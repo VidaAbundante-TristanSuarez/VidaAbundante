@@ -42,7 +42,7 @@ function mostrarTexto(biblia) {
     texto.innerHTML += `
       <div class="versiculo" style="font-size:${size}px">
         <span class="num">${v.Versiculo}</span>
-        ${v.Texto}
+        ${v.RV1960}
       </div>`;
   });
 }
@@ -52,3 +52,4 @@ window.cambiarLetra = (n) => {
   document.querySelectorAll(".versiculo")
     .forEach(v => v.style.fontSize = size + "px");
 };
+
