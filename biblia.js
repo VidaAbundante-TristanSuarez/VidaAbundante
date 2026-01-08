@@ -75,7 +75,7 @@ function cargarCapitulos() {
   mostrarTexto();
 }
 
-// 📖 MOSTRAR TEXTO
+// 📖 TEXTO NORMAL
 function mostrarTexto() {
   texto.innerHTML = "";
   notaBox.style.display = "none";
@@ -88,17 +88,21 @@ function mostrarTexto() {
     v.Capitulo == capSel.value
   );
 
-  versos.forEach(v => {
-    const id = `${v.Libro}_${v.Capitulo}_${v.Versiculo}`;
-    const marcado = marcados[id];
-    texto.innerHTML += `
-      <div class="versiculo ${marcado ? "resaltado" : ""}"
-        style="font-size:${size}px; background:${marcado?.color || "transparent"}"
-        onclick="toggle('${id}', ${v.Versiculo})">
-        <span class="num">${v.Versiculo}</span>
-        ${v.RV1960}
-      </div>`;
-  });
+  versos.forEach(v => pintarVersiculo(v));
+}
+
+// 🎨 DIBUJAR VERSÍCULO
+function pintarVersiculo(v, solo = false) {
+  const id = `${v.Libro}_${v.Capitulo}_${v.Versiculo}`;
+  const marcado = marcados[id];
+
+  texto.innerHTML += `
+    <div class="versiculo ${marcado ? "resaltado" : ""}"
+      style="font-size:${size}px; background:${marcado?.color || "transparent"}"
+      onclick="${solo ? "" : `toggle('${id}', ${v.Versiculo})`}">
+      <span class="num">${v.Versiculo}</span>
+      ${v.RV1960}
+    </div>`;
 }
 
 // ⭐ MARCAR
@@ -106,16 +110,14 @@ window.toggle = (id, num) => {
   if (!uid) return;
   const r = ref(db, "marcados/" + uid + "/" + id);
 
-  if (marcados[id]) {
-    remove(r);
-  } else {
-    set(r, { color: colorActual });
-  }
+  marcados[id]
+    ? remove(r)
+    : set(r, { color: colorActual });
 
   detectarGrupo(num);
 };
 
-// 🔗 DETECTAR GRUPO
+// 🔗 DETECTAR GRUPO DE MARCAS
 function detectarGrupo(num) {
   const nums = Object.keys(marcados)
     .map(k => Number(k.split("_")[2]))
@@ -135,6 +137,39 @@ window.guardarNota = () => {
   set(ref(db, "notas/" + uid + "/" + grupoActual), notaTexto.value);
   alert("Nota guardada ✨");
 };
+
+// ⭐ MIS VERSÍCULOS
+window.mostrarMisVersiculos = () => {
+  texto.innerHTML = "<h3>⭐ Mis versículos</h3>";
+  titulo.innerText = "";
+
+  Object.keys(marcados).forEach(id => {
+    const [Libro, Capitulo, Versiculo] = id.split("_");
+    const v = bibliaData.find(x =>
+      x.Libro === Libro &&
+      x.Capitulo == Capitulo &&
+      x.Versiculo == Versiculo
+    );
+    if (v) pintarVersiculo(v, true);
+  });
+};
+
+// 📝 MIS NOTAS
+window.mostrarNotas = () => {
+  texto.innerHTML = "<h3>📝 Mis notas</h3>";
+  titulo.innerText = "";
+
+  Object.keys(notas).forEach(grupo => {
+    texto.innerHTML += `
+      <div class="versiculo resaltado" style="background:#fff3b0">
+        <b>Versículos:</b> ${grupo.replaceAll("-", " a ")}<br>
+        ${notas[grupo]}
+      </div>`;
+  });
+};
+
+// ↩️ VOLVER
+window.volverBiblia = () => mostrarTexto();
 
 // 🎨 COLOR
 window.setColor = c => colorActual = c;
