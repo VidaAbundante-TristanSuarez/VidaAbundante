@@ -86,6 +86,17 @@ body.oscuro button:hover {
   background: #3a3a3a;
 }
 
+textarea {
+  border-radius: 10px;
+  padding: 10px;
+  font-size: 14px;
+}
+
+#titulo {
+  margin: 10px 0;
+  font-weight: bold;
+}
+
   </style>
 </head>
 
@@ -114,7 +125,17 @@ body.oscuro button:hover {
   <select id="libro"></select>
   <select id="capitulo"></select>
 
-  <div id="texto"></div>
+  <h3 id="titulo"></h3>
+<div id="texto"></div>
+
+<!-- 📝 NOTA -->
+<div id="notaBox" style="display:none; margin-top:15px">
+  <b>📝 Nota para este grupo:</b>
+  <textarea id="notaTexto"
+    style="width:100%; height:80px; margin-top:5px"
+    placeholder="Escribí tu nota aquí..."></textarea>
+  <button onclick="guardarNota()">💾 Guardar nota</button>
+</div>
 
   <div class="controls">
     <button onclick="cambiarLetra(1)">A+</button>
@@ -125,6 +146,7 @@ body.oscuro button:hover {
 
 </body>
 </html>
+
 
 
 
