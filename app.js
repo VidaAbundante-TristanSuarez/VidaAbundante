@@ -27,13 +27,26 @@ window.login = function () {
     .catch(e => alert(e.message));
 };
 
+import { getRedirectResult, signInWithRedirect } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
 window.loginGoogle = function () {
   const provider = new GoogleAuthProvider();
-  signInWithPopup(auth, provider).then(result => {
-    set(ref(db, "users/" + result.user.uid), {
-      email: result.user.email,
-      role: "user"
-    });
-    alert("✅ Bienvenido con Google");
-  });
+  signInWithRedirect(auth, provider);
 };
+
+// 🔁 Cuando vuelve de Google
+getRedirectResult(auth)
+  .then(result => {
+    if (result && result.user) {
+      set(ref(db, "users/" + result.user.uid), {
+        email: result.user.email,
+        role: "user"
+      });
+      alert("✅ Bienvenido con Google");
+    }
+  })
+  .catch(error => {
+    if (error) alert(error.message);
+  });
+
+
