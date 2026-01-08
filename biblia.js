@@ -135,3 +135,8 @@ window.cambiarLetra = n => {
   document.querySelectorAll(".versiculo")
     .forEach(v => v.style.fontSize = size + "px");
 };
+
+// 🌙 TOGGLE TEMA (LOCAL, SIN FIREBASE)
+window.toggleTema = () => {
+  document.body.classList.toggle("oscuro");
+};
