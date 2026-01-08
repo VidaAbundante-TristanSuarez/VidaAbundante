@@ -16,14 +16,20 @@ const db = getDatabase(app);
 
 // 📌 ESTADO
 let uid = null;
-let marcados = {};
 let bibliaData = [];
+let marcados = {};
+let notas = {};
 let size = 18;
 let colorActual = "#ffd6e8";
 
 const libroSel = document.getElementById("libro");
 const capSel = document.getElementById("capitulo");
 const texto = document.getElementById("texto");
+const titulo = document.getElementById("titulo");
+const notaBox = document.getElementById("notaBox");
+const notaTexto = document.getElementById("notaTexto");
+
+let grupoActual = null;
 
 // 📖 CARGAR BIBLIA
 fetch("VidaAbundante - RV1960.json")
@@ -38,9 +44,13 @@ onAuthStateChanged(auth, user => {
   if (!user) return;
   uid = user.uid;
 
-  onValue(ref(db, "marcados/" + uid), snap => {
-    marcados = snap.val() || {};
+  onValue(ref(db, "marcados/" + uid), s => {
+    marcados = s.val() || {};
     mostrarTexto();
+  });
+
+  onValue(ref(db, "notas/" + uid), s => {
+    notas = s.val() || {};
   });
 });
 
@@ -65,65 +75,65 @@ function cargarCapitulos() {
   mostrarTexto();
 }
 
-// 📖 TEXTO NORMAL
+// 📖 MOSTRAR TEXTO
 function mostrarTexto() {
   texto.innerHTML = "";
+  notaBox.style.display = "none";
+  grupoActual = null;
+
+  titulo.innerText = `${libroSel.value} ${capSel.value}`;
+
   const versos = bibliaData.filter(v =>
     v.Libro === libroSel.value &&
     v.Capitulo == capSel.value
   );
 
-  versos.forEach(v => pintarVersiculo(v));
-}
-
-// ⭐ SOLO MIS VERSÍCULOS
-window.mostrarMisVersiculos = () => {
-  texto.innerHTML = "<h3>⭐ Mis versículos</h3>";
-
-  Object.keys(marcados).forEach(id => {
-    const [Libro, Capitulo, Versiculo] = id.split("_");
-    const v = bibliaData.find(x =>
-      x.Libro === Libro &&
-      x.Capitulo == Capitulo &&
-      x.Versiculo == Versiculo
-    );
-    if (v) pintarVersiculo(v, true);
+  versos.forEach(v => {
+    const id = `${v.Libro}_${v.Capitulo}_${v.Versiculo}`;
+    const marcado = marcados[id];
+    texto.innerHTML += `
+      <div class="versiculo ${marcado ? "resaltado" : ""}"
+        style="font-size:${size}px; background:${marcado?.color || "transparent"}"
+        onclick="toggle('${id}', ${v.Versiculo})">
+        <span class="num">${v.Versiculo}</span>
+        ${v.RV1960}
+      </div>`;
   });
-};
-
-// ↩️ VOLVER
-window.volverBiblia = () => mostrarTexto();
-
-// 🎨 DIBUJAR
-function pintarVersiculo(v, solo = false) {
-  const id = `${v.Libro}_${v.Capitulo}_${v.Versiculo}`;
-  const marcado = marcados[id];
-  const fondo = marcado ? marcado.color : "transparent";
-  const clase = marcado ? "versiculo resaltado" : "versiculo";
-
-  texto.innerHTML += `
-    <div class="${clase}"
-         style="font-size:${size}px; background:${fondo}"
-         onclick="${solo ? `irAVersiculo('${v.Libro}',${v.Capitulo})` : `toggle('${id}')`}">
-      <span class="num">${marcado ? "⭐" : ""}${v.Versiculo}</span>
-      <b>${v.Libro} ${v.Capitulo}</b><br>
-      ${v.RV1960}
-    </div>`;
 }
-
-// 🔁 IR AL TEXTO
-window.irAVersiculo = (libro, cap) => {
-  libroSel.value = libro;
-  cargarCapitulos();
-  capSel.value = cap;
-  mostrarTexto();
-};
 
 // ⭐ MARCAR
-window.toggle = (id) => {
+window.toggle = (id, num) => {
   if (!uid) return;
   const r = ref(db, "marcados/" + uid + "/" + id);
-  marcados[id] ? remove(r) : set(r, { color: colorActual });
+
+  if (marcados[id]) {
+    remove(r);
+  } else {
+    set(r, { color: colorActual });
+  }
+
+  detectarGrupo(num);
+};
+
+// 🔗 DETECTAR GRUPO
+function detectarGrupo(num) {
+  const nums = Object.keys(marcados)
+    .map(k => Number(k.split("_")[2]))
+    .sort((a,b)=>a-b);
+
+  let grupo = nums.filter(n => Math.abs(n - num) <= 1);
+  if (grupo.length < 2) return;
+
+  grupoActual = grupo.join("-");
+  notaBox.style.display = "block";
+  notaTexto.value = notas[grupoActual] || "";
+}
+
+// 💾 GUARDAR NOTA
+window.guardarNota = () => {
+  if (!grupoActual || !uid) return;
+  set(ref(db, "notas/" + uid + "/" + grupoActual), notaTexto.value);
+  alert("Nota guardada ✨");
 };
 
 // 🎨 COLOR
@@ -136,7 +146,7 @@ window.cambiarLetra = n => {
     .forEach(v => v.style.fontSize = size + "px");
 };
 
-// 🌙 TOGGLE TEMA (LOCAL, SIN FIREBASE)
+// 🌙 TEMA
 window.toggleTema = () => {
   document.body.classList.toggle("oscuro");
 };
