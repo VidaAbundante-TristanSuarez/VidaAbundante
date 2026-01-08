@@ -136,8 +136,10 @@ window.cambiarLetra = (n) => {
 
 // 🌙 TOGGLE TEMA (SE GUARDA)
 window.toggleTema = () => {
-  if (!uid) return;
-
   const oscuro = document.body.classList.toggle("oscuro");
-  set(ref(db, "tema/" + uid), oscuro);
+
+  // 👉 si hay usuario, se guarda
+  if (uid) {
+    set(ref(db, "tema/" + uid), oscuro);
+  }
 };
