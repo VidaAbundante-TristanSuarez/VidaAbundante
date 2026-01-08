@@ -9,13 +9,13 @@ import {
 import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBZegbOl9gQTR6JAQokEc8YmVtbbcdr8ik",
-  authDomain: "vidaabundante-82bbe.firebaseapp.com",
-  databaseURL: "https://vidaabundante-82bbe-default-rtdb.firebaseio.com",
-  projectId: "vidaabundante-82bbe",
-  storageBucket: "vidaabundante-82bbe.appspot.com",
-  messagingSenderId: "975960147046",
-  appId: "1:975960147046:web:79345d4baff3d8c82059a7"
+  apiKey: "AIzaSyBtDcQ2DhgMpLsn4FCdF82QNstfvAjguQ4",
+  authDomain: "vidaabundante-f118a.firebaseapp.com",
+  databaseURL: "https://vidaabundante-f118a-default-rtdb.firebaseio.com",
+  projectId: "vidaabundante-f118a",
+  storageBucket: "vidaabundante-f118a.firebasestorage.app",
+  messagingSenderId: "288400700394",
+  appId: "1:288400700394:web:006e75400a073edaec3893"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -54,3 +54,4 @@ getRedirectResult(auth)
   .catch(error => {
     if (error) alert(error.message);
   });
+
