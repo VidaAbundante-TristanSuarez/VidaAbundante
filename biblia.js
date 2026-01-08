@@ -20,7 +20,7 @@ let uid = null;
 let marcados = {};
 let bibliaData = [];
 let size = 18;
-let colorActual = "#ffd6e8"; // 🌸 rosado por defecto
+let colorActual = "#ffd6e8"; // 🌸 rosado
 
 const libroSel = document.getElementById("libro");
 const capSel = document.getElementById("capitulo");
@@ -40,9 +40,20 @@ onAuthStateChanged(auth, user => {
 
   uid = user.uid;
 
+  // ⭐ versículos marcados
   onValue(ref(db, "marcados/" + uid), snap => {
     marcados = snap.val() || {};
     mostrarTexto();
+  });
+
+  // 🌙 preferencia de tema
+  onValue(ref(db, "tema/" + uid), snap => {
+    const oscuro = snap.val();
+    if (oscuro) {
+      document.body.classList.add("oscuro");
+    } else {
+      document.body.classList.remove("oscuro");
+    }
   });
 });
 
@@ -98,7 +109,7 @@ function mostrarTexto() {
   });
 }
 
-// ⭐ MARCAR / DESMARCAR
+// ⭐ MARCAR
 window.toggle = (id) => {
   if (!uid) return;
 
@@ -111,7 +122,7 @@ window.toggle = (id) => {
   }
 };
 
-// 🎨 CAMBIAR COLOR
+// 🎨 COLOR RESALTADOR
 window.setColor = (c) => {
   colorActual = c;
 };
@@ -121,4 +132,12 @@ window.cambiarLetra = (n) => {
   size += n;
   document.querySelectorAll(".versiculo")
     .forEach(v => v.style.fontSize = size + "px");
+};
+
+// 🌙 TOGGLE TEMA (SE GUARDA)
+window.toggleTema = () => {
+  if (!uid) return;
+
+  const oscuro = document.body.classList.toggle("oscuro");
+  set(ref(db, "tema/" + uid), oscuro);
 };
