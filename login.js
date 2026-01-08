@@ -3,8 +3,7 @@ import {
   getAuth,
   signInWithEmailAndPassword,
   GoogleAuthProvider,
-  signInWithRedirect,
-  getRedirectResult,
+  signInWithPopup,
   onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
@@ -19,16 +18,17 @@ const auth = getAuth(app);
 
 // LOGIN EMAIL
 window.login = () => {
-  signInWithEmailAndPassword(
-    auth,
-    email.value,
-    password.value
-  ).catch(e => alert(e.message));
+  signInWithEmailAndPassword(auth, email.value, password.value)
+    .catch(e => alert(e.message));
 };
 
-// LOGIN GOOGLE
-window.loginGoogle = () => {
-  signInWithRedirect(auth, new GoogleAuthProvider());
+// ✅ LOGIN GOOGLE CON POPUP
+window.loginGoogle = async () => {
+  try {
+    await signInWithPopup(auth, new GoogleAuthProvider());
+  } catch (e) {
+    alert(e.message);
+  }
 };
 
 // SI YA ESTÁ LOGUEADO → APP
