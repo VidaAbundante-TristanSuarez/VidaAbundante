@@ -1,5 +1,11 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import {
+  getAuth,
+  signInWithEmailAndPassword,
+  GoogleAuthProvider,
+  signInWithRedirect,
+  getRedirectResult
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 const firebaseConfig = {
@@ -16,6 +22,7 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getDatabase(app);
 
+// 🔐 LOGIN EMAIL
 window.login = function () {
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
@@ -27,14 +34,13 @@ window.login = function () {
     .catch(e => alert(e.message));
 };
 
-import { getRedirectResult, signInWithRedirect } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-
+// 🔐 LOGIN GOOGLE (REDIRECCIÓN)
 window.loginGoogle = function () {
   const provider = new GoogleAuthProvider();
   signInWithRedirect(auth, provider);
 };
 
-// 🔁 Cuando vuelve de Google
+// 🔁 CUANDO VUELVE DE GOOGLE
 getRedirectResult(auth)
   .then(result => {
     if (result && result.user) {
@@ -48,5 +54,3 @@ getRedirectResult(auth)
   .catch(error => {
     if (error) alert(error.message);
   });
-
-
