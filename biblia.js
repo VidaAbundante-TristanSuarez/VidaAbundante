@@ -19,8 +19,8 @@ const db = getDatabase(app);
 let uid = null;
 let marcados = {};
 let bibliaData = [];
-
 let size = 18;
+let colorActual = "#ffd6e8"; // 🌸 rosado por defecto
 
 const libroSel = document.getElementById("libro");
 const capSel = document.getElementById("capitulo");
@@ -86,10 +86,11 @@ function mostrarTexto() {
   versos.forEach(v => {
     const id = `${v.Libro}_${v.Capitulo}_${v.Versiculo}`;
     const marcado = marcados[id];
+    const fondo = marcado ? marcado.color : "transparent";
 
     texto.innerHTML += `
       <div class="versiculo"
-           style="font-size:${size}px"
+           style="font-size:${size}px; background:${fondo}"
            onclick="toggle('${id}')">
         <span class="num">${marcado ? "⭐" : ""}${v.Versiculo}</span>
         ${v.RV1960}
@@ -106,8 +107,13 @@ window.toggle = (id) => {
   if (marcados[id]) {
     remove(r);
   } else {
-    set(r, true);
+    set(r, { color: colorActual });
   }
+};
+
+// 🎨 CAMBIAR COLOR
+window.setColor = (c) => {
+  colorActual = c;
 };
 
 // 🔍 TAMAÑO LETRA
