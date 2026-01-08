@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Biblia</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 15px;
+      line-height: 1.6;
+    }
+
+    select {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      font-size: 16px;
+    }
+
+    .versiculo {
+      margin-bottom: 12px;
+    }
+
+    .num {
+      font-weight: bold;
+      margin-right: 5px;
+    }
+
+    .controls {
+      position: fixed;
+      bottom: 10px;
+      right: 10px;
+    }
+
+    .controls button {
+      font-size: 18px;
+      margin-left: 5px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h2>📖 Biblia</h2>
+
+  <select id="libro"></select>
+  <select id="capitulo"></select>
+
+  <div id="texto"></div>
+
+  <div class="controls">
+    <button onclick="cambiarLetra(1)">A+</button>
+    <button onclick="cambiarLetra(-1)">A-</button>
+  </div>
+
+  <script type="module" src="biblia.js"></script>
+
+</body>
+</html>
