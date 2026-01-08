@@ -56,9 +56,9 @@ getRedirectResult(auth)
 
 // ✅ ESCUCHAR SESIÓN (SOLO REDIRIGIR DESDE LOGIN)
 onAuthStateChanged(auth, (user) => {
-  const estoyEnLogin = window.location.pathname.endsWith("login.html");
-
-  if (user && estoyEnLogin) {
+  if (user) {
     window.location.replace("app.html");
   }
 });
+
+
