@@ -38,12 +38,31 @@
       font-size: 18px;
       margin-left: 5px;
     }
+    .versiculo {
+  padding: 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+/* 🌙 MODO OSCURO */
+body.oscuro {
+  background: #121212;
+  color: #e0e0e0;
+}
   </style>
 </head>
 
 <body>
 
   <h2>📖 Biblia</h2>
+<!-- 🎨 RESALTADOR -->
+<div style="margin-bottom:10px">
+  <b>Resaltar:</b>
+  <button onclick="setColor('#ffd6e8')">🌸</button>
+  <button onclick="setColor('#ccecff')">💙</button>
+  <button onclick="setColor('#fff3b0')">💛</button>
+</div>
 
   <select id="libro"></select>
   <select id="capitulo"></select>
@@ -59,3 +78,4 @@
 
 </body>
 </html>
+
