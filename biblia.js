@@ -94,19 +94,21 @@ function mostrarTexto() {
     v.Capitulo == capSel.value
   );
 
-  versos.forEach(v => {
-    const id = `${v.Libro}_${v.Capitulo}_${v.Versiculo}`;
-    const marcado = marcados[id];
-    const fondo = marcado ? marcado.color : "transparent";
+versos.forEach(v => {
+  const id = `${v.Libro}_${v.Capitulo}_${v.Versiculo}`;
+  const marcado = marcados[id];
+  const fondo = marcado ? marcado.color : "transparent";
+  const clase = marcado ? "versiculo resaltado" : "versiculo";
 
-    texto.innerHTML += `
-      <div class="versiculo"
-           style="font-size:${size}px; background:${fondo}"
-           onclick="toggle('${id}')">
-        <span class="num">${marcado ? "⭐" : ""}${v.Versiculo}</span>
-        ${v.RV1960}
-      </div>`;
-  });
+  texto.innerHTML += `
+    <div class="${clase}"
+         style="font-size:${size}px; background:${fondo}"
+         onclick="toggle('${id}')">
+      <span class="num">${marcado ? "⭐" : ""}${v.Versiculo}</span>
+      ${v.RV1960}
+    </div>`;
+});
+
 }
 
 // ⭐ MARCAR
@@ -143,3 +145,4 @@ window.toggleTema = () => {
     set(ref(db, "tema/" + uid), oscuro);
   }
 };
+
