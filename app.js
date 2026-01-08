@@ -9,7 +9,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-// 🔧 CONFIGURACIÓN CORRECTA
+// 🔧 CONFIGURACIÓN
 const firebaseConfig = {
   apiKey: "AIzaSyBtDcQ2DhgMpLsn4FCdF82QNstfvAjguQ4",
   authDomain: "vidaabundante-f118a.firebaseapp.com",
@@ -31,19 +31,16 @@ window.login = function () {
   const password = document.getElementById("password").value;
 
   signInWithEmailAndPassword(auth, email, password)
-    .then(() => {
-      // NO hacemos nada acá, onAuthStateChanged se encarga
-    })
     .catch(e => alert(e.message));
 };
 
-// 🔐 LOGIN GOOGLE (REDIRECCIÓN)
+// 🔐 LOGIN GOOGLE
 window.loginGoogle = function () {
   const provider = new GoogleAuthProvider();
   signInWithRedirect(auth, provider);
 };
 
-// 🔁 CUANDO VUELVE DE GOOGLE
+// 🔁 PROCESAR REDIRECCIÓN (SI VIENE DE GOOGLE)
 getRedirectResult(auth)
   .then(result => {
     if (result && result.user) {
@@ -54,12 +51,14 @@ getRedirectResult(auth)
     }
   })
   .catch(error => {
-    if (error) alert(error.message);
+    if (error) console.error(error);
   });
 
-// ✅ SI YA ESTÁ LOGUEADO → IR A LA APP
+// ✅ ESCUCHAR SESIÓN (SOLO REDIRIGIR DESDE LOGIN)
 onAuthStateChanged(auth, (user) => {
-  if (user) {
-    window.location.href = "app.html";
+  const estoyEnLogin = window.location.pathname.endsWith("login.html");
+
+  if (user && estoyEnLogin) {
+    window.location.replace("app.html");
   }
 });
