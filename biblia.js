@@ -248,17 +248,35 @@ const textoFinal = textoVersos.join("\n\n");
  const textoURL = encodeURIComponent(textoFinal);
 const refURL = encodeURIComponent(referencia);
 
+const base = "https://res.cloudinary.com/dlkpityif/image/upload/";
+const fondo = "fondo1";
+
+// ===== CONFIG DINÁMICA =====
+const fuenteTexto = "Arial_60";
+const fuenteRef = "Arial_42";
+const colorTexto = "co_rgb:ffffff";
+const outlineFuerte = "e_outline:5:000000";
+const outlineSuave = "e_outline:2:000000";
+
+// ===== ENCODE =====
+const textoURL = encodeURIComponent(textoFinal);
+const refURL = encodeURIComponent(referencia);
+
+// ===== URL FINAL =====
 const url =
   base +
-  "w_1600,h_1600,c_fill/" +
 
-  // TEXTO PRINCIPAL
-  "l_text:Arial_60_center:" + textoURL +
-  ",co_rgb:ffffff,g_center,y_-80,w_1400,c_fit,line_spacing_10/" +
+  // TEXTO PRINCIPAL (CAPA 1 – CONTORNO)
+  `l_text:${fuenteTexto}_center:${textoURL},` +
+  `${colorTexto},${outlineFuerte},g_center,y_-80,w_1400,c_fit/` +
+
+  // TEXTO PRINCIPAL (CAPA 2 – TEXTO)
+  `l_text:${fuenteTexto}_center:${textoURL},` +
+  `${colorTexto},${outlineSuave},g_center,y_-80,w_1400,c_fit/` +
 
   // REFERENCIA
-  "l_text:Arial_42_bold_center:" + refURL +
-  ",co_rgb:ffffff,g_south,y_140/" +
+  `l_text:${fuenteRef}_center:${refURL},` +
+  `${colorTexto},g_south,y_120/` +
 
   fondo;
 
@@ -361,6 +379,7 @@ function cargarImagenes() {
     });
   });
 }
+
 
 
 
