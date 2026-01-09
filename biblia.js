@@ -200,21 +200,40 @@ window.generarImagen = () => {
   }
 
   // 📖 texto + referencia
-  let textoVersos = "";
-  let referencia = "";
+// 📖 construir texto y referencia correcta
+let textoVersos = [];
+let libro = "";
+let capitulo = "";
+let numeros = [];
 
-  ids.forEach(id => {
-    const [Libro, Capitulo, Versiculo] = id.split("_");
-    const v = bibliaData.find(x =>
-      x.Libro === Libro &&
-      x.Capitulo == Capitulo &&
-      x.Versiculo == Versiculo
-    );
-    if (v) {
-      textoVersos += v.RV1960 + " ";
-      referencia = `${Libro} ${Capitulo}`;
-    }
-  });
+ids.forEach(id => {
+  const [L, C, V] = id.split("_");
+  const v = bibliaData.find(x =>
+    x.Libro === L &&
+    x.Capitulo == C &&
+    x.Versiculo == V
+  );
+  if (v) {
+    libro = L;
+    capitulo = C;
+    numeros.push(Number(V));
+    textoVersos.push(v.RV1960);
+  }
+});
+
+// ordenar versículos
+numeros.sort((a, b) => a - b);
+
+// 📌 referencia tipo Génesis 1:1-5
+let referencia = "";
+if (numeros.length === 1) {
+  referencia = `${libro} ${capitulo}:${numeros[0]}`;
+} else {
+  referencia = `${libro} ${capitulo}:${numeros[0]}-${numeros[numeros.length - 1]}`;
+}
+
+// texto con saltos
+const textoFinal = textoVersos.join("\n\n");
 
   if (!textoVersos.trim()) {
     alert("No se pudo construir el texto.");
@@ -225,17 +244,22 @@ window.generarImagen = () => {
   const base = "https://res.cloudinary.com/dlkpityif/image/upload/";
   const fondo = "fondo1";
 
-  const textoURL = encodeURIComponent(textoVersos.trim());
-  const refURL = encodeURIComponent(referencia);
+ const textoURL = encodeURIComponent(textoFinal);
+const refURL = encodeURIComponent(referencia);
 
-  const url =
-    base +
-    "w_1600,h_1600,c_fill/" +
-    "l_text:Arial_60_center:" + textoURL +
-    ",co_rgb:ffffff,g_center,y_-60,w_1400,c_fit/" +
-    "l_text:Arial_40_bold_center:" + refURL +
-    ",co_rgb:ffffff,g_south,y_120/" +
-    fondo;
+const url =
+  base +
+  "w_1600,h_1600,c_fill/" +
+
+  // TEXTO PRINCIPAL
+  "l_text:Arial_60_center:" + textoURL +
+  ",co_rgb:ffffff,gravity:center,y_-80,w_1400,c_fit,line_spacing_10/" +
+
+  // REFERENCIA
+  "l_text:Arial_42_bold_center:" + refURL +
+  ",co_rgb:ffffff,gravity:south,y_140/" +
+
+  fondo;
 
   // 💾 guardar en Firebase
   const imgRef = push(ref(db, "imagenes/" + uid));
@@ -336,4 +360,5 @@ function cargarImagenes() {
     });
   });
 }
+
 
