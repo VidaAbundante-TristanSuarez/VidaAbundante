@@ -75,6 +75,21 @@ function cargarCapitulos() {
   mostrarTexto();
 }
 
+// ⬅️➡️ CAMBIO DE CAPÍTULO
+window.capituloAnterior = () => {
+  if (capSel.selectedIndex > 0) {
+    capSel.selectedIndex--;
+    mostrarTexto();
+  }
+};
+
+window.capituloSiguiente = () => {
+  if (capSel.selectedIndex < capSel.options.length - 1) {
+    capSel.selectedIndex++;
+    mostrarTexto();
+  }
+};
+
 // 📖 TEXTO NORMAL
 function mostrarTexto() {
   texto.innerHTML = "";
@@ -204,5 +219,24 @@ window.mostrarSeccion = (seccion) => {
   // ✅ Mostramos solo la sección elegida
   const activa = document.getElementById("panel-" + seccion);
   if (activa) activa.style.display = "block";
+};
+
+// 🧭 CAMBIAR SECCIÓN PRINCIPAL
+window.irA = (seccion) => {
+
+  const secciones = [
+    "seccion-biblia",
+    "seccion-panel",
+    "seccion-devocionales",
+    "seccion-abc",
+    "seccion-iglesia"
+  ];
+
+  secciones.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = "none";
+  });
+
+  document.getElementById("seccion-" + seccion).style.display = "block";
 };
 
