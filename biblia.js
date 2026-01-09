@@ -181,24 +181,25 @@ window.toggleTema = () => {
 };
 
 // ================= GENERAR IMAGEN =================
+// 🖼️ GENERAR IMAGEN DESDE VERSÍCULOS MARCADOS
 window.generarImagen = () => {
 
-  const user = auth.currentUser;
-
-  if (!user) {
+  // 🔐 validar sesión
+  if (!uid) {
     sessionStorage.setItem("accionPendiente", "generarImagen");
     mostrarModalLogin();
     return;
   }
 
-  uid = user.uid;
-  const ids = Object.keys(marcados);
+  // 📌 versículos marcados
+  const ids = Object.keys(marcados || {});
 
   if (ids.length === 0) {
-    alert("Marcá al menos un versículo");
+    alert("Marcá al menos un versículo primero 🙏");
     return;
   }
 
+  // 📖 texto + referencia
   let textoVersos = "";
   let referencia = "";
 
@@ -215,24 +216,39 @@ window.generarImagen = () => {
     }
   });
 
-  const url =
-    "https://res.cloudinary.com/dlkpityif/image/upload/" +
-    "w_1600,h_1600,c_fill/" +
-    "l_text:Arial_60_center:" + encodeURIComponent(textoVersos.trim()) +
-    ",co_rgb:ffffff,g_center,y_-60,w_1400,c_fit/" +
-    "l_text:Arial_40_bold_center:" + encodeURIComponent(referencia) +
-    ",co_rgb:ffffff,g_south,y_120/" +
-    "fondo1";
+  if (!textoVersos.trim()) {
+    alert("No se pudo construir el texto.");
+    return;
+  }
 
+  // ☁️ CLOUDINARY
+  const base = "https://res.cloudinary.com/dlkpityif/image/upload/";
+  const fondo = "fondo1";
+
+  const textoURL = encodeURIComponent(textoVersos.trim());
+  const refURL = encodeURIComponent(referencia);
+
+  const url =
+    base +
+    "w_1600,h_1600,c_fill/" +
+    "l_text:Arial_60_center:" + textoURL +
+    ",co_rgb:ffffff,g_center,y_-60,w_1400,c_fit/" +
+    "l_text:Arial_40_bold_center:" + refURL +
+    ",co_rgb:ffffff,g_south,y_120/" +
+    fondo;
+
+  // 💾 guardar en Firebase
   const imgRef = push(ref(db, "imagenes/" + uid));
+
   set(imgRef, {
     url,
     nombre: referencia,
     creada: Date.now()
   });
 
-  alert("Imagen generada ✨\nMi Panel → Imágenes");
+  alert("✨ Imagen generada\nMi Panel → Imágenes");
 };
+
 
 // ================= LOGIN MODAL =================
 window.mostrarModalLogin = () => {
@@ -288,3 +304,4 @@ window.mostrarSeccion = (seccion) => {
     cargarImagenes();
   }
 };
+
