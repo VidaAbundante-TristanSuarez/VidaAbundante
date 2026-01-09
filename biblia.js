@@ -1,3 +1,11 @@
+import {
+  getDatabase,
+  ref,
+  set,
+  remove,
+  onValue,
+  push
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { getDatabase, ref, set, remove, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
@@ -42,7 +50,15 @@ fetch("VidaAbundante - RV1960.json")
 // 👤 USUARIO
 onAuthStateChanged(auth, user => {
   if (!user) return;
+
   uid = user.uid;
+
+  // 🔁 ACCIÓN PENDIENTE
+  const accion = sessionStorage.getItem("accionPendiente");
+  if (accion === "generarImagen") {
+    sessionStorage.removeItem("accionPendiente");
+    setTimeout(() => generarImagen(), 500);
+  }
 
   onValue(ref(db, "marcados/" + uid), s => {
     marcados = s.val() || {};
@@ -286,6 +302,7 @@ window.generarImagen = () => {
   const user = auth.currentUser;
 
 if (!user) {
+  sessionStorage.setItem("accionPendiente", "generarImagen");
   mostrarModalLogin();
   return;
 }
@@ -334,7 +351,7 @@ uid = user.uid;
     fondo;
 
   // 💾 Guardar en Firebase
-  const imgRef = ref(db, "imagenes/" + uid).push();
+ const imgRef = push(ref(db, "imagenes/" + uid));
 
   set(imgRef, {
     url: url,
@@ -359,4 +376,5 @@ window.cerrarLogin = () => {
 window.irALogin = () => {
   window.location.href = "login.html"; // o donde tengas tu login
 };
+
 
