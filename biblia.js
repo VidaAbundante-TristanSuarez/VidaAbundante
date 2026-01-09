@@ -185,3 +185,24 @@ window.cambiarLetra = n => {
 window.toggleTema = () => {
   document.body.classList.toggle("oscuro");
 };
+
+// 🧭 PANEL — MOSTRAR SECCIÓN (IMÁGENES / VERSÍCULOS / NOTAS)
+window.mostrarSeccion = (seccion) => {
+
+  // 🔒 Ocultamos todas las secciones del panel
+  const secciones = [
+    "panel-imagenes",
+    "panel-versiculos",
+    "panel-notas"
+  ];
+
+  secciones.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = "none";
+  });
+
+  // ✅ Mostramos solo la sección elegida
+  const activa = document.getElementById("panel-" + seccion);
+  if (activa) activa.style.display = "block";
+};
+
