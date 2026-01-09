@@ -235,8 +235,8 @@ window.generarImagen = () => {
   const base = "https://res.cloudinary.com/dlkpityif/image/upload/";
   const fondo = "fondo1";
 
-  const textoURL = encodeURIComponent(textoFinal);
-  const refURL = encodeURIComponent(referencia);
+  const textoURL = encodeURIComponent(encodeURIComponent(textoFinal));
+const refURL   = encodeURIComponent(encodeURIComponent(referencia));
 
   const url =
     base +
@@ -350,6 +350,7 @@ function cargarImagenes() {
     });
   });
 }
+
 
 
 
