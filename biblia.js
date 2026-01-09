@@ -200,22 +200,26 @@ window.generarImagen = () => {
   }
 
   // 📖 texto + referencia
-// 📖 construir texto y referencia correcta
+// 📖 construir texto y referencia correcta (MISMO LIBRO Y CAPÍTULO)
 let textoVersos = [];
-let libro = "";
-let capitulo = "";
 let numeros = [];
+
+const primerId = ids[0];
+const [libro, capitulo] = primerId.split("_");
 
 ids.forEach(id => {
   const [L, C, V] = id.split("_");
+
+  // ⚠️ ignorar versículos de otros capítulos/libros
+  if (L !== libro || C !== capitulo) return;
+
   const v = bibliaData.find(x =>
     x.Libro === L &&
     x.Capitulo == C &&
     x.Versiculo == V
   );
+
   if (v) {
-    libro = L;
-    capitulo = C;
     numeros.push(Number(V));
     textoVersos.push(v.RV1960);
   }
@@ -224,21 +228,18 @@ ids.forEach(id => {
 // ordenar versículos
 numeros.sort((a, b) => a - b);
 
-// 📌 referencia tipo Génesis 1:1-5
-let referencia = "";
-if (numeros.length === 1) {
-  referencia = `${libro} ${capitulo}:${numeros[0]}`;
-} else {
-  referencia = `${libro} ${capitulo}:${numeros[0]}-${numeros[numeros.length - 1]}`;
-}
+// 📌 referencia FINAL correcta
+let referencia = numeros.length === 1
+  ? `${libro} ${capitulo}:${numeros[0]}`
+  : `${libro} ${capitulo}:${numeros[0]}-${numeros[numeros.length - 1]}`;
 
-// texto con saltos
+// texto final
 const textoFinal = textoVersos.join("\n\n");
 
-  if (!textoVersos.trim()) {
-    alert("No se pudo construir el texto.");
-    return;
-  }
+  if (!textoFinal.trim()) {
+  alert("No se pudo construir el texto.");
+  return;
+}
 
   // ☁️ CLOUDINARY
   const base = "https://res.cloudinary.com/dlkpityif/image/upload/";
@@ -360,6 +361,7 @@ function cargarImagenes() {
     });
   });
 }
+
 
 
 
