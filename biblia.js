@@ -305,3 +305,35 @@ window.mostrarSeccion = (seccion) => {
   }
 };
 
+// ================= CARGAR IMÁGENES DEL PANEL =================
+function cargarImagenes() {
+  if (!uid) return;
+
+  const grid = document.getElementById("grid-imagenes");
+  const vacio = document.getElementById("imagenes-vacio");
+
+  onValue(ref(db, "imagenes/" + uid), snap => {
+    grid.innerHTML = "";
+
+    if (!snap.exists()) {
+      vacio.style.display = "block";
+      return;
+    }
+
+    vacio.style.display = "none";
+
+    snap.forEach(child => {
+      const img = child.val();
+
+      const card = document.createElement("div");
+      card.className = "card-imagen";
+      card.innerHTML = `
+        <img src="${img.url}" />
+        <div class="nombre">${img.nombre || "Imagen bíblica"}</div>
+      `;
+
+      grid.appendChild(card);
+    });
+  });
+}
+
