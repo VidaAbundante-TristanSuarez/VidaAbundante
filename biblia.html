@@ -63,12 +63,32 @@
     }
 
     /* ================= BIBLIA ================= */
-    .filtros select {
-      width: 100%;
-      padding: 10px;
-      margin-bottom: 8px;
-      font-size: 16px;
-    }
+    .filtros {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.filtros select {
+  padding: 10px;
+  font-size: 16px;
+}
+    
+.filtros-imagen select {
+  width: 35%;
+}
+
+#btnModoImagen {
+  width: 30%;
+  border-radius: 12px;
+  background: #8b3a3a; /* bordo claro */
+  color: white;
+  font-weight: bold;
+}
+
+#btnModoImagen.activo {
+  background: #4f6fa8; /* azul viejo */
+}
 
     .barra-acciones {
       position: sticky;
@@ -160,7 +180,30 @@ body.oscuro .card-imagen {
   text-align: center;
   font-weight: bold;
 }
+    /* ================= NAV RESPONSIVE ================= */
 
+#menu {
+  display: flex;
+  gap: 6px;
+  flex-wrap: nowrap;
+}
+
+.nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* 📱 MÓVIL */
+@media (max-width: 640px) {
+  .nav-btn .text {
+    display: none;
+  }
+
+  .nav-btn {
+    padding: 8px;
+  }
+}
     
   </style>
 </head>
@@ -170,12 +213,27 @@ body.oscuro .card-imagen {
 <!-- ================= HEADER ================= -->
 <div id="header">
   <div id="menu">
-    <button onclick="irA('biblia')">Biblia</button>
-    <button onclick="irA('devocionales')">Devocionales</button>
-    <button onclick="irA('abc')">ABC</button>
-    <button onclick="irA('iglesia')">Iglesia</button>
-    <button onclick="irA('panel')">Mi Panel</button>
-  </div>
+  <button onclick="irA('biblia')" class="nav-btn">
+    <span class="icon">📖</span>
+    <span class="text">Biblia</span>
+  </button>
+  <button onclick="irA('devocionales')" class="nav-btn">
+    <span class="icon">📆</span>
+    <span class="text">Devocionales</span>
+  </button>
+  <button onclick="irA('abc')" class="nav-btn">
+    <span class="icon">🔤</span>
+    <span class="text">ABC</span>
+  </button>
+  <button onclick="irA('iglesia')" class="nav-btn">
+    <span class="icon">⛪</span>
+    <span class="text">Iglesia</span>
+  </button>
+  <button onclick="irA('panel')" class="nav-btn">
+    <span class="icon">👤</span>
+    <span class="text">Mi Panel</span>
+  </button>
+</div>
 
   <button onclick="toggleTema()">🌙</button>
 </div>
@@ -183,16 +241,17 @@ body.oscuro .card-imagen {
 <!-- ================= BIBLIA ================= -->
 <div id="seccion-biblia" class="seccion">
 
-  <div class="filtros">
-    <select id="libro"></select>
-    <select id="capitulo"></select>
-  </div>
+<div class="filtros filtros-imagen">
 
-  <div class="barra-acciones">
-    <div>
-      <button onclick="capituloAnterior()">‹</button>
-      <button onclick="capituloSiguiente()">›</button>
-    </div>
+  <select id="libro"></select>
+
+  <select id="capitulo"></select>
+
+  <button id="btnModoImagen">
+    Habilitar Crear Imagen
+  </button>
+
+</div>
 
     <div>
       
@@ -354,6 +413,7 @@ body.oscuro .card-imagen {
   
 </body>
 </html>
+
 
 
 
