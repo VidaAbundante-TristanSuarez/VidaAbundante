@@ -253,11 +253,11 @@ const url =
 
   // TEXTO PRINCIPAL
   "l_text:Arial_60_center:" + textoURL +
-  ",co_rgb:ffffff,gravity:center,y_-80,w_1400,c_fit,line_spacing_10/" +
+  ",co_rgb:ffffff,g_center,y_-80,w_1400,c_fit,line_spacing_10/" +
 
   // REFERENCIA
   "l_text:Arial_42_bold_center:" + refURL +
-  ",co_rgb:ffffff,gravity:south,y_140/" +
+  ",co_rgb:ffffff,g_south,y_140/" +
 
   fondo;
 
@@ -360,5 +360,6 @@ function cargarImagenes() {
     });
   });
 }
+
 
 
