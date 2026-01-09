@@ -280,3 +280,64 @@ window.verImagen = (url) => {
   window.open(url, "_blank");
 };
 
+// 🖼️ GENERAR IMAGEN DESDE VERSÍCULOS MARCADOS
+window.generarImagen = () => {
+
+  if (!uid) {
+    alert("Tenés que iniciar sesión");
+    return;
+  }
+
+  // 📌 Tomamos solo los versículos marcados
+  const ids = Object.keys(marcados);
+
+  if (ids.length === 0) {
+    alert("Marcá al menos un versículo");
+    return;
+  }
+
+  // 📖 Construimos el texto
+  let textoVersos = "";
+  let referencia = "";
+
+  ids.forEach(id => {
+    const [Libro, Capitulo, Versiculo] = id.split("_");
+    const v = bibliaData.find(x =>
+      x.Libro === Libro &&
+      x.Capitulo == Capitulo &&
+      x.Versiculo == Versiculo
+    );
+    if (v) {
+      textoVersos += v.RV1960 + " ";
+      referencia = `${Libro} ${Capitulo}`;
+    }
+  });
+
+  // 🔗 URL Cloudinary (SIMPLE)
+  const base = "https://res.cloudinary.com/dlkpityif/image/upload/";
+  const fondo = "fondo1"; // 👈 nombre de tu imagen en cloudinary SIN extensión
+
+  const textoURL = encodeURIComponent(textoVersos.trim());
+  const refURL = encodeURIComponent(referencia);
+
+  const url =
+    base +
+    "w_1600,h_1600,c_fill/" +
+    "l_text:Arial_60_center:" + textoURL +
+    ",co_rgb:ffffff,g_center,y_-60,w_1400,c_fit/" +
+    "l_text:Arial_40_bold_center:" + refURL +
+    ",co_rgb:ffffff,g_south,y_120/" +
+    fondo;
+
+  // 💾 Guardar en Firebase
+  const imgRef = ref(db, "imagenes/" + uid).push();
+
+  set(imgRef, {
+    url: url,
+    nombre: referencia,
+    creada: Date.now()
+  });
+
+  alert("Imagen generada ✨\nMirá en Mi Panel → Imágenes");
+};
+
