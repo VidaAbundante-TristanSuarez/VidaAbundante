@@ -246,3 +246,45 @@ window.cerrarLogin = () => {
 window.irALogin = () => {
   window.location.href = "login.html";
 };
+
+// ================= NAVEGACIÓN PRINCIPAL =================
+window.irA = (seccion) => {
+
+  const secciones = [
+    "seccion-biblia",
+    "seccion-panel",
+    "seccion-devocionales",
+    "seccion-abc",
+    "seccion-iglesia"
+  ];
+
+  secciones.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = "none";
+  });
+
+  const activa = document.getElementById("seccion-" + seccion);
+  if (activa) activa.style.display = "block";
+};
+
+// ================= PANEL — PESTAÑAS =================
+window.mostrarSeccion = (seccion) => {
+
+  const paneles = [
+    "panel-imagenes",
+    "panel-versiculos",
+    "panel-notas"
+  ];
+
+  paneles.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = "none";
+  });
+
+  const activa = document.getElementById("panel-" + seccion);
+  if (activa) activa.style.display = "block";
+
+  if (seccion === "imagenes") {
+    cargarImagenes();
+  }
+};
