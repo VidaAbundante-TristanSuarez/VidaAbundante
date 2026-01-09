@@ -124,6 +124,44 @@
       border-radius: 10px;
       padding: 10px;
     }
+
+    /* 🖼️ GRID DE IMÁGENES */
+.grid-imagenes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+
+/* 🧩 CARD DE IMAGEN */
+.card-imagen {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+  cursor: pointer;
+  background: #fff;
+}
+
+body.oscuro .card-imagen {
+  background: #1e1e1e;
+}
+
+/* 🖼️ IMAGEN */
+.card-imagen img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* 🏷️ NOMBRE */
+.card-imagen .nombre {
+  padding: 6px;
+  font-size: 13px;
+  text-align: center;
+  font-weight: bold;
+}
+
+    
   </style>
 </head>
 
@@ -202,10 +240,18 @@
     <button onclick="mostrarSeccion('notas')">📝 Notas</button>
   </div>
 
-  <div id="panel-imagenes" class="panel-seccion">
-    <h3>Mis imágenes</h3>
-    <p>(próximo paso)</p>
-  </div>
+<div id="panel-imagenes" class="panel-seccion">
+
+  <!-- 🖼️ TÍTULO -->
+  <h3>🖼️ Mis imágenes</h3>
+
+  <!-- 📭 MENSAJE CUANDO NO HAY IMÁGENES -->
+  <p id="imagenes-vacio">Todavía no generaste imágenes.</p>
+
+  <!-- 🧩 GRID DE IMÁGENES -->
+  <div id="grid-imagenes" class="grid-imagenes"></div>
+
+</div>
 
   <div id="panel-versiculos" class="panel-seccion" style="display:none">
     <h3>Mis versículos</h3>
@@ -220,3 +266,4 @@
 <script type="module" src="biblia.js"></script>
 </body>
 </html>
+
