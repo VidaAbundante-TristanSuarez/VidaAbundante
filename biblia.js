@@ -191,98 +191,69 @@ window.generarImagen = () => {
     return;
   }
 
-  // 📌 versículos marcados
   const ids = Object.keys(marcados || {});
-
   if (ids.length === 0) {
     alert("Marcá al menos un versículo primero 🙏");
     return;
   }
 
-  // 📖 texto + referencia
-// 📖 construir texto y referencia correcta (MISMO LIBRO Y CAPÍTULO)
-let textoVersos = [];
-let numeros = [];
+  // 📖 construir texto (mismo libro y capítulo)
+  let textoVersos = [];
+  let numeros = [];
 
-const primerId = ids[0];
-const [libro, capitulo] = primerId.split("_");
+  const [libro, capitulo] = ids[0].split("_");
 
-ids.forEach(id => {
-  const [L, C, V] = id.split("_");
+  ids.forEach(id => {
+    const [L, C, V] = id.split("_");
+    if (L !== libro || C !== capitulo) return;
 
-  // ⚠️ ignorar versículos de otros capítulos/libros
-  if (L !== libro || C !== capitulo) return;
+    const v = bibliaData.find(x =>
+      x.Libro === L &&
+      x.Capitulo == C &&
+      x.Versiculo == V
+    );
 
-  const v = bibliaData.find(x =>
-    x.Libro === L &&
-    x.Capitulo == C &&
-    x.Versiculo == V
-  );
+    if (v) {
+      numeros.push(Number(V));
+      textoVersos.push(v.RV1960);
+    }
+  });
 
-  if (v) {
-    numeros.push(Number(V));
-    textoVersos.push(v.RV1960);
-  }
-});
+  numeros.sort((a, b) => a - b);
 
-// ordenar versículos
-numeros.sort((a, b) => a - b);
+  const referencia = numeros.length === 1
+    ? `${libro} ${capitulo}:${numeros[0]}`
+    : `${libro} ${capitulo}:${numeros[0]}-${numeros[numeros.length - 1]}`;
 
-// 📌 referencia FINAL correcta
-let referencia = numeros.length === 1
-  ? `${libro} ${capitulo}:${numeros[0]}`
-  : `${libro} ${capitulo}:${numeros[0]}-${numeros[numeros.length - 1]}`;
-
-// texto final
-const textoFinal = textoVersos.join("\n\n");
-
+  const textoFinal = textoVersos.join("\n\n");
   if (!textoFinal.trim()) {
-  alert("No se pudo construir el texto.");
-  return;
-}
+    alert("No se pudo construir el texto.");
+    return;
+  }
 
-  // ☁️ CLOUDINARY
+  // ☁️ CLOUDINARY (UNA SOLA VEZ)
   const base = "https://res.cloudinary.com/dlkpityif/image/upload/";
   const fondo = "fondo1";
 
- const textoURL = encodeURIComponent(textoFinal);
-const refURL = encodeURIComponent(referencia);
+  const textoURL = encodeURIComponent(textoFinal);
+  const refURL = encodeURIComponent(referencia);
 
-const base = "https://res.cloudinary.com/dlkpityif/image/upload/";
-const fondo = "fondo1";
+  const url =
+    base +
 
-// ===== CONFIG DINÁMICA =====
-const fuenteTexto = "Arial_60";
-const fuenteRef = "Arial_42";
-const colorTexto = "co_rgb:ffffff";
-const outlineFuerte = "e_outline:5:000000";
-const outlineSuave = "e_outline:2:000000";
+    // TEXTO CONTORNO
+    `l_text:Arial_60_center:${textoURL},co_rgb:ffffff,e_outline:5:000000,g_center,y_-80,w_1400,c_fit/` +
 
-// ===== ENCODE =====
-const textoURL = encodeURIComponent(textoFinal);
-const refURL = encodeURIComponent(referencia);
+    // TEXTO PRINCIPAL
+    `l_text:Arial_60_center:${textoURL},co_rgb:ffffff,e_outline:2:000000,g_center,y_-80,w_1400,c_fit/` +
 
-// ===== URL FINAL =====
-const url =
-  base +
+    // REFERENCIA
+    `l_text:Arial_42_center:${refURL},co_rgb:ffffff,g_south,y_120/` +
 
-  // TEXTO PRINCIPAL (CAPA 1 – CONTORNO)
-  `l_text:${fuenteTexto}_center:${textoURL},` +
-  `${colorTexto},${outlineFuerte},g_center,y_-80,w_1400,c_fit/` +
+    fondo;
 
-  // TEXTO PRINCIPAL (CAPA 2 – TEXTO)
-  `l_text:${fuenteTexto}_center:${textoURL},` +
-  `${colorTexto},${outlineSuave},g_center,y_-80,w_1400,c_fit/` +
-
-  // REFERENCIA
-  `l_text:${fuenteRef}_center:${refURL},` +
-  `${colorTexto},g_south,y_120/` +
-
-  fondo;
-
-  // 💾 guardar en Firebase
+  // 💾 guardar
   const imgRef = push(ref(db, "imagenes/" + uid));
-
   set(imgRef, {
     url,
     nombre: referencia,
@@ -379,6 +350,7 @@ function cargarImagenes() {
     });
   });
 }
+
 
 
 
