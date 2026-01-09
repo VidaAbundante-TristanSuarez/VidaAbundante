@@ -219,6 +219,11 @@ window.mostrarSeccion = (seccion) => {
   // ✅ Mostramos solo la sección elegida
   const activa = document.getElementById("panel-" + seccion);
   if (activa) activa.style.display = "block";
+
+  if (seccion === "imagenes") {
+  cargarImagenes();
+}
+
 };
 
 // 🧭 CAMBIAR SECCIÓN PRINCIPAL
@@ -238,5 +243,40 @@ window.irA = (seccion) => {
   });
 
   document.getElementById("seccion-" + seccion).style.display = "block";
+};
+
+// 🖼️ MIS IMÁGENES — CARGAR
+function cargarImagenes() {
+  if (!uid) return;
+
+  const grid = document.getElementById("grid-imagenes");
+  const vacio = document.getElementById("imagenes-vacio");
+
+  onValue(ref(db, "imagenes/" + uid), snap => {
+    grid.innerHTML = "";
+
+    if (!snap.exists()) {
+      vacio.style.display = "block";
+      return;
+    }
+
+    vacio.style.display = "none";
+
+    snap.forEach(img => {
+      const data = img.val();
+
+      grid.innerHTML += `
+        <div class="card-imagen" onclick="verImagen('${data.url}')">
+          <img src="${data.url}">
+          <div class="nombre">${data.nombre || "Sin nombre"}</div>
+        </div>
+      `;
+    });
+  });
+}
+
+// 🔍 VER IMAGEN GRANDE
+window.verImagen = (url) => {
+  window.open(url, "_blank");
 };
 
