@@ -283,10 +283,14 @@ window.verImagen = (url) => {
 // 🖼️ GENERAR IMAGEN DESDE VERSÍCULOS MARCADOS
 window.generarImagen = () => {
 
-  if (!uid) {
-    alert("Tenés que iniciar sesión");
-    return;
-  }
+  const user = auth.currentUser;
+
+if (!user) {
+  mostrarModalLogin();
+  return;
+}
+
+uid = user.uid;
 
   // 📌 Tomamos solo los versículos marcados
   const ids = Object.keys(marcados);
@@ -339,5 +343,20 @@ window.generarImagen = () => {
   });
 
   alert("Imagen generada ✨\nMirá en Mi Panel → Imágenes");
+};
+
+// 🔐 MOSTRAR MODAL LOGIN
+window.mostrarModalLogin = () => {
+  document.getElementById("loginModal").style.display = "flex";
+};
+
+// ❌ CERRAR MODAL
+window.cerrarLogin = () => {
+  document.getElementById("loginModal").style.display = "none";
+};
+
+// 👉 IR A LOGIN
+window.irALogin = () => {
+  window.location.href = "login.html"; // o donde tengas tu login
 };
 
