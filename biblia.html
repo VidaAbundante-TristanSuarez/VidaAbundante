@@ -121,16 +121,100 @@ body.oscuro .panel-seccion {
   background: #1e1e1e;
 }
 
+    /* 🔝 HEADER FIJO */
+#header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: white;
+  padding: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #ddd;
+}
+
+body.oscuro #header {
+  background: #121212;
+}
+
+/* 🎨 BARRA DE ACCIONES FIJA */
+.barra-acciones {
+  position: sticky;
+  top: 60px;
+  z-index: 900;
+  background: inherit;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+}
+
+/* 🔍 FILTROS */
+.filtros select {
+  width: 100%;
+  margin-bottom: 8px;
+}
+
     
   </style>
 </head>
 
 <body>
 
-  <!-- =========================
-       📖 TÍTULO PRINCIPAL
-       ========================= -->
-  <h2>📖 Biblia</h2>
+<!-- 🔝 HEADER PRINCIPAL (FIJO) -->
+<div id="header">
+
+  <!-- 📌 MENÚ PRINCIPAL -->
+  <div id="menu">
+    <button onclick="irA('biblia')">Biblia</button>
+    <button onclick="irA('devocionales')">Devocionales</button>
+    <button onclick="irA('abc')">ABC</button>
+    <button onclick="irA('iglesia')">Iglesia</button>
+    <button onclick="irA('panel')">Mi Panel</button>
+  </div>
+
+  <!-- 🌙 MODO OSCURO -->
+  <button id="temaBtn" onclick="toggleTema()">🌙</button>
+
+</div>
+
+  <!-- 📖 SECCIÓN BIBLIA -->
+<div id="seccion-biblia">
+
+  <!-- 🔍 FILTROS -->
+  <div class="filtros">
+    <select id="libro"></select>
+    <select id="capitulo"></select>
+  </div>
+
+  <!-- 🎨 BARRA DE ACCIONES -->
+  <div class="barra-acciones">
+
+    <!-- ⬅️➡️ CAPÍTULO -->
+    <div class="nav-capitulo">
+      <button onclick="capituloAnterior()">‹</button>
+      <button onclick="capituloSiguiente()">›</button>
+    </div>
+
+    <!-- 🎨 RESALTAR / LETRA -->
+    <div class="acciones-texto">
+      <button onclick="setColor('#ffd6e8')">🌸</button>
+      <button onclick="setColor('#ccecff')">💙</button>
+      <button onclick="setColor('#fff3b0')">💛</button>
+      <button onclick="cambiarLetra(-1)">−</button>
+      <button onclick="cambiarLetra(1)">+</button>
+    </div>
+
+  </div>
+
+  <!-- 📖 TÍTULO -->
+  <h3 id="titulo"></h3>
+
+  <!-- 📜 TEXTO -->
+  <div id="texto"></div>
+
+</div>
 
   <!-- 🗂️ PANEL DEL USUARIO -->
 <div id="panelUsuario" style="margin-top:20px;">
@@ -170,18 +254,6 @@ body.oscuro .panel-seccion {
   </div>
 
 </div>
-
-  
-  <!-- =========================
-       🎨 RESALTADOR DE VERSÍCULOS
-       (elige color antes de marcar)
-       ========================= -->
-  <div style="margin-bottom:10px">
-    <b>Resaltar:</b>
-    <button onclick="setColor('#ffd6e8')">🌸</button>
-    <button onclick="setColor('#ccecff')">💙</button>
-    <button onclick="setColor('#fff3b0')">💛</button>
-  </div>
 
   <!-- =========================
        🌙 MODO OSCURO / CLARO
@@ -231,13 +303,6 @@ body.oscuro .panel-seccion {
     <button onclick="guardarNota()">💾 Guardar nota</button>
   </div>
 
-  <!-- =========================
-       🔠 CONTROLES DE LETRA
-       ========================= -->
-  <div class="controls">
-    <button onclick="cambiarLetra(1)">A+</button>
-    <button onclick="cambiarLetra(-1)">A-</button>
-  </div>
 
   <!-- =========================
        📜 SCRIPT PRINCIPAL
@@ -246,4 +311,5 @@ body.oscuro .panel-seccion {
 
 </body>
 </html>
+
 
