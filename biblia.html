@@ -299,12 +299,62 @@ body.oscuro .card-imagen {
     <br><br>
     <button onclick="cerrarLogin()">Cancelar</button>
 
+<!-- 🖼️ MODAL GENERAR IMAGEN -->
+<div id="imagenModal" style="
+  display:none;
+  position:fixed;
+  top:0; left:0;
+  width:100%; height:100%;
+  background:rgba(0,0,0,0.6);
+  z-index:2100;
+  justify-content:center;
+  align-items:center;
+">
+
+  <div style="
+    background:white;
+    padding:20px;
+    border-radius:14px;
+    width:90%;
+    max-width:360px;
+    text-align:center;
+  ">
+
+    <h3>🖼️ Generar imagen</h3>
+
+    <p style="font-size:14px">
+      Se generará una imagen con los versículos seleccionados.
+    </p>
+
+    <!-- OPCIÓN A -->
+    <button style="width:100%; margin-bottom:8px"
+      onclick="generarImagenFinal('auto')">
+      ✨ Predeterminada
+    </button>
+
+    <!-- OPCIÓN B -->
+    <button style="width:100%; margin-bottom:8px"
+      onclick="generarImagenFinal('personalizada')">
+      🎨 Personalizar
+    </button>
+
+    <hr>
+
+    <button onclick="cerrarImagen()" style="width:100%">
+      Cancelar
+    </button>
+
+  </div>
+</div>
+
+    
   </div>
 </div>
 
   
 </body>
 </html>
+
 
 
 
