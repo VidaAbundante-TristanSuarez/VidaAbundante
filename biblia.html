@@ -109,6 +109,19 @@
       font-weight: bold;
     }
 
+    /* 🗂️ Secciones del panel */
+.panel-seccion {
+  padding: 10px;
+  border-radius: 10px;
+  background: #f5f5f5;
+}
+
+/* 🌙 Ajuste en modo oscuro */
+body.oscuro .panel-seccion {
+  background: #1e1e1e;
+}
+
+    
   </style>
 </head>
 
@@ -119,6 +132,46 @@
        ========================= -->
   <h2>📖 Biblia</h2>
 
+  <!-- 🗂️ PANEL DEL USUARIO -->
+<div id="panelUsuario" style="margin-top:20px;">
+
+  <!-- 📛 TÍTULO DEL PANEL -->
+  <h2>🗂️ Mi Panel</h2>
+
+  <!-- 🔘 BOTONES / PESTAÑAS -->
+  <div style="margin-bottom:15px">
+    <button onclick="mostrarSeccion('imagenes')">🖼️ Imágenes</button>
+    <button onclick="mostrarSeccion('versiculos')">⭐ Versículos</button>
+    <button onclick="mostrarSeccion('notas')">📝 Notas</button>
+  </div>
+
+  <!-- 🖼️ SECCIÓN IMÁGENES -->
+  <div id="panel-imagenes" class="panel-seccion">
+    <h3>🖼️ Mis imágenes</h3>
+    <p>Aquí aparecerán las imágenes generadas.</p>
+
+    <!-- (más adelante: cards de imágenes) -->
+  </div>
+
+  <!-- ⭐ SECCIÓN VERSÍCULOS -->
+  <div id="panel-versiculos" class="panel-seccion" style="display:none">
+    <h3>⭐ Mis versículos guardados</h3>
+    <p>Aquí verás todos los versículos que marcaste.</p>
+
+    <!-- (más adelante: lista de versículos) -->
+  </div>
+
+  <!-- 📝 SECCIÓN NOTAS -->
+  <div id="panel-notas" class="panel-seccion" style="display:none">
+    <h3>📝 Mis notas</h3>
+    <p>Aquí aparecerán las notas asociadas a grupos de versículos.</p>
+
+    <!-- (más adelante: notas) -->
+  </div>
+
+</div>
+
+  
   <!-- =========================
        🎨 RESALTADOR DE VERSÍCULOS
        (elige color antes de marcar)
@@ -193,3 +246,4 @@
 
 </body>
 </html>
+
