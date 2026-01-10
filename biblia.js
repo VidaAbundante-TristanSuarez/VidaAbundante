@@ -31,6 +31,11 @@ let size = 18;
 let colorActual = "#ffd6e8";
 let grupoActual = null;
 
+let seccionActiva = "biblia";
+
+let modoImagen = false;
+let seleccionImagen = {};
+
 // ================= DOM =================
 const libroSel = document.getElementById("libro");
 const capSel = document.getElementById("capitulo");
@@ -125,11 +130,18 @@ function mostrarTexto() {
 // ================= VERSÍCULO =================
 function pintarVersiculo(v, solo = false) {
   const id = `${v.Libro}_${v.Capitulo}_${v.Versiculo}`;
-  const marcado = marcados[id];
+
+  let background = "transparent";
+
+  if (modoImagen && seleccionImagen[id]) {
+    background = "#4f6fa8"; // azul viejo
+  } else if (!modoImagen && marcados[id]) {
+    background = marcados[id].color;
+  }
 
   texto.innerHTML += `
-    <div class="versiculo ${marcado ? "resaltado" : ""}"
-      style="font-size:${size}px; background:${marcado?.color || "transparent"}"
+    <div class="versiculo"
+      style="font-size:${size}px; background:${background}"
       onclick="${solo ? "" : `toggle('${id}', ${v.Versiculo})`}">
       <span class="num">${v.Versiculo}</span>
       ${v.RV1960}
@@ -138,6 +150,19 @@ function pintarVersiculo(v, solo = false) {
 
 // ================= MARCAR =================
 window.toggle = (id, num) => {
+
+  // 🎨 MODO IMAGEN
+  if (modoImagen) {
+    if (seleccionImagen[id]) {
+      delete seleccionImagen[id];
+    } else {
+      seleccionImagen[id] = true;
+    }
+    mostrarTexto();
+    return;
+  }
+
+  // ✍️ MODO NORMAL
   if (!uid) return;
 
   const r = ref(db, "marcados/" + uid + "/" + id);
@@ -225,7 +250,7 @@ window.generarImagen = () => {
     ? `${libro} ${capitulo}:${numeros[0]}`
     : `${libro} ${capitulo}:${numeros[0]}-${numeros[numeros.length - 1]}`;
 
-  const textoFinal = textoVersos.join("\n\n");
+ const textoFinal = textoVersos.join(" • ");
   if (!textoFinal.trim()) {
     alert("No se pudo construir el texto.");
     return;
@@ -279,17 +304,18 @@ window.irALogin = () => {
 
 // ================= NAVEGACIÓN PRINCIPAL =================
 window.irA = (seccion) => {
+  seccionActiva = seccion;
 
   const secciones = [
-    "seccion-biblia",
-    "seccion-panel",
-    "seccion-devocionales",
-    "seccion-abc",
-    "seccion-iglesia"
+    "biblia",
+    "panel",
+    "devocionales",
+    "abc",
+    "iglesia"
   ];
 
-  secciones.forEach(id => {
-    const el = document.getElementById(id);
+  secciones.forEach(s => {
+    const el = document.getElementById("seccion-" + s);
     if (el) el.style.display = "none";
   });
 
@@ -350,6 +376,23 @@ function cargarImagenes() {
     });
   });
 }
+
+window.toggleModoImagen = () => {
+  modoImagen = !modoImagen;
+
+  const btn = document.getElementById("btnModoImagen");
+
+  if (modoImagen) {
+    seleccionImagen = {};
+    btn.classList.add("activo");
+    btn.innerText = "Crear Imagen";
+  } else {
+    btn.classList.remove("activo");
+    btn.innerText = "Habilitar Crear Imagen";
+  }
+
+  mostrarTexto();
+};
 
 
 
