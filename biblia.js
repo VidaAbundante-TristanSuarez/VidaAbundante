@@ -131,23 +131,22 @@ function mostrarTexto() {
 function pintarVersiculo(v, solo = false) {
   const id = `${v.Libro}_${v.Capitulo}_${v.Versiculo}`;
 
-  let background = "transparent";
+  const estaSeleccionadoImagen = modoImagen && seleccionImagen[id];
+  const estaMarcadoNormal = marcados[id];
 
-  if (modoImagen && seleccionImagen[id]) {
-    background = "#4f6fa8"; // azul viejo
-  } else if (!modoImagen && marcados[id]) {
-    background = marcados[id].color;
-  }
+  const fondo = estaSeleccionadoImagen
+    ? "#4f6fa8"                 // azul viejo para imagen
+    : estaMarcadoNormal?.color || "transparent";
 
   texto.innerHTML += `
     <div class="versiculo"
-      style="font-size:${size}px; background:${background}"
+      style="font-size:${size}px; background:${fondo}"
       onclick="${solo ? "" : `toggle('${id}', ${v.Versiculo})`}">
       <span class="num">${v.Versiculo}</span>
       ${v.RV1960}
-    </div>`;
+    </div>
+  `;
 }
-
 // ================= MARCAR =================
 window.toggle = (id, num) => {
 
@@ -393,6 +392,7 @@ window.toggleModoImagen = () => {
 
   mostrarTexto();
 };
+
 
 
 
