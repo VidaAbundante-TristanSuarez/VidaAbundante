@@ -36,20 +36,19 @@ let seleccionImagen = {};
 let fondoFinal = null;
 
 // ================= NAVEGACIÓN =================
-function irA(seccion) {
+window.irA = seccion => {
   const secciones = ["biblia", "devocionales", "abc", "iglesia", "panel"];
   secciones.forEach(s => {
     const el = document.getElementById("seccion-" + s);
-    if(el) el.style.display = (s === seccion) ? "block" : "none";
+    if (el) el.style.display = (s === seccion) ? "block" : "none";
   });
 
-  // Salimos del modo imagen si estaba activo
   modoImagen = false;
   seleccionImagen = {};
   document.body.classList.remove("modo-imagen");
-  document.getElementById("btnImagen").classList.remove("activo");
+  document.getElementById("btnImagen")?.classList.remove("activo");
   mostrarTexto();
-}
+};
 
 // ================= DOM =================
 const libroSel = document.getElementById("libro");
@@ -479,6 +478,7 @@ document.getElementById("btnCancelarPersonalizada").onclick = () => {
   document.getElementById("btnImagen").classList.remove("activo");
   mostrarTexto();
 };
+
 
 
 
