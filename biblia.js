@@ -310,6 +310,51 @@ window.elegirPlantilla = plantilla => {
   generarImagenFinal();
 };
 
+window.elegirPlantilla = plantilla => {
+  plantillaSeleccionada = plantilla;
+  document.getElementById("modalPlantilla").style.display = "none";
+
+  if (plantilla === "personalizar") {
+    // Abrimos pantalla de personalización
+    document.getElementById("modalPersonalizar").style.display = "flex";
+    return;
+  }
+
+  // Generar la imagen automáticamente con la plantilla elegida
+  generarImagenFinal();
+};
+
+window.generarImagenPersonalizada = () => {
+  const fondo = document.getElementById("personalizarFondo").value;
+  const fuente = document.getElementById("personalizarFuente").value;
+  const tamaño = document.getElementById("personalizarTamaño").value;
+  const color = document.getElementById("personalizarColor").value;
+  const opacidad = document.getElementById("personalizarOpacidad").value;
+  const upper = document.getElementById("personalizarUpper").checked;
+
+  document.getElementById("modalPersonalizar").style.display = "none";
+
+  // Simulamos la generación de la imagen
+  alert(
+    `✅ Imagen personalizada generada!\n` +
+    `Formato: ${formatoImagen}\n` +
+    `Fondo: ${fondo} (opacidad ${opacidad})\n` +
+    `Fuente: ${fuente}\n` +
+    `Tamaño: ${tamaño}\n` +
+    `Color: ${color}\n` +
+    `Mayúsculas: ${upper ? "Sí" : "No"}`
+  );
+
+  // Salimos del modo imagen
+  modoImagen = false;
+  seleccionImagen = {};
+  plantillaSeleccionada = null;
+  formatoImagen = null;
+  document.body.classList.remove("modo-imagen");
+  document.getElementById("btnImagen").classList.remove("activo");
+  mostrarTexto();
+};
+  
 function generarImagenFinal() {
   // Por ahora simulamos la creación de la imagen
   alert(`✅ Imagen generada!\nFormato: ${formatoImagen}\nPlantilla: ${plantillaSeleccionada}`);
@@ -339,6 +384,7 @@ window.cancelarCrearImagen = () => {
 
   mostrarTexto();
 };
+
 
 
 
