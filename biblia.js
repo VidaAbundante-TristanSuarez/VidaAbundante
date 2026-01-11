@@ -34,6 +34,22 @@ let marcador = null;
 let modoImagen = false;
 let seleccionImagen = {};
 
+// ================= NAVEGACIÓN =================
+function irA(seccion) {
+  const secciones = ["biblia", "devocionales", "abc", "iglesia", "panel"];
+  secciones.forEach(s => {
+    const el = document.getElementById("seccion-" + s);
+    if(el) el.style.display = (s === seccion) ? "block" : "none";
+  });
+
+  // Salimos del modo imagen si estaba activo
+  modoImagen = false;
+  seleccionImagen = {};
+  document.body.classList.remove("modo-imagen");
+  document.getElementById("btnImagen").classList.remove("activo");
+  mostrarTexto();
+}
+
 // ================= DOM =================
 const libroSel = document.getElementById("libro");
 const capSel = document.getElementById("capitulo");
@@ -311,14 +327,20 @@ function generarImagenFinal() {
 
 // ================= CANCELAR CREACIÓN DE IMAGEN =================
 window.cancelarCrearImagen = () => {
+  // Cerramos todos los modales relacionados
   document.getElementById("modalFormato").style.display = "none";
+  document.getElementById("modalPlantilla").style.display = "none";
+  document.getElementById("modalPersonalizar").style.display = "none";
 
   // Salimos del modo imagen
   modoImagen = false;
   seleccionImagen = {};
 
   document.body.classList.remove("modo-imagen");
-  document.getElementById("btnImagen").classList.remove("activo");
+  const btnImg = document.getElementById("btnImagen");
+  if(btnImg) btnImg.classList.remove("activo");
+
+  // Volvemos a mostrar el texto normal
   mostrarTexto();
 };
 
@@ -396,4 +418,5 @@ document.getElementById("btnCancelarPersonalizada").onclick = () => {
   document.getElementById("btnImagen").classList.remove("activo");
   mostrarTexto();
 };
+
 
