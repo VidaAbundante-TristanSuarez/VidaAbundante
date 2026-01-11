@@ -38,12 +38,16 @@
       border-color: #333;
     }
 
-    #menu button {
-      margin-right: 6px;
+    #menu {
+      display: flex;
+      gap: 6px;
+      flex-wrap: nowrap;
     }
 
-    /* ================= BOTONES ================= */
-    button {
+    .nav-btn {
+      display: flex;
+      align-items: center;
+      gap: 4px;
       padding: 8px 14px;
       border-radius: 999px;
       border: none;
@@ -52,9 +56,15 @@
       background: #eaeaea;
     }
 
-    body.oscuro button {
+    body.oscuro .nav-btn {
       background: #2a2a2a;
       color: #fff;
+    }
+
+    @media (max-width: 640px) {
+      .nav-btn .text {
+        display: none;
+      }
     }
 
     /* ================= SECCIONES ================= */
@@ -64,41 +74,33 @@
 
     /* ================= BIBLIA ================= */
     .filtros {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 8px;
-}
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
 
-.filtros select {
-  padding: 10px;
-  font-size: 16px;
-}
-    
-.filtros-imagen select {
-  width: 35%;
-}
-
-#btnModoImagen {
-  width: 30%;
-  border-radius: 12px;
-  background: #8b3a3a; /* bordo claro */
-  color: white;
-  font-weight: bold;
-}
-
-#btnModoImagen.activo {
-  background: #4f6fa8; /* azul viejo */
-}
+    .filtros select {
+      padding: 10px;
+      font-size: 16px;
+    }
 
     .barra-acciones {
-      position: sticky;
-      top: 60px;
-      z-index: 900;
-      background: inherit;
-      padding: 8px 0;
       display: flex;
       justify-content: space-between;
-      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    #btnModoImagen {
+      background: #8b3a3a;
+      color: white;
+      font-weight: bold;
+      border-radius: 12px;
+    }
+
+    #btnModoImagen.activo {
+      background: #4f6fa8;
     }
 
     #titulo {
@@ -116,10 +118,6 @@
     .num {
       font-weight: bold;
       margin-right: 4px;
-    }
-
-    body.oscuro .resaltado {
-      color: #000;
     }
 
     /* ================= PANEL ================= */
@@ -145,66 +143,35 @@
       padding: 10px;
     }
 
-    /* 🖼️ GRID DE IMÁGENES */
-.grid-imagenes {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 12px;
-  margin-top: 10px;
-}
+    .grid-imagenes {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 12px;
+      margin-top: 10px;
+    }
 
-/* 🧩 CARD DE IMAGEN */
-.card-imagen {
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-  cursor: pointer;
-  background: #fff;
-}
+    .card-imagen {
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+      background: #fff;
+    }
 
-body.oscuro .card-imagen {
-  background: #1e1e1e;
-}
+    body.oscuro .card-imagen {
+      background: #1e1e1e;
+    }
 
-/* 🖼️ IMAGEN */
-.card-imagen img {
-  width: 100%;
-  height: auto;
-  display: block;
-}
+    .card-imagen img {
+      width: 100%;
+      display: block;
+    }
 
-/* 🏷️ NOMBRE */
-.card-imagen .nombre {
-  padding: 6px;
-  font-size: 13px;
-  text-align: center;
-  font-weight: bold;
-}
-    /* ================= NAV RESPONSIVE ================= */
-
-#menu {
-  display: flex;
-  gap: 6px;
-  flex-wrap: nowrap;
-}
-
-.nav-btn {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-/* 📱 MÓVIL */
-@media (max-width: 640px) {
-  .nav-btn .text {
-    display: none;
-  }
-
-  .nav-btn {
-    padding: 8px;
-  }
-}
-
+    .card-imagen .nombre {
+      padding: 6px;
+      font-size: 13px;
+      text-align: center;
+      font-weight: bold;
+    }
   </style>
 </head>
 
@@ -213,27 +180,12 @@ body.oscuro .card-imagen {
 <!-- ================= HEADER ================= -->
 <div id="header">
   <div id="menu">
-  <button onclick="irA('biblia')" class="nav-btn">
-    <span class="icon">📖</span>
-    <span class="text">Biblia</span>
-  </button>
-  <button onclick="irA('devocionales')" class="nav-btn">
-    <span class="icon">📆</span>
-    <span class="text">Devocionales</span>
-  </button>
-  <button onclick="irA('abc')" class="nav-btn">
-    <span class="icon">🔤</span>
-    <span class="text">ABC</span>
-  </button>
-  <button onclick="irA('iglesia')" class="nav-btn">
-    <span class="icon">⛪</span>
-    <span class="text">Iglesia</span>
-  </button>
-  <button onclick="irA('panel')" class="nav-btn">
-    <span class="icon">👤</span>
-    <span class="text">Mi Panel</span>
-  </button>
-</div>
+    <button class="nav-btn" onclick="irA('biblia')">📖 <span class="text">Biblia</span></button>
+    <button class="nav-btn" onclick="irA('devocionales')">📆 <span class="text">Devocionales</span></button>
+    <button class="nav-btn" onclick="irA('abc')">🔤 <span class="text">ABC</span></button>
+    <button class="nav-btn" onclick="irA('iglesia')">⛪ <span class="text">Iglesia</span></button>
+    <button class="nav-btn" onclick="irA('panel')">👤 <span class="text">Mi Panel</span></button>
+  </div>
 
   <button onclick="toggleTema()">🌙</button>
 </div>
@@ -241,30 +193,23 @@ body.oscuro .card-imagen {
 <!-- ================= BIBLIA ================= -->
 <div id="seccion-biblia" class="seccion">
 
-<div class="filtros filtros-imagen">
+  <div class="filtros">
+    <select id="libro"></select>
+    <select id="capitulo"></select>
+  </div>
 
-  <select id="libro"></select>
-
-  <select id="capitulo"></select>
-
-  <button id="btnModoImagen">
-    Habilitar Crear Imagen
-  </button>
-
-</div>
-
+  <div class="barra-acciones">
     <div>
-      
-  <!-- 🎨 RESALTAR -->
       <button onclick="setColor('#ffd6e8')">🌸</button>
       <button onclick="setColor('#ccecff')">💙</button>
       <button onclick="setColor('#fff3b0')">💛</button>
-  <!-- 🔠 TAMAÑO -->
       <button onclick="cambiarLetra(-1)">−</button>
       <button onclick="cambiarLetra(1)">+</button>
+    </div>
 
-   <!-- 🖼️ GENERAR IMAGEN -->
-  <button onclick="generarImagen()">🖼️</button>
+    <div>
+      <button id="btnModoImagen" onclick="toggleModoImagen()">Habilitar Crear Imagen</button>
+      <button onclick="generarImagen()">🖼️</button>
     </div>
   </div>
 
@@ -272,31 +217,27 @@ body.oscuro .card-imagen {
   <div id="texto"></div>
 
   <div id="notaBox" style="display:none; margin-top:15px">
-    <b>📝 Nota para este grupo:</b>
-    <textarea id="notaTexto" placeholder="Escribí tu nota aquí..."></textarea>
-    <button onclick="guardarNota()">💾 Guardar nota</button>
+    <b>📝 Nota:</b>
+    <textarea id="notaTexto"></textarea>
+    <button onclick="guardarNota()">💾 Guardar</button>
   </div>
-
 </div>
 
-<!-- ================= DEVOCIONALES ================= -->
+<!-- ================= OTRAS SECCIONES ================= -->
 <div id="seccion-devocionales" class="seccion" style="display:none">
   <h2>Devocionales</h2>
 </div>
 
-<!-- ================= ABC ================= -->
 <div id="seccion-abc" class="seccion" style="display:none">
   <h2>ABC</h2>
 </div>
 
-<!-- ================= IGLESIA ================= -->
 <div id="seccion-iglesia" class="seccion" style="display:none">
   <h2>Iglesia</h2>
 </div>
 
-<!-- ================= MI PANEL ================= -->
+<!-- ================= PANEL ================= -->
 <div id="seccion-panel" class="seccion" style="display:none">
-
   <h2>🗂️ Mi Panel</h2>
 
   <div class="panel-tabs">
@@ -305,117 +246,26 @@ body.oscuro .card-imagen {
     <button onclick="mostrarSeccion('notas')">📝 Notas</button>
   </div>
 
-<div id="panel-imagenes" class="panel-seccion">
+  <div id="panel-imagenes" class="panel-seccion">
+    <p id="imagenes-vacio">Todavía no generaste imágenes.</p>
+    <div id="grid-imagenes" class="grid-imagenes"></div>
+  </div>
 
-  <!-- 🖼️ TÍTULO -->
-  <h3>🖼️ Mis imágenes</h3>
-
-  <!-- 📭 MENSAJE CUANDO NO HAY IMÁGENES -->
-  <p id="imagenes-vacio">Todavía no generaste imágenes.</p>
-
-  <!-- 🧩 GRID DE IMÁGENES -->
-  <div id="grid-imagenes" class="grid-imagenes"></div>
-
+  <div id="panel-versiculos" class="panel-seccion" style="display:none"></div>
+  <div id="panel-notas" class="panel-seccion" style="display:none"></div>
 </div>
 
-  <div id="panel-versiculos" class="panel-seccion" style="display:none">
-    <h3>Mis versículos</h3>
+<!-- ================= MODAL LOGIN ================= -->
+<div id="loginModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:2000; justify-content:center; align-items:center;">
+  <div style="background:white; padding:20px; border-radius:12px; max-width:320px; width:90%; text-align:center;">
+    <h3>🔐 Iniciar sesión</h3>
+    <p>Necesitás iniciar sesión para generar imágenes.</p>
+    <button onclick="irALogin()">Iniciar sesión</button><br><br>
+    <button onclick="cerrarLogin()">Cancelar</button>
   </div>
-
-  <div id="panel-notas" class="panel-seccion" style="display:none">
-    <h3>Mis notas</h3>
-  </div>
-
 </div>
 
 <script type="module" src="biblia.js"></script>
 
-  <!-- 🔐 MODAL LOGIN -->
-<div id="loginModal" style="
-  display:none;
-  position:fixed;
-  top:0; left:0;
-  width:100%; height:100%;
-  background:rgba(0,0,0,0.6);
-  z-index:2000;
-  justify-content:center;
-  align-items:center;
-">
-
-  <div style="
-    background:white;
-    padding:20px;
-    border-radius:12px;
-    width:90%;
-    max-width:320px;
-    text-align:center;
-  ">
-
-    <h3>🔐 Iniciar sesión</h3>
-    <p>Necesitás iniciar sesión para generar imágenes.</p>
-
-    <button onclick="irALogin()">Iniciar sesión</button>
-    <br><br>
-    <button onclick="cerrarLogin()">Cancelar</button>
-
-<!-- 🖼️ MODAL GENERAR IMAGEN -->
-<div id="imagenModal" style="
-  display:none;
-  position:fixed;
-  top:0; left:0;
-  width:100%; height:100%;
-  background:rgba(0,0,0,0.6);
-  z-index:2100;
-  justify-content:center;
-  align-items:center;
-">
-
-  <div style="
-    background:white;
-    padding:20px;
-    border-radius:14px;
-    width:90%;
-    max-width:360px;
-    text-align:center;
-  ">
-
-    <h3>🖼️ Generar imagen</h3>
-
-    <p style="font-size:14px">
-      Se generará una imagen con los versículos seleccionados.
-    </p>
-
-    <!-- OPCIÓN A -->
-    <button style="width:100%; margin-bottom:8px"
-      onclick="generarImagenFinal('auto')">
-      ✨ Predeterminada
-    </button>
-
-    <!-- OPCIÓN B -->
-    <button style="width:100%; margin-bottom:8px"
-      onclick="generarImagenFinal('personalizada')">
-      🎨 Personalizar
-    </button>
-
-    <hr>
-
-    <button onclick="cerrarImagen()" style="width:100%">
-      Cancelar
-    </button>
-
-  </div>
-</div>
-
-    
-  </div>
-</div>
-
-  
 </body>
 </html>
-
-
-
-
-
-
