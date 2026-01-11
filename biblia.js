@@ -109,13 +109,16 @@ function mostrarTexto() {
 function pintarVersiculo(v) {
   const id = `${v.Libro}_${v.Capitulo}_${v.Versiculo}`;
 
-  const fondo = modoImagen && seleccionImagen[id]
-    ? "#4f6fa8"
-    : marcados[id]?.color || "transparent";
+  const marcado = marcados[id];
+  const imagen = modoImagen && seleccionImagen[id];
+
+  let clases = "versiculo";
+  if (imagen) clases += " imagen";
 
   texto.innerHTML += `
-    <div class="versiculo"
-      style="font-size:${size}px; background:${fondo}"
+    <div class="${clases}"
+      data-marcado="${!!marcado}"
+      style="font-size:${size}px; background:${imagen ? '' : marcado?.color || 'transparent'}"
       onclick="toggle('${id}', ${v.Versiculo})">
       <span class="num">${v.Versiculo}</span>
       ${v.RV1960}
@@ -165,7 +168,15 @@ window.guardarNota = () => {
 };
 
 // ================= AJUSTES =================
-window.setColor = c => colorActual = c;
+window.setColor = c => {
+  colorActual = c;
+  document.querySelectorAll(".color-btn")
+    .forEach(b => b.classList.remove("activo"));
+
+  const btn = document.querySelector(`[data-color="${c}"]`);
+  if (btn) btn.classList.add("activo");
+};
+
 window.cambiarLetra = n => {
   size += n;
   document.querySelectorAll(".versiculo")
@@ -178,9 +189,25 @@ window.toggleModoImagen = () => {
   modoImagen = !modoImagen;
   seleccionImagen = {};
 
-  const btn = document.getElementById("btnModoImagen");
-  btn.classList.toggle("activo", modoImagen);
-  btn.innerText = modoImagen ? "Crear Imagen" : "Habilitar Crear Imagen";
+  const btnImg = document.getElementById("btnImagen");
+  const btnCrear = document.getElementById("btnCrearImagen");
+
+  if (modoImagen) {
+    btnImg.classList.add("activo");
+
+    // ocultar demás acciones
+    document.querySelectorAll("#accionesBiblia button")
+      .forEach(b => b.style.display = "none");
+
+    btnCrear.style.display = "inline-block";
+  } else {
+    btnImg.classList.remove("activo");
+
+    document.querySelectorAll("#accionesBiblia button")
+      .forEach(b => b.style.display = "inline-block");
+
+    btnCrear.style.display = "none";
+  }
 
   mostrarTexto();
 };
@@ -201,3 +228,4 @@ window.generarImagen = () => {
 
   alert("✅ Lógica de generación OK (siguiente paso)");
 };
+
