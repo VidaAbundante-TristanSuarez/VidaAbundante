@@ -380,44 +380,58 @@ body.oscuro .barra-acciones {
 <div id="modalPersonalizar" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:3000; justify-content:center; align-items:center;">
   <div style="background:white; padding:20px; border-radius:12px; max-width:400px; width:90%; text-align:center;">
     <h3>⚙️ Personalizar Imagen</h3>
-    
+
+    <!-- Fondo: Color o Imagen -->
     <div style="margin:10px 0;">
-      <label>Fondo: </label>
-      <input type="color" id="personalizarFondo" value="#ffffff">
+      <label style="display:block; margin-bottom:6px;">Fondo:</label>
+      
+      <!-- Input color -->
+      <input type="color" id="personalizarFondo" value="#ffffff" style="width:60px; height:30px; border-radius:999px; border:none; cursor:pointer;">
+      
+      <!-- Grid de imágenes -->
+      <div id="personalizarFondos" style="display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; max-height:120px; overflow:auto;">
+        <!-- Se llenará desde JS -->
+      </div>
     </div>
 
+    <!-- Fuente -->
     <div style="margin:10px 0;">
       <label>Fuente: </label>
-      <select id="personalizarFuente">
+      <select id="personalizarFuente" style="border-radius:999px; padding:6px 10px;">
         <option value="Arial_70_bold">Arial Bold</option>
         <option value="Times_70_bold">Times Bold</option>
         <option value="Courier_70_bold">Courier Bold</option>
       </select>
     </div>
 
+    <!-- Tamaño -->
     <div style="margin:10px 0;">
       <label>Tamaño: </label>
-      <input type="number" id="personalizarTamaño" value="70" min="20" max="120">
+      <input type="number" id="personalizarTamaño" value="70" min="20" max="120" style="border-radius:999px; padding:6px 10px;">
     </div>
 
+    <!-- Color de letra -->
     <div style="margin:10px 0;">
       <label>Color de letra: </label>
-      <input type="color" id="personalizarColor" value="#000000">
+      <input type="color" id="personalizarColor" value="#000000" style="width:60px; height:30px; border-radius:999px; border:none; cursor:pointer;">
     </div>
 
+    <!-- Opacidad fondo -->
     <div style="margin:10px 0;">
       <label>Opacidad fondo: </label>
-      <input type="range" id="personalizarOpacidad" min="0" max="1" step="0.05" value="1">
+      <input type="range" id="personalizarOpacidad" min="0" max="1" step="0.05" value="1" style="border-radius:999px; width:100%;">
     </div>
 
+    <!-- Mayúsculas -->
     <div style="margin:10px 0;">
       <label>Mayúsculas: </label>
-      <input type="checkbox" id="personalizarUpper">
+      <input type="checkbox" id="personalizarUpper" style="width:20px; height:20px; border-radius:999px;">
     </div>
 
-    <div style="margin-top:15px;">
-      <button onclick="generarImagenPersonalizada()">✅ Generar Imagen</button>
-      <button onclick="cancelarCrearImagen()">❌ Cancelar</button>
+    <!-- Botones Generar / Cancelar -->
+    <div style="margin-top:15px; display:flex; justify-content:center; gap:10px;">
+      <button id="btnGenerarPersonalizada" style="border-radius:999px; padding:8px 14px; cursor:pointer;">✅ Generar Imagen</button>
+      <button id="btnCancelarPersonalizada" style="border-radius:999px; padding:8px 14px; cursor:pointer;">❌ Cancelar</button>
     </div>
   </div>
 </div>
@@ -427,6 +441,7 @@ body.oscuro .barra-acciones {
   
 </body>
 </html>
+
 
 
 
