@@ -89,6 +89,20 @@ function cargarCapitulos() {
   mostrarTexto();
 }
 
+window.capituloAnterior = () => {
+  if (capSel.selectedIndex > 0) {
+    capSel.selectedIndex--;
+    mostrarTexto();
+  }
+};
+
+window.capituloSiguiente = () => {
+  if (capSel.selectedIndex < capSel.options.length - 1) {
+    capSel.selectedIndex++;
+    mostrarTexto();
+  }
+};
+
 // ================= MOSTRAR TEXTO =================
 function mostrarTexto() {
   texto.innerHTML = "";
@@ -201,6 +215,7 @@ window.toggleModoImagen = () => {
   } else {
     body.classList.remove("modo-imagen");
     btnImg.classList.remove("activo");
+    seleccionImagen = {};
   }
 
   mostrarTexto();
@@ -222,5 +237,6 @@ window.generarImagen = () => {
 
   alert("✅ Lógica de generación OK (siguiente paso)");
 };
+
 
 
