@@ -220,69 +220,22 @@ window.toggleModoImagen = () => {
 
 // ================= GENERAR IMAGEN REAL =================
 window.generarImagen = () => {
-
-  // seguridad extra
   if (!modoImagen) return;
 
   const ids = Object.keys(seleccionImagen);
-
   if (ids.length === 0) {
     alert("Seleccioná al menos un versículo para continuar");
     return;
   }
 
-  // Mostrar modal de formato (misma pestaña)
+  // Mostrar modal de formato
   document.getElementById("modalFormato").style.display = "flex";
 };
 
-// ================= MARCADOR =================
-window.guardarMarcador = () => {
-  marcador = { libro: libroSel.value, capitulo: capSel.value };
-  alert("📌 Marcador guardado");
-};
-
-window.irAMarcador = () => {
-  if (!marcador) return;
-  libroSel.value = marcador.libro;
-  cargarCapitulos();
-  setTimeout(() => {
-    capSel.value = marcador.capitulo;
-    mostrarTexto();
-  }, 50);
-};
-
-// ================= NAVEGACIÓN =================
-window.irA = seccion => {
-  document.querySelectorAll(".seccion")
-    .forEach(s => s.style.display = "none");
-  document.getElementById("seccion-" + seccion).style.display = "block";
-};
-
-window.cerrarLogin = () => {
-  document.getElementById("loginModal").style.display = "none";
-};
-
-window.irALogin = () => {
-  window.location.href = "login.html"; // o tu ruta real
-};
-
 let formatoImagen = null;
-
-window.elegirFormato = formato => {
-  formatoImagen = formato;
-
-  document.getElementById("modalFormato").style.display = "none";
-
-  alert(
-    formato === "cuadrado"
-      ? "⬜ Formato Cuadrado elegido"
-      : "📱 Formato Historia elegido"
-  );
-
-  // En el próximo paso acá iremos a Plantillas
-// ================= PLANTILLAS =================
 let plantillaSeleccionada = null;
 
+// ================= ELEGIR FORMATO =================
 window.elegirFormato = formato => {
   if (!Object.keys(seleccionImagen).length) {
     alert("Seleccioná al menos un versículo antes de continuar");
@@ -296,34 +249,22 @@ window.elegirFormato = formato => {
   document.getElementById("modalPlantilla").style.display = "flex";
 };
 
+// ================= ELEGIR PLANTILLA =================
 window.elegirPlantilla = plantilla => {
   plantillaSeleccionada = plantilla;
   document.getElementById("modalPlantilla").style.display = "none";
 
   if (plantilla === "personalizar") {
-    // Aquí abrirías la pantalla de personalización
-    alert("⚙️ Pantalla de personalización aún no implementada");
-    return;
-  }
-
-  // Generar la imagen automáticamente con la plantilla elegida
-  generarImagenFinal();
-};
-
-window.elegirPlantilla = plantilla => {
-  plantillaSeleccionada = plantilla;
-  document.getElementById("modalPlantilla").style.display = "none";
-
-  if (plantilla === "personalizar") {
-    // Abrimos pantalla de personalización
+    // Abrimos modal de personalización
     document.getElementById("modalPersonalizar").style.display = "flex";
     return;
   }
 
-  // Generar la imagen automáticamente con la plantilla elegida
+  // Generar imagen automáticamente con la plantilla elegida
   generarImagenFinal();
 };
 
+// ================= GENERAR IMAGEN PERSONALIZADA =================
 window.generarImagenPersonalizada = () => {
   const fondo = document.getElementById("personalizarFondo").value;
   const fuente = document.getElementById("personalizarFuente").value;
@@ -334,7 +275,6 @@ window.generarImagenPersonalizada = () => {
 
   document.getElementById("modalPersonalizar").style.display = "none";
 
-  // Simulamos la generación de la imagen
   alert(
     `✅ Imagen personalizada generada!\n` +
     `Formato: ${formatoImagen}\n` +
@@ -345,7 +285,7 @@ window.generarImagenPersonalizada = () => {
     `Mayúsculas: ${upper ? "Sí" : "No"}`
   );
 
-  // Salimos del modo imagen
+  // Reseteamos todo
   modoImagen = false;
   seleccionImagen = {};
   plantillaSeleccionada = null;
@@ -354,12 +294,12 @@ window.generarImagenPersonalizada = () => {
   document.getElementById("btnImagen").classList.remove("activo");
   mostrarTexto();
 };
-  
+
+// ================= FUNCIONES INTERNAS =================
 function generarImagenFinal() {
-  // Por ahora simulamos la creación de la imagen
   alert(`✅ Imagen generada!\nFormato: ${formatoImagen}\nPlantilla: ${plantillaSeleccionada}`);
 
-  // Salimos del modo imagen y reseteamos selección
+  // Reseteamos todo
   modoImagen = false;
   seleccionImagen = {};
   plantillaSeleccionada = null;
@@ -369,22 +309,15 @@ function generarImagenFinal() {
   mostrarTexto();
 }
 
-  
-};
-
+// ================= CANCELAR CREACIÓN DE IMAGEN =================
 window.cancelarCrearImagen = () => {
   document.getElementById("modalFormato").style.display = "none";
 
-  // Salir de modo imagen
+  // Salimos del modo imagen
   modoImagen = false;
   seleccionImagen = {};
 
   document.body.classList.remove("modo-imagen");
   document.getElementById("btnImagen").classList.remove("activo");
-
   mostrarTexto();
 };
-
-
-
-
