@@ -21,23 +21,22 @@
     }
 
     /* ================= HEADER ================= */
-    #header {
-      position: sticky;
-      top: 0;
-      z-index: 1000;
-      background: #ffffff;
-      border-bottom: 1px solid #ddd;
-      padding: 10px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
+/* ================= HEADER ================= */
+#header {
+  position: static; /* ✅ NO sticky */
+  z-index: auto;
+  background: #ffffff;
+  border-bottom: 1px solid #ddd;
+  padding: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
 
-    body.oscuro #header {
-      background: #121212;
-      border-color: #333;
-    }
-
+body.oscuro #header {
+  background: #121212;
+  border-color: #333;
+}
     #menu {
       display: flex;
       gap: 6px;
@@ -214,7 +213,7 @@ body.oscuro .barra-acciones {
 }
 
 /* 🖼️ Modo imagen */
-.modo-imagen #accionesBiblia button {
+.modo-imagen .accion-normal {
   display: none;
 }
 
@@ -257,38 +256,41 @@ body.oscuro .barra-acciones {
 <div id="accionesBiblia" class="barra-acciones">
 
   <!-- ◀ ▶ CAPÍTULO -->
-  <button onclick="capituloAnterior()">‹</button>
-  <button onclick="capituloSiguiente()">›</button>
+  <button class="accion-normal" onclick="capituloAnterior()">‹</button>
+  <button class="accion-normal" onclick="capituloSiguiente()">›</button>
 
   <!-- 🎨 RESALTADO -->
-  <button class="color-btn" data-color="#ffd6e8"
+  <button class="accion-normal color-btn"
+          data-color="#ffd6e8"
           onclick="setColor('#ffd6e8', this)">🌸</button>
 
-  <button class="color-btn" data-color="#ccecff"
+  <button class="accion-normal color-btn"
+          data-color="#ccecff"
           onclick="setColor('#ccecff', this)">💙</button>
 
-  <button class="color-btn" data-color="#fff3b0"
+  <button class="accion-normal color-btn"
+          data-color="#fff3b0"
           onclick="setColor('#fff3b0', this)">💛</button>
 
   <!-- 🔠 TAMAÑO -->
-  <button onclick="cambiarLetra(-1)">A−</button>
-  <button onclick="cambiarLetra(1)">A+</button>
+  <button class="accion-normal" onclick="cambiarLetra(-1)">A−</button>
+  <button class="accion-normal" onclick="cambiarLetra(1)">A+</button>
 
-  <!-- 🖼️ MODO IMAGEN -->
+  <!-- ⬆ SUBIR -->
+  <button class="accion-normal"
+          onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+
+  <!-- 🖼️ MODO IMAGEN (NO lleva accion-normal) -->
   <button id="btnImagen" onclick="toggleModoImagen()">🖼️</button>
 
-  <!-- 🖼️ CREAR IMAGEN -->
+  <!-- 🖼️ CREAR IMAGEN (NO lleva accion-normal) -->
   <button id="btnCrearImagen"
           onclick="generarImagen()"
           style="display:none">
     Crear Imagen
   </button>
 
-  <!-- ⬆ SUBIR -->
-  <button onclick="scrollTo(0,0)">↑</button>
-
 </div>
-
 
   <h3 id="titulo"></h3>
   <div id="texto"></div>
@@ -346,6 +348,7 @@ body.oscuro .barra-acciones {
 
 </body>
 </html>
+
 
 
 
