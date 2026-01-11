@@ -235,20 +235,41 @@ body.oscuro .versiculo[data-marcado="true"] {
     <select id="capitulo"></select>
   </div>
 
-  <div class="barra-acciones">
-    <div>
-      <button onclick="setColor('#ffd6e8')">🌸</button>
-      <button onclick="setColor('#ccecff')">💙</button>
-      <button onclick="setColor('#fff3b0')">💛</button>
-      <button onclick="cambiarLetra(-1)">−</button>
-      <button onclick="cambiarLetra(1)">+</button>
-    </div>
+<div id="accionesBiblia" class="barra-acciones">
 
-    <div>
-      <button id="btnModoImagen" onclick="toggleModoImagen()">Habilitar Crear Imagen</button>
-    
-    </div>
-  </div>
+  <!-- ◀ ▶ CAPÍTULO -->
+  <button onclick="capituloAnterior()">‹</button>
+  <button onclick="capituloSiguiente()">›</button>
+
+  <!-- 🎨 RESALTADO -->
+  <button class="color-btn" data-color="#ffd6e8"
+          onclick="setColor('#ffd6e8', this)">🌸</button>
+
+  <button class="color-btn" data-color="#ccecff"
+          onclick="setColor('#ccecff', this)">💙</button>
+
+  <button class="color-btn" data-color="#fff3b0"
+          onclick="setColor('#fff3b0', this)">💛</button>
+
+  <!-- 🔠 TAMAÑO -->
+  <button onclick="cambiarLetra(-1)">A−</button>
+  <button onclick="cambiarLetra(1)">A+</button>
+
+  <!-- 🖼️ MODO IMAGEN -->
+  <button id="btnImagen" onclick="toggleModoImagen()">🖼️</button>
+
+  <!-- 🖼️ CREAR IMAGEN -->
+  <button id="btnCrearImagen"
+          onclick="generarImagen()"
+          style="display:none">
+    Crear Imagen
+  </button>
+
+  <!-- ⬆ SUBIR -->
+  <button onclick="scrollTo(0,0)">↑</button>
+
+</div>
+
 
   <h3 id="titulo"></h3>
   <div id="texto"></div>
@@ -306,4 +327,5 @@ body.oscuro .versiculo[data-marcado="true"] {
 
 </body>
 </html>
+
 
