@@ -1,3 +1,5 @@
+algo hice mal porque se puso extraño revisalo por fas 
+
 // ================= IMPORTS FIREBASE =================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
@@ -34,6 +36,22 @@ let marcador = null;
 let modoImagen = false;
 let seleccionImagen = {};
 
+// ================= NAVEGACIÓN =================
+function irA(seccion) {
+  const secciones = ["biblia", "devocionales", "abc", "iglesia", "panel"];
+  secciones.forEach(s => {
+    const el = document.getElementById("seccion-" + s);
+    if(el) el.style.display = (s === seccion) ? "block" : "none";
+  });
+
+  // Salimos del modo imagen si estaba activo
+  modoImagen = false;
+  seleccionImagen = {};
+  document.body.classList.remove("modo-imagen");
+  document.getElementById("btnImagen").classList.remove("activo");
+  mostrarTexto();
+}
+
 // ================= DOM =================
 const libroSel = document.getElementById("libro");
 const capSel = document.getElementById("capitulo");
@@ -42,7 +60,6 @@ const titulo = document.getElementById("titulo");
 const notaBox = document.getElementById("notaBox");
 const notaTexto = document.getElementById("notaTexto");
 const loginModal = document.getElementById("loginModal");
-const contenedorFondos = document.getElementById("personalizarFondos");
 
 // ================= CARGAR BIBLIA =================
 fetch("VidaAbundante - RV1960.json")
@@ -89,23 +106,6 @@ function cargarCapitulos() {
   mostrarTexto();
 }
 
-// ================= NAVEGACIÓN =================
-window.irA = (seccion) => {
-  const secciones = ["biblia", "devocionales", "abc", "iglesia", "panel"];
-  secciones.forEach(s => {
-    const el = document.getElementById("seccion-" + s);
-    if(el) el.style.display = (s === seccion) ? "block" : "none";
-  });
-
-  // Salimos del modo imagen si estaba activo
-  modoImagen = false;
-  seleccionImagen = {};
-  document.body.classList.remove("modo-imagen");
-  document.getElementById("btnImagen").classList.remove("activo");
-  mostrarTexto();
-};
-
-// ================= CAPÍTULOS ANTERIOR / SIGUIENTE =================
 window.capituloAnterior = () => {
   if (capSel.selectedIndex > 0) {
     capSel.selectedIndex--;
@@ -138,7 +138,7 @@ function mostrarTexto() {
   versos.forEach(v => pintarVersiculo(v));
 }
 
-// ================= PINTAR VERSÍCULO =================
+// ================= VERSÍCULO =================
 function pintarVersiculo(v) {
   const id = `${v.Libro}_${v.Capitulo}_${v.Versiculo}`;
   const marcado = marcados[id];
@@ -156,7 +156,7 @@ function pintarVersiculo(v) {
   texto.appendChild(div);
 }
 
-// ================= TOGGLE VERSÍCULO =================
+// ================= TOGGLE =================
 function toggleVersiculo(id, num) {
 
   // 🖼️ MODO IMAGEN
@@ -180,7 +180,7 @@ function toggleVersiculo(id, num) {
   detectarGrupo(num);
 }
 
-// ================= DETECTAR GRUPO DE VERSÍCULOS =================
+// ================= NOTAS AUTOMÁTICAS =================
 function detectarGrupo(num) {
   const nums = Object.keys(marcados)
     .map(k => Number(k.split("_")[2]))
@@ -236,10 +236,7 @@ window.toggleModoImagen = () => {
   mostrarTexto();
 };
 
-// ================= GENERAR IMAGEN =================
-let formatoImagen = null;
-let plantillaSeleccionada = null;
-
+// ================= GENERAR IMAGEN REAL =================
 window.generarImagen = () => {
   if (!modoImagen) return;
 
@@ -249,9 +246,14 @@ window.generarImagen = () => {
     return;
   }
 
+  // Mostrar modal de formato
   document.getElementById("modalFormato").style.display = "flex";
 };
 
+let formatoImagen = null;
+let plantillaSeleccionada = null;
+
+// ================= ELEGIR FORMATO =================
 window.elegirFormato = formato => {
   if (!Object.keys(seleccionImagen).length) {
     alert("Seleccioná al menos un versículo antes de continuar");
@@ -260,24 +262,48 @@ window.elegirFormato = formato => {
 
   formatoImagen = formato;
   document.getElementById("modalFormato").style.display = "none";
+
+  // Abrimos modal de plantillas
   document.getElementById("modalPlantilla").style.display = "flex";
 };
 
+// ================= ELEGIR PLANTILLA =================
 window.elegirPlantilla = plantilla => {
   plantillaSeleccionada = plantilla;
   document.getElementById("modalPlantilla").style.display = "none";
 
   if (plantilla === "personalizar") {
+    // Abrimos modal de personalización
     document.getElementById("modalPersonalizar").style.display = "flex";
     return;
   }
 
+  // Generar imagen automáticamente con la plantilla elegida
   generarImagenFinal();
 };
 
-window.generarImagenFinal = () => {
-  alert(`✅ Imagen generada!\nFormato: ${formatoImagen}\nPlantilla: ${plantillaSeleccionada}`);
+// ================= GENERAR IMAGEN PERSONALIZADA =================
+window.generarImagenPersonalizada = () => {
+  const fondo = document.getElementById("personalizarFondo").value;
+  const fuente = document.getElementById("personalizarFuente").value;
+  const tamaño = document.getElementById("personalizarTamaño").value;
+  const color = document.getElementById("personalizarColor").value;
+  const opacidad = document.getElementById("personalizarOpacidad").value;
+  const upper = document.getElementById("personalizarUpper").checked;
 
+  document.getElementById("modalPersonalizar").style.display = "none";
+
+  alert(
+    `✅ Imagen personalizada generada!\n` +
+    `Formato: ${formatoImagen}\n` +
+    `Fondo: ${fondo} (opacidad ${opacidad})\n` +
+    `Fuente: ${fuente}\n` +
+    `Tamaño: ${tamaño}\n` +
+    `Color: ${color}\n` +
+    `Mayúsculas: ${upper ? "Sí" : "No"}`
+  );
+
+  // Reseteamos todo
   modoImagen = false;
   seleccionImagen = {};
   plantillaSeleccionada = null;
@@ -287,33 +313,116 @@ window.generarImagenFinal = () => {
   mostrarTexto();
 };
 
-// ================= CANCELAR CREACIÓN =================
+// ================= FUNCIONES INTERNAS =================
+function generarImagenFinal() {
+  alert(`✅ Imagen generada!\nFormato: ${formatoImagen}\nPlantilla: ${plantillaSeleccionada}`);
+
+  // Reseteamos todo
+  modoImagen = false;
+  seleccionImagen = {};
+  plantillaSeleccionada = null;
+  formatoImagen = null;
+  document.body.classList.remove("modo-imagen");
+  document.getElementById("btnImagen").classList.remove("activo");
+  mostrarTexto();
+}
+
+// ================= CANCELAR CREACIÓN DE IMAGEN =================
 window.cancelarCrearImagen = () => {
+  // Cerramos todos los modales relacionados
   document.getElementById("modalFormato").style.display = "none";
   document.getElementById("modalPlantilla").style.display = "none";
   document.getElementById("modalPersonalizar").style.display = "none";
 
+  // Salimos del modo imagen
   modoImagen = false;
   seleccionImagen = {};
-  plantillaSeleccionada = null;
-  formatoImagen = null;
 
   document.body.classList.remove("modo-imagen");
-  document.getElementById("btnImagen").classList.remove("activo");
+  const btnImg = document.getElementById("btnImagen");
+  if(btnImg) btnImg.classList.remove("activo");
+
+  // Volvemos a mostrar el texto normal
   mostrarTexto();
 };
 
-// ================= FONDOS CLOUDINARY =================
+// ---------------- Fondos de Cloudinary ----------------
 const fondosCloudinary = [
   "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_6_kpgvmm",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_1_kupglf",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_2_a1wlsh",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_7_hnxuau",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_5_brmypi",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_4_xubjvd",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_9_b3tkxx"
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_1_kupglf",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_2_a1wlsh",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_7_hnxuau",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_5_brmypi",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_4_xubjvd",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_9_b3tkxx",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_3_jhrx0j",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_8_ivok7j",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_12_crdynt",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_15_iu1uxj",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_14_iww2jx",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_13_dzxm4k",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_11_z3nudj",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_10_scjlfu",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_1_cg9dfu",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_2_hi9hhz",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_1_cg9dfu",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_1_q3uzog",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_2_wzlhio",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_3_tjsq2f",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_7_cf7yzv",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_4_rplu10",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_5_ftamyb",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_yxah7e",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_6_wychbo",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/jardinflorescielorosas_qctpa1",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/nubepasto_w0pg1i",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/lagunapastofloresrosas_gibn7c",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/flores_riug8f",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/flores_riug8f",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/cielorosa_pc0puk",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_2_twzefr",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_3_zw4kl2",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_6_ghg8ux",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_1_jwctxg",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_c2feyb",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_5_htsxrq",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_4_jfb0m1",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_7_qpfbuy",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_1_z6ol0o",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_ycpnpv",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_2_ehfqna",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/doble_n6nexy",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/doble2_zyqinh",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_1_p3bdgg",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/piedras_no3cnu",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_2_tzcjhe",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_bzbuyy",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_3_hzwmnn",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_9_uoqpfk",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_10_dzbofe",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_8_xzqnli",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_7_gunjzi",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_4_kwzbbn",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_6_ghlggy",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_5_uxzbsn",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_2_wza5pr",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_tgzcpn",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_3_xyutfs",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_1_arstzx",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_3_thrkka",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_4_yp8i7h",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_6_lbylzl",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_7_f9qxrz",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_5_uh3dsx",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/cielovioleta_us3ilw",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/amanecerpiedras_zb18j1",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/amanecer1600x1600_igddhh",
+
 ];
 
+const contenedorFondos = document.getElementById("personalizarFondos");
+
+// Crear miniaturas clickeables
 fondosCloudinary.forEach(url => {
   const img = document.createElement("img");
   img.src = url;
@@ -322,20 +431,18 @@ fondosCloudinary.forEach(url => {
   img.style.objectFit = "cover";
   img.style.borderRadius = "8px";
   img.style.cursor = "pointer";
-
   img.onclick = () => {
-    contenedorFondos.querySelectorAll("img").forEach(i => {
-      i.style.outline = "";
-      i.removeAttribute("data-seleccionado");
-    });
-    img.style.outline = "3px solid #4f6fa8";
-    img.dataset.seleccionado = "true";
-  };
-
+  contenedorFondos.querySelectorAll("img").forEach(i => {
+    i.style.outline = "";
+    i.removeAttribute("data-seleccionado");
+  });
+  img.style.outline = "3px solid #4f6fa8";
+  img.dataset.seleccionado = "true";
+};
   contenedorFondos.appendChild(img);
 });
 
-// ================= BOTONES MODAL PERSONALIZAR =================
+// ---------------- Botón Generar ----------------
 document.getElementById("btnGenerarPersonalizada").onclick = () => {
   const fuente = document.getElementById("personalizarFuente").value;
   const tamaño = document.getElementById("personalizarTamaño").value;
@@ -343,12 +450,6 @@ document.getElementById("btnGenerarPersonalizada").onclick = () => {
   const opacidad = document.getElementById("personalizarOpacidad").value;
   const upper = document.getElementById("personalizarUpper").checked;
 
-  const imgSeleccionada = document.querySelector("#personalizarFondos img[data-seleccionado='true']");
-  if (!imgSeleccionada) {
-    alert("⚠️ Seleccioná un fondo para continuar");
-    return;
-  }
-  const fondoFinal = imgSeleccionada.src;
 
   document.getElementById("modalPersonalizar").style.display = "none";
 
@@ -362,6 +463,7 @@ document.getElementById("btnGenerarPersonalizada").onclick = () => {
     `Mayúsculas: ${upper ? "Sí" : "No"}`
   );
 
+  // Resetea todo
   modoImagen = false;
   seleccionImagen = {};
   plantillaSeleccionada = null;
@@ -371,20 +473,16 @@ document.getElementById("btnGenerarPersonalizada").onclick = () => {
   mostrarTexto();
 };
 
+// ---------------- Botón Cancelar ----------------
 document.getElementById("btnCancelarPersonalizada").onclick = () => {
   document.getElementById("modalPersonalizar").style.display = "none";
-
   modoImagen = false;
   seleccionImagen = {};
   plantillaSeleccionada = null;
   formatoImagen = null;
   document.body.classList.remove("modo-imagen");
   document.getElementById("btnImagen").classList.remove("activo");
-
-  contenedorFondos.querySelectorAll("img").forEach(i => {
-    i.style.outline = "";
-    i.removeAttribute("data-seleccionado");
-  });
-
   mostrarTexto();
 };
+
+
