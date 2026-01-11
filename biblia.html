@@ -109,11 +109,32 @@
     }
 
     .versiculo {
-      margin-bottom: 10px;
-      padding: 6px;
-      border-radius: 6px;
-      cursor: pointer;
-    }
+  padding: 10px 14px;
+  border-radius: 8px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  transition: background .2s;
+  color: #000;
+}
+
+body.oscuro .versiculo {
+  color: #fff;
+}
+
+/* resaltado normal */
+.versiculo[data-marcado="true"] {
+  color: #000;
+}
+
+body.oscuro .versiculo[data-marcado="true"] {
+  color: #000; /* fuerza negro sobre pastel */
+}
+
+/* selección imagen */
+.versiculo.imagen {
+  background: #4f6fa8 !important;
+  color: #fff !important;
+}
 
     .num {
       font-weight: bold;
@@ -172,6 +193,22 @@
       text-align: center;
       font-weight: bold;
     }
+
+    .barra-acciones {
+  position: sticky;
+  bottom: 0;
+  background: var(--fondo);
+  display: flex;
+  gap: 6px;
+  padding: 8px;
+  z-index: 20;
+}
+
+.barra-acciones button.activo {
+  background: #4f6fa8;
+  color: #fff;
+}
+
   </style>
 </head>
 
@@ -209,7 +246,7 @@
 
     <div>
       <button id="btnModoImagen" onclick="toggleModoImagen()">Habilitar Crear Imagen</button>
-      <button onclick="generarImagen()">🖼️</button>
+    
     </div>
   </div>
 
@@ -269,3 +306,4 @@
 
 </body>
 </html>
+
