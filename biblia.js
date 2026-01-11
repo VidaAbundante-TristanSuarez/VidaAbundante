@@ -280,6 +280,51 @@ window.elegirFormato = formato => {
   );
 
   // En el próximo paso acá iremos a Plantillas
+// ================= PLANTILLAS =================
+let plantillaSeleccionada = null;
+
+window.elegirFormato = formato => {
+  if (!Object.keys(seleccionImagen).length) {
+    alert("Seleccioná al menos un versículo antes de continuar");
+    return;
+  }
+
+  formatoImagen = formato;
+  document.getElementById("modalFormato").style.display = "none";
+
+  // Abrimos modal de plantillas
+  document.getElementById("modalPlantilla").style.display = "flex";
+};
+
+window.elegirPlantilla = plantilla => {
+  plantillaSeleccionada = plantilla;
+  document.getElementById("modalPlantilla").style.display = "none";
+
+  if (plantilla === "personalizar") {
+    // Aquí abrirías la pantalla de personalización
+    alert("⚙️ Pantalla de personalización aún no implementada");
+    return;
+  }
+
+  // Generar la imagen automáticamente con la plantilla elegida
+  generarImagenFinal();
+};
+
+function generarImagenFinal() {
+  // Por ahora simulamos la creación de la imagen
+  alert(`✅ Imagen generada!\nFormato: ${formatoImagen}\nPlantilla: ${plantillaSeleccionada}`);
+
+  // Salimos del modo imagen y reseteamos selección
+  modoImagen = false;
+  seleccionImagen = {};
+  plantillaSeleccionada = null;
+  formatoImagen = null;
+  document.body.classList.remove("modo-imagen");
+  document.getElementById("btnImagen").classList.remove("activo");
+  mostrarTexto();
+}
+
+  
 };
 
 window.cancelarCrearImagen = () => {
@@ -294,5 +339,6 @@ window.cancelarCrearImagen = () => {
 
   mostrarTexto();
 };
+
 
 
