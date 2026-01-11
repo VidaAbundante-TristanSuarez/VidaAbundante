@@ -262,5 +262,33 @@ window.irAMarcador = () => {
   }, 50);
 };
 
+let marcador = null;
+
+window.guardarMarcador = () => {
+  marcador = {
+    libro: libroSel.value,
+    capitulo: capSel.value
+  };
+  alert("📁 Marcador guardado");
+};
+
+window.irAMarcador = () => {
+  if (!marcador) return;
+
+  libroSel.value = marcador.libro;
+  cargarCapitulos();
+
+  setTimeout(() => {
+    capSel.value = marcador.capitulo;
+    mostrarTexto();
+  }, 50);
+};
+
+window.irA = seccion => {
+  document.querySelectorAll(".seccion")
+    .forEach(s => s.style.display = "none");
+
+  document.getElementById("seccion-" + seccion).style.display = "block";
+};
 
 
