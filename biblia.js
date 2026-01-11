@@ -30,6 +30,7 @@ let notas = {};
 let size = 18;
 let colorActual = "#ffd6e8";
 let grupoActual = null;
+let marcador = null;
 
 let seccionActiva = "biblia";
 
@@ -236,6 +237,29 @@ window.generarImagen = () => {
   }
 
   alert("✅ Lógica de generación OK (siguiente paso)");
+};
+
+window.guardarMarcador = () => {
+  marcador = {
+    libro: libroSel.value,
+    capitulo: capSel.value
+  };
+  alert("📌 Marcador guardado");
+};
+
+window.irAMarcador = () => {
+  if (!marcador) {
+    alert("No hay marcador guardado");
+    return;
+  }
+
+  libroSel.value = marcador.libro;
+  cargarCapitulos();
+
+  setTimeout(() => {
+    capSel.value = marcador.capitulo;
+    mostrarTexto();
+  }, 50);
 };
 
 
