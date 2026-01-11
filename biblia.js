@@ -1,5 +1,3 @@
-algo hice mal porque se puso extraño revisalo por fas 
-
 // ================= IMPORTS FIREBASE =================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
@@ -35,6 +33,7 @@ let marcador = null;
 
 let modoImagen = false;
 let seleccionImagen = {};
+let fondoFinal = null;
 
 // ================= NAVEGACIÓN =================
 function irA(seccion) {
@@ -217,6 +216,31 @@ window.toggleTema = () => {
   document.body.classList.toggle("oscuro");
 };
 
+// ================= MARCADOR =================
+window.guardarMarcador = () => {
+  marcador = {
+    libro: libroSel.value,
+    capitulo: capSel.value
+  };
+
+  alert(`📌 Marcador guardado:\n${marcador.libro} ${marcador.capitulo}`);
+};
+
+window.irAMarcador = () => {
+  if (!marcador) {
+    alert("No hay marcador guardado");
+    return;
+  }
+
+  libroSel.value = marcador.libro;
+  cargarCapitulos();
+
+  setTimeout(() => {
+    capSel.value = marcador.capitulo;
+    mostrarTexto();
+  }, 0);
+};
+
 // ================= MODO IMAGEN =================
 window.toggleModoImagen = () => {
   if (!uid) {
@@ -280,37 +304,6 @@ window.elegirPlantilla = plantilla => {
 
   // Generar imagen automáticamente con la plantilla elegida
   generarImagenFinal();
-};
-
-// ================= GENERAR IMAGEN PERSONALIZADA =================
-window.generarImagenPersonalizada = () => {
-  const fondo = document.getElementById("personalizarFondo").value;
-  const fuente = document.getElementById("personalizarFuente").value;
-  const tamaño = document.getElementById("personalizarTamaño").value;
-  const color = document.getElementById("personalizarColor").value;
-  const opacidad = document.getElementById("personalizarOpacidad").value;
-  const upper = document.getElementById("personalizarUpper").checked;
-
-  document.getElementById("modalPersonalizar").style.display = "none";
-
-  alert(
-    `✅ Imagen personalizada generada!\n` +
-    `Formato: ${formatoImagen}\n` +
-    `Fondo: ${fondo} (opacidad ${opacidad})\n` +
-    `Fuente: ${fuente}\n` +
-    `Tamaño: ${tamaño}\n` +
-    `Color: ${color}\n` +
-    `Mayúsculas: ${upper ? "Sí" : "No"}`
-  );
-
-  // Reseteamos todo
-  modoImagen = false;
-  seleccionImagen = {};
-  plantillaSeleccionada = null;
-  formatoImagen = null;
-  document.body.classList.remove("modo-imagen");
-  document.getElementById("btnImagen").classList.remove("activo");
-  mostrarTexto();
 };
 
 // ================= FUNCIONES INTERNAS =================
@@ -436,8 +429,10 @@ fondosCloudinary.forEach(url => {
     i.style.outline = "";
     i.removeAttribute("data-seleccionado");
   });
+
   img.style.outline = "3px solid #4f6fa8";
   img.dataset.seleccionado = "true";
+  fondoFinal = img.src; // ✅ FIX REAL
 };
   contenedorFondos.appendChild(img);
 });
@@ -454,14 +449,14 @@ document.getElementById("btnGenerarPersonalizada").onclick = () => {
   document.getElementById("modalPersonalizar").style.display = "none";
 
   alert(
-    `✅ Imagen personalizada generada!\n` +
-    `Formato: ${formatoImagen}\n` +
-    `Fondo: ${fondoFinal} (opacidad ${opacidad})\n` +
-    `Fuente: ${fuente}\n` +
-    `Tamaño: ${tamaño}\n` +
-    `Color: ${color}\n` +
-    `Mayúsculas: ${upper ? "Sí" : "No"}`
-  );
+  `✅ Imagen personalizada generada!\n` +
+  `Formato: ${formatoImagen}\n` +
+  `Fondo: ${fondoFinal || "No seleccionado"} (opacidad ${opacidad})\n` +
+  `Fuente: ${fuente}\n` +
+  `Tamaño: ${tamaño}\n` +
+  `Color: ${color}\n` +
+  `Mayúsculas: ${upper ? "Sí" : "No"}`
+);
 
   // Resetea todo
   modoImagen = false;
@@ -484,5 +479,6 @@ document.getElementById("btnCancelarPersonalizada").onclick = () => {
   document.getElementById("btnImagen").classList.remove("activo");
   mostrarTexto();
 };
+
 
 
