@@ -218,39 +218,14 @@ window.toggleModoImagen = () => {
 // ================= GENERAR IMAGEN REAL =================
 window.generarImagen = () => {
   const ids = Object.keys(seleccionImagen);
+
   if (ids.length === 0) {
     alert("Seleccioná al menos un versículo");
     return;
   }
 
-  const versos = ids.map(id => {
-    const [, , n] = id.split("_");
-    return `${n}. ${bibliaData.find(v =>
-      `${v.Libro}_${v.Capitulo}_${v.Versiculo}` === id
-    ).RV1960}`;
-  });
-
-  const textoFinal = versos.join("\n\n");
-
-  const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
-
-  canvas.width = 1080;
-  canvas.height = 1080;
-  ctx.fillStyle = "#ffffff";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  ctx.fillStyle = "#000";
-  ctx.font = "28px serif";
-
-  let y = 120;
-  textoFinal.split("\n").forEach(linea => {
-    ctx.fillText(linea, 80, y);
-    y += 40;
-  });
-
-  const img = canvas.toDataURL("image/png");
-  window.open(img, "_blank");
+  // Abrir modal de formato
+  document.getElementById("modalFormato").style.display = "flex";
 };
 
 // ================= MARCADOR =================
@@ -282,5 +257,34 @@ window.cerrarLogin = () => {
 
 window.irALogin = () => {
   window.location.href = "login.html"; // o tu ruta real
+};
+
+let formatoImagen = null;
+
+window.elegirFormato = formato => {
+  formatoImagen = formato;
+
+  document.getElementById("modalFormato").style.display = "none";
+
+  alert(
+    formato === "cuadrado"
+      ? "⬜ Formato Cuadrado elegido"
+      : "📱 Formato Historia elegido"
+  );
+
+  // En el próximo paso acá iremos a Plantillas
+};
+
+window.cancelarCrearImagen = () => {
+  document.getElementById("modalFormato").style.display = "none";
+
+  // Salir de modo imagen
+  modoImagen = false;
+  seleccionImagen = {};
+
+  document.body.classList.remove("modo-imagen");
+  document.getElementById("btnImagen").classList.remove("activo");
+
+  mostrarTexto();
 };
 
