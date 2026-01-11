@@ -321,3 +321,79 @@ window.cancelarCrearImagen = () => {
   document.getElementById("btnImagen").classList.remove("activo");
   mostrarTexto();
 };
+
+// ---------------- Fondos de Cloudinary ----------------
+const fondosCloudinary = [
+  "https://res.cloudinary.com/dlkpityif/image/upload/v1766894535/Untitled_Project_10_scjlfu.jpg",
+  // podés agregar más URLs de Cloudinary
+];
+
+const contenedorFondos = document.getElementById("personalizarFondos");
+
+// Crear miniaturas clickeables
+fondosCloudinary.forEach(url => {
+  const img = document.createElement("img");
+  img.src = url;
+  img.style.width = "60px";
+  img.style.height = "60px";
+  img.style.objectFit = "cover";
+  img.style.borderRadius = "8px";
+  img.style.cursor = "pointer";
+  img.onclick = () => {
+    // Deselecciona todas
+    contenedorFondos.querySelectorAll("img").forEach(i => i.style.outline = "");
+    // Marca seleccionada
+    img.style.outline = "3px solid #4f6fa8";
+    img.dataset.seleccionado = "true";
+  };
+  contenedorFondos.appendChild(img);
+});
+
+// ---------------- Botón Generar ----------------
+document.getElementById("btnGenerarPersonalizada").onclick = () => {
+  const fondoColor = document.getElementById("personalizarFondo").value;
+  const fuente = document.getElementById("personalizarFuente").value;
+  const tamaño = document.getElementById("personalizarTamaño").value;
+  const color = document.getElementById("personalizarColor").value;
+  const opacidad = document.getElementById("personalizarOpacidad").value;
+  const upper = document.getElementById("personalizarUpper").checked;
+
+  // Chequea si hay imagen seleccionada
+  const imgSeleccionada = document.querySelector("#personalizarFondos img[data-seleccionado='true']");
+  let fondoFinal = fondoColor;
+  if(imgSeleccionada) fondoFinal = imgSeleccionada.src;
+
+  document.getElementById("modalPersonalizar").style.display = "none";
+
+  alert(
+    `✅ Imagen personalizada generada!\n` +
+    `Formato: ${formatoImagen}\n` +
+    `Fondo: ${fondoFinal} (opacidad ${opacidad})\n` +
+    `Fuente: ${fuente}\n` +
+    `Tamaño: ${tamaño}\n` +
+    `Color: ${color}\n` +
+    `Mayúsculas: ${upper ? "Sí" : "No"}`
+  );
+
+  // Resetea todo
+  modoImagen = false;
+  seleccionImagen = {};
+  plantillaSeleccionada = null;
+  formatoImagen = null;
+  document.body.classList.remove("modo-imagen");
+  document.getElementById("btnImagen").classList.remove("activo");
+  mostrarTexto();
+};
+
+// ---------------- Botón Cancelar ----------------
+document.getElementById("btnCancelarPersonalizada").onclick = () => {
+  document.getElementById("modalPersonalizar").style.display = "none";
+  modoImagen = false;
+  seleccionImagen = {};
+  plantillaSeleccionada = null;
+  formatoImagen = null;
+  document.body.classList.remove("modo-imagen");
+  document.getElementById("btnImagen").classList.remove("activo");
+  mostrarTexto();
+};
+
