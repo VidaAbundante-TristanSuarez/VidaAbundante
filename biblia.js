@@ -168,12 +168,12 @@ window.guardarNota = () => {
 };
 
 // ================= AJUSTES =================
-window.setColor = c => {
+window.setColor = (c, btn) => {
   colorActual = c;
+
   document.querySelectorAll(".color-btn")
     .forEach(b => b.classList.remove("activo"));
 
-  const btn = document.querySelector(`[data-color="${c}"]`);
   if (btn) btn.classList.add("activo");
 };
 
@@ -182,31 +182,25 @@ window.cambiarLetra = n => {
   document.querySelectorAll(".versiculo")
     .forEach(v => v.style.fontSize = size + "px");
 };
-window.toggleTema = () => document.body.classList.toggle("oscuro");
+
+window.toggleTema = () => {
+  document.body.classList.toggle("oscuro");
+};
 
 // ================= MODO IMAGEN =================
 window.toggleModoImagen = () => {
   modoImagen = !modoImagen;
   seleccionImagen = {};
 
+  const body = document.body;
   const btnImg = document.getElementById("btnImagen");
-  const btnCrear = document.getElementById("btnCrearImagen");
 
   if (modoImagen) {
+    body.classList.add("modo-imagen");
     btnImg.classList.add("activo");
-
-    // ocultar demás acciones
-    document.querySelectorAll("#accionesBiblia button")
-      .forEach(b => b.style.display = "none");
-
-    btnCrear.style.display = "inline-block";
   } else {
+    body.classList.remove("modo-imagen");
     btnImg.classList.remove("activo");
-
-    document.querySelectorAll("#accionesBiblia button")
-      .forEach(b => b.style.display = "inline-block");
-
-    btnCrear.style.display = "none";
   }
 
   mostrarTexto();
@@ -228,4 +222,5 @@ window.generarImagen = () => {
 
   alert("✅ Lógica de generación OK (siguiente paso)");
 };
+
 
