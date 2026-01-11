@@ -34,22 +34,6 @@ let marcador = null;
 let modoImagen = false;
 let seleccionImagen = {};
 
-// ================= NAVEGACIÓN =================
-function irA(seccion) {
-  const secciones = ["biblia", "devocionales", "abc", "iglesia", "panel"];
-  secciones.forEach(s => {
-    const el = document.getElementById("seccion-" + s);
-    if(el) el.style.display = (s === seccion) ? "block" : "none";
-  });
-
-  // Salimos del modo imagen si estaba activo
-  modoImagen = false;
-  seleccionImagen = {};
-  document.body.classList.remove("modo-imagen");
-  document.getElementById("btnImagen").classList.remove("activo");
-  mostrarTexto();
-}
-
 // ================= DOM =================
 const libroSel = document.getElementById("libro");
 const capSel = document.getElementById("capitulo");
@@ -58,6 +42,7 @@ const titulo = document.getElementById("titulo");
 const notaBox = document.getElementById("notaBox");
 const notaTexto = document.getElementById("notaTexto");
 const loginModal = document.getElementById("loginModal");
+const contenedorFondos = document.getElementById("personalizarFondos");
 
 // ================= CARGAR BIBLIA =================
 fetch("VidaAbundante - RV1960.json")
@@ -104,6 +89,23 @@ function cargarCapitulos() {
   mostrarTexto();
 }
 
+// ================= NAVEGACIÓN =================
+window.irA = (seccion) => {
+  const secciones = ["biblia", "devocionales", "abc", "iglesia", "panel"];
+  secciones.forEach(s => {
+    const el = document.getElementById("seccion-" + s);
+    if(el) el.style.display = (s === seccion) ? "block" : "none";
+  });
+
+  // Salimos del modo imagen si estaba activo
+  modoImagen = false;
+  seleccionImagen = {};
+  document.body.classList.remove("modo-imagen");
+  document.getElementById("btnImagen").classList.remove("activo");
+  mostrarTexto();
+};
+
+// ================= CAPÍTULOS ANTERIOR / SIGUIENTE =================
 window.capituloAnterior = () => {
   if (capSel.selectedIndex > 0) {
     capSel.selectedIndex--;
@@ -136,7 +138,7 @@ function mostrarTexto() {
   versos.forEach(v => pintarVersiculo(v));
 }
 
-// ================= VERSÍCULO =================
+// ================= PINTAR VERSÍCULO =================
 function pintarVersiculo(v) {
   const id = `${v.Libro}_${v.Capitulo}_${v.Versiculo}`;
   const marcado = marcados[id];
@@ -154,7 +156,7 @@ function pintarVersiculo(v) {
   texto.appendChild(div);
 }
 
-// ================= TOGGLE =================
+// ================= TOGGLE VERSÍCULO =================
 function toggleVersiculo(id, num) {
 
   // 🖼️ MODO IMAGEN
@@ -178,7 +180,7 @@ function toggleVersiculo(id, num) {
   detectarGrupo(num);
 }
 
-// ================= NOTAS AUTOMÁTICAS =================
+// ================= DETECTAR GRUPO DE VERSÍCULOS =================
 function detectarGrupo(num) {
   const nums = Object.keys(marcados)
     .map(k => Number(k.split("_")[2]))
@@ -234,7 +236,10 @@ window.toggleModoImagen = () => {
   mostrarTexto();
 };
 
-// ================= GENERAR IMAGEN REAL =================
+// ================= GENERAR IMAGEN =================
+let formatoImagen = null;
+let plantillaSeleccionada = null;
+
 window.generarImagen = () => {
   if (!modoImagen) return;
 
@@ -244,14 +249,9 @@ window.generarImagen = () => {
     return;
   }
 
-  // Mostrar modal de formato
   document.getElementById("modalFormato").style.display = "flex";
 };
 
-let formatoImagen = null;
-let plantillaSeleccionada = null;
-
-// ================= ELEGIR FORMATO =================
 window.elegirFormato = formato => {
   if (!Object.keys(seleccionImagen).length) {
     alert("Seleccioná al menos un versículo antes de continuar");
@@ -260,48 +260,24 @@ window.elegirFormato = formato => {
 
   formatoImagen = formato;
   document.getElementById("modalFormato").style.display = "none";
-
-  // Abrimos modal de plantillas
   document.getElementById("modalPlantilla").style.display = "flex";
 };
 
-// ================= ELEGIR PLANTILLA =================
 window.elegirPlantilla = plantilla => {
   plantillaSeleccionada = plantilla;
   document.getElementById("modalPlantilla").style.display = "none";
 
   if (plantilla === "personalizar") {
-    // Abrimos modal de personalización
     document.getElementById("modalPersonalizar").style.display = "flex";
     return;
   }
 
-  // Generar imagen automáticamente con la plantilla elegida
   generarImagenFinal();
 };
 
-// ================= GENERAR IMAGEN PERSONALIZADA =================
-window.generarImagenPersonalizada = () => {
-  const fondo = document.getElementById("personalizarFondo").value;
-  const fuente = document.getElementById("personalizarFuente").value;
-  const tamaño = document.getElementById("personalizarTamaño").value;
-  const color = document.getElementById("personalizarColor").value;
-  const opacidad = document.getElementById("personalizarOpacidad").value;
-  const upper = document.getElementById("personalizarUpper").checked;
+window.generarImagenFinal = () => {
+  alert(`✅ Imagen generada!\nFormato: ${formatoImagen}\nPlantilla: ${plantillaSeleccionada}`);
 
-  document.getElementById("modalPersonalizar").style.display = "none";
-
-  alert(
-    `✅ Imagen personalizada generada!\n` +
-    `Formato: ${formatoImagen}\n` +
-    `Fondo: ${fondo} (opacidad ${opacidad})\n` +
-    `Fuente: ${fuente}\n` +
-    `Tamaño: ${tamaño}\n` +
-    `Color: ${color}\n` +
-    `Mayúsculas: ${upper ? "Sí" : "No"}`
-  );
-
-  // Reseteamos todo
   modoImagen = false;
   seleccionImagen = {};
   plantillaSeleccionada = null;
@@ -311,40 +287,23 @@ window.generarImagenPersonalizada = () => {
   mostrarTexto();
 };
 
-// ================= FUNCIONES INTERNAS =================
-function generarImagenFinal() {
-  alert(`✅ Imagen generada!\nFormato: ${formatoImagen}\nPlantilla: ${plantillaSeleccionada}`);
-
-  // Reseteamos todo
-  modoImagen = false;
-  seleccionImagen = {};
-  plantillaSeleccionada = null;
-  formatoImagen = null;
-  document.body.classList.remove("modo-imagen");
-  document.getElementById("btnImagen").classList.remove("activo");
-  mostrarTexto();
-}
-
-// ================= CANCELAR CREACIÓN DE IMAGEN =================
+// ================= CANCELAR CREACIÓN =================
 window.cancelarCrearImagen = () => {
-  // Cerramos todos los modales relacionados
   document.getElementById("modalFormato").style.display = "none";
   document.getElementById("modalPlantilla").style.display = "none";
   document.getElementById("modalPersonalizar").style.display = "none";
 
-  // Salimos del modo imagen
   modoImagen = false;
   seleccionImagen = {};
+  plantillaSeleccionada = null;
+  formatoImagen = null;
 
   document.body.classList.remove("modo-imagen");
-  const btnImg = document.getElementById("btnImagen");
-  if(btnImg) btnImg.classList.remove("activo");
-
-  // Volvemos a mostrar el texto normal
+  document.getElementById("btnImagen").classList.remove("activo");
   mostrarTexto();
 };
 
-// ---------------- Fondos de Cloudinary ----------------
+// ================= FONDOS CLOUDINARY =================
 const fondosCloudinary = [
   "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_6_kpgvmm",
   "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_1_kupglf",
@@ -352,13 +311,9 @@ const fondosCloudinary = [
   "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_7_hnxuau",
   "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_5_brmypi",
   "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_4_xubjvd",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_9_b3tkxx",
-  // ... sigue con todos tus fondos
+  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_9_b3tkxx"
 ];
 
-const contenedorFondos = document.getElementById("personalizarFondos");
-
-// Crear miniaturas clickeables
 fondosCloudinary.forEach(url => {
   const img = document.createElement("img");
   img.src = url;
@@ -369,12 +324,10 @@ fondosCloudinary.forEach(url => {
   img.style.cursor = "pointer";
 
   img.onclick = () => {
-    // Deselecciona todas
     contenedorFondos.querySelectorAll("img").forEach(i => {
       i.style.outline = "";
       i.removeAttribute("data-seleccionado");
     });
-    // Marca la seleccionada
     img.style.outline = "3px solid #4f6fa8";
     img.dataset.seleccionado = "true";
   };
@@ -382,7 +335,7 @@ fondosCloudinary.forEach(url => {
   contenedorFondos.appendChild(img);
 });
 
-// ---------------- Botón Generar ----------------
+// ================= BOTONES MODAL PERSONALIZAR =================
 document.getElementById("btnGenerarPersonalizada").onclick = () => {
   const fuente = document.getElementById("personalizarFuente").value;
   const tamaño = document.getElementById("personalizarTamaño").value;
@@ -390,13 +343,11 @@ document.getElementById("btnGenerarPersonalizada").onclick = () => {
   const opacidad = document.getElementById("personalizarOpacidad").value;
   const upper = document.getElementById("personalizarUpper").checked;
 
-  // Chequea si hay imagen seleccionada
   const imgSeleccionada = document.querySelector("#personalizarFondos img[data-seleccionado='true']");
   if (!imgSeleccionada) {
     alert("⚠️ Seleccioná un fondo para continuar");
     return;
   }
-
   const fondoFinal = imgSeleccionada.src;
 
   document.getElementById("modalPersonalizar").style.display = "none";
@@ -411,7 +362,6 @@ document.getElementById("btnGenerarPersonalizada").onclick = () => {
     `Mayúsculas: ${upper ? "Sí" : "No"}`
   );
 
-  // Resetea todo
   modoImagen = false;
   seleccionImagen = {};
   plantillaSeleccionada = null;
@@ -421,7 +371,6 @@ document.getElementById("btnGenerarPersonalizada").onclick = () => {
   mostrarTexto();
 };
 
-// ---------------- Botón Cancelar ----------------
 document.getElementById("btnCancelarPersonalizada").onclick = () => {
   document.getElementById("modalPersonalizar").style.display = "none";
 
@@ -432,7 +381,6 @@ document.getElementById("btnCancelarPersonalizada").onclick = () => {
   document.body.classList.remove("modo-imagen");
   document.getElementById("btnImagen").classList.remove("activo");
 
-  // Deselecciona todas las miniaturas
   contenedorFondos.querySelectorAll("img").forEach(i => {
     i.style.outline = "";
     i.removeAttribute("data-seleccionado");
@@ -440,19 +388,3 @@ document.getElementById("btnCancelarPersonalizada").onclick = () => {
 
   mostrarTexto();
 };
-
-// ---------------- Botón Cancelar ----------------
-document.getElementById("btnCancelarPersonalizada").onclick = () => {
-  document.getElementById("modalPersonalizar").style.display = "none";
-  modoImagen = false;
-  seleccionImagen = {};
-  plantillaSeleccionada = null;
-  formatoImagen = null;
-  document.body.classList.remove("modo-imagen");
-  document.getElementById("btnImagen").classList.remove("activo");
-  mostrarTexto();
-};
-
-
-
-
