@@ -275,3 +275,12 @@ window.irA = seccion => {
     .forEach(s => s.style.display = "none");
   document.getElementById("seccion-" + seccion).style.display = "block";
 };
+
+window.cerrarLogin = () => {
+  document.getElementById("loginModal").style.display = "none";
+};
+
+window.irALogin = () => {
+  window.location.href = "login.html"; // o tu ruta real
+};
+
