@@ -225,6 +225,10 @@ body.oscuro .barra-acciones {
 .modo-imagen #btnCrearImagen {
   display: inline-block;
 }
+
+#seccion-biblia {
+  padding-bottom: 90px;
+}
     
   </style>
 </head>
@@ -263,6 +267,40 @@ body.oscuro .barra-acciones {
     <textarea id="notaTexto"></textarea>
     <button onclick="guardarNota()">💾 Guardar</button>
   </div>
+
+  <div id="accionesBiblia" class="barra-acciones">
+
+    <button class="accion-normal" onclick="capituloAnterior()">‹</button>
+    <button class="accion-normal" onclick="capituloSiguiente()">›</button>
+
+    <button class="accion-normal color-btn"
+            data-color="#ffd6e8"
+            onclick="setColor('#ffd6e8', this)">🌸</button>
+
+    <button class="accion-normal color-btn"
+            data-color="#ccecff"
+            onclick="setColor('#ccecff', this)">💙</button>
+
+    <button class="accion-normal color-btn"
+            data-color="#fff3b0"
+            onclick="setColor('#fff3b0', this)">💛</button>
+
+    <button class="accion-normal" onclick="cambiarLetra(-1)">A−</button>
+    <button class="accion-normal" onclick="cambiarLetra(1)">A+</button>
+
+    <button class="accion-normal"
+            onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+
+    <button id="btnImagen" onclick="toggleModoImagen()">🖼️</button>
+
+    <button id="btnCrearImagen"
+            onclick="generarImagen()"
+            style="display:none">
+      Crear Imagen
+    </button>
+
+  </div>
+  
 </div>
 
 <!-- ================= OTRAS SECCIONES ================= -->
@@ -308,48 +346,10 @@ body.oscuro .barra-acciones {
 </div>
 
 <script type="module" src="biblia.js"></script>
-
-<div id="accionesBiblia" class="barra-acciones">
-
-  <!-- ◀ ▶ CAPÍTULO -->
-  <button class="accion-normal" onclick="capituloAnterior()">‹</button>
-  <button class="accion-normal" onclick="capituloSiguiente()">›</button>
-
-  <!-- 🎨 RESALTADO -->
-  <button class="accion-normal color-btn"
-          data-color="#ffd6e8"
-          onclick="setColor('#ffd6e8', this)">🌸</button>
-
-  <button class="accion-normal color-btn"
-          data-color="#ccecff"
-          onclick="setColor('#ccecff', this)">💙</button>
-
-  <button class="accion-normal color-btn"
-          data-color="#fff3b0"
-          onclick="setColor('#fff3b0', this)">💛</button>
-
-  <!-- 🔠 TAMAÑO -->
-  <button class="accion-normal" onclick="cambiarLetra(-1)">A−</button>
-  <button class="accion-normal" onclick="cambiarLetra(1)">A+</button>
-
-  <!-- ⬆ SUBIR -->
-  <button class="accion-normal"
-          onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
-
-  <!-- 🖼️ MODO IMAGEN (NO lleva accion-normal) -->
-  <button id="btnImagen" onclick="toggleModoImagen()">🖼️</button>
-
-  <!-- 🖼️ CREAR IMAGEN (NO lleva accion-normal) -->
-  <button id="btnCrearImagen"
-          onclick="generarImagen()"
-          style="display:none">
-    Crear Imagen
-  </button>
-
-</div>
   
 </body>
 </html>
+
 
 
 
