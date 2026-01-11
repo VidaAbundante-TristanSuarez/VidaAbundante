@@ -209,22 +209,29 @@ window.toggleModoImagen = () => {
   modoImagen = !modoImagen;
   seleccionImagen = {};
 
-  document.body.classList.toggle("modo-imagen", modoImagen);
-  document.getElementById("btnImagen").classList.toggle("activo", modoImagen);
+  const body = document.body;
+  const btnImg = document.getElementById("btnImagen");
+
+  body.classList.toggle("modo-imagen", modoImagen);
+  btnImg.classList.toggle("activo", modoImagen);
 
   mostrarTexto();
 };
 
 // ================= GENERAR IMAGEN REAL =================
 window.generarImagen = () => {
+
+  // seguridad extra
+  if (!modoImagen) return;
+
   const ids = Object.keys(seleccionImagen);
 
   if (ids.length === 0) {
-    alert("Seleccioná al menos un versículo");
+    alert("Seleccioná al menos un versículo para continuar");
     return;
   }
 
-  // Abrir modal de formato
+  // Mostrar modal de formato (misma pestaña)
   document.getElementById("modalFormato").style.display = "flex";
 };
 
@@ -287,4 +294,5 @@ window.cancelarCrearImagen = () => {
 
   mostrarTexto();
 };
+
 
