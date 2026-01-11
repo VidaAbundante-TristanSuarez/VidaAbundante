@@ -212,8 +212,7 @@ body.oscuro .barra-acciones {
   transform: scale(1.15);
 }
 
-/* 🖼️ Modo imagen */
-.modo-imagen .accion-normal {
+.modo-imagen #accionesBiblia .accion-normal {
   display: none;
 }
 
@@ -248,48 +247,12 @@ body.oscuro .barra-acciones {
 <!-- ================= BIBLIA ================= -->
 <div id="seccion-biblia" class="seccion">
 
-  <div class="filtros">
-    <select id="libro"></select>
-    <select id="capitulo"></select>
-  </div>
+<div class="filtros">
+  <select id="libro"></select>
+  <select id="capitulo"></select>
 
-<div id="accionesBiblia" class="barra-acciones">
-
-  <!-- ◀ ▶ CAPÍTULO -->
-  <button class="accion-normal" onclick="capituloAnterior()">‹</button>
-  <button class="accion-normal" onclick="capituloSiguiente()">›</button>
-
-  <!-- 🎨 RESALTADO -->
-  <button class="accion-normal color-btn"
-          data-color="#ffd6e8"
-          onclick="setColor('#ffd6e8', this)">🌸</button>
-
-  <button class="accion-normal color-btn"
-          data-color="#ccecff"
-          onclick="setColor('#ccecff', this)">💙</button>
-
-  <button class="accion-normal color-btn"
-          data-color="#fff3b0"
-          onclick="setColor('#fff3b0', this)">💛</button>
-
-  <!-- 🔠 TAMAÑO -->
-  <button class="accion-normal" onclick="cambiarLetra(-1)">A−</button>
-  <button class="accion-normal" onclick="cambiarLetra(1)">A+</button>
-
-  <!-- ⬆ SUBIR -->
-  <button class="accion-normal"
-          onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
-
-  <!-- 🖼️ MODO IMAGEN (NO lleva accion-normal) -->
-  <button id="btnImagen" onclick="toggleModoImagen()">🖼️</button>
-
-  <!-- 🖼️ CREAR IMAGEN (NO lleva accion-normal) -->
-  <button id="btnCrearImagen"
-          onclick="generarImagen()"
-          style="display:none">
-    Crear Imagen
-  </button>
-
+  <button onclick="guardarMarcador()">📁</button>
+  <button onclick="irAMarcador()">↩</button>
 </div>
 
   <h3 id="titulo"></h3>
@@ -346,8 +309,48 @@ body.oscuro .barra-acciones {
 
 <script type="module" src="biblia.js"></script>
 
+<div id="accionesBiblia" class="barra-acciones">
+
+  <!-- ◀ ▶ CAPÍTULO -->
+  <button class="accion-normal" onclick="capituloAnterior()">‹</button>
+  <button class="accion-normal" onclick="capituloSiguiente()">›</button>
+
+  <!-- 🎨 RESALTADO -->
+  <button class="accion-normal color-btn"
+          data-color="#ffd6e8"
+          onclick="setColor('#ffd6e8', this)">🌸</button>
+
+  <button class="accion-normal color-btn"
+          data-color="#ccecff"
+          onclick="setColor('#ccecff', this)">💙</button>
+
+  <button class="accion-normal color-btn"
+          data-color="#fff3b0"
+          onclick="setColor('#fff3b0', this)">💛</button>
+
+  <!-- 🔠 TAMAÑO -->
+  <button class="accion-normal" onclick="cambiarLetra(-1)">A−</button>
+  <button class="accion-normal" onclick="cambiarLetra(1)">A+</button>
+
+  <!-- ⬆ SUBIR -->
+  <button class="accion-normal"
+          onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+
+  <!-- 🖼️ MODO IMAGEN (NO lleva accion-normal) -->
+  <button id="btnImagen" onclick="toggleModoImagen()">🖼️</button>
+
+  <!-- 🖼️ CREAR IMAGEN (NO lleva accion-normal) -->
+  <button id="btnCrearImagen"
+          onclick="generarImagen()"
+          style="display:none">
+    Crear Imagen
+  </button>
+
+</div>
+  
 </body>
 </html>
+
 
 
 
