@@ -432,8 +432,19 @@ fondosCloudinary.forEach(url => {
   img.style.outline = "3px solid #4f6fa8";
   img.dataset.seleccionado = "true";
   fondoFinal = img.src; // ✅ FIX REAL
-};
+actualizarPreview();
+  };
   contenedorFondos.appendChild(img);
+});
+
+["personalizarFuente",
+ "personalizarTamaño",
+ "personalizarColor",
+ "personalizarOpacidad",
+ "personalizarUpper"
+].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener("input", actualizarPreview);
 });
 
 // ---------------- Botón Generar ----------------
@@ -478,6 +489,7 @@ document.getElementById("btnCancelarPersonalizada").onclick = () => {
   document.getElementById("btnImagen").classList.remove("activo");
   mostrarTexto();
 };
+
 
 
 
