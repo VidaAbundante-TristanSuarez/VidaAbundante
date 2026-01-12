@@ -66,6 +66,7 @@ const titulo = document.getElementById("titulo");
 const notaBox = document.getElementById("notaBox");
 const notaTexto = document.getElementById("notaTexto");
 const loginModal = document.getElementById("loginModal");
+const previewTextoWrapper = document.getElementById("previewTextoWrapper");
 
 // ================= CARGAR BIBLIA =================
 fetch("VidaAbundante - RV1960.json")
@@ -171,6 +172,23 @@ function obtenerVersiculoSeleccionado() {
   });
 
   return textos.join(" ") + "\n\n— " + referencia;
+}
+
+function tamañoInicialPorCaracteres(texto) {
+  const len = texto.length;
+
+  if (len <= 400) return 70;
+  if (len <= 600) return 65;
+  if (len <= 800) return 60;
+  if (len <= 1000) return 55;
+  if (len <= 1200) return 50;
+  if (len <= 1400) return 45;
+  if (len <= 1600) return 40;
+  if (len <= 1800) return 35;
+  if (len <= 2000) return 30;
+  if (len <= 2200) return 25;
+
+  return 22;
 }
 
 // ================= VERSÍCULO =================
@@ -323,7 +341,9 @@ window.elegirFormato = formato => {
   formatoImagen = formato;
   document.getElementById("modalFormato").style.display = "none";
 
-  // Abrimos modal de plantillas
+  // 🔹 reset tamaño manual → AppSheet manda
+  document.getElementById("personalizarTamaño").value = "";
+
   document.getElementById("modalPersonalizar").style.display = "flex";
 };
 
@@ -585,7 +605,6 @@ modalImagen.appendChild(downloadButton);
   });
 }
 
-
   // Resetea todo
   modoImagen = false;
   seleccionImagen = {};
@@ -613,46 +632,39 @@ function actualizarPreview() {
   const previewImagen = document.getElementById("previewImagen");
   const previewTexto = document.getElementById("previewTexto");
 
-  // Fondo de la imagen
+  // Fondo
   if (fondoFinal) {
     previewImagen.style.backgroundImage = `url(${fondoFinal})`;
   }
 
-  // Fuente y Tamaño
+  // Texto real
+  const versiculo = obtenerVersiculoSeleccionado();
+  previewTexto.innerText = versiculo || "Selecciona un versículo para mostrar";
+
+  // Fuente
   const fuente = document.getElementById("personalizarFuente").value;
-  previewTexto.style.fontFamily = fuente ? fuente : 'Arial'; // Aplica una fuente por defecto si no se selecciona ninguna
-  const tamaño = document.getElementById("personalizarTamaño").value;
-  previewTexto.style.fontSize = `${tamaño}px`;
-  // Ajustar automáticamente el tamaño de la letra según la cantidad de texto
-const cantidadDeCaracteres = previewTexto.innerText.length;
-const tamañoBase = parseInt(tamaño); // Tamaño inicial desde el input
+  previewTexto.style.fontFamily = fuente || "Arial";
 
-// Calculamos un tamaño dinámico en base a la cantidad de caracteres
-const nuevoTamaño = Math.max(12, Math.min(100, (3000 / cantidadDeCaracteres) * tamañoBase)); // Ajuste de tamaño entre 12px y 100px
+  // Tamaño inicial por caracteres (AppSheet)
+  const tamañoBase = tamañoInicialPorCaracteres(versiculo || "");
+  const tamañoManual = document.getElementById("personalizarTamaño").value;
+  previewTexto.style.fontSize = `${tamañoManual || tamañoBase}px`;
 
-previewTexto.style.fontSize = `${nuevoTamaño}px`;
-
-  // Color y Opacidad
+  // Color
   const color = document.getElementById("personalizarColor").value;
-  const opacidad = document.getElementById("personalizarOpacidad").value;
   previewTexto.style.color = color;
-  previewTexto.style.backgroundColor = `rgba(255, 255, 255, ${opacidad})`;
+
+  // Opacidad SOLO sombra
+  const opacidad = document.getElementById("personalizarOpacidad").value;
+  previewTextoWrapper.style.backgroundColor = `rgba(0,0,0,${opacidad})`;
 
   // Mayúsculas
   const upper = document.getElementById("personalizarUpper").checked;
   previewTexto.style.textTransform = upper ? "uppercase" : "none";
 
-  // Actualizar el texto con el versículo real
-  const versiculo = obtenerVersiculoSeleccionado();
-  previewTexto.innerText = versiculo || "Selecciona un versículo para mostrar"; // Agregar texto por defecto si no hay versículo
-
-previewTexto.style.lineHeight = "1.25";
-
+  // Estilo
+  previewTexto.style.lineHeight = "1.25";
 }
-
-
-
-
 
 
 
