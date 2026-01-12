@@ -414,7 +414,7 @@ const fondosCloudinary = [
 
 const contenedorFondos = document.getElementById("personalizarFondos");
 
-// Crear miniaturas clickeables
+// Crear miniaturas clickeables para los fondos
 fondosCloudinary.forEach(url => {
   const img = document.createElement("img");
   img.src = url;
@@ -423,28 +423,28 @@ fondosCloudinary.forEach(url => {
   img.style.objectFit = "cover";
   img.style.borderRadius = "8px";
   img.style.cursor = "pointer";
-  img.onclick = () => {
-  contenedorFondos.querySelectorAll("img").forEach(i => {
-    i.style.outline = "";
-    i.removeAttribute("data-seleccionado");
-  });
 
-  img.style.outline = "3px solid #4f6fa8";
-  img.dataset.seleccionado = "true";
-  fondoFinal = img.src; // ✅ FIX REAL
-actualizarPreview();
+  img.onclick = () => {
+    contenedorFondos.querySelectorAll("img").forEach(i => {
+      i.style.outline = "";
+      i.removeAttribute("data-seleccionado");
+    });
+
+    img.style.outline = "3px solid #4f6fa8";
+    img.dataset.seleccionado = "true";
+    fondoFinal = img.src; // Asigna el fondo seleccionado
+
+    actualizarPreview(); // Actualiza la vista previa con el nuevo fondo
   };
+
   contenedorFondos.appendChild(img);
 });
 
-["personalizarFuente",
- "personalizarTamaño",
- "personalizarColor",
- "personalizarOpacidad",
- "personalizarUpper"
-].forEach(id => {
+// Conectar los controles de personalización a la vista previa
+["personalizarFuente", "personalizarTamaño", "personalizarColor", "personalizarOpacidad", "personalizarUpper"]
+.forEach(id => {
   const el = document.getElementById(id);
-  if (el) el.addEventListener("input", actualizarPreview);
+  if (el) el.addEventListener("input", actualizarPreview); // Llama a actualizarPreview cuando haya cambios
 });
 
 // ---------------- Botón Generar ----------------
@@ -490,6 +490,42 @@ document.getElementById("btnCancelarPersonalizada").onclick = () => {
   mostrarTexto();
 };
 
+// Actualiza la vista previa
+function actualizarPreview() {
+  const previewImagen = document.getElementById("previewImagen");
+  const previewTexto = document.getElementById("previewTexto");
+
+  // Fondo de la imagen
+  if (fondoFinal) {
+    previewImagen.style.backgroundImage = `url(${fondoFinal})`;
+  }
+
+  // Fuente y Tamaño
+  const fuente = document.getElementById("personalizarFuente").value;
+  const tamaño = document.getElementById("personalizarTamaño").value;
+  previewTexto.style.fontFamily = fuente;
+  previewTexto.style.fontSize = `${tamaño}px`;
+
+  // Color y Opacidad
+  const color = document.getElementById("personalizarColor").value;
+  const opacidad = document.getElementById("personalizarOpacidad").value;
+  previewTexto.style.color = color;
+  previewTexto.style.backgroundColor = `rgba(255, 255, 255, ${opacidad})`;
+
+  // Mayúsculas
+  const upper = document.getElementById("personalizarUpper").checked;
+  previewTexto.style.textTransform = upper ? "uppercase" : "none";
+
+  // Actualizar el texto con el versículo real (esto es un ejemplo)
+  const versiculo = obtenerVersiculoSeleccionado();
+  previewTexto.innerText = versiculo;
+}
+
+// Función para obtener el versículo seleccionado (puedes usar la lógica que necesites)
+function obtenerVersiculoSeleccionado() {
+  // Este es un ejemplo de versículo, reemplázalo por el versículo real
+  return "Porque de tal manera amó Dios al mundo…";
+}
 
 
 
