@@ -511,6 +511,83 @@ document.getElementById("btnGenerarPersonalizada").onclick = () => {
     `Mayúsculas: ${upper ? "Sí" : "No"}`
   );
 
+  // Mostrar la imagen en grande para vista previa
+const imagenFinal = document.createElement("img");
+imagenFinal.src = obtenerImagenGenerada(); // Esto simula el URL de la imagen generada
+imagenFinal.style.width = "100%"; // Esto hace que la imagen ocupe toda la pantalla
+imagenFinal.style.maxWidth = "800px"; // Para no hacerlo demasiado grande
+imagenFinal.style.margin = "auto";
+imagenFinal.style.display = "block";
+
+const modalImagen = document.createElement("div");
+modalImagen.style.position = "fixed";
+modalImagen.style.top = "0";
+modalImagen.style.left = "0";
+modalImagen.style.width = "100%";
+modalImagen.style.height = "100%";
+modalImagen.style.backgroundColor = "rgba(0,0,0,0.7)";
+modalImagen.style.zIndex = "1000";
+modalImagen.style.display = "flex";
+modalImagen.style.justifyContent = "center";
+modalImagen.style.alignItems = "center";
+
+modalImagen.appendChild(imagenFinal);
+
+// Añadir un botón de cerrar
+const closeButton = document.createElement("button");
+closeButton.innerText = "Cerrar";
+closeButton.style.position = "absolute";
+closeButton.style.top = "10px";
+closeButton.style.right = "10px";
+closeButton.style.padding = "10px";
+closeButton.style.backgroundColor = "white";
+closeButton.style.border = "none";
+closeButton.style.borderRadius = "50%";
+closeButton.style.cursor = "pointer";
+
+closeButton.onclick = () => {
+  modalImagen.remove();
+};
+
+modalImagen.appendChild(closeButton);
+
+document.body.appendChild(modalImagen);
+
+// Descargar la imagen
+const downloadButton = document.createElement("button");
+downloadButton.innerText = "Descargar Imagen";
+downloadButton.style.marginTop = "15px";
+downloadButton.style.padding = "10px";
+downloadButton.style.backgroundColor = "#4f6fa8";
+downloadButton.style.color = "#fff";
+downloadButton.style.border = "none";
+downloadButton.style.borderRadius = "5px";
+downloadButton.style.cursor = "pointer";
+
+downloadButton.onclick = () => {
+  const link = document.createElement("a");
+  link.href = imagenFinal.src;
+  link.download = "imagen_personalizada.png"; // Nombre por defecto de la imagen
+  link.click();
+};
+
+modalImagen.appendChild(downloadButton);
+
+  if (uid) {
+  const imagenId = Date.now(); // Usamos el tiempo actual como un identificador único para la imagen
+  const imagenURL = imagenFinal.src;
+
+  // Guardar la URL de la imagen en la base de datos
+  set(ref(db, `imagenes/${uid}/${imagenId}`), {
+    url: imagenURL,
+    fecha: new Date().toISOString()
+  }).then(() => {
+    alert("✅ Imagen guardada en tu panel!");
+    mostrarImagenesEnPanel(); // Actualiza la sección de imágenes en el panel
+  });
+}
+
+
   // Resetea todo
   modoImagen = false;
   seleccionImagen = {};
@@ -548,6 +625,14 @@ function actualizarPreview() {
   previewTexto.style.fontFamily = fuente ? fuente : 'Arial'; // Aplica una fuente por defecto si no se selecciona ninguna
   const tamaño = document.getElementById("personalizarTamaño").value;
   previewTexto.style.fontSize = `${tamaño}px`;
+  // Ajustar automáticamente el tamaño de la letra según la cantidad de texto
+const cantidadDeCaracteres = previewTexto.innerText.length;
+const tamañoBase = parseInt(tamaño); // Tamaño inicial desde el input
+
+// Calculamos un tamaño dinámico en base a la cantidad de caracteres
+const nuevoTamaño = Math.max(12, Math.min(100, (3000 / cantidadDeCaracteres) * tamañoBase)); // Ajuste de tamaño entre 12px y 100px
+
+previewTexto.style.fontSize = `${nuevoTamaño}px`;
 
   // Color y Opacidad
   const color = document.getElementById("personalizarColor").value;
@@ -566,6 +651,7 @@ function actualizarPreview() {
 previewTexto.style.lineHeight = "1.25";
 
 }
+
 
 
 
