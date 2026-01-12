@@ -9,6 +9,14 @@ import {
   onValue
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
+import { signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+window.logout = () => {
+  signOut(auth).then(() => {
+    window.location.href = "login.html";
+  });
+};
+
 // ================= FIREBASE CONFIG =================
 const firebaseConfig = {
   apiKey: "AIzaSyBtDcQ2DhgMpLsn4FCdF82QNstfvAjguQ4",
@@ -69,9 +77,12 @@ fetch("VidaAbundante - RV1960.json")
 
 // ================= AUTH =================
 onAuthStateChanged(auth, user => {
-  uid = user ? user.uid : null;
+  if (!user) {
+    window.location.href = "biblia.html";
+    return;
+  }
 
-  if (!uid) return;
+  uid = user.uid;
 
   onValue(ref(db, "marcados/" + uid), s => {
     marcados = s.val() || {};
@@ -82,6 +93,7 @@ onAuthStateChanged(auth, user => {
     notas = s.val() || {};
   });
 });
+
 
 // ================= INICIO =================
 function iniciar() {
@@ -557,6 +569,7 @@ previewTexto.style.fontSize = `${tamaño}px`;
 previewTexto.style.lineHeight = "1.25";
 
 }
+
 
 
 
