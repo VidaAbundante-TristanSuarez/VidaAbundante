@@ -77,22 +77,22 @@ fetch("VidaAbundante - RV1960.json")
 
 // ================= AUTH =================
 onAuthStateChanged(auth, user => {
-  if (!user) {
-    // ⛔ ACA estaba tu problema
-    window.location.href = "login.html";
-    return;
+  uid = user ? user.uid : null;
+
+  if (uid) {
+    // Cargar marcados y notas solo si hay usuario
+    onValue(ref(db, "marcados/" + uid), s => {
+      marcados = s.val() || {};
+      mostrarTexto();
+    });
+
+    onValue(ref(db, "notas/" + uid), s => {
+      notas = s.val() || {};
+    });
   }
 
-  uid = user.uid;
-
-  onValue(ref(db, "marcados/" + uid), s => {
-    marcados = s.val() || {};
-    mostrarTexto();
-  });
-
-  onValue(ref(db, "notas/" + uid), s => {
-    notas = s.val() || {};
-  });
+  // Mostrar u ocultar el panel de usuario
+  document.getElementById("panelUsuario").style.display = uid ? "block" : "none";
 });
 
 // ================= INICIO =================
@@ -563,12 +563,10 @@ function actualizarPreview() {
   const versiculo = obtenerVersiculoSeleccionado();
   previewTexto.innerText = versiculo || "Selecciona un versículo para mostrar"; // Agregar texto por defecto si no hay versículo
 
-const tamaño = document.getElementById("personalizarTamaño").value;
-
-previewTexto.style.fontSize = `${tamaño}px`;
 previewTexto.style.lineHeight = "1.25";
 
 }
+
 
 
 
