@@ -34,6 +34,7 @@ window.loginGoogle = async () => {
 // SI YA ESTÁ LOGUEADO → APP
 onAuthStateChanged(auth, (user) => {
   if (user) {
-    window.location.href = "app.html";
+    window.location.href = "biblia.html";
   }
 });
+
