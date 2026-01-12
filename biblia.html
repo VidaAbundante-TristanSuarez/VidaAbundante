@@ -19,8 +19,7 @@
       background: #121212;
       color: #e0e0e0;
     }
-
-    /* ================= HEADER ================= */
+    
 /* ================= HEADER ================= */
 #header {
   position: static; /* ✅ NO sticky */
@@ -397,8 +396,17 @@ button:active {
 </div>
 
 <!-- Modal Plantilla -->
-<div id="modalPlantilla" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:3000; justify-content:center; align-items:center;">
-  <div style="background:white; padding:20px; border-radius:12px; max-width:360px; width:90%; text-align:center;">
+<div id="modalPersonalizar" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:3000; justify-content:center; align-items:center; overflow:auto;">
+ <div style="
+  background:white;
+  padding:20px;
+  border-radius:12px;
+  max-width:400px;
+  width:90%;
+  max-height:90vh;
+  overflow:auto;
+  text-align:center;
+">
     <h3>🎨 Elegí la plantilla</h3>
     <button onclick="elegirPlantilla('flores')">🌸 Flores</button>
     <button onclick="elegirPlantilla('carta')">✉️ Carta</button>
@@ -434,11 +442,11 @@ button:active {
     <!-- Fuente -->
     <div style="margin:10px 0;">
       <label>Fuente: </label>
-      <select id="personalizarFuente">
-        <option value="Arial_70_bold">Arial Bold</option>
-        <option value="Times_70_bold">Times Bold</option>
-        <option value="Courier_70_bold">Courier Bold</option>
-      </select>
+     <select id="personalizarFuente">
+  <option value="Arial">Arial</option>
+  <option value="Times New Roman">Times New Roman</option>
+  <option value="Courier New">Courier New</option>
+</select>
     </div>
 
     <!-- Tamaño -->
@@ -479,6 +487,7 @@ button:active {
   
 </body>
 </html>
+
 
 
 
