@@ -137,24 +137,29 @@ function mostrarTexto() {
 }
 
 function obtenerVersiculoSeleccionado() {
-  // Obtenemos el ID del versículo desde los datos del versículo seleccionado
-  const idSeleccionado = Object.keys(seleccionImagen)[0]; // Solo un versículo se puede seleccionar
-  if (!idSeleccionado) return "";  // Si no hay versículo seleccionado, devolvemos vacío
+  const ids = Object.keys(seleccionImagen);
+  if (ids.length === 0) return "";
 
-  // Parseamos el id para obtener libro, capitulo y versiculo
-  const [libro, capitulo, versiculo] = idSeleccionado.split("_");
+  let textos = [];
+  let referencia = "";
 
-  // Buscamos el versículo en los datos de la biblia
-  const versiculoData = bibliaData.find(v =>
-    v.Libro === libro &&
-    v.Capitulo === parseInt(capitulo) &&  // Aseguramos que el capítulo sea un número
-    v.Versiculo === parseInt(versiculo)  // Aseguramos que el versículo sea un número
-  );
+  ids.forEach(id => {
+    const [libro, capitulo, versiculo] = id.split("_");
 
-  // Si encontramos el versículo, lo devolvemos. Si no, devolvemos vacío
-  return versiculoData ? versiculoData.RV1960 : "";
+    const v = bibliaData.find(x =>
+      x.Libro === libro &&
+      x.Capitulo === parseInt(capitulo) &&
+      x.Versiculo === parseInt(versiculo)
+    );
+
+    if (v) {
+      textos.push(v.RV1960);
+      referencia = `${libro} ${capitulo}:${versiculo}`;
+    }
+  });
+
+  return textos.join(" ") + "\n\n— " + referencia;
 }
-
 
 // ================= VERSÍCULO =================
 function pintarVersiculo(v) {
@@ -547,12 +552,12 @@ function actualizarPreview() {
   previewTexto.innerText = versiculo || "Selecciona un versículo para mostrar"; // Agregar texto por defecto si no hay versículo
 
 const tamaño = document.getElementById("personalizarTamaño").value;
-const lineHeight = parseInt(tamaño) * 1.4; // Ajusta el line-height según el tamaño de la fuente
 
 previewTexto.style.fontSize = `${tamaño}px`;
-previewTexto.style.lineHeight = `${lineHeight}px`; // Ajusta el line-height
+previewTexto.style.lineHeight = "1.25";
 
 }
+
 
 
 
