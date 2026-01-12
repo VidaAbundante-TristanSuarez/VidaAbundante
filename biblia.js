@@ -78,7 +78,8 @@ fetch("VidaAbundante - RV1960.json")
 // ================= AUTH =================
 onAuthStateChanged(auth, user => {
   if (!user) {
-    window.location.href = "biblia.html";
+    // ⛔ ACA estaba tu problema
+    window.location.href = "login.html";
     return;
   }
 
@@ -93,7 +94,6 @@ onAuthStateChanged(auth, user => {
     notas = s.val() || {};
   });
 });
-
 
 // ================= INICIO =================
 function iniciar() {
@@ -569,6 +569,7 @@ previewTexto.style.fontSize = `${tamaño}px`;
 previewTexto.style.lineHeight = "1.25";
 
 }
+
 
 
 
