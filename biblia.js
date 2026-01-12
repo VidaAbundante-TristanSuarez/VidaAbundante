@@ -324,7 +324,7 @@ window.elegirFormato = formato => {
   document.getElementById("modalFormato").style.display = "none";
 
   // Abrimos modal de plantillas
-  document.getElementById("modalPlantilla").style.display = "flex";
+  document.getElementById("modalPersonalizar").style.display = "flex";
 };
 
 // ================= ELEGIR PLANTILLA =================
@@ -566,6 +566,7 @@ function actualizarPreview() {
 previewTexto.style.lineHeight = "1.25";
 
 }
+
 
 
 
