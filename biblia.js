@@ -136,6 +136,26 @@ function mostrarTexto() {
   versos.forEach(v => pintarVersiculo(v));
 }
 
+function obtenerVersiculoSeleccionado() {
+  // Obtenemos el ID del versículo desde los datos del versículo seleccionado
+  const idSeleccionado = Object.keys(seleccionImagen)[0]; // Solo un versículo se puede seleccionar
+  if (!idSeleccionado) return "";  // Si no hay versículo seleccionado, devolvemos vacío
+
+  // Parseamos el id para obtener libro, capitulo y versiculo
+  const [libro, capitulo, versiculo] = idSeleccionado.split("_");
+
+  // Buscamos el versículo en los datos de la biblia
+  const versiculoData = bibliaData.find(v =>
+    v.Libro === libro &&
+    v.Capitulo === parseInt(capitulo) &&  // Aseguramos que el capítulo sea un número
+    v.Versiculo === parseInt(versiculo)  // Aseguramos que el versículo sea un número
+  );
+
+  // Si encontramos el versículo, lo devolvemos. Si no, devolvemos vacío
+  return versiculoData ? versiculoData.RV1960 : "";
+}
+
+
 // ================= VERSÍCULO =================
 function pintarVersiculo(v) {
   const id = `${v.Libro}_${v.Capitulo}_${v.Versiculo}`;
@@ -449,24 +469,30 @@ fondosCloudinary.forEach(url => {
 
 // ---------------- Botón Generar ----------------
 document.getElementById("btnGenerarPersonalizada").onclick = () => {
+  // Validación para asegurarse de que se haya seleccionado un fondo
+  if (!fondoFinal) {
+    alert("Por favor, selecciona un fondo antes de continuar.");
+    return;
+  }
+
+  // Si todo está bien, continuamos con la generación de la imagen
   const fuente = document.getElementById("personalizarFuente").value;
   const tamaño = document.getElementById("personalizarTamaño").value;
   const color = document.getElementById("personalizarColor").value;
   const opacidad = document.getElementById("personalizarOpacidad").value;
   const upper = document.getElementById("personalizarUpper").checked;
 
-
   document.getElementById("modalPersonalizar").style.display = "none";
 
   alert(
-  `✅ Imagen personalizada generada!\n` +
-  `Formato: ${formatoImagen}\n` +
-  `Fondo: ${fondoFinal || "No seleccionado"} (opacidad ${opacidad})\n` +
-  `Fuente: ${fuente}\n` +
-  `Tamaño: ${tamaño}\n` +
-  `Color: ${color}\n` +
-  `Mayúsculas: ${upper ? "Sí" : "No"}`
-);
+    `✅ Imagen personalizada generada!\n` +
+    `Formato: ${formatoImagen}\n` +
+    `Fondo: ${fondoFinal || "No seleccionado"} (opacidad ${opacidad})\n` +
+    `Fuente: ${fuente}\n` +
+    `Tamaño: ${tamaño}\n` +
+    `Color: ${color}\n` +
+    `Mayúsculas: ${upper ? "Sí" : "No"}`
+  );
 
   // Resetea todo
   modoImagen = false;
@@ -477,6 +503,7 @@ document.getElementById("btnGenerarPersonalizada").onclick = () => {
   document.getElementById("btnImagen").classList.remove("activo");
   mostrarTexto();
 };
+
 
 // ---------------- Botón Cancelar ----------------
 document.getElementById("btnCancelarPersonalizada").onclick = () => {
@@ -517,15 +544,10 @@ function actualizarPreview() {
   previewTexto.style.textTransform = upper ? "uppercase" : "none";
 
   // Actualizar el texto con el versículo real (esto es un ejemplo)
-  const versiculo = obtenerVersiculoSeleccionado();
-  previewTexto.innerText = versiculo;
+  const versiculo = obtenerVersiculoSeleccionado(); // Aquí se obtiene el versículo real
+  previewTexto.innerText = versiculo || "Selecciona un versículo para mostrar"; // Agregar texto por defecto si no hay versículo
 }
 
-// Función para obtener el versículo seleccionado (puedes usar la lógica que necesites)
-function obtenerVersiculoSeleccionado() {
-  // Este es un ejemplo de versículo, reemplázalo por el versículo real
-  return "Porque de tal manera amó Dios al mundo…";
-}
 
 
 
