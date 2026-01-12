@@ -517,7 +517,6 @@ document.getElementById("btnCancelarPersonalizada").onclick = () => {
   mostrarTexto();
 };
 
-// Actualiza la vista previa
 function actualizarPreview() {
   const previewImagen = document.getElementById("previewImagen");
   const previewTexto = document.getElementById("previewTexto");
@@ -529,8 +528,8 @@ function actualizarPreview() {
 
   // Fuente y Tamaño
   const fuente = document.getElementById("personalizarFuente").value;
+  previewTexto.style.fontFamily = fuente ? fuente : 'Arial'; // Aplica una fuente por defecto si no se selecciona ninguna
   const tamaño = document.getElementById("personalizarTamaño").value;
-  previewTexto.style.fontFamily = fuente;
   previewTexto.style.fontSize = `${tamaño}px`;
 
   // Color y Opacidad
@@ -543,11 +542,17 @@ function actualizarPreview() {
   const upper = document.getElementById("personalizarUpper").checked;
   previewTexto.style.textTransform = upper ? "uppercase" : "none";
 
-  // Actualizar el texto con el versículo real (esto es un ejemplo)
-  const versiculo = obtenerVersiculoSeleccionado(); // Aquí se obtiene el versículo real
+  // Actualizar el texto con el versículo real
+  const versiculo = obtenerVersiculoSeleccionado();
   previewTexto.innerText = versiculo || "Selecciona un versículo para mostrar"; // Agregar texto por defecto si no hay versículo
-}
 
+const tamaño = document.getElementById("personalizarTamaño").value;
+const lineHeight = parseInt(tamaño) * 1.4; // Ajusta el line-height según el tamaño de la fuente
+
+previewTexto.style.fontSize = `${tamaño}px`;
+previewTexto.style.lineHeight = `${lineHeight}px`; // Ajusta el line-height
+
+}
 
 
 
