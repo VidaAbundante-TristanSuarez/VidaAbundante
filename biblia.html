@@ -270,7 +270,26 @@ button:active {
   background-position: center; /* Centra la imagen */
   overflow: hidden;
 }
-   
+
+.toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 5px;
+  font-size: 16px;
+  z-index: 999;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.toast[style="display: block;"] {
+  opacity: 1;
+}
+
   </style>
 </head>
 
@@ -343,6 +362,11 @@ button:active {
   
 </div>
 
+  <!-- Toast de Notificación -->
+<div id="toast" class="toast" style="display: none;">
+  📝 Nota guardada
+</div>
+  
 <!-- ================= OTRAS SECCIONES ================= -->
 <div id="seccion-devocionales" class="seccion" style="display:none">
   <h2>Devocionales</h2>
@@ -474,6 +498,7 @@ button:active {
   
 </body>
 </html>
+
 
 
 
