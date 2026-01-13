@@ -11,6 +11,14 @@ import {
 
 import { signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
+window.logout = () => {
+  signOut(auth).then(() => {
+    window.location.href = "login.html";
+  });
+};
+
+import { signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
 // ================= FIREBASE CONFIG =================
 const firebaseConfig = {
   apiKey: "AIzaSyBtDcQ2DhgMpLsn4FCdF82QNstfvAjguQ4",
@@ -36,6 +44,7 @@ let marcador = null;
 let modoImagen = false;
 let seleccionImagen = {};
 let fondoFinal = null;
+
 let formatoImagen = null;
 
 // ================= NAVEGACIÓN =================
@@ -708,6 +717,7 @@ function actualizarPreview() {
   // Estilo
   previewTexto.style.lineHeight = "1.25";
 }
+
 
 
 
