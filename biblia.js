@@ -78,12 +78,10 @@ fetch("VidaAbundante - RV1960.json")
   .then(data => {
     bibliaData = data;
     iniciar();
-  })
-  .catch(error => console.error("Error al cargar la Biblia:", error));
+  });
 
 // ================= AUTH =================
 onAuthStateChanged(auth, user => {
-  console.log("Estado de autenticación cambiado:", user);
   uid = user ? user.uid : null;
 
   if (uid) {
@@ -198,17 +196,6 @@ function tamañoInicialPorCaracteres(texto) {
 }
 
 // ================= VERSÍCULO =================
-const observer = new IntersectionObserver((entries) => {
-  entries.forEach(entry => {
-    if (entry.isIntersecting) {
-      entry.target.classList.add('visible');
-    } else {
-      entry.target.classList.remove('visible');
-    }
-  });
-}, { threshold: 0.5 });
-
-// ================= PINTEAR VERSÍCULO CON LA INTERSECCIÓN =================
 function pintarVersiculo(v) {
   const id = `${v.Libro}_${v.Capitulo}_${v.Versiculo}`;
   const marcado = marcados[id];
@@ -222,8 +209,6 @@ function pintarVersiculo(v) {
 
   div.innerHTML = `<span class="num">${v.Versiculo}</span> ${v.RV1960}`;
   div.onclick = () => toggleVersiculo(id, v.Versiculo);
-
-  observer.observe(div);
 
   texto.appendChild(div);
 }
@@ -717,6 +702,7 @@ function actualizarPreview() {
   // Estilo
   previewTexto.style.lineHeight = "1.25";
 }
+
 
 
 
