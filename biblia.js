@@ -45,8 +45,6 @@ let modoImagen = false;
 let seleccionImagen = {};
 let fondoFinal = null;
 
-let formatoImagen = null;
-
 // ================= NAVEGACIÓN =================
 window.irA = seccion => {
   const secciones = ["biblia", "devocionales", "abc", "iglesia", "panel"];
@@ -669,6 +667,7 @@ function actualizarPreview() {
   // Estilo
   previewTexto.style.lineHeight = "1.25";
 }
+
 
 
 
