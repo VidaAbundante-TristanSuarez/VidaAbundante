@@ -215,6 +215,7 @@ function pintarVersiculo(v) {
 
 // ================= TOGGLE =================
 function toggleVersiculo(id, num) {
+
   // 🖼️ MODO IMAGEN
   if (modoImagen) {
     if (!uid) {
@@ -253,58 +254,24 @@ function detectarGrupo(num) {
 // ================= GUARDAR NOTA =================
 window.guardarNota = () => {
   if (!grupoActual || !uid) return;
-
   set(ref(db, "notas/" + uid + "/" + grupoActual), notaTexto.value);
-
-  // Mostrar el toast
-  const toast = document.getElementById("toast");
-  toast.style.display = "block";
-  setTimeout(() => {
-    toast.style.display = "none";
-  }, 3000); // Desaparece después de 3 segundos
+  alert("📝 Nota guardada");
 };
 
 // ================= AJUSTES =================
-// ================= GUARDAR COLOR PREFERIDO =================
 window.setColor = (c, btn) => {
   colorActual = c;
-  localStorage.setItem("colorMarcado", c);  // Guardar color en localStorage
   document.querySelectorAll(".color-btn").forEach(b => b.classList.remove("activo"));
   btn?.classList.add("activo");
 };
 
-// ================= TAMAÑO LETRA LIMITADOS =================
 window.cambiarLetra = n => {
   size += n;
-  if (size < 18) size = 18;  // Tamaño mínimo
-  if (size > 40) size = 40;  // Tamaño máximo
   mostrarTexto();
 };
 
-// ================= CARGAR TEMA PREFERIDO =================
-window.onload = () => {
-  const colorGuardado = localStorage.getItem("colorMarcado");
-  if (colorGuardado) {
-    colorActual = colorGuardado;
-    document.querySelectorAll(".color-btn").forEach(b => {
-      if (b.getAttribute("data-color") === colorGuardado) {
-        b.classList.add("activo");
-      }
-    });
-  }
-
-  const temaGuardado = localStorage.getItem("modoOscuro");
-  if (temaGuardado === "true") {
-    document.body.classList.add("oscuro");
-  } else {
-    document.body.classList.remove("oscuro");
-  }
-};
-
-// ================= TOGGLE TEMA =================
 window.toggleTema = () => {
-  const modoOscuroActivo = document.body.classList.toggle("oscuro");
-  localStorage.setItem("modoOscuro", modoOscuroActivo);
+  document.body.classList.toggle("oscuro");
 };
 
 // ================= MARCADOR =================
@@ -702,6 +669,7 @@ function actualizarPreview() {
   // Estilo
   previewTexto.style.lineHeight = "1.25";
 }
+
 
 
 
