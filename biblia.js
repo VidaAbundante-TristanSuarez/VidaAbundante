@@ -43,6 +43,8 @@ let modoImagen = false;
 let seleccionImagen = {};
 let fondoFinal = null;
 
+let formatoImagen = null;
+
 // ================= NAVEGACIÓN =================
 window.irA = seccion => {
   const secciones = ["biblia", "devocionales", "abc", "iglesia", "panel"];
@@ -192,6 +194,18 @@ function tamañoInicialPorCaracteres(texto) {
 }
 
 // ================= VERSÍCULO =================
+// Detectar cuando un versículo está visible en la pantalla
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+    } else {
+      entry.target.classList.remove('visible');
+    }
+  });
+}, { threshold: 0.5 }); // 50% del elemento visible
+
+// ================= PINTEAR VERSÍCULO CON LA INTERSECCIÓN =================
 function pintarVersiculo(v) {
   const id = `${v.Libro}_${v.Capitulo}_${v.Versiculo}`;
   const marcado = marcados[id];
@@ -205,6 +219,9 @@ function pintarVersiculo(v) {
 
   div.innerHTML = `<span class="num">${v.Versiculo}</span> ${v.RV1960}`;
   div.onclick = () => toggleVersiculo(id, v.Versiculo);
+
+  // Añadir el observador para lazy load
+  observer.observe(div);
 
   texto.appendChild(div);
 }
@@ -250,24 +267,62 @@ function detectarGrupo(num) {
 // ================= GUARDAR NOTA =================
 window.guardarNota = () => {
   if (!grupoActual || !uid) return;
+
   set(ref(db, "notas/" + uid + "/" + grupoActual), notaTexto.value);
-  alert("📝 Nota guardada");
+
+  // Mostrar el toast
+  const toast = document.getElementById("toast");
+  toast.style.display = "block";
+  setTimeout(() => {
+    toast.style.display = "none";
+  }, 3000); // Desaparece después de 3 segundos
 };
 
 // ================= AJUSTES =================
+// ================= GUARDAR COLOR PREFERIDO =================
+window.onload = () => {
+  const colorGuardado = localStorage.getItem("colorMarcado");
+  if (colorGuardado) {
+    colorActual = colorGuardado;
+    // Aquí puedes aplicar el color guardado a la UI
+    document.querySelectorAll(".color-btn").forEach(b => {
+      if (b.getAttribute("data-color") === colorGuardado) {
+        b.classList.add("activo");
+      }
+    });
+  }
+};
+
+// ================= AJUSTES COLOR =================
 window.setColor = (c, btn) => {
   colorActual = c;
+  localStorage.setItem("colorMarcado", c);  // Guardar color en localStorage
   document.querySelectorAll(".color-btn").forEach(b => b.classList.remove("activo"));
   btn?.classList.add("activo");
 };
 
+// ================= TAMAÑO LETRA LIMITADOS =================
 window.cambiarLetra = n => {
   size += n;
+  if (size < 18) size = 18;  // Tamaño mínimo
+  if (size > 40) size = 40;  // Tamaño máximo
   mostrarTexto();
 };
 
+// ================= CARGAR TEMA PREFERIDO =================
+window.onload = () => {
+  const temaGuardado = localStorage.getItem("modoOscuro");
+  if (temaGuardado === "true") {
+    document.body.classList.add("oscuro");
+  } else {
+    document.body.classList.remove("oscuro");
+  }
+};
+
+// ================= TOGGLE TEMA =================
 window.toggleTema = () => {
-  document.body.classList.toggle("oscuro");
+  const modoOscuroActivo = document.body.classList.toggle("oscuro");
+  localStorage.setItem("modoOscuro", modoOscuroActivo);
 };
 
 // ================= MARCADOR =================
@@ -665,6 +720,7 @@ function actualizarPreview() {
   // Estilo
   previewTexto.style.lineHeight = "1.25";
 }
+
 
 
 
