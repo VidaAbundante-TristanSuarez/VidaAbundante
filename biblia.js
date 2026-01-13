@@ -11,12 +11,6 @@ import {
 
 import { signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-window.logout = () => {
-  signOut(auth).then(() => {
-    window.location.href = "login.html";
-  });
-};
-
 // ================= FIREBASE CONFIG =================
 const firebaseConfig = {
   apiKey: "AIzaSyBtDcQ2DhgMpLsn4FCdF82QNstfvAjguQ4",
@@ -42,7 +36,6 @@ let marcador = null;
 let modoImagen = false;
 let seleccionImagen = {};
 let fondoFinal = null;
-
 let formatoImagen = null;
 
 // ================= NAVEGACIÓN =================
@@ -76,10 +69,12 @@ fetch("VidaAbundante - RV1960.json")
   .then(data => {
     bibliaData = data;
     iniciar();
-  });
+  })
+  .catch(error => console.error("Error al cargar la Biblia:", error));
 
 // ================= AUTH =================
 onAuthStateChanged(auth, user => {
+  console.log("Estado de autenticación cambiado:", user);
   uid = user ? user.uid : null;
 
   if (uid) {
@@ -194,7 +189,6 @@ function tamañoInicialPorCaracteres(texto) {
 }
 
 // ================= VERSÍCULO =================
-// Detectar cuando un versículo está visible en la pantalla
 const observer = new IntersectionObserver((entries) => {
   entries.forEach(entry => {
     if (entry.isIntersecting) {
@@ -203,7 +197,7 @@ const observer = new IntersectionObserver((entries) => {
       entry.target.classList.remove('visible');
     }
   });
-}, { threshold: 0.5 }); // 50% del elemento visible
+}, { threshold: 0.5 });
 
 // ================= PINTEAR VERSÍCULO CON LA INTERSECCIÓN =================
 function pintarVersiculo(v) {
@@ -220,7 +214,6 @@ function pintarVersiculo(v) {
   div.innerHTML = `<span class="num">${v.Versiculo}</span> ${v.RV1960}`;
   div.onclick = () => toggleVersiculo(id, v.Versiculo);
 
-  // Añadir el observador para lazy load
   observer.observe(div);
 
   texto.appendChild(div);
@@ -228,7 +221,6 @@ function pintarVersiculo(v) {
 
 // ================= TOGGLE =================
 function toggleVersiculo(id, num) {
-
   // 🖼️ MODO IMAGEN
   if (modoImagen) {
     if (!uid) {
@@ -280,20 +272,6 @@ window.guardarNota = () => {
 
 // ================= AJUSTES =================
 // ================= GUARDAR COLOR PREFERIDO =================
-window.onload = () => {
-  const colorGuardado = localStorage.getItem("colorMarcado");
-  if (colorGuardado) {
-    colorActual = colorGuardado;
-    // Aquí puedes aplicar el color guardado a la UI
-    document.querySelectorAll(".color-btn").forEach(b => {
-      if (b.getAttribute("data-color") === colorGuardado) {
-        b.classList.add("activo");
-      }
-    });
-  }
-};
-
-// ================= AJUSTES COLOR =================
 window.setColor = (c, btn) => {
   colorActual = c;
   localStorage.setItem("colorMarcado", c);  // Guardar color en localStorage
@@ -311,6 +289,16 @@ window.cambiarLetra = n => {
 
 // ================= CARGAR TEMA PREFERIDO =================
 window.onload = () => {
+  const colorGuardado = localStorage.getItem("colorMarcado");
+  if (colorGuardado) {
+    colorActual = colorGuardado;
+    document.querySelectorAll(".color-btn").forEach(b => {
+      if (b.getAttribute("data-color") === colorGuardado) {
+        b.classList.add("activo");
+      }
+    });
+  }
+
   const temaGuardado = localStorage.getItem("modoOscuro");
   if (temaGuardado === "true") {
     document.body.classList.add("oscuro");
@@ -720,6 +708,7 @@ function actualizarPreview() {
   // Estilo
   previewTexto.style.lineHeight = "1.25";
 }
+
 
 
 
