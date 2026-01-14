@@ -634,14 +634,20 @@ function actualizarPreview() {
   previewTexto.style.fontFamily = fuente ? fuente : 'Arial'; // Aplica una fuente por defecto si no se selecciona ninguna
   const tamaño = document.getElementById("personalizarTamaño").value;
   previewTexto.style.fontSize = `${tamaño}px`;
-  // Ajustar automáticamente el tamaño de la letra según la cantidad de texto
-const cantidadDeCaracteres = previewTexto.innerText.length;
-const tamañoBase = parseInt(tamaño); // Tamaño inicial desde el input
 
-// Calculamos un tamaño dinámico en base a la cantidad de caracteres
-const nuevoTamaño = Math.max(12, Math.min(100, (3000 / cantidadDeCaracteres) * tamañoBase)); // Ajuste de tamaño entre 12px y 100px
+  // Ajuste automático SUAVE según cantidad de texto
+const cantidad = previewTexto.innerText.length;
+const tamañoBase = parseInt(tamaño);
 
-previewTexto.style.fontSize = `${nuevoTamaño}px`;
+// factor entre 0.6 y 1 (nunca explota)
+let factor = 1;
+
+if (cantidad > 400) factor = 0.85;
+if (cantidad > 700) factor = 0.75;
+if (cantidad > 1000) factor = 0.65;
+
+const tamañoFinal = Math.max(12, Math.min(72, tamañoBase * factor));
+previewTexto.style.fontSize = `${tamañoFinal}px`;
 
   // Color y Opacidad
   const color = document.getElementById("personalizarColor").value;
@@ -656,6 +662,7 @@ previewTexto.style.fontSize = `${nuevoTamaño}px`;
 previewTexto.style.lineHeight = "1.25";
 
 }
+
 
 
 
