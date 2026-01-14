@@ -261,9 +261,10 @@ window.setColor = (c, btn) => {
   btn?.classList.add("activo");
 };
 
-window.cambiarLetra = n => {
-  size += n;
-  mostrarTexto();
+window.cambiarLetra = delta => {
+  let size = parseInt(getComputedStyle(document.body).fontSize);
+  size = Math.max(14, size + delta * 2); // nunca menos de 14
+  document.body.style.fontSize = size + "px";
 };
 
 window.toggleTema = () => {
@@ -675,17 +676,18 @@ function actualizarPreview() {
   previewTexto.style.fontSize = `${size}px`;
   previewTextoHalo.style.fontSize = `${size}px`;
 
-  // 5️⃣ AUTOAJUSTE (SOLO REDUCE)
-  const min = 12;
+ // 5️⃣ AUTOAJUSTE REAL (SOLO REDUCE)
+const min = 12;
+const wrapper = document.getElementById("previewTextoWrapper");
 
-  while (
-    previewTexto.scrollHeight > previewImagen.clientHeight &&
-    size > min
-  ) {
-    size--;
-    previewTexto.style.fontSize = `${size}px`;
-    previewTextoHalo.style.fontSize = `${size}px`;
-  }
+while (
+  previewTexto.scrollHeight > wrapper.clientHeight &&
+  parseInt(previewTexto.style.fontSize) > min
+) {
+  const nuevo = parseInt(previewTexto.style.fontSize) - 1;
+  previewTexto.style.fontSize = nuevo + "px";
+  previewTextoHalo.style.fontSize = nuevo + "px";
+}
 
   // 6️⃣ COLOR Y OPACIDAD
   const colorTexto = document.getElementById("personalizarColor").value;
@@ -743,6 +745,7 @@ function resetPreview() {
   previewImagen.classList.remove("preview-story");
   previewImagen.classList.add("preview-post");
 }
+
 
 
 
