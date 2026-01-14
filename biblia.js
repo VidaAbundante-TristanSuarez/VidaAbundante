@@ -618,50 +618,62 @@ function actualizarPreview() {
   const previewImagen = document.getElementById("previewImagen");
   const previewTexto = document.getElementById("previewTexto");
 
-  
-  // Actualizar el texto con el versículo real
+  // 1️⃣ Texto real
   const versiculo = obtenerVersiculoSeleccionado();
-  previewTexto.innerText = versiculo || "Selecciona un versículo para mostrar"; // Agregar texto por defecto si no hay versículo
+  previewTexto.innerText =
+    versiculo || "Selecciona un versículo para mostrar";
 
-  
-  // Fondo de la imagen
+  // 2️⃣ Fondo
   if (fondoFinal) {
     previewImagen.style.backgroundImage = `url(${fondoFinal})`;
   }
 
-  // Fuente y Tamaño
+  // 3️⃣ Fuente y tamaño BASE (slider manda)
   const fuente = document.getElementById("personalizarFuente").value;
-  previewTexto.style.fontFamily = fuente ? fuente : 'Arial'; // Aplica una fuente por defecto si no se selecciona ninguna
+  previewTexto.style.fontFamily = fuente || "Arial";
+
   const tamaño = document.getElementById("personalizarTamaño").value;
-  previewTexto.style.fontSize = `${tamaño}px`;
+  const tamañoBase = parseInt(tamaño);
+  previewTexto.style.fontSize = `${tamañoBase}px`;
 
-  // Ajuste automático SUAVE según cantidad de texto
-const cantidad = previewTexto.innerText.length;
-const tamañoBase = parseInt(tamaño);
+  // 4️⃣ AUTOAJUSTE REAL SEGÚN CONTENEDOR (limpio y estable)
+  const min = 12;
+  const max = tamañoBase;
 
-// factor entre 0.6 y 1 (nunca explota)
-let factor = 1;
+  // reducir hasta que entre
+  while (
+    previewTexto.scrollHeight > previewImagen.clientHeight &&
+    parseInt(previewTexto.style.fontSize) > min
+  ) {
+    previewTexto.style.fontSize =
+      `${parseInt(previewTexto.style.fontSize) - 1}px`;
+  }
 
-if (cantidad > 400) factor = 0.85;
-if (cantidad > 700) factor = 0.75;
-if (cantidad > 1000) factor = 0.65;
+  // evitar texto gigante si es muy corto
+  if (previewTexto.scrollHeight < previewImagen.clientHeight * 0.4) {
+    previewTexto.style.fontSize =
+      `${Math.min(
+        max,
+        parseInt(previewTexto.style.fontSize) + 2
+      )}px`;
+  }
 
-const tamañoFinal = Math.max(12, Math.min(72, tamañoBase * factor));
-previewTexto.style.fontSize = `${tamañoFinal}px`;
-
-  // Color y Opacidad
+  // 5️⃣ Color y opacidad
   const color = document.getElementById("personalizarColor").value;
   const opacidad = document.getElementById("personalizarOpacidad").value;
   previewTexto.style.color = color;
-  previewTexto.style.backgroundColor = `rgba(255, 255, 255, ${opacidad})`;
+  previewTexto.style.backgroundColor =
+    `rgba(255, 255, 255, ${opacidad})`;
 
-  // Mayúsculas
+  // 6️⃣ Mayúsculas
   const upper = document.getElementById("personalizarUpper").checked;
   previewTexto.style.textTransform = upper ? "uppercase" : "none";
 
-previewTexto.style.lineHeight = "1.25";
-
+  // 7️⃣ Interlineado fijo
+  previewTexto.style.lineHeight = "1.25";
 }
+
+
 
 
 
