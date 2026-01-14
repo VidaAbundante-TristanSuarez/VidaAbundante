@@ -427,8 +427,15 @@ button:active {
 <div id="modalFormato" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:3000; justify-content:center; align-items:center;">
   <div style="background:white; padding:20px; border-radius:12px; max-width:320px; width:90%; text-align:center;">
     <h3>📐 Elegí el formato</h3>
-    <button onclick="elegirFormato('cuadrado')">⬜ Cuadrado</button>
-    <button onclick="elegirFormato('historia')">📱 Historia</button>
+
+    <button onclick="elegirFormato('post'); setFormatoImagen('post')">
+      ⬜ Cuadrado
+    </button>
+
+    <button onclick="elegirFormato('story'); setFormatoImagen('story')">
+      📱 Historia
+    </button>
+
     <button onclick="cancelarCrearImagen()">❌ Cancelar</button>
   </div>
 </div>
@@ -512,6 +519,7 @@ button:active {
   
 </body>
 </html>
+
 
 
 
