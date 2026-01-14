@@ -465,27 +465,12 @@ button:active {
   </div>
 </div>
 
-  <!-- Modal Formato -->
-<div id="modalFormato" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:3000; justify-content:center; align-items:center;">
-  <div style="background:white; padding:20px; border-radius:12px; max-width:320px; width:90%; text-align:center;">
-    <h3>📐 Elegí el formato</h3>
-
-    <button onclick="elegirFormato('post'); setFormatoImagen('post')">
-      ⬜ Cuadrado
-    </button>
-
-    <button onclick="elegirFormato('story'); setFormatoImagen('story')">
-      📱 Historia
-    </button>
-
-    <button onclick="cancelarCrearImagen()">❌ Cancelar</button>
-  </div>
-</div>
-
 <div id="modalPersonalizar" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:3000; justify-content:center; align-items:center;">
   <div style="background:white; padding:20px; border-radius:12px; max-width:400px; width:90%; text-align:center;">
 
     <h3>⚙️ Personalizar Imagen</h3>
+<h4>🖼️ Fondos</h4>
+<div id="personalizarFondos"></div>
 
 <!-- 🔴 VISTA PREVIA -->
 <div id="previewImagen"
@@ -507,11 +492,12 @@ button:active {
     <option value="post">Cuadrado</option>
     <option value="story">Historia</option>
   </select>
-
-  <input type="range" id="personalizarOpacidad" min="0" max="1" step="0.05">
+<label>Opacidad del fondo</label>
+  <input type="range" id="personalizarOpacidad" min="0" max="1" step="0.05" value="0.35">
 
   <!-- Fila 2 -->
-  <input type="range" id="personalizarTamaño">
+  <label>Tamaño del texto</label>
+  <input type="range" id="personalizarTamaño" min="16" max="64" step="1" value="32">
   <label>
     <input type="checkbox" id="personalizarUpper"> Mayúsculas
   </label>
@@ -547,6 +533,7 @@ button:active {
   
 </body>
 </html>
+
 
 
 
