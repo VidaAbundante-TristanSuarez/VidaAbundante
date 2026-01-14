@@ -43,6 +43,23 @@ let modoImagen = false;
 let seleccionImagen = {};
 let fondoFinal = null;
 
+// ================= Cuadrado o Historia =================
+window.setFormatoImagen = tipo => {
+  const preview = document.getElementById("previewImagen");
+
+  preview.classList.remove("preview-post", "preview-story");
+
+  if (tipo === "post") {
+    preview.classList.add("preview-post");
+  }
+
+  if (tipo === "story") {
+    preview.classList.add("preview-story");
+  }
+
+  actualizarPreview();
+};
+
 // ================= NAVEGACIÓN =================
 window.irA = seccion => {
   const secciones = ["biblia", "devocionales", "abc", "iglesia", "panel"];
@@ -626,6 +643,7 @@ document.getElementById("btnCancelarPersonalizada").onclick = () => {
   mostrarTexto();
 };
 
+
 // ---------------- VISTA PREVIA ----------------
 
 function actualizarPreview() {
@@ -687,8 +705,8 @@ function resetPreview() {
   const previewImagen = document.getElementById("previewImagen");
   const slider = document.getElementById("personalizarTamaño");
 
-  // valores por defecto reales
   slider.value = 32;
+
   previewTexto.style.fontSize = "32px";
   previewTexto.style.fontFamily = "Arial";
   previewTexto.style.textTransform = "none";
@@ -696,9 +714,13 @@ function resetPreview() {
   previewTexto.style.color = "#000000";
   previewTexto.style.backgroundColor = "transparent";
 
-  // quitar fondo
   previewImagen.style.backgroundImage = "none";
+
+  // 📐 formato por defecto
+  previewImagen.classList.remove("preview-story");
+  previewImagen.classList.add("preview-post");
 }
+
 
 
 
