@@ -306,7 +306,7 @@ button:active {
 /* ================= TEXTO CON HALO ================= */
 #previewTextoWrapper {
   position: absolute;
-  inset: 0;
+  inset: 20px; /* margen real */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -317,7 +317,8 @@ button:active {
 #previewTextoHalo {
   position: absolute;
   z-index: 1;
-  filter: blur(1px);
+  filter: blur(3px);
+  opacity: 0.85;
 }
 
 #previewTexto {
@@ -575,6 +576,7 @@ button:active {
   
 </body>
 </html>
+
 
 
 
