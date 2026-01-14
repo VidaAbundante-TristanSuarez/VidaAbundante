@@ -294,6 +294,12 @@ window.toggleModoImagen = () => {
   body.classList.toggle("modo-imagen", modoImagen);
   btnImg.classList.toggle("activo", modoImagen);
 
+  // 🔑 CUANDO SALÍS DE MODO IMAGEN
+  if (!modoImagen) {
+    resetPreview();
+    actualizarPreview();
+  }
+
   mostrarTexto();
 };
 
@@ -361,22 +367,22 @@ function generarImagenFinal() {
 
 // ================= CANCELAR CREACIÓN DE IMAGEN =================
 window.cancelarCrearImagen = () => {
-  // Cerramos todos los modales relacionados
   document.getElementById("modalFormato").style.display = "none";
   document.getElementById("modalPlantilla").style.display = "none";
   document.getElementById("modalPersonalizar").style.display = "none";
 
-  // Salimos del modo imagen
+  resetPreview();        // 🔑
+  actualizarPreview();  // 🔑
+
   modoImagen = false;
   seleccionImagen = {};
+  fondoFinal = null;
 
   document.body.classList.remove("modo-imagen");
-  const btnImg = document.getElementById("btnImagen");
-  if(btnImg) btnImg.classList.remove("activo");
-
-  // Volvemos a mostrar el texto normal
+  document.getElementById("btnImagen").classList.remove("activo");
   mostrarTexto();
 };
+
 
 // ---------------- Fondos de Cloudinary ----------------
 const fondosCloudinary = [
@@ -605,42 +611,53 @@ modalImagen.appendChild(downloadButton);
 // ---------------- Botón Cancelar ----------------
 document.getElementById("btnCancelarPersonalizada").onclick = () => {
   document.getElementById("modalPersonalizar").style.display = "none";
+
+  resetPreview();        // 🔑 ESTA LÍNEA
+  actualizarPreview();  // 🔑 Y ESTA
+
   modoImagen = false;
   seleccionImagen = {};
   plantillaSeleccionada = null;
   formatoImagen = null;
+  fondoFinal = null;
+
   document.body.classList.remove("modo-imagen");
   document.getElementById("btnImagen").classList.remove("activo");
   mostrarTexto();
 };
 
+// ---------------- VISTA PREVIA ----------------
+
 function actualizarPreview() {
   const previewImagen = document.getElementById("previewImagen");
   const previewTexto = document.getElementById("previewTexto");
 
-  // 1️⃣ Texto real
+  // 1️⃣ TEXTO REAL
   const versiculo = obtenerVersiculoSeleccionado();
   previewTexto.innerText =
     versiculo || "Selecciona un versículo para mostrar";
 
-  // 2️⃣ Fondo
+  // 2️⃣ FONDO (si existe)
   if (fondoFinal) {
     previewImagen.style.backgroundImage = `url(${fondoFinal})`;
+  } else {
+    previewImagen.style.backgroundImage = "none";
   }
 
-  // 3️⃣ Fuente y tamaño BASE (slider manda)
+  // 3️⃣ FUENTE
   const fuente = document.getElementById("personalizarFuente").value;
   previewTexto.style.fontFamily = fuente || "Arial";
 
-  const tamaño = document.getElementById("personalizarTamaño").value;
-  const tamañoBase = parseInt(tamaño);
+  // 4️⃣ TAMAÑO BASE (EL SLIDER MANDA SIEMPRE)
+  const slider = document.getElementById("personalizarTamaño");
+  const tamañoBase = parseInt(slider.value);
+
+  // reinicio limpio SIEMPRE
   previewTexto.style.fontSize = `${tamañoBase}px`;
 
-  // 4️⃣ AUTOAJUSTE REAL SEGÚN CONTENEDOR (limpio y estable)
+  // 5️⃣ AUTOAJUSTE REAL (SOLO REDUCE, NUNCA AGRANDA)
   const min = 12;
-  const max = tamañoBase;
 
-  // reducir hasta que entre
   while (
     previewTexto.scrollHeight > previewImagen.clientHeight &&
     parseInt(previewTexto.style.fontSize) > min
@@ -649,31 +666,39 @@ function actualizarPreview() {
       `${parseInt(previewTexto.style.fontSize) - 1}px`;
   }
 
-  // evitar texto gigante si es muy corto
-  if (previewTexto.scrollHeight < previewImagen.clientHeight * 0.4) {
-    previewTexto.style.fontSize =
-      `${Math.min(
-        max,
-        parseInt(previewTexto.style.fontSize) + 2
-      )}px`;
-  }
-
-  // 5️⃣ Color y opacidad
+  // 6️⃣ COLOR Y OPACIDAD
   const color = document.getElementById("personalizarColor").value;
   const opacidad = document.getElementById("personalizarOpacidad").value;
+
   previewTexto.style.color = color;
   previewTexto.style.backgroundColor =
     `rgba(255, 255, 255, ${opacidad})`;
 
-  // 6️⃣ Mayúsculas
+  // 7️⃣ MAYÚSCULAS
   const upper = document.getElementById("personalizarUpper").checked;
   previewTexto.style.textTransform = upper ? "uppercase" : "none";
 
-  // 7️⃣ Interlineado fijo
+  // 8️⃣ INTERLINEADO FIJO
   previewTexto.style.lineHeight = "1.25";
 }
 
+function resetPreview() {
+  const previewTexto = document.getElementById("previewTexto");
+  const previewImagen = document.getElementById("previewImagen");
+  const slider = document.getElementById("personalizarTamaño");
 
+  // valores por defecto reales
+  slider.value = 32;
+  previewTexto.style.fontSize = "32px";
+  previewTexto.style.fontFamily = "Arial";
+  previewTexto.style.textTransform = "none";
+  previewTexto.style.lineHeight = "1.25";
+  previewTexto.style.color = "#000000";
+  previewTexto.style.backgroundColor = "transparent";
+
+  // quitar fondo
+  previewImagen.style.backgroundImage = "none";
+}
 
 
 
