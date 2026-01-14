@@ -302,6 +302,49 @@ button:active {
 #previewImagen.preview-story {
   height: 720px;
 }
+    
+/* ================= TEXTO CON HALO ================= */
+#previewTextoWrapper {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  pointer-events: none;
+}
+
+#previewTextoHalo {
+  position: absolute;
+  z-index: 1;
+  filter: blur(1px);
+}
+
+#previewTexto {
+  position: relative;
+  z-index: 2;
+}
+
+    /* ================= PANEL OPCIONES COMPACTO ================= */
+.panel-opciones {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.panel-opciones label,
+.panel-opciones select,
+.panel-opciones input,
+.panel-opciones button {
+  width: 100%;
+}
+
+/* Mobile: una sola columna */
+@media (max-width: 480px) {
+  .panel-opciones {
+    grid-template-columns: 1fr;
+  }
+}
 
     
   </style>
@@ -445,80 +488,94 @@ button:active {
 
     <h3>⚙️ Personalizar Imagen</h3>
 
-<!-- 🔴 VISTA PREVIA (ACÁ) -->
+<!-- 🔴 VISTA PREVIA -->
 <div id="previewImagen"
-     style="width:100%; aspect-ratio:1/1; border-radius:16px; margin-bottom:12px;
-            display:flex; align-items:center; justify-content:center;
+     style="width:100%; border-radius:16px; margin-bottom:12px;
             background:#ddd; background-size:cover; background-position:center;">
-  <div id="previewTexto"
-       style="padding:20px; border-radius:12px;
-              background:rgba(255,255,255,1);
-              font-size:32px; font-weight:bold;">
-    Porque de tal manera amó Dios al mundo…
+
+  <div id="previewTextoWrapper">
+    <div id="previewTextoHalo"></div>
+    <div id="previewTexto"></div>
   </div>
+
 </div>
 
-    <!-- Fondos -->
-    <div id="personalizarFondos"
-         style="display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; max-height:120px; overflow:auto;">
-    </div>
+<!-- 🧩 OPCIONES COMPACTAS -->
+<div class="panel-opciones">
 
-    <!-- Fuente -->
-    <div style="margin:10px 0;">
-      <label>Fuente: </label>
-     <select id="personalizarFuente">
-  <option value="Arial">Arial</option>
-  <option value="Times New Roman">Times New Roman</option>
-  <option value="Courier New">Courier New</option>
-  <option value="Verdana">Verdana</option>
-  <option value="Georgia">Georgia</option>
-  <option value="Helvetica">Helvetica</option>
-  <option value="Trebuchet MS">Trebuchet MS</option>
-  <option value="Impact">Impact</option>
-  <option value="Comic Sans MS">Comic Sans MS</option>
-  <option value="Roboto">Roboto</option>
- <option value="Lobster">Lobster</option>
-</select>
-    </div>
+  <!-- Fondos -->
+  <div id="personalizarFondos"
+       style="display:flex; gap:6px; flex-wrap:wrap; max-height:120px; overflow:auto;">
+  </div>
 
-    <!-- Tamaño -->
-    <div style="margin:10px 0;">
-      <label>Tamaño: </label>
-     <input type="number" id="personalizarTamaño" placeholder="Auto">
-    </div>
+  <!-- Fuente -->
+  <div>
+    <label>Fuente</label>
+    <select id="personalizarFuente">
+      <option value="Arial">Arial</option>
+      <option value="Times New Roman">Times New Roman</option>
+      <option value="Courier New">Courier New</option>
+      <option value="Verdana">Verdana</option>
+      <option value="Georgia">Georgia</option>
+      <option value="Helvetica">Helvetica</option>
+      <option value="Trebuchet MS">Trebuchet MS</option>
+      <option value="Impact">Impact</option>
+      <option value="Comic Sans MS">Comic Sans MS</option>
+      <option value="Roboto">Roboto</option>
+      <option value="Lobster">Lobster</option>
+    </select>
+  </div>
 
-    <!-- Color -->
-    <div style="margin:10px 0;">
-      <label>Color: </label>
-      <input type="color" id="personalizarColor">
-    </div>
+  <!-- Tamaño -->
+  <div>
+    <label>Tamaño</label>
+    <input type="number" id="personalizarTamaño" placeholder="Auto">
+  </div>
 
-    <!-- Opacidad -->
-    <div style="margin:10px 0;">
-      <label>Opacidad fondo: </label>
-      <input type="range" id="personalizarOpacidad" min="0" max="1" step="0.05">
-    </div>
+  <!-- Color -->
+  <div>
+    <label>Color</label>
+    <input type="color" id="personalizarColor">
+  </div>
 
-    <!-- Upper -->
-    <div style="margin:10px 0;">
-      <label>Mayúsculas: </label>
+  <!-- Opacidad -->
+  <div>
+    <label>Opacidad fondo</label>
+    <input type="range" id="personalizarOpacidad" min="0" max="1" step="0.05">
+  </div>
+
+  <!-- Mayúsculas -->
+  <div>
+    <label>
       <input type="checkbox" id="personalizarUpper">
-    </div>
-
-    <!-- Botones -->
-    <div style="margin-top:15px;">
-      <button id="btnGenerarPersonalizada">✅ Generar</button>
-      <button id="btnCancelarPersonalizada">❌ Cancelar</button>
-    </div>
-
+      Mayúsculas
+    </label>
   </div>
+
+  <!-- Formato -->
+  <div>
+    <label>Formato</label>
+    <select onchange="setFormatoImagen(this.value)">
+      <option value="post">Cuadrado</option>
+      <option value="story">Historia</option>
+    </select>
+  </div>
+
 </div>
+
+<!-- Botones -->
+<div style="margin-top:15px; display:flex; gap:10px; justify-content:center;">
+  <button id="btnGenerarPersonalizada">✅ Generar</button>
+  <button id="btnCancelarPersonalizada">❌ Cancelar</button>
+</div>
+
 
   
 <script type="module" src="biblia.js"></script>
   
 </body>
 </html>
+
 
 
 
