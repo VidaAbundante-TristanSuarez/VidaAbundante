@@ -204,6 +204,7 @@ function toggleVersiculo(id, num) {
       ? delete seleccionImagen[id]
       : seleccionImagen[id] = true;
     mostrarTexto();
+    actualizarPreview();
     return;
   }
 
@@ -322,6 +323,8 @@ window.elegirFormato = formato => {
 
   formatoImagen = formato;
   document.getElementById("modalFormato").style.display = "none";
+  actualizarPreview();
+
 
   // Abrimos modal de plantillas
   document.getElementById("modalPersonalizar").style.display = "flex";
@@ -615,6 +618,12 @@ function actualizarPreview() {
   const previewImagen = document.getElementById("previewImagen");
   const previewTexto = document.getElementById("previewTexto");
 
+  
+  // Actualizar el texto con el versículo real
+  const versiculo = obtenerVersiculoSeleccionado();
+  previewTexto.innerText = versiculo || "Selecciona un versículo para mostrar"; // Agregar texto por defecto si no hay versículo
+
+  
   // Fondo de la imagen
   if (fondoFinal) {
     previewImagen.style.backgroundImage = `url(${fondoFinal})`;
@@ -644,13 +653,10 @@ previewTexto.style.fontSize = `${nuevoTamaño}px`;
   const upper = document.getElementById("personalizarUpper").checked;
   previewTexto.style.textTransform = upper ? "uppercase" : "none";
 
-  // Actualizar el texto con el versículo real
-  const versiculo = obtenerVersiculoSeleccionado();
-  previewTexto.innerText = versiculo || "Selecciona un versículo para mostrar"; // Agregar texto por defecto si no hay versículo
-
 previewTexto.style.lineHeight = "1.25";
 
 }
+
 
 
 
