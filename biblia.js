@@ -17,8 +17,6 @@ window.logout = () => {
   });
 };
 
-import { signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-
 // ================= FIREBASE CONFIG =================
 const firebaseConfig = {
   apiKey: "AIzaSyBtDcQ2DhgMpLsn4FCdF82QNstfvAjguQ4",
@@ -68,7 +66,6 @@ const titulo = document.getElementById("titulo");
 const notaBox = document.getElementById("notaBox");
 const notaTexto = document.getElementById("notaTexto");
 const loginModal = document.getElementById("loginModal");
-const previewTextoWrapper = document.getElementById("previewTextoWrapper");
 
 // ================= CARGAR BIBLIA =================
 fetch("VidaAbundante - RV1960.json")
@@ -174,23 +171,6 @@ function obtenerVersiculoSeleccionado() {
   });
 
   return textos.join(" ") + "\n\n— " + referencia;
-}
-
-function tamañoInicialPorCaracteres(texto) {
-  const len = texto.length;
-
-  if (len <= 400) return 70;
-  if (len <= 600) return 65;
-  if (len <= 800) return 60;
-  if (len <= 1000) return 55;
-  if (len <= 1200) return 50;
-  if (len <= 1400) return 45;
-  if (len <= 1600) return 40;
-  if (len <= 1800) return 35;
-  if (len <= 2000) return 30;
-  if (len <= 2200) return 25;
-
-  return 22;
 }
 
 // ================= VERSÍCULO =================
@@ -343,9 +323,7 @@ window.elegirFormato = formato => {
   formatoImagen = formato;
   document.getElementById("modalFormato").style.display = "none";
 
-  // 🔹 reset tamaño manual → AppSheet manda
-  document.getElementById("personalizarTamaño").value = "";
-
+  // Abrimos modal de plantillas
   document.getElementById("modalPersonalizar").style.display = "flex";
 };
 
@@ -400,72 +378,74 @@ window.cancelarCrearImagen = () => {
 // ---------------- Fondos de Cloudinary ----------------
 const fondosCloudinary = [
   "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_6_kpgvmm",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_1_kupglf",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_2_a1wlsh",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_7_hnxuau",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_5_brmypi",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_4_xubjvd",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_9_b3tkxx",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_3_jhrx0j",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_8_ivok7j",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_12_crdynt",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_15_iu1uxj",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_14_iww2jx",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_13_dzxm4k",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_11_z3nudj",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_10_scjlfu",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_1_cg9dfu",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_2_hi9hhz",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_1_q3uzog",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_2_wzlhio",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_3_tjsq2f",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_7_cf7yzv",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_4_rplu10",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_5_ftamyb",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_yxah7e",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_6_wychbo",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/jardinflorescielorosas_qctpa1",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/nubepasto_w0pg1i",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/lagunapastofloresrosas_gibn7c",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/flores_riug8f",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/cielorosa_pc0puk",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_2_twzefr",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_3_zw4kl2",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_6_ghg8ux",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_1_jwctxg",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_c2feyb",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_5_htsxrq",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_4_jfb0m1",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_7_qpfbuy",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_1_z6ol0o",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_ycpnpv",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_2_ehfqna",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/doble_n6nexy",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/doble2_zyqinh",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_1_p3bdgg",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/piedras_no3cnu",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_2_tzcjhe",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_bzbuyy",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_3_hzwmnn",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_9_uoqpfk",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_10_dzbofe",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_8_xzqnli",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_7_gunjzi",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_4_kwzbbn",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_6_ghlggy",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_5_uxzbsn",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_2_wza5pr",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_tgzcpn",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_3_xyutfs",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_1_arstzx",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_3_thrkka",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_4_yp8i7h",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_6_lbylzl",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_7_f9qxrz",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_5_uh3dsx",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/cielovioleta_us3ilw",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/amanecerpiedras_zb18j1",
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/amanecer1600x1600_igddhh"
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_1_kupglf",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_2_a1wlsh",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_7_hnxuau",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_5_brmypi",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_4_xubjvd",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_9_b3tkxx",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_3_jhrx0j",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_8_ivok7j",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_12_crdynt",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_15_iu1uxj",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_14_iww2jx",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_13_dzxm4k",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_11_z3nudj",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_10_scjlfu",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_1_cg9dfu",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_2_hi9hhz",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_1_cg9dfu",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_1_q3uzog",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_2_wzlhio",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_3_tjsq2f",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_7_cf7yzv",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_4_rplu10",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_5_ftamyb",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_yxah7e",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_6_wychbo",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/jardinflorescielorosas_qctpa1",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/nubepasto_w0pg1i",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/lagunapastofloresrosas_gibn7c",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/flores_riug8f",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/flores_riug8f",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/cielorosa_pc0puk",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_2_twzefr",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_3_zw4kl2",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_6_ghg8ux",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_1_jwctxg",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_c2feyb",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_5_htsxrq",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_4_jfb0m1",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_7_qpfbuy",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_1_z6ol0o",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_ycpnpv",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_2_ehfqna",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/doble_n6nexy",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/doble2_zyqinh",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_1_p3bdgg",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/piedras_no3cnu",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_2_tzcjhe",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_bzbuyy",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_3_hzwmnn",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_9_uoqpfk",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_10_dzbofe",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_8_xzqnli",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_7_gunjzi",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_4_kwzbbn",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_6_ghlggy",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_5_uxzbsn",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_2_wza5pr",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_tgzcpn",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_3_xyutfs",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_1_arstzx",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_3_thrkka",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_4_yp8i7h",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_6_lbylzl",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_7_f9qxrz",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_5_uh3dsx",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/cielovioleta_us3ilw",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/amanecerpiedras_zb18j1",
+"https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/amanecer1600x1600_igddhh",
 
 ];
 
@@ -607,6 +587,7 @@ modalImagen.appendChild(downloadButton);
   });
 }
 
+
   // Resetea todo
   modoImagen = false;
   seleccionImagen = {};
@@ -634,43 +615,42 @@ function actualizarPreview() {
   const previewImagen = document.getElementById("previewImagen");
   const previewTexto = document.getElementById("previewTexto");
 
-  // Fondo
+  // Fondo de la imagen
   if (fondoFinal) {
     previewImagen.style.backgroundImage = `url(${fondoFinal})`;
   }
 
-  // Texto real
-  const versiculo = obtenerVersiculoSeleccionado();
-  previewTexto.innerText = versiculo || "Selecciona un versículo para mostrar";
-
-  // Fuente
+  // Fuente y Tamaño
   const fuente = document.getElementById("personalizarFuente").value;
-  previewTexto.style.fontFamily = fuente || "Arial";
+  previewTexto.style.fontFamily = fuente ? fuente : 'Arial'; // Aplica una fuente por defecto si no se selecciona ninguna
+  const tamaño = document.getElementById("personalizarTamaño").value;
+  previewTexto.style.fontSize = `${tamaño}px`;
+  // Ajustar automáticamente el tamaño de la letra según la cantidad de texto
+const cantidadDeCaracteres = previewTexto.innerText.length;
+const tamañoBase = parseInt(tamaño); // Tamaño inicial desde el input
 
-  // Tamaño inicial por caracteres (AppSheet)
-  const tamañoBase = tamañoInicialPorCaracteres(versiculo || "");
-  const tamañoManual = document.getElementById("personalizarTamaño").value;
-  previewTexto.style.fontSize = `${tamañoManual || tamañoBase}px`;
+// Calculamos un tamaño dinámico en base a la cantidad de caracteres
+const nuevoTamaño = Math.max(12, Math.min(100, (3000 / cantidadDeCaracteres) * tamañoBase)); // Ajuste de tamaño entre 12px y 100px
 
-  // Color
+previewTexto.style.fontSize = `${nuevoTamaño}px`;
+
+  // Color y Opacidad
   const color = document.getElementById("personalizarColor").value;
-  previewTexto.style.color = color;
-
-  // Opacidad SOLO sombra
   const opacidad = document.getElementById("personalizarOpacidad").value;
-  previewTextoWrapper.style.backgroundColor = `rgba(0,0,0,${opacidad})`;
+  previewTexto.style.color = color;
+  previewTexto.style.backgroundColor = `rgba(255, 255, 255, ${opacidad})`;
 
   // Mayúsculas
   const upper = document.getElementById("personalizarUpper").checked;
   previewTexto.style.textTransform = upper ? "uppercase" : "none";
 
-  // Estilo
-  previewTexto.style.lineHeight = "1.25";
+  // Actualizar el texto con el versículo real
+  const versiculo = obtenerVersiculoSeleccionado();
+  previewTexto.innerText = versiculo || "Selecciona un versículo para mostrar"; // Agregar texto por defecto si no hay versículo
+
+previewTexto.style.lineHeight = "1.25";
+
 }
-
-
-
-
 
 
 
