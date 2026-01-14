@@ -265,11 +265,15 @@ button:active {
 
 #previewImagen {
   width: 100%;
-  height: 100%;
-  background-size: cover; /* Asegura que el fondo se ajuste */
-  background-position: center; /* Centra la imagen */
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-size: cover;
+  background-position: center;
   overflow: hidden;
 }
+
 
 .toast {
   position: fixed;
@@ -290,6 +294,16 @@ button:active {
   opacity: 1;
 }
 
+/* 📐 FORMATOS */
+#previewImagen.preview-post {
+  height: 420px;
+}
+
+#previewImagen.preview-story {
+  height: 720px;
+}
+
+    
   </style>
 </head>
 
@@ -498,6 +512,7 @@ button:active {
   
 </body>
 </html>
+
 
 
 
