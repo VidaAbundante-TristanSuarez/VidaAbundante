@@ -331,42 +331,13 @@ window.generarImagen = () => {
     return;
   }
 
-  // Mostrar modal de formato
-  document.getElementById("modalFormato").style.display = "flex";
-};
+  // 📐 formato por defecto
+  setFormatoImagen("post");
 
-let formatoImagen = null;
-let plantillaSeleccionada = null;
-
-// ================= ELEGIR FORMATO =================
-window.elegirFormato = formato => {
-  if (!Object.keys(seleccionImagen).length) {
-    alert("Seleccioná al menos un versículo antes de continuar");
-    return;
-  }
-
-  formatoImagen = formato;
-  document.getElementById("modalFormato").style.display = "none";
-  actualizarPreview();
-
-
-  // Abrimos modal de plantillas
+  // 👉 abrir personalización directo
   document.getElementById("modalPersonalizar").style.display = "flex";
-};
 
-// ================= ELEGIR PLANTILLA =================
-window.elegirPlantilla = plantilla => {
-  plantillaSeleccionada = plantilla;
-  document.getElementById("modalPlantilla").style.display = "none";
-
-  if (plantilla === "personalizar") {
-    // Abrimos modal de personalización
-    document.getElementById("modalPersonalizar").style.display = "flex";
-    return;
-  }
-
-  // Generar imagen automáticamente con la plantilla elegida
-  generarImagenFinal();
+  actualizarPreview();
 };
 
 // ================= FUNCIONES INTERNAS =================
@@ -385,8 +356,6 @@ function generarImagenFinal() {
 
 // ================= CANCELAR CREACIÓN DE IMAGEN =================
 window.cancelarCrearImagen = () => {
-  document.getElementById("modalFormato").style.display = "none";
-  document.getElementById("modalPlantilla").style.display = "none";
   document.getElementById("modalPersonalizar").style.display = "none";
 
   resetPreview();        // 🔑
@@ -540,7 +509,7 @@ document.getElementById("btnGenerarPersonalizada").onclick = () => {
 
   // Mostrar la imagen en grande para vista previa
 const imagenFinal = document.createElement("img");
-imagenFinal.src = obtenerImagenGenerada(); // Esto simula el URL de la imagen generada
+imagenFinal.src = fondoFinal;
 imagenFinal.style.width = "100%"; // Esto hace que la imagen ocupe toda la pantalla
 imagenFinal.style.maxWidth = "800px"; // Para no hacerlo demasiado grande
 imagenFinal.style.margin = "auto";
@@ -745,6 +714,7 @@ function resetPreview() {
   previewImagen.classList.remove("preview-story");
   previewImagen.classList.add("preview-post");
 }
+
 
 
 
