@@ -43,6 +43,31 @@ let modoImagen = false;
 let seleccionImagen = {};
 let fondoFinal = null;
 
+// ================= ESTILO DE TEXTO =================
+let textStyle = {
+  upper: false,
+  bold: false,
+  italic: false,
+  underline: false
+};
+
+function toggleUpper() {
+  textStyle.upper = !textStyle.upper;
+  actualizarPreview();
+}
+function toggleBold() {
+  textStyle.bold = !textStyle.bold;
+  actualizarPreview();
+}
+function toggleItalic() {
+  textStyle.italic = !textStyle.italic;
+  actualizarPreview();
+}
+function toggleUnderline() {
+  textStyle.underline = !textStyle.underline;
+  actualizarPreview();
+}
+
 // ================= Cuadrado o Historia =================
 window.setFormatoImagen = tipo => {
   const preview = document.getElementById("previewImagen");
@@ -354,22 +379,7 @@ function generarImagenFinal() {
   mostrarTexto();
 }
 
-// ================= CANCELAR CREACIÓN DE IMAGEN =================
-window.cancelarCrearImagen = () => {
-  document.getElementById("modalPersonalizar").style.display = "none";
-
-  resetPreview();        // 🔑
-  actualizarPreview();  // 🔑
-
-  modoImagen = false;
-  seleccionImagen = {};
-  fondoFinal = null;
-
-  document.body.classList.remove("modo-imagen");
-  document.getElementById("btnImagen").classList.remove("activo");
-  mostrarTexto();
-};
-
+window.cancelarCrearImagen = salirModoImagen;
 
 // ---------------- Fondos de Cloudinary ----------------
 const fondosCloudinary = [
@@ -594,39 +604,20 @@ modalImagen.appendChild(downloadButton);
   mostrarTexto();
 };
 
-
-// ---------------- Botón Cancelar ----------------
-document.getElementById("btnCancelarPersonalizada").onclick = () => {
-  document.getElementById("modalPersonalizar").style.display = "none";
-
-  resetPreview();        // 🔑 ESTA LÍNEA
-  actualizarPreview();  // 🔑 Y ESTA
-
-  modoImagen = false;
-  seleccionImagen = {};
-  plantillaSeleccionada = null;
-  formatoImagen = null;
-  fondoFinal = null;
-
-  document.body.classList.remove("modo-imagen");
-  document.getElementById("btnImagen").classList.remove("activo");
-  mostrarTexto();
-};
-
-
 // ---------------- VISTA PREVIA ----------------
 
 function actualizarPreview() {
   const previewImagen = document.getElementById("previewImagen");
   const previewTexto = document.getElementById("previewTexto");
-  const previewTextoHalo = document.getElementById("previewTextoHalo");
+  const previewTextoBack = document.getElementById("previewTextoBack");
+  const wrapper = document.getElementById("previewTextoWrapper");
 
-  // 1️⃣ TEXTO REAL
+  // 1️⃣ TEXTO
   const versiculo = obtenerVersiculoSeleccionado();
-  const textoFinal = versiculo || "Selecciona un versículo para mostrar";
+  const textoFinal = versiculo || "";
 
   previewTexto.innerText = textoFinal;
-  previewTextoHalo.innerText = textoFinal;
+  previewTextoBack.innerText = textoFinal;
 
   // 2️⃣ FONDO
   previewImagen.style.backgroundImage = fondoFinal
@@ -636,51 +627,55 @@ function actualizarPreview() {
   // 3️⃣ FUENTE
   const fuente = document.getElementById("personalizarFuente").value || "Arial";
   previewTexto.style.fontFamily = fuente;
-  previewTextoHalo.style.fontFamily = fuente;
+  previewTextoBack.style.fontFamily = fuente;
 
   // 4️⃣ TAMAÑO BASE
   const slider = document.getElementById("personalizarTamaño");
   let size = parseInt(slider.value) || 32;
 
-  previewTexto.style.fontSize = `${size}px`;
-  previewTextoHalo.style.fontSize = `${size}px`;
+  previewTexto.style.fontSize = size + "px";
+  previewTextoBack.style.fontSize = size + "px";
 
-// 5️⃣ AUTOAJUSTE REAL (SOLO REDUCE, 100% SEGURO)
-const min = 14;
-const wrapper = document.getElementById("previewTextoWrapper");
+  // 5️⃣ AUTOAJUSTE (solo reduce)
+  const min = 14;
+  while (
+    previewTexto.scrollHeight > wrapper.clientHeight &&
+    size > min
+  ) {
+    size--;
+    previewTexto.style.fontSize = size + "px";
+    previewTextoBack.style.fontSize = size + "px";
+  }
 
-let sizeActual = parseInt(previewTexto.style.fontSize);
-
-while (
-  previewTexto.scrollHeight > wrapper.clientHeight &&
-  sizeActual > min
-) {
-  sizeActual--;
-  previewTexto.style.fontSize = sizeActual + "px";
-  previewTextoHalo.style.fontSize = sizeActual + "px";
-}
-
-  // 6️⃣ COLOR Y OPACIDAD
+  // 6️⃣ COLORES
   const colorTexto = document.getElementById("personalizarColor").value;
   const opacidad = document.getElementById("personalizarOpacidad").value;
-  const colorHalo = colorContraste(colorTexto);
+  const colorBack = colorContraste(colorTexto);
 
   previewTexto.style.color = colorTexto;
-  previewTextoHalo.style.color = colorHalo;
+  previewTextoBack.style.color = colorBack;
 
-  previewTexto.style.backgroundColor =
-    `rgba(255,255,255,${opacidad})`;
+  // fondo SOLO en wrapper
+  wrapper.style.backgroundColor = `rgba(0,0,0,${opacidad})`;
 
-  // 7️⃣ MAYÚSCULAS
+  // 7️⃣ ESTILOS
   const upper = document.getElementById("personalizarUpper").checked;
   const transform = upper ? "uppercase" : "none";
 
   previewTexto.style.textTransform = transform;
-  previewTextoHalo.style.textTransform = transform;
+  previewTextoBack.style.textTransform = transform;
+
+  previewTexto.style.fontWeight = textStyle.bold ? "700" : "400";
+  previewTexto.style.fontStyle = textStyle.italic ? "italic" : "normal";
+  previewTexto.style.textDecoration = textStyle.underline ? "underline" : "none";
+
+  previewTextoBack.style.fontWeight = previewTexto.style.fontWeight;
+  previewTextoBack.style.fontStyle = previewTexto.style.fontStyle;
+  previewTextoBack.style.textDecoration = previewTexto.style.textDecoration;
 
   // 8️⃣ INTERLINEADO
   previewTexto.style.lineHeight = "1.25";
-  previewTextoHalo.style.lineHeight = "1.25";
+  previewTextoBack.style.lineHeight = "1.25";
 }
 
 
@@ -691,31 +686,74 @@ function colorContraste(hex) {
   const r = parseInt(hex.substr(0, 2), 16);
   const g = parseInt(hex.substr(2, 2), 16);
   const b = parseInt(hex.substr(4, 2), 16);
-
   const luminancia = (0.299 * r + 0.587 * g + 0.114 * b);
   return luminancia > 160 ? "#000000" : "#ffffff";
 }
 
+// ---------------- RESET PREVIEW ----------------
+
 function resetPreview() {
   const previewTexto = document.getElementById("previewTexto");
+  const previewTextoBack = document.getElementById("previewTextoBack");
   const previewImagen = document.getElementById("previewImagen");
+  const wrapper = document.getElementById("previewTextoWrapper");
   const slider = document.getElementById("personalizarTamaño");
 
+  // tamaño por defecto
   slider.value = 32;
-
   previewTexto.style.fontSize = "32px";
+  previewTextoBack.style.fontSize = "32px";
+
+  // fuente por defecto
   previewTexto.style.fontFamily = "Arial";
-  previewTexto.style.textTransform = "none";
-  previewTexto.style.lineHeight = "1.25";
+  previewTextoBack.style.fontFamily = "Arial";
+
+  // colores por defecto (texto + back)
   previewTexto.style.color = "#000000";
-  previewTexto.style.backgroundColor = "transparent";
+  previewTextoBack.style.color = "#ffffff";
 
+  // estilos
+  previewTexto.style.textTransform = "none";
+  previewTextoBack.style.textTransform = "none";
+  previewTexto.style.fontWeight = "400";
+  previewTexto.style.fontStyle = "normal";
+  previewTexto.style.textDecoration = "none";
+
+  previewTextoBack.style.fontWeight = "400";
+  previewTextoBack.style.fontStyle = "normal";
+  previewTextoBack.style.textDecoration = "none";
+
+  // fondo
   previewImagen.style.backgroundImage = "none";
+  wrapper.style.backgroundColor = "transparent";
 
-  // 📐 formato por defecto
+  // formato por defecto → POST
   previewImagen.classList.remove("preview-story");
   previewImagen.classList.add("preview-post");
+
+  // reset estado de estilos
+  textStyle.upper = false;
+  textStyle.bold = false;
+  textStyle.italic = false;
+  textStyle.underline = false;
 }
+
+// ---------------- SALIR MODO IMAGEN ----------------
+
+function salirModoImagen() {
+  modoImagen = false;
+  seleccionImagen = {};
+  fondoFinal = null;
+
+  document.body.classList.remove("modo-imagen");
+  document.getElementById("btnImagen")?.classList.remove("activo");
+
+  document.getElementById("modalPersonalizar").style.display = "none";
+
+  resetPreview();
+  mostrarTexto();
+}
+
 
 
 
