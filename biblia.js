@@ -645,17 +645,19 @@ function actualizarPreview() {
   previewTexto.style.fontSize = `${size}px`;
   previewTextoHalo.style.fontSize = `${size}px`;
 
- // 5️⃣ AUTOAJUSTE REAL (SOLO REDUCE)
-const min = 12;
+// 5️⃣ AUTOAJUSTE REAL (SOLO REDUCE, 100% SEGURO)
+const min = 14;
 const wrapper = document.getElementById("previewTextoWrapper");
+
+let sizeActual = parseInt(previewTexto.style.fontSize);
 
 while (
   previewTexto.scrollHeight > wrapper.clientHeight &&
-  parseInt(previewTexto.style.fontSize) > min
+  sizeActual > min
 ) {
-  const nuevo = parseInt(previewTexto.style.fontSize) - 1;
-  previewTexto.style.fontSize = nuevo + "px";
-  previewTextoHalo.style.fontSize = nuevo + "px";
+  sizeActual--;
+  previewTexto.style.fontSize = sizeActual + "px";
+  previewTextoHalo.style.fontSize = sizeActual + "px";
 }
 
   // 6️⃣ COLOR Y OPACIDAD
@@ -714,6 +716,7 @@ function resetPreview() {
   previewImagen.classList.remove("preview-story");
   previewImagen.classList.add("preview-post");
 }
+
 
 
 
