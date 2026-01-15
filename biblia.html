@@ -225,6 +225,11 @@ body.oscuro .barra-acciones {
   display: inline-block;
 }
 
+.modo-imagen #header {
+  box-shadow: 0 4px 12px rgba(79,111,168,0.4);
+}
+
+    
 #seccion-biblia {
   padding-bottom: 90px;
 }
@@ -350,6 +355,18 @@ button:active {
   #previewImagen {
     margin-bottom: 24px;
   }
+}
+
+.text-tools {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+}
+
+.text-tools button {
+  width: 44px;
+  height: 36px;
+  font-weight: bold;
 }
 
   </style>
@@ -507,18 +524,6 @@ button:active {
   </div>
 
   <div>
-    <label>Tamaño texto</label>
-    <input type="range" id="personalizarTamaño" min="16" max="64" step="1" value="32">
-  </div>
-
-  <div>
-    <label>
-      <input type="checkbox" id="personalizarUpper">
-      Mayúsculas
-    </label>
-  </div>
-
-  <div>
     <label>Fuente</label>
     <select id="personalizarFuente">
       <option value="Arial">Arial</option>
@@ -534,6 +539,18 @@ button:active {
       <option value="Lobster">Lobster</option>
     </select>
   </div>
+  
+  <div>
+    <label>Tamaño texto</label>
+    <input type="range" id="personalizarTamaño" min="16" max="64" step="1" value="32">
+  </div>
+
+  <div class="text-tools">
+  <button onclick="toggleUpper()">Aa</button>
+  <button onclick="toggleBold()">B</button>
+  <button onclick="toggleItalic()">I</button>
+  <button onclick="toggleUnderline()">U</button>
+</div>
 
   <div>
     <label>Color texto</label>
@@ -554,6 +571,7 @@ button:active {
   
 </body>
 </html>
+
 
 
 
