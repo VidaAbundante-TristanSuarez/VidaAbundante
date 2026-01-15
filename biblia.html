@@ -308,30 +308,34 @@ button:active {
   height: min(720px, 85vh);
 }
     
-/* ================= TEXTO CON HALO ================= */
+/* ================= TEXTO DOBLE ================= */
 #previewTextoWrapper {
   position: absolute;
-  inset: 20px; /* margen real */
+  inset: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
   text-align: center;
-  pointer-events: none;
 }
 
-#previewTextoHalo {
+#previewTextoBack,
+#previewTexto {
   position: absolute;
+  padding: 20px;
+  font-weight: bold;
+  line-height: 1.25;
+}
+
+#previewTextoBack {
   z-index: 1;
-  filter: blur(6px);
-  opacity: 0.9;
-  transform: scale(1.05);
+  -webkit-text-stroke: 6px currentColor;
 }
 
 #previewTexto {
-  position: relative;
   z-index: 2;
 }
-    /* ================= PANEL OPCIONES COMPACTO ================= */
+
+/* ================= PANEL OPCIONES COMPACTO ================= */
 .panel-opciones {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -501,9 +505,9 @@ button:active {
             background:#ddd; background-size:cover; background-position:center;">
 
   <div id="previewTextoWrapper">
-    <div id="previewTextoHalo"></div>
-    <div id="previewTexto"></div>
-  </div>
+  <div id="previewTextoBack"></div>
+  <div id="previewTexto"></div>
+</div>
 
 </div>
 
@@ -571,6 +575,7 @@ button:active {
   
 </body>
 </html>
+
 
 
 
