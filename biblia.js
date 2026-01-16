@@ -32,6 +32,7 @@ let marcados = {};
 let notas = {};
 let size = 18;
 let colorActual = "#ffd6e8";
+let resaltadorAbierto = true;
 let grupoActual = null;
 let marcador = null;
 
@@ -515,6 +516,7 @@ if (btnGen) {
     salirModoImagen();
   };
 }
+
 
 
 
