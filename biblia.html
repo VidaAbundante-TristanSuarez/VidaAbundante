@@ -4,14 +4,15 @@
   <meta charset="UTF-8" />
   <title>Vida Abundante</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Lobster&display=swap" rel="stylesheet">
+
+  <!-- FUENTES -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Lobster&display=swap" rel="stylesheet">
 
   <style>
+    /* ================= BASE ================= */
     body {
-      font-family: Arial, sans-serif;
       margin: 0;
-      padding: 0;
-      line-height: 1.6;
+      font-family: Arial, sans-serif;
       background: #fff;
       color: #000;
     }
@@ -20,27 +21,41 @@
       background: #121212;
       color: #e0e0e0;
     }
-    
-/* ================= HEADER ================= */
-#header {
-  position: static; /* ✅ NO sticky */
-  z-index: auto;
-  background: #ffffff;
-  border-bottom: 1px solid #ddd;
-  padding: 10px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
 
-body.oscuro #header {
-  background: #121212;
-  border-color: #333;
-}
+    button {
+      border-radius: 999px;
+      padding: 10px 16px;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      background: #f2f2f2;
+      transition: .2s;
+    }
+
+    button:hover {
+      background: #4f6fa8;
+      color: #fff;
+      transform: scale(1.05);
+    }
+
+    /* ================= HEADER ================= */
+    #header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px;
+      border-bottom: 1px solid #ddd;
+      background: #fff;
+    }
+
+    body.oscuro #header {
+      background: #121212;
+      border-color: #333;
+    }
+
     #menu {
       display: flex;
       gap: 6px;
-      flex-wrap: nowrap;
     }
 
     .nav-btn {
@@ -49,9 +64,7 @@ body.oscuro #header {
       gap: 4px;
       padding: 8px 14px;
       border-radius: 999px;
-      border: none;
       font-weight: bold;
-      cursor: pointer;
       background: #eaeaea;
     }
 
@@ -61,9 +74,7 @@ body.oscuro #header {
     }
 
     @media (max-width: 640px) {
-      .nav-btn .text {
-        display: none;
-      }
+      .nav-btn .text { display: none; }
     }
 
     /* ================= SECCIONES ================= */
@@ -75,515 +86,182 @@ body.oscuro #header {
     .filtros {
       display: flex;
       gap: 8px;
-      margin-bottom: 8px;
-    }
-
-    .filtros select {
-      padding: 10px;
-      font-size: 16px;
-    }
-
-    #titulo {
-      margin: 12px 0;
-      font-weight: bold;
+      margin-bottom: 10px;
     }
 
     .versiculo {
-  padding: 10px 14px;
-  border-radius: 8px;
-  margin-bottom: 6px;
-  cursor: pointer;
-  transition: background .2s;
-  color: #000;
-}
-
-body.oscuro .versiculo {
-  color: #fff;
-}
-
-/* resaltado normal */
-.versiculo[data-marcado="true"] {
-  color: #000;
-}
-
-body.oscuro .versiculo[data-marcado="true"] {
-  color: #000; /* fuerza negro sobre pastel */
-}
-
-/* selección imagen */
-.versiculo.imagen {
-  background: #4f6fa8 !important;
-  color: #fff !important;
-}
-
-    .num {
-      font-weight: bold;
-      margin-right: 4px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      margin-bottom: 6px;
+      cursor: pointer;
     }
 
-    /* ================= PANEL ================= */
-    .panel-tabs button {
-      margin-right: 6px;
+    .versiculo.imagen {
+      background: #4f6fa8;
+      color: #fff;
     }
 
-    .panel-seccion {
-      margin-top: 10px;
-      padding: 10px;
-      border-radius: 10px;
+    /* ================= BARRA ACCIONES ================= */
+    .barra-acciones {
+      position: sticky;
+      bottom: 0;
+      display: flex;
+      gap: 6px;
+      padding: 8px;
       background: #f5f5f5;
+      border-top: 1px solid #ddd;
+      z-index: 20;
     }
 
-    body.oscuro .panel-seccion {
+    body.oscuro .barra-acciones {
       background: #1e1e1e;
+      border-color: #333;
     }
 
-    textarea {
-      width: 100%;
-      height: 80px;
-      border-radius: 10px;
-      padding: 10px;
+    .modo-imagen .accion-normal {
+      display: none;
     }
 
-    .grid-imagenes {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-      gap: 12px;
-      margin-top: 10px;
+    #btnCrearImagen {
+      display: none;
     }
 
-    .card-imagen {
-      border-radius: 12px;
-      overflow: hidden;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    .modo-imagen #btnCrearImagen {
+      display: inline-block;
+      background: #4f6fa8;
+      color: #fff;
+    }
+
+    /* ================= MODAL PERSONALIZAR ================= */
+    #modalPersonalizar {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.6);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 3000;
+    }
+
+    #modalPersonalizar .box {
       background: #fff;
-    }
-
-    body.oscuro .card-imagen {
-      background: #1e1e1e;
-    }
-
-    .card-imagen img {
-      width: 100%;
-      display: block;
-    }
-
-    .card-imagen .nombre {
-      padding: 6px;
-      font-size: 13px;
+      border-radius: 16px;
+      padding: 20px;
+      width: 90%;
+      max-width: 420px;
       text-align: center;
+    }
+
+    /* PREVIEW */
+    #previewImagen {
+      width: 100%;
+      height: 420px;
+      border-radius: 16px;
+      background-size: cover;
+      background-position: center;
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+
+    #previewTextoWrapper {
+      position: absolute;
+      inset: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
+    #previewTextoBack {
+      position: absolute;
+      font-weight: bold;
+      -webkit-text-stroke: 6px currentColor;
+    }
+
+    #previewTexto {
+      position: relative;
       font-weight: bold;
     }
 
-.barra-acciones {
-  position: sticky;
-  bottom: 0;
-  z-index: 20;
+    /* OPCIONES */
+    .panel-opciones {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-top: 10px;
+    }
 
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-
-  padding: 8px;
-  background: #f5f5f5;
-  border-top: 1px solid #ddd;
-}
-
-body.oscuro .barra-acciones {
-  background: #1e1e1e;
-  border-color: #333;
-}
-
-.barra-acciones button {
-  border-radius: 999px;
-  padding: 6px 10px;
-  border: none;
-  cursor: pointer;
-}
-
-.barra-acciones button.activo {
-  background: #4f6fa8;
-  color: #fff;
-}
-
-/* 🎨 Botón de color activo */
-.color-btn.activo {
-  outline: 3px solid #4f6fa8;
-  transform: scale(1.15);
-}
-
-.modo-imagen #accionesBiblia .accion-normal {
-  display: none;
-}
-
-.modo-imagen #btnImagen {
-  display: inline-block;
-  background: #4f6fa8;
-  color: #fff;
-}
-
-.modo-imagen #btnCrearImagen {
-  display: inline-block;
-}
-
-.modo-imagen #header {
-  box-shadow: 0 4px 12px rgba(79,111,168,0.4);
-}
-
-    
-#seccion-biblia {
-  padding-bottom: 90px;
-}
-
- /* Crear Imagen OCULTO por defecto */
-#btnCrearImagen {
-  display: none;
-}
-
-/* Visible SOLO en modo imagen */
-.modo-imagen #btnCrearImagen {
-  display: inline-block;
-}
-
-    button {
-  border-radius: 999px;
-  padding: 10px 16px;
-  border: none;
-  cursor: pointer;
-  font-weight: 600;
-  background: #f2f2f2;
-  transition: all .2s;
-}
-
-button:hover {
-  transform: scale(1.05);
-  background: #4f6fa8;
-  color: white;
-}
-
-button:active {
-  transform: scale(0.95);
-}
-
-.modal button {
-  box-shadow: 0 4px 10px rgba(0,0,0,.15);
-}
-
-#previewImagen {
-  width: 100%;
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-size: cover;
-  background-position: center;
-  overflow: hidden;
-}
-
-
-.toast {
-  position: fixed;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: rgba(0, 0, 0, 0.7);
-  color: white;
-  padding: 10px 20px;
-  border-radius: 5px;
-  font-size: 16px;
-  z-index: 999;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.toast[style="display: block;"] {
-  opacity: 1;
-}
-
-/* 📐 FORMATOS */
-#previewImagen.preview-post {
-  height: 420px;
-}
-
-#previewImagen.preview-story {
-  height: min(720px, 85vh);
-}
-    
-/* ================= TEXTO DOBLE ================= */
-#previewTextoWrapper {
-  position: absolute;
-  inset: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-}
-
-#previewTextoBack,
-#previewTexto {
-  position: absolute;
-  padding: 20px;
-  font-weight: bold;
-  line-height: 1.25;
-}
-
-#previewTextoBack {
-  z-index: 1;
-  -webkit-text-stroke: 6px currentColor;
-}
-
-#previewTexto {
-  z-index: 2;
-}
-
-/* ================= PANEL OPCIONES COMPACTO ================= */
-.panel-opciones {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
-}
-
-.panel-opciones label,
-.panel-opciones select,
-.panel-opciones input {
-  width: 100%;
-}
-
-#personalizarFondos {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  flex-wrap: nowrap;
-}
-
-@media (max-width: 480px) {
-  #previewImagen {
-    margin-bottom: 24px;
-  }
-}
-
-.text-tools {
-  display: flex;
-  gap: 6px;
-  justify-content: center;
-}
-
-.text-tools button {
-  width: 44px;
-  height: 36px;
-  font-weight: bold;
-}
-
+    .text-tools {
+      grid-column: span 2;
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+    }
   </style>
 </head>
 
 <body>
 
-<!-- ================= HEADER ================= -->
+<!-- HEADER -->
 <div id="header">
   <div id="menu">
     <button class="nav-btn" onclick="irA('biblia')">📖 <span class="text">Biblia</span></button>
-    <button class="nav-btn" onclick="irA('devocionales')">📆 <span class="text">Devocionales</span></button>
-    <button class="nav-btn" onclick="irA('abc')">🔤 <span class="text">ABC</span></button>
-    <button class="nav-btn" onclick="irA('iglesia')">⛪ <span class="text">Iglesia</span></button>
     <button class="nav-btn" onclick="irA('panel')">👤 <span class="text">Mi Panel</span></button>
   </div>
-
   <button onclick="toggleTema()">🌙</button>
 </div>
 
-<!-- ================= BIBLIA ================= -->
+<!-- BIBLIA -->
 <div id="seccion-biblia" class="seccion">
-
-<div class="filtros">
-  <select id="libro"></select>
-  <select id="capitulo"></select>
-
-  <button onclick="guardarMarcador()">📁</button>
-  <button onclick="irAMarcador()">↩</button>
-</div>
+  <div class="filtros">
+    <select id="libro"></select>
+    <select id="capitulo"></select>
+  </div>
 
   <h3 id="titulo"></h3>
   <div id="texto"></div>
 
-  <div id="notaBox" style="display:none; margin-top:15px">
-    <b>📝 Nota:</b>
-    <textarea id="notaTexto"></textarea>
-    <button onclick="guardarNota()">💾 Guardar</button>
-  </div>
-
   <div id="accionesBiblia" class="barra-acciones">
-
     <button class="accion-normal" onclick="capituloAnterior()">‹</button>
     <button class="accion-normal" onclick="capituloSiguiente()">›</button>
-
-    <button class="accion-normal color-btn"
-            data-color="#ffd6e8"
-            onclick="setColor('#ffd6e8', this)">🌸</button>
-
-    <button class="accion-normal color-btn"
-            data-color="#ccecff"
-            onclick="setColor('#ccecff', this)">💙</button>
-
-    <button class="accion-normal color-btn"
-            data-color="#fff3b0"
-            onclick="setColor('#fff3b0', this)">💛</button>
-
-    <button class="accion-normal" onclick="cambiarLetra(-1)">A−</button>
-    <button class="accion-normal" onclick="cambiarLetra(1)">A+</button>
-
-    <button class="accion-normal"
-            onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
-
     <button id="btnImagen" onclick="toggleModoImagen()">🖼️</button>
-
- <button id="btnCrearImagen"
-        onclick="generarImagen()">
-  Crear Imagen
-</button>
-
-  </div>
-  
-</div>
-
-  <!-- Toast de Notificación -->
-<div id="toast" class="toast" style="display: none;">
-  📝 Nota guardada
-</div>
-  
-<!-- ================= OTRAS SECCIONES ================= -->
-<div id="seccion-devocionales" class="seccion" style="display:none">
-  <h2>Devocionales</h2>
-</div>
-
-<div id="seccion-abc" class="seccion" style="display:none">
-  <h2>ABC</h2>
-</div>
-
-<div id="seccion-iglesia" class="seccion" style="display:none">
-  <h2>Iglesia</h2>
-</div>
-
-<!-- ================= PANEL ================= -->
-<div id="seccion-panel" class="seccion" style="display:none">
-  <h2>🗂️ Mi Panel</h2>
-
-  <div class="panel-tabs">
-    <button onclick="mostrarSeccion('imagenes')">🖼️ Imágenes</button>
-    <button onclick="mostrarSeccion('versiculos')">⭐ Versículos</button>
-    <button onclick="mostrarSeccion('notas')">📝 Notas</button>
-  </div>
-
-  <div id="panel-imagenes" class="panel-seccion">
-    <p id="imagenes-vacio">Todavía no generaste imágenes.</p>
-    <div id="grid-imagenes" class="grid-imagenes"></div>
-  </div>
-
-  <div id="panel-versiculos" class="panel-seccion" style="display:none"></div>
-  <div id="panel-notas" class="panel-seccion" style="display:none"></div>
-</div>
-
-<!-- ================= MODAL LOGIN ================= -->
-<div id="loginModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:2000; justify-content:center; align-items:center;">
-  <div style="background:white; padding:20px; border-radius:12px; max-width:320px; width:90%; text-align:center;">
-    <h3>🔐 Iniciar sesión</h3>
-    <p>Necesitás iniciar sesión para generar imágenes.</p>
-    <button onclick="irALogin()">Iniciar sesión</button><br><br>
-    <button onclick="cerrarLogin()">Cancelar</button>
+    <button id="btnCrearImagen" onclick="generarImagen()">Crear Imagen</button>
   </div>
 </div>
 
-<div id="modalPersonalizar" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:3000; justify-content:center; align-items:center;">
-  <div style="background:white; padding:20px; border-radius:12px; max-width:400px; width:90%; text-align:center;">
-
+<!-- MODAL PERSONALIZAR -->
+<div id="modalPersonalizar">
+  <div class="box">
     <h3>⚙️ Personalizar Imagen</h3>
-<h4>🖼️ Fondos</h4>
-<div id="personalizarFondos"></div>
 
-<!-- 🔴 VISTA PREVIA -->
-<div id="previewImagen"
-     style="width:100%; border-radius:16px; margin-bottom:12px;
-            background:#ddd; background-size:cover; background-position:center;">
+    <div id="previewImagen">
+      <div id="previewTextoWrapper">
+        <div id="previewTextoBack"></div>
+        <div id="previewTexto"></div>
+      </div>
+    </div>
 
-  <div id="previewTextoWrapper">
-  <div id="previewTextoBack"></div>
-  <div id="previewTexto"></div>
+    <div class="panel-opciones">
+      <select id="personalizarFuente"></select>
+      <input type="range" id="personalizarTamaño" min="16" max="64">
+      <input type="color" id="personalizarColor">
+      <input type="range" id="personalizarOpacidad" min="0" max="1" step="0.05">
+
+      <div class="text-tools">
+        <button onclick="toggleUpper()">Aa</button>
+        <button onclick="toggleBold()">B</button>
+        <button onclick="toggleItalic()">I</button>
+        <button onclick="toggleUnderline()">U</button>
+      </div>
+    </div>
+
+    <br>
+    <button id="btnGenerarPersonalizada">✅ Generar</button>
+    <button onclick="cancelarCrearImagen()">❌ Cancelar</button>
+  </div>
 </div>
 
-</div>
-
-<!-- 🧩 OPCIONES COMPACTAS -->
-<div class="panel-opciones">
-
-  <div>
-    <label>Formato</label>
-    <select onchange="setFormatoImagen(this.value)">
-      <option value="post">Cuadrado</option>
-      <option value="story">Historia</option>
-    </select>
-  </div>
-
-  <div>
-    <label>Opacidad fondo</label>
-    <input type="range" id="personalizarOpacidad" min="0" max="1" step="0.05" value="0.35">
-  </div>
-
-  <div>
-    <label>Fuente</label>
-    <select id="personalizarFuente">
-      <option value="Arial">Arial</option>
-      <option value="Times New Roman">Times New Roman</option>
-      <option value="Courier New">Courier New</option>
-      <option value="Verdana">Verdana</option>
-      <option value="Georgia">Georgia</option>
-      <option value="Helvetica">Helvetica</option>
-      <option value="Trebuchet MS">Trebuchet MS</option>
-      <option value="Impact">Impact</option>
-      <option value="Comic Sans MS">Comic Sans MS</option>
-      <option value="Roboto">Roboto</option>
-      <option value="Lobster">Lobster</option>
-    </select>
-  </div>
-  
-  <div>
-    <label>Tamaño texto</label>
-    <input type="range" id="personalizarTamaño" min="16" max="64" step="1" value="32">
-  </div>
-
-  <div class="text-tools">
-  <button onclick="toggleUpper()">Aa</button>
-  <button onclick="toggleBold()">B</button>
-  <button onclick="toggleItalic()">I</button>
-  <button onclick="toggleUnderline()">U</button>
-</div>
-
-  <div>
-    <label>Color texto</label>
-    <input type="color" id="personalizarColor">
-  </div>
-
-</div>
-
-<!-- Botones -->
-<div style="margin-top:15px; display:flex; gap:10px; justify-content:center;">
-  <button id="btnGenerarPersonalizada">✅ Generar</button>
-  <button id="btnCancelarPersonalizada" onclick="cancelarCrearImagen()">❌ Cancelar</button>
-</div>
-
-
-  
 <script type="module" src="biblia.js"></script>
-  
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
