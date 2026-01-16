@@ -190,8 +190,25 @@ function actualizarPreview() {
 
   previewTexto.style.color = color;
   previewTextoBack.style.color = colorContraste(color);
-  wrapper.style.backgroundColor = `rgba(0,0,0,${opacidad})`;
+const op = parseFloat(opacidad);
 
+// opacidad //
+let bgColor = "rgba(0,0,0,0)";
+
+if (op > 0.5) {
+  // hacia negro
+  const a = (op - 0.5) * 2;
+  bgColor = `rgba(0,0,0,${a})`;
+} else if (op < 0.5) {
+  // hacia blanco
+  const a = (0.5 - op) * 2;
+  bgColor = `rgba(255,255,255,${a})`;
+}
+
+wrapper.style.backgroundColor = bgColor;
+
+//
+  
   const transform = textStyle.upper ? "uppercase" : "none";
 
 previewTexto.style.textTransform = transform;
@@ -480,6 +497,7 @@ window.setFormatoImagen = tipo => {
   const preview = document.getElementById("previewImagen");
   preview.classList.remove("preview-post", "preview-story");
   preview.classList.add(tipo === "story" ? "preview-story" : "preview-post");
+  setTimeout(ajustarTextoPreview, 50); // 👈 ESTA LÍNEA
 };
 
 // ============================================================
@@ -532,6 +550,7 @@ if (btnGen) {
     salirModoImagen();
   };
 }
+
 
 
 
