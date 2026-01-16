@@ -312,8 +312,9 @@ button:active {
 /* ================= TEXTO DOBLE ================= */
 #previewTextoWrapper {
   position: absolute;
-  inset: 40px 24px; /* MÁS ALTO ÚTIL EN STORY */
+  inset: 40px 24px;
   overflow: hidden;
+  border-radius: 24px;
 }
 
 #previewTextoBack,
@@ -498,8 +499,16 @@ button:active {
 </div>
 
 <div id="modalPersonalizar" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:3000; justify-content:center; align-items:center;">
-  <div style="background:white; padding:20px; border-radius:12px; max-width:400px; width:90%; text-align:center;">
-
+  <div style="
+  background:white;
+  padding:16px;
+  border-radius:12px;
+  max-width:360px;
+  width:85%;
+  max-height:85vh;
+  overflow-y:auto;
+  text-align:center;
+">
     <h3>⚙️ Personalizar Imagen</h3>
 <h4>🖼️ Fondos</h4>
 <div id="personalizarFondos"></div>
@@ -580,6 +589,7 @@ button:active {
   
 </body>
 </html>
+
 
 
 
