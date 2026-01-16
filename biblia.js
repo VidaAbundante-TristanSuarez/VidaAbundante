@@ -203,11 +203,44 @@ previewTextoBack.style.textTransform = transform;
   previewTextoBack.style.fontWeight = previewTexto.style.fontWeight;
   previewTextoBack.style.fontStyle = previewTexto.style.fontStyle;
   previewTextoBack.style.textDecoration = previewTexto.style.textDecoration;
+
+  ajustarTextoPreview();
+
 }
+
+function ajustarTextoPreview() {
+  const wrapper = document.getElementById("previewTextoWrapper");
+  const texto = document.getElementById("previewTexto");
+  const back = document.getElementById("previewTextoBack");
+
+  if (!wrapper || !texto) return;
+
+  let size = parseInt(texto.style.fontSize) || 32;
+
+  while (texto.scrollHeight > wrapper.clientHeight && size > 14) {
+    size--;
+    texto.style.fontSize = size + "px";
+    back.style.fontSize = size + "px";
+  }
+}
+
 
 function resetPreview() {
   fondoFinal = null;
   textStyle = { upper: false, bold: false, italic: false, underline: false };
+}
+
+function resetModalPersonalizar() {
+  fondoFinal = null;
+  textStyle = { upper:false, bold:false, italic:false, underline:false };
+
+  document.getElementById("personalizarOpacidad").value = 0.35;
+  document.getElementById("personalizarTamaño").value = 32;
+  document.getElementById("personalizarFuente").value = "Arial";
+  document.getElementById("personalizarColor").value = "#ffffff";
+
+  const prev = document.getElementById("previewImagen");
+  if (prev) prev.style.backgroundImage = "none";
 }
 
 function salirModoImagen() {
@@ -229,6 +262,13 @@ function mostrarToast(msg) {
 // ============================================================
 // ================= WINDOW / UI ===============================
 // ============================================================
+
+// 🔗 Listeners de personalización (NO EXISTÍAN)
+["personalizarOpacidad","personalizarFuente","personalizarTamaño","personalizarColor"]
+.forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.oninput = actualizarPreview;
+});
 
 window.irA = seccion => {
   ["biblia", "devocionales", "abc", "iglesia", "panel"].forEach(s => {
@@ -260,7 +300,10 @@ window.generarImagen = () => {
   actualizarPreview();
 };
 
-window.cancelarCrearImagen = salirModoImagen;
+window.cancelarCrearImagen = () => {
+  resetModalPersonalizar();
+  salirModoImagen();
+};
 
 window.setColor = (c, btn) => {
   colorActual = c;
@@ -334,9 +377,11 @@ onAuthStateChanged(auth, user => {
 
 // ---- Marcadores ----
 window.guardarMarcador = () => {
-  if (!grupoActual || !uid) return;
-  set(ref(db, `notas/${uid}/${grupoActual}`), notaTexto.value)
-    .then(() => mostrarToast("📝 Nota guardada"));
+  marcador = {
+    libro: libroSel.value,
+    capitulo: capSel.value
+  };
+  mostrarToast("📁 Marcador guardado");
 };
 
 window.irAMarcador = () => {
@@ -470,6 +515,7 @@ if (btnGen) {
     salirModoImagen();
   };
 }
+
 
 
 
