@@ -255,6 +255,7 @@ window.generarImagen = () => {
     return;
   }
   document.getElementById("modalPersonalizar").style.display = "flex";
+  setFormatoImagen("post");
   cargarFondos(); 
   actualizarPreview();
 };
@@ -469,6 +470,7 @@ if (btnGen) {
     salirModoImagen();
   };
 }
+
 
 
 
