@@ -463,28 +463,28 @@ window.cerrarLogin = () => {
 
 window.toggleUpper = () => {
   textStyle.upper = !textStyle.upper;
-  document.querySelector(".text-tools button:nth-child(1)")
+  document.querySelector(".style-row button:nth-child(1)")
     .classList.toggle("activo", textStyle.upper);
   actualizarPreview();
 };
 
 window.toggleBold = () => {
   textStyle.bold = !textStyle.bold;
-  document.querySelector(".text-tools button:nth-child(2)")
+  document.querySelector(".style-row button:nth-child(2)")
     .classList.toggle("activo", textStyle.bold);
   actualizarPreview();
 };
 
 window.toggleItalic = () => {
   textStyle.italic = !textStyle.italic;
-  document.querySelector(".text-tools button:nth-child(3)")
+  document.querySelector(".style-row button:nth-child(3)")
     .classList.toggle("activo", textStyle.italic);
   actualizarPreview();
 };
 
 window.toggleUnderline = () => {
   textStyle.underline = !textStyle.underline;
-  document.querySelector(".text-tools button:nth-child(4)")
+  document.querySelector(".style-row button:nth-child(4)")
     .classList.toggle("activo", textStyle.underline);
   actualizarPreview();
 };
@@ -550,6 +550,7 @@ if (btnGen) {
     salirModoImagen();
   };
 }
+
 
 
 
