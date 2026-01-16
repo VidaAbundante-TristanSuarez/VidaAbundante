@@ -287,9 +287,8 @@ window.setColor = (c, btn) => {
 };
 
 window.cambiarLetra = delta => {
-  let size = parseInt(getComputedStyle(document.body).fontSize);
-  size = Math.max(14, size + delta * 2); // nunca menos de 14
-  document.body.style.fontSize = size + "px";
+  size = Math.max(14, size + delta * 2); // mínimo seguro
+  mostrarTexto(); // SOLO repinta los versículos
 };
 
 window.toggleTema = () => {
@@ -508,14 +507,13 @@ document.getElementById("btnGenerarPersonalizada").onclick = () => {
   document.getElementById("modalPersonalizar").style.display = "none";
 
   alert(
-    `✅ Imagen personalizada generada!\n` +
-    `Formato: ${formatoImagen}\n` +
-    `Fondo: ${fondoFinal || "No seleccionado"} (opacidad ${opacidad})\n` +
-    `Fuente: ${fuente}\n` +
-    `Tamaño: ${tamaño}\n` +
-    `Color: ${color}\n` +
-    `Mayúsculas: ${upper ? "Sí" : "No"}`
-  );
+  `✅ Imagen personalizada generada!\n` +
+  `Fondo seleccionado correctamente\n` +
+  `Fuente: ${fuente}\n` +
+  `Tamaño: ${tamaño}\n` +
+  `Color: ${color}\n` +
+  `Mayúsculas: ${upper ? "Sí" : "No"}`
+);
 
   // Mostrar la imagen en grande para vista previa
 const imagenFinal = document.createElement("img");
@@ -593,16 +591,13 @@ modalImagen.appendChild(downloadButton);
   });
 }
 
+// Resetea todo
+modoImagen = false;
+seleccionImagen = {};
+document.body.classList.remove("modo-imagen");
+document.getElementById("btnImagen").classList.remove("activo");
+mostrarTexto();
 
-  // Resetea todo
-  modoImagen = false;
-  seleccionImagen = {};
-  plantillaSeleccionada = null;
-  formatoImagen = null;
-  document.body.classList.remove("modo-imagen");
-  document.getElementById("btnImagen").classList.remove("activo");
-  mostrarTexto();
-};
 
 // ---------------- VISTA PREVIA ----------------
 
@@ -753,6 +748,7 @@ function salirModoImagen() {
   resetPreview();
   mostrarTexto();
 }
+
 
 
 
