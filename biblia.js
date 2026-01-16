@@ -327,6 +327,15 @@ onAuthStateChanged(auth, user => {
   }
 });
 
+// ================= ESTADO IMAGEN (FIX CRÍTICO) =================
+let formatoImagen = "post";
+let opacidadFondo = 0.35;
+let textoImagen = "";
+let tamañoTexto = 32;
+let fuenteTexto = "Arial";
+let colorTexto = "#ffffff";
+
+
 // ================= BOTÓN GENERAR IMAGEN FINAL =================
 const btnGen = document.getElementById("btnGenerarPersonalizada");
 
@@ -449,6 +458,7 @@ window.generarImagenCanvas = async function () {
     }).catch(() => {});
   }
 };
+
 
 
 
