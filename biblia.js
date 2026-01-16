@@ -136,7 +136,9 @@ onAuthStateChanged(auth, user => {
   }
 
   // Mostrar u ocultar el panel de usuario
-  document.getElementById("panelUsuario").style.display = uid ? "block" : "none";
+document.getElementById("seccion-panel").style.display =
+  uid ? "block" : "none";
+  
 });
 
 // ================= INICIO =================
@@ -278,7 +280,8 @@ function detectarGrupo(num) {
 window.guardarNota = () => {
   if (!grupoActual || !uid) return;
   set(ref(db, "notas/" + uid + "/" + grupoActual), notaTexto.value);
-  alert("📝 Nota guardada");
+  mostrarToast("📝 Nota guardada");
+
 };
 
 // ================= AJUSTES =================
@@ -740,6 +743,27 @@ function salirModoImagen() {
   mostrarTexto();
 }
 
+window.mostrarSeccion = tipo => {
+  ["imagenes", "versiculos", "notas"].forEach(s => {
+    const el = document.getElementById("panel-" + s);
+    if (el) el.style.display = (s === tipo) ? "block" : "none";
+  });
+};
+
+  window.irALogin = () => {
+  window.location.href = "login.html";
+};
+
+window.cerrarLogin = () => {
+  document.getElementById("loginModal").style.display = "none";
+};
+
+function mostrarToast(msg) {
+  const toast = document.getElementById("toast");
+  toast.innerText = msg;
+  toast.style.display = "block";
+  setTimeout(() => toast.style.display = "none", 2000);
+}
 
 
 
