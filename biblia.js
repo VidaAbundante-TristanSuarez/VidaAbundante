@@ -476,7 +476,7 @@ fondosCloudinary.forEach(url => {
 });
 
 // Conectar los controles de personalización a la vista previa
-["personalizarFuente", "personalizarTamaño", "personalizarColor", "personalizarOpacidad", "personalizarUpper"]
+["personalizarFuente", "personalizarTamaño", "personalizarColor", "personalizarOpacidad"]
 .forEach(id => {
   const el = document.getElementById(id);
   if (el) el.addEventListener("input", actualizarPreview); // Llama a actualizarPreview cuando haya cambios
@@ -495,7 +495,7 @@ document.getElementById("btnGenerarPersonalizada").onclick = () => {
   const tamaño = document.getElementById("personalizarTamaño").value;
   const color = document.getElementById("personalizarColor").value;
   const opacidad = document.getElementById("personalizarOpacidad").value;
-  const upper = document.getElementById("personalizarUpper").checked;
+  const transform = textStyle.upper ? "uppercase" : "none";
 
   document.getElementById("modalPersonalizar").style.display = "none";
 
@@ -648,7 +648,7 @@ function actualizarPreview() {
   wrapper.style.backgroundColor = `rgba(0,0,0,${opacidad})`;
 
   // 7️⃣ ESTILOS
-  const upper = document.getElementById("personalizarUpper").checked;
+ const transform = textStyle.upper ? "uppercase" : "none";
   const transform = upper ? "uppercase" : "none";
 
   previewTexto.style.textTransform = transform;
@@ -764,6 +764,7 @@ function mostrarToast(msg) {
   toast.style.display = "block";
   setTimeout(() => toast.style.display = "none", 2000);
 }
+
 
 
 
