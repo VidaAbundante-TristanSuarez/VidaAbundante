@@ -327,6 +327,15 @@ onAuthStateChanged(auth, user => {
   }
 });
 
+// ================= BOTÓN GENERAR IMAGEN FINAL =================
+const btnGen = document.getElementById("btnGenerarPersonalizada");
+
+if (btnGen) {
+  btnGen.onclick = () => {
+    generarImagenCanvas();
+  };
+}
+
 // ==============================================
 // 📸 GENERAR IMAGEN REAL (CANVAS)
 // ==============================================
@@ -440,6 +449,7 @@ window.generarImagenCanvas = async function () {
     }).catch(() => {});
   }
 };
+
 
 
 
