@@ -255,6 +255,7 @@ window.generarImagen = () => {
     return;
   }
   document.getElementById("modalPersonalizar").style.display = "flex";
+  cargarFondos(); 
   actualizarPreview();
 };
 
@@ -451,15 +452,6 @@ function cargarFondos() {
   });
 }
 
-// cargar fondos al abrir modal
-const modal = document.getElementById("modalPersonalizar");
-if (modal) {
-  const observer = new MutationObserver(() => {
-    if (modal.style.display === "flex") cargarFondos();
-  });
-  observer.observe(modal, { attributes: true });
-}
-
 // ============================================================
 // ================= BOTÓN GENERAR ============================
 // ============================================================
@@ -477,5 +469,6 @@ if (btnGen) {
     salirModoImagen();
   };
 }
+
 
 
