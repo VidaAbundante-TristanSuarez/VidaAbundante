@@ -325,6 +325,80 @@ window.irAMarcador = () => {
   }, 0);
 };
 
+// ---------------- VISTA PREVIA ----------------
+
+function actualizarPreview() {
+  const previewImagen = document.getElementById("previewImagen");
+  const previewTexto = document.getElementById("previewTexto");
+  const previewTextoBack = document.getElementById("previewTextoBack");
+  const wrapper = document.getElementById("previewTextoWrapper");
+
+  // 1️⃣ TEXTO
+  const versiculo = obtenerVersiculoSeleccionado();
+  const textoFinal = versiculo || "";
+
+  previewTexto.innerText = textoFinal;
+  previewTextoBack.innerText = textoFinal;
+
+  // 2️⃣ FONDO
+  previewImagen.style.backgroundImage = fondoFinal
+    ? `url(${fondoFinal})`
+    : "none";
+
+  // 3️⃣ FUENTE
+  const fuente = document.getElementById("personalizarFuente").value || "Arial";
+  previewTexto.style.fontFamily = fuente;
+  previewTextoBack.style.fontFamily = fuente;
+
+  // 4️⃣ TAMAÑO BASE
+  const slider = document.getElementById("personalizarTamaño");
+  let previewSize = parseInt(slider.value) || 32;
+
+
+  previewTexto.style.fontSize = previewSize + "px";
+  previewTextoBack.style.fontSize = previewSize + "px";
+
+  // 5️⃣ AUTOAJUSTE (solo reduce)
+  const min = 14;
+  while (
+    previewTexto.scrollHeight > wrapper.clientHeight &&
+    previewSize > min
+  ) {
+    previewSize--;
+    previewTexto.style.fontSize = previewSize + "px";
+    previewTextoBack.style.fontSize = previewSize + "px";
+  }
+
+  // 6️⃣ COLORES
+  const colorTexto = document.getElementById("personalizarColor").value;
+  const opacidad = document.getElementById("personalizarOpacidad").value;
+  const colorBack = colorContraste(colorTexto);
+
+  previewTexto.style.color = colorTexto;
+  previewTextoBack.style.color = colorBack;
+
+  // fondo SOLO en wrapper
+  wrapper.style.backgroundColor = `rgba(0,0,0,${opacidad})`;
+
+  // 7️⃣ ESTILOS
+ const transform = textStyle.upper ? "uppercase" : "none";
+
+  previewTexto.style.textTransform = transform;
+  previewTextoBack.style.textTransform = transform;
+
+  previewTexto.style.fontWeight = textStyle.bold ? "700" : "400";
+  previewTexto.style.fontStyle = textStyle.italic ? "italic" : "normal";
+  previewTexto.style.textDecoration = textStyle.underline ? "underline" : "none";
+
+  previewTextoBack.style.fontWeight = previewTexto.style.fontWeight;
+  previewTextoBack.style.fontStyle = previewTexto.style.fontStyle;
+  previewTextoBack.style.textDecoration = previewTexto.style.textDecoration;
+
+  // 8️⃣ INTERLINEADO
+  previewTexto.style.lineHeight = "1.25";
+  previewTextoBack.style.lineHeight = "1.25";
+}
+
 // ================= MODO IMAGEN =================
 window.toggleModoImagen = () => {
   if (!uid) {
@@ -483,13 +557,18 @@ fondosCloudinary.forEach(url => {
 });
 
 // ---------------- Botón Generar ----------------
-document.getElementById("btnGenerarPersonalizada").onclick = () => {
-  // Validación para asegurarse de que se haya seleccionado un fondo
-  if (!fondoFinal) {
-    alert("Por favor, selecciona un fondo antes de continuar.");
-    return;
-  }
+const btnGen = document.getElementById("btnGenerarPersonalizada");
 
+if (btnGen) {
+  btnGen.onclick = () => {
+
+    // Validación: fondo seleccionado
+    if (!fondoFinal) {
+      alert("Por favor, selecciona un fondo antes de continuar.");
+      return;
+    }
+
+   
   // Si todo está bien, continuamos con la generación de la imagen
   const fuente = document.getElementById("personalizarFuente").value;
   const tamaño = document.getElementById("personalizarTamaño").value;
@@ -505,7 +584,7 @@ document.getElementById("btnGenerarPersonalizada").onclick = () => {
   `Fuente: ${fuente}\n` +
   `Tamaño: ${tamaño}\n` +
   `Color: ${color}\n` +
-  `Mayúsculas: ${upper ? "Sí" : "No"}`
+  `Mayúsculas: ${textStyle.upper ? "Sí" : "No"}`
 );
 
   // Mostrar la imagen en grande para vista previa
@@ -580,7 +659,7 @@ modalImagen.appendChild(downloadButton);
     fecha: new Date().toISOString()
   }).then(() => {
     alert("✅ Imagen guardada en tu panel!");
-    mostrarImagenesEnPanel(); // Actualiza la sección de imágenes en el panel
+     // mostrarImagenesEnPanel(); // ❌ DESACTIVADA
   });
 }
 
@@ -591,82 +670,7 @@ document.body.classList.remove("modo-imagen");
 document.getElementById("btnImagen").classList.remove("activo");
 mostrarTexto();
 
-
-// ---------------- VISTA PREVIA ----------------
-
-function actualizarPreview() {
-  const previewImagen = document.getElementById("previewImagen");
-  const previewTexto = document.getElementById("previewTexto");
-  const previewTextoBack = document.getElementById("previewTextoBack");
-  const wrapper = document.getElementById("previewTextoWrapper");
-
-  // 1️⃣ TEXTO
-  const versiculo = obtenerVersiculoSeleccionado();
-  const textoFinal = versiculo || "";
-
-  previewTexto.innerText = textoFinal;
-  previewTextoBack.innerText = textoFinal;
-
-  // 2️⃣ FONDO
-  previewImagen.style.backgroundImage = fondoFinal
-    ? `url(${fondoFinal})`
-    : "none";
-
-  // 3️⃣ FUENTE
-  const fuente = document.getElementById("personalizarFuente").value || "Arial";
-  previewTexto.style.fontFamily = fuente;
-  previewTextoBack.style.fontFamily = fuente;
-
-  // 4️⃣ TAMAÑO BASE
-  const slider = document.getElementById("personalizarTamaño");
-  let previewSize = parseInt(slider.value) || 32;
-
-
-  previewTexto.style.fontSize = previewSize + "px";
-  previewTextoBack.style.fontSize = previewSize + "px";
-
-  // 5️⃣ AUTOAJUSTE (solo reduce)
-  const min = 14;
-  while (
-    previewTexto.scrollHeight > wrapper.clientHeight &&
-    previewSize > min
-  ) {
-    previewSize--;
-    previewTexto.style.fontSize = previewSize + "px";
-    previewTextoBack.style.fontSize = previewSize + "px";
-  }
-
-  // 6️⃣ COLORES
-  const colorTexto = document.getElementById("personalizarColor").value;
-  const opacidad = document.getElementById("personalizarOpacidad").value;
-  const colorBack = colorContraste(colorTexto);
-
-  previewTexto.style.color = colorTexto;
-  previewTextoBack.style.color = colorBack;
-
-  // fondo SOLO en wrapper
-  wrapper.style.backgroundColor = `rgba(0,0,0,${opacidad})`;
-
-  // 7️⃣ ESTILOS
- const transform = textStyle.upper ? "uppercase" : "none";
-  const transform = upper ? "uppercase" : "none";
-
-  previewTexto.style.textTransform = transform;
-  previewTextoBack.style.textTransform = transform;
-
-  previewTexto.style.fontWeight = textStyle.bold ? "700" : "400";
-  previewTexto.style.fontStyle = textStyle.italic ? "italic" : "normal";
-  previewTexto.style.textDecoration = textStyle.underline ? "underline" : "none";
-
-  previewTextoBack.style.fontWeight = previewTexto.style.fontWeight;
-  previewTextoBack.style.fontStyle = previewTexto.style.fontStyle;
-  previewTextoBack.style.textDecoration = previewTexto.style.textDecoration;
-
-  // 8️⃣ INTERLINEADO
-  previewTexto.style.lineHeight = "1.25";
-  previewTextoBack.style.lineHeight = "1.25";
-}
-
+};
 
 // ---------------- CONTRASTE AUTOMÁTICO ----------------
 
@@ -764,6 +768,7 @@ function mostrarToast(msg) {
   toast.style.display = "block";
   setTimeout(() => toast.style.display = "none", 2000);
 }
+
 
 
 
