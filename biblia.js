@@ -218,7 +218,15 @@ function ajustarTextoPreview() {
 
   let size = parseInt(texto.style.fontSize) || 32;
 
-  while (texto.scrollHeight > wrapper.clientHeight && size > 14) {
+  // reset previo
+  texto.style.whiteSpace = "pre-wrap";
+  texto.style.wordBreak = "break-word";
+
+  while (
+    (texto.scrollHeight > wrapper.clientHeight ||
+     texto.scrollWidth > wrapper.clientWidth) &&
+    size > 12
+  ) {
     size--;
     texto.style.fontSize = size + "px";
     back.style.fontSize = size + "px";
@@ -438,21 +446,29 @@ window.cerrarLogin = () => {
 
 window.toggleUpper = () => {
   textStyle.upper = !textStyle.upper;
+  document.querySelector(".text-tools button:nth-child(1)")
+    .classList.toggle("activo", textStyle.upper);
   actualizarPreview();
 };
 
 window.toggleBold = () => {
   textStyle.bold = !textStyle.bold;
+  document.querySelector(".text-tools button:nth-child(2)")
+    .classList.toggle("activo", textStyle.bold);
   actualizarPreview();
 };
 
 window.toggleItalic = () => {
   textStyle.italic = !textStyle.italic;
+  document.querySelector(".text-tools button:nth-child(3)")
+    .classList.toggle("activo", textStyle.italic);
   actualizarPreview();
 };
 
 window.toggleUnderline = () => {
   textStyle.underline = !textStyle.underline;
+  document.querySelector(".text-tools button:nth-child(4)")
+    .classList.toggle("activo", textStyle.underline);
   actualizarPreview();
 };
 
@@ -516,6 +532,7 @@ if (btnGen) {
     salirModoImagen();
   };
 }
+
 
 
 
