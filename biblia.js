@@ -204,6 +204,14 @@ function actualizarPreview() {
   previewTextoBack.style.fontWeight = previewTexto.style.fontWeight;
   previewTextoBack.style.fontStyle = previewTexto.style.fontStyle;
   previewTextoBack.style.textDecoration = previewTexto.style.textDecoration;
+
+// ---- sincronizar datos para canvas ----
+textoImagen = textoFinal;
+tamañoTexto = sizeBase;
+fuenteTexto = fuente;
+colorTexto = color;
+opacidadFondo = opacidad;
+
 }
 
 function resetPreview() {
@@ -458,6 +466,7 @@ window.generarImagenCanvas = async function () {
     }).catch(() => {});
   }
 };
+
 
 
 
