@@ -191,11 +191,10 @@ function actualizarPreview() {
   previewTextoBack.style.color = colorContraste(color);
   wrapper.style.backgroundColor = `rgba(0,0,0,${opacidad})`;
 
-  const upper = document.getElementById("personalizarUpper").checked;
-  const transform = upper ? "uppercase" : "none";
+  const transform = textStyle.upper ? "uppercase" : "none";
 
-  previewTexto.style.textTransform = transform;
-  previewTextoBack.style.textTransform = transform;
+previewTexto.style.textTransform = transform;
+previewTextoBack.style.textTransform = transform;
 
   previewTexto.style.fontWeight = textStyle.bold ? "700" : "400";
   previewTexto.style.fontStyle = textStyle.italic ? "italic" : "normal";
@@ -326,3 +325,157 @@ onAuthStateChanged(auth, user => {
     });
   }
 });
+
+// ============================================================
+// ================= FUNCIONES QUE FALTABAN ===================
+// ============================================================
+
+// ---- Marcadores ----
+window.guardarMarcador = () => {
+  if (!grupoActual || !uid) return;
+  set(ref(db, `notas/${uid}/${grupoActual}`), notaTexto.value)
+    .then(() => mostrarToast("📝 Nota guardada"));
+};
+
+window.irAMarcador = () => {
+  if (!marcador) return;
+  libroSel.value = marcador.libro;
+  cargarCapitulos();
+  capSel.value = marcador.capitulo;
+  mostrarTexto();
+};
+
+// ---- Notas ----
+window.guardarNota = () => {
+  if (!grupoActual || !uid) return;
+  set(ref(db, `notas/${uid}/${grupoActual}`), notaTexto.value)
+    .then(() => mostrarToast("📝 Nota guardada"));
+};
+
+// ---- Navegación capítulos ----
+window.capituloAnterior = () => {
+  if (capSel.selectedIndex > 0) {
+    capSel.selectedIndex--;
+    mostrarTexto();
+  }
+};
+
+window.capituloSiguiente = () => {
+  if (capSel.selectedIndex < capSel.options.length - 1) {
+    capSel.selectedIndex++;
+    mostrarTexto();
+  }
+};
+
+// ---- Panel ----
+window.mostrarSeccion = tipo => {
+  ["imagenes", "versiculos", "notas"].forEach(s => {
+    document.getElementById("panel-" + s).style.display =
+      s === tipo ? "block" : "none";
+  });
+};
+
+// ---- Login ----
+window.irALogin = () => {
+  window.location.href = "login.html";
+};
+
+window.cerrarLogin = () => {
+  loginModal.style.display = "none";
+};
+
+// ============================================================
+// ================= TEXTO (BOTONES) ==========================
+// ============================================================
+
+window.toggleUpper = () => {
+  textStyle.upper = !textStyle.upper;
+  actualizarPreview();
+};
+
+window.toggleBold = () => {
+  textStyle.bold = !textStyle.bold;
+  actualizarPreview();
+};
+
+window.toggleItalic = () => {
+  textStyle.italic = !textStyle.italic;
+  actualizarPreview();
+};
+
+window.toggleUnderline = () => {
+  textStyle.underline = !textStyle.underline;
+  actualizarPreview();
+};
+
+// ============================================================
+// ================= FORMATO IMAGEN ===========================
+// ============================================================
+
+window.setFormatoImagen = tipo => {
+  const preview = document.getElementById("previewImagen");
+  preview.classList.remove("preview-post", "preview-story");
+  preview.classList.add(tipo === "story" ? "preview-story" : "preview-post");
+};
+
+// ============================================================
+// ================= FONDOS ================================
+// ============================================================
+
+const fondos = [
+  "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee",
+  "https://images.unsplash.com/photo-1496307042754-b4aa456c4a2d",
+  "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429",
+  "https://images.unsplash.com/photo-1519681393784-d120267933ba"
+];
+
+function cargarFondos() {
+  const cont = document.getElementById("personalizarFondos");
+  cont.innerHTML = "";
+
+  fondos.forEach(url => {
+    const img = document.createElement("img");
+    img.src = url;
+    img.style.width = "70px";
+    img.style.height = "70px";
+    img.style.objectFit = "cover";
+    img.style.borderRadius = "10px";
+    img.style.cursor = "pointer";
+
+    img.onclick = () => {
+      fondoFinal = url;
+      actualizarPreview();
+    };
+
+    cont.appendChild(img);
+  });
+}
+
+// cargar fondos al abrir modal
+const modal = document.getElementById("modalPersonalizar");
+if (modal) {
+  const observer = new MutationObserver(() => {
+    if (modal.style.display === "flex") cargarFondos();
+  });
+  observer.observe(modal, { attributes: true });
+}
+
+// ============================================================
+// ================= BOTÓN GENERAR ============================
+// ============================================================
+
+const btnGen = document.getElementById("btnGenerarPersonalizada");
+
+if (btnGen) {
+  btnGen.onclick = () => {
+    if (!fondoFinal) {
+      alert("Seleccioná un fondo");
+      return;
+    }
+
+    alert("✅ Imagen generada (canvas va acá)");
+    salirModoImagen();
+  };
+}
+
+
