@@ -5,6 +5,7 @@ import {
   onAuthStateChanged,
   signOut
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
 import {
   getDatabase,
   ref,
@@ -568,7 +569,6 @@ if (btnGen) {
       return;
     }
 
-   
   // Si todo está bien, continuamos con la generación de la imagen
   const fuente = document.getElementById("personalizarFuente").value;
   const tamaño = document.getElementById("personalizarTamaño").value;
@@ -672,6 +672,7 @@ mostrarTexto();
 
 };
 
+}
 // ---------------- CONTRASTE AUTOMÁTICO ----------------
 
 function colorContraste(hex) {
@@ -768,6 +769,7 @@ function mostrarToast(msg) {
   toast.style.display = "block";
   setTimeout(() => toast.style.display = "none", 2000);
 }
+
 
 
 
