@@ -1,6 +1,10 @@
 // ================= IMPORTS FIREBASE =================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import {
+  getAuth,
+  onAuthStateChanged,
+  signOut
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import {
   getDatabase,
   ref,
@@ -8,14 +12,6 @@ import {
   remove,
   onValue
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-
-import { signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-
-window.logout = () => {
-  signOut(auth).then(() => {
-    window.location.href = "login.html";
-  });
-};
 
 // ================= FIREBASE CONFIG =================
 const firebaseConfig = {
@@ -28,6 +24,12 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getDatabase(app);
+
+window.logout = () => {
+  signOut(auth).then(() => {
+    window.location.href = "login.html";
+  });
+};
 
 // ================= ESTADO =================
 let uid = null;
@@ -365,18 +367,6 @@ window.generarImagen = () => {
 };
 
 // ================= FUNCIONES INTERNAS =================
-function generarImagenFinal() {
-  alert(`✅ Imagen generada!\nFormato: ${formatoImagen}\nPlantilla: ${plantillaSeleccionada}`);
-
-  // Reseteamos todo
-  modoImagen = false;
-  seleccionImagen = {};
-  plantillaSeleccionada = null;
-  formatoImagen = null;
-  document.body.classList.remove("modo-imagen");
-  document.getElementById("btnImagen").classList.remove("activo");
-  mostrarTexto();
-}
 
 window.cancelarCrearImagen = salirModoImagen;
 
@@ -626,20 +616,21 @@ function actualizarPreview() {
 
   // 4️⃣ TAMAÑO BASE
   const slider = document.getElementById("personalizarTamaño");
-  let size = parseInt(slider.value) || 32;
+  let previewSize = parseInt(slider.value) || 32;
 
-  previewTexto.style.fontSize = size + "px";
-  previewTextoBack.style.fontSize = size + "px";
+
+  previewTexto.style.fontSize = previewSize + "px";
+  previewTextoBack.style.fontSize = previewSize + "px";
 
   // 5️⃣ AUTOAJUSTE (solo reduce)
   const min = 14;
   while (
     previewTexto.scrollHeight > wrapper.clientHeight &&
-    size > min
+    previewSize > min
   ) {
-    size--;
-    previewTexto.style.fontSize = size + "px";
-    previewTextoBack.style.fontSize = size + "px";
+    previewSize--;
+    previewTexto.style.fontSize = previewSize + "px";
+    previewTextoBack.style.fontSize = previewSize + "px";
   }
 
   // 6️⃣ COLORES
@@ -748,6 +739,7 @@ function salirModoImagen() {
   resetPreview();
   mostrarTexto();
 }
+
 
 
 
