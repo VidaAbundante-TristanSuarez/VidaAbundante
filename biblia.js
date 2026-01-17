@@ -717,6 +717,25 @@ function medirAltoTexto(ctx, texto, maxWidth) {
   return lineas * parseInt(ctx.font);
 }
 
+function dibujarTextoMultilineaStroke(ctx, texto, x, y, maxWidth, lineHeight) {
+  const palabras = texto.split(" ");
+  let linea = "";
+
+  for (let i = 0; i < palabras.length; i++) {
+    const test = linea + palabras[i] + " ";
+    const metrics = ctx.measureText(test);
+
+    if (metrics.width > maxWidth && i > 0) {
+      ctx.strokeText(linea, x, y);
+      linea = palabras[i] + " ";
+      y += lineHeight;
+    } else {
+      linea = test;
+    }
+  }
+  ctx.strokeText(linea, x, y);
+}
+
 
 
 
