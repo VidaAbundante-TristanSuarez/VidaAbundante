@@ -274,22 +274,27 @@ function resetModalPersonalizar() {
   document.getElementById("personalizarColor").value = "#ffffff";
 
   const prev = document.getElementById("previewImagen");
-  if (prev) prev.style.backgroundImage = "none";
+  if (prev) {
+    prev.style.backgroundImage = "none";
+    prev.style.pointerEvents = "auto";
+  }
 
-  // 🔥 LIMPIAR ESTADO FINAL
+  const wrapper = document.getElementById("previewTextoWrapper");
+  if (wrapper) wrapper.style.pointerEvents = "auto";
+
+  // 🔥 VOLVER A MOSTRAR TEXTO HTML
+  document.getElementById("previewTexto").style.display = "block";
+  document.getElementById("previewTextoBack").style.display = "block";
+
+  // Restaurar UI
   document.querySelector(".panel-opciones").style.display = "block";
   document.getElementById("personalizarFondos").style.display = "flex";
   document.getElementById("btnGenerarPersonalizada").style.display = "inline-block";
 
   const acciones = document.getElementById("accionesFinales");
   if (acciones) acciones.remove();
-
-const preview = document.getElementById("previewImagen");
-if (preview) preview.style.pointerEvents = "auto";
-
-const wrapper = document.getElementById("previewTextoWrapper");
-if (wrapper) wrapper.style.pointerEvents = "auto";
 }
+
 
 function salirModoImagen() {
   modoImagen = false;
@@ -661,15 +666,6 @@ const fuente = fuentesSeguras.includes(fuentePreview)
   ctx.textAlign = "center";
   ctx.textBaseline = "top";
 
-  // Fondo opaco
-  ctx.fillStyle = `rgba(0,0,0,${opacidad})`;
-  ctx.fillRect(
-    paddingX,
-    paddingY,
-    maxWidth,
-    maxHeight
-  );
-
   // Ajuste automático tamaño
   do {
     ctx.font = `
@@ -771,39 +767,45 @@ function dibujarTextoMultilineaStroke(ctx, texto, x, y, maxWidth, lineHeight) {
 function mostrarResultadoFinal(canvas) {
   const preview = document.getElementById("previewImagen");
 
-  // Mostrar imagen final
+  // Mostrar imagen final del canvas
   preview.style.backgroundImage = `url(${canvas.toDataURL("image/png")})`;
-
-  // 🔥 DESACTIVAR INTERACCIÓN DEL PREVIEW
   preview.style.pointerEvents = "none";
+  preview.style.position = "relative";
+  preview.style.zIndex = "1";
+
+  // 🔴 OCULTAR TEXTO HTML (EVITA TEXTO DUPLICADO)
+  document.getElementById("previewTexto").style.display = "none";
+  document.getElementById("previewTextoBack").style.display = "none";
 
   const wrapper = document.getElementById("previewTextoWrapper");
   if (wrapper) wrapper.style.pointerEvents = "none";
 
-  // Ocultar opciones
+  // Ocultar paneles
   document.querySelector(".panel-opciones").style.display = "none";
   document.getElementById("personalizarFondos").style.display = "none";
   document.getElementById("btnGenerarPersonalizada").style.display = "none";
 
-  // Crear botones finales
+  // Evitar duplicar botones
+  const viejo = document.getElementById("accionesFinales");
+  if (viejo) viejo.remove();
+
+  // Botones finales
   const acciones = document.createElement("div");
   acciones.id = "accionesFinales";
   acciones.style.display = "flex";
-  acciones.style.flexDirection = "row"; // 👈 ESTA
-  acciones.style.position = "relative";
-  acciones.style.zIndex = "10";
-  acciones.style.gap = "10px";
   acciones.style.justifyContent = "center";
+  acciones.style.gap = "12px";
   acciones.style.marginTop = "15px";
+  acciones.style.zIndex = "1000";
 
   acciones.innerHTML = `
     <button onclick="descargarImagenFinal()">⬇️ Descargar</button>
     <button onclick="compartirImagenFinal()">📤 Compartir</button>
   `;
 
-  preview.parentNode.appendChild(acciones);
+  // ⬅️ IMPORTANTE: va DENTRO del modal, no del preview
+  document.getElementById("modalPersonalizar").appendChild(acciones);
 }
-
 
 // ======================== OPCION DESCARGAR ====================================
 
@@ -836,6 +838,7 @@ function compartirImagenFinal() {
     }
   });
 }
+
 
 
 
