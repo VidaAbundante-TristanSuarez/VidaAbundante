@@ -545,8 +545,7 @@ if (btnGen) {
       return;
     }
 
-    alert("✅ Imagen generada (canvas va acá)");
-    salirModoImagen();
+    generarImagenFinal(); // 🔥 ACÁ SE CREA LA IMAGEN REAL
   };
 }
 
@@ -556,7 +555,8 @@ function generarImagenFinal() {
   const canvas = document.getElementById("canvasFinal");
   const ctx = canvas.getContext("2d");
 
-  const esStory = document.getElementById("formatoImagen")?.value === "historia";
+ const preview = document.getElementById("previewImagen");
+const esStory = preview.classList.contains("preview-story");
 
   // Tamaños reales
   canvas.width = esStory ? 1080 : 1080;
@@ -580,6 +580,13 @@ function generarImagenFinal() {
     dibujarTexto(ctx, canvas);
     exportarImagen(canvas);
   }
+}
+
+function exportarImagen(canvas) {
+  const link = document.createElement("a");
+  link.download = "versiculo.png";
+  link.href = canvas.toDataURL("image/png");
+  link.click();
 }
 
 // ======================== DIBUJA FONDO ==================================== 
@@ -685,6 +692,7 @@ function medirAltoTexto(ctx, texto, maxWidth) {
   }
   return lineas * parseInt(ctx.font);
 }
+
 
 
 
