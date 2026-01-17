@@ -253,7 +253,6 @@ function ajustarTextoPreview() {
   }
 }
 
-
 function resetPreview() {
   fondoFinal = null;
   textStyle = { upper: false, bold: false, italic: false, underline: false };
@@ -270,6 +269,20 @@ function resetModalPersonalizar() {
 
   const prev = document.getElementById("previewImagen");
   if (prev) prev.style.backgroundImage = "none";
+
+  // 🔥 LIMPIAR ESTADO FINAL
+  document.querySelector(".panel-opciones").style.display = "block";
+  document.getElementById("personalizarFondos").style.display = "flex";
+  document.getElementById("btnGenerarPersonalizada").style.display = "inline-block";
+
+  const acciones = document.getElementById("accionesFinales");
+  if (acciones) acciones.remove();
+
+const preview = document.getElementById("previewImagen");
+if (preview) preview.style.pointerEvents = "auto";
+
+const wrapper = document.getElementById("previewTextoWrapper");
+if (wrapper) wrapper.style.pointerEvents = "auto";
 }
 
 function salirModoImagen() {
@@ -752,20 +765,26 @@ function dibujarTextoMultilineaStroke(ctx, texto, x, y, maxWidth, lineHeight) {
 function mostrarResultadoFinal(canvas) {
   const preview = document.getElementById("previewImagen");
 
-  // Mostrar la imagen final en el mismo preview
+  // Mostrar imagen final
   preview.style.backgroundImage = `url(${canvas.toDataURL("image/png")})`;
 
-  // Ocultar opciones de personalización
+  // 🔥 DESACTIVAR INTERACCIÓN DEL PREVIEW
+  preview.style.pointerEvents = "none";
+
+  const wrapper = document.getElementById("previewTextoWrapper");
+  if (wrapper) wrapper.style.pointerEvents = "none";
+
+  // Ocultar opciones
   document.querySelector(".panel-opciones").style.display = "none";
   document.getElementById("personalizarFondos").style.display = "none";
-
-  // Cambiar botones
   document.getElementById("btnGenerarPersonalizada").style.display = "none";
 
   // Crear botones finales
   const acciones = document.createElement("div");
   acciones.id = "accionesFinales";
   acciones.style.display = "flex";
+  acciones.style.position = "relative";
+  acciones.style.zIndex = "5000";
   acciones.style.gap = "10px";
   acciones.style.justifyContent = "center";
   acciones.style.marginTop = "15px";
@@ -777,6 +796,7 @@ function mostrarResultadoFinal(canvas) {
 
   preview.parentNode.appendChild(acciones);
 }
+
 
 // ======================== OPCION DESCARGAR ====================================
 
@@ -796,17 +816,21 @@ function compartirImagenFinal() {
   canvas.toBlob(blob => {
     const file = new File([blob], "versiculo.png", { type: "image/png" });
 
-    if (navigator.share) {
+    if (navigator.share && navigator.canShare?.({ files: [file] })) {
       navigator.share({
         files: [file],
         title: "Versículo",
         text: "Compartir imagen"
       });
     } else {
-      alert("Compartir no disponible en este dispositivo");
+      // 🔥 FALLBACK REAL
+      descargarImagenFinal();
+      alert("Tu dispositivo no permite compartir directamente. La imagen se descargó para que la compartas manualmente.");
     }
   });
 }
+
+
 
 
 
