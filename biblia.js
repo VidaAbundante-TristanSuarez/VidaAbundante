@@ -145,7 +145,7 @@ function obtenerVersiculoSeleccionado() {
     }
   });
 
-  return textos.join(" ")
+return textos.join(" ")
   + "\n\n▪ "
   + refFinal;
 
@@ -182,17 +182,11 @@ function actualizarPreview() {
   previewTexto.style.fontSize = sizeBase + "px";
   previewTextoBack.style.fontSize = sizeBase + "px";
 
- let intentos = 0;
-while (
-  previewTexto.scrollHeight > wrapper.clientHeight &&
-  sizeBase > 14 &&
-  intentos < 10
-) {
-  sizeBase--;
-  previewTexto.style.fontSize = sizeBase + "px";
-  previewTextoBack.style.fontSize = sizeBase + "px";
-  intentos++;
-}
+  while (previewTexto.scrollHeight > wrapper.clientHeight && sizeBase > 14) {
+    sizeBase--;
+    previewTexto.style.fontSize = sizeBase + "px";
+    previewTextoBack.style.fontSize = sizeBase + "px";
+  }
 
   const color = document.getElementById("personalizarColor").value;
   const opacidad = document.getElementById("personalizarOpacidad").value;
@@ -259,6 +253,7 @@ function ajustarTextoPreview() {
   }
 }
 
+
 function resetPreview() {
   fondoFinal = null;
   textStyle = { upper: false, bold: false, italic: false, underline: false };
@@ -274,27 +269,8 @@ function resetModalPersonalizar() {
   document.getElementById("personalizarColor").value = "#ffffff";
 
   const prev = document.getElementById("previewImagen");
-  if (prev) {
-    prev.style.backgroundImage = "none";
-    prev.style.pointerEvents = "auto";
-  }
-
-  const wrapper = document.getElementById("previewTextoWrapper");
-  if (wrapper) wrapper.style.pointerEvents = "auto";
-
-  // 🔥 VOLVER A MOSTRAR TEXTO HTML
-  document.getElementById("previewTexto").style.display = "block";
-  document.getElementById("previewTextoBack").style.display = "block";
-
-  // Restaurar UI
-  document.querySelector(".panel-opciones").style.display = "block";
-  document.getElementById("personalizarFondos").style.display = "flex";
-  document.getElementById("btnGenerarPersonalizada").style.display = "inline-block";
-
-  const acciones = document.getElementById("accionesFinales");
-  if (acciones) acciones.remove();
+  if (prev) prev.style.backgroundImage = "none";
 }
-
 
 function salirModoImagen() {
   modoImagen = false;
@@ -598,15 +574,22 @@ const esStory = preview.classList.contains("preview-story");
     img.onload = () => {
       dibujarFondo(ctx, img, canvas);
       dibujarTexto(ctx, canvas);
-      mostrarResultadoFinal(canvas);
+      exportarImagen(canvas);
     };
     img.src = fondoFinal;
   } else {
     ctx.fillStyle = "#000";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     dibujarTexto(ctx, canvas);
-    mostrarResultadoFinal(canvas);
+    exportarImagen(canvas);
   }
+}
+
+function exportarImagen(canvas) {
+  const link = document.createElement("a");
+  link.download = "versiculo.png";
+  link.href = canvas.toDataURL("image/png");
+  link.click();
 }
 
 // ======================== DIBUJA FONDO ==================================== 
@@ -639,23 +622,7 @@ function dibujarTexto(ctx, canvas) {
   const color = document.getElementById("personalizarColor").value;
   const opacidad = document.getElementById("personalizarOpacidad").value;
 
-  const fuentePreview = document.getElementById("personalizarFuente").value || "Arial";
-
-const fuentesSeguras = [
-  "Arial",
-  "Times New Roman",
-  "Courier New",
-  "Verdana",
-  "Georgia",
-  "Helvetica",
-  "Trebuchet MS",
-  "Impact"
-];
-
-const fuente = fuentesSeguras.includes(fuentePreview)
-  ? fuentePreview
-  : "Arial";
-
+  const fuente = document.getElementById("personalizarFuente").value || "Arial";
   let size = parseInt(document.getElementById("personalizarTamaño").value || 36);
 
   const paddingX = 80;
@@ -666,46 +633,29 @@ const fuente = fuentesSeguras.includes(fuentePreview)
   ctx.textAlign = "center";
   ctx.textBaseline = "top";
 
+  // Fondo opaco
+  ctx.fillStyle = `rgba(0,0,0,${opacidad})`;
+  ctx.fillRect(
+    paddingX,
+    paddingY,
+    maxWidth,
+    maxHeight
+  );
+
   // Ajuste automático tamaño
-  ctx.font = `
-  ${textStyle.italic ? "italic" : ""}
-  ${textStyle.bold ? "700" : "400"}
-  ${size}px ${fuente}
-`;
+  do {
+    ctx.font = `
+      ${textStyle.italic ? "italic" : ""}
+      ${textStyle.bold ? "700" : "400"}
+      ${size}px ${fuente}
+    `;
+    size--;
+  } while (medirAltoTexto(ctx, texto, maxWidth) > maxHeight && size > 14);
 
-while (medirAltoTexto(ctx, texto, maxWidth) > maxHeight && size > 14) {
-  size--;
-  ctx.font = `
-    ${textStyle.italic ? "italic" : ""}
-    ${textStyle.bold ? "700" : "400"}
-    ${size}px ${fuente}
-  `;
-}
+  ctx.fillStyle = color;
+
   let y = paddingY + (maxHeight - medirAltoTexto(ctx, texto, maxWidth)) / 2;
-
-// ===== OUTLINE =====
-ctx.lineWidth = 4;
-ctx.strokeStyle = colorContraste(color);
-dibujarTextoMultilineaStroke(
-  ctx,
-  texto,
-  canvas.width / 2,
-  y,
-  maxWidth,
-  size * 1.3
-);
-
-// ===== TEXTO PRINCIPAL =====
-ctx.fillStyle = color;
-dibujarTextoMultilinea(
-  ctx,
-  texto,
-  canvas.width / 2,
-  y,
-  maxWidth,
-  size * 1.3
-);
-
+  dibujarTextoMultilinea(ctx, texto, canvas.width / 2, y, maxWidth, size * 1.3);
 }
 
 // ======================== FUNCIONES AUXILIARES MULTILÍNEA ==================================== 
@@ -746,100 +696,8 @@ function medirAltoTexto(ctx, texto, maxWidth) {
   return lineas * parseInt(ctx.font);
 }
 
-// ======================== OUTLINE ====================================
 
-function dibujarTextoMultilineaStroke(ctx, texto, x, y, maxWidth, lineHeight) {
-  const palabras = texto.split(" ");
-  let linea = "";
 
-  for (let i = 0; i < palabras.length; i++) {
-    const test = linea + palabras[i] + " ";
-    const metrics = ctx.measureText(test);
-
-    if (metrics.width > maxWidth && i > 0) {
-      ctx.strokeText(linea, x, y);
-      linea = palabras[i] + " ";
-      y += lineHeight;
-    } else {
-      linea = test;
-    }
-  }
-  ctx.strokeText(linea, x, y);
-}
-
-// ======================== VER RESULTADO FINAL ====================================
-
-function mostrarResultadoFinal(canvas) {
-  const preview = document.getElementById("previewImagen");
-
-  // Imagen final
-  preview.style.backgroundImage = `url(${canvas.toDataURL("image/png")})`;
-  preview.style.pointerEvents = "none";
-
-  // Ocultar texto HTML para que no se duplique
-  document.getElementById("previewTexto").style.display = "none";
-  document.getElementById("previewTextoBack").style.display = "none";
-
-  const wrapper = document.getElementById("previewTextoWrapper");
-  if (wrapper) wrapper.style.pointerEvents = "none";
-
-  // Ocultar opciones
-  document.querySelector(".panel-opciones").style.display = "none";
-  document.getElementById("personalizarFondos").style.display = "none";
-  document.getElementById("btnGenerarPersonalizada").style.display = "none";
-
-  // Eliminar botones previos si existen
-  const viejo = document.getElementById("accionesFinales");
-  if (viejo) viejo.remove();
-
-  // Botones finales (DEBAJO del preview)
-  const acciones = document.createElement("div");
-  acciones.id = "accionesFinales";
-  acciones.style.display = "flex";
-  acciones.style.justifyContent = "center";
-  acciones.style.gap = "12px";
-  acciones.style.marginTop = "15px";
-
-  acciones.innerHTML = `
-    <button onclick="descargarImagenFinal()">⬇️ Descargar</button>
-    <button onclick="compartirImagenFinal()">📤 Compartir</button>
-  `;
-
-  // 👈 ESTO ES CLAVE: se agregan junto al preview, no afuera
-  preview.parentNode.appendChild(acciones);
-}
-
-// ======================== OPCION DESCARGAR ====================================
-
-function descargarImagenFinal() {
-  const canvas = document.getElementById("canvasFinal");
-  const link = document.createElement("a");
-  link.download = "versiculo.png";
-  link.href = canvas.toDataURL("image/png");
-  link.click();
-}
-
-// ======================== OPCION COMPARTIR ====================================
-
-function compartirImagenFinal() {
-  const canvas = document.getElementById("canvasFinal");
-
-  canvas.toBlob(blob => {
-    const file = new File([blob], "versiculo.png", { type: "image/png" });
-
-    if (navigator.share && navigator.canShare?.({ files: [file] })) {
-      navigator.share({
-        files: [file],
-        title: "Versículo",
-        text: "Compartir imagen"
-      });
-    } else {
-      // 🔥 FALLBACK REAL
-      descargarImagenFinal();
-      alert("Tu dispositivo no permite compartir directamente. La imagen se descargó para que la compartas manualmente.");
-    }
-  });
-}
 
 
 
