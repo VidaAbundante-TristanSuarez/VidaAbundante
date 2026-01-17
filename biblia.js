@@ -145,10 +145,7 @@ function obtenerVersiculoSeleccionado() {
     }
   });
 
-return textos.join(" ")
-  + "\n\n▪ "
-  + refFinal;
-
+  return textos.join(" ") + "\n\n— " + refFinal;
 }
 
 function colorContraste(hex) {
@@ -536,6 +533,7 @@ function cargarFondos() {
   });
 }
 
+// ============================================================
 // ================= BOTÓN GENERAR ============================
 // ============================================================
 
@@ -548,153 +546,11 @@ if (btnGen) {
       return;
     }
 
-    generarImagenFinal(); // 🔥 ACÁ SE CREA LA IMAGEN REAL
+    alert("✅ Imagen generada (canvas va acá)");
+    salirModoImagen();
   };
 }
 
-// ============================================================ CANVAS
-
-function generarImagenFinal() {
-  const canvas = document.getElementById("canvasFinal");
-  const ctx = canvas.getContext("2d");
-
- const preview = document.getElementById("previewImagen");
-const esStory = preview.classList.contains("preview-story");
-
-  // Tamaños reales
-  canvas.width = esStory ? 1080 : 1080;
-  canvas.height = esStory ? 1920 : 1080;
-
-  // ===== FONDO =====
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  if (fondoFinal) {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => {
-      dibujarFondo(ctx, img, canvas);
-      dibujarTexto(ctx, canvas);
-      exportarImagen(canvas);
-    };
-    img.src = fondoFinal;
-  } else {
-    ctx.fillStyle = "#000";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    dibujarTexto(ctx, canvas);
-    exportarImagen(canvas);
-  }
-}
-
-function exportarImagen(canvas) {
-  const link = document.createElement("a");
-  link.download = "versiculo.png";
-  link.href = canvas.toDataURL("image/png");
-  link.click();
-}
-
-// ======================== DIBUJA FONDO ==================================== 
-
-function dibujarFondo(ctx, img, canvas) {
-  const ratioCanvas = canvas.width / canvas.height;
-  const ratioImg = img.width / img.height;
-
-  let drawWidth, drawHeight, x, y;
-
-  if (ratioImg > ratioCanvas) {
-    drawHeight = canvas.height;
-    drawWidth = img.width * (canvas.height / img.height);
-    x = (canvas.width - drawWidth) / 2;
-    y = 0;
-  } else {
-    drawWidth = canvas.width;
-    drawHeight = img.height * (canvas.width / img.width);
-    x = 0;
-    y = (canvas.height - drawHeight) / 2;
-  }
-
-  ctx.drawImage(img, x, y, drawWidth, drawHeight);
-}
-
-// ======================== DIBUJA TEXTO CLON DEL PREVIEW ==================================== 
-
-function dibujarTexto(ctx, canvas) {
-  const texto = obtenerVersiculoSeleccionado();
-  const color = document.getElementById("personalizarColor").value;
-  const opacidad = document.getElementById("personalizarOpacidad").value;
-
-  const fuente = document.getElementById("personalizarFuente").value || "Arial";
-  let size = parseInt(document.getElementById("personalizarTamaño").value || 36);
-
-  const paddingX = 80;
-  const paddingY = 120;
-  const maxWidth = canvas.width - paddingX * 2;
-  const maxHeight = canvas.height - paddingY * 2;
-
-  ctx.textAlign = "center";
-  ctx.textBaseline = "top";
-
-  // Fondo opaco
-  ctx.fillStyle = `rgba(0,0,0,${opacidad})`;
-  ctx.fillRect(
-    paddingX,
-    paddingY,
-    maxWidth,
-    maxHeight
-  );
-
-  // Ajuste automático tamaño
-  do {
-    ctx.font = `
-      ${textStyle.italic ? "italic" : ""}
-      ${textStyle.bold ? "700" : "400"}
-      ${size}px ${fuente}
-    `;
-    size--;
-  } while (medirAltoTexto(ctx, texto, maxWidth) > maxHeight && size > 14);
-
-  ctx.fillStyle = color;
-
-  let y = paddingY + (maxHeight - medirAltoTexto(ctx, texto, maxWidth)) / 2;
-  dibujarTextoMultilinea(ctx, texto, canvas.width / 2, y, maxWidth, size * 1.3);
-}
-
-// ======================== FUNCIONES AUXILIARES MULTILÍNEA ==================================== 
-
-function dibujarTextoMultilinea(ctx, texto, x, y, maxWidth, lineHeight) {
-  const palabras = texto.split(" ");
-  let linea = "";
-
-  for (let i = 0; i < palabras.length; i++) {
-    const test = linea + palabras[i] + " ";
-    const metrics = ctx.measureText(test);
-
-    if (metrics.width > maxWidth && i > 0) {
-      ctx.fillText(linea, x, y);
-      linea = palabras[i] + " ";
-      y += lineHeight;
-    } else {
-      linea = test;
-    }
-  }
-  ctx.fillText(linea, x, y);
-}
-
-function medirAltoTexto(ctx, texto, maxWidth) {
-  const palabras = texto.split(" ");
-  let linea = "";
-  let lineas = 1;
-
-  for (let i = 0; i < palabras.length; i++) {
-    const test = linea + palabras[i] + " ";
-    if (ctx.measureText(test).width > maxWidth && i > 0) {
-      lineas++;
-      linea = palabras[i] + " ";
-    } else {
-      linea = test;
-    }
-  }
-  return lineas * parseInt(ctx.font);
-}
 
 
 
