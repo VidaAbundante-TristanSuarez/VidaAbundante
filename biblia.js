@@ -182,11 +182,17 @@ function actualizarPreview() {
   previewTexto.style.fontSize = sizeBase + "px";
   previewTextoBack.style.fontSize = sizeBase + "px";
 
-  while (previewTexto.scrollHeight > wrapper.clientHeight && sizeBase > 14) {
-    sizeBase--;
-    previewTexto.style.fontSize = sizeBase + "px";
-    previewTextoBack.style.fontSize = sizeBase + "px";
-  }
+ let intentos = 0;
+while (
+  previewTexto.scrollHeight > wrapper.clientHeight &&
+  sizeBase > 14 &&
+  intentos < 10
+) {
+  sizeBase--;
+  previewTexto.style.fontSize = sizeBase + "px";
+  previewTextoBack.style.fontSize = sizeBase + "px";
+  intentos++;
+}
 
   const color = document.getElementById("personalizarColor").value;
   const opacidad = document.getElementById("personalizarOpacidad").value;
@@ -783,8 +789,9 @@ function mostrarResultadoFinal(canvas) {
   const acciones = document.createElement("div");
   acciones.id = "accionesFinales";
   acciones.style.display = "flex";
+  acciones.style.flexDirection = "row"; // 👈 ESTA
   acciones.style.position = "relative";
-  acciones.style.zIndex = "5000";
+  acciones.style.zIndex = "10";
   acciones.style.gap = "10px";
   acciones.style.justifyContent = "center";
   acciones.style.marginTop = "15px";
@@ -829,6 +836,7 @@ function compartirImagenFinal() {
     }
   });
 }
+
 
 
 
