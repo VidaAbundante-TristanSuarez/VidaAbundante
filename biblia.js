@@ -667,15 +667,20 @@ const fuente = fuentesSeguras.includes(fuentePreview)
   ctx.textBaseline = "top";
 
   // Ajuste automático tamaño
-  do {
-    ctx.font = `
-      ${textStyle.italic ? "italic" : ""}
-      ${textStyle.bold ? "700" : "400"}
-      ${size}px ${fuente}
-    `;
-    size--;
-  } while (medirAltoTexto(ctx, texto, maxWidth) > maxHeight && size > 14);
+  ctx.font = `
+  ${textStyle.italic ? "italic" : ""}
+  ${textStyle.bold ? "700" : "400"}
+  ${size}px ${fuente}
+`;
 
+while (medirAltoTexto(ctx, texto, maxWidth) > maxHeight && size > 14) {
+  size--;
+  ctx.font = `
+    ${textStyle.italic ? "italic" : ""}
+    ${textStyle.bold ? "700" : "400"}
+    ${size}px ${fuente}
+  `;
+}
   let y = paddingY + (maxHeight - medirAltoTexto(ctx, texto, maxWidth)) / 2;
 
 // ===== OUTLINE =====
@@ -767,44 +772,41 @@ function dibujarTextoMultilineaStroke(ctx, texto, x, y, maxWidth, lineHeight) {
 function mostrarResultadoFinal(canvas) {
   const preview = document.getElementById("previewImagen");
 
-  // Mostrar imagen final del canvas
+  // Imagen final
   preview.style.backgroundImage = `url(${canvas.toDataURL("image/png")})`;
   preview.style.pointerEvents = "none";
-  preview.style.position = "relative";
-  preview.style.zIndex = "1";
 
-  // 🔴 OCULTAR TEXTO HTML (EVITA TEXTO DUPLICADO)
+  // Ocultar texto HTML para que no se duplique
   document.getElementById("previewTexto").style.display = "none";
   document.getElementById("previewTextoBack").style.display = "none";
 
   const wrapper = document.getElementById("previewTextoWrapper");
   if (wrapper) wrapper.style.pointerEvents = "none";
 
-  // Ocultar paneles
+  // Ocultar opciones
   document.querySelector(".panel-opciones").style.display = "none";
   document.getElementById("personalizarFondos").style.display = "none";
   document.getElementById("btnGenerarPersonalizada").style.display = "none";
 
-  // Evitar duplicar botones
+  // Eliminar botones previos si existen
   const viejo = document.getElementById("accionesFinales");
   if (viejo) viejo.remove();
 
-  // Botones finales
+  // Botones finales (DEBAJO del preview)
   const acciones = document.createElement("div");
   acciones.id = "accionesFinales";
   acciones.style.display = "flex";
   acciones.style.justifyContent = "center";
   acciones.style.gap = "12px";
   acciones.style.marginTop = "15px";
-  acciones.style.zIndex = "1000";
 
   acciones.innerHTML = `
     <button onclick="descargarImagenFinal()">⬇️ Descargar</button>
     <button onclick="compartirImagenFinal()">📤 Compartir</button>
   `;
 
-  // ⬅️ IMPORTANTE: va DENTRO del modal, no del preview
-  document.getElementById("modalPersonalizar").appendChild(acciones);
+  // 👈 ESTO ES CLAVE: se agregan junto al preview, no afuera
+  preview.parentNode.appendChild(acciones);
 }
 
 // ======================== OPCION DESCARGAR ====================================
@@ -838,6 +840,7 @@ function compartirImagenFinal() {
     }
   });
 }
+
 
 
 
