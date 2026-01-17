@@ -145,7 +145,10 @@ function obtenerVersiculoSeleccionado() {
     }
   });
 
-  return textos.join(" ") + "\n\n— " + refFinal;
+  return textos.join(" ")
+  + "\n\n▪ "
+  + refFinal;
+
 }
 
 function colorContraste(hex) {
@@ -649,10 +652,31 @@ function dibujarTexto(ctx, canvas) {
     size--;
   } while (medirAltoTexto(ctx, texto, maxWidth) > maxHeight && size > 14);
 
-  ctx.fillStyle = color;
-
   let y = paddingY + (maxHeight - medirAltoTexto(ctx, texto, maxWidth)) / 2;
-  dibujarTextoMultilinea(ctx, texto, canvas.width / 2, y, maxWidth, size * 1.3);
+
+// ===== OUTLINE =====
+ctx.lineWidth = 4;
+ctx.strokeStyle = colorContraste(color);
+dibujarTextoMultilineaStroke(
+  ctx,
+  texto,
+  canvas.width / 2,
+  y,
+  maxWidth,
+  size * 1.3
+);
+
+// ===== TEXTO PRINCIPAL =====
+ctx.fillStyle = color;
+dibujarTextoMultilinea(
+  ctx,
+  texto,
+  canvas.width / 2,
+  y,
+  maxWidth,
+  size * 1.3
+);
+
 }
 
 // ======================== FUNCIONES AUXILIARES MULTILÍNEA ==================================== 
@@ -692,6 +716,7 @@ function medirAltoTexto(ctx, texto, maxWidth) {
   }
   return lineas * parseInt(ctx.font);
 }
+
 
 
 
