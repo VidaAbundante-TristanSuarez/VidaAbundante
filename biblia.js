@@ -65,6 +65,11 @@ function mostrarTexto() {
   notaBox.style.display = "none";
   grupoActual = null;
 
+
+  if (modoImagen) {
+    seleccionImagen = {};
+  }
+  
   titulo.innerText = `${libroSel.value} ${capSel.value}`;
 
   const versos = bibliaData.filter(v =>
@@ -113,9 +118,13 @@ function toggleVersiculo(id, num) {
 }
 
 function detectarGrupo(num) {
-  const nums = Object.keys(marcados)
-    .map(k => Number(k.split("_")[2]))
-    .sort((a, b) => a - b);
+ const nums = Object.keys(marcados)
+  .filter(k => {
+    const [lib, cap] = k.split("_");
+    return lib === libroSel.value && cap == capSel.value;
+  })
+  .map(k => Number(k.split("_")[2]))
+  .sort((a, b) => a - b);
 
   const grupo = nums.filter(n => Math.abs(n - num) <= 1);
   if (grupo.length < 2) return;
@@ -130,23 +139,56 @@ function obtenerVersiculoSeleccionado() {
   if (ids.length === 0) return "";
 
   let textos = [];
-  let refFinal = "";
+  let numeros = [];
+  let libro = "";
+  let cap = "";
 
   ids.forEach(id => {
-    const [libro, cap, ver] = id.split("_");
-    const v = bibliaData.find(x =>
-      x.Libro === libro &&
-      x.Capitulo == cap &&
-      x.Versiculo == ver
+    const [l, c, v] = id.split("_");
+    const vers = bibliaData.find(x =>
+      x.Libro === l &&
+      x.Capitulo == c &&
+      x.Versiculo == v
     );
-    if (v) {
-      textos.push(v.RV1960);
-      refFinal = `${libro} ${cap}:${ver}`;
+
+    if (vers) {
+      libro = l;
+      cap = c;
+      textos.push(vers.RV1960);
+      numeros.push(Number(v));
     }
   });
 
-  return textos.join(" ") + "\n\n— " + refFinal;
+  // ordenar versículos
+  numeros.sort((a, b) => a - b);
+
+  // convertir a rangos
+  const partes = [];
+  let inicio = numeros[0];
+  let anterior = numeros[0];
+
+  for (let i = 1; i < numeros.length; i++) {
+    if (numeros[i] === anterior + 1) {
+      anterior = numeros[i];
+    } else {
+      partes.push(
+        inicio === anterior ? `${inicio}` : `${inicio}-${anterior}`
+      );
+      inicio = numeros[i];
+      anterior = numeros[i];
+    }
+  }
+
+  partes.push(
+    inicio === anterior ? `${inicio}` : `${inicio}-${anterior}`
+  );
+
+  const referencia = `${libro} ${cap}:${partes.join(",")}`;
+
+  return textos.join(" ") + "\n\n▪ " + referencia;
 }
+
+
 
 function colorContraste(hex) {
   hex = hex.replace("#", "");
@@ -156,6 +198,58 @@ function colorContraste(hex) {
   const lum = 0.299 * r + 0.587 * g + 0.114 * b;
   return lum > 160 ? "#000000" : "#ffffff";
 }
+
+function formatearVersiculosComoRango(numeros) {
+  if (numeros.length === 0) return "";
+
+  numeros.sort((a, b) => a - b);
+
+  const partes = [];
+  let inicio = numeros[0];
+  let anterior = numeros[0];
+
+  for (let i = 1; i < numeros.length; i++) {
+    if (numeros[i] === anterior + 1) {
+      anterior = numeros[i];
+    } else {
+      partes.push(
+        inicio === anterior ? `${inicio}` : `${inicio}-${anterior}`
+      );
+      inicio = numeros[i];
+      anterior = numeros[i];
+    }
+  }
+
+  partes.push(
+    inicio === anterior ? `${inicio}` : `${inicio}-${anterior}`
+  );
+
+  return partes.join(",");
+}
+
+
+function colorOutlineDesdeBase(hex) {
+  const map = {
+    "#329534": "#e5ffe5",
+    "#b2a43d": "#fffce5",
+    "#c14444": "#ffe5e5",
+    "#524ec9": "#e5e7ff",
+    "#000000": "#ffffff",
+    "#ffffff": "#000000",
+    "#aa4ec9": "#f4e5ff",
+    "#d57747": "#ffece5",
+
+    "#e5ffe5": "#329534",
+    "#fffce5": "#b2a43d",
+    "#ffe5e5": "#c14444",
+    "#e5e7ff": "#524ec9",
+    "#f4e5ff": "#aa4ec9",
+    "#ffece5": "#d57747"
+  };
+
+  return map[hex.toLowerCase()] || hex;
+}
+
 
 function actualizarPreview() {
   const previewImagen = document.getElementById("previewImagen");
@@ -178,12 +272,6 @@ function actualizarPreview() {
   let sizeBase = parseInt(document.getElementById("personalizarTamaño").value || 32);
   previewTexto.style.fontSize = sizeBase + "px";
   previewTextoBack.style.fontSize = sizeBase + "px";
-
-  while (previewTexto.scrollHeight > wrapper.clientHeight && sizeBase > 14) {
-    sizeBase--;
-    previewTexto.style.fontSize = sizeBase + "px";
-    previewTextoBack.style.fontSize = sizeBase + "px";
-  }
 
   const color = document.getElementById("personalizarColor").value;
   const opacidad = document.getElementById("personalizarOpacidad").value;
@@ -222,34 +310,7 @@ previewTextoBack.style.textTransform = transform;
   previewTextoBack.style.fontStyle = previewTexto.style.fontStyle;
   previewTextoBack.style.textDecoration = previewTexto.style.textDecoration;
 
-  ajustarTextoPreview();
-
 }
-
-function ajustarTextoPreview() {
-  const wrapper = document.getElementById("previewTextoWrapper");
-  const texto = document.getElementById("previewTexto");
-  const back = document.getElementById("previewTextoBack");
-
-  if (!wrapper || !texto) return;
-
-  let size = parseInt(texto.style.fontSize) || 32;
-
-  // reset previo
-  texto.style.whiteSpace = "pre-wrap";
-  texto.style.wordBreak = "break-word";
-
-  while (
-    (texto.scrollHeight > wrapper.clientHeight ||
-     texto.scrollWidth > wrapper.clientWidth) &&
-    size > 12
-  ) {
-    size--;
-    texto.style.fontSize = size + "px";
-    back.style.fontSize = size + "px";
-  }
-}
-
 
 function resetPreview() {
   fondoFinal = null;
@@ -266,8 +327,27 @@ function resetModalPersonalizar() {
   document.getElementById("personalizarColor").value = "#ffffff";
 
   const prev = document.getElementById("previewImagen");
-  if (prev) prev.style.backgroundImage = "none";
+  if (prev) {
+    prev.style.backgroundImage = "none";
+    prev.style.pointerEvents = "auto";
+  }
+
+  const wrapper = document.getElementById("previewTextoWrapper");
+  if (wrapper) wrapper.style.pointerEvents = "auto";
+
+  // 🔥 VOLVER A MOSTRAR TEXTO HTML
+  document.getElementById("previewTexto").style.display = "block";
+  document.getElementById("previewTextoBack").style.display = "block";
+
+  // Restaurar UI
+  document.querySelector(".panel-opciones").style.display = "block";
+  document.getElementById("personalizarFondos").style.display = "flex";
+  document.getElementById("btnGenerarPersonalizada").style.display = "inline-block";
+
+  const acciones = document.getElementById("accionesFinales");
+  if (acciones) acciones.remove();
 }
+
 
 function salirModoImagen() {
   modoImagen = false;
@@ -497,7 +577,6 @@ window.setFormatoImagen = tipo => {
   const preview = document.getElementById("previewImagen");
   preview.classList.remove("preview-post", "preview-story");
   preview.classList.add(tipo === "story" ? "preview-story" : "preview-post");
-  setTimeout(ajustarTextoPreview, 50); // 👈 ESTA LÍNEA
 };
 
 // ============================================================
@@ -533,7 +612,6 @@ function cargarFondos() {
   });
 }
 
-// ============================================================
 // ================= BOTÓN GENERAR ============================
 // ============================================================
 
@@ -546,15 +624,272 @@ if (btnGen) {
       return;
     }
 
-    alert("✅ Imagen generada (canvas va acá)");
-    salirModoImagen();
+    generarImagenFinal(); // 🔥 ACÁ SE CREA LA IMAGEN REAL
   };
 }
 
+// ============================================================ CANVAS
+
+function generarImagenFinal() {
+  const canvas = document.getElementById("canvasFinal");
+  const ctx = canvas.getContext("2d");
+
+  const preview = document.getElementById("previewImagen");
+  const esStory = preview.classList.contains("preview-story");
+
+  canvas.width = 1080;
+  canvas.height = esStory ? 1920 : 1080;
+
+  const fuente = document.getElementById("personalizarFuente").value || "Arial";
+
+  document.fonts.load(`700 32px ${fuente}`).then(() => {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (fondoFinal) {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        dibujarFondo(ctx, img, canvas);
+        dibujarTexto(ctx, canvas);
+        mostrarResultadoFinal(canvas);
+      };
+      img.src = fondoFinal;
+    } else {
+      ctx.fillStyle = "#000";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      dibujarTexto(ctx, canvas);
+      mostrarResultadoFinal(canvas);
+    }
+  });
+}
+
+// ======================== DIBUJA FONDO ==================================== 
+
+function dibujarFondo(ctx, img, canvas) {
+  const ratioCanvas = canvas.width / canvas.height;
+  const ratioImg = img.width / img.height;
+
+  let drawWidth, drawHeight, x, y;
+
+  if (ratioImg > ratioCanvas) {
+    drawHeight = canvas.height;
+    drawWidth = img.width * (canvas.height / img.height);
+    x = (canvas.width - drawWidth) / 2;
+    y = 0;
+  } else {
+    drawWidth = canvas.width;
+    drawHeight = img.height * (canvas.width / img.width);
+    x = 0;
+    y = (canvas.height - drawHeight) / 2;
+  }
+
+  ctx.drawImage(img, x, y, drawWidth, drawHeight);
+}
+
+// ======================== DIBUJA TEXTO CLON DEL PREVIEW ==================================== 
+
+function dibujarTexto(ctx, canvas) {
+  const texto = obtenerVersiculoSeleccionado();
+  const color = document.getElementById("personalizarColor").value;
+  const opacidad = document.getElementById("personalizarOpacidad").value;
+
+  const fuentePreview = document.getElementById("personalizarFuente").value || "Arial";
+
+const fuente = fuentePreview;
+
+  let size = parseInt(document.getElementById("personalizarTamaño").value || 36);
+
+  const paddingX = 80;
+  const paddingY = 120;
+  const maxWidth = canvas.width - paddingX * 2;
+  const maxHeight = canvas.height - paddingY * 2;
+
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+
+  // Ajuste automático tamaño
+  ctx.font = `
+  ${textStyle.italic ? "italic" : ""}
+  ${textStyle.bold ? "700" : "400"}
+  ${size}px ${fuente}
+`;
+
+const lineHeight = size * 1.3;
+
+while (medirAltoTexto(ctx, texto, maxWidth, lineHeight) > maxHeight && size > 14) {
+  size--;
+  ctx.font = `
+    ${textStyle.italic ? "italic" : ""}
+    ${textStyle.bold ? "700" : "400"}
+    ${size}px ${fuente}
+  `;
+}
+  let y = paddingY + 
+  (maxHeight - medirAltoTexto(ctx, texto, maxWidth, lineHeight)) / 2;
+
+// ===== OUTLINE =====
+ctx.lineWidth = 4;
+const outlineColor = colorOutlineDesdeBase(color);
+ctx.strokeStyle = outlineColor;
+
+dibujarTextoMultilineaStroke(
+  ctx,
+  texto,
+  canvas.width / 2,
+  y,
+  maxWidth,
+  size * 1.3
+);
+
+// ===== TEXTO PRINCIPAL =====
+ctx.fillStyle = color;
+dibujarTextoMultilinea(
+  ctx,
+  texto,
+  canvas.width / 2,
+  y,
+  maxWidth,
+  size * 1.3
+);
+
+}
+
+// ======================== FUNCIONES AUXILIARES MULTILÍNEA ==================================== 
+
+function dibujarTextoMultilinea(ctx, texto, x, y, maxWidth, lineHeight) {
+  const palabras = texto.split(" ");
+  let linea = "";
+
+  for (let i = 0; i < palabras.length; i++) {
+    const test = linea + palabras[i] + " ";
+    const metrics = ctx.measureText(test);
+
+    if (metrics.width > maxWidth && i > 0) {
+      ctx.fillText(linea, x, y);
+      linea = palabras[i] + " ";
+      y += lineHeight;
+    } else {
+      linea = test;
+    }
+  }
+  ctx.fillText(linea, x, y);
+}
+
+function medirAltoTexto(ctx, texto, maxWidth, lineHeight) {
+  const palabras = texto.split(" ");
+  let linea = "";
+  let lineas = 1;
+
+  for (let i = 0; i < palabras.length; i++) {
+    const test = linea + palabras[i] + " ";
+    if (ctx.measureText(test).width > maxWidth && i > 0) {
+      lineas++;
+      linea = palabras[i] + " ";
+    } else {
+      linea = test;
+    }
+  }
+  return lineas * lineHeight;
+}
+
+// ======================== OUTLINE ====================================
+
+function dibujarTextoMultilineaStroke(ctx, texto, x, y, maxWidth, lineHeight) {
+  const palabras = texto.split(" ");
+  let linea = "";
+
+  for (let i = 0; i < palabras.length; i++) {
+    const test = linea + palabras[i] + " ";
+    const metrics = ctx.measureText(test);
+
+    if (metrics.width > maxWidth && i > 0) {
+      ctx.strokeText(linea, x, y);
+      linea = palabras[i] + " ";
+      y += lineHeight;
+    } else {
+      linea = test;
+    }
+  }
+  ctx.strokeText(linea, x, y);
+}
+
+// ======================== VER RESULTADO FINAL ====================================
+
+function mostrarResultadoFinal(canvas) {
+  const preview = document.getElementById("previewImagen");
+
+  // Imagen final
+  preview.style.backgroundImage = `url(${canvas.toDataURL("image/png")})`;
+  preview.style.pointerEvents = "none";
+
+  // Ocultar texto HTML para que no se duplique
+  document.getElementById("previewTexto").style.display = "none";
+  document.getElementById("previewTextoBack").style.display = "none";
+
+  const wrapper = document.getElementById("previewTextoWrapper");
+  if (wrapper) wrapper.style.pointerEvents = "none";
+
+  // Ocultar opciones
+  document.querySelector(".panel-opciones").style.display = "none";
+  document.getElementById("personalizarFondos").style.display = "none";
+  document.getElementById("btnGenerarPersonalizada").style.display = "none";
+
+  // Eliminar botones previos si existen
+  const viejo = document.getElementById("accionesFinales");
+  if (viejo) viejo.remove();
+
+  // Botones finales (DEBAJO del preview)
+  const acciones = document.createElement("div");
+  acciones.id = "accionesFinales";
+  acciones.style.display = "flex";
+  acciones.style.justifyContent = "center";
+  acciones.style.gap = "12px";
+  acciones.style.marginTop = "15px";
+
+  acciones.innerHTML = `
+    <button onclick="descargarImagenFinal()">⬇️ Descargar</button>
+    <button onclick="compartirImagenFinal()">📤 Compartir</button>
+  `;
+
+  // 👈 ESTO ES CLAVE: se agregan junto al preview, no afuera
+  preview.parentNode.appendChild(acciones);
+}
+
+// ======================== OPCION DESCARGAR ====================================
+
+function descargarImagenFinal() {
+  const canvas = document.getElementById("canvasFinal");
+  canvas.toBlob(blob => {
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "versiculo.png";
+    link.click();
+    URL.revokeObjectURL(link.href);
+  });
+}
 
 
+// ======================== OPCION COMPARTIR ====================================
 
+function compartirImagenFinal() {
+  const canvas = document.getElementById("canvasFinal");
 
+  canvas.toBlob(blob => {
+    const file = new File([blob], "versiculo.png", { type: "image/png" });
+
+    if (navigator.share && navigator.canShare?.({ files: [file] })) {
+      navigator.share({
+        files: [file],
+        title: "Versículo",
+        text: "Compartir imagen"
+      });
+    } else {
+      // 🔥 FALLBACK REAL
+      descargarImagenFinal();
+      alert("Tu dispositivo no permite compartir directamente. La imagen se descargó para que la compartas manualmente.");
+    }
+  });
+}
 
 
 
