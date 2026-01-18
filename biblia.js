@@ -599,22 +599,29 @@ const paleta = document.getElementById("paletaResaltadores");
 // abrir / cerrar paleta
 if (btnActivo && paleta) {
 
-  btnActivo.addEventListener("click", () => {
-    paleta.style.display =
-      paleta.style.display === "block" ? "none" : "block";
-  });
+btnActivo.addEventListener("click", (e) => {
+  e.stopPropagation(); // 🔥 CLAVE
+  e.preventDefault();
+
+  paleta.style.display =
+    paleta.style.display === "block" ? "none" : "block";
+});
 
   // elegir color
-  paleta.querySelectorAll("button").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const color = btn.dataset.color;
+paleta.querySelectorAll("button").forEach(btn => {
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation(); // 🔥 CLAVE
+    e.preventDefault();
 
-      colorActual = color; // 🔥 ESTO ES LO IMPORTANTE
-      btnActivo.style.background = color;
+    const color = btn.dataset.color;
 
-      paleta.style.display = "none";
-    });
+    colorActual = color;
+    btnActivo.style.background = color;
+
+    paleta.style.display = "none";
   });
+});
+
 
 }
 
@@ -927,6 +934,7 @@ function compartirImagenFinal() {
 
 window.descargarImagenFinal = descargarImagenFinal;
 window.compartirImagenFinal = compartirImagenFinal;
+
 
 
 
