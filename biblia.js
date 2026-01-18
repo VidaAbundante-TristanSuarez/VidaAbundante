@@ -64,11 +64,6 @@ function mostrarTexto() {
   texto.innerHTML = "";
   notaBox.style.display = "none";
   grupoActual = null;
-
-
-  if (modoImagen) {
-    seleccionImagen = {};
-  }
   
   titulo.innerText = `${libroSel.value} ${capSel.value}`;
 
@@ -907,6 +902,7 @@ function compartirImagenFinal() {
     }
   });
 }
+
 
 
 
