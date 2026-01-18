@@ -276,10 +276,16 @@ function actualizarPreview() {
   const fuente = document.getElementById("personalizarFuente").value || "Arial";
   previewTexto.style.fontFamily = fuente;
   previewTextoBack.style.fontFamily = fuente;
+  
+  const formatoStory =
+  document.getElementById("previewImagen")
+    .classList.contains("preview-story");
 
-  let sizeBase = parseInt(document.getElementById("personalizarTamaño").value || 32);
-  previewTexto.style.fontSize = sizeBase + "px";
-  previewTextoBack.style.fontSize = sizeBase + "px";
+const sizeBase = formatoStory ? 56 : 48;
+
+previewTexto.style.fontSize = sizeBase + "px";
+previewTextoBack.style.fontSize = sizeBase + "px";
+
 
   const color = document.getElementById("personalizarColor").value;
   const opacidad = document.getElementById("personalizarOpacidad").value;
@@ -704,38 +710,63 @@ function dibujarFondo(ctx, img, canvas) {
 function dibujarTexto(ctx, canvas) {
   const texto = obtenerVersiculoSeleccionado();
   const color = document.getElementById("personalizarColor").value;
-  const opacidad = document.getElementById("personalizarOpacidad").value;
-
-  const fuentePreview = document.getElementById("personalizarFuente").value || "Arial";
-
-const fuente = fuentePreview;
-
-  let size = parseInt(document.getElementById("personalizarTamaño").value || 36);
+  const fuente = document.getElementById("personalizarFuente").value || "Arial";
 
   const paddingX = 80;
   const paddingY = 120;
   const maxWidth = canvas.width - paddingX * 2;
   const maxHeight = canvas.height - paddingY * 2;
 
+  let size = canvas.height > canvas.width ? 56 : 48;
+
   ctx.textAlign = "center";
   ctx.textBaseline = "top";
 
-  // Ajuste automático tamaño
- ctx.font =
-  `${textStyle.italic ? "italic " : ""}` +
-  `${textStyle.bold ? "700 " : "400 "}` +
-  `${size}px '${fuente}'`;
+  // Ajuste automático REAL
+  while (size > 14) {
+    ctx.font =
+      `${textStyle.italic ? "italic " : ""}` +
+      `${textStyle.bold ? "700 " : "400 "}` +
+      `${size}px '${fuente}'`;
 
-const lineHeight = size * 1.3;
+    const lineHeight = size * 1.3;
 
-while (medirAltoTexto(ctx, texto, maxWidth, lineHeight) > maxHeight && size > 14) {
-  size--;
-  ctx.font =
-  `${textStyle.italic ? "italic " : ""}` +
-  `${textStyle.bold ? "700 " : "400 "}` +
-  `${size}px '${fuente}'`;
+    if (medirAltoTexto(ctx, texto, maxWidth, lineHeight) <= maxHeight) {
+      break;
+    }
+    size--;
+  }
 
+  const lineHeight = size * 1.3;
+  const y =
+    paddingY +
+    (maxHeight - medirAltoTexto(ctx, texto, maxWidth, lineHeight)) / 2;
+
+  // OUTLINE
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = colorOutlineDesdeBase(color);
+  dibujarTextoMultilineaStroke(
+    ctx,
+    texto,
+    canvas.width / 2,
+    y,
+    maxWidth,
+    lineHeight
+  );
+
+  // TEXTO
+  ctx.fillStyle = color;
+  dibujarTextoMultilinea(
+    ctx,
+    texto,
+    canvas.width / 2,
+    y,
+    maxWidth,
+    lineHeight
+  );
 }
+
+  const lineHeight = size * 1.3;
   let y = paddingY + 
   (maxHeight - medirAltoTexto(ctx, texto, maxWidth, lineHeight)) / 2;
 
@@ -903,6 +934,8 @@ function compartirImagenFinal() {
   });
 }
 
+window.descargarImagenFinal = descargarImagenFinal;
+window.compartirImagenFinal = compartirImagenFinal;
 
 
 
