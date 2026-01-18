@@ -441,6 +441,11 @@ fetch("VidaAbundante - RV1960.json")
     iniciar();
   });
 
+document.fonts.ready.then(() => {
+  console.log("✅ Fuentes cargadas");
+  actualizarPreview();
+});
+
 function iniciar() {
   const libros = [...new Set(bibliaData.map(v => v.Libro))];
   libroSel.innerHTML = "";
@@ -708,21 +713,20 @@ const fuente = fuentePreview;
   ctx.textBaseline = "top";
 
   // Ajuste automático tamaño
-  ctx.font = `
-  ${textStyle.italic ? "italic" : ""}
-  ${textStyle.bold ? "700" : "400"}
-  ${size}px ${fuente}
-`;
+ ctx.font =
+  `${textStyle.italic ? "italic " : ""}` +
+  `${textStyle.bold ? "700 " : "400 "}` +
+  `${size}px '${fuente}'`;
 
 const lineHeight = size * 1.3;
 
 while (medirAltoTexto(ctx, texto, maxWidth, lineHeight) > maxHeight && size > 14) {
   size--;
-  ctx.font = `
-    ${textStyle.italic ? "italic" : ""}
-    ${textStyle.bold ? "700" : "400"}
-    ${size}px ${fuente}
-  `;
+  ctx.font =
+  `${textStyle.italic ? "italic " : ""}` +
+  `${textStyle.bold ? "700 " : "400 "}` +
+  `${size}px '${fuente}'`;
+
 }
   let y = paddingY + 
   (maxHeight - medirAltoTexto(ctx, texto, maxWidth, lineHeight)) / 2;
@@ -890,6 +894,7 @@ function compartirImagenFinal() {
     }
   });
 }
+
 
 
 
