@@ -56,9 +56,7 @@ const notaBox = document.getElementById("notaBox");
 const notaTexto = document.getElementById("notaTexto");
 const loginModal = document.getElementById("loginModal");
 
-// ============================================================
 // ================= FUNCIONES INTERNAS =======================
-// ============================================================
 
 function mostrarTexto() {
   texto.innerHTML = "";
@@ -103,6 +101,7 @@ function pintarVersiculo(v) {
   texto.appendChild(div);
 }
 
+// ================= TOGGLE VERSICULO =======================
 
 function toggleVersiculo(id, num) {
   if (modoImagen) {
@@ -124,6 +123,7 @@ function toggleVersiculo(id, num) {
   marcados[id] ? remove(r) : set(r, { color: colorActual });
   detectarGrupo(num);
 }
+// ================= DETECTA GRUPO =======================
 
 function detectarGrupo(num) {
  const nums = Object.keys(marcados)
@@ -141,6 +141,8 @@ function detectarGrupo(num) {
   notaBox.style.display = "block";
   notaTexto.value = notas[grupoActual] || "";
 }
+
+// ================= OBTIENE VERSICULO SELECCIONADO =======================
 
 function obtenerVersiculoSeleccionado() {
   const ids = Object.keys(seleccionImagen);
@@ -167,10 +169,10 @@ function obtenerVersiculoSeleccionado() {
     }
   });
 
-  // ordenar versículos
+  // ordenar versículos // =================
   numeros.sort((a, b) => a - b);
 
-  // convertir a rangos
+  // convertir a rangos // =================
   const partes = [];
   let inicio = numeros[0];
   let anterior = numeros[0];
@@ -196,7 +198,7 @@ function obtenerVersiculoSeleccionado() {
   return textos.join(" ") + "\n\n▪ " + referencia;
 }
 
-
+// ================= COLOR CONTRASTE  =======================
 
 function colorContraste(hex) {
   hex = hex.replace("#", "");
@@ -206,6 +208,8 @@ function colorContraste(hex) {
   const lum = 0.299 * r + 0.587 * g + 0.114 * b;
   return lum > 160 ? "#000000" : "#ffffff";
 }
+
+// ================= JUAN 1:5-10  =======================
 
 function formatearVersiculosComoRango(numeros) {
   if (numeros.length === 0) return "";
@@ -235,7 +239,7 @@ function formatearVersiculosComoRango(numeros) {
   return partes.join(",");
 }
 
-
+// ================= COLOR OUTLINE CLAROS Y OSCUROS  =======================
 function colorOutlineDesdeBase(hex) {
   const map = {
     "#329534": "#e5ffe5",
@@ -258,6 +262,7 @@ function colorOutlineDesdeBase(hex) {
   return map[hex.toLowerCase()] || hex;
 }
 
+// ================= ACTUALIZAR VISTA PREVIA  =======================
 
 function actualizarPreview() {
   const previewImagen = document.getElementById("previewImagen");
@@ -294,15 +299,15 @@ previewTextoBack.style.fontSize = sizeBase + "px";
   previewTextoBack.style.color = colorContraste(color);
 const op = parseFloat(opacidad);
 
-// opacidad //
+// opacidad // ================= 
 let bgColor = "rgba(0,0,0,0)";
 
 if (op > 0.5) {
-  // hacia negro
+  // hacia negro // ================= 
   const a = (op - 0.5) * 2;
   bgColor = `rgba(0,0,0,${a})`;
 } else if (op < 0.5) {
-  // hacia blanco
+  // hacia blanco // ================= 
   const a = (0.5 - op) * 2;
   bgColor = `rgba(255,255,255,${a})`;
 }
@@ -326,10 +331,14 @@ previewTextoBack.style.textTransform = transform;
 
 }
 
+// ================= RESET DE LA VISTA PREVIA =======================
+
 function resetPreview() {
   fondoFinal = null;
   textStyle = { upper: false, bold: false, italic: false, underline: false };
 }
+
+// ================= RESET DEL MODAL  =======================
 
 function resetModalPersonalizar() {
   fondoFinal = null;
@@ -362,6 +371,7 @@ function resetModalPersonalizar() {
   if (acciones) acciones.remove();
 }
 
+// ================= SALIR DEL MODO IMAGEN  ======================= 
 
 function salirModoImagen() {
   modoImagen = false;
@@ -372,6 +382,8 @@ function salirModoImagen() {
   mostrarTexto();
 }
 
+// ================= TOAST   =======================
+
 function mostrarToast(msg) {
   const t = document.getElementById("toast");
   t.innerText = msg;
@@ -379,9 +391,7 @@ function mostrarToast(msg) {
   setTimeout(() => (t.style.display = "none"), 2000);
 }
 
-// ============================================================
 // ================= WINDOW / UI ===============================
-// ============================================================
 
 // 🔗 Listeners de personalización (NO EXISTÍAN)
 ["personalizarOpacidad","personalizarFuente","personalizarTamaño","personalizarColor"]
@@ -444,9 +454,7 @@ window.logout = () => {
   signOut(auth).then(() => (window.location.href = "login.html"));
 };
 
-// ============================================================
 // ================= CARGA BIBLIA ==============================
-// ============================================================
 
 fetch("VidaAbundante - RV1960.json")
   .then(r => r.json())
@@ -478,9 +486,7 @@ function cargarCapitulos() {
   mostrarTexto();
 }
 
-// ============================================================
 // ================= AUTH =====================================
-// ============================================================
 
 onAuthStateChanged(auth, user => {
   uid = user ? user.uid : null;
@@ -496,9 +502,7 @@ onAuthStateChanged(auth, user => {
   }
 });
 
-// ============================================================
 // ================= FUNCIONES QUE FALTABAN ===================
-// ============================================================
 
 // ---- Marcadores ----
 window.guardarMarcador = () => {
@@ -556,9 +560,7 @@ window.cerrarLogin = () => {
   loginModal.style.display = "none";
 };
 
-// ============================================================
 // ================= TEXTO (BOTONES) ==========================
-// ============================================================
 
 window.toggleUpper = () => {
   textStyle.upper = !textStyle.upper;
@@ -588,20 +590,14 @@ window.toggleUnderline = () => {
   actualizarPreview();
 };
 
-// ============================================================
 // ================= FORMATO IMAGEN ===========================
-// ============================================================
-
 window.setFormatoImagen = tipo => {
   const preview = document.getElementById("previewImagen");
   preview.classList.remove("preview-post", "preview-story");
   preview.classList.add(tipo === "story" ? "preview-story" : "preview-post");
 };
 
-// ============================================================
 // ================= FONDOS ================================
-// ============================================================
-
 const fondos = [
   "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee",
   "https://images.unsplash.com/photo-1496307042754-b4aa456c4a2d",
@@ -632,7 +628,6 @@ function cargarFondos() {
 }
 
 // ================= BOTÓN GENERAR ============================
-// ============================================================
 
 const btnGen = document.getElementById("btnGenerarPersonalizada");
 
@@ -646,8 +641,7 @@ if (btnGen) {
     generarImagenFinal(); // 🔥 ACÁ SE CREA LA IMAGEN REAL
   };
 }
-
-// ============================================================ CANVAS
+// ================= CANVAS GENERA IMAGEN FINAL ============================
 
 function generarImagenFinal() {
   const canvas = document.getElementById("canvasFinal");
@@ -905,6 +899,7 @@ function compartirImagenFinal() {
 
 window.descargarImagenFinal = descargarImagenFinal;
 window.compartirImagenFinal = compartirImagenFinal;
+
 
 
 
