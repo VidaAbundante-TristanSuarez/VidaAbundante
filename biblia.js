@@ -766,37 +766,6 @@ function dibujarTexto(ctx, canvas) {
   );
 }
 
-  const lineHeight = size * 1.3;
-  let y = paddingY + 
-  (maxHeight - medirAltoTexto(ctx, texto, maxWidth, lineHeight)) / 2;
-
-// ===== OUTLINE =====
-ctx.lineWidth = 4;
-const outlineColor = colorOutlineDesdeBase(color);
-ctx.strokeStyle = outlineColor;
-
-dibujarTextoMultilineaStroke(
-  ctx,
-  texto,
-  canvas.width / 2,
-  y,
-  maxWidth,
-  size * 1.3
-);
-
-// ===== TEXTO PRINCIPAL =====
-ctx.fillStyle = color;
-dibujarTextoMultilinea(
-  ctx,
-  texto,
-  canvas.width / 2,
-  y,
-  maxWidth,
-  size * 1.3
-);
-
-}
-
 // ======================== FUNCIONES AUXILIARES MULTILÍNEA ==================================== 
 
 function dibujarTextoMultilinea(ctx, texto, x, y, maxWidth, lineHeight) {
@@ -936,6 +905,7 @@ function compartirImagenFinal() {
 
 window.descargarImagenFinal = descargarImagenFinal;
 window.compartirImagenFinal = compartirImagenFinal;
+
 
 
 
