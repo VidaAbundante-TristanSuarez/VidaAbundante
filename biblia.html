@@ -466,6 +466,27 @@ border: 2px solid #ff4fa3;
     <button class="accion-normal" onclick="capituloAnterior()">‹</button>
     <button class="accion-normal" onclick="capituloSiguiente()">›</button>
 
+    <!-- RESALTADOR COMPACTO (NUEVO) -->
+<div id="resaltadorCompacto" style="position: relative;">
+  
+  <!-- Botón activo -->
+  <button id="btnResaltadorActivo" class="btn-resaltador">
+    🟨
+  </button>
+
+  <!-- Paleta desplegable -->
+  <div id="paletaResaltadores" style="display:none; position:absolute; top:40px; left:0;">
+    <button data-color="#ffe066">🟨</button>
+    <button data-color="#329534">🟩</button>
+    <button data-color="#c14444">🟥</button>
+    <button data-color="#524ec9">🟦</button>
+    <button data-color="#aa4ec9">🟪</button>
+    <button data-color="#d57747">🟧</button>
+  </div>
+
+</div>
+
+<!--
     <button class="accion-normal color-btn"
             data-color="#ffd6e8"
             onclick="setColor('#ffd6e8', this)">🌸</button>
@@ -477,6 +498,7 @@ border: 2px solid #ff4fa3;
     <button class="accion-normal color-btn"
             data-color="#fff3b0"
             onclick="setColor('#fff3b0', this)">💛</button>
+    -->
 
     <button class="accion-normal" onclick="cambiarLetra(-1)">A−</button>
     <button class="accion-normal" onclick="cambiarLetra(1)">A+</button>
@@ -643,6 +665,7 @@ border: 2px solid #ff4fa3;
   
 </body>
 </html>
+
 
 
 
