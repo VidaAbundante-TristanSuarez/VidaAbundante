@@ -86,15 +86,28 @@ function pintarVersiculo(v) {
   const imagen = modoImagen && seleccionImagen[id];
 
   const div = document.createElement("div");
-  div.className = "versiculo" + (imagen ? " imagen" : "");
+
+  // CLASES
+  div.className = "versiculo";
+  if (imagen) div.classList.add("imagen");
+
+  // TAMAÑO
   div.style.fontSize = size + "px";
-  div.style.background = imagen ? "" : marcado?.color || "transparent";
+
+  // COLOR DE FONDO (CLAVE)
+  if (modoImagen) {
+    div.style.background = imagen ? "rgba(255, 214, 232, 0.6)" : "transparent";
+  } else {
+    div.style.background = marcado?.color || "transparent";
+  }
 
   div.innerHTML = `<span class="num">${v.Versiculo}</span> ${v.RV1960}`;
+
   div.onclick = () => toggleVersiculo(id, v.Versiculo);
 
   texto.appendChild(div);
 }
+
 
 function toggleVersiculo(id, num) {
   if (modoImagen) {
@@ -894,6 +907,7 @@ function compartirImagenFinal() {
     }
   });
 }
+
 
 
 
