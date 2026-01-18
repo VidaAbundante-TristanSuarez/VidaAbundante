@@ -35,6 +35,7 @@ let colorActual = "#ffd6e8";
 let resaltadorAbierto = true;
 let grupoActual = null;
 let marcador = null;
+let colorResaltadoActivo = "#ffe066";
 
 let modoImagen = false;
 let seleccionImagen = {};
@@ -590,6 +591,33 @@ window.toggleUnderline = () => {
   actualizarPreview();
 };
 
+// ================= RESALTADOR COMPACTO ======================
+
+const btnActivo = document.getElementById("btnResaltadorActivo");
+const paleta = document.getElementById("paletaResaltadores");
+
+// abrir / cerrar paleta
+if (btnActivo && paleta) {
+
+  btnActivo.addEventListener("click", () => {
+    paleta.style.display =
+      paleta.style.display === "block" ? "none" : "block";
+  });
+
+  // elegir color
+  paleta.querySelectorAll("button").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const color = btn.dataset.color;
+
+      colorActual = color; // 🔥 ESTO ES LO IMPORTANTE
+      btnActivo.style.background = color;
+
+      paleta.style.display = "none";
+    });
+  });
+
+}
+
 // ================= FORMATO IMAGEN ===========================
 window.setFormatoImagen = tipo => {
   const preview = document.getElementById("previewImagen");
@@ -899,6 +927,7 @@ function compartirImagenFinal() {
 
 window.descargarImagenFinal = descargarImagenFinal;
 window.compartirImagenFinal = compartirImagenFinal;
+
 
 
 
