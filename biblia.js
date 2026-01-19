@@ -31,11 +31,11 @@ let bibliaData = [];
 let marcados = {};
 let notas = {};
 let size = 18;
-let colorActual = "#ffd6e8";
+let colorActual = "#ffe066"; // 🟨 amarillo por default
 let resaltadorAbierto = true;
 let grupoActual = null;
 let marcador = null;
-let colorResaltadoActivo = "#ffe066";
+
 
 let modoImagen = false;
 let seleccionImagen = {};
@@ -454,6 +454,11 @@ window.toggleTema = () => {
 window.logout = () => {
   signOut(auth).then(() => (window.location.href = "login.html"));
 };
+
+const btnActivo = document.getElementById("btnResaltadorActivo");
+if (btnActivo) {
+  btnActivo.style.background = colorActual;
+}
 
 // ================= CARGA BIBLIA ==============================
 
@@ -934,6 +939,7 @@ function compartirImagenFinal() {
 
 window.descargarImagenFinal = descargarImagenFinal;
 window.compartirImagenFinal = compartirImagenFinal;
+
 
 
 
