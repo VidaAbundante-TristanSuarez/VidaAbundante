@@ -591,17 +591,19 @@ window.toggleUnderline = () => {
   actualizarPreview();
 };
 
-// ================= RESALTADOR COMPACTO (FIX) ======================
+// ================= RESALTADOR COMPACTO (FINAL FUNCIONAL) ======================
 
 const btnActivo = document.getElementById("btnResaltadorActivo");
 const paleta = document.getElementById("paletaResaltadores");
+const contResaltador = document.getElementById("resaltadorCompacto");
 
-if (btnActivo && paleta) {
+if (btnActivo && paleta && contResaltador) {
 
-  // color inicial correcto
+  // 🔹 estado inicial
   btnActivo.style.background = colorActual;
+  btnActivo.textContent = "💛"; // emoji inicial (amarillo)
 
-  // abrir / cerrar paleta
+  // 🔹 abrir / cerrar paleta
   btnActivo.addEventListener("click", e => {
     e.preventDefault();
     e.stopPropagation();
@@ -610,27 +612,30 @@ if (btnActivo && paleta) {
       paleta.style.display === "block" ? "none" : "block";
   });
 
-  // elegir color
+  // 🔹 elegir color + emoji
   paleta.querySelectorAll("button").forEach(btn => {
     btn.addEventListener("click", e => {
       e.preventDefault();
       e.stopPropagation();
 
       const color = btn.dataset.color;
+      const emoji = btn.textContent;
 
       colorActual = color;
       btnActivo.style.background = color;
+      btnActivo.textContent = emoji;
 
       paleta.style.display = "none";
     });
   });
 
-  // cerrar al hacer click afuera
-  document.addEventListener("click", () => {
-    paleta.style.display = "none";
+  // 🔹 cerrar SOLO si el click fue fuera del resaltador
+  document.addEventListener("click", e => {
+    if (!contResaltador.contains(e.target)) {
+      paleta.style.display = "none";
+    }
   });
 }
-
 
 // ================= FORMATO IMAGEN ===========================
 window.setFormatoImagen = tipo => {
@@ -941,6 +946,7 @@ function compartirImagenFinal() {
 
 window.descargarImagenFinal = descargarImagenFinal;
 window.compartirImagenFinal = compartirImagenFinal;
+
 
 
 
