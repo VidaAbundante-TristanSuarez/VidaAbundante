@@ -287,11 +287,11 @@ function actualizarPreview() {
   document.getElementById("previewImagen")
     .classList.contains("preview-story");
 
-const sizeBase = formatoStory ? 56 : 48;
+const sizeSlider = document.getElementById("personalizarTamaño");
+const sizeBase = sizeSlider ? Number(sizeSlider.value) : (formatoStory ? 56 : 48);
 
 previewTexto.style.fontSize = sizeBase + "px";
 previewTextoBack.style.fontSize = sizeBase + "px";
-
 
   const color = document.getElementById("personalizarColor").value;
   const opacidad = document.getElementById("personalizarOpacidad").value;
@@ -934,6 +934,7 @@ function compartirImagenFinal() {
 
 window.descargarImagenFinal = descargarImagenFinal;
 window.compartirImagenFinal = compartirImagenFinal;
+
 
 
 
