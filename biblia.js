@@ -591,17 +591,22 @@ window.toggleUnderline = () => {
   actualizarPreview();
 };
 
-// ================= RESALTADOR COMPACTO (FINAL FUNCIONAL) ======================
+// ================= RESALTADOR COMPACTO (ESTABLE DEFINITIVO) ======================
+document.addEventListener("DOMContentLoaded", () => {
 
-const btnActivo = document.getElementById("btnResaltadorActivo");
-const paleta = document.getElementById("paletaResaltadores");
-const contResaltador = document.getElementById("resaltadorCompacto");
+  const btnActivo = document.getElementById("btnResaltadorActivo");
+  const paleta = document.getElementById("paletaResaltadores");
+  const contResaltador = document.getElementById("resaltadorCompacto");
 
-if (btnActivo && paleta && contResaltador) {
+  if (!btnActivo || !paleta || !contResaltador) {
+    console.warn("❌ Resaltador no inicializado: elementos no encontrados");
+    return;
+  }
 
-  // 🔹 estado inicial
+  // 🔹 color inicial REAL
+  colorActual = colorActual || "#fff3b0";
   btnActivo.style.background = colorActual;
-  btnActivo.textContent = "💛"; // emoji inicial (amarillo)
+  btnActivo.textContent = "💛";
 
   // 🔹 abrir / cerrar paleta
   btnActivo.addEventListener("click", e => {
@@ -619,23 +624,25 @@ if (btnActivo && paleta && contResaltador) {
       e.stopPropagation();
 
       const color = btn.dataset.color;
-      const emoji = btn.textContent;
+      if (!color) return;
 
       colorActual = color;
       btnActivo.style.background = color;
-      btnActivo.textContent = emoji;
+      btnActivo.textContent = btn.textContent;
 
       paleta.style.display = "none";
     });
   });
 
-  // 🔹 cerrar SOLO si el click fue fuera del resaltador
+  // 🔹 cerrar solo al hacer click fuera
   document.addEventListener("click", e => {
     if (!contResaltador.contains(e.target)) {
       paleta.style.display = "none";
     }
   });
-}
+
+});
+
 
 // ================= FORMATO IMAGEN ===========================
 window.setFormatoImagen = tipo => {
@@ -946,6 +953,7 @@ function compartirImagenFinal() {
 
 window.descargarImagenFinal = descargarImagenFinal;
 window.compartirImagenFinal = compartirImagenFinal;
+
 
 
 
