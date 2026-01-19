@@ -31,7 +31,7 @@ let bibliaData = [];
 let marcados = {};
 let notas = {};
 let size = 18;
-let colorActual = "#ffe066"; // 🟨 amarillo por default
+let colorActual = "#fff3b0"; // 🟨 amarillo por default
 let resaltadorAbierto = true;
 let grupoActual = null;
 let marcador = null;
@@ -591,37 +591,46 @@ window.toggleUnderline = () => {
   actualizarPreview();
 };
 
-// ================= RESALTADOR COMPACTO ======================
+// ================= RESALTADOR COMPACTO (FIX) ======================
 
 const btnActivo = document.getElementById("btnResaltadorActivo");
 const paleta = document.getElementById("paletaResaltadores");
 
-// abrir / cerrar paleta
 if (btnActivo && paleta) {
 
-btnActivo.addEventListener("click", (e) => {
-  e.stopPropagation(); // 🔥 CLAVE
-  e.preventDefault();
+  // color inicial correcto
+  btnActivo.style.background = colorActual;
 
-  paleta.style.display =
-    paleta.style.display === "block" ? "none" : "block";
-});
+  // abrir / cerrar paleta
+  btnActivo.addEventListener("click", e => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    paleta.style.display =
+      paleta.style.display === "block" ? "none" : "block";
+  });
 
   // elegir color
-paleta.querySelectorAll("button").forEach(btn => {
-  btn.addEventListener("click", (e) => {
-    e.stopPropagation(); // 🔥 CLAVE
-    e.preventDefault();
+  paleta.querySelectorAll("button").forEach(btn => {
+    btn.addEventListener("click", e => {
+      e.preventDefault();
+      e.stopPropagation();
 
-    const color = btn.dataset.color;
+      const color = btn.dataset.color;
 
-    colorActual = color;
-    btnActivo.style.background = color;
+      colorActual = color;
+      btnActivo.style.background = color;
 
+      paleta.style.display = "none";
+    });
+  });
+
+  // cerrar al hacer click afuera
+  document.addEventListener("click", () => {
     paleta.style.display = "none";
   });
-});
 }
+
 
 // ================= FORMATO IMAGEN ===========================
 window.setFormatoImagen = tipo => {
@@ -932,6 +941,7 @@ function compartirImagenFinal() {
 
 window.descargarImagenFinal = descargarImagenFinal;
 window.compartirImagenFinal = compartirImagenFinal;
+
 
 
 
