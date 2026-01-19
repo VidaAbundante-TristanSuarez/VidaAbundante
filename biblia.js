@@ -455,11 +455,6 @@ window.logout = () => {
   signOut(auth).then(() => (window.location.href = "login.html"));
 };
 
-const btnActivo = document.getElementById("btnResaltadorActivo");
-if (btnActivo) {
-  btnActivo.style.background = colorActual;
-}
-
 // ================= CARGA BIBLIA ==============================
 
 fetch("VidaAbundante - RV1960.json")
@@ -626,8 +621,6 @@ paleta.querySelectorAll("button").forEach(btn => {
     paleta.style.display = "none";
   });
 });
-
-
 }
 
 // ================= FORMATO IMAGEN ===========================
@@ -939,6 +932,7 @@ function compartirImagenFinal() {
 
 window.descargarImagenFinal = descargarImagenFinal;
 window.compartirImagenFinal = compartirImagenFinal;
+
 
 
 
