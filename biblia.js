@@ -74,29 +74,36 @@ function mostrarTexto() {
   versos.forEach(v => pintarVersiculo(v));
 }
 
+// ======================= PINTAR VERSICULO  =============================
+
 function pintarVersiculo(v) {
   const id = `${v.Libro}_${v.Capitulo}_${v.Versiculo}`;
   const marcado = marcados[id];
   const imagen = modoImagen && seleccionImagen[id];
 
   const div = document.createElement("div");
-
-  // CLASES
   div.className = "versiculo";
   if (imagen) div.classList.add("imagen");
 
-  // TAMAÑO
   div.style.fontSize = size + "px";
 
-  // COLOR DE FONDO (CLAVE)
+  // FONDO
   if (modoImagen) {
     div.style.background = imagen ? "rgba(255, 214, 232, 0.6)" : "transparent";
   } else {
     div.style.background = marcado?.color || "transparent";
   }
 
-  div.innerHTML = `<span class="num">${v.Versiculo}</span> ${v.RV1960}`;
+  // 👉 COLOR DE TEXTO (CLAVE)
+  if (marcado) {
+    if (document.body.classList.contains("oscuro")) {
+      div.style.color = "#000000"; // negro en modo oscuro
+    } else {
+      div.style.color = colorContraste(marcado.color);
+    }
+  }
 
+  div.innerHTML = `<span class="num">${v.Versiculo}</span> ${v.RV1960}`;
   div.onclick = () => toggleVersiculo(id, v.Versiculo);
 
   texto.appendChild(div);
@@ -473,7 +480,8 @@ window.cambiarLetra = delta => {
 };
 
 window.toggleTema = () => {
-  document.body.classList.toggle("oscuro");
+  const oscuro = document.body.classList.toggle("oscuro");
+  localStorage.setItem("modoOscuro", oscuro ? "1" : "0");
 };
 
 window.logout = () => {
@@ -931,6 +939,12 @@ function compartirImagenFinal() {
 
 window.descargarImagenFinal = descargarImagenFinal;
 window.compartirImagenFinal = compartirImagenFinal;
+
+// ================= RESTAURAR MODO OSCURO =================
+if (localStorage.getItem("modoOscuro") === "1") {
+  document.body.classList.add("oscuro");
+}
+
 
 
 
