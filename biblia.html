@@ -431,31 +431,46 @@ border: 2px solid #ff4fa3;
   cursor: pointer;
 }
 
-/* ================= RESALTADOR COMPACTO (FIX REAL) ================= */
+    /* ================= RESALTADOR COMPACTO (ARRIBA / COSTADO) ================= */
 
 #resaltadorCompacto {
   position: relative;
   z-index: 9999;
 }
 
+/* 🔼 Se abre HACIA ARRIBA por defecto */
 #paletaResaltadores {
   position: absolute;
-  top: 40px;
+  bottom: 110%;          /* 👈 CLAVE: arriba del botón */
   left: 0;
+
   display: none;
   background: #fff;
-  border-radius: 10px;
-  padding: 6px;
+  border-radius: 12px;
+  padding: 8px;
   box-shadow: 0 6px 20px rgba(0,0,0,.25);
+
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  min-width: 160px;
 }
 
+/* 👉 Si no entra arriba, se corre al costado */
+#resaltadorCompacto.mover-derecha #paletaResaltadores {
+  bottom: 0;
+  left: 110%;
+}
+
+/* botones */
 #paletaResaltadores button {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   border: none;
   cursor: pointer;
 }
+
 
   </style>
 </head>
@@ -701,6 +716,7 @@ border: 2px solid #ff4fa3;
   
 </body>
 </html>
+
 
 
 
