@@ -944,7 +944,6 @@ function descargarImagenFinal() {
   });
 }
 
-
 // ======================== OPCION COMPARTIR ====================================
 
 function compartirImagenFinal() {
@@ -969,28 +968,4 @@ function compartirImagenFinal() {
 
 window.descargarImagenFinal = descargarImagenFinal;
 window.compartirImagenFinal = compartirImagenFinal;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
