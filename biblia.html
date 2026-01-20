@@ -431,6 +431,37 @@ border: 2px solid #ff4fa3;
   cursor: pointer;
 }
 
+/* ================= RESALTADOR COMPACTO ================= */
+
+#resaltadorCompacto {
+  position: relative;
+}
+
+#paletaResaltadores {
+  position: absolute;
+  top: 110%;
+  left: 0;
+  display: none;
+  z-index: 9999;
+
+  background: #222;
+  padding: 8px;
+  border-radius: 10px;
+
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+#paletaResaltadores button {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+}
+
+
   </style>
 </head>
 
@@ -676,6 +707,7 @@ border: 2px solid #ff4fa3;
   
 </body>
 </html>
+
 
 
 
