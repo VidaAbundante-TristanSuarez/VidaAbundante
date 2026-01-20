@@ -618,58 +618,57 @@ window.toggleUnderline = () => {
 
 // ================= RESALTADOR COMPACTO (FINAL REAL PARA MODULE) ======================
 
-(function initResaltadorCompacto() {
+document.addEventListener("DOMContentLoaded", () => {
 
-  const btnActivo = document.getElementById("btnResaltadorActivo");
-  const paleta = document.getElementById("paletaResaltadores");
-  const contResaltador = document.getElementById("resaltadorCompacto");
+  (function initResaltadorCompacto() {
 
-  if (!btnActivo || !paleta || !contResaltador) {
-    console.warn("❌ Resaltador NO inicializado (HTML no encontrado)");
-    return;
-  }
+    const btnActivo = document.getElementById("btnResaltadorActivo");
+    const paleta = document.getElementById("paletaResaltadores");
+    const contResaltador = document.getElementById("resaltadorCompacto");
 
-  // 🔹 estado inicial
-  colorActual = colorActual || "#fff3b0";
-  btnActivo.style.background = colorActual;
-  btnActivo.textContent = "💛";
+    if (!btnActivo || !paleta || !contResaltador) {
+      console.warn("❌ Resaltador NO inicializado (HTML no encontrado)");
+      return;
+    }
 
-  // 🔹 abrir / cerrar paleta
-  btnActivo.onclick = e => {
-    e.preventDefault();
-    e.stopPropagation();
+    colorActual = colorActual || "#fff3b0";
+    btnActivo.style.background = colorActual;
+    btnActivo.textContent = "💛";
 
-    paleta.style.display =
-      paleta.style.display === "block" ? "none" : "block";
-  };
-
-  // 🔹 elegir color + emoji
-  paleta.querySelectorAll("button").forEach(btn => {
-    btn.onclick = e => {
+    btnActivo.onclick = e => {
       e.preventDefault();
       e.stopPropagation();
-
-      const color = btn.dataset.color;
-      if (!color) return;
-
-      colorActual = color;
-      btnActivo.style.background = color;
-      btnActivo.textContent = btn.textContent;
-
-      paleta.style.display = "none";
+      paleta.style.display =
+        paleta.style.display === "block" ? "none" : "block";
     };
-  });
 
-  // 🔹 cerrar solo si clickea fuera
-  document.addEventListener("click", e => {
-    if (!contResaltador.contains(e.target)) {
-      paleta.style.display = "none";
-    }
-  });
+    paleta.querySelectorAll("button").forEach(btn => {
+      btn.onclick = e => {
+        e.preventDefault();
+        e.stopPropagation();
 
-  console.log("✅ Resaltador compacto inicializado correctamente");
+        const color = btn.dataset.color;
+        if (!color) return;
 
-})();
+        colorActual = color;
+        btnActivo.style.background = color;
+        btnActivo.textContent = btn.textContent;
+        paleta.style.display = "none";
+      };
+    });
+
+    document.addEventListener("click", e => {
+      if (!contResaltador.contains(e.target)) {
+        paleta.style.display = "none";
+      }
+    });
+
+    console.log("✅ Resaltador compacto inicializado correctamente");
+
+  })();
+
+});
+
 
 // ================= FORMATO IMAGEN ===========================
 window.setFormatoImagen = tipo => {
@@ -932,6 +931,7 @@ function compartirImagenFinal() {
 
 window.descargarImagenFinal = descargarImagenFinal;
 window.compartirImagenFinal = compartirImagenFinal;
+
 
 
 
