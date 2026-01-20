@@ -259,26 +259,35 @@ function formatearVersiculosComoRango(numeros) {
 }
 
 // ================= COLOR OUTLINE CLAROS Y OSCUROS  =======================
-function colorOutlineDesdeBase(color) {
+function colorOutlineDesdeBase(color, amount = 0.35) {
   if (!color) return "#000000";
 
-  // convertir rgb() a hex
+  // rgb() → hex
   if (color.startsWith("rgb")) {
     const nums = color.match(/\d+/g).map(Number);
-    return colorOutlineDesdeBase(
-      "#" + nums.map(x => x.toString(16).padStart(2, "0")).join("")
-    );
+    color =
+      "#" + nums.map(x => x.toString(16).padStart(2, "0")).join("");
   }
 
   const hex = color.replace("#", "");
-  const r = parseInt(hex.substr(0, 2), 16);
-  const g = parseInt(hex.substr(2, 2), 16);
-  const b = parseInt(hex.substr(4, 2), 16);
+  let r = parseInt(hex.substr(0, 2), 16);
+  let g = parseInt(hex.substr(2, 2), 16);
+  let b = parseInt(hex.substr(4, 2), 16);
 
+  // luminancia perceptual
   const lum = 0.299 * r + 0.587 * g + 0.114 * b;
 
-  // 👈 contraste automático REAL
-  return lum > 160 ? "#000000" : "#ffffff";
+  // si es claro → oscurecer | si es oscuro → aclarar
+  const factor = lum > 160 ? (1 - amount) : (1 + amount);
+
+  r = Math.min(255, Math.max(0, Math.round(r * factor)));
+  g = Math.min(255, Math.max(0, Math.round(g * factor)));
+  b = Math.min(255, Math.max(0, Math.round(b * factor)));
+
+  return (
+    "#" +
+    [r, g, b].map(v => v.toString(16).padStart(2, "0")).join("")
+  );
 }
 
 // ================= ACTUALIZAR VISTA PREVIA  =======================
@@ -756,134 +765,36 @@ if (btnGen) {
     generarImagenFinal(); // 🔥 ACÁ SE CREA LA IMAGEN REAL
   };
 }
+
 // ================= CANVAS GENERA IMAGEN FINAL ============================
-
 function generarImagenFinal() {
-  const canvas = document.getElementById("canvasFinal");
-  const ctx = canvas.getContext("2d");
-
   const preview = document.getElementById("previewImagen");
-  const esStory = preview.classList.contains("preview-story");
+  const canvasFinal = document.getElementById("canvasFinal");
 
-  canvas.width = 1080;
-  canvas.height = esStory ? 1920 : 1080;
+  html2canvas(preview, {
+    scale: 2,              // calidad alta
+    useCORS: true,
+    backgroundColor: null // respeta transparencias
+  }).then(canvas => {
+    // Ajustar tamaño final
+    const ctx = canvasFinal.getContext("2d");
 
-  const fuente = document.getElementById("personalizarFuente").value || "Arial";
+    const esStory = preview.classList.contains("preview-story");
+    canvasFinal.width = 1080;
+    canvasFinal.height = esStory ? 1920 : 1080;
 
-  document.fonts.load(`700 32px ${fuente}`).then(() => {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, canvasFinal.width, canvasFinal.height);
 
-    if (fondoFinal) {
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.onload = () => {
-        dibujarFondo(ctx, img, canvas);
-        dibujarTexto(ctx, canvas);
-        mostrarResultadoFinal(canvas);
-      };
-      img.src = fondoFinal;
-    } else {
-      ctx.fillStyle = "#000";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      dibujarTexto(ctx, canvas);
-      mostrarResultadoFinal(canvas);
-    }
-  });
-}
-
-// ======================== DIBUJA FONDO ==================================== 
-
-function dibujarFondo(ctx, img, canvas) {
-  const ratioCanvas = canvas.width / canvas.height;
-  const ratioImg = img.width / img.height;
-
-  let drawWidth, drawHeight, x, y;
-
-  if (ratioImg > ratioCanvas) {
-    drawHeight = canvas.height;
-    drawWidth = img.width * (canvas.height / img.height);
-    x = (canvas.width - drawWidth) / 2;
-    y = 0;
-  } else {
-    drawWidth = canvas.width;
-    drawHeight = img.height * (canvas.width / img.width);
-    x = 0;
-    y = (canvas.height - drawHeight) / 2;
-  }
-
-  ctx.drawImage(img, x, y, drawWidth, drawHeight);
-}
-// ======================== CORTAR TEXTO ====================================
-function dividirLineasCanvas(ctx, texto, maxWidth) {
-  const palabras = texto.split(" ");
-  const lineas = [];
-  let linea = "";
-
-  palabras.forEach(p => {
-    const test = linea + p + " ";
-    if (ctx.measureText(test).width > maxWidth && linea) {
-      lineas.push(linea.trim());
-      linea = p + " ";
-    } else {
-      linea = test;
-    }
-  });
-
-  if (linea) lineas.push(linea.trim());
-  return lineas;
-}
-
-// ======================== DIBUJAR TEXTO ====================================
-function dibujarTexto(ctx, canvas) {
-  const texto = obtenerVersiculoSeleccionado();
-  const color = document.getElementById("personalizarColor").value;
-
-  // 👇 LEEMOS EL TAMAÑO FINAL DEL PREVIEW
-  const preview = document.getElementById("previewTexto");
-  const css = getComputedStyle(preview);
-
-  const fontSize = parseFloat(css.fontSize);
-  const lineHeight = fontSize * 1.3;
-  const fontFamily = css.fontFamily;
-  const fontWeight = css.fontWeight;
-  const fontStyle = css.fontStyle;
-
-  const paddingX = 80;
-  const paddingY = 120;
-  const maxWidth = canvas.width - paddingX * 2;
-  const maxHeight = canvas.height - paddingY * 2;
-
-  ctx.textAlign = "center";
-  ctx.textBaseline = "top";
-  ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px ${fontFamily}`;
-
-  const lineas = dividirLineasCanvas(ctx, texto, maxWidth);
-  const totalHeight = lineas.length * lineHeight;
-
-  const yInicial =
-    paddingY + (maxHeight - totalHeight) / 2;
-
-  // OUTLINE
-  ctx.lineWidth = 4;
-  ctx.strokeStyle = colorOutlineDesdeBase(color);
-
-  lineas.forEach((l, i) => {
-    ctx.strokeText(
-      l,
-      canvas.width / 2,
-      yInicial + i * lineHeight
+    // Dibujar EXACTAMENTE lo que se ve
+    ctx.drawImage(
+      canvas,
+      0,
+      0,
+      canvasFinal.width,
+      canvasFinal.height
     );
-  });
 
-  // TEXTO
-  ctx.fillStyle = color;
-
-  lineas.forEach((l, i) => {
-    ctx.fillText(
-      l,
-      canvas.width / 2,
-      yInicial + i * lineHeight
-    );
+    mostrarResultadoFinal(canvasFinal);
   });
 }
 
@@ -971,6 +882,7 @@ window.compartirImagenFinal = compartirImagenFinal;
 if (localStorage.getItem("modoOscuro") === "1") {
   document.body.classList.add("oscuro");
 }
+
 
 
 
