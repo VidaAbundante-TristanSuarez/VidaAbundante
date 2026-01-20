@@ -783,110 +783,57 @@ function dibujarFondo(ctx, img, canvas) {
 // ======================== DIBUJA TEXTO CLON DEL PREVIEW ==================================== 
 
 function dibujarTexto(ctx, canvas) {
-  const texto = obtenerVersiculoSeleccionado();
+  const lineas = obtenerLineasDesdePreview();
+  const estilos = obtenerEstilosPreview();
   const color = document.getElementById("personalizarColor").value;
-  const fuente = document.getElementById("personalizarFuente").value || "Arial";
-
-  const paddingX = 80;
-  const paddingY = 120;
-  const maxWidth = canvas.width - paddingX * 2;
-  const maxHeight = canvas.height - paddingY * 2;
-
-  let size = canvas.height > canvas.width ? 56 : 48;
 
   ctx.textAlign = "center";
   ctx.textBaseline = "top";
+  ctx.font = `
+    ${estilos.fontStyle}
+    ${estilos.fontWeight}
+    ${estilos.fontSize}px
+    ${estilos.fontFamily}
+  `;
 
-  // 🔧 AJUSTE AUTOMÁTICO (usa medirAltoTexto NUEVO)
-  while (size > 14) {
-    ctx.font =
-      `${textStyle.italic ? "italic " : ""}` +
-      `${textStyle.bold ? "700 " : "400 "}` +
-      `${size}px '${fuente}'`;
+  const totalHeight = lineas.length * estilos.lineHeight;
+  const yInicial = (canvas.height - totalHeight) / 2;
 
-    const lineHeight = size * 1.3;
-
-    if (medirAltoTexto(ctx, texto, maxWidth, lineHeight) <= maxHeight) {
-      break;
-    }
-    size--;
-  }
-
-  const lineHeight = size * 1.3;
-
-  const totalHeight = medirAltoTexto(ctx, texto, maxWidth, lineHeight);
-
-  const yInicial =
-    paddingY +
-    (maxHeight - totalHeight) / 2;
-
-  // ================= OUTLINE =================
+  // OUTLINE
   ctx.lineWidth = 4;
   ctx.strokeStyle = colorOutlineDesdeBase(color);
 
-  dibujarTextoMultilinea(
-    ctx,
-    texto,
-    canvas.width / 2,
-    yInicial,
-    maxWidth,
-    lineHeight,
-    true   // 👈 stroke
-  );
+  lineas.forEach((l, i) => {
+    ctx.strokeText(l, canvas.width / 2, yInicial + i * estilos.lineHeight);
+  });
 
-  // ================= TEXTO =================
+  // TEXTO
   ctx.fillStyle = color;
 
-  dibujarTextoMultilinea(
-    ctx,
-    texto,
-    canvas.width / 2,
-    yInicial,
-    maxWidth,
-    lineHeight,
-    false  // 👈 fill
-  );
-}
-
-// ======================== NUEVAS (RESPETAN \n) ==================================== //
-function dividirLineas(ctx, texto, maxWidth) {
-  const lineas = [];
-  const bloques = texto.split("\n");
-
-  bloques.forEach(bloque => {
-    const palabras = bloque.split(" ");
-    let linea = "";
-
-    palabras.forEach(p => {
-      const test = linea + p + " ";
-      if (ctx.measureText(test).width > maxWidth && linea) {
-        lineas.push(linea.trim());
-        linea = p + " ";
-      } else {
-        linea = test;
-      }
-    });
-
-    if (linea) lineas.push(linea.trim());
-    lineas.push(""); // salto real
+  lineas.forEach((l, i) => {
+    ctx.fillText(l, canvas.width / 2, yInicial + i * estilos.lineHeight);
   });
+}
+// ======================== leer líneas reales del preview ====================================
+function obtenerLineasDesdePreview() {
+  const el = document.getElementById("previewTexto");
+  const texto = el.innerText;
 
-  return lineas;
+  return texto.split("\n");
 }
 
-function medirAltoTexto(ctx, texto, maxWidth, lineHeight) {
-  const lineas = dividirLineas(ctx, texto, maxWidth);
-  return lineas.length * lineHeight;
-}
+// ======================== copiar estilos exactos del preview ====================================
+function obtenerEstilosPreview() {
+  const el = document.getElementById("previewTexto");
+  const css = getComputedStyle(el);
 
-function dibujarTextoMultilinea(ctx, texto, x, y, maxWidth, lineHeight, stroke = false) {
-  const lineas = dividirLineas(ctx, texto, maxWidth);
-
-  lineas.forEach(l => {
-    if (stroke) ctx.strokeText(l, x, y);
-    else ctx.fillText(l, x, y);
-    y += lineHeight;
-  });
+  return {
+    fontSize: parseFloat(css.fontSize),
+    lineHeight: parseFloat(css.lineHeight),
+    fontFamily: css.fontFamily,
+    fontWeight: css.fontWeight,
+    fontStyle: css.fontStyle
+  };
 }
 
 // ======================== VER RESULTADO FINAL ====================================
@@ -968,4 +915,5 @@ function compartirImagenFinal() {
 
 window.descargarImagenFinal = descargarImagenFinal;
 window.compartirImagenFinal = compartirImagenFinal;
+
 
