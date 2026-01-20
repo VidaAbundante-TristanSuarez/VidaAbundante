@@ -196,7 +196,7 @@ function obtenerVersiculoSeleccionado() {
 
   const referencia = `${libro} ${cap}:${partes.join(",")}`;
 
-  return textos.join(" ") + "\n\n▪ " + referencia;
+  return textos.join("\n") + "\n\n▪ " + referencia;
 }
 
 // ================= COLOR CONTRASTE  =======================
@@ -932,6 +932,7 @@ function compartirImagenFinal() {
 
 window.descargarImagenFinal = descargarImagenFinal;
 window.compartirImagenFinal = compartirImagenFinal;
+
 
 
 
