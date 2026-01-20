@@ -779,61 +779,78 @@ function dibujarFondo(ctx, img, canvas) {
 
   ctx.drawImage(img, x, y, drawWidth, drawHeight);
 }
+// ======================== CORTAR TEXTO ====================================
+function dividirLineasCanvas(ctx, texto, maxWidth) {
+  const palabras = texto.split(" ");
+  const lineas = [];
+  let linea = "";
 
-// ======================== DIBUJA TEXTO CLON DEL PREVIEW ==================================== 
+  palabras.forEach(p => {
+    const test = linea + p + " ";
+    if (ctx.measureText(test).width > maxWidth && linea) {
+      lineas.push(linea.trim());
+      linea = p + " ";
+    } else {
+      linea = test;
+    }
+  });
 
+  if (linea) lineas.push(linea.trim());
+  return lineas;
+}
+
+// ======================== DIBUJAR TEXTO ====================================
 function dibujarTexto(ctx, canvas) {
-  const lineas = obtenerLineasDesdePreview();
-  const estilos = obtenerEstilosPreview();
+  const texto = obtenerVersiculoSeleccionado();
   const color = document.getElementById("personalizarColor").value;
+
+  // 👇 LEEMOS EL TAMAÑO FINAL DEL PREVIEW
+  const preview = document.getElementById("previewTexto");
+  const css = getComputedStyle(preview);
+
+  const fontSize = parseFloat(css.fontSize);
+  const lineHeight = fontSize * 1.3;
+  const fontFamily = css.fontFamily;
+  const fontWeight = css.fontWeight;
+  const fontStyle = css.fontStyle;
+
+  const paddingX = 80;
+  const paddingY = 120;
+  const maxWidth = canvas.width - paddingX * 2;
+  const maxHeight = canvas.height - paddingY * 2;
 
   ctx.textAlign = "center";
   ctx.textBaseline = "top";
-  ctx.font = `
-    ${estilos.fontStyle}
-    ${estilos.fontWeight}
-    ${estilos.fontSize}px
-    ${estilos.fontFamily}
-  `;
+  ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px ${fontFamily}`;
 
-  const totalHeight = lineas.length * estilos.lineHeight;
-  const yInicial = (canvas.height - totalHeight) / 2;
+  const lineas = dividirLineasCanvas(ctx, texto, maxWidth);
+  const totalHeight = lineas.length * lineHeight;
+
+  const yInicial =
+    paddingY + (maxHeight - totalHeight) / 2;
 
   // OUTLINE
   ctx.lineWidth = 4;
   ctx.strokeStyle = colorOutlineDesdeBase(color);
 
   lineas.forEach((l, i) => {
-    ctx.strokeText(l, canvas.width / 2, yInicial + i * estilos.lineHeight);
+    ctx.strokeText(
+      l,
+      canvas.width / 2,
+      yInicial + i * lineHeight
+    );
   });
 
   // TEXTO
   ctx.fillStyle = color;
 
   lineas.forEach((l, i) => {
-    ctx.fillText(l, canvas.width / 2, yInicial + i * estilos.lineHeight);
+    ctx.fillText(
+      l,
+      canvas.width / 2,
+      yInicial + i * lineHeight
+    );
   });
-}
-// ======================== leer líneas reales del preview ====================================
-function obtenerLineasDesdePreview() {
-  const el = document.getElementById("previewTexto");
-  const texto = el.innerText;
-
-  return texto.split("\n");
-}
-
-// ======================== copiar estilos exactos del preview ====================================
-function obtenerEstilosPreview() {
-  const el = document.getElementById("previewTexto");
-  const css = getComputedStyle(el);
-
-  return {
-    fontSize: parseFloat(css.fontSize),
-    lineHeight: parseFloat(css.lineHeight),
-    fontFamily: css.fontFamily,
-    fontWeight: css.fontWeight,
-    fontStyle: css.fontStyle
-  };
 }
 
 // ======================== VER RESULTADO FINAL ====================================
@@ -915,5 +932,6 @@ function compartirImagenFinal() {
 
 window.descargarImagenFinal = descargarImagenFinal;
 window.compartirImagenFinal = compartirImagenFinal;
+
 
 
