@@ -241,26 +241,31 @@ function formatearVersiculosComoRango(numeros) {
 }
 
 // ================= COLOR OUTLINE CLAROS Y OSCUROS  =======================
-function colorOutlineDesdeBase(hex) {
+function colorOutlineDesdeBase(color) {
+  if (!color) return "#000000";
+
+  // convertir rgb() a hex
+  if (color.startsWith("rgb")) {
+    const nums = color.match(/\d+/g).map(Number);
+    return colorOutlineDesdeBase(
+      "#" + nums.map(x => x.toString(16).padStart(2, "0")).join("")
+    );
+  }
+
+  const hex = color.toLowerCase().trim();
+
   const map = {
     "#329534": "#e5ffe5",
     "#b2a43d": "#fffce5",
     "#c14444": "#ffe5e5",
     "#524ec9": "#e5e7ff",
-    "#000000": "#ffffff",
-    "#ffffff": "#000000",
     "#aa4ec9": "#f4e5ff",
     "#d57747": "#ffece5",
-
-    "#e5ffe5": "#329534",
-    "#fffce5": "#b2a43d",
-    "#ffe5e5": "#c14444",
-    "#e5e7ff": "#524ec9",
-    "#f4e5ff": "#aa4ec9",
-    "#ffece5": "#d57747"
+    "#000000": "#ffffff",
+    "#ffffff": "#000000"
   };
 
-  return map[hex.toLowerCase()] || hex;
+  return map[hex] || "#000000";
 }
 
 // ================= ACTUALIZAR VISTA PREVIA  =======================
@@ -290,9 +295,20 @@ function actualizarPreview() {
 const sizeSlider = document.getElementById("personalizarTamaño");
 const sizeBase = sizeSlider ? Number(sizeSlider.value) : (formatoStory ? 56 : 48);
 
-previewTexto.style.fontSize = sizeBase + "px";
-previewTextoBack.style.fontSize = sizeBase + "px";
+// 🔧 AUTO AJUSTE DE TEXTO EN PREVIEW
+let fontSize = sizeBase;
+const maxHeight = wrapper.clientHeight - 40;
 
+previewTexto.style.lineHeight = "1.3";
+previewTextoBack.style.lineHeight = "1.3";
+
+while (fontSize > 14) {
+  previewTexto.style.fontSize = fontSize + "px";
+  previewTextoBack.style.fontSize = fontSize + "px";
+
+  if (previewTexto.scrollHeight <= maxHeight) break;
+  fontSize--;
+}
   const color = document.getElementById("personalizarColor").value;
   const opacidad = document.getElementById("personalizarOpacidad").value;
 
@@ -370,6 +386,20 @@ function resetModalPersonalizar() {
 
   const acciones = document.getElementById("accionesFinales");
   if (acciones) acciones.remove();
+
+    // 🔁 RESTAURAR LAYOUT DEL MODAL (CLAVE)
+  const panel = document.querySelector(".panel-opciones");
+  if (panel) {
+    panel.style.display = "grid";
+    panel.style.gridTemplateColumns = "repeat(auto-fit, minmax(120px, 1fr))";
+  }
+
+  const fondos = document.getElementById("personalizarFondos");
+  if (fondos) {
+    fondos.style.display = "flex";
+    fondos.style.flexWrap = "wrap";
+    fondos.style.gap = "10px";
+  }
 }
 
 // ================= SALIR DEL MODO IMAGEN  ======================= 
@@ -758,7 +788,7 @@ function dibujarFondo(ctx, img, canvas) {
 // ======================== DIBUJA TEXTO CLON DEL PREVIEW ==================================== 
 
 function dibujarTexto(ctx, canvas) {
-  const texto = obtenerVersiculoSeleccionado();
+  const texto = obtenerVersiculoSeleccionado().replace(/\n+/g, " \n ");
   const color = document.getElementById("personalizarColor").value;
   const fuente = document.getElementById("personalizarFuente").value || "Arial";
 
@@ -955,6 +985,7 @@ function compartirImagenFinal() {
 
 window.descargarImagenFinal = descargarImagenFinal;
 window.compartirImagenFinal = compartirImagenFinal;
+
 
 
 
