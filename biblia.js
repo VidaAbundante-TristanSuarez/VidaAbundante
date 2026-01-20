@@ -252,20 +252,15 @@ function colorOutlineDesdeBase(color) {
     );
   }
 
-  const hex = color.toLowerCase().trim();
+  const hex = color.replace("#", "");
+  const r = parseInt(hex.substr(0, 2), 16);
+  const g = parseInt(hex.substr(2, 2), 16);
+  const b = parseInt(hex.substr(4, 2), 16);
 
-  const map = {
-    "#329534": "#e5ffe5",
-    "#b2a43d": "#fffce5",
-    "#c14444": "#ffe5e5",
-    "#524ec9": "#e5e7ff",
-    "#aa4ec9": "#f4e5ff",
-    "#d57747": "#ffece5",
-    "#000000": "#ffffff",
-    "#ffffff": "#000000"
-  };
+  const lum = 0.299 * r + 0.587 * g + 0.114 * b;
 
-  return map[hex] || "#000000";
+  // 👈 contraste automático REAL
+  return lum > 160 ? "#000000" : "#ffffff";
 }
 
 // ================= ACTUALIZAR VISTA PREVIA  =======================
@@ -788,7 +783,7 @@ function dibujarFondo(ctx, img, canvas) {
 // ======================== DIBUJA TEXTO CLON DEL PREVIEW ==================================== 
 
 function dibujarTexto(ctx, canvas) {
-  const texto = obtenerVersiculoSeleccionado().replace(/\n+/g, " \n ");
+  const texto = obtenerVersiculoSeleccionado();
   const color = document.getElementById("personalizarColor").value;
   const fuente = document.getElementById("personalizarFuente").value || "Arial";
 
@@ -802,7 +797,7 @@ function dibujarTexto(ctx, canvas) {
   ctx.textAlign = "center";
   ctx.textBaseline = "top";
 
-  // Ajuste automático REAL
+  // 🔧 AJUSTE AUTOMÁTICO (usa medirAltoTexto NUEVO)
   while (size > 14) {
     ctx.font =
       `${textStyle.italic ? "italic " : ""}` +
@@ -818,91 +813,80 @@ function dibujarTexto(ctx, canvas) {
   }
 
   const lineHeight = size * 1.3;
-  const y =
-    paddingY +
-    (maxHeight - medirAltoTexto(ctx, texto, maxWidth, lineHeight)) / 2;
 
-  // OUTLINE
+  const totalHeight = medirAltoTexto(ctx, texto, maxWidth, lineHeight);
+
+  const yInicial =
+    paddingY +
+    (maxHeight - totalHeight) / 2;
+
+  // ================= OUTLINE =================
   ctx.lineWidth = 4;
   ctx.strokeStyle = colorOutlineDesdeBase(color);
-  dibujarTextoMultilineaStroke(
-    ctx,
-    texto,
-    canvas.width / 2,
-    y,
-    maxWidth,
-    lineHeight
-  );
 
-  // TEXTO
-  ctx.fillStyle = color;
   dibujarTextoMultilinea(
     ctx,
     texto,
     canvas.width / 2,
-    y,
+    yInicial,
     maxWidth,
-    lineHeight
+    lineHeight,
+    true   // 👈 stroke
+  );
+
+  // ================= TEXTO =================
+  ctx.fillStyle = color;
+
+  dibujarTextoMultilinea(
+    ctx,
+    texto,
+    canvas.width / 2,
+    yInicial,
+    maxWidth,
+    lineHeight,
+    false  // 👈 fill
   );
 }
 
-// ======================== FUNCIONES AUXILIARES MULTILÍNEA ==================================== 
+// ======================== NUEVAS (RESPETAN \n) ==================================== //
+function dividirLineas(ctx, texto, maxWidth) {
+  const lineas = [];
+  const bloques = texto.split("\n");
 
-function dibujarTextoMultilinea(ctx, texto, x, y, maxWidth, lineHeight) {
-  const palabras = texto.split(" ");
-  let linea = "";
+  bloques.forEach(bloque => {
+    const palabras = bloque.split(" ");
+    let linea = "";
 
-  for (let i = 0; i < palabras.length; i++) {
-    const test = linea + palabras[i] + " ";
-    const metrics = ctx.measureText(test);
+    palabras.forEach(p => {
+      const test = linea + p + " ";
+      if (ctx.measureText(test).width > maxWidth && linea) {
+        lineas.push(linea.trim());
+        linea = p + " ";
+      } else {
+        linea = test;
+      }
+    });
 
-    if (metrics.width > maxWidth && i > 0) {
-      ctx.fillText(linea, x, y);
-      linea = palabras[i] + " ";
-      y += lineHeight;
-    } else {
-      linea = test;
-    }
-  }
-  ctx.fillText(linea, x, y);
+    if (linea) lineas.push(linea.trim());
+    lineas.push(""); // salto real
+  });
+
+  return lineas;
 }
 
 function medirAltoTexto(ctx, texto, maxWidth, lineHeight) {
-  const palabras = texto.split(" ");
-  let linea = "";
-  let lineas = 1;
-
-  for (let i = 0; i < palabras.length; i++) {
-    const test = linea + palabras[i] + " ";
-    if (ctx.measureText(test).width > maxWidth && i > 0) {
-      lineas++;
-      linea = palabras[i] + " ";
-    } else {
-      linea = test;
-    }
-  }
-  return lineas * lineHeight;
+  const lineas = dividirLineas(ctx, texto, maxWidth);
+  return lineas.length * lineHeight;
 }
 
-// ======================== OUTLINE ====================================
+function dibujarTextoMultilinea(ctx, texto, x, y, maxWidth, lineHeight, stroke = false) {
+  const lineas = dividirLineas(ctx, texto, maxWidth);
 
-function dibujarTextoMultilineaStroke(ctx, texto, x, y, maxWidth, lineHeight) {
-  const palabras = texto.split(" ");
-  let linea = "";
-
-  for (let i = 0; i < palabras.length; i++) {
-    const test = linea + palabras[i] + " ";
-    const metrics = ctx.measureText(test);
-
-    if (metrics.width > maxWidth && i > 0) {
-      ctx.strokeText(linea, x, y);
-      linea = palabras[i] + " ";
-      y += lineHeight;
-    } else {
-      linea = test;
-    }
-  }
-  ctx.strokeText(linea, x, y);
+  lineas.forEach(l => {
+    if (stroke) ctx.strokeText(l, x, y);
+    else ctx.fillText(l, x, y);
+    y += lineHeight;
+  });
 }
 
 // ======================== VER RESULTADO FINAL ====================================
@@ -985,6 +969,7 @@ function compartirImagenFinal() {
 
 window.descargarImagenFinal = descargarImagenFinal;
 window.compartirImagenFinal = compartirImagenFinal;
+
 
 
 
