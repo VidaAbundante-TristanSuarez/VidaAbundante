@@ -75,7 +75,6 @@ function mostrarTexto() {
 }
 
 // ======================= PINTAR VERSICULO  =============================
-
 function pintarVersiculo(v) {
   const id = `${v.Libro}_${v.Capitulo}_${v.Versiculo}`;
   const marcado = marcados[id];
@@ -85,23 +84,35 @@ function pintarVersiculo(v) {
   div.className = "versiculo";
   if (imagen) div.classList.add("imagen");
 
+  // Tamaño de letra
   div.style.fontSize = size + "px";
 
-  // FONDO
+  // ================= FONDO =================
   if (modoImagen) {
-    div.style.background = imagen ? "rgba(255, 214, 232, 0.6)" : "transparent";
+    // En modo imagen solo se ve la selección
+    div.style.background = imagen
+      ? "rgba(255, 214, 232, 0.6)"
+      : "transparent";
   } else {
+    // Modo normal → resaltador real
     div.style.background = marcado?.color || "transparent";
   }
 
-  // 👉 COLOR DE TEXTO (CLAVE)
-  if (marcado) {
+  // ================= COLOR DE TEXTO =================
+  if (modoImagen) {
+    // 🖼️ MODO IMAGEN: siempre blanco, sin importar tema o resaltado
+    div.style.color = "#ffffff";
+  } 
+  else if (marcado) {
     if (document.body.classList.contains("oscuro")) {
-      div.style.color = "#000000"; // negro en modo oscuro
+      // 🌙 Resaltado en modo oscuro → negro
+      div.style.color = "#000000";
     } else {
+      // ☀️ Modo claro → contraste automático según color
       div.style.color = colorContraste(marcado.color);
     }
   }
+  // (si no está marcado, usa el color normal del CSS)
 
   div.innerHTML = `<span class="num">${v.Versiculo}</span> ${v.RV1960}`;
   div.onclick = () => toggleVersiculo(id, v.Versiculo);
@@ -944,6 +955,7 @@ window.compartirImagenFinal = compartirImagenFinal;
 if (localStorage.getItem("modoOscuro") === "1") {
   document.body.classList.add("oscuro");
 }
+
 
 
 
