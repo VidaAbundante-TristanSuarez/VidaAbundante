@@ -636,7 +636,6 @@ window.toggleUnderline = () => {
 };
 
 // ================= RESALTADOR COMPACTO (FINAL REAL PARA MODULE) ======================
-
 document.addEventListener("DOMContentLoaded", () => {
 
   (function initResaltadorCompacto() {
@@ -650,17 +649,33 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    colorActual = colorActual || "#fff3b0";
+    // 🔹 estado inicial
     btnActivo.style.background = colorActual;
     btnActivo.textContent = "💛";
 
+    // 🔹 abrir / cerrar paleta
     btnActivo.onclick = e => {
       e.preventDefault();
       e.stopPropagation();
-      paleta.style.display =
-        paleta.style.display === "block" ? "none" : "block";
+
+      // mostrar / ocultar
+      const visible = paleta.style.display === "block";
+      paleta.style.display = visible ? "none" : "block";
+
+      // 📐 control de posición (NUNCA abajo)
+      contResaltador.classList.remove("mover-derecha");
+
+      if (!visible) {
+        const rect = paleta.getBoundingClientRect();
+
+        // si no entra arriba → mover al costado
+        if (rect.top < 10) {
+          contResaltador.classList.add("mover-derecha");
+        }
+      }
     };
 
+    // 🔹 elegir color
     paleta.querySelectorAll("button").forEach(btn => {
       btn.onclick = e => {
         e.preventDefault();
@@ -672,10 +687,12 @@ document.addEventListener("DOMContentLoaded", () => {
         colorActual = color;
         btnActivo.style.background = color;
         btnActivo.textContent = btn.textContent;
+
         paleta.style.display = "none";
       };
     });
 
+    // 🔹 cerrar clic fuera
     document.addEventListener("click", e => {
       if (!contResaltador.contains(e.target)) {
         paleta.style.display = "none";
@@ -687,7 +704,6 @@ document.addEventListener("DOMContentLoaded", () => {
   })();
 
 });
-
 
 // ================= FORMATO IMAGEN ===========================
 window.setFormatoImagen = tipo => {
@@ -955,6 +971,7 @@ window.compartirImagenFinal = compartirImagenFinal;
 if (localStorage.getItem("modoOscuro") === "1") {
   document.body.classList.add("oscuro");
 }
+
 
 
 
