@@ -431,7 +431,7 @@ border: 2px solid #ff4fa3;
   cursor: pointer;
 }
 
-/* ================= RESALTADOR COMPACTO ================= */
+/* ================= RESALTADOR COMPACTO (FIX VISUAL) ================= */
 
 #resaltadorCompacto {
   position: relative;
@@ -439,14 +439,16 @@ border: 2px solid #ff4fa3;
 
 #paletaResaltadores {
   position: absolute;
-  top: 110%;
+  top: auto;
+  bottom: 110%;            /* 👈 CLAVE: se abre HACIA ARRIBA */
   left: 0;
+
   display: none;
-  z-index: 9999;
+  z-index: 99999;
 
   background: #222;
   padding: 8px;
-  border-radius: 10px;
+  border-radius: 12px;
 
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -460,7 +462,6 @@ border: 2px solid #ff4fa3;
   border: none;
   cursor: pointer;
 }
-
 
   </style>
 </head>
@@ -707,6 +708,7 @@ border: 2px solid #ff4fa3;
   
 </body>
 </html>
+
 
 
 
