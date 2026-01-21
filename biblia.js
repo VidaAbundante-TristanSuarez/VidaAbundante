@@ -765,29 +765,22 @@ if (btnGen) {
 function generarImagenFinal() {
   const preview = document.getElementById("previewImagen");
   const canvasFinal = document.getElementById("canvasFinal");
-  const ctx = canvasFinal.getContext("2d");
-
-  const esStory = preview.classList.contains("preview-story");
-
-  canvasFinal.width = 1080;
-  canvasFinal.height = esStory ? 1920 : 1080;
 
   html2canvas(preview, {
-    scale: 2,
+    scale: window.devicePixelRatio || 2,
     useCORS: true,
     backgroundColor: null
   }).then(canvasTemp => {
 
+    // 🔒 copiar EXACTAMENTE el canvas generado (sin estirar)
+    canvasFinal.width = canvasTemp.width;
+    canvasFinal.height = canvasTemp.height;
+
+    const ctx = canvasFinal.getContext("2d");
     ctx.clearRect(0, 0, canvasFinal.width, canvasFinal.height);
+    ctx.drawImage(canvasTemp, 0, 0);
 
-    ctx.drawImage(
-      canvasTemp,
-      0,
-      0,
-      canvasFinal.width,
-      canvasFinal.height
-    );
-
+    // mostrar resultado sin tocar proporciones
     mostrarResultadoFinal(canvasFinal);
   });
 }
@@ -871,6 +864,7 @@ window.compartirImagenFinal = compartirImagenFinal;
 if (localStorage.getItem("modoOscuro") === "1") {
   document.body.classList.add("oscuro");
 }
+
 
 
 
