@@ -378,7 +378,6 @@ function resetPreview() {
 }
 
 // ================= RESET DEL MODAL  =======================
-
 function resetModalPersonalizar() {
   fondoFinal = null;
   textStyle = { upper:false, bold:false, italic:false, underline:false };
@@ -389,41 +388,24 @@ function resetModalPersonalizar() {
   document.getElementById("personalizarColor").value = "#ffffff";
 
   const preview = document.getElementById("previewImagen");
-  if (preview) {
-    preview.style.backgroundImage = "none";
-    preview.style.pointerEvents = "auto";
-  }
+  preview.style.backgroundImage = "none";
+  preview.style.pointerEvents = "auto";
+  preview.classList.remove("render-final"); // 🔥 CLAVE
 
-  const wrapper = document.getElementById("previewTextoWrapper");
-  if (wrapper) {
-    wrapper.style.pointerEvents = "auto";
-    wrapper.style.backgroundColor = ""; // 🔥 restaurar fondo
-  }
-
-  // 🔁 Mostrar texto HTML nuevamente
+  // Restaurar texto HTML
   document.getElementById("previewTexto").style.display = "block";
   document.getElementById("previewTextoBack").style.display = "block";
 
-  // 🔁 Restaurar paneles
-  const panel = document.querySelector(".panel-opciones");
-  if (panel) {
-    panel.style.display = "grid";
-    panel.style.gridTemplateColumns = "repeat(auto-fit, minmax(120px, 1fr))";
-    panel.style.opacity = "1";
-    panel.style.pointerEvents = "auto";
-  }
+  // Restaurar wrapper
+  const wrapper = document.getElementById("previewTextoWrapper");
+  wrapper.style.pointerEvents = "auto";
+  wrapper.style.background = "";
 
-  const fondos = document.getElementById("personalizarFondos");
-  if (fondos) {
-    fondos.style.display = "flex";
-    fondos.style.flexWrap = "wrap";
-    fondos.style.gap = "10px";
-  }
+  // Restaurar UI
+  document.querySelector(".panel-opciones").style.display = "grid";
+  document.getElementById("personalizarFondos").style.display = "flex";
+  document.getElementById("btnGenerarPersonalizada").style.display = "inline-block";
 
-  const btn = document.getElementById("btnGenerarPersonalizada");
-  if (btn) btn.style.display = "inline-block";
-
-  // ❌ Eliminar botones finales
   const acciones = document.getElementById("accionesFinales");
   if (acciones) acciones.remove();
 }
@@ -788,37 +770,24 @@ function generarImagenFinal() {
 
 function mostrarResultadoFinal(canvas) {
   const preview = document.getElementById("previewImagen");
-  const wrapper = document.getElementById("previewTextoWrapper");
 
-  // Imagen final renderizada
+  // 🔥 marcar estado render final
+  preview.classList.add("render-final");
+
+  // Imagen final
   preview.style.backgroundImage = `url(${canvas.toDataURL("image/png")})`;
   preview.style.pointerEvents = "none";
 
-  // ❌ Ocultar texto HTML (evita duplicado)
-  document.getElementById("previewTexto").style.display = "none";
-  document.getElementById("previewTextoBack").style.display = "none";
+  // Ocultar paneles de edición
+  document.querySelector(".panel-opciones").style.display = "none";
+  document.getElementById("personalizarFondos").style.display = "none";
+  document.getElementById("btnGenerarPersonalizada").style.display = "none";
 
-  // 🔥 ELIMINAR FONDO EXTRA (CLAVE DEL BUG)
-  if (wrapper) {
-    wrapper.style.backgroundColor = "transparent";
-    wrapper.style.pointerEvents = "none";
-  }
-
-  // ❌ Ocultar paneles de edición
-  const panel = document.querySelector(".panel-opciones");
-  if (panel) panel.style.display = "none";
-
-  const fondos = document.getElementById("personalizarFondos");
-  if (fondos) fondos.style.display = "none";
-
-  const btn = document.getElementById("btnGenerarPersonalizada");
-  if (btn) btn.style.display = "none";
-
-  // ❌ Eliminar acciones previas
+  // Eliminar botones previos
   const viejo = document.getElementById("accionesFinales");
   if (viejo) viejo.remove();
 
-  // ✅ Botones finales
+  // Botones finales
   const acciones = document.createElement("div");
   acciones.id = "accionesFinales";
   acciones.style.display = "flex";
@@ -876,6 +845,7 @@ window.compartirImagenFinal = compartirImagenFinal;
 if (localStorage.getItem("modoOscuro") === "1") {
   document.body.classList.add("oscuro");
 }
+
 
 
 
