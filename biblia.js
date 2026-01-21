@@ -388,32 +388,29 @@ function resetModalPersonalizar() {
   document.getElementById("personalizarFuente").value = "Arial";
   document.getElementById("personalizarColor").value = "#ffffff";
 
-  const prev = document.getElementById("previewImagen");
-  if (prev) {
-    prev.style.backgroundImage = "none";
-    prev.style.pointerEvents = "auto";
+  const preview = document.getElementById("previewImagen");
+  if (preview) {
+    preview.style.backgroundImage = "none";
+    preview.style.pointerEvents = "auto";
   }
 
   const wrapper = document.getElementById("previewTextoWrapper");
-  if (wrapper) wrapper.style.pointerEvents = "auto";
+  if (wrapper) {
+    wrapper.style.pointerEvents = "auto";
+    wrapper.style.backgroundColor = ""; // 🔥 restaurar fondo
+  }
 
-  // 🔥 VOLVER A MOSTRAR TEXTO HTML
+  // 🔁 Mostrar texto HTML nuevamente
   document.getElementById("previewTexto").style.display = "block";
   document.getElementById("previewTextoBack").style.display = "block";
 
-  // Restaurar UI
-  document.querySelector(".panel-opciones").style.display = "block";
-  document.getElementById("personalizarFondos").style.display = "flex";
-  document.getElementById("btnGenerarPersonalizada").style.display = "inline-block";
-
-  const acciones = document.getElementById("accionesFinales");
-  if (acciones) acciones.remove();
-
-    // 🔁 RESTAURAR LAYOUT DEL MODAL (CLAVE)
+  // 🔁 Restaurar paneles
   const panel = document.querySelector(".panel-opciones");
   if (panel) {
     panel.style.display = "grid";
     panel.style.gridTemplateColumns = "repeat(auto-fit, minmax(120px, 1fr))";
+    panel.style.opacity = "1";
+    panel.style.pointerEvents = "auto";
   }
 
   const fondos = document.getElementById("personalizarFondos");
@@ -422,7 +419,15 @@ function resetModalPersonalizar() {
     fondos.style.flexWrap = "wrap";
     fondos.style.gap = "10px";
   }
+
+  const btn = document.getElementById("btnGenerarPersonalizada");
+  if (btn) btn.style.display = "inline-block";
+
+  // ❌ Eliminar botones finales
+  const acciones = document.getElementById("accionesFinales");
+  if (acciones) acciones.remove();
 }
+
 
 // ================= SALIR DEL MODO IMAGEN  ======================= 
 
@@ -767,35 +772,15 @@ if (btnGen) {
 }
 
 // ================= CANVAS GENERA IMAGEN FINAL ============================
-// ================= CANVAS GENERA IMAGEN FINAL ============================
 function generarImagenFinal() {
   const preview = document.getElementById("previewImagen");
-  const canvasFinal = document.getElementById("canvasFinal");
-
-  const scale = window.devicePixelRatio || 2;
 
   html2canvas(preview, {
-    scale,           // calidad Retina
-    useCORS: true,   // fondos externos
-    backgroundColor: null // respeta transparencias
+    scale: window.devicePixelRatio || 2,
+    useCORS: true,
+    backgroundColor: null
   }).then(canvas => {
-    const esStory = preview.classList.contains("preview-story");
-
-    // Forzar tamaño final si querés exacto
-    canvasFinal.width = 1080;
-    canvasFinal.height = esStory ? 1920 : 1080;
-
-    const ctx = canvasFinal.getContext("2d");
-    ctx.clearRect(0, 0, canvasFinal.width, canvasFinal.height);
-
-    // 🔥 Escalar canvas de html2canvas a canvasFinal
-    ctx.drawImage(
-      canvas,
-      0, 0, canvas.width, canvas.height,       // canvas original
-      0, 0, canvasFinal.width, canvasFinal.height // canvas final
-    );
-
-    mostrarResultadoFinal(canvasFinal);
+    mostrarResultadoFinal(canvas);
   });
 }
 
@@ -803,28 +788,37 @@ function generarImagenFinal() {
 
 function mostrarResultadoFinal(canvas) {
   const preview = document.getElementById("previewImagen");
+  const wrapper = document.getElementById("previewTextoWrapper");
 
-  // Imagen final
+  // Imagen final renderizada
   preview.style.backgroundImage = `url(${canvas.toDataURL("image/png")})`;
   preview.style.pointerEvents = "none";
 
-  // Ocultar texto HTML para que no se duplique
+  // ❌ Ocultar texto HTML (evita duplicado)
   document.getElementById("previewTexto").style.display = "none";
   document.getElementById("previewTextoBack").style.display = "none";
 
-  const wrapper = document.getElementById("previewTextoWrapper");
-  if (wrapper) wrapper.style.pointerEvents = "none";
+  // 🔥 ELIMINAR FONDO EXTRA (CLAVE DEL BUG)
+  if (wrapper) {
+    wrapper.style.backgroundColor = "transparent";
+    wrapper.style.pointerEvents = "none";
+  }
 
-  // Ocultar opciones
-  document.querySelector(".panel-opciones").style.display = "none";
-  document.getElementById("personalizarFondos").style.display = "none";
-  document.getElementById("btnGenerarPersonalizada").style.display = "none";
+  // ❌ Ocultar paneles de edición
+  const panel = document.querySelector(".panel-opciones");
+  if (panel) panel.style.display = "none";
 
-  // Eliminar botones previos si existen
+  const fondos = document.getElementById("personalizarFondos");
+  if (fondos) fondos.style.display = "none";
+
+  const btn = document.getElementById("btnGenerarPersonalizada");
+  if (btn) btn.style.display = "none";
+
+  // ❌ Eliminar acciones previas
   const viejo = document.getElementById("accionesFinales");
   if (viejo) viejo.remove();
 
-  // Botones finales (DEBAJO del preview)
+  // ✅ Botones finales
   const acciones = document.createElement("div");
   acciones.id = "accionesFinales";
   acciones.style.display = "flex";
@@ -837,7 +831,6 @@ function mostrarResultadoFinal(canvas) {
     <button onclick="compartirImagenFinal()">📤 Compartir</button>
   `;
 
-  // 👈 ESTO ES CLAVE: se agregan junto al preview, no afuera
   preview.parentNode.appendChild(acciones);
 }
 
@@ -883,6 +876,7 @@ window.compartirImagenFinal = compartirImagenFinal;
 if (localStorage.getItem("modoOscuro") === "1") {
   document.body.classList.add("oscuro");
 }
+
 
 
 
