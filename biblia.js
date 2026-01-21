@@ -767,31 +767,32 @@ if (btnGen) {
 }
 
 // ================= CANVAS GENERA IMAGEN FINAL ============================
+// ================= CANVAS GENERA IMAGEN FINAL ============================
 function generarImagenFinal() {
   const preview = document.getElementById("previewImagen");
   const canvasFinal = document.getElementById("canvasFinal");
 
+  const scale = window.devicePixelRatio || 2;
+
   html2canvas(preview, {
-    scale: 2,              // calidad alta
-    useCORS: true,
+    scale,           // calidad Retina
+    useCORS: true,   // fondos externos
     backgroundColor: null // respeta transparencias
   }).then(canvas => {
-    // Ajustar tamaño final
-    const ctx = canvasFinal.getContext("2d");
-
     const esStory = preview.classList.contains("preview-story");
+
+    // Forzar tamaño final si querés exacto
     canvasFinal.width = 1080;
     canvasFinal.height = esStory ? 1920 : 1080;
 
+    const ctx = canvasFinal.getContext("2d");
     ctx.clearRect(0, 0, canvasFinal.width, canvasFinal.height);
 
-    // Dibujar EXACTAMENTE lo que se ve
+    // 🔥 Escalar canvas de html2canvas a canvasFinal
     ctx.drawImage(
       canvas,
-      0,
-      0,
-      canvasFinal.width,
-      canvasFinal.height
+      0, 0, canvas.width, canvas.height,       // canvas original
+      0, 0, canvasFinal.width, canvasFinal.height // canvas final
     );
 
     mostrarResultadoFinal(canvasFinal);
@@ -882,6 +883,7 @@ window.compartirImagenFinal = compartirImagenFinal;
 if (localStorage.getItem("modoOscuro") === "1") {
   document.body.classList.add("oscuro");
 }
+
 
 
 
