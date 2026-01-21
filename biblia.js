@@ -32,7 +32,7 @@ let marcados = {};
 let notas = {};
 let size = 18;
 let colorActual = "#fff3b0"; // 🟨 amarillo por default
-let resaltadorAbierto = true;
+let resaltadorAbierto = false;
 let grupoActual = null;
 let marcador = null;
 
@@ -385,7 +385,11 @@ function resetModalPersonalizar() {
   document.getElementById("personalizarOpacidad").value = 0.35;
   document.getElementById("personalizarTamaño").value = 32;
   document.getElementById("personalizarFuente").value = "Arial";
-  document.getElementById("personalizarColor").value = "#ffffff";
+ const colorInput = document.getElementById("personalizarColor");
+colorInput.value = document.body.classList.contains("oscuro")
+  ? "#ffffff"
+  : "#000000";
+
 
   const preview = document.getElementById("previewImagen");
   preview.style.backgroundImage = "none";
@@ -408,6 +412,7 @@ function resetModalPersonalizar() {
 
   const acciones = document.getElementById("accionesFinales");
   if (acciones) acciones.remove();
+  actualizarPreview();
 }
 
 
@@ -640,6 +645,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const paleta = document.getElementById("paletaResaltadores");
     const contResaltador = document.getElementById("resaltadorCompacto");
 
+// 🔒 FORZAR PALETA CERRADA AL INICIAR
+paleta.style.display = "none";
+    
     if (!btnActivo || !paleta || !contResaltador) {
       console.warn("❌ Resaltador NO inicializado (HTML no encontrado)");
       return;
@@ -756,13 +764,31 @@ if (btnGen) {
 // ================= CANVAS GENERA IMAGEN FINAL ============================
 function generarImagenFinal() {
   const preview = document.getElementById("previewImagen");
+  const canvasFinal = document.getElementById("canvasFinal");
+  const ctx = canvasFinal.getContext("2d");
+
+  const esStory = preview.classList.contains("preview-story");
+
+  canvasFinal.width = 1080;
+  canvasFinal.height = esStory ? 1920 : 1080;
 
   html2canvas(preview, {
-    scale: window.devicePixelRatio || 2,
+    scale: 2,
     useCORS: true,
     backgroundColor: null
-  }).then(canvas => {
-    mostrarResultadoFinal(canvas);
+  }).then(canvasTemp => {
+
+    ctx.clearRect(0, 0, canvasFinal.width, canvasFinal.height);
+
+    ctx.drawImage(
+      canvasTemp,
+      0,
+      0,
+      canvasFinal.width,
+      canvasFinal.height
+    );
+
+    mostrarResultadoFinal(canvasFinal);
   });
 }
 
@@ -845,6 +871,7 @@ window.compartirImagenFinal = compartirImagenFinal;
 if (localStorage.getItem("modoOscuro") === "1") {
   document.body.classList.add("oscuro");
 }
+
 
 
 
