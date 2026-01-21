@@ -474,6 +474,26 @@ border: 2px solid #ff4fa3;
   cursor: pointer;
 }
 
+  /* 🔥 FIX DEFINITIVO: evitar fondos fantasmas en imagen final */
+#previewImagen.render-final #previewTextoWrapper {
+  background: transparent !important;
+}
+
+/* 🔥 Cuando se genera la imagen, ocultar texto HTML real */
+#previewImagen.render-final #previewTexto,
+#previewImagen.render-final #previewTextoBack {
+  display: none !important;
+}
+
+/* 🔥 Modal SIEMPRE legible (no gris) */
+#modalPersonalizar {
+  color: #000;
+}
+
+#modalPersonalizar label {
+  color: #000;
+}
+
 
   </style>
 </head>
@@ -719,6 +739,7 @@ border: 2px solid #ff4fa3;
   
 </body>
 </html>
+
 
 
 
