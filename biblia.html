@@ -9,18 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
-<link href="https://fonts.googleapis.com/css2?
-family=Roboto:wght@400;700&
-family=Lobster&
-family=Playfair+Display:wght@400;700&
-family=Montserrat:wght@400;700&
-family=Poppins:wght@400;700&
-family=Abril+Fatface&
-family=Cormorant:wght@400;700&
-family=Josefin+Sans:wght@400;700&
-family=Great+Vibes&
-
-display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Lobster&family=Playfair+Display:wght@400;700&family=Montserrat:wght@400;700&family=Poppins:wght@400;700&family=Abril+Fatface&family=Cormorant:wght@400;700&family=Josefin+Sans:wght@400;700&family=Great+Vibes&display=swap" rel="stylesheet">
 
   <!-- html2canvas (UNA SOLA VEZ) -->
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
@@ -758,32 +747,27 @@ body.oscuro #btnResaltadorActivo .icono-candado {
 
   <div>
     <label>Fuente</label>
-    <select id="personalizarFuente">
-      <div id="listaFuentes" style="
-  max-height:180px;
-  overflow-y:auto;
-  display:flex;
-  flex-direction:column;
-  gap:6px;
-  margin-top:8px;
-">
+
+<!-- SELECT oculto (lo usa el JS) -->
+<select id="personalizarFuente" style="display:none">
+  <option value="Roboto">Roboto</option>
+  <option value="Lobster">Lobster</option>
+  <option value="Playfair Display">Playfair Display</option>
+  <option value="Montserrat">Montserrat</option>
+  <option value="Poppins">Poppins</option>
+</select>
+
+<!-- LISTA VISUAL -->
+<div id="listaFuentes"
+     style="
+       max-height:180px;
+       overflow-y:auto;
+       display:flex;
+       flex-direction:column;
+       gap:6px;
+       margin-top:8px;
+     ">
 </div>
-      <option value="Arial">Arial</option>
-      <option value="Times New Roman">Times New Roman</option>
-      <option value="Courier New">Courier New</option>
-      <option value="Verdana">Verdana</option>
-      <option value="Georgia">Georgia</option>
-      <option value="Helvetica">Helvetica</option>
-      <option value="Trebuchet MS">Trebuchet MS</option>
-      <option value="Impact">Impact</option>
-      <option value="Comic Sans MS">Comic Sans MS</option>
-      <option value="Roboto">Roboto</option>
-      <option value="Lobster">Lobster</option>
-      <option value="Playfair Display">Playfair</option>
-      <option value="Montserrat">Montserrat</option>
-      <option value="Poppins">Poppins</option>
-    </select>
-  </div>
   
   <div>
     <label>Tamaño texto</label>
@@ -825,6 +809,7 @@ body.oscuro #btnResaltadorActivo .icono-candado {
   
 </body>
 </html>
+
 
 
 
