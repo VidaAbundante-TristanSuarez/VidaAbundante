@@ -739,6 +739,7 @@ window.toggleUnderline = () => {
 };
 
 // ================= RESALTADOR COMPACTO (FINAL REAL PARA MODULE) ======================
+
 document.addEventListener("DOMContentLoaded", () => {
 
   (function initResaltadorCompacto() {
@@ -746,38 +747,38 @@ document.addEventListener("DOMContentLoaded", () => {
     const btnActivo = document.getElementById("btnResaltadorActivo");
     const paleta = document.getElementById("paletaResaltadores");
     const contResaltador = document.getElementById("resaltadorCompacto");
+    const candado = document.getElementById("candadoResaltador");
 
-// 🔒 FORZAR PALETA CERRADA AL INICIAR
-paleta.style.display = "none";
-    
-    if (!btnActivo || !paleta || !contResaltador) {
+    if (!btnActivo || !paleta || !contResaltador || !candado) {
       console.warn("❌ Resaltador NO inicializado (HTML no encontrado)");
       return;
     }
 
-    // 🔹 estado inicial
+    let colorActual = "#fff3b0"; // color inicial
+    let bloqueado = false; // estado del candado
+
+    // 🔒 Paleta cerrada al iniciar
+    paleta.style.display = "none";
     btnActivo.style.background = colorActual;
     btnActivo.textContent = "💛";
 
-    // 🔹 abrir / cerrar paleta
+    // 🔹 abrir / cerrar paleta y manejo bloqueo
     btnActivo.onclick = e => {
       e.preventDefault();
       e.stopPropagation();
 
-      // mostrar / ocultar
+      // abrir paleta siempre
       const visible = paleta.style.display === "block";
       paleta.style.display = visible ? "none" : "block";
 
-      // 📐 control de posición (NUNCA abajo)
-      contResaltador.classList.remove("mover-derecha");
+      // si está bloqueado, mostrar candado
+      candado.style.display = bloqueado ? "inline" : "none";
 
+      // control posición (costado si no entra)
+      contResaltador.classList.remove("mover-derecha");
       if (!visible) {
         const rect = paleta.getBoundingClientRect();
-
-        // si no entra arriba → mover al costado
-        if (rect.top < 10) {
-          contResaltador.classList.add("mover-derecha");
-        }
+        if (rect.top < 10) contResaltador.classList.add("mover-derecha");
       }
     };
 
@@ -795,6 +796,8 @@ paleta.style.display = "none";
         btnActivo.textContent = btn.textContent;
 
         paleta.style.display = "none";
+        bloqueado = false;
+        candado.style.display = "none";
       };
     });
 
@@ -803,6 +806,14 @@ paleta.style.display = "none";
       if (!contResaltador.contains(e.target)) {
         paleta.style.display = "none";
       }
+    });
+
+    // 🔹 bloqueo manual: si ya elegiste color y querés bloquear
+    btnActivo.addEventListener("contextmenu", e => {
+      e.preventDefault();
+      bloqueado = true;
+      paleta.style.display = "block"; // se abre al bloquear
+      candado.style.display = "inline";
     });
 
     console.log("✅ Resaltador compacto inicializado correctamente");
@@ -966,6 +977,7 @@ window.compartirImagenFinal = compartirImagenFinal;
 if (localStorage.getItem("modoOscuro") === "1") {
   document.body.classList.add("oscuro");
 }
+
 
 
 
