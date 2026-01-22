@@ -4,8 +4,24 @@
   <meta charset="UTF-8" />
   <title>Vida Abundante</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-   <!-- Fuentes -->
-<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Lobster&display=swap" rel="stylesheet">
+ 
+<!-- Fuentes -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<link href="https://fonts.googleapis.com/css2?
+family=Roboto:wght@400;700&
+family=Lobster&
+family=Playfair+Display:wght@400;700&
+family=Montserrat:wght@400;700&
+family=Poppins:wght@400;700&
+family=Abril+Fatface&
+family=Cormorant:wght@400;700&
+family=Josefin+Sans:wght@400;700&
+family=Great+Vibes&
+
+display=swap" rel="stylesheet">
+
   <!-- html2canvas (UNA SOLA VEZ) -->
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
@@ -421,10 +437,12 @@ body.modo-imagen .versiculo.imagen {
 border: 2px solid #ff4fa3;
 }
 
-@font-face {
-  font-family: "Playfair";
-  src: url("fonts/PlayfairDisplay-Regular.ttf") format("truetype");
-}
+/* Fuentes disponibles */
+.font-roboto { font-family: 'Roboto', sans-serif; }
+.font-lobster { font-family: 'Lobster', cursive; }
+.font-playfair { font-family: 'Playfair Display', serif; }
+.font-montserrat { font-family: 'Montserrat', sans-serif; }
+.font-poppins { font-family: 'Poppins', sans-serif; }
 
 /* ================= RESALTADOR COMPACTO (ARRIBA / COSTADO) ================= */
     
@@ -741,6 +759,15 @@ body.oscuro #btnResaltadorActivo .icono-candado {
   <div>
     <label>Fuente</label>
     <select id="personalizarFuente">
+      <div id="listaFuentes" style="
+  max-height:180px;
+  overflow-y:auto;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  margin-top:8px;
+">
+</div>
       <option value="Arial">Arial</option>
       <option value="Times New Roman">Times New Roman</option>
       <option value="Courier New">Courier New</option>
@@ -752,6 +779,9 @@ body.oscuro #btnResaltadorActivo .icono-candado {
       <option value="Comic Sans MS">Comic Sans MS</option>
       <option value="Roboto">Roboto</option>
       <option value="Lobster">Lobster</option>
+      <option value="Playfair Display">Playfair</option>
+      <option value="Montserrat">Montserrat</option>
+      <option value="Poppins">Poppins</option>
     </select>
   </div>
   
@@ -795,6 +825,7 @@ body.oscuro #btnResaltadorActivo .icono-candado {
   
 </body>
 </html>
+
 
 
 
