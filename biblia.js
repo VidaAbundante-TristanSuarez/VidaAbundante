@@ -624,6 +624,45 @@ document.fonts.ready.then(() => {
   actualizarPreview();
 });
 
+// ================= LISTA VISUAL DE FUENTES =================
+const fuentesGoogle = [
+  { nombre: "Roboto", css: "Roboto" },
+  { nombre: "Lobster", css: "Lobster" },
+  { nombre: "Playfair Display", css: "'Playfair Display'" },
+  { nombre: "Montserrat", css: "Montserrat" },
+  { nombre: "Poppins", css: "Poppins" },
+  { nombre: "Cinzel", css: "Cinzel" },
+  { nombre: "Abril Fatface", css: "'Abril Fatface'" },
+  { nombre: "Cormorant", css: "Cormorant" },
+  { nombre: "Josefin Sans", css: "'Josefin Sans'" },
+  { nombre: "Great Vibes", css: "'Great Vibes'" }
+];
+
+function crearListaVisualFuentes() {
+  const cont = document.getElementById("listaFuentes");
+  if (!cont) return;
+
+  cont.innerHTML = "";
+
+  fuentesGoogle.forEach(f => {
+    const btn = document.createElement("button");
+    btn.textContent = f.nombre;
+    btn.style.fontFamily = f.css;
+    btn.style.padding = "10px";
+    btn.style.borderRadius = "10px";
+    btn.style.border = "none";
+    btn.style.fontSize = "18px";
+    btn.style.cursor = "pointer";
+
+    btn.onclick = () => {
+      document.getElementById("personalizarFuente").value = f.nombre;
+      actualizarPreview();
+    };
+
+    cont.appendChild(btn);
+  });
+}
+
 function iniciar() {
   const libros = [...new Set(bibliaData.map(v => v.Libro))];
   libroSel.innerHTML = "";
@@ -995,6 +1034,7 @@ window.compartirImagenFinal = compartirImagenFinal;
 if (localStorage.getItem("modoOscuro") === "1") {
   document.body.classList.add("oscuro");
 }
+
 
 
 
