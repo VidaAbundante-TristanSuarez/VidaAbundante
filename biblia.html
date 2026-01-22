@@ -494,7 +494,27 @@ border: 2px solid #ff4fa3;
   color: #000;
 }
 
+#bannerModoImagen {
+  display: none;
+  text-align: center;
+  font-size: 13px;
+  padding: 6px;
+  background: rgba(0,0,0,0.08);
+}
 
+body.oscuro #bannerModoImagen {
+  background: rgba(255,255,255,0.08);
+}
+
+body.modo-imagen #texto {
+  background: rgba(0,0,0,0.04);
+}
+
+body.oscuro.modo-imagen #texto {
+  background: rgba(255,255,255,0.04);
+}
+
+    
   </style>
 </head>
 
@@ -527,6 +547,10 @@ border: 2px solid #ff4fa3;
   <h3 id="titulo"></h3>
   <div id="texto"></div>
 
+  <div id="bannerModoImagen">
+  🖼️ Modo imagen activado · Tocá los versículos a incluir
+</div>
+  
   <div id="notaBox" style="display:none; margin-top:15px">
     <b>📝 Nota:</b>
     <textarea id="notaTexto"></textarea>
@@ -739,6 +763,7 @@ border: 2px solid #ff4fa3;
   
 </body>
 </html>
+
 
 
 
