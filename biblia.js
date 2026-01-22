@@ -408,9 +408,8 @@ function actualizarPreview() {
   previewTextoBack.style.color = outlineColor;
 
   // desplazamiento (outline)
-  previewTextoBack.style.transform = "translate(1px, 1px)";
-  // opcional pro:
-  // previewTextoBack.style.filter = "blur(0.3px)";
+  previewTextoBack.style.transform = "translate(0.5px, 0.5px)";
+  previewTextoBack.style.filter = "blur(0.2px)";
 
   // ================= OPACIDAD FONDO TEXTO =================
   const op = parseFloat(opacidad);
@@ -958,4 +957,5 @@ window.compartirImagenFinal = compartirImagenFinal;
 if (localStorage.getItem("modoOscuro") === "1") {
   document.body.classList.add("oscuro");
 }
+
 
