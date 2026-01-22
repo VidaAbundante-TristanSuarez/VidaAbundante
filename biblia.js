@@ -291,74 +291,93 @@ function colorOutlineDesdeBase(color, amount = 0.35) {
 }
 
 // ================= ACTUALIZAR VISTA PREVIA  =======================
-
 function actualizarPreview() {
   const previewImagen = document.getElementById("previewImagen");
   const previewTexto = document.getElementById("previewTexto");
   const previewTextoBack = document.getElementById("previewTextoBack");
   const wrapper = document.getElementById("previewTextoWrapper");
 
+  // ================= TEXTO =================
   const textoFinal = obtenerVersiculoSeleccionado();
   previewTexto.innerText = textoFinal;
   previewTextoBack.innerText = textoFinal;
 
+  // ================= FONDO =================
   previewImagen.style.backgroundImage = fondoFinal
     ? `url(${fondoFinal})`
     : "none";
 
+  // ================= FUENTE =================
   const fuente = document.getElementById("personalizarFuente").value || "Arial";
   previewTexto.style.fontFamily = fuente;
   previewTextoBack.style.fontFamily = fuente;
-  
-  const formatoStory =
-  document.getElementById("previewImagen")
-    .classList.contains("preview-story");
 
-const sizeSlider = document.getElementById("personalizarTamaño");
-const sizeBase = sizeSlider ? Number(sizeSlider.value) : (formatoStory ? 56 : 48);
+  // ================= FORMATO =================
+  const formatoStory = previewImagen.classList.contains("preview-story");
+  const sizeSlider = document.getElementById("personalizarTamaño");
+  const sizeBase = sizeSlider
+    ? Number(sizeSlider.value)
+    : (formatoStory ? 56 : 48);
 
-// 🔧 AUTO AJUSTE DE TEXTO EN PREVIEW
-let fontSize = sizeBase;
-const maxHeight = wrapper.clientHeight - 40;
+  // ================= AUTO AJUSTE =================
+  let fontSize = sizeBase;
+  const maxHeight = wrapper.clientHeight - 40;
 
-previewTexto.style.lineHeight = "1.3";
-previewTextoBack.style.lineHeight = "1.3";
+  previewTexto.style.lineHeight = "1.3";
+  previewTextoBack.style.lineHeight = "1.3";
 
-while (fontSize > 14) {
-  previewTexto.style.fontSize = fontSize + "px";
-  previewTextoBack.style.fontSize = fontSize + "px";
+  while (fontSize > 14) {
+    previewTexto.style.fontSize = fontSize + "px";
+    previewTextoBack.style.fontSize = fontSize + "px";
+    if (previewTexto.scrollHeight <= maxHeight) break;
+    fontSize--;
+  }
 
-  if (previewTexto.scrollHeight <= maxHeight) break;
-  fontSize--;
-}
+  // ================= COLOR / OUTLINE =================
   const color = document.getElementById("personalizarColor").value;
   const opacidad = document.getElementById("personalizarOpacidad").value;
+  const outlineColor = colorOutlineDesdeBase(color);
 
+  // capas
+  previewTexto.style.position = "relative";
+  previewTexto.style.zIndex = "2";
+
+  previewTextoBack.style.position = "absolute";
+  previewTextoBack.style.zIndex = "1";
+
+  // reset estilos acumulables
+  previewTextoBack.style.transform = "none";
+  previewTextoBack.style.textShadow = "none";
+  previewTextoBack.style.filter = "none";
+
+  // colores
   previewTexto.style.color = color;
-  previewTextoBack.style.color = colorContraste(color);
-const op = parseFloat(opacidad);
+  previewTextoBack.style.color = outlineColor;
 
-// opacidad // ================= 
-let bgColor = "rgba(0,0,0,0)";
+  // desplazamiento (outline)
+  previewTextoBack.style.transform = "translate(1px, 1px)";
+  // opcional pro:
+  // previewTextoBack.style.filter = "blur(0.3px)";
 
-if (op > 0.5) {
-  // hacia negro // ================= 
-  const a = (op - 0.5) * 2;
-  bgColor = `rgba(0,0,0,${a})`;
-} else if (op < 0.5) {
-  // hacia blanco // ================= 
-  const a = (0.5 - op) * 2;
-  bgColor = `rgba(255,255,255,${a})`;
-}
+  // ================= OPACIDAD FONDO TEXTO =================
+  const op = parseFloat(opacidad);
+  let bgColor = "rgba(0,0,0,0)";
 
-wrapper.style.backgroundColor = bgColor;
+  if (op > 0.5) {
+    const a = (op - 0.5) * 2;
+    bgColor = `rgba(0,0,0,${a})`;
+  } else if (op < 0.5) {
+    const a = (0.5 - op) * 2;
+    bgColor = `rgba(255,255,255,${a})`;
+  }
 
-//
-  
+  wrapper.style.backgroundColor = bgColor;
+
+  // ================= ESTILOS TEXTO =================
   const transform = textStyle.upper ? "uppercase" : "none";
 
-previewTexto.style.textTransform = transform;
-previewTextoBack.style.textTransform = transform;
+  previewTexto.style.textTransform = transform;
+  previewTextoBack.style.textTransform = transform;
 
   previewTexto.style.fontWeight = textStyle.bold ? "700" : "400";
   previewTexto.style.fontStyle = textStyle.italic ? "italic" : "normal";
@@ -367,8 +386,8 @@ previewTextoBack.style.textTransform = transform;
   previewTextoBack.style.fontWeight = previewTexto.style.fontWeight;
   previewTextoBack.style.fontStyle = previewTexto.style.fontStyle;
   previewTextoBack.style.textDecoration = previewTexto.style.textDecoration;
-
 }
+
 
 // ================= RESET DE LA VISTA PREVIA =======================
 
@@ -864,6 +883,7 @@ window.compartirImagenFinal = compartirImagenFinal;
 if (localStorage.getItem("modoOscuro") === "1") {
   document.body.classList.add("oscuro");
 }
+
 
 
 
