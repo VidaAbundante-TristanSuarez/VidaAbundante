@@ -746,112 +746,94 @@ window.toggleUnderline = () => {
   actualizarPreview();
 };
 
-// ================= RESALTADOR COMPACTO (FINAL REAL PARA MODULE) ======================
-// ================= RESALTADOR COMPACTO (FINAL CORREGIDO) ======================
+// ================= RESALTADOR COMPACTO (FINAL CORRECTO) ======================
 document.addEventListener("DOMContentLoaded", () => {
 
-  (function initResaltadorCompacto() {
+  const btnActivo = document.getElementById("btnResaltadorActivo");
+  const paleta = document.getElementById("paletaResaltadores");
+  const contResaltador = document.getElementById("resaltadorCompacto");
 
-    const btnActivo = document.getElementById("btnResaltadorActivo");
-    const paleta = document.getElementById("paletaResaltadores");
-    const contResaltador = document.getElementById("resaltadorCompacto");
+  if (!btnActivo || !paleta || !contResaltador) return;
 
-    if (!btnActivo || !paleta || !contResaltador) {
-      console.warn("❌ Resaltador NO inicializado (HTML no encontrado)");
+  paleta.style.display = "none";
+  actualizarIcono();
+
+  // 👉 click normal: bloquear / desbloquear
+  btnActivo.addEventListener("click", e => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (paleta.style.display !== "block") {
+      resaltadorBloqueado = !resaltadorBloqueado;
+      actualizarIcono();
       return;
     }
 
-    // 🔒 estado inicial
     paleta.style.display = "none";
-    actualizarIconoResaltador();
+  });
 
-    // 🔘 CLICK NORMAL → bloquear / desbloquear
-    btnActivo.addEventListener("click", e => {
-      e.preventDefault();
+  // 👉 click derecho / mantener presionado: abrir paleta
+  btnActivo.addEventListener("contextmenu", e => {
+    e.preventDefault();
+
+    const visible = paleta.style.display === "block";
+    paleta.style.display = visible ? "none" : "block";
+
+    contResaltador.classList.remove("mover-derecha");
+
+    if (!visible) {
+      const rect = paleta.getBoundingClientRect();
+      if (rect.top < 10) contResaltador.classList.add("mover-derecha");
+    }
+  });
+
+  // 👉 elegir color
+  paleta.querySelectorAll("button").forEach(btn => {
+    btn.addEventListener("click", e => {
       e.stopPropagation();
 
-      // si la paleta NO está abierta → toggle lock
-      if (paleta.style.display !== "block") {
-        resaltadorBloqueado = !resaltadorBloqueado;
-        actualizarIconoResaltador();
-        return;
-      }
+      const color = btn.dataset.color;
+      if (!color) return;
 
-      // si está abierta → cerrarla
+      colorActual = color;
+      resaltadorBloqueado = false;
+
+      actualizarIcono();
       paleta.style.display = "none";
     });
+  });
 
-    // 🟡 CLICK DERECHO / LONG PRESS → abrir paleta
-    btnActivo.addEventListener("contextmenu", e => {
-      e.preventDefault();
-
-      const visible = paleta.style.display === "block";
-      paleta.style.display = visible ? "none" : "block";
-
-      contResaltador.classList.remove("mover-derecha");
-
-      if (!visible) {
-        const rect = paleta.getBoundingClientRect();
-        if (rect.top < 10) {
-          contResaltador.classList.add("mover-derecha");
-        }
-      }
-    });
-
-    // 🎨 ELEGIR COLOR
-    paleta.querySelectorAll("button").forEach(btn => {
-      btn.addEventListener("click", e => {
-        e.preventDefault();
-        e.stopPropagation();
-
-        const color = btn.dataset.color;
-        if (!color) return;
-
-        colorActual = color;
-        resaltadorBloqueado = false;
-
-        actualizarIconoResaltador();
-        paleta.style.display = "none";
-      });
-    });
-
-    // ❌ cerrar al click fuera
-    document.addEventListener("click", e => {
-      if (!contResaltador.contains(e.target)) {
-        paleta.style.display = "none";
-      }
-    });
-
-    // 🔄 ACTUALIZAR ICONO + CANDADO (SIN innerHTML)
-    function actualizarIconoResaltador() {
-      const icono = btnActivo.querySelector(".icono-resaltador");
-      const candado = btnActivo.querySelector(".icono-candado");
-
-      btnActivo.style.background = colorActual;
-
-      if (icono) icono.textContent = obtenerEmojiPorColor(colorActual);
-      if (candado) candado.style.display = resaltadorBloqueado ? "block" : "none";
+  // 👉 cerrar al tocar fuera
+  document.addEventListener("click", e => {
+    if (!contResaltador.contains(e.target)) {
+      paleta.style.display = "none";
     }
+  });
 
-    // 🎨 emoji según color
-    function obtenerEmojiPorColor(color) {
-      switch (color) {
-        case "#ffd6e8": return "🌸";
-        case "#fff3b0": return "💛";
-        case "#caffd1": return "💚";
-        case "#ffc9c9": return "❤️";
-        case "#ccecff": return "💙";
-        case "#e6c9ff": return "💜";
-        case "#ffe2c9": return "🧡";
-        default: return "💛";
-      }
+  function actualizarIcono() {
+    const icono = btnActivo.querySelector(".icono-resaltador");
+    const candado = btnActivo.querySelector(".icono-candado");
+
+    btnActivo.style.background = colorActual;
+
+    icono.textContent = emojiPorColor(colorActual);
+    candado.style.display = resaltadorBloqueado ? "block" : "none";
+  }
+
+  function emojiPorColor(color) {
+    switch (color) {
+      case "#ffd6e8": return "🌸";
+      case "#fff3b0": return "💛";
+      case "#caffd1": return "💚";
+      case "#ffc9c9": return "❤️";
+      case "#ccecff": return "💙";
+      case "#e6c9ff": return "💜";
+      case "#ffe2c9": return "🧡";
+      default: return "💛";
     }
-
-    console.log("✅ Resaltador compacto inicializado correctamente");
-
-  })();
-
+  }
 });
+
 
 // ================= FORMATO IMAGEN ===========================
 window.setFormatoImagen = tipo => {
@@ -1008,6 +990,7 @@ window.compartirImagenFinal = compartirImagenFinal;
 if (localStorage.getItem("modoOscuro") === "1") {
   document.body.classList.add("oscuro");
 }
+
 
 
 
