@@ -48,9 +48,6 @@ let textStyle = {
   underline: false
 };
 
-let resaltadorBloqueado = false;  // 🔒 indica si el resaltador está desactivado
-let colorAnterior = colorActual;  // guarda el último color usado
-
 // ================= DOM (SE CARGA CON DEFER) =================
 const libroSel = document.getElementById("libro");
 const capSel = document.getElementById("capitulo");
@@ -152,13 +149,9 @@ function toggleVersiculo(id, num) {
 
   if (!uid) return;
 
-  // 🔒 si el resaltador está bloqueado, no hacemos nada
-if (resaltadorBloqueado) return;
-
-const r = ref(db, "marcados/" + uid + "/" + id);
-marcados[id] ? remove(r) : set(r, { color: colorActual });
-detectarGrupo(num);
-
+  const r = ref(db, "marcados/" + uid + "/" + id);
+  marcados[id] ? remove(r) : set(r, { color: colorActual });
+  detectarGrupo(num);
 }
 // ================= DETECTA GRUPO =======================
 
@@ -415,9 +408,10 @@ function actualizarPreview() {
   previewTextoBack.style.color = outlineColor;
 
   // desplazamiento (outline)
-  previewTextoBack.style.transform = "translate(0.5px, 0.5px)";
-  previewTextoBack.style.filter = "blur(0.2px)";
- 
+  previewTextoBack.style.transform = "translate(1px, 1px)";
+  // opcional pro:
+  // previewTextoBack.style.filter = "blur(0.3px)";
+
   // ================= OPACIDAD FONDO TEXTO =================
   const op = parseFloat(opacidad);
   let bgColor = "rgba(0,0,0,0)";
@@ -563,7 +557,7 @@ window.toggleModoImagen = () => {
   mostrarTexto();
 };
 
-// ================= GENERAR IMAGEN ===============================
+
 window.generarImagen = () => {
   if (Object.keys(seleccionImagen).length === 0) {
     alert("Seleccioná al menos un versículo");
@@ -574,8 +568,6 @@ window.generarImagen = () => {
   cargarFondos(); 
   actualizarPreview();
 };
-
-// ================= CANCELAR IMAGEN ===============================
 
 window.cancelarCrearImagen = () => {
   resetModalPersonalizar();
@@ -739,7 +731,6 @@ window.toggleUnderline = () => {
 };
 
 // ================= RESALTADOR COMPACTO (FINAL REAL PARA MODULE) ======================
-
 document.addEventListener("DOMContentLoaded", () => {
 
   (function initResaltadorCompacto() {
@@ -747,38 +738,38 @@ document.addEventListener("DOMContentLoaded", () => {
     const btnActivo = document.getElementById("btnResaltadorActivo");
     const paleta = document.getElementById("paletaResaltadores");
     const contResaltador = document.getElementById("resaltadorCompacto");
-    const candado = document.getElementById("candadoResaltador");
 
-    if (!btnActivo || !paleta || !contResaltador || !candado) {
+// 🔒 FORZAR PALETA CERRADA AL INICIAR
+paleta.style.display = "none";
+    
+    if (!btnActivo || !paleta || !contResaltador) {
       console.warn("❌ Resaltador NO inicializado (HTML no encontrado)");
       return;
     }
 
-    let colorActual = "#fff3b0"; // color inicial
-    let bloqueado = false; // estado del candado
-
-    // 🔒 Paleta cerrada al iniciar
-    paleta.style.display = "none";
+    // 🔹 estado inicial
     btnActivo.style.background = colorActual;
     btnActivo.textContent = "💛";
 
-    // 🔹 abrir / cerrar paleta y manejo bloqueo
+    // 🔹 abrir / cerrar paleta
     btnActivo.onclick = e => {
       e.preventDefault();
       e.stopPropagation();
 
-      // abrir paleta siempre
+      // mostrar / ocultar
       const visible = paleta.style.display === "block";
       paleta.style.display = visible ? "none" : "block";
 
-      // si está bloqueado, mostrar candado
-      candado.style.display = bloqueado ? "inline" : "none";
-
-      // control posición (costado si no entra)
+      // 📐 control de posición (NUNCA abajo)
       contResaltador.classList.remove("mover-derecha");
+
       if (!visible) {
         const rect = paleta.getBoundingClientRect();
-        if (rect.top < 10) contResaltador.classList.add("mover-derecha");
+
+        // si no entra arriba → mover al costado
+        if (rect.top < 10) {
+          contResaltador.classList.add("mover-derecha");
+        }
       }
     };
 
@@ -796,8 +787,6 @@ document.addEventListener("DOMContentLoaded", () => {
         btnActivo.textContent = btn.textContent;
 
         paleta.style.display = "none";
-        bloqueado = false;
-        candado.style.display = "none";
       };
     });
 
@@ -806,14 +795,6 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!contResaltador.contains(e.target)) {
         paleta.style.display = "none";
       }
-    });
-
-    // 🔹 bloqueo manual: si ya elegiste color y querés bloquear
-    btnActivo.addEventListener("contextmenu", e => {
-      e.preventDefault();
-      bloqueado = true;
-      paleta.style.display = "block"; // se abre al bloquear
-      candado.style.display = "inline";
     });
 
     console.log("✅ Resaltador compacto inicializado correctamente");
@@ -977,24 +958,4 @@ window.compartirImagenFinal = compartirImagenFinal;
 if (localStorage.getItem("modoOscuro") === "1") {
   document.body.classList.add("oscuro");
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
