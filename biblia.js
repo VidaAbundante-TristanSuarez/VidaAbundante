@@ -132,28 +132,44 @@ function pintarVersiculo(v) {
 }
 
 // ================= TOGGLE VERSICULO =======================
-
 function toggleVersiculo(id, num) {
+
+  // 🖼️ MODO IMAGEN
   if (modoImagen) {
     if (!uid) {
       loginModal.style.display = "flex";
       return;
     }
-    seleccionImagen[id]
-      ? delete seleccionImagen[id]
-      : seleccionImagen[id] = true;
+
+    if (seleccionImagen[id]) {
+      delete seleccionImagen[id];
+    } else {
+      seleccionImagen[id] = true;
+    }
+
     mostrarTexto();
     actualizarPreview();
     return;
   }
 
+  // 🔐 requiere login
   if (!uid) return;
-if (resaltadorBloqueado) return;
 
+  // 🔒 resaltador bloqueado
+  if (resaltadorBloqueado) return;
+
+  // 🎨 marcar / desmarcar versículo
   const r = ref(db, "marcados/" + uid + "/" + id);
-  marcados[id] ? remove(r) : set(r, { color: colorActual });
+
+  if (marcados[id]) {
+    remove(r);
+  } else {
+    set(r, { color: colorActual });
+  }
+
   detectarGrupo(num);
 }
+
 // ================= DETECTA GRUPO =======================
 
 function detectarGrupo(num) {
@@ -731,6 +747,7 @@ window.toggleUnderline = () => {
 };
 
 // ================= RESALTADOR COMPACTO (FINAL REAL PARA MODULE) ======================
+// ================= RESALTADOR COMPACTO (FINAL CORREGIDO) ======================
 document.addEventListener("DOMContentLoaded", () => {
 
   (function initResaltadorCompacto() {
@@ -746,46 +763,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // 🔒 estado inicial
     paleta.style.display = "none";
-    btnActivo.style.background = colorActual;
     actualizarIconoResaltador();
 
-    // 🔘 CLICK EN BOTÓN PRINCIPAL
-    btnActivo.onclick = e => {
+    // 🔘 CLICK NORMAL → bloquear / desbloquear
+    btnActivo.addEventListener("click", e => {
       e.preventDefault();
       e.stopPropagation();
 
-      // 🔒 si la paleta está cerrada → bloquear / desbloquear
+      // si la paleta NO está abierta → toggle lock
       if (paleta.style.display !== "block") {
         resaltadorBloqueado = !resaltadorBloqueado;
         actualizarIconoResaltador();
         return;
       }
 
-      // abrir / cerrar paleta
+      // si está abierta → cerrarla
       paleta.style.display = "none";
-    };
-
-    // 🎨 ELEGIR COLOR
-    paleta.querySelectorAll("button").forEach(btn => {
-      btn.onclick = e => {
-        e.preventDefault();
-        e.stopPropagation();
-
-        const color = btn.dataset.color;
-        if (!color) return;
-
-        colorActual = color;
-        btnActivo.textContent = btn.textContent;
-
-        // 🔓 elegir color desbloquea
-        resaltadorBloqueado = false;
-        actualizarIconoResaltador();
-
-        paleta.style.display = "none";
-      };
     });
 
-    // 📂 ABRIR PALETA (click largo / segundo gesto opcional)
+    // 🟡 CLICK DERECHO / LONG PRESS → abrir paleta
     btnActivo.addEventListener("contextmenu", e => {
       e.preventDefault();
 
@@ -802,24 +798,52 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
 
-    // ❌ cerrar clic fuera
+    // 🎨 ELEGIR COLOR
+    paleta.querySelectorAll("button").forEach(btn => {
+      btn.addEventListener("click", e => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const color = btn.dataset.color;
+        if (!color) return;
+
+        colorActual = color;
+        resaltadorBloqueado = false;
+
+        actualizarIconoResaltador();
+        paleta.style.display = "none";
+      });
+    });
+
+    // ❌ cerrar al click fuera
     document.addEventListener("click", e => {
       if (!contResaltador.contains(e.target)) {
         paleta.style.display = "none";
       }
     });
 
-    // 🔄 ICONO + CANDADO
+    // 🔄 ACTUALIZAR ICONO + CANDADO (SIN innerHTML)
     function actualizarIconoResaltador() {
+      const icono = btnActivo.querySelector(".icono-resaltador");
+      const candado = btnActivo.querySelector(".icono-candado");
+
       btnActivo.style.background = colorActual;
 
-      if (resaltadorBloqueado) {
-        btnActivo.innerHTML = `
-          <span class="icono-resaltador">${btnActivo.textContent || "💛"}</span>
-          <span class="icono-candado">🔒</span>
-        `;
-      } else {
-        btnActivo.textContent = btnActivo.textContent || "💛";
+      if (icono) icono.textContent = obtenerEmojiPorColor(colorActual);
+      if (candado) candado.style.display = resaltadorBloqueado ? "block" : "none";
+    }
+
+    // 🎨 emoji según color
+    function obtenerEmojiPorColor(color) {
+      switch (color) {
+        case "#ffd6e8": return "🌸";
+        case "#fff3b0": return "💛";
+        case "#caffd1": return "💚";
+        case "#ffc9c9": return "❤️";
+        case "#ccecff": return "💙";
+        case "#e6c9ff": return "💜";
+        case "#ffe2c9": return "🧡";
+        default: return "💛";
       }
     }
 
@@ -828,7 +852,6 @@ document.addEventListener("DOMContentLoaded", () => {
   })();
 
 });
-
 
 // ================= FORMATO IMAGEN ===========================
 window.setFormatoImagen = tipo => {
@@ -985,6 +1008,7 @@ window.compartirImagenFinal = compartirImagenFinal;
 if (localStorage.getItem("modoOscuro") === "1") {
   document.body.classList.add("oscuro");
 }
+
 
 
 
