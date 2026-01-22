@@ -48,6 +48,9 @@ let textStyle = {
   underline: false
 };
 
+let resaltadorBloqueado = false;  // 🔒 indica si el resaltador está desactivado
+let colorAnterior = colorActual;  // guarda el último color usado
+
 // ================= DOM (SE CARGA CON DEFER) =================
 const libroSel = document.getElementById("libro");
 const capSel = document.getElementById("capitulo");
@@ -149,9 +152,13 @@ function toggleVersiculo(id, num) {
 
   if (!uid) return;
 
-  const r = ref(db, "marcados/" + uid + "/" + id);
-  marcados[id] ? remove(r) : set(r, { color: colorActual });
-  detectarGrupo(num);
+  // 🔒 si el resaltador está bloqueado, no hacemos nada
+if (resaltadorBloqueado) return;
+
+const r = ref(db, "marcados/" + uid + "/" + id);
+marcados[id] ? remove(r) : set(r, { color: colorActual });
+detectarGrupo(num);
+
 }
 // ================= DETECTA GRUPO =======================
 
@@ -408,10 +415,9 @@ function actualizarPreview() {
   previewTextoBack.style.color = outlineColor;
 
   // desplazamiento (outline)
-  previewTextoBack.style.transform = "translate(1px, 1px)";
-  // opcional pro:
-  // previewTextoBack.style.filter = "blur(0.3px)";
-
+  previewTextoBack.style.transform = "translate(0.5px, 0.5px)";
+  previewTextoBack.style.filter = "blur(0.2px)";
+ 
   // ================= OPACIDAD FONDO TEXTO =================
   const op = parseFloat(opacidad);
   let bgColor = "rgba(0,0,0,0)";
@@ -557,7 +563,7 @@ window.toggleModoImagen = () => {
   mostrarTexto();
 };
 
-
+// ================= GENERAR IMAGEN ===============================
 window.generarImagen = () => {
   if (Object.keys(seleccionImagen).length === 0) {
     alert("Seleccioná al menos un versículo");
@@ -568,6 +574,8 @@ window.generarImagen = () => {
   cargarFondos(); 
   actualizarPreview();
 };
+
+// ================= CANCELAR IMAGEN ===============================
 
 window.cancelarCrearImagen = () => {
   resetModalPersonalizar();
@@ -958,6 +966,7 @@ window.compartirImagenFinal = compartirImagenFinal;
 if (localStorage.getItem("modoOscuro") === "1") {
   document.body.classList.add("oscuro");
 }
+
 
 
 
