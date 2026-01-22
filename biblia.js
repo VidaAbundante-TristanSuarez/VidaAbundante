@@ -747,8 +747,6 @@ window.toggleUnderline = () => {
 };
 
 // ========================= RESALTADOR COMPACTO  =======================================
-no .. se ve que algo no era. se deformo toda mi barra de acciones hay dos corazones uno abajo y otro arribaaaa... 
-
 document.addEventListener("DOMContentLoaded", () => {
 
   const btnActivo = document.getElementById("btnResaltadorActivo");
@@ -992,6 +990,7 @@ window.compartirImagenFinal = compartirImagenFinal;
 if (localStorage.getItem("modoOscuro") === "1") {
   document.body.classList.add("oscuro");
 }
+
 
 
 
