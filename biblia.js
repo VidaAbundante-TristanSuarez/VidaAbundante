@@ -270,7 +270,7 @@ function formatearVersiculosComoRango(numeros) {
 }
 
 // ================= COLOR OUTLINE CLAROS Y OSCUROS  =======================
-function colorOutlineDesdeBase(color, amount = 0.35) {
+function colorOutlineDesdeBase(color, amount = 0.85) {
   if (!color) return "#000000";
 
   // rgb() → hex
@@ -281,25 +281,33 @@ function colorOutlineDesdeBase(color, amount = 0.35) {
   }
 
   const hex = color.replace("#", "");
-  let r = parseInt(hex.substr(0, 2), 16);
-  let g = parseInt(hex.substr(2, 2), 16);
-  let b = parseInt(hex.substr(4, 2), 16);
+  const r = parseInt(hex.slice(0, 2), 16);
+  const g = parseInt(hex.slice(2, 4), 16);
+  const b = parseInt(hex.slice(4, 6), 16);
 
   // luminancia perceptual
   const lum = 0.299 * r + 0.587 * g + 0.114 * b;
 
-  // si es claro → oscurecer | si es oscuro → aclarar
-  const factor = lum > 160 ? (1 - amount) : (1 + amount);
+  // target: blanco o negro suave
+  const target = lum < 140
+    ? { r: 255, g: 255, b: 255 }   // aclarar → blanco
+    : { r: 0, g: 0, b: 0 };       // oscurecer → negro
 
-  r = Math.min(255, Math.max(0, Math.round(r * factor)));
-  g = Math.min(255, Math.max(0, Math.round(g * factor)));
-  b = Math.min(255, Math.max(0, Math.round(b * factor)));
+  // interpolación
+  const mix = (a, b) => Math.round(a + (b - a) * amount);
 
   return (
     "#" +
-    [r, g, b].map(v => v.toString(16).padStart(2, "0")).join("")
+    [
+      mix(r, target.r),
+      mix(g, target.g),
+      mix(b, target.b)
+    ]
+      .map(v => v.toString(16).padStart(2, "0"))
+      .join("")
   );
 }
+
 
 // ================= ACTUALIZAR VISTA PREVIA  =======================
 function actualizarPreview() {
@@ -916,6 +924,7 @@ window.compartirImagenFinal = compartirImagenFinal;
 if (localStorage.getItem("modoOscuro") === "1") {
   document.body.classList.add("oscuro");
 }
+
 
 
 
