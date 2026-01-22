@@ -280,7 +280,7 @@ function colorOutlineDesdeBase(color) {
       "#" + nums.map(x => x.toString(16).padStart(2, "0")).join("");
   }
 
-  // hex → rgb
+  // hex → rgb normalizado
   let r = parseInt(color.slice(1, 3), 16) / 255;
   let g = parseInt(color.slice(3, 5), 16) / 255;
   let b = parseInt(color.slice(5, 7), 16) / 255;
@@ -302,16 +302,16 @@ function colorOutlineDesdeBase(color) {
     h /= 6;
   }
 
-  // 🎯 AJUSTES CLAVE
-  const isLight = l > 0.7;
+  // 🔥 CLAVE: extremos tintados
+  const isLight = l > 0.65;
 
-  // pastel siempre
-  s = Math.max(0.25, s * 0.6);
+  // mantener color vivo
+  s = Math.min(1, s * 0.9 + 0.1);
 
-  // claro ↔ oscuro
+  // extremos reales
   l = isLight
-    ? Math.max(0.35, l - 0.25) // pastel oscuro
-    : Math.min(0.88, l + 0.35); // pastel claro
+    ? 0.12   // casi negro tintado
+    : 0.92;  // casi blanco tintado
 
   // hsl → rgb
   function hue2rgb(p, q, t) {
@@ -341,6 +341,7 @@ function colorOutlineDesdeBase(color) {
       .join("")
   );
 }
+
 
 // ================= ACTUALIZAR VISTA PREVIA  =======================
 function actualizarPreview() {
@@ -957,6 +958,7 @@ window.compartirImagenFinal = compartirImagenFinal;
 if (localStorage.getItem("modoOscuro") === "1") {
   document.body.classList.add("oscuro");
 }
+
 
 
 
