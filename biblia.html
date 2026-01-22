@@ -426,15 +426,21 @@ border: 2px solid #ff4fa3;
   src: url("fonts/PlayfairDisplay-Regular.ttf") format("truetype");
 }
 
-    #btnResaltadorActivo {
+/* ================= RESALTADOR COMPACTO (ARRIBA / COSTADO) ================= */
+    
+#btnResaltadorActivo {
   width: 36px;
   height: 36px;
   border-radius: 8px;
   border: none;
   cursor: pointer;
-}
 
-    /* ================= RESALTADOR COMPACTO (ARRIBA / COSTADO) ================= */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  position: relative;
+}
 
 #resaltadorCompacto {
   position: relative;
@@ -609,10 +615,16 @@ body.oscuro #btnResaltadorActivo .icono-candado {
   <span class="icono-candado" style="display:none;">🔒</span>
 </button>
 
+<!-- RESALTADOR COMPACTO -->
+<div id="resaltadorCompacto" style="position: relative;">
+  
+  <!-- Botón activo (corazón / color) -->
+  <button id="btnResaltadorActivo" class="btn-resaltador">
+    💛
+  </button>
 
   <!-- Paleta desplegable -->
- <div id="paletaResaltadores">
-
+  <div id="paletaResaltadores">
     <button data-color="#ffd6e8">🌸</button> 
     <button data-color="#fff3b0">💛</button>
     <button data-color="#caffd1">💚</button>
@@ -620,6 +632,9 @@ body.oscuro #btnResaltadorActivo .icono-candado {
     <button data-color="#ccecff">💙</button>
     <button data-color="#e6c9ff">💜</button>
     <button data-color="#ffe2c9">🧡</button>
+
+    <!-- Botón para bloquear -->
+    <button id="btnBloquearResaltador" title="Bloquear resaltador">🔒</button>
   </div>
 
 </div>
@@ -789,5 +804,6 @@ body.oscuro #btnResaltadorActivo .icono-candado {
   
 </body>
 </html>
+
 
 
