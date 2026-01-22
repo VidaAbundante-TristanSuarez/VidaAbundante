@@ -33,6 +33,7 @@ let notas = {};
 let size = 18;
 let colorActual = "#fff3b0"; // 🟨 amarillo por default
 let resaltadorAbierto = false;
+let resaltadorBloqueado = false; // 🔒 nuevo estado
 let grupoActual = null;
 let marcador = null;
 
@@ -130,7 +131,6 @@ function pintarVersiculo(v) {
   texto.appendChild(div);
 }
 
-
 // ================= TOGGLE VERSICULO =======================
 
 function toggleVersiculo(id, num) {
@@ -148,6 +148,7 @@ function toggleVersiculo(id, num) {
   }
 
   if (!uid) return;
+if (resaltadorBloqueado) return;
 
   const r = ref(db, "marcados/" + uid + "/" + id);
   marcados[id] ? remove(r) : set(r, { color: colorActual });
@@ -738,41 +739,33 @@ document.addEventListener("DOMContentLoaded", () => {
     const paleta = document.getElementById("paletaResaltadores");
     const contResaltador = document.getElementById("resaltadorCompacto");
 
-// 🔒 FORZAR PALETA CERRADA AL INICIAR
-paleta.style.display = "none";
-    
     if (!btnActivo || !paleta || !contResaltador) {
       console.warn("❌ Resaltador NO inicializado (HTML no encontrado)");
       return;
     }
 
-    // 🔹 estado inicial
+    // 🔒 estado inicial
+    paleta.style.display = "none";
     btnActivo.style.background = colorActual;
-    btnActivo.textContent = "💛";
+    actualizarIconoResaltador();
 
-    // 🔹 abrir / cerrar paleta
+    // 🔘 CLICK EN BOTÓN PRINCIPAL
     btnActivo.onclick = e => {
       e.preventDefault();
       e.stopPropagation();
 
-      // mostrar / ocultar
-      const visible = paleta.style.display === "block";
-      paleta.style.display = visible ? "none" : "block";
-
-      // 📐 control de posición (NUNCA abajo)
-      contResaltador.classList.remove("mover-derecha");
-
-      if (!visible) {
-        const rect = paleta.getBoundingClientRect();
-
-        // si no entra arriba → mover al costado
-        if (rect.top < 10) {
-          contResaltador.classList.add("mover-derecha");
-        }
+      // 🔒 si la paleta está cerrada → bloquear / desbloquear
+      if (paleta.style.display !== "block") {
+        resaltadorBloqueado = !resaltadorBloqueado;
+        actualizarIconoResaltador();
+        return;
       }
+
+      // abrir / cerrar paleta
+      paleta.style.display = "none";
     };
 
-    // 🔹 elegir color
+    // 🎨 ELEGIR COLOR
     paleta.querySelectorAll("button").forEach(btn => {
       btn.onclick = e => {
         e.preventDefault();
@@ -782,25 +775,60 @@ paleta.style.display = "none";
         if (!color) return;
 
         colorActual = color;
-        btnActivo.style.background = color;
         btnActivo.textContent = btn.textContent;
+
+        // 🔓 elegir color desbloquea
+        resaltadorBloqueado = false;
+        actualizarIconoResaltador();
 
         paleta.style.display = "none";
       };
     });
 
-    // 🔹 cerrar clic fuera
+    // 📂 ABRIR PALETA (click largo / segundo gesto opcional)
+    btnActivo.addEventListener("contextmenu", e => {
+      e.preventDefault();
+
+      const visible = paleta.style.display === "block";
+      paleta.style.display = visible ? "none" : "block";
+
+      contResaltador.classList.remove("mover-derecha");
+
+      if (!visible) {
+        const rect = paleta.getBoundingClientRect();
+        if (rect.top < 10) {
+          contResaltador.classList.add("mover-derecha");
+        }
+      }
+    });
+
+    // ❌ cerrar clic fuera
     document.addEventListener("click", e => {
       if (!contResaltador.contains(e.target)) {
         paleta.style.display = "none";
       }
     });
 
+    // 🔄 ICONO + CANDADO
+    function actualizarIconoResaltador() {
+      btnActivo.style.background = colorActual;
+
+      if (resaltadorBloqueado) {
+        btnActivo.innerHTML = `
+          <span class="icono-resaltador">${btnActivo.textContent || "💛"}</span>
+          <span class="icono-candado">🔒</span>
+        `;
+      } else {
+        btnActivo.textContent = btnActivo.textContent || "💛";
+      }
+    }
+
     console.log("✅ Resaltador compacto inicializado correctamente");
 
   })();
 
 });
+
 
 // ================= FORMATO IMAGEN ===========================
 window.setFormatoImagen = tipo => {
@@ -957,5 +985,6 @@ window.compartirImagenFinal = compartirImagenFinal;
 if (localStorage.getItem("modoOscuro") === "1") {
   document.body.classList.add("oscuro");
 }
+
 
 
