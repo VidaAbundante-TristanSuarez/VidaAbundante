@@ -524,22 +524,12 @@ body.oscuro.modo-imagen #texto {
 body.modo-imagen #resaltadorCompacto {
   display: none;
 }
+
 /* ================= CANDADO RESALTADOR ================= */
+
 #btnResaltadorActivo {
   position: relative;
-  overflow: visible;
-}
-
-#btnResaltadorActivo .icono-candado {
-  position: absolute;
-  top: -4px;
-  right: -4px;
-  background: white;
-  border-radius: 50%;
-  font-size: 10px;
-  padding: 2px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-  pointer-events: none; /* que no interfiera con clicks */
+  overflow: hidden;
 }
 
 /* icono base (corazón / flor) */
@@ -549,10 +539,25 @@ body.modo-imagen #resaltadorCompacto {
   line-height: 1;
 }
 
+/* 🔒 candado */
+#btnResaltadorActivo .icono-candado {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+
+  background: white;
+  border-radius: 50%;
+  font-size: 10px;
+  padding: 2px;
+
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+
 /* modo oscuro */
 body.oscuro #btnResaltadorActivo .icono-candado {
   background: #1e1e1e;
 }
+
     
   </style>
 </head>
@@ -603,11 +608,13 @@ body.oscuro #btnResaltadorActivo .icono-candado {
 
     <!-- RESALTADOR COMPACTO (NUEVO) -->
 <div id="resaltadorCompacto" style="position: relative;">
+    
+  <!-- Botón activo (corazón / color) -->
   <button id="btnResaltadorActivo" class="btn-resaltador">
     💛
-    <span class="icono-candado" style="display:none;">🔒</span>  <!-- pequeño candado indicador -->
   </button>
 
+  <!-- Paleta desplegable -->
   <div id="paletaResaltadores">
     <button data-color="#ffd6e8">🌸</button> 
     <button data-color="#fff3b0">💛</button>
@@ -617,9 +624,10 @@ body.oscuro #btnResaltadorActivo .icono-candado {
     <button data-color="#e6c9ff">💜</button>
     <button data-color="#ffe2c9">🧡</button>
 
-    <!-- Botón para bloquear/resaltar -->
-    <button id="btnBloquearResaltador" title="Bloquear resaltador">🔒</button>  <!-- candado grande que bloquea -->
+    <!-- Botón para bloquear -->
+    <button id="btnBloquearResaltador" title="Bloquear resaltador">🔒</button>
   </div>
+
 </div>
 
     <button class="accion-normal" onclick="cambiarLetra(-1)">A−</button>
@@ -787,8 +795,6 @@ body.oscuro #btnResaltadorActivo .icono-candado {
   
 </body>
 </html>
-
-
 
 
 
