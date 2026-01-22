@@ -84,41 +84,52 @@ function pintarVersiculo(v) {
   div.className = "versiculo";
   if (imagen) div.classList.add("imagen");
 
-  // Tamaño de letra
+  // ================= TAMAÑO DE LETRA =================
   div.style.fontSize = size + "px";
 
   // ================= FONDO =================
   if (modoImagen) {
-    // En modo imagen solo se ve la selección
     div.style.background = imagen
       ? "rgba(255, 214, 232, 0.6)"
       : "transparent";
   } else {
-    // Modo normal → resaltador real
     div.style.background = marcado?.color || "transparent";
   }
 
   // ================= COLOR DE TEXTO =================
   if (modoImagen) {
-    // 🖼️ MODO IMAGEN: siempre blanco, sin importar tema o resaltado
-    div.style.color = "#ffffff";
+    if (imagen) {
+      div.style.color = "#ffffff";
+    } else {
+      div.style.color = document.body.classList.contains("oscuro")
+        ? "#ffffff"
+        : "#000000";
+    }
   } 
   else if (marcado) {
     if (document.body.classList.contains("oscuro")) {
-      // 🌙 Resaltado en modo oscuro → negro
       div.style.color = "#000000";
     } else {
-      // ☀️ Modo claro → contraste automático según color
       div.style.color = colorContraste(marcado.color);
     }
   }
-  // (si no está marcado, usa el color normal del CSS)
 
+  // ================= OPACIDAD (UX MODO IMAGEN) =================
+  if (modoImagen && !imagen) {
+    div.style.opacity = "0.6";
+  } else {
+    div.style.opacity = "1";
+  }
+
+  // ================= CONTENIDO =================
   div.innerHTML = `<span class="num">${v.Versiculo}</span> ${v.RV1960}`;
+
+  // ================= CLICK =================
   div.onclick = () => toggleVersiculo(id, v.Versiculo);
 
   texto.appendChild(div);
 }
+
 
 // ================= TOGGLE VERSICULO =======================
 
@@ -441,10 +452,19 @@ function salirModoImagen() {
   modoImagen = false;
   seleccionImagen = {};
   fondoFinal = null;
+
   document.body.classList.remove("modo-imagen");
+
+  // 🖼️ ocultar banner
+  const banner = document.getElementById("bannerModoImagen");
+  if (banner) {
+    banner.style.display = "none";
+  }
+
   document.getElementById("modalPersonalizar").style.display = "none";
   mostrarTexto();
 }
+
 
 // ================= TOAST   =======================
 
@@ -472,16 +492,29 @@ window.irA = seccion => {
   mostrarTexto();
 };
 
+// ================= MODO IMAGEN ===============================
+
 window.toggleModoImagen = () => {
   if (!uid) {
     loginModal.style.display = "flex";
     return;
   }
+
   modoImagen = !modoImagen;
   seleccionImagen = {};
+
+  // clase global
   document.body.classList.toggle("modo-imagen", modoImagen);
+
+  // 🖼️ banner modo imagen
+  const banner = document.getElementById("bannerModoImagen");
+  if (banner) {
+    banner.style.display = modoImagen ? "block" : "none";
+  }
+
   mostrarTexto();
 };
+
 
 window.generarImagen = () => {
   if (Object.keys(seleccionImagen).length === 0) {
@@ -883,6 +916,7 @@ window.compartirImagenFinal = compartirImagenFinal;
 if (localStorage.getItem("modoOscuro") === "1") {
   document.body.classList.add("oscuro");
 }
+
 
 
 
