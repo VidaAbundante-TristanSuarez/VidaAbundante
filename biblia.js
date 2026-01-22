@@ -582,6 +582,7 @@ window.generarImagen = () => {
   document.getElementById("modalPersonalizar").style.display = "flex";
   setFormatoImagen("post");
   cargarFondos(); 
+  crearListaVisualFuentes();
   actualizarPreview();
 };
 
@@ -1034,6 +1035,7 @@ window.compartirImagenFinal = compartirImagenFinal;
 if (localStorage.getItem("modoOscuro") === "1") {
   document.body.classList.add("oscuro");
 }
+
 
 
 
