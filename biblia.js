@@ -746,7 +746,7 @@ window.toggleUnderline = () => {
   actualizarPreview();
 };
 
-// ================= RESALTADOR COMPACTO (FINAL CORRECTO) ======================
+// ========================= RESALTADOR COMPACTO  =======================================
 document.addEventListener("DOMContentLoaded", () => {
 
   const btnActivo = document.getElementById("btnResaltadorActivo");
@@ -759,11 +759,23 @@ document.addEventListener("DOMContentLoaded", () => {
     return;
   }
 
+  let colorActual = "#fff3b0";  // ejemplo color inicial (amarillo)
+  let resaltadorBloqueado = false;
+
+  // Aseguramos que el pequeño candado exista en btnActivo:
+  if (!btnActivo.querySelector('.icono-candado')) {
+    const span = document.createElement("span");
+    span.className = "icono-candado";
+    span.textContent = "🔒";
+    span.style.display = "none";  // inicialmente oculto
+    btnActivo.appendChild(span);
+  }
+
   paleta.style.display = "none";
   btnActivo.style.background = colorActual;
   btnActivo.textContent = "💛";
 
-  // 🟡 CLICK PRINCIPAL → abrir / cerrar paleta
+  // CLICK PRINCIPAL → abrir / cerrar paleta
   btnActivo.onclick = e => {
     e.preventDefault();
     e.stopPropagation();
@@ -776,57 +788,41 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  // 🎨 ELEGIR COLOR
+  // ELEGIR COLOR
   paleta.querySelectorAll("button[data-color]").forEach(btn => {
     btn.onclick = e => {
       e.preventDefault();
       e.stopPropagation();
-
-      // Quitar candado de todos los botones
-      paleta.querySelectorAll("button[data-color] span.icono-candado").forEach(c => c.remove());
 
       colorActual = btn.dataset.color;
       btnActivo.style.background = colorActual;
       btnActivo.textContent = btn.textContent;
 
       resaltadorBloqueado = false;
+      btnBloquear.textContent = "🔒";  // mostrar candado cerrado cuando desbloqueado
       paleta.style.display = "none";
+
+      // Ocultar candado pequeño indicador
+      btnActivo.querySelector('.icono-candado').style.display = 'none';
     };
   });
 
-  // 🔒 BLOQUEAR / DESBLOQUEAR
+  // BLOQUEAR / DESBLOQUEAR
   btnBloquear.onclick = e => {
     e.preventDefault();
     e.stopPropagation();
 
     resaltadorBloqueado = !resaltadorBloqueado;
+
+    // Cambiar texto del botón bloqueador grande
     btnBloquear.textContent = resaltadorBloqueado ? "🔓" : "🔒";
 
-    // Quitar todos los candados anteriores
-    paleta.querySelectorAll("button[data-color] span.icono-candado").forEach(c => c.remove());
-
-    if (resaltadorBloqueado) {
-      // Colocar candado sobre el color actual
-      const botonColor = Array.from(paleta.querySelectorAll("button[data-color]"))
-        .find(b => b.dataset.color === colorActual);
-      if (botonColor) {
-        const span = document.createElement("span");
-        span.textContent = "🔒";
-        span.className = "icono-candado";
-        span.style.position = "absolute";
-        span.style.top = "-4px";
-        span.style.right = "-4px";
-        span.style.fontSize = "10px";
-        span.style.background = "#fff";
-        span.style.borderRadius = "50%";
-        span.style.padding = "1px";
-        botonColor.style.position = "relative";
-        botonColor.appendChild(span);
-      }
-    }
+    // Mostrar u ocultar candado pequeño en botón activo
+    const iconoCandado = btnActivo.querySelector('.icono-candado');
+    iconoCandado.style.display = resaltadorBloqueado ? 'inline-block' : 'none';
   };
 
-  // ❌ cerrar clic fuera
+  // cerrar paleta al clic fuera
   document.addEventListener("click", e => {
     if (!cont.contains(e.target)) {
       paleta.style.display = "none";
@@ -990,6 +986,7 @@ window.compartirImagenFinal = compartirImagenFinal;
 if (localStorage.getItem("modoOscuro") === "1") {
   document.body.classList.add("oscuro");
 }
+
 
 
 
