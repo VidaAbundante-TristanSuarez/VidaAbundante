@@ -888,11 +888,16 @@ if (btnGen) {
 }
 
 // ================= CANVAS GENERA IMAGEN FINAL ============================
-function generarImagenFinal() {
+async function generarImagenFinal() {
+
+  // ⏳ ESPERAR A QUE LAS FUENTES SE CARGUEN (CLAVE PARA CELU)
+  await document.fonts.ready;
+
   const preview = document.getElementById("previewImagen");
   const canvasFinal = document.getElementById("canvasFinal");
 
   html2canvas(preview, {
+
     scale: window.devicePixelRatio || 2,
     useCORS: true,
     backgroundColor: null
@@ -990,6 +995,7 @@ window.compartirImagenFinal = compartirImagenFinal;
 if (localStorage.getItem("modoOscuro") === "1") {
   document.body.classList.add("oscuro");
 }
+
 
 
 
