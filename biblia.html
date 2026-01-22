@@ -514,6 +514,11 @@ body.oscuro.modo-imagen #texto {
   background: rgba(255,255,255,0.04);
 }
 
+/* 🖼️ Ocultar resaltador en modo imagen */
+body.modo-imagen #resaltadorCompacto {
+  display: none;
+}
+
     
   </style>
 </head>
@@ -583,20 +588,6 @@ body.oscuro.modo-imagen #texto {
   </div>
 
 </div>
-
-<!--
-    <button class="accion-normal color-btn"
-            data-color="#ffd6e8"
-            onclick="setColor('#ffd6e8', this)">🌸</button>
-
-    <button class="accion-normal color-btn"
-            data-color="#ccecff"
-            onclick="setColor('#ccecff', this)">💙</button>
-
-    <button class="accion-normal color-btn"
-            data-color="#fff3b0"
-            onclick="setColor('#fff3b0', this)">💛</button>
-    -->
 
     <button class="accion-normal" onclick="cambiarLetra(-1)">A−</button>
     <button class="accion-normal" onclick="cambiarLetra(1)">A+</button>
@@ -763,6 +754,7 @@ body.oscuro.modo-imagen #texto {
   
 </body>
 </html>
+
 
 
 
