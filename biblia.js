@@ -632,7 +632,6 @@ const fuentesGoogle = [
   { nombre: "Playfair Display", css: "'Playfair Display'" },
   { nombre: "Montserrat", css: "Montserrat" },
   { nombre: "Poppins", css: "Poppins" },
-  { nombre: "Cinzel", css: "Cinzel" },
   { nombre: "Abril Fatface", css: "'Abril Fatface'" },
   { nombre: "Cormorant", css: "Cormorant" },
   { nombre: "Josefin Sans", css: "'Josefin Sans'" },
@@ -652,17 +651,36 @@ function crearListaVisualFuentes() {
     btn.style.padding = "10px";
     btn.style.borderRadius = "10px";
     btn.style.border = "none";
-    btn.style.fontSize = "18px";
+    btn.style.fontSize = "16px";
     btn.style.cursor = "pointer";
+    btn.style.display = "block"; // importante para que apile verticalmente
 
-    btn.onclick = () => {
+    btn.onclick = e => {
+      e.stopPropagation();  // no cerrar el contenedor al hacer click
       document.getElementById("personalizarFuente").value = f.nombre;
       actualizarPreview();
+      cont.style.display = "none"; // cierra paleta al seleccionar
     };
 
     cont.appendChild(btn);
   });
 }
+
+// Toggle abrir/cerrar
+const btnFuentes = document.getElementById("btnFuentes");
+btnFuentes.onclick = e => {
+  e.stopPropagation();
+  const lista = document.getElementById("listaFuentes");
+  lista.style.display = lista.style.display === "block" ? "none" : "block";
+};
+
+// Cerrar al tocar fuera
+document.addEventListener("click", () => {
+  const lista = document.getElementById("listaFuentes");
+  if (lista) lista.style.display = "none";
+});
+
+//
 
 function iniciar() {
   const libros = [...new Set(bibliaData.map(v => v.Libro))];
@@ -1035,6 +1053,7 @@ window.compartirImagenFinal = compartirImagenFinal;
 if (localStorage.getItem("modoOscuro") === "1") {
   document.body.classList.add("oscuro");
 }
+
 
 
 
