@@ -747,6 +747,8 @@ window.toggleUnderline = () => {
 };
 
 // ========================= RESALTADOR COMPACTO  =======================================
+no .. se ve que algo no era. se deformo toda mi barra de acciones hay dos corazones uno abajo y otro arribaaaa... 
+
 document.addEventListener("DOMContentLoaded", () => {
 
   const btnActivo = document.getElementById("btnResaltadorActivo");
@@ -759,70 +761,74 @@ document.addEventListener("DOMContentLoaded", () => {
     return;
   }
 
-  let colorActual = "#fff3b0";  // color inicial amarillo
-  let resaltadorBloqueado = false;
-
-  // 🔹 Aseguramos que el pequeño candado exista
-  if (!btnActivo.querySelector('.icono-candado')) {
-    const span = document.createElement("span");
-    span.className = "icono-candado";
-    span.textContent = "🔒";
-    span.style.display = "none";  // inicialmente oculto
-    btnActivo.appendChild(span);
-  }
-
-  // 🔹 Inicializar botón activo con emoji y candado
-  btnActivo.innerHTML = `💛 <span class="icono-candado" style="display:none;">🔒</span>`;
   paleta.style.display = "none";
+  btnActivo.style.background = colorActual;
+  btnActivo.textContent = "💛";
 
-  // ================= CLICK PRINCIPAL → abrir / cerrar paleta =================
+  // 🟡 CLICK PRINCIPAL → abrir / cerrar paleta
   btnActivo.onclick = e => {
     e.preventDefault();
     e.stopPropagation();
-    if (resaltadorBloqueado) return; // ❌ no abrir si bloqueado
-
     const visible = paleta.style.display === "block";
-    if (visible) {
-      paleta.style.display = "none";
-    } else {
-      paleta.style.display = "grid"; // primero mostrar
+    paleta.style.display = visible ? "none" : "block";
+    cont.classList.remove("mover-derecha");
+    if (!visible) {
       const rect = paleta.getBoundingClientRect();
-      cont.classList.toggle("mover-derecha", rect.top < 10);
+      if (rect.top < 10) cont.classList.add("mover-derecha");
     }
   };
 
-  // ================= ELEGIR COLOR =================
+  // 🎨 ELEGIR COLOR
   paleta.querySelectorAll("button[data-color]").forEach(btn => {
     btn.onclick = e => {
       e.preventDefault();
       e.stopPropagation();
-      if (resaltadorBloqueado) return; // ❌ ignorar si bloqueado
+
+      // Quitar candado de todos los botones
+      paleta.querySelectorAll("button[data-color] span.icono-candado").forEach(c => c.remove());
 
       colorActual = btn.dataset.color;
-      btnActivo.innerHTML = `${btn.textContent} <span class="icono-candado" style="display:none;">🔒</span>`;
+      btnActivo.style.background = colorActual;
+      btnActivo.textContent = btn.textContent;
+
+      resaltadorBloqueado = false;
       paleta.style.display = "none";
     };
   });
 
-  // ================= BLOQUEAR / DESBLOQUEAR =================
+  // 🔒 BLOQUEAR / DESBLOQUEAR
   btnBloquear.onclick = e => {
     e.preventDefault();
     e.stopPropagation();
 
     resaltadorBloqueado = !resaltadorBloqueado;
-
-    // 🔹 Cambiar candado grande
     btnBloquear.textContent = resaltadorBloqueado ? "🔓" : "🔒";
 
-    // 🔹 Mostrar / ocultar candado pequeño
-    const iconoCandado = btnActivo.querySelector('.icono-candado');
-    iconoCandado.style.display = resaltadorBloqueado ? 'inline-block' : 'none';
+    // Quitar todos los candados anteriores
+    paleta.querySelectorAll("button[data-color] span.icono-candado").forEach(c => c.remove());
 
-    // 🔹 Cerrar paleta si estaba abierta
-    if (resaltadorBloqueado) paleta.style.display = "none";
+    if (resaltadorBloqueado) {
+      // Colocar candado sobre el color actual
+      const botonColor = Array.from(paleta.querySelectorAll("button[data-color]"))
+        .find(b => b.dataset.color === colorActual);
+      if (botonColor) {
+        const span = document.createElement("span");
+        span.textContent = "🔒";
+        span.className = "icono-candado";
+        span.style.position = "absolute";
+        span.style.top = "-4px";
+        span.style.right = "-4px";
+        span.style.fontSize = "10px";
+        span.style.background = "#fff";
+        span.style.borderRadius = "50%";
+        span.style.padding = "1px";
+        botonColor.style.position = "relative";
+        botonColor.appendChild(span);
+      }
+    }
   };
 
-  // ================= CERRAR PALETA AL CLIC FUERA =================
+  // ❌ cerrar clic fuera
   document.addEventListener("click", e => {
     if (!cont.contains(e.target)) {
       paleta.style.display = "none";
@@ -986,6 +992,7 @@ window.compartirImagenFinal = compartirImagenFinal;
 if (localStorage.getItem("modoOscuro") === "1") {
   document.body.classList.add("oscuro");
 }
+
 
 
 
