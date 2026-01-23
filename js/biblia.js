@@ -1,10 +1,13 @@
 // ================= CARGA BIBLIA ==============================
 
-fetch("VidaAbundante - RV1960.json")
+fetch("https://raw.githubusercontent.com/VidaAbundante-TristanSuarez/VidaAbundante/50fa8465246138b133b154ec2259c718c36872f7/VidaAbundante%20-%20RV1960.json")
   .then(r => r.json())
   .then(data => {
     bibliaData = data;
     iniciar();
+  })
+  .catch(err => {
+    console.error("Error cargando Biblia:", err);
   });
 
 document.fonts.ready.then(() => {
@@ -138,4 +141,5 @@ function escucharMarcados() {
 document.addEventListener("DOMContentLoaded", () => {
   cargarBiblia();
 });
+
 
