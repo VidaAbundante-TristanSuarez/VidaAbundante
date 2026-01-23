@@ -1,136 +1,140 @@
-// ================= BIBLIA =================
+// ================= CARGA DE BIBLIA =================
 
-import {
-  bibliaData,
-  marcados,
-  size,
-  colorActual,
-  modoImagen,
-  seleccionImagen,
-  grupoActual
-} from "./estado.js";
-
-import { db } from "./firebase.js";
-import { ref, set, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-
-// ================= DOM =================
-const libroSel = document.getElementById("libro");
-const capSel = document.getElementById("capitulo");
-const texto = document.getElementById("texto");
-const titulo = document.getElementById("titulo");
-const notaBox = document.getElementById("notaBox");
-const notaTexto = document.getElementById("notaTexto");
-const loginModal = document.getElementById("loginModal");
-
-// ================= CARGA BIBLIA =================
-fetch("VidaAbundante - RV1960.json")
-  .then(r => r.json())
-  .then(data => {
-    bibliaData.length = 0;
-    data.forEach(v => bibliaData.push(v));
-    iniciar();
-  });
-
-// ================= INICIO =================
-function iniciar() {
-  const libros = [...new Set(bibliaData.map(v => v.Libro))];
-  libroSel.innerHTML = "";
-  libros.forEach(l => (libroSel.innerHTML += `<option>${l}</option>`));
-  libroSel.onchange = cargarCapitulos;
-  capSel.onchange = mostrarTexto;
-  cargarCapitulos();
+function cargarBiblia() {
+  fetch("biblia.json")
+    .then(res => res.json())
+    .then(data => {
+      bibliaData = data;
+      iniciarBiblia();
+    })
+    .catch(err => {
+      console.error("Error cargando Biblia:", err);
+    });
 }
 
-function cargarCapitulos() {
-  capSel.innerHTML = "";
-  const caps = [...new Set(
-    bibliaData.filter(v => v.Libro === libroSel.value).map(v => v.Capitulo)
-  )];
-  caps.forEach(c => (capSel.innerHTML += `<option>${c}</option>`));
+// ================= INICIO =================
+
+function iniciarBiblia() {
+  if (!bibliaData || bibliaData.length === 0) return;
+
+  libroActual = 0;
+  capituloActual = 0;
+
+  cargarLibros();
+  cargarCapitulos();
   mostrarTexto();
 }
 
-// ================= MOSTRAR TEXTO =================
+// ================= LIBROS =================
+
+function cargarLibros() {
+  const contenedor = document.getElementById("libros");
+  if (!contenedor) return;
+
+  contenedor.innerHTML = "";
+
+  bibliaData.forEach((libro, index) => {
+    const btn = document.createElement("button");
+    btn.textContent = libro.name;
+    btn.onclick = () => {
+      libroActual = index;
+      capituloActual = 0;
+      cargarCapitulos();
+      mostrarTexto();
+    };
+    contenedor.appendChild(btn);
+  });
+}
+
+// ================= CAPITULOS =================
+
+function cargarCapitulos() {
+  const contenedor = document.getElementById("capitulos");
+  if (!contenedor) return;
+
+  contenedor.innerHTML = "";
+
+  const caps = bibliaData[libroActual].chapters;
+
+  caps.forEach((_, index) => {
+    const btn = document.createElement("button");
+    btn.textContent = index + 1;
+    btn.onclick = () => {
+      capituloActual = index;
+      mostrarTexto();
+    };
+    contenedor.appendChild(btn);
+  });
+}
+
+// ================= TEXTO =================
+
 function mostrarTexto() {
-  texto.innerHTML = "";
-  notaBox.style.display = "none";
-  grupoActual = null;
+  const contenedor = document.getElementById("textoBiblia");
+  if (!contenedor) return;
 
-  titulo.innerText = `${libroSel.value} ${capSel.value}`;
+  contenedor.innerHTML = "";
 
-  const versos = bibliaData.filter(v =>
-    v.Libro === libroSel.value &&
-    v.Capitulo == capSel.value
-  );
+  const capitulo = bibliaData[libroActual].chapters[capituloActual];
 
-  versos.forEach(v => pintarVersiculo(v));
+  capitulo.forEach((verso, index) => {
+    const p = document.createElement("p");
+    p.className = "versiculo";
+    p.dataset.verso = index + 1;
+    p.style.fontSize = size + "px";
+    p.textContent = (index + 1) + ". " + verso;
+
+    p.onclick = () => toggleVersiculo(index + 1, p);
+
+    aplicarMarcado(p, index + 1);
+    contenedor.appendChild(p);
+  });
 }
 
-window.mostrarTexto = mostrarTexto;
+// ================= MARCADO =================
 
-// ================= PINTAR VERSÍCULO =================
-function pintarVersiculo(v) {
-  const id = `${v.Libro}_${v.Capitulo}_${v.Versiculo}`;
-  const marcado = marcados[id];
-  const imagen = modoImagen && seleccionImagen[id];
+function toggleVersiculo(num, elemento) {
+  const clave = `${libroActual}-${capituloActual}-${num}`;
 
-  const div = document.createElement("div");
-  div.className = "versiculo";
-  if (imagen) div.classList.add("imagen");
-
-  div.style.fontSize = size + "px";
-
-  if (modoImagen) {
-    div.style.background = imagen
-      ? "rgba(255, 214, 232, 0.6)"
-      : "transparent";
+  if (marcados[clave]) {
+    delete marcados[clave];
+    elemento.style.background = "";
   } else {
-    div.style.background = marcado?.color || "transparent";
+    marcados[clave] = colorActual;
+    elemento.style.background = colorActual;
   }
 
-  div.innerHTML = `<span class="num">${v.Versiculo}</span> ${v.RV1960}`;
-  div.onclick = () => toggleVersiculo(id, v.Versiculo);
-
-  texto.appendChild(div);
+  guardarMarcados();
 }
 
-// ================= TOGGLE =================
-function toggleVersiculo(id, num) {
-  if (modoImagen) {
-    if (!window.uid) {
-      if (loginModal) loginModal.style.display = "flex";
-      return;
+function aplicarMarcado(elemento, num) {
+  const clave = `${libroActual}-${capituloActual}-${num}`;
+  if (marcados[clave]) {
+    elemento.style.background = marcados[clave];
+  }
+}
+
+// ================= FIREBASE =================
+
+function guardarMarcados() {
+  if (!uid) return;
+
+  set(ref(db, "marcados/" + uid), marcados);
+}
+
+function escucharMarcados() {
+  if (!uid) return;
+
+  onValue(ref(db, "marcados/" + uid), (snap) => {
+    if (snap.exists()) {
+      marcados = snap.val();
+      mostrarTexto();
     }
-    if (seleccionImagen[id]) delete seleccionImagen[id];
-    else seleccionImagen[id] = true;
-    mostrarTexto();
-    return;
-  }
-
-  if (!window.uid) return;
-
-  const r = ref(db, "marcados/" + window.uid + "/" + id);
-
-  if (marcados[id]) remove(r);
-  else set(r, { color: colorActual });
-
-  detectarGrupo(num);
+  });
 }
 
-// ================= GRUPOS =================
-function detectarGrupo(num) {
-  const nums = Object.keys(marcados)
-    .filter(k => {
-      const [lib, cap] = k.split("_");
-      return lib === libroSel.value && cap == capSel.value;
-    })
-    .map(k => Number(k.split("_")[2]))
-    .sort((a, b) => a - b);
+// ================= AUTO INICIO =================
 
-  const grupo = nums.filter(n => Math.abs(n - num) <= 1);
-  if (grupo.length < 2) return;
-
-  grupoActual = grupo.join("-");
-  notaBox.style.display = "block";
-  notaTexto.value = window.notas?.[grupoActual] || "";
-}
+document.addEventListener("DOMContentLoaded", () => {
+  cargarBiblia();
+});
