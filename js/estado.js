@@ -1,21 +1,25 @@
 // ================= ESTADO GLOBAL =================
-export let uid = null;
-export let bibliaData = [];
-export let marcados = {};
-export let notas = {};
+let uid = null;
 
-export let size = 18;
-export let colorActual = "#fff3b0";
+let bibliaData = [];
+let libroActual = null;
+let capituloActual = null;
 
-export let resaltadorBloqueado = false;
-export let grupoActual = null;
-export let marcador = null;
+let marcados = {};
+let notas = {};
 
-export let modoImagen = false;
-export let seleccionImagen = {};
-export let fondoFinal = null;
+let size = 18;
+let colorActual = "#fff3b0";
 
-export let textStyle = {
+let resaltadorBloqueado = false;
+let grupoActual = null;
+let marcador = null;
+
+let modoImagen = false;
+let seleccionImagen = {};
+let fondoFinal = null;
+
+let textStyle = {
   upper: false,
   bold: false,
   italic: false,
