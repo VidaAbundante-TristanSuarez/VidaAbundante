@@ -10,11 +10,6 @@ fetch("https://raw.githubusercontent.com/VidaAbundante-TristanSuarez/VidaAbundan
     console.error("Error cargando Biblia:", err);
   });
 
-document.fonts.ready.then(() => {
-  console.log("✅ Fuentes cargadas");
-  actualizarPreview();
-});
-
 // ================= INICIO =================
 
 function iniciarBiblia() {
@@ -136,10 +131,5 @@ function escucharMarcados() {
   });
 }
 
-// ================= AUTO INICIO =================
-
-document.addEventListener("DOMContentLoaded", () => {
-  cargarBiblia();
-});
 
 
