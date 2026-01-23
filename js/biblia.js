@@ -4,7 +4,7 @@ fetch("https://raw.githubusercontent.com/VidaAbundante-TristanSuarez/VidaAbundan
   .then(r => r.json())
   .then(data => {
     bibliaData = data;
-    iniciar();
+    iniciarBiblia();
   })
   .catch(err => {
     console.error("Error cargando Biblia:", err);
@@ -130,6 +130,7 @@ function escucharMarcados() {
     }
   });
 }
+
 
 
 
