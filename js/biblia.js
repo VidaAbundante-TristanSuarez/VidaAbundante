@@ -1,16 +1,16 @@
-// ================= CARGA DE BIBLIA =================
+// ================= CARGA BIBLIA ==============================
 
-function cargarBiblia() {
-  fetch("biblia.json")
-    .then(res => res.json())
-    .then(data => {
-      bibliaData = data;
-      iniciarBiblia();
-    })
-    .catch(err => {
-      console.error("Error cargando Biblia:", err);
-    });
-}
+fetch("VidaAbundante - RV1960.json")
+  .then(r => r.json())
+  .then(data => {
+    bibliaData = data;
+    iniciar();
+  });
+
+document.fonts.ready.then(() => {
+  console.log("✅ Fuentes cargadas");
+  actualizarPreview();
+});
 
 // ================= INICIO =================
 
@@ -138,3 +138,4 @@ function escucharMarcados() {
 document.addEventListener("DOMContentLoaded", () => {
   cargarBiblia();
 });
+
