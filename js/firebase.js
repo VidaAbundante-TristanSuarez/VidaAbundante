@@ -26,14 +26,19 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getDatabase(app);
 
-// ================= AUTH STATE =================
-onAuthStateChanged(auth, (user) => {
-  if (user) {
-    uid = user.uid;
-    console.log("Usuario autenticado:", uid);
-  } else {
-    uid = null;
-    console.log("Usuario no autenticado");
+// ================= AUTH =====================================
+
+onAuthStateChanged(auth, user => {
+  uid = user ? user.uid : null;
+
+  if (uid) {
+    onValue(ref(db, "marcados/" + uid), s => {
+      marcados = s.val() || {};
+      mostrarTexto();
+    });
+    onValue(ref(db, "notas/" + uid), s => {
+      notas = s.val() || {};
+    });
   }
 });
 
@@ -50,4 +55,5 @@ window.ref = ref;
 window.set = set;
 window.remove = remove;
 window.onValue = onValue;
+
 
