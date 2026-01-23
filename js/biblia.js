@@ -1,136 +1,154 @@
+
+
 // ================= CARGA BIBLIA ==============================
 
-fetch("https://raw.githubusercontent.com/VidaAbundante-TristanSuarez/VidaAbundante/50fa8465246138b133b154ec2259c718c36872f7/VidaAbundante%20-%20RV1960.json")
+fetch("VidaAbundante - RV1960.json")
   .then(r => r.json())
   .then(data => {
     bibliaData = data;
-    iniciarBiblia();
-  })
-  .catch(err => {
-    console.error("Error cargando Biblia:", err);
+    iniciar();
   });
+
+document.fonts.ready.then(() => {
+  console.log("✅ Fuentes cargadas");
+  actualizarPreview();
+});
 
 // ================= INICIO =================
 
-function iniciarBiblia() {
-  if (!bibliaData || bibliaData.length === 0) return;
-
-  libroActual = 0;
-  capituloActual = 0;
-
-  cargarLibros();
+function iniciar() {
+  const libros = [...new Set(bibliaData.map(v => v.Libro))];
+  libroSel.innerHTML = "";
+  libros.forEach(l => (libroSel.innerHTML += `<option>${l}</option>`));
+  libroSel.onchange = cargarCapitulos;
+  capSel.onchange = mostrarTexto;
   cargarCapitulos();
-  mostrarTexto();
-}
-
-// ================= LIBROS =================
-
-function cargarLibros() {
-  const contenedor = document.getElementById("libros");
-  if (!contenedor) return;
-
-  contenedor.innerHTML = "";
-
-  bibliaData.forEach((libro, index) => {
-    const btn = document.createElement("button");
-    btn.textContent = libro.name;
-    btn.onclick = () => {
-      libroActual = index;
-      capituloActual = 0;
-      cargarCapitulos();
-      mostrarTexto();
-    };
-    contenedor.appendChild(btn);
-  });
 }
 
 // ================= CAPITULOS =================
 
 function cargarCapitulos() {
-  const contenedor = document.getElementById("capitulos");
-  if (!contenedor) return;
-
-  contenedor.innerHTML = "";
-
-  const caps = bibliaData[libroActual].chapters;
-
-  caps.forEach((_, index) => {
-    const btn = document.createElement("button");
-    btn.textContent = index + 1;
-    btn.onclick = () => {
-      capituloActual = index;
-      mostrarTexto();
-    };
-    contenedor.appendChild(btn);
-  });
-}
+  capSel.innerHTML = "";
+  const caps = [...new Set(
+    bibliaData.filter(v => v.Libro === libroSel.value).map(v => v.Capitulo)
+  )];
+  caps.forEach(c => (capSel.innerHTML += `<option>${c}</option>`));
+  mostrarTexto();
+} 
 
 // ================= TEXTO =================
 
 function mostrarTexto() {
-  const contenedor = document.getElementById("textoBiblia");
-  if (!contenedor) return;
+  texto.innerHTML = "";
+  notaBox.style.display = "none";
+  grupoActual = null;
+  
+  titulo.innerText = `${libroSel.value} ${capSel.value}`;
 
-  contenedor.innerHTML = "";
+  const versos = bibliaData.filter(v =>
+    v.Libro === libroSel.value &&
+    v.Capitulo == capSel.value
+  );
 
-  const capitulo = bibliaData[libroActual].chapters[capituloActual];
-
-  capitulo.forEach((verso, index) => {
-    const p = document.createElement("p");
-    p.className = "versiculo";
-    p.dataset.verso = index + 1;
-    p.style.fontSize = size + "px";
-    p.textContent = (index + 1) + ". " + verso;
-
-    p.onclick = () => toggleVersiculo(index + 1, p);
-
-    aplicarMarcado(p, index + 1);
-    contenedor.appendChild(p);
-  });
+  versos.forEach(v => pintarVersiculo(v));
 }
 
-// ================= MARCADO =================
+// ================= TOGGLE VERSICULO =======================
+function toggleVersiculo(id, num) {
 
-function toggleVersiculo(num, elemento) {
-  const clave = `${libroActual}-${capituloActual}-${num}`;
-
-  if (marcados[clave]) {
-    delete marcados[clave];
-    elemento.style.background = "";
-  } else {
-    marcados[clave] = colorActual;
-    elemento.style.background = colorActual;
-  }
-
-  guardarMarcados();
-}
-
-function aplicarMarcado(elemento, num) {
-  const clave = `${libroActual}-${capituloActual}-${num}`;
-  if (marcados[clave]) {
-    elemento.style.background = marcados[clave];
-  }
-}
-
-// ================= FIREBASE =================
-
-function guardarMarcados() {
-  if (!uid) return;
-
-  set(ref(db, "marcados/" + uid), marcados);
-}
-
-function escucharMarcados() {
-  if (!uid) return;
-
-  onValue(ref(db, "marcados/" + uid), (snap) => {
-    if (snap.exists()) {
-      marcados = snap.val();
-      mostrarTexto();
+  // 🖼️ MODO IMAGEN
+  if (modoImagen) {
+    if (!uid) {
+      loginModal.style.display = "flex";
+      return;
     }
-  });
+
+    if (seleccionImagen[id]) {
+      delete seleccionImagen[id];
+    } else {
+      seleccionImagen[id] = true;
+    }
+
+    mostrarTexto();
+    actualizarPreview();
+    return;
+  }
+
+  // 🔐 requiere login
+  if (!uid) return;
+
+  // 🔒 resaltador bloqueado
+  if (resaltadorBloqueado) return;
+
+  // 🎨 marcar / desmarcar versículo
+  const r = ref(db, "marcados/" + uid + "/" + id);
+
+  if (marcados[id]) {
+    remove(r);
+  } else {
+    set(r, { color: colorActual });
+  }
+
+  detectarGrupo(num);
 }
 
+// ======================= PINTAR VERSICULO  =============================
+function pintarVersiculo(v) {
+  const id = `${v.Libro}_${v.Capitulo}_${v.Versiculo}`;
+  const marcado = marcados[id];
+  const imagen = modoImagen && seleccionImagen[id];
 
+  const div = document.createElement("div");
+  div.className = "versiculo";
+  if (imagen) div.classList.add("imagen");
+
+  // ================= TAMAÑO DE LETRA =================
+  div.style.fontSize = size + "px";
+
+  // ================= FONDO =================
+  if (modoImagen) {
+    div.style.background = imagen
+      ? "rgba(255, 214, 232, 0.6)"
+      : "transparent";
+  } else {
+    div.style.background = marcado?.color || "transparent";
+  }
+
+  // ================= COLOR DE TEXTO =================
+  if (modoImagen) {
+    if (imagen) {
+      div.style.color = "#ffffff";
+    } else {
+      div.style.color = document.body.classList.contains("oscuro")
+        ? "#ffffff"
+        : "#000000";
+    }
+  } 
+  else if (marcado) {
+    if (document.body.classList.contains("oscuro")) {
+      div.style.color = "#000000";
+    } else {
+      div.style.color = colorContraste(marcado.color);
+    }
+  }
+
+// ================= DETECTA GRUPO =======================
+
+function detectarGrupo(num) {
+ const nums = Object.keys(marcados)
+  .filter(k => {
+    const [lib, cap] = k.split("_");
+    return lib === libroSel.value && cap == capSel.value;
+  })
+  .map(k => Number(k.split("_")[2]))
+  .sort((a, b) => a - b);
+
+  const grupo = nums.filter(n => Math.abs(n - num) <= 1);
+  if (grupo.length < 2) return;
+
+  grupoActual = grupo.join("-");
+  notaBox.style.display = "block";
+  notaTexto.value = notas[grupoActual] || "";
+}
 
 
