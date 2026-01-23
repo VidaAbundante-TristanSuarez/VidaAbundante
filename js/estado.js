@@ -11,6 +11,7 @@ let notas = {};
 let size = 18;
 let colorActual = "#fff3b0";
 
+let resaltadorAbierto = false;
 let resaltadorBloqueado = false;
 let grupoActual = null;
 let marcador = null;
@@ -25,3 +26,11 @@ let textStyle = {
   italic: false,
   underline: false
 };
+
+
+
+
+
+
+
+
