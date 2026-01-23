@@ -1,6 +1,4 @@
-// ================= FIREBASE =================
-
-// IMPORTS FIREBASE
+// ================= FIREBASE SDKs =================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import {
   getAuth,
@@ -15,14 +13,7 @@ import {
   onValue
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-// IMPORTA ESTADO GLOBAL
-import {
-  uid,
-  marcados,
-  notas
-} from "./estado.js";
-
-// ================= CONFIG =================
+// ================= FIREBASE CONFIG =================
 const firebaseConfig = {
   apiKey: "AIzaSyBtDcQ2DhgMpLsn4FCdF82QNstfvAjguQ4",
   authDomain: "vidaabundante-f118a.firebaseapp.com",
@@ -32,21 +23,17 @@ const firebaseConfig = {
 
 // ================= INIT =================
 const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-export const db = getDatabase(app);
+const auth = getAuth(app);
+const db = getDatabase(app);
 
-// ================= AUTH =================
-onAuthStateChanged(auth, user => {
-  uid = user ? user.uid : null;
-
-  if (uid) {
-    onValue(ref(db, "marcados/" + uid), s => {
-      marcados = s.val() || {};
-    });
-
-    onValue(ref(db, "notas/" + uid), s => {
-      notas = s.val() || {};
-    });
+// ================= AUTH STATE =================
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    uid = user.uid;
+    console.log("Usuario autenticado:", uid);
+  } else {
+    uid = null;
+    console.log("Usuario no autenticado");
   }
 });
 
@@ -57,12 +44,10 @@ window.logout = () => {
   });
 };
 
-// ================= NOTAS =================
-window.guardarNota = () => {
-  if (!uid) return;
-  const notaTexto = document.getElementById("notaTexto");
-  const grupoActual = window.grupoActual;
-  if (!grupoActual) return;
+// ================= EXPONER GLOBAL =================
+window.db = db;
+window.ref = ref;
+window.set = set;
+window.remove = remove;
+window.onValue = onValue;
 
-  set(ref(db, `notas/${uid}/${grupoActual}`), notaTexto.value);
-};
