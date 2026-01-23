@@ -565,6 +565,43 @@ body.oscuro #btnResaltadorActivo .icono-candado {
   background: #1e1e1e;
 }
 
+/* ================= FUENTES COMPACTO (igual a formato) ================= */
+
+#fuentesCompacto {
+  position: relative;
+}
+
+#fuentesCompacto #btnFuentes {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+#fuentesCompacto #listaFuentes {
+  position: absolute;
+  bottom: 110%;       /* se abre hacia arriba */
+  left: 0;
+
+  display: none;
+  background: #fff;
+  border-radius: 12px;
+  padding: 8px;
+  box-shadow: 0 6px 20px rgba(0,0,0,.25);
+
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  min-width: 160px;
+  z-index: 9999;
+}
+
+body.oscuro #fuentesCompacto #listaFuentes {
+  background: #1e1e1e;
+}
+
     
   </style>
 </head>
@@ -745,13 +782,7 @@ body.oscuro #btnResaltadorActivo .icono-candado {
     <input type="range" id="personalizarOpacidad" min="0" max="1" step="0.05" value="0.35">
   </div>
 
-  <div id="fuentesCompacto">
-  <button id="btnFuentes">🅰️ Fuente</button>
-  <div id="listaFuentes" style="display:none;"></div>
-</div>
-  
-  <div>
-    <label>Fuente</label>
+<!-- ================= FUENTE (COMPACTO) ================= -->
 
 <!-- SELECT oculto (lo usa el JS) -->
 <select id="personalizarFuente" style="display:none">
@@ -762,16 +793,12 @@ body.oscuro #btnResaltadorActivo .icono-candado {
   <option value="Poppins">Poppins</option>
 </select>
 
-<!-- LISTA VISUAL -->
-<div id="listaFuentes"
-     style="
-       max-height:180px;
-       overflow-y:auto;
-       display:flex;
-       flex-direction:column;
-       gap:6px;
-       margin-top:8px;
-     ">
+<div id="fuentesCompacto">
+  <button id="btnFuentes">🅰️</button>
+
+  <div id="listaFuentes">
+    <!-- JS genera los botones de fuentes -->
+  </div>
 </div>
   
   <div>
@@ -819,6 +846,7 @@ body.oscuro #btnResaltadorActivo .icono-candado {
   
 </body>
 </html>
+
 
 
 
