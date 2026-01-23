@@ -1,63 +1,80 @@
-// ================= UI / BOTONES =================
+// ================= UI GENERAL =================
 
-import {
-  size,
-  colorActual,
-  resaltadorBloqueado,
-  marcador,
-  textStyle
-} from "./estado.js";
-
-// ================= DOM =================
-const btnMas = document.getElementById("mas");
-const btnMenos = document.getElementById("menos");
-const colores = document.querySelectorAll(".color");
-const btnBold = document.getElementById("btnBold");
-const btnItalic = document.getElementById("btnItalic");
-const btnUnderline = document.getElementById("btnUnderline");
-const btnUpper = document.getElementById("btnUpper");
-const btnLock = document.getElementById("btnLock");
-
-// ================= TAMAÑO TEXTO =================
-if (btnMas) {
-  btnMas.onclick = () => {
-    size += 2;
-    if (window.mostrarTexto) window.mostrarTexto();
-  };
+// ---- Tamaño de texto ----
+function aumentarTexto() {
+  size += 2;
+  mostrarTexto();
+  actualizarPreviewImagen();
 }
 
-if (btnMenos) {
-  btnMenos.onclick = () => {
-    size = Math.max(12, size - 2);
-    if (window.mostrarTexto) window.mostrarTexto();
-  };
+function disminuirTexto() {
+  if (size > 10) size -= 2;
+  mostrarTexto();
+  actualizarPreviewImagen();
 }
 
-// ================= COLORES =================
-colores.forEach(c => {
-  c.onclick = () => {
-    if (resaltadorBloqueado) return;
-    colorActual = c.dataset.color;
-    colores.forEach(x => x.classList.remove("activo"));
-    c.classList.add("activo");
-  };
+// ---- Estilos ----
+function toggleBold() {
+  textStyle.bold = !textStyle.bold;
+  mostrarTexto();
+  actualizarPreviewImagen();
+}
+
+function toggleItalic() {
+  textStyle.italic = !textStyle.italic;
+  mostrarTexto();
+  actualizarPreviewImagen();
+}
+
+function toggleUnderline() {
+  textStyle.underline = !textStyle.underline;
+  mostrarTexto();
+  actualizarPreviewImagen();
+}
+
+function toggleUpper() {
+  textStyle.upper = !textStyle.upper;
+  mostrarTexto();
+  actualizarPreviewImagen();
+}
+
+// ---- Colores ----
+function cambiarColor(color) {
+  colorActual = color;
+}
+
+// ---- Modo imagen ----
+function activarImagen() {
+  activarModoImagen();
+}
+
+function desactivarImagen() {
+  desactivarModoImagen();
+}
+
+function generarImagen() {
+  generarImagenFinal();
+}
+
+// ---- Eventos ----
+document.addEventListener("DOMContentLoaded", () => {
+  const btnMas = document.getElementById("btnMas");
+  const btnMenos = document.getElementById("btnMenos");
+  const btnBold = document.getElementById("btnBold");
+  const btnItalic = document.getElementById("btnItalic");
+  const btnUnderline = document.getElementById("btnUnderline");
+  const btnUpper = document.getElementById("btnUpper");
+  const btnImagen = document.getElementById("btnImagen");
+  const btnImagenOff = document.getElementById("btnImagenOff");
+  const btnGenerarImagen = document.getElementById("btnGenerarImagen");
+
+  if (btnMas) btnMas.onclick = aumentarTexto;
+  if (btnMenos) btnMenos.onclick = disminuirTexto;
+  if (btnBold) btnBold.onclick = toggleBold;
+  if (btnItalic) btnItalic.onclick = toggleItalic;
+  if (btnUnderline) btnUnderline.onclick = toggleUnderline;
+  if (btnUpper) btnUpper.onclick = toggleUpper;
+  if (btnImagen) btnImagen.onclick = activarImagen;
+  if (btnImagenOff) btnImagenOff.onclick = desactivarImagen;
+  if (btnGenerarImagen) btnGenerarImagen.onclick = generarImagen;
 });
-
-// ================= ESTILOS =================
-if (btnBold) btnBold.onclick = () => toggle("bold");
-if (btnItalic) btnItalic.onclick = () => toggle("italic");
-if (btnUnderline) btnUnderline.onclick = () => toggle("underline");
-if (btnUpper) btnUpper.onclick = () => toggle("upper");
-
-function toggle(tipo) {
-  textStyle[tipo] = !textStyle[tipo];
-  document.body.classList.toggle(tipo, textStyle[tipo]);
-}
-
-// ================= BLOQUEO =================
-if (btnLock) {
-  btnLock.onclick = () => {
-    resaltadorBloqueado = !resaltadorBloqueado;
-    btnLock.classList.toggle("activo", resaltadorBloqueado);
-  };
-}
