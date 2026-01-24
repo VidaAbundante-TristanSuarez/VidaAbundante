@@ -151,4 +151,35 @@ function detectarGrupo(num) {
   notaTexto.value = notas[grupoActual] || "";
 }
 
+// ================= FORMATO EN RANGO ej JUAN 1:5-10  =======================
+
+function formatearVersiculosComoRango(numeros) {
+  if (numeros.length === 0) return "";
+
+  numeros.sort((a, b) => a - b);
+
+  const partes = [];
+  let inicio = numeros[0];
+  let anterior = numeros[0];
+
+  for (let i = 1; i < numeros.length; i++) {
+    if (numeros[i] === anterior + 1) {
+      anterior = numeros[i];
+    } else {
+      partes.push(
+        inicio === anterior ? `${inicio}` : `${inicio}-${anterior}`
+      );
+      inicio = numeros[i];
+      anterior = numeros[i];
+    }
+  }
+
+  partes.push(
+    inicio === anterior ? `${inicio}` : `${inicio}-${anterior}`
+  );
+
+  return partes.join(",");
+}
+
+
 
