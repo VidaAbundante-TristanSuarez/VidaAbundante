@@ -1,24 +1,4 @@
 
-
-
-  // ================= OPACIDAD (UX MODO IMAGEN) =================
-  if (modoImagen && !imagen) {
-    div.style.opacity = "0.6";
-  } else {
-    div.style.opacity = "1";
-  }
-
-  // ================= CONTENIDO =================
-  div.innerHTML = `<span class="num">${v.Versiculo}</span> ${v.RV1960}`;
-
-  // ================= CLICK =================
-  div.onclick = () => toggleVersiculo(id, v.Versiculo);
-
-  texto.appendChild(div);
-}
-
-
-
 // ================= OBTIENE VERSICULO SELECCIONADO =======================
 
 function obtenerVersiculoSeleccionado() {
@@ -75,6 +55,23 @@ function obtenerVersiculoSeleccionado() {
   return textos.join("\n") + "\n\n▪ " + referencia;
 }
 
+
+// ================= OPACIDAD (UX MODO IMAGEN) =================
+  if (modoImagen && !imagen) {
+    div.style.opacity = "0.6";
+  } else {
+    div.style.opacity = "1";
+  }
+
+  // ================= CONTENIDO =================
+  div.innerHTML = `<span class="num">${v.Versiculo}</span> ${v.RV1960}`;
+
+  // ================= CLICK =================
+  div.onclick = () => toggleVersiculo(id, v.Versiculo);
+
+  texto.appendChild(div);
+}
+
 // ================= COLOR CONTRASTE  =======================
 
 function colorContraste(hex) {
@@ -85,8 +82,6 @@ function colorContraste(hex) {
   const lum = 0.299 * r + 0.587 * g + 0.114 * b;
   return lum > 160 ? "#000000" : "#ffffff";
 }
-
-
 
 // ================= COLOR OUTLINE CLAROS Y OSCUROS  =======================
 function colorOutlineDesdeBase(color) {
@@ -161,8 +156,7 @@ function colorOutlineDesdeBase(color) {
   );
 }
 
-
-// ================= ACTUALIZAR VISTA PREVIA  =======================
+// ================= 🈯 ACTUALIZAR VISTA PREVIA 🈯 =======================
 function actualizarPreview() {
   const previewImagen = document.getElementById("previewImagen");
   const previewTexto = document.getElementById("previewTexto");
@@ -260,14 +254,14 @@ function actualizarPreview() {
 }
 
 
-// ================= RESET DE LA VISTA PREVIA =======================
+// ================= 🈯 RESET DE LA VISTA PREVIA =======================
 
 function resetPreview() {
   fondoFinal = null;
   textStyle = { upper: false, bold: false, italic: false, underline: false };
 }
 
-// ================= RESET DEL MODAL  =======================
+// ================= 🈯 RESET DEL MODAL  =======================
 function resetModalPersonalizar() {
   fondoFinal = null;
   textStyle = { upper:false, bold:false, italic:false, underline:false };
@@ -279,7 +273,6 @@ function resetModalPersonalizar() {
 colorInput.value = document.body.classList.contains("oscuro")
   ? "#ffffff"
   : "#000000";
-
 
   const preview = document.getElementById("previewImagen");
   preview.style.backgroundImage = "none";
@@ -325,9 +318,6 @@ function salirModoImagen() {
   mostrarTexto();
 }
 
-
-
-
 // ================= WINDOW / UI ===============================
 
 // 🔗 Listeners de personalización (NO EXISTÍAN)
@@ -336,14 +326,6 @@ function salirModoImagen() {
   const el = document.getElementById(id);
   if (el) el.oninput = actualizarPreview;
 });
-
-window.irA = seccion => {
-  ["biblia", "devocionales", "abc", "iglesia", "panel"].forEach(s => {
-    const el = document.getElementById("seccion-" + s);
-    if (el) el.style.display = s === seccion ? "block" : "none";
-  });
-  mostrarTexto();
-};
 
 // ================= MODO IMAGEN ===============================
 
