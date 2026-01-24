@@ -318,14 +318,6 @@ function salirModoImagen() {
   mostrarTexto();
 }
 
-// ================= WINDOW / UI ===============================
-
-// 🔗 Listeners de personalización (NO EXISTÍAN)
-["personalizarOpacidad","personalizarFuente","personalizarTamaño","personalizarColor"]
-.forEach(id => {
-  const el = document.getElementById(id);
-  if (el) el.oninput = actualizarPreview;
-});
 
 // ================= MODO IMAGEN ===============================
 
@@ -349,6 +341,13 @@ window.toggleModoImagen = () => {
 
   mostrarTexto();
 };
+
+// 🔗 Listeners de personalización 
+["personalizarOpacidad","personalizarFuente","personalizarTamaño","personalizarColor"]
+.forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.oninput = actualizarPreview;
+});
 
 
 window.generarImagen = () => {
@@ -458,27 +457,6 @@ document.addEventListener("click", () => {
   const lista = document.getElementById("listaFuentes");
   if (lista) lista.style.display = "none";
 });
-
-//
-
-function iniciar() {
-  const libros = [...new Set(bibliaData.map(v => v.Libro))];
-  libroSel.innerHTML = "";
-  libros.forEach(l => (libroSel.innerHTML += `<option>${l}</option>`));
-  libroSel.onchange = cargarCapitulos;
-  capSel.onchange = mostrarTexto;
-  cargarCapitulos();
-}
-
-function cargarCapitulos() {
-  capSel.innerHTML = "";
-  const caps = [...new Set(
-    bibliaData.filter(v => v.Libro === libroSel.value).map(v => v.Capitulo)
-  )];
-  caps.forEach(c => (capSel.innerHTML += `<option>${c}</option>`));
-  mostrarTexto();
-}
-
 
 // ================= FORMATO IMAGEN ===========================
 window.setFormatoImagen = tipo => {
