@@ -43,7 +43,7 @@ function mostrarToast(msg) {
   setTimeout(() => (t.style.display = "none"), 2000);
 }
 
-// ---- CAPITULO ANTERIOR ----
+// ================= CAPITULO ANTERIOR ----
 window.capituloAnterior = () => {
   if (capSel.selectedIndex > 0) {
     capSel.selectedIndex--;
@@ -51,7 +51,7 @@ window.capituloAnterior = () => {
   }
 };
 
-// ---- CAPITULO SIGUIENTE
+// ================= CAPITULO SIGUIENTE
 window.capituloSiguiente = () => {
   if (capSel.selectedIndex < capSel.options.length - 1) {
     capSel.selectedIndex++;
@@ -59,7 +59,7 @@ window.capituloSiguiente = () => {
   }
 };
 
-// ---- PANEL MOSTRAR SECCION  ----
+// ================= PANEL MOSTRAR SECCION  ----
 window.mostrarSeccion = tipo => {
   ["imagenes", "versiculos", "notas"].forEach(s => {
     document.getElementById("panel-" + s).style.display =
@@ -67,28 +67,28 @@ window.mostrarSeccion = tipo => {
   });
 };
 
-// ---- IR A LOGIN ----
+// ================= IR A LOGIN ----
 window.irALogin = () => {
   window.location.href = "login.html";
 };
 
-// ---- CERRAR LOGIN
+// ================= CERRAR LOGIN
 window.cerrarLogin = () => {
   loginModal.style.display = "none";
 };
 
-// ---- LOGOUT 
+// ================= LOGOUT 
 window.logout = () => {
   signOut(auth).then(() => (window.location.href = "login.html"));
 };
 
-// ---- CAMBIAR LETRA
+// ================= CAMBIAR LETRA
 window.cambiarLetra = delta => {
   size = Math.max(14, size + delta * 2);
   mostrarTexto();
 };
 
-// ---- TOGGLE TEMA OSCURO / CLARO 🌙
+// ================= TOGGLE TEMA OSCURO / CLARO 🌙
 window.toggleTema = () => {
   const oscuro = document.body.classList.toggle("oscuro");
   localStorage.setItem("modoOscuro", oscuro ? "1" : "0");
