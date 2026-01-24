@@ -1,5 +1,14 @@
+// ================= IR A SECCIONES =================
 
-// ================= MARCADOR =================
+window.irA = seccion => {
+  ["biblia", "devocionales", "abc", "iglesia", "panel"].forEach(s => {
+    const el = document.getElementById("seccion-" + s);
+    if (el) el.style.display = s === seccion ? "block" : "none";
+  });
+  mostrarTexto();
+};
+
+// ================= 📁 MARCADOR =================
 
 window.guardarMarcador = () => {
   marcador = {
@@ -9,7 +18,7 @@ window.guardarMarcador = () => {
   mostrarToast("📁 Marcador guardado");
 };
 
-// ----- IR A MARCADOR
+// =========== IR A MARCADOR 📁↩
 window.irAMarcador = () => {
   if (!marcador) return;
   libroSel.value = marcador.libro;
@@ -18,7 +27,7 @@ window.irAMarcador = () => {
   mostrarTexto();
 };
 
-// ---- Notas ----
+// ================ NOTAS  📋 ================
 window.guardarNota = () => {
   if (!grupoActual || !uid) return;
   set(ref(db, `notas/${uid}/${grupoActual}`), notaTexto.value)
