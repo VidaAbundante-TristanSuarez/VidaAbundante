@@ -85,6 +85,11 @@ window.toggleTema = () => {
   localStorage.setItem("modoOscuro", oscuro ? "1" : "0");
 };
 
+// ================= RESTAURAR MODO OSCURO 🌙 =================
+if (localStorage.getItem("modoOscuro") === "1") {
+  document.body.classList.add("oscuro");
+}
+
 // ================= 🆎 TEXTO ESTILOS FUENTES (BOTONES) ==========================
 
 // ---- MAYUSULAS
