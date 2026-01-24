@@ -55,6 +55,181 @@ function obtenerVersiculoSeleccionado() {
   return textos.join("\n") + "\n\n▪ " + referencia;
 }
 
+// ======================= 🎨 MODO IMAGEN ⭐ ===============================
+
+window.toggleModoImagen = () => {
+  if (!uid) {
+    loginModal.style.display = "flex";
+    return;
+  }
+
+  modoImagen = !modoImagen;
+  seleccionImagen = {};
+
+  // clase global
+  document.body.classList.toggle("modo-imagen", modoImagen);
+
+  // 🖼️ banner modo imagen
+  const banner = document.getElementById("bannerModoImagen");
+  if (banner) {
+    banner.style.display = modoImagen ? "block" : "none";
+  }
+
+  mostrarTexto();
+};
+
+// 🔗 Listeners de personalización 
+["personalizarOpacidad","personalizarFuente","personalizarTamaño","personalizarColor"]
+.forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.oninput = actualizarPreview;
+});
+
+
+window.generarImagen = () => {
+  if (Object.keys(seleccionImagen).length === 0) {
+    alert("Seleccioná al menos un versículo");
+    return;
+  }
+  document.getElementById("modalPersonalizar").style.display = "flex";
+  setFormatoImagen("post");
+  cargarFondos(); 
+  crearListaVisualFuentes();
+  actualizarPreview();
+};
+
+window.cancelarCrearImagen = () => {
+  resetModalPersonalizar();
+  salirModoImagen();
+};
+
+window.setColor = (c, btn) => {
+  colorActual = c;
+  document.querySelectorAll(".color-btn").forEach(b => b.classList.remove("activo"));
+  btn?.classList.add("activo");
+};
+
+// Función para mostrar/ocultar la lista de fuentes
+function toggleFuentes() {
+  const listaFuentes = document.getElementById("listaFuentes");
+  // Si la lista está oculta, la mostramos; si está visible, la ocultamos
+  listaFuentes.style.display = (listaFuentes.style.display === "none" || listaFuentes.style.display === "") ? "block" : "none";
+}
+
+// Asocia la función al botón FUENTES
+document.getElementById("btnFuentes").addEventListener("click", toggleFuentes);
+
+// Fuentes disponibles
+const fuentesDisponibles = [
+  "Roboto", "Lobster", "Playfair Display", "Montserrat", "Poppins"
+];
+
+// Poblar la lista de fuentes
+const listaFuentes = document.getElementById("listaFuentes");
+fuentesDisponibles.forEach(fuente => {
+  const fuenteOption = document.createElement("div");
+  fuenteOption.textContent = fuente;
+  fuenteOption.style.cursor = "pointer";
+  fuenteOption.onclick = () => {
+    document.getElementById("personalizarFuente").value = fuente;
+    listaFuentes.style.display = "none";  // Cierra la lista después de seleccionar una fuente
+  };
+  listaFuentes.appendChild(fuenteOption);
+});
+
+
+
+// ================= LISTA VISUAL DE FUENTES =================
+const fuentesGoogle = [
+  { nombre: "Roboto", css: "Roboto" },
+  { nombre: "Lobster", css: "Lobster" },
+  { nombre: "Playfair Display", css: "'Playfair Display'" },
+  { nombre: "Montserrat", css: "Montserrat" },
+  { nombre: "Poppins", css: "Poppins" },
+  { nombre: "Abril Fatface", css: "'Abril Fatface'" },
+  { nombre: "Cormorant", css: "Cormorant" },
+  { nombre: "Josefin Sans", css: "'Josefin Sans'" },
+  { nombre: "Great Vibes", css: "'Great Vibes'" }
+];
+
+function crearListaVisualFuentes() {
+  const cont = document.getElementById("listaFuentes");
+  if (!cont) return;
+
+  cont.innerHTML = "";
+
+  fuentesGoogle.forEach(f => {
+    const btn = document.createElement("button");
+    btn.textContent = f.nombre;
+    btn.style.fontFamily = f.css;
+    btn.style.padding = "10px";
+    btn.style.borderRadius = "10px";
+    btn.style.border = "none";
+    btn.style.fontSize = "16px";
+    btn.style.cursor = "pointer";
+    btn.style.display = "block"; // importante para que apile verticalmente
+
+    btn.onclick = e => {
+      e.stopPropagation();  // no cerrar el contenedor al hacer click
+      document.getElementById("personalizarFuente").value = f.nombre;
+      actualizarPreview();
+      cont.style.display = "none"; // cierra paleta al seleccionar
+    };
+
+    cont.appendChild(btn);
+  });
+}
+
+// Toggle abrir/cerrar
+const btnFuentes = document.getElementById("btnFuentes");
+btnFuentes.onclick = e => {
+  e.stopPropagation();
+  const lista = document.getElementById("listaFuentes");
+  lista.style.display = lista.style.display === "block" ? "none" : "block";
+};
+
+// Cerrar al tocar fuera
+document.addEventListener("click", () => {
+  const lista = document.getElementById("listaFuentes");
+  if (lista) lista.style.display = "none";
+});
+
+// ================= FORMATO IMAGEN ===========================
+window.setFormatoImagen = tipo => {
+  const preview = document.getElementById("previewImagen");
+  preview.classList.remove("preview-post", "preview-story");
+  preview.classList.add(tipo === "story" ? "preview-story" : "preview-post");
+};
+
+// ================= FONDOS ================================
+const fondos = [
+  "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee",
+  "https://images.unsplash.com/photo-1496307042754-b4aa456c4a2d",
+  "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429",
+  "https://images.unsplash.com/photo-1519681393784-d120267933ba"
+];
+
+function cargarFondos() {
+  const cont = document.getElementById("personalizarFondos");
+  cont.innerHTML = "";
+
+  fondos.forEach(url => {
+    const img = document.createElement("img");
+    img.src = url;
+    img.style.width = "70px";
+    img.style.height = "70px";
+    img.style.objectFit = "cover";
+    img.style.borderRadius = "10px";
+    img.style.cursor = "pointer";
+
+    img.onclick = () => {
+      fondoFinal = url;
+      actualizarPreview();
+    };
+
+    cont.appendChild(img);
+  });
+}
 
 // ================= OPACIDAD (UX MODO IMAGEN) =================
   if (modoImagen && !imagen) {
@@ -316,183 +491,6 @@ function salirModoImagen() {
 
   document.getElementById("modalPersonalizar").style.display = "none";
   mostrarTexto();
-}
-
-
-// ================= MODO IMAGEN ===============================
-
-window.toggleModoImagen = () => {
-  if (!uid) {
-    loginModal.style.display = "flex";
-    return;
-  }
-
-  modoImagen = !modoImagen;
-  seleccionImagen = {};
-
-  // clase global
-  document.body.classList.toggle("modo-imagen", modoImagen);
-
-  // 🖼️ banner modo imagen
-  const banner = document.getElementById("bannerModoImagen");
-  if (banner) {
-    banner.style.display = modoImagen ? "block" : "none";
-  }
-
-  mostrarTexto();
-};
-
-// 🔗 Listeners de personalización 
-["personalizarOpacidad","personalizarFuente","personalizarTamaño","personalizarColor"]
-.forEach(id => {
-  const el = document.getElementById(id);
-  if (el) el.oninput = actualizarPreview;
-});
-
-
-window.generarImagen = () => {
-  if (Object.keys(seleccionImagen).length === 0) {
-    alert("Seleccioná al menos un versículo");
-    return;
-  }
-  document.getElementById("modalPersonalizar").style.display = "flex";
-  setFormatoImagen("post");
-  cargarFondos(); 
-  crearListaVisualFuentes();
-  actualizarPreview();
-};
-
-window.cancelarCrearImagen = () => {
-  resetModalPersonalizar();
-  salirModoImagen();
-};
-
-window.setColor = (c, btn) => {
-  colorActual = c;
-  document.querySelectorAll(".color-btn").forEach(b => b.classList.remove("activo"));
-  btn?.classList.add("activo");
-};
-
-// Función para mostrar/ocultar la lista de fuentes
-function toggleFuentes() {
-  const listaFuentes = document.getElementById("listaFuentes");
-  // Si la lista está oculta, la mostramos; si está visible, la ocultamos
-  listaFuentes.style.display = (listaFuentes.style.display === "none" || listaFuentes.style.display === "") ? "block" : "none";
-}
-
-// Asocia la función al botón FUENTES
-document.getElementById("btnFuentes").addEventListener("click", toggleFuentes);
-
-// Fuentes disponibles
-const fuentesDisponibles = [
-  "Roboto", "Lobster", "Playfair Display", "Montserrat", "Poppins"
-];
-
-// Poblar la lista de fuentes
-const listaFuentes = document.getElementById("listaFuentes");
-fuentesDisponibles.forEach(fuente => {
-  const fuenteOption = document.createElement("div");
-  fuenteOption.textContent = fuente;
-  fuenteOption.style.cursor = "pointer";
-  fuenteOption.onclick = () => {
-    document.getElementById("personalizarFuente").value = fuente;
-    listaFuentes.style.display = "none";  // Cierra la lista después de seleccionar una fuente
-  };
-  listaFuentes.appendChild(fuenteOption);
-});
-
-
-
-// ================= LISTA VISUAL DE FUENTES =================
-const fuentesGoogle = [
-  { nombre: "Roboto", css: "Roboto" },
-  { nombre: "Lobster", css: "Lobster" },
-  { nombre: "Playfair Display", css: "'Playfair Display'" },
-  { nombre: "Montserrat", css: "Montserrat" },
-  { nombre: "Poppins", css: "Poppins" },
-  { nombre: "Abril Fatface", css: "'Abril Fatface'" },
-  { nombre: "Cormorant", css: "Cormorant" },
-  { nombre: "Josefin Sans", css: "'Josefin Sans'" },
-  { nombre: "Great Vibes", css: "'Great Vibes'" }
-];
-
-function crearListaVisualFuentes() {
-  const cont = document.getElementById("listaFuentes");
-  if (!cont) return;
-
-  cont.innerHTML = "";
-
-  fuentesGoogle.forEach(f => {
-    const btn = document.createElement("button");
-    btn.textContent = f.nombre;
-    btn.style.fontFamily = f.css;
-    btn.style.padding = "10px";
-    btn.style.borderRadius = "10px";
-    btn.style.border = "none";
-    btn.style.fontSize = "16px";
-    btn.style.cursor = "pointer";
-    btn.style.display = "block"; // importante para que apile verticalmente
-
-    btn.onclick = e => {
-      e.stopPropagation();  // no cerrar el contenedor al hacer click
-      document.getElementById("personalizarFuente").value = f.nombre;
-      actualizarPreview();
-      cont.style.display = "none"; // cierra paleta al seleccionar
-    };
-
-    cont.appendChild(btn);
-  });
-}
-
-// Toggle abrir/cerrar
-const btnFuentes = document.getElementById("btnFuentes");
-btnFuentes.onclick = e => {
-  e.stopPropagation();
-  const lista = document.getElementById("listaFuentes");
-  lista.style.display = lista.style.display === "block" ? "none" : "block";
-};
-
-// Cerrar al tocar fuera
-document.addEventListener("click", () => {
-  const lista = document.getElementById("listaFuentes");
-  if (lista) lista.style.display = "none";
-});
-
-// ================= FORMATO IMAGEN ===========================
-window.setFormatoImagen = tipo => {
-  const preview = document.getElementById("previewImagen");
-  preview.classList.remove("preview-post", "preview-story");
-  preview.classList.add(tipo === "story" ? "preview-story" : "preview-post");
-};
-
-// ================= FONDOS ================================
-const fondos = [
-  "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee",
-  "https://images.unsplash.com/photo-1496307042754-b4aa456c4a2d",
-  "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429",
-  "https://images.unsplash.com/photo-1519681393784-d120267933ba"
-];
-
-function cargarFondos() {
-  const cont = document.getElementById("personalizarFondos");
-  cont.innerHTML = "";
-
-  fondos.forEach(url => {
-    const img = document.createElement("img");
-    img.src = url;
-    img.style.width = "70px";
-    img.style.height = "70px";
-    img.style.objectFit = "cover";
-    img.style.borderRadius = "10px";
-    img.style.cursor = "pointer";
-
-    img.onclick = () => {
-      fondoFinal = url;
-      actualizarPreview();
-    };
-
-    cont.appendChild(img);
-  });
 }
 
 // ================= BOTÓN GENERAR ============================
