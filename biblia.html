@@ -602,7 +602,155 @@ body.oscuro #fuentesCompacto #listaFuentes {
   background: #1e1e1e;
 }
 
-    
+/* ================= MODAL BASE ================= */
+#modalPersonalizar {
+  display: none;
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.7);
+  z-index: 1000;
+  justify-content: center;
+  align-items: center;
+  overflow-y: auto;
+}
+
+/* CONTENEDOR INTERNO DEL MODAL */
+#modalPersonalizar > div {
+  background: #fff;
+  padding: 25px;
+  max-width: 700px;
+  width: 90%;
+  border-radius: 12px;
+  position: relative;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* BOTON CERRAR MODAL */
+#modalPersonalizar button[onclick="cancelarCrearImagen()"] {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: transparent;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #333;
+}
+
+/* PREVIEW IMAGEN */
+#previewImagen {
+  width: 100%;
+  height: 400px;
+  background: #eee;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.2);
+}
+
+/* WRAPPER DE TEXTO */
+#previewTextoWrapper {
+  position: absolute;
+  padding: 15px;
+  text-align: center;
+  width: 90%;
+  word-wrap: break-word;
+  pointer-events: none; /* evita que interfiera con clicks */
+}
+
+/* TEXTO DE PREVIEW */
+#previewTexto {
+  white-space: pre-wrap;
+  font-size: 24px;
+  color: #000;
+}
+
+/* INPUTS DE PERSONALIZACION */
+#modalPersonalizar label {
+  display: flex;
+  flex-direction: column;
+  font-size: 14px;
+  color: #333;
+}
+
+#modalPersonalizar input,
+#modalPersonalizar select {
+  margin-top: 5px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+}
+
+/* LISTA DE FONDOS */
+#personalizarFondos {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 5px;
+}
+
+#personalizarFondos img {
+  height: 60px;
+  width: 100px;
+  object-fit: cover;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all 0.2s ease;
+}
+
+#personalizarFondos img:hover,
+#personalizarFondos img.selected {
+  border-color: #007bff;
+  transform: scale(1.05);
+}
+
+/* BOTONES DE ACCIÓN */
+#modalPersonalizar div:last-child {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+
+#modalPersonalizar div:last-child button {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+#modalPersonalizar div:last-child button:hover {
+  background: #0056b3;
+  transform: translateY(-2px);
+}
+
+/* SCROLLBAR PARA FONDOS */
+#personalizarFondos::-webkit-scrollbar {
+  height: 6px;
+}
+
+#personalizarFondos::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.3);
+  border-radius: 3px;
+}
+
+#personalizarFondos::-webkit-scrollbar-track {
+  background: rgba(0,0,0,0.1);
+}
+   
   </style>
 </head>
 
@@ -740,101 +888,57 @@ body.oscuro #fuentesCompacto #listaFuentes {
 
 <!-- ================= MODAL PERSONALIZAR ================= -->
   
-<div id="modalPersonalizar" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:3000; justify-content:center; align-items:center;">
-  <div style="
-  background:white;
-  padding:16px;
-  border-radius:12px;
-  max-width:360px;
-  width:85%;
-  max-height:85vh;
-  overflow-y:auto;
-  text-align:center;
-">
+<!-- ================= MODAL PERSONALIZAR IMAGEN ================= -->
+<div id="modalPersonalizar" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:1000; justify-content:center; align-items:center;">
+  <div style="background:white; padding:20px; max-width:600px; width:90%; border-radius:10px; position:relative;">
 
-<div id="personalizarFondos"></div>
+    <!-- CERRAR MODAL -->
+    <button onclick="cancelarCrearImagen()" style="position:absolute; top:10px; right:10px;">✖</button>
 
-<!-- 🔴 VISTA PREVIA -->
-<div id="previewImagen"
-     style="width:100%; border-radius:16px; margin-bottom:12px;
-            background:#ddd; background-size:cover; background-position:center;">
+    <!-- PREVIEW DE LA IMAGEN -->
+    <div id="previewImagen" style="width:100%; height:400px; background:#eee; display:flex; justify-content:center; align-items:center; position:relative; margin-bottom:20px;">
+      <div id="previewTextoWrapper" style="position:absolute; padding:10px; text-align:center; width:90%; word-wrap:break-word;">
+        <div id="previewTexto" style="white-space:pre-wrap;"></div>
+        <div id="previewTextoBack" style="white-space:pre-wrap; display:none;"></div>
+      </div>
+    </div>
 
-  <div id="previewTextoWrapper">
-  <div id="previewTextoBack"></div>
-  <div id="previewTexto"></div>
-</div>
+    <!-- AJUSTES DE TEXTO -->
+    <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:20px;">
+      <label>Tamaño: <input id="personalizarTamaño" type="number" value="24" min="10" max="100"></label>
+      <label>Color: <input id="personalizarColor" type="color" value="#000000"></label>
+      <label>Opacidad fondo: <input id="personalizarOpacidad" type="range" min="0" max="1" step="0.05" value="0.3"></label>
+      <label>Fuente: 
+        <select id="personalizarFuente">
+          <option>Arial</option>
+          <option>Roboto</option>
+          <option>Lobster</option>
+          <option>Playfair Display</option>
+          <option>Montserrat</option>
+          <option>Poppins</option>
+          <option>Great Vibes</option>
+        </select>
+      </label>
+    </div>
 
-</div>
+    <!-- LISTA DE FONDOS -->
+    <div id="personalizarFondos" style="display:flex; gap:5px; overflow-x:auto; margin-bottom:20px;"></div>
 
-<!-- 🧩 OPCIONES COMPACTAS -->
-<div class="panel-opciones">
+    <!-- BOTONES DE ACCIÓN -->
+    <div style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center;">
+      <button onclick="generarImagenFinal()">Generar imagen final</button>
+      <button onclick="descargarImagenFinal()">💾 Descargar</button>
+      <button onclick="compartirImagenFinal()">📤 Compartir</button>
+      <button onclick="subirImagen('personal')">⬆️ Subir a mi panel</button>
+      <button onclick="subirImagen('iglesia')">⬆️ Subir a panel iglesia</button>
+    </div>
 
-  <div>
-    <label>Formato</label>
-    <select onchange="setFormatoImagen(this.value)">
-      <option value="post">Cuadrado</option>
-      <option value="story">Historia</option>
-    </select>
-  </div>
-
-  <div>
-    <label>Opacidad fondo</label>
-    <input type="range" id="personalizarOpacidad" min="0" max="1" step="0.05" value="0.35">
-  </div>
-
-<!-- ================= FUENTE (COMPACTO) ================= -->
-
-<!-- SELECT oculto (lo usa el JS) -->
-<select id="personalizarFuente" style="display:none">
-  <option value="Roboto">Roboto</option>
-  <option value="Lobster">Lobster</option>
-  <option value="Playfair Display">Playfair Display</option>
-  <option value="Montserrat">Montserrat</option>
-  <option value="Poppins">Poppins</option>
-</select>
-
-<div id="fuentesCompacto">
-  <button id="btnFuentes">🅰️</button>
-
-  <div id="listaFuentes">
-    <!-- JS genera los botones de fuentes -->
   </div>
 </div>
-  
-  <div>
-    <label>Tamaño texto</label>
-    <input type="range" id="personalizarTamaño" min="16" max="64" step="1" value="32">
-  </div>
 
-  <div class="style-row">
-  <button onclick="toggleUpper()">Aa</button>
-  <button onclick="toggleBold()">B</button>
-  <button onclick="toggleItalic()">I</button>
-  <button onclick="toggleUnderline()">U</button>
-</div>
+<!-- ================= CANVAS FINAL (OCULTO) ================= -->
+<canvas id="canvasFinal" style="display:none;"></canvas>
 
-<div>
-  <label>Color texto</label>
-  <input type="color" id="personalizarColor">
-
-  
-</div>
-
-</div>
-    
-<!-- Botones -->
-<div style="margin-top:15px; display:flex; gap:10px; justify-content:center;">
-  <button id="btnGenerarPersonalizada">✅ Generar</button>
-  <button id="btnCancelarPersonalizada" onclick="cancelarCrearImagen()">❌ Cancelar</button>
-
-</div>
-
-<canvas
-  id="canvasFinal"
-  width="1080"
-  height="1080"
-  style="display:none;">
-</canvas>
 
   
 <script type="module" src="js/estado.js"></script>
@@ -848,6 +952,7 @@ body.oscuro #fuentesCompacto #listaFuentes {
   
 </body>
 </html>
+
 
 
 
