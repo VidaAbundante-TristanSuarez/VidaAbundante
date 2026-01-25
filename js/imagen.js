@@ -1,614 +1,236 @@
+// ================= IMPORTS =================
+import { state } from "./estado.js";
+import { mostrarTexto } from "./biblia.js";
+import { subirImagenFirebase } from "./firebase.js"; // ✅ NUEVO: función para subir imágenes
 
-// ================= OBTIENE VERSICULO SELECCIONADO =======================
+// ================= ELEMENTOS =================
+const modal = document.getElementById("modalPersonalizar");
+const preview = document.getElementById("previewImagen");
+const textoFront = document.getElementById("previewTexto");
+const textoBack = document.getElementById("previewTextoBack");
+const wrapper = document.getElementById("previewTextoWrapper");
 
+const inputSize = document.getElementById("personalizarTamaño");
+const inputColor = document.getElementById("personalizarColor");
+const inputOpacidad = document.getElementById("personalizarOpacidad");
+const selectFuente = document.getElementById("personalizarFuente");
+const contFuentes = document.getElementById("listaFuentes");
+const contFondos = document.getElementById("personalizarFondos");
+
+const canvasFinal = document.getElementById("canvasFinal");
+
+// ================= OBTENER TEXTO SELECCIONADO =================
 function obtenerVersiculoSeleccionado() {
-  const ids = Object.keys(seleccionImagen);
-  if (ids.length === 0) return "";
+  const ids = Object.keys(state.seleccionImagen);
+  if (!ids.length) return "";
 
-  let textos = [];
-  let numeros = [];
-  let libro = "";
-  let cap = "";
+  let textos = [], numeros = [], libro = "", cap = "";
 
   ids.forEach(id => {
     const [l, c, v] = id.split("_");
-    const vers = bibliaData.find(x =>
-      x.Libro === l &&
-      x.Capitulo == c &&
-      x.Versiculo == v
+    const vers = state.bibliaData.find(x =>
+      x.Libro === l && x.Capitulo == c && x.Versiculo == v
     );
-
     if (vers) {
       libro = l;
       cap = c;
-      textos.push(vers.RV1960);
+      textos.push(vers.Texto);
       numeros.push(Number(v));
     }
   });
 
-  // ordenar versículos // =================
-  numeros.sort((a, b) => a - b);
+  numeros.sort((a,b)=>a-b);
 
-  // convertir a rangos // =================
   const partes = [];
-  let inicio = numeros[0];
-  let anterior = numeros[0];
-
-  for (let i = 1; i < numeros.length; i++) {
-    if (numeros[i] === anterior + 1) {
-      anterior = numeros[i];
-    } else {
-      partes.push(
-        inicio === anterior ? `${inicio}` : `${inicio}-${anterior}`
-      );
-      inicio = numeros[i];
-      anterior = numeros[i];
+  let inicio = numeros[0], anterior = numeros[0];
+  for (let i=1;i<numeros.length;i++){
+    if(numeros[i]===anterior+1) anterior=numeros[i];
+    else { 
+      partes.push(inicio===anterior?`${inicio}`:`${inicio}-${anterior}`);
+      inicio=numeros[i]; anterior=numeros[i];
     }
   }
-
-  partes.push(
-    inicio === anterior ? `${inicio}` : `${inicio}-${anterior}`
-  );
+  partes.push(inicio===anterior?`${inicio}`:`${inicio}-${anterior}`);
 
   const referencia = `${libro} ${cap}:${partes.join(",")}`;
-
   return textos.join("\n") + "\n\n▪ " + referencia;
 }
 
-// ======================= 🎨 MODO IMAGEN ⭐ ===============================
-
+// ================= MODO IMAGEN =================
 window.toggleModoImagen = () => {
-  if (!uid) {
-    loginModal.style.display = "flex";
-    return;
-  }
+  if (!state.uid) { loginModal.style.display="flex"; return; }
 
-  modoImagen = !modoImagen;
-  seleccionImagen = {};
+  state.modoImagen = !state.modoImagen;
+  state.seleccionImagen = {};
+  document.body.classList.toggle("modo-imagen", state.modoImagen);
 
-  // clase global
-  document.body.classList.toggle("modo-imagen", modoImagen);
-
-  // 🖼️ banner modo imagen
   const banner = document.getElementById("bannerModoImagen");
-  if (banner) {
-    banner.style.display = modoImagen ? "block" : "none";
-  }
+  if(banner) banner.style.display = state.modoImagen?"block":"none";
 
   mostrarTexto();
 };
 
-// 🔗 Listeners de personalización 
-["personalizarOpacidad","personalizarFuente","personalizarTamaño","personalizarColor"]
-.forEach(id => {
-  const el = document.getElementById(id);
-  if (el) el.oninput = actualizarPreview;
-});
-
-
+// ================= GENERAR IMAGEN =================
 window.generarImagen = () => {
-  if (Object.keys(seleccionImagen).length === 0) {
-    alert("Seleccioná al menos un versículo");
-    return;
+  if (!state.uid) { loginModal.style.display="flex"; return; }
+  if (!Object.keys(state.seleccionImagen).length) {
+    alert("Seleccioná al menos un versículo"); return;
   }
-  document.getElementById("modalPersonalizar").style.display = "flex";
-  setFormatoImagen("post");
-  cargarFondos(); 
+  abrirPersonalizar();
+};
+
+// ================= ABRIR MODAL =================
+function abrirPersonalizar() {
+  modal.style.display = "flex";
+  cargarFondos();
   crearListaVisualFuentes();
+  construirTexto();
   actualizarPreview();
-};
-
-window.cancelarCrearImagen = () => {
-  resetModalPersonalizar();
-  salirModoImagen();
-};
-
-window.setColor = (c, btn) => {
-  colorActual = c;
-  document.querySelectorAll(".color-btn").forEach(b => b.classList.remove("activo"));
-  btn?.classList.add("activo");
-};
-
-// Función para mostrar/ocultar la lista de fuentes
-function toggleFuentes() {
-  const listaFuentes = document.getElementById("listaFuentes");
-  // Si la lista está oculta, la mostramos; si está visible, la ocultamos
-  listaFuentes.style.display = (listaFuentes.style.display === "none" || listaFuentes.style.display === "") ? "block" : "none";
 }
 
-// Asocia la función al botón FUENTES
-document.getElementById("btnFuentes").addEventListener("click", toggleFuentes);
-
-// Fuentes disponibles
-const fuentesDisponibles = [
-  "Roboto", "Lobster", "Playfair Display", "Montserrat", "Poppins"
-];
-
-// Poblar la lista de fuentes
-const listaFuentes = document.getElementById("listaFuentes");
-fuentesDisponibles.forEach(fuente => {
-  const fuenteOption = document.createElement("div");
-  fuenteOption.textContent = fuente;
-  fuenteOption.style.cursor = "pointer";
-  fuenteOption.onclick = () => {
-    document.getElementById("personalizarFuente").value = fuente;
-    listaFuentes.style.display = "none";  // Cierra la lista después de seleccionar una fuente
-  };
-  listaFuentes.appendChild(fuenteOption);
-});
-
-
-
-// ================= LISTA VISUAL DE FUENTES =================
-const fuentesGoogle = [
-  { nombre: "Roboto", css: "Roboto" },
-  { nombre: "Lobster", css: "Lobster" },
-  { nombre: "Playfair Display", css: "'Playfair Display'" },
-  { nombre: "Montserrat", css: "Montserrat" },
-  { nombre: "Poppins", css: "Poppins" },
-  { nombre: "Abril Fatface", css: "'Abril Fatface'" },
-  { nombre: "Cormorant", css: "Cormorant" },
-  { nombre: "Josefin Sans", css: "'Josefin Sans'" },
-  { nombre: "Great Vibes", css: "'Great Vibes'" }
-];
-
-function crearListaVisualFuentes() {
-  const cont = document.getElementById("listaFuentes");
-  if (!cont) return;
-
-  cont.innerHTML = "";
-
-  fuentesGoogle.forEach(f => {
-    const btn = document.createElement("button");
-    btn.textContent = f.nombre;
-    btn.style.fontFamily = f.css;
-    btn.style.padding = "10px";
-    btn.style.borderRadius = "10px";
-    btn.style.border = "none";
-    btn.style.fontSize = "16px";
-    btn.style.cursor = "pointer";
-    btn.style.display = "block"; // importante para que apile verticalmente
-
-    btn.onclick = e => {
-      e.stopPropagation();  // no cerrar el contenedor al hacer click
-      document.getElementById("personalizarFuente").value = f.nombre;
-      actualizarPreview();
-      cont.style.display = "none"; // cierra paleta al seleccionar
-    };
-
-    cont.appendChild(btn);
-  });
+// ================= CONSTRUIR TEXTO =================
+function construirTexto() {
+  const contenido = obtenerVersiculoSeleccionado();
+  textoFront.innerText = contenido;
+  textoBack.innerText = contenido;
 }
 
-// Toggle abrir/cerrar
-const btnFuentes = document.getElementById("btnFuentes");
-btnFuentes.onclick = e => {
-  e.stopPropagation();
-  const lista = document.getElementById("listaFuentes");
-  lista.style.display = lista.style.display === "block" ? "none" : "block";
-};
+// ================= PREVIEW EN TIEMPO REAL =================
+function actualizarPreview() {
+  if (!textoFront) return;
 
-// Cerrar al tocar fuera
-document.addEventListener("click", () => {
-  const lista = document.getElementById("listaFuentes");
-  if (lista) lista.style.display = "none";
-});
+  // tamaño
+  textoFront.style.fontSize = inputSize.value+"px";
+  textoBack.style.fontSize = inputSize.value+"px";
 
-// ================= FORMATO IMAGEN ===========================
-window.setFormatoImagen = tipo => {
-  const preview = document.getElementById("previewImagen");
-  preview.classList.remove("preview-post", "preview-story");
-  preview.classList.add(tipo === "story" ? "preview-story" : "preview-post");
-};
+  // color
+  textoFront.style.color = inputColor.value;
+  textoBack.style.color = inputColor.value;
 
-// ================= FONDOS ================================
+  // fuente
+  textoFront.style.fontFamily = selectFuente.value;
+  textoBack.style.fontFamily = selectFuente.value;
+
+  // opacidad fondo
+  preview.style.backgroundColor = `rgba(0,0,0,${inputOpacidad.value})`;
+
+  // estilos adicionales
+  textoFront.style.fontWeight = state.textStyle.bold?"700":"400";
+  textoFront.style.fontStyle = state.textStyle.italic?"italic":"normal";
+  textoFront.style.textDecoration = state.textStyle.underline?"underline":"none";
+  textoFront.style.textTransform = state.textStyle.upper?"uppercase":"none";
+  textoBack.style.cssText = textoFront.style.cssText;
+
+  // fondo
+  if(state.fondoFinal) preview.style.backgroundImage = `url(${state.fondoFinal})`;
+  else preview.style.backgroundImage = "none";
+}
+
+// ================= FONDOS =================
 const fondos = [
   "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee",
   "https://images.unsplash.com/photo-1496307042754-b4aa456c4a2d",
   "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429",
   "https://images.unsplash.com/photo-1519681393784-d120267933ba"
 ];
-
 function cargarFondos() {
-  const cont = document.getElementById("personalizarFondos");
-  cont.innerHTML = "";
+  contFondos.innerHTML="";
+  fondos.forEach(url=>{
+    const img=document.createElement("img");
+    img.src=url;
+    img.onclick=()=>{ state.fondoFinal=url; actualizarPreview(); };
+    contFondos.appendChild(img);
+  });
+}
 
-  fondos.forEach(url => {
-    const img = document.createElement("img");
-    img.src = url;
-    img.style.width = "70px";
-    img.style.height = "70px";
-    img.style.objectFit = "cover";
-    img.style.borderRadius = "10px";
-    img.style.cursor = "pointer";
-
-    img.onclick = () => {
-      fondoFinal = url;
+// ================= FUENTES =================
+const fuentesGoogle = ["Roboto","Lobster","Playfair Display","Montserrat","Poppins","Great Vibes"];
+function crearListaVisualFuentes() {
+  contFuentes.innerHTML="";
+  fuentesGoogle.forEach(f=>{
+    const btn=document.createElement("button");
+    btn.textContent=f;
+    btn.style.fontFamily=f;
+    btn.onclick=()=>{
+      selectFuente.value=f;
       actualizarPreview();
+      contFuentes.style.display="none";
     };
-
-    cont.appendChild(img);
+    contFuentes.appendChild(btn);
   });
 }
 
-// ================= OPACIDAD (UX MODO IMAGEN) =================
-  if (modoImagen && !imagen) {
-    div.style.opacity = "0.6";
-  } else {
-    div.style.opacity = "1";
-  }
+// ================= LISTENERS =================
+[inputSize,inputColor,inputOpacidad].forEach(el=>el.addEventListener("input",actualizarPreview));
+selectFuente.addEventListener("change",actualizarPreview);
 
-  // ================= CONTENIDO =================
-  div.innerHTML = `<span class="num">${v.Versiculo}</span> ${v.RV1960}`;
+// ================= CANCELAR =================
+window.cancelarCrearImagen = () => {
+  modal.style.display = "none";
+  state.fondoFinal = null;
+  state.textStyle = {upper:false,bold:false,italic:false,underline:false};
+};
 
-  // ================= CLICK =================
-  div.onclick = () => toggleVersiculo(id, v.Versiculo);
+// ================= FORMATO =================
+window.setFormatoImagen = tipo => {
+  preview.classList.remove("preview-post","preview-story");
+  preview.classList.add("preview-"+tipo);
+};
 
-  texto.appendChild(div);
-}
-
-// ================= COLOR CONTRASTE  =======================
-
-function colorContraste(hex) {
-  hex = hex.replace("#", "");
-  const r = parseInt(hex.substr(0, 2), 16);
-  const g = parseInt(hex.substr(2, 2), 16);
-  const b = parseInt(hex.substr(4, 2), 16);
-  const lum = 0.299 * r + 0.587 * g + 0.114 * b;
-  return lum > 160 ? "#000000" : "#ffffff";
-}
-
-// ================= COLOR OUTLINE CLAROS Y OSCUROS  =======================
-function colorOutlineDesdeBase(color) {
-  if (!color) return "#000000";
-
-  // rgb() → hex
-  if (color.startsWith("rgb")) {
-    const nums = color.match(/\d+/g).map(Number);
-    color =
-      "#" + nums.map(x => x.toString(16).padStart(2, "0")).join("");
-  }
-
-  // hex → rgb normalizado
-  let r = parseInt(color.slice(1, 3), 16) / 255;
-  let g = parseInt(color.slice(3, 5), 16) / 255;
-  let b = parseInt(color.slice(5, 7), 16) / 255;
-
-  const max = Math.max(r, g, b);
-  const min = Math.min(r, g, b);
-  let h, s, l = (max + min) / 2;
-
-  if (max === min) {
-    h = s = 0;
-  } else {
-    const d = max - min;
-    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-    switch (max) {
-      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-      case g: h = (b - r) / d + 2; break;
-      case b: h = (r - g) / d + 4; break;
-    }
-    h /= 6;
-  }
-
-  // 🔥 CLAVE: extremos tintados
-  const isLight = l > 0.65;
-
-  // mantener color vivo
-  s = Math.min(1, s * 0.9 + 0.1);
-
-  // extremos reales
-  l = isLight
-    ? 0.12   // casi negro tintado
-    : 0.92;  // casi blanco tintado
-
-  // hsl → rgb
-  function hue2rgb(p, q, t) {
-    if (t < 0) t += 1;
-    if (t > 1) t -= 1;
-    if (t < 1/6) return p + (q - p) * 6 * t;
-    if (t < 1/2) return q;
-    if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
-    return p;
-  }
-
-  let r2, g2, b2;
-  if (s === 0) {
-    r2 = g2 = b2 = l;
-  } else {
-    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-    const p = 2 * l - q;
-    r2 = hue2rgb(p, q, h + 1/3);
-    g2 = hue2rgb(p, q, h);
-    b2 = hue2rgb(p, q, h - 1/3);
-  }
-
-  return (
-    "#" +
-    [r2, g2, b2]
-      .map(v => Math.round(v * 255).toString(16).padStart(2, "0"))
-      .join("")
-  );
-}
-
-// ================= 🈯 ACTUALIZAR VISTA PREVIA 🈯 =======================
-function actualizarPreview() {
-  const previewImagen = document.getElementById("previewImagen");
-  const previewTexto = document.getElementById("previewTexto");
-  const previewTextoBack = document.getElementById("previewTextoBack");
-  const wrapper = document.getElementById("previewTextoWrapper");
-
-  // ================= TEXTO =================
-  const textoFinal = obtenerVersiculoSeleccionado();
-  previewTexto.innerText = textoFinal;
-  previewTextoBack.innerText = textoFinal;
-
-  // ================= FONDO =================
-  previewImagen.style.backgroundImage = fondoFinal
-    ? `url(${fondoFinal})`
-    : "none";
-
-  // ================= FUENTE =================
-  const fuente = document.getElementById("personalizarFuente").value || "Arial";
-  previewTexto.style.fontFamily = fuente;
-  previewTextoBack.style.fontFamily = fuente;
-
-  // ================= FORMATO =================
-  const formatoStory = previewImagen.classList.contains("preview-story");
-  const sizeSlider = document.getElementById("personalizarTamaño");
-  const sizeBase = sizeSlider
-    ? Number(sizeSlider.value)
-    : (formatoStory ? 56 : 48);
-
-  // ================= AUTO AJUSTE =================
-  let fontSize = sizeBase;
-  const maxHeight = wrapper.clientHeight - 40;
-
-  previewTexto.style.lineHeight = "1.3";
-  previewTextoBack.style.lineHeight = "1.3";
-
-  while (fontSize > 14) {
-    previewTexto.style.fontSize = fontSize + "px";
-    previewTextoBack.style.fontSize = fontSize + "px";
-    if (previewTexto.scrollHeight <= maxHeight) break;
-    fontSize--;
-  }
-
-  // ================= COLOR / OUTLINE =================
-  const color = document.getElementById("personalizarColor").value;
-  const opacidad = document.getElementById("personalizarOpacidad").value;
-  const outlineColor = colorOutlineDesdeBase(color);
-
-  // capas
-  previewTexto.style.position = "relative";
-  previewTexto.style.zIndex = "2";
-
-  previewTextoBack.style.position = "absolute";
-  previewTextoBack.style.zIndex = "1";
-
-  // reset estilos acumulables
-  previewTextoBack.style.transform = "none";
-  previewTextoBack.style.textShadow = "none";
-  previewTextoBack.style.filter = "none";
-
-  // colores
-  previewTexto.style.color = color;
-  previewTextoBack.style.color = outlineColor;
-
-  // desplazamiento (outline)
-  previewTextoBack.style.transform = "translate(0.5px, 0.5px)";
-  previewTextoBack.style.filter = "blur(0.2px)";
-
-  // ================= OPACIDAD FONDO TEXTO =================
-  const op = parseFloat(opacidad);
-  let bgColor = "rgba(0,0,0,0)";
-
-  if (op > 0.5) {
-    const a = (op - 0.5) * 2;
-    bgColor = `rgba(0,0,0,${a})`;
-  } else if (op < 0.5) {
-    const a = (0.5 - op) * 2;
-    bgColor = `rgba(255,255,255,${a})`;
-  }
-
-  wrapper.style.backgroundColor = bgColor;
-
-  // ================= ESTILOS TEXTO =================
-  const transform = textStyle.upper ? "uppercase" : "none";
-
-  previewTexto.style.textTransform = transform;
-  previewTextoBack.style.textTransform = transform;
-
-  previewTexto.style.fontWeight = textStyle.bold ? "700" : "400";
-  previewTexto.style.fontStyle = textStyle.italic ? "italic" : "normal";
-  previewTexto.style.textDecoration = textStyle.underline ? "underline" : "none";
-
-  previewTextoBack.style.fontWeight = previewTexto.style.fontWeight;
-  previewTextoBack.style.fontStyle = previewTexto.style.fontStyle;
-  previewTextoBack.style.textDecoration = previewTexto.style.textDecoration;
-}
-
-
-// ================= 🈯 RESET DE LA VISTA PREVIA =======================
-
-function resetPreview() {
-  fondoFinal = null;
-  textStyle = { upper: false, bold: false, italic: false, underline: false };
-}
-
-// ================= 🈯 RESET DEL MODAL  =======================
-function resetModalPersonalizar() {
-  fondoFinal = null;
-  textStyle = { upper:false, bold:false, italic:false, underline:false };
-
-  document.getElementById("personalizarOpacidad").value = 0.35;
-  document.getElementById("personalizarTamaño").value = 32;
-  document.getElementById("personalizarFuente").value = "Arial";
- const colorInput = document.getElementById("personalizarColor");
-colorInput.value = document.body.classList.contains("oscuro")
-  ? "#ffffff"
-  : "#000000";
-
-  const preview = document.getElementById("previewImagen");
-  preview.style.backgroundImage = "none";
-  preview.style.pointerEvents = "auto";
-  preview.classList.remove("render-final"); // 🔥 CLAVE
-
-  // Restaurar texto HTML
-  document.getElementById("previewTexto").style.display = "block";
-  document.getElementById("previewTextoBack").style.display = "block";
-
-  // Restaurar wrapper
-  const wrapper = document.getElementById("previewTextoWrapper");
-  wrapper.style.pointerEvents = "auto";
-  wrapper.style.background = "";
-
-  // Restaurar UI
-  document.querySelector(".panel-opciones").style.display = "grid";
-  document.getElementById("personalizarFondos").style.display = "flex";
-  document.getElementById("btnGenerarPersonalizada").style.display = "inline-block";
-
-  const acciones = document.getElementById("accionesFinales");
-  if (acciones) acciones.remove();
-  actualizarPreview();
-}
-
-
-// ================= SALIR DEL MODO IMAGEN  ======================= 
-
-function salirModoImagen() {
-  modoImagen = false;
-  seleccionImagen = {};
-  fondoFinal = null;
-
-  document.body.classList.remove("modo-imagen");
-
-  // 🖼️ ocultar banner
-  const banner = document.getElementById("bannerModoImagen");
-  if (banner) {
-    banner.style.display = "none";
-  }
-
-  document.getElementById("modalPersonalizar").style.display = "none";
-  mostrarTexto();
-}
-
-// ================= BOTÓN GENERAR ============================
-
-const btnGen = document.getElementById("btnGenerarPersonalizada");
-
-if (btnGen) {
-  btnGen.onclick = () => {
-    if (!fondoFinal) {
-      alert("Seleccioná un fondo");
-      return;
-    }
-
-    generarImagenFinal(); // 🔥 ACÁ SE CREA LA IMAGEN REAL
-  };
-}
-
-// ================= CANVAS GENERA IMAGEN FINAL ============================
+// ================= CANVAS FINAL =================
 async function generarImagenFinal() {
-
-  // ⏳ ESPERAR A QUE LAS FUENTES SE CARGUEN (CLAVE PARA CELU)
   await document.fonts.ready;
+  html2canvas(preview,{
+    scale:window.devicePixelRatio||2,
+    useCORS:true
+  }).then(c=>{
+    canvasFinal.width=c.width;
+    canvasFinal.height=c.height;
+    canvasFinal.getContext("2d").drawImage(c,0,0);
 
-  const preview = document.getElementById("previewImagen");
-  const canvasFinal = document.getElementById("canvasFinal");
-
-  html2canvas(preview, {
-
-    scale: window.devicePixelRatio || 2,
-    useCORS: true,
-    backgroundColor: null
-  }).then(canvasTemp => {
-
-    // 🔒 copiar EXACTAMENTE el canvas generado (sin estirar)
-    canvasFinal.width = canvasTemp.width;
-    canvasFinal.height = canvasTemp.height;
-
-    const ctx = canvasFinal.getContext("2d");
-    ctx.clearRect(0, 0, canvasFinal.width, canvasFinal.height);
-    ctx.drawImage(canvasTemp, 0, 0);
-
-    // mostrar resultado sin tocar proporciones
-    mostrarResultadoFinal(canvasFinal);
+    // preview actualizado con imagen final
+    preview.style.backgroundImage=`url(${canvasFinal.toDataURL("image/png")})`;
   });
 }
+window.generarImagenFinal = generarImagenFinal;
 
-// ======================== VER RESULTADO FINAL ====================================
-
-function mostrarResultadoFinal(canvas) {
-  const preview = document.getElementById("previewImagen");
-
-  // 🔥 marcar estado render final
-  preview.classList.add("render-final");
-
-  // Imagen final
-  preview.style.backgroundImage = `url(${canvas.toDataURL("image/png")})`;
-  preview.style.pointerEvents = "none";
-
-  // Ocultar paneles de edición
-  document.querySelector(".panel-opciones").style.display = "none";
-  document.getElementById("personalizarFondos").style.display = "none";
-  document.getElementById("btnGenerarPersonalizada").style.display = "none";
-
-  // Eliminar botones previos
-  const viejo = document.getElementById("accionesFinales");
-  if (viejo) viejo.remove();
-
-  // Botones finales
-  const acciones = document.createElement("div");
-  acciones.id = "accionesFinales";
-  acciones.style.display = "flex";
-  acciones.style.justifyContent = "center";
-  acciones.style.gap = "12px";
-  acciones.style.marginTop = "15px";
-
-  acciones.innerHTML = `
-    <button onclick="descargarImagenFinal()">⬇️ Descargar</button>
-    <button onclick="compartirImagenFinal()">📤 Compartir</button>
-  `;
-
-  preview.parentNode.appendChild(acciones);
-}
-
-// ======================== OPCION DESCARGAR ====================================
-
-function descargarImagenFinal() {
-  const canvas = document.getElementById("canvasFinal");
-  canvas.toBlob(blob => {
+// ======================== DESCARGAR IMAGEN ====================
+window.descargarImagenFinal = () => {
+  canvasFinal.toBlob(blob => {
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
     link.download = "versiculo.png";
     link.click();
     URL.revokeObjectURL(link.href);
   });
-}
+};
 
-// ======================== OPCION COMPARTIR ====================================
-
-function compartirImagenFinal() {
-  const canvas = document.getElementById("canvasFinal");
-
-  canvas.toBlob(blob => {
+// ======================== COMPARTIR IMAGEN ====================
+window.compartirImagenFinal = () => {
+  canvasFinal.toBlob(blob => {
     const file = new File([blob], "versiculo.png", { type: "image/png" });
-
     if (navigator.share && navigator.canShare?.({ files: [file] })) {
-      navigator.share({
-        files: [file],
-        title: "Versículo",
-        text: "Compartir imagen"
-      });
+      navigator.share({ files: [file], title: "Versículo", text: "Compartir imagen" });
     } else {
-      // 🔥 FALLBACK REAL
-      descargarImagenFinal();
+      window.descargarImagenFinal();
       alert("Tu dispositivo no permite compartir directamente. La imagen se descargó para que la compartas manualmente.");
     }
   });
-}
+};
 
-window.descargarImagenFinal = descargarImagenFinal;
-window.compartirImagenFinal = compartirImagenFinal;
+// ======================== SUBIR IMAGEN ====================
+/**
+ * panel = "personal" o "iglesia"
+ */
+window.subirImagen = (panel="personal") => {
+  canvasFinal.toBlob(async blob => {
+    if(!blob) { alert("Primero generá la imagen final"); return; }
 
+    const url = await subirImagenFirebase(blob, panel); // ✅ capturamos la URL
+    if(url) {
+      // Por ejemplo, mostrarla en el preview inmediatamente
+      preview.style.backgroundImage = `url(${url})`;
+      console.log("Imagen subida y lista para mostrar:", url);
+    }
+  });
+};
