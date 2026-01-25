@@ -1,3 +1,6 @@
+import { state } from "./estado.js";
+import { mostrarTexto } from "./biblia.js";
+
 // ================= IR A SECCIONES =================
 
 window.irA = seccion => {
@@ -11,7 +14,7 @@ window.irA = seccion => {
 // ================= 📁 MARCADOR =================
 
 window.guardarMarcador = () => {
-  marcador = {
+  state.marcador = {
     libro: libroSel.value,
     capitulo: capSel.value
   };
@@ -20,21 +23,26 @@ window.guardarMarcador = () => {
 
 // =========== IR A MARCADOR 📁↩
 window.irAMarcador = () => {
-  if (!marcador) return;
-  libroSel.value = marcador.libro;
+  if (!state.marcador) return;
+  libroSel.value = state.marcador.libro;
   cargarCapitulos();
-  capSel.value = marcador.capitulo;
+  capSel.value = state.marcador.capitulo;
   mostrarTexto();
 };
 
 // ================ NOTAS  📋 ================
+// 👉 UI SOLO actualiza estado (Firebase escucha desde main.js)
+
 window.guardarNota = () => {
-  if (!grupoActual || !uid) return;
-  set(ref(db, `notas/${uid}/${grupoActual}`), notaTexto.value)
-    .then(() => mostrarToast("📝 Nota guardada"));
+  if (!state.grupoActual || !state.uid) return;
+  state.notaPendiente = {
+    grupo: state.grupoActual,
+    texto: notaTexto.value
+  };
+  mostrarToast("📝 Nota guardada");
 };
 
-// ================= TOAST  =======================
+// ================= TOAST =======================
 
 function mostrarToast(msg) {
   const t = document.getElementById("toast");
@@ -51,7 +59,7 @@ window.capituloAnterior = () => {
   }
 };
 
-// ================= CAPITULO SIGUIENTE
+// ================= CAPITULO SIGUIENTE ----
 window.capituloSiguiente = () => {
   if (capSel.selectedIndex < capSel.options.length - 1) {
     capSel.selectedIndex++;
@@ -59,7 +67,7 @@ window.capituloSiguiente = () => {
   }
 };
 
-// ================= PANEL MOSTRAR SECCION  ----
+// ================= PANEL MOSTRAR SECCION ----
 window.mostrarSeccion = tipo => {
   ["imagenes", "versiculos", "notas"].forEach(s => {
     document.getElementById("panel-" + s).style.display =
@@ -72,23 +80,21 @@ window.irALogin = () => {
   window.location.href = "login.html";
 };
 
-// ================= CERRAR LOGIN
+// ================= CERRAR LOGIN ----
 window.cerrarLogin = () => {
   loginModal.style.display = "none";
 };
 
-// ================= LOGOUT 
-window.logout = () => {
-  signOut(auth).then(() => (window.location.href = "login.html"));
-};
+// ❌ LOGOUT YA NO VA AQUÍ
+// 👉 logout está en main.js
 
-// ================= CAMBIAR LETRA
+// ================= CAMBIAR LETRA ----
 window.cambiarLetra = delta => {
-  size = Math.max(14, size + delta * 2);
+  state.size = Math.max(14, state.size + delta * 2);
   mostrarTexto();
 };
 
-// ================= TOGGLE TEMA OSCURO / CLARO 🌙
+// ================= TOGGLE TEMA OSCURO 🌙 ----
 window.toggleTema = () => {
   const oscuro = document.body.classList.toggle("oscuro");
   localStorage.setItem("modoOscuro", oscuro ? "1" : "0");
@@ -99,41 +105,34 @@ if (localStorage.getItem("modoOscuro") === "1") {
   document.body.classList.add("oscuro");
 }
 
-// ================= 🆎 TEXTO ESTILOS FUENTES (BOTONES) ==========================
+// ================= 🆎 ESTILOS DE TEXTO =================
 
-// ---- MAYUSULAS
+// ---- MAYUSCULAS
 window.toggleUpper = () => {
-  textStyle.upper = !textStyle.upper;
-  document.querySelector(".style-row button:nth-child(1)")
-    .classList.toggle("activo", textStyle.upper);
+  state.textStyle.upper = !state.textStyle.upper;
   actualizarPreview();
 };
 
 // ---- NEGRITA
 window.toggleBold = () => {
-  textStyle.bold = !textStyle.bold;
-  document.querySelector(".style-row button:nth-child(2)")
-    .classList.toggle("activo", textStyle.bold);
+  state.textStyle.bold = !state.textStyle.bold;
   actualizarPreview();
 };
 
 // ---- ITALIC
 window.toggleItalic = () => {
-  textStyle.italic = !textStyle.italic;
-  document.querySelector(".style-row button:nth-child(3)")
-    .classList.toggle("activo", textStyle.italic);
+  state.textStyle.italic = !state.textStyle.italic;
   actualizarPreview();
 };
 
 // ---- SUBRAYADO
 window.toggleUnderline = () => {
-  textStyle.underline = !textStyle.underline;
-  document.querySelector(".style-row button:nth-child(4)")
-    .classList.toggle("activo", textStyle.underline);
+  state.textStyle.underline = !state.textStyle.underline;
   actualizarPreview();
 };
 
-// ========================= 🌸 RESALTADOR COMPACTO 💛 =======================================
+// ================= 🌸 RESALTADOR COMPACTO 💛 =================
+
 document.addEventListener("DOMContentLoaded", () => {
 
   const btnActivo = document.getElementById("btnResaltadorActivo");
@@ -141,79 +140,34 @@ document.addEventListener("DOMContentLoaded", () => {
   const cont = document.getElementById("resaltadorCompacto");
   const btnBloquear = document.getElementById("btnBloquearResaltador");
 
-  if (!btnActivo || !paleta || !cont || !btnBloquear) {
-    console.warn("❌ Resaltador no inicializado");
-    return;
-  }
+  if (!btnActivo || !paleta || !cont || !btnBloquear) return;
 
   paleta.style.display = "none";
-  btnActivo.style.background = colorActual;
-  btnActivo.textContent = "💛";
+  btnActivo.style.background = state.colorActual;
 
-  // 🟡 CLICK PRINCIPAL → abrir / cerrar paleta
   btnActivo.onclick = e => {
     e.preventDefault();
     e.stopPropagation();
-    const visible = paleta.style.display === "block";
-    paleta.style.display = visible ? "none" : "block";
-    cont.classList.remove("mover-derecha");
-    if (!visible) {
-      const rect = paleta.getBoundingClientRect();
-      if (rect.top < 10) cont.classList.add("mover-derecha");
-    }
+    paleta.style.display =
+      paleta.style.display === "block" ? "none" : "block";
   };
 
-  // 🎨 ELEGIR COLOR
   paleta.querySelectorAll("button[data-color]").forEach(btn => {
     btn.onclick = e => {
       e.preventDefault();
-      e.stopPropagation();
-
-      // Quitar candado de todos los botones
-      paleta.querySelectorAll("button[data-color] span.icono-candado").forEach(c => c.remove());
-
-      colorActual = btn.dataset.color;
-      btnActivo.style.background = colorActual;
-      btnActivo.textContent = btn.textContent;
-
-      resaltadorBloqueado = false;
+      state.colorActual = btn.dataset.color;
+      btnActivo.style.background = state.colorActual;
       paleta.style.display = "none";
     };
   });
 
-  // 🔒 BLOQUEAR / DESBLOQUEAR
   btnBloquear.onclick = e => {
     e.preventDefault();
-    e.stopPropagation();
-
-    resaltadorBloqueado = !resaltadorBloqueado;
-    btnBloquear.textContent = resaltadorBloqueado ? "🔓" : "🔒";
-
-    // Quitar todos los candados anteriores
-    paleta.querySelectorAll("button[data-color] span.icono-candado").forEach(c => c.remove());
-
-    if (resaltadorBloqueado) {
-      // Colocar candado sobre el color actual
-      const botonColor = Array.from(paleta.querySelectorAll("button[data-color]"))
-        .find(b => b.dataset.color === colorActual);
-      if (botonColor) {
-        const span = document.createElement("span");
-        span.textContent = "🔒";
-        span.className = "icono-candado";
-        span.style.position = "absolute";
-        span.style.top = "-4px";
-        span.style.right = "-4px";
-        span.style.fontSize = "10px";
-        span.style.background = "#fff";
-        span.style.borderRadius = "50%";
-        span.style.padding = "1px";
-        botonColor.style.position = "relative";
-        botonColor.appendChild(span);
-      }
-    }
+    state.resaltadorBloqueado = !state.resaltadorBloqueado;
+    btnBloquear.textContent =
+      state.resaltadorBloqueado ? "🔓" : "🔒";
   };
 
-  // ❌ cerrar clic fuera
   document.addEventListener("click", e => {
     if (!cont.contains(e.target)) {
       paleta.style.display = "none";
@@ -221,5 +175,3 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
 });
-
-// ============// ============// ============// ============
