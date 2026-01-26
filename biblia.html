@@ -722,7 +722,7 @@ body.oscuro #fuentesCompacto #listaFuentes {
 }
 
 #modalPersonalizar div:last-child button {
-  background: #007bff;
+  background: #c41515;
   color: white;
   border: none;
   padding: 10px 15px;
@@ -733,7 +733,7 @@ body.oscuro #fuentesCompacto #listaFuentes {
 }
 
 #modalPersonalizar div:last-child button:hover {
-  background: #0056b3;
+  background: #c13333;
   transform: translateY(-2px);
 }
 
@@ -750,7 +750,30 @@ body.oscuro #fuentesCompacto #listaFuentes {
 #personalizarFondos::-webkit-scrollbar-track {
   background: rgba(0,0,0,0.1);
 }
-   
+
+@media (max-width: 600px) {
+
+  #modalPersonalizar {
+    padding: 10px;
+  }
+
+  #personalizarFondos {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  .panel-opciones {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  #accionesFinales button {
+    font-size: 14px;
+    padding: 8px 10px;
+  }
+}
+
+    
   </style>
 </head>
 
@@ -950,4 +973,5 @@ body.oscuro #fuentesCompacto #listaFuentes {
   
 </body>
 </html>
+
 
