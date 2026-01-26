@@ -31,12 +31,14 @@ function obtenerVersiculoSeleccionado() {
     const vers = state.bibliaData.find(x =>
       x.Libro === l && x.Capitulo == c && x.Versiculo == v
     );
+   
     if (vers) {
-      libro = l;
-      cap = c;
-      textos.push(vers.Texto);
-      numeros.push(Number(v));
-    }
+  libro = l;
+  cap = c;
+  textos.push(vers.RV1960 || vers.Texto || "");
+  numeros.push(Number(v));
+}
+
   });
 
   numeros.sort((a,b)=>a-b);
