@@ -234,3 +234,6 @@ window.subirImagen = (panel="personal") => {
     }
   });
 };
+
+// 👉 EXPONER PARA OTROS ARCHIVOS (ui.js)
+window.actualizarPreview = actualizarPreview;
