@@ -7,53 +7,39 @@ fetch("VidaAbundante - RV1960.json")
   .then(r => r.json())
   .then(data => {
     state.bibliaData = data;
-    iniciar();
+    iniciarBiblia();
   });
-
-document.fonts.ready.then(() => {
-  console.log("✅ Fuentes cargadas");
-  actualizarPreview();
-});
 
 // ================= INICIO =================
 
-function iniciar() {
-  const libros = [...new Set(state.bibliaData.map(v => v.Libro))];
-  libroSel.innerHTML = "";
-  libros.forEach(l => (libroSel.innerHTML += `<option>${l}</option>`));
-  libroSel.onchange = cargarCapitulos;
-  capSel.onchange = mostrarTexto;
-  cargarCapitulos();
-}
-
-// ================= CAPITULOS =================
-
-function cargarCapitulos() {
-  capSel.innerHTML = "";
-  const caps = [...new Set(
-    state.bibliaData
-      .filter(v => v.Libro === libroSel.value)
-      .map(v => v.Capitulo)
-  )];
-  caps.forEach(c => (capSel.innerHTML += `<option>${c}</option>`));
-  mostrarTexto();
+function iniciarBiblia() {
+  // valores iniciales
+  if (!state.libroActual) {
+    state.libroActual = state.bibliaData[0].Libro;
+    state.capituloActual = state.bibliaData[0].Capitulo;
+  }
 }
 
 // ================= TEXTO =================
 
 export function mostrarTexto() {
-  texto.innerHTML = "";
+  const contenedor = document.getElementById("texto");
+  const titulo = document.getElementById("titulo");
+  const notaBox = document.getElementById("notaBox");
+  const notaTexto = document.getElementById("notaTexto");
+
+  contenedor.innerHTML = "";
   notaBox.style.display = "none";
   state.grupoActual = null;
 
-  titulo.innerText = `${libroSel.value} ${capSel.value}`;
+  titulo.innerText = `${state.libroActual} ${state.capituloActual}`;
 
   const versos = state.bibliaData.filter(v =>
-    v.Libro === libroSel.value &&
-    v.Capitulo == capSel.value
+    v.Libro === state.libroActual &&
+    v.Capitulo == state.capituloActual
   );
 
-  versos.forEach(v => pintarVersiculo(v));
+  versos.forEach(v => pintarVersiculo(v, contenedor));
 }
 
 // ================= TOGGLE VERSICULO =======================
@@ -62,17 +48,14 @@ function toggleVersiculo(id, num) {
 
   // 🖼️ MODO IMAGEN
   if (state.modoImagen) {
-    if (!state.uid) {
-      loginModal.style.display = "flex";
-      return;
-    }
+    if (!state.uid) return;
 
     state.seleccionImagen[id]
       ? delete state.seleccionImagen[id]
       : state.seleccionImagen[id] = true;
 
     mostrarTexto();
-    actualizarPreview();
+    if (window.actualizarPreview) window.actualizarPreview();
     return;
   }
 
@@ -94,7 +77,7 @@ function toggleVersiculo(id, num) {
 
 // ======================= PINTAR VERSICULO =============================
 
-function pintarVersiculo(v) {
+function pintarVersiculo(v, contenedor) {
   const id = `${v.Libro}_${v.Capitulo}_${v.Versiculo}`;
   const marcado = state.marcados[id];
   const imagen = state.modoImagen && state.seleccionImagen[id];
@@ -103,53 +86,40 @@ function pintarVersiculo(v) {
   div.className = "versiculo";
   if (imagen) div.classList.add("imagen");
 
-  // ================= EVENTO CLICK =================
   div.onclick = () => toggleVersiculo(id, v.Versiculo);
 
-  // ================= TAMAÑO DE LETRA =================
   div.style.fontSize = state.size + "px";
 
-  // ================= FONDO =================
   if (state.modoImagen) {
     div.style.background = imagen
-      ? "rgba(255, 214, 232, 0.6)"
+      ? "rgba(255,214,232,0.6)"
       : "transparent";
-  } else {
-    div.style.background = marcado?.color || "transparent";
-  }
-
-  // ================= COLOR DE TEXTO =================
-  if (state.modoImagen) {
-    div.style.color = imagen
-      ? "#ffffff"
-      : document.body.classList.contains("oscuro")
-        ? "#ffffff"
-        : "#000000";
+    div.style.color = imagen ? "#fff" : "";
   } else if (marcado) {
-    div.style.color = document.body.classList.contains("oscuro")
-      ? "#000000"
-      : colorContraste(marcado.color);
+    div.style.background = marcado.color;
   }
 
-  // ================= TEXTO =================
   let textoVerso = v.Texto;
-
   if (state.textStyle.upper) textoVerso = textoVerso.toUpperCase();
-  if (state.textStyle.bold) div.style.fontWeight = "bold";
-  if (state.textStyle.italic) div.style.fontStyle = "italic";
-  if (state.textStyle.underline) div.style.textDecoration = "underline";
+
+  div.style.fontWeight = state.textStyle.bold ? "bold" : "normal";
+  div.style.fontStyle = state.textStyle.italic ? "italic" : "normal";
+  div.style.textDecoration = state.textStyle.underline ? "underline" : "none";
 
   div.innerHTML = `<span class="num">${v.Versiculo}</span> ${textoVerso}`;
-  texto.appendChild(div);
+  contenedor.appendChild(div);
 }
 
 // ================= DETECTA GRUPO =======================
 
 function detectarGrupo(num) {
+  const notaBox = document.getElementById("notaBox");
+  const notaTexto = document.getElementById("notaTexto");
+
   const nums = Object.keys(state.marcados)
     .filter(k => {
       const [lib, cap] = k.split("_");
-      return lib === libroSel.value && cap == capSel.value;
+      return lib === state.libroActual && cap == state.capituloActual;
     })
     .map(k => Number(k.split("_")[2]))
     .sort((a, b) => a - b);
@@ -160,34 +130,4 @@ function detectarGrupo(num) {
   state.grupoActual = grupo.join("-");
   notaBox.style.display = "block";
   notaTexto.value = state.notas[state.grupoActual] || "";
-}
-
-// ================= FORMATO RANGO (UTILIDAD) =======================
-
-function formatearVersiculosComoRango(numeros) {
-  if (numeros.length === 0) return "";
-
-  numeros.sort((a, b) => a - b);
-
-  const partes = [];
-  let inicio = numeros[0];
-  let anterior = numeros[0];
-
-  for (let i = 1; i < numeros.length; i++) {
-    if (numeros[i] === anterior + 1) {
-      anterior = numeros[i];
-    } else {
-      partes.push(
-        inicio === anterior ? `${inicio}` : `${inicio}-${anterior}`
-      );
-      inicio = numeros[i];
-      anterior = numeros[i];
-    }
-  }
-
-  partes.push(
-    inicio === anterior ? `${inicio}` : `${inicio}-${anterior}`
-  );
-
-  return partes.join(",");
 }
