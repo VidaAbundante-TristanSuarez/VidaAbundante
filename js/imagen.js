@@ -99,11 +99,16 @@ function construirTexto() {
 
 // ================= PREVIEW EN TIEMPO REAL =================
 function actualizarPreview() {
-  if (!textoFront) return;
+
+  if (!textoFront || !textoBack) return;
+
+  const contenido = obtenerVersiculoSeleccionado();
+  textoFront.innerText = contenido;
+  textoBack.innerText = contenido;
 
   // tamaño
-  textoFront.style.fontSize = inputSize.value+"px";
-  textoBack.style.fontSize = inputSize.value+"px";
+  textoFront.style.fontSize = inputSize.value + "px";
+  textoBack.style.fontSize = inputSize.value + "px";
 
   // color
   textoFront.style.color = inputColor.value;
@@ -117,15 +122,19 @@ function actualizarPreview() {
   preview.style.backgroundColor = `rgba(0,0,0,${inputOpacidad.value})`;
 
   // estilos adicionales
-  textoFront.style.fontWeight = state.textStyle.bold?"700":"400";
-  textoFront.style.fontStyle = state.textStyle.italic?"italic":"normal";
-  textoFront.style.textDecoration = state.textStyle.underline?"underline":"none";
-  textoFront.style.textTransform = state.textStyle.upper?"uppercase":"none";
+  textoFront.style.fontWeight = state.textStyle.bold ? "700" : "400";
+  textoFront.style.fontStyle = state.textStyle.italic ? "italic" : "normal";
+  textoFront.style.textDecoration = state.textStyle.underline ? "underline" : "none";
+  textoFront.style.textTransform = state.textStyle.upper ? "uppercase" : "none";
+
   textoBack.style.cssText = textoFront.style.cssText;
 
   // fondo
-  if(state.fondoFinal) preview.style.backgroundImage = `url(${state.fondoFinal})`;
-  else preview.style.backgroundImage = "none";
+  if (state.fondoFinal) {
+    preview.style.backgroundImage = `url(${state.fondoFinal})`;
+  } else {
+    preview.style.backgroundImage = "none";
+  }
 }
 
 // ================= FONDOS =================
@@ -175,8 +184,9 @@ window.cancelarCrearImagen = () => {
 
 // ================= FORMATO =================
 window.setFormatoImagen = tipo => {
-  preview.classList.remove("preview-post","preview-story");
-  preview.classList.add("preview-"+tipo);
+  preview.classList.remove("preview-post", "preview-story");
+  preview.classList.add(tipo === "story" ? "preview-story" : "preview-post");
+  actualizarPreview();
 };
 
 // ================= CANVAS FINAL =================
