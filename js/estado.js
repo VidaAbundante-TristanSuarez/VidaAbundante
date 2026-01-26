@@ -1,36 +1,29 @@
 // ================= ESTADO GLOBAL =================
-let uid = null;
 
-let bibliaData = [];
-let libroActual = null;
-let capituloActual = null;
+export const state = {
+  uid: null,
 
-let marcados = {};
-let notas = {};
+  bibliaData: [],
 
-let size = 18;
-let colorActual = "#fff3b0";
+  marcados: {},
+  notas: {},
 
-let resaltadorAbierto = false;
-let resaltadorBloqueado = false;
-let grupoActual = null;
-let marcador = null;
+  size: 18,
+  colorActual: "#fff3b0",
 
-let modoImagen = false;
-let seleccionImagen = {};
-let fondoFinal = null;
+  resaltadorAbierto: false,
+  resaltadorBloqueado: false,
+  grupoActual: null,
+  marcador: null,
 
-let textStyle = {
-  upper: false,
-  bold: false,
-  italic: false,
-  underline: false
+  modoImagen: false,
+  seleccionImagen: {},
+  fondoFinal: null,
+
+  textStyle: {
+    upper: false,
+    bold: false,
+    italic: false,
+    underline: false
+  }
 };
-
-
-
-
-
-
-
-
