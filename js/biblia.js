@@ -99,7 +99,7 @@ function pintarVersiculo(v, contenedor) {
     div.style.background = marcado.color;
   }
 
-  let textoVerso = v.Texto;
+  let textoVerso = v.RV1960 || v.Texto || "";
   if (state.textStyle.upper) textoVerso = textoVerso.toUpperCase();
 
   div.style.fontWeight = state.textStyle.bold ? "bold" : "normal";
@@ -131,3 +131,4 @@ function detectarGrupo(num) {
   notaBox.style.display = "block";
   notaTexto.value = state.notas[state.grupoActual] || "";
 }
+
