@@ -142,7 +142,6 @@ window.toggleUnderline = () => {
 };
 
 // ================= 🌸 RESALTADOR COMPACTO 💛 =================
-
 document.addEventListener("DOMContentLoaded", () => {
 
   const btnActivo = document.getElementById("btnResaltadorActivo");
@@ -173,9 +172,35 @@ document.addEventListener("DOMContentLoaded", () => {
 
   btnBloquear.onclick = e => {
     e.preventDefault();
+    e.stopPropagation();
+
     state.resaltadorBloqueado = !state.resaltadorBloqueado;
-    btnBloquear.textContent =
-      state.resaltadorBloqueado ? "🔓" : "🔒";
+    btnBloquear.textContent = state.resaltadorBloqueado ? "🔓" : "🔒";
+
+    // limpiar candados previos
+    paleta.querySelectorAll(".icono-candado").forEach(c => c.remove());
+
+    if (state.resaltadorBloqueado) {
+      const botonColor = [...paleta.querySelectorAll("button[data-color]")]
+        .find(b => b.dataset.color === state.colorActual);
+
+      if (botonColor) {
+        botonColor.style.position = "relative";
+
+        const span = document.createElement("span");
+        span.className = "icono-candado";
+        span.textContent = "🔒";
+        span.style.position = "absolute";
+        span.style.top = "-4px";
+        span.style.right = "-4px";
+        span.style.fontSize = "10px";
+        span.style.background = "#fff";
+        span.style.borderRadius = "50%";
+        span.style.padding = "1px";
+
+        botonColor.appendChild(span);
+      }
+    }
   };
 
   document.addEventListener("click", e => {
