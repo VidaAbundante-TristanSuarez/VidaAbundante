@@ -25,21 +25,6 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getDatabase(app);
 
-// ================= AUTH =====================================
-onAuthStateChanged(auth, user => {
-  uid = user ? user.uid : null;
-
-  if (uid) {
-    onValue(ref(db, "marcados/" + uid), s => {
-      marcados = s.val() || {};
-      mostrarTexto();
-    });
-    onValue(ref(db, "notas/" + uid), s => {
-      notas = s.val() || {};
-    });
-  }
-});
-
 // ================= ESTADO GLOBAL =================
 let uid = null;
 let bibliaData = [];
@@ -62,6 +47,21 @@ let textStyle = {
   italic: false,
   underline: false
 };
+
+// ================= AUTH =====================================
+onAuthStateChanged(auth, user => {
+  uid = user ? user.uid : null;
+
+  if (uid) {
+    onValue(ref(db, "marcados/" + uid), s => {
+      marcados = s.val() || {};
+      mostrarTexto();
+    });
+    onValue(ref(db, "notas/" + uid), s => {
+      notas = s.val() || {};
+    });
+  }
+});
 
 // ================= DOM (SE CARGA CON DEFER) =================
 const libroSel = document.getElementById("libro");
