@@ -135,6 +135,20 @@ function actualizarPreview() {
   } else {
     preview.style.backgroundImage = "none";
   }
+
+  // tamaño base
+  let fontSize = parseInt(inputSize.value);
+  textoFront.style.fontSize = fontSize + "px";
+  textoBack.style.fontSize = fontSize + "px";
+
+  // 🔁 autoajuste para que no se salga
+  while (fontSize > 14) {
+    if (textoFront.scrollHeight <= wrapper.clientHeight - 40) break;
+    fontSize--;
+    textoFront.style.fontSize = fontSize + "px";
+    textoBack.style.fontSize = fontSize + "px";
+  }
+  
 }
 
 // ================= FONDOS =================
