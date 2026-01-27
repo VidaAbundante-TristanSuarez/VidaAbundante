@@ -15,31 +15,25 @@
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
   <style>
-  /* =====================================================
-   ESTILOS GENERALES
-   ===================================================== */
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      line-height: 1.6;
+      background: #fff;
+      color: #000;
+    }
 
-body {
-  font-family: Arial, sans-serif;
-  margin: 0;
-  padding: 0;
-  line-height: 1.6;
-  background: #fff;
-  color: #000;
-}
-
-/* 🌙 Modo oscuro */
-body.oscuro {
-  background: #121212;
-  color: #e0e0e0;
-}
-
-/* =====================================================
-   HEADER / MENÚ
-   ===================================================== */
-
+    body.oscuro {
+      background: #121212;
+      color: #e0e0e0;
+    }
+    
+/* ================= HEADER ================= */
 #header {
-  background: #fff;
+  position: static; /* ✅ NO sticky */
+  z-index: auto;
+  background: #ffffff;
   border-bottom: 1px solid #ddd;
   padding: 10px;
   display: flex;
@@ -51,99 +45,153 @@ body.oscuro #header {
   background: #121212;
   border-color: #333;
 }
+    #menu {
+      display: flex;
+      gap: 6px;
+      flex-wrap: nowrap;
+    }
 
-#menu {
-  display: flex;
-  gap: 6px;
-}
+    .nav-btn {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+      background: #eaeaea;
+    }
 
-/* Botones de navegación */
-.nav-btn {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 8px 14px;
-  border-radius: 999px;
-  border: none;
-  font-weight: bold;
-  cursor: pointer;
-  background: #eaeaea;
-}
+    body.oscuro .nav-btn {
+      background: #2a2a2a;
+      color: #fff;
+    }
 
-body.oscuro .nav-btn {
-  background: #2a2a2a;
-  color: #fff;
-}
+    @media (max-width: 640px) {
+      .nav-btn .text {
+        display: none;
+      }
+    }
 
-/* Ocultar texto en móvil */
-@media (max-width: 640px) {
-  .nav-btn .text {
-    display: none;
-  }
-}
+    /* ================= SECCIONES ================= */
+    .seccion {
+      padding: 15px;
+    }
 
-/* =====================================================
-   SECCIONES
-   ===================================================== */
+    /* ================= BIBLIA ================= */
+    .filtros {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
 
-.seccion {
-  padding: 15px;
-}
+    .filtros select {
+      padding: 10px;
+      font-size: 16px;
+    }
 
-/* =====================================================
-   BIBLIA
-   ===================================================== */
+    #titulo {
+      margin: 12px 0;
+      font-weight: bold;
+    }
 
-.filtros {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-
-.filtros select {
-  padding: 10px;
-  font-size: 16px;
-}
-
-#titulo {
-  margin: 12px 0;
-  font-weight: bold;
-}
-
-/* Versículos */
-.versiculo {
+    .versiculo {
   padding: 10px 14px;
   border-radius: 8px;
   margin-bottom: 6px;
   cursor: pointer;
   transition: background .2s;
+  color: #000;
 }
 
 body.oscuro .versiculo {
   color: #fff;
 }
 
-/* Versículo marcado */
+/* resaltado normal */
 .versiculo[data-marcado="true"] {
   color: #000;
 }
 
-/* Versículo seleccionado para imagen */
+body.oscuro .versiculo[data-marcado="true"] {
+  color: #000; /* fuerza negro sobre pastel */
+}
+
+/* selección imagen */
 .versiculo.imagen {
   background: #4f6fa8 !important;
   color: #fff !important;
 }
 
-/* =====================================================
-   BARRA DE ACCIONES
-   ===================================================== */
+    .num {
+      font-weight: bold;
+      margin-right: 4px;
+    }
+
+    /* ================= PANEL ================= */
+    .panel-tabs button {
+      margin-right: 6px;
+    }
+
+    .panel-seccion {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 10px;
+      background: #f5f5f5;
+    }
+
+    body.oscuro .panel-seccion {
+      background: #1e1e1e;
+    }
+
+    textarea {
+      width: 100%;
+      height: 80px;
+      border-radius: 10px;
+      padding: 10px;
+    }
+
+    .grid-imagenes {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 12px;
+      margin-top: 10px;
+    }
+
+    .card-imagen {
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+      background: #fff;
+    }
+
+    body.oscuro .card-imagen {
+      background: #1e1e1e;
+    }
+
+    .card-imagen img {
+      width: 100%;
+      display: block;
+    }
+
+    .card-imagen .nombre {
+      padding: 6px;
+      font-size: 13px;
+      text-align: center;
+      font-weight: bold;
+    }
 
 .barra-acciones {
   position: sticky;
   bottom: 0;
   z-index: 20;
+
   display: flex;
+  align-items: center;
   gap: 6px;
+  flex-wrap: wrap;
+
   padding: 8px;
   background: #f5f5f5;
   border-top: 1px solid #ddd;
@@ -154,23 +202,311 @@ body.oscuro .barra-acciones {
   border-color: #333;
 }
 
-/* =====================================================
-   MODO IMAGEN
-   ===================================================== */
+.barra-acciones button {
+  border-radius: 999px;
+  padding: 6px 10px;
+  border: none;
+  cursor: pointer;
+}
 
-body.modo-imagen #accionesBiblia .accion-normal {
+.barra-acciones button.activo {
+  background: #ffe8c8;
+  color: #000;
+}
+
+/* 🎨 Botón de color activo */
+.color-btn.activo {
+  outline: 3px solid #ffe8c8;
+  transform: scale(1.15);
+}
+
+.modo-imagen #accionesBiblia .accion-normal {
   display: none;
 }
 
+.modo-imagen #btnImagen {
+  display: inline-block;
+  background: #4f6fa8;
+  color: #fff;
+}
+
+.modo-imagen #btnCrearImagen {
+  display: inline-block;
+}
+
+.modo-imagen #header {
+  box-shadow: 0 4px 12px rgba(79,111,168,0.4);
+}
+
+    
+#seccion-biblia {
+  padding-bottom: 90px;
+}
+
+ /* Crear Imagen OCULTO por defecto */
 #btnCrearImagen {
   display: none;
 }
 
-body.modo-imagen #btnCrearImagen {
+/* Visible SOLO en modo imagen */
+.modo-imagen #btnCrearImagen {
   display: inline-block;
 }
 
-/* Banner informativo */
+ button {
+  border-radius: 999px;
+  padding: 10px 16px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  background: #f2f2f2;
+  transition: all .2s;
+}
+
+button:hover {
+  transform: scale(1.05);
+  background: #4f6fa8;
+  color: white;
+}
+
+button:active {
+  transform: scale(0.95);
+}
+
+.modal button {
+  box-shadow: 0 4px 10px rgba(0,0,0,.15);
+}
+
+#previewImagen {
+  position: relative; /* ✅ CLAVE ABSOLUTA */
+  width: 100%;
+  max-height: 45vh;
+  aspect-ratio: 1 / 1;
+  border-radius: 16px;
+  overflow: hidden;
+  background-size: cover;
+  background-position: center;
+}
+
+.toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 5px;
+  font-size: 16px;
+  z-index: 999;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.toast[style="display: block;"] {
+  opacity: 1;
+}
+
+/* 📐 FORMATOS */
+#previewImagen.preview-post {
+  height: 420px;
+}
+
+#previewImagen.preview-story {
+  aspect-ratio: 9 / 16;
+  max-height: 50vh;        /* 🔥 CLAVE */
+}
+   
+/* ================= TEXTO DOBLE ================= */
+#previewTextoWrapper {
+  position: absolute;
+  inset: 40px 24px;
+  overflow: hidden;
+  border-radius: 24px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+#previewTextoBack,
+#previewTexto {
+  position: absolute;
+  padding: 20px;
+  font-weight: bold;
+  line-height: 1.25;
+}
+
+#previewTextoBack {
+  z-index: 1;
+  -webkit-text-stroke: 6px currentColor;
+}
+
+#previewTexto {
+  z-index: 2;
+}
+
+/* ================= PANEL OPCIONES COMPACTO ================= */
+.panel-opciones {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.panel-opciones label,
+.panel-opciones select,
+.panel-opciones input {
+  width: 100%;
+}
+
+#personalizarFondos {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  margin-bottom: 12px;
+}
+
+@media (max-width: 480px) {
+  #previewImagen {
+    margin-bottom: 24px;
+  }
+}
+
+.text-tools {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+}
+
+.text-tools button {
+  width: 44px;
+  height: 36px;
+  font-weight: bold;
+}
+
+.style-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.style-row button {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: none;
+  background: #eee;
+  font-weight: bold;
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.style-row button.activo {
+  background: #ffe8c8;
+  color: #000;
+  box-shadow: inset 0 0 0 2px #d8bfa0;
+}
+
+.style-row input[type="color"] {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: none;
+  padding: 0;
+}
+
+body.modo-imagen .versiculo.imagen {
+border: 2px solid #ff4fa3;
+}
+
+/* Fuentes disponibles */
+.font-roboto { font-family: 'Roboto', sans-serif; }
+.font-lobster { font-family: 'Lobster', cursive; }
+.font-playfair { font-family: 'Playfair Display', serif; }
+.font-montserrat { font-family: 'Montserrat', sans-serif; }
+.font-poppins { font-family: 'Poppins', sans-serif; }
+
+/* ================= RESALTADOR COMPACTO (ARRIBA / COSTADO) ================= */
+    
+#btnResaltadorActivo {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  position: relative;
+}
+
+#resaltadorCompacto {
+  position: relative;
+  z-index: 9999;
+}
+
+/* 🔼 Se abre HACIA ARRIBA por defecto */
+#paletaResaltadores {
+  position: absolute;
+  bottom: 110%;          /* 👈 CLAVE: arriba del botón */
+  left: 0;
+
+  display: none;
+  background: #fff;
+  border-radius: 12px;
+  padding: 8px;
+  box-shadow: 0 6px 20px rgba(0,0,0,.25);
+
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  min-width: 160px;
+}
+
+/* 👉 Si no entra arriba, se corre al costado */
+#resaltadorCompacto.mover-derecha #paletaResaltadores {
+  bottom: 0;
+  left: 110%;
+}
+
+/* botones */
+#paletaResaltadores button {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+}
+
+  /* 🔥 FIX DEFINITIVO: evitar fondos fantasmas en imagen final */
+#previewImagen.render-final #previewTextoWrapper {
+  background: transparent !important;
+}
+
+/* 🔥 Cuando se genera la imagen, ocultar texto HTML real */
+#previewImagen.render-final #previewTexto,
+#previewImagen.render-final #previewTextoBack {
+  display: none !important;
+}
+
+/* 🔥 Modal SIEMPRE legible (no gris) */
+#modalPersonalizar {
+  color: #000;
+}
+
+#modalPersonalizar label {
+  color: #000;
+}
+
 #bannerModoImagen {
   display: none;
   text-align: center;
@@ -179,25 +515,107 @@ body.modo-imagen #btnCrearImagen {
   background: rgba(0,0,0,0.08);
 }
 
-body.modo-imagen #bannerModoImagen {
-  display: block;
+body.oscuro #bannerModoImagen {
+  background: rgba(255,255,255,0.08);
 }
 
-/* =====================================================
-   MODAL PERSONALIZAR IMAGEN
-   ===================================================== */
+body.modo-imagen #texto {
+  background: rgba(0,0,0,0.04);
+}
 
+body.oscuro.modo-imagen #texto {
+  background: rgba(255,255,255,0.04);
+}
+
+/* 🖼️ Ocultar resaltador en modo imagen */
+body.modo-imagen #resaltadorCompacto {
+  display: none;
+}
+
+/* ================= CANDADO RESALTADOR ================= */
+
+#btnResaltadorActivo {
+  position: relative;
+  overflow: hidden;
+}
+
+/* icono base (corazón / flor) */
+#btnResaltadorActivo .icono-resaltador {
+  display: inline-block;
+  font-size: 18px;
+  line-height: 1;
+}
+
+/* 🔒 candado */
+#btnResaltadorActivo .icono-candado {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+
+  background: white;
+  border-radius: 50%;
+  font-size: 10px;
+  padding: 2px;
+
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+
+/* modo oscuro */
+body.oscuro #btnResaltadorActivo .icono-candado {
+  background: #1e1e1e;
+}
+
+/* ================= FUENTES COMPACTO (igual a formato) ================= */
+
+#fuentesCompacto {
+  position: relative;
+}
+
+#fuentesCompacto #btnFuentes {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+#fuentesCompacto #listaFuentes {
+  position: absolute;
+  bottom: 110%;       /* se abre hacia arriba */
+  left: 0;
+
+  display: none;
+  background: #fff;
+  border-radius: 12px;
+  padding: 8px;
+  box-shadow: 0 6px 20px rgba(0,0,0,.25);
+
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  min-width: 160px;
+  z-index: 9999;
+}
+
+body.oscuro #fuentesCompacto #listaFuentes {
+  background: #1e1e1e;
+}
+
+/* ================= MODAL BASE ================= */
 #modalPersonalizar {
   display: none;
   position: fixed;
-  inset: 0;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
   background: rgba(0,0,0,0.7);
   z-index: 1000;
   justify-content: center;
   align-items: center;
+  overflow-y: auto;
 }
 
-/* Caja interna del modal */
+/* CONTENEDOR INTERNO DEL MODAL */
 #modalPersonalizar > div {
   background: #fff;
   padding: 25px;
@@ -205,91 +623,154 @@ body.modo-imagen #bannerModoImagen {
   width: 90%;
   border-radius: 12px;
   position: relative;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-/* Botón cerrar */
-#modalPersonalizar .cerrar {
+/* BOTON CERRAR MODAL */
+#modalPersonalizar button[onclick="cancelarCrearImagen()"] {
   position: absolute;
-  top: 12px;
-  right: 12px;
-  background: none;
+  top: 15px;
+  right: 15px;
+  background: transparent;
   border: none;
   font-size: 20px;
   cursor: pointer;
+  color: #333;
 }
 
-/* Botones finales del modal */
-#modalPersonalizar .acciones {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  justify-content: center;
-}
-
-/* =====================================================
-   PREVIEW DE IMAGEN
-   ===================================================== */
-
+/* PREVIEW IMAGEN */
 #previewImagen {
-  position: relative;
   width: 100%;
-  height: 420px;
-  border-radius: 16px;
-  overflow: hidden;
+  height: 400px;
   background: #eee;
-  background-size: cover;
-  background-position: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.2);
 }
 
-/* Contenedor del texto */
+/* WRAPPER DE TEXTO */
 #previewTextoWrapper {
   position: absolute;
-  inset: 40px 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  padding: 15px;
   text-align: center;
+  width: 90%;
+  word-wrap: break-word;
+  pointer-events: none; /* evita que interfiera con clicks */
 }
 
-/* Texto frontal */
+/* TEXTO DE PREVIEW */
 #previewTexto {
-  position: relative;
-  z-index: 2;
-  font-weight: bold;
-  line-height: 1.25;
+  white-space: pre-wrap;
+  font-size: 24px;
+  color: #000;
 }
 
-/* Texto fondo (borde/sombra) */
-#previewTextoBack {
-  position: absolute;
-  z-index: 1;
-  filter: blur(0.4px);
+/* INPUTS DE PERSONALIZACION */
+#modalPersonalizar label {
+  display: flex;
+  flex-direction: column;
+  font-size: 14px;
+  color: #333;
 }
 
-/* =====================================================
-   FONDOS
-   ===================================================== */
+#modalPersonalizar input,
+#modalPersonalizar select {
+  margin-top: 5px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+}
 
+/* LISTA DE FONDOS */
 #personalizarFondos {
   display: flex;
-  gap: 8px;
+  gap: 10px;
   overflow-x: auto;
+  padding-bottom: 5px;
 }
 
 #personalizarFondos img {
   height: 60px;
   width: 100px;
   object-fit: cover;
-  border-radius: 8px;
+  border-radius: 6px;
   cursor: pointer;
   border: 2px solid transparent;
+  transition: all 0.2s ease;
 }
 
-#personalizarFondos img:hover {
-  border-color: #4f6fa8;
+#personalizarFondos img:hover,
+#personalizarFondos img.selected {
+  border-color: #007bff;
+  transform: scale(1.05);
+}
+
+/* BOTONES DE ACCIÓN */
+#modalPersonalizar div:last-child {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+
+#modalPersonalizar div:last-child button {
+  background: #c41515;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+#modalPersonalizar div:last-child button:hover {
+  background: #c13333;
+  transform: translateY(-2px);
+}
+
+/* SCROLLBAR PARA FONDOS */
+#personalizarFondos::-webkit-scrollbar {
+  height: 6px;
+}
+
+#personalizarFondos::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.3);
+  border-radius: 3px;
+}
+
+#personalizarFondos::-webkit-scrollbar-track {
+  background: rgba(0,0,0,0.1);
+}
+
+@media (max-width: 600px) {
+
+  #modalPersonalizar {
+    padding: 10px;
+  }
+
+  #personalizarFondos {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  .panel-opciones {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  #accionesFinales button {
+    font-size: 14px;
+    padding: 8px 10px;
+  }
 }
 
     
@@ -427,45 +908,33 @@ body.modo-imagen #bannerModoImagen {
     <button onclick="cerrarLogin()">Cancelar</button>
   </div>
 </div>
-
+  
 <!-- ================= MODAL PERSONALIZAR IMAGEN ================= -->
-<div id="modalPersonalizar">
+<div id="modalPersonalizar" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:1000; justify-content:center; align-items:center;">
+  <div style="background:white; padding:20px; max-width:600px; width:90%; border-radius:10px; position:relative;">
 
-  <div>
-    <!-- Cerrar -->
-    <button class="cerrar" onclick="cancelarCrearImagen()">✖</button>
+    <!-- CERRAR MODAL -->
+    <button onclick="cancelarCrearImagen()" style="position:absolute; top:10px; right:10px;">✖</button>
 
-    <!-- Preview -->
-    <div id="previewImagen">
-      <div id="previewTextoWrapper">
-        <div id="previewTexto"></div>
-        <div id="previewTextoBack"></div>
+    <!-- PREVIEW DE LA IMAGEN -->
+    <div id="previewImagen" style="width:100%; height:400px; background:#eee; display:flex; justify-content:center; align-items:center; position:relative; margin-bottom:20px;">
+      <div id="previewTextoWrapper" style="position:absolute; padding:10px; text-align:center; width:90%; word-wrap:break-word;">
+        <div id="previewTexto" style="white-space:pre-wrap;"></div>
+        <div id="previewTextoBack" style="white-space:pre-wrap; display:none;"></div>
       </div>
     </div>
 
-    <!-- Controles -->
-    <div class="panel-opciones">
-      <label>
-        Tamaño
-        <input id="personalizarTamaño" type="number" value="24">
-      </label>
-
-      <label>
-        Color
-        <input id="personalizarColor" type="color" value="#000000">
-      </label>
-
-      <label>
-        Opacidad fondo
-        <input id="personalizarOpacidad" type="range" min="0" max="1" step="0.05">
-      </label>
-
-      <label>
-        Fuente
+    <!-- AJUSTES DE TEXTO -->
+    <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:20px;">
+      <label>Tamaño: <input id="personalizarTamaño" type="number" value="24" min="10" max="100"></label>
+      <label>Color: <input id="personalizarColor" type="color" value="#000000"></label>
+      <label>Opacidad fondo: <input id="personalizarOpacidad" type="range" min="0" max="1" step="0.05" value="0.3"></label>
+      <label>Fuente: 
         <select id="personalizarFuente">
+          <option>Arial</option>
           <option>Roboto</option>
-          <option>Playfair Display</option>
           <option>Lobster</option>
+          <option>Playfair Display</option>
           <option>Montserrat</option>
           <option>Poppins</option>
           <option>Great Vibes</option>
@@ -473,21 +942,20 @@ body.modo-imagen #bannerModoImagen {
       </label>
     </div>
 
-    <!-- Fondos -->
-    <div id="personalizarFondos"></div>
+    <!-- LISTA DE FONDOS -->
+    <div id="personalizarFondos" style="display:flex; gap:5px; overflow-x:auto; margin-bottom:20px;"></div>
 
-    <!-- Acciones -->
-    <div class="acciones">
-      <button onclick="generarImagenFinal()">Generar imagen</button>
+    <!-- BOTONES DE ACCIÓN -->
+    <div style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center;">
+      <button onclick="generarImagenFinal()">Generar imagen final</button>
       <button onclick="descargarImagenFinal()">💾 Descargar</button>
       <button onclick="compartirImagenFinal()">📤 Compartir</button>
       <button onclick="subirImagen('personal')">⬆️ Subir a mi panel</button>
       <button onclick="subirImagen('iglesia')">⬆️ Subir a panel iglesia</button>
     </div>
+
   </div>
-
 </div>
-
 
 <!-- ================= CANVAS FINAL (OCULTO) ================= -->
 <canvas id="canvasFinal" style="display:none;"></canvas>
@@ -503,7 +971,4 @@ body.modo-imagen #bannerModoImagen {
   
 </body>
 </html>
-
-
-
 
