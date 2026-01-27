@@ -105,6 +105,96 @@ function cargarCapitulos() {
   mostrarTexto();
 }
 
+// ========================= 🎨 RESALTADOR COMPACTO  =======================================
+document.addEventListener("DOMContentLoaded", () => {
+
+  const btnActivo = document.getElementById("btnResaltadorActivo");
+  const paleta = document.getElementById("paletaResaltadores");
+  const cont = document.getElementById("resaltadorCompacto");
+  const btnBloquear = document.getElementById("btnBloquearResaltador");
+
+  if (!btnActivo || !paleta || !cont || !btnBloquear) {
+    console.warn("❌ Resaltador no inicializado");
+    return;
+  }
+
+  paleta.style.display = "none";
+  btnActivo.style.background = colorActual;
+  btnActivo.textContent = "💛";
+
+  // 🟡 CLICK PRINCIPAL → abrir / cerrar paleta
+  btnActivo.onclick = e => {
+    e.preventDefault();
+    e.stopPropagation();
+    const visible = paleta.style.display === "block";
+    paleta.style.display = visible ? "none" : "block";
+    cont.classList.remove("mover-derecha");
+    if (!visible) {
+      const rect = paleta.getBoundingClientRect();
+      if (rect.top < 10) cont.classList.add("mover-derecha");
+    }
+  };
+
+  // 🎨 ELEGIR COLOR
+  paleta.querySelectorAll("button[data-color]").forEach(btn => {
+    btn.onclick = e => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      // Quitar candado de todos los botones
+      paleta.querySelectorAll("button[data-color] span.icono-candado").forEach(c => c.remove());
+
+      colorActual = btn.dataset.color;
+      btnActivo.style.background = colorActual;
+      btnActivo.textContent = btn.textContent;
+
+      resaltadorBloqueado = false;
+      paleta.style.display = "none";
+    };
+  });
+
+  // 🔒 BLOQUEAR / DESBLOQUEAR
+  btnBloquear.onclick = e => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    resaltadorBloqueado = !resaltadorBloqueado;
+    btnBloquear.textContent = resaltadorBloqueado ? "🔓" : "🔒";
+
+    // Quitar todos los candados anteriores
+    paleta.querySelectorAll("button[data-color] span.icono-candado").forEach(c => c.remove());
+
+    if (resaltadorBloqueado) {
+      // Colocar candado sobre el color actual
+      const botonColor = Array.from(paleta.querySelectorAll("button[data-color]"))
+        .find(b => b.dataset.color === colorActual);
+      if (botonColor) {
+        const span = document.createElement("span");
+        span.textContent = "🔒";
+        span.className = "icono-candado";
+        span.style.position = "absolute";
+        span.style.top = "-4px";
+        span.style.right = "-4px";
+        span.style.fontSize = "10px";
+        span.style.background = "#fff";
+        span.style.borderRadius = "50%";
+        span.style.padding = "1px";
+        botonColor.style.position = "relative";
+        botonColor.appendChild(span);
+      }
+    }
+  };
+
+  // ❌ cerrar clic fuera
+  document.addEventListener("click", e => {
+    if (!cont.contains(e.target)) {
+      paleta.style.display = "none";
+    }
+  });
+
+});
+
+
 // ================= ⭐ MOSTRAR TEXTO =======================
 function mostrarTexto() {
   texto.innerHTML = "";
@@ -466,6 +556,37 @@ document.addEventListener("click", () => {
   if (lista) lista.style.display = "none";
 });
 
+// ================= 🌄 FONDOS ⛺================================
+const fondos = [
+  "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee",
+  "https://images.unsplash.com/photo-1496307042754-b4aa456c4a2d",
+  "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429",
+  "https://images.unsplash.com/photo-1519681393784-d120267933ba"
+];
+
+// ================= ⭐ CARGAR FONDOS   =======================
+function cargarFondos() {
+  const cont = document.getElementById("personalizarFondos");
+  cont.innerHTML = "";
+
+  fondos.forEach(url => {
+    const img = document.createElement("img");
+    img.src = url;
+    img.style.width = "70px";
+    img.style.height = "70px";
+    img.style.objectFit = "cover";
+    img.style.borderRadius = "10px";
+    img.style.cursor = "pointer";
+
+    img.onclick = () => {
+      fondoFinal = url;
+      actualizarPreview();
+    };
+
+    cont.appendChild(img);
+  });
+}
+
 // ================= ⭐ ACTUALIZAR VISTA PREVIA  =======================
 function actualizarPreview() {
   const previewImagen = document.getElementById("previewImagen");
@@ -562,6 +683,123 @@ function actualizarPreview() {
   previewTextoBack.style.textDecoration = previewTexto.style.textDecoration;
 }
 
+// ================= 🎀 BOTÓN GENERAR ============================
+const btnGen = document.getElementById("btnGenerarPersonalizada");
+
+if (btnGen) {
+  btnGen.onclick = () => {
+    if (!fondoFinal) {
+      alert("Seleccioná un fondo");
+      return;
+    }
+
+    generarImagenFinal(); // 🔥 ACÁ SE CREA LA IMAGEN REAL
+  };
+}
+
+// ================= ⭐ CANVAS GENERA IMAGEN FINAL ============================
+async function generarImagenFinal() {
+
+  // ⏳ ESPERAR A QUE LAS FUENTES SE CARGUEN (CLAVE PARA CELU)
+  await document.fonts.ready;
+
+  const preview = document.getElementById("previewImagen");
+  const canvasFinal = document.getElementById("canvasFinal");
+
+  html2canvas(preview, {
+
+    scale: window.devicePixelRatio || 2,
+    useCORS: true,
+    backgroundColor: null
+  }).then(canvasTemp => {
+
+    // 🔒 copiar EXACTAMENTE el canvas generado (sin estirar)
+    canvasFinal.width = canvasTemp.width;
+    canvasFinal.height = canvasTemp.height;
+
+    const ctx = canvasFinal.getContext("2d");
+    ctx.clearRect(0, 0, canvasFinal.width, canvasFinal.height);
+    ctx.drawImage(canvasTemp, 0, 0);
+
+    // mostrar resultado sin tocar proporciones
+    mostrarResultadoFinal(canvasFinal);
+  });
+}
+
+// ======================== ⭐ VER RESULTADO FINAL ====================================
+function mostrarResultadoFinal(canvas) {
+  const preview = document.getElementById("previewImagen");
+
+  // 🔥 marcar estado render final
+  preview.classList.add("render-final");
+
+  // Imagen final
+  preview.style.backgroundImage = `url(${canvas.toDataURL("image/png")})`;
+  preview.style.pointerEvents = "none";
+
+  // Ocultar paneles de edición
+  document.querySelector(".panel-opciones").style.display = "none";
+  document.getElementById("personalizarFondos").style.display = "none";
+  document.getElementById("btnGenerarPersonalizada").style.display = "none";
+
+  // Eliminar botones previos
+  const viejo = document.getElementById("accionesFinales");
+  if (viejo) viejo.remove();
+
+  // Botones finales
+  const acciones = document.createElement("div");
+  acciones.id = "accionesFinales";
+  acciones.style.display = "flex";
+  acciones.style.justifyContent = "center";
+  acciones.style.gap = "12px";
+  acciones.style.marginTop = "15px";
+
+  acciones.innerHTML = `
+    <button onclick="descargarImagenFinal()">⬇️ Descargar</button>
+    <button onclick="compartirImagenFinal()">📤 Compartir</button>
+  `;
+
+  preview.parentNode.appendChild(acciones);
+}
+
+// ======================== ⭐ OPCION DESCARGAR ====================================
+
+function descargarImagenFinal() {
+  const canvas = document.getElementById("canvasFinal");
+  canvas.toBlob(blob => {
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "versiculo.png";
+    link.click();
+    URL.revokeObjectURL(link.href);
+  });
+}
+
+// ========================⭐ OPCION COMPARTIR ====================================
+function compartirImagenFinal() {
+  const canvas = document.getElementById("canvasFinal");
+
+  canvas.toBlob(blob => {
+    const file = new File([blob], "versiculo.png", { type: "image/png" });
+
+    if (navigator.share && navigator.canShare?.({ files: [file] })) {
+      navigator.share({
+        files: [file],
+        title: "Versículo",
+        text: "Compartir imagen"
+      });
+    } else {
+      // 🔥 FALLBACK REAL
+      descargarImagenFinal();
+      alert("Tu dispositivo no permite compartir directamente. La imagen se descargó para que la compartas manualmente.");
+    }
+  });
+}
+
+window.descargarImagenFinal = descargarImagenFinal;
+window.compartirImagenFinal = compartirImagenFinal;
+
+
 // ================= ⭐ RESET DE LA VISTA PREVIA =======================
 
 function resetPreview() {
@@ -624,7 +862,7 @@ function salirModoImagen() {
   mostrarTexto();
 }
 
-// ================= 🔺 WINDOW / UI ===============================
+// ================= 🔺 WINDOW / UI ⭕ ===============================
 window.irA = seccion => {
   ["biblia", "devocionales", "abc", "iglesia", "panel"].forEach(s => {
     const el = document.getElementById("seccion-" + s);
@@ -809,241 +1047,4 @@ window.setFormatoImagen = tipo => {
   preview.classList.remove("preview-post", "preview-story");
   preview.classList.add(tipo === "story" ? "preview-story" : "preview-post");
 };
-
-// ========================= 🎨 RESALTADOR COMPACTO  =======================================
-document.addEventListener("DOMContentLoaded", () => {
-
-  const btnActivo = document.getElementById("btnResaltadorActivo");
-  const paleta = document.getElementById("paletaResaltadores");
-  const cont = document.getElementById("resaltadorCompacto");
-  const btnBloquear = document.getElementById("btnBloquearResaltador");
-
-  if (!btnActivo || !paleta || !cont || !btnBloquear) {
-    console.warn("❌ Resaltador no inicializado");
-    return;
-  }
-
-  paleta.style.display = "none";
-  btnActivo.style.background = colorActual;
-  btnActivo.textContent = "💛";
-
-  // 🟡 CLICK PRINCIPAL → abrir / cerrar paleta
-  btnActivo.onclick = e => {
-    e.preventDefault();
-    e.stopPropagation();
-    const visible = paleta.style.display === "block";
-    paleta.style.display = visible ? "none" : "block";
-    cont.classList.remove("mover-derecha");
-    if (!visible) {
-      const rect = paleta.getBoundingClientRect();
-      if (rect.top < 10) cont.classList.add("mover-derecha");
-    }
-  };
-
-  // 🎨 ELEGIR COLOR
-  paleta.querySelectorAll("button[data-color]").forEach(btn => {
-    btn.onclick = e => {
-      e.preventDefault();
-      e.stopPropagation();
-
-      // Quitar candado de todos los botones
-      paleta.querySelectorAll("button[data-color] span.icono-candado").forEach(c => c.remove());
-
-      colorActual = btn.dataset.color;
-      btnActivo.style.background = colorActual;
-      btnActivo.textContent = btn.textContent;
-
-      resaltadorBloqueado = false;
-      paleta.style.display = "none";
-    };
-  });
-
-  // 🔒 BLOQUEAR / DESBLOQUEAR
-  btnBloquear.onclick = e => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    resaltadorBloqueado = !resaltadorBloqueado;
-    btnBloquear.textContent = resaltadorBloqueado ? "🔓" : "🔒";
-
-    // Quitar todos los candados anteriores
-    paleta.querySelectorAll("button[data-color] span.icono-candado").forEach(c => c.remove());
-
-    if (resaltadorBloqueado) {
-      // Colocar candado sobre el color actual
-      const botonColor = Array.from(paleta.querySelectorAll("button[data-color]"))
-        .find(b => b.dataset.color === colorActual);
-      if (botonColor) {
-        const span = document.createElement("span");
-        span.textContent = "🔒";
-        span.className = "icono-candado";
-        span.style.position = "absolute";
-        span.style.top = "-4px";
-        span.style.right = "-4px";
-        span.style.fontSize = "10px";
-        span.style.background = "#fff";
-        span.style.borderRadius = "50%";
-        span.style.padding = "1px";
-        botonColor.style.position = "relative";
-        botonColor.appendChild(span);
-      }
-    }
-  };
-
-  // ❌ cerrar clic fuera
-  document.addEventListener("click", e => {
-    if (!cont.contains(e.target)) {
-      paleta.style.display = "none";
-    }
-  });
-
-});
-
-// ================= 🌄 FONDOS ⛺================================
-const fondos = [
-  "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee",
-  "https://images.unsplash.com/photo-1496307042754-b4aa456c4a2d",
-  "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429",
-  "https://images.unsplash.com/photo-1519681393784-d120267933ba"
-];
-
-// ================= ⭐ CARGAR FONDOS   =======================
-function cargarFondos() {
-  const cont = document.getElementById("personalizarFondos");
-  cont.innerHTML = "";
-
-  fondos.forEach(url => {
-    const img = document.createElement("img");
-    img.src = url;
-    img.style.width = "70px";
-    img.style.height = "70px";
-    img.style.objectFit = "cover";
-    img.style.borderRadius = "10px";
-    img.style.cursor = "pointer";
-
-    img.onclick = () => {
-      fondoFinal = url;
-      actualizarPreview();
-    };
-
-    cont.appendChild(img);
-  });
-}
-
-// ================= 🎀 BOTÓN GENERAR ============================
-const btnGen = document.getElementById("btnGenerarPersonalizada");
-
-if (btnGen) {
-  btnGen.onclick = () => {
-    if (!fondoFinal) {
-      alert("Seleccioná un fondo");
-      return;
-    }
-
-    generarImagenFinal(); // 🔥 ACÁ SE CREA LA IMAGEN REAL
-  };
-}
-
-// ================= ⭐ CANVAS GENERA IMAGEN FINAL ============================
-async function generarImagenFinal() {
-
-  // ⏳ ESPERAR A QUE LAS FUENTES SE CARGUEN (CLAVE PARA CELU)
-  await document.fonts.ready;
-
-  const preview = document.getElementById("previewImagen");
-  const canvasFinal = document.getElementById("canvasFinal");
-
-  html2canvas(preview, {
-
-    scale: window.devicePixelRatio || 2,
-    useCORS: true,
-    backgroundColor: null
-  }).then(canvasTemp => {
-
-    // 🔒 copiar EXACTAMENTE el canvas generado (sin estirar)
-    canvasFinal.width = canvasTemp.width;
-    canvasFinal.height = canvasTemp.height;
-
-    const ctx = canvasFinal.getContext("2d");
-    ctx.clearRect(0, 0, canvasFinal.width, canvasFinal.height);
-    ctx.drawImage(canvasTemp, 0, 0);
-
-    // mostrar resultado sin tocar proporciones
-    mostrarResultadoFinal(canvasFinal);
-  });
-}
-
-// ======================== ⭐ VER RESULTADO FINAL ====================================
-function mostrarResultadoFinal(canvas) {
-  const preview = document.getElementById("previewImagen");
-
-  // 🔥 marcar estado render final
-  preview.classList.add("render-final");
-
-  // Imagen final
-  preview.style.backgroundImage = `url(${canvas.toDataURL("image/png")})`;
-  preview.style.pointerEvents = "none";
-
-  // Ocultar paneles de edición
-  document.querySelector(".panel-opciones").style.display = "none";
-  document.getElementById("personalizarFondos").style.display = "none";
-  document.getElementById("btnGenerarPersonalizada").style.display = "none";
-
-  // Eliminar botones previos
-  const viejo = document.getElementById("accionesFinales");
-  if (viejo) viejo.remove();
-
-  // Botones finales
-  const acciones = document.createElement("div");
-  acciones.id = "accionesFinales";
-  acciones.style.display = "flex";
-  acciones.style.justifyContent = "center";
-  acciones.style.gap = "12px";
-  acciones.style.marginTop = "15px";
-
-  acciones.innerHTML = `
-    <button onclick="descargarImagenFinal()">⬇️ Descargar</button>
-    <button onclick="compartirImagenFinal()">📤 Compartir</button>
-  `;
-
-  preview.parentNode.appendChild(acciones);
-}
-
-// ======================== ⭐ OPCION DESCARGAR ====================================
-
-function descargarImagenFinal() {
-  const canvas = document.getElementById("canvasFinal");
-  canvas.toBlob(blob => {
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = "versiculo.png";
-    link.click();
-    URL.revokeObjectURL(link.href);
-  });
-}
-
-// ========================⭐ OPCION COMPARTIR ====================================
-function compartirImagenFinal() {
-  const canvas = document.getElementById("canvasFinal");
-
-  canvas.toBlob(blob => {
-    const file = new File([blob], "versiculo.png", { type: "image/png" });
-
-    if (navigator.share && navigator.canShare?.({ files: [file] })) {
-      navigator.share({
-        files: [file],
-        title: "Versículo",
-        text: "Compartir imagen"
-      });
-    } else {
-      // 🔥 FALLBACK REAL
-      descargarImagenFinal();
-      alert("Tu dispositivo no permite compartir directamente. La imagen se descargó para que la compartas manualmente.");
-    }
-  });
-}
-
-window.descargarImagenFinal = descargarImagenFinal;
-window.compartirImagenFinal = compartirImagenFinal;
-
 
