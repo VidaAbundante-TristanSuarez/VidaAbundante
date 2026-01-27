@@ -95,9 +95,6 @@ window.cerrarLogin = () => {
   loginModal.style.display = "none";
 };
 
-// ❌ LOGOUT YA NO VA AQUÍ
-// 👉 logout está en main.js
-
 // ================= CAMBIAR LETRA ----
 window.cambiarLetra = delta => {
   state.size = Math.max(14, state.size + delta * 2);
@@ -108,6 +105,7 @@ window.cambiarLetra = delta => {
 window.toggleTema = () => {
   const oscuro = document.body.classList.toggle("oscuro");
   localStorage.setItem("modoOscuro", oscuro ? "1" : "0");
+  mostrarTexto(); // 🔁 vuelve a pintar los versículos
 };
 
 // ================= RESTAURAR MODO OSCURO 🌙 =================
