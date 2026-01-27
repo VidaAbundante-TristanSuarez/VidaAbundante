@@ -53,12 +53,11 @@ window.guardarNota = () => {
 };
 
 // ================= TOAST =======================
-
 function mostrarToast(msg) {
   const t = document.getElementById("toast");
   t.innerText = msg;
-  t.style.display = "block";
-  setTimeout(() => (t.style.display = "none"), 2000);
+  t.classList.add("mostrar");
+  setTimeout(() => t.classList.remove("mostrar"), 2000);
 }
 
 // ================= CAPITULO ANTERIOR ----
