@@ -90,13 +90,15 @@ function pintarVersiculo(v, contenedor) {
 
   div.style.fontSize = state.size + "px";
 
-  if (state.modoImagen) {
+    if (state.modoImagen) {
     div.style.background = imagen
       ? "rgba(255,214,232,0.6)"
       : "transparent";
     div.style.color = imagen ? "#fff" : "";
-  } else if (marcado) {
+  } 
+  else if (marcado) {
     div.style.background = marcado.color;
+    div.style.color = "#000000"; // ✅ TEXTO SIEMPRE NEGRO
   }
 
   let textoVerso = v.RV1960 || v.Texto || "";
@@ -131,4 +133,5 @@ function detectarGrupo(num) {
   notaBox.style.display = "block";
   notaTexto.value = state.notas[state.grupoActual] || "";
 }
+
 
