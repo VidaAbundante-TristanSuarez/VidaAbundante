@@ -409,35 +409,6 @@ function colorOutlineDesdeBase(color) {
   if (el) el.oninput = actualizarPreview;
 });
 
-// ================= ⭐ LISTA DE FUENTES MOSTRAR/OCULTAR  =======================
-// Función para mostrar/ocultar la lista de fuentes
-function toggleFuentes() {
-  const listaFuentes = document.getElementById("listaFuentes");
-  // Si la lista está oculta, la mostramos; si está visible, la ocultamos
-  listaFuentes.style.display = (listaFuentes.style.display === "none" || listaFuentes.style.display === "") ? "block" : "none";
-}
-
-// Asocia la función al botón FUENTES
-document.getElementById("btnFuentes").addEventListener("click", toggleFuentes);
-
-// Fuentes disponibles
-const fuentesDisponibles = [
-  "Roboto", "Lobster", "Playfair Display", "Montserrat", "Poppins"
-];
-
-// Poblar la lista de fuentes
-const listaFuentes = document.getElementById("listaFuentes");
-fuentesDisponibles.forEach(fuente => {
-  const fuenteOption = document.createElement("div");
-  fuenteOption.textContent = fuente;
-  fuenteOption.style.cursor = "pointer";
-  fuenteOption.onclick = () => {
-    document.getElementById("personalizarFuente").value = fuente;
-    listaFuentes.style.display = "none";  // Cierra la lista después de seleccionar una fuente
-  };
-  listaFuentes.appendChild(fuenteOption);
-});
-
 // ================= 🎀 LISTA VISUAL DE FUENTES =================
 const fuentesGoogle = [
   { nombre: "Roboto", css: "Roboto" },
