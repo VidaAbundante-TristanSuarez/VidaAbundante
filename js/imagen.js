@@ -130,11 +130,14 @@ function actualizarPreview() {
   textoBack.style.cssText = textoFront.style.cssText;
 
   // fondo
-  if (state.fondoFinal) {
-    preview.style.backgroundImage = `url(${state.fondoFinal})`;
-  } else {
-    preview.style.backgroundImage = "none";
-  }
+ // Actualización del fondo
+if (state.fondoFinal) {
+  preview.style.backgroundImage = `url(${state.fondoFinal})`;
+  preview.style.backgroundSize = "cover";  // Corregimos el tamaño del fondo
+  preview.style.backgroundPosition = "center";  // Aseguramos que esté centrado
+} else {
+  preview.style.backgroundImage = "none";
+}
 
   // tamaño base
   let fontSize = parseInt(inputSize.value);
@@ -198,10 +201,20 @@ window.cancelarCrearImagen = () => {
 
 // ================= FORMATO =================
 window.setFormatoImagen = tipo => {
-  preview.classList.remove("preview-post", "preview-story");
-  preview.classList.add(tipo === "story" ? "preview-story" : "preview-post");
+  preview.classList.remove("preview-post", "preview-story", "preview-cuadrado");
+  
+  if (tipo === "story") {
+    preview.classList.add("preview-story");
+    preview.style.aspectRatio = "9/16";
+  } else if (tipo === "cuadrado") {
+    preview.classList.add("preview-cuadrado");
+    preview.style.aspectRatio = "1/1";  // Relación cuadrada
+  } else {
+    preview.classList.add("preview-post");
+  }
   actualizarPreview();
 };
+
 
 // ================= CANVAS FINAL =================
 async function generarImagenFinal() {
