@@ -899,6 +899,47 @@ body.modo-imagen #resaltadorCompacto {
       </div>
     </div>
 
+    <!-- ================= ESTILOS DE TEXTO ================= -->
+<div class="style-row" id="textStyles">
+  <button id="btnUpper" title="Mayúsculas">Aa</button>
+  <button id="btnBold" title="Negrita">B</button>
+  <button id="btnItalic" title="Cursiva">I</button>
+  <button id="btnUnderline" title="Subrayado">U</button>
+</div>
+
+<!-- ================= FUENTES VISUALES ================= -->
+<div style="position: relative;">
+
+  <button id="btnFuentes">🔤 Fuentes</button>
+
+  <div id="listaFuentes"
+       style="
+         display:none;
+         position:absolute;
+         top:110%;
+         left:0;
+         z-index:50;
+         background:white;
+         border-radius:12px;
+         box-shadow:0 8px 20px rgba(0,0,0,.25);
+         padding:10px;
+         max-height:260px;
+         overflow-y:auto;
+         width:100%;
+       ">
+  </div>
+
+</div>
+
+<!-- ================= FORMATO IMAGEN ================= -->
+<div class="style-row" id="formatoImagen">
+
+  <button id="btnPost" class="activo">POST</button>
+
+  <button id="btnStory">STORY</button>
+
+</div>
+
     <!-- AJUSTES -->
     <div class="panel-opciones">
       <label>Tamaño
@@ -952,6 +993,7 @@ body.modo-imagen #resaltadorCompacto {
   
 </body>
 </html>
+
 
 
 
