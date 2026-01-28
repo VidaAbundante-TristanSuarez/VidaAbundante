@@ -893,30 +893,31 @@ body.oscuro #fuentesCompacto #listaFuentes {
     <button data-color="#e6c9ff">💜</button>
     <button data-color="#ffe2c9">🧡</button>
 
-    <!-- Botón para bloquear -->
+    <!-- Botón Bloquear resaltador -->
     <button id="btnBloquearResaltador" title="Bloquear resaltador">🔒</button>
   </div>
 
 </div>
-
+ <!-- Tamaño de letra -->
     <button class="accion-normal" onclick="cambiarLetra(-1)">A−</button>
     <button class="accion-normal" onclick="cambiarLetra(1)">A+</button>
-
+ <!-- Scroll arriba -->
     <button class="accion-normal"
             onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
-
+  <!-- Activar modo imagen -->
     <button id="btnImagen" onclick="toggleModoImagen()">🖼️</button>
-
+ <!-- Crear imagen -->
+    <!-- ⚠️ Por defecto está oculto por CSS -->
  <button id="btnCrearImagen"
         onclick="generarImagen()">
   Crear Imagen
 </button>
 
-  </div>
-  
+</div>
 </div>
 
-  <!-- Toast de Notificación -->
+<!-- ================= TOAST ================= -->
+<!-- Notificación flotante -->
 <div id="toast" class="toast" style="display: none;">
   📝 Nota guardada
 </div>
@@ -937,23 +938,24 @@ body.oscuro #fuentesCompacto #listaFuentes {
 <!-- ================= PANEL ================= -->
 <div id="seccion-panel" class="seccion" style="display:none">
   <h2>🗂️ Mi Panel</h2>
-
+<!-- Tabs -->
   <div class="panel-tabs">
     <button onclick="mostrarSeccion('imagenes')">🖼️ Imágenes</button>
     <button onclick="mostrarSeccion('versiculos')">⭐ Versículos</button>
     <button onclick="mostrarSeccion('notas')">📝 Notas</button>
   </div>
-
+  <!-- Imágenes -->
   <div id="panel-imagenes" class="panel-seccion">
     <p id="imagenes-vacio">Todavía no generaste imágenes.</p>
     <div id="grid-imagenes" class="grid-imagenes"></div>
   </div>
-
+<!-- ⚠️ Estos paneles se rellenan por JS -->
   <div id="panel-versiculos" class="panel-seccion" style="display:none"></div>
   <div id="panel-notas" class="panel-seccion" style="display:none"></div>
 </div>
 
 <!-- ================= MODAL LOGIN ================= -->
+<!-- Se muestra cuando el usuario no está logueado -->
 <div id="loginModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:2000; justify-content:center; align-items:center;">
   <div style="background:white; padding:20px; border-radius:12px; max-width:320px; width:90%; text-align:center;">
     <h3>🔐 Iniciar sesión</h3>
@@ -963,24 +965,28 @@ body.oscuro #fuentesCompacto #listaFuentes {
   </div>
 </div>
 
-<!-- ================= MODAL PERSONALIZAR ================= -->
-  
 <!-- ================= MODAL PERSONALIZAR IMAGEN ================= -->
+<!-- ⚠️ ESTE MODAL ESTÁ DUPLICADO EN CSS (lo veremos después) -->
 <div id="modalPersonalizar" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:1000; justify-content:center; align-items:center;">
   <div style="background:white; padding:20px; max-width:600px; width:90%; border-radius:10px; position:relative;">
 
-    <!-- CERRAR MODAL -->
+<!-- CERRAR MODAL -->
     <button onclick="cancelarCrearImagen()" style="position:absolute; top:10px; right:10px;">✖</button>
 
-    <!-- PREVIEW DE LA IMAGEN -->
+<!-- PREVIEW DE LA IMAGEN -->
+<!-- ⚠️ ESTE ID (#previewImagen) ESTÁ DEFINIDO DOS VECES EN CSS -->
     <div id="previewImagen" style="width:100%; height:400px; background:#eee; display:flex; justify-content:center; align-items:center; position:relative; margin-bottom:20px;">
-      <div id="previewTextoWrapper" style="position:absolute; padding:10px; text-align:center; width:90%; word-wrap:break-word;">
-        <div id="previewTexto" style="white-space:pre-wrap;"></div>
+<!-- Texto dentro de la imagen -->
+<!-- ⚠️ #previewTextoWrapper TAMBIÉN ESTÁ DUPLICADO EN CSS --> 
+   <div id="previewTextoWrapper" style="position:absolute; padding:10px; text-align:center; width:90%; word-wrap:break-word;">
+<!-- Texto trasero (contorno) -->
+<!-- ⚠️ Se usa solo en ciertos modos -->
+   <div id="previewTexto" style="white-space:pre-wrap;"></div>
         <div id="previewTextoBack" style="white-space:pre-wrap; display:none;"></div>
       </div>
     </div>
 
-    <!-- AJUSTES DE TEXTO -->
+ <!-- ================= AJUSTES ================= -->
     <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:20px;">
       <label>Tamaño: <input id="personalizarTamaño" type="number" value="24" min="10" max="100"></label>
       <label>Color: <input id="personalizarColor" type="color" value="#000000"></label>
@@ -998,10 +1004,11 @@ body.oscuro #fuentesCompacto #listaFuentes {
       </label>
     </div>
 
-    <!-- LISTA DE FONDOS -->
+  <!-- ================= FONDOS ================= -->
+  <!-- ⚠️ #personalizarFondos ESTÁ DEFINIDO 3 VECES EN CSS -->
     <div id="personalizarFondos" style="display:flex; gap:5px; overflow-x:auto; margin-bottom:20px;"></div>
 
-    <!-- BOTONES DE ACCIÓN -->
+   <!-- ================= BOTONES MODAL CREAR IMAGEN================= -->
     <div style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center;">
       <button onclick="generarImagenFinal()">Generar imagen final</button>
       <button onclick="descargarImagenFinal()">💾 Descargar</button>
@@ -1013,15 +1020,18 @@ body.oscuro #fuentesCompacto #listaFuentes {
   </div>
 </div>
 
-<!-- ================= CANVAS FINAL (OCULTO) ================= -->
+<!-- ================= CANVAS FINAL ================= -->
+<!-- Usado para renderizar la imagen -->
 <canvas id="canvasFinal" style="display:none;"></canvas>
 
-
+<!-- ================= SCRIPT PRINCIPAL ================= -->
+<!-- ⚠️ biblia.js CONTROLA TODO -->
 <script type="module" src="biblia.js"></script>
 
   
 </body>
 </html>
+
 
 
 
