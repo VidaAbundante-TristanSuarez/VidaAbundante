@@ -872,32 +872,37 @@ body.modo-imagen #resaltadorCompacto {
   </div>
 </div>
 
-<!-- ================= MODAL PERSONALIZAR IMAGEN ================= -->
-<!-- ⚠️ ESTE MODAL ESTÁ DUPLICADO EN CSS (lo veremos después) -->
-<div id="modalPersonalizar">
+<div id="modalPersonalizar" class="modal">
 
-<!-- CERRAR MODAL -->
-    <button onclick="cancelarCrearImagen()" style="position:absolute; top:10px; right:10px;">✖</button>
+  <!-- CONTENEDOR INTERNO -->
+  <div class="modal-contenido">
 
-<!-- PREVIEW DE LA IMAGEN -->
-<!-- ⚠️ ESTE ID (#previewImagen) ESTÁ DEFINIDO DOS VECES EN CSS -->
-    <div id="previewImagen" style="width:100%; height:400px; background:#eee; display:flex; justify-content:center; align-items:center; position:relative; margin-bottom:20px;">
-<!-- Texto dentro de la imagen -->
-<!-- ⚠️ #previewTextoWrapper TAMBIÉN ESTÁ DUPLICADO EN CSS --> 
-   <div id="previewTextoWrapper" style="position:absolute; padding:10px; text-align:center; width:90%; word-wrap:break-word;">
-<!-- Texto trasero (contorno) -->
-<!-- ⚠️ Se usa solo en ciertos modos -->
-   <div id="previewTexto" style="white-space:pre-wrap;"></div>
-        <div id="previewTextoBack" style="white-space:pre-wrap; display:none;"></div>
+    <!-- CERRAR -->
+    <button class="cerrar-modal" onclick="cancelarCrearImagen()">✖</button>
+
+    <!-- PREVIEW -->
+    <div id="previewImagen">
+      <div id="previewTextoWrapper">
+        <div id="previewTextoBack"></div>
+        <div id="previewTexto"></div>
       </div>
     </div>
 
- <!-- ================= AJUSTES ================= -->
-    <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:20px;">
-      <label>Tamaño: <input id="personalizarTamaño" type="number" value="24" min="10" max="100"></label>
-      <label>Color: <input id="personalizarColor" type="color" value="#000000"></label>
-      <label>Opacidad fondo: <input id="personalizarOpacidad" type="range" min="0" max="1" step="0.05" value="0.3"></label>
-      <label>Fuente: 
+    <!-- AJUSTES -->
+    <div class="panel-opciones">
+      <label>Tamaño
+        <input id="personalizarTamaño" type="number" value="24" min="10" max="100">
+      </label>
+
+      <label>Color
+        <input id="personalizarColor" type="color" value="#000000">
+      </label>
+
+      <label>Opacidad fondo
+        <input id="personalizarOpacidad" type="range" min="0" max="1" step="0.05" value="0.3">
+      </label>
+
+      <label>Fuente
         <select id="personalizarFuente">
           <option>Arial</option>
           <option>Roboto</option>
@@ -910,12 +915,11 @@ body.modo-imagen #resaltadorCompacto {
       </label>
     </div>
 
-  <!-- ================= FONDOS ================= -->
-  <!-- ⚠️ #personalizarFondos ESTÁ DEFINIDO 3 VECES EN CSS -->
-    <div id="personalizarFondos" style="display:flex; gap:5px; overflow-x:auto; margin-bottom:20px;"></div>
+    <!-- FONDOS -->
+    <div id="personalizarFondos"></div>
 
-   <!-- ================= BOTONES MODAL CREAR IMAGEN================= -->
-    <div style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center;">
+    <!-- BOTONES -->
+    <div id="accionesFinales">
       <button onclick="generarImagenFinal()">Generar imagen final</button>
       <button onclick="descargarImagenFinal()">💾 Descargar</button>
       <button onclick="compartirImagenFinal()">📤 Compartir</button>
@@ -937,6 +941,7 @@ body.modo-imagen #resaltadorCompacto {
   
 </body>
 </html>
+
 
 
 
