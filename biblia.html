@@ -382,14 +382,6 @@ button:active {
   width: 100%;
 }
 
-#personalizarFondos {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  padding-bottom: 8px;
-  margin-bottom: 12px;
-}
-
 @media (max-width: 480px) {
   #previewImagen {
     margin-bottom: 24px;
@@ -568,62 +560,6 @@ body.modo-imagen #resaltadorCompacto {
   line-height: 1;
 }
 
-/* 🔒 candado */
-#btnResaltadorActivo .icono-candado {
-  position: absolute;
-  top: -4px;
-  right: -4px;
-
-  background: white;
-  border-radius: 50%;
-  font-size: 10px;
-  padding: 2px;
-
-  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-}
-
-/* modo oscuro */
-body.oscuro #btnResaltadorActivo .icono-candado {
-  background: #1e1e1e;
-}
-
-/* ================= FUENTES COMPACTO (igual a formato) ================= */
-
-#fuentesCompacto {
-  position: relative;
-}
-
-#fuentesCompacto #btnFuentes {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
-  font-weight: bold;
-}
-
-#fuentesCompacto #listaFuentes {
-  position: absolute;
-  bottom: 110%;       /* se abre hacia arriba */
-  left: 0;
-
-  display: none;
-  background: #fff;
-  border-radius: 12px;
-  padding: 8px;
-  box-shadow: 0 6px 20px rgba(0,0,0,.25);
-
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 6px;
-  min-width: 160px;
-  z-index: 9999;
-}
-
-body.oscuro #fuentesCompacto #listaFuentes {
-  background: #1e1e1e;
-}
-
 /* ================= MODAL BASE ================= */
 #modalPersonalizar {
   display: none;
@@ -663,30 +599,6 @@ body.oscuro #fuentesCompacto #listaFuentes {
   color: #333;
 }
 
-/* PREVIEW IMAGEN */
-#previewImagen {
-  width: 100%;
-  height: 400px;
-  background: #eee;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  position: relative;
-  border-radius: 10px;
-  overflow: hidden;
-  box-shadow: inset 0 0 10px rgba(0,0,0,0.2);
-}
-
-/* WRAPPER DE TEXTO */
-#previewTextoWrapper {
-  position: absolute;
-  padding: 15px;
-  text-align: center;
-  width: 90%;
-  word-wrap: break-word;
-  pointer-events: none; /* evita que interfiera con clicks */
-}
-
 /* TEXTO DE PREVIEW */
 #previewTexto {
   white-space: pre-wrap;
@@ -711,7 +623,7 @@ body.oscuro #fuentesCompacto #listaFuentes {
   font-size: 14px;
 }
 
-/* LISTA DE FONDOS */
+/* LISTA DE FONDOS 🟢 DEFINICIÓN DEFINITIVA (SE QUEDA) */
 #personalizarFondos {
   display: flex;
   gap: 10px;
@@ -734,7 +646,7 @@ body.oscuro #fuentesCompacto #listaFuentes {
   border-color: #007bff;
   transform: scale(1.05);
 }
-
+/*  🟢  */
 /* BOTONES DE ACCIÓN */
 #modalPersonalizar div:last-child {
   display: flex;
@@ -775,11 +687,11 @@ body.oscuro #fuentesCompacto #listaFuentes {
 
 @media (max-width: 600px) {
 
-  #modalPersonalizar {
+#modalPersonalizar {
     padding: 10px;
   }
 
-  #personalizarFondos {
+#personalizarFondos {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 8px;
@@ -789,7 +701,7 @@ body.oscuro #fuentesCompacto #listaFuentes {
     grid-template-columns: repeat(2, 1fr);
   }
 
-  #accionesFinales button {
+#accionesFinales button {
     font-size: 14px;
     padding: 8px 10px;
   }
@@ -799,11 +711,6 @@ body.oscuro #fuentesCompacto #listaFuentes {
   max-width: 95vw;
   max-height: 90vh;
   overflow-y: auto;
-}
-
-#personalizarFondos {
-  overflow-x: auto;
-  flex-wrap: nowrap;
 }
 
 #modalPersonalizar div:last-child {
@@ -967,8 +874,7 @@ body.oscuro #fuentesCompacto #listaFuentes {
 
 <!-- ================= MODAL PERSONALIZAR IMAGEN ================= -->
 <!-- ⚠️ ESTE MODAL ESTÁ DUPLICADO EN CSS (lo veremos después) -->
-<div id="modalPersonalizar" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:1000; justify-content:center; align-items:center;">
-  <div style="background:white; padding:20px; max-width:600px; width:90%; border-radius:10px; position:relative;">
+<div id="modalPersonalizar">
 
 <!-- CERRAR MODAL -->
     <button onclick="cancelarCrearImagen()" style="position:absolute; top:10px; right:10px;">✖</button>
@@ -1031,6 +937,7 @@ body.oscuro #fuentesCompacto #listaFuentes {
   
 </body>
 </html>
+
 
 
 
