@@ -1,20 +1,26 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+<!-- ================= CONFIGURACIÓN BÁSICA ================= -->
   <meta charset="UTF-8" />
   <title>Vida Abundante</title>
+<!-- Escalado correcto en celulares 📱 -->
   <meta name="viewport" content="width=device-width, initial-scale=1" />
  
-<!-- Fuentes -->
+ <!-- ================= FUENTES DE GOOGLE ================= -->
+  <!-- Se cargan todas las fuentes que luego podés usar en textos e imágenes -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Lobster&family=Playfair+Display:wght@400;700&family=Montserrat:wght@400;700&family=Poppins:wght@400;700&family=Abril+Fatface&family=Cormorant:wght@400;700&family=Josefin+Sans:wght@400;700&family=Great+Vibes&display=swap" rel="stylesheet">
 
-  <!-- html2canvas (UNA SOLA VEZ) -->
+ <!-- ================= html2canvas ================= -->
+  <!-- Librería que convierte HTML en imagen (para generar imágenes bíblicas) -->
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
   <style>
+    
+ /* ================= ESTILOS GENERALES ================= */
     body {
       font-family: Arial, sans-serif;
       margin: 0;
@@ -24,12 +30,14 @@
       color: #000;
     }
 
+    /* Modo oscuro */
     body.oscuro {
       background: #121212;
       color: #e0e0e0;
     }
     
-/* ================= HEADER ================= */
+/* ================= HEADER SUPERIOR ================= */
+/* Barra superior con botones de navegación */
 #header {
   position: static; /* ✅ NO sticky */
   z-index: auto;
@@ -44,13 +52,16 @@
 body.oscuro #header {
   background: #121212;
   border-color: #333;
-}
+}   
+    
+/* Contenedor de botones del menú */
     #menu {
       display: flex;
       gap: 6px;
       flex-wrap: nowrap;
     }
-
+    
+/* Botones del menú */
     .nav-btn {
       display: flex;
       align-items: center;
@@ -68,18 +79,20 @@ body.oscuro #header {
       color: #fff;
     }
 
+  /* En móvil se oculta el texto y queda solo el emoji */
     @media (max-width: 640px) {
       .nav-btn .text {
         display: none;
       }
     }
 
-    /* ================= SECCIONES ================= */
+  /* ================= SECCIONES GENERALES ================= */
     .seccion {
       padding: 15px;
     }
 
-    /* ================= BIBLIA ================= */
+  /* ================= SECCIÓN BIBLIA ================= */
+    /* Filtros de libro y capítulo */
     .filtros {
       display: flex;
       gap: 8px;
@@ -91,11 +104,13 @@ body.oscuro #header {
       font-size: 16px;
     }
 
+  /* Título del libro + capítulo */
     #titulo {
       margin: 12px 0;
       font-weight: bold;
     }
-
+    
+ /* Versículos */
     .versiculo {
   padding: 10px 14px;
   border-radius: 8px;
@@ -109,21 +124,22 @@ body.oscuro .versiculo {
   color: #fff;
 }
 
-/* resaltado normal */
+/* Versículo marcado (resaltado) */
 .versiculo[data-marcado="true"] {
-  color: #000;
+  color: #000; 
 }
 
 body.oscuro .versiculo[data-marcado="true"] {
-  color: #000; /* fuerza negro sobre pastel */
+  color: #000; /* fuerza negro sobre color resaltador pastel */
 }
 
-/* selección imagen */
+/* Versículo seleccionado para imagen */
 .versiculo.imagen {
   background: #4f6fa8 !important;
   color: #fff !important;
 }
 
+/* Número del versículo */
     .num {
       font-weight: bold;
       margin-right: 4px;
@@ -182,6 +198,7 @@ body.oscuro .versiculo[data-marcado="true"] {
       font-weight: bold;
     }
 
+/* ================= BARRA DE ACCIONES ================= */
 .barra-acciones {
   position: sticky;
   bottom: 0;
@@ -209,6 +226,7 @@ body.oscuro .barra-acciones {
   cursor: pointer;
 }
 
+ /* Botón activo */
 .barra-acciones button.activo {
   background: #ffe8c8;
   color: #000;
@@ -220,6 +238,8 @@ body.oscuro .barra-acciones {
   transform: scale(1.15);
 }
 
+/* ================= MODO IMAGEN ================= */
+    /* Cuando está activo el modo imagen */
 .modo-imagen #accionesBiblia .accion-normal {
   display: none;
 }
@@ -277,6 +297,7 @@ button:active {
   box-shadow: 0 4px 10px rgba(0,0,0,.15);
 }
 
+ /* ================= PREVIEW IMAGEN ================= */
 #previewImagen {
   position: relative; /* ✅ CLAVE ABSOLUTA */
   width: 100%;
@@ -318,6 +339,7 @@ button:active {
 }
    
 /* ================= TEXTO DOBLE ================= */
+    /* Texto dentro de la imagen (doble capa) */
 #previewTextoWrapper {
   position: absolute;
   inset: 40px 24px;
@@ -800,44 +822,56 @@ body.oscuro #fuentesCompacto #listaFuentes {
   
 <body>
 <!-- ================= HEADER ================= -->
+  <!-- Barra fija con navegación -->
 <div id="header">
-  <div id="menu">
+
+  <!-- Menú principal -->
+<div id="menu">
+  <!-- Cada botón llama a irA('seccion') -->
     <button class="nav-btn" onclick="irA('biblia')">📖 <span class="text">Biblia</span></button>
     <button class="nav-btn" onclick="irA('devocionales')">📆 <span class="text">Devocionales</span></button>
     <button class="nav-btn" onclick="irA('abc')">🔤 <span class="text">ABC</span></button>
     <button class="nav-btn" onclick="irA('iglesia')">⛪ <span class="text">Iglesia</span></button>
     <button class="nav-btn" onclick="irA('panel')">👤 <span class="text">Mi Panel</span></button>
-  </div>
-
-  <button onclick="toggleTema()">🌙</button>
 </div>
 
-<!-- ================= BIBLIA ================= -->
-<div id="seccion-biblia" class="seccion">
+ <!-- Botón para alternar modo oscuro -->
+    <button onclick="toggleTema()">🌙</button>
+</div>
 
+<!-- ================= SECCIÓN BIBLIA ================= -->
+<div id="seccion-biblia" class="seccion">
+<!-- Select de libro + capítulo -->
 <div class="filtros">
   <select id="libro"></select>
   <select id="capitulo"></select>
-
+<!-- Guardar marcador -->
   <button onclick="guardarMarcador()">📁</button>
+<!-- Volver al marcador -->
   <button onclick="irAMarcador()">↩</button>
 </div>
-  
+ <!-- ================= BANNER MODO IMAGEN ================= -->
+ <!-- Solo se muestra cuando body tiene la clase modo-imagen -->
     <div id="bannerModoImagen">
   🖼️ Modo imagen activado · Tocá los versículos a incluir
 </div>
-
+<!-- Título del libro + capítulo -->
   <h3 id="titulo"></h3>
+<!-- CONTENEDOR DEL TEXTO BÍBLICO -->
+  <!-- ⚠️ JS inserta aquí los versículos -->
   <div id="texto"></div>
- 
+<!-- ================= CAJA DE NOTAS ================= -->
+  <!-- ⚠️ Se muestra/oculta por JS --> 
   <div id="notaBox" style="display:none; margin-top:15px">
     <b>📝 Nota:</b>
+    <!-- Texto de la nota -->
     <textarea id="notaTexto"></textarea>
+    <!-- Guardar nota -->
     <button onclick="guardarNota()">💾 Guardar</button>
   </div>
-
+ <!-- ================= BARRA DE ACCIONES ================= -->
   <div id="accionesBiblia" class="barra-acciones">
-
+ <!-- Navegación de capítulos -->
     <button class="accion-normal" onclick="capituloAnterior()">‹</button>
     <button class="accion-normal" onclick="capituloSiguiente()">›</button>
 
@@ -988,5 +1022,6 @@ body.oscuro #fuentesCompacto #listaFuentes {
   
 </body>
 </html>
+
 
 
