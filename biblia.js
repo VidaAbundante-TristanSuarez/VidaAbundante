@@ -32,7 +32,6 @@ let marcados = {};
 let notas = {};
 let size = 18;
 let colorActual = "#fff3b0"; // 💛 amarillo por default
-let resaltadorAbierto = false;
 let resaltadorBloqueado = false; // 🔒 nuevo estado
 let grupoActual = null;
 let marcador = null;
@@ -544,17 +543,17 @@ function crearListaVisualFuentes() {
 // ================= 🎀 Abrir y cerrar fuentes =================
 // Toggle abrir/cerrar
 const btnFuentes = document.getElementById("btnFuentes");
-btnFuentes.onclick = e => {
-  e.stopPropagation();
-  const lista = document.getElementById("listaFuentes");
-  lista.style.display = lista.style.display === "block" ? "none" : "block";
-};
 
-// Cerrar al tocar fuera
-document.addEventListener("click", () => {
-  const lista = document.getElementById("listaFuentes");
-  if (lista) lista.style.display = "none";
-});
+if (btnFuentes) {
+  btnFuentes.onclick = e => {
+    e.stopPropagation();
+    const lista = document.getElementById("listaFuentes");
+    if (!lista) return;
+
+    lista.style.display =
+      lista.style.display === "block" ? "none" : "block";
+  };
+}
 
 // ================= 🌄 FONDOS ⛺================================
 const fondos = [
@@ -799,14 +798,6 @@ function compartirImagenFinal() {
 window.descargarImagenFinal = descargarImagenFinal;
 window.compartirImagenFinal = compartirImagenFinal;
 
-
-// ================= ⭐ RESET DE LA VISTA PREVIA =======================
-
-function resetPreview() {
-  fondoFinal = null;
-  textStyle = { upper: false, bold: false, italic: false, underline: false };
-}
-
 // ================= ⭐ RESET DEL MODAL  =======================
 function resetModalPersonalizar() {
   fondoFinal = null;
@@ -910,13 +901,6 @@ window.generarImagen = () => {
 window.cancelarCrearImagen = () => {
   resetModalPersonalizar();
   salirModoImagen();
-};
-
-// ================= 🔺 SET COLOR ===============================
-window.setColor = (c, btn) => {
-  colorActual = c;
-  document.querySelectorAll(".color-btn").forEach(b => b.classList.remove("activo"));
-  btn?.classList.add("activo");
 };
 
 // ================= 🔺 CAMBIAR LETRA ===============================
