@@ -930,8 +930,8 @@ body.modo-imagen #resaltadorCompacto {
     
 <!-- ================= FORMATO IMAGEN ================= -->
 <div class="fila-opciones">
-  <button onclick="setFormatoImagen('post')">🖼 Post</button>
-  <button onclick="setFormatoImagen('story')">📜 History</button>
+  <button onclick="setFormatoImagen('post')">🟦</button>
+  <button onclick="setFormatoImagen('story')">📱</button>
 
   <label>
     Opacidad
@@ -969,14 +969,11 @@ body.modo-imagen #resaltadorCompacto {
     
 <!-- BOTONES -->    
 <div class="fila-final">
+  <button onclick="descargarImagenFinal()">Descargar💾</button>
+  <button onclick="compartirImagenFinal()">Compartir📤</button>
+  <button onclick="generarImagenFinal()">Finalizar✅</button>
   <label class="subir-iglesia">
-    <input type="checkbox" id="checkIglesia">
-    Subir ⛪
-  </label>
-
-  <button onclick="descargarImagenFinal()">💾</button>
-  <button onclick="compartirImagenFinal()">📤</button>
-  <button onclick="generarImagenFinal()">✅</button>
+    <input type="checkbox" id="checkIglesia">Subir ⛪</label>
 </div>
 
 <div style="height:10px"></div>
@@ -994,6 +991,7 @@ body.modo-imagen #resaltadorCompacto {
   
 </body>
 </html>
+
 
 
 
