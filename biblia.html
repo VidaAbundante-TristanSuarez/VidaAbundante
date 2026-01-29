@@ -579,21 +579,16 @@ body.modo-imagen #resaltadorCompacto {
 /* CONTENEDOR INTERNO DEL MODAL */
 #modalPersonalizar > div {
   background: #fff;
-  padding: 20px;
-  width: 100%;
-  max-width: 480px;   /* 👈 emulador real */
-  height: auto;
-
-  border-radius: 16px;
+  width: 390px;              /* ancho real celular */
+  max-width: 100%;
+  height: 100vh;             /* ocupa toda la altura */
+  border-radius: 0;          /* como app */
   position: relative;
-
-  box-shadow: 0 12px 30px rgba(0,0,0,0.35);
 
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  overflow-y: auto;
 }
-
 
 /* BOTON CERRAR MODAL */
 #modalPersonalizar button[onclick="cancelarCrearImagen()"] {
@@ -734,10 +729,18 @@ body.modo-imagen #resaltadorCompacto {
 /* ================= FUENTES VISUALES ================= */
 
 #listaFuentes {
-  position: absolute !important;
-  z-index: 9999;
-  max-height: 260px;
+  position: fixed;
+  bottom: 80px;
+  left: 10px;
+  right: 10px;
+
+  max-height: 50vh;
   overflow-y: auto;
+
+  background: white;
+  border-radius: 14px;
+  padding: 12px;
+  z-index: 9999;
 }
 
 #btnFuentes {
@@ -911,12 +914,10 @@ body.modo-imagen #resaltadorCompacto {
       </div>
     </div>
 
-    <!-- ================= ESTILOS DE TEXTO ================= -->
-<div class="style-row" id="textStyles">
-  <button id="btnUpper" title="Mayúsculas">Aa</button>
-  <button id="btnBold" title="Negrita">B</button>
-  <button id="btnItalic" title="Cursiva">I</button>
-  <button id="btnUnderline" title="Subrayado">U</button>
+<!-- ================= FORMATO IMAGEN ================= -->
+<div class="style-row">
+  <button onclick="setFormatoImagen('post')">🖼 Vista previa</button>
+  <button onclick="setFormatoImagen('story')">📜 Post / History</button>
 </div>
 
 <!-- ================= FUENTES VISUALES ================= -->
@@ -943,13 +944,12 @@ body.modo-imagen #resaltadorCompacto {
 
 </div>
 
-<!-- ================= FORMATO IMAGEN ================= -->
-<div class="style-row" id="formatoImagen">
-
-  <button id="btnPost" class="activo">POST</button>
-
-  <button id="btnStory">STORY</button>
-
+<!-- ================= ESTILOS DE TEXTO ================= -->
+<div class="style-row" id="textStyles">
+  <button id="btnUpper" title="Mayúsculas">Aa</button>
+  <button id="btnBold" title="Negrita">B</button>
+  <button id="btnItalic" title="Cursiva">I</button>
+  <button id="btnUnderline" title="Subrayado">U</button>
 </div>
 
     <!-- AJUSTES -->
@@ -966,29 +966,21 @@ body.modo-imagen #resaltadorCompacto {
         <input id="personalizarOpacidad" type="range" min="0" max="1" step="0.05" value="0.3">
       </label>
 
-      <label>Fuente
-        <select id="personalizarFuente">
-          <option>Arial</option>
-          <option>Roboto</option>
-          <option>Lobster</option>
-          <option>Playfair Display</option>
-          <option>Montserrat</option>
-          <option>Poppins</option>
-          <option>Great Vibes</option>
-        </select>
-      </label>
     </div>
 
     <!-- FONDOS -->
     <div id="personalizarFondos"></div>
 
+   <label style="display:flex; align-items:center; gap:8px;">
+  <input type="checkbox" id="checkIglesia">
+  ⛪ Subir al panel de la iglesia
+</label>
+
     <!-- BOTONES -->
     <div id="accionesFinales">
-      <button onclick="generarImagenFinal()">Generar imagen final</button>
       <button onclick="descargarImagenFinal()">💾 Descargar</button>
       <button onclick="compartirImagenFinal()">📤 Compartir</button>
-      <button onclick="subirImagen('personal')">⬆️ Subir a mi panel</button>
-      <button onclick="subirImagen('iglesia')">⬆️ Subir a panel iglesia</button>
+      <button onclick="generarImagenFinal()">Generar imagen final</button>
     </div>
 
   </div>
@@ -1005,6 +997,7 @@ body.modo-imagen #resaltadorCompacto {
   
 </body>
 </html>
+
 
 
 
