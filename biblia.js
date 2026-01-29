@@ -35,6 +35,7 @@ let colorActual = "#fff3b0"; // 💛 amarillo por default
 let resaltadorBloqueado = false; // 🔒 nuevo estado
 let grupoActual = null;
 let marcador = null;
+let fuenteActual = "Arial";
 
 let modoImagen = false;
 let seleccionImagen = {};
@@ -458,8 +459,8 @@ function colorOutlineDesdeBase(color) {
 
   // extremos reales
   l = isLight
-    ? 0.06   // casi negro tintado
-    : 0.96;  // casi blanco tintado
+    ? 0.08   // casi negro tintado
+    : 0.91;  // casi blanco tintado
 
   // hsl → rgb
   function hue2rgb(p, q, t) {
@@ -492,7 +493,7 @@ function colorOutlineDesdeBase(color) {
 
 // ================= 🎀 FUENTES  =======================
 // 🔗 Listeners de personalización 
-["personalizarOpacidad","personalizarFuente","personalizarTamaño","personalizarColor"]
+["personalizarOpacidad","personalizarTamaño","personalizarColor"]
 .forEach(id => {
   const el = document.getElementById(id);
   if (el) el.oninput = actualizarPreview;
@@ -531,7 +532,7 @@ function crearListaVisualFuentes() {
 
     btn.onclick = e => {
       e.stopPropagation();  // no cerrar el contenedor al hacer click
-      document.getElementById("personalizarFuente").value = f.nombre;
+     fuenteActual = f.css;
       actualizarPreview();
       cont.style.display = "none"; // cierra paleta al seleccionar
     };
@@ -604,7 +605,7 @@ function actualizarPreview() {
     : "none";
 
   // ================= Fuente =================
-  const fuente = document.getElementById("personalizarFuente").value || "Arial";
+  const fuente = fuenteActual;
   previewTexto.style.fontFamily = fuente;
   previewTextoBack.style.fontFamily = fuente;
 
@@ -665,7 +666,7 @@ function actualizarPreview() {
     bgColor = `rgba(255,255,255,${a})`;
   }
 
-  wrapper.style.backgroundColor = bgColor;
+ wrapper.style.backgroundColor = "transparent";
 
   // ================= Estilos Texto =================
   const transform = textStyle.upper ? "uppercase" : "none";
@@ -680,20 +681,6 @@ function actualizarPreview() {
   previewTextoBack.style.fontWeight = previewTexto.style.fontWeight;
   previewTextoBack.style.fontStyle = previewTexto.style.fontStyle;
   previewTextoBack.style.textDecoration = previewTexto.style.textDecoration;
-}
-
-// ================= 🎀 BOTÓN GENERAR ============================
-const btnGen = document.getElementById("btnGenerarPersonalizada");
-
-if (btnGen) {
-  btnGen.onclick = () => {
-    if (!fondoFinal) {
-      alert("Seleccioná un fondo");
-      return;
-    }
-
-    generarImagenFinal(); // 🔥 ACÁ SE CREA LA IMAGEN REAL
-  };
 }
 
 // ================= ⭐ CANVAS GENERA IMAGEN FINAL ============================
@@ -723,6 +710,14 @@ async function generarImagenFinal() {
     // mostrar resultado sin tocar proporciones
     mostrarResultadoFinal(canvasFinal);
   });
+
+  const subirIglesia = document.getElementById("checkIglesia")?.checked;
+
+if (subirIglesia) {
+  subirImagen("iglesia");
+}
+subirImagen("personal");
+
 }
 
 // ======================== ⭐ VER RESULTADO FINAL ====================================
@@ -737,7 +732,6 @@ function mostrarResultadoFinal(canvas) {
   preview.style.pointerEvents = "none";
 
   // Ocultar paneles de edición
-  document.querySelector(".panel-opciones").style.display = "none";
   document.getElementById("personalizarFondos").style.display = "none";
   document.getElementById("btnGenerarPersonalizada").style.display = "none";
 
@@ -826,7 +820,6 @@ colorInput.value = document.body.classList.contains("oscuro")
   wrapper.style.background = "";
 
   // Restaurar UI
-  document.querySelector(".panel-opciones").style.display = "grid";
   document.getElementById("personalizarFondos").style.display = "flex";
   document.getElementById("btnGenerarPersonalizada").style.display = "inline-block";
 
