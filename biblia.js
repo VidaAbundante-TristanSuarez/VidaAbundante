@@ -733,7 +733,6 @@ function mostrarResultadoFinal(canvas) {
 
   // Ocultar paneles de edición
   document.getElementById("personalizarFondos").style.display = "none";
-  document.getElementById("btnGenerarPersonalizada").style.display = "none";
 
   // Eliminar botones previos
   const viejo = document.getElementById("accionesFinales");
@@ -799,9 +798,9 @@ function resetModalPersonalizar() {
 
   document.getElementById("personalizarOpacidad").value = 0.35;
   document.getElementById("personalizarTamaño").value = 32;
-  document.getElementById("personalizarFuente").value = "Arial";
- const colorInput = document.getElementById("personalizarColor");
-colorInput.value = document.body.classList.contains("oscuro")
+  fuenteActual = "Arial";
+  const colorInput = document.getElementById("personalizarColor");
+  colorInput.value = document.body.classList.contains("oscuro")
   ? "#ffffff"
   : "#000000";
 
