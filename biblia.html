@@ -665,12 +665,26 @@ body.modo-imagen #resaltadorCompacto {
   border-radius: 3px;
 }
 
-.boton-fuentes {
-  position: relative;
+#btnFuentes {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: var(--ui-azul-claro);
+  color: #000;
+
+  font-weight: bold;
+  border: none;
+  cursor: pointer;
 }
 
-#btnFuentes {
-  margin-bottom: 0;
+#btnFuentes.activo {
+  background: var(--ui-azul-hover);
+  color: #fff;
 }
 
 .fila-opciones {
@@ -786,11 +800,12 @@ body.oscuro .nav-btn:hover i {
   color: #ffbf69;
 }
 
-button i,
+/* Iconos centrados en botones redondos */
+.fila-final button i,
 .subir-iglesia-btn i {
-  font-size: 14px;
+  font-size: 16px;
   line-height: 1;
-  margin-right: 4px;
+  margin: 0;
 }
 
 .fila-final button,
@@ -844,6 +859,23 @@ body.oscuro .subir-iglesia-btn:hover {
 
 .fila-opciones button.activo {
   background: var(--ui-azul-hover);
+  color: #fff;
+}
+
+.subir-iglesia-btn {
+  cursor: pointer;
+}
+
+.subir-iglesia-btn input {
+  display: none;
+}
+
+.subir-iglesia-btn i {
+  pointer-events: none;
+}
+
+/* CHECK ACTIVADO */
+#checkIglesia:checked + i {
   color: #fff;
 }
 
@@ -1038,7 +1070,7 @@ body.oscuro .subir-iglesia-btn:hover {
     <div id="personalizarFondos"></div>
     
 <!-- ================= FORMATO IMAGEN ================= -->
-<div class="fila-opciones">
+<div class="fila-opciones style-row">
   <button onclick="setFormatoImagen('post')" title="Post">
   <i class="fa-solid fa-square"></i>
 </button>
@@ -1056,7 +1088,7 @@ body.oscuro .subir-iglesia-btn:hover {
 <!-- ================= FUENTES VISUALES ================= -->
 <div class="fila-texto">
 <div style="position:relative;">
-  <button id="btnFuentes">🔤 Fuentes</button>
+  <button id="btnFuentes" class="style-btn">🔤 Fuentes</button>
   <div id="listaFuentes"></div>
 </div>
 
@@ -1087,12 +1119,10 @@ body.oscuro .subir-iglesia-btn:hover {
   <i class="fa-solid fa-circle-check"></i>
 </button>
 
-<button class="subir-iglesia-btn" onclick="toggleSubirIglesia()">
+<label class="subir-iglesia-btn">
+  <input type="checkbox" id="checkIglesia">
   <i class="fa-solid fa-church"></i>
-</button>
-
-<input type="checkbox" id="checkIglesia" hidden>
-
+</label>
 
 </div>
 
@@ -1111,26 +1141,3 @@ body.oscuro .subir-iglesia-btn:hover {
   
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
