@@ -541,22 +541,15 @@ function crearListaVisualFuentes() {
   });
 }
 
-// ================= 🎀 Dropdown fuentes =================
-document.addEventListener("DOMContentLoaded", () => {
-  const btnFuentes = document.getElementById("btnFuentes");
-  const listaFuentes = document.getElementById("listaFuentes");
+// ================= 🎀 Dropdown fuentes HORIZONTAL =================
+const btnFuentes = document.getElementById("btnFuentes");
+const listaFuentes = document.getElementById("listaFuentes");
 
-  if (!btnFuentes || !listaFuentes) return;
+btnFuentes.addEventListener("click", () => {
+  const visible = listaFuentes.style.display === "flex";
 
-  btnFuentes.onclick = e => {
-    e.stopPropagation();
-    listaFuentes.style.display =
-      listaFuentes.style.display === "block" ? "none" : "block";
-  };
-
-  document.addEventListener("click", () => {
-    listaFuentes.style.display = "none";
-  });
+  listaFuentes.style.display = visible ? "none" : "flex";
+  btnFuentes.classList.toggle("activo", !visible);
 });
 
 // ================= 🌄 FONDOS ⛺================================
