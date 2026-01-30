@@ -749,15 +749,17 @@ body.modo-imagen #resaltadorCompacto {
 }
 
 .opacidad-slider {
-  width: 90px;
+  width: 92px;
   margin: 0;
 }
 
+/* box de tamaño */
 .tamano-input {
   width: 60px;
-  height: 36px;
+  height: 34px;          /* 👈 iguala altura botones */
   text-align: center;
-  padding: 0;
+  padding: 0 4px;
+  font-size: 14px;
 }
 
 /* Alinear TODO en la fila */
@@ -771,6 +773,17 @@ body.modo-imagen #resaltadorCompacto {
   border-radius: 8px;
   border: none;
   padding: 0;
+}
+
+/* ================= ALINEAR CONTROLES CON PREVIEW ================= */
+
+.fila-opciones,
+.fila-texto,
+.fila-final {
+  max-width: 420px;       /* mismo max-width que preview */
+  margin-left: auto;
+  margin-right: auto;
+  justify-content: center;
 }
 
 
@@ -1002,6 +1015,7 @@ body.modo-imagen #resaltadorCompacto {
   
 </body>
 </html>
+
 
 
 
