@@ -383,8 +383,21 @@ body.oscuro .barra-acciones {
 }
 
 .style-row button {
+  width: 34px;
+  height: 34px;
+
+  border-radius: 8px;
+  border: none;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
   background: var(--ui-azul-claro);
   color: #000;
+
+  font-weight: bold;
+  cursor: pointer;
 }
 
 .style-row button.activo {
@@ -652,6 +665,10 @@ body.modo-imagen #resaltadorCompacto {
   border-radius: 3px;
 }
 
+.boton-fuentes {
+  position: relative;
+}
+
 #btnFuentes {
   margin-bottom: 0;
 }
@@ -778,15 +795,27 @@ button i,
 
 .fila-final button,
 .subir-iglesia-btn {
+  width: 40px;
+  height: 40px;
+
+  border-radius: 999px;   /* 🔥 vuelven los redonditos */
+  border: none;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
   background: var(--ui-azul-claro);
   color: #000;
+
   box-shadow: 0 4px 10px rgba(0,0,0,.15);
+  cursor: pointer;
 }
 
 body.oscuro .fila-final button,
 body.oscuro .subir-iglesia-btn {
-  background: #2a2a2a;
-  box-shadow: 0 4px 10px rgba(0,0,0,.6);
+  background: #1f3a5f;   /* azul oscuro elegante */
+  color: #fff;
 }
 
 .fila-final button:hover,
@@ -1058,10 +1087,12 @@ body.oscuro .subir-iglesia-btn:hover {
   <i class="fa-solid fa-circle-check"></i>
 </button>
 
-<label class="subir-iglesia-btn">
-  <input type="checkbox" id="checkIglesia">
+<button class="subir-iglesia-btn" onclick="toggleSubirIglesia()">
   <i class="fa-solid fa-church"></i>
-</label>
+</button>
+
+<input type="checkbox" id="checkIglesia" hidden>
+
 
 </div>
 
@@ -1080,6 +1111,7 @@ body.oscuro .subir-iglesia-btn:hover {
   
 </body>
 </html>
+
 
 
 
