@@ -641,13 +641,10 @@ body.modo-imagen #resaltadorCompacto {
   left: calc(100% + 8px);
 
   display: none;
-  flex-direction: row;
+  grid-template-columns: repeat(4, 1fr); /* 👈 2 filas aprox */
   gap: 8px;
 
-  max-width: 260px;
-  overflow-x: auto;
-  overflow-y: hidden;
-
+  max-width: 240px;
   background: white;
   border-radius: 12px;
   padding: 8px;
@@ -763,8 +760,8 @@ body.oscuro .cerrar-modal {
 
 /* Alinear TODO en la fila */
 .color-input {
-  width: 44px;      /* 👈 un poco más ancho */
-  height: 34px;     /* 👈 igual a estilos */
+  width: 56px;      /* 👈 más ancho */
+  height: 34px;     /* 👈 mismo alto que estilos */
   border-radius: 8px;
   border: none;
   padding: 0;
@@ -877,6 +874,14 @@ body.oscuro .subir-iglesia-btn:hover {
 /* CHECK ACTIVADO */
 #checkIglesia:checked + i {
   color: #fff;
+}
+
+@media (max-width: 480px) {
+  #modalPersonalizar > div {
+    width: 100%;
+    margin: 0 auto;
+    border-radius: 0;
+  }
 }
 
   </style>
@@ -1141,3 +1146,4 @@ body.oscuro .subir-iglesia-btn:hover {
   
 </body>
 </html>
+
