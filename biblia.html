@@ -23,6 +23,7 @@
   <style>
     
  /* ================= ESTILOS GENERALES ================= */
+    /* Estilo base para toda la página */
     body {
       font-family: Arial, sans-serif;
       margin: 0;
@@ -32,7 +33,7 @@
       color: #000;
     }
 
-    /* Modo oscuro */
+     /* Modo oscuro: cambia fondo y texto */
     body.oscuro {
       background: #121212;
       color: #e0e0e0;
@@ -50,20 +51,21 @@
   justify-content: space-between;
   align-items: center;
 }
-
+    
+/* Cambios para modo oscuro en header */
 body.oscuro #header {
   background: #121212;
   border-color: #333;
 }   
     
-/* Contenedor de botones del menú */
+/* Contenedor de botones del menú (flex horizontal)*/
     #menu {
       display: flex;
       gap: 6px;
       flex-wrap: nowrap;
     }
     
-/* Botones del menú */
+/* Estilo para los botones de navegación */
     .nav-btn {
       display: flex;
       align-items: center;
@@ -76,6 +78,7 @@ body.oscuro #header {
       background: #eaeaea;
     }
 
+    /* Estilo para los botones de navegación MODO OSCURO*/
     body.oscuro .nav-btn {
       background: #2a2a2a;
       color: #fff;
@@ -94,13 +97,14 @@ body.oscuro #header {
     }
 
   /* ================= SECCIÓN BIBLIA ================= */
-    /* Filtros de libro y capítulo */
+     /* Filtros para seleccionar libro y capítulo */
     .filtros {
       display: flex;
       gap: 8px;
       margin-bottom: 8px;
     }
 
+     /* Estilo select de filtros */
     .filtros select {
       padding: 10px;
       font-size: 16px;
@@ -1116,6 +1120,7 @@ body.oscuro .subir-iglesia-btn:hover {
   
 </body>
 </html>
+
 
 
 
