@@ -1010,8 +1010,13 @@ body.modo-imagen #resaltadorCompacto {
     
 <!-- ================= FORMATO IMAGEN ================= -->
 <div class="fila-opciones">
-  <button onclick="setFormatoImagen('post')">🟦</button>
-  <button onclick="setFormatoImagen('story')">📱</button>
+  <button onclick="setFormatoImagen('post')" title="Post">
+  <i class="fa-solid fa-square"></i>
+</button>
+
+<button onclick="setFormatoImagen('story')" title="Story">
+  <i class="fa-solid fa-mobile-screen"></i>
+</button>
 
  <input id="personalizarOpacidad" class="opacidad-slider"
        type="range" min="0" max="1" step="0.05" value="0.3">
@@ -1041,12 +1046,21 @@ body.modo-imagen #resaltadorCompacto {
     
 <!-- BOTONES -->    
 <div class="fila-final">
-  <button onclick="descargarImagenFinal()">Descarga💾</button>
-  <button onclick="compartirImagenFinal()">Comparte📤</button>
-  <button onclick="generarImagenFinal()">Finaliza✅</button>
- <label class="subir-iglesia-btn">
+ <button onclick="descargarImagenFinal()">
+  <i class="fa-solid fa-download"></i>
+</button>
+
+<button onclick="compartirImagenFinal()">
+  <i class="fa-solid fa-share-nodes"></i>
+</button>
+
+  <button onclick="generarImagenFinal()">
+  <i class="fa-solid fa-circle-check"></i>
+</button>
+
+<label class="subir-iglesia-btn">
   <input type="checkbox" id="checkIglesia">
-  Sube⛪
+  <i class="fa-solid fa-church"></i>
 </label>
 
 </div>
@@ -1066,6 +1080,7 @@ body.modo-imagen #resaltadorCompacto {
   
 </body>
 </html>
+
 
 
 
