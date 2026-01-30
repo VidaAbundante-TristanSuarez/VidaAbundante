@@ -457,6 +457,7 @@ border: 2px solid #ff4fa3;
   justify-content: center;
 
   position: relative;
+  overflow: hidden;
 }
 
 #resaltadorCompacto {
@@ -543,12 +544,6 @@ body.modo-imagen #resaltadorCompacto {
 }
 
 /* ================= CANDADO RESALTADOR ================= */
-
-#btnResaltadorActivo {
-  position: relative;
-  overflow: hidden;
-}
-
 /* icono base (corazón / flor) */
 #btnResaltadorActivo .icono-resaltador {
   display: inline-block;
@@ -571,6 +566,7 @@ body.modo-imagen #resaltadorCompacto {
 
 /* CONTENEDOR INTERNO DEL MODAL */
 #modalPersonalizar > div {
+  position: relative;
   background: #fff;
   width: 390px;
   max-width: 100%;
@@ -579,18 +575,6 @@ body.modo-imagen #resaltadorCompacto {
   display: flex;
   flex-direction: column;
   overflow-y: auto;
-}
-
-/* BOTON CERRAR MODAL */
-#modalPersonalizar button[onclick="cancelarCrearImagen()"] {
-  position: absolute;
-  top: 15px;
-  right: 15px;
-  background: transparent;
-  border: none;
-  font-size: 20px;
-  cursor: pointer;
-  color: #333;
 }
 
 /* TEXTO DE PREVIEW */
@@ -714,6 +698,9 @@ body.modo-imagen #resaltadorCompacto {
   gap: 8px;
   justify-content: center;
   align-items: center;
+  flex-wrap: nowrap; /* 👈 CLAVE */
+  max-width: 420px;
+  margin: 0 auto; /* esto reemplaza margin-left y margin-right */
 }
 
 /* ================= BOTONES FINALES ================= */
@@ -733,9 +720,10 @@ body.modo-imagen #resaltadorCompacto {
 /* ================= BOTÓN SUBIR A IGLESIA ================= */
 
 .subir-iglesia-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
+  white-space: nowrap;
 
   height: 36px;
   padding: 0 12px;
@@ -757,10 +745,16 @@ body.modo-imagen #resaltadorCompacto {
   position: absolute;
   top: 12px;
   right: 12px;
+  z-index: 9999;       /* 👈 CLAVE */
   background: transparent;
-  font-size: 18px;
+  font-size: 20px;
   border: none;
   cursor: pointer;
+  color: #333;
+}
+
+body.oscuro .cerrar-modal {
+  color: #fff;
 }
 
 .opcion-color label {
@@ -789,10 +783,6 @@ body.modo-imagen #resaltadorCompacto {
 
 
 /* Alinear TODO en la fila */
-.fila-opciones {
-  align-items: center;
-}
-
 .color-input {
   width: 44px;      /* 👈 un poco más ancho */
   height: 34px;     /* 👈 igual a estilos */
@@ -805,14 +795,14 @@ body.modo-imagen #resaltadorCompacto {
 /* ================= ALINEAR CONTROLES CON PREVIEW ================= */
 
 .fila-opciones,
-.fila-texto,
-.fila-final {
+.fila-texto {
   max-width: 420px;       /* mismo max-width que preview */
   margin-left: auto;
   margin-right: auto;
   justify-content: center;
 }
-
+    
+/* ICONOS SECCIONES */
 .nav-btn i {
   font-size: 16px;
   color: #4f6fa8;
@@ -834,7 +824,34 @@ body.oscuro .nav-btn:hover i {
 button i,
 .subir-iglesia-btn i {
   font-size: 14px;
+  line-height: 1;
   margin-right: 4px;
+}
+
+.fila-final button,
+.subir-iglesia-btn {
+  background: #f2f2f2;
+  box-shadow: 0 4px 10px rgba(0,0,0,.15);
+  transition: all .2s ease;
+}
+
+body.oscuro .fila-final button,
+body.oscuro .subir-iglesia-btn {
+  background: #2a2a2a;
+  box-shadow: 0 4px 10px rgba(0,0,0,.6);
+}
+
+.fila-final button:hover,
+.subir-iglesia-btn:hover {
+  transform: translateY(-1px);
+  background: #4f6fa8;
+  color: #fff;
+}
+
+body.oscuro .fila-final button:hover,
+body.oscuro .subir-iglesia-btn:hover {
+  background: #ffbf69;
+  color: #000;
 }
 
   </style>
@@ -1099,6 +1116,7 @@ button i,
   
 </body>
 </html>
+
 
 
 
