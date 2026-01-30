@@ -13,6 +13,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Lobster&family=Playfair+Display:wght@400;700&family=Montserrat:wght@400;700&family=Poppins:wght@400;700&family=Abril+Fatface&family=Cormorant:wght@400;700&family=Josefin+Sans:wght@400;700&family=Great+Vibes&display=swap" rel="stylesheet">
+<!-- ================= ICONOS ================= -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
  <!-- ================= html2canvas ================= -->
   <!-- Librería que convierte HTML en imagen (para generar imágenes bíblicas) -->
@@ -825,12 +827,32 @@ body.modo-imagen #resaltadorCompacto {
 
   <!-- Menú principal -->
 <div id="menu">
-  <!-- Cada botón llama a irA('seccion') -->
-    <button class="nav-btn" onclick="irA('biblia')">📖 <span class="text">Biblia</span></button>
-    <button class="nav-btn" onclick="irA('devocionales')">📆 <span class="text">Devocionales</span></button>
-    <button class="nav-btn" onclick="irA('abc')">🔤 <span class="text">ABC</span></button>
-    <button class="nav-btn" onclick="irA('iglesia')">⛪ <span class="text">Iglesia</span></button>
-    <button class="nav-btn" onclick="irA('panel')">👤 <span class="text">Mi Panel</span></button>
+
+  <button class="nav-btn" onclick="irA('biblia')">
+    <i class="fa-solid fa-book-bible"></i>
+    <span class="text">Biblia</span>
+  </button>
+
+  <button class="nav-btn" onclick="irA('devocionales')">
+    <i class="fa-solid fa-calendar-days"></i>
+    <span class="text">Devocionales</span>
+  </button>
+
+  <button class="nav-btn" onclick="irA('abc')">
+    <i class="fa-solid fa-font"></i>
+    <span class="text">ABC</span>
+  </button>
+
+  <button class="nav-btn" onclick="irA('iglesia')">
+    <i class="fa-solid fa-church"></i>
+    <span class="text">Iglesia</span>
+  </button>
+
+  <button class="nav-btn" onclick="irA('panel')">
+    <i class="fa-solid fa-user"></i>
+    <span class="text">Mi Panel</span>
+  </button>
+
 </div>
 
  <!-- Botón para alternar modo oscuro -->
@@ -1040,6 +1062,7 @@ body.modo-imagen #resaltadorCompacto {
   
 </body>
 </html>
+
 
 
 
