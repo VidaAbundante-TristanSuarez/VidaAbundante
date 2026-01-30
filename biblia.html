@@ -283,8 +283,10 @@ body.oscuro .barra-acciones {
   transition: all .2s;
 }
 
-button:hover {
-  transform: scale(1.05);
+/* ================= HOVER BOTONES MODAL ================= */
+
+.modal button:hover {
+  transform: scale(1.02);
   background: #4f6fa8;
   color: white;
 }
@@ -712,26 +714,41 @@ body.modo-imagen #resaltadorCompacto {
   align-items: center;
 }
 
+/* ================= BOTONES FINALES ================= */
+
 .fila-final button {
-  font-size: 14px;
-  padding: 8px 10px;
+  height: 36px;
+  padding: 0 12px;
+  font-size: 13px;
+  border-radius: 10px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
 }
+
+/* ================= BOTÓN SUBIR A IGLESIA ================= */
 
 .subir-iglesia-btn {
   display: flex;
   align-items: center;
   gap: 6px;
 
-  padding: 8px 12px;
-  border-radius: 999px;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 10px;
+
   background: #f2f2f2;
   cursor: pointer;
+
   font-size: 13px;
   font-weight: 600;
 }
 
 .subir-iglesia-btn input {
   accent-color: #4f6fa8;
+  transform: scale(0.9);
 }
 
 .cerrar-modal {
@@ -756,11 +773,18 @@ body.modo-imagen #resaltadorCompacto {
 /* box de tamaño */
 .tamano-input {
   width: 60px;
-  height: 34px;          /* 👈 iguala altura botones */
+  height: 34px;          /* iguala altura botones */
   text-align: center;
   padding: 0 4px;
   font-size: 14px;
 }
+
+/* flechas visibles */
+.tamano-input::-webkit-inner-spin-button,
+.tamano-input::-webkit-outer-spin-button {
+  opacity: 1;
+}
+
 
 /* Alinear TODO en la fila */
 .fila-opciones {
@@ -768,12 +792,13 @@ body.modo-imagen #resaltadorCompacto {
 }
 
 .color-input {
-  width: 36px;
-  height: 36px;
+  width: 44px;      /* 👈 un poco más ancho */
+  height: 34px;     /* 👈 igual a estilos */
   border-radius: 8px;
   border: none;
   padding: 0;
 }
+
 
 /* ================= ALINEAR CONTROLES CON PREVIEW ================= */
 
@@ -1015,6 +1040,7 @@ body.modo-imagen #resaltadorCompacto {
   
 </body>
 </html>
+
 
 
 
