@@ -640,65 +640,86 @@ body.modo-imagen #resaltadorCompacto {
 /* CONTENEDOR FUENTES */
 /* ================= FUENTES VISUALES (FIX PRO) ================= */
 
-#listaFuentes {
-  position: absolute;
-  top: 110%;
-  left: 0;
-  transform: none;
+/* ================= FUENTES VISUALES (GRID 3x3, SE ABRE CON BOTON) ================= */
 
-  display: none;
-  grid-auto-flow: column;
-  grid-template-rows: repeat(2, auto);
-  gap: 8px;
+/* Botón Fuentes: que el texto entre y quede lindo */
+#btnFuentes{
+  min-width: 110px;      /* 👈 para que quepa “Fuentes” */
+  height: 36px;
+  padding: 0 12px;
+  gap: 6px;
 
-  width: min(560px, calc(100vw - 24px));
-  max-width: 560px;
-
-  overflow-x: auto;
-  overflow-y: hidden;
-
-  background: #fff;
-  border-radius: 12px;
-  padding: 10px;
-
-  box-shadow: 0 8px 24px rgba(0,0,0,.25);
-  z-index: 2000;
-  -webkit-overflow-scrolling: touch;
-}
-
-#listaFuentes.abierto {
-  display: grid;
-}
-
-#listaFuentes button {
-  width: max-content;
-  min-width: 0;
-  padding: 8px 12px;
-  font-size: 14px;
-  white-space: nowrap;
   border-radius: 10px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  background: var(--ui-azul-claro);
+  color: #000;
+
+  font-weight: 700;
   border: none;
   cursor: pointer;
-  background: #f0f0f0;
-  line-height: 1;
+
+  white-space: nowrap;   /* 👈 no se corta */
 }
 
-#listaFuentes button:hover {
-  background: #e7e7e7;
-}
-
-#listaFuentes button.activo {
+#btnFuentes.activo{
   background: var(--ui-azul-hover);
   color: #fff;
 }
 
-#listaFuentes::-webkit-scrollbar {
-  height: 7px;
+/* Contenedor desplegable: grilla 3x3 sin scroll */
+#listaFuentes{
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;              /* 👈 se alinea con el botón */
+  transform: none;
+
+  display: none;        /* se muestra con .abierto */
+  width: min(420px, calc(100vw - 24px));
+  padding: 10px;
+
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.25);
+  z-index: 3000;
+
+  /* ✅ grid fijo 3 columnas */
+  display: none;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
 }
 
-#listaFuentes::-webkit-scrollbar-thumb {
-  background: rgba(0,0,0,.25);
-  border-radius: 999px;
+/* Abrir */
+#listaFuentes.abierto{
+  display: grid;
+}
+
+/* Botones de cada fuente */
+#listaFuentes button{
+  width: 100%;
+  height: 34px;
+  padding: 6px 8px;
+
+  font-size: 12.5px;       /* 👈 más compacto para 3x3 */
+  line-height: 1;
+
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis; /* si es largo, corta prolijo */
+
+  background: #f0f0f0;
+}
+
+#listaFuentes button.activo{
+  background: var(--ui-azul-hover);
+  color: #fff;
 }
 
 .fila-opciones {
@@ -1197,6 +1218,7 @@ button.activo,
   
 </body>
 </html>
+
 
 
 
