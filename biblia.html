@@ -550,13 +550,15 @@ body.modo-imagen #resaltadorCompacto {
 #modalPersonalizar > div {
   position: relative;
   background: #fff;
-  width: 390px;
-  max-width: 100%;
-  max-height: 92vh;      /* 🔥 CLAVE */
-  border-radius: 16px;  /* un poco más humano */
+  width: 100%;
+  max-width: 420px;
+  margin: auto;
+
+  max-height: 92vh;
+  border-radius: 16px;
   display: flex;
   flex-direction: column;
-  overflow-y:  hidden;
+  overflow-y: hidden;
   padding-bottom: 16px;
 }
 
@@ -641,10 +643,11 @@ body.modo-imagen #resaltadorCompacto {
   left: calc(100% + 8px);
 
   display: none;
-  grid-template-columns: repeat(4, 1fr); /* 👈 2 filas aprox */
+  grid-template-columns: repeat(3, 1fr); /* 👈 2 filas aprox */
   gap: 8px;
 
-  max-width: 240px;
+  max-width: 120px;
+  overflow-y: auto;
   background: white;
   border-radius: 12px;
   padding: 8px;
@@ -1154,5 +1157,6 @@ body.oscuro .subir-iglesia-btn:hover {
   
 </body>
 </html>
+
 
 
