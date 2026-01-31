@@ -702,7 +702,7 @@ async function generarImagenFinal() {
   const preview = document.getElementById("previewImagen");
   const canvasFinal = document.getElementById("canvasFinal");
 
-  if (!preview || !canvasFinal) return;
+  if (!preview || !canvasFinal) return false;
 
   // si no hay texto todavía, actualiza
   actualizarPreview();
@@ -714,7 +714,7 @@ async function generarImagenFinal() {
   const rect = preview.getBoundingClientRect();
   if (rect.width === 0 || rect.height === 0) {
     alert("❌ Error: preview sin tamaño");
-    return;
+    return false;
   }
 
   const canvasTemp = await html2canvas(preview, {
@@ -735,37 +735,45 @@ async function generarImagenFinal() {
   const subirIglesia = document.getElementById("checkIglesia")?.checked;
   if (subirIglesia) subirImagen("iglesia");
   subirImagen("personal");
+
+  return true;
 }
 
 // ======================== helper para que Descargar/Compartir generen antes si hace falta ====================================
-
 async function asegurarCanvasListo() {
   const canvas = document.getElementById("canvasFinal");
   if (!canvas) return false;
 
-  // si está vacío (0x0) o sin contenido, generarlo
   if (canvas.width === 0 || canvas.height === 0) {
-    await generarImagenFinal();
+    const ok = await generarImagenFinal();
+    return !!ok;
   }
-  return canvas.width > 0 && canvas.height > 0;
+  return true;
 }
 
 // ======================== ⭐ OPCION DESCARGAR ====================================
-
 async function descargarImagenFinal() {
-  const ok = await asegurarCanvasListo();
-  if (!ok) return;
-
   const canvas = document.getElementById("canvasFinal");
+
+  // si todavía no hay imagen, generarla
+  if (!canvas.width || !canvas.height) {
+    const ok = await generarImagenFinal();
+    if (!ok) return;
+  }
+
   canvas.toBlob(blob => {
+    if (!blob) {
+      alert("No se pudo generar la imagen");
+      return;
+    }
+
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
     link.download = "versiculo.png";
     link.click();
     URL.revokeObjectURL(link.href);
-  });
+  }, "image/png");
 }
-
 
 // ========================⭐ OPCION COMPARTIR ====================================
 async function compartirImagenFinal() {
