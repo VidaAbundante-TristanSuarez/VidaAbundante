@@ -548,7 +548,7 @@ const listaFuentes = document.getElementById("listaFuentes");
 btnFuentes.addEventListener("click", () => {
   const visible = listaFuentes.style.display === "flex";
 
-  listaFuentes.style.display = visible ? "none" : "flex";
+  listaFuentes.style.display = visible ? "none" : "grid";
   btnFuentes.classList.toggle("activo", !visible);
 });
 
@@ -724,8 +724,7 @@ function mostrarResultadoFinal(canvas) {
   preview.classList.add("render-final");
 
   // Imagen final
-  preview.style.backgroundImage = `url(${canvas.toDataURL("image/png")})`;
-  preview.style.pointerEvents = "none";
+    preview.style.pointerEvents = "none";
 
   // Ocultar paneles de edición
   document.getElementById("personalizarFondos").style.display = "none";
@@ -887,6 +886,9 @@ window.generarImagen = () => {
 
 // ================= 🔺 CANCELAR CREAR IMAGEN ===============================
 window.cancelarCrearImagen = () => {
+  const modal = document.getElementById("modalPersonalizar");
+  if (modal) modal.style.display = "none";
+
   resetModalPersonalizar();
   salirModoImagen();
 };
