@@ -414,14 +414,6 @@ body.oscuro .barra-acciones {
   box-shadow: inset 0 0 0 2px rgba(0,0,0,.15);
 }
 
-.style-row input[type="color"] {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  border: none;
-  padding: 0;
-}
-
 /* Fuentes disponibles */
 .font-roboto { font-family: 'Roboto', sans-serif; }
 .font-lobster { font-family: 'Lobster', cursive; }
@@ -818,17 +810,26 @@ body.oscuro .cerrar-modal {
   opacity: 1;
 }
 
-
-/* Alinear TODO en la fila */
-.color-input {
-  width: 66px;      /* 👈 más ancho */
-  height: 34px;     /* 👈 mismo alto que estilos */
+/* ✅ Color picker: tamaño definitivo */
+#personalizarColor {
+  width: 66px;
+  height: 34px;
   border-radius: 8px;
   border: none;
   padding: 0;
-  margin: 0 auto; /* 👈 centrado */
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
 }
 
+/* ✅ (Opcional pero recomendado) que el “swatch” respete la forma */
+#personalizarColor::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+#personalizarColor::-webkit-color-swatch {
+  border: none;
+  border-radius: 8px;
+}
 
 /* ================= ALINEAR CONTROLES CON PREVIEW ================= */
 
@@ -977,6 +978,49 @@ button.activo,
   color: #fff !important;
 }
 
+/* ================= BOTÓN MODO OSCURO (REDONDO + ANIMADO) ================= */
+
+#header button[onclick="toggleTema()"] {
+  width: 40px;
+  height: 40px;
+
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  background: var(--ui-azul-claro);
+  color: #000;
+
+  font-size: 18px;
+  cursor: pointer;
+
+  transition:
+    background 0.25s ease,
+    color 0.25s ease,
+    transform 0.35s ease;
+}
+
+/* Hover */
+#header button[onclick="toggleTema()"]:hover {
+  background: var(--ui-azul-hover);
+  color: #fff;
+  transform: scale(1.05);
+}
+
+/* 🌙 Modo oscuro */
+body.oscuro #header button[onclick="toggleTema()"] {
+  background: #d1eeff;
+  color: #000;
+}
+
+/* ✨ Animación al cambiar de modo */
+#header button[onclick="toggleTema()"].animar {
+  transform: rotate(360deg);
+}
 
   </style>
  
@@ -1221,7 +1265,7 @@ button.activo,
 </button>
 
 <label class="subir-iglesia-btn">
-  <input type="checkbox" id="checkIglesia">
+  <input type="checkbox" id="checkIglesia" checked>
   <i class="fa-solid fa-church"></i>
 </label>
 
@@ -1242,6 +1286,7 @@ button.activo,
   
 </body>
 </html>
+
 
 
 
