@@ -687,21 +687,17 @@ body.modo-imagen #resaltadorCompacto {
 }
 
 /* La lista ocupa TODO el ancho del modal y queda justo debajo de la fila */
+/* ================= LISTA FUENTES: ANCHO MODAL REAL ================= */
 #listaFuentes{
-  position: absolute;
-  left: 12px;              /* 👈 borde a borde dentro del modal */
-  right: 12px;
-  top: calc(100% + 8px);
-
+  position: fixed;              /* 👈 clave */
   display: none;
   padding: 10px;
   background: #fff;
   border-radius: 14px;
   box-shadow: 0 8px 24px rgba(0,0,0,.25);
-  z-index: 4000;
+  z-index: 99999;
 
   /* ✅ una sola línea con scroll horizontal */
-  display: none;
   flex-wrap: nowrap;
   gap: 8px;
   overflow-x: auto;
@@ -712,6 +708,10 @@ body.modo-imagen #resaltadorCompacto {
 #listaFuentes.abierto{
   display: flex;
 }
+
+/* ✅ Ocultar scrollbar (igual hay scroll) */
+#listaFuentes::-webkit-scrollbar { height: 0px; }
+#listaFuentes { scrollbar-width: none; }
 
 /* Botones: tamaño “contenido”, NO se cortan */
 #listaFuentes button{
@@ -1303,6 +1303,7 @@ body.oscuro #header button[onclick="toggleTema()"] {
   
 </body>
 </html>
+
 
 
 
