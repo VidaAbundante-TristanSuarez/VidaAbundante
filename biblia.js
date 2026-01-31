@@ -521,23 +521,25 @@ function crearListaVisualFuentes() {
 
   fuentesGoogle.forEach(f => {
     const btn = document.createElement("button");
-    btn.type = "button";
     btn.textContent = f.nombre;
     btn.style.fontFamily = f.css;
 
-    // marcar activo si coincide
+    // marcar la fuente actual como activa
     if (fuenteActual === f.css) btn.classList.add("activo");
 
     btn.onclick = e => {
       e.preventDefault();
       e.stopPropagation();
+
       fuenteActual = f.css;
 
-      // marcar activo visualmente
+      // actualizar activo visual
       cont.querySelectorAll("button").forEach(b => b.classList.remove("activo"));
       btn.classList.add("activo");
 
       actualizarPreview();
+
+      // cerrar al elegir
       cont.classList.remove("abierto");
       document.getElementById("btnFuentes")?.classList.remove("activo");
     };
@@ -547,20 +549,26 @@ function crearListaVisualFuentes() {
 }
 
 // ================= 🎀 CERRAR FUENTES AL TOCAR FUERA O AL TOCAR DE NUEVO =================
-const btnFuentes = document.getElementById('btnFuentes');
-const listaFuentes = document.getElementById('listaFuentes');
+const btnFuentes = document.getElementById("btnFuentes");
+const listaFuentes = document.getElementById("listaFuentes");
 
-btnFuentes.addEventListener("click", e => {
+// abrir/cerrar tocando el botón
+btnFuentes?.addEventListener("click", e => {
+  e.preventDefault();
   e.stopPropagation();
+
   const abierto = listaFuentes.classList.toggle("abierto");
   btnFuentes.classList.toggle("activo", abierto);
 });
 
-document.addEventListener("click", () => {
-  listaFuentes.classList.remove("abierto");
-  btnFuentes.classList.remove("activo");
+// cerrar tocando afuera
+document.addEventListener("click", e => {
+  // si clic fue afuera del botón y afuera de la lista
+  if (!listaFuentes.contains(e.target) && e.target !== btnFuentes) {
+    listaFuentes.classList.remove("abierto");
+    btnFuentes?.classList.remove("activo");
+  }
 });
-
 
 // ================= 🌄 FONDOS ⛺================================
 const fondos = [
