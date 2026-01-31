@@ -521,20 +521,25 @@ function crearListaVisualFuentes() {
 
   fuentesGoogle.forEach(f => {
     const btn = document.createElement("button");
+    btn.type = "button";
     btn.textContent = f.nombre;
     btn.style.fontFamily = f.css;
-    btn.style.padding = "10px";
-    btn.style.borderRadius = "10px";
-    btn.style.border = "none";
-    btn.style.fontSize = "16px";
-    btn.style.cursor = "pointer";
-    btn.style.display = "block"; // importante para que apile verticalmente
+
+    // marcar activo si coincide
+    if (fuenteActual === f.css) btn.classList.add("activo");
 
     btn.onclick = e => {
-      e.stopPropagation();  // no cerrar el contenedor al hacer click
-     fuenteActual = f.css;
+      e.preventDefault();
+      e.stopPropagation();
+      fuenteActual = f.css;
+
+      // marcar activo visualmente
+      cont.querySelectorAll("button").forEach(b => b.classList.remove("activo"));
+      btn.classList.add("activo");
+
       actualizarPreview();
-      cont.style.display = "none"; // cierra paleta al seleccionar
+      cont.classList.remove("abierto");
+      document.getElementById("btnFuentes")?.classList.remove("activo");
     };
 
     cont.appendChild(btn);
@@ -686,45 +691,37 @@ function actualizarPreview() {
 
 // ================= ⭐ CANVAS GENERA IMAGEN FINAL ============================
 async function generarImagenFinal() {
-
   const preview = document.getElementById("previewImagen");
   const canvasFinal = document.getElementById("canvasFinal");
 
-  // 🔥 FORZAR VISIBILIDAD REAL
-  preview.style.display = "flex";
-  preview.style.opacity = "1";
-  preview.style.visibility = "visible";
+  if (!preview || !canvasFinal) return;
 
-  // esperar layout real
+  // si no hay texto todavía, actualiza
+  actualizarPreview();
+
+  // asegurar layout real
   await new Promise(r => requestAnimationFrame(r));
-  await new Promise(r => setTimeout(r, 60));
-
-  // ⏳ ESPERAR FUENTES (CLAVE EN CELU)
   await document.fonts.ready;
 
-  // 🧪 VALIDAR TAMAÑO
   const rect = preview.getBoundingClientRect();
   if (rect.width === 0 || rect.height === 0) {
     alert("❌ Error: preview sin tamaño");
     return;
   }
 
-  html2canvas(preview, {
+  const canvasTemp = await html2canvas(preview, {
     scale: Math.max(2, window.devicePixelRatio || 2),
     useCORS: true,
     allowTaint: false,
     backgroundColor: null
-  }).then(canvasTemp => {
-
-    // 🔒 copiar EXACTO (sin estirar)
-    canvasFinal.width = canvasTemp.width;
-    canvasFinal.height = canvasTemp.height;
-
-    const ctx = canvasFinal.getContext("2d");
-    ctx.clearRect(0, 0, canvasFinal.width, canvasFinal.height);
-    ctx.drawImage(canvasTemp, 0, 0);
-
   });
+
+  canvasFinal.width = canvasTemp.width;
+  canvasFinal.height = canvasTemp.height;
+
+  const ctx = canvasFinal.getContext("2d");
+  ctx.clearRect(0, 0, canvasFinal.width, canvasFinal.height);
+  ctx.drawImage(canvasTemp, 0, 0);
 
   // 🔼 subir imagen (si aplica)
   const subirIglesia = document.getElementById("checkIglesia")?.checked;
@@ -732,10 +729,25 @@ async function generarImagenFinal() {
   subirImagen("personal");
 }
 
+// ======================== helper para que Descargar/Compartir generen antes si hace falta ====================================
+
+async function asegurarCanvasListo() {
+  const canvas = document.getElementById("canvasFinal");
+  if (!canvas) return false;
+
+  // si está vacío (0x0) o sin contenido, generarlo
+  if (canvas.width === 0 || canvas.height === 0) {
+    await generarImagenFinal();
+  }
+  return canvas.width > 0 && canvas.height > 0;
+}
 
 // ======================== ⭐ OPCION DESCARGAR ====================================
 
-function descargarImagenFinal() {
+async function descargarImagenFinal() {
+  const ok = await asegurarCanvasListo();
+  if (!ok) return;
+
   const canvas = document.getElementById("canvasFinal");
   canvas.toBlob(blob => {
     const link = document.createElement("a");
@@ -746,29 +758,29 @@ function descargarImagenFinal() {
   });
 }
 
+
 // ========================⭐ OPCION COMPARTIR ====================================
-function compartirImagenFinal() {
+async function compartirImagenFinal() {
+  const ok = await asegurarCanvasListo();
+  if (!ok) return;
+
   const canvas = document.getElementById("canvasFinal");
 
-  canvas.toBlob(blob => {
+  canvas.toBlob(async blob => {
     const file = new File([blob], "versiculo.png", { type: "image/png" });
 
     if (navigator.share && navigator.canShare?.({ files: [file] })) {
-      navigator.share({
+      await navigator.share({
         files: [file],
-        title: "Versículo",
-        text: "Compartir imagen"
+        title: "Versículo"
+        // ✅ sin "text" para que no mande mensaje raro
       });
     } else {
-      // 🔥 FALLBACK REAL
-      descargarImagenFinal();
+      await descargarImagenFinal();
       alert("Tu dispositivo no permite compartir directamente. La imagen se descargó para que la compartas manualmente.");
     }
   });
 }
-
-window.descargarImagenFinal = descargarImagenFinal;
-window.compartirImagenFinal = compartirImagenFinal;
 
 // ================= ⭐ RESET DEL MODAL  =======================
 function resetModalPersonalizar() {
