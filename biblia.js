@@ -541,31 +541,19 @@ function crearListaVisualFuentes() {
   });
 }
 
-// ================= 🎀 Dropdown fuentes HORIZONTAL =================
-const btnFuentes = document.getElementById("btnFuentes");
-const listaFuentes = document.getElementById("listaFuentes");
-
-btnFuentes.addEventListener("click", () => {
-  const visible = listaFuentes.style.display === "flex";
-
-  listaFuentes.style.display = visible ? "none" : "grid";
-  btnFuentes.classList.toggle("activo", !visible);
-});
-
 // ================= 🎀 CERRAR FUENTES AL TOCAR FUERA O AL TOCAR DE NUEVO =================
 const btnFuentes = document.getElementById('btnFuentes');
 const listaFuentes = document.getElementById('listaFuentes');
 
-btnFuentes.addEventListener('click', (e) => {
+btnFuentes.addEventListener("click", e => {
   e.stopPropagation();
-  const abierto = listaFuentes.style.display === 'grid';
-  listaFuentes.style.display = abierto ? 'none' : 'grid';
-  btnFuentes.classList.toggle('activo', !abierto);
+  const abierto = listaFuentes.classList.toggle("abierto");
+  btnFuentes.classList.toggle("activo", abierto);
 });
 
-document.addEventListener('click', () => {
-  listaFuentes.style.display = 'none';
-  btnFuentes.classList.remove('activo');
+document.addEventListener("click", () => {
+  listaFuentes.classList.remove("abierto");
+  btnFuentes.classList.remove("activo");
 });
 
 
@@ -699,20 +687,36 @@ function actualizarPreview() {
 // ================= ⭐ CANVAS GENERA IMAGEN FINAL ============================
 async function generarImagenFinal() {
 
-  // ⏳ ESPERAR A QUE LAS FUENTES SE CARGUEN (CLAVE PARA CELU)
-  await document.fonts.ready;
-
   const preview = document.getElementById("previewImagen");
   const canvasFinal = document.getElementById("canvasFinal");
 
-  html2canvas(preview, {
+  // 🔥 FORZAR VISIBILIDAD REAL
+  preview.style.display = "flex";
+  preview.style.opacity = "1";
+  preview.style.visibility = "visible";
 
-    scale: window.devicePixelRatio || 2,
+  // esperar layout real
+  await new Promise(r => requestAnimationFrame(r));
+  await new Promise(r => setTimeout(r, 60));
+
+  // ⏳ ESPERAR FUENTES (CLAVE EN CELU)
+  await document.fonts.ready;
+
+  // 🧪 VALIDAR TAMAÑO
+  const rect = preview.getBoundingClientRect();
+  if (rect.width === 0 || rect.height === 0) {
+    alert("❌ Error: preview sin tamaño");
+    return;
+  }
+
+  html2canvas(preview, {
+    scale: Math.max(2, window.devicePixelRatio || 2),
     useCORS: true,
+    allowTaint: false,
     backgroundColor: null
   }).then(canvasTemp => {
 
-    // 🔒 copiar EXACTAMENTE el canvas generado (sin estirar)
+    // 🔒 copiar EXACTO (sin estirar)
     canvasFinal.width = canvasTemp.width;
     canvasFinal.height = canvasTemp.height;
 
@@ -720,51 +724,14 @@ async function generarImagenFinal() {
     ctx.clearRect(0, 0, canvasFinal.width, canvasFinal.height);
     ctx.drawImage(canvasTemp, 0, 0);
 
-    // mostrar resultado sin tocar proporciones
-    mostrarResultadoFinal(canvasFinal);
   });
 
+  // 🔼 subir imagen (si aplica)
   const subirIglesia = document.getElementById("checkIglesia")?.checked;
-
-if (subirIglesia) {
-  subirImagen("iglesia");
-}
-subirImagen("personal");
-
+  if (subirIglesia) subirImagen("iglesia");
+  subirImagen("personal");
 }
 
-// ======================== ⭐ VER RESULTADO FINAL ====================================
-function mostrarResultadoFinal(canvas) {
-  const preview = document.getElementById("previewImagen");
-
-  // 🔥 marcar estado render final
-  preview.classList.add("render-final");
-
-  // Imagen final
-    preview.style.pointerEvents = "none";
-
-  // Ocultar paneles de edición
-  document.getElementById("personalizarFondos").style.display = "none";
-
-  // Eliminar botones previos
-  const viejo = document.getElementById("accionesFinales");
-  if (viejo) viejo.remove();
-
-  // Botones finales
-  const acciones = document.createElement("div");
-  acciones.id = "accionesFinales";
-  acciones.style.display = "flex";
-  acciones.style.justifyContent = "center";
-  acciones.style.gap = "12px";
-  acciones.style.marginTop = "15px";
-
-  acciones.innerHTML = `
-    <button onclick="descargarImagenFinal()">⬇️ Descargar</button>
-    <button onclick="compartirImagenFinal()">📤 Compartir</button>
-  `;
-
-  preview.parentNode.appendChild(acciones);
-}
 
 // ======================== ⭐ OPCION DESCARGAR ====================================
 
