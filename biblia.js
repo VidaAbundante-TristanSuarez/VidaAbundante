@@ -970,32 +970,32 @@ window.cerrarLogin = () => {
 // ================= 🔺 TEXTO MAYUSCULAR ===================
 window.toggleUpper = () => {
   textStyle.upper = !textStyle.upper;
-  document.querySelector(".style-row button:nth-child(1)")
-    .classList.toggle("activo", textStyle.upper);
+  const b = document.getElementById("btnUpper");
+  if (b) b.classList.toggle("activo", textStyle.upper);
   actualizarPreview();
 };
 
 // ================= 🔺 TEXTO NEGRITA ===================
 window.toggleBold = () => {
   textStyle.bold = !textStyle.bold;
-  document.querySelector(".style-row button:nth-child(2)")
-    .classList.toggle("activo", textStyle.bold);
+  const b = document.getElementById("btnBold");
+  if (b) b.classList.toggle("activo", textStyle.bold);
   actualizarPreview();
 };
 
 // ================= 🔺 TEXTO ITALIC ===================
 window.toggleItalic = () => {
   textStyle.italic = !textStyle.italic;
-  document.querySelector(".style-row button:nth-child(3)")
-    .classList.toggle("activo", textStyle.italic);
+  const b = document.getElementById("btnItalic");
+  if (b) b.classList.toggle("activo", textStyle.italic);
   actualizarPreview();
 };
 
 // ================= 🔺 TEXTO UNDERLINE ===================
 window.toggleUnderline = () => {
   textStyle.underline = !textStyle.underline;
-  document.querySelector(".style-row button:nth-child(4)")
-    .classList.toggle("activo", textStyle.underline);
+  const b = document.getElementById("btnUnderline");
+  if (b) b.classList.toggle("activo", textStyle.underline);
   actualizarPreview();
 };
 
@@ -1004,5 +1004,11 @@ window.setFormatoImagen = tipo => {
   const preview = document.getElementById("previewImagen");
   preview.classList.remove("preview-post", "preview-story");
   preview.classList.add(tipo === "story" ? "preview-story" : "preview-post");
-};
 
+  const bPost = document.getElementById("btnFormatoPost");
+  const bStory = document.getElementById("btnFormatoStory");
+  if (bPost) bPost.classList.toggle("activo", tipo !== "story");
+  if (bStory) bStory.classList.toggle("activo", tipo === "story");
+
+  actualizarPreview(); // ✅ para recalcular tamaño automático
+};
