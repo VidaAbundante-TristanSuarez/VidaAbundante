@@ -718,6 +718,10 @@ body.modo-imagen #resaltadorCompacto {
   color: #fff;
 }
 
+/* ✅ Mostrar lista de fuentes cuando está abierta */
+#listaFuentes.abierto {
+  display: grid;
+}
 
 .fila-opciones {
   display: flex;
@@ -943,6 +947,7 @@ button.activo,
   color: #fff !important;
 }
 
+
   </style>
  
 </head>
@@ -1135,11 +1140,11 @@ button.activo,
     
 <!-- ================= FORMATO IMAGEN ================= -->
 <div class="fila-opciones style-row">
-  <button onclick="setFormatoImagen('post')" title="Post">
+ <button type="button" onclick="setFormatoImagen('post')" title="Post">
   <i class="fa-solid fa-square"></i>
 </button>
 
-<button onclick="setFormatoImagen('story')" title="Story">
+<button type="button" onclick="setFormatoImagen('story')" title="Story">
   <i class="fa-solid fa-mobile-screen"></i>
 </button>
 
@@ -1158,10 +1163,11 @@ button.activo,
 
 <!-- ================= ESTILOS DE TEXTO ================= -->
 <div class="style-row" id="textStyles">
-<button onclick="toggleUpper()" id="btnUpper">Aa</button>
-<button onclick="toggleBold()" id="btnBold">B</button>
-<button onclick="toggleItalic()" id="btnItalic">I</button>
-<button onclick="toggleUnderline()" id="btnUnderline">U</button>
+<button type="button" onclick="toggleUpper()" id="btnUpper">Aa</button>
+<button type="button" onclick="toggleBold()" id="btnBold">B</button>
+<button type="button" onclick="toggleItalic()" id="btnItalic">I</button>
+<button type="button" onclick="toggleUnderline()" id="btnUnderline">U</button>
+
 </div>
 
 <!-- COLOR -->
@@ -1205,6 +1211,7 @@ button.activo,
   
 </body>
 </html>
+
 
 
 
