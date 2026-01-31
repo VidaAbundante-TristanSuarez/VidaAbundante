@@ -321,14 +321,15 @@ body.oscuro .barra-acciones {
   opacity: 1;
 }
 
-/* 📐 FORMATOS */
+/* 📐 FORMATOS (FIX REAL) */
 #previewImagen.preview-post {
-  height: 420px;
+  aspect-ratio: 1 / 1;
+  max-height: 60vh;
 }
 
 #previewImagen.preview-story {
   aspect-ratio: 9 / 16;
-  max-height: 50vh;        /* 🔥 CLAVE */
+  max-height: 70vh;
 }
    
 /* ================= TEXTO DOBLE ================= */
@@ -1022,6 +1023,20 @@ body.oscuro #header button[onclick="toggleTema()"] {
   transform: rotate(360deg);
 }
 
+/* ================= BOTÓN CREAR IMAGEN (BARRA) MÁS GRANDE ================= */
+#btnCrearImagen{
+  padding: 10px 16px !important;
+  font-weight: 800;
+  font-size: 14px;
+  height: 42px;
+  border-radius: 999px;
+  background: #4f6fa8;
+  color: #fff;
+}
+#btnCrearImagen:active{
+  transform: scale(0.98);
+}
+
   </style>
  
 </head>
@@ -1276,7 +1291,7 @@ body.oscuro #header button[onclick="toggleTema()"] {
 <div style="height:10px"></div>
 
 </div>
-
+</div>
 <!-- ================= CANVAS FINAL ================= -->
 <!-- Usado para renderizar la imagen -->
 <canvas id="canvasFinal" style="display:none;"></canvas>
@@ -1288,6 +1303,7 @@ body.oscuro #header button[onclick="toggleTema()"] {
   
 </body>
 </html>
+
 
 
 
