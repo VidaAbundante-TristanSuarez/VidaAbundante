@@ -293,7 +293,7 @@ function pintarVersiculo(v) {
   // ================= Color de Texto =================
   if (modoImagen) {
     if (imagen) {
-      div.style.color = "#ffffff";
+      div.style.color = "#000000";
     } else {
       div.style.color = document.body.classList.contains("oscuro")
         ? "#ffffff"
@@ -552,23 +552,21 @@ function crearListaVisualFuentes() {
 const btnFuentes = document.getElementById("btnFuentes");
 const listaFuentes = document.getElementById("listaFuentes");
 
-// abrir/cerrar tocando el botón
-btnFuentes?.addEventListener("click", e => {
-  e.preventDefault();
-  e.stopPropagation();
+if (btnFuentes && listaFuentes) {
+  btnFuentes.addEventListener("click", e => {
+    e.preventDefault();
+    e.stopPropagation();
+    const abierto = listaFuentes.classList.toggle("abierto");
+    btnFuentes.classList.toggle("activo", abierto);
+  });
 
-  const abierto = listaFuentes.classList.toggle("abierto");
-  btnFuentes.classList.toggle("activo", abierto);
-});
-
-// cerrar tocando afuera
-document.addEventListener("click", e => {
-  // si clic fue afuera del botón y afuera de la lista
-  if (!listaFuentes.contains(e.target) && e.target !== btnFuentes) {
-    listaFuentes.classList.remove("abierto");
-    btnFuentes?.classList.remove("activo");
-  }
-});
+  document.addEventListener("click", e => {
+    if (!listaFuentes.contains(e.target) && e.target !== btnFuentes) {
+      listaFuentes.classList.remove("abierto");
+      btnFuentes.classList.remove("activo");
+    }
+  });
+}
 
 // ================= 🌄 FONDOS ⛺================================
 const fondos = [
@@ -912,15 +910,35 @@ window.cambiarLetra = delta => {
 };
 
 // ================= 🔺 TOGGLE TEMA ===============================
+// ================= 🌙 TOGGLE TEMA (ANIMADO + ICONO DINÁMICO) =================
 window.toggleTema = () => {
+  const btn = document.querySelector('#header button[onclick="toggleTema()"]');
+
+  // animación
+  if (btn) {
+    btn.classList.add("animar");
+    setTimeout(() => btn.classList.remove("animar"), 350);
+  }
+
+  // toggle modo
   const oscuro = document.body.classList.toggle("oscuro");
   localStorage.setItem("modoOscuro", oscuro ? "1" : "0");
+
+  // cambiar ícono
+  if (btn) {
+    btn.textContent = oscuro ? "☀️" : "🌙";
+  }
 };
 
-// ================= ✨ Restaura Modo Oscuro =================
-if (localStorage.getItem("modoOscuro") === "1") {
-  document.body.classList.add("oscuro");
-}
+// ================= ✨ RESTAURAR MODO OSCURO + ICONO =================
+(() => {
+  const oscuro = localStorage.getItem("modoOscuro") === "1";
+  if (oscuro) document.body.classList.add("oscuro");
+
+  const btn = document.querySelector('#header button[onclick="toggleTema()"]');
+  if (btn) btn.textContent = oscuro ? "☀️" : "🌙";
+})();
+
 
 // ================= 🔺 LOGOUT ===============================
 window.logout = () => {
@@ -1040,3 +1058,9 @@ window.setFormatoImagen = tipo => {
 
   actualizarPreview(); // ✅ para recalcular tamaño automático
 };
+
+// ================= 🔺 HACER FUNCIONES GLOBALES (FIX DESCARGAR/COMPARTIR EN PC) =================
+window.generarImagenFinal = generarImagenFinal;
+window.descargarImagenFinal = descargarImagenFinal;
+window.compartirImagenFinal = compartirImagenFinal;
+
