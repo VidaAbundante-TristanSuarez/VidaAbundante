@@ -583,7 +583,8 @@ function cargarFondos() {
 
   fondos.forEach(url => {
     const img = document.createElement("img");
-    img.src = url;
+    img.crossOrigin = "anonymous";
+    img.src = url + "?auto=format&fit=crop&w=900&q=80";
     img.style.width = "70px";
     img.style.height = "70px";
     img.style.objectFit = "cover";
@@ -714,6 +715,11 @@ async function generarImagenFinal() {
     alert("❌ Error: preview sin tamaño");
     return false;
   }
+
+  // ✅ FIX: asegurarse que el texto NO esté oculto al capturar
+  preview.classList.remove("render-final");
+  document.getElementById("previewTexto").style.display = "block";
+  document.getElementById("previewTextoBack").style.display = "block";
 
   const canvasTemp = await html2canvas(preview, {
     scale: Math.max(2, window.devicePixelRatio || 2),
@@ -910,7 +916,7 @@ window.cambiarLetra = delta => {
 };
 
 // ================= 🔺 TOGGLE TEMA ===============================
-// ================= 🌙 TOGGLE TEMA (ANIMADO + ICONO DINÁMICO) =================
+// ================= 🌙 TOGGLE TEMA (ANIMADO + ICONO + REPINTAR) =================
 window.toggleTema = () => {
   const btn = document.querySelector('#header button[onclick="toggleTema()"]');
 
@@ -925,8 +931,15 @@ window.toggleTema = () => {
   localStorage.setItem("modoOscuro", oscuro ? "1" : "0");
 
   // cambiar ícono
-  if (btn) {
-    btn.textContent = oscuro ? "☀️" : "🌙";
+  if (btn) btn.textContent = oscuro ? "☀️" : "🌙";
+
+  // ✅ FIX: repintar colores de versículos YA MISMO
+  mostrarTexto();
+
+  // ✅ FIX: si el modal está abierto, refrescar preview YA MISMO
+  const modal = document.getElementById("modalPersonalizar");
+  if (modal && modal.style.display === "flex") {
+    actualizarPreview();
   }
 };
 
