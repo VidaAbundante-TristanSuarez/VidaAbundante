@@ -552,6 +552,23 @@ btnFuentes.addEventListener("click", () => {
   btnFuentes.classList.toggle("activo", !visible);
 });
 
+// ================= 🎀 CERRAR FUENTES AL TOCAR FUERA O AL TOCAR DE NUEVO =================
+const btnFuentes = document.getElementById('btnFuentes');
+const listaFuentes = document.getElementById('listaFuentes');
+
+btnFuentes.addEventListener('click', (e) => {
+  e.stopPropagation();
+  const abierto = listaFuentes.style.display === 'grid';
+  listaFuentes.style.display = abierto ? 'none' : 'grid';
+  btnFuentes.classList.toggle('activo', !abierto);
+});
+
+document.addEventListener('click', () => {
+  listaFuentes.style.display = 'none';
+  btnFuentes.classList.remove('activo');
+});
+
+
 // ================= 🌄 FONDOS ⛺================================
 const fondos = [
   "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee",
