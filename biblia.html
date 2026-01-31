@@ -21,7 +21,14 @@
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
   <style>
-    
+
+/* ✅ Box sizing global: evita cortes y corrimientos */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
  /* ================= ESTILOS GENERALES ================= */
     /* Estilo base para toda la página */
     body {
@@ -628,28 +635,26 @@ body.modo-imagen #resaltadorCompacto {
   background: rgba(0,0,0,0.1);
 }
 
-@media (max-width: 600px) {
 
-#modalPersonalizar {
-    padding: 10px;
-  }
-  }
-
-/* ================= FUENTES VISUALES ================= */
+/* ================= FUENTES VISUALES 🎀 ================= */
 /* CONTENEDOR FUENTES */
+/* ================= FUENTES VISUALES (FIX PRO) ================= */
+
 #listaFuentes {
   position: absolute;
   top: 110%;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0;
+  transform: none;
 
   display: none;
   grid-auto-flow: column;
-  grid-template-rows: repeat(2, auto); /* 👈 2 filas */
+  grid-template-rows: repeat(2, auto);
   gap: 8px;
 
-  max-width: 320px;
-  overflow-x: auto;   /* 👈 solo costado */
+  width: min(560px, calc(100vw - 24px));
+  max-width: 560px;
+
+  overflow-x: auto;
   overflow-y: hidden;
 
   background: #fff;
@@ -657,60 +662,29 @@ body.modo-imagen #resaltadorCompacto {
   padding: 10px;
 
   box-shadow: 0 8px 24px rgba(0,0,0,.25);
-  z-index: 200;
+  z-index: 2000;
+  -webkit-overflow-scrolling: touch;
 }
 
-#listaFuentes::-webkit-scrollbar {
-  height: 6px;
-}
-
-#listaFuentes::-webkit-scrollbar-thumb {
-  background: rgba(0,0,0,.3);
-  border-radius: 3px;
-}
-
-#btnFuentes {
-  min-width: 78px;     /* 👈 entra “Fuentes” */
-  height: 34px;
-  padding: 0 10px;
-  gap: 6px;
-
-  border-radius: 8px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  background: var(--ui-azul-claro);
-  color: #000;
-
-  font-weight: bold;
-  border: none;
-  cursor: pointer;
-}
-
-#btnFuentes.activo {
-  background: var(--ui-azul-hover);
-  color: #fff;
-}
-
-.boton-fuentes {
-  position: relative;
-}
-
-#btnFuentes {
-  margin-bottom: 0;
+#listaFuentes.abierto {
+  display: grid;
 }
 
 #listaFuentes button {
-  min-width: 120px;
-  padding: 8px;
+  width: max-content;
+  min-width: 0;
+  padding: 8px 12px;
   font-size: 14px;
   white-space: nowrap;
-  border-radius: 8px;
+  border-radius: 10px;
   border: none;
   cursor: pointer;
   background: #f0f0f0;
+  line-height: 1;
+}
+
+#listaFuentes button:hover {
+  background: #e7e7e7;
 }
 
 #listaFuentes button.activo {
@@ -718,9 +692,13 @@ body.modo-imagen #resaltadorCompacto {
   color: #fff;
 }
 
-/* ✅ Mostrar lista de fuentes cuando está abierta */
-#listaFuentes.abierto {
-  display: grid;
+#listaFuentes::-webkit-scrollbar {
+  height: 7px;
+}
+
+#listaFuentes::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,.25);
+  border-radius: 999px;
 }
 
 .fila-opciones {
@@ -932,11 +910,18 @@ body.oscuro .subir-iglesia-btn:hover {
   justify-content: center;
 }
 
-@media (max-width: 480px) {
+@media (max-width: 600px) {
+  #modalPersonalizar {
+    padding: 0;               /* 👈 clave, sin margen fantasma */
+    align-items: stretch;     /* ocupa todo alto */
+  }
+
   #modalPersonalizar > div {
-    width: 100%;
-    margin: 0 auto;
+    width: 100vw;             /* 👈 ocupa pantalla */
+    max-width: 100vw;
+    margin: 0;
     border-radius: 0;
+    max-height: 100vh;
   }
 }
 
@@ -1140,13 +1125,14 @@ button.activo,
     
 <!-- ================= FORMATO IMAGEN ================= -->
 <div class="fila-opciones style-row">
- <button type="button" onclick="setFormatoImagen('post')" title="Post">
+<button id="btnFormatoPost" type="button" onclick="setFormatoImagen('post')" title="Post">
   <i class="fa-solid fa-square"></i>
 </button>
 
-<button type="button" onclick="setFormatoImagen('story')" title="Story">
+<button id="btnFormatoStory" type="button" onclick="setFormatoImagen('story')" title="Story">
   <i class="fa-solid fa-mobile-screen"></i>
 </button>
+
 
  <input id="personalizarOpacidad" class="opacidad-slider"
        type="range" min="0" max="1" step="0.05" value="0.3">
@@ -1211,6 +1197,7 @@ button.activo,
   
 </body>
 </html>
+
 
 
 
