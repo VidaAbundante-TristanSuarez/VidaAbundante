@@ -148,8 +148,9 @@ body.oscuro .versiculo[data-marcado="true"] {
 
 /* Versículo seleccionado para imagen */
 .versiculo.imagen {
-  background: #4f6fa8 !important;
-  color: #fff !important;
+  background: #2ed5e8 !important;
+  color: #000 !important;            /* 👈 negro para que se lea siempre */
+  border: 2px solid #1f6d76 !important;
 }
 
 /* Número del versículo */
@@ -421,10 +422,6 @@ body.oscuro .barra-acciones {
   padding: 0;
 }
 
-body.modo-imagen .versiculo.imagen {
-border: 2px solid #ff4fa3;
-}
-
 /* Fuentes disponibles */
 .font-roboto { font-family: 'Roboto', sans-serif; }
 .font-lobster { font-family: 'Lobster', cursive; }
@@ -637,11 +634,6 @@ body.modo-imagen #resaltadorCompacto {
 
 
 /* ================= FUENTES VISUALES 🎀 ================= */
-/* CONTENEDOR FUENTES */
-/* ================= FUENTES VISUALES (FIX PRO) ================= */
-
-/* ================= FUENTES VISUALES (GRID 3x3, SE ABRE CON BOTON) ================= */
-
 /* Botón Fuentes: que el texto entre y quede lindo */
 #btnFuentes{
   min-width: 110px;      /* 👈 para que quepa “Fuentes” */
@@ -670,57 +662,87 @@ body.modo-imagen #resaltadorCompacto {
   color: #fff;
 }
 
-/* Contenedor desplegable: grilla 3x3 sin scroll */
+/* ✅ IMPORTANTE: el contenedor del modal debe ser “referencia” */
+#modalPersonalizar > div {
+  position: relative; /* 👈 agregá esta línea si no estaba */
+}
+
+/* ================= FUENTES (1 FILA + SCROLL HORIZONTAL + ANCHO TOTAL) ================= */
+
+#btnFuentes{
+  min-width: 110px;
+  height: 34px;          /* 👈 iguala con los estilos */
+  padding: 0 10px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: var(--ui-azul-claro);
+  color: #000;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  font-size: 13px;
+  line-height: 1;
+}
+
+#btnFuentes.activo{
+  background: var(--ui-azul-hover);
+  color: #fff;
+}
+
+/* La lista ocupa TODO el ancho del modal y queda justo debajo de la fila */
 #listaFuentes{
   position: absolute;
+  left: 12px;              /* 👈 borde a borde dentro del modal */
+  right: 12px;
   top: calc(100% + 8px);
-  left: 0;              /* 👈 se alinea con el botón */
-  transform: none;
 
-  display: none;        /* se muestra con .abierto */
-  width: min(420px, calc(100vw - 24px));
+  display: none;
   padding: 10px;
-
   background: #fff;
   border-radius: 14px;
   box-shadow: 0 8px 24px rgba(0,0,0,.25);
-  z-index: 3000;
+  z-index: 4000;
 
-  /* ✅ grid fijo 3 columnas */
+  /* ✅ una sola línea con scroll horizontal */
   display: none;
-  grid-template-columns: repeat(3, 1fr);
+  flex-wrap: nowrap;
   gap: 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
 }
 
-/* Abrir */
 #listaFuentes.abierto{
-  display: grid;
+  display: flex;
 }
 
-/* Botones de cada fuente */
+/* Botones: tamaño “contenido”, NO se cortan */
 #listaFuentes button{
-  width: 100%;
+  width: max-content;
+  flex: 0 0 auto;
   height: 34px;
-  padding: 6px 8px;
-
-  font-size: 12.5px;       /* 👈 más compacto para 3x3 */
-  line-height: 1;
-
+  padding: 0 12px;
   border-radius: 10px;
   border: none;
   cursor: pointer;
-
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis; /* si es largo, corta prolijo */
-
   background: #f0f0f0;
+  white-space: nowrap;
+  font-size: 13px;
+  line-height: 1;
 }
 
 #listaFuentes button.activo{
   background: var(--ui-azul-hover);
   color: #fff;
 }
+
+/* ✅ Ocultar scrollbar (igual hay scroll con dedo/mouse) */
+#listaFuentes::-webkit-scrollbar { height: 0px; }
+#listaFuentes { scrollbar-width: none; }
 
 .fila-opciones {
   display: flex;
@@ -767,7 +789,9 @@ body.modo-imagen #resaltadorCompacto {
 }
 
 body.oscuro .cerrar-modal {
+  background: rgba(0,0,0,0.55);
   color: #fff;
+  border: 1px solid rgba(255,255,255,0.25);
 }
 
 .opcion-color label {
@@ -864,8 +888,8 @@ body.oscuro .nav-btn:hover i {
 
 body.oscuro .fila-final button,
 body.oscuro .subir-iglesia-btn {
-  background: #1f3a5f;   /* azul oscuro elegante */
-  color: #fff;
+  background: #d1eeff;   /* 👈 claro */
+  color: #000;
 }
 
 .fila-final button:hover,
@@ -1218,6 +1242,7 @@ button.activo,
   
 </body>
 </html>
+
 
 
 
