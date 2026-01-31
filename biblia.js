@@ -548,17 +548,49 @@ function crearListaVisualFuentes() {
   });
 }
 
-// ================= 🎀 CERRAR FUENTES AL TOCAR FUERA O AL TOCAR DE NUEVO =================
+// ================= 🎀 CERRAR/ABRIR FUENTES + POSICIONAR AL ANCHO DEL MODAL =================
 const btnFuentes = document.getElementById("btnFuentes");
 const listaFuentes = document.getElementById("listaFuentes");
+
+function posicionarListaFuentes() {
+  const modalBox = document.querySelector("#modalPersonalizar > div"); // contenedor interno
+  if (!modalBox || !btnFuentes || !listaFuentes) return;
+
+  const rModal = modalBox.getBoundingClientRect();
+  const rBtn = btnFuentes.getBoundingClientRect();
+
+  // ancho exacto del modal (con padding interno)
+  const padding = 12;
+  const left = rModal.left + padding;
+  const width = rModal.width - padding * 2;
+
+  listaFuentes.style.left = left + "px";
+  listaFuentes.style.width = width + "px";
+
+  // debajo del botón
+  listaFuentes.style.top = (rBtn.bottom + 8) + "px";
+}
 
 if (btnFuentes && listaFuentes) {
   btnFuentes.addEventListener("click", e => {
     e.preventDefault();
     e.stopPropagation();
+
     const abierto = listaFuentes.classList.toggle("abierto");
     btnFuentes.classList.toggle("activo", abierto);
+
+    if (abierto) {
+      posicionarListaFuentes();
+    }
   });
+
+  window.addEventListener("resize", () => {
+    if (listaFuentes.classList.contains("abierto")) posicionarListaFuentes();
+  });
+
+  window.addEventListener("scroll", () => {
+    if (listaFuentes.classList.contains("abierto")) posicionarListaFuentes();
+  }, true);
 
   document.addEventListener("click", e => {
     if (!listaFuentes.contains(e.target) && e.target !== btnFuentes) {
@@ -591,10 +623,10 @@ function cargarFondos() {
     img.style.borderRadius = "10px";
     img.style.cursor = "pointer";
 
-    img.onclick = () => {
-      fondoFinal = url;
-      actualizarPreview();
-    };
+   img.onclick = () => {
+   fondoFinal = img.src;   // 👈 usar el src real con parámetros
+   actualizarPreview();
+};
 
     cont.appendChild(img);
   });
@@ -700,34 +732,54 @@ function actualizarPreview() {
 async function generarImagenFinal() {
   const preview = document.getElementById("previewImagen");
   const canvasFinal = document.getElementById("canvasFinal");
+  const modal = document.getElementById("modalPersonalizar");
 
   if (!preview || !canvasFinal) return false;
 
-  // si no hay texto todavía, actualiza
-  actualizarPreview();
-
-  // asegurar layout real
-  await new Promise(r => requestAnimationFrame(r));
-  await document.fonts.ready;
-
-  const rect = preview.getBoundingClientRect();
-  if (rect.width === 0 || rect.height === 0) {
-    alert("❌ Error: preview sin tamaño");
+  // ✅ si el modal no está visible, html2canvas puede generar vacío
+  if (modal && getComputedStyle(modal).display === "none") {
+    console.warn("❌ Modal cerrado: no se puede generar imagen");
     return false;
   }
 
-  // ✅ FIX: asegurarse que el texto NO esté oculto al capturar
+  // 🔁 refrescar texto/estilos
+  actualizarPreview();
+
+  // ✅ asegurar layout real (2 frames para móvil)
+  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+  await document.fonts.ready;
+
+  const rect = preview.getBoundingClientRect();
+  if (rect.width < 10 || rect.height < 10) {
+    alert("❌ Error: preview sin tamaño real");
+    return false;
+  }
+
+  // ✅ asegurarse que el texto esté visible
   preview.classList.remove("render-final");
-  document.getElementById("previewTexto").style.display = "block";
-  document.getElementById("previewTextoBack").style.display = "block";
+  const t1 = document.getElementById("previewTexto");
+  const t2 = document.getElementById("previewTextoBack");
+  if (t1) t1.style.display = "block";
+  if (t2) t2.style.display = "block";
 
-  const canvasTemp = await html2canvas(preview, {
-    scale: Math.max(2, window.devicePixelRatio || 2),
-    useCORS: true,
-    allowTaint: false,
-    backgroundColor: null
-  });
+  // ✅ html2canvas
+  let canvasTemp;
+  try {
+    canvasTemp = await html2canvas(preview, {
+      scale: Math.max(2, window.devicePixelRatio || 2),
+      useCORS: true,
+      allowTaint: false,
+      backgroundColor: "#ffffff", // 👈 evita PNG “transparente” que parece vacío
+      foreignObjectRendering: true, // 👈 mejora captura del texto en algunos móviles
+      logging: false
+    });
+  } catch (err) {
+    console.error("❌ html2canvas falló:", err);
+    alert("❌ No se pudo generar la imagen (html2canvas). Revisá CORS del fondo.");
+    return false;
+  }
 
+  // ✅ copiar al canvasFinal
   canvasFinal.width = canvasTemp.width;
   canvasFinal.height = canvasTemp.height;
 
@@ -735,29 +787,22 @@ async function generarImagenFinal() {
   ctx.clearRect(0, 0, canvasFinal.width, canvasFinal.height);
   ctx.drawImage(canvasTemp, 0, 0);
 
-  // 🔼 subir imagen (si aplica)
+  // 🔼 subir imagen (si aplica)  (⚠️ si subirImagen usa el canvas, hacelo DESPUÉS de dibujar)
   const subirIglesia = document.getElementById("checkIglesia")?.checked;
-  if (subirIglesia) subirImagen("iglesia");
-  subirImagen("personal");
-
-  return true;
-}
-
-// ======================== helper para que Descargar/Compartir generen antes si hace falta ====================================
-async function asegurarCanvasListo() {
-  const canvas = document.getElementById("canvasFinal");
-  if (!canvas) return false;
-
-  if (canvas.width === 0 || canvas.height === 0) {
-    const ok = await generarImagenFinal();
-    return !!ok;
+  if (typeof subirImagen === "function") {
+    if (subirIglesia) subirImagen("iglesia");
+    subirImagen("personal");
+  } else {
+    console.warn("⚠️ subirImagen() no existe en este archivo");
   }
+
   return true;
 }
 
 // ======================== ⭐ OPCION DESCARGAR ====================================
 async function descargarImagenFinal() {
   const canvas = document.getElementById("canvasFinal");
+  if (!canvas) return;
 
   // si todavía no hay imagen, generarla
   if (!canvas.width || !canvas.height) {
@@ -765,41 +810,64 @@ async function descargarImagenFinal() {
     if (!ok) return;
   }
 
-  canvas.toBlob(blob => {
-    if (!blob) {
-      alert("No se pudo generar la imagen");
-      return;
-    }
-
+  // ✅ FIX: si toBlob devuelve null (pasa cuando el canvas queda “tainted”), fallback aDataURL
+  const descargarDesdeDataURL = () => {
     const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
+    link.href = canvas.toDataURL("image/png");
     link.download = "versiculo.png";
     link.click();
-    URL.revokeObjectURL(link.href);
-  }, "image/png");
+  };
+
+  try {
+    canvas.toBlob(blob => {
+      if (!blob) {
+        console.warn("⚠️ toBlob devolvió null, uso toDataURL()");
+        descargarDesdeDataURL();
+        return;
+      }
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "versiculo.png";
+      link.click();
+      URL.revokeObjectURL(link.href);
+    }, "image/png");
+  } catch (e) {
+    console.warn("⚠️ toBlob falló, uso toDataURL()", e);
+    descargarDesdeDataURL();
+  }
 }
 
 // ========================⭐ OPCION COMPARTIR ====================================
 async function compartirImagenFinal() {
-  const ok = await asegurarCanvasListo();
-  if (!ok) return;
-
   const canvas = document.getElementById("canvasFinal");
+  if (!canvas) return;
 
+  // si todavía no hay imagen, generarla
+  if (!canvas.width || !canvas.height) {
+    const ok = await generarImagenFinal();
+    if (!ok) return;
+  }
+
+  // ✅ igual que descargar: si toBlob null → fallback descarga
   canvas.toBlob(async blob => {
+    if (!blob) {
+      await descargarImagenFinal();
+      alert("No se pudo compartir directo (blob null). Se descargó la imagen.");
+      return;
+    }
+
     const file = new File([blob], "versiculo.png", { type: "image/png" });
 
     if (navigator.share && navigator.canShare?.({ files: [file] })) {
       await navigator.share({
         files: [file],
         title: "Versículo"
-        // ✅ sin "text" para que no mande mensaje raro
       });
     } else {
       await descargarImagenFinal();
       alert("Tu dispositivo no permite compartir directamente. La imagen se descargó para que la compartas manualmente.");
     }
-  });
+  }, "image/png");
 }
 
 // ================= ⭐ RESET DEL MODAL  =======================
