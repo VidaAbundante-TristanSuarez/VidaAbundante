@@ -194,7 +194,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 });
 
-
 // ================= ⭐ MOSTRAR TEXTO =======================
 function mostrarTexto() {
   texto.innerHTML = "";
@@ -608,49 +607,70 @@ const fondos = [
   "https://images.unsplash.com/photo-1519681393784-d120267933ba"
 ];
 
-// ================= ⭐ CARGAR FONDOS   =======================
+// ================= ⭐ CARGAR FONDOS (CORS + CSS SAFE) =======================
 function cargarFondos() {
   const cont = document.getElementById("personalizarFondos");
+  if (!cont) return;
+
   cont.innerHTML = "";
 
-  fondos.forEach(url => {
+  fondos.forEach(baseUrl => {
+    // ✅ siempre generamos la url final con parámetros
+    const finalUrl = baseUrl.includes("?")
+      ? baseUrl + "&auto=format&fit=crop&w=900&q=80"
+      : baseUrl + "?auto=format&fit=crop&w=900&q=80";
+
     const img = document.createElement("img");
+
+    // ✅ IMPORTANTE: setear crossOrigin ANTES del src
     img.crossOrigin = "anonymous";
-    img.src = url + "?auto=format&fit=crop&w=900&q=80";
+    img.referrerPolicy = "no-referrer"; // 👈 ayuda con algunos hosts
+
+    img.src = finalUrl;
+
     img.style.width = "70px";
     img.style.height = "70px";
     img.style.objectFit = "cover";
     img.style.borderRadius = "10px";
     img.style.cursor = "pointer";
 
-   img.onclick = () => {
-   fondoFinal = img.src;   // 👈 usar el src real con parámetros
-   actualizarPreview();
-};
+    img.onclick = () => {
+      // ✅ guardamos SIEMPRE la url final exacta
+      fondoFinal = finalUrl;
+      actualizarPreview();
+    };
 
     cont.appendChild(img);
   });
 }
 
-// ================= ⭐ ACTUALIZAR VISTA PREVIA  =======================
+// ================= ⭐ ACTUALIZAR VISTA PREVIA (FIX) =======================
 function actualizarPreview() {
   const previewImagen = document.getElementById("previewImagen");
   const previewTexto = document.getElementById("previewTexto");
   const previewTextoBack = document.getElementById("previewTextoBack");
   const wrapper = document.getElementById("previewTextoWrapper");
 
+  if (!previewImagen || !previewTexto || !previewTextoBack || !wrapper) return;
+
   // ================= Texto =================
   const textoFinal = obtenerVersiculoSeleccionado();
-  previewTexto.innerText = textoFinal;
-  previewTextoBack.innerText = textoFinal;
+  previewTexto.innerText = textoFinal || "";
+  previewTextoBack.innerText = textoFinal || "";
 
-  // ================= Fondo =================
-  previewImagen.style.backgroundImage = fondoFinal
-    ? `url(${fondoFinal})`
-    : "none";
+  // ================= Fondo (CSS SAFE) =================
+  // ✅ Comillas para URLs con ? & etc.
+  if (fondoFinal) {
+    previewImagen.style.backgroundImage = `url("${fondoFinal}")`;
+  } else {
+    previewImagen.style.backgroundImage = "none";
+  }
+
+  // (opcional recomendado) si no hay fondo, que NO quede transparente raro
+  previewImagen.style.backgroundColor = fondoFinal ? "transparent" : "#ffffff";
 
   // ================= Fuente =================
-  const fuente = fuenteActual;
+  const fuente = fuenteActual || "Arial";
   previewTexto.style.fontFamily = fuente;
   previewTextoBack.style.fontFamily = fuente;
 
@@ -661,22 +681,38 @@ function actualizarPreview() {
     ? Number(sizeSlider.value)
     : (formatoStory ? 56 : 48);
 
+  // ✅ IMPORTANTE: wrapper.clientHeight puede ser 0 si el modal recién abre.
+  // Si es 0, no hagas autoajuste todavía.
+  const wrapperH = wrapper.clientHeight;
+  const maxHeight = wrapperH > 0 ? (wrapperH - 40) : null;
+
   // ================= Auto Ajuste =================
   let fontSize = sizeBase;
-  const maxHeight = wrapper.clientHeight - 40;
 
   previewTexto.style.lineHeight = "1.3";
   previewTextoBack.style.lineHeight = "1.3";
 
-  while (fontSize > 14) {
+  // Solo autoajusta si hay alto válido
+  if (maxHeight && maxHeight > 20) {
+    while (fontSize > 14) {
+      previewTexto.style.fontSize = fontSize + "px";
+      previewTextoBack.style.fontSize = fontSize + "px";
+      if (previewTexto.scrollHeight <= maxHeight) break;
+      fontSize--;
+    }
+  } else {
+    // fallback: aplica el size sin intentar medir
     previewTexto.style.fontSize = fontSize + "px";
     previewTextoBack.style.fontSize = fontSize + "px";
-    if (previewTexto.scrollHeight <= maxHeight) break;
-    fontSize--;
   }
+
   // ================= Color / Outline =================
-  const color = document.getElementById("personalizarColor").value;
-  const opacidad = document.getElementById("personalizarOpacidad").value;
+  const colorEl = document.getElementById("personalizarColor");
+  const opEl = document.getElementById("personalizarOpacidad");
+
+  const color = colorEl ? colorEl.value : "#000000";
+  const opacidad = opEl ? opEl.value : "0.3";
+
   const outlineColor = colorOutlineDesdeBase(color);
 
   // capas
@@ -703,25 +739,27 @@ function actualizarPreview() {
   const op = parseFloat(opacidad);
   let bgColor = "rgba(0,0,0,0)";
 
-  if (op > 0.5) {
-    const a = (op - 0.5) * 2;
-    bgColor = `rgba(0,0,0,${a})`;
-  } else if (op < 0.5) {
-    const a = (0.5 - op) * 2;
-    bgColor = `rgba(255,255,255,${a})`;
+  if (!isNaN(op)) {
+    if (op > 0.5) {
+      const a = (op - 0.5) * 2;
+      bgColor = `rgba(0,0,0,${a})`;
+    } else if (op < 0.5) {
+      const a = (0.5 - op) * 2;
+      bgColor = `rgba(255,255,255,${a})`;
+    }
   }
 
- wrapper.style.backgroundColor = bgColor;
+  wrapper.style.backgroundColor = bgColor;
 
   // ================= Estilos Texto =================
-  const transform = textStyle.upper ? "uppercase" : "none";
+  const transform = textStyle?.upper ? "uppercase" : "none";
 
   previewTexto.style.textTransform = transform;
   previewTextoBack.style.textTransform = transform;
 
-  previewTexto.style.fontWeight = textStyle.bold ? "700" : "400";
-  previewTexto.style.fontStyle = textStyle.italic ? "italic" : "normal";
-  previewTexto.style.textDecoration = textStyle.underline ? "underline" : "none";
+  previewTexto.style.fontWeight = textStyle?.bold ? "700" : "400";
+  previewTexto.style.fontStyle = textStyle?.italic ? "italic" : "normal";
+  previewTexto.style.textDecoration = textStyle?.underline ? "underline" : "none";
 
   previewTextoBack.style.fontWeight = previewTexto.style.fontWeight;
   previewTextoBack.style.fontStyle = previewTexto.style.fontStyle;
