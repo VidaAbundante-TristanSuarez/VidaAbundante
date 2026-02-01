@@ -644,7 +644,6 @@ function cargarFondos() {
 }
 
 // ================= ⭐ ACTUALIZAR VISTA PREVIA (FIX) =======================
-// ================= ⭐ ACTUALIZAR VISTA PREVIA (ANTI-PNG NEGRO) =======================
 function actualizarPreview() {
   const previewImagen = document.getElementById("previewImagen");
   const previewTexto = document.getElementById("previewTexto");
@@ -659,14 +658,13 @@ function actualizarPreview() {
   previewTextoBack.innerText = textoFinal || "";
 
   // ================= Fondo =================
-  // ✅ Si hay fondo, lo ponemos con comillas (URLs con ? &)
   if (fondoFinal) {
     previewImagen.style.backgroundImage = `url("${fondoFinal}")`;
   } else {
     previewImagen.style.backgroundImage = "none";
   }
 
-  // ✅ CLAVE: SIEMPRE un color de fondo para que no salga PNG negro por transparencia
+  // ✅ SIEMPRE un color de fondo para evitar “negro” por transparencia
   previewImagen.style.backgroundColor = "#ffffff";
 
   // ================= Fuente =================
@@ -674,19 +672,19 @@ function actualizarPreview() {
   previewTexto.style.fontFamily = fuente;
   previewTextoBack.style.fontFamily = fuente;
 
-  // ================= Formato =================
+  // ================= Formato / Tamaño =================
   const formatoStory = previewImagen.classList.contains("preview-story");
   const sizeSlider = document.getElementById("personalizarTamaño");
   const sizeBase = sizeSlider ? Number(sizeSlider.value) : (formatoStory ? 56 : 48);
 
-  // ================= Auto Ajuste =================
   let fontSize = sizeBase;
-  const maxHeight = wrapper.clientHeight - 40;
-
   previewTexto.style.lineHeight = "1.3";
   previewTextoBack.style.lineHeight = "1.3";
 
-  if (wrapper.clientHeight > 0) {
+  const wrapperH = wrapper.clientHeight;
+  const maxHeight = wrapperH > 0 ? wrapperH - 40 : null;
+
+  if (maxHeight && maxHeight > 20) {
     while (fontSize > 14) {
       previewTexto.style.fontSize = fontSize + "px";
       previewTextoBack.style.fontSize = fontSize + "px";
@@ -712,6 +710,7 @@ function actualizarPreview() {
   previewTextoBack.style.position = "absolute";
   previewTextoBack.style.zIndex = "1";
 
+  // reset acumulables
   previewTextoBack.style.transform = "none";
   previewTextoBack.style.textShadow = "none";
   previewTextoBack.style.filter = "none";
@@ -727,11 +726,8 @@ function actualizarPreview() {
   let bgColor = "rgba(0,0,0,0)";
 
   if (!isNaN(op)) {
-    if (op > 0.5) {
-      bgColor = `rgba(0,0,0,${(op - 0.5) * 2})`;
-    } else if (op < 0.5) {
-      bgColor = `rgba(255,255,255,${(0.5 - op) * 2})`;
-    }
+    if (op > 0.5) bgColor = `rgba(0,0,0,${(op - 0.5) * 2})`;
+    else if (op < 0.5) bgColor = `rgba(255,255,255,${(0.5 - op) * 2})`;
   }
 
   wrapper.style.backgroundColor = bgColor;
@@ -751,22 +747,6 @@ function actualizarPreview() {
   previewTextoBack.style.textDecoration = previewTexto.style.textDecoration;
 }
 
-  // ================= Estilos Texto =================
-  const transform = textStyle?.upper ? "uppercase" : "none";
-
-  previewTexto.style.textTransform = transform;
-  previewTextoBack.style.textTransform = transform;
-
-  previewTexto.style.fontWeight = textStyle?.bold ? "700" : "400";
-  previewTexto.style.fontStyle = textStyle?.italic ? "italic" : "normal";
-  previewTexto.style.textDecoration = textStyle?.underline ? "underline" : "none";
-
-  previewTextoBack.style.fontWeight = previewTexto.style.fontWeight;
-  previewTextoBack.style.fontStyle = previewTexto.style.fontStyle;
-  previewTextoBack.style.textDecoration = previewTexto.style.textDecoration;
-}
-
-// ================= ⭐ CANVAS GENERA IMAGEN FINAL (FIX TRANSPARENCIA NEGRA) ============================
 // ================= ⭐ CANVAS GENERA IMAGEN FINAL (FIX REAL) ============================
 async function generarImagenFinal() {
   const preview = document.getElementById("previewImagen");
