@@ -981,25 +981,38 @@ window.toggleModoImagen = () => {
 };
 
 // ================= 🔺 GENERAR IMAGEN ===============================
-window.generarImagen = () => {
+window.generarImagen = async () => {
   if (Object.keys(seleccionImagen).length === 0) {
     alert("Seleccioná al menos un versículo");
     return;
   }
-  document.getElementById("modalPersonalizar").style.display = "flex";
+
+  const modal = document.getElementById("modalPersonalizar");
+  if (!modal) return;
+
+  modal.style.display = "flex";
+
   setFormatoImagen("post");
-  cargarFondos(); 
+  cargarFondos();
   crearListaVisualFuentes();
+
+  // ✅ esperar 1 frame para que el modal ya tenga tamaño real
+  await new Promise(r => requestAnimationFrame(r));
+
   actualizarPreview();
 };
 
 // ================= 🔺 CANCELAR CREAR IMAGEN ===============================
 window.cancelarCrearImagen = () => {
+  // 1️⃣ primero salir del modo imagen (estado lógico)
+  salirModoImagen();
+
+  // 2️⃣ resetear todo el modal mientras todavía existe
+  resetModalPersonalizar();
+
+  // 3️⃣ por último cerrar visualmente
   const modal = document.getElementById("modalPersonalizar");
   if (modal) modal.style.display = "none";
-
-  resetModalPersonalizar();
-  salirModoImagen();
 };
 
 // ================= 🔺 CAMBIAR LETRA ===============================
