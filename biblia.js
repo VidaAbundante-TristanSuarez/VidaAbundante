@@ -766,24 +766,16 @@ function actualizarPreview() {
   previewTextoBack.style.textDecoration = previewTexto.style.textDecoration;
 }
 
-// ================= ⭐ CANVAS GENERA IMAGEN FINAL ============================
+// ================= ⭐ CANVAS GENERA IMAGEN FINAL (FIX TRANSPARENCIA NEGRA) ============================
 async function generarImagenFinal() {
   const preview = document.getElementById("previewImagen");
   const canvasFinal = document.getElementById("canvasFinal");
-  const modal = document.getElementById("modalPersonalizar");
-
   if (!preview || !canvasFinal) return false;
 
-  // ✅ si el modal no está visible, html2canvas puede generar vacío
-  if (modal && getComputedStyle(modal).display === "none") {
-    console.warn("❌ Modal cerrado: no se puede generar imagen");
-    return false;
-  }
-
-  // 🔁 refrescar texto/estilos
+  // refrescar
   actualizarPreview();
 
-  // ✅ asegurar layout real (2 frames para móvil)
+  // 2 frames para asegurar layout
   await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
   await document.fonts.ready;
 
@@ -793,86 +785,73 @@ async function generarImagenFinal() {
     return false;
   }
 
-  // ✅ asegurarse que el texto esté visible
+  // asegurar texto visible
   preview.classList.remove("render-final");
   const t1 = document.getElementById("previewTexto");
   const t2 = document.getElementById("previewTextoBack");
   if (t1) t1.style.display = "block";
   if (t2) t2.style.display = "block";
 
-  // ✅ html2canvas
   let canvasTemp;
   try {
     canvasTemp = await html2canvas(preview, {
       scale: Math.max(2, window.devicePixelRatio || 2),
       useCORS: true,
       allowTaint: false,
-      backgroundColor: "#ffffff", // 👈 evita PNG “transparente” que parece vacío
-      foreignObjectRendering: true, // 👈 mejora captura del texto en algunos móviles
+      backgroundColor: null,      // 👈 dejamos transparente acá…
       logging: false
     });
   } catch (err) {
     console.error("❌ html2canvas falló:", err);
-    alert("❌ No se pudo generar la imagen (html2canvas). Revisá CORS del fondo.");
+    alert("❌ No se pudo generar la imagen.");
     return false;
   }
 
-  // ✅ copiar al canvasFinal
   canvasFinal.width = canvasTemp.width;
   canvasFinal.height = canvasTemp.height;
 
   const ctx = canvasFinal.getContext("2d");
-  ctx.clearRect(0, 0, canvasFinal.width, canvasFinal.height);
+
+  // ✅ CLAVE: rellenar blanco ANTES de dibujar (evita PNG negro por transparencia)
+  ctx.save();
+  ctx.globalCompositeOperation = "source-over";
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, canvasFinal.width, canvasFinal.height);
+  ctx.restore();
+
   ctx.drawImage(canvasTemp, 0, 0);
 
-  // 🔼 subir imagen (si aplica)  (⚠️ si subirImagen usa el canvas, hacelo DESPUÉS de dibujar)
+  // subir imagen si existe la función
   const subirIglesia = document.getElementById("checkIglesia")?.checked;
   if (typeof subirImagen === "function") {
     if (subirIglesia) subirImagen("iglesia");
     subirImagen("personal");
-  } else {
-    console.warn("⚠️ subirImagen() no existe en este archivo");
   }
 
   return true;
 }
 
-// ======================== ⭐ OPCION DESCARGAR ====================================
+// ======================== ⭐ OPCION DESCARGAR (FIX) ====================================
 async function descargarImagenFinal() {
   const canvas = document.getElementById("canvasFinal");
   if (!canvas) return;
 
-  // si todavía no hay imagen, generarla
   if (!canvas.width || !canvas.height) {
     const ok = await generarImagenFinal();
     if (!ok) return;
   }
 
-  // ✅ FIX: si toBlob devuelve null (pasa cuando el canvas queda “tainted”), fallback aDataURL
-  const descargarDesdeDataURL = () => {
+  canvas.toBlob(blob => {
+    if (!blob) {
+      alert("No se pudo generar la imagen");
+      return;
+    }
     const link = document.createElement("a");
-    link.href = canvas.toDataURL("image/png");
+    link.href = URL.createObjectURL(blob);
     link.download = "versiculo.png";
     link.click();
-  };
-
-  try {
-    canvas.toBlob(blob => {
-      if (!blob) {
-        console.warn("⚠️ toBlob devolvió null, uso toDataURL()");
-        descargarDesdeDataURL();
-        return;
-      }
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = "versiculo.png";
-      link.click();
-      URL.revokeObjectURL(link.href);
-    }, "image/png");
-  } catch (e) {
-    console.warn("⚠️ toBlob falló, uso toDataURL()", e);
-    descargarDesdeDataURL();
-  }
+    URL.revokeObjectURL(link.href);
+  }, "image/png");
 }
 
 // ========================⭐ OPCION COMPARTIR ====================================
