@@ -1001,11 +1001,6 @@ window.cancelarCrearImagen = () => {
   salirModoImagen();
 };
 
-  // 3️⃣ por último cerrar visualmente
-  const modal = document.getElementById("modalPersonalizar");
-  if (modal) modal.style.display = "none";
-};
-
 // ================= ✅ FINALIZAR EDICIÓN (CONFIRMAR) =================
 window.finalizarEdicion = async () => {
 
