@@ -608,6 +608,7 @@ const fondos = [
 ];
 
 // ================= ⭐ CARGAR FONDOS (CORS + CSS SAFE) =======================
+// ================= ⭐ CARGAR FONDOS (CORS + URL FINAL) =======================
 function cargarFondos() {
   const cont = document.getElementById("personalizarFondos");
   if (!cont) return;
@@ -615,16 +616,15 @@ function cargarFondos() {
   cont.innerHTML = "";
 
   fondos.forEach(baseUrl => {
-    // ✅ siempre generamos la url final con parámetros
     const finalUrl = baseUrl.includes("?")
       ? baseUrl + "&auto=format&fit=crop&w=900&q=80"
       : baseUrl + "?auto=format&fit=crop&w=900&q=80";
 
     const img = document.createElement("img");
 
-    // ✅ IMPORTANTE: setear crossOrigin ANTES del src
+    // ✅ crossOrigin ANTES del src
     img.crossOrigin = "anonymous";
-    img.referrerPolicy = "no-referrer"; // 👈 ayuda con algunos hosts
+    img.referrerPolicy = "no-referrer";
 
     img.src = finalUrl;
 
@@ -635,8 +635,7 @@ function cargarFondos() {
     img.style.cursor = "pointer";
 
     img.onclick = () => {
-      // ✅ guardamos SIEMPRE la url final exacta
-      fondoFinal = finalUrl;
+      fondoFinal = finalUrl;       // ✅ guardamos la URL FINAL
       actualizarPreview();
     };
 
@@ -645,6 +644,7 @@ function cargarFondos() {
 }
 
 // ================= ⭐ ACTUALIZAR VISTA PREVIA (FIX) =======================
+// ================= ⭐ ACTUALIZAR VISTA PREVIA (ANTI-PNG NEGRO) =======================
 function actualizarPreview() {
   const previewImagen = document.getElementById("previewImagen");
   const previewTexto = document.getElementById("previewTexto");
@@ -658,16 +658,16 @@ function actualizarPreview() {
   previewTexto.innerText = textoFinal || "";
   previewTextoBack.innerText = textoFinal || "";
 
-  // ================= Fondo (CSS SAFE) =================
-  // ✅ Comillas para URLs con ? & etc.
+  // ================= Fondo =================
+  // ✅ Si hay fondo, lo ponemos con comillas (URLs con ? &)
   if (fondoFinal) {
     previewImagen.style.backgroundImage = `url("${fondoFinal}")`;
   } else {
     previewImagen.style.backgroundImage = "none";
   }
 
-  // (opcional recomendado) si no hay fondo, que NO quede transparente raro
-  previewImagen.style.backgroundColor = fondoFinal ? "transparent" : "#ffffff";
+  // ✅ CLAVE: SIEMPRE un color de fondo para que no salga PNG negro por transparencia
+  previewImagen.style.backgroundColor = "#ffffff";
 
   // ================= Fuente =================
   const fuente = fuenteActual || "Arial";
@@ -677,23 +677,16 @@ function actualizarPreview() {
   // ================= Formato =================
   const formatoStory = previewImagen.classList.contains("preview-story");
   const sizeSlider = document.getElementById("personalizarTamaño");
-  const sizeBase = sizeSlider
-    ? Number(sizeSlider.value)
-    : (formatoStory ? 56 : 48);
-
-  // ✅ IMPORTANTE: wrapper.clientHeight puede ser 0 si el modal recién abre.
-  // Si es 0, no hagas autoajuste todavía.
-  const wrapperH = wrapper.clientHeight;
-  const maxHeight = wrapperH > 0 ? (wrapperH - 40) : null;
+  const sizeBase = sizeSlider ? Number(sizeSlider.value) : (formatoStory ? 56 : 48);
 
   // ================= Auto Ajuste =================
   let fontSize = sizeBase;
+  const maxHeight = wrapper.clientHeight - 40;
 
   previewTexto.style.lineHeight = "1.3";
   previewTextoBack.style.lineHeight = "1.3";
 
-  // Solo autoajusta si hay alto válido
-  if (maxHeight && maxHeight > 20) {
+  if (wrapper.clientHeight > 0) {
     while (fontSize > 14) {
       previewTexto.style.fontSize = fontSize + "px";
       previewTextoBack.style.fontSize = fontSize + "px";
@@ -701,7 +694,6 @@ function actualizarPreview() {
       fontSize--;
     }
   } else {
-    // fallback: aplica el size sin intentar medir
     previewTexto.style.fontSize = fontSize + "px";
     previewTextoBack.style.fontSize = fontSize + "px";
   }
@@ -712,26 +704,21 @@ function actualizarPreview() {
 
   const color = colorEl ? colorEl.value : "#000000";
   const opacidad = opEl ? opEl.value : "0.3";
-
   const outlineColor = colorOutlineDesdeBase(color);
 
-  // capas
   previewTexto.style.position = "relative";
   previewTexto.style.zIndex = "2";
 
   previewTextoBack.style.position = "absolute";
   previewTextoBack.style.zIndex = "1";
 
-  // reset estilos acumulables
   previewTextoBack.style.transform = "none";
   previewTextoBack.style.textShadow = "none";
   previewTextoBack.style.filter = "none";
 
-  // colores
   previewTexto.style.color = color;
   previewTextoBack.style.color = outlineColor;
 
-  // desplazamiento (outline)
   previewTextoBack.style.transform = "translate(0.5px, 0.5px)";
   previewTextoBack.style.filter = "blur(0.2px)";
 
@@ -741,11 +728,9 @@ function actualizarPreview() {
 
   if (!isNaN(op)) {
     if (op > 0.5) {
-      const a = (op - 0.5) * 2;
-      bgColor = `rgba(0,0,0,${a})`;
+      bgColor = `rgba(0,0,0,${(op - 0.5) * 2})`;
     } else if (op < 0.5) {
-      const a = (0.5 - op) * 2;
-      bgColor = `rgba(255,255,255,${a})`;
+      bgColor = `rgba(255,255,255,${(0.5 - op) * 2})`;
     }
   }
 
@@ -766,24 +751,42 @@ function actualizarPreview() {
   previewTextoBack.style.textDecoration = previewTexto.style.textDecoration;
 }
 
+  // ================= Estilos Texto =================
+  const transform = textStyle?.upper ? "uppercase" : "none";
+
+  previewTexto.style.textTransform = transform;
+  previewTextoBack.style.textTransform = transform;
+
+  previewTexto.style.fontWeight = textStyle?.bold ? "700" : "400";
+  previewTexto.style.fontStyle = textStyle?.italic ? "italic" : "normal";
+  previewTexto.style.textDecoration = textStyle?.underline ? "underline" : "none";
+
+  previewTextoBack.style.fontWeight = previewTexto.style.fontWeight;
+  previewTextoBack.style.fontStyle = previewTexto.style.fontStyle;
+  previewTextoBack.style.textDecoration = previewTexto.style.textDecoration;
+}
+
 // ================= ⭐ CANVAS GENERA IMAGEN FINAL (FIX TRANSPARENCIA NEGRA) ============================
+// ================= ⭐ CANVAS GENERA IMAGEN FINAL (FIX REAL) ============================
 async function generarImagenFinal() {
   const preview = document.getElementById("previewImagen");
   const canvasFinal = document.getElementById("canvasFinal");
+  const modal = document.getElementById("modalPersonalizar");
+
   if (!preview || !canvasFinal) return false;
 
-  // refrescar
+  // si el modal está cerrado, html2canvas suele sacar vacío
+  if (modal && getComputedStyle(modal).display === "none") return false;
+
+  // refrescar estilos
   actualizarPreview();
 
-  // 2 frames para asegurar layout
+  // asegurar layout real
   await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
   await document.fonts.ready;
 
   const rect = preview.getBoundingClientRect();
-  if (rect.width < 10 || rect.height < 10) {
-    alert("❌ Error: preview sin tamaño real");
-    return false;
-  }
+  if (rect.width < 10 || rect.height < 10) return false;
 
   // asegurar texto visible
   preview.classList.remove("render-final");
@@ -798,12 +801,10 @@ async function generarImagenFinal() {
       scale: Math.max(2, window.devicePixelRatio || 2),
       useCORS: true,
       allowTaint: false,
-      backgroundColor: null,      // 👈 dejamos transparente acá…
-      logging: false
+      backgroundColor: "#ffffff" // ✅ CLAVE: nunca transparente => nunca negro
     });
   } catch (err) {
-    console.error("❌ html2canvas falló:", err);
-    alert("❌ No se pudo generar la imagen.");
+    console.error("html2canvas falló:", err);
     return false;
   }
 
@@ -811,17 +812,10 @@ async function generarImagenFinal() {
   canvasFinal.height = canvasTemp.height;
 
   const ctx = canvasFinal.getContext("2d");
-
-  // ✅ CLAVE: rellenar blanco ANTES de dibujar (evita PNG negro por transparencia)
-  ctx.save();
-  ctx.globalCompositeOperation = "source-over";
-  ctx.fillStyle = "#ffffff";
-  ctx.fillRect(0, 0, canvasFinal.width, canvasFinal.height);
-  ctx.restore();
-
+  ctx.clearRect(0, 0, canvasFinal.width, canvasFinal.height);
   ctx.drawImage(canvasTemp, 0, 0);
 
-  // subir imagen si existe la función
+  // subir imagen (si existe la función)
   const subirIglesia = document.getElementById("checkIglesia")?.checked;
   if (typeof subirImagen === "function") {
     if (subirIglesia) subirImagen("iglesia");
@@ -841,17 +835,26 @@ async function descargarImagenFinal() {
     if (!ok) return;
   }
 
-  canvas.toBlob(blob => {
-    if (!blob) {
-      alert("No se pudo generar la imagen");
-      return;
-    }
+  const descargarDesdeDataURL = () => {
     const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
+    link.href = canvas.toDataURL("image/png");
     link.download = "versiculo.png";
     link.click();
-    URL.revokeObjectURL(link.href);
-  }, "image/png");
+  };
+
+  try {
+    canvas.toBlob(blob => {
+      if (!blob) return descargarDesdeDataURL();
+
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "versiculo.png";
+      link.click();
+      URL.revokeObjectURL(link.href);
+    }, "image/png");
+  } catch (e) {
+    descargarDesdeDataURL();
+  }
 }
 
 // ========================⭐ OPCION COMPARTIR ====================================
@@ -859,27 +862,21 @@ async function compartirImagenFinal() {
   const canvas = document.getElementById("canvasFinal");
   if (!canvas) return;
 
-  // si todavía no hay imagen, generarla
   if (!canvas.width || !canvas.height) {
     const ok = await generarImagenFinal();
     if (!ok) return;
   }
 
-  // ✅ igual que descargar: si toBlob null → fallback descarga
   canvas.toBlob(async blob => {
     if (!blob) {
       await descargarImagenFinal();
-      alert("No se pudo compartir directo (blob null). Se descargó la imagen.");
       return;
     }
 
     const file = new File([blob], "versiculo.png", { type: "image/png" });
 
     if (navigator.share && navigator.canShare?.({ files: [file] })) {
-      await navigator.share({
-        files: [file],
-        title: "Versículo"
-      });
+      await navigator.share({ files: [file], title: "Versículo" });
     } else {
       await descargarImagenFinal();
       alert("Tu dispositivo no permite compartir directamente. La imagen se descargó para que la compartas manualmente.");
@@ -895,31 +892,42 @@ function resetModalPersonalizar() {
   document.getElementById("personalizarOpacidad").value = 0.35;
   document.getElementById("personalizarTamaño").value = 32;
   fuenteActual = "Arial";
+
   const colorInput = document.getElementById("personalizarColor");
-  colorInput.value = document.body.classList.contains("oscuro")
-  ? "#ffffff"
-  : "#000000";
+  if (colorInput) {
+    colorInput.value = document.body.classList.contains("oscuro")
+      ? "#ffffff"
+      : "#000000";
+  }
 
   const preview = document.getElementById("previewImagen");
-  preview.style.backgroundImage = "none";
-  preview.style.pointerEvents = "auto";
-  preview.classList.remove("render-final"); // 🔥 CLAVE
+  if (preview) {
+    preview.style.backgroundImage = "none";
+    preview.style.pointerEvents = "auto";
+    preview.classList.remove("render-final");
+  }
 
-  // Restaurar texto HTML
-  document.getElementById("previewTexto").style.display = "block";
-  document.getElementById("previewTextoBack").style.display = "block";
+  const t1 = document.getElementById("previewTexto");
+  const t2 = document.getElementById("previewTextoBack");
+  if (t1) t1.style.display = "block";
+  if (t2) t2.style.display = "block";
 
-  // Restaurar wrapper
   const wrapper = document.getElementById("previewTextoWrapper");
-  wrapper.style.pointerEvents = "auto";
-  wrapper.style.background = "";
+  if (wrapper) {
+    wrapper.style.pointerEvents = "auto";
+    wrapper.style.background = "";
+  }
 
-  // Restaurar UI
-  document.getElementById("personalizarFondos").style.display = "flex";
-  document.getElementById("btnGenerarPersonalizada").style.display = "inline-block";
+  // ================= RESTAURAR UI (SEGURO) =================
+  const fondosBox = document.getElementById("personalizarFondos");
+  if (fondosBox) fondosBox.style.display = "flex";
+
+  const btnGen = document.getElementById("btnGenerarPersonalizada");
+  if (btnGen) btnGen.style.display = "inline-block";
 
   const acciones = document.getElementById("accionesFinales");
   if (acciones) acciones.remove();
+
   actualizarPreview();
 }
 
