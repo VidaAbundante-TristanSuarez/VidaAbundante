@@ -852,14 +852,14 @@ function clickLink(link) {
 }
 
 // ======================== ⭐ OPCION DESCARGAR (FIX) ====================================
+// ======================== ⭐ OPCION DESCARGAR (FIX) ====================================
 async function descargarImagenFinal() {
   const canvas = document.getElementById("canvasFinal");
   if (!canvas) return;
- // ✅ SIEMPRE regenerar antes de descargar (evita “me baja el PNG viejo”)
-const ok = await generarImagenFinal();
-if (!ok) return;
 
-  }
+  // ✅ SIEMPRE regenerar antes de descargar (evita “me baja el PNG viejo”)
+  const ok = await generarImagenFinal();
+  if (!ok) return;
 
   const descargarDesdeDataURL = () => {
     const link = document.createElement("a");
