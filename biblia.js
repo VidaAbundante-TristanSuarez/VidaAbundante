@@ -40,6 +40,7 @@ let fuenteActual = "Arial";
 let modoImagen = false;
 let seleccionImagen = {};
 let fondoFinal = null;
+let fondoFinalBlobUrl = null; // ✅ fondo seguro para html2canvas
 
 let textStyle = {
   upper: false,
@@ -82,7 +83,12 @@ fetch("VidaAbundante - RV1960.json")
 
 document.fonts.ready.then(() => {
   console.log("✅ Fuentes cargadas");
-  actualizarPreview();
+
+  // ✅ solo refrescar si el modal existe y está visible
+  const modal = document.getElementById("modalPersonalizar");
+  if (modal && getComputedStyle(modal).display !== "none") {
+    actualizarPreview();
+  }
 });
 
 // ================= ⭐ INICIAR BIBLIA ==============================
@@ -607,7 +613,6 @@ const fondos = [
   "https://images.unsplash.com/photo-1519681393784-d120267933ba"
 ];
 
-// ================= ⭐ CARGAR FONDOS (CORS + CSS SAFE) =======================
 // ================= ⭐ CARGAR FONDOS (CORS + URL FINAL) =======================
 function cargarFondos() {
   const cont = document.getElementById("personalizarFondos");
@@ -634,16 +639,37 @@ function cargarFondos() {
     img.style.borderRadius = "10px";
     img.style.cursor = "pointer";
 
-    img.onclick = () => {
-      fondoFinal = finalUrl;       // ✅ guardamos la URL FINAL
-      actualizarPreview();
-    };
+   img.onclick = async () => {
+  try {
+    // liberar blob anterior
+    if (fondoFinalBlobUrl) URL.revokeObjectURL(fondoFinalBlobUrl);
+
+    fondoFinal = finalUrl; // guardo la url original (por si querés)
+    fondoFinalBlobUrl = await urlToBlobURL(finalUrl); // ✅ la clave
+
+    actualizarPreview();
+  } catch (e) {
+    console.error(e);
+    fondoFinal = null;
+    fondoFinalBlobUrl = null;
+    alert("Ese fondo no se puede usar (CORS). Probá otro o sin fondo.");
+    actualizarPreview();
+  }
+};
 
     cont.appendChild(img);
   });
 }
 
-// ================= ⭐ ACTUALIZAR VISTA PREVIA (FIX) =======================
+// ================= ⭐ URLTOBLOBURL =======================
+async function urlToBlobURL(url) {
+  const res = await fetch(url, { mode: "cors", cache: "no-store" });
+  if (!res.ok) throw new Error("Fondo no disponible (CORS o 404)");
+  const blob = await res.blob();
+  return URL.createObjectURL(blob);
+}
+
+// ================= ⭐ ACTUALIZAR VISTA PREVIA (FIX) 📱 =======================
 function actualizarPreview() {
   const previewImagen = document.getElementById("previewImagen");
   const previewTexto = document.getElementById("previewTexto");
@@ -658,11 +684,13 @@ function actualizarPreview() {
   previewTextoBack.innerText = textoFinal || "";
 
   // ================= Fondo =================
-  if (fondoFinal) {
-    previewImagen.style.backgroundImage = `url("${fondoFinal}")`;
-  } else {
-    previewImagen.style.backgroundImage = "none";
-  }
+const fondoUsable = fondoFinalBlobUrl || fondoFinal;
+
+if (fondoUsable) {
+  previewImagen.style.backgroundImage = `url("${fondoUsable}")`;
+} else {
+  previewImagen.style.backgroundImage = "none";
+}
 
   // ✅ SIEMPRE un color de fondo para evitar “negro” por transparencia
   previewImagen.style.backgroundColor = "#ffffff";
@@ -725,10 +753,15 @@ function actualizarPreview() {
   const op = parseFloat(opacidad);
   let bgColor = "rgba(0,0,0,0)";
 
-  if (!isNaN(op)) {
-    if (op > 0.5) bgColor = `rgba(0,0,0,${(op - 0.5) * 2})`;
-    else if (op < 0.5) bgColor = `rgba(255,255,255,${(0.5 - op) * 2})`;
+ if (!isNaN(op)) {
+  if (op > 0.5) {
+    const a = Math.min(0.70, (op - 0.5) * 2);     // ✅ cap
+    bgColor = `rgba(0,0,0,${a})`;
+  } else if (op < 0.5) {
+    const a = Math.min(0.70, (0.5 - op) * 2);     // ✅ cap
+    bgColor = `rgba(255,255,255,${a})`;
   }
+}
 
   wrapper.style.backgroundColor = bgColor;
 
@@ -877,6 +910,13 @@ async function compartirImagenFinal() {
 // ================= ⭐ RESET DEL MODAL  =======================
 function resetModalPersonalizar() {
   fondoFinal = null;
+    // ✅ limpiar selección (evita que queden versículos viejos seleccionados)
+  seleccionImagen = {};
+
+  if (fondoFinalBlobUrl) {
+  URL.revokeObjectURL(fondoFinalBlobUrl);
+  fondoFinalBlobUrl = null;
+}
   textStyle = { upper:false, bold:false, italic:false, underline:false };
 
   document.getElementById("personalizarOpacidad").value = 0.35;
@@ -893,6 +933,7 @@ function resetModalPersonalizar() {
   const preview = document.getElementById("previewImagen");
   if (preview) {
     preview.style.backgroundImage = "none";
+    preview.style.backgroundColor = "#ffffff";
     preview.style.pointerEvents = "auto";
     preview.classList.remove("render-final");
   }
@@ -926,6 +967,10 @@ function salirModoImagen() {
   modoImagen = false;
   seleccionImagen = {};
   fondoFinal = null;
+  if (fondoFinalBlobUrl) {
+  URL.revokeObjectURL(fondoFinalBlobUrl);
+  fondoFinalBlobUrl = null;
+}
 
   document.body.classList.remove("modo-imagen");
 
@@ -979,6 +1024,9 @@ window.generarImagen = async () => {
 
   const modal = document.getElementById("modalPersonalizar");
   if (!modal) return;
+
+  // ✅ CLAVE: reset antes de mostrar (evita overlay negro por sliders viejos)
+  resetModalPersonalizar();
 
   modal.style.display = "flex";
 
