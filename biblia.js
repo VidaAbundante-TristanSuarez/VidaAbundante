@@ -910,9 +910,7 @@ async function compartirImagenFinal() {
 // ================= ⭐ RESET DEL MODAL  =======================
 function resetModalPersonalizar() {
   fondoFinal = null;
-    // ✅ limpiar selección (evita que queden versículos viejos seleccionados)
-  seleccionImagen = {};
-
+  
   if (fondoFinalBlobUrl) {
   URL.revokeObjectURL(fondoFinalBlobUrl);
   fondoFinalBlobUrl = null;
