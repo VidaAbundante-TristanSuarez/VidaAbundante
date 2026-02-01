@@ -776,6 +776,8 @@ async function generarImagenFinal() {
   if (t2) t2.style.display = "block";
 
   let canvasTemp;
+    // ✅ esperar un toque para que el background cargue (si hay fondo)
+  await new Promise(r => setTimeout(r, 120));
   try {
     canvasTemp = await html2canvas(preview, {
       scale: Math.max(2, window.devicePixelRatio || 2),
@@ -783,8 +785,9 @@ async function generarImagenFinal() {
       allowTaint: false,
       backgroundColor: "#ffffff" // ✅ CLAVE: nunca transparente => nunca negro
     });
-  } catch (err) {
+    } catch (err) {
     console.error("html2canvas falló:", err);
+    alert("No se pudo generar PNG. Probable problema de CORS con el fondo elegido.\nProbá con otro fondo o sin fondo.");
     return false;
   }
 
@@ -805,6 +808,13 @@ async function generarImagenFinal() {
   return true;
 }
 
+// ================= ✅ CLICK SEGURO PARA DESCARGA =================
+function clickLink(link) {
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
+
 // ======================== ⭐ OPCION DESCARGAR (FIX) ====================================
 async function descargarImagenFinal() {
   const canvas = document.getElementById("canvasFinal");
@@ -819,7 +829,7 @@ async function descargarImagenFinal() {
     const link = document.createElement("a");
     link.href = canvas.toDataURL("image/png");
     link.download = "versiculo.png";
-    link.click();
+    clickLink(link);
   };
 
   try {
@@ -829,7 +839,7 @@ async function descargarImagenFinal() {
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
       link.download = "versiculo.png";
-      link.click();
+      clickLink(link);
       URL.revokeObjectURL(link.href);
     }, "image/png");
   } catch (e) {
@@ -984,15 +994,42 @@ window.generarImagen = async () => {
 
 // ================= 🔺 CANCELAR CREAR IMAGEN ===============================
 window.cancelarCrearImagen = () => {
-  // 1️⃣ primero salir del modo imagen (estado lógico)
-  salirModoImagen();
-
-  // 2️⃣ resetear todo el modal mientras todavía existe
+  // 1️⃣ resetear mientras el modal está visible
   resetModalPersonalizar();
+
+  // 2️⃣ salir del modo imagen (cierra modal + vuelve a biblia)
+  salirModoImagen();
+};
 
   // 3️⃣ por último cerrar visualmente
   const modal = document.getElementById("modalPersonalizar");
   if (modal) modal.style.display = "none";
+};
+
+// ================= ✅ FINALIZAR EDICIÓN (CONFIRMAR) =================
+window.finalizarEdicion = async () => {
+
+  // Si querés: antes de finalizar, aseguramos que el PNG se pueda generar
+  // (así no salís sin poder descargar). Si no querés esto, decime y lo saco.
+  const ok = await generarImagenFinal();
+  if (!ok) {
+    alert("No se pudo generar la imagen (PNG). Revisá consola (F12) para ver el error.");
+    return; // no dejamos finalizar si no hay PNG
+  }
+
+  const terminar = confirm(
+    "¿Terminar edición?\n\nOK = Terminar edición y volver a Biblia\nCancelar = Volver a edición"
+  );
+
+  if (!terminar) {
+    // Volver a edición = no hacer nada (modal sigue abierto)
+    return;
+  }
+
+  // Terminar edición:
+  resetModalPersonalizar();  // limpia controles
+  salirModoImagen();         // sale de modo imagen y cierra modal
+  irA("biblia");             // vuelve a biblia
 };
 
 // ================= 🔺 CAMBIAR LETRA ===============================
