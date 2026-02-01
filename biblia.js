@@ -786,11 +786,14 @@ async function generarImagenFinal() {
   const canvasFinal = document.getElementById("canvasFinal");
   const modal = document.getElementById("modalPersonalizar");
 
-  if (!preview || !canvasFinal) return false;
+  if (!preview || !canvasFinal) {
+  return false;
+}
 
-  // si el modal está cerrado, html2canvas suele sacar vacío
-  if (modal && getComputedStyle(modal).display === "none") return false;
-
+if (modal && getComputedStyle(modal).display === "none") {
+  canvasFinal.width = 0; canvasFinal.height = 0;
+  return false;
+}
   // refrescar estilos
   actualizarPreview();
 
@@ -852,10 +855,10 @@ function clickLink(link) {
 async function descargarImagenFinal() {
   const canvas = document.getElementById("canvasFinal");
   if (!canvas) return;
+ // ✅ SIEMPRE regenerar antes de descargar (evita “me baja el PNG viejo”)
+const ok = await generarImagenFinal();
+if (!ok) return;
 
-  if (!canvas.width || !canvas.height) {
-    const ok = await generarImagenFinal();
-    if (!ok) return;
   }
 
   const descargarDesdeDataURL = () => {
@@ -884,11 +887,9 @@ async function descargarImagenFinal() {
 async function compartirImagenFinal() {
   const canvas = document.getElementById("canvasFinal");
   if (!canvas) return;
-
-  if (!canvas.width || !canvas.height) {
-    const ok = await generarImagenFinal();
-    if (!ok) return;
-  }
+// ✅ SIEMPRE regenerar antes de descargar (evita “me baja el PNG viejo”)
+const ok = await generarImagenFinal();
+if (!ok) return;
 
   canvas.toBlob(async blob => {
     if (!blob) {
