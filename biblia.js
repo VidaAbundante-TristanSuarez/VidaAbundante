@@ -423,77 +423,34 @@ function colorContraste(hex) {
   return lum > 160 ? "#000000" : "#ffffff";
 }
 
-// ================= ⭐ COLOR OUTLINE CLAROS Y OSCUROS  =======================
+// ================= ⭐ COLOR OUTLINE (PURO BLANCO/NEGRO) =======================
 function colorOutlineDesdeBase(color) {
   if (!color) return "#000000";
 
   // rgb() → hex
   if (color.startsWith("rgb")) {
     const nums = color.match(/\d+/g).map(Number);
+    color = "#" + nums.map(x => x.toString(16).padStart(2, "0")).join("");
+  }
+
+  // por si viene #abc (raro, pero por las dudas)
+  if (color.length === 4) {
     color =
-      "#" + nums.map(x => x.toString(16).padStart(2, "0")).join("");
+      "#" +
+      color[1] + color[1] +
+      color[2] + color[2] +
+      color[3] + color[3];
   }
 
-  // hex → rgb normalizado
-  let r = parseInt(color.slice(1, 3), 16) / 255;
-  let g = parseInt(color.slice(3, 5), 16) / 255;
-  let b = parseInt(color.slice(5, 7), 16) / 255;
+  // luminancia simple
+  const r = parseInt(color.slice(1, 3), 16);
+  const g = parseInt(color.slice(3, 5), 16);
+  const b = parseInt(color.slice(5, 7), 16);
+  const lum = 0.299 * r + 0.587 * g + 0.114 * b;
 
-  const max = Math.max(r, g, b);
-  const min = Math.min(r, g, b);
-  let h, s, l = (max + min) / 2;
-
-  if (max === min) {
-    h = s = 0;
-  } else {
-    const d = max - min;
-    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-    switch (max) {
-      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-      case g: h = (b - r) / d + 2; break;
-      case b: h = (r - g) / d + 4; break;
-    }
-    h /= 6;
-  }
-
-  // 🔥 CLAVE: extremos tintados
-  const isLight = l > 0.65;
-
-  // mantener color vivo
-  s = Math.min(1, s * 0.9 + 0.1);
-
-  // extremos reales
-  l = isLight
-    ? 0.08   // casi negro tintado
-    : 0.91;  // casi blanco tintado
-
-  // hsl → rgb
-  function hue2rgb(p, q, t) {
-    if (t < 0) t += 1;
-    if (t > 1) t -= 1;
-    if (t < 1/6) return p + (q - p) * 6 * t;
-    if (t < 1/2) return q;
-    if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
-    return p;
-  }
-
-  let r2, g2, b2;
-  if (s === 0) {
-    r2 = g2 = b2 = l;
-  } else {
-    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-    const p = 2 * l - q;
-    r2 = hue2rgb(p, q, h + 1/3);
-    g2 = hue2rgb(p, q, h);
-    b2 = hue2rgb(p, q, h - 1/3);
-  }
-
-  return (
-    "#" +
-    [r2, g2, b2]
-      .map(v => Math.round(v * 255).toString(16).padStart(2, "0"))
-      .join("")
-  );
+  // ✅ si el texto base es claro -> outline NEGRO
+  // ✅ si el texto base es oscuro -> outline BLANCO
+  return lum > 160 ? "#000000" : "#ffffff";
 }
 
 // ================= 🎀 FUENTES  =======================
@@ -669,7 +626,7 @@ async function urlToBlobURL(url) {
   return URL.createObjectURL(blob);
 }
 
-// ================= ⭐ ACTUALIZAR VISTA PREVIA (FIX) 📱 =======================
+// ================= ⭐ ACTUALIZAR VISTA PREVIA (FIX) 🌅 =======================
 function actualizarPreview() {
   const previewImagen = document.getElementById("previewImagen");
   const previewTexto = document.getElementById("previewTexto");
@@ -692,8 +649,9 @@ if (fondoUsable) {
   previewImagen.style.backgroundImage = "none";
 }
 
-  // ✅ SIEMPRE un color de fondo para evitar “negro” por transparencia
-  previewImagen.style.backgroundColor = "#ffffff";
+ // ✅ Fondo: si hay imagen, dejamos TRANSPARENTE para que no aparezcan “esquinas blancas”
+// ✅ Si NO hay fondo, usamos blanco para evitar negro
+previewImagen.style.backgroundColor = fondoUsable ? "transparent" : "#ffffff";
 
   // ================= Fuente =================
   const fuente = fuenteActual || "Arial";
@@ -815,12 +773,18 @@ if (modal && getComputedStyle(modal).display === "none") {
     // ✅ esperar un toque para que el background cargue (si hay fondo)
   await new Promise(r => setTimeout(r, 120));
   try {
-    canvasTemp = await html2canvas(preview, {
-      scale: Math.max(2, window.devicePixelRatio || 2),
-      useCORS: true,
-      allowTaint: false,
-      backgroundColor: "#ffffff" // ✅ CLAVE: nunca transparente => nunca negro
-    });
+const fondoUsable = fondoFinalBlobUrl || fondoFinal; // mismo criterio que preview
+
+canvasTemp = await html2canvas(preview, {
+  scale: Math.max(2, window.devicePixelRatio || 2),
+  useCORS: true,
+  allowTaint: false,
+
+  // ✅ Si hay fondo, TRANSPARENTE (evita esquinas blancas con border-radius)
+  // ✅ Si no hay fondo, BLANCO (evita fondo negro)
+  backgroundColor: fondoUsable ? null : "#ffffff"
+});
+
     } catch (err) {
     console.error("html2canvas falló:", err);
     alert("No se pudo generar PNG. Probable problema de CORS con el fondo elegido.\nProbá con otro fondo o sin fondo.");
