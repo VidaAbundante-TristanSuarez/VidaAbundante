@@ -125,9 +125,9 @@ body.oscuro #header {
     
  /* Versículos */
     .versiculo {
-  padding: 10px 14px;
+  padding: 8px 14px;
   border-radius: 8px;
-  margin-bottom: 6px;
+  margin-bottom: 3px;
   cursor: pointer;
   transition: background .2s;
   color: #000;
@@ -740,6 +740,20 @@ body.modo-imagen #resaltadorCompacto {
 #listaFuentes::-webkit-scrollbar { height: 0px; }
 #listaFuentes { scrollbar-width: none; }
 
+/* ================= SCROLL LISTA FUENTES EN PC ================= */
+@media (min-width: 641px) {
+  #listaFuentes {
+    scrollbar-width: thin;              /* Firefox */
+  }
+  #listaFuentes::-webkit-scrollbar {
+    height: 10px;                       /* Chrome/Edge */
+  }
+  #listaFuentes::-webkit-scrollbar-thumb {
+    background: rgba(0,0,0,0.25);
+    border-radius: 999px;
+  }
+}
+
 .fila-opciones {
   display: flex;
   gap: 8px;
@@ -1313,6 +1327,7 @@ body.oscuro #header button[onclick="toggleTema()"] {
   
 </body>
 </html>
+
 
 
 
