@@ -332,9 +332,10 @@ body.oscuro .barra-acciones {
   max-height: 70vh;
 }
    
-/* ================= TEXTO DOBLE ================= */
-    /* Texto dentro de la imagen (doble capa) */
-#previewTextoWrapper {
+/* ================= TEXTO DOBLE (PREVIEW) ================= */
+
+/* Caja donde vive el texto (overlay dentro de la imagen) */
+#previewTextoWrapper{
   position: absolute;
   inset: 40px 24px;
   overflow: hidden;
@@ -346,22 +347,34 @@ body.oscuro .barra-acciones {
   text-align: center;
 }
 
-#previewTextoBack,
-#previewTexto {
+/* Ambas capas exactamente superpuestas */
+#previewTexto,
+#previewTextoBack{
   position: absolute;
+  inset: 0;            /* ✅ esto asegura MISMA POSICION sin depender de left/top/right */
   padding: 20px;
-  font-weight: bold;
+
+  white-space: pre-wrap;
+  max-width: 100%;
+  text-align: center;
+
   line-height: 1.25;
+  font-size: 22px;     /* base */
 }
 
-#previewTextoBack {
+/* Back = capa de “borde” */
+#previewTextoBack{
   z-index: 1;
-  -webkit-text-stroke: 3px currentColor; /* 👈 más fino */
-  opacity: 0.9;
-  transform: translateY(-1px);
+  opacity: 1;
+
+  /* ✅ IMPORTANTISIMO: desactivar cualquier stroke/transform viejo */
+  -webkit-text-stroke: 0 transparent;
+  transform: none;
+  filter: none;
 }
 
-#previewTexto {
+/* Front = texto final */
+#previewTexto{
   z-index: 2;
 }
 
@@ -557,16 +570,6 @@ body.modo-imagen #resaltadorCompacto {
   flex-direction: column;
   overflow-y: hidden;
   padding-bottom: 16px;
-}
-
-/* TEXTO DE PREVIEW */
-#previewTexto,
-#previewTextoBack {
-  white-space: pre-wrap;
-  font-size: 22px;      /* 👈 tamaño “modico” base */
-  line-height: 1.25;
-  text-align: center;
-  max-width: 100%;
 }
 
 /* INPUTS DE PERSONALIZACION */
@@ -1303,6 +1306,7 @@ body.oscuro #header button[onclick="toggleTema()"] {
   
 </body>
 </html>
+
 
 
 
