@@ -696,16 +696,33 @@ previewImagen.style.backgroundColor = fondoUsable ? "transparent" : "#ffffff";
   previewTextoBack.style.position = "absolute";
   previewTextoBack.style.zIndex = "1";
 
-  // reset acumulables
-  previewTextoBack.style.transform = "none";
-  previewTextoBack.style.textShadow = "none";
-  previewTextoBack.style.filter = "none";
+// ✅ anclaje exacto (misma posición que el texto principal)
+previewTextoBack.style.left = "0";
+previewTextoBack.style.top = "0";
+previewTextoBack.style.right = "0";
+previewTextoBack.style.bottom = "0";
+  
+// reset acumulables (back)
+previewTextoBack.style.transform = "none";     // ✅ sin desplazamiento
+previewTextoBack.style.filter = "none";        // ✅ sin blur
+previewTextoBack.style.textShadow = "none";
 
-  previewTexto.style.color = color;
-  previewTextoBack.style.color = outlineColor;
+// colores
+previewTexto.style.color = color;
+previewTextoBack.style.color = outlineColor;
 
-  previewTextoBack.style.transform = "translate(0.5px, 0.5px)";
-  previewTextoBack.style.filter = "blur(0.2px)";
+// ✅ Outline real (borde alrededor) pero SIN corrimiento
+const px = 1; // subilo a 2 si querés borde más grueso
+previewTextoBack.style.textShadow = `
+  -${px}px 0 ${outlineColor},
+   ${px}px 0 ${outlineColor},
+   0 -${px}px ${outlineColor},
+   0  ${px}px ${outlineColor},
+  -${px}px -${px}px ${outlineColor},
+   ${px}px -${px}px ${outlineColor},
+  -${px}px  ${px}px ${outlineColor},
+   ${px}px  ${px}px ${outlineColor}
+`;
 
   // ================= Opacidad Oscuro/Claro =================
   const op = parseFloat(opacidad);
