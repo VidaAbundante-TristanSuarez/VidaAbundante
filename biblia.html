@@ -578,7 +578,7 @@ body.modo-imagen #resaltadorCompacto {
 }
 
 /* CONTENEDOR INTERNO DEL MODAL */
-#modalPersonalizar > div {
+#modalPersonalizar .modal-contenido {
   position: relative;
   background: #fff;
   width: 100%;
@@ -649,43 +649,7 @@ body.modo-imagen #resaltadorCompacto {
   background: rgba(0,0,0,0.1);
 }
 
-
-/* ================= FUENTES VISUALES 🎀 ================= */
-/* Botón Fuentes: que el texto entre y quede lindo */
-#btnFuentes{
-  min-width: 110px;      /* 👈 para que quepa “Fuentes” */
-  height: 36px;
-  padding: 0 12px;
-  gap: 6px;
-
-  border-radius: 10px;
-
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  background: var(--ui-azul-claro);
-  color: #000;
-
-  font-weight: 700;
-  border: none;
-  cursor: pointer;
-
-  white-space: nowrap;   /* 👈 no se corta */
-}
-
-#btnFuentes.activo{
-  background: var(--ui-azul-hover);
-  color: #fff;
-}
-
-/* ✅ IMPORTANTE: el contenedor del modal debe ser “referencia” */
-#modalPersonalizar > div {
-  position: relative; /* 👈 agregá esta línea si no estaba */
-}
-
-/* ================= FUENTES (1 FILA + SCROLL HORIZONTAL + ANCHO TOTAL) ================= */
-
+/* ================= FUENTES (1 FILA + SCROLL HORIZONTAL + ANCHO TOTAL) 🎀 ================= */
 #btnFuentes{
   min-width: 110px;
   height: 34px;          /* 👈 iguala con los estilos */
@@ -732,10 +696,6 @@ body.modo-imagen #resaltadorCompacto {
 #listaFuentes.abierto{
   display: flex;
 }
-
-/* ✅ Ocultar scrollbar (igual hay scroll) */
-#listaFuentes::-webkit-scrollbar { height: 0px; }
-#listaFuentes { scrollbar-width: none; }
 
 /* Botones: tamaño “contenido”, NO se cortan */
 #listaFuentes button{
@@ -1001,13 +961,18 @@ body.oscuro .subir-iglesia-btn:hover {
     align-items: stretch;     /* ocupa todo alto */
   }
 
-  #modalPersonalizar > div {
+  #modalPersonalizar .modal-contenido {
     width: 100vw;             /* 👈 ocupa pantalla */
     max-width: 100vw;
     margin: 0;
     border-radius: 0;
     max-height: 100vh;
   }
+}
+
+/* ✅ IMPORTANTE: el contenedor del modal debe ser “referencia” */
+#modalPersonalizar .modal-contenido {
+  position: relative; /* 👈 agregá esta línea si no estaba */
 }
 
 button.activo,
@@ -1184,9 +1149,9 @@ body.oscuro #header button[onclick="toggleTema()"] {
     <button class="accion-normal"
             onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
   <!-- Activar modo imagen -->
-    <button class="btnImagen" onclick="toggleModoImagen()">
-    <i class="fa-solid fa-image"></i>
-  </button>
+<button id="btnImagen" class="btnImagen" onclick="toggleModoImagen()">
+<i class="fa-solid fa-image"></i>
+</button>
  <!-- Crear imagen -->
     <!-- ⚠️ Por defecto está oculto por CSS -->
  <button id="btnCrearImagen"
@@ -1224,6 +1189,7 @@ body.oscuro #header button[onclick="toggleTema()"] {
     <button onclick="mostrarSeccion('imagenes')">
       <i class="fa-solid fa-image"></i>
   <span>Imagenes</span>
+      </button>
     <button onclick="mostrarSeccion('versiculos')">⭐ Versículos</button>
     <button onclick="mostrarSeccion('notas')">
   <i class="fa-solid fa-clipboard"></i>
@@ -1309,7 +1275,7 @@ body.oscuro #header button[onclick="toggleTema()"] {
 <input id="personalizarColor" class="color-input" type="color" value="#000000">
 
 </div>
-    
+ </div>   
 <!-- BOTONES -->    
 <div class="fila-final">
  <button onclick="descargarImagenFinal()">
@@ -1394,22 +1360,4 @@ body.oscuro #header button[onclick="toggleTema()"] {
   
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
