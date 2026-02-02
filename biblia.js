@@ -514,6 +514,20 @@ function crearListaVisualFuentes() {
 const btnFuentes = document.getElementById("btnFuentes");
 const listaFuentes = document.getElementById("listaFuentes");
 
+// ✅ PC: rueda vertical => scroll horizontal en lista de fuentes
+if (listaFuentes) {
+  listaFuentes.addEventListener("wheel", (e) => {
+    // solo cuando la lista está abierta
+    if (!listaFuentes.classList.contains("abierto")) return;
+
+    // si el usuario ya tiene shift, dejamos el comportamiento normal
+    if (e.shiftKey) return;
+
+    e.preventDefault();
+    listaFuentes.scrollLeft += e.deltaY;
+  }, { passive: false });
+}
+
 function posicionarListaFuentes() {
   const modalBox = document.querySelector("#modalPersonalizar > div"); // contenedor interno
   if (!modalBox || !btnFuentes || !listaFuentes) return;
