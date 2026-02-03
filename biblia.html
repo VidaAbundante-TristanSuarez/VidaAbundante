@@ -354,6 +354,8 @@ body.oscuro .barra-acciones {
   align-items: center;
   justify-content: center;
   text-align: center;
+   /* ✅ importante */
+  contain: layout paint;  /* mejora estabilidad de medidas */
 }
 
 /* Ambas capas exactamente superpuestas */
@@ -369,6 +371,9 @@ body.oscuro .barra-acciones {
 
   line-height: 1.25;
   font-size: 22px;     /* base */
+  margin: 0;
+  pointer-events: none;     /* ✅ evita clicks raros */
+  display: block;
 }
 
 /* Back = capa de “borde” */
@@ -1303,6 +1308,7 @@ body.oscuro #header button[onclick="toggleTema()"] {
   
 </body>
 </html>
+
 
 
 
