@@ -31,11 +31,15 @@ let bibliaData = [];
 let marcados = {};
 let notas = {};
 let size = 18;
+let fuenteActual = "Arial";
 let colorActual = "#fff3b0"; // 💛 amarillo por default
 let resaltadorBloqueado = false; // 🔒 nuevo estado
 let grupoActual = null;
-let marcador = null;
-let fuenteActual = "Arial";
+// ================= MARCADORES (NUEVO LIMPIO) =================
+let modoMarcador = false;
+let seleccionMarcador = {};         // {idVersiculo:true}
+let marcadores = {};                // cache firebase
+let ultimoMarcadorAplicado = null;  // resaltado al volver (opcional)
 
 let modoImagen = false;
 let seleccionImagen = {};
@@ -61,6 +65,9 @@ onAuthStateChanged(auth, user => {
     onValue(ref(db, "notas/" + uid), s => {
       notas = s.val() || {};
     });
+    onValue(ref(db, "marcadores/" + uid), s => {
+  marcadores = s.val() || {};
+});
   }
 });
 
@@ -219,6 +226,20 @@ function mostrarTexto() {
 // ================= ⭐ TOGGLE VERSICULO =======================
 function toggleVersiculo(id, num) {
 
+  // 📌 MODO MARCADOR (seleccionar versículos para guardar)
+  if (modoMarcador) {
+    if (!uid) {
+      loginModal.style.display = "flex";
+      return;
+    }
+
+    if (seleccionMarcador[id]) delete seleccionMarcador[id];
+    else seleccionMarcador[id] = true;
+
+    mostrarTexto();
+    return;
+  }
+
   // 🖼️ MODO IMAGEN
   if (modoImagen) {
     if (!uid) {
@@ -279,6 +300,13 @@ function pintarVersiculo(v) {
   const marcado = marcados[id];
   const imagen = modoImagen && seleccionImagen[id];
 
+  const selMarcador = modoMarcador && seleccionMarcador[id];
+
+const aplicado = ultimoMarcadorAplicado &&
+  ultimoMarcadorAplicado.libro === v.Libro &&
+  Number(ultimoMarcadorAplicado.capitulo) === Number(v.Capitulo) &&
+  (ultimoMarcadorAplicado.versiculos || []).includes(Number(v.Versiculo));
+  
   const div = document.createElement("div");
   div.className = "versiculo";
   if (imagen) div.classList.add("imagen");
@@ -286,14 +314,19 @@ function pintarVersiculo(v) {
   // ================= Tamaño Letra =================
   div.style.fontSize = size + "px";
 
-  // ================= Fondo =================
-  if (modoImagen) {
-    div.style.background = imagen
-      ? "rgba(255, 214, 232, 0.6)"
-      : "transparent";
+// ================= Fondo =================
+if (modoImagen) {
+  div.style.background = imagen ? "rgba(255, 214, 232, 0.6)" : "transparent";
+} else if (modoMarcador) {
+  div.style.background = selMarcador ? "rgba(209, 238, 255, 0.8)" : "transparent";
+} else {
+  if (aplicado && ultimoMarcadorAplicado.color) {
+    div.style.background = ultimoMarcadorAplicado.color;
   } else {
     div.style.background = marcado?.color || "transparent";
   }
+}
+if (selMarcador) div.style.border = "2px solid #4f6fa8";
 
   // ================= Color de Texto =================
   if (modoImagen) {
@@ -847,7 +880,6 @@ function clickLink(link) {
 }
 
 // ======================== ⭐ OPCION DESCARGAR (FIX) ====================================
-// ======================== ⭐ OPCION DESCARGAR (FIX) ====================================
 async function descargarImagenFinal() {
   const canvas = document.getElementById("canvasFinal");
   if (!canvas) return;
@@ -1118,22 +1150,185 @@ window.logout = () => {
   signOut(auth).then(() => (window.location.href = "login.html"));
 };
 
-// ================= 🔺 GUARDAR MARCADOR ===================
-window.guardarMarcador = () => {
-  marcador = {
-    libro: libroSel.value,
-    capitulo: capSel.value
-  };
-  mostrarToast("📁 Marcador guardado");
+// ================= 📌 BOTÓN 1: MODO MARCADOR =================
+window.toggleModoMarcador = () => {
+  if (!uid) {
+    loginModal.style.display = "flex";
+    return;
+  }
+
+  modoMarcador = !modoMarcador;
+  if (!modoMarcador) {
+    seleccionMarcador = {};
+  }
+
+  const btn = document.getElementById("btnModoMarcador");
+  if (btn) btn.classList.toggle("activo", modoMarcador);
+
+  mostrarToast(modoMarcador
+    ? "📌 Modo marcador: elegí versículos y luego abrí 📁"
+    : "✅ Modo marcador desactivado"
+  );
+
+  mostrarTexto();
 };
 
-// ================= 🔺 IR A MARCADOR ===================
-window.irAMarcador = () => {
-  if (!marcador) return;
-  libroSel.value = marcador.libro;
-  cargarCapitulos();
-  capSel.value = marcador.capitulo;
+// ================= 📁 BOTÓN 2: LISTA MARCADORES =================
+window.abrirMarcadores = () => {
+  if (!uid) {
+    loginModal.style.display = "flex";
+    return;
+  }
+
+  const modal = document.getElementById("modalMarcadores");
+  const lista = document.getElementById("listaMarcadores");
+  const form = document.getElementById("formNuevoMarcador");
+
+  if (!modal || !lista || !form) return;
+
+  form.style.display = "none";
+  lista.style.display = "block";
+
+  renderListaMarcadores();
+  modal.style.display = "flex";
+};
+
+window.cerrarMarcadores = () => {
+  const modal = document.getElementById("modalMarcadores");
+  if (modal) modal.style.display = "none";
+};
+
+function renderListaMarcadores() {
+  const lista = document.getElementById("listaMarcadores");
+  if (!lista) return;
+
+  const items = Object.entries(marcadores || {})
+    .map(([id, m]) => ({ id, ...m }))
+    .sort((a, b) => (b.fecha || 0) - (a.fecha || 0));
+
+  // CTA Guardar (solo si está en modo marcador y hay selección)
+  let header = "";
+  if (modoMarcador && Object.keys(seleccionMarcador).length > 0) {
+    header = `
+      <div style="padding:10px; border-radius:14px; background:#fff3b0; margin-bottom:10px;">
+        <b>Guardar nuevo marcador</b><br>
+        <button type="button" onclick="abrirFormNuevoMarcador()"
+          style="margin-top:8px; border:none; border-radius:999px; padding:8px 12px; cursor:pointer; background:#4f6fa8; color:#fff;">
+          Continuar
+        </button>
+      </div>
+    `;
+  }
+
+  if (items.length === 0) {
+    lista.innerHTML = header + `<p style="opacity:.75">Todavía no guardaste marcadores.</p>`;
+    return;
+  }
+
+  lista.innerHTML = header + items.map(m => {
+    const fechaTxt = m.fecha ? new Date(m.fecha).toLocaleDateString() : "";
+    const linea = `${fechaTxt} · ${m.ref || ""}`;
+    return `
+      <div style="padding:10px; border-radius:14px; background:#e9f6ff; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+        <div style="font-size:13px;">
+          <b>${m.titulo || "Sin título"}</b><br>
+          <span style="opacity:.8">${linea}</span>
+        </div>
+        <button type="button" onclick="abrirMarcador('${m.id}')"
+          style="border:none; border-radius:999px; padding:8px 10px; cursor:pointer;">
+          ↩
+        </button>
+      </div>
+    `;
+  }).join("");
+}
+
+window.abrirFormNuevoMarcador = () => {
+  const lista = document.getElementById("listaMarcadores");
+  const form = document.getElementById("formNuevoMarcador");
+  const info = document.getElementById("infoMarcadorNuevo");
+  if (!lista || !form || !info) return;
+
+  const ids = Object.keys(seleccionMarcador);
+  const nums = ids.map(id => Number(id.split("_")[2])).sort((a,b)=>a-b);
+  const rango = formatearVersiculosComoRango(nums);
+  const refTxt = `${libroSel.value} ${capSel.value}:${rango}`;
+
+  info.textContent = `📌 ${refTxt} (fecha automática)`;
+
+  document.getElementById("marcadorTitulo").value = "";
+  document.getElementById("marcadorNota").value = "";
+  document.getElementById("marcadorColor").value = colorActual || "#fff3b0";
+  document.getElementById("marcadorKeep").checked = true;
+
+  lista.style.display = "none";
+  form.style.display = "block";
+};
+
+window.cancelarNuevoMarcador = () => {
+  const form = document.getElementById("formNuevoMarcador");
+  const lista = document.getElementById("listaMarcadores");
+  if (form) form.style.display = "none";
+  if (lista) lista.style.display = "block";
+};
+
+window.guardarNuevoMarcador = async () => {
+  if (!uid) return;
+
+  const ids = Object.keys(seleccionMarcador);
+  if (ids.length === 0) return alert("Elegí al menos un versículo");
+
+  const titulo = (document.getElementById("marcadorTitulo").value || "").trim();
+  const nota = (document.getElementById("marcadorNota").value || "").trim();
+  const color = document.getElementById("marcadorColor").value || "#fff3b0";
+  const keep = document.getElementById("marcadorKeep").checked;
+
+  const nums = ids.map(id => Number(id.split("_")[2])).sort((a,b)=>a-b);
+  const rango = formatearVersiculosComoRango(nums);
+  const refTxt = `${libroSel.value} ${capSel.value}:${rango}`;
+
+  const data = {
+    fecha: Date.now(),
+    titulo: titulo || "Marcador",
+    nota,
+    libro: libroSel.value,
+    capitulo: Number(capSel.value),
+    versiculos: nums,
+    ref: refTxt,
+    color,
+    keep
+  };
+
+  const idMarcador = `${Date.now()}`;
+  await set(ref(db, `marcadores/${uid}/${idMarcador}`), data);
+
+  ultimoMarcadorAplicado = keep ? { ...data } : null;
+
+  // salir del modo marcador
+  modoMarcador = false;
+  seleccionMarcador = {};
+
+  const btn = document.getElementById("btnModoMarcador");
+  if (btn) btn.classList.remove("activo");
+
+  mostrarToast("📁 Marcador guardado");
+  cerrarMarcadores();
   mostrarTexto();
+};
+
+window.abrirMarcador = (idMarcador) => {
+  const m = (marcadores || {})[idMarcador];
+  if (!m) return;
+
+  libroSel.value = m.libro;
+  cargarCapitulos();
+  capSel.value = m.capitulo;
+  mostrarTexto();
+
+  ultimoMarcadorAplicado = m.keep ? m : null;
+
+  cerrarMarcadores();
+  setTimeout(mostrarTexto, 50);
 };
 
 // ================= 🔺 NOTAS ===================
