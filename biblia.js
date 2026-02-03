@@ -320,10 +320,16 @@ if (modoImagen) {
   div.style.background = imagen ? "rgba(255, 214, 232, 0.6)" : "transparent";
 
 } else if (modoMarcador) {
-  // ✅ MODO MARCADOR LIMPIO: no mostrar resaltados antiguos
+  // ✅ MODO MARCADOR: selección bien visible (especialmente en oscuro)
   if (selMarcador) {
-    div.style.background = "rgba(209, 238, 255, 0.85)";
+    div.style.background = enOscuro
+      ? "rgba(209, 238, 255, 0.55)"   // más fuerte en oscuro
+      : "rgba(209, 238, 255, 0.92)";  // casi sólido en claro
+  } else if (aplicado && ultimoMarcadorAplicado?.color) {
+    // ✅ si hay marcador "keep", lo mostramos aunque estés seleccionando
+    div.style.background = ultimoMarcadorAplicado.color;
   } else {
+    // ✅ ocultar resaltados viejos
     div.style.background = "transparent";
   }
 
@@ -339,31 +345,32 @@ if (modoImagen) {
 if (selMarcador) div.style.border = "2px solid #4f6fa8";
 else div.style.border = "none";
 
- // ================= Color de Texto =================
+// ================= Color de Texto (FIX MODO MARCADOR) =================
 const enOscuro = document.body.classList.contains("oscuro");
-
-// color de fondo real (para contraste) en marcador/aplicado/marcado
-let fondo = null;
 
 if (modoImagen) {
   // modo imagen: seleccionado negro, no seleccionado según tema
   div.style.color = imagen ? "#000000" : (enOscuro ? "#ffffff" : "#000000");
-
 } else {
-  // detectar fondo que quedó aplicado
-  if (modoMarcador) {
-    if (selMarcador) fondo = "#d1eeff"; // aproximación (celeste)
-    else if (aplicado && ultimoMarcadorAplicado?.color) fondo = ultimoMarcadorAplicado.color;
-    else if (marcado?.color) fondo = marcado.color;
-  } else {
-    if (aplicado && ultimoMarcadorAplicado?.color) fondo = ultimoMarcadorAplicado.color;
-    else if (marcado?.color) fondo = marcado.color;
-  }
 
-  if (fondo) {
-    div.style.color = colorContraste(fondo);
+  // ✅ si estoy seleccionando para marcador, quiero que SIEMPRE se lea
+  if (modoMarcador && selMarcador) {
+    div.style.color = "#000000"; // el fondo de selección es claro
   } else {
-    div.style.color = enOscuro ? "#ffffff" : "#000000";
+    // fondo real SOLO cuando realmente estás mostrando un fondo
+    let fondo = null;
+
+    if (modoMarcador) {
+      // ✅ en modo marcador NO usar "marcado.color" si NO lo estás pintando
+      if (aplicado && ultimoMarcadorAplicado?.color) fondo = ultimoMarcadorAplicado.color;
+      // si no hay aplicado, fondo queda null -> color por tema
+    } else {
+      if (aplicado && ultimoMarcadorAplicado?.color) fondo = ultimoMarcadorAplicado.color;
+      else if (marcado?.color) fondo = marcado.color;
+    }
+
+    if (fondo) div.style.color = colorContraste(fondo);
+    else div.style.color = enOscuro ? "#ffffff" : "#000000";
   }
 }
 
@@ -1215,11 +1222,14 @@ window.toggleModoMarcador = () => {
 
 // ================= 📁 BOTÓN 2: LISTA MARCADORES 📌=================
 window.abrirMarcadores = () => {
+  if (modoMarcador) {
+  mostrarToast("Salí del modo marcador para ver la lista 📁");
+  return;
+}
   if (!uid) {
     loginModal.style.display = "flex";
     return;
   }
-
   const modal = document.getElementById("modalMarcadores");
   const lista = document.getElementById("listaMarcadores");
   const form = document.getElementById("formNuevoMarcador");
