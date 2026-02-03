@@ -139,13 +139,13 @@ body.oscuro #header {
 }
 
   /* Título del libro + capítulo */
-    #titulo {
+ #titulo {
       margin: 12px 0;
       font-weight: bold;
     }
     
  /* Versículos */
-    .versiculo {
+  .versiculo {
   padding: 8px 14px;
   border-radius: 8px;
   margin-bottom: 3px;
@@ -175,35 +175,35 @@ body.oscuro .versiculo[data-marcado="true"] {
 }
 
 /* Número del versículo */
-    .num {
+ .num {
       font-weight: bold;
       margin-right: 4px;
     }
 
     /* ================= PANEL ================= */
-    .panel-tabs button {
+ .panel-tabs button {
       margin-right: 6px;
     }
 
-    .panel-seccion {
+  .panel-seccion {
       margin-top: 10px;
       padding: 10px;
       border-radius: 10px;
       background: #e9f6ff;
     }
 
-    body.oscuro .panel-seccion {
+   body.oscuro .panel-seccion {
       background: #1e1e1e;
     }
 
-    textarea {
+   textarea {
       width: 100%;
       height: 80px;
       border-radius: 10px;
       padding: 10px;
     }
 
-    .grid-imagenes {
+   .grid-imagenes {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
       gap: 12px;
@@ -259,18 +259,6 @@ body.oscuro .barra-acciones {
   padding: 6px 10px;
   border: none;
   cursor: pointer;
-}
-
- /* Botón activo */
-.barra-acciones button.activo {
-  background: #e9f6ff;
-  color: #000;
-}
-
-/* 🎨 Botón de color activo */
-.color-btn.activo {
-  outline: 3px solid #e9f6ff;
-  transform: scale(1.15);
 }
 
 /* ================= MODO IMAGEN ================= */
@@ -405,18 +393,6 @@ body.oscuro .barra-acciones {
   }
 }
 
-.text-tools {
-  display: flex;
-  gap: 6px;
-  justify-content: center;
-}
-
-.text-tools button {
-  width: 44px;
-  height: 36px;
-  font-weight: bold;
-}
-
 .style-row {
   display: flex;
   align-items: center;
@@ -449,15 +425,7 @@ body.oscuro .barra-acciones {
   box-shadow: inset 0 0 0 2px rgba(0,0,0,.15);
 }
 
-/* Fuentes disponibles */
-.font-roboto { font-family: 'Roboto', sans-serif; }
-.font-lobster { font-family: 'Lobster', cursive; }
-.font-playfair { font-family: 'Playfair Display', serif; }
-.font-montserrat { font-family: 'Montserrat', sans-serif; }
-.font-poppins { font-family: 'Poppins', sans-serif; }
-
 /* ================= RESALTADOR COMPACTO (ARRIBA / COSTADO) ================= */
-    
 #btnResaltadorActivo {
   width: 36px;
   height: 36px;
@@ -522,16 +490,7 @@ body.oscuro .barra-acciones {
   display: none !important;
 }
 
-/* 🔥 Modal SIEMPRE legible (no gris) */
-#modalPersonalizar {
-  color: #000;
-}
-
-#modalPersonalizar label {
-  color: #000;
-}
-
-#bannerModoImagen {
+  #bannerModoImagen {
   display: none;
   text-align: center;
   font-size: 13px;
@@ -575,6 +534,11 @@ body.modo-imagen #resaltadorCompacto {
   justify-content: center;
   align-items: center;
   overflow-y: auto;
+  color: #000; /* 🔥 Modal SIEMPRE legible (no gris) */
+}
+
+  #modalPersonalizar label {
+  color: #000;
 }
 
 /* CONTENEDOR INTERNO DEL MODAL */
@@ -591,6 +555,21 @@ body.modo-imagen #resaltadorCompacto {
   flex-direction: column;
   overflow-y: hidden;
   padding-bottom: 16px;
+}
+
+@media (max-width: 600px) {
+  #modalPersonalizar {
+    padding: 0;               /* 👈 clave, sin margen fantasma */
+    align-items: stretch;     /* ocupa todo alto */
+  }
+
+  #modalPersonalizar .modal-contenido {
+    width: 100vw;             /* 👈 ocupa pantalla */
+    max-width: 100vw;
+    margin: 0;
+    border-radius: 0;
+    max-height: 100vh;
+  }
 }
 
 /* INPUTS DE PERSONALIZACION */
@@ -716,10 +695,6 @@ body.modo-imagen #resaltadorCompacto {
   background: var(--ui-azul-hover);
   color: #fff;
 }
-
-/* ✅ Ocultar scrollbar (igual hay scroll con dedo/mouse) */
-#listaFuentes::-webkit-scrollbar { height: 0px; }
-#listaFuentes { scrollbar-width: none; }
 
 /* ================= SCROLL LISTA FUENTES EN PC ================= */
 @media (min-width: 641px) {
@@ -953,26 +928,6 @@ body.oscuro .subir-iglesia-btn:hover {
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-@media (max-width: 600px) {
-  #modalPersonalizar {
-    padding: 0;               /* 👈 clave, sin margen fantasma */
-    align-items: stretch;     /* ocupa todo alto */
-  }
-
-  #modalPersonalizar .modal-contenido {
-    width: 100vw;             /* 👈 ocupa pantalla */
-    max-width: 100vw;
-    margin: 0;
-    border-radius: 0;
-    max-height: 100vh;
-  }
-}
-
-/* ✅ IMPORTANTE: el contenedor del modal debe ser “referencia” */
-#modalPersonalizar .modal-contenido {
-  position: relative; /* 👈 agregá esta línea si no estaba */
 }
 
 button.activo,
@@ -1360,4 +1315,5 @@ body.oscuro #header button[onclick="toggleTema()"] {
   
 </body>
 </html>
+
 
