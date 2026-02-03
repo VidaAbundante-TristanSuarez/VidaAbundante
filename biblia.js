@@ -237,6 +237,7 @@ function toggleVersiculo(id, num) {
     else seleccionMarcador[id] = true;
 
     mostrarTexto();
+    refrescarBotonGuardarMarcador();
     return;
   }
 
@@ -368,7 +369,13 @@ function obtenerVersiculoSeleccionado() {
   if (ids.length === 0) return "";
 
   // ordenar por número de versículo
-  ids.sort((a, b) => Number(a.split("_")[2]) - Number(b.split("_")[2]));
+ ids.sort((a,b) => {
+  const [la, ca, va] = a.split("_");
+  const [lb, cb, vb] = b.split("_");
+  if (la !== lb) return la.localeCompare(lb);
+  if (Number(ca) !== Number(cb)) return Number(ca) - Number(cb);
+  return Number(va) - Number(vb);
+});
 
   let textos = [];
   let numeros = [];
@@ -751,10 +758,13 @@ previewTextoBack.style.textShadow = "none";
 
 // colores
 previewTexto.style.color = color;
-previewTextoBack.style.color = outlineColor;
 
-// ✅ Outline real (borde alrededor) pero SIN corrimiento
-const px = 1; // subilo a 2 si querés borde más grueso
+// ✅ BACK: NO debe verse como texto sólido, solo como borde
+previewTextoBack.style.color = "transparent";   // 🔥 clave
+previewTextoBack.style.textShadow = "none";
+
+// ✅ Outline real (borde alrededor) sin duplicar relleno
+const px = 1; // probá 1 o 2
 previewTextoBack.style.textShadow = `
   -${px}px 0 ${outlineColor},
    ${px}px 0 ${outlineColor},
@@ -1145,6 +1155,7 @@ window.logout = () => {
   signOut(auth).then(() => (window.location.href = "login.html"));
 };
 
+// ================= 🔺 MARCADOR ===================
 // ================= 📌 BOTÓN 1: MODO MARCADOR =================
 window.toggleModoMarcador = () => {
   if (!uid) {
@@ -1166,6 +1177,8 @@ window.toggleModoMarcador = () => {
   );
 
   mostrarTexto();
+  refrescarBotonGuardarMarcador();
+
 };
 
 // ================= 📁 BOTÓN 2: LISTA MARCADORES =================
@@ -1187,12 +1200,14 @@ window.abrirMarcadores = () => {
   renderListaMarcadores();
   modal.style.display = "flex";
 };
-
+// ================= ✨ Cerrar Marcadores =================
 window.cerrarMarcadores = () => {
   const modal = document.getElementById("modalMarcadores");
   if (modal) modal.style.display = "none";
+  refrescarBotonGuardarMarcador();
 };
 
+// ================= ✨ Render Lista Marcadores =================
 function renderListaMarcadores() {
   const lista = document.getElementById("listaMarcadores");
   if (!lista) return;
@@ -1237,7 +1252,7 @@ function renderListaMarcadores() {
     `;
   }).join("");
 }
-
+// ================= ✨ Abrir Form Nuevo Marcador =================
 window.abrirFormNuevoMarcador = () => {
   const lista = document.getElementById("listaMarcadores");
   const form = document.getElementById("formNuevoMarcador");
@@ -1259,14 +1274,14 @@ window.abrirFormNuevoMarcador = () => {
   lista.style.display = "none";
   form.style.display = "block";
 };
-
+// ================= ✨ Cancelar Nuevo Marcador =================
 window.cancelarNuevoMarcador = () => {
   const form = document.getElementById("formNuevoMarcador");
   const lista = document.getElementById("listaMarcadores");
   if (form) form.style.display = "none";
   if (lista) lista.style.display = "block";
 };
-
+// ================= ✨ Guardar Nuevo Marcador =================
 window.guardarNuevoMarcador = async () => {
   if (!uid) return;
 
@@ -1303,6 +1318,8 @@ window.guardarNuevoMarcador = async () => {
   modoMarcador = false;
   seleccionMarcador = {};
 
+  refrescarBotonGuardarMarcador();
+
   const btn = document.getElementById("btnModoMarcador");
   if (btn) btn.classList.remove("activo");
 
@@ -1310,7 +1327,7 @@ window.guardarNuevoMarcador = async () => {
   cerrarMarcadores();
   mostrarTexto();
 };
-
+// ================= ✨ Abrir Marcador =================
 window.abrirMarcador = (idMarcador) => {
   const m = (marcadores || {})[idMarcador];
   if (!m) return;
@@ -1324,6 +1341,41 @@ window.abrirMarcador = (idMarcador) => {
 
   cerrarMarcadores();
   setTimeout(mostrarTexto, 50);
+};
+// ================= ✨ Refrescar Boton Guardar Marcador =================
+function refrescarBotonGuardarMarcador() {
+  const btn = document.getElementById("btnGuardarMarcador");
+  if (!btn) return;
+
+  const haySeleccion = Object.keys(seleccionMarcador || {}).length > 0;
+
+  // aparece solo en modo marcador
+ btn.style.display = (modoMarcador && haySeleccion) ? "inline-flex" : "none";
+
+  // si querés que SOLO se pueda apretar cuando hay selección:
+  btn.disabled = !haySeleccion;
+  btn.style.opacity = haySeleccion ? "1" : "0.4";
+}
+// ================= ✨ Guardar Marcador Rapido =================
+window.guardarMarcadorRapido = () => {
+  if (!uid) {
+    loginModal.style.display = "flex";
+    return;
+  }
+
+  if (!modoMarcador) return;
+
+  if (Object.keys(seleccionMarcador).length === 0) {
+    mostrarToast("Seleccioná al menos 1 versículo 📌");
+    return;
+  }
+
+  abrirMarcadores();
+
+  // abrir directo el formulario
+  setTimeout(() => {
+    if (typeof abrirFormNuevoMarcador === "function") abrirFormNuevoMarcador();
+  }, 0);
 };
 
 // ================= 🔺 NOTAS ===================
