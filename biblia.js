@@ -339,13 +339,10 @@ if (selMarcador) div.style.border = "2px solid #4f6fa8";
         : "#000000";
     }
   } 
+
   else if (marcado) {
-    if (document.body.classList.contains("oscuro")) {
-      div.style.color = "#000000";
-    } else {
-      div.style.color = colorContraste(marcado.color);
-    }
-  }
+  div.style.color = colorContraste(marcado.color);
+}
 
   // ================= Opacidad (UX MODO IMAGEN) =================
   if (modoImagen && !imagen) {
@@ -489,10 +486,11 @@ function colorOutlineDesdeBase(color) {
 
 // ================= 🎀 FUENTES  =======================
 // 🔗 Listeners de personalización 
-["personalizarOpacidad","personalizarTamaño","personalizarColor"]
-.forEach(id => {
+["personalizarOpacidad","personalizarTamaño","personalizarColor"].forEach(id => {
   const el = document.getElementById(id);
-  if (el) el.oninput = actualizarPreview;
+  if (!el) return;
+  el.addEventListener("input", actualizarPreview);
+  el.addEventListener("change", actualizarPreview);
 });
 
 // ================= 🎀 LISTA VISUAL DE FUENTES =================
@@ -716,17 +714,22 @@ previewImagen.style.backgroundColor = fondoUsable ? "transparent" : "#ffffff";
   previewTexto.style.lineHeight = "1.3";
   previewTextoBack.style.lineHeight = "1.3";
 
-  const wrapperH = wrapper.clientHeight;
-  const maxHeight = wrapperH > 0 ? wrapperH - 40 : null;
+ const maxHeight = wrapper.clientHeight; // ya es la caja real del texto
 
-  if (maxHeight && maxHeight > 20) {
-    while (fontSize > 14) {
-      previewTexto.style.fontSize = fontSize + "px";
-      previewTextoBack.style.fontSize = fontSize + "px";
-      if (previewTexto.scrollHeight <= maxHeight) break;
-      fontSize--;
-    }
-  } else {
+// aplicar el size que eligió el usuario primero
+previewTexto.style.fontSize = fontSize + "px";
+previewTextoBack.style.fontSize = fontSize + "px";
+
+// si se desborda, recién ahí achicamos
+let guard = 0;
+while (previewTexto.scrollHeight > maxHeight && fontSize > 14 && guard < 200) {
+  fontSize--;
+  previewTexto.style.fontSize = fontSize + "px";
+  previewTextoBack.style.fontSize = fontSize + "px";
+  guard++;
+}
+
+  else {
     previewTexto.style.fontSize = fontSize + "px";
     previewTextoBack.style.fontSize = fontSize + "px";
   }
@@ -739,32 +742,25 @@ previewImagen.style.backgroundColor = fondoUsable ? "transparent" : "#ffffff";
   const opacidad = opEl ? opEl.value : "0.3";
   const outlineColor = colorOutlineDesdeBase(color);
 
-  previewTexto.style.position = "relative";
-  previewTexto.style.zIndex = "2";
-
-  previewTextoBack.style.position = "absolute";
-  previewTextoBack.style.zIndex = "1";
-
-// ✅ anclaje exacto (misma posición que el texto principal)
-previewTextoBack.style.left = "0";
-previewTextoBack.style.top = "0";
-previewTextoBack.style.right = "0";
-previewTextoBack.style.bottom = "0";
+  // ✅ NO tocar position acá. La define el CSS para que queden idénticos.
+previewTexto.style.zIndex = "2";
+previewTextoBack.style.zIndex = "1";
   
 // reset acumulables (back)
 previewTextoBack.style.transform = "none";     // ✅ sin desplazamiento
 previewTextoBack.style.filter = "none";        // ✅ sin blur
 previewTextoBack.style.textShadow = "none";
 
-// colores
 previewTexto.style.color = color;
 
-// ✅ BACK: NO debe verse como texto sólido, solo como borde
-previewTextoBack.style.color = "transparent";   // 🔥 clave
-previewTextoBack.style.textShadow = "none";
+// back: sólo borde
+previewTextoBack.style.color = "transparent";
+previewTextoBack.style.webkitTextStroke = "0px transparent";
+previewTextoBack.style.transform = "none";
+previewTextoBack.style.filter = "none";
 
-// ✅ Outline real (borde alrededor) sin duplicar relleno
-const px = 1; // probá 1 o 2
+// outline por text-shadow
+const px = 2; // probá 2 (1 a veces queda muy finito)
 previewTextoBack.style.textShadow = `
   -${px}px 0 ${outlineColor},
    ${px}px 0 ${outlineColor},
