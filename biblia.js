@@ -764,6 +764,7 @@ while (previewTexto.scrollHeight > maxHeight && fontSize > 14 && guard < 200) {
   const color = colorEl ? colorEl.value : "#000000";
   const opacidad = opEl ? opEl.value : "0.3";
   const outlineColor = colorOutlineDesdeBase(color);
+  const px = 2; // 👈 grosor del borde
 
   // ✅ NO tocar position acá. La define el CSS para que queden idénticos.
 previewTexto.style.zIndex = "2";
