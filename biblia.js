@@ -139,8 +139,8 @@ document.addEventListener("DOMContentLoaded", () => {
   btnActivo.onclick = e => {
     e.preventDefault();
     e.stopPropagation();
-    const visible = paleta.style.display === "block";
-    paleta.style.display = visible ? "none" : "block";
+  const visible = paleta.style.display === "grid";
+  paleta.style.display = visible ? "none" : "grid";
     cont.classList.remove("mover-derecha");
     if (!visible) {
       const rect = paleta.getBoundingClientRect();
@@ -367,6 +367,9 @@ function obtenerVersiculoSeleccionado() {
   const ids = Object.keys(seleccionImagen);
   if (ids.length === 0) return "";
 
+  // ordenar por número de versículo
+  ids.sort((a, b) => Number(a.split("_")[2]) - Number(b.split("_")[2]));
+
   let textos = [];
   let numeros = [];
   let libro = "";
@@ -388,10 +391,7 @@ function obtenerVersiculoSeleccionado() {
     }
   });
 
-  // ordenar versículos // =================
-  numeros.sort((a, b) => a - b);
-
-  // convertir a rangos // =================
+  // convertir a rangos
   const partes = [];
   let inicio = numeros[0];
   let anterior = numeros[0];
@@ -400,20 +400,14 @@ function obtenerVersiculoSeleccionado() {
     if (numeros[i] === anterior + 1) {
       anterior = numeros[i];
     } else {
-      partes.push(
-        inicio === anterior ? `${inicio}` : `${inicio}-${anterior}`
-      );
+      partes.push(inicio === anterior ? `${inicio}` : `${inicio}-${anterior}`);
       inicio = numeros[i];
       anterior = numeros[i];
     }
   }
-
-  partes.push(
-    inicio === anterior ? `${inicio}` : `${inicio}-${anterior}`
-  );
+  partes.push(inicio === anterior ? `${inicio}` : `${inicio}-${anterior}`);
 
   const referencia = `${libro} ${cap}:${partes.join(",")}`;
-
   return textos.join("\n") + "\n\n▪ " + referencia;
 }
 
@@ -561,8 +555,9 @@ if (listaFuentes) {
   }, { passive: false });
 }
 
+// ================= ⭐ Posicionar Lista Fuentes =================
 function posicionarListaFuentes() {
-  const modalBox = document.querySelector("#modalPersonalizar > div"); // contenedor interno
+const modalBox = document.querySelector("#modalPersonalizar .modal-contenido");
   if (!modalBox || !btnFuentes || !listaFuentes) return;
 
   const rModal = modalBox.getBoundingClientRect();
