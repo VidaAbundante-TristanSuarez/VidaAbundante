@@ -311,6 +311,8 @@ const aplicado = ultimoMarcadorAplicado &&
   const div = document.createElement("div");
   div.className = "versiculo";
   if (imagen) div.classList.add("imagen");
+  
+  const enOscuro = document.body.classList.contains("oscuro");
 
   // ================= Tamaño Letra =================
   div.style.fontSize = size + "px";
@@ -1222,18 +1224,26 @@ window.toggleModoMarcador = () => {
 
 // ================= 📁 BOTÓN 2: LISTA MARCADORES 📌=================
 window.abrirMarcadores = () => {
+  // si el modal ya está abierto -> cerrar
+  const modal = document.getElementById("modalMarcadores");
+  if (modal && getComputedStyle(modal).display !== "none") {
+    cerrarMarcadores();
+    return;
+  }
+
+  // si estás en modo marcador, bloqueás (como lo tenés)
   if (modoMarcador) {
-  mostrarToast("Salí del modo marcador para ver la lista 📁");
-  return;
-}
+    mostrarToast("Salí del modo marcador para ver la lista 📁");
+    return;
+  }
+
   if (!uid) {
     loginModal.style.display = "flex";
     return;
   }
-  const modal = document.getElementById("modalMarcadores");
+
   const lista = document.getElementById("listaMarcadores");
   const form = document.getElementById("formNuevoMarcador");
-
   if (!modal || !lista || !form) return;
 
   form.style.display = "none";
