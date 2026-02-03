@@ -16,10 +16,25 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
+// ✅ DOM
+const emailEl = document.getElementById("email");
+const passEl  = document.getElementById("password");
+
 // LOGIN EMAIL
-window.login = () => {
-  signInWithEmailAndPassword(auth, email.value, password.value)
-    .catch(e => alert(e.message));
+window.login = async () => {
+  const email = (emailEl?.value || "").trim();
+  const password = passEl?.value || "";
+
+  if (!email || !password) {
+    alert("Completá email y contraseña.");
+    return;
+  }
+
+  try {
+    await signInWithEmailAndPassword(auth, email, password);
+  } catch (e) {
+    alert(e.message);
+  }
 };
 
 // ✅ LOGIN GOOGLE CON POPUP
@@ -33,8 +48,5 @@ window.loginGoogle = async () => {
 
 // SI YA ESTÁ LOGUEADO → APP
 onAuthStateChanged(auth, (user) => {
-  if (user) {
-    window.location.href = "biblia.html";
-  }
+  if (user) window.location.href = "biblia.html";
 });
-
