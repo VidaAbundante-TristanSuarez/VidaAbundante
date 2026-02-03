@@ -29,12 +29,11 @@ const db = getDatabase(app);
 let uid = null;
 let bibliaData = [];
 let marcados = {};
-let notas = {};
 let size = 18;
 let fuenteActual = "Arial";
 let colorActual = "#fff3b0"; // 💛 amarillo por default
 let resaltadorBloqueado = false; // 🔒 nuevo estado
-let grupoActual = null;
+
 // ================= MARCADORES (NUEVO LIMPIO) =================
 let modoMarcador = false;
 let seleccionMarcador = {};         // {idVersiculo:true}
@@ -67,13 +66,6 @@ onAuthStateChanged(auth, user => {
     mostrarTexto();
   });
 
-  onValue(ref(db, "notas/" + uid), s => {
-    notas = s.val() || {};
-  });
-
-  onValue(ref(db, "marcadores/" + uid), s => {
-    marcadores = s.val() || {};
-  });
 });
 
 // ================= DOM (SE CARGA CON DEFER) =================
@@ -81,8 +73,6 @@ const libroSel = document.getElementById("libro");
 const capSel = document.getElementById("capitulo");
 const texto = document.getElementById("texto");
 const titulo = document.getElementById("titulo");
-const notaBox = document.getElementById("notaBox");
-const notaTexto = document.getElementById("notaTexto");
 const loginModal = document.getElementById("loginModal");
 
 // ================= ⭐ CARGA BIBLIA ==============================
@@ -214,10 +204,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // ================= ⭐ MOSTRAR TEXTO =======================
 function mostrarTexto() {
-  texto.innerHTML = "";
-  notaBox.style.display = "none";
-  grupoActual = null;
-  
+  texto.innerHTML = ""; 
   titulo.innerText = `${libroSel.value} ${capSel.value}`;
 
   const versos = bibliaData.filter(v =>
@@ -278,26 +265,6 @@ function toggleVersiculo(id, num) {
   } else {
     set(r, { color: colorActual });
   }
-
-  detectarGrupo(num);
-}
-
-// ================= ⭐ DETECTA GRUPO =======================
-function detectarGrupo(num) {
- const nums = Object.keys(marcados)
-  .filter(k => {
-    const [lib, cap] = k.split("_");
-    return lib === libroSel.value && cap == capSel.value;
-  })
-  .map(k => Number(k.split("_")[2]))
-  .sort((a, b) => a - b);
-
-  const grupo = nums.filter(n => Math.abs(n - num) <= 1);
-  if (grupo.length < 2) return;
-
-  grupoActual = grupo.join("-");
-  notaBox.style.display = "block";
-  notaTexto.value = notas[grupoActual] || "";
 }
 
 // ======================= ⭐ PINTAR VERSICULO  =============================
@@ -1527,13 +1494,6 @@ window.editarMarcadorEnPanel = (idMarcador) => {
     // guardamos “id en edición”
     window.__editMarcadorId = idMarcador;
   }, 0);
-};
-
-// ================= 🔺 NOTAS ===================
-window.guardarNota = () => {
-  if (!grupoActual || !uid) return;
-  set(ref(db, `notas/${uid}/${grupoActual}`), notaTexto.value)
-    .then(() => mostrarToast("📝 Nota guardada"));
 };
 
 // ================= ⭐ TOAST   =======================
