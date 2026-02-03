@@ -988,6 +988,22 @@ body.oscuro #header button[onclick="toggleTema()"] {
   transform: scale(0.98);
 }
 
+#bannerModoMarcador {
+  display: none;
+  text-align: center;
+  font-size: 13px;
+  padding: 6px;
+  background: rgba(0,0,0,0.08);
+}
+
+body.oscuro #bannerModoMarcador {
+  background: rgba(255,255,255,0.08);
+}
+
+body.modo-marcador #accionesBiblia{
+  display:none !important;
+}
+
   </style>
  
 </head>
@@ -1046,11 +1062,17 @@ body.oscuro #header button[onclick="toggleTema()"] {
 <button id="btnGuardarMarcador" type="button" onclick="guardarMarcadorRapido()" style="display:none;">✅</button>
 
 </div>
- <!-- ================= BANNER MODO IMAGEN ================= -->
+ <!-- ================= BANNER MODO IMAGEN 🌄 ================= -->
  <!-- Solo se muestra cuando body tiene la clase modo-imagen -->
     <div id="bannerModoImagen">
   🖼️ Modo imagen activado · Tocá los versículos a incluir
 </div>
+   <!-- ================= BANNER MODO IMARCADOR 📌================= -->
+   <!-- Solo se muestra cuando body tiene la clase modo-📌 -->
+  <div id="bannerModoMarcador">
+  📌 Modo marcador activado · Tocá versículos para el marcador
+</div>
+
 <!-- Título del libro + capítulo -->
   <h3 id="titulo"></h3>
 <!-- CONTENEDOR DEL TEXTO BÍBLICO -->
@@ -1309,6 +1331,7 @@ body.oscuro #header button[onclick="toggleTema()"] {
   
 </body>
 </html>
+
 
 
 
