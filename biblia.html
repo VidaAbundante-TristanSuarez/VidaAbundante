@@ -872,7 +872,7 @@ body.oscuro .subir-iglesia-btn:hover {
   color: #000;
 }
 
-/* ================= COLOR UNIFICADO UI ================= */
+/* ================= COLOR UNIFICADO UI 🌈================= */
 
 :root {
   --ui-azul-claro: #d1eeff;
@@ -1143,12 +1143,13 @@ body.oscuro #header button[onclick="toggleTema()"] {
   <span>Imagenes</span>
       </button>
     <button onclick="mostrarSeccion('versiculos')">⭐ Versículos</button>
-    <button onclick="mostrarSeccion('notas')">
-  <i class="fa-solid fa-clipboard"></i>
-  <span>Notas</span>
+    <button onclick="mostrarSeccion('marcadores')">
+  <i class="fa-solid fa-bookmark"></i>
+  <span>Marcadores</span>
 </button>
 
-    
+    <div id="panel-marcadores" class="panel-seccion" style="display:none"></div>
+
   </div>
   <!-- Imágenes -->
   <div id="panel-imagenes" class="panel-seccion">
@@ -1308,6 +1309,7 @@ body.oscuro #header button[onclick="toggleTema()"] {
   
 </body>
 </html>
+
 
 
 
