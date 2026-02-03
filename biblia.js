@@ -57,18 +57,23 @@ let textStyle = {
 onAuthStateChanged(auth, user => {
   uid = user ? user.uid : null;
 
-  if (uid) {
-    onValue(ref(db, "marcados/" + uid), s => {
-      marcados = s.val() || {};
-      mostrarTexto();
-    });
-    onValue(ref(db, "notas/" + uid), s => {
-      notas = s.val() || {};
-    });
-    onValue(ref(db, "marcadores/" + uid), s => {
-  marcadores = s.val() || {};
-});
+  if (!uid) {
+    window.location.href = "login.html";
+    return;
   }
+
+  onValue(ref(db, "marcados/" + uid), s => {
+    marcados = s.val() || {};
+    mostrarTexto();
+  });
+
+  onValue(ref(db, "notas/" + uid), s => {
+    notas = s.val() || {};
+  });
+
+  onValue(ref(db, "marcadores/" + uid), s => {
+    marcadores = s.val() || {};
+  });
 });
 
 // ================= DOM (SE CARGA CON DEFER) =================
