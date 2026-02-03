@@ -318,38 +318,60 @@ const aplicado = ultimoMarcadorAplicado &&
 // ================= Fondo =================
 if (modoImagen) {
   div.style.background = imagen ? "rgba(255, 214, 232, 0.6)" : "transparent";
+
 } else if (modoMarcador) {
-  div.style.background = selMarcador ? "rgba(209, 238, 255, 0.8)" : "transparent";
+  // ✅ en modo marcador: se ve selección + aplicado + resaltados normales
+  if (selMarcador) {
+    div.style.background = "rgba(209, 238, 255, 0.85)";
+  } else if (aplicado && ultimoMarcadorAplicado?.color) {
+    div.style.background = ultimoMarcadorAplicado.color;
+  } else {
+    div.style.background = marcado?.color || "transparent";
+  }
+
 } else {
-  if (aplicado && ultimoMarcadorAplicado.color) {
+  // modo normal
+  if (aplicado && ultimoMarcadorAplicado?.color) {
     div.style.background = ultimoMarcadorAplicado.color;
   } else {
     div.style.background = marcado?.color || "transparent";
   }
 }
+
 if (selMarcador) div.style.border = "2px solid #4f6fa8";
 
-  // ================= Color de Texto =================
-  if (modoImagen) {
-    if (imagen) {
-      div.style.color = "#000000";
-    } else {
-      div.style.color = document.body.classList.contains("oscuro")
-        ? "#ffffff"
-        : "#000000";
-    }
-  } 
+ // ================= Color de Texto =================
+const enOscuro = document.body.classList.contains("oscuro");
 
-  else if (marcado) {
-  div.style.color = colorContraste(marcado.color);
+// color de fondo real (para contraste) en marcador/aplicado/marcado
+let fondo = null;
+
+if (modoImagen) {
+  // modo imagen: seleccionado negro, no seleccionado según tema
+  div.style.color = imagen ? "#000000" : (enOscuro ? "#ffffff" : "#000000");
+
+} else {
+  // detectar fondo que quedó aplicado
+  if (modoMarcador) {
+    if (selMarcador) fondo = "#d1eeff"; // aproximación (celeste)
+    else if (aplicado && ultimoMarcadorAplicado?.color) fondo = ultimoMarcadorAplicado.color;
+    else if (marcado?.color) fondo = marcado.color;
+  } else {
+    if (aplicado && ultimoMarcadorAplicado?.color) fondo = ultimoMarcadorAplicado.color;
+    else if (marcado?.color) fondo = marcado.color;
+  }
+
+  if (fondo) {
+    div.style.color = colorContraste(fondo);
+  } else {
+    div.style.color = enOscuro ? "#ffffff" : "#000000";
+  }
 }
 
-  // ================= Opacidad (UX MODO IMAGEN) =================
-  if (modoImagen && !imagen) {
-    div.style.opacity = "0.6";
-  } else {
-    div.style.opacity = "1";
-  }
+ // ================= Opacidad (UX Modo imagen y Modo Marcador) =================
+if (modoImagen && !imagen) {
+  div.style.opacity = "0.6";
+} else_job: "no" }
 
   // ================= Contenido =================
   div.innerHTML = `<span class="num">${v.Versiculo}</span> ${v.RV1960}`;
@@ -752,14 +774,14 @@ previewTextoBack.style.textShadow = "none";
 
 previewTexto.style.color = color;
 
-// back: sólo borde
-previewTextoBack.style.color = "transparent";
-previewTextoBack.style.WebkitTextStroke = "0px transparent";
+// back: borde REAL (mejor para html2canvas)
+previewTextoBack.style.color = outlineColor;                 // color del borde
+previewTextoBack.style.WebkitTextStroke = `${px}px ${outlineColor}`;
+previewTextoBack.style.webkitTextFillColor = "transparent"; // relleno transparente (solo borde)
 previewTextoBack.style.transform = "none";
 previewTextoBack.style.filter = "none";
 
-// outline por text-shadow
-const px = 2; // probá 2 (1 a veces queda muy finito)
+// backup por si stroke falla en algún navegador
 previewTextoBack.style.textShadow = `
   -${px}px 0 ${outlineColor},
    ${px}px 0 ${outlineColor},
@@ -834,20 +856,22 @@ if (modal && getComputedStyle(modal).display === "none") {
   if (t2) t2.style.display = "block";
 
   let canvasTemp;
-    // ✅ esperar un toque para que el background cargue (si hay fondo)
-  await new Promise(r => setTimeout(r, 120));
-  try {
-const fondoUsable = fondoFinalBlobUrl || fondoFinal; // mismo criterio que preview
+  
+// ✅ esperar a que el navegador “pinte” stroke/shadow y fondo
+await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+await new Promise(r => setTimeout(r, 120));
 
-canvasTemp = await html2canvas(preview, {
-  scale: Math.max(2, window.devicePixelRatio || 2),
-  useCORS: true,
-  allowTaint: false,
+try {
+  const fondoUsable = fondoFinalBlobUrl || fondoFinal;
 
-  // ✅ Si hay fondo, TRANSPARENTE (evita esquinas blancas con border-radius)
+  canvasTemp = await html2canvas(preview, {
+    scale: Math.max(2, window.devicePixelRatio || 2),
+    useCORS: true,
+    allowTaint: false,
+     // ✅ Si hay fondo, TRANSPARENTE (evita esquinas blancas con border-radius)
   // ✅ Si no hay fondo, BLANCO (evita fondo negro)
-  backgroundColor: fondoUsable ? null : "#ffffff"
-});
+    backgroundColor: fondoUsable ? null : "#ffffff"
+  });
 
     } catch (err) {
     console.error("html2canvas falló:", err);
