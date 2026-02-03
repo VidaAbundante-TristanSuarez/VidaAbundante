@@ -158,11 +158,6 @@ body.oscuro .versiculo {
   color: #fff;
 }
 
-/* Versículo marcado (resaltado) */
-.versiculo[data-marcado="true"] {
-  color: #000; 
-}
-
 body.oscuro .versiculo[data-marcado="true"] {
   color: #000; /* fuerza negro sobre color resaltador pastel */
 }
@@ -1004,6 +999,58 @@ body.modo-marcador #accionesBiblia{
   display:none !important;
 }
 
+/* ✅ En modo marcador, ocultar botón de lista (📁) */
+body.modo-marcador #btnListaMarcadores {
+  display: none !important;
+}
+
+/* ================= MODAL MARCADORES: COLOR PRO ================= */
+
+.fila-color-marcador{
+  display:flex;
+  gap:12px;
+  align-items:center;
+  margin-top:8px;
+}
+
+.color-marcador{
+  display:flex;
+  gap:10px;
+  align-items:center;   /* ✅ centra verticalmente "Color" */
+  font-size:13px;
+}
+
+.color-marcador span{
+  line-height: 1;
+}
+
+#marcadorColor{
+  width:44px;
+  height:34px;
+  border:none;
+  padding:0;
+  background:transparent;
+  cursor:pointer;
+  border-radius:999px; /* ✅ forma redondeada del input */
+}
+
+/* ✅ redondear el swatch real (Chrome/Edge/Safari) */
+#marcadorColor::-webkit-color-swatch-wrapper{
+  padding:0;
+}
+#marcadorColor::-webkit-color-swatch{
+  border:none;
+  border-radius:999px;
+}
+
+/* checkbox alineado */
+.keep-marcador{
+  font-size:13px;
+  display:flex;
+  gap:8px;
+  align-items:center;
+}
+
   </style>
  
 </head>
@@ -1302,17 +1349,17 @@ body.modo-marcador #accionesBiblia{
         <textarea id="marcadorNota" style="width:100%; height:90px; border-radius:10px; padding:10px;"></textarea>
       </label>
 
-      <div style="display:flex; gap:10px; align-items:center; margin-top:8px;">
-        <label style="font-size:13px;">
-          Color
-          <input id="marcadorColor" type="color" value="#fff3b0" style="width:54px; height:34px; border:none; background:transparent; cursor:pointer;">
-        </label>
+<div class="fila-color-marcador">
+  <div class="color-marcador">
+    <span>Color</span>
+    <input id="marcadorColor" type="color" value="#fff3b0">
+  </div>
 
-        <label style="font-size:13px; display:flex; gap:8px; align-items:center;">
-          <input id="marcadorKeep" type="checkbox" checked>
-          Mantener resaltado
-        </label>
-      </div>
+  <label class="keep-marcador">
+    <input id="marcadorKeep" type="checkbox" checked>
+    Mantener resaltado
+  </label>
+</div>
 
       <div style="display:flex; gap:10px; margin-top:10px; justify-content:flex-end;">
         <button type="button" onclick="cancelarNuevoMarcador()" style="border:none; padding:8px 12px; border-radius:999px; background:#eee; cursor:pointer;">Cancelar</button>
@@ -1331,6 +1378,7 @@ body.modo-marcador #accionesBiblia{
   
 </body>
 </html>
+
 
 
 
