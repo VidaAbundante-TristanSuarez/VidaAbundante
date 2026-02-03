@@ -449,16 +449,15 @@ body.oscuro .barra-acciones {
 /* 🔼 Se abre HACIA ARRIBA por defecto */
 #paletaResaltadores {
   position: absolute;
-  bottom: 110%;          /* 👈 CLAVE: arriba del botón */
+  bottom: 110%;
   left: 0;
 
-  display: none;
+  display: none;              /* ✅ oculto por defecto */
   background: #fff;
   border-radius: 12px;
   padding: 8px;
   box-shadow: 0 6px 20px rgba(0,0,0,.25);
 
-  display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 6px;
   min-width: 160px;
@@ -515,14 +514,6 @@ body.modo-imagen #resaltadorCompacto {
   display: none;
 }
 
-/* ================= CANDADO RESALTADOR ================= */
-/* icono base (corazón / flor) */
-#btnResaltadorActivo .icono-resaltador {
-  display: inline-block;
-  font-size: 18px;
-  line-height: 1;
-}
-
 /* ================= MODAL BASE ================= */
 #modalPersonalizar {
   display: none;
@@ -535,10 +526,6 @@ body.modo-imagen #resaltadorCompacto {
   align-items: center;
   overflow-y: auto;
   color: #000; /* 🔥 Modal SIEMPRE legible (no gris) */
-}
-
-  #modalPersonalizar label {
-  color: #000;
 }
 
 /* CONTENEDOR INTERNO DEL MODAL */
@@ -577,7 +564,7 @@ body.modo-imagen #resaltadorCompacto {
   display: flex;
   flex-direction: column;
   font-size: 14px;
-  color: #333;
+  color: #000;
 }
 
 #modalPersonalizar input,
@@ -697,6 +684,12 @@ body.modo-imagen #resaltadorCompacto {
 }
 
 /* ================= SCROLL LISTA FUENTES EN PC ================= */
+/* ✅ Ocultar scrollbar SOLO en mobile (igual hay scroll) */
+@media (max-width: 640px) {
+  #listaFuentes::-webkit-scrollbar { height: 0px; }
+  #listaFuentes { scrollbar-width: none; }
+}
+
 @media (min-width: 641px) {
   #listaFuentes {
     scrollbar-width: thin;              /* Firefox */
@@ -736,11 +729,6 @@ body.modo-imagen #resaltadorCompacto {
   flex-wrap: nowrap; /* 👈 CLAVE */
   max-width: 420px;
   margin: 0 auto; /* esto reemplaza margin-left y margin-right */
-}
-
-.subir-iglesia-btn input {
-  accent-color: #007bff;
-  transform: scale(0.9);
 }
 
 .cerrar-modal {
@@ -1195,39 +1183,37 @@ body.oscuro #header button[onclick="toggleTema()"] {
     
 <!-- ================= FORMATO IMAGEN ================= -->
 <div class="fila-opciones style-row">
-<button id="btnFormatoPost" type="button" onclick="setFormatoImagen('post')" title="Post">
-  <i class="fa-solid fa-square"></i>
-</button>
+  <button id="btnFormatoPost" type="button" onclick="setFormatoImagen('post')" title="Post">
+    <i class="fa-solid fa-square"></i>
+  </button>
 
-<button id="btnFormatoStory" type="button" onclick="setFormatoImagen('story')" title="Story">
-  <i class="fa-solid fa-mobile-screen"></i>
-</button>
+  <button id="btnFormatoStory" type="button" onclick="setFormatoImagen('story')" title="Story">
+    <i class="fa-solid fa-mobile-screen"></i>
+  </button>
 
+  <input id="personalizarOpacidad" class="opacidad-slider"
+         type="range" min="0" max="1" step="0.05" value="0.3">
 
- <input id="personalizarOpacidad" class="opacidad-slider"
-       type="range" min="0" max="1" step="0.05" value="0.3">
+  <input id="personalizarTamaño" class="tamano-input"
+         type="number" value="24" min="10" max="100">
+</div>
 
-<input id="personalizarTamaño" class="tamano-input"
-       type="number" value="24" min="10" max="100">
-
-<!-- ================= FUENTES VISUALES ================= -->
+<!-- ================= FUENTES / ESTILOS / COLOR ================= -->
 <div class="fila-texto">
-<div style="position:relative;">
-  <button id="btnFuentes" class="style-btn">🔤 Fuentes</button>
-  <div id="listaFuentes"></div>
+  <div style="position:relative;">
+    <button id="btnFuentes" class="style-btn">🔤 Fuentes</button>
+    <div id="listaFuentes"></div>
+  </div>
+
+  <div class="style-row" id="textStyles">
+    <button type="button" onclick="toggleUpper()" id="btnUpper">Aa</button>
+    <button type="button" onclick="toggleBold()" id="btnBold">B</button>
+    <button type="button" onclick="toggleItalic()" id="btnItalic">I</button>
+    <button type="button" onclick="toggleUnderline()" id="btnUnderline">U</button>
+  </div>
+
+  <input id="personalizarColor" class="color-input" type="color" value="#000000">
 </div>
-
-<!-- ================= ESTILOS DE TEXTO ================= -->
-<div class="style-row" id="textStyles">
-<button type="button" onclick="toggleUpper()" id="btnUpper">Aa</button>
-<button type="button" onclick="toggleBold()" id="btnBold">B</button>
-<button type="button" onclick="toggleItalic()" id="btnItalic">I</button>
-<button type="button" onclick="toggleUnderline()" id="btnUnderline">U</button>
-
-</div>
-
-<!-- COLOR -->
-<input id="personalizarColor" class="color-input" type="color" value="#000000">
 
 </div>
  </div>   
@@ -1315,5 +1301,6 @@ body.oscuro #header button[onclick="toggleTema()"] {
   
 </body>
 </html>
+
 
 
