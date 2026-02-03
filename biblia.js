@@ -1151,7 +1151,7 @@ window.logout = () => {
 };
 
 // ================= 🔺 MARCADOR ===================
-// ================= 📌 BOTÓN 1: MODO MARCADOR =================
+// ================= 📌 BOTÓN 1: MODO MARCADOR 📌 =================
 window.toggleModoMarcador = () => {
   if (!uid) {
     loginModal.style.display = "flex";
@@ -1176,7 +1176,7 @@ window.toggleModoMarcador = () => {
 
 };
 
-// ================= 📁 BOTÓN 2: LISTA MARCADORES =================
+// ================= 📁 BOTÓN 2: LISTA MARCADORES 📌=================
 window.abrirMarcadores = () => {
   if (!uid) {
     loginModal.style.display = "flex";
@@ -1195,14 +1195,14 @@ window.abrirMarcadores = () => {
   renderListaMarcadores();
   modal.style.display = "flex";
 };
-// ================= ✨ Cerrar Marcadores =================
+// ================= ✨ Cerrar Marcadores 📌=================
 window.cerrarMarcadores = () => {
   const modal = document.getElementById("modalMarcadores");
   if (modal) modal.style.display = "none";
   refrescarBotonGuardarMarcador();
 };
 
-// ================= ✨ Render Lista Marcadores =================
+// ================= ✨ Render Lista Marcadores 📌=================
 function renderListaMarcadores() {
   const lista = document.getElementById("listaMarcadores");
   if (!lista) return;
@@ -1247,7 +1247,7 @@ function renderListaMarcadores() {
     `;
   }).join("");
 }
-// ================= ✨ Abrir Form Nuevo Marcador =================
+// ================= ✨ Abrir Form Nuevo Marcador 📌=================
 window.abrirFormNuevoMarcador = () => {
   const lista = document.getElementById("listaMarcadores");
   const form = document.getElementById("formNuevoMarcador");
@@ -1269,14 +1269,17 @@ window.abrirFormNuevoMarcador = () => {
   lista.style.display = "none";
   form.style.display = "block";
 };
-// ================= ✨ Cancelar Nuevo Marcador =================
+
+// ================= ❌ Cancelar Nuevo Marcador 📌=================
 window.cancelarNuevoMarcador = () => {
   const form = document.getElementById("formNuevoMarcador");
   const lista = document.getElementById("listaMarcadores");
   if (form) form.style.display = "none";
   if (lista) lista.style.display = "block";
+  window.__editMarcadorId = null;
 };
-// ================= ✨ Guardar Nuevo Marcador =================
+
+// ================= ✨ Guardar Nuevo Marcador 📌=================
 window.guardarNuevoMarcador = async () => {
   if (!uid) return;
 
@@ -1304,8 +1307,10 @@ window.guardarNuevoMarcador = async () => {
     keep
   };
 
-  const idMarcador = `${Date.now()}`;
-  await set(ref(db, `marcadores/${uid}/${idMarcador}`), data);
+  // ✅ si vengo editando, reutilizo el id. si no, creo uno nuevo
+const idMarcador = window.__editMarcadorId || `${Date.now()}`;
+await set(ref(db, `marcadores/${uid}/${idMarcador}`), data);
+window.__editMarcadorId = null;
 
   ultimoMarcadorAplicado = keep ? { ...data } : null;
 
@@ -1322,7 +1327,7 @@ window.guardarNuevoMarcador = async () => {
   cerrarMarcadores();
   mostrarTexto();
 };
-// ================= ✨ Abrir Marcador =================
+// ================= ✨ Abrir Marcador 📌=================
 window.abrirMarcador = (idMarcador) => {
   const m = (marcadores || {})[idMarcador];
   if (!m) return;
@@ -1337,7 +1342,7 @@ window.abrirMarcador = (idMarcador) => {
   cerrarMarcadores();
   setTimeout(mostrarTexto, 50);
 };
-// ================= ✨ Refrescar Boton Guardar Marcador =================
+// ================= ✨ Refrescar Boton Guardar Marcador 📌=================
 function refrescarBotonGuardarMarcador() {
   const btn = document.getElementById("btnGuardarMarcador");
   if (!btn) return;
@@ -1351,7 +1356,7 @@ function refrescarBotonGuardarMarcador() {
   btn.disabled = !haySeleccion;
   btn.style.opacity = haySeleccion ? "1" : "0.4";
 }
-// ================= ✨ Guardar Marcador Rapido =================
+// ================= ✨ Guardar Marcador Rapido 📌=================
 window.guardarMarcadorRapido = () => {
   if (!uid) {
     loginModal.style.display = "flex";
@@ -1370,6 +1375,87 @@ window.guardarMarcadorRapido = () => {
   // abrir directo el formulario
   setTimeout(() => {
     if (typeof abrirFormNuevoMarcador === "function") abrirFormNuevoMarcador();
+  }, 0);
+};
+
+// ================= 🔺Render con orden: fecha o libro/capítulo 📌===================
+let ordenMarcadores = "fecha"; // "fecha" | "biblia"
+
+function renderPanelMarcadores() {
+  const panel = document.getElementById("panel-marcadores");
+  if (!panel) return;
+
+  const items = Object.entries(marcadores || {}).map(([id, m]) => ({ id, ...m }));
+
+  const ordenados = items.sort((a,b) => {
+    if (ordenMarcadores === "biblia") {
+      const la = (a.libro || "").localeCompare(b.libro || "");
+      if (la !== 0) return la;
+      const ca = (a.capitulo || 0) - (b.capitulo || 0);
+      if (ca !== 0) return ca;
+      return ((a.versiculos?.[0] || 0) - (b.versiculos?.[0] || 0));
+    }
+    return (b.fecha || 0) - (a.fecha || 0);
+  });
+
+  panel.innerHTML = `
+    <div style="display:flex; gap:10px; align-items:center; margin-bottom:10px; flex-wrap:wrap;">
+      <b>📌 Marcadores</b>
+      <label style="font-size:13px; display:flex; gap:6px; align-items:center;">
+        Ordenar por:
+        <select id="ordenMarcadoresSelect" style="padding:6px 10px; border-radius:999px;">
+          <option value="fecha">Fecha</option>
+          <option value="biblia">Libro / Capítulo</option>
+        </select>
+      </label>
+    </div>
+
+    ${ordenados.length ? ordenados.map(m => {
+      const fechaTxt = m.fecha ? new Date(m.fecha).toLocaleString() : "";
+      const refTxt = m.ref || `${m.libro || ""} ${m.capitulo || ""}`;
+      return `
+        <div style="padding:10px; border-radius:14px; background:#e9f6ff; margin-bottom:8px;">
+          <div style="display:flex; justify-content:space-between; gap:10px; align-items:center;">
+            <div style="font-size:13px;">
+              <b>${m.titulo || "Marcador"}</b><br>
+              <span style="opacity:.8">${refTxt} · ${fechaTxt}</span>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <button type="button" onclick="abrirMarcador('${m.id}')" style="border:none; border-radius:999px; padding:8px 10px; cursor:pointer;">↩</button>
+              <button type="button" onclick="editarMarcadorEnPanel('${m.id}')" style="border:none; border-radius:999px; padding:8px 10px; cursor:pointer;">✏️</button>
+            </div>
+          </div>
+          ${m.nota ? `<div style="margin-top:8px; font-size:13px; opacity:.9;">${m.nota}</div>` : ""}
+        </div>
+      `;
+    }).join("") : `<p style="opacity:.75">Todavía no guardaste marcadores.</p>`}
+  `;
+
+  const sel = document.getElementById("ordenMarcadoresSelect");
+  if (sel) {
+    sel.value = ordenMarcadores;
+    sel.onchange = () => {
+      ordenMarcadores = sel.value;
+      renderPanelMarcadores();
+    };
+  }
+}
+
+// ================= Editar marcador desde Mi Panel (reusa tu modal) 📌===================
+window.editarMarcadorEnPanel = (idMarcador) => {
+  const m = (marcadores || {})[idMarcador];
+  if (!m) return;
+
+  abrirMarcadores(); // abre modal
+  setTimeout(() => {
+    abrirFormNuevoMarcador();
+    document.getElementById("marcadorTitulo").value = m.titulo || "";
+    document.getElementById("marcadorNota").value = m.nota || "";
+    document.getElementById("marcadorColor").value = m.color || "#fff3b0";
+    document.getElementById("marcadorKeep").checked = !!m.keep;
+
+    // guardamos “id en edición”
+    window.__editMarcadorId = idMarcador;
   }, 0);
 };
 
@@ -1407,10 +1493,12 @@ window.capituloSiguiente = () => {
 
 // ================= 🔺 PANEL ===================
 window.mostrarSeccion = tipo => {
-  ["imagenes", "versiculos", "notas"].forEach(s => {
-    document.getElementById("panel-" + s).style.display =
-      s === tipo ? "block" : "none";
+  ["imagenes", "versiculos", "marcadores"].forEach(s => {
+    const el = document.getElementById("panel-" + s);
+    if (el) el.style.display = (s === tipo ? "block" : "none");
   });
+
+  if (tipo === "marcadores") renderPanelMarcadores();
 };
 
 // ================= 🔺 IR A LOGIN ===================
