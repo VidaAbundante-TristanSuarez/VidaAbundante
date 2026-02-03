@@ -348,8 +348,6 @@ if (selMarcador) div.style.border = "2px solid #4f6fa8";
 else div.style.border = "none";
 
 // ================= Color de Texto (FIX MODO MARCADOR) =================
-const enOscuro = document.body.classList.contains("oscuro");
-
 if (modoImagen) {
   // modo imagen: seleccionado negro, no seleccionado según tema
   div.style.color = imagen ? "#000000" : (enOscuro ? "#ffffff" : "#000000");
@@ -1224,39 +1222,43 @@ window.toggleModoMarcador = () => {
 
 // ================= 📁 BOTÓN 2: LISTA MARCADORES 📌=================
 window.abrirMarcadores = () => {
-  // si el modal ya está abierto -> cerrar
-  const modal = document.getElementById("modalMarcadores");
-  if (modal && getComputedStyle(modal).display !== "none") {
-    cerrarMarcadores();
-    return;
-  }
-
-  // si estás en modo marcador, bloqueás (como lo tenés)
-  if (modoMarcador) {
-    mostrarToast("Salí del modo marcador para ver la lista 📁");
-    return;
-  }
-
   if (!uid) {
     loginModal.style.display = "flex";
     return;
   }
 
+  if (modoMarcador) {
+    mostrarToast("Salí del modo marcador para ver la lista 📁");
+    return;
+  }
+
+  const modal = document.getElementById("modalMarcadores");
   const lista = document.getElementById("listaMarcadores");
   const form = document.getElementById("formNuevoMarcador");
   if (!modal || !lista || !form) return;
+
+  // ✅ toggle real
+  const abierto = getComputedStyle(modal).display !== "none";
+  if (abierto) {
+    cerrarMarcadores();
+    return;
+  }
 
   form.style.display = "none";
   lista.style.display = "block";
 
   renderListaMarcadores();
   modal.style.display = "flex";
+  modal.setAttribute("aria-hidden", "false");
 };
 
 // ================= ✨ Cerrar Marcadores 📌=================
 window.cerrarMarcadores = () => {
   const modal = document.getElementById("modalMarcadores");
-  if (modal) modal.style.display = "none";
+  if (modal) {
+    modal.style.display = "none";
+    modal.setAttribute("aria-hidden", "true");
+  }
   refrescarBotonGuardarMarcador();
 };
 
