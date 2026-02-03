@@ -7,7 +7,7 @@
   box-sizing: border-box;
 }
 
- /* ================= ESTILOS GENERALES ================= */
+/* ================= ESTILOS GENERALES ================= */
     /* Estilo base para toda la página */
     body {
       font-family: Arial, sans-serif;
@@ -18,15 +18,15 @@
       color: #000;
     }
 
-     /* Modo oscuro: cambia fondo y texto */
+   /* Modo oscuro: cambia fondo y texto */
     body.oscuro {
       background: #121212;
       color: #e0e0e0;
     }
     
-/* ================= HEADER SUPERIOR ================= */
-/* Barra superior con botones de navegación */
-#header {
+ /* ================= HEADER SUPERIOR ================= */
+ /* Barra superior con botones de navegación */
+  #header {
   position: static; /* ✅ NO sticky */
   z-index: auto;
   background: #ffffff;
@@ -35,92 +35,92 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-}
+  }
     
-/* Cambios para modo oscuro en header */
-body.oscuro #header {
+ /* Cambios para modo oscuro en header */
+  body.oscuro #header {
   background: #121212;
   border-color: #333;
-}   
+ }   
     
 /* Contenedor de botones del menú (flex horizontal)*/
-    #menu {
-      display: flex;
-      gap: 6px;
-      flex-wrap: nowrap;
-    }
+  #menu {
+  display: flex;
+  gap: 6px;
+  flex-wrap: nowrap;
+  }
     
 /* Estilo para los botones de navegación */
-    .nav-btn {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      padding: 8px 14px;
-      border-radius: 999px;
-      border: none;
-      font-weight: bold;
-      cursor: pointer;
-      background: #e9f6ff;
-    }
+ .nav-btn {
+ display: flex;
+ align-items: center;
+ gap: 4px;
+ padding: 8px 14px;
+ border-radius: 999px;
+ border: none;
+ font-weight: bold;
+ cursor: pointer;
+ background: #e9f6ff;
+ }
 
-    /* Estilo para los botones de navegación MODO OSCURO*/
-    body.oscuro .nav-btn {
-      background: #2a2a2a;
-      color: #fff;
-    }
+ /* Estilo para los botones de navegación MODO OSCURO*/
+ body.oscuro .nav-btn {
+ background: #2a2a2a;
+ color: #fff;
+ }
 
-  /* En móvil se oculta el texto y queda solo el emoji */
-    @media (max-width: 640px) {
-      .nav-btn .text {
-        display: none;
-      }
-    }
+ /* En móvil se oculta el texto y queda solo el emoji */
+ @media (max-width: 640px) {
+ .nav-btn .text {
+ display: none;
+ }
+ }
 
   /* ================= SECCIONES GENERALES ================= */
-    .seccion {
-      padding: 15px;
-    }
+ .seccion {
+ padding: 15px;
+ }
 
   /* ================= SECCIÓN BIBLIA ================= */
-     /* Filtros para seleccionar libro y capítulo */
-    .filtros {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 8px;
-    }
+  /* Filtros para seleccionar libro y capítulo */
+  .filtros {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+  }
 
-     /* Estilo select de filtros */
-    .filtros select {
-      padding: 10px;
-      font-size: 16px;
-    }
+  /* Estilo select de filtros */
+  .filtros select {
+  padding: 10px;
+  font-size: 16px;
+  }
 
   /* ================= BOTONES FILTROS (marcadores) ================= */
-.filtros button {
+ .filtros button {
   border: none;
   border-radius: 999px;
   padding: 10px 12px;
   cursor: pointer;
   background: var(--ui-azul-claro);
   font-weight: 700;
-}
+  }
 
-.filtros button:hover {
+ .filtros button:hover {
   background: var(--ui-azul-hover);
   color: #fff;
-}
+  }
 
 /* ✅ Botón activo cuando está en modo marcador */
-#btnModoMarcador.activo {
+  #btnModoMarcador.activo {
   background: var(--ui-azul-hover);
   color: #fff;
-}
+  }
 
-  /* Título del libro + capítulo */
- #titulo {
-      margin: 12px 0;
-      font-weight: bold;
-    }
+ /* Título del libro + capítulo */
+  #titulo {
+  margin: 12px 0;
+  font-weight: bold;
+  }
     
  /* Versículos */
   .versiculo {
@@ -130,140 +130,140 @@ body.oscuro #header {
   cursor: pointer;
   transition: background .2s;
   color: #000;
-}
+  }
 
-body.oscuro .versiculo {
+  body.oscuro .versiculo {
   color: #fff;
-}
+  }
 
 /* Versículo seleccionado para imagen */
-.versiculo.imagen {
+  .versiculo.imagen {
   background: #a9ffef !important;
   color: #000 !important;            /* 👈 negro para que se lea siempre */
   border: 2px solid #1f6d76 !important;
-}
+  }
 
 /* Número del versículo */
- .num {
-      font-weight: bold;
-      margin-right: 4px;
-    }
+  .num {
+  font-weight: bold;
+  margin-right: 4px;
+  }
 
-    /* ================= PANEL ================= */
- .panel-tabs button {
-      margin-right: 6px;
-    }
+ /* ================= PANEL ================= */
+  .panel-tabs button {
+   margin-right: 6px;
+  }
 
   .panel-seccion {
-      margin-top: 10px;
-      padding: 10px;
-      border-radius: 10px;
-      background: #e9f6ff;
-    }
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 10px;
+  background: #e9f6ff;
+  }
 
    body.oscuro .panel-seccion {
-      background: #1e1e1e;
+   background: #1e1e1e;
     }
 
    textarea {
-      width: 100%;
-      height: 80px;
-      border-radius: 10px;
-      padding: 10px;
-    }
+   width: 100%;
+   height: 80px;
+   border-radius: 10px;
+   padding: 10px;
+   }
 
    .grid-imagenes {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-      gap: 12px;
-      margin-top: 10px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+    margin-top: 10px;
     }
 
     .card-imagen {
-      border-radius: 12px;
-      overflow: hidden;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-      background: #fff;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    background: #fff;
     }
 
     body.oscuro .card-imagen {
-      background: #1e1e1e;
+    background: #1e1e1e;
     }
 
     .card-imagen img {
-      width: 100%;
-      display: block;
+    width: 100%;
+    display: block;
     }
 
     .card-imagen .nombre {
-      padding: 6px;
-      font-size: 13px;
-      text-align: center;
-      font-weight: bold;
+    padding: 6px;
+    font-size: 13px;
+    text-align: center;
+    font-weight: bold;
     }
 
 /* ================= BARRA DE ACCIONES ================= */
-.barra-acciones {
-  position: sticky;
-  bottom: 0;
-  z-index: 20;
+   .barra-acciones {
+   position: sticky;
+   bottom: 0;
+   z-index: 20;
 
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
+   display: flex;
+   align-items: center;
+   gap: 6px;
+   flex-wrap: wrap;
 
-  padding: 8px;
-  background: #e9f6ff;
-  border-top: 1px solid #ddd;
-}
+   padding: 8px;
+   background: #e9f6ff;
+   border-top: 1px solid #ddd;
+   }
 
-body.oscuro .barra-acciones {
-  background: #1e1e1e;
-  border-color: #333;
-}
+   body.oscuro .barra-acciones {
+   background: #1e1e1e;
+   border-color: #333;
+   }
 
-.barra-acciones button {
+  .barra-acciones button {
   border-radius: 999px;
   padding: 6px 10px;
   border: none;
   cursor: pointer;
-}
+  }
 
 /* ================= MODO IMAGEN ================= */
     /* Cuando está activo el modo imagen */
-.modo-imagen #accionesBiblia .accion-normal {
-  display: none;
-}
+ .modo-imagen #accionesBiblia .accion-normal {
+ display: none;
+ }
 
 .modo-imagen #btnImagen {
-  display: inline-block;
-  background: #99d6ff;
-  color: #fff;
-}
+ display: inline-block;
+ background: #99d6ff;
+ color: #fff;
+ }
 
 .modo-imagen #btnCrearImagen {
-  display: inline-block;
-}
+ display: inline-block;
+ }
 
 .modo-imagen #header {
-  box-shadow: 0 4px 12px rgba(79,111,168,0.4);
-}
+ box-shadow: 0 4px 12px rgba(79,111,168,0.4);
+ }
 
     
-#seccion-biblia {
-  padding-bottom: 90px;
-}
+ #seccion-biblia {
+ padding-bottom: 90px;
+ }
 
  /* Crear Imagen OCULTO por defecto */
-#btnCrearImagen {
-  display: none;
-}
+ #btnCrearImagen {
+ display: none;
+ }
 
 /* Visible SOLO en modo imagen */
-.modo-imagen #btnCrearImagen {
-  display: inline-block;
-}
+ .modo-imagen #btnCrearImagen {
+ display: inline-block;
+ }
 
  /* ================= PREVIEW IMAGEN ================= */
 #previewImagen {
@@ -892,11 +892,11 @@ body.oscuro .subir-iglesia-btn:hover {
   justify-content: center;
 }
 
-button.activo,
-.style-row button.activo,
-.fila-opciones button.activo {
-  background: var(--ui-azul-hover) !important;
-  color: #fff !important;
+#modalPersonalizar .style-row button.activo,
+#modalPersonalizar .fila-opciones button.activo,
+#modalPersonalizar button.activo {
+  background: var(--ui-azul-hover);
+  color: #fff;
 }
 
 /* ================= BOTÓN MODO OSCURO (REDONDO + ANIMADO) ================= */
