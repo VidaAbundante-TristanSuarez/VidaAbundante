@@ -371,7 +371,9 @@ if (modoImagen) {
  // ================= Opacidad (UX Modo imagen y Modo Marcador) =================
 if (modoImagen && !imagen) {
   div.style.opacity = "0.6";
-} else_job: "no" }
+} else {
+  div.style.opacity = "1";
+}
 
   // ================= Contenido =================
   div.innerHTML = `<span class="num">${v.Versiculo}</span> ${v.RV1960}`;
