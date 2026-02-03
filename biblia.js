@@ -320,13 +320,11 @@ if (modoImagen) {
   div.style.background = imagen ? "rgba(255, 214, 232, 0.6)" : "transparent";
 
 } else if (modoMarcador) {
-  // ✅ en modo marcador: se ve selección + aplicado + resaltados normales
+  // ✅ MODO MARCADOR LIMPIO: no mostrar resaltados antiguos
   if (selMarcador) {
     div.style.background = "rgba(209, 238, 255, 0.85)";
-  } else if (aplicado && ultimoMarcadorAplicado?.color) {
-    div.style.background = ultimoMarcadorAplicado.color;
   } else {
-    div.style.background = marcado?.color || "transparent";
+    div.style.background = "transparent";
   }
 
 } else {
@@ -339,6 +337,7 @@ if (modoImagen) {
 }
 
 if (selMarcador) div.style.border = "2px solid #4f6fa8";
+else div.style.border = "none";
 
  // ================= Color de Texto =================
 const enOscuro = document.body.classList.contains("oscuro");
@@ -1185,22 +1184,33 @@ window.toggleModoMarcador = () => {
     return;
   }
 
+  // si estaba modo imagen, lo apagamos
+  if (modoImagen) {
+    salirModoImagen(); // ya la tenés hecha
+  }
+
   modoMarcador = !modoMarcador;
+
   if (!modoMarcador) {
     seleccionMarcador = {};
   }
 
+  // clase global (para CSS: ocultar barra de acciones, etc.)
+  document.body.classList.toggle("modo-marcador", modoMarcador);
+
+  // botón activo
   const btn = document.getElementById("btnModoMarcador");
   if (btn) btn.classList.toggle("activo", modoMarcador);
 
-  mostrarToast(modoMarcador
-    ? "📌 Modo marcador: elegí versículos y luego abrí 📁"
-    : "✅ Modo marcador desactivado"
-  );
+  // banner fijo marcador
+  const banner = document.getElementById("bannerModoMarcador");
+  if (banner) banner.style.display = modoMarcador ? "block" : "none";
+
+  // opcional: toast corto
+  // mostrarToast(modoMarcador ? "📌 Modo marcador activado" : "✅ Modo marcador desactivado");
 
   mostrarTexto();
   refrescarBotonGuardarMarcador();
-
 };
 
 // ================= 📁 BOTÓN 2: LISTA MARCADORES 📌=================
@@ -1222,6 +1232,7 @@ window.abrirMarcadores = () => {
   renderListaMarcadores();
   modal.style.display = "flex";
 };
+
 // ================= ✨ Cerrar Marcadores 📌=================
 window.cerrarMarcadores = () => {
   const modal = document.getElementById("modalMarcadores");
@@ -1286,7 +1297,12 @@ window.abrirFormNuevoMarcador = () => {
   const rango = formatearVersiculosComoRango(nums);
   const refTxt = `${libroSel.value} ${capSel.value}:${rango}`;
 
-  info.textContent = `📌 ${refTxt} (fecha automática)`;
+  const hoy = new Date().toLocaleDateString("es-AR", {
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric"
+});
+info.textContent = `📌 ${refTxt} · ${hoy}`;
 
   document.getElementById("marcadorTitulo").value = "";
   document.getElementById("marcadorNota").value = "";
