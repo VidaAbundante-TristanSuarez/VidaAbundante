@@ -727,18 +727,18 @@ body.modo-imagen #resaltadorCompacto {
   margin: 0 auto; /* esto reemplaza margin-left y margin-right */
 }
 
-.cerrar-modal {
+#modalPersonalizar .cerrar-modal{
   position: absolute;
   top: 12px;
   right: 12px;
-  z-index: 99999; /* 👈 sube por encima de TODO */
+  z-index: 99999;
   background: rgba(255,255,255,0.85);
   border-radius: 50%;
   width: 34px;
   height: 34px;
 }
 
-body.oscuro .cerrar-modal {
+body.oscuro #modalPersonalizar .cerrar-modal{
   background: rgba(0,0,0,0.55);
   color: #fff;
   border: 1px solid rgba(255,255,255,0.25);
@@ -1389,6 +1389,7 @@ body.modo-marcador #btnListaMarcadores {
   
 </body>
 </html>
+
 
 
 
