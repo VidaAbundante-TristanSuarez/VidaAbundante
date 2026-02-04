@@ -94,15 +94,7 @@
 <!-- CONTENEDOR DEL TEXTO BÍBLICO -->
   <!-- ⚠️ JS inserta aquí los versículos -->
   <div id="texto"></div>
-<!-- ================= CAJA DE NOTAS ================= -->
-  <!-- ⚠️ Se muestra/oculta por JS --> 
- <div id="notaBox" class="hidden mt-15">
-    <b>📝 Nota:</b>
-    <!-- Texto de la nota -->
-    <textarea id="notaTexto"></textarea>
-    <!-- Guardar nota -->
-    <button onclick="guardarNota()">💾 Guardar</button>
-  </div>
+
  <!-- ================= BARRA DE ACCIONES ================= -->
   <div id="accionesBiblia" class="barra-acciones">
  <!-- Navegación de capítulos -->
@@ -135,13 +127,16 @@
  <!-- Tamaño de letra -->
     <button class="accion-normal" onclick="cambiarLetra(-1)">A−</button>
     <button class="accion-normal" onclick="cambiarLetra(1)">A+</button>
+    
  <!-- Scroll arriba -->
     <button class="accion-normal"
             onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+    
   <!-- Activar modo imagen -->
 <button id="btnImagen" class="btnImagen" onclick="toggleModoImagen()">
 <i class="fa-solid fa-image"></i>
 </button>
+    
  <!-- Crear imagen -->
     <!-- ⚠️ Por defecto está oculto por CSS -->
  <button id="btnCrearImagen"
@@ -152,12 +147,6 @@
 </div>
 </div>
 
-<!-- ================= TOAST ================= -->
-<!-- Notificación flotante -->
-<div id="toast" class="toast" style="display: none;">
-  📝 Nota guardada
-</div>
-  
 <!-- ================= OTRAS SECCIONES ================= -->
 <div id="seccion-devocionales" class="seccion" style="display:none">
   <h2>Devocionales</h2>
@@ -196,7 +185,6 @@
   </div>
 <!-- ⚠️ Estos paneles se rellenan por JS -->
   <div id="panel-versiculos" class="panel-seccion" style="display:none"></div>
-  <div id="panel-notas" class="panel-seccion" style="display:none"></div>
 </div>
 
 <!-- ================= MODAL LOGIN ================= -->
@@ -350,6 +338,7 @@
   
 </body>
 </html>
+
 
 
 
