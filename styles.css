@@ -1180,4 +1180,23 @@ body.oscuro .card-marcador{
   opacity:.95;
 }
 
+/* ✅ select libro/capítulo más lindos */
+.filtros select{
+  border-radius: 999px;
+  border: 1px solid rgba(0,0,0,.15);
+  background: #fff;
+}
+
+body.oscuro .filtros select{
+  background:#1e1e1e;
+  color:#fff;
+  border-color: rgba(255,255,255,.18);
+}
+
+/* ✅ menos espacio entre versículos (≈ 30%) */
+.versiculo{
+  margin-bottom: 2px;   /* antes 3px */
+  padding: 7px 14px;    /* un toque menos alto */
+}
+
   </style>
