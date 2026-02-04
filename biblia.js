@@ -179,9 +179,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     resaltadorBloqueado = !resaltadorBloqueado;
     btnBloquear.textContent = resaltadorBloqueado ? "🔒" : "🔓";
-    btnBloquear.textContent = "🔓";
-
-
+  
     // Quitar todos los candados anteriores
     paleta.querySelectorAll("button[data-color] span.icono-candado").forEach(c => c.remove());
 
@@ -1508,15 +1506,6 @@ window.editarMarcadorEnPanel = (idMarcador) => {
     window.__editMarcadorId = idMarcador;
   }, 0);
 };
-
-// ================= ⭐ TOAST   =======================
-
-function mostrarToast(msg) {
-  const t = document.getElementById("toast");
-  t.innerText = msg;
-  t.style.display = "block";
-  setTimeout(() => (t.style.display = "none"), 2000);
-}
 
 // ================= 🔺 CAPITULO ANTERIOR ===================
 window.capituloAnterior = () => {
