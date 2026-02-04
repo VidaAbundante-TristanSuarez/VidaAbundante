@@ -48,6 +48,8 @@ let modoMarcador = false;
 let seleccionMarcador = {};         // {idVersiculo:true}
 let marcadores = {};                // cache firebase
 let ultimoMarcadorAplicado = null;  // resaltado al volver (opcional)
+// ✅ cuando edito desde "Mi Panel", guardo acá la info original del marcador
+window.__editMarcadorBase = null;  // {libro, capitulo, versiculos, ref}
 
 let modoImagen = false;
 let seleccionImagen = {};
@@ -1389,50 +1391,69 @@ window.cancelarNuevoMarcador = () => {
 window.guardarNuevoMarcador = async () => {
   if (!uid) return;
 
-  const ids = Object.keys(seleccionMarcador);
-  if (ids.length === 0) return alert("Elegí al menos un versículo");
+  const editando = !!window.__editMarcadorId;
+
+  // ✅ 1) si estoy creando nuevo: uso selección
+  // ✅ 2) si estoy editando: uso la base guardada (no rompe aunque no haya selección)
+  let ids = Object.keys(seleccionMarcador || {});
+  let nums = ids.map(id => Number(id.split("_")[2])).sort((a,b)=>a-b);
+
+  if (nums.length === 0 && editando && window.__editMarcadorBase?.versiculos?.length) {
+    nums = window.__editMarcadorBase.versiculos.slice().sort((a,b)=>a-b);
+  }
+
+  if (nums.length === 0) {
+    alert("Elegí al menos un versículo");
+    return;
+  }
 
   const titulo = (document.getElementById("marcadorTitulo").value || "").trim();
   const nota = (document.getElementById("marcadorNota").value || "").trim();
   const color = document.getElementById("marcadorColor").value || "#fff3b0";
   const keep = document.getElementById("marcadorKeep").checked;
 
-  const nums = ids.map(id => Number(id.split("_")[2])).sort((a,b)=>a-b);
+  // ✅ libro/capítulo: si estoy editando, respeto lo del marcador; si no, lo actual
+  const libroBase = editando ? (window.__editMarcadorBase?.libro || libroSel.value) : libroSel.value;
+  const capBase   = editando ? (window.__editMarcadorBase?.capitulo || Number(capSel.value)) : Number(capSel.value);
+
   const rango = formatearVersiculosComoRango(nums);
-  const refTxt = `${libroSel.value} ${capSel.value}:${rango}`;
+  const refTxt = `${libroBase} ${capBase}:${rango}`;
 
   const data = {
-    fecha: Date.now(),
+    fecha: editando ? (marcadores?.[window.__editMarcadorId]?.fecha || Date.now()) : Date.now(),
     titulo: titulo || "Marcador",
     nota,
-    libro: libroSel.value,
-    capitulo: Number(capSel.value),
+    libro: libroBase,
+    capitulo: Number(capBase),
     versiculos: nums,
     ref: refTxt,
     color,
     keep
   };
 
-  // ✅ si vengo editando, reutilizo el id. si no, creo uno nuevo
-const idMarcador = window.__editMarcadorId || `${Date.now()}`;
-await set(ref(db, `marcadores/${uid}/${idMarcador}`), data);
-window.__editMarcadorId = null;
+  const idMarcador = window.__editMarcadorId || `${Date.now()}`;
+  await set(ref(db, `marcadores/${uid}/${idMarcador}`), data);
+
+  // limpiar estado edición
+  window.__editMarcadorId = null;
+  window.__editMarcadorBase = null;
 
   ultimoMarcadorAplicado = keep ? { ...data } : null;
 
-  // salir del modo marcador
+  // salir del modo marcador si estaba
   modoMarcador = false;
   seleccionMarcador = {};
-
-  refrescarBotonGuardarMarcador();
+  document.body.classList.remove("modo-marcador");
 
   const btn = document.getElementById("btnModoMarcador");
   if (btn) btn.classList.remove("activo");
 
-  mostrarToast("📁 Marcador guardado");
+  refrescarBotonGuardarMarcador();
+  mostrarToast("✅ Guardado");
   cerrarMarcadores();
   mostrarTexto();
 };
+
 // ================= ✨ Abrir Marcador 📌=================
 window.abrirMarcador = (idMarcador) => {
   const m = (marcadores || {})[idMarcador];
@@ -1493,12 +1514,15 @@ window.guardarMarcadorRapido = () => {
 
 // ================= 🔺Render con orden: fecha o libro/capítulo 📌===================
 let ordenMarcadores = "fecha"; // "fecha" | "biblia"
+let modoEliminarMarcadores = false;
+let seleccionEliminarMarcadores = {}; // {id:true}
 
 function renderPanelMarcadores() {
   const panel = document.getElementById("panel-marcadores");
   if (!panel) return;
 
-  const items = Object.entries(marcadores || {}).map(([id, m]) => ({ id, ...m }));
+  // ✅ así nunca se pisa el id
+  const items = Object.entries(marcadores || {}).map(([id, m]) => ({ ...m, id }));
 
   const ordenados = items.sort((a,b) => {
     if (ordenMarcadores === "biblia") {
@@ -1511,34 +1535,61 @@ function renderPanelMarcadores() {
     return (b.fecha || 0) - (a.fecha || 0);
   });
 
+  const cantSel = Object.keys(seleccionEliminarMarcadores).length;
+
   panel.innerHTML = `
-    <div style="display:flex; gap:10px; align-items:center; margin-bottom:10px; flex-wrap:wrap;">
-      <b>📌 Marcadores</b>
-      <label style="font-size:13px; display:flex; gap:6px; align-items:center;">
-        Ordenar por:
-        <select id="ordenMarcadoresSelect" style="padding:6px 10px; border-radius:999px;">
-          <option value="fecha">Fecha</option>
-          <option value="biblia">Libro / Capítulo</option>
-        </select>
-      </label>
+    <div style="display:flex; gap:10px; align-items:center; margin-bottom:10px; flex-wrap:wrap; justify-content:space-between;">
+      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+        <b>📌 Marcadores</b>
+
+        <label style="font-size:13px; display:flex; gap:6px; align-items:center;">
+          Ordenar:
+          <select id="ordenMarcadoresSelect" style="padding:6px 10px; border-radius:999px;">
+            <option value="fecha">Fecha</option>
+            <option value="biblia">Libro / Capítulo</option>
+          </select>
+        </label>
+      </div>
+
+      <div style="display:flex; gap:8px; align-items:center;">
+        <button type="button" onclick="toggleModoEliminarMarcadores()"
+          style="border:none; border-radius:999px; padding:8px 12px; cursor:pointer;">
+          ${modoEliminarMarcadores ? "✅ Listo" : "🗑️ Eliminar"}
+        </button>
+
+        <button type="button" onclick="confirmarEliminarMarcadores()"
+          style="border:none; border-radius:999px; padding:8px 12px; cursor:pointer; background:#d9534f; color:#fff; opacity:${cantSel ? "1":"0.45"};"
+          ${cantSel ? "" : "disabled"}>
+          Eliminar (${cantSel})
+        </button>
+      </div>
     </div>
 
     ${ordenados.length ? ordenados.map(m => {
       const fechaTxt = m.fecha ? new Date(m.fecha).toLocaleString() : "";
       const refTxt = m.ref || `${m.libro || ""} ${m.capitulo || ""}`;
+      const checked = !!seleccionEliminarMarcadores[m.id];
+
       return `
-        <div style="padding:10px; border-radius:14px; background:#e9f6ff; margin-bottom:8px;">
+        <div class="card-marcador">
           <div style="display:flex; justify-content:space-between; gap:10px; align-items:center;">
             <div style="font-size:13px;">
               <b>${m.titulo || "Marcador"}</b><br>
-              <span style="opacity:.8">${refTxt} · ${fechaTxt}</span>
+              <span class="muted">${refTxt} · ${fechaTxt}</span>
             </div>
-            <div style="display:flex; gap:8px;">
-              <button type="button" onclick="abrirMarcador('${m.id}')" style="border:none; border-radius:999px; padding:8px 10px; cursor:pointer;">↩</button>
-              <button type="button" onclick="editarMarcadorEnPanel('${m.id}')" style="border:none; border-radius:999px; padding:8px 10px; cursor:pointer;">✏️</button>
+
+            <div style="display:flex; gap:8px; align-items:center;">
+              ${modoEliminarMarcadores ? `
+                <input type="checkbox" ${checked ? "checked":""}
+                  onchange="toggleSeleccionEliminarMarcador('${m.id}', this.checked)">
+              ` : `
+                <button type="button" onclick="abrirMarcador('${m.id}')" style="border:none; border-radius:999px; padding:8px 10px; cursor:pointer;">↩</button>
+                <button type="button" onclick="editarMarcadorEnPanel('${m.id}')" style="border:none; border-radius:999px; padding:8px 10px; cursor:pointer;">✏️</button>
+              `}
             </div>
           </div>
-          ${m.nota ? `<div style="margin-top:8px; font-size:13px; opacity:.9;">${m.nota}</div>` : ""}
+
+          ${m.nota ? `<div class="nota">${m.nota}</div>` : ""}
         </div>
       `;
     }).join("") : `<p style="opacity:.75">Todavía no guardaste marcadores.</p>`}
@@ -1562,6 +1613,7 @@ window.editarMarcadorEnPanel = (idMarcador) => {
   abrirMarcadores(); // abre modal
   setTimeout(() => {
     abrirFormNuevoMarcador();
+
     document.getElementById("marcadorTitulo").value = m.titulo || "";
     document.getElementById("marcadorNota").value = m.nota || "";
     document.getElementById("marcadorColor").value = m.color || "#fff3b0";
@@ -1569,7 +1621,52 @@ window.editarMarcadorEnPanel = (idMarcador) => {
 
     // guardamos “id en edición”
     window.__editMarcadorId = idMarcador;
+
+    // ✅ guardo la base para que NO pida selección al guardar
+    window.__editMarcadorBase = {
+      libro: m.libro,
+      capitulo: Number(m.capitulo),
+      versiculos: (m.versiculos || []).map(Number),
+      ref: m.ref || ""
+    };
+
   }, 0);
+};
+
+// ================= 🔺 TOGGLE MODO ELIMINAR MARCADORES ===================
+window.toggleModoEliminarMarcadores = () => {
+  modoEliminarMarcadores = !modoEliminarMarcadores;
+  if (!modoEliminarMarcadores) seleccionEliminarMarcadores = {};
+  renderPanelMarcadores();
+};
+
+// ================= 🔺 SELECCIONAR ELIMINAR MARCADOR ===================
+window.toggleSeleccionEliminarMarcador = (id, checked) => {
+  if (checked) seleccionEliminarMarcadores[id] = true;
+  else delete seleccionEliminarMarcadores[id];
+  renderPanelMarcadores();
+};
+
+// ================= 🔺 CONFIRMAR ELIMINAR MARCADORES ===================
+window.confirmarEliminarMarcadores = async () => {
+  const ids = Object.keys(seleccionEliminarMarcadores);
+  if (ids.length === 0) return;
+
+  const ok = confirm(`¿Seguro que querés borrar ${ids.length} marcador(es)?\n\nEsto NO se puede deshacer.`);
+  if (!ok) return;
+
+  try {
+    for (const id of ids) {
+      await remove(ref(db, `marcadores/${uid}/${id}`));
+    }
+    seleccionEliminarMarcadores = {};
+    modoEliminarMarcadores = false;
+    mostrarToast("🗑️ Marcadores eliminados");
+    renderPanelMarcadores();
+  } catch (e) {
+    console.error(e);
+    mostrarToast("❌ No se pudo borrar");
+  }
 };
 
 // ================= 🔺 CAPITULO ANTERIOR ===================
