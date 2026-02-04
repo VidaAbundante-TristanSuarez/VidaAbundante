@@ -1204,14 +1204,10 @@ window.toggleModoMarcador = () => {
 };
 
 // ================= 📁 BOTÓN 2: LISTA MARCADORES 📌=================
+// ================= 📁 BOTÓN: ABRIR MODAL MARCADORES =================
 window.abrirMarcadores = () => {
   if (!uid) {
     loginModal.style.display = "flex";
-    return;
-  }
-
-  if (modoMarcador) {
-    mostrarToast("Salí del modo marcador para ver la lista 📁");
     return;
   }
 
@@ -1220,13 +1216,14 @@ window.abrirMarcadores = () => {
   const form = document.getElementById("formNuevoMarcador");
   if (!modal || !lista || !form) return;
 
-  // ✅ toggle real
+  // ✅ Si está abierto, cerrar
   const abierto = getComputedStyle(modal).display !== "none";
   if (abierto) {
     cerrarMarcadores();
     return;
   }
 
+  // ✅ Por defecto: abrir lista
   form.style.display = "none";
   lista.style.display = "block";
 
@@ -1390,39 +1387,46 @@ window.abrirMarcador = (idMarcador) => {
   cerrarMarcadores();
   setTimeout(mostrarTexto, 50);
 };
-// ================= ✨ Refrescar Boton Guardar Marcador 📌=================
+
+// ================= ✨ Refrescar Botones Marcador (✅ y 📁) 📌=================
 function refrescarBotonGuardarMarcador() {
-  const btn = document.getElementById("btnGuardarMarcador");
-  if (!btn) return;
+  const btnGuardar = document.getElementById("btnGuardarMarcador");   // ✅
+  const btnLista = document.getElementById("btnListaMarcadores");     // 📁
+  if (!btnGuardar) return;
 
   const haySeleccion = Object.keys(seleccionMarcador || {}).length > 0;
 
-  // aparece solo en modo marcador
- btn.style.display = (modoMarcador && haySeleccion) ? "inline-flex" : "none";
+  // ✅ aparece solo en modo marcador + hay selección
+  btnGuardar.style.display = (modoMarcador && haySeleccion) ? "inline-flex" : "none";
+  btnGuardar.disabled = !haySeleccion;
+  btnGuardar.style.opacity = haySeleccion ? "1" : "0.4";
 
-  // si querés que SOLO se pueda apretar cuando hay selección:
-  btn.disabled = !haySeleccion;
-  btn.style.opacity = haySeleccion ? "1" : "0.4";
+  // 📁 solo visible cuando modo marcador está OFF
+  if (btnLista) {
+    btnLista.style.display = modoMarcador ? "none" : "inline-flex";
+  }
 }
-// ================= ✨ Guardar Marcador Rapido 📌=================
+
+// ================= ✨ Guardar Marcador Rapido 📌 (abre formulario directo)=================
 window.guardarMarcadorRapido = () => {
   if (!uid) {
     loginModal.style.display = "flex";
     return;
   }
-
   if (!modoMarcador) return;
 
-  if (Object.keys(seleccionMarcador).length === 0) {
+  const seleccion = Object.keys(seleccionMarcador || {});
+  if (seleccion.length === 0) {
     mostrarToast("Seleccioná al menos 1 versículo 📌");
     return;
   }
 
+  // ✅ Abrir modal
   abrirMarcadores();
 
-  // abrir directo el formulario
+  // ✅ Pasar directo al formulario
   setTimeout(() => {
-    if (typeof abrirFormNuevoMarcador === "function") abrirFormNuevoMarcador();
+    abrirFormNuevoMarcador();
   }, 0);
 };
 
