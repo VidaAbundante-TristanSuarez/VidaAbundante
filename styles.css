@@ -1119,4 +1119,65 @@ body.oscuro .btn-ghost{
 .hidden{ display:none !important; }
 .mt-15{ margin-top:15px; }
 
+/* ================= MI PANEL: TABS REDONDOS + PRO ================= */
+.panel-tabs{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin: 10px 0 12px;
+}
+
+.panel-tabs button{
+  border:none;
+  border-radius: 999px;
+  padding: 9px 14px;
+  cursor:pointer;
+  font-weight: 800;
+  background: var(--ui-azul-claro);
+  color:#000;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
+.panel-tabs button:hover{
+  background: var(--ui-azul-hover);
+  color:#fff;
+}
+
+body.oscuro .panel-tabs button{
+  background: #2a2a2a;
+  color:#fff;
+}
+
+body.oscuro .panel-tabs button:hover{
+  background: #ffbf69;
+  color:#000;
+}
+
+/* ================= TARJETAS MARCADORES (para que en oscuro se lean) ================= */
+.card-marcador{
+  background:#e9f6ff;
+  color:#000;                 /* ✅ fuerza texto negro (importantísimo) */
+  border-radius:14px;
+  padding:10px;
+  margin-bottom:8px;
+}
+
+body.oscuro .card-marcador{
+  background:#d1eeff;         /* un poquito más brillante en oscuro */
+  color:#000;                 /* ✅ negro siempre */
+}
+
+.card-marcador .muted{
+  opacity:.8;
+  font-size: 13px;
+}
+
+.card-marcador .nota{
+  margin-top:8px;
+  font-size:13px;
+  opacity:.95;
+}
+
   </style>
