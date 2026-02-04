@@ -66,9 +66,20 @@ onAuthStateChanged(auth, user => {
     mostrarTexto();
   });
 
+// ✅ Cargar marcadores
+onValue(ref(db, "marcadores/" + uid), s => {
+  marcadores = s.val() || {};
+
+  // si estoy viendo panel marcadores, refrescar
+  const panelMarcadores = document.getElementById("panel-marcadores");
+  if (panelMarcadores && getComputedStyle(panelMarcadores).display !== "none") {
+    renderPanelMarcadores();
+  }
 });
 
-// ================= DOM (SE CARGA CON DEFER) =================
+});
+
+// ================= DOM (script al final del body)  =================
 const libroSel = document.getElementById("libro");
 const capSel = document.getElementById("capitulo");
 const texto = document.getElementById("texto");
@@ -167,7 +178,9 @@ document.addEventListener("DOMContentLoaded", () => {
     e.stopPropagation();
 
     resaltadorBloqueado = !resaltadorBloqueado;
-    btnBloquear.textContent = resaltadorBloqueado ? "🔓" : "🔒";
+    btnBloquear.textContent = resaltadorBloqueado ? "🔒" : "🔓";
+    btnBloquear.textContent = "🔓";
+
 
     // Quitar todos los candados anteriores
     paleta.querySelectorAll("button[data-color] span.icono-candado").forEach(c => c.remove());
