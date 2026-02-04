@@ -1199,4 +1199,17 @@ body.oscuro .filtros select{
   padding: 7px 14px;    /* un toque menos alto */
 }
 
+body.barra-oculta #accionesBiblia{
+  display:none !important;
+}
+
+#btnMostrarBarra{
+  background: var(--ui-azul-claro);
+}
+
+body.oscuro #btnMostrarBarra{
+  background: #d1eeff;
+  color:#000;
+}
+
   </style>
