@@ -5,6 +5,7 @@ import {
   onAuthStateChanged,
   signOut
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
 import {
   getDatabase,
   ref,
@@ -12,6 +13,13 @@ import {
   remove,
   onValue
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+import {
+  getStorage,
+  ref as sRef,
+  uploadBytes,
+  getDownloadURL
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
 // ================= FIREBASE CONFIG =================
 const firebaseConfig = {
@@ -24,6 +32,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getDatabase(app);
+const storage = getStorage(app);
 
 // ================= ESTADO GLOBAL =================
 let uid = null;
@@ -895,6 +904,55 @@ function clickLink(link) {
   link.remove();
 }
 
+// ================= ⭐ SUBIR IMAGEN (personal / iglesia) ☁️ =================
+async function subirImagen(destino = "personal") {
+  if (!uid) return;
+
+  const canvas = document.getElementById("canvasFinal");
+  if (!canvas || canvas.width < 10 || canvas.height < 10) return;
+
+  const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
+  if (!blob) return;
+
+  // nombre único
+  const ts = Date.now();
+  const fileName = `versiculo_${ts}.png`;
+
+  // rutas (podés cambiarlas si tu panel lee otra cosa)
+  const storagePath =
+    destino === "iglesia"
+      ? `imagenes_iglesia/${uid}/${fileName}`
+      : `imagenes_personal/${uid}/${fileName}`;
+
+  const dbPath =
+    destino === "iglesia"
+      ? `panelImagenesIglesia/${uid}/${ts}`
+      : `panelImagenesPersonal/${uid}/${ts}`;
+
+  try {
+    // 1) subir a Storage
+    const storageRef = sRef(storage, storagePath);
+    await uploadBytes(storageRef, blob, { contentType: "image/png" });
+
+    // 2) obtener URL
+    const url = await getDownloadURL(storageRef);
+
+    // 3) guardar referencia en Realtime DB
+    await set(ref(db, dbPath), {
+      url,
+      storagePath,
+      fecha: ts,
+      libro: libroSel?.value || "",
+      capitulo: Number(capSel?.value || 0)
+    });
+
+    console.log("✅ Imagen subida:", destino, url);
+  } catch (e) {
+    console.error("❌ Error subiendo imagen:", e);
+    mostrarToast("❌ No se pudo subir la imagen");
+  }
+}
+
 // ======================== ⭐ OPCION DESCARGAR (FIX) ====================================
 async function descargarImagenFinal() {
   const canvas = document.getElementById("canvasFinal");
@@ -1255,7 +1313,7 @@ function renderListaMarcadores() {
   let header = "";
   if (modoMarcador && Object.keys(seleccionMarcador).length > 0) {
     header = `
-      <div style="padding:10px; border-radius:14px; background:#fff3b0; margin-bottom:10px;">
+      <div class="card-marcador" style="background:#fff3b0;">
         <b>Guardar nuevo marcador</b><br>
         <button type="button" onclick="abrirFormNuevoMarcador()"
           style="margin-top:8px; border:none; border-radius:999px; padding:8px 12px; cursor:pointer; background:#4f6fa8; color:#fff;">
@@ -1266,18 +1324,20 @@ function renderListaMarcadores() {
   }
 
   if (items.length === 0) {
-    lista.innerHTML = header + `<p style="opacity:.75">Todavía no guardaste marcadores.</p>`;
+    lista.innerHTML = header + `<p class="muted">Todavía no guardaste marcadores.</p>`;
     return;
   }
 
   lista.innerHTML = header + items.map(m => {
     const fechaTxt = m.fecha ? new Date(m.fecha).toLocaleDateString() : "";
     const linea = `${fechaTxt} · ${m.ref || ""}`;
+
     return `
-      <div style="padding:10px; border-radius:14px; background:#e9f6ff; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
-        <div style="font-size:13px;">
+      <div class="card-marcador" style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
           <b>${m.titulo || "Sin título"}</b><br>
-          <span style="opacity:.8">${linea}</span>
+          <span class="muted">${linea}</span>
+          ${m.nota ? `<div class="nota">${m.nota}</div>` : ""}
         </div>
         <button type="button" onclick="abrirMarcador('${m.id}')"
           style="border:none; border-radius:999px; padding:8px 10px; cursor:pointer;">
@@ -1287,6 +1347,7 @@ function renderListaMarcadores() {
     `;
   }).join("");
 }
+
 // ================= ✨ Abrir Form Nuevo Marcador 📌=================
 window.abrirFormNuevoMarcador = () => {
   const lista = document.getElementById("listaMarcadores");
