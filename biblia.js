@@ -1760,6 +1760,32 @@ window.cambiarTamanoPreview = (delta) => {
   actualizarPreview();
 };
 
+// ================= 🔺 OCLTAR BARRA DE ACCIONES ===========================
+let timerBarra = null;
+
+window.ocultarBarraAcciones = () => {
+  document.body.classList.add("barra-oculta");
+  const btn = document.getElementById("btnMostrarBarra");
+  if (btn) btn.style.display = "inline-flex";
+
+  // 🔥 después de unos segundos lo dejo más transparente
+  clearTimeout(timerBarra);
+  timerBarra = setTimeout(() => {
+    if (btn) btn.style.opacity = "0.35";
+  }, 2500);
+};
+
+// ================= 🔺 MOSTRAR BARRA DE ACCIONES ===========================
+window.mostrarBarraAcciones = () => {
+  document.body.classList.remove("barra-oculta");
+  const btn = document.getElementById("btnMostrarBarra");
+  if (btn) {
+    btn.style.display = "none";
+    btn.style.opacity = "0.55";
+  }
+};
+
+
 // ================= 🔺 HACER FUNCIONES GLOBALES (FIX DESCARGAR/COMPARTIR EN PC) =================
 window.generarImagenFinal = generarImagenFinal;
 window.descargarImagenFinal = descargarImagenFinal;
