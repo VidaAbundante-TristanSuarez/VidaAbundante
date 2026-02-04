@@ -1751,6 +1751,15 @@ window.setFormatoImagen = tipo => {
   actualizarPreview(); // ✅ para recalcular tamaño automático
 };
 
+// ================= 🔺 CAMBIAR TAMAÑO ===========================
+window.cambiarTamanoPreview = (delta) => {
+  const inp = document.getElementById("personalizarTamaño");
+  if (!inp) return;
+  const val = Math.max(10, Math.min(100, Number(inp.value || 24) + delta));
+  inp.value = val;
+  actualizarPreview();
+};
+
 // ================= 🔺 HACER FUNCIONES GLOBALES (FIX DESCARGAR/COMPARTIR EN PC) =================
 window.generarImagenFinal = generarImagenFinal;
 window.descargarImagenFinal = descargarImagenFinal;
