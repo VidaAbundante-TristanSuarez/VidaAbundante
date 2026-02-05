@@ -176,7 +176,6 @@
       <i class="fa-solid fa-image"></i>
   <span>Imagenes</span>
       </button>
-    <button onclick="mostrarSeccion('versiculos')">⭐ Versículos</button>
     <button onclick="mostrarSeccion('marcadores')">
   <i class="fa-solid fa-bookmark"></i>
   <span>Marcadores</span>
@@ -190,8 +189,7 @@
     <p id="imagenes-vacio">Todavía no generaste imágenes.</p>
     <div id="grid-imagenes" class="grid-imagenes"></div>
   </div>
-<!-- ⚠️ Estos paneles se rellenan por JS -->
-  <div id="panel-versiculos" class="panel-seccion" style="display:none"></div>
+
 </div>
 
 <!-- ================= MODAL LOGIN ================= -->
@@ -342,7 +340,20 @@
   </div>
 </div>
 
-  
+<!-- ================= MODAL COMPARTIR MARCADOR 📋================= -->
+  <div id="modalCompartirMarcador" class="modal-overlay" aria-hidden="true">
+  <div class="modal-card modal-card-sm">
+    <h3 class="modal-title">📤 Compartir</h3>
+    <p class="modal-sub">¿Dónde querés compartir este marcador?</p>
+
+    <div class="modal-actions">
+      <button class="btn-primary" onclick="compartirMarcador('iglesia')">⛪ Iglesia</button>
+      <button class="btn-primary" onclick="compartirMarcador('redes')">📱 Redes</button>
+      <button class="btn-ghost" onclick="cerrarCompartirMarcador()">Cancelar</button>
+    </div>
+  </div>
+</div>
+ 
 <!-- ================= SCRIPT PRINCIPAL ================= -->
 <!-- ⚠️ biblia.js CONTROLA TODO -->
 <script type="module" src="biblia.js"></script>
@@ -350,6 +361,7 @@
   
 </body>
 </html>
+
 
 
 
