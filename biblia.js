@@ -63,6 +63,9 @@ let textStyle = {
   underline: false
 };
 
+let filtroMarcadoresPanel = "ambos"; // "ambos" | "notas" | "versiculos"
+let creandoNotaLibre = false;        // ✅ nota sin versículos
+
 // ================= AUTH =====================================
 onAuthStateChanged(auth, user => {
   uid = user ? user.uid : null;
@@ -304,6 +307,7 @@ const aplicado = ultimoMarcadorAplicado &&
   
   const div = document.createElement("div");
   div.className = "versiculo";
+  div.dataset.id = id;
   if (imagen) div.classList.add("imagen");
   
   const enOscuro = document.body.classList.contains("oscuro");
@@ -436,7 +440,7 @@ function obtenerVersiculoSeleccionado() {
   partes.push(inicio === anterior ? `${inicio}` : `${inicio}-${anterior}`);
 
   const referencia = `${libro} ${cap}:${partes.join(",")}`;
-  return textos.join("\n") + "\n\n▪ " + referencia;
+  return textos.join(" ") + "\n\n▪ " + referencia;
 }
 
 // ================= ⭐ FORMATEA: JUAN 1:5-10  =======================
@@ -1402,10 +1406,9 @@ window.guardarNuevoMarcador = async () => {
     nums = window.__editMarcadorBase.versiculos.slice().sort((a,b)=>a-b);
   }
 
-  if (nums.length === 0) {
-    alert("Elegí al menos un versículo");
-    return;
-  }
+  // ✅ YA NO OBLIGA A SELECCIONAR
+  // Si no hay versículos, se guarda igual con versiculos: []
+  // y la referencia queda "Libro Capítulo" (sin :rango)
 
   const titulo = (document.getElementById("marcadorTitulo").value || "").trim();
   const nota = (document.getElementById("marcadorNota").value || "").trim();
@@ -1416,8 +1419,10 @@ window.guardarNuevoMarcador = async () => {
   const libroBase = editando ? (window.__editMarcadorBase?.libro || libroSel.value) : libroSel.value;
   const capBase   = editando ? (window.__editMarcadorBase?.capitulo || Number(capSel.value)) : Number(capSel.value);
 
-  const rango = formatearVersiculosComoRango(nums);
-  const refTxt = `${libroBase} ${capBase}:${rango}`;
+  // ✅ ref: con rango si hay versículos, si no solo "Libro Capítulo"
+  const refTxt = (nums.length > 0)
+    ? `${libroBase} ${capBase}:${formatearVersiculosComoRango(nums)}`
+    : `${libroBase} ${capBase}`;
 
   const data = {
     fecha: editando ? (marcadores?.[window.__editMarcadorId]?.fecha || Date.now()) : Date.now(),
@@ -1425,7 +1430,7 @@ window.guardarNuevoMarcador = async () => {
     nota,
     libro: libroBase,
     capitulo: Number(capBase),
-    versiculos: nums,
+    versiculos: nums,   // ✅ puede ser []
     ref: refTxt,
     color,
     keep
@@ -1454,6 +1459,7 @@ window.guardarNuevoMarcador = async () => {
   mostrarTexto();
 };
 
+
 // ================= ✨ Abrir Marcador 📌=================
 window.abrirMarcador = (idMarcador) => {
   const m = (marcadores || {})[idMarcador];
@@ -1468,6 +1474,16 @@ window.abrirMarcador = (idMarcador) => {
 
   cerrarMarcadores();
   setTimeout(mostrarTexto, 50);
+
+  // ✅ scroll al primer versículo del marcador
+  const primero = (m.versiculos || [])[0];
+  if (primero) {
+    const idV = `${m.libro}_${m.capitulo}_${primero}`;
+    setTimeout(() => {
+      const el = document.querySelector(`.versiculo[data-id="${idV}"]`);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 120);
+  }
 };
 
 // ================= ✨ Refrescar Botones Marcador (✅ y 📁) 📌=================
@@ -1535,11 +1551,18 @@ function renderPanelMarcadores() {
     return (b.fecha || 0) - (a.fecha || 0);
   });
 
-  const cantSel = Object.keys(seleccionEliminarMarcadores).length;
+  const cantSel = Object.keys(seleccionEliminarMarcadores || {}).length;
+
+  // ✅ filtro (todos | notas | versiculos)
+  const filtrados = ordenados.filter(m => {
+    if (filtroMarcadoresPanel === "notas") return !!(m.nota && m.nota.trim());
+    if (filtroMarcadoresPanel === "versiculos") return (m.versiculos || []).length > 0;
+    return true;
+  });
 
   panel.innerHTML = `
-    <div style="display:flex; gap:10px; align-items:center; margin-bottom:10px; flex-wrap:wrap; justify-content:space-between;">
-      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px;">
+      <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
         <b>📌 Marcadores</b>
 
         <label style="font-size:13px; display:flex; gap:6px; align-items:center;">
@@ -1551,24 +1574,47 @@ function renderPanelMarcadores() {
         </label>
       </div>
 
-      <div style="display:flex; gap:8px; align-items:center;">
-        <button type="button" onclick="toggleModoEliminarMarcadores()"
-          style="border:none; border-radius:999px; padding:8px 12px; cursor:pointer;">
-          ${modoEliminarMarcadores ? "✅ Listo" : "🗑️ Eliminar"}
+      <div style="display:flex; align-items:center; gap:8px;">
+        <button type="button" onclick="abrirNotaLibre()" title="Nueva nota"
+          style="border:none; border-radius:999px; padding:8px 10px; cursor:pointer;">
+          ➕
         </button>
 
-        <button type="button" onclick="confirmarEliminarMarcadores()"
-          style="border:none; border-radius:999px; padding:8px 12px; cursor:pointer; background:#d9534f; color:#fff; opacity:${cantSel ? "1":"0.45"};"
-          ${cantSel ? "" : "disabled"}>
-          Eliminar (${cantSel})
+        <button type="button" onclick="toggleFiltroMarcadoresPanel()" title="Filtrar notas/versículos"
+          style="border:none; border-radius:999px; padding:8px 10px; cursor:pointer;">
+          🗒
+        </button>
+
+        <button type="button" onclick="toggleModoEliminarMarcadores()" title="Eliminar"
+          style="border:none; border-radius:999px; padding:8px 10px; cursor:pointer;">
+          🗑
         </button>
       </div>
     </div>
 
-    ${ordenados.length ? ordenados.map(m => {
+    ${modoEliminarMarcadores && cantSel > 0 ? `
+      <div style="display:flex; justify-content:flex-end; margin-bottom:10px;">
+        <button type="button" onclick="confirmarEliminarMarcadores()"
+          style="border:none; border-radius:999px; padding:10px 14px; cursor:pointer; background:#d9534f; color:#fff;">
+          Eliminar (${cantSel})
+        </button>
+      </div>
+    ` : ``}
+
+    ${filtrados.length ? filtrados.map(m => {
       const fechaTxt = m.fecha ? new Date(m.fecha).toLocaleString() : "";
-      const refTxt = m.ref || `${m.libro || ""} ${m.capitulo || ""}`;
-      const checked = !!seleccionEliminarMarcadores[m.id];
+      const refTxt = m.ref || (m.libro && m.capitulo ? `${m.libro} ${m.capitulo}` : "Nota");
+      const checked = !!(seleccionEliminarMarcadores && seleccionEliminarMarcadores[m.id]);
+
+      // ✅ texto de versículos (si aplica)
+      let textoVers = "";
+      if (m.libro && m.capitulo && (m.versiculos || []).length && Array.isArray(window.bibliaData)) {
+        const partes = (m.versiculos || []).map(n => {
+          const vv = bibliaData.find(x => x.Libro === m.libro && x.Capitulo == m.capitulo && x.Versiculo == n);
+          return vv ? vv.RV1960 : "";
+        }).filter(Boolean);
+        if (partes.length) textoVers = partes.join(" ");
+      }
 
       return `
         <div class="card-marcador">
@@ -1583,12 +1629,19 @@ function renderPanelMarcadores() {
                 <input type="checkbox" ${checked ? "checked":""}
                   onchange="toggleSeleccionEliminarMarcador('${m.id}', this.checked)">
               ` : `
-                <button type="button" onclick="abrirMarcador('${m.id}')" style="border:none; border-radius:999px; padding:8px 10px; cursor:pointer;">↩</button>
-                <button type="button" onclick="editarMarcadorEnPanel('${m.id}')" style="border:none; border-radius:999px; padding:8px 10px; cursor:pointer;">✏️</button>
+                <button type="button" onclick="abrirMarcador('${m.id}')" title="Ir"
+                  style="border:none; border-radius:999px; padding:8px 10px; cursor:pointer;">↩</button>
+
+                <button type="button" onclick="editarMarcadorEnPanel('${m.id}')" title="Editar"
+                  style="border:none; border-radius:999px; padding:8px 10px; cursor:pointer;">✏️</button>
+
+                <button type="button" onclick="abrirCompartirMarcador('${m.id}')" title="Compartir"
+                  style="border:none; border-radius:999px; padding:8px 10px; cursor:pointer;">📤</button>
               `}
             </div>
           </div>
 
+          ${textoVers ? `<div class="nota" style="margin-top:8px;">${textoVers}</div>` : ""}
           ${m.nota ? `<div class="nota">${m.nota}</div>` : ""}
         </div>
       `;
@@ -1604,6 +1657,15 @@ function renderPanelMarcadores() {
     };
   }
 }
+
+// ================= Toggle Filtro Marcadores Panel 📌===================
+window.toggleFiltroMarcadoresPanel = () => {
+  // ciclo: ambos -> notas -> versiculos -> ambos
+  filtroMarcadoresPanel =
+    filtroMarcadoresPanel === "ambos" ? "notas" :
+    filtroMarcadoresPanel === "notas" ? "versiculos" : "ambos";
+  renderPanelMarcadores();
+};
 
 // ================= Editar marcador desde Mi Panel (reusa tu modal) 📌===================
 window.editarMarcadorEnPanel = (idMarcador) => {
@@ -1669,6 +1731,29 @@ window.confirmarEliminarMarcadores = async () => {
   }
 };
 
+// ================= ✅ NUEVA NOTA SIN VERSÍCULO =================
+window.abrirNotaLibre = () => {
+  creandoNotaLibre = true;
+  // no depende de selección
+  abrirMarcadores();
+  setTimeout(() => {
+    // forzamos formulario
+    const lista = document.getElementById("listaMarcadores");
+    const form = document.getElementById("formNuevoMarcador");
+    const info = document.getElementById("infoMarcadorNuevo");
+    if (!lista || !form || !info) return;
+
+    info.textContent = `🗒 Nota (sin versículo) · ${new Date().toLocaleDateString("es-AR")}`;
+    document.getElementById("marcadorTitulo").value = "";
+    document.getElementById("marcadorNota").value = "";
+    document.getElementById("marcadorColor").value = "#fff3b0";
+    document.getElementById("marcadorKeep").checked = false;
+
+    lista.style.display = "none";
+    form.style.display = "block";
+  }, 0);
+};
+
 // ================= 🔺 CAPITULO ANTERIOR ===================
 window.capituloAnterior = () => {
   if (capSel.selectedIndex > 0) {
@@ -1687,7 +1772,7 @@ window.capituloSiguiente = () => {
 
 // ================= 🔺 PANEL ===================
 window.mostrarSeccion = tipo => {
-  ["imagenes", "versiculos", "marcadores"].forEach(s => {
+  ["imagenes", "marcadores"].forEach(s => {
     const el = document.getElementById("panel-" + s);
     if (el) el.style.display = (s === tipo ? "block" : "none");
   });
@@ -1783,6 +1868,81 @@ window.mostrarBarraAcciones = () => {
     btn.style.display = "none";
     btn.style.opacity = "0.55";
   }
+};
+
+let __compartirMarcadorId = null;
+
+window.abrirCompartirMarcador = (id) => {
+  __compartirMarcadorId = id;
+  const modal = document.getElementById("modalCompartirMarcador");
+  if (modal) {
+    modal.style.display = "flex";
+    modal.setAttribute("aria-hidden","false");
+  }
+};
+
+window.cerrarCompartirMarcador = () => {
+  __compartirMarcadorId = null;
+  const modal = document.getElementById("modalCompartirMarcador");
+  if (modal) {
+    modal.style.display = "none";
+    modal.setAttribute("aria-hidden","true");
+  }
+};
+
+window.compartirMarcador = async (destino) => {
+  const id = __compartirMarcadorId;
+  if (!id) return;
+
+  const m = (marcadores || {})[id];
+  if (!m) return;
+
+  // armar texto
+  let textoVers = "";
+  if (m.libro && m.capitulo && (m.versiculos || []).length) {
+    const partes = (m.versiculos || []).map(n => {
+      const vv = bibliaData.find(x => x.Libro === m.libro && x.Capitulo == m.capitulo && x.Versiculo == n);
+      return vv ? vv.RV1960 : "";
+    }).filter(Boolean);
+    textoVers = partes.join(" ");
+  }
+
+  const payload = [
+    m.titulo ? `*${m.titulo}*` : "",
+    m.ref ? m.ref : "Nota",
+    textoVers,
+    m.nota || ""
+  ].filter(Boolean).join("\n\n");
+
+  if (destino === "redes") {
+    try {
+      if (navigator.share) {
+        await navigator.share({ text: payload, title: "Marcador" });
+      } else {
+        await navigator.clipboard.writeText(payload);
+        alert("Tu dispositivo no permite compartir directo. Copié el texto al portapapeles.");
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    cerrarCompartirMarcador();
+    return;
+  }
+
+  // destino = iglesia: guardar copia en DB
+  try {
+    await set(ref(db, `marcadoresIglesia/${uid}/${Date.now()}`), {
+      ...m,
+      publicadoPor: uid,
+      publicadoEn: Date.now()
+    });
+    mostrarToast("✅ Compartido en Iglesia");
+  } catch (e) {
+    console.error(e);
+    mostrarToast("❌ No se pudo compartir");
+  }
+
+  cerrarCompartirMarcador();
 };
 
 
