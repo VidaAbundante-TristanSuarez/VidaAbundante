@@ -728,18 +728,21 @@ body.oscuro #modalPersonalizar .cerrar-modal{
 }
 
 /* box de tamaño */
-.tamano-input {
-  width: 60px;
-  height: 34px;          /* iguala altura botones */
-  text-align: center;
+/* ✅ Tamaño: más angosto + sin flechas internas */
+.tamano-input{
+  width: 34px;          /* ~ mitad */
+  height: 34px;
+  text-align:center;
   padding: 0 4px;
   font-size: 14px;
+  appearance: textfield;
 }
 
-/* flechas visibles */
+/* Chrome/Edge/Safari */
 .tamano-input::-webkit-inner-spin-button,
-.tamano-input::-webkit-outer-spin-button {
-  opacity: 1;
+.tamano-input::-webkit-outer-spin-button{
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 /* ✅ Color picker: tamaño definitivo */
@@ -1210,6 +1213,15 @@ body.barra-oculta #accionesBiblia{
 body.oscuro #btnMostrarBarra{
   background: #d1eeff;
   color:#000;
+}
+
+/* ✅ Estado visual del botón Iglesia (NO depende de :checked + i) */
+.subir-iglesia-btn.activo{
+  background: var(--ui-azul-hover) !important;
+  color: #fff !important;
+}
+.subir-iglesia-btn.activo i{
+  color:#fff !important;
 }
 
   </style>
