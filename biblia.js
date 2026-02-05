@@ -893,11 +893,14 @@ try {
   ctx.clearRect(0, 0, canvasFinal.width, canvasFinal.height);
   ctx.drawImage(canvasTemp, 0, 0);
 
-  // subir imagen (si existe la función)
-  const subirIglesia = document.getElementById("checkIglesia")?.checked;
+   // subir imagen (si existe la función)
+  const subirIglesia = !!document.getElementById("checkIglesia")?.checked;
+
   if (typeof subirImagen === "function") {
-    if (subirIglesia) subirImagen("iglesia");
-    subirImagen("personal");
+    const tareas = [];
+    if (subirIglesia) tareas.push(subirImagen("iglesia"));
+    tareas.push(subirImagen("personal"));
+    await Promise.all(tareas); // ✅ asegura que termine antes de seguir
   }
 
   return true;
