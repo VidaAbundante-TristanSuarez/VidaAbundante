@@ -1068,6 +1068,8 @@ function resetModalPersonalizar() {
   const acciones = document.getElementById("accionesFinales");
   if (acciones) acciones.remove();
 
+    // ✅ default TRUE cada vez que se abre / resetea el modal
+  forceDefaultCheckIglesia();
   actualizarPreview();
 }
 
@@ -1837,6 +1839,13 @@ window.setFormatoImagen = tipo => {
   if (bStory) bStory.classList.toggle("activo", tipo === "story");
 
   actualizarPreview(); // ✅ para recalcular tamaño automático
+    
+  // ✅ si la lista de fuentes está abierta, la reubicamos
+  if (typeof posicionarListaFuentes === "function") {
+    const lf = document.getElementById("listaFuentes");
+    if (lf && lf.classList.contains("abierto")) posicionarListaFuentes();
+  }
+
 };
 
 // ================= 🔺 CAMBIAR TAMAÑO ===========================
@@ -1947,6 +1956,33 @@ window.compartirMarcador = async (destino) => {
 
   cerrarCompartirMarcador();
 };
+
+// ================= ✅ CHECK IGLESIA (SIEMPRE default TRUE + estado visual) =================
+function syncCheckIglesiaUI() {
+  const chk = document.getElementById("checkIglesia");
+  const label = chk?.closest(".subir-iglesia-btn");
+  if (!chk || !label) return;
+
+  // ✅ estado visual del botón
+  label.classList.toggle("activo", chk.checked);
+}
+
+function forceDefaultCheckIglesia() {
+  const chk = document.getElementById("checkIglesia");
+  if (!chk) return;
+
+  // ✅ siempre por defecto TRUE
+  chk.checked = true;
+
+  // ✅ enganchar cambio para que el visual se actualice
+  chk.removeEventListener("change", syncCheckIglesiaUI);
+  chk.addEventListener("change", syncCheckIglesiaUI);
+
+  // ✅ aplicar visual
+  syncCheckIglesiaUI();
+}
+
+document.addEventListener("DOMContentLoaded", forceDefaultCheckIglesia);
 
 
 // ================= 🔺 HACER FUNCIONES GLOBALES (FIX DESCARGAR/COMPARTIR EN PC) =================
