@@ -167,9 +167,9 @@
   background: #e9f6ff;
   }
 
-   body.oscuro .panel-seccion {
-   background: #1e1e1e;
-    }
+  body.oscuro .panel-seccion {
+  background: #1e1e1e;
+  }
 
    textarea {
    width: 100%;
@@ -185,7 +185,7 @@
     margin-top: 10px;
     }
 
-    .card-imagen {
+   .card-imagen {
     border-radius: 12px;
     overflow: hidden;
     box-shadow: 0 4px 10px rgba(0,0,0,0.15);
@@ -242,17 +242,17 @@
  display: none;
  }
 
-body.modo-imagen #btnImagen {
+ body.modo-imagen #btnImagen {
  display: inline-block;
  background: #99d6ff;
  color: #fff;
  }
 
-body.modo-imagen #btnCrearImagen {
+ body.modo-imagen #btnCrearImagen {
  display: inline-block;
  }
 
-body.modo-imagen #header {
+ body.modo-imagen #header {
  box-shadow: 0 4px 12px rgba(79,111,168,0.4);
  }
 
@@ -262,15 +262,15 @@ body.modo-imagen #header {
  }
 
  /* ================= PREVIEW IMAGEN ================= */
-#previewImagen {
-  position: relative;
-  width: 100%;
-  max-width: 420px;
-  margin: 0 auto;
+ #previewImagen {
+ position: relative;
+ width: 100%;
+ max-width: 420px;
+ margin: 0 auto;
 
-  aspect-ratio: 1 / 1;   /* 🔲 default */
-  border-radius: 18px;
-  overflow: hidden;
+ aspect-ratio: 1 / 1;   /* 🔲 default */
+ border-radius: 18px;
+ overflow: hidden;
 
   background-size: cover;
   background-position: center;
