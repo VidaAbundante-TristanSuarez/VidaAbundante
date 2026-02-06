@@ -1107,22 +1107,18 @@ window.irA = seccion => {
 
 // ================= 🔺 MODO IMAGEN ===============================
 window.toggleModoImagen = () => {
-  if (!uid) {
-    loginModal.style.display = "flex";
-    return;
-  }
+  if (!uid) { loginModal.style.display = "flex"; return; }
 
   modoImagen = !modoImagen;
   seleccionImagen = {};
 
-  // clase global
   document.body.classList.toggle("modo-imagen", modoImagen);
 
-  // 🖼️ banner modo imagen
   const banner = document.getElementById("bannerModoImagen");
-  if (banner) {
-    banner.style.display = modoImagen ? "block" : "none";
-  }
+  if (banner) banner.style.display = modoImagen ? "block" : "none";
+
+  aplicarUIAccionesPorModo();          // ✅ CLAVE
+  refrescarBotonGuardarMarcador();     // ✅ CLAVE
 
   mostrarTexto();
 };
