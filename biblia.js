@@ -1637,8 +1637,8 @@ function renderPanelMarcadores() {
   });
 
   panel.innerHTML = `
-    <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px;">
-      <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+   <div style="display:flex; align-items:center; justify-content:flex-start; gap:10px; margin-bottom:10px; flex-wrap:wrap;">
+   <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
         <b>📌 Marcadores</b>
 
         <label style="font-size:13px; display:flex; gap:6px; align-items:center;">
