@@ -1015,11 +1015,6 @@ body.oscuro #bannerModoMarcador {
   background: rgba(255,255,255,0.08);
 }
 
-body.modo-marcador #accionesBiblia .accion-normal,
-body.modo-marcador #resaltadorCompacto{
-  display:none;
-}
-
 /* ✅ En modo marcador, ocultar botón de lista (📁) */
 body.modo-marcador #btnListaMarcadores {
   display: none !important;
