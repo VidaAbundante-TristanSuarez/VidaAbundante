@@ -1427,45 +1427,25 @@ info.textContent = `📌 ${refTxt} · ${hoy}`;
 };
 
 // ================= ❌ Cancelar Nuevo Marcador 📌=================
-window.cancelarNuevoMarcador = (volverABibliaModoMarcador = false) => {
+window.cancelarNuevoMarcador = () => {
+  // cerrar modal marcadores y volver a lista
   const modal = document.getElementById("modalMarcadores");
   const form = document.getElementById("formNuevoMarcador");
   const lista = document.getElementById("listaMarcadores");
 
-  // limpiar flags de edición
   window.__editMarcadorId = null;
   window.__editMarcadorBase = null;
   creandoNotaLibre = false;
 
-  if (volverABibliaModoMarcador) {
-    // ✅ cerrar modal y volver a biblia en modo marcador
-    if (modal) {
-      modal.style.display = "none";
-      modal.setAttribute("aria-hidden", "true");
-    }
-    if (form) form.style.display = "none";
-    if (lista) lista.style.display = "block";
-
-    // ✅ asegurar que modo marcador siga activo
-    modoMarcador = true;
-    document.body.classList.add("modo-marcador");
-
-    const btn = document.getElementById("btnModoMarcadorBarra");
-    if (btn) btn.classList.add("activo");
-
-    const banner = document.getElementById("bannerModoMarcador");
-    if (banner) banner.style.display = "block";
-
-    aplicarUIAccionesPorModo();
-    refrescarBotonGuardarMarcador();
-    mostrarTexto();
-    renderPreviewVersiculosMarcador();
-    return;
-  }
-
-  // comportamiento normal: volver a la lista dentro del modal
   if (form) form.style.display = "none";
   if (lista) lista.style.display = "block";
+
+  // ✅ si estoy en Panel (seccion-panel visible) NO dejo modo marcador prendido
+  const seccionPanel = document.getElementById("seccion-panel");
+  const estoyEnPanel = seccionPanel && seccionPanel.style.display !== "none";
+  if (estoyEnPanel) {
+    salirModoMarcadorLimpio();
+  }
 };
 
 // ================= ✨ Guardar Nuevo Marcador 📌=================
@@ -2130,4 +2110,6 @@ document.addEventListener("DOMContentLoaded", () => {
 window.generarImagenFinal = generarImagenFinal;
 window.descargarImagenFinal = descargarImagenFinal;
 window.compartirImagenFinal = compartirImagenFinal;
+window.finalizarEdicion = window.finalizarEdicion;
+window.cancelarCrearImagen = window.cancelarCrearImagen;
 
