@@ -197,35 +197,27 @@
 <!-- ================= PANEL ================= -->
 <div id="seccion-panel" class="seccion" style="display:none">
   <h2>🗂️ Mi Panel</h2>
-<!-- Tabs -->
 
-  <!-- Imágenes -->
+  <!-- Tabs -->
+  <div class="panel-tabs">
+    <button type="button" onclick="mostrarSeccion('imagenes')">
+      <i class="fa-solid fa-image"></i>
+      <span>Imagenes</span>
+    </button>
+
+    <button type="button" onclick="mostrarSeccion('marcadores')">
+      <i class="fa-solid fa-bookmark"></i>
+      <span>Marcadores</span>
+    </button>
+  </div>
+
+  <!-- Secciones -->
   <div id="panel-imagenes" class="panel-seccion">
     <p id="imagenes-vacio">Todavía no generaste imágenes.</p>
     <div id="grid-imagenes" class="grid-imagenes"></div>
   </div>
-  
-<!-- Tabs -->
-<div class="panel-tabs">
-  <button type="button" onclick="mostrarSeccion('imagenes')">
-    <i class="fa-solid fa-image"></i>
-    <span>Imagenes</span>
-  </button>
 
-  <button type="button" onclick="mostrarSeccion('marcadores')">
-    <i class="fa-solid fa-bookmark"></i>
-    <span>Marcadores</span>
-  </button>
-</div>
-
-<!-- Secciones -->
-<div id="panel-imagenes" class="panel-seccion">
-  <p id="imagenes-vacio">Todavía no generaste imágenes.</p>
-  <div id="grid-imagenes" class="grid-imagenes"></div>
-</div>
-
-<div id="panel-marcadores" class="panel-seccion" style="display:none"></div>
-
+  <div id="panel-marcadores" class="panel-seccion" style="display:none"></div>
 </div>
 
 <!-- ================= MODAL LOGIN ================= -->
@@ -401,6 +393,7 @@
   
 </body>
 </html>
+
 
 
 
