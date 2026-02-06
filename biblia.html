@@ -154,6 +154,11 @@
     <i class="fa-solid fa-panorama"></i>
   </button>
 
+  <!-- ✅ Crear Imagen (solo aparece cuando modo imagen está activo) -->
+<button id="btnCrearImagen" type="button" onclick="generarImagen()" aria-label="Crear imagen">
+  Crear Imagen
+</button>
+
   <!-- ✅ Confirmar marcador rápido (solo visible en modo marcador) -->
   <button id="btnGuardarMarcador" type="button" onclick="guardarMarcadorRapido()" style="display:none;" aria-label="Guardar marcador">
     ✅
@@ -170,7 +175,7 @@
 
 <!-- ✅ Botón flotante: aparece solo cuando la barra está oculta -->
 <button id="btnMostrarBarra" type="button" onclick="mostrarBarraAcciones()"
-  style="display:none; position:fixed; bottom:12px; left:12px; z-index:9999; border:none; border-radius:999px; padding:10px 12px; cursor:pointer; opacity:.75;">
+  style="display:none; position:fixed; bottom:12px; left:12px; z-index:9999; border:none; cursor:pointer;">
   <i class="fa-solid fa-circle-dot"></i>
 </button>
 
@@ -193,24 +198,33 @@
 <div id="seccion-panel" class="seccion" style="display:none">
   <h2>🗂️ Mi Panel</h2>
 <!-- Tabs -->
-  <div class="panel-tabs">
-    <button onclick="mostrarSeccion('imagenes')">
-      <i class="fa-solid fa-image"></i>
-  <span>Imagenes</span>
-      </button>
-    <button onclick="mostrarSeccion('marcadores')">
-  <i class="fa-solid fa-bookmark"></i>
-  <span>Marcadores</span>
-</button>
 
-    <div id="panel-marcadores" class="panel-seccion" style="display:none"></div>
-
-  </div>
   <!-- Imágenes -->
   <div id="panel-imagenes" class="panel-seccion">
     <p id="imagenes-vacio">Todavía no generaste imágenes.</p>
     <div id="grid-imagenes" class="grid-imagenes"></div>
   </div>
+  
+<!-- Tabs -->
+<div class="panel-tabs">
+  <button type="button" onclick="mostrarSeccion('imagenes')">
+    <i class="fa-solid fa-image"></i>
+    <span>Imagenes</span>
+  </button>
+
+  <button type="button" onclick="mostrarSeccion('marcadores')">
+    <i class="fa-solid fa-bookmark"></i>
+    <span>Marcadores</span>
+  </button>
+</div>
+
+<!-- Secciones -->
+<div id="panel-imagenes" class="panel-seccion">
+  <p id="imagenes-vacio">Todavía no generaste imágenes.</p>
+  <div id="grid-imagenes" class="grid-imagenes"></div>
+</div>
+
+<div id="panel-marcadores" class="panel-seccion" style="display:none"></div>
 
 </div>
 
@@ -387,5 +401,6 @@
   
 </body>
 </html>
+
 
 
