@@ -86,9 +86,9 @@ onValue(ref(db, "marcadores/" + uid), s => {
 
   // si estoy viendo panel marcadores, refrescar
   const panelMarcadores = document.getElementById("panel-marcadores");
-  if (panelMarcadores && getComputedStyle(panelMarcadores).display !== "none") {
-    renderPanelMarcadores();
-  }
+if (panelMarcadores && panelMarcadores.offsetParent !== null) {
+  renderPanelMarcadores();
+}
 });
 
 });
@@ -1316,7 +1316,7 @@ function renderListaMarcadores() {
   if (!lista) return;
 
   const items = Object.entries(marcadores || {})
-    .map(([id, m]) => ({ id, ...m }))
+    .map(([id, m]) => ({ ...m, id }))
     .sort((a, b) => (b.fecha || 0) - (a.fecha || 0));
 
   // CTA Guardar (solo si está en modo marcador y hay selección)
