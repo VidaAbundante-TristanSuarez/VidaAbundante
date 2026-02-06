@@ -2031,33 +2031,16 @@ window.compartirMarcador = async (destino) => {
   cerrarCompartirMarcador();
 };
 
-// ================= ✅ CHECK IGLESIA (SIEMPRE default TRUE + estado visual) =================
-function syncCheckIglesiaUI() {
-  const chk = document.getElementById("checkIglesia");
-  const label = chk?.closest(".subir-iglesia-btn");
-  if (!chk || !label) return;
-
-  // ✅ estado visual del botón
-  label.classList.toggle("activo", chk.checked);
-}
-
 // ================= 🔺 FORCE DEFAULT CHECK IGLESIA ===========================
+// ================= ✅ CHECK IGLESIA (SIEMPRE default TRUE) =================
 function forceDefaultCheckIglesia() {
   const chk = document.getElementById("checkIglesia");
   if (!chk) return;
-
-  // ✅ siempre por defecto TRUE
   chk.checked = true;
-
-  // ✅ enganchar cambio para que el visual se actualice
-  chk.removeEventListener("change", syncCheckIglesiaUI);
-  chk.addEventListener("change", syncCheckIglesiaUI);
-
-  // ✅ aplicar visual
-  syncCheckIglesiaUI();
 }
 
-document.addEventListener("DOMContentLoaded", forceDefaultCheckIglesia);
+// ✅ ejecutar ya (más seguro con type="module")
+forceDefaultCheckIglesia();
 
 // ================= UI: ocultar acciones al entrar en modo marcador =================
 function aplicarUIAccionesPorModo() {
