@@ -28,7 +28,6 @@
   
 <body>
 <!-- ================= HEADER ================= -->
-  <!-- Barra fija con navegación -->
 <div id="header">
 
   <!-- Menú principal -->
@@ -71,12 +70,6 @@
 <div class="filtros">
   <select id="libro"></select>
   <select id="capitulo"></select>
-<button id="btnModoMarcador" type="button" onclick="toggleModoMarcador()">📌</button>
-<button id="btnListaMarcadores" type="button" onclick="abrirMarcadores()">📁</button>
-
-<!-- ✅ ESTE -->
-<button id="btnGuardarMarcador" type="button" onclick="guardarMarcadorRapido()" style="display:none;">✅</button>
-
 </div>
  <!-- ================= BANNER MODO IMAGEN 🌄 ================= -->
  <!-- Solo se muestra cuando body tiene la clase modo-imagen -->
@@ -90,68 +83,97 @@
 </div>
 
 <!-- Título del libro + capítulo -->
+<!-- ✅ Barra fija: Título + navegación capítulos -->
+<div id="barraTituloBiblia">
   <h3 id="titulo"></h3>
+
+  <div class="nav-capitulo">
+    <button type="button" id="btnCapAnt" onclick="capituloAnterior()" aria-label="Capítulo anterior">
+      <i class="fa-solid fa-chevron-left"></i>
+    </button>
+
+    <button type="button" id="btnCapSig" onclick="capituloSiguiente()" aria-label="Capítulo siguiente">
+      <i class="fa-solid fa-chevron-right"></i>
+    </button>
+  </div>
+</div>
+
 <!-- CONTENEDOR DEL TEXTO BÍBLICO -->
   <!-- ⚠️ JS inserta aquí los versículos -->
   <div id="texto"></div>
 
  <!-- ================= BARRA DE ACCIONES ================= -->
-  <div id="accionesBiblia" class="barra-acciones">
- <!-- Navegación de capítulos -->
-    <button class="accion-normal" onclick="capituloAnterior()">‹</button>
-    <button class="accion-normal" onclick="capituloSiguiente()">›</button>
+<div id="accionesBiblia" class="barra-acciones">
 
-    <!-- RESALTADOR COMPACTO (NUEVO) -->
-<div id="resaltadorCompacto" style="position: relative;">
-    
-  <!-- Botón activo (corazón / color) -->
-  <button id="btnResaltadorActivo" class="btn-resaltador">
-    💛
+  <!-- ✅ Tamaño letra (antes estaban cap ant/sig) -->
+  <button class="accion-normal" type="button" onclick="cambiarLetra(-1)" aria-label="Achicar letra">
+    <i class="fa-solid fa-minus"></i>
   </button>
 
-  <!-- Paleta desplegable -->
-  <div id="paletaResaltadores">
-    <button data-color="#ffd6e8">🌸</button> 
-    <button data-color="#fff3b0">💛</button>
-    <button data-color="#caffd1">💚</button>
-    <button data-color="#ffc9c9">❤️</button>
-    <button data-color="#ccecff">💙</button>
-    <button data-color="#e6c9ff">💜</button>
-    <button data-color="#ffe2c9">🧡</button>
+  <button class="accion-normal" type="button" onclick="cambiarLetra(1)" aria-label="Agrandar letra">
+    <i class="fa-solid fa-plus"></i>
+  </button>
 
-    <!-- Botón Bloquear resaltador -->
-    <button id="btnBloquearResaltador" title="Bloquear resaltador">🔒</button>
+  <!-- ✅ Volver arriba -->
+  <button class="accion-normal" type="button"
+          onclick="window.scrollTo({top:0,behavior:'smooth'})"
+          aria-label="Volver al inicio">
+    <i class="fa-solid fa-circle-up"></i>
+  </button>
+
+  <!-- ✅ Resaltador -->
+  <div id="resaltadorCompacto" style="position: relative;">
+    <button id="btnResaltadorActivo" class="btn-resaltador" type="button">💛</button>
+    <div id="paletaResaltadores">
+      <button data-color="#ffd6e8">🌸</button>
+      <button data-color="#fff3b0">💛</button>
+      <button data-color="#caffd1">💚</button>
+      <button data-color="#ffc9c9">❤️</button>
+      <button data-color="#ccecff">💙</button>
+      <button data-color="#e6c9ff">💜</button>
+      <button data-color="#ffe2c9">🧡</button>
+      <button id="btnBloquearResaltador" title="Bloquear resaltador" type="button">🔒</button>
+    </div>
   </div>
 
+  <!-- ✅ Modo marcador (oculta demás acciones y deja solo check/confirmación) -->
+  <button id="btnModoMarcadorBarra" class="accion-normal" type="button" onclick="toggleModoMarcador()"
+          aria-label="Modo marcador">
+    <i class="fa-solid fa-thumbtack"></i>
+  </button>
+
+  <!-- ✅ Lista marcadores -->
+  <button id="btnListaMarcadores" class="accion-normal" type="button" onclick="abrirMarcadores()"
+          aria-label="Lista de marcadores">
+    <i class="fa-solid fa-list"></i>
+  </button>
+
+  <!-- ✅ Modo imagen -->
+  <button id="btnImagen" class="accion-normal" type="button" onclick="toggleModoImagen()"
+          aria-label="Modo imagen">
+    <i class="fa-solid fa-panorama"></i>
+  </button>
+
+  <!-- ✅ Confirmar marcador rápido (solo visible en modo marcador) -->
+  <button id="btnGuardarMarcador" type="button" onclick="guardarMarcadorRapido()" style="display:none;" aria-label="Guardar marcador">
+    ✅
+  </button>
+
+  <!-- ✅ Ocultar barra (a la derecha) -->
+  <div class="spacer"></div>
+
+  <button class="accion-normal" type="button" onclick="ocultarBarraAcciones()" aria-label="Ocultar barra">
+    <i class="fa-solid fa-circle-dot"></i>
+  </button>
+
 </div>
- <!-- Tamaño de letra -->
-    <button class="accion-normal" onclick="cambiarLetra(-1)">A−</button>
-    <button class="accion-normal" onclick="cambiarLetra(1)">A+</button>
-    
- <!-- Scroll arriba -->
-    <button class="accion-normal"
-            onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
-    
-  <!-- Activar modo imagen -->
-<button id="btnImagen" class="btnImagen" onclick="toggleModoImagen()">
-<i class="fa-solid fa-image"></i>
-</button>
-    
- <!-- Crear imagen -->
-    <!-- ⚠️ Por defecto está oculto por CSS -->
- <button id="btnCrearImagen"
-        onclick="generarImagen()">
-  Crear Imagen
+
+<!-- ✅ Botón flotante: aparece solo cuando la barra está oculta -->
+<button id="btnMostrarBarra" type="button" onclick="mostrarBarraAcciones()"
+  style="display:none; position:fixed; bottom:12px; left:12px; z-index:9999; border:none; border-radius:999px; padding:10px 12px; cursor:pointer; opacity:.75;">
+  <i class="fa-solid fa-circle-dot"></i>
 </button>
 
-<button class="accion-normal" onclick="ocultarBarraAcciones()">⬇️</button>
-
-<button id="btnMostrarBarra" onclick="mostrarBarraAcciones()"
-  style="display:none; position:fixed; bottom:12px; right:12px; z-index:9999; border:none; border-radius:999px; padding:10px 12px; cursor:pointer; opacity:.55;">
-  ⬆️
-</button>
-
-</div>
 </div>
 
 <!-- ================= OTRAS SECCIONES ================= -->
@@ -332,9 +354,13 @@
 </div>
 
       <div style="display:flex; gap:10px; margin-top:10px; justify-content:flex-end;">
-        <button type="button" onclick="cancelarNuevoMarcador()" style="border:none; padding:8px 12px; border-radius:999px; background:#eee; cursor:pointer;">Cancelar</button>
+        <button type="button" onclick="cancelarNuevoMarcador(true)" style="border:none; padding:8px 12px; border-radius:999px; background:#eee; cursor:pointer;">Cancelar</button>
         <button type="button" onclick="guardarNuevoMarcador()" style="border:none; padding:8px 12px; border-radius:999px; background:#4f6fa8; color:#fff; cursor:pointer;">Guardar</button>
       </div>
+      
+      <!-- ✅ Vista previa versículos marcados -->
+<div id="previewVersiculosMarcador" class="preview-versiculos-marcador"></div>
+
     </div>
 
   </div>
@@ -361,21 +387,5 @@
   
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
