@@ -117,32 +117,30 @@
   }
 
 /* ✅ Botón activo cuando está en modo marcador */
-  #btnModoMarcador.activo {
+#btnModoMarcadorBarra.activo{
   background: var(--ui-azul-hover);
-  color: #fff;
-  }
+  color:#fff;
+}
 
  /* Título del libro + capítulo */
   #titulo {
   margin: 12px 0;
   font-weight: bold;
   }
-    
- /* Versículos */
-  .versiculo {
-  padding: 8px 14px;
+
+
+/* ✅ menos espacio entre versículos (≈ 30%) */
+.versiculo{
+  padding: 7px 14px;
   border-radius: 8px;
-  margin-bottom: 3px;
+  margin-bottom: 2px;
   cursor: pointer;
   transition: background .2s;
-  color: #000;
-  }
+}
 
-  body.oscuro .versiculo {
-  color: #fff;
-  }
+body.oscuro .versiculo { color:#fff; }
 
-/* Versículo seleccionado para imagen */
+ /* Versículo seleccionado para imagen */
   .versiculo.imagen {
   background: #a9ffef !important;
   color: #000 !important;            /* 👈 negro para que se lea siempre */
@@ -932,27 +930,6 @@ body.oscuro .subir-iglesia-btn:has(input:checked){
   color:#fff;
 }
 
-/* CHECK ACTIVADO */
-#checkIglesia:checked + i {
-  color: #fff;
-}
-
-#checkIglesia:checked + i::after {
-  content: "✓";
-  position: absolute;
-  bottom: -4px;
-  right: -4px;
-  background: #4f6fa8;
-  color: #fff;
-  font-size: 10px;
-  border-radius: 50%;
-  width: 14px;
-  height: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
 #modalPersonalizar .style-row button.activo,
 #modalPersonalizar .fila-opciones button.activo,
 #modalPersonalizar button.activo {
@@ -1038,8 +1015,9 @@ body.oscuro #bannerModoMarcador {
   background: rgba(255,255,255,0.08);
 }
 
-body.modo-marcador #accionesBiblia{
-  display:none !important;
+body.modo-marcador #accionesBiblia .accion-normal,
+body.modo-marcador #resaltadorCompacto{
+  display:none;
 }
 
 /* ✅ En modo marcador, ocultar botón de lista (📁) */
@@ -1263,12 +1241,6 @@ body.oscuro .filtros select{
   background:#1e1e1e;
   color:#fff;
   border-color: rgba(255,255,255,.18);
-}
-
-/* ✅ menos espacio entre versículos (≈ 30%) */
-.versiculo{
-  margin-bottom: 2px;   /* antes 3px */
-  padding: 7px 14px;    /* un toque menos alto */
 }
 
 body.barra-oculta #accionesBiblia{
