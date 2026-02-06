@@ -2031,49 +2031,59 @@ window.compartirMarcador = async (destino) => {
   cerrarCompartirMarcador();
 };
 
-// ================= 🔺 FORCE DEFAULT CHECK IGLESIA ===========================
-// ================= ✅ CHECK IGLESIA (SIEMPRE default TRUE) =================
+// ================= 🔺 FORCE DEFAULT CHECK IGLESIA estado pinta css ===========================
 function forceDefaultCheckIglesia() {
   const chk = document.getElementById("checkIglesia");
   if (!chk) return;
-  chk.checked = true;
+  chk.checked = true; // ✅ siempre por defecto
 }
 
-// ✅ ejecutar ya (más seguro con type="module")
-forceDefaultCheckIglesia();
+document.addEventListener("DOMContentLoaded", forceDefaultCheckIglesia);
 
 // ================= UI: ocultar acciones al entrar en modo marcador =================
 function aplicarUIAccionesPorModo() {
   const acciones = document.getElementById("accionesBiblia");
   if (!acciones) return;
 
-  // elementos
   const btnModo = document.getElementById("btnModoMarcadorBarra"); // 📌
   const btnGuardar = document.getElementById("btnGuardarMarcador"); // ✅
   const btnLista = document.getElementById("btnListaMarcadores"); // list
   const btnImagen = document.getElementById("btnImagen"); // panorama
+  const btnCrear = document.getElementById("btnCrearImagen"); // Crear Imagen
 
-  // todas las acciones normales dentro de la barra
   const normales = acciones.querySelectorAll(".accion-normal, #resaltadorCompacto");
 
-  if (modoMarcador) {
-    // ✅ ocultar TODO lo normal
+  // ✅ MODO IMAGEN: ocultar marcadores + mostrar Crear Imagen
+  if (modoImagen) {
     normales.forEach(el => (el.style.display = "none"));
 
-    // ✅ dejar visible el 📌 para salir y el ✅ para guardar (cuando haya selección)
+    if (btnImagen) btnImagen.style.display = "inline-flex";
+    if (btnCrear) btnCrear.style.display = "inline-flex";
+
+    if (btnModo) btnModo.style.display = "none";
+    if (btnGuardar) btnGuardar.style.display = "none";
+    if (btnLista) btnLista.style.display = "none";
+    return;
+  }
+
+  // ✅ MODO MARCADOR
+  if (modoMarcador) {
+    normales.forEach(el => (el.style.display = "none"));
+
     if (btnModo) btnModo.style.display = "inline-flex";
-    // el ✅ lo maneja refrescarBotonGuardarMarcador()
     if (btnLista) btnLista.style.display = "none";
     if (btnImagen) btnImagen.style.display = "none";
-  } else {
-    // volver a modo normal
-    normales.forEach(el => (el.style.display = ""));
-    if (btnModo) btnModo.style.display = "inline-flex";
-    if (btnLista) btnLista.style.display = "inline-flex";
-    if (btnImagen) btnImagen.style.display = "inline-flex";
+    if (btnCrear) btnCrear.style.display = "none";
+    return;
   }
-}
 
+  // ✅ MODO NORMAL
+  normales.forEach(el => (el.style.display = ""));
+  if (btnModo) btnModo.style.display = "inline-flex";
+  if (btnLista) btnLista.style.display = "inline-flex";
+  if (btnImagen) btnImagen.style.display = "inline-flex";
+  if (btnCrear) btnCrear.style.display = "none";
+}
 
 // ================= 🔺 HACER FUNCIONES GLOBALES (FIX DESCARGAR/COMPARTIR EN PC) =================
 window.generarImagenFinal = generarImagenFinal;
