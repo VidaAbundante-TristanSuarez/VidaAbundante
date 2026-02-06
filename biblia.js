@@ -255,6 +255,7 @@ function toggleVersiculo(id, num) {
 
     mostrarTexto();
     refrescarBotonGuardarMarcador();
+    renderPreviewVersiculosMarcador();
     return;
   }
 
@@ -1244,9 +1245,7 @@ window.toggleModoMarcador = () => {
   }
 
   // si estaba modo imagen, lo apagamos
-  if (modoImagen) {
-    salirModoImagen(); // ya la tenés hecha
-  }
+  if (modoImagen) salirModoImagen();
 
   modoMarcador = !modoMarcador;
 
@@ -1254,22 +1253,22 @@ window.toggleModoMarcador = () => {
     seleccionMarcador = {};
   }
 
-  // clase global (para CSS: ocultar barra de acciones, etc.)
   document.body.classList.toggle("modo-marcador", modoMarcador);
 
-  // botón activo
-  const btn = document.getElementById("btnModoMarcador");
+  // ✅ botón correcto (ahora está en la barra)
+  const btn = document.getElementById("btnModoMarcadorBarra");
   if (btn) btn.classList.toggle("activo", modoMarcador);
 
   // banner fijo marcador
   const banner = document.getElementById("bannerModoMarcador");
   if (banner) banner.style.display = modoMarcador ? "block" : "none";
 
-  // opcional: toast corto
-  // mostrarToast(modoMarcador ? "📌 Modo marcador activado" : "✅ Modo marcador desactivado");
+  // ✅ ocultar/mostrar acciones según modo
+  aplicarUIAccionesPorModo();
 
   mostrarTexto();
   refrescarBotonGuardarMarcador();
+  renderPreviewVersiculosMarcador(); // por si está abierto el form
 };
 
 // ================= 📁 BOTÓN 2: LISTA MARCADORES 📌=================
@@ -1339,24 +1338,63 @@ function renderListaMarcadores() {
     return;
   }
 
-  lista.innerHTML = header + items.map(m => {
-    const fechaTxt = m.fecha ? new Date(m.fecha).toLocaleDateString() : "";
-    const linea = `${fechaTxt} · ${m.ref || ""}`;
+  lista.innerHTML =
+    header +
+    items
+      .map(m => {
+        const fechaTxt = m.fecha ? new Date(m.fecha).toLocaleDateString("es-AR") : "";
+        const refTxt = m.ref || (m.libro && m.capitulo ? `${m.libro} ${m.capitulo}` : "Nota");
+        const titulo = (m.titulo || "Marcador").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-    return `
-      <div class="card-marcador" style="display:flex; justify-content:space-between; align-items:center;">
-        <div>
-          <b>${m.titulo || "Sin título"}</b><br>
-          <span class="muted">${linea}</span>
-          ${m.nota ? `<div class="nota">${m.nota}</div>` : ""}
-        </div>
-        <button type="button" onclick="abrirMarcador('${m.id}')"
-          style="border:none; border-radius:999px; padding:8px 10px; cursor:pointer;">
-          ↩
-        </button>
-      </div>
-    `;
+        // ✅ línea simple
+        const linea = `${refTxt} - ${fechaTxt} - ${titulo}`;
+
+        return `
+          <div class="card-marcador" style="cursor:pointer;" onclick="abrirMarcador('${m.id}')">
+            <div style="font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+              ${linea}
+            </div>
+          </div>
+        `;
+      })
+      .join("");
+}
+
+// ================= ✨ RENDER PREVIEW VERSICULOS MARCADOR 📌=================
+function renderPreviewVersiculosMarcador() {
+  const box = document.getElementById("previewVersiculosMarcador");
+  if (!box) return;
+
+  const form = document.getElementById("formNuevoMarcador");
+  const formVisible = form && getComputedStyle(form).display !== "none";
+  if (!formVisible) {
+    box.innerHTML = "";
+    return;
+  }
+
+  const ids = Object.keys(seleccionMarcador || {});
+  if (ids.length === 0) {
+    box.innerHTML = "";
+    return;
+  }
+
+  ids.sort((a,b) => {
+    const va = Number(a.split("_")[2]);
+    const vb = Number(b.split("_")[2]);
+    return va - vb;
+  });
+
+  const libro = libroSel.value;
+  const cap = Number(capSel.value);
+
+  const partes = ids.map(id => {
+    const n = Number(id.split("_")[2]);
+    const vv = bibliaData.find(x => x.Libro === libro && x.Capitulo == cap && x.Versiculo == n);
+    const txt = vv ? vv.RV1960 : "";
+    return `<div><span style="opacity:.75">${n}</span> ${txt}</div>`;
   }).join("");
+
+  box.innerHTML = partes;
 }
 
 // ================= ✨ Abrir Form Nuevo Marcador 📌=================
@@ -1385,15 +1423,49 @@ info.textContent = `📌 ${refTxt} · ${hoy}`;
 
   lista.style.display = "none";
   form.style.display = "block";
+  renderPreviewVersiculosMarcador();
 };
 
 // ================= ❌ Cancelar Nuevo Marcador 📌=================
-window.cancelarNuevoMarcador = () => {
+window.cancelarNuevoMarcador = (volverABibliaModoMarcador = false) => {
+  const modal = document.getElementById("modalMarcadores");
   const form = document.getElementById("formNuevoMarcador");
   const lista = document.getElementById("listaMarcadores");
+
+  // limpiar flags de edición
+  window.__editMarcadorId = null;
+  window.__editMarcadorBase = null;
+  creandoNotaLibre = false;
+
+  if (volverABibliaModoMarcador) {
+    // ✅ cerrar modal y volver a biblia en modo marcador
+    if (modal) {
+      modal.style.display = "none";
+      modal.setAttribute("aria-hidden", "true");
+    }
+    if (form) form.style.display = "none";
+    if (lista) lista.style.display = "block";
+
+    // ✅ asegurar que modo marcador siga activo
+    modoMarcador = true;
+    document.body.classList.add("modo-marcador");
+
+    const btn = document.getElementById("btnModoMarcadorBarra");
+    if (btn) btn.classList.add("activo");
+
+    const banner = document.getElementById("bannerModoMarcador");
+    if (banner) banner.style.display = "block";
+
+    aplicarUIAccionesPorModo();
+    refrescarBotonGuardarMarcador();
+    mostrarTexto();
+    renderPreviewVersiculosMarcador();
+    return;
+  }
+
+  // comportamiento normal: volver a la lista dentro del modal
   if (form) form.style.display = "none";
   if (lista) lista.style.display = "block";
-  window.__editMarcadorId = null;
 };
 
 // ================= ✨ Guardar Nuevo Marcador 📌=================
@@ -1455,7 +1527,7 @@ window.guardarNuevoMarcador = async () => {
   seleccionMarcador = {};
   document.body.classList.remove("modo-marcador");
 
-  const btn = document.getElementById("btnModoMarcador");
+  const btn = document.getElementById("btnModoMarcadorBarra");
   if (btn) btn.classList.remove("activo");
 
   refrescarBotonGuardarMarcador();
@@ -1463,7 +1535,6 @@ window.guardarNuevoMarcador = async () => {
   cerrarMarcadores();
   mostrarTexto();
 };
-
 
 // ================= ✨ Abrir Marcador 📌=================
 window.abrirMarcador = (idMarcador) => {
@@ -1494,7 +1565,7 @@ window.abrirMarcador = (idMarcador) => {
 // ================= ✨ Refrescar Botones Marcador (✅ y 📁) 📌=================
 function refrescarBotonGuardarMarcador() {
   const btnGuardar = document.getElementById("btnGuardarMarcador");   // ✅
-  const btnLista = document.getElementById("btnListaMarcadores");     // 📁
+  const btnLista = document.getElementById("btnListaMarcadores");     // list
   if (!btnGuardar) return;
 
   const haySeleccion = Object.keys(seleccionMarcador || {}).length > 0;
@@ -1504,10 +1575,10 @@ function refrescarBotonGuardarMarcador() {
   btnGuardar.disabled = !haySeleccion;
   btnGuardar.style.opacity = haySeleccion ? "1" : "0.4";
 
-  // 📁 solo visible cuando modo marcador está OFF
-  if (btnLista) {
-    btnLista.style.display = modoMarcador ? "none" : "inline-flex";
-  }
+  // ✅ lista solo visible cuando NO estás en modo marcador
+  if (btnLista) btnLista.style.display = modoMarcador ? "none" : "inline-flex";
+
+  aplicarUIAccionesPorModo();
 }
 
 // ================= ✨ Guardar Marcador Rapido 📌 (abre formulario directo)=================
@@ -1533,7 +1604,7 @@ window.guardarMarcadorRapido = () => {
   }, 0);
 };
 
-// ================= 🔺Render con orden: fecha o libro/capítulo 📌===================
+// ================= 🔺RENDER PANEL MARCADORES con orden: fecha o libro/capítulo 📌===================
 let ordenMarcadores = "fecha"; // "fecha" | "biblia"
 let modoEliminarMarcadores = false;
 let seleccionEliminarMarcadores = {}; // {id:true}
@@ -1884,6 +1955,7 @@ window.mostrarBarraAcciones = () => {
 
 let __compartirMarcadorId = null;
 
+// ================= 🔺 ABRIR COMPARTIR MARCADOR ===========================
 window.abrirCompartirMarcador = (id) => {
   __compartirMarcadorId = id;
   const modal = document.getElementById("modalCompartirMarcador");
@@ -1893,6 +1965,7 @@ window.abrirCompartirMarcador = (id) => {
   }
 };
 
+// ================= 🔺 CERRAR COMPARTIR MARCADOR ===========================
 window.cerrarCompartirMarcador = () => {
   __compartirMarcadorId = null;
   const modal = document.getElementById("modalCompartirMarcador");
@@ -1902,6 +1975,7 @@ window.cerrarCompartirMarcador = () => {
   }
 };
 
+// ================= 🔺 COMPARTIR MARCADOR ===========================
 window.compartirMarcador = async (destino) => {
   const id = __compartirMarcadorId;
   if (!id) return;
@@ -1967,6 +2041,7 @@ function syncCheckIglesiaUI() {
   label.classList.toggle("activo", chk.checked);
 }
 
+// ================= 🔺 FORCE DEFAULT CHECK IGLESIA ===========================
 function forceDefaultCheckIglesia() {
   const chk = document.getElementById("checkIglesia");
   if (!chk) return;
@@ -1983,6 +2058,38 @@ function forceDefaultCheckIglesia() {
 }
 
 document.addEventListener("DOMContentLoaded", forceDefaultCheckIglesia);
+
+// ================= UI: ocultar acciones al entrar en modo marcador =================
+function aplicarUIAccionesPorModo() {
+  const acciones = document.getElementById("accionesBiblia");
+  if (!acciones) return;
+
+  // elementos
+  const btnModo = document.getElementById("btnModoMarcadorBarra"); // 📌
+  const btnGuardar = document.getElementById("btnGuardarMarcador"); // ✅
+  const btnLista = document.getElementById("btnListaMarcadores"); // list
+  const btnImagen = document.getElementById("btnImagen"); // panorama
+
+  // todas las acciones normales dentro de la barra
+  const normales = acciones.querySelectorAll(".accion-normal, #resaltadorCompacto");
+
+  if (modoMarcador) {
+    // ✅ ocultar TODO lo normal
+    normales.forEach(el => (el.style.display = "none"));
+
+    // ✅ dejar visible el 📌 para salir y el ✅ para guardar (cuando haya selección)
+    if (btnModo) btnModo.style.display = "inline-flex";
+    // el ✅ lo maneja refrescarBotonGuardarMarcador()
+    if (btnLista) btnLista.style.display = "none";
+    if (btnImagen) btnImagen.style.display = "none";
+  } else {
+    // volver a modo normal
+    normales.forEach(el => (el.style.display = ""));
+    if (btnModo) btnModo.style.display = "inline-flex";
+    if (btnLista) btnLista.style.display = "inline-flex";
+    if (btnImagen) btnImagen.style.display = "inline-flex";
+  }
+}
 
 
 // ================= 🔺 HACER FUNCIONES GLOBALES (FIX DESCARGAR/COMPARTIR EN PC) =================
