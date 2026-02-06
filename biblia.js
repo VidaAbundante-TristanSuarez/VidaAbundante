@@ -2085,6 +2085,47 @@ function aplicarUIAccionesPorModo() {
   if (btnCrear) btnCrear.style.display = "none";
 }
 
+// ================= Salir de modal limpio ================
+function salirModoMarcadorLimpio() {
+  modoMarcador = false;
+  seleccionMarcador = {};
+  document.body.classList.remove("modo-marcador");
+
+  const btn = document.getElementById("btnModoMarcadorBarra");
+  if (btn) btn.classList.remove("activo");
+
+  const banner = document.getElementById("bannerModoMarcador");
+  if (banner) banner.style.display = "none";
+
+  aplicarUIAccionesPorModo();
+  refrescarBotonGuardarMarcador();
+  renderPreviewVersiculosMarcador();
+  mostrarTexto();
+}
+
+// ================= no dependas del onclick en HTML ================
+document.addEventListener("DOMContentLoaded", () => {
+  const btnGuardar = document.getElementById("btnGuardarMarcador");
+  if (btnGuardar) {
+    btnGuardar.type = "button";
+    btnGuardar.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      guardarMarcadorRapido(); // ✅ este es el flujo correcto
+    };
+  }
+
+  const btnModo = document.getElementById("btnModoMarcadorBarra");
+  if (btnModo) {
+    btnModo.type = "button";
+    btnModo.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleModoMarcador();
+    };
+  }
+});
+
 // ================= 🔺 HACER FUNCIONES GLOBALES (FIX DESCARGAR/COMPARTIR EN PC) =================
 window.generarImagenFinal = generarImagenFinal;
 window.descargarImagenFinal = descargarImagenFinal;
