@@ -828,14 +828,13 @@ body.oscuro .subir-iglesia-btn {
   color: #000;
 }
 
-.fila-final button:hover,
-.subir-iglesia-btn:hover {
+/* hover solo para botones reales (en mobile no aplica) */
+.fila-final button:hover{
   background: var(--ui-azul-hover);
   color: #fff;
 }
 
-body.oscuro .fila-final button:hover,
-body.oscuro .subir-iglesia-btn:hover {
+body.oscuro .fila-final button:hover{
   background: #ffbf69;
   color: #000;
 }
@@ -850,17 +849,87 @@ body.oscuro .subir-iglesia-btn:hover {
   color: #fff;
 }
 
-.subir-iglesia-btn {
-  cursor: pointer;
-  position: relative; /* 👈 CLAVE para el ✓ */
+/* ✅ Checkbox real (NO display:none) para que Android repinte bien */
+.subir-iglesia-btn{
+  position: relative;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
 }
 
-.subir-iglesia-btn input {
-  display: none;
+.subir-iglesia-btn input{
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;                 /* invisible pero clickeable */
+  margin: 0;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
 }
 
 .subir-iglesia-btn i {
   pointer-events: none;
+}
+
+/* ✅ Estado visual correcto (CSS puro, sin JS) */
+.subir-iglesia-btn{
+  background: var(--ui-azul-claro);
+  color: #000;
+  transition: background .15s ease, color .15s ease, transform .05s ease;
+}
+
+.subir-iglesia-btn:active{
+  transform: scale(0.98);
+}
+
+/* ✅ cuando está CHECKED: el botón se ve “marcado” */
+.subir-iglesia-btn input:checked + i{
+  color:#fff;
+}
+
+.subir-iglesia-btn input:checked ~ i::after{
+  content:"✓";
+  position:absolute;
+  bottom:-4px;
+  right:-4px;
+  background:#4f6fa8;
+  color:#fff;
+  font-size:10px;
+  border-radius:50%;
+  width:14px;
+  height:14px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+/* ✅ fondo activo según checked */
+.subir-iglesia-btn input:checked{
+  /* no pinta nada, pero obliga repintado */
+}
+
+.subir-iglesia-btn input:checked + i{
+  /* icon ya blanco por arriba */
+}
+
+.subir-iglesia-btn input:checked ~ i{
+  /* nada */
+}
+
+.subir-iglesia-btn:has(input:checked){
+  background: var(--ui-azul-hover);
+  color:#fff;
+}
+
+body.oscuro .subir-iglesia-btn{
+  background:#d1eeff;
+  color:#000;
+}
+
+body.oscuro .subir-iglesia-btn:has(input:checked){
+  background: var(--ui-azul-hover);
+  color:#fff;
 }
 
 /* CHECK ACTIVADO */
@@ -1213,15 +1282,6 @@ body.barra-oculta #accionesBiblia{
 body.oscuro #btnMostrarBarra{
   background: #d1eeff;
   color:#000;
-}
-
-/* ✅ Estado visual del botón Iglesia (NO depende de :checked + i) */
-.subir-iglesia-btn.activo{
-  background: var(--ui-azul-hover) !important;
-  color: #fff !important;
-}
-.subir-iglesia-btn.activo i{
-  color:#fff !important;
 }
 
   </style>
