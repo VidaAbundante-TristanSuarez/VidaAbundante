@@ -1085,13 +1085,6 @@ function salirModoImagen() {
 }
 
   document.body.classList.remove("modo-imagen");
-
-  // 🖼️ ocultar banner
-  const banner = document.getElementById("bannerModoImagen");
-  if (banner) {
-    banner.style.display = "none";
-  }
-
   document.getElementById("modalPersonalizar").style.display = "none";
   mostrarTexto();
 }
@@ -1113,9 +1106,6 @@ window.toggleModoImagen = () => {
   seleccionImagen = {};
 
   document.body.classList.toggle("modo-imagen", modoImagen);
-
-  const banner = document.getElementById("bannerModoImagen");
-  if (banner) banner.style.display = modoImagen ? "block" : "none";
 
   aplicarUIAccionesPorModo();          // ✅ CLAVE
   refrescarBotonGuardarMarcador();     // ✅ CLAVE
@@ -1155,6 +1145,17 @@ window.cancelarCrearImagen = () => {
 
   // 2️⃣ salir del modo imagen (cierra modal + vuelve a biblia)
   salirModoImagen();
+};
+
+// ================= ✅ CERRAR MODAL IMAGEN (SIN SALIR DE MODO IMAGEN) =================
+window.cerrarModalPersonalizar = () => {
+  const modal = document.getElementById("modalPersonalizar");
+  if (modal) modal.style.display = "none";
+
+  // 👇 NO tocamos modoImagen ni seleccionImagen
+  // Solo re-pintamos la biblia para que se vea la selección activa
+  aplicarUIAccionesPorModo();
+  mostrarTexto();
 };
 
 // ================= ✅ FINALIZAR EDICIÓN (CONFIRMAR) =================
@@ -1254,10 +1255,6 @@ window.toggleModoMarcador = () => {
   // ✅ botón correcto (ahora está en la barra)
   const btn = document.getElementById("btnModoMarcadorBarra");
   if (btn) btn.classList.toggle("activo", modoMarcador);
-
-  // banner fijo marcador
-  const banner = document.getElementById("bannerModoMarcador");
-  if (banner) banner.style.display = modoMarcador ? "block" : "none";
 
   // ✅ ocultar/mostrar acciones según modo
   aplicarUIAccionesPorModo();
@@ -1612,37 +1609,23 @@ function renderPanelMarcadores() {
     return true;
   });
 
-  panel.innerHTML = `
-   <div style="display:flex; align-items:center; justify-content:flex-start; gap:10px; margin-bottom:10px; flex-wrap:wrap;">
-   <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-        <b>📌 Marcadores</b>
-
-        <label style="font-size:13px; display:flex; gap:6px; align-items:center;">
-          Ordenar:
-          <select id="ordenMarcadoresSelect" style="padding:6px 10px; border-radius:999px;">
-            <option value="fecha">Fecha</option>
-            <option value="biblia">Libro / Capítulo</option>
-          </select>
-        </label>
-      </div>
-
-      <div style="display:flex; align-items:center; gap:8px;">
-        <button type="button" onclick="abrirNotaLibre()" title="Nueva nota"
-          style="border:none; border-radius:999px; padding:8px 10px; cursor:pointer;">
-          ➕
-        </button>
-
-        <button type="button" onclick="toggleFiltroMarcadoresPanel()" title="Filtrar notas/versículos"
-          style="border:none; border-radius:999px; padding:8px 10px; cursor:pointer;">
-          🗒
-        </button>
-
-        <button type="button" onclick="toggleModoEliminarMarcadores()" title="Eliminar"
-          style="border:none; border-radius:999px; padding:8px 10px; cursor:pointer;">
-          🗑
-        </button>
-      </div>
+ panel.innerHTML = `
+  <div class="panel-marcadores-bar">
+    <div class="pm-left">
+      <b>📌 Marcadores</b>
     </div>
+
+    <div class="pm-right">
+      <select id="ordenMarcadoresSelect" class="pm-select" title="Orden">
+        <option value="fecha">Fecha</option>
+        <option value="biblia">Biblia</option>
+      </select>
+
+      <button type="button" onclick="abrirNotaLibre()" title="Nueva nota" class="pm-btn">➕</button>
+      <button type="button" onclick="toggleFiltroMarcadoresPanel()" title="Filtrar" class="pm-btn">🗒</button>
+      <button type="button" onclick="toggleModoEliminarMarcadores()" title="Eliminar" class="pm-btn">🗑</button>
+    </div>
+  </div>
 
     ${modoEliminarMarcadores && cantSel > 0 ? `
       <div style="display:flex; justify-content:flex-end; margin-bottom:10px;">
@@ -2070,9 +2053,6 @@ function salirModoMarcadorLimpio() {
   const btn = document.getElementById("btnModoMarcadorBarra");
   if (btn) btn.classList.remove("activo");
 
-  const banner = document.getElementById("bannerModoMarcador");
-  if (banner) banner.style.display = "none";
-
   aplicarUIAccionesPorModo();
   refrescarBotonGuardarMarcador();
   renderPreviewVersiculosMarcador();
@@ -2102,10 +2082,12 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-// ================= 🔺 HACER FUNCIONES GLOBALES (FIX DESCARGAR/COMPARTIR EN PC) =================
+// ================= 🔺 HACER FUNCIONES GLOBALES (FIX ONCLICK EN HTML) =================
 window.generarImagenFinal = generarImagenFinal;
 window.descargarImagenFinal = descargarImagenFinal;
 window.compartirImagenFinal = compartirImagenFinal;
+
+// estas ya son window.xxx por definición arriba, pero las dejamos por claridad:
 window.finalizarEdicion = window.finalizarEdicion;
 window.cancelarCrearImagen = window.cancelarCrearImagen;
-
+window.cerrarModalPersonalizar = window.cerrarModalPersonalizar;
