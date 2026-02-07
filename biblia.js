@@ -265,10 +265,11 @@ function mostrarTexto() {
 function toggleVersiculo(id, num) {
 
   // 📌 MODO MARCADOR (seleccionar versículos para guardar)
-if (!uid) {
-  openModal("loginModal");
-  return;
-}
+  if (modoMarcador) {
+    if (!uid) {
+      openModal("loginModal");
+      return;
+    }
 
     if (seleccionMarcador[id]) delete seleccionMarcador[id];
     else seleccionMarcador[id] = true;
@@ -280,23 +281,21 @@ if (!uid) {
   }
 
   // 🖼️ MODO IMAGEN
-  if (!uid) {
-  openModal("loginModal");
-  return;
-}
-
-    if (seleccionImagen[id]) {
-      delete seleccionImagen[id];
-    } else {
-      seleccionImagen[id] = true;
+  if (modoImagen) {
+    if (!uid) {
+      openModal("loginModal");
+      return;
     }
+
+    if (seleccionImagen[id]) delete seleccionImagen[id];
+    else seleccionImagen[id] = true;
 
     mostrarTexto();
     actualizarPreview();
     return;
   }
 
-  // 🔐 requiere login
+  // 🔐 requiere login (modo normal)
   if (!uid) return;
 
   // 🔒 resaltador bloqueado
@@ -305,11 +304,8 @@ if (!uid) {
   // 🎨 marcar / desmarcar versículo
   const r = ref(db, "marcados/" + uid + "/" + id);
 
-  if (marcados[id]) {
-    remove(r);
-  } else {
-    set(r, { color: colorActual });
-  }
+  if (marcados[id]) remove(r);
+  else set(r, { color: colorActual });
 }
 
 // ======================= ⭐ PINTAR VERSICULO  =============================
