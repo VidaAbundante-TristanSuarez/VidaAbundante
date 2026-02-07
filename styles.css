@@ -121,9 +121,30 @@
   align-items:center;
 }
 
+/* ✅ Barra fija con título + flechas */
+#barraTituloBiblia{
+  position: sticky;
+  top: 0;                 /* si querés que quede debajo del header, decime el alto y lo ajusto */
+  z-index: 50;
+  background: inherit;    /* respeta claro/oscuro */
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(0,0,0,.08);
+}
+
+body.oscuro #barraTituloBiblia{
+  border-bottom: 1px solid rgba(255,255,255,.12);
+}
+
+/* ✅ Título con Lora */
+#titulo{
+  font-family: "Lora", serif;
+  font-weight: 700;
+  letter-spacing: .2px;
+}
+
 #btnCapAnt, #btnCapSig{
-  width: 38px;
-  height: 38px;
+  width: 30px;
+  height: 30px;
   border-radius: 999px;
   border: none;
   cursor: pointer;
@@ -131,6 +152,10 @@
   display:flex;
   align-items:center;
   justify-content:center;
+}
+
+#btnCapAnt i, #btnCapSig i{
+  font-size: 12px;
 }
 
 #btnCapAnt:hover, #btnCapSig:hover{
@@ -165,16 +190,18 @@
   font-weight: bold;
   }
 
-
-/* ✅ menos espacio entre versículos (≈ 30%) */
+/* ✅ Versículo con “sangría colgante” */
 .versiculo{
   padding: 7px 14px;
+  padding-left: 28px;     /* espacio donde vive el número */
   border-radius: 8px;
   margin-bottom: 2px;
   cursor: pointer;
   transition: background .2s;
-  line-height: 1.25;   /* ✅ esto baja el “aire” real */
-  }
+  line-height: 1.25;  /* ✅ esto baja el “aire” real */
+
+  text-indent: -18px;     /* saca el num hacia la izquierda SOLO en el primer renglón */
+}
 
 body.oscuro .versiculo { color:#fff; }
 
@@ -186,13 +213,16 @@ body.oscuro .versiculo { color:#fff; }
   }
 
 /* Número del versículo */
- /* ✅ Número de versículo más chico y prolijo */
+/* ✅ número pequeño, en el “gutter” */
 .num{
-  font-weight: 600;        /* menos pesado que bold */
-  font-size: 0.75em;       /* 🔑 achica relativo al texto */
-  opacity: 0.85;            /* visualmente más discreto */
+  display: inline-block;
+  width: 18px;            /* ancho fijo para que no mueva el texto */
+  text-align: right;
   margin-right: 6px;
-  vertical-align: baseline;
+
+  font-weight: 700;
+  font-size: 0.68em;
+  opacity: .8;
 }
 
  /* ================= PANEL ================= */
