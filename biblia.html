@@ -13,7 +13,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Lobster&family=Playfair+Display:wght@400;700&family=Montserrat:wght@400;700&family=Poppins:wght@400;700&family=Abril+Fatface&family=Cormorant:wght@400;700&family=Josefin+Sans:wght@400;700&family=Great+Vibes&display=swap" rel="stylesheet">
-<!-- ================= ICONOS ================= -->
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+
+  <!-- ================= ICONOS ================= -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
  <!-- ================= html2canvas ================= -->
@@ -175,7 +177,7 @@
 
 <!-- ✅ Botón flotante: aparece solo cuando la barra está oculta -->
 <button id="btnMostrarBarra" type="button" onclick="mostrarBarraAcciones()"
-  style="display:none; position:fixed; bottom:12px; left:12px; z-index:9999; border:none; cursor:pointer;">
+  style="display:none; position:fixed; bottom:12px; right:12px; z-index:9999; border:none; cursor:pointer;">
   <i class="fa-solid fa-circle-dot"></i>
 </button>
 
@@ -240,7 +242,7 @@
   <div class="modal-contenido">
 
     <!-- CERRAR -->
-    <button class="cerrar-modal" onclick="cancelarCrearImagen()">✖</button>
+    <button class="cerrar-modal" type="button" onclick="cerrarModalPersonalizar()">✖</button>
 
     <!-- PREVIEW -->
     <div id="previewImagen">
@@ -294,23 +296,23 @@
 
     <!-- BOTONES (DENTRO DEL MODAL) -->
     <div class="fila-final">
-      <button onclick="descargarImagenFinal()">
-        <i class="fa-solid fa-download"></i>
-      </button>
+  <button type="button" onclick="descargarImagenFinal()">
+    <i class="fa-solid fa-download"></i>
+  </button>
 
-      <button onclick="compartirImagenFinal()">
-        <i class="fa-solid fa-share-nodes"></i>
-      </button>
+  <button type="button" onclick="compartirImagenFinal()">
+    <i class="fa-solid fa-share-nodes"></i>
+  </button>
 
-      <button onclick="finalizarEdicion()">
-        <i class="fa-solid fa-circle-check"></i>
-      </button>
+  <button type="button" onclick="finalizarEdicion()">
+    <i class="fa-solid fa-circle-check"></i>
+  </button>
 
-      <label class="subir-iglesia-btn">
-        <input type="checkbox" id="checkIglesia" checked>
-        <i class="fa-solid fa-church"></i>
-      </label>
-    </div>
+  <label class="subir-iglesia-btn">
+    <input type="checkbox" id="checkIglesia" checked>
+    <i class="fa-solid fa-church"></i>
+  </label>
+</div>
 
     <div style="height:10px"></div>
 
@@ -393,6 +395,7 @@
   
 </body>
 </html>
+
 
 
 
