@@ -173,7 +173,8 @@
   margin-bottom: 2px;
   cursor: pointer;
   transition: background .2s;
-}
+  line-height: 1.25;   /* ✅ esto baja el “aire” real */
+  }
 
 body.oscuro .versiculo { color:#fff; }
 
@@ -1305,6 +1306,67 @@ body.oscuro #btnMostrarBarra{
 body.oscuro #btnMostrarBarra{
   background: #d1eeff;
   color:#000;
+}
+
+/* ✅ Banner automático por modo (no depende de JS) */
+body.modo-imagen #bannerModoImagen { display: block; }
+body.modo-marcador #bannerModoMarcador { display: block; }
+
+/* ✅ Versículos dentro del modal marcadores: Lora italic bold */
+.preview-versiculos-marcador{
+  font-family: "Lora", serif;
+  font-style: italic;
+  font-weight: 700;
+  line-height: 1.25;
+  font-size: 14px;
+  margin-top: 10px;
+}
+
+/* ✅ Si está abierto modal marcadores, que nada (lista fuentes) quede arriba */
+#modalMarcadores{
+  z-index: 3000;
+}
+#modalMarcadores *{
+  pointer-events: auto;
+}
+
+/* ✅ Mi Panel > Marcadores: barra en 1 sola línea */
+.panel-marcadores-bar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:10px;
+  flex-wrap:nowrap;          /* ✅ NO baja de línea */
+}
+
+.pm-left{
+  min-width: 0;
+}
+
+.pm-right{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:nowrap;          /* ✅ NO baja de línea */
+}
+
+.pm-select{
+  padding:6px 10px;
+  border-radius:999px;
+  max-width: 120px;          /* ✅ más angosto */
+}
+
+.pm-btn{
+  border:none;
+  border-radius:999px;
+  padding:8px 10px;
+  cursor:pointer;
+  background: var(--ui-azul-claro);
+}
+.pm-btn:hover{
+  background: var(--ui-azul-hover);
+  color:#fff;
 }
 
   </style>
