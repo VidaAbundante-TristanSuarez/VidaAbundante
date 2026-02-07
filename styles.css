@@ -1413,4 +1413,20 @@ body.modo-marcador #bannerModoMarcador { display: block; }
   color:#fff;
 }
 
+/* ================= MODALES: ABRIR/CERRAR PROLIGO ================= */
+#loginModal,
+#modalPersonalizar,
+#modalMarcadores,
+#modalCompartirMarcador {
+  display: none;
+}
+
+#loginModal.abierto,
+#modalPersonalizar.abierto,
+#modalMarcadores.abierto,
+#modalCompartirMarcador.abierto {
+  display: flex;
+}
+
+
   </style>
