@@ -26,10 +26,8 @@ const firebaseConfig = {
   apiKey: "AIzaSyBtDcQ2DhgMpLsn4FCdF82QNstfvAjguQ4",
   authDomain: "vidaabundante-f118a.firebaseapp.com",
   databaseURL: "https://vidaabundante-f118a-default-rtdb.firebaseio.com",
-  projectId: "vidaabundante-f118a",
-  storageBucket: "vidaabundante-f118a.appspot.com"
+  projectId: "vidaabundante-f118a"
 };
-
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -102,28 +100,6 @@ const texto = document.getElementById("texto");
 const titulo = document.getElementById("titulo");
 const loginModal = document.getElementById("loginModal");
 
-// ================= ✅ HELPERS MODALES (PROLIGO) =================
-function openModal(id) {
-  const el = document.getElementById(id);
-  if (!el) return false;
-  el.classList.add("abierto");
-  el.setAttribute("aria-hidden", "false");
-  return true;
-}
-
-function closeModal(id) {
-  const el = document.getElementById(id);
-  if (!el) return false;
-  el.classList.remove("abierto");
-  el.setAttribute("aria-hidden", "true");
-  return true;
-}
-
-function isModalOpen(id) {
-  const el = document.getElementById(id);
-  return !!(el && el.classList.contains("abierto"));
-}
-
 // ================= ⭐ CARGA BIBLIA ==============================
 fetch("VidaAbundante - RV1960.json")
   .then(r => r.json())
@@ -135,8 +111,9 @@ fetch("VidaAbundante - RV1960.json")
 document.fonts.ready.then(() => {
   console.log("✅ Fuentes cargadas");
 
-  // ✅ solo refrescar si el modal está abierto
-  if (isModalOpen("modalPersonalizar")) {
+  // ✅ solo refrescar si el modal existe y está visible
+  const modal = document.getElementById("modalPersonalizar");
+  if (modal && getComputedStyle(modal).display !== "none") {
     actualizarPreview();
   }
 });
@@ -269,7 +246,7 @@ function toggleVersiculo(id, num) {
   // 📌 MODO MARCADOR (seleccionar versículos para guardar)
   if (modoMarcador) {
     if (!uid) {
-      openModal("loginModal");
+      loginModal.style.display = "flex";
       return;
     }
 
@@ -285,19 +262,22 @@ function toggleVersiculo(id, num) {
   // 🖼️ MODO IMAGEN
   if (modoImagen) {
     if (!uid) {
-      openModal("loginModal");
+      loginModal.style.display = "flex";
       return;
     }
 
-    if (seleccionImagen[id]) delete seleccionImagen[id];
-    else seleccionImagen[id] = true;
+    if (seleccionImagen[id]) {
+      delete seleccionImagen[id];
+    } else {
+      seleccionImagen[id] = true;
+    }
 
     mostrarTexto();
     actualizarPreview();
     return;
   }
 
-  // 🔐 requiere login (modo normal)
+  // 🔐 requiere login
   if (!uid) return;
 
   // 🔒 resaltador bloqueado
@@ -306,8 +286,11 @@ function toggleVersiculo(id, num) {
   // 🎨 marcar / desmarcar versículo
   const r = ref(db, "marcados/" + uid + "/" + id);
 
-  if (marcados[id]) remove(r);
-  else set(r, { color: colorActual });
+  if (marcados[id]) {
+    remove(r);
+  } else {
+    set(r, { color: colorActual });
+  }
 }
 
 // ======================= ⭐ PINTAR VERSICULO  =============================
@@ -859,12 +842,10 @@ async function generarImagenFinal() {
   return false;
 }
 
-if (modal && !isModalOpen("modalPersonalizar")) {
-  canvasFinal.width = 0;
-  canvasFinal.height = 0;
+if (modal && getComputedStyle(modal).display === "none") {
+  canvasFinal.width = 0; canvasFinal.height = 0;
   return false;
 }
-
   // refrescar estilos
   actualizarPreview();
 
@@ -1098,15 +1079,24 @@ function salirModoImagen() {
   modoImagen = false;
   seleccionImagen = {};
   fondoFinal = null;
-
   if (fondoFinalBlobUrl) {
-    URL.revokeObjectURL(fondoFinalBlobUrl);
-    fondoFinalBlobUrl = null;
-  }
+  URL.revokeObjectURL(fondoFinalBlobUrl);
+  fondoFinalBlobUrl = null;
+}
 
   document.body.classList.remove("modo-imagen");
-  closeModal("modalPersonalizar");
+
+  // 🖼️ ocultar banner
+  const banner = document.getElementById("bannerModoImagen");
+  if (banner) {
+    banner.style.display = "none";
+  }
+
+  document.getElementById("modalPersonalizar").style.display = "none";
   mostrarTexto();
+  aplicarUIAccionesPorModo();
+  refrescarBotonGuardarMarcador();
+
 }
 
 // ================= 🔺 WINDOW / UI ⭕ ===============================
@@ -1120,12 +1110,15 @@ window.irA = seccion => {
 
 // ================= 🔺 MODO IMAGEN ===============================
 window.toggleModoImagen = () => {
-  if (!uid) { openModal("loginModal"); return; }
+  if (!uid) { loginModal.style.display = "flex"; return; }
 
   modoImagen = !modoImagen;
   seleccionImagen = {};
 
   document.body.classList.toggle("modo-imagen", modoImagen);
+
+  const banner = document.getElementById("bannerModoImagen");
+  if (banner) banner.style.display = modoImagen ? "block" : "none";
 
   aplicarUIAccionesPorModo();          // ✅ CLAVE
   refrescarBotonGuardarMarcador();     // ✅ CLAVE
@@ -1146,8 +1139,8 @@ window.generarImagen = async () => {
   // ✅ CLAVE: reset antes de mostrar (evita overlay negro por sliders viejos)
   resetModalPersonalizar();
 
-  openModal("modalPersonalizar");
-  
+  modal.style.display = "flex";
+
   setFormatoImagen("post");
   cargarFondos();
   crearListaVisualFuentes();
@@ -1165,15 +1158,6 @@ window.cancelarCrearImagen = () => {
 
   // 2️⃣ salir del modo imagen (cierra modal + vuelve a biblia)
   salirModoImagen();
-};
-
-// ================= ✅ CERRAR MODAL IMAGEN (SIN SALIR DE MODO IMAGEN) =================
-window.cerrarModalPersonalizar = () => {
-  closeModal("modalPersonalizar");
-
-  // NO tocamos modoImagen ni seleccionImagen
-  aplicarUIAccionesPorModo();
-  mostrarTexto();
 };
 
 // ================= ✅ FINALIZAR EDICIÓN (CONFIRMAR) =================
@@ -1229,10 +1213,11 @@ window.toggleTema = () => {
   // ✅ FIX: repintar colores de versículos YA MISMO
   mostrarTexto();
 
-if (isModalOpen("modalPersonalizar")) {
- actualizarPreview();
+  // ✅ FIX: si el modal está abierto, refrescar preview YA MISMO
+  const modal = document.getElementById("modalPersonalizar");
+  if (modal && modal.style.display === "flex") {
+    actualizarPreview();
   }
-
 };
 
 // ================= ✨ RESTAURAR MODO OSCURO + ICONO =================
@@ -1253,8 +1238,8 @@ window.logout = () => {
 // ================= 🔺 MARCADOR ===================
 // ================= 📌 BOTÓN 1: MODO MARCADOR 📌 =================
 window.toggleModoMarcador = () => {
-   if (!uid) {
-    openModal("loginModal");
+  if (!uid) {
+    loginModal.style.display = "flex";
     return;
   }
 
@@ -1273,6 +1258,10 @@ window.toggleModoMarcador = () => {
   const btn = document.getElementById("btnModoMarcadorBarra");
   if (btn) btn.classList.toggle("activo", modoMarcador);
 
+  // banner fijo marcador
+  const banner = document.getElementById("bannerModoMarcador");
+  if (banner) banner.style.display = modoMarcador ? "block" : "none";
+
   // ✅ ocultar/mostrar acciones según modo
   aplicarUIAccionesPorModo();
 
@@ -1285,7 +1274,7 @@ window.toggleModoMarcador = () => {
 // ================= 📁 BOTÓN: ABRIR MODAL MARCADORES =================
 window.abrirMarcadores = () => {
   if (!uid) {
-    openModal("loginModal");
+    loginModal.style.display = "flex";
     return;
   }
 
@@ -1295,7 +1284,8 @@ window.abrirMarcadores = () => {
   if (!modal || !lista || !form) return;
 
   // ✅ Si está abierto, cerrar
-  if (isModalOpen("modalMarcadores")) {
+  const abierto = getComputedStyle(modal).display !== "none";
+  if (abierto) {
     cerrarMarcadores();
     return;
   }
@@ -1305,12 +1295,17 @@ window.abrirMarcadores = () => {
   lista.style.display = "block";
 
   renderListaMarcadores();
-  openModal("modalMarcadores");
+  modal.style.display = "flex";
+  modal.setAttribute("aria-hidden", "false");
 };
 
 // ================= ✨ Cerrar Marcadores 📌=================
 window.cerrarMarcadores = () => {
-  closeModal("modalMarcadores");
+  const modal = document.getElementById("modalMarcadores");
+  if (modal) {
+    modal.style.display = "none";
+    modal.setAttribute("aria-hidden", "true");
+  }
   refrescarBotonGuardarMarcador();
 };
 
@@ -1568,10 +1563,9 @@ function refrescarBotonGuardarMarcador() {
 // ================= ✨ Guardar Marcador Rapido 📌 (abre formulario directo)=================
 window.guardarMarcadorRapido = () => {
   if (!uid) {
-    openModal("loginModal");
+    loginModal.style.display = "flex";
     return;
   }
-
   if (!modoMarcador) return;
 
   const seleccion = Object.keys(seleccionMarcador || {});
@@ -1621,23 +1615,37 @@ function renderPanelMarcadores() {
     return true;
   });
 
- panel.innerHTML = `
-  <div class="panel-marcadores-bar">
-    <div class="pm-left">
-      <b>📌 Marcadores</b>
-    </div>
+  panel.innerHTML = `
+   <div style="display:flex; align-items:center; justify-content:flex-start; gap:10px; margin-bottom:10px; flex-wrap:wrap;">
+   <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+        <b>📌 Marcadores</b>
 
-    <div class="pm-right">
-      <select id="ordenMarcadoresSelect" class="pm-select" title="Orden">
-        <option value="fecha">Fecha</option>
-        <option value="biblia">Biblia</option>
-      </select>
+        <label style="font-size:13px; display:flex; gap:6px; align-items:center;">
+          Ordenar:
+          <select id="ordenMarcadoresSelect" style="padding:6px 10px; border-radius:999px;">
+            <option value="fecha">Fecha</option>
+            <option value="biblia">Libro / Capítulo</option>
+          </select>
+        </label>
+      </div>
 
-      <button type="button" onclick="abrirNotaLibre()" title="Nueva nota" class="pm-btn">➕</button>
-      <button type="button" onclick="toggleFiltroMarcadoresPanel()" title="Filtrar" class="pm-btn">🗒</button>
-      <button type="button" onclick="toggleModoEliminarMarcadores()" title="Eliminar" class="pm-btn">🗑</button>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <button type="button" onclick="abrirNotaLibre()" title="Nueva nota"
+          style="border:none; border-radius:999px; padding:8px 10px; cursor:pointer;">
+          ➕
+        </button>
+
+        <button type="button" onclick="toggleFiltroMarcadoresPanel()" title="Filtrar notas/versículos"
+          style="border:none; border-radius:999px; padding:8px 10px; cursor:pointer;">
+          🗒
+        </button>
+
+        <button type="button" onclick="toggleModoEliminarMarcadores()" title="Eliminar"
+          style="border:none; border-radius:999px; padding:8px 10px; cursor:pointer;">
+          🗑
+        </button>
+      </div>
     </div>
-  </div>
 
     ${modoEliminarMarcadores && cantSel > 0 ? `
       <div style="display:flex; justify-content:flex-end; margin-bottom:10px;">
@@ -1834,7 +1842,7 @@ window.irALogin = () => {
 
 // ================= 🔺 CERRAR LOGIN ===================
 window.cerrarLogin = () => {
-  closeModal("loginModal");
+  loginModal.style.display = "none";
 };
 
 // ================= 🔺 TEXTO MAYUSCULAR ===================
@@ -1929,13 +1937,21 @@ let __compartirMarcadorId = null;
 // ================= 🔺 ABRIR COMPARTIR MARCADOR ===========================
 window.abrirCompartirMarcador = (id) => {
   __compartirMarcadorId = id;
-  openModal("modalCompartirMarcador");
+  const modal = document.getElementById("modalCompartirMarcador");
+  if (modal) {
+    modal.style.display = "flex";
+    modal.setAttribute("aria-hidden","false");
+  }
 };
 
 // ================= 🔺 CERRAR COMPARTIR MARCADOR ===========================
 window.cerrarCompartirMarcador = () => {
   __compartirMarcadorId = null;
-  closeModal("modalCompartirMarcador");
+  const modal = document.getElementById("modalCompartirMarcador");
+  if (modal) {
+    modal.style.display = "none";
+    modal.setAttribute("aria-hidden","true");
+  }
 };
 
 // ================= 🔺 COMPARTIR MARCADOR ===========================
@@ -2057,16 +2073,13 @@ function salirModoMarcadorLimpio() {
   const btn = document.getElementById("btnModoMarcadorBarra");
   if (btn) btn.classList.remove("activo");
 
+  const banner = document.getElementById("bannerModoMarcador");
+  if (banner) banner.style.display = "none";
+
   aplicarUIAccionesPorModo();
   refrescarBotonGuardarMarcador();
   renderPreviewVersiculosMarcador();
   mostrarTexto();
-}
-
-function mostrarToast(msg) {
-  // simple y seguro
-  console.log("TOAST:", msg);
-  alert(msg);
 }
 
 // ================= no dependas del onclick en HTML ================
@@ -2077,7 +2090,7 @@ document.addEventListener("DOMContentLoaded", () => {
     btnGuardar.onclick = (e) => {
       e.preventDefault();
       e.stopPropagation();
-      guardarMarcadorRapido();
+      guardarMarcadorRapido(); // ✅ este es el flujo correcto
     };
   }
 
@@ -2092,35 +2105,10 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-// ================= 🔺 HACER FUNCIONES GLOBALES (FIX ONCLICK EN HTML) =================
+// ================= 🔺 HACER FUNCIONES GLOBALES (FIX DESCARGAR/COMPARTIR EN PC) =================
 window.generarImagenFinal = generarImagenFinal;
 window.descargarImagenFinal = descargarImagenFinal;
 window.compartirImagenFinal = compartirImagenFinal;
+window.finalizarEdicion = window.finalizarEdicion;
+window.cancelarCrearImagen = window.cancelarCrearImagen;
 
-// ✅ BINDINGS SEGUROS (NO dependas de onclick en HTML)
-document.addEventListener("DOMContentLoaded", () => {
-
-  document.querySelector('#modalPersonalizar button[onclick="descargarImagenFinal()"]')
-    ?.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); descargarImagenFinal(); });
-
-  document.querySelector('#modalPersonalizar button[onclick="compartirImagenFinal()"]')
-    ?.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); compartirImagenFinal(); });
-
-  document.querySelector('#modalPersonalizar button[onclick="finalizarEdicion()"]')
-    ?.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); window.finalizarEdicion(); });
-
-  document.getElementById("btnCapAnt")
-    ?.addEventListener("click", (e) => { e.preventDefault(); capituloAnterior(); });
-
-  document.getElementById("btnCapSig")
-    ?.addEventListener("click", (e) => { e.preventDefault(); capituloSiguiente(); });
-
-  document.getElementById("btnListaMarcadores")
-    ?.addEventListener("click", (e) => { e.preventDefault(); abrirMarcadores(); });
-
-  document.getElementById("btnModoMarcadorBarra")
-    ?.addEventListener("click", (e) => { e.preventDefault(); toggleModoMarcador(); });
-
-  document.getElementById("btnResaltadorActivo")
-    ?.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); });
-});
