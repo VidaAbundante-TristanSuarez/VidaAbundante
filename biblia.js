@@ -100,6 +100,28 @@ const texto = document.getElementById("texto");
 const titulo = document.getElementById("titulo");
 const loginModal = document.getElementById("loginModal");
 
+// ================= ✅ HELPERS MODALES (PROLIGO) =================
+function openModal(id) {
+  const el = document.getElementById(id);
+  if (!el) return false;
+  el.classList.add("abierto");
+  el.setAttribute("aria-hidden", "false");
+  return true;
+}
+
+function closeModal(id) {
+  const el = document.getElementById(id);
+  if (!el) return false;
+  el.classList.remove("abierto");
+  el.setAttribute("aria-hidden", "true");
+  return true;
+}
+
+function isModalOpen(id) {
+  const el = document.getElementById(id);
+  return !!(el && el.classList.contains("abierto"));
+}
+
 // ================= ⭐ CARGA BIBLIA ==============================
 fetch("VidaAbundante - RV1960.json")
   .then(r => r.json())
@@ -111,9 +133,8 @@ fetch("VidaAbundante - RV1960.json")
 document.fonts.ready.then(() => {
   console.log("✅ Fuentes cargadas");
 
-  // ✅ solo refrescar si el modal existe y está visible
-  const modal = document.getElementById("modalPersonalizar");
-  if (modal && getComputedStyle(modal).display !== "none") {
+  // ✅ solo refrescar si el modal está abierto
+  if (isModalOpen("modalPersonalizar")) {
     actualizarPreview();
   }
 });
@@ -244,11 +265,10 @@ function mostrarTexto() {
 function toggleVersiculo(id, num) {
 
   // 📌 MODO MARCADOR (seleccionar versículos para guardar)
-  if (modoMarcador) {
-    if (!uid) {
-      loginModal.style.display = "flex";
-      return;
-    }
+if (!uid) {
+  openModal("loginModal");
+  return;
+}
 
     if (seleccionMarcador[id]) delete seleccionMarcador[id];
     else seleccionMarcador[id] = true;
@@ -260,11 +280,10 @@ function toggleVersiculo(id, num) {
   }
 
   // 🖼️ MODO IMAGEN
-  if (modoImagen) {
-    if (!uid) {
-      loginModal.style.display = "flex";
-      return;
-    }
+  if (!uid) {
+  openModal("loginModal");
+  return;
+}
 
     if (seleccionImagen[id]) {
       delete seleccionImagen[id];
@@ -842,10 +861,12 @@ async function generarImagenFinal() {
   return false;
 }
 
-if (modal && getComputedStyle(modal).display === "none") {
-  canvasFinal.width = 0; canvasFinal.height = 0;
+if (modal && !isModalOpen("modalPersonalizar")) {
+  canvasFinal.width = 0;
+  canvasFinal.height = 0;
   return false;
 }
+
   // refrescar estilos
   actualizarPreview();
 
@@ -1079,13 +1100,14 @@ function salirModoImagen() {
   modoImagen = false;
   seleccionImagen = {};
   fondoFinal = null;
+
   if (fondoFinalBlobUrl) {
-  URL.revokeObjectURL(fondoFinalBlobUrl);
-  fondoFinalBlobUrl = null;
-}
+    URL.revokeObjectURL(fondoFinalBlobUrl);
+    fondoFinalBlobUrl = null;
+  }
 
   document.body.classList.remove("modo-imagen");
-  document.getElementById("modalPersonalizar").style.display = "none";
+  closeModal("modalPersonalizar");
   mostrarTexto();
 }
 
@@ -1100,7 +1122,7 @@ window.irA = seccion => {
 
 // ================= 🔺 MODO IMAGEN ===============================
 window.toggleModoImagen = () => {
-  if (!uid) { loginModal.style.display = "flex"; return; }
+  if (!uid) { openModal("loginModal"); return; }
 
   modoImagen = !modoImagen;
   seleccionImagen = {};
@@ -1126,8 +1148,8 @@ window.generarImagen = async () => {
   // ✅ CLAVE: reset antes de mostrar (evita overlay negro por sliders viejos)
   resetModalPersonalizar();
 
-  modal.style.display = "flex";
-
+  openModal("modalPersonalizar");
+  
   setFormatoImagen("post");
   cargarFondos();
   crearListaVisualFuentes();
@@ -1149,11 +1171,9 @@ window.cancelarCrearImagen = () => {
 
 // ================= ✅ CERRAR MODAL IMAGEN (SIN SALIR DE MODO IMAGEN) =================
 window.cerrarModalPersonalizar = () => {
-  const modal = document.getElementById("modalPersonalizar");
-  if (modal) modal.style.display = "none";
+  closeModal("modalPersonalizar");
 
-  // 👇 NO tocamos modoImagen ni seleccionImagen
-  // Solo re-pintamos la biblia para que se vea la selección activa
+  // NO tocamos modoImagen ni seleccionImagen
   aplicarUIAccionesPorModo();
   mostrarTexto();
 };
@@ -1211,11 +1231,10 @@ window.toggleTema = () => {
   // ✅ FIX: repintar colores de versículos YA MISMO
   mostrarTexto();
 
-  // ✅ FIX: si el modal está abierto, refrescar preview YA MISMO
-  const modal = document.getElementById("modalPersonalizar");
-  if (modal && modal.style.display === "flex") {
-    actualizarPreview();
+if (isModalOpen("modalPersonalizar")) {
+ actualizarPreview();
   }
+
 };
 
 // ================= ✨ RESTAURAR MODO OSCURO + ICONO =================
@@ -1236,8 +1255,8 @@ window.logout = () => {
 // ================= 🔺 MARCADOR ===================
 // ================= 📌 BOTÓN 1: MODO MARCADOR 📌 =================
 window.toggleModoMarcador = () => {
-  if (!uid) {
-    loginModal.style.display = "flex";
+   if (!uid) {
+    openModal("loginModal");
     return;
   }
 
@@ -1268,7 +1287,7 @@ window.toggleModoMarcador = () => {
 // ================= 📁 BOTÓN: ABRIR MODAL MARCADORES =================
 window.abrirMarcadores = () => {
   if (!uid) {
-    loginModal.style.display = "flex";
+    openModal("loginModal");
     return;
   }
 
@@ -1278,8 +1297,7 @@ window.abrirMarcadores = () => {
   if (!modal || !lista || !form) return;
 
   // ✅ Si está abierto, cerrar
-  const abierto = getComputedStyle(modal).display !== "none";
-  if (abierto) {
+  if (isModalOpen("modalMarcadores")) {
     cerrarMarcadores();
     return;
   }
@@ -1289,17 +1307,12 @@ window.abrirMarcadores = () => {
   lista.style.display = "block";
 
   renderListaMarcadores();
-  modal.style.display = "flex";
-  modal.setAttribute("aria-hidden", "false");
+  openModal("modalMarcadores");
 };
 
 // ================= ✨ Cerrar Marcadores 📌=================
 window.cerrarMarcadores = () => {
-  const modal = document.getElementById("modalMarcadores");
-  if (modal) {
-    modal.style.display = "none";
-    modal.setAttribute("aria-hidden", "true");
-  }
+  closeModal("modalMarcadores");
   refrescarBotonGuardarMarcador();
 };
 
@@ -1557,9 +1570,10 @@ function refrescarBotonGuardarMarcador() {
 // ================= ✨ Guardar Marcador Rapido 📌 (abre formulario directo)=================
 window.guardarMarcadorRapido = () => {
   if (!uid) {
-    loginModal.style.display = "flex";
+    openModal("loginModal");
     return;
   }
+
   if (!modoMarcador) return;
 
   const seleccion = Object.keys(seleccionMarcador || {});
@@ -1822,7 +1836,7 @@ window.irALogin = () => {
 
 // ================= 🔺 CERRAR LOGIN ===================
 window.cerrarLogin = () => {
-  loginModal.style.display = "none";
+  closeModal("loginModal");
 };
 
 // ================= 🔺 TEXTO MAYUSCULAR ===================
@@ -1917,21 +1931,13 @@ let __compartirMarcadorId = null;
 // ================= 🔺 ABRIR COMPARTIR MARCADOR ===========================
 window.abrirCompartirMarcador = (id) => {
   __compartirMarcadorId = id;
-  const modal = document.getElementById("modalCompartirMarcador");
-  if (modal) {
-    modal.style.display = "flex";
-    modal.setAttribute("aria-hidden","false");
-  }
+  openModal("modalCompartirMarcador");
 };
 
 // ================= 🔺 CERRAR COMPARTIR MARCADOR ===========================
 window.cerrarCompartirMarcador = () => {
   __compartirMarcadorId = null;
-  const modal = document.getElementById("modalCompartirMarcador");
-  if (modal) {
-    modal.style.display = "none";
-    modal.setAttribute("aria-hidden","true");
-  }
+  closeModal("modalCompartirMarcador");
 };
 
 // ================= 🔺 COMPARTIR MARCADOR ===========================
