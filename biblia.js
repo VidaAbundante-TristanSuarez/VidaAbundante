@@ -27,6 +27,7 @@ const firebaseConfig = {
   authDomain: "vidaabundante-f118a.firebaseapp.com",
   databaseURL: "https://vidaabundante-f118a-default-rtdb.firebaseio.com",
   projectId: "vidaabundante-f118a"
+  storageBucket: "vidaabundante-f118a.appspot.com" // ✅ AGREGAR
 };
 
 const app = initializeApp(firebaseConfig);
@@ -2061,6 +2062,12 @@ function salirModoMarcadorLimpio() {
   mostrarTexto();
 }
 
+function mostrarToast(msg) {
+  // simple y seguro
+  console.log("TOAST:", msg);
+  alert(msg);
+}
+
 // ================= no dependas del onclick en HTML ================
 document.addEventListener("DOMContentLoaded", () => {
   const btnGuardar = document.getElementById("btnGuardarMarcador");
@@ -2069,7 +2076,7 @@ document.addEventListener("DOMContentLoaded", () => {
     btnGuardar.onclick = (e) => {
       e.preventDefault();
       e.stopPropagation();
-      guardarMarcadorRapido(); // ✅ este es el flujo correcto
+      guardarMarcadorRapido();
     };
   }
 
@@ -2089,15 +2096,9 @@ window.generarImagenFinal = generarImagenFinal;
 window.descargarImagenFinal = descargarImagenFinal;
 window.compartirImagenFinal = compartirImagenFinal;
 
-// estas ya son window.xxx por definición arriba, pero las dejamos por claridad:
-window.finalizarEdicion = window.finalizarEdicion;
-window.cancelarCrearImagen = window.cancelarCrearImagen;
-window.cerrarModalPersonalizar = window.cerrarModalPersonalizar;
-
 // ✅ BINDINGS SEGUROS (NO dependas de onclick en HTML)
 document.addEventListener("DOMContentLoaded", () => {
 
-  // Modal Imagen
   document.querySelector('#modalPersonalizar button[onclick="descargarImagenFinal()"]')
     ?.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); descargarImagenFinal(); });
 
@@ -2107,21 +2108,18 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelector('#modalPersonalizar button[onclick="finalizarEdicion()"]')
     ?.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); window.finalizarEdicion(); });
 
-  // Capítulo ant/sig
   document.getElementById("btnCapAnt")
     ?.addEventListener("click", (e) => { e.preventDefault(); capituloAnterior(); });
 
   document.getElementById("btnCapSig")
     ?.addEventListener("click", (e) => { e.preventDefault(); capituloSiguiente(); });
 
-  // Marcadores
   document.getElementById("btnListaMarcadores")
     ?.addEventListener("click", (e) => { e.preventDefault(); abrirMarcadores(); });
 
   document.getElementById("btnModoMarcadorBarra")
     ?.addEventListener("click", (e) => { e.preventDefault(); toggleModoMarcador(); });
 
-  // Resaltador: evita que el click “muera” por propagación rara
   document.getElementById("btnResaltadorActivo")
     ?.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); });
 });
