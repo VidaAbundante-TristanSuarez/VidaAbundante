@@ -186,10 +186,14 @@ body.oscuro .versiculo { color:#fff; }
   }
 
 /* Número del versículo */
-  .num {
-  font-weight: bold;
-  margin-right: 4px;
-  }
+ /* ✅ Número de versículo más chico y prolijo */
+.num{
+  font-weight: 600;        /* menos pesado que bold */
+  font-size: 0.75em;       /* 🔑 achica relativo al texto */
+  opacity: 0.85;            /* visualmente más discreto */
+  margin-right: 6px;
+  vertical-align: baseline;
+}
 
  /* ================= PANEL ================= */
   .panel-tabs button {
