@@ -2091,3 +2091,35 @@ window.compartirImagenFinal = compartirImagenFinal;
 window.finalizarEdicion = window.finalizarEdicion;
 window.cancelarCrearImagen = window.cancelarCrearImagen;
 window.cerrarModalPersonalizar = window.cerrarModalPersonalizar;
+
+// ✅ BINDINGS SEGUROS (NO dependas de onclick en HTML)
+document.addEventListener("DOMContentLoaded", () => {
+
+  // Modal Imagen
+  document.querySelector('#modalPersonalizar button[onclick="descargarImagenFinal()"]')
+    ?.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); descargarImagenFinal(); });
+
+  document.querySelector('#modalPersonalizar button[onclick="compartirImagenFinal()"]')
+    ?.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); compartirImagenFinal(); });
+
+  document.querySelector('#modalPersonalizar button[onclick="finalizarEdicion()"]')
+    ?.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); window.finalizarEdicion(); });
+
+  // Capítulo ant/sig
+  document.getElementById("btnCapAnt")
+    ?.addEventListener("click", (e) => { e.preventDefault(); capituloAnterior(); });
+
+  document.getElementById("btnCapSig")
+    ?.addEventListener("click", (e) => { e.preventDefault(); capituloSiguiente(); });
+
+  // Marcadores
+  document.getElementById("btnListaMarcadores")
+    ?.addEventListener("click", (e) => { e.preventDefault(); abrirMarcadores(); });
+
+  document.getElementById("btnModoMarcadorBarra")
+    ?.addEventListener("click", (e) => { e.preventDefault(); toggleModoMarcador(); });
+
+  // Resaltador: evita que el click “muera” por propagación rara
+  document.getElementById("btnResaltadorActivo")
+    ?.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); });
+});
