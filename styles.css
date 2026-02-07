@@ -298,8 +298,18 @@ body.oscuro .versiculo { color:#fff; }
 
     
  #seccion-biblia {
- padding-bottom: 10px;
+ padding-bottom: 0px;
  }
+
+/* ✅ Espacio solo cuando la barra de acciones está visible */
+body:not(.barra-oculta) #seccion-biblia {
+  padding-bottom: 64px; /* altura real de la barra */
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+}
 
  /* ================= PREVIEW IMAGEN ================= */
  #previewImagen {
