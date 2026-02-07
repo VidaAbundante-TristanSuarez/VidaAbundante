@@ -26,9 +26,10 @@ const firebaseConfig = {
   apiKey: "AIzaSyBtDcQ2DhgMpLsn4FCdF82QNstfvAjguQ4",
   authDomain: "vidaabundante-f118a.firebaseapp.com",
   databaseURL: "https://vidaabundante-f118a-default-rtdb.firebaseio.com",
-  projectId: "vidaabundante-f118a"
-  storageBucket: "vidaabundante-f118a.appspot.com" // ✅ AGREGAR
+  projectId: "vidaabundante-f118a",
+  storageBucket: "vidaabundante-f118a.appspot.com"
 };
+
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
