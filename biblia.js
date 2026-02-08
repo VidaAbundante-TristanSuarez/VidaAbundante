@@ -1473,11 +1473,10 @@ window.cancelarNuevoMarcador = () => {
 async function guardarNuevoMarcador() {
   try {
     if (!uid) {
-      abrirLogin(); // o mostrar loginModal
+      loginModal.style.display = "flex";
       return;
     }
 
-    // Tomar valores
     const titulo = (document.getElementById("marcadorTitulo")?.value || "").trim();
     const nota = (document.getElementById("marcadorNota")?.value || "").trim();
     const color = document.getElementById("marcadorColor")?.value || "#fff3b0";
@@ -1488,45 +1487,85 @@ async function guardarNuevoMarcador() {
       return;
     }
 
-    // ✅ acá armás el objeto a guardar (ajustá campos si los tuyos se llaman distinto)
+    // ✅ Si estoy EDITANDO desde Mi Panel, uso la base original
+    const editId = window.__editMarcadorId || null;
+    const base = window.__editMarcadorBase || null;
+
+    const libro = base?.libro || libroSel?.value || "";
+    const capitulo = Number(base?.capitulo ?? capSel?.value ?? 0);
+
+    // versículos:
+    // - si edito: uso los versículos originales
+    // - si creo: uso selección actual
+    const versiculos = (base?.versiculos && Array.isArray(base.versiculos))
+      ? base.versiculos.map(Number).filter(n => !isNaN(n))
+      : Object.keys(seleccionMarcador || {})
+          .map(x => Number(x.split("_").pop()))
+          .filter(n => !isNaN(n));
+
+    // si NO es nota libre y NO hay versículos, no dejamos guardar
+    if (!creandoNotaLibre && versiculos.length === 0) {
+      mostrarToast("Seleccioná al menos 1 versículo 📌");
+      return;
+    }
+
     const data = {
       titulo,
       nota,
       color,
       keep,
-      libro: libroActual,
-      capitulo: capituloActual,
-      versiculos: Object.keys(seleccionMarcador || {}).map(x => Number(x.split("_").pop())).filter(n => !isNaN(n)),
+      libro,
+      capitulo,
+      versiculos,
       fecha: Date.now()
     };
 
-    // ✅ ruta personal (IMPORTANTE que coincida con tus reglas)
-    const id = crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
-    const ruta = `marcadores_personal/${uid}/${id}`;
+    // ✅ ruta: coincide con tu listener onValue(ref(db, "marcadores/" + uid))
+    const id = editId || (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()));
+    const ruta = `marcadores/${uid}/${id}`;
 
     await set(ref(db, ruta), data);
 
-    // limpiar selección + cerrar form/modal de manera prolija
+    // ✅ estado post-guardado
     seleccionMarcador = {};
-    ultimoMarcadorAplicado = { ...data };
+    creandoNotaLibre = false;
 
-    cancelarNuevoMarcador(true);  // o cerrarMarcadores(); según tu flujo
-    mostrarToast("✅ Marcador guardado");
+    // el resaltado al volver (solo si keep)
+    ultimoMarcadorAplicado = data.keep ? data : null;
 
-    // refrescar panel/lista si corresponde
-    abrirMarcadores(); // opcional si tu UI lo necesita
+    // limpiar edición
+    window.__editMarcadorId = null;
+    window.__editMarcadorBase = null;
 
-catch (e) {
-  console.error("❌ Error guardando marcador:", e);
-  if (String(e?.message || "").includes("PERMISSION_DENIED") || String(e?.code || "").includes("permission-denied")) {
-    mostrarToast("⛔ No tenés permiso para guardar (reglas Firebase)");
-  } else {
-    mostrarToast("❌ No se pudo guardar el marcador");
+    // cerrar UI del modal marcadores prolijo
+    const form = document.getElementById("formNuevoMarcador");
+    const lista = document.getElementById("listaMarcadores");
+    if (form) form.style.display = "none";
+    if (lista) lista.style.display = "block";
+
+    const modal = document.getElementById("modalMarcadores");
+    if (modal) {
+      modal.style.display = "none";
+      modal.setAttribute("aria-hidden", "true");
+    }
+
+    mostrarToast(editId ? "✅ Marcador actualizado" : "✅ Marcador guardado");
+    mostrarTexto();
+    refrescarBotonGuardarMarcador();
+
+  } catch (e) {
+    console.error("❌ Error guardando marcador:", e);
+
+    const msg = String(e?.message || "");
+    const code = String(e?.code || "");
+
+    if (msg.includes("PERMISSION_DENIED") || code.includes("permission-denied")) {
+      mostrarToast("⛔ No tenés permiso para guardar (reglas Firebase)");
+    } else {
+      mostrarToast("❌ No se pudo guardar el marcador");
+    }
   }
 }
-
-}
-
 
 // ================= ✨ Abrir Marcador 📌=================
 window.abrirMarcador = (idMarcador) => {
