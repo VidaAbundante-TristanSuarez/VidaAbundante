@@ -163,7 +163,7 @@
   <!-- ✅ Confirmar marcador rápido (solo visible en modo marcador) -->
   <button id="btnGuardarMarcador" type="button" onclick="guardarMarcadorRapido()" style="display:none;" aria-label="Guardar marcador">
     ✅
-  </button>
+  </button
 
   <!-- ✅ Ocultar barra (a la derecha) -->
   <div class="spacer"></div>
@@ -362,7 +362,12 @@
 
       <div style="display:flex; gap:10px; margin-top:10px; justify-content:flex-end;">
         <button type="button" onclick="cancelarNuevoMarcador(true)" style="border:none; padding:8px 12px; border-radius:999px; background:#eee; cursor:pointer;">Cancelar</button>
-        <button type="button" onclick="guardarNuevoMarcador()" style="border:none; padding:8px 12px; border-radius:999px; background:#4f6fa8; color:#fff; cursor:pointer;">Guardar</button>
+        <button id="btnGuardarNuevoMarcador" type="button"
+  style="border:none; padding:8px 12px; border-radius:999px; background:#4f6fa8; color:#fff; cursor:pointer;">
+  Guardar
+</button>
+
+      
       </div>
       
       <!-- ✅ Vista previa versículos marcados -->
@@ -394,6 +399,7 @@
   
 </body>
 </html>
+
 
 
 
