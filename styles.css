@@ -190,18 +190,46 @@ body.oscuro #barraTituloBiblia{
   font-weight: bold;
   }
 
-/* ✅ Versículo con “sangría colgante” */
+/* ================= VERSÍCULOS: NÚMERO AFUERA + TEXTO ALINEADO (PC/CEL) ================= */
 .versiculo{
   padding: 7px 14px;
-  padding-left: 28px;     /* espacio donde vive el número */
   border-radius: 8px;
   margin-bottom: 2px;
   cursor: pointer;
   transition: background .2s;
-  line-height: 1.25;  /* ✅ esto baja el “aire” real */
+  line-height: 1.25;
 
-  text-indent: -18px;     /* saca el num hacia la izquierda SOLO en el primer renglón */
+  /* ✅ layout estable */
+  display: grid;
+  grid-template-columns: 24px 1fr; /* gutter fijo para el número */
+  column-gap: 8px;
+  align-items: start;
+
+  /* ✅ evita “corrimientos” raros */
+  text-indent: 0;
 }
+
+/* Número del versículo */
+.num{
+  grid-column: 1;
+  display: block;
+  width: 24px;              /* mismo que el gutter */
+  text-align: right;
+
+  font-weight: 800;
+  font-size: 0.68em;
+  opacity: .8;
+
+  /* ✅ el número queda arriba, no se centra raro en multi-línea */
+  line-height: 1;
+  padding-top: 2px;
+}
+
+/* ✅ el texto siempre empieza alineado en la columna 2 */
+.versiculo > :not(.num){
+  grid-column: 2;
+}
+
 
 body.oscuro .versiculo { color:#fff; }
 
@@ -211,19 +239,6 @@ body.oscuro .versiculo { color:#fff; }
   color: #000 !important;            /* 👈 negro para que se lea siempre */
   border: 2px solid #1f6d76 !important;
   }
-
-/* Número del versículo */
-/* ✅ número pequeño, en el “gutter” */
-.num{
-  display: inline-block;
-  width: 18px;            /* ancho fijo para que no mueva el texto */
-  text-align: right;
-  margin-right: 6px;
-
-  font-weight: 700;
-  font-size: 0.68em;
-  opacity: .8;
-}
 
  /* ================= PANEL ================= */
   .panel-tabs button {
