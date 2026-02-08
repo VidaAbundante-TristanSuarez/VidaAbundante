@@ -26,7 +26,8 @@ const firebaseConfig = {
   apiKey: "AIzaSyBtDcQ2DhgMpLsn4FCdF82QNstfvAjguQ4",
   authDomain: "vidaabundante-f118a.firebaseapp.com",
   databaseURL: "https://vidaabundante-f118a-default-rtdb.firebaseio.com",
-  projectId: "vidaabundante-f118a"
+  projectId: "vidaabundante-f118a",
+  storageBucket: "vidaabundante-f118a.appspot.com",
 };
 
 const app = initializeApp(firebaseConfig);
@@ -136,6 +137,26 @@ function cargarCapitulos() {
   )];
   caps.forEach(c => (capSel.innerHTML += `<option>${c}</option>`));
   mostrarTexto();
+}
+
+// ================= ⭐ MOSTRAR TOAST ==============================
+function mostrarToast(msg, ms = 2200) {
+  let t = document.getElementById("toast");
+  if (!t) {
+    t = document.createElement("div");
+    t.id = "toast";
+    t.className = "toast";
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.display = "block";
+  requestAnimationFrame(() => (t.style.opacity = "1"));
+
+  clearTimeout(t._tm);
+  t._tm = setTimeout(() => {
+    t.style.opacity = "0";
+    setTimeout(() => (t.style.display = "none"), 250);
+  }, ms);
 }
 
 // ========================= 🎨 RESALTADOR COMPACTO  =======================================
@@ -961,6 +982,7 @@ async function subirImagen(destino = "personal") {
     console.error("❌ Error subiendo imagen:", e);
     mostrarToast("❌ No se pudo subir la imagen");
   }
+  
 }
 
 // ======================== ⭐ OPCION DESCARGAR (FIX) ====================================
@@ -1448,72 +1470,63 @@ window.cancelarNuevoMarcador = () => {
 };
 
 // ================= ✨ Guardar Nuevo Marcador 📌=================
-window.guardarNuevoMarcador = async () => {
-  if (!uid) return;
+async function guardarNuevoMarcador() {
+  try {
+    if (!uid) {
+      abrirLogin(); // o mostrar loginModal
+      return;
+    }
 
-  const editando = !!window.__editMarcadorId;
+    // Tomar valores
+    const titulo = (document.getElementById("marcadorTitulo")?.value || "").trim();
+    const nota = (document.getElementById("marcadorNota")?.value || "").trim();
+    const color = document.getElementById("marcadorColor")?.value || "#fff3b0";
+    const keep = !!document.getElementById("marcadorKeep")?.checked;
 
-  // ✅ 1) si estoy creando nuevo: uso selección
-  // ✅ 2) si estoy editando: uso la base guardada (no rompe aunque no haya selección)
-  let ids = Object.keys(seleccionMarcador || {});
-  let nums = ids.map(id => Number(id.split("_")[2])).sort((a,b)=>a-b);
+    if (!titulo) {
+      mostrarToast("Poné un título 🙏");
+      return;
+    }
 
-  if (nums.length === 0 && editando && window.__editMarcadorBase?.versiculos?.length) {
-    nums = window.__editMarcadorBase.versiculos.slice().sort((a,b)=>a-b);
+    // ✅ acá armás el objeto a guardar (ajustá campos si los tuyos se llaman distinto)
+    const data = {
+      titulo,
+      nota,
+      color,
+      keep,
+      libro: libroActual,
+      capitulo: capituloActual,
+      versiculos: Object.keys(seleccionMarcador || {}).map(x => Number(x.split("_").pop())).filter(n => !isNaN(n)),
+      fecha: Date.now()
+    };
+
+    // ✅ ruta personal (IMPORTANTE que coincida con tus reglas)
+    const id = crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
+    const ruta = `marcadores_personal/${uid}/${id}`;
+
+    await set(ref(db, ruta), data);
+
+    // limpiar selección + cerrar form/modal de manera prolija
+    seleccionMarcador = {};
+    ultimoMarcadorAplicado = { ...data };
+
+    cancelarNuevoMarcador(true);  // o cerrarMarcadores(); según tu flujo
+    mostrarToast("✅ Marcador guardado");
+
+    // refrescar panel/lista si corresponde
+    abrirMarcadores(); // opcional si tu UI lo necesita
+
+catch (e) {
+  console.error("❌ Error guardando marcador:", e);
+  if (String(e?.message || "").includes("PERMISSION_DENIED") || String(e?.code || "").includes("permission-denied")) {
+    mostrarToast("⛔ No tenés permiso para guardar (reglas Firebase)");
+  } else {
+    mostrarToast("❌ No se pudo guardar el marcador");
   }
+}
 
-  // ✅ YA NO OBLIGA A SELECCIONAR
-  // Si no hay versículos, se guarda igual con versiculos: []
-  // y la referencia queda "Libro Capítulo" (sin :rango)
+}
 
-  const titulo = (document.getElementById("marcadorTitulo").value || "").trim();
-  const nota = (document.getElementById("marcadorNota").value || "").trim();
-  const color = document.getElementById("marcadorColor").value || "#fff3b0";
-  const keep = document.getElementById("marcadorKeep").checked;
-
-  // ✅ libro/capítulo: si estoy editando, respeto lo del marcador; si no, lo actual
-  const libroBase = editando ? (window.__editMarcadorBase?.libro || libroSel.value) : libroSel.value;
-  const capBase   = editando ? (window.__editMarcadorBase?.capitulo || Number(capSel.value)) : Number(capSel.value);
-
-  // ✅ ref: con rango si hay versículos, si no solo "Libro Capítulo"
-  const refTxt = (nums.length > 0)
-    ? `${libroBase} ${capBase}:${formatearVersiculosComoRango(nums)}`
-    : `${libroBase} ${capBase}`;
-
-  const data = {
-    fecha: editando ? (marcadores?.[window.__editMarcadorId]?.fecha || Date.now()) : Date.now(),
-    titulo: titulo || "Marcador",
-    nota,
-    libro: libroBase,
-    capitulo: Number(capBase),
-    versiculos: nums,   // ✅ puede ser []
-    ref: refTxt,
-    color,
-    keep
-  };
-
-  const idMarcador = window.__editMarcadorId || `${Date.now()}`;
-  await set(ref(db, `marcadores/${uid}/${idMarcador}`), data);
-
-  // limpiar estado edición
-  window.__editMarcadorId = null;
-  window.__editMarcadorBase = null;
-
-  ultimoMarcadorAplicado = keep ? { ...data } : null;
-
-  // salir del modo marcador si estaba
-  modoMarcador = false;
-  seleccionMarcador = {};
-  document.body.classList.remove("modo-marcador");
-
-  const btn = document.getElementById("btnModoMarcadorBarra");
-  if (btn) btn.classList.remove("activo");
-
-  refrescarBotonGuardarMarcador();
-  mostrarToast("✅ Guardado");
-  cerrarMarcadores();
-  mostrarTexto();
-};
 
 // ================= ✨ Abrir Marcador 📌=================
 window.abrirMarcador = (idMarcador) => {
