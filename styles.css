@@ -230,6 +230,10 @@ body.oscuro #barraTituloBiblia{
   grid-column: 2;
 }
 
+.versiculo .txt{
+  grid-column: 2;
+  display: block;
+}
 
 body.oscuro .versiculo { color:#fff; }
 
