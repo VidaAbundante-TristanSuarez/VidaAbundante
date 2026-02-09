@@ -124,12 +124,13 @@
 /* ✅ Barra fija con título + flechas */
 #barraTituloBiblia{
   position: sticky;
-  top: 50;                 /* 👈 altura del header */
+  top: 0;              /* ✅ vuelve a pegarse */
   z-index: 50;
-  background: inherit;    /* respeta claro/oscuro */
+  background: inherit;
   padding: 8px 0;
   border-bottom: 1px solid rgba(0,0,0,.08);
 }
+
 
 body.oscuro #barraTituloBiblia{
   border-bottom: 1px solid rgba(255,255,255,.12);
@@ -350,6 +351,10 @@ body.oscuro .versiculo { color:#fff; }
  #seccion-biblia {
  padding-bottom: 0px;
  }
+
+#seccion-biblia{
+  padding-top: 60px;  /* ✅ “reserva” el lugar del header */
+}
 
 /* ✅ Espacio solo cuando la barra de acciones está visible */
 body:not(.barra-oculta) #seccion-biblia {
