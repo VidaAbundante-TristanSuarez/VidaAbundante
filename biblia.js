@@ -921,13 +921,20 @@ try {
    // subir imagen (si existe la función)
   const subirIglesia = !!document.getElementById("checkIglesia")?.checked;
 
-  if (typeof subirImagen === "function") {
-    const tareas = [];
-    if (subirIglesia) tareas.push(subirImagen("iglesia"));
-    tareas.push(subirImagen("personal"));
-    await Promise.all(tareas); // ✅ asegura que termine antes de seguir
-  }
+if (typeof subirImagen === "function") {
+  const tareas = [];
+  if (subirIglesia) tareas.push(subirImagen("iglesia"));
+  tareas.push(subirImagen("personal"));
 
+  const resultados = await Promise.allSettled(tareas);
+
+  const fallos = resultados.filter(r => r.status === "rejected");
+  if (fallos.length) {
+    console.warn("⚠️ Subida falló:", fallos);
+    mostrarToast("⚠️ Se descargó la imagen, pero no se pudo subir (CORS).");
+  }
+}
+  
   return true;
 }
 
