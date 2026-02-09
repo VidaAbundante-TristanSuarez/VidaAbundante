@@ -402,7 +402,10 @@ if (modoImagen && !imagen) {
 }
 
   // ================= Contenido =================
-  div.innerHTML = `<span class="num">${v.Versiculo}</span> ${v.RV1960}`;
+div.innerHTML = `
+  <span class="num">${v.Versiculo}</span>
+  <span class="txt">${v.RV1960}</span>
+`;
 
   // ================= Click =================
   div.onclick = () => toggleVersiculo(id, v.Versiculo);
@@ -2153,6 +2156,19 @@ document.addEventListener("DOMContentLoaded", () => {
       e.preventDefault();
       e.stopPropagation();
       toggleModoMarcador();
+    };
+  }
+});
+
+// ================= LISTENER GUARDAR NUEVO MARCADOR (BOTÓN DEL MODAL) =================
+document.addEventListener("DOMContentLoaded", () => {
+  const b = document.getElementById("btnGuardarNuevoMarcador");
+  if (b) {
+    b.type = "button";
+    b.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      guardarNuevoMarcador();
     };
   }
 });
