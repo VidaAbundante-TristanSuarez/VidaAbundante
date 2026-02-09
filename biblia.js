@@ -66,7 +66,12 @@ let textStyle = {
   underline: false
 };
 
-let filtroMarcadoresPanel = "ambos"; // "ambos" | "notas" | "versiculos"
+// ================= FILTROS PANEL (Mi Panel > Marcadores) =================
+let ordenMarcadores = "fecha";        // "fecha" | "biblia"
+let filtroNotasPanel = "con";         // "con" | "sin"   (solo notas)
+let modoEliminarMarcadores = false;
+let seleccionEliminarMarcadores = {}; // {id:true}
+
 let creandoNotaLibre = false;        // ✅ nota sin versículos
 
 // ================= AUTH =====================================
@@ -1648,7 +1653,6 @@ window.guardarMarcadorRapido = () => {
 };
 
 // ================= 🔺RENDER PANEL MARCADORES con orden: fecha o libro/capítulo 📌===================
-let ordenMarcadores = "fecha"; // "fecha" | "biblia"
 let modoEliminarMarcadores = false;
 let seleccionEliminarMarcadores = {}; // {id:true}
 
@@ -1656,10 +1660,9 @@ function renderPanelMarcadores() {
   const panel = document.getElementById("panel-marcadores");
   if (!panel) return;
 
-  // ✅ así nunca se pisa el id
   const items = Object.entries(marcadores || {}).map(([id, m]) => ({ ...m, id }));
 
-  const ordenados = items.sort((a,b) => {
+  const ordenados = items.sort((a, b) => {
     if (ordenMarcadores === "biblia") {
       const la = (a.libro || "").localeCompare(b.libro || "");
       if (la !== 0) return la;
@@ -1670,43 +1673,52 @@ function renderPanelMarcadores() {
     return (b.fecha || 0) - (a.fecha || 0);
   });
 
-  const cantSel = Object.keys(seleccionEliminarMarcadores || {}).length;
-
-  // ✅ filtro (todos | notas | versiculos)
+  // ✅ Filtro: SOLO NOTAS (con versículo / sin versículo)
   const filtrados = ordenados.filter(m => {
-    if (filtroMarcadoresPanel === "notas") return !!(m.nota && m.nota.trim());
-    if (filtroMarcadoresPanel === "versiculos") return (m.versiculos || []).length > 0;
-    return true;
+    const tieneNota = !!(m.nota && String(m.nota).trim());
+    if (!tieneNota) return false;
+
+    const cantVers = (m.versiculos || []).length;
+    if (filtroNotasPanel === "con") return cantVers > 0;
+    return cantVers === 0;
   });
 
-  panel.innerHTML = `
-   <div style="display:flex; align-items:center; justify-content:flex-start; gap:10px; margin-bottom:10px; flex-wrap:wrap;">
-   <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-        <b>📌 Marcadores</b>
+  const cantSel = Object.keys(seleccionEliminarMarcadores || {}).length;
 
-        <label style="font-size:13px; display:flex; gap:6px; align-items:center;">
-          Ordenar:
-          <select id="ordenMarcadoresSelect" style="padding:6px 10px; border-radius:999px;">
-            <option value="fecha">Fecha</option>
-            <option value="biblia">Libro / Capítulo</option>
-          </select>
-        </label>
+  // iconos dinámicos
+  const iconOrden = (ordenMarcadores === "fecha")
+    ? `<i class="fa-regular fa-calendar"></i>`
+    : `<i class="fa-solid fa-book-bible"></i>`;
+
+  const iconFiltroNotas = (filtroNotasPanel === "con")
+    ? `<i class="fa-solid fa-thumbtack"></i>`
+    : `<i class="fa-solid fa-sheet-plastic"></i>`;
+
+  panel.innerHTML = `
+    <div class="panel-marcadores-bar">
+      <div class="pm-left">
+        <b>📌 Marcadores</b>
       </div>
 
-      <div style="display:flex; align-items:center; gap:8px;">
-        <button type="button" onclick="abrirNotaLibre()" title="Nueva nota"
-          style="border:none; border-radius:999px; padding:8px 10px; cursor:pointer;">
-          ➕
+      <div class="pm-right">
+        <!-- 1) AGREGAR NOTA -->
+        <button type="button" class="pm-btn" onclick="abrirNotaLibre()" title="Agregar nota">
+          <i class="fa-solid fa-square-plus"></i>
         </button>
 
-        <button type="button" onclick="toggleFiltroMarcadoresPanel()" title="Filtrar notas/versículos"
-          style="border:none; border-radius:999px; padding:8px 10px; cursor:pointer;">
-          🗒
+        <!-- 2) ORDEN FECHA / BIBLICO -->
+        <button type="button" class="pm-btn" onclick="toggleOrdenMarcadoresPanel()" title="Ordenar">
+          ${iconOrden}
         </button>
 
-        <button type="button" onclick="toggleModoEliminarMarcadores()" title="Eliminar"
-          style="border:none; border-radius:999px; padding:8px 10px; cursor:pointer;">
-          🗑
+        <!-- 3) FILTRO NOTAS CON / SIN VERSICULO -->
+        <button type="button" class="pm-btn" onclick="toggleFiltroNotasPanel()" title="Filtrar notas">
+          ${iconFiltroNotas}
+        </button>
+
+        <!-- 4) ELIMINAR -->
+        <button type="button" class="pm-btn" onclick="toggleModoEliminarMarcadores()" title="Eliminar">
+          <i class="fa-solid fa-trash-can"></i>
         </button>
       </div>
     </div>
@@ -1721,13 +1733,12 @@ function renderPanelMarcadores() {
     ` : ``}
 
     ${filtrados.length ? filtrados.map(m => {
-      const fechaTxt = m.fecha ? new Date(m.fecha).toLocaleString() : "";
+      const fechaTxt = m.fecha ? new Date(m.fecha).toLocaleString("es-AR") : "";
       const refTxt = m.ref || (m.libro && m.capitulo ? `${m.libro} ${m.capitulo}` : "Nota");
       const checked = !!(seleccionEliminarMarcadores && seleccionEliminarMarcadores[m.id]);
 
-      // ✅ texto de versículos (si aplica)
       let textoVers = "";
-      if (m.libro && m.capitulo && (m.versiculos || []).length && Array.isArray(window.bibliaData)) {
+      if (m.libro && m.capitulo && (m.versiculos || []).length) {
         const partes = (m.versiculos || []).map(n => {
           const vv = bibliaData.find(x => x.Libro === m.libro && x.Capitulo == m.capitulo && x.Versiculo == n);
           return vv ? vv.RV1960 : "";
@@ -1748,14 +1759,17 @@ function renderPanelMarcadores() {
                 <input type="checkbox" ${checked ? "checked":""}
                   onchange="toggleSeleccionEliminarMarcador('${m.id}', this.checked)">
               ` : `
-                <button type="button" onclick="abrirMarcador('${m.id}')" title="Ir"
-                  style="border:none; border-radius:999px; padding:8px 10px; cursor:pointer;">↩</button>
+                <button type="button" class="pm-btn" onclick="abrirMarcadorDesdePanel('${m.id}')" title="Volver">
+                  <i class="fa-solid fa-reply"></i>
+                </button>
 
-                <button type="button" onclick="editarMarcadorEnPanel('${m.id}')" title="Editar"
-                  style="border:none; border-radius:999px; padding:8px 10px; cursor:pointer;">✏️</button>
+                <button type="button" class="pm-btn" onclick="editarMarcadorEnPanel('${m.id}')" title="Editar">
+                  <i class="fa-solid fa-pen-to-square"></i>
+                </button>
 
-                <button type="button" onclick="abrirCompartirMarcador('${m.id}')" title="Compartir"
-                  style="border:none; border-radius:999px; padding:8px 10px; cursor:pointer;">📤</button>
+                <button type="button" class="pm-btn" onclick="abrirCompartirMarcador('${m.id}')" title="Compartir">
+                  <i class="fa-solid fa-share-nodes"></i>
+                </button>
               `}
             </div>
           </div>
@@ -1764,18 +1778,30 @@ function renderPanelMarcadores() {
           ${m.nota ? `<div class="nota">${m.nota}</div>` : ""}
         </div>
       `;
-    }).join("") : `<p style="opacity:.75">Todavía no guardaste marcadores.</p>`}
+    }).join("") : `<p style="opacity:.75">Todavía no tenés notas para este filtro.</p>`}
   `;
-
-  const sel = document.getElementById("ordenMarcadoresSelect");
-  if (sel) {
-    sel.value = ordenMarcadores;
-    sel.onchange = () => {
-      ordenMarcadores = sel.value;
-      renderPanelMarcadores();
-    };
-  }
 }
+
+// ================= TOGGLES PANEL (iconos tipo sol/luna) =================
+window.toggleOrdenMarcadoresPanel = () => {
+  ordenMarcadores = (ordenMarcadores === "fecha") ? "biblia" : "fecha";
+  renderPanelMarcadores();
+};
+
+window.toggleFiltroNotasPanel = () => {
+  filtroNotasPanel = (filtroNotasPanel === "con") ? "sin" : "con";
+  renderPanelMarcadores();
+};
+
+// ✅ FIX: desde el panel SIEMPRE ir a la Biblia y recién ahí abrir marcador
+window.abrirMarcadorDesdePanel = (idMarcador) => {
+  irA("biblia"); // cambia de sección
+
+  // esperamos un pelín para que ya esté visible
+  setTimeout(() => {
+    abrirMarcador(idMarcador);
+  }, 0);
+};
 
 // ================= Toggle Filtro Marcadores Panel 📌===================
 window.toggleFiltroMarcadoresPanel = () => {
