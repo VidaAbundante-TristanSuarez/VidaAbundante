@@ -367,7 +367,7 @@ body.oscuro .versiculo { color:#fff; }
 
 /* ✅ Espacio solo cuando la barra de acciones está visible */
 body:not(.barra-oculta) #seccion-biblia {
-  padding-bottom: 12px; /* altura real de la barra */
+  padding-bottom: 5px; /* altura real de la barra es 64 */
 }
 
 html, body {
