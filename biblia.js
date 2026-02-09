@@ -758,33 +758,15 @@ previewImagen.style.backgroundColor = fondoUsable ? "transparent" : "#ffffff";
   previewTexto.style.fontFamily = fuente;
   previewTextoBack.style.fontFamily = fuente;
 
-  // ================= Formato / Tamaño =================
-const formatoStory = previewImagen.classList.contains("preview-story");
+// ================= Formato / Tamaño (RESPUESTA INMEDIATA) =================
 const sizeSlider = document.getElementById("personalizarTamaño");
-const sizeBase = sizeSlider ? Number(sizeSlider.value) : (formatoStory ? 56 : 48);
+let fontSize = sizeSlider ? Number(sizeSlider.value) : 32;
 
-let fontSize = sizeBase;
 previewTexto.style.lineHeight = "1.3";
 previewTextoBack.style.lineHeight = "1.3";
 
-// alto usable real del wrapper (sin padding)
-const cs = getComputedStyle(wrapper);
-const maxHeight =
-  wrapper.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
-
-// aplicar el size que eligió el usuario primero
 previewTexto.style.fontSize = fontSize + "px";
 previewTextoBack.style.fontSize = fontSize + "px";
-previewTexto.offsetHeight; // fuerza reflow
-
-// si se desborda, recién ahí achicamos
-let guard = 0;
-while (previewTexto.scrollHeight > maxHeight && fontSize > 14 && guard < 200) {
-  fontSize--;
-  previewTexto.style.fontSize = fontSize + "px";
-  previewTextoBack.style.fontSize = fontSize + "px";
-  guard++;
-}
 
   // ================= Color / Outline =================
   const colorEl = document.getElementById("personalizarColor");
