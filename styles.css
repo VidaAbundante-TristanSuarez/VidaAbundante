@@ -110,8 +110,10 @@
 }
 
 #barraTituloBiblia h3{
-  margin: 12px 0;
+  margin: 0;                   /* 👈 elimina espacio extra */
+  padding: 2px 0 0 0;          /* 👈 pequeño respiro arriba */
   font-weight: 800;
+  font-size: 16px;             /* 👈 podés bajar si querés */
 }
 
 /* ✅ Botones flecha prolijos (celestito + redondos) */
@@ -127,7 +129,7 @@
   top: 0;              /* ✅ vuelve a pegarse */
   z-index: 50;
   background: #eafaff;
-  padding: 8px 0;
+  padding: 4px 0;
   border-bottom: 1px solid rgba(0,0,0,.08);
 }
 
