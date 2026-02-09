@@ -192,7 +192,7 @@ body.oscuro #barraTituloBiblia{
 
 /* ================= VERSÍCULOS: NÚMERO AFUERA + TEXTO ALINEADO (PC/CEL) ================= */
 .versiculo{
-  padding: 7px 14px;
+  padding: 7px 10px;            /* 👈 antes 14px → ahora menos espacio lateral */
   border-radius: 8px;
   margin-bottom: 2px;
   cursor: pointer;
@@ -201,28 +201,29 @@ body.oscuro #barraTituloBiblia{
 
   /* ✅ layout estable */
   display: grid;
-  grid-template-columns: 24px 1fr; /* gutter fijo para el número */
-  column-gap: 8px;
-  align-items: start;
+  grid-template-columns: 22px 1fr; /* 👈 antes 24px */
+  column-gap: 6px;                /* 👈 antes 8px */
+  align-items: center;            /* 👈 antes start (esto centra verticalmente) */
 
-  /* ✅ evita “corrimientos” raros */
   text-indent: 0;
 }
 
 /* Número del versículo */
 .num{
   grid-column: 1;
-  display: block;
-  width: 24px;              /* mismo que el gutter */
-  text-align: right;
+  display: flex;                 /* 👈 para centrado real */
+  align-items: center;           /* 👈 centra vertical */
+  justify-content: center;       /* 👈 centra horizontal */
+
+  width: 22px;                   /* 👈 igual que columna */
+  text-align: center;            /* 👈 antes right */
 
   font-weight: 800;
   font-size: 0.68em;
   opacity: .8;
 
-  /* ✅ el número queda arriba, no se centra raro en multi-línea */
-  line-height: 1;
-  padding-top: 2px;
+  line-height: 1;                /* mantiene compacto */
+  padding-top: 0;                /* 👈 quitamos el ajuste manual */
 }
 
 /* ✅ el texto siempre empieza alineado en la columna 2 */
@@ -237,12 +238,12 @@ body.oscuro #barraTituloBiblia{
 
 body.oscuro .versiculo { color:#fff; }
 
- /* Versículo seleccionado para imagen */
-  .versiculo.imagen {
+/* Versículo seleccionado para imagen */
+.versiculo.imagen {
   background: #a9ffef !important;
-  color: #000 !important;            /* 👈 negro para que se lea siempre */
+  color: #000 !important;
   border: 2px solid #1f6d76 !important;
-  }
+}
 
  /* ================= PANEL ================= */
   .panel-tabs button {
