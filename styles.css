@@ -126,7 +126,7 @@
   position: sticky;
   top: 0;              /* ✅ vuelve a pegarse */
   z-index: 50;
-  background: inherit;
+  background: #c9eeff;
   padding: 8px 0;
   border-bottom: 1px solid rgba(0,0,0,.08);
 }
