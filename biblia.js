@@ -58,6 +58,7 @@ let modoImagen = false;
 let seleccionImagen = {};
 let fondoFinal = null;
 let fondoFinalBlobUrl = null; // ✅ fondo seguro para html2canvas
+let creandoNotaLibre = false; // ✅ estado: nota sin versículo
 
 let textStyle = {
   upper: false,
