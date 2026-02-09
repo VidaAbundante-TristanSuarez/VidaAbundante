@@ -123,10 +123,9 @@
 
 /* ✅ Barra fija con título + flechas */
 #barraTituloBiblia{
-  position: sticky;
-  top: 0;                 /* si querés que quede debajo del header, decime el alto y lo ajusto */
-  z-index: 50;
-  background: inherit;    /* respeta claro/oscuro */
+  position: relative;   /* 🔥 ya no sticky */
+  z-index: 2;
+  background: inherit;
   padding: 8px 0;
   border-bottom: 1px solid rgba(0,0,0,.08);
 }
@@ -349,6 +348,21 @@ body.oscuro .versiculo { color:#fff; }
  #seccion-biblia {
  padding-bottom: 0px;
  }
+
+/* ================= SCROLL SOLO EN TEXTO BIBLIA ================= */
+
+#seccion-biblia{
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 120px); /* ajustable si querés */
+}
+
+#texto{
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
 
 /* ✅ Espacio solo cuando la barra de acciones está visible */
 body:not(.barra-oculta) #seccion-biblia {
