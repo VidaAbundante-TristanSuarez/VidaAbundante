@@ -126,11 +126,17 @@
   position: sticky;
   top: 0;              /* ✅ vuelve a pegarse */
   z-index: 50;
-  background: #c9eeff;
+  background: #eafaff;
   padding: 8px 0;
   border-bottom: 1px solid rgba(0,0,0,.08);
 }
 
+#barraTituloBiblia{
+  box-shadow: 0 6px 14px rgba(0,0,0,.06);
+}
+body.oscuro #barraTituloBiblia{
+  box-shadow: 0 6px 14px rgba(0,0,0,.35);
+}
 
 body.oscuro #barraTituloBiblia{
   border-bottom: 1px solid rgba(255,255,255,.12);
