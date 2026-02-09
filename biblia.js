@@ -66,14 +66,6 @@ let textStyle = {
   underline: false
 };
 
-// ================= FILTROS PANEL (Mi Panel > Marcadores) =================
-let ordenMarcadores = "fecha";        // "fecha" | "biblia"
-let filtroNotasPanel = "con";         // "con" | "sin"   (solo notas)
-let modoEliminarMarcadores = false;
-let seleccionEliminarMarcadores = {}; // {id:true}
-
-let creandoNotaLibre = false;        // ✅ nota sin versículos
-
 // ================= AUTH =====================================
 onAuthStateChanged(auth, user => {
   uid = user ? user.uid : null;
@@ -1653,8 +1645,15 @@ window.guardarMarcadorRapido = () => {
 };
 
 // ================= 🔺RENDER PANEL MARCADORES con orden: fecha o libro/capítulo 📌===================
+// (dejá donde ya esté esto en tu archivo)
+let ordenMarcadores = "fecha"; // "fecha" | "biblia"
+
+// (dejá estas)
 let modoEliminarMarcadores = false;
 let seleccionEliminarMarcadores = {}; // {id:true}
+
+// (agregá esta si no existe en otro lado)
+let filtroNotasPanel = "con"; // "con" | "sin"
 
 function renderPanelMarcadores() {
   const panel = document.getElementById("panel-marcadores");
@@ -1801,15 +1800,6 @@ window.abrirMarcadorDesdePanel = (idMarcador) => {
   setTimeout(() => {
     abrirMarcador(idMarcador);
   }, 0);
-};
-
-// ================= Toggle Filtro Marcadores Panel 📌===================
-window.toggleFiltroMarcadoresPanel = () => {
-  // ciclo: ambos -> notas -> versiculos -> ambos
-  filtroMarcadoresPanel =
-    filtroMarcadoresPanel === "ambos" ? "notas" :
-    filtroMarcadoresPanel === "notas" ? "versiculos" : "ambos";
-  renderPanelMarcadores();
 };
 
 // ================= Editar marcador desde Mi Panel (reusa tu modal) 📌===================
