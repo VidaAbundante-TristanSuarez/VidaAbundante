@@ -1111,12 +1111,14 @@ body.modo-imagen #btnCrearImagen{
   display: none;
   text-align: center;
   font-size: 13px;
-  padding: 6px;
-  background: rgba(0,0,0,0.08);
+  padding: 8px;
+  background: #d1eeff;
+  color: #000;
 }
 
 body.oscuro #bannerModoMarcador {
-  background: rgba(255,255,255,0.08);
+  background: #1f3a4d;
+  color: #ffffff;
 }
 
 /* ✅ En modo marcador, ocultar botón de lista (📁) */
