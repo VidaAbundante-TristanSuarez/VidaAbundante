@@ -107,13 +107,19 @@
   align-items:center;
   justify-content:space-between;
   gap: 10px;
+  position: sticky;
+  top: 0;              /* ✅ vuelve a pegarse */
+  z-index: 50;
+  background: #eafaff;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(0,0,0,.08);
+  box-shadow: 0 6px 14px rgba(0,0,0,.06);
 }
 
 #barraTituloBiblia h3{
   margin: 0;                   /* 👈 elimina espacio extra */
-  padding: 2px 0 0 0;          /* 👈 pequeño respiro arriba */
-  padding-left: 10px;
-  font-weight: 800;
+  padding: 2px 0 0 10px;          /* 👈 pequeño respiro arriba */
+    font-weight: 800;
   font-size: 16px;             /* 👈 podés bajar si querés */
 }
 
@@ -123,27 +129,11 @@
   gap: 8px;
   align-items:center;
 }
-
-/* ✅ Barra fija con título + flechas */
-#barraTituloBiblia{
-  position: sticky;
-  top: 0;              /* ✅ vuelve a pegarse */
-  z-index: 50;
-  background: #eafaff;
-  padding: 4px 0;
-  border-bottom: 1px solid rgba(0,0,0,.08);
-}
-
-#barraTituloBiblia{
-  box-shadow: 0 6px 14px rgba(0,0,0,.06);
-}
+ 
 body.oscuro #barraTituloBiblia{
   box-shadow: 0 6px 14px rgba(0,0,0,.35);
-}
-
-body.oscuro #barraTituloBiblia{
   border-bottom: 1px solid rgba(255,255,255,.12);
-}
+ }
 
 /* ✅ Título con Lora */
 #titulo{
@@ -362,7 +352,7 @@ body.oscuro .versiculo { color:#fff; }
  }
 
 #seccion-biblia{
-  padding-top: 60px;  /* ✅ “reserva” el lugar del header */
+  padding-top: 10px;  /* ✅ “reserva” el lugar del header */
 }
 
 /* ✅ Espacio solo cuando la barra de acciones está visible */
