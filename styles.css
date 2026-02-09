@@ -568,11 +568,13 @@ display: none;
 text-align: center;
 font-size: 13px;
 padding: 6px;
-background: rgba(0,0,0,0.08);
+background: #d1eeff;
+color: #000;
 }
 
 body.oscuro #bannerModoImagen {
-background: rgba(255,255,255,0.08);
+background: #1f3a4d;
+color: #ffffff;
 }
 
 body.modo-imagen #texto {
@@ -834,11 +836,11 @@ body.oscuro #modalPersonalizar .cerrar-modal{
 /* box de tamaño */
 /* ✅ Tamaño: más angosto + sin flechas internas */
 .tamano-input{
-  width: 34px;          /* ~ mitad */
-  height: 34px;
+  width: 28px;          /* ~ mitad */
+  height: 28px;
   text-align:center;
   padding: 0 4px;
-  font-size: 14px;
+  font-size: 12px;
   appearance: textfield;
 }
 
