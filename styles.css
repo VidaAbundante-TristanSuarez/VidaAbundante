@@ -118,9 +118,10 @@
 
 #barraTituloBiblia h3{
   margin: 0;                   /* 👈 elimina espacio extra */
-  padding: 2px 0 0 10px;          /* 👈 pequeño respiro arriba */
+  padding: 2px 0 0 20px;          /* 👈 pequeño respiro arriba */
     font-weight: 800;
-  font-size: 16px;             /* 👈 podés bajar si querés */
+  font-size: 17px;             /* 👈 podés bajar si querés */
+  color: #000;
 }
 
 /* ✅ Botones flecha prolijos (celestito + redondos) */
