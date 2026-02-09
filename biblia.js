@@ -27,13 +27,15 @@ const firebaseConfig = {
   authDomain: "vidaabundante-f118a.firebaseapp.com",
   databaseURL: "https://vidaabundante-f118a-default-rtdb.firebaseio.com",
   projectId: "vidaabundante-f118a",
-  storageBucket: "vidaabundante-f118a.appspot.com",
+  storageBucket: "vidaabundante-f118a.firebasestorage.app",
 };
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getDatabase(app);
-const storage = getStorage(app);
+
+// ✅ Opción blindada (recomendada):
+const storage = getStorage(app, "gs://vidaabundante-f118a.firebasestorage.app");
 
 // ================= ESTADO GLOBAL =================
 let uid = null;
