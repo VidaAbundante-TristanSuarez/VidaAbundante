@@ -103,18 +103,27 @@
 
      /* ✅ Título + flechas en la misma línea */
 #barraTituloBiblia{
+  position: sticky;
+  top: 0;
+  z-index: 50;
+
   display:flex;
   align-items:center;
   justify-content:space-between;
-  gap: 10px;
-  position: sticky;
-  top: 0;              /* ✅ vuelve a pegarse */
-  z-index: 50;
+  gap:10px;
+
   background: #eafaff;
-  padding: 4px 0;
+  padding: 6px 15px;   /* 👈 padding interno propio */
+  
   border-bottom: 1px solid rgba(0,0,0,.08);
   box-shadow: 0 6px 14px rgba(0,0,0,.06);
+
+  /* 👇 rompe el padding lateral del contenedor */
+  margin-left: -15px;
+  margin-right: -15px;
+  margin-bottom: 12px;
 }
+
 
 #barraTituloBiblia h3{
   margin: 0;                   /* 👈 elimina espacio extra */
