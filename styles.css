@@ -112,6 +112,7 @@
 #barraTituloBiblia h3{
   margin: 0;                   /* 👈 elimina espacio extra */
   padding: 2px 0 0 0;          /* 👈 pequeño respiro arriba */
+  padding-left: 10px;
   font-weight: 800;
   font-size: 16px;             /* 👈 podés bajar si querés */
 }
@@ -366,7 +367,7 @@ body.oscuro .versiculo { color:#fff; }
 
 /* ✅ Espacio solo cuando la barra de acciones está visible */
 body:not(.barra-oculta) #seccion-biblia {
-  padding-bottom: 64px; /* altura real de la barra */
+  padding-bottom: 12px; /* altura real de la barra */
 }
 
 html, body {
