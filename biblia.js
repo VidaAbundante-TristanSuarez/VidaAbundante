@@ -175,31 +175,6 @@ function estimarFontSizeInicial(texto) {
   return 21;
 }
 
-// ================= ⭐ AUTOAJUSTAR FONTSIZE ==============================
-function autoAjustarFontSize(wrapper, elFront, elBack, startPx, minPx = 16) {
-  if (!wrapper || !elFront || !elBack) return startPx;
-
-  const maxH = wrapper.clientHeight;
-  const maxW = wrapper.clientWidth;
-
-  let px = startPx;
-
-  for (let i = 0; i < 40; i++) {
-    elFront.style.fontSize = px + "px";
-    elBack.style.fontSize = px + "px";
-
-    const okH = elFront.scrollHeight <= maxH && elBack.scrollHeight <= maxH;
-    const okW = elFront.scrollWidth  <= maxW && elBack.scrollWidth  <= maxW;
-
-    if (okH && okW) break;
-
-    px -= 1;
-    if (px <= minPx) { px = minPx; break; }
-  }
-
-  return px;
-}
-
 // ========================= 🎨 RESALTADOR COMPACTO  =======================================
 document.addEventListener("DOMContentLoaded", () => {
 
@@ -806,28 +781,20 @@ previewImagen.style.backgroundColor = fondoUsable ? "transparent" : "#ffffff";
   previewTexto.style.fontFamily = fuente;
   previewTextoBack.style.fontFamily = fuente;
 
-// ================= Formato / Tamaño (AUTO por texto + manual si el usuario toca) =================
+// ================= Tamaño (AUTO sugerido / MANUAL libre) =================
 const sizeSlider = document.getElementById("personalizarTamaño");
 
-previewTexto.style.lineHeight = "1.3";
-previewTextoBack.style.lineHeight = "1.3";
-
-// 1) base: si NO tocó el usuario => AUTO; si tocó => slider
-let baseSize;
+// 1) si el usuario NO tocó tamaño => sugerimos por cantidad de texto
 if (!userSetFontSize) {
-  baseSize = estimarFontSizeInicial(textoFinal);
-  if (sizeSlider) sizeSlider.value = String(baseSize);
-} else {
-  baseSize = sizeSlider ? Number(sizeSlider.value) : 32;
+  const sugerido = estimarFontSizeInicial(textoFinal);
+  if (sizeSlider) sizeSlider.value = String(sugerido);
 }
 
-// 2) fit: bajamos si hace falta para que entre
-const finalSize = autoAjustarFontSize(wrapper, previewTexto, previewTextoBack, baseSize, 16);
+// 2) tamaño final SIEMPRE = lo que diga el slider (manual manda)
+const finalSize = sizeSlider ? Number(sizeSlider.value || 32) : 32;
+
 previewTexto.style.fontSize = finalSize + "px";
 previewTextoBack.style.fontSize = finalSize + "px";
-
-// si estamos en AUTO, reflejar el tamaño real en el slider
-if (!userSetFontSize && sizeSlider) sizeSlider.value = String(finalSize);
 
   // ================= Color / Outline =================
   const colorEl = document.getElementById("personalizarColor");
@@ -2022,13 +1989,18 @@ window.setFormatoImagen = tipo => {
 
 };
 
-// ================= 🔺 CAMBIAR TAMAÑO ===========================
+// ================= 🔺 CAMBIAR TAMAÑO (+/-) LIBRE ===========================
 window.cambiarTamanoPreview = (delta) => {
-  userSetFontSize = true; // ✅ manual
+  userSetFontSize = true; // ✅ al tocar +/-, ya es manual
+
   const inp = document.getElementById("personalizarTamaño");
   if (!inp) return;
-  const val = Math.max(10, Math.min(100, Number(inp.value || 24) + delta));
-  inp.value = val;
+
+  const step = 0.5; // ✅ medio punto
+  const cur = Number(inp.value || 32);
+  const next = cur + (delta * step);
+
+  inp.value = String(next);
   actualizarPreview();
 };
 
