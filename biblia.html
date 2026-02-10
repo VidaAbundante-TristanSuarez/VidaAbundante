@@ -184,22 +184,28 @@
 
 <!-- ================= OTRAS SECCIONES ================= -->
 <div id="seccion-devocionales" class="seccion" style="display:none">
-  <h2>📅 Devocionales</h2>
+  <h2>Devocionales</h2>
 
-  <input id="devImg" type="file" accept="image/*">
+  <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+    <label class="btn-primary" style="cursor:pointer;">
+      📷 Cargar imagen
+      <input id="devImg" type="file" accept="image/*" style="display:none">
+    </label>
 
-  <div style="margin:12px 0;">
-    <canvas id="devCanvas" style="width:100%;max-width:420px;border-radius:12px;border:1px solid #ddd;"></canvas>
+    <button id="btnDevRecortar" type="button" class="btn-ghost">✂️ Recortar</button>
+    <button id="btnDevOCR" type="button" class="btn-primary">🧠 OCR</button>
   </div>
 
-  <div style="display:flex; gap:8px; flex-wrap:wrap;">
-    <button id="btnDevRecortar" class="btn-primary" type="button">✂️ Recortar</button>
-    <button id="btnDevOCR" class="btn-primary" type="button">🧠 Obtener texto</button>
+  <p id="estadoOCRDev" style="margin-top:10px; opacity:.8; font-size:13px;"></p>
+
+  <!-- canvas para ver imagen y recortar -->
+  <div style="margin-top:12px; border-radius:12px; overflow:hidden; border:1px solid #ddd;">
+    <canvas id="devCanvas" style="display:block; width:100%; max-width:420px;"></canvas>
   </div>
 
   <div style="margin-top:12px;">
-    <label style="font-weight:700;">Texto detectado (editable)</label>
-    <textarea id="devTexto" style="width:100%;height:220px;border-radius:12px;padding:10px;"></textarea>
+    <label style="display:block; font-weight:700; margin-bottom:6px;">Texto detectado (editable)</label>
+    <textarea id="devTexto" style="width:100%; height:220px; border-radius:12px; padding:12px;"></textarea>
   </div>
 </div>
 
@@ -417,6 +423,7 @@
   
 </body>
 </html>
+
 
 
 
