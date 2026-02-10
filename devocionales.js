@@ -1,5 +1,6 @@
 // devocionales.js
-// ✅ Devocionales con recorte (PC + CEL) + OCR (TextDetector). No toca biblia.js
+// ✅ Devocionales con recorte (PC + CEL) + OCR por Cloud Function (Google Vision)
+// ✅ No toca biblia.js
 
 let img = null;
 let canvas, ctx;
@@ -8,22 +9,16 @@ let canvas, ctx;
 let start = null;
 let crop = null;        // {x,y,w,h} en coords canvas
 let recortando = false; // modo recorte on/off
-let drawing = false;    // está arrastrando ahora?
+let drawing = false;    // arrastrando ahora?
+
+// 🔥 URL de tu Cloud Function ya desplegada
+const OCR_URL = "https://us-central1-vidaabundante-f118a.cloudfunctions.net/ocrDevocional";
 
 function $(id) { return document.getElementById(id); }
 
 function ocrSetStatus(msg) {
   const el = $("estadoOCRDev");
   if (el) el.textContent = msg || "";
-}
-
-function limpiarTextoOCR(t) {
-  if (!t) return "";
-  return String(t)
-    .replace(/\u00A0/g, " ")
-    .replace(/[ \t]+/g, " ")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
 }
 
 function fitCanvasToImage(image, maxW = 420) {
@@ -47,7 +42,7 @@ function draw() {
     ctx.lineWidth = 2;
     ctx.strokeRect(crop.x, crop.y, crop.w, crop.h);
 
-    // oscurecer afuera (evenodd)
+    // oscurecer afuera
     ctx.fillStyle = "rgba(0,0,0,0.25)";
     ctx.beginPath();
     ctx.rect(0, 0, canvas.width, canvas.height);
@@ -66,7 +61,7 @@ function normalizeRect(a, b) {
   return { x, y, w, h };
 }
 
-// Convierte coords de pantalla -> coords de canvas
+// coords pantalla -> coords canvas
 function canvasPointFromClient(clientX, clientY) {
   const r = canvas.getBoundingClientRect();
   const x = (clientX - r.left) * (canvas.width / r.width);
@@ -74,15 +69,14 @@ function canvasPointFromClient(clientX, clientY) {
   return { x, y };
 }
 
-// Soporta mouse/touch/pen vía Pointer Events
+// Eventos de recorte (mouse + touch + pen)
 function bindPointerCropEvents() {
-  // clave para celular: que el canvas no “arrastre” la página al tocar
+  // clave cel: que no “mueva” la página al tocar el canvas
   canvas.style.touchAction = "none";
 
   canvas.addEventListener("pointerdown", (e) => {
     if (!recortando || !img) return;
 
-    // capturar puntero para seguir recibiendo eventos aunque se salga
     canvas.setPointerCapture?.(e.pointerId);
 
     drawing = true;
@@ -109,7 +103,7 @@ function bindPointerCropEvents() {
     drawing = false;
     start = null;
 
-    // si quedó muy chico, lo descartamos para evitar “click accidental”
+    // si es muy chico, lo descartamos
     if (crop && (crop.w < 10 || crop.h < 10)) {
       crop = null;
       draw();
@@ -123,8 +117,7 @@ function bindPointerCropEvents() {
   canvas.addEventListener("pointerleave", end, { passive: false });
 }
 
-// Si no recorta, devuelve toda la imagen renderizada en canvas.
-// Si recortó, devuelve solo el rectángulo.
+// Devuelve blob del recorte (o toda la imagen si no recortó)
 async function getCroppedBlob() {
   if (!img) return null;
 
@@ -146,35 +139,13 @@ async function getCroppedBlob() {
   return await new Promise(res => out.toBlob(res, "image/jpeg", 0.92));
 }
 
-// Preproceso suave para mejorar OCR
-async function preprocessBlobToBitmap(blob, maxDim = 1600) {
-  const bmp = await createImageBitmap(blob);
-
-  const ratio = Math.min(1, maxDim / Math.max(bmp.width, bmp.height));
-  const w = Math.round(bmp.width * ratio);
-  const h = Math.round(bmp.height * ratio);
-
-  const c = document.createElement("canvas");
-  c.width = w; c.height = h;
-  const cctx = c.getContext("2d", { willReadFrequently: true });
-  cctx.drawImage(bmp, 0, 0, w, h);
-
-  const imageData = cctx.getImageData(0, 0, w, h);
-  const d = imageData.data;
-
-  const contrast = 1.12;
-  const intercept = 128 * (1 - contrast);
-
-  for (let i = 0; i < d.length; i += 4) {
-    const r = d[i], g = d[i + 1], b = d[i + 2];
-    let y = 0.299 * r + 0.587 * g + 0.114 * b;
-    y = y * contrast + intercept;
-    y = Math.max(0, Math.min(255, y));
-    d[i] = d[i + 1] = d[i + 2] = y;
-  }
-
-  cctx.putImageData(imageData, 0, 0);
-  return await createImageBitmap(c);
+// Blob -> Base64 (sin "data:image/..")
+async function blobToBase64(blob) {
+  const buf = await blob.arrayBuffer();
+  let binary = "";
+  const bytes = new Uint8Array(buf);
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary);
 }
 
 // INIT
@@ -192,13 +163,9 @@ document.addEventListener("DOMContentLoaded", () => {
   if (!input || !btnRecortar || !btnOCR || !ta) return;
 
   bindPointerCropEvents();
+  ocrSetStatus("✅ Cargá una imagen, recortá si querés y tocá OCR.");
 
-  if (!("TextDetector" in window)) {
-    ocrSetStatus("⚠️ OCR no disponible en este navegador. Probá Chrome/Edge actualizado (ideal Android).");
-  } else {
-    ocrSetStatus("✅ Cargá una imagen, recortá si querés y tocá OCR.");
-  }
-
+  // Cargar imagen
   input.addEventListener("change", () => {
     const file = input.files?.[0];
     if (!file) return;
@@ -218,23 +185,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
       fitCanvasToImage(img, 420);
       draw();
-      URL.revokeObjectURL(url);
 
+      URL.revokeObjectURL(url);
       ocrSetStatus("✅ Imagen cargada. Podés recortar o tocar OCR.");
     };
 
     image.src = url;
   });
 
+  // Toggle recorte
   btnRecortar.addEventListener("click", () => {
     if (!img) { alert("Primero cargá una imagen"); return; }
+
     recortando = !recortando;
-
     btnRecortar.textContent = recortando ? "✅ Listo (recorte)" : "✂️ Recortar";
-
-    // si apaga recorte, no borro el crop (queda marcado)
-    // si querés que al apagar se borre, descomentá:
-    // if (!recortando) { crop = null; draw(); }
 
     if (!recortando) {
       start = null;
@@ -242,39 +206,34 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  // OCR por Cloud Function
   btnOCR.addEventListener("click", async () => {
     if (!img) { alert("Primero cargá una imagen"); return; }
 
-    if (!("TextDetector" in window)) {
-      alert("Tu navegador no soporta OCR (TextDetector). Probá Chrome/Edge actualizado, ideal Android.");
-      return;
-    }
-
-    const blob = await getCroppedBlob();
-    if (!blob) return;
-
-    ta.value = "";
-    ocrSetStatus("⏳ Detectando texto…");
+    ocrSetStatus("⏳ Enviando imagen al OCR…");
 
     try {
-      const detector = new TextDetector();
+      const blob = await getCroppedBlob();
+      if (!blob) return;
 
-      // mejor detección: bitmap preprocesado
-      const bitmap = await preprocessBlobToBitmap(blob);
-      const results = await detector.detect(bitmap);
+      const imageBase64 = await blobToBase64(blob);
 
-      const lines = (results || [])
-        .map(r => (r.rawValue || "").trim())
-        .filter(Boolean);
+      const r = await fetch(OCR_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageBase64 })
+      });
 
-      const text = limpiarTextoOCR(lines.join("\n"));
+      const data = await r.json().catch(() => ({}));
 
-      ta.value = text || "";
-      ocrSetStatus(
-        text
-          ? "✅ Texto detectado. Podés corregirlo manualmente."
-          : "⚠️ No pude detectar texto. Mejor luz, menos inclinación y texto más grande."
-      );
+      if (!r.ok) {
+        ocrSetStatus("❌ Error OCR: " + (data?.error || r.status));
+        return;
+      }
+
+      const text = (data?.text || "").trim();
+      ta.value = text || "⚠️ No se detectó texto. Probá con mejor luz y texto más grande.";
+      ocrSetStatus("✅ OCR listo.");
     } catch (e) {
       console.error(e);
       ocrSetStatus("❌ Error OCR: " + (e?.message || e));
