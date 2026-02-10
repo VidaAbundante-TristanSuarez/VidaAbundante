@@ -184,8 +184,26 @@
 
 <!-- ================= OTRAS SECCIONES ================= -->
 <div id="seccion-devocionales" class="seccion" style="display:none">
-  <h2>Devocionales</h2>
+  <h2>📅 Devocionales</h2>
+
+  <input id="devImg" type="file" accept="image/*">
+
+  <div style="margin:12px 0;">
+    <canvas id="devCanvas" style="width:100%;max-width:420px;border-radius:12px;border:1px solid #ddd;"></canvas>
+  </div>
+
+  <div style="display:flex; gap:8px; flex-wrap:wrap;">
+    <button id="btnDevRecortar" class="btn-primary" type="button">✂️ Recortar</button>
+    <button id="btnDevOCR" class="btn-primary" type="button">🧠 Obtener texto</button>
+  </div>
+
+  <div style="margin-top:12px;">
+    <label style="font-weight:700;">Texto detectado (editable)</label>
+    <textarea id="devTexto" style="width:100%;height:220px;border-radius:12px;padding:10px;"></textarea>
+  </div>
 </div>
+
+<script type="module" src="devocionales.js"></script>
 
 <div id="seccion-abc" class="seccion" style="display:none">
   <h2>ABC</h2>
@@ -399,6 +417,7 @@
   
 </body>
 </html>
+
 
 
 
