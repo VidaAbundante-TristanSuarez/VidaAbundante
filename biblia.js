@@ -162,17 +162,43 @@ function mostrarToast(msg, ms = 2200) {
   }, ms);
 }
 
-// ================= ⭐ ESTIMAR FONT SIZE INICIAL ==============================
-function estimarFontSizeInicial(texto) {
-  const t = (texto || "").trim();
-  const len = t.length;
+// ================= ⭐ SUGERIR TAMAÑO QUE ENTRE (solo sugerencia) =================
+function sugerirFontSizeQueEntre(wrapper, elFront, elBack, maxPx = 64, minPx = 10, step = 0.5) {
+  if (!wrapper || !elFront || !elBack) return 32;
 
-  if (len <= 60) return 44;
-  if (len <= 120) return 38;
-  if (len <= 200) return 32;
-  if (len <= 280) return 28;
-  if (len <= 360) return 24;
-  return 21;
+  // medir "zona útil" (restando padding del wrapper)
+  const cs = getComputedStyle(wrapper);
+  const padX = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+  const padY = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0);
+
+  const maxW = Math.max(10, wrapper.clientWidth - padX);
+  const maxH = Math.max(10, wrapper.clientHeight - padY);
+
+  // helper: aplica tamaño y revisa si entra
+  const entra = (px) => {
+    elFront.style.fontSize = px + "px";
+    elBack.style.fontSize  = px + "px";
+
+    // OJO: usamos scrollHeight/Width para detectar desborde real
+    const okH = elFront.scrollHeight <= maxH && elBack.scrollHeight <= maxH;
+    const okW = elFront.scrollWidth  <= maxW && elBack.scrollWidth  <= maxW;
+    return okH && okW;
+  };
+
+  // si ni el mínimo entra, devolvemos min (igual será sugerencia)
+  if (!entra(minPx)) return minPx;
+
+  // Búsqueda binaria en pasos de 0.5px (máximo tamaño que entra)
+  let lo = minPx;
+  let hi = maxPx;
+
+  while ((hi - lo) > step) {
+    const mid = Math.floor(((lo + hi) / 2) / step) * step; // redondeo a step
+    if (entra(mid)) lo = mid;
+    else hi = mid - step;
+  }
+
+  return Number(lo.toFixed(1));
 }
 
 // ========================= 🎨 RESALTADOR COMPACTO  =======================================
@@ -781,18 +807,26 @@ previewImagen.style.backgroundColor = fondoUsable ? "transparent" : "#ffffff";
   previewTexto.style.fontFamily = fuente;
   previewTextoBack.style.fontFamily = fuente;
 
-// ================= Tamaño (AUTO sugerido / MANUAL libre) =================
+// ================= Tamaño (AUTO sugerido por MEDICION / MANUAL libre) =================
 const sizeSlider = document.getElementById("personalizarTamaño");
 
-// 1) si el usuario NO tocó tamaño => sugerimos por cantidad de texto
-if (!userSetFontSize) {
-  const sugerido = estimarFontSizeInicial(textoFinal);
-  if (sizeSlider) sizeSlider.value = String(sugerido);
+// line-height estable ayuda a medir bien
+previewTexto.style.lineHeight = "1.3";
+previewTextoBack.style.lineHeight = "1.3";
+
+// 1) AUTO: sugerimos midiendo si entra (NO es obligación, solo sugerencia)
+if (!userSetFontSize && sizeSlider) {
+  // primero ponemos un tamaño alto para que mida bien el “peor caso”
+  sizeSlider.value = "64";
+  previewTexto.style.fontSize = "64px";
+  previewTextoBack.style.fontSize = "64px";
+
+  const sugerido = sugerirFontSizeQueEntre(wrapper, previewTexto, previewTextoBack, 64, 10, 0.5);
+  sizeSlider.value = String(sugerido);
 }
 
-// 2) tamaño final SIEMPRE = lo que diga el slider (manual manda)
+// 2) MANUAL (o AUTO ya sugerido): el tamaño final SIEMPRE es el del slider
 const finalSize = sizeSlider ? Number(sizeSlider.value || 32) : 32;
-
 previewTexto.style.fontSize = finalSize + "px";
 previewTextoBack.style.fontSize = finalSize + "px";
 
@@ -803,7 +837,7 @@ previewTextoBack.style.fontSize = finalSize + "px";
   const color = colorEl ? colorEl.value : "#000000";
   const opacidad = opEl ? opEl.value : "0.3";
   const outlineColor = colorOutlineDesdeBase(color);
-  const px = 2; // 👈 grosor del borde
+  const px = 1; // 👈 grosor del borde
 
   // ✅ NO tocar position acá. La define el CSS para que queden idénticos.
 previewTexto.style.zIndex = "2";
@@ -823,16 +857,12 @@ previewTextoBack.style.webkitTextFillColor = "transparent"; // relleno transpare
 previewTextoBack.style.transform = "none";
 previewTextoBack.style.filter = "none";
 
-// backup por si stroke falla en algún navegador
+// ✅ backup MUCHO más suave (solo 4 direcciones, no 8)
 previewTextoBack.style.textShadow = `
   -${px}px 0 ${outlineColor},
    ${px}px 0 ${outlineColor},
    0 -${px}px ${outlineColor},
-   0  ${px}px ${outlineColor},
-  -${px}px -${px}px ${outlineColor},
-   ${px}px -${px}px ${outlineColor},
-  -${px}px  ${px}px ${outlineColor},
-   ${px}px  ${px}px ${outlineColor}
+   0  ${px}px ${outlineColor}
 `;
 
   // ================= Opacidad Oscuro/Claro =================
