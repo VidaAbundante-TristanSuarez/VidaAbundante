@@ -60,6 +60,9 @@ let fondoFinal = null;
 let fondoFinalBlobUrl = null; // ✅ fondo seguro para html2canvas
 let creandoNotaLibre = false; // ✅ estado: nota sin versículo
 
+// ================= AUTO TAMAÑO PREVIEW =================
+let userSetFontSize = false; // si el usuario tocó tamaño (slider o + -), queda manual hasta que cambie el texto
+
 let textStyle = {
   upper: false,
   bold: false,
@@ -157,6 +160,44 @@ function mostrarToast(msg, ms = 2200) {
     t.style.opacity = "0";
     setTimeout(() => (t.style.display = "none"), 250);
   }, ms);
+}
+
+// ================= ⭐ ESTIMAR FONT SIZE INICIAL ==============================
+function estimarFontSizeInicial(texto) {
+  const t = (texto || "").trim();
+  const len = t.length;
+
+  if (len <= 60) return 44;
+  if (len <= 120) return 38;
+  if (len <= 200) return 32;
+  if (len <= 280) return 28;
+  if (len <= 360) return 24;
+  return 21;
+}
+
+// ================= ⭐ AUTOAJUSTAR FONTSIZE ==============================
+function autoAjustarFontSize(wrapper, elFront, elBack, startPx, minPx = 16) {
+  if (!wrapper || !elFront || !elBack) return startPx;
+
+  const maxH = wrapper.clientHeight;
+  const maxW = wrapper.clientWidth;
+
+  let px = startPx;
+
+  for (let i = 0; i < 40; i++) {
+    elFront.style.fontSize = px + "px";
+    elBack.style.fontSize = px + "px";
+
+    const okH = elFront.scrollHeight <= maxH && elBack.scrollHeight <= maxH;
+    const okW = elFront.scrollWidth  <= maxW && elBack.scrollWidth  <= maxW;
+
+    if (okH && okW) break;
+
+    px -= 1;
+    if (px <= minPx) { px = minPx; break; }
+  }
+
+  return px;
 }
 
 // ========================= 🎨 RESALTADOR COMPACTO  =======================================
@@ -294,6 +335,7 @@ function toggleVersiculo(id, num) {
     }
 
     mostrarTexto();
+    userSetFontSize = false; // ✅ cambió el texto => volver a AUTO
     actualizarPreview();
     return;
   }
@@ -539,11 +581,17 @@ function colorOutlineDesdeBase(color) {
 
 // ================= 🎀 FUENTES  =======================
 // 🔗 Listeners de personalización 
-["personalizarOpacidad","personalizarTamaño","personalizarColor"].forEach(id => {
+["personalizarOpacidad", "personalizarTamaño", "personalizarColor"].forEach(id => {
   const el = document.getElementById(id);
   if (!el) return;
-  el.addEventListener("input", actualizarPreview);
-  el.addEventListener("change", actualizarPreview);
+
+  const handler = () => {
+    if (id === "personalizarTamaño") userSetFontSize = true; // ✅ manual SOLO si tocan tamaño
+    actualizarPreview();
+  };
+
+  el.addEventListener("input", handler);
+  el.addEventListener("change", handler);
 });
 
 // ================= 🎀 LISTA VISUAL DE FUENTES =================
@@ -758,15 +806,28 @@ previewImagen.style.backgroundColor = fondoUsable ? "transparent" : "#ffffff";
   previewTexto.style.fontFamily = fuente;
   previewTextoBack.style.fontFamily = fuente;
 
-// ================= Formato / Tamaño (RESPUESTA INMEDIATA) =================
+// ================= Formato / Tamaño (AUTO por texto + manual si el usuario toca) =================
 const sizeSlider = document.getElementById("personalizarTamaño");
-let fontSize = sizeSlider ? Number(sizeSlider.value) : 32;
 
 previewTexto.style.lineHeight = "1.3";
 previewTextoBack.style.lineHeight = "1.3";
 
-previewTexto.style.fontSize = fontSize + "px";
-previewTextoBack.style.fontSize = fontSize + "px";
+// 1) base: si NO tocó el usuario => AUTO; si tocó => slider
+let baseSize;
+if (!userSetFontSize) {
+  baseSize = estimarFontSizeInicial(textoFinal);
+  if (sizeSlider) sizeSlider.value = String(baseSize);
+} else {
+  baseSize = sizeSlider ? Number(sizeSlider.value) : 32;
+}
+
+// 2) fit: bajamos si hace falta para que entre
+const finalSize = autoAjustarFontSize(wrapper, previewTexto, previewTextoBack, baseSize, 16);
+previewTexto.style.fontSize = finalSize + "px";
+previewTextoBack.style.fontSize = finalSize + "px";
+
+// si estamos en AUTO, reflejar el tamaño real en el slider
+if (!userSetFontSize && sizeSlider) sizeSlider.value = String(finalSize);
 
   // ================= Color / Outline =================
   const colorEl = document.getElementById("personalizarColor");
@@ -1035,6 +1096,7 @@ if (!ok) return;
 
 // ================= ⭐ RESET DEL MODAL  =======================
 function resetModalPersonalizar() {
+  userSetFontSize = false;
   fondoFinal = null;
   
   if (fondoFinalBlobUrl) {
@@ -1044,7 +1106,6 @@ function resetModalPersonalizar() {
   textStyle = { upper:false, bold:false, italic:false, underline:false };
 
   document.getElementById("personalizarOpacidad").value = 0.35;
-  document.getElementById("personalizarTamaño").value = 32;
   fuenteActual = "Arial";
 
   const colorInput = document.getElementById("personalizarColor");
@@ -1963,6 +2024,7 @@ window.setFormatoImagen = tipo => {
 
 // ================= 🔺 CAMBIAR TAMAÑO ===========================
 window.cambiarTamanoPreview = (delta) => {
+  userSetFontSize = true; // ✅ manual
   const inp = document.getElementById("personalizarTamaño");
   if (!inp) return;
   const val = Math.max(10, Math.min(100, Number(inp.value || 24) + delta));
