@@ -846,10 +846,10 @@ body.oscuro #modalPersonalizar .cerrar-modal{
 /* box de tamaño */
 /* ✅ Tamaño: más angosto + sin flechas internas */
 .tamano-input{
-  width: 28px;          /* ~ mitad */
-  height: 28px;
+  width: 25px;          /* ~ mitad */
+  height: 25px;
   text-align:center;
-  padding: 0 4px;
+  padding: 0 2px;
   font-size: 12px;
   appearance: textfield;
 }
