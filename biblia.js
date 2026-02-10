@@ -837,7 +837,7 @@ previewTextoBack.style.fontSize = finalSize + "px";
   const color = colorEl ? colorEl.value : "#000000";
   const opacidad = opEl ? opEl.value : "0.3";
   const outlineColor = colorOutlineDesdeBase(color);
-  const px = 1; // 👈 grosor del borde
+  const px = 0.75; // 👈 grosor del borde
 
   // ✅ NO tocar position acá. La define el CSS para que queden idénticos.
 previewTexto.style.zIndex = "2";
