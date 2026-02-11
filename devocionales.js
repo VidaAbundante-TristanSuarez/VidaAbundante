@@ -247,14 +247,71 @@ function partirEn2Bloques(txt) {
   const t = String(txt || "").trim();
   if (!t) return ["", ""];
 
-  // separa por línea vacía (doble enter). Si no hay, lo parte a la mitad.
-  const partes = t.split(/\n\s*\n/).filter(Boolean);
-  if (partes.length >= 2) {
-    return [partes[0].trim(), partes.slice(1).join("\n\n").trim()];
+  // Limpieza básica (borra letras sueltas del logo si aparecen solas)
+  const lineas = t.split("\n").map(s => s.trim()).filter(Boolean);
+
+  // 🔥 Bloque 1 armado fijo (lo que pediste)
+  // DEVOCIONAL + fecha (si existen)
+  const titulo = lineas.find(l => /^DEVOCIONAL$/i.test(l)) || "DEVOCIONAL";
+  const fecha = lineas.find(l => /(lunes|martes|miércoles|jueves|viernes|sábado|domingo|\d{1,2}\s+de\s+\w+)/i.test(l)) || "";
+
+  // Versículo: agarramos el texto “grande” hasta encontrar una cita tipo "Mateo 19:13-14"
+  let versiculo = [];
+  let cita = "";
+  let iCita = -1;
+
+  for (let i = 0; i < lineas.length; i++) {
+    if (/(?:\b\w+\b)\s+\d+:\d+/i.test(lineas[i])) { // ej "Mateo 19:13-14"
+      cita = lineas[i];
+      iCita = i;
+      break;
+    }
   }
 
-  const mid = Math.ceil(t.length / 2);
-  return [t.slice(0, mid).trim(), t.slice(mid).trim()];
+  // Versículo: desde después de fecha hasta antes de cita (si la encontramos)
+  const startVers = 0;
+  const endVers = iCita > -1 ? iCita : Math.min(lineas.length, 30);
+  for (let i = startVers; i < endVers; i++) {
+    const l = lineas[i];
+    // descartamos líneas de iglesia si se mezclaron
+    if (/iglesia cristiana|roca\s*123|tristan/i.test(l)) continue;
+    if (/^devocional$/i.test(l)) continue;
+    if (fecha && l === fecha) continue;
+    versiculo.push(l);
+  }
+
+  // Footer fijo bloque 1
+  const footer1 = "IGLESIA CRISTIANA DE LA VIDA ABUNDANTE";
+  const footer2 = "ROCA 123 - TRISTAN SUAREZ";
+
+  const bloque1 =
+`${titulo}
+${fecha}
+
+${versiculo.join(" ")}
+
+${cita}
+
+${footer1}
+${footer2}`.trim();
+
+  // 🔥 Bloque 2: todo lo que queda después de la cita
+  let resto = "";
+  if (iCita > -1) {
+    resto = lineas.slice(iCita + 1).join("\n").trim();
+  } else {
+    // si no encontró cita, usa lo que quede al final como reflexión
+    resto = lineas.slice(Math.floor(lineas.length / 2)).join("\n").trim();
+  }
+
+  // Sacar el footer si quedó duplicado
+  resto = resto
+    .replace(/IGLESIA CRISTIANA DE LA VIDA ABUNDANTE[\s\S]*$/i, "")
+    .trim();
+
+  const bloque2 = resto;
+
+  return [bloque1, bloque2];
 }
 
 btnB1.onclick = () => {
@@ -266,7 +323,17 @@ btnB1.onclick = () => {
 btnB2.onclick = () => {
   const [, b2] = partirEn2Bloques(ta.value);
   if (!b2) return alert("No hay texto para Bloque 2");
+
   window.abrirPersonalizarConTexto?.(b2);
+
+  // ✅ fuerza “modo fondo plano”
+  // deja el fondo en blanco (después lo elegís con el color)
+  const cont = document.getElementById("previewImagen");
+  if (cont) cont.style.background = "#ffffff";
+
+  // si tenés una opacidad/backdrop, lo apagamos
+  const back = document.getElementById("previewTextoBack");
+  if (back) back.style.opacity = "0";
 };
 
 });
