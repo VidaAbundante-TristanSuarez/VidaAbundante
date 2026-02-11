@@ -353,7 +353,7 @@ function partirEn2Bloques(txt) {
       ? lineas.slice(verseStart, verseEnd + 1)
       : [];
 
-  const versiculo = versiculoLines.join("\n").trim();
+ const versiculo = versiculoLines.join(" ").replace(/\s+/g, " ").trim();
 
   // -------- Bloque 2: Reflexión + Oración (sin versículo) ----------
   // Reflexión: desde después de fecha (si existe) hasta antes de “Oración”
@@ -365,11 +365,12 @@ function partirEn2Bloques(txt) {
   const corteAntesVersiculo = (verseStart >= 0) ? verseStart : (idxCita >= 0 ? idxCita : lineas.length);
 
   const reflexionEnd = (idxOracion >= 0 ? idxOracion : corteAntesVersiculo);
-  const reflexion = lineas.slice(inicioCuerpo, reflexionEnd).join("\n").trim();
+  const reflexion = lineas.slice(inicioCuerpo, reflexionEnd).join(" ").replace(/\s+/g, " ").trim();
 
   let oracion = "";
   if (idxOracion >= 0) {
-    oracion = lineas.slice(idxOracion, corteAntesVersiculo).join("\n").trim();
+    oracion = lineas.slice(idxOracion, corteAntesVersiculo).join(" ").replace(/\s+/g, " ").trim();
+
     // opcional: normalizar el prefijo "Oración:" si viene pegado
     oracion = oracion.replace(/^.*?\bOraci[oó]n\b\s*:\s*/i, "Oración: ");
     if (!/^Oración:/i.test(oracion)) oracion = "Oración: " + oracion;
