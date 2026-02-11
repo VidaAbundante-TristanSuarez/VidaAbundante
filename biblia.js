@@ -2252,3 +2252,21 @@ window.compartirImagenFinal = compartirImagenFinal;
 window.finalizarEdicion = window.finalizarEdicion;
 window.cancelarCrearImagen = window.cancelarCrearImagen;
 
+// ================= 💛 DEVOCIONALES =================
+// ✅ Entrada desde Devocionales: abre el mismo modal de imagen, pero con texto externo
+window.abrirPersonalizarConTexto = function(texto) {
+  if (!texto) return;
+
+  // Reutiliza tu flujo actual: previewTexto / modalPersonalizar / generarImagenFinal, etc.
+  // 1) setea el texto del preview
+  const prev = document.getElementById("previewTexto");
+  if (prev) prev.textContent = texto;
+
+  // 2) abre el modal
+  const modal = document.getElementById("modalPersonalizar");
+  if (modal) modal.style.display = "flex";
+
+  // 3) opcional: fuerza actualización si tenés una función tipo actualizarPreview()
+  if (typeof window.actualizarPreview === "function") window.actualizarPreview();
+};
+
