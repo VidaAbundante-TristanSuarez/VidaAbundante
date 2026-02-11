@@ -239,4 +239,34 @@ document.addEventListener("DOMContentLoaded", () => {
       ocrSetStatus("❌ Error OCR: " + (e?.message || e));
     }
   });
+
+  const btnB1 = document.getElementById("btnDevBloque1");
+const btnB2 = document.getElementById("btnDevBloque2");
+
+function partirEn2Bloques(txt) {
+  const t = String(txt || "").trim();
+  if (!t) return ["", ""];
+
+  // separa por línea vacía (doble enter). Si no hay, lo parte a la mitad.
+  const partes = t.split(/\n\s*\n/).filter(Boolean);
+  if (partes.length >= 2) {
+    return [partes[0].trim(), partes.slice(1).join("\n\n").trim()];
+  }
+
+  const mid = Math.ceil(t.length / 2);
+  return [t.slice(0, mid).trim(), t.slice(mid).trim()];
+}
+
+btnB1.onclick = () => {
+  const [b1] = partirEn2Bloques(ta.value);
+  if (!b1) return alert("No hay texto para Bloque 1");
+  window.abrirPersonalizarConTexto?.(b1);
+};
+
+btnB2.onclick = () => {
+  const [, b2] = partirEn2Bloques(ta.value);
+  if (!b2) return alert("No hay texto para Bloque 2");
+  window.abrirPersonalizarConTexto?.(b2);
+};
+
 });
