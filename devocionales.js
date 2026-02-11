@@ -141,11 +141,17 @@ async function getCroppedBlob() {
 
 // Blob -> Base64 (sin "data:image/..")
 async function blobToBase64(blob) {
-  const buf = await blob.arrayBuffer();
-  let binary = "";
-  const bytes = new Uint8Array(buf);
-  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-  return btoa(binary);
+  return await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onload = () => {
+      // reader.result = "data:image/jpeg;base64,AAAA..."
+      const res = String(reader.result || "");
+      const base64 = res.split(",")[1] || "";
+      resolve(base64);
+    };
+    reader.readAsDataURL(blob);
+  });
 }
 
 // INIT
@@ -244,43 +250,134 @@ document.addEventListener("DOMContentLoaded", () => {
 const btnB2 = document.getElementById("btnDevBloque2");
 
 function partirEn2Bloques(txt) {
-  const t = String(txt || "").trim();
-  if (!t) return ["", ""];
+  const raw = String(txt || "").replace(/\r/g, "").trim();
+  if (!raw) return ["", ""];
 
-  // Limpieza básica (borra letras sueltas del logo si aparecen solas)
-  const lineas = t.split("\n").map(s => s.trim()).filter(Boolean);
+  // -------- helpers ----------
+  const norm = (s) =>
+    String(s || "")
+      .trim()
+      .replace(/[•·▪●■▶►➤➔➡️]/g, "")     // viñetas comunes
+      .replace(/\s+/g, " ");
 
-  // 🔥 Bloque 1 armado fijo (lo que pediste)
-  // DEVOCIONAL + fecha (si existen)
+  const sinAcentos = (s) =>
+    s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+  const isOracionLine = (s) => {
+    const n = sinAcentos(norm(s)).toLowerCase();
+    // acepta "oracion", "oracion:", "oración", con viñeta delante, etc.
+    return /\boracion\b/.test(n);
+  };
+
+  const isCitaLine = (s) => {
+    // Busca algo tipo "MATEO 19:13-14" o "Juan 3:16"
+    // (la cita suele estar sola en una línea)
+    return /([A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+)\s+\d+:\d+(-\d+)?/.test(norm(s));
+  };
+
+  const letters = (s) => (norm(s).match(/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/g) || []).length;
+  const uppers  = (s) => (norm(s).match(/[A-ZÁÉÍÓÚÜÑ]/g) || []).length;
+
+  const isMostlyUpper = (s) => {
+    const L = letters(s);
+    if (L < 6) return false;
+    return (uppers(s) / L) >= 0.75; // bastante estricto
+  };
+
+  const isBasuraLogo = (s) => {
+    const n = sinAcentos(norm(s)).toUpperCase();
+    // basura típica + líneas demasiado cortas sueltas
+    if (n === "DE LA VIDA" || n === "DE LA VIDA." || n === "LA VIDA" || n === "VIDA") return true;
+    if (n.includes("DE LA VIDA") && n.length <= 20) return true;
+    if (n.length <= 2) return true;
+    return false;
+  };
+
+  // -------- preparar líneas ----------
+  let lineas = raw
+    .split("\n")
+    .map(norm)
+    .filter(Boolean)
+    .filter(l => !isBasuraLogo(l));
+
+  // título / fecha
   const titulo = lineas.find(l => /^DEVOCIONAL$/i.test(l)) || "DEVOCIONAL";
-  const fecha = lineas.find(l => /(lunes|martes|miércoles|jueves|viernes|sábado|domingo|\d{1,2}\s+de\s+\w+)/i.test(l)) || "";
 
-  // Versículo: agarramos el texto “grande” hasta encontrar una cita tipo "Mateo 19:13-14"
-  let versiculo = [];
-  let cita = "";
-  let iCita = -1;
+  const fecha =
+    lineas.find(l =>
+      /(lunes|martes|miércoles|miercoles|jueves|viernes|sábado|sabado|domingo)\s+\d{1,2}\s+de\s+\w+/i.test(l)
+    ) || "";
 
-  for (let i = 0; i < lineas.length; i++) {
-    if (/(?:\b\w+\b)\s+\d+:\d+/i.test(lineas[i])) { // ej "Mateo 19:13-14"
-      cita = lineas[i];
-      iCita = i;
-      break;
+  // Índices clave
+  const idxOracion = lineas.findIndex(isOracionLine);
+
+  // Tomamos LA ÚLTIMA cita encontrada (casi siempre está al final)
+  let idxCita = -1;
+  for (let i = lineas.length - 1; i >= 0; i--) {
+    if (isCitaLine(lineas[i])) { idxCita = i; break; }
+  }
+  const cita = idxCita >= 0 ? lineas[idxCita] : "";
+
+  // -------- detectar bloque del versículo (mayúsculas antes de la cita) ----------
+  // Buscamos hacia arriba desde idxCita-1 un bloque CONTIGUO de líneas mayormente en mayúsculas.
+  let verseStart = -1;
+  let verseEnd = -1;
+
+  if (idxCita > 0) {
+    let i = idxCita - 1;
+
+    // saltar posibles líneas basura entre versículo y cita
+    while (i >= 0 && isBasuraLogo(lineas[i])) i--;
+
+    // si la línea es mayúscula, empezamos bloque
+    if (i >= 0 && isMostlyUpper(lineas[i])) {
+      verseEnd = i;
+      while (i >= 0 && isMostlyUpper(lineas[i])) i--;
+      verseStart = i + 1;
+    } else {
+      // fallback: si OCR partió raro, buscamos el último “grupo” de mayúsculas
+      for (let k = idxCita - 1; k >= 0; k--) {
+        if (isMostlyUpper(lineas[k])) {
+          verseEnd = k;
+          let j = k;
+          while (j >= 0 && isMostlyUpper(lineas[j])) j--;
+          verseStart = j + 1;
+          break;
+        }
+      }
     }
   }
 
-  // Versículo: desde después de fecha hasta antes de cita (si la encontramos)
-  const startVers = 0;
-  const endVers = iCita > -1 ? iCita : Math.min(lineas.length, 30);
-  for (let i = startVers; i < endVers; i++) {
-    const l = lineas[i];
-    // descartamos líneas de iglesia si se mezclaron
-    if (/iglesia cristiana|roca\s*123|tristan/i.test(l)) continue;
-    if (/^devocional$/i.test(l)) continue;
-    if (fecha && l === fecha) continue;
-    versiculo.push(l);
+  const versiculoLines =
+    (verseStart >= 0 && verseEnd >= verseStart)
+      ? lineas.slice(verseStart, verseEnd + 1)
+      : [];
+
+  const versiculo = versiculoLines.join("\n").trim();
+
+  // -------- Bloque 2: Reflexión + Oración (sin versículo) ----------
+  // Reflexión: desde después de fecha (si existe) hasta antes de “Oración”
+  // Oración: desde “Oración...” hasta antes del versículo
+  const idxFecha = fecha ? lineas.indexOf(fecha) : -1;
+
+  const inicioCuerpo = (idxFecha >= 0) ? (idxFecha + 1) : 0;
+
+  const corteAntesVersiculo = (verseStart >= 0) ? verseStart : (idxCita >= 0 ? idxCita : lineas.length);
+
+  const reflexionEnd = (idxOracion >= 0 ? idxOracion : corteAntesVersiculo);
+  const reflexion = lineas.slice(inicioCuerpo, reflexionEnd).join("\n").trim();
+
+  let oracion = "";
+  if (idxOracion >= 0) {
+    oracion = lineas.slice(idxOracion, corteAntesVersiculo).join("\n").trim();
+    // opcional: normalizar el prefijo "Oración:" si viene pegado
+    oracion = oracion.replace(/^.*?\bOraci[oó]n\b\s*:\s*/i, "Oración: ");
+    if (!/^Oración:/i.test(oracion)) oracion = "Oración: " + oracion;
   }
 
-  // Footer fijo bloque 1
+  const bloque2 = [reflexion, oracion].filter(Boolean).join("\n\n").trim();
+
+  // -------- Bloque 1: SOLO versículo + cita + footer (con título/fecha arriba) ----------
   const footer1 = "IGLESIA CRISTIANA DE LA VIDA ABUNDANTE";
   const footer2 = "ROCA 123 - TRISTAN SUAREZ";
 
@@ -288,31 +385,16 @@ function partirEn2Bloques(txt) {
 `${titulo}
 ${fecha}
 
-${versiculo.join(" ")}
+${versiculo}
 
 ${cita}
 
 ${footer1}
 ${footer2}`.trim();
 
-  // 🔥 Bloque 2: todo lo que queda después de la cita
-  let resto = "";
-  if (iCita > -1) {
-    resto = lineas.slice(iCita + 1).join("\n").trim();
-  } else {
-    // si no encontró cita, usa lo que quede al final como reflexión
-    resto = lineas.slice(Math.floor(lineas.length / 2)).join("\n").trim();
-  }
-
-  // Sacar el footer si quedó duplicado
-  resto = resto
-    .replace(/IGLESIA CRISTIANA DE LA VIDA ABUNDANTE[\s\S]*$/i, "")
-    .trim();
-
-  const bloque2 = resto;
-
   return [bloque1, bloque2];
 }
+
 
 btnB1.onclick = () => {
   const [b1] = partirEn2Bloques(ta.value);
