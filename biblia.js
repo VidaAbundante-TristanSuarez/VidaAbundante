@@ -1972,25 +1972,20 @@ window.capituloSiguiente = () => {
 };
 
 // ================= 🔺 PANEL ===================
-window.mostrarSeccion = tipo => {
+window.mostrarSeccion = (tipo) => {
   ["imagenes", "marcadores"].forEach(s => {
     const el = document.getElementById("panel-" + s);
     if (el) el.style.display = (s === tipo ? "block" : "none");
   });
 
   if (tipo === "marcadores") renderPanelMarcadores();
-    // marcar tab activo
-  const tabs = document.querySelectorAll("#seccion-panel .panel-tabs button");
-  tabs.forEach(b => b.classList.remove("activo"));
+
+  // ✅ marcar tab activo SOLO en Panel
+  const tabsPanel = document.querySelectorAll("#seccion-panel .panel-tabs button");
+  tabsPanel.forEach(b => b.classList.remove("activo"));
+
   const btn = document.querySelector(`#seccion-panel .panel-tabs button[onclick="mostrarSeccion('${tipo}')"]`);
   if (btn) btn.classList.add("activo");
-
-    // marcar tab activo dentro de Iglesia
-  const tabs = document.querySelectorAll("#seccion-iglesia .panel-tabs button");
-  tabs.forEach(b => b.classList.remove("activo"));
-  const btn = document.querySelector(`#seccion-iglesia .panel-tabs button[onclick="mostrarIglesiaSub('${sub}')"]`);
-  if (btn) btn.classList.add("activo");
-
 };
 
 // ================= 🔺 IR A LOGIN ===================
