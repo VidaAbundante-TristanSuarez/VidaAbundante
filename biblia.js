@@ -1181,17 +1181,28 @@ function salirModoImagen() {
 }
 
 // ================= 🔺 WINDOW / UI ⭕ ===============================
-window.irA = seccion => {
+window.irA = (seccion) => {
+  // 1) mostrar/ocultar secciones principales
   ["biblia", "iglesia", "panel"].forEach(s => {
     const el = document.getElementById("seccion-" + s);
-    if (el) el.style.display = s === seccion ? "block" : "none";
+    if (el) el.style.display = (s === seccion) ? "block" : "none";
   });
 
+  // 2) marcar botón activo del menú
+  document.querySelectorAll("#menu .nav-btn").forEach(b => b.classList.remove("activo"));
+  const btnActivo = document.querySelector(`#menu .nav-btn[onclick="irA('${seccion}')"]`);
+  if (btnActivo) btnActivo.classList.add("activo");
+
+  // 3) defaults internos
   if (seccion === "iglesia") {
-    window.mostrarIglesiaSub?.("devocionales");
+    window.mostrarIglesiaSub?.("devocionales"); // que arranque ahí
+  }
+  if (seccion === "panel") {
+    window.mostrarSeccion?.("imagenes"); // que arranque en imágenes
   }
 
-  mostrarTexto();
+  // 4) repintar biblia solo cuando estás en biblia
+  if (seccion === "biblia") mostrarTexto();
 };
 
 // ================= 🔺 MODO IMAGEN ===============================
@@ -1968,6 +1979,18 @@ window.mostrarSeccion = tipo => {
   });
 
   if (tipo === "marcadores") renderPanelMarcadores();
+    // marcar tab activo
+  const tabs = document.querySelectorAll("#seccion-panel .panel-tabs button");
+  tabs.forEach(b => b.classList.remove("activo"));
+  const btn = document.querySelector(`#seccion-panel .panel-tabs button[onclick="mostrarSeccion('${tipo}')"]`);
+  if (btn) btn.classList.add("activo");
+
+    // marcar tab activo dentro de Iglesia
+  const tabs = document.querySelectorAll("#seccion-iglesia .panel-tabs button");
+  tabs.forEach(b => b.classList.remove("activo"));
+  const btn = document.querySelector(`#seccion-iglesia .panel-tabs button[onclick="mostrarIglesiaSub('${sub}')"]`);
+  if (btn) btn.classList.add("activo");
+
 };
 
 // ================= 🔺 IR A LOGIN ===================
@@ -2301,9 +2324,20 @@ window.abrirPersonalizarConTexto = function(texto, opts = {}) {
 window.mostrarIglesiaSub = (sub) => {
   const dev = document.getElementById("iglesia-devocionales");
   const abc = document.getElementById("iglesia-abc");
-  if (!dev || !abc) return;
 
-  dev.style.display = (sub === "devocionales") ? "block" : "none";
-  abc.style.display = (sub === "abc") ? "block" : "none";
+  if (dev) dev.style.display = (sub === "devocionales") ? "block" : "none";
+  if (abc) abc.style.display = (sub === "abc") ? "block" : "none";
+
+  // marcar tab activo si querés (opcional)
+  const tabs = document.querySelectorAll("#seccion-iglesia .panel-tabs button");
+  tabs.forEach(b => b.classList.remove("activo"));
+  const btn = document.querySelector(`#seccion-iglesia .panel-tabs button[onclick="mostrarIglesiaSub('${sub}')"]`);
+  if (btn) btn.classList.add("activo");
 };
+
+// ================= Biblia marcada al abrir la app =================
+document.addEventListener("DOMContentLoaded", () => {
+  window.irA?.("biblia");
+});
+
 
