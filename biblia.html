@@ -287,6 +287,12 @@
     <!-- FONDOS -->
     <div id="personalizarFondos"></div>
 
+    <!-- ✅ DEVOCIONAL: FONDO PLANO -->
+<div id="devFondoPlano" style="display:none; margin-top:10px; gap:10px; align-items:center;">
+  <b style="font-size:13px;">Fondo plano</b>
+  <input id="devColorPlano" type="color" value="#ffffff">
+</div>
+
     <!-- ================= FORMATO IMAGEN ================= -->
     <div class="fila-opciones style-row">
       <button id="btnFormatoPost" type="button" onclick="setFormatoImagen('post')" title="Post">
@@ -328,6 +334,12 @@
 
     <!-- BOTONES (DENTRO DEL MODAL) -->
     <div class="fila-final">
+
+      <!-- ✅ DEVOCIONAL: NAVEGACIÓN PASOS -->
+<button id="btnDevSiguiente1" style="display:none;" type="button">➡️ Siguiente</button>
+<button id="btnDevSiguiente2" style="display:none;" type="button">➡️ Siguiente</button>
+<button id="btnDevVerFinal" style="display:none;" type="button">✅ Ver final</button>
+      
       <button onclick="descargarImagenFinal()">
         <i class="fa-solid fa-download"></i>
       </button>
@@ -432,6 +444,7 @@
   
 </body>
 </html>
+
 
 
 
