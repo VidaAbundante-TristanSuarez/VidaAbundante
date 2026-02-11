@@ -2251,6 +2251,9 @@ window.abrirPersonalizarConTexto = function(texto, opts = {}) {
   const modal = document.getElementById("modalPersonalizar");
   if (modal) modal.style.display = "flex";
 
+  crearListaVisualFuentes();   // ✅ llena la lista de fuentes
+  cargarFondos();              // ✅ carga fondos también (si los querés usar)
+
   // Si querés: Bloque 2 sin imagen de fondo y con fondo plano
   if (opts.fondoPlano) {
     fondoFinal = null;
@@ -2266,6 +2269,45 @@ window.abrirPersonalizarConTexto = function(texto, opts = {}) {
     const back = document.getElementById("previewTextoWrapper");
     if (back) back.style.backgroundColor = "rgba(0,0,0,0)"; // sin caja
   }
+
+  // ✅ Mostrar selector de fondo plano SOLO en devocionales si lo piden
+const boxPlano = document.getElementById("devFondoPlano");
+const inpPlano = document.getElementById("devColorPlano");
+
+if (boxPlano && inpPlano) {
+  const usarPlano = !!opts.fondoPlano;
+  boxPlano.style.display = usarPlano ? "flex" : "none";
+
+  if (usarPlano) {
+    inpPlano.value = opts.color || "#ffffff";
+
+    const previewImagen = document.getElementById("previewImagen");
+    if (previewImagen) {
+      // sin imagen de fondo
+      fondoFinal = null;
+      if (fondoFinalBlobUrl) {
+        URL.revokeObjectURL(fondoFinalBlobUrl);
+        fondoFinalBlobUrl = null;
+      }
+      previewImagen.style.backgroundImage = "none";
+      previewImagen.style.backgroundColor = inpPlano.value;
+    }
+
+    // cambiar en vivo
+    inpPlano.oninput = () => {
+      const previewImagen = document.getElementById("previewImagen");
+      if (previewImagen) {
+        fondoFinal = null;
+        if (fondoFinalBlobUrl) {
+          URL.revokeObjectURL(fondoFinalBlobUrl);
+          fondoFinalBlobUrl = null;
+        }
+        previewImagen.style.backgroundImage = "none";
+        previewImagen.style.backgroundColor = inpPlano.value;
+      }
+    };
+  }
+}
 
   // ✅ clave: refresca todo (incluye tu auto-tamaño)
   actualizarPreview();
@@ -2330,3 +2372,149 @@ document.addEventListener("DOMContentLoaded", () => {
   window.irA?.("biblia");
 });
 
+// ================= ✅ DEVOCIONAL 3 PASOS arma la imagen final combinada =================
+window.__devPaso = 0;
+window.__devImg1 = null;
+window.__devImg2 = null;
+
+function dev_setUI(paso) {
+  const b1 = document.getElementById("btnDevSiguiente1");
+  const b2 = document.getElementById("btnDevSiguiente2");
+  const bf = document.getElementById("btnDevVerFinal");
+  const acciones = document.querySelector("#modalPersonalizar .fila-final");
+
+  // botones finales (download/share/check/iglesia)
+  const btnDesc = acciones?.querySelector('button[onclick="descargarImagenFinal()"]');
+  const btnShare = acciones?.querySelector('button[onclick="compartirImagenFinal()"]');
+  const btnFin = acciones?.querySelector('button[onclick="finalizarEdicion()"]');
+  const chk = acciones?.querySelector(".subir-iglesia-btn");
+
+  // reset
+  if (b1) b1.style.display = "none";
+  if (b2) b2.style.display = "none";
+  if (bf) bf.style.display = "none";
+
+  if (btnDesc) btnDesc.style.display = "none";
+  if (btnShare) btnShare.style.display = "none";
+  if (btnFin) btnFin.style.display = "none";
+  if (chk) chk.style.display = "none";
+
+  // pasos
+  if (paso === 1) {
+    if (b1) b1.style.display = "inline-flex";
+  } else if (paso === 2) {
+    if (b2) b2.style.display = "inline-flex";
+  } else if (paso === 3) {
+    if (bf) bf.style.display = "inline-flex";
+    // acciones finales SOLO en final
+    if (btnDesc) btnDesc.style.display = "inline-flex";
+    if (btnShare) btnShare.style.display = "inline-flex";
+    if (btnFin) btnFin.style.display = "inline-flex";
+    if (chk) chk.style.display = "inline-flex";
+  }
+}
+
+async function dev_capturar() {
+  const ok = await generarImagenFinal();
+  if (!ok) return null;
+  const c = document.getElementById("canvasFinal");
+  return c ? c.toDataURL("image/png") : null;
+}
+
+function dev_cargarImg(src) {
+  return new Promise((res, rej) => {
+    const i = new Image();
+    i.onload = () => res(i);
+    i.onerror = rej;
+    i.src = src;
+  });
+}
+
+async function dev_armarFinal() {
+  if (!window.__devImg1 || !window.__devImg2) {
+    alert("Falta Bloque 1 o Bloque 2.");
+    return;
+  }
+
+  const img1 = await dev_cargarImg(window.__devImg1);
+  const img2 = await dev_cargarImg(window.__devImg2);
+
+  const W = Math.max(img1.width, img2.width);
+  const H = img1.height + img2.height;
+
+  const canvasFinal = document.getElementById("canvasFinal");
+  if (!canvasFinal) return;
+
+  canvasFinal.width = W;
+  canvasFinal.height = H;
+
+  const ctx = canvasFinal.getContext("2d");
+  ctx.clearRect(0, 0, W, H);
+  ctx.drawImage(img1, 0, 0);
+  ctx.drawImage(img2, 0, img1.height);
+
+  // mostrar en el preview como “resultado final”
+  const previewImagen = document.getElementById("previewImagen");
+  if (previewImagen) {
+    previewImagen.style.backgroundImage = "none";
+    previewImagen.style.backgroundColor = "#ffffff";
+  }
+
+  // ocultar textos del preview para que no molesten
+  document.getElementById("previewTexto")?.style && (document.getElementById("previewTexto").style.display = "none");
+  document.getElementById("previewTextoBack")?.style && (document.getElementById("previewTextoBack").style.display = "none");
+
+  // mostrar canvas final (en vez de preview html)
+  canvasFinal.style.display = "block";
+  canvasFinal.style.width = "100%";
+  canvasFinal.style.maxWidth = "420px";
+  canvasFinal.style.borderRadius = "12px";
+}
+
+// Hook: cuando abro el modal desde devocional, activo pasos
+const _abrirOriginal = window.abrirPersonalizarConTexto;
+window.abrirPersonalizarConTexto = function(texto, opts = {}) {
+  _abrirOriginal(texto, opts);
+
+  // devocional: si opts.devPaso viene 1 o 2 o 3
+  if (opts.devPaso) {
+    window.__devPaso = opts.devPaso;
+    dev_setUI(opts.devPaso);
+
+    // si es final, arma el canvas combinado
+    if (opts.devPaso === 3) {
+      dev_armarFinal().then(() => {
+        dev_setUI(3);
+      });
+    }
+  }
+};
+
+// botones
+document.addEventListener("DOMContentLoaded", () => {
+  const b1 = document.getElementById("btnDevSiguiente1");
+  const b2 = document.getElementById("btnDevSiguiente2");
+  const bf = document.getElementById("btnDevVerFinal");
+
+  if (b1) b1.onclick = async () => {
+    const snap = await dev_capturar();
+    if (!snap) return alert("No se pudo guardar Bloque 1.");
+    window.__devImg1 = snap;
+
+    // devocionales.js tiene que abrir el bloque 2 (lo hacemos desde window)
+    window.__devSiguiente?.(2);
+  };
+
+  if (b2) b2.onclick = async () => {
+    const snap = await dev_capturar();
+    if (!snap) return alert("No se pudo guardar Bloque 2.");
+    window.__devImg2 = snap;
+
+    window.__devSiguiente?.(3);
+  };
+
+  if (bf) bf.onclick = async () => {
+    dev_setUI(3);
+    await dev_armarFinal();
+  };
+});
