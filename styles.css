@@ -55,8 +55,9 @@
   gap: 6px;
   flex-wrap: nowrap;
   }
-    
-/* Estilo para los botones de navegación */
+
+/* ICONOS SECCIONES */
+/* Estilo para los botones de navegación .nav-btn*/
  .nav-btn {
  display: flex;
  align-items: center;
@@ -81,6 +82,43 @@
  display: none;
  }
  }
+
+.nav-btn i {
+  font-size: 16px;
+  color: #4f6fa8;
+}
+
+/* 🌙 MODO OSCURO */
+body.oscuro .nav-btn i {
+  color: #ffd6a5;
+}
+    
+.nav-btn:hover i {
+  color: #3b5f9c;
+}
+
+body.oscuro .nav-btn:hover i {
+  color: #ffbf69;
+}
+
+/* ✅ Botón activo del menú (sección actual) */
+.nav-btn.activo{
+  background: var(--ui-azul-hover);
+  color: #fff;
+}
+
+.nav-btn.activo i{
+  color: #fff;
+}
+
+/* oscuro */
+body.oscuro .nav-btn.activo{
+  background: #ffbf69;
+  color: #000;
+}
+body.oscuro .nav-btn.activo i{
+  color: #000;
+}
 
   /* ================= SECCIONES GENERALES ================= */
  .seccion {
@@ -892,25 +930,6 @@ body.oscuro #modalPersonalizar .cerrar-modal{
   justify-content: center;
 }
     
-/* ICONOS SECCIONES */
-.nav-btn i {
-  font-size: 16px;
-  color: #4f6fa8;
-}
-
-/* 🌙 MODO OSCURO */
-body.oscuro .nav-btn i {
-  color: #ffd6a5;
-}
-    
-.nav-btn:hover i {
-  color: #3b5f9c;
-}
-
-body.oscuro .nav-btn:hover i {
-  color: #ffbf69;
-}
-
 /* Iconos centrados en botones redondos */
 .fila-final button i,
 .subir-iglesia-btn i {
