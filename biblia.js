@@ -70,6 +70,10 @@ let textStyle = {
   underline: false
 };
 
+// ================= DEVOCIONALES: TEXTO EXTERNO PARA EL MODAL =================
+let textoExternoModal = "";     // si hay texto acá, el modal usa esto
+let modoTextoExterno = false;   // true = no usar versículos seleccionados
+
 // ================= AUTH =====================================
 onAuthStateChanged(auth, user => {
   uid = user ? user.uid : null;
@@ -784,10 +788,13 @@ function actualizarPreview() {
 
   if (!previewImagen || !previewTexto || !previewTextoBack || !wrapper) return;
 
-  // ================= Texto =================
-  const textoFinal = obtenerVersiculoSeleccionado();
-  previewTexto.innerText = textoFinal || "";
-  previewTextoBack.innerText = textoFinal || "";
+  // ================= Texto Versiculos Biblia o Bloque OCR Devocional =================
+ const textoFinal = modoTextoExterno
+  ? (textoExternoModal || "")
+  : obtenerVersiculoSeleccionado();
+
+previewTexto.innerText = textoFinal || "";
+previewTextoBack.innerText = textoFinal || "";
 
   // ================= Fondo =================
 const fondoUsable = fondoFinalBlobUrl || fondoFinal;
@@ -1094,6 +1101,8 @@ if (!ok) return;
 // ================= ⭐ RESET DEL MODAL  =======================
 function resetModalPersonalizar() {
   userSetFontSize = false;
+  modoTextoExterno = false;
+  textoExternoModal = "";
   fondoFinal = null;
   
   if (fondoFinalBlobUrl) {
@@ -2253,20 +2262,32 @@ window.finalizarEdicion = window.finalizarEdicion;
 window.cancelarCrearImagen = window.cancelarCrearImagen;
 
 // ================= 💛 DEVOCIONALES =================
-// ✅ Entrada desde Devocionales: abre el mismo modal de imagen, pero con texto externo
-window.abrirPersonalizarConTexto = function(texto) {
+// ✅ Abre el mismo modal, pero con texto externo (no pisa tu auto-tamaño)
+window.abrirPersonalizarConTexto = function(texto, opts = {}) {
   if (!texto) return;
 
-  // Reutiliza tu flujo actual: previewTexto / modalPersonalizar / generarImagenFinal, etc.
-  // 1) setea el texto del preview
-  const prev = document.getElementById("previewTexto");
-  if (prev) prev.textContent = texto;
+  modoTextoExterno = true;
+  textoExternoModal = String(texto);
 
-  // 2) abre el modal
   const modal = document.getElementById("modalPersonalizar");
   if (modal) modal.style.display = "flex";
 
-  // 3) opcional: fuerza actualización si tenés una función tipo actualizarPreview()
-  if (typeof window.actualizarPreview === "function") window.actualizarPreview();
-};
+  // Si querés: Bloque 2 sin imagen de fondo y con fondo plano
+  if (opts.fondoPlano) {
+    fondoFinal = null;
+    if (fondoFinalBlobUrl) {
+      URL.revokeObjectURL(fondoFinalBlobUrl);
+      fondoFinalBlobUrl = null;
+    }
+    const previewImagen = document.getElementById("previewImagen");
+    if (previewImagen) {
+      previewImagen.style.backgroundImage = "none";
+      previewImagen.style.backgroundColor = opts.color || "#ffffff";
+    }
+    const back = document.getElementById("previewTextoWrapper");
+    if (back) back.style.backgroundColor = "rgba(0,0,0,0)"; // sin caja
+  }
 
+  // ✅ clave: refresca todo (incluye tu auto-tamaño)
+  actualizarPreview();
+};
