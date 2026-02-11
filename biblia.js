@@ -1182,10 +1182,15 @@ function salirModoImagen() {
 
 // ================= 🔺 WINDOW / UI ⭕ ===============================
 window.irA = seccion => {
-  ["biblia", "devocionales", "abc", "iglesia", "panel"].forEach(s => {
+  ["biblia", "iglesia", "panel"].forEach(s => {
     const el = document.getElementById("seccion-" + s);
     if (el) el.style.display = s === seccion ? "block" : "none";
   });
+
+  if (seccion === "iglesia") {
+    window.mostrarIglesiaSub?.("devocionales");
+  }
+
   mostrarTexto();
 };
 
@@ -2291,3 +2296,14 @@ window.abrirPersonalizarConTexto = function(texto, opts = {}) {
   // ✅ clave: refresca todo (incluye tu auto-tamaño)
   actualizarPreview();
 };
+
+// ================= IGLESIA: SUBSECCIONES =================
+window.mostrarIglesiaSub = (sub) => {
+  const dev = document.getElementById("iglesia-devocionales");
+  const abc = document.getElementById("iglesia-abc");
+  if (!dev || !abc) return;
+
+  dev.style.display = (sub === "devocionales") ? "block" : "none";
+  abc.style.display = (sub === "abc") ? "block" : "none";
+};
+
