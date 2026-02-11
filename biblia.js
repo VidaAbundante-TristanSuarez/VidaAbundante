@@ -2328,9 +2328,10 @@ window.mostrarIglesiaSub = (sub) => {
   if (dev) dev.style.display = (sub === "devocionales") ? "block" : "none";
   if (abc) abc.style.display = (sub === "abc") ? "block" : "none";
 
-  // marcar tab activo si querés (opcional)
-  const tabs = document.querySelectorAll("#seccion-iglesia .panel-tabs button");
-  tabs.forEach(b => b.classList.remove("activo"));
+  // marcar botón activo
+  const tabsIglesia = document.querySelectorAll("#seccion-iglesia .panel-tabs button");
+  tabsIglesia.forEach(b => b.classList.remove("activo"));
+
   const btn = document.querySelector(`#seccion-iglesia .panel-tabs button[onclick="mostrarIglesiaSub('${sub}')"]`);
   if (btn) btn.classList.add("activo");
 };
