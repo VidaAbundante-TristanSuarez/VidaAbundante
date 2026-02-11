@@ -400,8 +400,25 @@ ${footer2}`.trim();
 btnB1.onclick = () => {
   const [b1] = partirEn2Bloques(ta.value);
   if (!b1) return alert("No hay texto para Bloque 1");
-  window.abrirPersonalizarConTexto?.(b1);
+  window.__devUltimoTexto = ta.value; // guardo el texto completo
+  window.__devSiguiente = (paso) => abrirPasoDevocional(paso);
+  abrirPasoDevocional(1);
 };
+
+function abrirPasoDevocional(paso) {
+  const [b1, b2] = partirEn2Bloques(document.getElementById("devTexto").value);
+
+  if (paso === 1) {
+    window.abrirPersonalizarConTexto?.(b1, { devPaso: 1, fondoPlano: true, color: "#ffffff" });
+  }
+  if (paso === 2) {
+    window.abrirPersonalizarConTexto?.(b2, { devPaso: 2, fondoPlano: true, color: "#ffffff" });
+  }
+  if (paso === 3) {
+    // abre “final”: el modal usa las imágenes guardadas
+    window.abrirPersonalizarConTexto?.("FINAL", { devPaso: 3 });
+  }
+}
 
 btnB2.onclick = () => {
   const [, b2] = partirEn2Bloques(ta.value);
