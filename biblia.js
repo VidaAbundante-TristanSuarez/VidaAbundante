@@ -206,7 +206,7 @@ function sugerirFontSizeQueEntre(wrapper, elFront, elBack, maxPx = 64, minPx = 1
 }
 
 // ========================= 🎨 RESALTADOR COMPACTO  =======================================
-document.addEventListener("DOMContentLoaded", () => {
+function initResaltadorCompacto() {
 
   const btnActivo = document.getElementById("btnResaltadorActivo");
   const paleta = document.getElementById("paletaResaltadores");
@@ -226,8 +226,8 @@ document.addEventListener("DOMContentLoaded", () => {
   btnActivo.onclick = e => {
     e.preventDefault();
     e.stopPropagation();
-  const visible = paleta.style.display === "grid";
-  paleta.style.display = visible ? "none" : "grid";
+    const visible = paleta.style.display === "grid";
+    paleta.style.display = visible ? "none" : "grid";
     cont.classList.remove("mover-derecha");
     if (!visible) {
       const rect = paleta.getBoundingClientRect();
@@ -241,7 +241,6 @@ document.addEventListener("DOMContentLoaded", () => {
       e.preventDefault();
       e.stopPropagation();
 
-      // Quitar candado de todos los botones
       paleta.querySelectorAll("button[data-color] span.icono-candado").forEach(c => c.remove());
 
       colorActual = btn.dataset.color;
@@ -260,12 +259,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     resaltadorBloqueado = !resaltadorBloqueado;
     btnBloquear.textContent = resaltadorBloqueado ? "🔒" : "🔓";
-  
-    // Quitar todos los candados anteriores
+
     paleta.querySelectorAll("button[data-color] span.icono-candado").forEach(c => c.remove());
 
     if (resaltadorBloqueado) {
-      // Colocar candado sobre el color actual
       const botonColor = Array.from(paleta.querySelectorAll("button[data-color]"))
         .find(b => b.dataset.color === colorActual);
       if (botonColor) {
@@ -287,12 +284,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ❌ cerrar clic fuera
   document.addEventListener("click", e => {
-    if (!cont.contains(e.target)) {
-      paleta.style.display = "none";
-    }
+    if (!cont.contains(e.target)) paleta.style.display = "none";
   });
-
-});
+}
 
 // ================= ⭐ MOSTRAR TEXTO =======================
 function mostrarTexto() {
@@ -2176,8 +2170,6 @@ function forceDefaultCheckIglesia() {
   chk.checked = true; // ✅ siempre por defecto
 }
 
-document.addEventListener("DOMContentLoaded", forceDefaultCheckIglesia);
-
 // ================= UI: ocultar acciones al entrar en modo marcador =================
 function aplicarUIAccionesPorModo() {
   const acciones = document.getElementById("accionesBiblia");
@@ -2241,42 +2233,6 @@ function salirModoMarcadorLimpio() {
   mostrarTexto();
 }
 
-// ================= no dependas del onclick en HTML ================
-document.addEventListener("DOMContentLoaded", () => {
-  const btnGuardar = document.getElementById("btnGuardarMarcador");
-  if (btnGuardar) {
-    btnGuardar.type = "button";
-    btnGuardar.onclick = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      guardarMarcadorRapido(); // ✅ este es el flujo correcto
-    };
-  }
-
-  const btnModo = document.getElementById("btnModoMarcadorBarra");
-  if (btnModo) {
-    btnModo.type = "button";
-    btnModo.onclick = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      toggleModoMarcador();
-    };
-  }
-});
-
-// ================= LISTENER GUARDAR NUEVO MARCADOR (BOTÓN DEL MODAL) =================
-document.addEventListener("DOMContentLoaded", () => {
-  const b = document.getElementById("btnGuardarNuevoMarcador");
-  if (b) {
-    b.type = "button";
-    b.onclick = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      guardarNuevoMarcador();
-    };
-  }
-});
-
 // ================= 🔺 HACER FUNCIONES GLOBALES (FIX DESCARGAR/COMPARTIR EN PC) =================
 window.generarImagenFinal = generarImagenFinal;
 window.descargarImagenFinal = descargarImagenFinal;
@@ -2331,9 +2287,46 @@ window.mostrarIglesiaSub = (sub) => {
   if (btn) btn.classList.add("activo");
 };
 
-// ================= Biblia marcada al abrir la app =================
+// ================= ✅ INIT ÚNICO =================
 document.addEventListener("DOMContentLoaded", () => {
+  // 1) UI resaltador
+  initResaltadorCompacto();
+
+  // 2) check iglesia por defecto
+  forceDefaultCheckIglesia();
+
+  // 3) listeners botones (sin depender del onclick en HTML)
+  const btnGuardar = document.getElementById("btnGuardarMarcador");
+  if (btnGuardar) {
+    btnGuardar.type = "button";
+    btnGuardar.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      guardarMarcadorRapido();
+    };
+  }
+
+  const btnModo = document.getElementById("btnModoMarcadorBarra");
+  if (btnModo) {
+    btnModo.type = "button";
+    btnModo.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleModoMarcador();
+    };
+  }
+
+  const b = document.getElementById("btnGuardarNuevoMarcador");
+  if (b) {
+    b.type = "button";
+    b.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      guardarNuevoMarcador();
+    };
+  }
+
+  // 4) arrancar en biblia
   window.irA?.("biblia");
 });
-
 
