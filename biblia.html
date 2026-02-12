@@ -441,7 +441,44 @@
     </div>
   </div>
 </div>
- 
+
+<!-- ================= MODAL 3: AUDIO DEVOCIONAL ================= -->
+<div id="modalAudio" class="modal" style="display:none;">
+  <div class="modal-content modal-audio" role="dialog" aria-modal="true" aria-label="Audio devocional">
+    <div class="modal-header">
+      <h3>Audio devocional</h3>
+      <button class="btn-cerrar" onclick="cerrarModalAudio()" aria-label="Cerrar">✕</button>
+    </div>
+
+    <div class="audio-player">
+      <audio id="audioPreview" controls preload="none"></audio>
+      <div id="audioEstado" class="audio-estado">Listo para previsualizar.</div>
+    </div>
+
+    <label class="lbl" for="textoAudio">Texto para audio (editable)</label>
+    <textarea id="textoAudio" rows="8" placeholder="Acá podés corregir pronunciación, quitar signos invertidos, etc."></textarea>
+
+    <div class="fila-botones">
+      <button id="btnEscuchar" class="btn-principal" onclick="escucharPreviaAudio()">
+        ▶ Escuchar previa
+      </button>
+
+      <button id="btnSubirAudio" class="btn-secundario" onclick="finalizarYSubirAudio()">
+        ⬆ Subir audio
+      </button>
+
+      <button class="btn-terciario" onclick="restaurarTextoAudio()">
+        ↺ Restaurar desde texto original
+      </button>
+    </div>
+
+    <div class="nota-ayuda">
+      * El texto original de la imagen NO se modifica. Esto es solo para el audio.
+    </div>
+  </div>
+</div>
+
+  
 <!-- ================= SCRIPT PRINCIPAL ================= -->
 <!-- ⚠️ biblia.js CONTROLA TODO -->
 <script type="module" src="biblia.js"></script>
@@ -449,6 +486,7 @@
   
 </body>
 </html>
+
 
 
 
