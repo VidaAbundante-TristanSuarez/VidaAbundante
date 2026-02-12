@@ -74,6 +74,8 @@ let textStyle = {
 let textoExternoModal = "";     // si hay texto acá, el modal usa esto
 let modoTextoExterno = false;   // true = no usar versículos seleccionados
 
+window.__devPasoCaptura = false; // ✅ si true: NO subir a firebase
+
 // ================= AUTH =====================================
 onAuthStateChanged(auth, user => {
   uid = user ? user.uid : null;
@@ -962,17 +964,17 @@ try {
    // subir imagen (si existe la función)
   const subirIglesia = !!document.getElementById("checkIglesia")?.checked;
 
-if (typeof subirImagen === "function") {
+// ✅ Subir SOLO si NO estamos capturando pasos devocional
+if (!window.__devPasoCaptura && typeof subirImagen === "function") {
   const tareas = [];
   if (subirIglesia) tareas.push(subirImagen("iglesia"));
   tareas.push(subirImagen("personal"));
 
   const resultados = await Promise.allSettled(tareas);
-
   const fallos = resultados.filter(r => r.status === "rejected");
   if (fallos.length) {
     console.warn("⚠️ Subida falló:", fallos);
-    mostrarToast("⚠️ Se descargó la imagen, pero no se pudo subir (CORS).");
+    mostrarToast("⚠️ Se descargó la imagen, pero no se pudo subir.");
   }
 }
   
@@ -2241,9 +2243,47 @@ window.finalizarEdicion = window.finalizarEdicion;
 window.cancelarCrearImagen = window.cancelarCrearImagen;
 
 // ================= 💛 DEVOCIONALES =================
+function uiModoFondosSolo() {
+  const fondos = document.getElementById("personalizarFondos");
+  const plano  = document.getElementById("fondoPlanoBox");
+  if (fondos) fondos.style.display = "flex";
+  if (plano)  plano.style.display  = "none";
+}
+
+function uiModoFondoPlanoSolo() {
+  const fondos = document.getElementById("personalizarFondos");
+  const plano  = document.getElementById("fondoPlanoBox");
+  if (fondos) fondos.style.display = "none";
+  if (plano)  plano.style.display  = "block";
+}
+
+// botón “Aplicar”
+window.aplicarFondoPlanoDesdePicker = () => {
+  const c = document.getElementById("colorFondoPlano")?.value || "#ffffff";
+  const previewImagen = document.getElementById("previewImagen");
+  if (previewImagen) {
+    // fondo plano: sin imagen
+    fondoFinal = null;
+    if (fondoFinalBlobUrl) {
+      URL.revokeObjectURL(fondoFinalBlobUrl);
+      fondoFinalBlobUrl = null;
+    }
+    previewImagen.style.backgroundImage = "none";
+    previewImagen.style.backgroundColor = c;
+  }
+  // sin caja atrás del texto
+  const back = document.getElementById("previewTextoWrapper");
+  if (back) back.style.backgroundColor = "rgba(0,0,0,0)";
+  actualizarPreview();
+};
+
+// ================= 💛 DEVOCIONALES =================
 // ✅ Abre el mismo modal, pero con texto externo (no pisa tu auto-tamaño)
 window.abrirPersonalizarConTexto = function(texto, opts = {}) {
   if (!texto) return;
+
+  // ✅ siempre arrancamos limpio
+  resetModalPersonalizar();
 
   modoTextoExterno = true;
   textoExternoModal = String(texto);
@@ -2251,65 +2291,38 @@ window.abrirPersonalizarConTexto = function(texto, opts = {}) {
   const modal = document.getElementById("modalPersonalizar");
   if (modal) modal.style.display = "flex";
 
-  crearListaVisualFuentes();   // ✅ llena la lista de fuentes
-  cargarFondos();              // ✅ carga fondos también (si los querés usar)
+  // ✅ decidir UI por paso
+  // Bloque 1: fondos (NO color plano)
+  // Bloque 2: color plano (NO fondos)
+  const paso = opts.paso || 1;
 
-  // Si querés: Bloque 2 sin imagen de fondo y con fondo plano
-  if (opts.fondoPlano) {
-    fondoFinal = null;
-    if (fondoFinalBlobUrl) {
-      URL.revokeObjectURL(fondoFinalBlobUrl);
-      fondoFinalBlobUrl = null;
-    }
+  if (paso === 1) {
+    uiModoFondosSolo();
+    // fondo por defecto: ninguno hasta que elijas
     const previewImagen = document.getElementById("previewImagen");
     if (previewImagen) {
       previewImagen.style.backgroundImage = "none";
-      previewImagen.style.backgroundColor = opts.color || "#ffffff";
+      previewImagen.style.backgroundColor = "#ffffff";
     }
-    const back = document.getElementById("previewTextoWrapper");
-    if (back) back.style.backgroundColor = "rgba(0,0,0,0)"; // sin caja
   }
 
-  // ✅ Mostrar selector de fondo plano SOLO en devocionales si lo piden
-const boxPlano = document.getElementById("devFondoPlano");
-const inpPlano = document.getElementById("devColorPlano");
-
-if (boxPlano && inpPlano) {
-  const usarPlano = !!opts.fondoPlano;
-  boxPlano.style.display = usarPlano ? "flex" : "none";
-
-  if (usarPlano) {
-    inpPlano.value = opts.color || "#ffffff";
-
-    const previewImagen = document.getElementById("previewImagen");
-    if (previewImagen) {
-      // sin imagen de fondo
-      fondoFinal = null;
-      if (fondoFinalBlobUrl) {
-        URL.revokeObjectURL(fondoFinalBlobUrl);
-        fondoFinalBlobUrl = null;
-      }
-      previewImagen.style.backgroundImage = "none";
-      previewImagen.style.backgroundColor = inpPlano.value;
-    }
-
-    // cambiar en vivo
-    inpPlano.oninput = () => {
-      const previewImagen = document.getElementById("previewImagen");
-      if (previewImagen) {
-        fondoFinal = null;
-        if (fondoFinalBlobUrl) {
-          URL.revokeObjectURL(fondoFinalBlobUrl);
-          fondoFinalBlobUrl = null;
-        }
-        previewImagen.style.backgroundImage = "none";
-        previewImagen.style.backgroundColor = inpPlano.value;
-      }
-    };
+  if (paso === 2) {
+    uiModoFondoPlanoSolo();
+    // aplicar color inicial (si viene) o blanco
+    const color = opts.color || "#ffffff";
+    const picker = document.getElementById("colorFondoPlano");
+    if (picker) picker.value = color;
+    window.aplicarFondoPlanoDesdePicker();
   }
-}
 
-  // ✅ clave: refresca todo (incluye tu auto-tamaño)
+  // cargar fondos SOLO si toca
+  if (paso === 1) {
+    cargarFondos();
+  }
+
+  // fuentes (siempre)
+  crearListaVisualFuentes();
+
   actualizarPreview();
 };
 
