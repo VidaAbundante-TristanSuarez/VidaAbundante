@@ -2273,6 +2273,224 @@ function salirModoMarcadorLimpio() {
   mostrarTexto();
 }
 
+// ================= MODAL 3: AUDIO (DEVOCIONAL) =================
+let __audioTextoOriginal = "";
+let __audioLastUrl = "";     // si tu AppSheet devuelve URL final del mp3/wav
+let __audioLastTs = 0;       // para asociar subidas
+let __audioSpeaking = false;
+
+// ✅ Fonética: si vos ya tenés un sistema, esto NO lo pisa.
+// Solo agrega Joiada con J si hace falta.
+window.__FONETICA = window.__FONETICA || {};
+if (!window.__FONETICA["Joiada"]) {
+  // Truco: “Joíada” suele forzar mejor la J en TTS español
+  window.__FONETICA["Joiada"] = "Joíada";
+}
+
+// ✅ Normaliza texto para lectura (respeta ¿?¡! y agrega micro pausas)
+function audio_prepararTextoParaVoz(txt) {
+  let t = String(txt || "");
+
+  // 1) aplicar fonética (mapa)
+  const mapa = window.__FONETICA || {};
+  Object.keys(mapa).forEach(k => {
+    const val = mapa[k];
+    // reemplazo simple (no regex raro)
+    t = t.split(k).join(val);
+  });
+
+  // 2) pausas suaves: sin borrar signos, solo ayudamos al “tono”
+  //    (algunos TTS ignoran signos, esto ayuda)
+  t = t
+    .replace(/([¿¡])/g, "$1 ")     // espacio después de ¿¡
+    .replace(/([?.!])(\S)/g, "$1 $2");
+
+  return t.trim();
+}
+
+// ✅ Obtener texto que hoy está en tu preview (el de la imagen)
+function audio_getTextoDesdePreview() {
+  const el = document.getElementById("previewTexto");
+  const t = el ? (el.innerText || "") : "";
+  return t.trim();
+}
+
+// ✅ Abrir/Cerrar modal
+window.abrirModalAudio = () => {
+  const modal = document.getElementById("modalAudio");
+  const ta = document.getElementById("textoAudio");
+  const estado = document.getElementById("audioEstado");
+  const audio = document.getElementById("audioPreview");
+
+  if (!modal || !ta) return;
+
+  // texto base: lo que estés viendo en el modal de imagen
+  const base = audio_getTextoDesdePreview();
+  __audioTextoOriginal = base;
+
+  ta.value = base;
+
+  // limpiar player (hasta que exista audio real)
+  if (audio) audio.removeAttribute("src");
+  if (estado) estado.textContent = "Listo para previsualizar.";
+
+  // abrir (mismo sistema de tus modales)
+  modal.classList.add("abierto");
+  modal.setAttribute("aria-hidden", "false");
+};
+
+window.cerrarModalAudio = () => {
+  const modal = document.getElementById("modalAudio");
+  if (!modal) return;
+
+  // cortar voz si estaba hablando
+  try { window.speechSynthesis?.cancel(); } catch(e){}
+
+  modal.classList.remove("abierto");
+  modal.setAttribute("aria-hidden", "true");
+};
+
+window.restaurarTextoAudio = () => {
+  const ta = document.getElementById("textoAudio");
+  if (!ta) return;
+  ta.value = __audioTextoOriginal || "";
+};
+
+// ✅ Escucha previa: usa la voz del dispositivo (NO genera archivo)
+window.escucharPreviaAudio = () => {
+  const ta = document.getElementById("textoAudio");
+  const estado = document.getElementById("audioEstado");
+  if (!ta) return;
+
+  const raw = ta.value || "";
+  const texto = audio_prepararTextoParaVoz(raw);
+
+  if (!texto.trim()) {
+    if (estado) estado.textContent = "⚠️ No hay texto para leer.";
+    return;
+  }
+
+  if (!("speechSynthesis" in window)) {
+    if (estado) estado.textContent = "⚠️ Tu dispositivo no soporta lectura por voz.";
+    alert("Tu dispositivo no soporta lectura por voz (speechSynthesis).");
+    return;
+  }
+
+  try {
+    window.speechSynthesis.cancel();
+
+    const u = new SpeechSynthesisUtterance(texto);
+
+    // idioma español (Argentina)
+    u.lang = "es-AR";
+
+    // valores suaves (si querés más “radio”, decime y lo ajusto)
+    u.rate = 0.95;
+    u.pitch = 1.0;
+    u.volume = 1.0;
+
+    __audioSpeaking = true;
+    if (estado) estado.textContent = "▶ Reproduciendo previa…";
+
+    u.onend = () => {
+      __audioSpeaking = false;
+      if (estado) estado.textContent = "✅ Previa finalizada.";
+    };
+    u.onerror = () => {
+      __audioSpeaking = false;
+      if (estado) estado.textContent = "❌ No se pudo reproducir la previa.";
+    };
+
+    window.speechSynthesis.speak(u);
+  } catch (e) {
+    console.error(e);
+    if (estado) estado.textContent = "❌ Error al reproducir previa.";
+  }
+};
+
+// ✅ Subir audio REAL (vía tu AppSheet/GitHub)
+// IMPORTANTE: esto NO inventa tu sistema. Solo llama a una función si ya existe.
+window.finalizarYSubirAudio = async () => {
+  const estado = document.getElementById("audioEstado");
+  const ta = document.getElementById("textoAudio");
+  const chk = document.getElementById("checkIglesiaAudio");
+
+  if (!ta) return;
+  const texto = (ta.value || "").trim();
+  if (!texto) {
+    if (estado) estado.textContent = "⚠️ Pegá o escribí el texto antes de subir.";
+    return;
+  }
+
+  const subirIglesia = !!chk?.checked;
+
+  // 1) Si vos ya tenés una función global (por ejemplo, la traés desde otro JS),
+  //    la usamos tal cual:
+  //    window.subirAudioAGithub({ texto, subirIglesia, ... }) => debería devolver {url}
+  if (typeof window.subirAudioAGithub === "function") {
+    try {
+      if (estado) estado.textContent = "⬆ Subiendo audio…";
+      const resp = await window.subirAudioAGithub({
+        texto,
+        subirIglesia,
+        ts: Date.now()
+      });
+
+      const url = resp?.url || resp?.audioUrl || "";
+      __audioLastUrl = url || "";
+      __audioLastTs = Date.now();
+
+      // poner en el player si hay url
+      const audio = document.getElementById("audioPreview");
+      if (audio && url) audio.src = url;
+
+      if (estado) estado.textContent = url ? "✅ Audio subido y listo para escuchar." : "✅ Subido (sin URL devuelta).";
+      return;
+    } catch (e) {
+      console.error(e);
+      if (estado) estado.textContent = "❌ No se pudo subir el audio (falló tu función).";
+      return;
+    }
+  }
+
+  // 2) Si NO existe tu función todavía, dejamos un mensaje claro:
+  if (estado) estado.textContent =
+    "⚠️ Falta conectar tu subida real (AppSheet/GitHub). " +
+    "Decime el nombre EXACTO de tu función o pegá ese bloque acá y lo conecto sin romper nada.";
+  alert("Todavía no está conectado el bloque real de subida (AppSheet/GitHub).");
+};
+
+// ✅ Botón del modal de imagen -> abre modal audio
+document.addEventListener("DOMContentLoaded", () => {
+  const b = document.getElementById("btnAbrirAudio");
+  if (b) {
+    b.type = "button";
+    b.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      window.abrirModalAudio?.();
+    };
+  }
+});
+
+// ================= mas de AUDIOS 😆 =================
+// ✅ URL del Web App de Apps Script (Deploy -> Web app)
+const AUDIO_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbwDgVe2-aMdEEoqEF0ZFGnQYWArTFjU1TPoGR4WytbYitz6q3CkAtjmz0HobAcqJbs9Uw/exec";
+
+window.subirAudioAGithub = async ({ texto, subirIglesia, ts }) => {
+  const r = await fetch(AUDIO_WEBAPP_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ texto, subirIglesia, ts })
+  });
+
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok || !data.url) {
+    throw new Error(data?.error || "No devolvió URL");
+  }
+  return { url: data.url };
+};
+
 // ================= 🔺 HACER FUNCIONES GLOBALES (FIX DESCARGAR/COMPARTIR EN PC) =================
 window.generarImagenFinal = generarImagenFinal;
 window.descargarImagenFinal = descargarImagenFinal;
