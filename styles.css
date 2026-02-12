@@ -76,13 +76,6 @@
  color: #fff;
  }
 
- /* En móvil se oculta el texto y queda solo el emoji */
- @media (max-width: 640px) {
- .nav-btn .text {
- display: none;
- }
- }
-
 .nav-btn i {
   font-size: 16px;
   color: #4f6fa8;
@@ -122,7 +115,7 @@ body.oscuro .nav-btn.activo i{
 
   /* ================= SECCIONES GENERALES ================= */
  .seccion {
- padding: 15px;
+ padding: 12px;
  }
 
   /* ================= SECCIÓN BIBLIA ================= */
@@ -338,7 +331,7 @@ body.oscuro .panel-tabs button.activo{
   gap:10px;
   flex-wrap:wrap;
 
-  margin: 6px 0 10px;        /* 👈 menos aire */
+  margin: 4px 0 6px;        /* 👈 menos aire */
   background: #eafaff;       /* 👈 barra */
   padding: 8px 10px;
   border-radius: 14px;
