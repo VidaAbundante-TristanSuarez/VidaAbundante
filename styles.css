@@ -1524,5 +1524,23 @@ body.modo-marcador #bannerModoMarcador { display: block; }
   }
 }
 
+/* ================= MODAL AUDIO ================= */
+#audioEstado.audio-estado{
+  font-size: 12px;
+  opacity: .8;
+  margin-top: 6px;
+  text-align: center;
+}
+
+body.oscuro #modalAudio .modal-card{
+  background:#161616;
+  color:#fff;
+  border: 1px solid rgba(255,255,255,.08);
+}
+body.oscuro #modalAudio textarea{
+  background:#1e1e1e;
+  color:#fff;
+  border: 1px solid rgba(255,255,255,.18);
+}
 
   </style>
