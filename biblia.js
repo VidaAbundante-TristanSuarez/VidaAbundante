@@ -90,6 +90,12 @@ onAuthStateChanged(auth, user => {
     mostrarTexto();
   });
 
+  // ✅ Cargar imágenes del panel (personal)
+onValue(ref(db, "panelImagenesPersonal/" + uid), s => {
+  const data = s.val() || {};
+  renderPanelImagenes(data);
+});
+
 // ✅ Cargar marcadores
 onValue(ref(db, "marcadores/" + uid), s => {
   marcadores = s.val() || {};
@@ -1951,6 +1957,38 @@ window.abrirNotaLibre = () => {
   }, 0);
 };
 
+// ================= 🔺 RENDERPANELIMAGENES ===================
+function renderPanelImagenes(data) {
+  const grid = document.getElementById("grid-imagenes");
+  const vacio = document.getElementById("imagenes-vacio");
+  if (!grid || !vacio) return;
+
+  const items = Object.entries(data || {})
+    .map(([id, obj]) => ({ id, ...(obj || {}) }))
+    .sort((a,b) => (b.fecha || 0) - (a.fecha || 0));
+
+  if (!items.length) {
+    vacio.style.display = "block";
+    grid.innerHTML = "";
+    return;
+  }
+
+  vacio.style.display = "none";
+
+  grid.innerHTML = items.map(it => {
+    const refTxt = (it.libro && it.capitulo) ? `${it.libro} ${it.capitulo}` : "Imagen";
+    const fechaTxt = it.fecha ? new Date(it.fecha).toLocaleDateString("es-AR") : "";
+    const url = (it.url || "").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+
+    return `
+      <div class="card-imagen">
+        <img src="${url}" alt="Imagen generada" loading="lazy">
+        <div class="nombre">${refTxt} · ${fechaTxt}</div>
+      </div>
+    `;
+  }).join("");
+}
+
 // ================= 🔺 CAPITULO ANTERIOR ===================
 window.capituloAnterior = () => {
   if (capSel.selectedIndex > 0) {
@@ -2278,7 +2316,6 @@ window.aplicarFondoPlanoDesdePicker = () => {
 };
 
 // ================= 💛 DEVOCIONALES =================
-// ✅ Abre el mismo modal, pero con texto externo (no pisa tu auto-tamaño)
 window.abrirPersonalizarConTexto = function(texto, opts = {}) {
   if (!texto) return;
 
@@ -2291,14 +2328,20 @@ window.abrirPersonalizarConTexto = function(texto, opts = {}) {
   const modal = document.getElementById("modalPersonalizar");
   if (modal) modal.style.display = "flex";
 
-  // ✅ decidir UI por paso
-  // Bloque 1: fondos (NO color plano)
-  // Bloque 2: color plano (NO fondos)
-  const paso = opts.paso || 1;
+  const boxFormato = document.getElementById("boxFormato");
+  const esDev = !!opts.devPaso;
+
+  // ✅ En devocionales NO se elige formato manual
+  if (boxFormato) boxFormato.style.display = esDev ? "none" : "flex";
+
+  const paso = Number(opts.paso || 1);
 
   if (paso === 1) {
+    // ✅ Bloque 1: CUADRADO + fondos galería
+    setFormatoImagen("post");
     uiModoFondosSolo();
-    // fondo por defecto: ninguno hasta que elijas
+    cargarFondos();
+
     const previewImagen = document.getElementById("previewImagen");
     if (previewImagen) {
       previewImagen.style.backgroundImage = "none";
@@ -2307,17 +2350,14 @@ window.abrirPersonalizarConTexto = function(texto, opts = {}) {
   }
 
   if (paso === 2) {
+    // ✅ Bloque 2: STORY + solo color plano
+    setFormatoImagen("story");
     uiModoFondoPlanoSolo();
-    // aplicar color inicial (si viene) o blanco
+
     const color = opts.color || "#ffffff";
     const picker = document.getElementById("colorFondoPlano");
     if (picker) picker.value = color;
     window.aplicarFondoPlanoDesdePicker();
-  }
-
-  // cargar fondos SOLO si toca
-  if (paso === 1) {
-    cargarFondos();
   }
 
   // fuentes (siempre)
