@@ -179,22 +179,26 @@ document.addEventListener("DOMContentLoaded", () => {
     const url = URL.createObjectURL(file);
     const image = new Image();
 
-    image.onload = () => {
-      img = image;
+   image.onload = () => {
+  img = image;
 
-      // reset recorte
-      crop = null;
-      start = null;
-      drawing = false;
-      recortando = false;
-      btnRecortar.textContent = "✂️ Recortar";
+  // reset recorte
+  crop = null;
+  start = null;
+  drawing = false;
+  recortando = false;
+  btnRecortar.textContent = "✂️ Recortar";
 
-      fitCanvasToImage(img, 420);
-      draw();
+  fitCanvasToImage(img, 420);
+  draw();
 
-      URL.revokeObjectURL(url);
-      ocrSetStatus("✅ Imagen cargada. Podés recortar o tocar OCR.");
-    };
+  // ✅ mostrar UI que estaba oculta
+  document.getElementById("devCanvasBox")?.classList.remove("hidden");
+  document.getElementById("devTextoBox")?.classList.remove("hidden");
+
+  URL.revokeObjectURL(url);
+  ocrSetStatus("✅ Imagen cargada. Podés recortar o tocar OCR.");
+};
 
     image.src = url;
   });
@@ -468,4 +472,46 @@ btnB2.onclick = () => {
   if (back) back.style.opacity = "0";
 };
 
+});
+
+// =========================
+// ✅ DEVOCIONALES: flujo 3 pasos usando el modal de biblia.js
+// Bloque 1: CUADRADO + fondos galería
+// Bloque 2: STORY + solo color plano
+// Bloque 3: preview final (combinada)
+// =========================
+
+window.__devSiguiente = (paso) => {
+  const ta = document.getElementById("devTexto");
+  const texto = (ta?.value || "").trim();
+  if (!texto) {
+    alert("Primero necesitás texto (OCR o pegado).");
+    return;
+  }
+
+  if (paso === 1) {
+    // Bloque 1: cuadrado + fondos galería
+    window.abrirPersonalizarConTexto(texto, { paso: 1, devPaso: 1 });
+    return;
+  }
+
+  if (paso === 2) {
+    // Bloque 2: story + color plano
+    window.abrirPersonalizarConTexto(texto, { paso: 2, devPaso: 2, color: "#ffffff" });
+    return;
+  }
+
+  if (paso === 3) {
+    // Bloque 3: final
+    window.abrirPersonalizarConTexto(texto, { paso: 2, devPaso: 3, color: "#ffffff" });
+    return;
+  }
+};
+
+document.addEventListener("DOMContentLoaded", () => {
+  const b1 = document.getElementById("btnDevBloque1");
+  const b2 = document.getElementById("btnDevBloque2");
+
+  if (b1) b1.onclick = () => window.__devSiguiente(1);
+  if (b2) b2.onclick = () => window.__devSiguiente(2);
 });
