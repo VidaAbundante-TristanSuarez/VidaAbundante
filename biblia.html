@@ -442,38 +442,73 @@
   </div>
 </div>
 
-<!-- ================= MODAL 3: AUDIO DEVOCIONAL ================= -->
-<div id="modalAudio" class="modal" style="display:none;">
-  <div class="modal-content modal-audio" role="dialog" aria-modal="true" aria-label="Audio devocional">
-    <div class="modal-header">
-      <h3>Audio devocional</h3>
-      <button class="btn-cerrar" onclick="cerrarModalAudio()" aria-label="Cerrar">✕</button>
+<!-- ================= MODAL 3: AUDIO (REUTILIZA ESTILO DE MODALES) ================= -->
+<div id="modalAudio" class="modal-overlay" aria-hidden="true">
+  <div class="modal-card">
+
+    <div style="padding:12px 14px; border-bottom:1px solid #ddd; display:flex; align-items:center; justify-content:space-between;">
+      <b>🎧 Audio devocional</b>
+      <button type="button" onclick="cerrarModalAudio()"
+        style="border:none; background:#eee; border-radius:999px; width:34px; height:34px; cursor:pointer;">✖</button>
     </div>
 
-    <div class="audio-player">
-      <audio id="audioPreview" controls preload="none"></audio>
-      <div id="audioEstado" class="audio-estado">Listo para previsualizar.</div>
-    </div>
+    <div style="padding:12px 14px; display:flex; flex-direction:column; gap:10px;">
 
-    <label class="lbl" for="textoAudio">Texto para audio (editable)</label>
-    <textarea id="textoAudio" rows="8" placeholder="Acá podés corregir pronunciación, quitar signos invertidos, etc."></textarea>
+      <!-- Player -->
+      <div class="audio-player">
+        <audio id="audioPreview" controls preload="none" style="width:100%;"></audio>
+        <div id="audioEstado" class="audio-estado">Listo para previsualizar.</div>
+      </div>
 
-    <div class="fila-botones">
-      <button id="btnEscuchar" class="btn-principal" onclick="escucharPreviaAudio()">
-        ▶ Escuchar previa
-      </button>
+      <label class="lbl" for="textoAudio" style="font-weight:800; font-size:13px;">
+        Texto para audio (editable)
+      </label>
 
-      <button id="btnSubirAudio" class="btn-secundario" onclick="finalizarYSubirAudio()">
-        ⬆ Subir audio
-      </button>
+      <textarea id="textoAudio" rows="8"
+        placeholder="Acá podés corregir pronunciación, respetar ¿?¡!, etc."
+        style="width:100%; height:190px; border-radius:12px; padding:12px;"></textarea>
 
-      <button class="btn-terciario" onclick="restaurarTextoAudio()">
-        ↺ Restaurar desde texto original
-      </button>
-    </div>
+      <!-- Acciones audio -->
+      <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center;">
+        <button type="button" class="btn-primary" onclick="escucharPreviaAudio()">
+          ▶ Escuchar previa
+        </button>
 
-    <div class="nota-ayuda">
-      * El texto original de la imagen NO se modifica. Esto es solo para el audio.
+        <button type="button" class="btn-primary" onclick="finalizarYSubirAudio()">
+          ⬆ Subir audio
+        </button>
+
+        <button type="button" class="btn-ghost" onclick="restaurarTextoAudio()">
+          ↺ Restaurar
+        </button>
+      </div>
+
+      <div style="font-size:12px; opacity:.8; line-height:1.25; text-align:center;">
+        * Esto NO modifica el texto de la imagen. Solo afecta al audio.
+      </div>
+
+      <!-- ✅ Botones finales: mismos que imagen -->
+      <div class="fila-final" style="margin-top:6px;">
+
+        <button type="button" onclick="descargarImagenFinal()" title="Descargar imagen">
+          <i class="fa-solid fa-download"></i>
+        </button>
+
+        <button type="button" onclick="compartirImagenFinal()" title="Compartir imagen">
+          <i class="fa-solid fa-share-nodes"></i>
+        </button>
+
+        <button type="button" onclick="finalizarEdicion()" title="Finalizar">
+          <i class="fa-solid fa-circle-check"></i>
+        </button>
+
+        <label class="subir-iglesia-btn" title="Subir a Iglesia">
+          <input type="checkbox" id="checkIglesiaAudio" checked>
+          <i class="fa-solid fa-church"></i>
+        </label>
+
+      </div>
+
     </div>
   </div>
 </div>
@@ -486,6 +521,7 @@
   
 </body>
 </html>
+
 
 
 
