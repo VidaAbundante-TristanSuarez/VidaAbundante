@@ -202,19 +202,22 @@
 
     <p id="estadoOCRDev" style="margin-top:10px; opacity:.8; font-size:13px;"></p>
 
-    <div style="margin-top:12px; border-radius:12px; overflow:hidden; border:1px solid #ddd;">
-      <canvas id="devCanvas" style="display:block; width:100%; max-width:420px;"></canvas>
-    </div>
+ <!-- ✅ (oculto hasta que se cargue imagen) -->
+<div id="devCanvasBox" class="hidden" style="margin-top:12px; border-radius:12px; overflow:hidden; border:1px solid #ddd;">
+  <canvas id="devCanvas" style="display:block; width:100%; max-width:420px;"></canvas>
+</div>
 
-    <div style="margin-top:12px;">
-      <label style="display:block; font-weight:700; margin-bottom:6px;">Texto detectado (editable)</label>
-      <textarea id="devTexto" style="width:100%; height:220px; border-radius:12px; padding:12px;"></textarea>
+<!-- ✅ (oculto hasta que se cargue imagen) -->
+<div id="devTextoBox" class="hidden" style="margin-top:12px;">
+  <label style="display:block; font-weight:700; margin-bottom:6px;">Texto detectado (editable)</label>
+  <textarea id="devTexto" style="width:100%; height:220px; border-radius:12px; padding:12px;"></textarea>
 
-      <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;">
-        <button id="btnDevBloque1" type="button" class="btn-primary">➡️ Bloque 1</button>
-        <button id="btnDevBloque2" type="button" class="btn-primary">➡️ Bloque 2</button>
-      </div>
-    </div>
+  <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;">
+    <button id="btnDevBloque1" type="button" class="btn-primary">➡️ Bloque 1</button>
+    <button id="btnDevBloque2" type="button" class="btn-primary">➡️ Bloque 2</button>
+  </div>
+</div>
+
   </div>
 
   <!-- ✅ SUB-SECCIÓN: ABC (OCULTA por default) -->
@@ -297,26 +300,25 @@
 </div>
     
     <!-- ================= FORMATO IMAGEN ================= -->
-    <div class="fila-opciones style-row">
-      <button id="btnFormatoPost" type="button" onclick="setFormatoImagen('post')" title="Post">
-        <i class="fa-solid fa-square"></i>
-      </button>
+<div id="boxFormato" class="fila-opciones style-row">
+  <button id="btnFormatoPost" type="button" onclick="setFormatoImagen('post')" title="Post">
+    <i class="fa-solid fa-square"></i>
+  </button>
 
-      <button id="btnFormatoStory" type="button" onclick="setFormatoImagen('story')" title="Story">
-        <i class="fa-solid fa-mobile-screen"></i>
-      </button>
+  <button id="btnFormatoStory" type="button" onclick="setFormatoImagen('story')" title="Story">
+    <i class="fa-solid fa-mobile-screen"></i>
+  </button>
 
-      <input id="personalizarOpacidad" class="opacidad-slider"
-             type="range" min="0" max="1" step="0.05" value="0.3">
+  <input id="personalizarOpacidad" class="opacidad-slider"
+         type="range" min="0" max="1" step="0.05" value="0.3">
 
-      <button type="button" onclick="cambiarTamanoPreview(-1)" style="border:none;border-radius:10px;padding:6px 10px;cursor:pointer;background:var(--ui-azul-claro);">−</button>
+  <button type="button" onclick="cambiarTamanoPreview(-1)" style="border:none;border-radius:10px;padding:6px 10px;cursor:pointer;background:var(--ui-azul-claro);">−</button>
 
-<input id="personalizarTamaño" class="tamano-input"
-       type="number" value="24" min="10" max="100">
+  <input id="personalizarTamaño" class="tamano-input"
+         type="number" value="24" min="10" max="100">
 
-<button type="button" onclick="cambiarTamanoPreview(1)" style="border:none;border-radius:10px;padding:6px 10px;cursor:pointer;background:var(--ui-azul-claro);">+</button>
-
-    </div>
+  <button type="button" onclick="cambiarTamanoPreview(1)" style="border:none;border-radius:10px;padding:6px 10px;cursor:pointer;background:var(--ui-azul-claro);">+</button>
+</div>
 
     <!-- ================= FUENTES / ESTILOS / COLOR ================= -->
     <div class="fila-texto">
@@ -447,6 +449,7 @@
   
 </body>
 </html>
+
 
 
 
