@@ -1495,23 +1495,5 @@ body.modo-marcador #bannerModoMarcador { display: block; }
   display: flex;
 }
 
-/* ✅ Scroll en celular para secciones largas */
-html, body { height: 100%; }
-.seccion { min-height: 100vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
-
-/* ✅ Devocionales: que no quede tapado por barras */
-#iglesia-devocionales { padding-bottom: 140px; }
-
-/* ✅ Botonera devocional más chica */
-#iglesia-devocionales .btn-primary,
-#iglesia-devocionales .btn-ghost {
-  padding: 8px 10px;
-  font-size: 13px;
-  border-radius: 10px;
-}
-
-/* ✅ Canvas no debe quedar “raro” al tocar */
-#devCanvas { touch-action: none; }
-
 
   </style>
