@@ -1543,4 +1543,16 @@ body.oscuro #modalAudio textarea{
   border: 1px solid rgba(255,255,255,.18);
 }
 
+/* ✅ Player prolijo */
+#modalAudio .audio-player{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+
+#modalAudio textarea{
+  resize: vertical;
+  min-height: 160px;
+}
+
   </style>
