@@ -311,7 +311,7 @@ function partirEn2Bloques(txt) {
   const keys = [
     "IGLESIA", "CRISTIANA", "VIDA", "ABUNDANTE",
     "DE LA VIDA", "LA VIDA", "VIDA ABUNDANTE",
-    "ABUNDAN", "ABUNDA", "AB" // el OCR a veces corta así
+    "ABUNDAN", "ABUNDA", "AB", "DE LA", "DE", "LA" // el OCR a veces corta así
   ];
 
   const tieneKey = keys.some(k => n.includes(sinAcentos(k).toUpperCase()));
