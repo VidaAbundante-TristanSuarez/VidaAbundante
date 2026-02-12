@@ -436,17 +436,16 @@ ${footer2}`.trim();
   return [bloque1, bloque2];
 }
 
-
 btnB1.onclick = () => {
   const [b1] = partirEn2Bloques(ta.value);
   if (!b1) return alert("No hay texto para Bloque 1");
-  window.abrirPersonalizarConTexto?.(b1, { paso: 1 }); // ✅ fondos
+  window.abrirPersonalizarConTexto?.(b1, { paso: 1, devPaso: 1 });
 };
 
 btnB2.onclick = () => {
   const [, b2] = partirEn2Bloques(ta.value);
   if (!b2) return alert("No hay texto para Bloque 2");
-  window.abrirPersonalizarConTexto?.(b2, { paso: 2, color: "#ffffff" }); // ✅ fondo plano
+  window.abrirPersonalizarConTexto?.(b2, { paso: 2, devPaso: 2, color: "#ffffff" });
 };
 
 function abrirPasoDevocional(paso) {
@@ -481,22 +480,27 @@ window.__devSiguiente = (paso) => {
     return;
   }
 
+  // ✅ SIEMPRE partir en 2 bloques acá
+  const [b1, b2] = partirEn2Bloques(texto);
+
   if (paso === 1) {
-    // Bloque 1: cuadrado + fondos galería
-    window.abrirPersonalizarConTexto(texto, { paso: 1, devPaso: 1 });
+    // Bloque 1: CUADRADO + fondos galería
+    if (!b1) return alert("No hay texto para Bloque 1");
+    window.abrirPersonalizarConTexto(b1, { paso: 1, devPaso: 1 });
     return;
   }
 
   if (paso === 2) {
-    // Bloque 2: story + color plano
-    window.abrirPersonalizarConTexto(texto, { paso: 2, devPaso: 2, color: "#ffffff" });
+    // Bloque 2: STORY + color plano
+    if (!b2) return alert("No hay texto para Bloque 2");
+    window.abrirPersonalizarConTexto(b2, { paso: 2, devPaso: 2, color: "#ffffff" });
     return;
   }
 
-if (paso === 3) {
-  window.abrirPersonalizarConTexto(texto, { devPaso: 3 });
-  return;
-}
+  if (paso === 3) {
+    window.abrirPersonalizarConTexto("FINAL", { devPaso: 3 });
+    return;
+  }
 };
 
 document.addEventListener("DOMContentLoaded", () => {
