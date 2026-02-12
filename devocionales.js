@@ -285,13 +285,41 @@ function partirEn2Bloques(txt) {
   };
 
   const isBasuraLogo = (s) => {
-    const n = sinAcentos(norm(s)).toUpperCase();
-    // basura típica + líneas demasiado cortas sueltas
-    if (n === "DE LA VIDA" || n === "DE LA VIDA." || n === "LA VIDA" || n === "VIDA") return true;
-    if (n.includes("DE LA VIDA") && n.length <= 20) return true;
-    if (n.length <= 2) return true;
-    return false;
-  };
+  const raw = String(s || "").trim();
+  if (!raw) return true;
+
+  const clean = sinAcentos(norm(raw));
+  const n = clean.toUpperCase();
+
+  // 1) líneas ultra cortas basura
+  if (n.length <= 2) return true;
+
+  // 2) Detectar si "parece logo": corta + mayormente MAYÚSCULA
+  const letters = (clean.match(/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/g) || []).length;
+  const uppers  = (clean.match(/[A-ZÁÉÍÓÚÜÑ]/g) || []).length;
+  const upperRatio = letters ? (uppers / letters) : 0;
+
+  const esCorta = n.length <= 28;          // 👈 clave: solo líneas cortas
+  const esMayus = upperRatio >= 0.75;      // 👈 clave: parece texto de logo
+
+  // Si NO es corta o NO es mayúscula, NO borrar nunca.
+  // Esto protege párrafos reales donde aparece "vida" o "abundante".
+  if (!esCorta || !esMayus) return false;
+
+  // 3) Palabras clave del logo (solo para líneas cortas y mayúsculas)
+  // (incluye pedacitos típicos)
+  const keys = [
+    "IGLESIA", "CRISTIANA", "VIDA", "ABUNDANTE",
+    "DE LA VIDA", "LA VIDA", "VIDA ABUNDANTE",
+    "ABUNDAN", "ABUNDA", "AB" // el OCR a veces corta así
+  ];
+
+  const tieneKey = keys.some(k => n.includes(sinAcentos(k).toUpperCase()));
+  if (!tieneKey) return false;
+
+  // 4) Si llega acá => línea corta + mayúscula + palabra clave => casi seguro es logo
+  return true;
+};
 
   // -------- preparar líneas ----------
   let lineas = raw
@@ -400,9 +428,13 @@ ${footer2}`.trim();
 btnB1.onclick = () => {
   const [b1] = partirEn2Bloques(ta.value);
   if (!b1) return alert("No hay texto para Bloque 1");
-  window.__devUltimoTexto = ta.value; // guardo el texto completo
-  window.__devSiguiente = (paso) => abrirPasoDevocional(paso);
-  abrirPasoDevocional(1);
+  window.abrirPersonalizarConTexto?.(b1, { paso: 1 }); // ✅ fondos
+};
+
+btnB2.onclick = () => {
+  const [, b2] = partirEn2Bloques(ta.value);
+  if (!b2) return alert("No hay texto para Bloque 2");
+  window.abrirPersonalizarConTexto?.(b2, { paso: 2, color: "#ffffff" }); // ✅ fondo plano
 };
 
 function abrirPasoDevocional(paso) {
