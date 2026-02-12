@@ -257,10 +257,9 @@ btnOCR.addEventListener("click", async () => {
     btnOCR.style.opacity = "1";
   }
 });
-
-  const btnB1 = document.getElementById("btnDevBloque1");
-const btnB2 = document.getElementById("btnDevBloque2");
-
+}); // ✅ CIERRA el document.addEventListener("DOMContentLoaded", () => { ... })
+  
+// ✅ GLOBAL: para que lo pueda usar window.__devSiguiente
 function partirEn2Bloques(txt) {
   const raw = String(txt || "").replace(/\r/g, "").trim();
   if (!raw) return ["", ""];
@@ -269,7 +268,7 @@ function partirEn2Bloques(txt) {
   const norm = (s) =>
     String(s || "")
       .trim()
-      .replace(/[•·▪●■▶►➤➔➡️]/g, "")     // viñetas comunes
+      .replace(/[•·▪●■▶►➤➔➡️]/g, "")
       .replace(/\s+/g, " ");
 
   const sinAcentos = (s) =>
@@ -277,13 +276,10 @@ function partirEn2Bloques(txt) {
 
   const isOracionLine = (s) => {
     const n = sinAcentos(norm(s)).toLowerCase();
-    // acepta "oracion", "oracion:", "oración", con viñeta delante, etc.
     return /\boracion\b/.test(n);
   };
 
   const isCitaLine = (s) => {
-    // Busca algo tipo "MATEO 19:13-14" o "Juan 3:16"
-    // (la cita suele estar sola en una línea)
     return /([A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+)\s+\d+:\d+(-\d+)?/.test(norm(s));
   };
 
@@ -293,45 +289,36 @@ function partirEn2Bloques(txt) {
   const isMostlyUpper = (s) => {
     const L = letters(s);
     if (L < 6) return false;
-    return (uppers(s) / L) >= 0.75; // bastante estricto
+    return (uppers(s) / L) >= 0.75;
   };
 
   const isBasuraLogo = (s) => {
-  const raw = String(s || "").trim();
-  if (!raw) return true;
+    const raw = String(s || "").trim();
+    if (!raw) return true;
 
-  const clean = sinAcentos(norm(raw));
-  const n = clean.toUpperCase();
+    const clean = sinAcentos(norm(raw));
+    const n = clean.toUpperCase();
 
-  // 1) líneas ultra cortas basura
-  if (n.length <= 2) return true;
+    if (n.length <= 2) return true;
 
-  // 2) Detectar si "parece logo": corta + mayormente MAYÚSCULA
-  const letters = (clean.match(/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/g) || []).length;
-  const uppers  = (clean.match(/[A-ZÁÉÍÓÚÜÑ]/g) || []).length;
-  const upperRatio = letters ? (uppers / letters) : 0;
+    const ltrs = (clean.match(/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/g) || []).length;
+    const ups  = (clean.match(/[A-ZÁÉÍÓÚÜÑ]/g) || []).length;
+    const upperRatio = ltrs ? (ups / ltrs) : 0;
 
-  const esCorta = n.length <= 28;          // 👈 clave: solo líneas cortas
-  const esMayus = upperRatio >= 0.75;      // 👈 clave: parece texto de logo
+    const esCorta = n.length <= 28;
+    const esMayus = upperRatio >= 0.75;
 
-  // Si NO es corta o NO es mayúscula, NO borrar nunca.
-  // Esto protege párrafos reales donde aparece "vida" o "abundante".
-  if (!esCorta || !esMayus) return false;
+    if (!esCorta || !esMayus) return false;
 
-  // 3) Palabras clave del logo (solo para líneas cortas y mayúsculas)
-  // (incluye pedacitos típicos)
-  const keys = [
-    "IGLESIA", "CRISTIANA", "VIDA", "ABUNDANTE",
-    "DE LA VIDA", "LA VIDA", "VIDA ABUNDANTE",
-    "ABUNDAN", "ABUNDA", "AB", "DE LA", "DE", "LA" // el OCR a veces corta así
-  ];
+    const keys = [
+      "IGLESIA", "CRISTIANA", "VIDA", "ABUNDANTE",
+      "DE LA VIDA", "LA VIDA", "VIDA ABUNDANTE",
+      "ABUNDAN", "ABUNDA", "AB", "DE LA", "DE", "LA"
+    ];
 
-  const tieneKey = keys.some(k => n.includes(sinAcentos(k).toUpperCase()));
-  if (!tieneKey) return false;
-
-  // 4) Si llega acá => línea corta + mayúscula + palabra clave => casi seguro es logo
-  return true;
-};
+    const tieneKey = keys.some(k => n.includes(sinAcentos(k).toUpperCase()));
+    return !!tieneKey;
+  };
 
   // -------- preparar líneas ----------
   let lineas = raw
@@ -340,7 +327,6 @@ function partirEn2Bloques(txt) {
     .filter(Boolean)
     .filter(l => !isBasuraLogo(l));
 
-  // título / fecha
   const titulo = lineas.find(l => /^DEVOCIONAL$/i.test(l)) || "DEVOCIONAL";
 
   const fecha =
@@ -348,34 +334,26 @@ function partirEn2Bloques(txt) {
       /(lunes|martes|miércoles|miercoles|jueves|viernes|sábado|sabado|domingo)\s+\d{1,2}\s+de\s+\w+/i.test(l)
     ) || "";
 
-  // Índices clave
   const idxOracion = lineas.findIndex(isOracionLine);
 
-  // Tomamos LA ÚLTIMA cita encontrada (casi siempre está al final)
   let idxCita = -1;
   for (let i = lineas.length - 1; i >= 0; i--) {
     if (isCitaLine(lineas[i])) { idxCita = i; break; }
   }
   const cita = idxCita >= 0 ? lineas[idxCita] : "";
 
-  // -------- detectar bloque del versículo (mayúsculas antes de la cita) ----------
-  // Buscamos hacia arriba desde idxCita-1 un bloque CONTIGUO de líneas mayormente en mayúsculas.
+  // -------- bloque versículo (mayúsculas antes de la cita) ----------
   let verseStart = -1;
   let verseEnd = -1;
 
   if (idxCita > 0) {
     let i = idxCita - 1;
 
-    // saltar posibles líneas basura entre versículo y cita
-    while (i >= 0 && isBasuraLogo(lineas[i])) i--;
-
-    // si la línea es mayúscula, empezamos bloque
     if (i >= 0 && isMostlyUpper(lineas[i])) {
       verseEnd = i;
       while (i >= 0 && isMostlyUpper(lineas[i])) i--;
       verseStart = i + 1;
     } else {
-      // fallback: si OCR partió raro, buscamos el último “grupo” de mayúsculas
       for (let k = idxCita - 1; k >= 0; k--) {
         if (isMostlyUpper(lineas[k])) {
           verseEnd = k;
@@ -393,13 +371,10 @@ function partirEn2Bloques(txt) {
       ? lineas.slice(verseStart, verseEnd + 1)
       : [];
 
- const versiculo = versiculoLines.join(" ").replace(/\s+/g, " ").trim();
+  const versiculo = versiculoLines.join(" ").replace(/\s+/g, " ").trim();
 
-  // -------- Bloque 2: Reflexión + Oración (sin versículo) ----------
-  // Reflexión: desde después de fecha (si existe) hasta antes de “Oración”
-  // Oración: desde “Oración...” hasta antes del versículo
+  // -------- Bloque 2: Reflexión + Oración ----------
   const idxFecha = fecha ? lineas.indexOf(fecha) : -1;
-
   const inicioCuerpo = (idxFecha >= 0) ? (idxFecha + 1) : 0;
 
   const corteAntesVersiculo = (verseStart >= 0) ? verseStart : (idxCita >= 0 ? idxCita : lineas.length);
@@ -410,15 +385,12 @@ function partirEn2Bloques(txt) {
   let oracion = "";
   if (idxOracion >= 0) {
     oracion = lineas.slice(idxOracion, corteAntesVersiculo).join(" ").replace(/\s+/g, " ").trim();
-
-    // opcional: normalizar el prefijo "Oración:" si viene pegado
     oracion = oracion.replace(/^.*?\bOraci[oó]n\b\s*:\s*/i, "Oración: ");
     if (!/^Oración:/i.test(oracion)) oracion = "Oración: " + oracion;
   }
 
   const bloque2 = [reflexion, oracion].filter(Boolean).join("\n\n").trim();
 
-  // -------- Bloque 1: SOLO versículo + cita + footer (con título/fecha arriba) ----------
   const footer1 = "IGLESIA CRISTIANA DE LA VIDA ABUNDANTE";
   const footer2 = "ROCA 123 - TRISTAN SUAREZ";
 
@@ -436,34 +408,6 @@ ${footer2}`.trim();
   return [bloque1, bloque2];
 }
 
-btnB1.onclick = () => {
-  const [b1] = partirEn2Bloques(ta.value);
-  if (!b1) return alert("No hay texto para Bloque 1");
-  window.abrirPersonalizarConTexto?.(b1, { paso: 1, devPaso: 1 });
-};
-
-btnB2.onclick = () => {
-  const [, b2] = partirEn2Bloques(ta.value);
-  if (!b2) return alert("No hay texto para Bloque 2");
-  window.abrirPersonalizarConTexto?.(b2, { paso: 2, devPaso: 2, color: "#ffffff" });
-};
-
-function abrirPasoDevocional(paso) {
-  const [b1, b2] = partirEn2Bloques(document.getElementById("devTexto").value);
-
-  if (paso === 1) {
-    window.abrirPersonalizarConTexto?.(b1, { devPaso: 1, fondoPlano: true, color: "#ffffff" });
-  }
-  if (paso === 2) {
-    window.abrirPersonalizarConTexto?.(b2, { devPaso: 2, fondoPlano: true, color: "#ffffff" });
-  }
-  if (paso === 3) {
-    // abre “final”: el modal usa las imágenes guardadas
-    window.abrirPersonalizarConTexto?.("FINAL", { devPaso: 3 });
-  }
-}
-
-});
 
 // =========================
 // ✅ DEVOCIONALES: flujo 3 pasos usando el modal de biblia.js
@@ -475,23 +419,17 @@ function abrirPasoDevocional(paso) {
 window.__devSiguiente = (paso) => {
   const ta = document.getElementById("devTexto");
   const texto = (ta?.value || "").trim();
-  if (!texto) {
-    alert("Primero necesitás texto (OCR o pegado).");
-    return;
-  }
+  if (!texto) { alert("Primero necesitás texto (OCR o pegado)."); return; }
 
-  // ✅ SIEMPRE partir en 2 bloques acá
-  const [b1, b2] = partirEn2Bloques(texto);
+  const [b1, b2] = partirEn2Bloques(texto); // ✅ ahora sí existe
 
   if (paso === 1) {
-    // Bloque 1: CUADRADO + fondos galería
     if (!b1) return alert("No hay texto para Bloque 1");
     window.abrirPersonalizarConTexto(b1, { paso: 1, devPaso: 1 });
     return;
   }
 
   if (paso === 2) {
-    // Bloque 2: STORY + color plano
     if (!b2) return alert("No hay texto para Bloque 2");
     window.abrirPersonalizarConTexto(b2, { paso: 2, devPaso: 2, color: "#ffffff" });
     return;
@@ -499,7 +437,6 @@ window.__devSiguiente = (paso) => {
 
   if (paso === 3) {
     window.abrirPersonalizarConTexto("FINAL", { devPaso: 3 });
-    return;
   }
 };
 
