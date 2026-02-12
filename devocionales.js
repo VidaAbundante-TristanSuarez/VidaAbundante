@@ -217,38 +217,46 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // OCR por Cloud Function
-  btnOCR.addEventListener("click", async () => {
-    if (!img) { alert("Primero cargá una imagen"); return; }
+btnOCR.addEventListener("click", async () => {
+  if (!img) { alert("Primero cargá una imagen"); return; }
 
-    ocrSetStatus("⏳ Enviando imagen al OCR…");
+  // ✅ Evita doble click
+  btnOCR.disabled = true;
+  btnOCR.style.opacity = "0.6";
 
-    try {
-      const blob = await getCroppedBlob();
-      if (!blob) return;
+  ocrSetStatus("⏳ Enviando imagen al OCR…");
 
-      const imageBase64 = await blobToBase64(blob);
+  try {
+    const blob = await getCroppedBlob();
+    if (!blob) return;
 
-      const r = await fetch(OCR_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageBase64 })
-      });
+    const imageBase64 = await blobToBase64(blob);
 
-      const data = await r.json().catch(() => ({}));
+    const r = await fetch(OCR_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ imageBase64 })
+    });
 
-      if (!r.ok) {
-        ocrSetStatus("❌ Error OCR: " + (data?.error || r.status));
-        return;
-      }
+    const data = await r.json().catch(() => ({}));
 
-      const text = (data?.text || "").trim();
-      ta.value = text || "⚠️ No se detectó texto. Probá con mejor luz y texto más grande.";
-      ocrSetStatus("✅ OCR listo.");
-    } catch (e) {
-      console.error(e);
-      ocrSetStatus("❌ Error OCR: " + (e?.message || e));
+    if (!r.ok) {
+      ocrSetStatus("❌ Error OCR: " + (data?.error || r.status));
+      return;
     }
-  });
+
+    const text = (data?.text || "").trim();
+    ta.value = text || "⚠️ No se detectó texto. Probá con mejor luz y texto más grande.";
+    ocrSetStatus("✅ OCR listo.");
+  } catch (e) {
+    console.error(e);
+    ocrSetStatus("❌ Error OCR: " + (e?.message || e));
+  } finally {
+    // ✅ Pase lo que pase, volver a habilitar
+    btnOCR.disabled = false;
+    btnOCR.style.opacity = "1";
+  }
+});
 
   const btnB1 = document.getElementById("btnDevBloque1");
 const btnB2 = document.getElementById("btnDevBloque2");
@@ -456,22 +464,6 @@ function abrirPasoDevocional(paso) {
   }
 }
 
-btnB2.onclick = () => {
-  const [, b2] = partirEn2Bloques(ta.value);
-  if (!b2) return alert("No hay texto para Bloque 2");
-
-  window.abrirPersonalizarConTexto?.(b2);
-
-  // ✅ fuerza “modo fondo plano”
-  // deja el fondo en blanco (después lo elegís con el color)
-  const cont = document.getElementById("previewImagen");
-  if (cont) cont.style.background = "#ffffff";
-
-  // si tenés una opacidad/backdrop, lo apagamos
-  const back = document.getElementById("previewTextoBack");
-  if (back) back.style.opacity = "0";
-};
-
 });
 
 // =========================
@@ -501,11 +493,10 @@ window.__devSiguiente = (paso) => {
     return;
   }
 
-  if (paso === 3) {
-    // Bloque 3: final
-    window.abrirPersonalizarConTexto(texto, { paso: 2, devPaso: 3, color: "#ffffff" });
-    return;
-  }
+if (paso === 3) {
+  window.abrirPersonalizarConTexto(texto, { devPaso: 3 });
+  return;
+}
 };
 
 document.addEventListener("DOMContentLoaded", () => {
