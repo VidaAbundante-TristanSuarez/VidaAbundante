@@ -287,12 +287,15 @@
     <!-- FONDOS -->
     <div id="personalizarFondos"></div>
 
-    <!-- ✅ DEVOCIONAL: FONDO PLANO -->
-<div id="devFondoPlano" style="display:none; margin-top:10px; gap:10px; align-items:center;">
-  <b style="font-size:13px;">Fondo plano</b>
-  <input id="devColorPlano" type="color" value="#ffffff">
+    <!-- ✅ FONDO PLANO (solo Bloque 2) -->
+<div id="fondoPlanoBox" style="display:none; margin:10px 0;">
+  <label style="font-weight:700; font-size:13px; display:block; margin-bottom:6px;">Fondo plano</label>
+  <div style="display:flex; gap:10px; align-items:center;">
+    <input id="colorFondoPlano" type="color" value="#ffffff" style="width:44px; height:36px; border:none; padding:0; background:transparent;">
+    <button type="button" class="btn-ghost" onclick="aplicarFondoPlanoDesdePicker()">Aplicar</button>
+  </div>
 </div>
-
+    
     <!-- ================= FORMATO IMAGEN ================= -->
     <div class="fila-opciones style-row">
       <button id="btnFormatoPost" type="button" onclick="setFormatoImagen('post')" title="Post">
@@ -444,6 +447,7 @@
   
 </body>
 </html>
+
 
 
 
