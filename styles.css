@@ -294,15 +294,10 @@ body.oscuro .versiculo { color:#fff; }
 }
 
  /* ================= MI PANEL TABS REDONDOS + PRO .panel-tabs button================= */
-  .panel-tabs button {
-   margin-right: 6px;
-  }
-
-
 .panel-tabs button{
   border:none;
   border-radius: 999px;
-  padding: 9px 14px;
+  padding: 8px 12px;
   cursor:pointer;
   font-weight: 800;
   background: var(--ui-azul-claro);
@@ -337,11 +332,24 @@ body.oscuro .panel-tabs button.activo{
   color:#000;
 }
 
+/* ================= SUBSECCIONES (panel-tabs): PROLIJO + BARRA ================= */
 .panel-tabs{
   display:flex;
   gap:10px;
   flex-wrap:wrap;
-  margin: 10px 0 12px;
+
+  margin: 6px 0 10px;        /* 👈 menos aire */
+  background: #eafaff;       /* 👈 barra */
+  padding: 8px 10px;
+  border-radius: 14px;
+  border: 1px solid rgba(0,0,0,.08);
+  box-shadow: 0 6px 14px rgba(0,0,0,.06);
+}
+
+body.oscuro .panel-tabs{
+  background: #1e1e1e;
+  border-color: rgba(255,255,255,.12);
+  box-shadow: 0 6px 14px rgba(0,0,0,.35);
 }
 
   .panel-seccion {
@@ -1320,32 +1328,49 @@ body.oscuro .modal-card{
 }
 
 /* =============== BOTONES (REUTILIZABLES) =============== */
-.btn-primary{
-  border:none;
+.btn-primary,
+.btn-ghost{
+  border: none;
   border-radius: 999px;
   padding: 10px 14px;
-  background: var(--ui-azul-hover);
-  color:#fff;
   font-weight: 800;
-  cursor:pointer;
+  cursor: pointer;
+  line-height: 1;
+}
+
+/* variantes */
+.btn-primary{
+  background: var(--ui-azul-hover);
+  color: #fff;
 }
 
 .btn-ghost{
-  border:none;
-  border-radius: 999px;
-  padding: 10px 14px;
   background: rgba(0,0,0,.08);
-  cursor:pointer;
+  color: #000;
   font-weight: 700;
 }
 
 body.oscuro .btn-ghost{
   background: rgba(255,255,255,.12);
-  color:#fff;
+  color: #fff;
 }
 
 .hidden{ display:none !important; }
 .mt-15{ margin-top:15px; }
+
+/* ====== SOLO DEVOCIONALES: versión compacta (override limpio) ====== */
+#iglesia-devocionales .btn-primary,
+#iglesia-devocionales .btn-ghost{
+  padding: 8px 10px;
+  font-size: 13px;
+  border-radius: 10px; /* más “UI” */
+  height: 34px;
+}
+
+#iglesia-devocionales .btn-primary i,
+#iglesia-devocionales .btn-ghost i{
+  font-size: 14px;
+}
 
 /* ================= TARJETAS MARCADORES (para que en oscuro se lean) ================= */
 .card-marcador{
@@ -1493,6 +1518,17 @@ body.modo-marcador #bannerModoMarcador { display: block; }
 #modalMarcadores.abierto,
 #modalCompartirMarcador.abierto {
   display: flex;
+}
+
+/* ================= DEVOCIONALES: SCROLL LOCAL (SOLO CELU) ================= */
+@media (max-width: 600px){
+  /* el contenedor de devocionales ocupa pantalla real */
+  #iglesia-devocionales{
+    height: calc(100vh - 60px); /* ajusta si tu header es más alto */
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 140px; /* tu margen para que no tape barras */
+  }
 }
 
 
