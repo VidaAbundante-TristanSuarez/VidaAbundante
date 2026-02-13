@@ -2638,6 +2638,8 @@ window.abrirPersonalizarConTexto = function(texto, opts = {}) {
 
   // ✅ siempre arrancamos limpio
   resetModalPersonalizar();
+  
+window.__devPaso = Number(opts.paso || 1);
 
   modoTextoExterno = true;
   textoExternoModal = String(texto);
@@ -2903,3 +2905,18 @@ if (bf) bf.onclick = () => uiBloqueo(bf, async () => {
 });
 
 });
+
+document.addEventListener("DOMContentLoaded", () => {
+  const b1 = document.getElementById("btnDevSiguiente1");
+  const b2 = document.getElementById("btnDevSiguiente2");
+  const v2 = document.getElementById("btnDevVolver2");
+  const v3 = document.getElementById("btnDevVolver3");
+  const verFinal = document.getElementById("btnDevVerFinal");
+
+  if (b1) b1.addEventListener("click", () => uiBloqueo(b1, async () => window.devPasoSiguiente?.(1)));
+  if (b2) b2.addEventListener("click", () => uiBloqueo(b2, async () => window.devPasoSiguiente?.(2)));
+  if (v2) v2.addEventListener("click", () => window.devPasoVolver?.(2));
+  if (v3) v3.addEventListener("click", () => window.devPasoVolver?.(3));
+  if (verFinal) verFinal.addEventListener("click", () => uiBloqueo(verFinal, async () => window.devPasoFinal?.()));
+});
+
