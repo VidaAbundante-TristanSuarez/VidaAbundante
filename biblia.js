@@ -2324,18 +2324,21 @@ window.abrirModalAudio = () => {
 
   if (!modal || !ta) return;
 
-  // texto base: lo que estés viendo en el modal de imagen
-  const base = audio_getTextoDesdePreview();
-  __audioTextoOriginal = base;
+  // ✅ TEXTO BASE: en devocional final usar SIEMPRE el texto completo guardado
+  const base =
+    (window.__devPaso === 3 && window.__devTextoCompleto)
+      ? String(window.__devTextoCompleto || "").trim()
+      : audio_getTextoDesdePreview();
 
+  __audioTextoOriginal = base;
   ta.value = base;
 
   // limpiar player (hasta que exista audio real)
   if (audio) audio.removeAttribute("src");
   if (estado) estado.textContent = "Listo para previsualizar.";
 
-  // abrir (mismo sistema de tus modales)
-  modal.classList.add("abierto");
+  // ✅ abrir como el resto de tus modales
+  modal.style.display = "flex";
   modal.setAttribute("aria-hidden", "false");
 };
 
@@ -2343,10 +2346,9 @@ window.cerrarModalAudio = () => {
   const modal = document.getElementById("modalAudio");
   if (!modal) return;
 
-  // cortar voz si estaba hablando
   try { window.speechSynthesis?.cancel(); } catch(e){}
 
-  modal.classList.remove("abierto");
+  modal.style.display = "none";
   modal.setAttribute("aria-hidden", "true");
 };
 
@@ -2653,6 +2655,7 @@ function dev_setUI(paso) {
   const b2 = document.getElementById("btnDevSiguiente2");
   const bf = document.getElementById("btnDevVerFinal");
   const acciones = document.querySelector("#modalPersonalizar .fila-final");
+  const btnAudio = document.getElementById("btnAbrirAudio");
 
   // botones finales (download/share/check/iglesia)
   const btnDesc = acciones?.querySelector('button[onclick="descargarImagenFinal()"]');
@@ -2669,6 +2672,7 @@ function dev_setUI(paso) {
   if (btnShare) btnShare.style.display = "none";
   if (btnFin) btnFin.style.display = "none";
   if (chk) chk.style.display = "none";
+  if (btnAudio) btnAudio.style.display = "none";
 
   // pasos
   if (paso === 1) {
@@ -2682,6 +2686,8 @@ function dev_setUI(paso) {
     if (btnShare) btnShare.style.display = "inline-flex";
     if (btnFin) btnFin.style.display = "inline-flex";
     if (chk) chk.style.display = "inline-flex";
+    if (btnAudio) btnAudio.style.display = "inline-flex";
+
   }
 }
 
