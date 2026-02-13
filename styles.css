@@ -1555,4 +1555,45 @@ body.oscuro #modalAudio textarea{
   min-height: 160px;
 }
 
+/* =========================================================
+   ✅ 1 FILA SOLO EN "CREAR IMAGEN"
+   ========================================================= */
+
+/* Cuando el modal tenga la clase .solo-imagen,
+   juntamos controles + estilos en una misma fila */
+#modalPersonalizar.solo-imagen #boxControlesTexto,
+#modalPersonalizar.solo-imagen #textStyles {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* La fila de texto, en modo imagen, se vuelve una “fila única” */
+#modalPersonalizar.solo-imagen .fila-texto {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;          /* si no entra, baja prolijo */
+}
+
+/* En modo imagen: el bloque de fuentes + color se mantienen,
+   pero la idea es que #textStyles quede pegadito a opacidad/tamaño */
+#modalPersonalizar.solo-imagen #boxControlesTexto {
+  order: 1;
+}
+#modalPersonalizar.solo-imagen #textStyles {
+  order: 2;
+}
+
+/* =========================================================
+   ✅ OCULTAR BOTONES DE FORMATO EN DEVOCIONALES
+   ========================================================= */
+
+/* Cuando el modal tenga la clase .modo-devocional,
+   escondemos #textStyles completo */
+#modalPersonalizar.modo-devocional #textStyles {
+  display: none !important;
+}
+
+
   </style>
