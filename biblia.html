@@ -190,21 +190,22 @@
   <!-- ✅ SUB-SECCIÓN: DEVOCIONALES (VISIBLE por default) -->
   <div id="iglesia-devocionales">
    
-    <div style="display:flex; gap:5px; flex-wrap:wrap; align-items:center;">
-      <label class="btn-primary" style="cursor:pointer;">
-        📷 Cargar imagen
-        <input id="devImg" type="file" accept="image/*" style="display:none">
-      </label>
-
-      <button id="btnDevRecortar" type="button" class="btn-ghost">✂️ Recortar</button>
-      <button id="btnDevOCR" type="button" class="btn-primary">🧠 OCR</button>
-    </div>
-
     <p id="estadoOCRDev" style="margin-top:10px; opacity:.8; font-size:13px;"></p>
 
- <!-- ✅ (oculto hasta que se cargue imagen) -->
+<!-- Canvas primero -->
 <div id="devCanvasBox" class="hidden" style="margin-top:12px; border-radius:12px; overflow:hidden; border:1px solid #ddd;">
   <canvas id="devCanvas" style="display:block; width:100%; max-width:420px;"></canvas>
+</div>
+
+<!-- Botones debajo -->
+<div class="dev-actions" style="display:flex; gap:8px; flex-wrap:wrap; justify-content:center; align-items:center; margin-top:10px;">
+  <label class="btn-primary" style="cursor:pointer;">
+    📷 Cargar imagen
+    <input id="devImg" type="file" accept="image/*" style="display:none">
+  </label>
+
+  <button id="btnDevRecortar" type="button" class="btn-ghost">✂️ Recortar</button>
+  <button id="btnDevOCR" type="button" class="btn-primary">🧠 OCR</button>
 </div>
 
 <!-- ✅ (oculto hasta que se cargue imagen) -->
@@ -300,6 +301,7 @@
 </div>
     
     <!-- ================= FORMATO IMAGEN ================= -->
+<!-- ✅ FORMATO (solo post/story) -->
 <div id="boxFormato" class="fila-opciones style-row">
   <button id="btnFormatoPost" type="button" onclick="setFormatoImagen('post')" title="Post">
     <i class="fa-solid fa-square"></i>
@@ -308,17 +310,23 @@
   <button id="btnFormatoStory" type="button" onclick="setFormatoImagen('story')" title="Story">
     <i class="fa-solid fa-mobile-screen"></i>
   </button>
+</div>
 
+<!-- ✅ CONTROLES TEXTO (siempre visibles) -->
+<div id="boxControlesTexto" class="fila-opciones style-row">
   <input id="personalizarOpacidad" class="opacidad-slider"
          type="range" min="0" max="1" step="0.05" value="0.3">
 
-  <button type="button" onclick="cambiarTamanoPreview(-1)" style="border:none;border-radius:10px;padding:6px 10px;cursor:pointer;background:var(--ui-azul-claro);">−</button>
+  <button type="button" onclick="cambiarTamanoPreview(-1)"
+    style="border:none;border-radius:10px;padding:6px 10px;cursor:pointer;background:var(--ui-azul-claro);">−</button>
 
   <input id="personalizarTamaño" class="tamano-input"
          type="number" value="24" min="10" max="100">
 
-  <button type="button" onclick="cambiarTamanoPreview(1)" style="border:none;border-radius:10px;padding:6px 10px;cursor:pointer;background:var(--ui-azul-claro);">+</button>
+  <button type="button" onclick="cambiarTamanoPreview(1)"
+    style="border:none;border-radius:10px;padding:6px 10px;cursor:pointer;background:var(--ui-azul-claro);">+</button>
 </div>
+
 
     <!-- ================= FUENTES / ESTILOS / COLOR ================= -->
     <div class="fila-texto">
@@ -525,6 +533,7 @@
   
 </body>
 </html>
+
 
 
 
