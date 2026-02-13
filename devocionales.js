@@ -204,7 +204,8 @@ document.getElementById("devCanvasBox")?.classList.remove("hidden");
 
 // ✅ el textarea solo aparece cuando haya OCR
 document.getElementById("devTextoBox")?.classList.add("hidden");
-document.getElementById("devTexto")?.value = "";
+const devTA = document.getElementById("devTexto");
+if (devTA) devTA.value = "";
 
   URL.revokeObjectURL(url);
   ocrSetStatus("✅ Imagen cargada. Podés recortar o tocar OCR.");
