@@ -163,6 +163,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const input = $("devImg");
   const btnRecortar = $("btnDevRecortar");
+  // ✅ Al inicio deshabilitado
+btnRecortar.disabled = true;
+btnRecortar.style.opacity = "0.6";
   const btnOCR = $("btnDevOCR");
   const ta = $("devTexto");
 
@@ -186,15 +189,22 @@ document.addEventListener("DOMContentLoaded", () => {
   crop = null;
   start = null;
   drawing = false;
-  recortando = false;
-  btnRecortar.textContent = "✂️ Recortar";
+  // ✅ activar recorte automáticamente
+recortando = true;
+btnRecortar.disabled = false;
+btnRecortar.style.opacity = "1";
+btnRecortar.innerHTML = '✅ Listo <i class="fa-solid fa-crop"></i>';
+
 
   fitCanvasToImage(img, 420);
   draw();
 
-  // ✅ mostrar UI que estaba oculta
-  document.getElementById("devCanvasBox")?.classList.remove("hidden");
-  document.getElementById("devTextoBox")?.classList.remove("hidden");
+  // ✅ mostrar canvas
+document.getElementById("devCanvasBox")?.classList.remove("hidden");
+
+// ✅ el textarea solo aparece cuando haya OCR
+document.getElementById("devTextoBox")?.classList.add("hidden");
+document.getElementById("devTexto")?.value = "";
 
   URL.revokeObjectURL(url);
   ocrSetStatus("✅ Imagen cargada. Podés recortar o tocar OCR.");
@@ -208,7 +218,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!img) { alert("Primero cargá una imagen"); return; }
 
     recortando = !recortando;
-    btnRecortar.textContent = recortando ? "✅ Listo (recorte)" : "✂️ Recortar";
+   btnRecortar.innerHTML = recortando
+  ? '✅ Listo <i class="fa-solid fa-crop"></i>'
+  : '✂️ Recortar <i class="fa-solid fa-crop"></i>';
 
     if (!recortando) {
       start = null;
@@ -245,9 +257,20 @@ btnOCR.addEventListener("click", async () => {
       return;
     }
 
-    const text = (data?.text || "").trim();
-    ta.value = text || "⚠️ No se detectó texto. Probá con mejor luz y texto más grande.";
-    ocrSetStatus("✅ OCR listo.");
+   const text = (data?.text || "").trim();
+
+if (text) {
+  ta.value = text;
+
+  // ✅ Mostrar textarea SOLO si hay texto real
+  document.getElementById("devTextoBox")?.classList.remove("hidden");
+
+  ocrSetStatus("✅ OCR listo.");
+} else {
+  ta.value = "";
+  ocrSetStatus("⚠️ No se detectó texto. Probá con mejor luz y texto más grande.");
+}
+
   } catch (e) {
     console.error(e);
     ocrSetStatus("❌ Error OCR: " + (e?.message || e));
