@@ -1184,6 +1184,9 @@ function salirModoImagen() {
   }
 
   document.getElementById("modalPersonalizar").style.display = "none";
+    const modal = document.getElementById("modalPersonalizar");
+  if (modal) modal.classList.remove("solo-imagen", "modo-devocional");
+
   mostrarTexto();
   aplicarUIAccionesPorModo();
   refrescarBotonGuardarMarcador();
@@ -1246,6 +1249,10 @@ window.generarImagen = async () => {
   // ✅ CLAVE: reset antes de mostrar (evita overlay negro por sliders viejos)
   resetModalPersonalizar();
 
+    // ✅ MODO: CREAR IMAGEN
+  modal.classList.add("solo-imagen");
+  modal.classList.remove("modo-devocional");
+  
   modal.style.display = "flex";
 
   setFormatoImagen("post");
@@ -1265,6 +1272,9 @@ window.cancelarCrearImagen = () => {
 
   // 2️⃣ salir del modo imagen (cierra modal + vuelve a biblia)
   salirModoImagen();
+    // ✅ limpiar modo visual del modal
+  const modal = document.getElementById("modalPersonalizar");
+  if (modal) modal.classList.remove("solo-imagen", "modo-devocional");
 };
 
 // ================= ✅ FINALIZAR EDICIÓN (CONFIRMAR) =================
@@ -2632,8 +2642,13 @@ window.abrirPersonalizarConTexto = function(texto, opts = {}) {
   modoTextoExterno = true;
   textoExternoModal = String(texto);
 
-  const modal = document.getElementById("modalPersonalizar");
-  if (modal) modal.style.display = "flex";
+    const modal = document.getElementById("modalPersonalizar");
+  if (modal) {
+    // ✅ MODO: DEVOCIONAL
+    modal.classList.add("modo-devocional");
+    modal.classList.remove("solo-imagen");
+    modal.style.display = "flex";
+  }
 
   const boxFormato = document.getElementById("boxFormato");
   const esDev = !!opts.devPaso;
