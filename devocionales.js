@@ -419,6 +419,7 @@ ${footer2}`.trim();
 window.__devSiguiente = (paso) => {
   const ta = document.getElementById("devTexto");
   const texto = (ta?.value || "").trim();
+  window.__devTextoCompleto = texto; // ✅ para audio final (paso 3)
   if (!texto) { alert("Primero necesitás texto (OCR o pegado)."); return; }
 
   const [b1, b2] = partirEn2Bloques(texto); // ✅ ahora sí existe
