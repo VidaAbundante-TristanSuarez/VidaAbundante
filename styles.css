@@ -1164,21 +1164,22 @@ body.oscuro #header button[onclick="toggleTema()"] {
   transform: rotate(360deg);
 }
 
-/* ================= BOTÓN CREAR IMAGEN (BARRA) MÁS GRANDE ================= */
 /* ================= BOTÓN CREAR IMAGEN ================= */
-#btnCrearImagen {
-  display: none;
-  padding: 10px 16px;
-  font-weight: 800;
-  font-size: 14px;
-  height: 38px;
+/* ✅ Botón Crear Imagen: mismo tamaño que los demás */
+#btnCrearImagen{
+  display:none; /* lo muestra el body.modo-imagen */
   border-radius: 999px;
-  background: var(--ui-azul-hover);
-  color: #fff;
+  padding: 6px 10px;     /* igual que .barra-acciones button */
+  height: auto;          /* no forzar 38px */
+  font-weight: 700;      /* igual al resto */
+  font-size: 14px;
   border: none;
-  cursor:pointer;
+  cursor: pointer;
+  background: var(--ui-azul-hover);
+  color:#fff;
 }
-#btnCrearImagen:active { transform: scale(0.98); }
+#btnCrearImagen:active{ transform: scale(0.98); }
+body.modo-imagen #btnCrearImagen{ display:inline-block; }
 
 
 body.modo-imagen #btnCrearImagen{
@@ -1595,5 +1596,17 @@ body.oscuro #modalAudio textarea{
   display: none !important;
 }
 
+/* ================= DEVOCIONAL: BOTONES PASOS (solo se ven en modo-devocional) ================= */
+#btnDevSiguiente1,
+#btnDevSiguiente2,
+#btnDevVerFinal{
+  display:none;
+}
+
+#modalPersonalizar.modo-devocional #btnDevSiguiente1,
+#modalPersonalizar.modo-devocional #btnDevSiguiente2,
+#modalPersonalizar.modo-devocional #btnDevVerFinal{
+  display:inline-flex;
+}
 
   </style>
