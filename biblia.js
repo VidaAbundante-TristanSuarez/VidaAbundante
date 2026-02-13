@@ -45,6 +45,7 @@ let size = 18;
 let fuenteActual = "Arial";
 let colorActual = "#fff3b0"; // 💛 amarillo por default
 let resaltadorBloqueado = false; // 🔒 nuevo estado
+let devFondoPlano = ""; // "#rrggbb" o ""
 
 // ================= MARCADORES (NUEVO LIMPIO) =================
 let modoMarcador = false;
@@ -903,6 +904,13 @@ previewTextoBack.style.textShadow = `
   previewTextoBack.style.fontWeight = previewTexto.style.fontWeight;
   previewTextoBack.style.fontStyle = previewTexto.style.fontStyle;
   previewTextoBack.style.textDecoration = previewTexto.style.textDecoration;
+
+  // ✅ DEVOCIONAL PASO 2: forzar fondo plano siempre
+if (window.__devPaso === 2 && devFondoPlano) {
+  previewImagen.style.backgroundImage = "none";
+  previewImagen.style.backgroundColor = devFondoPlano;
+}
+
 }
 
 // ================= ⭐ CANVAS GENERA IMAGEN FINAL (FIX REAL) ============================
@@ -2426,6 +2434,18 @@ window.finalizarYSubirAudio = async () => {
 
   const subirIglesia = !!chk?.checked;
 
+  const esDevocional = (window.__devPaso === 3); // solo el final
+
+if (!esDevocional) {
+  // ✅ Biblia: NO GitHub. Acá llamamos a Firebase (te dejo función abajo)
+  if (estado) estado.textContent = "⬆ Subiendo audio a Firebase…";
+  const url = await subirAudioAFirebase({ texto, subirIglesia });
+  const audio = document.getElementById("audioPreview");
+  if (audio && url) audio.src = url;
+  if (estado) estado.textContent = url ? "✅ Audio subido (Firebase)." : "✅ Subido.";
+  return;
+}
+
   // 1) Si vos ya tenés una función global (por ejemplo, la traés desde otro JS),
   //    la usamos tal cual:
   //    window.subirAudioAGithub({ texto, subirIglesia, ... }) => debería devolver {url}
@@ -2462,6 +2482,24 @@ window.finalizarYSubirAudio = async () => {
   alert("Todavía no está conectado el bloque real de subida (AppSheet/GitHub).");
 };
 
+async function uiBloqueo(btn, fn) {
+  if (!btn) return fn();
+
+  btn.disabled = true;
+  const old = btn.innerHTML;
+  btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i>';
+
+  // ✅ dejar que el DOM pinte el spinner (2 frames)
+  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+  try {
+    return await fn();
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = old;
+  }
+}
+
 // ✅ Botón del modal de imagen -> abre modal audio
 document.addEventListener("DOMContentLoaded", () => {
   const b = document.getElementById("btnAbrirAudio");
@@ -2482,7 +2520,6 @@ const AUDIO_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbwDgVe2-aMdEEo
 window.subirAudioAGithub = async ({ texto, subirIglesia, ts }) => {
   const r = await fetch(AUDIO_WEBAPP_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ texto, subirIglesia, ts })
   });
 
@@ -2492,6 +2529,51 @@ window.subirAudioAGithub = async ({ texto, subirIglesia, ts }) => {
   }
   return { url: data.url };
 };
+
+// ================= mas de AUDIOS 😆 =================
+async function subirAudioAFirebase({ texto, subirIglesia }) {
+  if (!uid) throw new Error("No hay uid");
+
+  // 1) pedir audio base64 al Apps Script (modo RAW)
+  const r = await fetch(AUDIO_WEBAPP_URL, {
+    method: "POST",
+    body: JSON.stringify({ texto, modo: "raw" })
+  });
+
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok || !data.audioBase64) {
+    throw new Error(data?.error || "No devolvió audioBase64");
+  }
+
+  // 2) base64 -> Blob mp3
+  const bytes = Uint8Array.from(atob(data.audioBase64), c => c.charCodeAt(0));
+  const blob = new Blob([bytes], { type: "audio/mpeg" });
+
+  // 3) subir a Firebase Storage
+  const ts = Date.now();
+  const fileName = `audio_${ts}.mp3`;
+  const storagePath = subirIglesia
+    ? `audios_iglesia/${uid}/${fileName}`
+    : `audios_personal/${uid}/${fileName}`;
+
+  const storageRef = sRef(storage, storagePath);
+  await uploadBytes(storageRef, blob, { contentType: "audio/mpeg" });
+  const url = await getDownloadURL(storageRef);
+
+  // 4) guardar referencia en Realtime DB (para tu panel / appsheet después)
+  const dbPath = subirIglesia
+    ? `panelAudiosIglesia/${uid}/${ts}`
+    : `panelAudiosPersonal/${uid}/${ts}`;
+
+  await set(ref(db, dbPath), {
+    url,
+    storagePath,
+    fecha: ts,
+    origen: "biblia"
+  });
+
+  return url;
+}
 
 // ================= 🔺 HACER FUNCIONES GLOBALES (FIX DESCARGAR/COMPARTIR EN PC) =================
 window.generarImagenFinal = generarImagenFinal;
@@ -2519,6 +2601,10 @@ function uiModoFondoPlanoSolo() {
 window.aplicarFondoPlanoDesdePicker = () => {
   const c = document.getElementById("colorFondoPlano")?.value || "#ffffff";
   const previewImagen = document.getElementById("previewImagen");
+
+  // ✅ guardar fondo plano para paso 2
+  devFondoPlano = c;
+
   if (previewImagen) {
     // fondo plano: sin imagen
     fondoFinal = null;
@@ -2529,9 +2615,10 @@ window.aplicarFondoPlanoDesdePicker = () => {
     previewImagen.style.backgroundImage = "none";
     previewImagen.style.backgroundColor = c;
   }
-  // sin caja atrás del texto
+
   const back = document.getElementById("previewTextoWrapper");
   if (back) back.style.backgroundColor = "rgba(0,0,0,0)";
+
   actualizarPreview();
 };
 
@@ -2746,6 +2833,14 @@ async function dev_armarFinal() {
   canvasFinal.style.width = "100%";
   canvasFinal.style.maxWidth = "420px";
   canvasFinal.style.borderRadius = "12px";
+
+  // ✅ si existe <img id="imgFinalDev">, lo llenamos también
+const imgFinal = document.getElementById("imgFinalDev");
+if (imgFinal && canvasFinal) {
+  imgFinal.src = canvasFinal.toDataURL("image/png");
+  imgFinal.style.display = "block";
+}
+
 }
 
 // Hook: cuando abro el modal desde devocional, activo pasos
@@ -2773,25 +2868,23 @@ document.addEventListener("DOMContentLoaded", () => {
   const b2 = document.getElementById("btnDevSiguiente2");
   const bf = document.getElementById("btnDevVerFinal");
 
-  if (b1) b1.onclick = async () => {
-    const snap = await dev_capturar();
-    if (!snap) return alert("No se pudo guardar Bloque 1.");
-    window.__devImg1 = snap;
+if (b1) b1.onclick = () => uiBloqueo(b1, async () => {
+  const snap = await dev_capturar();
+  if (!snap) return alert("No se pudo guardar Bloque 1.");
+  window.__devImg1 = snap;
+  window.__devSiguiente?.(2);
+});
 
-    // devocionales.js tiene que abrir el bloque 2 (lo hacemos desde window)
-    window.__devSiguiente?.(2);
-  };
+if (b2) b2.onclick = () => uiBloqueo(b2, async () => {
+  const snap = await dev_capturar();
+  if (!snap) return alert("No se pudo guardar Bloque 2.");
+  window.__devImg2 = snap;
+  window.__devSiguiente?.(3);
+});
 
-  if (b2) b2.onclick = async () => {
-    const snap = await dev_capturar();
-    if (!snap) return alert("No se pudo guardar Bloque 2.");
-    window.__devImg2 = snap;
+if (bf) bf.onclick = () => uiBloqueo(bf, async () => {
+  dev_setUI(3);
+  await dev_armarFinal();
+});
 
-    window.__devSiguiente?.(3);
-  };
-
-  if (bf) bf.onclick = async () => {
-    dev_setUI(3);
-    await dev_armarFinal();
-  };
 });
