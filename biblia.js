@@ -975,22 +975,33 @@ try {
   ctx.clearRect(0, 0, canvasFinal.width, canvasFinal.height);
   ctx.drawImage(canvasTemp, 0, 0);
 
-   // subir imagen (si existe la función)
-  const subirIglesia = !!document.getElementById("checkIglesia")?.checked;
-
 // ✅ Subir SOLO si NO estamos capturando pasos devocional
-if (!window.__devPasoCaptura && typeof subirImagen === "function") {
-  const tareas = [];
-  if (subirIglesia) tareas.push(subirImagen("iglesia"));
-  tareas.push(subirImagen("personal"));
+if (!window.__devPasoCaptura) {
 
-  const resultados = await Promise.allSettled(tareas);
-  const fallos = resultados.filter(r => r.status === "rejected");
-  if (fallos.length) {
-    console.warn("⚠️ Subida falló:", fallos);
-    mostrarToast("⚠️ Se descargó la imagen, pero no se pudo subir.");
+  // ✅ Si estamos en DEV FINAL (paso 3), se maneja distinto
+  if (window.__devPaso === 3) {
+    // acá va la subida especial del devocional final
+    await subirDevocionalFinal();
+
+  } else {
+    // ✅ Biblia normal: lo de siempre
+    if (typeof subirImagen !== "function") return true;
+
+    const subirIglesia = !!document.getElementById("checkIglesia")?.checked;
+
+    const tareas = [];
+    if (subirIglesia) tareas.push(subirImagen("iglesia"));
+    tareas.push(subirImagen("personal"));
+
+    const resultados = await Promise.allSettled(tareas);
+    const fallos = resultados.filter(r => r.status === "rejected");
+    if (fallos.length) {
+      console.warn("⚠️ Subida falló:", fallos);
+      mostrarToast("⚠️ Se descargó la imagen, pero no se pudo subir.");
+    }
   }
 }
+
   
   return true;
 }
@@ -2659,6 +2670,9 @@ const Modal = {
       btnAudio: document.getElementById("btnAbrirAudio"),
 
       chkIglesia: document.getElementById("checkIglesia"),
+      chkIglesiaLabel: document.getElementById("checkIglesia")?.closest(".subir-iglesia-btn"),
+      chkPanelDevLabel: document.getElementById("chkPanelDevLabel"),
+
     };
   },
 
@@ -2709,8 +2723,11 @@ const Modal = {
     show(E.btnAudio, false);
     // el check iglesia lo usás en imagen; en dev final lo querés "subir a mi panel" tilde (lo resolvemos después)
     // por ahora lo dejamos visible solo donde corresponda:
-    const labelChk = E.chkIglesia?.closest(".subir-iglesia-btn");
-    if (labelChk) labelChk.style.display = "none";
+    const labelIglesia = E.chkIglesiaLabel;
+const labelPanelDev = E.chkPanelDevLabel;
+
+if (labelIglesia) labelIglesia.style.display = "none";
+if (labelPanelDev) labelPanelDev.style.display = "none";
 
     // ========= MODOS =========
     if (this.state.mode === "BIBLE_IMAGE") {
@@ -2730,6 +2747,8 @@ const Modal = {
       // default: sube personal SIEMPRE; iglesia opcional (como ya tenés)
       forceDefaultCheckIglesia();
 
+      if (labelIglesia) labelIglesia.style.display = "inline-flex";
+  if (labelPanelDev) labelPanelDev.style.display = "none";
       // tamaños: depende del formato que elijas (ya lo maneja setFormatoImagen)
       return;
     }
@@ -2777,6 +2796,8 @@ const Modal = {
       show(E.btnDesc, true);
       show(E.btnShare, true);
 
+       if (labelIglesia) labelIglesia.style.display = "none";
+  if (labelPanelDev) labelPanelDev.style.display = "inline-flex";
       // ojo: el check actual es "iglesia". En dev final vos querés:
       // - subir por default a iglesia-devocionales
       // - y tilde para subir a mi panel
@@ -2785,6 +2806,56 @@ const Modal = {
     }
   }
 };
+
+async function subirDevocionalFinal() {
+  if (!uid) return;
+
+  const canvas = document.getElementById("canvasFinal");
+  if (!canvas || canvas.width < 10 || canvas.height < 10) return;
+
+  const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
+  if (!blob) return;
+
+  const ts = Date.now();
+  const fileName = `devocional_${ts}.png`;
+
+  // ✅ siempre iglesia-devocionales
+  const storageIglesia = `devocionales_iglesia/${uid}/${fileName}`;
+  const dbIglesia = `iglesiaDevocionales/${uid}/${ts}`;
+
+  // ☑️ opcional mi panel devocionales
+  const subirPanel = !!document.getElementById("checkPanelDev")?.checked;
+  const storagePanel = `devocionales_personal/${uid}/${fileName}`;
+  const dbPanel = `panelDevocionalesPersonal/${uid}/${ts}`;
+
+  // 1) subir a Iglesia SIEMPRE
+  const refI = sRef(storage, storageIglesia);
+  await uploadBytes(refI, blob, { contentType: "image/png" });
+  const urlI = await getDownloadURL(refI);
+
+  await set(ref(db, dbIglesia), {
+    url: urlI,
+    storagePath: storageIglesia,
+    fecha: ts,
+    tipo: "devocional"
+  });
+
+  // 2) subir a Panel SOLO si tildado
+  if (subirPanel) {
+    const refP = sRef(storage, storagePanel);
+    await uploadBytes(refP, blob, { contentType: "image/png" });
+    const urlP = await getDownloadURL(refP);
+
+    await set(ref(db, dbPanel), {
+      url: urlP,
+      storagePath: storagePanel,
+      fecha: ts,
+      tipo: "devocional"
+    });
+  }
+
+  mostrarToast("✅ Devocional subido");
+}
 
 // ================= 💛 DEVOCIONALES =================
 function uiModoFondosSolo() {
