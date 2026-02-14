@@ -77,6 +77,27 @@ let modoTextoExterno = false;   // true = no usar versículos seleccionados
 
 window.__devPasoCaptura = false; // ✅ si true: NO subir a firebase
 
+
+function aplicarChecksDevUI() {
+  const chkIglesiaLabel = document.querySelector('#rowFinal .subir-iglesia-btn input#checkIglesia')?.closest('label');
+  const chkPanelLabel = document.getElementById("chkPanelDevLabel");
+
+  // Si NO estamos en devocional paso 3 -> comportamiento normal
+  if (window.__devPaso !== 3) {
+    if (chkPanelLabel) chkPanelLabel.style.display = "none";
+    if (chkIglesiaLabel) chkIglesiaLabel.style.display = "inline-flex";
+    return;
+  }
+
+  // ✅ DEV FINAL (paso 3):
+  // Iglesia es SIEMPRE (sin checkbox visible)
+  if (chkIglesiaLabel) chkIglesiaLabel.style.display = "none";
+
+  // Panel es opcional (checkbox visible)
+  if (chkPanelLabel) chkPanelLabel.style.display = "inline-flex";
+}
+
+
 // ================= AUTH =====================================
 onAuthStateChanged(auth, user => {
   uid = user ? user.uid : null;
@@ -2742,7 +2763,7 @@ if (labelPanelDev) labelPanelDev.style.display = "none";
       show(E.btnShare, true);
       show(E.btnFin, true);
 
-      if (labelChk) labelChk.style.display = "inline-flex";
+      if (labelIglesia) labelIglesia.style.display = "inline-flex";
 
       // default: sube personal SIEMPRE; iglesia opcional (como ya tenés)
       forceDefaultCheckIglesia();
@@ -2905,6 +2926,7 @@ window.abrirPersonalizarConTexto = function(texto, opts = {}) {
   resetModalPersonalizar();
   
 window.__devPaso = Number(opts.paso || 1);
+aplicarChecksDevUI();
 
   modoTextoExterno = true;
   textoExternoModal = String(texto);
