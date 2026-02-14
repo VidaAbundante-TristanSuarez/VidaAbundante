@@ -2221,12 +2221,26 @@ window.compartirMarcador = async (destino) => {
   cerrarCompartirMarcador();
 };
 
-// ================= 🔺 FORCE DEFAULT CHECK IGLESIA estado pinta css ===========================
+// ================= ✅ CHECK IGLESIA (default TRUE + estado visual) =================
+function syncCheckIglesiaUI() {
+  const chk = document.getElementById("checkIglesia");
+  const label = chk?.closest(".subir-iglesia-btn");
+  if (!chk || !label) return;
+  label.classList.toggle("activo", chk.checked);
+}
+
 function forceDefaultCheckIglesia() {
   const chk = document.getElementById("checkIglesia");
   if (!chk) return;
-  chk.checked = true; // ✅ siempre por defecto
+
+  chk.checked = true;
+
+  chk.removeEventListener("change", syncCheckIglesiaUI);
+  chk.addEventListener("change", syncCheckIglesiaUI);
+
+  syncCheckIglesiaUI();
 }
+
 
 // ================= UI: ocultar acciones al entrar en modo marcador =================
 function aplicarUIAccionesPorModo() {
@@ -2558,6 +2572,7 @@ async function subirAudioAFirebase({ texto, subirIglesia }) {
   // 1) pedir audio base64 al Apps Script (modo RAW)
   const r = await fetch(AUDIO_WEBAPP_URL, {
     method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ texto, modo: "raw" })
   });
 
@@ -2807,11 +2822,21 @@ function dev_setUI(paso) {
 }
 
 async function dev_capturar() {
-  const ok = await generarImagenFinal();
-  if (!ok) return null;
-  const c = document.getElementById("canvasFinal");
-  return c ? c.toDataURL("image/png") : null;
+  // ✅ durante captura de pasos: NO subir a Firebase
+  window.__devPasoCaptura = true;
+
+  try {
+    const ok = await generarImagenFinal();
+    if (!ok) return null;
+
+    const c = document.getElementById("canvasFinal");
+    return c ? c.toDataURL("image/png") : null;
+  } finally {
+    // ✅ volvemos a permitir subidas cuando ya estás en el final
+    window.__devPasoCaptura = false;
+  }
 }
+
 
 function dev_cargarImg(src) {
   return new Promise((res, rej) => {
@@ -2917,17 +2942,4 @@ if (bf) bf.onclick = () => uiBloqueo(bf, async () => {
 
 });
 
-document.addEventListener("DOMContentLoaded", () => {
-  const b1 = document.getElementById("btnDevSiguiente1");
-  const b2 = document.getElementById("btnDevSiguiente2");
-  const v2 = document.getElementById("btnDevVolver2");
-  const v3 = document.getElementById("btnDevVolver3");
-  const verFinal = document.getElementById("btnDevVerFinal");
-
-  if (b1) b1.addEventListener("click", () => uiBloqueo(b1, async () => window.devPasoSiguiente?.(1)));
-  if (b2) b2.addEventListener("click", () => uiBloqueo(b2, async () => window.devPasoSiguiente?.(2)));
-  if (v2) v2.addEventListener("click", () => window.devPasoVolver?.(2));
-  if (v3) v3.addEventListener("click", () => window.devPasoVolver?.(3));
-  if (verFinal) verFinal.addEventListener("click", () => uiBloqueo(verFinal, async () => window.devPasoFinal?.()));
-});
 
