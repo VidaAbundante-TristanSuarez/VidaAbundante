@@ -390,6 +390,12 @@
         <input type="checkbox" id="checkIglesia" checked>
         <i class="fa-solid fa-church"></i>
       </label>
+   
+    <label class="subir-iglesia-btn" id="chkPanelDevLabel" title="Subir a mi panel" style="display:none;">
+  <input type="checkbox" id="checkPanelDev" checked>
+  <i class="fa-solid fa-user"></i>
+</label>
+
     </div>
 
     <div style="height:10px"></div>
@@ -495,19 +501,35 @@
         style="width:100%; height:190px; border-radius:12px; padding:12px;"></textarea>
 
       <!-- Acciones audio -->
-      <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center;">
-        <button type="button" class="btn-primary" onclick="escucharPreviaAudio()">
-          ▶ Escuchar previa
-        </button>
+<div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center;">
 
-        <button type="button" class="btn-primary" onclick="finalizarYSubirAudio()">
-          ⬆ Subir audio
-        </button>
+  <!-- ▶ Escucha previa (genera + reproduce) -->
+  <button type="button" class="btn-primary" onclick="escucharPreviaAudio()" title="Escucha previa">
+    <i class="fa-solid fa-play"></i>
+    <span>Escucha previa</span>
+  </button>
 
-        <button type="button" class="btn-ghost" onclick="restaurarTextoAudio()">
-          ↺ Restaurar
-        </button>
-      </div>
+  <!-- ↻ Regenerar (hace lo mismo, vuelve a generar la previa real) -->
+  <button type="button" class="btn-primary" onclick="escucharPreviaAudio()" title="Regenerar audio">
+    <i class="fa-solid fa-rotate-right"></i>
+    <span>Regenerar</span>
+  </button>
+
+  <!-- ✅ Finalizar = subir a Firebase y cerrar modal -->
+  <button type="button" class="btn-primary"
+    onclick="finalizarYSubirAudio().then(()=>cerrarModalAudio())"
+    title="Finalizar (sube y cierra)">
+    <i class="fa-solid fa-circle-check"></i>
+    <span>Finalizar</span>
+  </button>
+
+  <!-- ↺ Restaurar texto -->
+  <button type="button" class="btn-ghost" onclick="restaurarTextoAudio()" title="Restaurar texto original">
+    <i class="fa-solid fa-rotate-left"></i>
+    <span>Restaurar</span>
+  </button>
+
+</div>
 
       <div style="font-size:12px; opacity:.8; line-height:1.25; text-align:center;">
         * Esto NO modifica el texto de la imagen. Solo afecta al audio.
@@ -547,4 +569,5 @@
   
 </body>
 </html>
+
 
