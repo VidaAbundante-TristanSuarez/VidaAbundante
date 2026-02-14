@@ -1557,56 +1557,93 @@ body.oscuro #modalAudio textarea{
 }
 
 /* =========================================================
-   ✅ 1 FILA SOLO EN "CREAR IMAGEN"
+   ✅ MODAL A (Biblia)
    ========================================================= */
+#modalBibliaImagen.modal-overlay { display:none; }
+#modalBibliaImagen.modal-overlay.abierto { display:flex; }
 
-/* Cuando el modal tenga la clase .solo-imagen,
-   juntamos controles + estilos en una misma fila */
-#modalPersonalizar.solo-imagen #boxControlesTexto,
-#modalPersonalizar.solo-imagen #textStyles {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
+#previewImagenBiblia{
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+  aspect-ratio: 1 / 1;
+  border-radius: 18px;
+  overflow: hidden;
+  background-size: cover;
+  background-position: center;
 }
 
-/* La fila de texto, en modo imagen, se vuelve una “fila única” */
-#modalPersonalizar.solo-imagen .fila-texto {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;          /* si no entra, baja prolijo */
+#previewTextoWrapperBiblia{
+  position:absolute;
+  inset: 40px 24px;
+  overflow:hidden;
+  border-radius: 24px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
 }
 
-/* En modo imagen: el bloque de fuentes + color se mantienen,
-   pero la idea es que #textStyles quede pegadito a opacidad/tamaño */
-#modalPersonalizar.solo-imagen #boxControlesTexto {
-  order: 1;
+#previewTextoBiblia,
+#previewTextoBackBiblia{
+  position:absolute;
+  inset:0;
+  padding:20px;
+  white-space: pre-wrap;
+  text-align:center;
+  line-height:1.25;
+  pointer-events:none;
 }
-#modalPersonalizar.solo-imagen #textStyles {
-  order: 2;
+
+.galeria-fondos{
+  display:flex;
+  gap:10px;
+  overflow-x:auto;
+  padding-bottom:5px;
 }
 
 /* =========================================================
-   ✅ OCULTAR BOTONES DE FORMATO EN DEVOCIONALES
+   ✅ MODAL B (Devocionales)
    ========================================================= */
+#modalDevocionales.modal-overlay { display:none; }
+#modalDevocionales.modal-overlay.abierto { display:flex; }
 
-/* Cuando el modal tenga la clase .modo-devocional,
-   escondemos #textStyles completo */
-#modalPersonalizar.modo-devocional #textStyles {
-  display: none !important;
+#previewDevocional{
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+  border-radius: 18px;
+  overflow: hidden;
+  background:#eee;
+  min-height: 240px; /* luego en JS lo ajustás a 210x210 / 210x87 / A4 */
 }
 
-/* ================= DEVOCIONAL: BOTONES PASOS (solo se ven en modo-devocional) ================= */
-#btnDevSiguiente1,
-#btnDevSiguiente2,
-#btnDevVerFinal{
+/* listas de fuentes reutilizables */
+.lista-fuentes{
+  position: fixed;
   display:none;
+  padding:10px;
+  background:#fff;
+  border-radius:14px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.25);
+  z-index: 99999;
+  flex-wrap:nowrap;
+  gap:8px;
+  overflow-x:auto;
+  overflow-y:hidden;
 }
 
-#modalPersonalizar.modo-devocional #btnDevSiguiente1,
-#modalPersonalizar.modo-devocional #btnDevSiguiente2,
-#modalPersonalizar.modo-devocional #btnDevVerFinal{
-  display:inline-flex;
+.lista-fuentes.abierto{ display:flex; }
+
+/* mini botones */
+.btn-mini{
+  border:none;
+  border-radius:10px;
+  padding:6px 10px;
+  cursor:pointer;
+  background: var(--ui-azul-claro);
 }
+
 
   </style>
