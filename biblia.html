@@ -145,9 +145,15 @@
   </button>
 
   <!-- ✅ Crear Imagen (solo aparece cuando modo imagen está activo) -->
-<button id="btnCrearImagen" type="button" onclick="generarImagen()" aria-label="Crear imagen">
+<button id="btnCrearImagen"
+        class="btn-primary"
+        type="button"
+        onclick="generarImagen()"
+        aria-label="Crear imagen">
+  <i class="fa-solid fa-panorama"></i>
   Crear Imagen
 </button>
+
 
   <!-- ✅ Confirmar marcador rápido (solo visible en modo marcador) -->
   <button id="btnGuardarMarcador" type="button" onclick="guardarMarcadorRapido()" style="display:none;" aria-label="Guardar marcador">
@@ -569,5 +575,6 @@
   
 </body>
 </html>
+
 
 
