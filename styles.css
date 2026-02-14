@@ -1166,21 +1166,6 @@ body.oscuro #header button[onclick="toggleTema()"] {
 
 /* ================= BOTÓN CREAR IMAGEN ================= */
 /* ✅ Botón Crear Imagen: mismo tamaño que los demás */
-#btnCrearImagen{
-  display:none; /* lo muestra el body.modo-imagen */
-  border-radius: 999px;
-  padding: 6px 10px;     /* igual que .barra-acciones button */
-  height: auto;          /* no forzar 38px */
-  font-weight: 700;      /* igual al resto */
-  font-size: 14px;
-  border: none;
-  cursor: pointer;
-  background: var(--ui-azul-hover);
-  color:#fff;
-}
-#btnCrearImagen:active{ transform: scale(0.98); }
-body.modo-imagen #btnCrearImagen{ display:inline-block; }
-
 
 body.modo-imagen #btnCrearImagen{
   display: inline-block;
@@ -1645,5 +1630,15 @@ body.oscuro #modalAudio textarea{
   background: var(--ui-azul-claro);
 }
 
+/* ✅ FIX: labels de check en fila final sin romper estilos viejos */
+.fila-final .subir-iglesia-btn,
+#chkPanelDevLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* si querés que no salten feo */
+#chkPanelDevLabel { white-space: nowrap; }
 
   </style>
