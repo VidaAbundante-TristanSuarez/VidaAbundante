@@ -1225,8 +1225,9 @@ function salirModoImagen() {
     banner.style.display = "none";
   }
 
-  document.getElementById("modalPersonalizar").style.display = "none";
-    const modal = document.getElementById("modalPersonalizar");
+  cerrarModalPersonalizar();
+
+  const modal = document.getElementById("modalPersonalizar");
   if (modal) modal.classList.remove("solo-imagen", "modo-devocional");
 
   mostrarTexto();
@@ -1278,6 +1279,20 @@ window.toggleModoImagen = () => {
   mostrarTexto();
 };
 
+function abrirModalPersonalizar() {
+  const m = document.getElementById("modalPersonalizar");
+  if (!m) return;
+  m.style.display = "flex";
+  m.classList.add("abierto");
+}
+
+function cerrarModalPersonalizar() {
+  const m = document.getElementById("modalPersonalizar");
+  if (!m) return;
+  m.style.display = "none";
+  m.classList.remove("abierto");
+}
+
 // ================= 🔺 GENERAR IMAGEN ===============================
 window.generarImagen = async () => {
   if (Object.keys(seleccionImagen).length === 0) {
@@ -1295,8 +1310,7 @@ window.generarImagen = async () => {
   modal.classList.add("solo-imagen");
   modal.classList.remove("modo-devocional");
   
-  modal.style.display = "flex";
-
+  abrirModalPersonalizar();
   setFormatoImagen("post");
   cargarFondos();
   crearListaVisualFuentes();
@@ -2706,7 +2720,8 @@ const Modal = {
     const { modal } = this.el();
     if (!modal) return;
 
-    modal.style.display = "flex";
+    abrirModalPersonalizar();
+
     modal.classList.remove("solo-imagen", "modo-devocional");
 
     // configurar UI por modo
@@ -2716,7 +2731,8 @@ const Modal = {
   close() {
     const { modal } = this.el();
     if (!modal) return;
-    modal.style.display = "none";
+    cerrarModalPersonalizar();
+
     modal.classList.remove("solo-imagen", "modo-devocional");
     this.state.mode = null;
   },
