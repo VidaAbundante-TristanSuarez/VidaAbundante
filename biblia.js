@@ -1243,26 +1243,34 @@ window.generarImagen = async () => {
     return;
   }
 
-  const modal = document.getElementById("modalPersonalizar");
-  if (!modal) return;
+  // ✅ Abrir el modal REAL del HTML (Biblia)
+  const modal = document.getElementById("modalBibliaImagen");
+  if (!modal) {
+    alert("No existe #modalBibliaImagen en el HTML");
+    return;
+  }
 
-  // ✅ CLAVE: reset antes de mostrar (evita overlay negro por sliders viejos)
-  resetModalPersonalizar();
+  // ✅ Preparar texto
+  const txt = obtenerVersiculoSeleccionado();
+  const front = document.getElementById("previewTextoBiblia");
+  const back  = document.getElementById("previewTextoBackBiblia");
+  if (front) front.innerText = txt;
+  if (back)  back.innerText  = txt;
 
-    // ✅ MODO: CREAR IMAGEN
-  modal.classList.add("solo-imagen");
-  modal.classList.remove("modo-devocional");
-  
+  // ✅ Reset UI simple
+  document.getElementById("opacidadBiblia").value = 0.3;
+  document.getElementById("colorFuenteBiblia").value = "#000000";
+  document.getElementById("tamanoBiblia").value = 24;
+
+  // ✅ Abrir
   modal.style.display = "flex";
+  modal.setAttribute("aria-hidden", "false");
 
-  setFormatoImagen("post");
-  cargarFondos();
-  crearListaVisualFuentes();
+  // ✅ cargar fondos (si tenés función, sino la creamos en el PASO 2)
+  if (typeof window.cargarFondosBiblia === "function") window.cargarFondosBiblia();
 
-  // ✅ esperar 1 frame para que el modal ya tenga tamaño real
-  await new Promise(r => requestAnimationFrame(r));
-
-  actualizarPreview();
+  // ✅ refrescar preview con los valores actuales
+  if (typeof window.actualizarPreviewBiblia === "function") window.actualizarPreviewBiblia();
 };
 
 // ================= 🔺 CANCELAR CREAR IMAGEN ===============================
@@ -2942,4 +2950,426 @@ if (bf) bf.onclick = () => uiBloqueo(bf, async () => {
 
 });
 
+// =====================================================
+// ✅ MODAL BIBLIA IMAGEN (REAL) — Motor de preview
+// =====================================================
+window.__bibliaFormato = "post"; // "post" | "story"
+window.__bibliaTextoStyle = { upper:false, bold:false, italic:false, underline:false };
+window.__bibliaFuente = "Roboto";
+window.__bibliaFondoUrl = "";   // fondo seleccionado (url)
+
+function rgbaFromOpacitySlider(val) {
+  const op = Math.max(0, Math.min(1, Number(val || 0)));
+  // mismo criterio que venías usando: <0.5 blanquea, >0.5 oscurece
+  if (op > 0.5) {
+    const a = Math.min(0.70, (op - 0.5) * 2);
+    return `rgba(0,0,0,${a})`;
+  } else if (op < 0.5) {
+    const a = Math.min(0.70, (0.5 - op) * 2);
+    return `rgba(255,255,255,${a})`;
+  }
+  return "rgba(0,0,0,0)";
+}
+
+window.actualizarPreviewBiblia = () => {
+  const preview = document.getElementById("previewImagenBiblia");
+  const wrapper = document.getElementById("previewTextoWrapperBiblia");
+  const front   = document.getElementById("previewTextoBiblia");
+  const back    = document.getElementById("previewTextoBackBiblia");
+
+  if (!preview || !wrapper || !front || !back) return;
+
+  // fondo
+  if (window.__bibliaFondoUrl) {
+    preview.style.backgroundImage = `url("${window.__bibliaFondoUrl}")`;
+    preview.style.backgroundSize = "cover";
+    preview.style.backgroundPosition = "center";
+    preview.style.backgroundColor = "transparent";
+  } else {
+    preview.style.backgroundImage = "none";
+    preview.style.backgroundColor = "#ffffff";
+  }
+
+  // formato
+  preview.classList.remove("preview-post", "preview-story");
+  preview.classList.add(window.__bibliaFormato === "story" ? "preview-story" : "preview-post");
+
+  // estilos
+  const op = document.getElementById("opacidadBiblia")?.value ?? 0.3;
+  wrapper.style.backgroundColor = rgbaFromOpacitySlider(op);
+
+  const color = document.getElementById("colorFuenteBiblia")?.value ?? "#000000";
+  const size  = Number(document.getElementById("tamanoBiblia")?.value ?? 24);
+
+  const fuente = window.__bibliaFuente || "Roboto";
+  const upper = !!window.__bibliaTextoStyle.upper;
+  const bold  = !!window.__bibliaTextoStyle.bold;
+  const italic= !!window.__bibliaTextoStyle.italic;
+  const under = !!window.__bibliaTextoStyle.underline;
+
+  [front, back].forEach(el => {
+    el.style.fontFamily = fuente;
+    el.style.fontSize = size + "px";
+    el.style.lineHeight = "1.3";
+    el.style.textTransform = upper ? "uppercase" : "none";
+    el.style.fontWeight = bold ? "700" : "400";
+    el.style.fontStyle  = italic ? "italic" : "normal";
+    el.style.textDecoration = under ? "underline" : "none";
+  });
+
+  front.style.color = color;
+
+  // borde simple (back)
+  const outline = colorOutlineDesdeBase(color);
+  const px = 0.6;
+  back.style.color = outline;
+  back.style.WebkitTextStroke = `${px}px ${outline}`;
+  back.style.webkitTextFillColor = "transparent";
+  back.style.textShadow = `
+    -${px}px 0 ${outline},
+     ${px}px 0 ${outline},
+     0 -${px}px ${outline},
+     0  ${px}px ${outline}
+  `;
+};
+
+// listeners Biblia
+document.addEventListener("DOMContentLoaded", () => {
+  const op = document.getElementById("opacidadBiblia");
+  const col= document.getElementById("colorFuenteBiblia");
+  const sz = document.getElementById("tamanoBiblia");
+  if (op) op.addEventListener("input", window.actualizarPreviewBiblia);
+  if (col) col.addEventListener("input", window.actualizarPreviewBiblia);
+  if (sz) sz.addEventListener("input", window.actualizarPreviewBiblia);
+});
+
+// Formato post/story
+window.setFormatoBiblia = (tipo) => {
+  window.__bibliaFormato = (tipo === "story") ? "story" : "post";
+  window.actualizarPreviewBiblia();
+};
+
+// Tamaño +/-
+window.cambiarTamanoBiblia = (delta) => {
+  const inp = document.getElementById("tamanoBiblia");
+  if (!inp) return;
+  const cur = Number(inp.value || 24);
+  inp.value = String(Math.max(10, Math.min(100, cur + delta)));
+  window.actualizarPreviewBiblia();
+};
+
+// Estilos
+window.toggleUpperBiblia = () => { window.__bibliaTextoStyle.upper = !window.__bibliaTextoStyle.upper; window.actualizarPreviewBiblia(); };
+window.toggleBoldBiblia  = () => { window.__bibliaTextoStyle.bold  = !window.__bibliaTextoStyle.bold;  window.actualizarPreviewBiblia(); };
+window.toggleItalicBiblia= () => { window.__bibliaTextoStyle.italic= !window.__bibliaTextoStyle.italic;window.actualizarPreviewBiblia(); };
+window.toggleUnderlineBiblia=()=>{ window.__bibliaTextoStyle.underline=!window.__bibliaTextoStyle.underline;window.actualizarPreviewBiblia(); };
+
+// Fuentes (Biblia)
+window.cargarFuentesBiblia = () => {
+  const cont = document.getElementById("listaFuentesBiblia");
+  const btn  = document.getElementById("btnFuentesBiblia");
+  if (!cont || !btn) return;
+
+  cont.innerHTML = "";
+  fuentesGoogle.forEach(f => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.textContent = f.nombre;
+    b.style.fontFamily = f.css;
+    if (window.__bibliaFuente === f.css) b.classList.add("activo");
+
+    b.onclick = (e) => {
+      e.preventDefault(); e.stopPropagation();
+      window.__bibliaFuente = f.css;
+      window.actualizarPreviewBiblia();
+      cont.style.display = "none";
+    };
+
+    cont.appendChild(b);
+  });
+
+  btn.onclick = (e) => {
+    e.preventDefault(); e.stopPropagation();
+    cont.style.display = (cont.style.display === "block") ? "none" : "block";
+  };
+
+  document.addEventListener("click", (e) => {
+    if (!cont.contains(e.target) && e.target !== btn) cont.style.display = "none";
+  });
+};
+
+window.cargarFondosBiblia = () => {
+  const cont = document.getElementById("fondosBiblia");
+  if (!cont) return;
+  cont.innerHTML = "";
+
+  // usá tus fondos existentes
+  const arr = (typeof fondos !== "undefined" && Array.isArray(fondos)) ? fondos : [];
+  arr.forEach(baseUrl => {
+    const finalUrl = baseUrl.includes("?")
+      ? baseUrl + "&auto=format&fit=crop&w=900&q=80"
+      : baseUrl + "?auto=format&fit=crop&w=900&q=80";
+
+    const img = document.createElement("img");
+    img.crossOrigin = "anonymous";
+    img.referrerPolicy = "no-referrer";
+    img.src = finalUrl;
+
+    img.onclick = async () => {
+      // ✅ guardo url directa (si CORS molesta en html2canvas lo resolvemos luego)
+      window.__bibliaFondoUrl = finalUrl;
+      window.actualizarPreviewBiblia();
+    };
+
+    cont.appendChild(img);
+  });
+};
+
+// abrir/cerrar modal Biblia
+window.cerrarModalBibliaImagen = () => {
+  const modal = document.getElementById("modalBibliaImagen");
+  if (modal) {
+    modal.style.display = "none";
+    modal.setAttribute("aria-hidden","true");
+  }
+};
+
+// init
+document.addEventListener("DOMContentLoaded", () => {
+  window.cargarFuentesBiblia();
+});
+
+async function biblia_renderToCanvas() {
+  // ✅ hacemos un canvas “de salida” usando html2canvas SOBRE EL PREVIEW REAL
+  const preview = document.getElementById("previewImagenBiblia");
+  if (!preview) return null;
+
+  await document.fonts.ready;
+  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+  // html2canvas ya está en el HTML
+  const canvas = await html2canvas(preview, {
+    scale: Math.max(2, window.devicePixelRatio || 2),
+    useCORS: true,
+    allowTaint: false,
+    backgroundColor: window.__bibliaFondoUrl ? null : "#ffffff"
+  });
+
+  return canvas;
+}
+
+window.descargarImagenBiblia = async () => {
+  try {
+    const canvas = await biblia_renderToCanvas();
+    if (!canvas) return;
+
+    const link = document.createElement("a");
+    link.href = canvas.toDataURL("image/png");
+    link.download = "versiculo.png";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  } catch (e) {
+    console.error(e);
+    alert("No se pudo descargar (probable CORS en el fondo). Probá sin fondo o con otro.");
+  }
+};
+
+window.compartirImagenBiblia = async () => {
+  try {
+    const canvas = await biblia_renderToCanvas();
+    if (!canvas) return;
+
+    const blob = await new Promise(res => canvas.toBlob(res, "image/png"));
+    if (!blob) return;
+
+    const file = new File([blob], "versiculo.png", { type: "image/png" });
+
+    if (navigator.share && navigator.canShare?.({ files: [file] })) {
+      await navigator.share({ files: [file], title: "Versículo" });
+    } else {
+      await window.descargarImagenBiblia();
+      alert("Tu dispositivo no permite compartir directo. Se descargó la imagen.");
+    }
+  } catch (e) {
+    console.error(e);
+    alert("No se pudo compartir (probable CORS en el fondo).");
+  }
+};
+
+window.finalizarBiblia = async () => {
+  const chk = document.getElementById("checkIglesiaBiblia");
+  const subirIglesia = !!chk?.checked;
+
+  // ✅ tu requisito: SIEMPRE se sube al panel (personal)
+  // Iglesia solo si está tildado.
+  try {
+    const canvas = await biblia_renderToCanvas();
+    if (!canvas) return;
+
+    // usar tu storage/firebase (ya lo tenés importado arriba)
+    const blob = await new Promise(res => canvas.toBlob(res, "image/png"));
+    if (!blob) return;
+
+    const ts = Date.now();
+    const fileName = `versiculo_${ts}.png`;
+
+    // Personal
+    const refPersonal = sRef(storage, `imagenes_personal/${uid}/${fileName}`);
+    await uploadBytes(refPersonal, blob, { contentType: "image/png" });
+    const urlPersonal = await getDownloadURL(refPersonal);
+
+    await set(ref(db, `panelImagenesPersonal/${uid}/${ts}`), {
+      url: urlPersonal,
+      storagePath: `imagenes_personal/${uid}/${fileName}`,
+      fecha: ts,
+      libro: libroSel?.value || "",
+      capitulo: Number(capSel?.value || 0),
+      origen: "biblia"
+    });
+
+    // Iglesia opcional
+    if (subirIglesia) {
+      const refIglesia = sRef(storage, `imagenes_iglesia/${uid}/${fileName}`);
+      await uploadBytes(refIglesia, blob, { contentType: "image/png" });
+      const urlIglesia = await getDownloadURL(refIglesia);
+
+      await set(ref(db, `panelImagenesIglesia/${uid}/${ts}`), {
+        url: urlIglesia,
+        storagePath: `imagenes_iglesia/${uid}/${fileName}`,
+        fecha: ts,
+        libro: libroSel?.value || "",
+        capitulo: Number(capSel?.value || 0),
+        origen: "biblia"
+      });
+    }
+
+    // ✅ guardar “última imagen” para adjuntar audio después
+    window.__ultimoTsImagen = ts;
+
+    // cerrar modal
+    window.cerrarModalBibliaImagen();
+    mostrarToast("✅ Imagen guardada en Mi Panel" + (subirIglesia ? " + Iglesia" : ""));
+  } catch (e) {
+    console.error(e);
+    alert("No se pudo finalizar/subir. Mirá consola (F12).");
+  }
+};
+
+// =====================================================
+// ✅ AUDIO: contexto (biblia vs devocional)
+// =====================================================
+window.__audioContexto = "biblia"; // "biblia" | "devocional"
+window.__audioTextoOriginal = "";
+
+window.abrirModalAudioDesdeBiblia = () => {
+  window.__audioContexto = "biblia";
+
+  // texto = el mismo que está en la imagen biblia
+  const base = document.getElementById("previewTextoBiblia")?.innerText || "";
+  window.__audioTextoOriginal = base.trim();
+
+  const modal = document.getElementById("modalAudio");
+  const ta = document.getElementById("textoAudio");
+  const audio = document.getElementById("audioPreview");
+  const estado = document.getElementById("audioEstado");
+
+  if (ta) ta.value = window.__audioTextoOriginal;
+  if (audio) audio.removeAttribute("src");
+  if (estado) estado.textContent = "Listo para previsualizar.";
+
+  if (modal) { modal.style.display = "flex"; modal.setAttribute("aria-hidden","false"); }
+};
+
+window.abrirModalAudioDesdeDevocional = () => {
+  window.__audioContexto = "devocional";
+
+  // texto = el completo OCR
+  const base = String(window.__devTextoCompleto || "").trim();
+  window.__audioTextoOriginal = base;
+
+  const modal = document.getElementById("modalAudio");
+  const ta = document.getElementById("textoAudio");
+  const audio = document.getElementById("audioPreview");
+  const estado = document.getElementById("audioEstado");
+
+  if (ta) ta.value = window.__audioTextoOriginal;
+  if (audio) audio.removeAttribute("src");
+  if (estado) estado.textContent = "Listo para previsualizar.";
+
+  if (modal) { modal.style.display = "flex"; modal.setAttribute("aria-hidden","false"); }
+};
+
+window.cerrarModalAudio = () => {
+  const modal = document.getElementById("modalAudio");
+  if (modal) { modal.style.display = "none"; modal.setAttribute("aria-hidden","true"); }
+};
+
+window.restaurarTextoAudio = () => {
+  const ta = document.getElementById("textoAudio");
+  if (ta) ta.value = window.__audioTextoOriginal || "";
+};
+
+// ✅ Regenerar = vuelve a pedir base64 de nuevo
+window.regenerarAudio = async () => {
+  // simplemente llamamos a la previa real otra vez
+  await escucharPreviaAudio();
+};
+
+// ✅ Finalizar audio (Biblia: adjuntar / Dev: adjuntar)
+window.finalizarAudio = async () => {
+  const estado = document.getElementById("audioEstado");
+  const ta = document.getElementById("textoAudio");
+  const texto = (ta?.value || "").trim();
+  if (!texto) { if (estado) estado.textContent = "⚠️ No hay texto."; return; }
+
+  try {
+    if (estado) estado.textContent = "⬆ Guardando audio…";
+
+    // 1) pedir mp3 base64
+    const r = await fetch(AUDIO_WEBAPP_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ texto, modo: "raw" })
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok || !data.audioBase64) throw new Error(data?.error || "No devolvió audioBase64");
+
+    // 2) subir a Firebase Storage (SIEMPRE)
+    const bytes = Uint8Array.from(atob(data.audioBase64), c => c.charCodeAt(0));
+    const blob = new Blob([bytes], { type: "audio/mpeg" });
+
+    const ts = Date.now();
+    const fileName = `audio_${ts}.mp3`;
+
+    const storagePath = (window.__audioContexto === "devocional")
+      ? `audios_devocionales/${uid}/${fileName}`
+      : `audios_biblia/${uid}/${fileName}`;
+
+    const storageRef = sRef(storage, storagePath);
+    await uploadBytes(storageRef, blob, { contentType: "audio/mpeg" });
+    const url = await getDownloadURL(storageRef);
+
+    // 3) adjuntar según contexto
+    if (window.__audioContexto === "biblia") {
+      // adjuntar al último ts de imagen (si existe)
+      const imgTs = window.__ultimoTsImagen || null;
+      if (imgTs) {
+        await set(ref(db, `panelImagenesPersonal/${uid}/${imgTs}/audioUrl`), url);
+        await set(ref(db, `panelImagenesPersonal/${uid}/${imgTs}/audioStoragePath`), storagePath);
+      }
+      // opcional: guardar log
+      await set(ref(db, `panelAudiosPersonal/${uid}/${ts}`), { url, storagePath, fecha: ts, origen:"biblia" });
+    } else {
+      // devocional: guardo en un nodo dedicado (después lo mostramos en Iglesia)
+      await set(ref(db, `iglesiaDevocionalesAudios/${ts}`), { url, storagePath, fecha: ts, uid });
+    }
+
+    if (estado) estado.textContent = "✅ Audio guardado.";
+    cerrarModalAudio();
+  } catch (e) {
+    console.error(e);
+    if (estado) estado.textContent = "❌ No se pudo guardar el audio.";
+  }
+};
 
