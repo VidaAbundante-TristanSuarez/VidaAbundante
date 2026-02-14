@@ -457,6 +457,7 @@ window.__devSiguiente = (paso) => {
     modoTextoExterno = true;
     textoExternoModal = b1;
     Modal.open("DEV1");
+      aplicarChecksDevUI(); // ✅ AQUI
     crearListaVisualFuentes();
     cargarFondos();
     actualizarPreview();
@@ -468,6 +469,7 @@ window.__devSiguiente = (paso) => {
     modoTextoExterno = true;
     textoExternoModal = b2;
     Modal.open("DEV2");
+      aplicarChecksDevUI(); // ✅ AQUI
     crearListaVisualFuentes();
     // fondo plano default blanco
     const picker = document.getElementById("colorFondoPlano");
@@ -482,6 +484,7 @@ window.__devSiguiente = (paso) => {
     modoTextoExterno = false;
     textoExternoModal = "";
     Modal.open("DEV3");
+      aplicarChecksDevUI(); // ✅ AQUI
     // arma el canvas combinado
     dev_armarFinal().then(() => Modal.applyUI());
   }
