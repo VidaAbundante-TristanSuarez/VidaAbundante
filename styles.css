@@ -1658,7 +1658,7 @@ body.oscuro #modalAudio textarea{
 }
 
 .opacidad-slider{ width:120px; }
-.tamano-input{ width:56px; text-align:center; }
+.tamano-input{ width:50px; text-align:center; }
 
 /* Color picker más prolijo */
 .color-input{
