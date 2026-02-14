@@ -144,16 +144,7 @@
     <i class="fa-solid fa-panorama"></i>
   </button>
 
-  <!-- ✅ Crear Imagen (solo aparece cuando modo imagen está activo) -->
-<button id="btnCrearImagen"
-        class="btn-primary"
-        type="button"
-        onclick="generarImagen()"
-        aria-label="Crear imagen">
-  <i class="fa-solid fa-panorama"></i>
-  Crear Imagen
-</button>
-
+  <!-- ✅ Crear Imagen (solo aparece cuando modo imagen está activo) --> <button id="btnCrearImagen" type="button" onclick="generarImagen()" aria-label="Crear imagen"> Crear Imagen </button>
 
   <!-- ✅ Confirmar marcador rápido (solo visible en modo marcador) -->
   <button id="btnGuardarMarcador" type="button" onclick="guardarMarcadorRapido()" style="display:none;" aria-label="Guardar marcador">
@@ -204,13 +195,12 @@
 </div>
 
 <!-- Botones debajo -->
-<div class="dev-actions" style="display:flex; gap:8px; flex-wrap:wrap; justify-content:center; align-items:center; margin-top:10px;">
-  <label class="btn-primary" style="cursor:pointer;">
-    📷 Cargar imagen
-    <input id="devImg" type="file" accept="image/*" style="display:none">
-  </label>
+<button id="btnDevImg" type="button" class="btn-primary">
+  📷 Cargar imagen
+</button>
+<input id="devImg" type="file" accept="image/*" hidden>
 
-  <button id="btnDevRecortar" type="button" class="btn-ghost">✂️ Recortar</button>
+ <button id="btnDevRecortar" type="button" class="btn-ghost">✂️ Recortar</button>
   <button id="btnDevOCR" type="button" class="btn-primary">🧠 OCR</button>
 </div>
 
@@ -575,6 +565,7 @@
   
 </body>
 </html>
+
 
 
 
