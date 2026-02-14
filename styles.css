@@ -762,14 +762,6 @@ color: #000; /* 🔥 Modal SIEMPRE legible (no gris) */
   font-size: 14px;
 }
 
-/* LISTA DE FONDOS 🟢 DEFINICIÓN DEFINITIVA (SE QUEDA) */
-#personalizarFondos {
-  display: flex;
-  gap: 10px;
-  overflow-x: auto;
-  padding-bottom: 5px;
-}
-
 #personalizarFondos img {
   height: 60px;
   width: 100px;
@@ -785,17 +777,7 @@ color: #000; /* 🔥 Modal SIEMPRE legible (no gris) */
   border-color: #007bff;
   transform: scale(1.05);
 }
-/*  🟢  */
 
-/* SCROLLBAR PARA FONDOS */
-#personalizarFondos::-webkit-scrollbar {
-  height: 6px;
-}
-
-#personalizarFondos::-webkit-scrollbar-thumb {
-  background: rgba(0,0,0,0.3);
-  border-radius: 3px;
-}
 
 #personalizarFondos::-webkit-scrollbar-track {
   background: rgba(0,0,0,0.1);
@@ -907,16 +889,6 @@ color: #000; /* 🔥 Modal SIEMPRE legible (no gris) */
   align-items: center;
 }
 
-.fila-final {
-  display: flex;
-  gap: 8px;
-  justify-content: center;
-  align-items: center;
-  flex-wrap: nowrap; /* 👈 CLAVE */
-  max-width: 420px;
-  margin: 0 auto; /* esto reemplaza margin-left y margin-right */
-}
-
 #modalPersonalizar .cerrar-modal{
   position: absolute;
   top: 12px;
@@ -936,22 +908,6 @@ body.oscuro #modalPersonalizar .cerrar-modal{
 
 .opcion-color label {
   font-size: 12px;
-}
-
-.opacidad-slider {
-  width: 92px;
-  margin: 0;
-}
-
-/* box de tamaño */
-/* ✅ Tamaño: más angosto + sin flechas internas */
-.tamano-input{
-  width: 25px;          /* ~ mitad */
-  height: 25px;
-  text-align:center;
-  padding: 0 2px;
-  font-size: 12px;
-  appearance: textfield;
 }
 
 /* Chrome/Edge/Safari */
@@ -1655,5 +1611,79 @@ body.oscuro #modalAudio textarea{
 
 /* si querés que no salten feo */
 #chkPanelDevLabel { white-space: nowrap; }
+
+/* ================= MODAL CREAR IMAGEN (BIBLIA) ================= */
+
+#modalPersonalizar .modal-contenido{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+/* Fondos: galería horizontal con scroll */
+#personalizarFondos{
+  display:flex;
+  gap:10px;
+  overflow-x:auto;
+  padding:8px 6px;
+  scrollbar-width:thin;
+}
+#personalizarFondos::-webkit-scrollbar{ height:8px; }
+#personalizarFondos::-webkit-scrollbar-thumb{ border-radius:999px; }
+
+/* Row A: Formato + Opacidad + Color fuente (TODO EN UNA FILA) */
+#rowA{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+/* Row B: Fuentes + Estilos + Tamaño (- num +) EN UNA FILA */
+#rowB{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+/* Ajustes de controles */
+#boxFormato{ display:flex; gap:8px; }
+#boxControlesTexto{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
+.opacidad-slider{ width:120px; }
+.tamano-input{ width:56px; text-align:center; }
+
+/* Color picker más prolijo */
+.color-input{
+  width:44px;
+  height:36px;
+  border:none;
+  background:transparent;
+  padding:0;
+  cursor:pointer;
+}
+
+/* Fila final: botones iguales y centrados */
+#rowFinal{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  flex-wrap:wrap;
+}
+#rowFinal button,
+#rowFinal .subir-iglesia-btn{
+  height:38px;
+  min-width:38px;
+  border-radius:999px;
+}
+
 
   </style>
