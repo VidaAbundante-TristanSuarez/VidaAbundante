@@ -443,33 +443,48 @@ ${footer2}`.trim();
 window.__devSiguiente = (paso) => {
   const ta = document.getElementById("devTexto");
   const texto = (ta?.value || "").trim();
-  window.__devTextoCompleto = texto; // ✅ para audio final (paso 3)
   if (!texto) { alert("Primero necesitás texto (OCR o pegado)."); return; }
 
-  const [b1, b2] = partirEn2Bloques(texto); // ✅ ahora sí existe
+  // guardo texto completo para el audio final
+  Modal.state.dev.textoCompleto = texto;
+  window.__devTextoCompleto = texto; // por compatibilidad
+
+  const [b1, b2] = partirEn2Bloques(texto);
 
   if (paso === 1) {
     if (!b1) return alert("No hay texto para Bloque 1");
-    window.abrirPersonalizarConTexto(b1, { paso: 1, devPaso: 1 });
+    // abrir paso 1
+    modoTextoExterno = true;
+    textoExternoModal = b1;
+    Modal.open("DEV1");
+    crearListaVisualFuentes();
+    cargarFondos();
+    actualizarPreview();
     return;
   }
 
   if (paso === 2) {
     if (!b2) return alert("No hay texto para Bloque 2");
-    window.abrirPersonalizarConTexto(b2, { paso: 2, devPaso: 2, color: "#ffffff" });
+    modoTextoExterno = true;
+    textoExternoModal = b2;
+    Modal.open("DEV2");
+    crearListaVisualFuentes();
+    // fondo plano default blanco
+    const picker = document.getElementById("colorFondoPlano");
+    if (picker) picker.value = Modal.state.dev.fondoPlano || "#ffffff";
+    aplicarFondoPlanoDesdePicker();
+    actualizarPreview();
     return;
   }
 
   if (paso === 3) {
-    window.abrirPersonalizarConTexto("FINAL", { devPaso: 3 });
+    // abrir final
+    modoTextoExterno = false;
+    textoExternoModal = "";
+    Modal.open("DEV3");
+    // arma el canvas combinado
+    dev_armarFinal().then(() => Modal.applyUI());
   }
 };
 
-document.addEventListener("DOMContentLoaded", () => {
-  const b1 = document.getElementById("btnDevBloque1");
-  const b2 = document.getElementById("btnDevBloque2");
-
-  if (b1) b1.onclick = () => window.__devSiguiente(1);
-  if (b2) b2.onclick = () => window.__devSiguiente(2);
-});
 
