@@ -2448,6 +2448,11 @@ window.finalizarYSubirAudio = async () => {
     return;
   }
 
+if (!window.__audioBase64) {
+  if (estado) estado.textContent = "⚠️ Primero generá la previa real.";
+  return;
+}
+  
   const subirIglesia = !!chk?.checked;
 
   const esDevocional = (window.__devPaso === 3); // solo el final
