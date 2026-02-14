@@ -3001,6 +3001,16 @@ document.addEventListener("DOMContentLoaded", () => {
   // 2) check iglesia por defecto
   forceDefaultCheckIglesia();
 
+// ✅ BOTÓN CARGAR IMAGEN (DEVOCIONAL)
+  const btnDevImg = document.getElementById("btnDevImg");
+  const inputDevImg = document.getElementById("devImg");
+
+  if (btnDevImg && inputDevImg) {
+    btnDevImg.addEventListener("click", () => {
+      inputDevImg.click();
+    });
+  }
+  
   // 3) listeners botones (sin depender del onclick en HTML)
   const btnGuardar = document.getElementById("btnGuardarMarcador");
   if (btnGuardar) {
