@@ -423,7 +423,22 @@ body.oscuro .panel-tabs{
 
 /* ================= MODO IMAGEN ================= */
     /* Cuando está activo el modo imagen */
- body.modo-imagen #accionesBiblia .accion-normal {
+#btnCrearImagen{
+  display:none;
+  border-radius: 999px;
+  padding: 6px 10px;
+  height: auto;
+  font-weight: 700;
+  font-size: 14px;
+  border: none;
+  cursor: pointer;
+  background: var(--ui-azul-hover);
+  color:#fff;
+}
+#btnCrearImagen:active{ transform: scale(0.98); }
+body.modo-imagen #btnCrearImagen{ display:inline-block; }
+
+body.modo-imagen #accionesBiblia .accion-normal {
  display: none;
  }
 
