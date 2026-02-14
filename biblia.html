@@ -272,127 +272,200 @@
   </div>
 </div>
 
-<div id="modalPersonalizar">
-
-  <!-- CONTENEDOR INTERNO -->
+<!-- =========================================================
+     ✅ MODAL A: BIBLIA - CREAR IMAGEN
+     ========================================================= -->
+<div id="modalBibliaImagen" class="modal-overlay" aria-hidden="true">
   <div class="modal-contenido">
 
-    <!-- CERRAR -->
-    <button class="cerrar-modal" onclick="cancelarCrearImagen()">✖</button>
+    <button class="cerrar-modal" onclick="cerrarModalBibliaImagen()">✖</button>
 
     <!-- PREVIEW -->
-    <div id="previewImagen">
-      <div id="previewTextoWrapper">
-        <div id="previewTextoBack"></div>
-        <div id="previewTexto"></div>
+    <div id="previewImagenBiblia">
+      <div id="previewTextoWrapperBiblia">
+        <div id="previewTextoBackBiblia"></div>
+        <div id="previewTextoBiblia"></div>
       </div>
     </div>
 
     <!-- FONDOS -->
-    <div id="personalizarFondos"></div>
+    <div id="fondosBiblia" class="galeria-fondos"></div>
 
-    <!-- ✅ FONDO PLANO (solo Bloque 2) -->
-<div id="fondoPlanoBox" style="display:none; margin:10px 0;">
-  <label style="font-weight:700; font-size:13px; display:block; margin-bottom:6px;">Fondo plano</label>
-  <div style="display:flex; gap:10px; align-items:center;">
-    <input id="colorFondoPlano" type="color" value="#ffffff" style="width:44px; height:36px; border:none; padding:0; background:transparent;">
-    <button type="button" class="btn-ghost" onclick="aplicarFondoPlanoDesdePicker()">Aplicar</button>
-  </div>
-</div>
-    
-    <!-- ================= FORMATO IMAGEN ================= -->
-<!-- ✅ FORMATO (solo post/story) -->
-<div id="boxFormato" class="fila-opciones style-row">
-  <button id="btnFormatoPost" type="button" onclick="setFormatoImagen('post')" title="Post">
-    <i class="fa-solid fa-square"></i>
-  </button>
-
-  <button id="btnFormatoStory" type="button" onclick="setFormatoImagen('story')" title="Story">
-    <i class="fa-solid fa-mobile-screen"></i>
-  </button>
-</div>
-
-<!-- ✅ CONTROLES TEXTO (siempre visibles) -->
-<div id="boxControlesTexto" class="fila-opciones style-row">
-  <input id="personalizarOpacidad" class="opacidad-slider"
-         type="range" min="0" max="1" step="0.05" value="0.3">
-
-  <button type="button" onclick="cambiarTamanoPreview(-1)"
-    style="border:none;border-radius:10px;padding:6px 10px;cursor:pointer;background:var(--ui-azul-claro);">−</button>
-
-  <input id="personalizarTamaño" class="tamano-input"
-         type="number" value="24" min="10" max="100">
-
-  <button type="button" onclick="cambiarTamanoPreview(1)"
-    style="border:none;border-radius:10px;padding:6px 10px;cursor:pointer;background:var(--ui-azul-claro);">+</button>
-</div>
-
-
-    <!-- ================= FUENTES / ESTILOS / COLOR ================= -->
-    <div class="fila-texto">
-      <div style="position:relative;">
-        <button id="btnFuentes" class="style-btn">🔤 Fuentes</button>
-        <div id="listaFuentes"></div>
+    <!-- FILA 1: formato + opacidad + color fuente -->
+    <div class="fila-opciones">
+      <div class="style-row">
+        <button id="btnFormatoPostBiblia" type="button" onclick="setFormatoBiblia('post')" title="Post">
+          <i class="fa-solid fa-square"></i>
+        </button>
+        <button id="btnFormatoStoryBiblia" type="button" onclick="setFormatoBiblia('story')" title="Story">
+          <i class="fa-solid fa-mobile-screen"></i>
+        </button>
       </div>
 
-      <div class="style-row" id="textStyles">
-        <button type="button" onclick="toggleUpper()" id="btnUpper">Aa</button>
-        <button type="button" onclick="toggleBold()" id="btnBold">B</button>
-        <button type="button" onclick="toggleItalic()" id="btnItalic">I</button>
-        <button type="button" onclick="toggleUnderline()" id="btnUnderline">U</button>
-      </div>
+      <input id="opacidadBiblia" class="opacidad-slider" type="range" min="0" max="1" step="0.05" value="0.3">
 
-      <input id="personalizarColor" class="color-input" type="color" value="#000000">
+      <button type="button" class="btn-mini" onclick="cambiarTamanoBiblia(-1)">−</button>
+      <input id="tamanoBiblia" class="tamano-input" type="number" value="24" min="10" max="100">
+      <button type="button" class="btn-mini" onclick="cambiarTamanoBiblia(1)">+</button>
+
+      <input id="colorFuenteBiblia" class="color-input" type="color" value="#000000">
     </div>
 
-    <!-- BOTONES (DENTRO DEL MODAL) -->
+    <!-- FILA 2: fuentes + estilos + tamaño + + -->
+    <div class="fila-texto">
+      <div style="position:relative;">
+        <button id="btnFuentesBiblia" class="style-btn">🔤 Fuentes</button>
+        <div id="listaFuentesBiblia" class="lista-fuentes"></div>
+      </div>
+
+      <div class="style-row" id="stylesBiblia">
+        <button type="button" onclick="toggleUpperBiblia()" id="upperBiblia">Aa</button>
+        <button type="button" onclick="toggleBoldBiblia()" id="boldBiblia">B</button>
+        <button type="button" onclick="toggleItalicBiblia()" id="italicBiblia">I</button>
+        <button type="button" onclick="toggleUnderlineBiblia()" id="underlineBiblia">U</button>
+      </div>
+    </div>
+
+    <!-- FILA FINAL: audio + descargar + compartir + finalizar + tilde iglesia -->
     <div class="fila-final">
+      <button type="button" id="btnAudioBiblia" title="Audio" onclick="abrirModalAudioDesdeBiblia()">
+        <i class="fa-solid fa-headphones"></i>
+      </button>
 
-      <!-- ✅ DEVOCIONAL: NAVEGACIÓN PASOS -->
-<button type="button" class="btn-primary" id="btnDevSiguiente1" aria-label="Siguiente">
-  <i class="fa-solid fa-circle-right"></i>
-</button>
-
-<button type="button" class="btn-ghost" id="btnDevVolver2" aria-label="Volver">
-  <i class="fa-solid fa-circle-left"></i>
-</button>
-      
-<button type="button" class="btn-primary" id="btnDevSiguiente2" aria-label="Siguiente">
-  <i class="fa-solid fa-circle-right"></i>
-</button>
-
-<button type="button" class="btn-ghost" id="btnDevVolver3" aria-label="Volver">
-  <i class="fa-solid fa-circle-left"></i>
-</button>
-      
-      <button id="btnDevVerFinal" style="display:none;" type="button">✅ Ver final</button>
-      
-     <button type="button" id="btnAbrirAudio" title="Audio">
-  <i class="fa-solid fa-headphones"></i>
-</button>
-
-      <button onclick="descargarImagenFinal()">
+      <button type="button" onclick="descargarImagenBiblia()">
         <i class="fa-solid fa-download"></i>
       </button>
 
-      <button onclick="compartirImagenFinal()">
+      <button type="button" onclick="compartirImagenBiblia()">
         <i class="fa-solid fa-share-nodes"></i>
       </button>
 
-      <button onclick="finalizarEdicion()">
+      <button type="button" onclick="finalizarBiblia()">
         <i class="fa-solid fa-circle-check"></i>
       </button>
 
       <label class="subir-iglesia-btn">
-        <input type="checkbox" id="checkIglesia" checked>
+        <input type="checkbox" id="checkIglesiaBiblia" checked>
         <i class="fa-solid fa-church"></i>
       </label>
     </div>
 
     <div style="height:10px"></div>
-
   </div>
 </div>
+
+
+<!-- =========================================================
+     ✅ MODAL B: DEVOCIONALES - PASO 1/2/3
+     ========================================================= -->
+<div id="modalDevocionales" class="modal-overlay" aria-hidden="true">
+  <div class="modal-contenido">
+
+    <button class="cerrar-modal" onclick="cerrarModalDevocionales()">✖</button>
+
+    <!-- PREVIEW -->
+    <div id="previewDevocional"></div>
+
+    <!-- FONDOS -->
+    <div id="fondosDevocional" class="galeria-fondos"></div>
+
+    <!-- ✅ CONTENEDOR DE PASOS -->
+    <div id="devStep1" class="dev-step">
+      <!-- Paso 1: 210x210 -->
+      <div class="fila-opciones">
+        <div style="position:relative;">
+          <button id="btnFuentesDev1" class="style-btn">🔤 Fuentes</button>
+          <div id="listaFuentesDev1" class="lista-fuentes"></div>
+        </div>
+
+        <div class="style-row" id="stylesDev1">
+          <button type="button" onclick="toggleBoldDev(1)" id="boldDev1">B</button>
+          <button type="button" onclick="toggleItalicDev(1)" id="italicDev1">I</button>
+          <button type="button" onclick="toggleUnderlineDev(1)" id="underlineDev1">U</button>
+        </div>
+
+        <button type="button" class="btn-mini" onclick="cambiarTamanoDev(1,-1)">−</button>
+        <input id="tamanoDev1" class="tamano-input" type="number" value="24" min="10" max="100">
+        <button type="button" class="btn-mini" onclick="cambiarTamanoDev(1,1)">+</button>
+      </div>
+
+      <div class="fila-opciones">
+        <input id="opacidadDev1" class="opacidad-slider" type="range" min="0" max="1" step="0.05" value="0.3">
+        <input id="colorFuenteDev1" class="color-input" type="color" value="#000000">
+      </div>
+
+      <div class="fila-final">
+        <button type="button" class="btn-primary" onclick="irPasoDev(2)" aria-label="Siguiente">
+          <i class="fa-solid fa-circle-right"></i>
+        </button>
+      </div>
+    </div>
+
+    <div id="devStep2" class="dev-step" style="display:none;">
+      <!-- Paso 2: 210x87 -->
+      <div class="fila-opciones">
+        <input id="colorFondoDev2" type="color" value="#ffffff" style="width:44px; height:36px; border:none; padding:0; background:transparent;">
+        <input id="opacidadDev2" class="opacidad-slider" type="range" min="0" max="1" step="0.05" value="0.3">
+        <input id="colorFuenteDev2" class="color-input" type="color" value="#000000">
+      </div>
+
+      <div class="fila-opciones">
+        <div style="position:relative;">
+          <button id="btnFuentesDev2" class="style-btn">🔤 Fuentes</button>
+          <div id="listaFuentesDev2" class="lista-fuentes"></div>
+        </div>
+
+        <div class="style-row" id="stylesDev2">
+          <button type="button" onclick="toggleBoldDev(2)" id="boldDev2">B</button>
+          <button type="button" onclick="toggleItalicDev(2)" id="italicDev2">I</button>
+          <button type="button" onclick="toggleUnderlineDev(2)" id="underlineDev2">U</button>
+        </div>
+
+        <button type="button" class="btn-mini" onclick="cambiarTamanoDev(2,-1)">−</button>
+        <input id="tamanoDev2" class="tamano-input" type="number" value="22" min="10" max="100">
+        <button type="button" class="btn-mini" onclick="cambiarTamanoDev(2,1)">+</button>
+      </div>
+
+      <div class="fila-final">
+        <button type="button" class="btn-ghost" onclick="irPasoDev(1)" aria-label="Anterior">
+          <i class="fa-solid fa-circle-left"></i>
+        </button>
+        <button type="button" class="btn-primary" onclick="irPasoDev(3)" aria-label="Siguiente">
+          <i class="fa-solid fa-circle-right"></i>
+        </button>
+      </div>
+    </div>
+
+    <div id="devStep3" class="dev-step" style="display:none;">
+      <!-- Paso 3: A4 -->
+      <div class="fila-final">
+        <button type="button" class="btn-ghost" onclick="irPasoDev(2)" aria-label="Anterior">
+          <i class="fa-solid fa-circle-left"></i>
+        </button>
+
+        <button type="button" id="btnAudioDev" title="Audio" onclick="abrirModalAudioDesdeDevocional()">
+          <i class="fa-solid fa-headphones"></i>
+        </button>
+
+        <button type="button" onclick="descargarDevocional()">
+          <i class="fa-solid fa-download"></i>
+        </button>
+
+        <button type="button" onclick="compartirDevocional()">
+          <i class="fa-solid fa-share-nodes"></i>
+        </button>
+
+        <label class="subir-iglesia-btn" title="Subir a mi panel">
+          <input type="checkbox" id="checkPanelDev" checked>
+          <i class="fa-solid fa-user"></i>
+        </label>
+      </div>
+    </div>
+
+    <div style="height:10px"></div>
+  </div>
+</div>
+
 
 <!-- ================= CANVAS FINAL ================= -->
 <!-- Usado para renderizar la imagen -->
@@ -547,6 +620,7 @@
   
 </body>
 </html>
+
 
 
 
