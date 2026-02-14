@@ -2377,56 +2377,52 @@ window.restaurarTextoAudio = () => {
 };
 
 // ✅ Escucha previa: usa la voz del dispositivo (NO genera archivo)
-window.escucharPreviaAudio = () => {
+window.escucharPreviaAudio = async () => {
   const ta = document.getElementById("textoAudio");
   const estado = document.getElementById("audioEstado");
-  if (!ta) return;
+  const audio = document.getElementById("audioPreview");
+  if (!ta || !audio) return;
 
-  const raw = ta.value || "";
-  const texto = audio_prepararTextoParaVoz(raw);
-
-  if (!texto.trim()) {
-    if (estado) estado.textContent = "⚠️ No hay texto para leer.";
-    return;
-  }
-
-  if (!("speechSynthesis" in window)) {
-    if (estado) estado.textContent = "⚠️ Tu dispositivo no soporta lectura por voz.";
-    alert("Tu dispositivo no soporta lectura por voz (speechSynthesis).");
+  const texto = (ta.value || "").trim();
+  if (!texto) {
+    if (estado) estado.textContent = "⚠️ No hay texto para previsualizar.";
     return;
   }
 
   try {
-    window.speechSynthesis.cancel();
+    window.__audioBase64 = null; // limpia audio anterior
+    if (estado) estado.textContent = "🎧 Generando previa real…";
 
-    const u = new SpeechSynthesisUtterance(texto);
+    // 👇 pedimos el MP3 real (tu misma voz/SSML) en base64
+    const r = await fetch(AUDIO_WEBAPP_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ texto, modo: "raw" })
+    });
 
-    // idioma español (Argentina)
-    u.lang = "es-AR";
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok || !data.audioBase64) {
+      throw new Error(data?.error || "No devolvió audioBase64");
+    }
 
-    // valores suaves (si querés más “radio”, decime y lo ajusto)
-    u.rate = 0.95;
-    u.pitch = 1.0;
-    u.volume = 1.0;
+    window.__audioBase64 = data.audioBase64; // ✅ guardo el audio generado
+    
+    // base64 -> blob -> url local
+    const bytes = Uint8Array.from(atob(data.audioBase64), c => c.charCodeAt(0));
+    const blob = new Blob([bytes], { type: "audio/mpeg" });
+    const localUrl = URL.createObjectURL(blob);
 
-    __audioSpeaking = true;
-    if (estado) estado.textContent = "▶ Reproduciendo previa…";
+    audio.src = localUrl;
+    audio.load();
+    await audio.play();
 
-    u.onend = () => {
-      __audioSpeaking = false;
-      if (estado) estado.textContent = "✅ Previa finalizada.";
-    };
-    u.onerror = () => {
-      __audioSpeaking = false;
-      if (estado) estado.textContent = "❌ No se pudo reproducir la previa.";
-    };
-
-    window.speechSynthesis.speak(u);
+    if (estado) estado.textContent = "✅ Previa real reproduciendo (misma voz que el MP3).";
   } catch (e) {
     console.error(e);
-    if (estado) estado.textContent = "❌ Error al reproducir previa.";
+    if (estado) estado.textContent = "❌ No se pudo generar la previa real.";
   }
 };
+
 
 // ✅ Subir audio REAL (vía tu AppSheet/GitHub)
 // IMPORTANTE: esto NO inventa tu sistema. Solo llama a una función si ya existe.
@@ -2528,17 +2524,32 @@ document.addEventListener("DOMContentLoaded", () => {
 const AUDIO_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbwDgVe2-aMdEEoqEF0ZFGnQYWArTFjU1TPoGR4WytbYitz6q3CkAtjmz0HobAcqJbs9Uw/exec";
 
 window.subirAudioAGithub = async ({ texto, subirIglesia, ts }) => {
+
+  // 🚨 BLOQUEO: si no existe previa real, no permitir subir
+  if (!window.__audioBase64) {
+    throw new Error("Primero generá la previa real del audio");
+  }
+
   const r = await fetch(AUDIO_WEBAPP_URL, {
     method: "POST",
-    body: JSON.stringify({ texto, subirIglesia, ts })
+    headers: { "Content-Type": "application/json" }, // ✅ importante
+    body: JSON.stringify({
+      modo: "github",
+      texto,
+      audioBase64: window.__audioBase64, // ya sabemos que existe
+      subirIglesia,
+      ts
+    })
   });
 
   const data = await r.json().catch(() => ({}));
   if (!r.ok || !data.url) {
     throw new Error(data?.error || "No devolvió URL");
   }
+
   return { url: data.url };
 };
+
 
 // ================= mas de AUDIOS 😆 =================
 async function subirAudioAFirebase({ texto, subirIglesia }) {
