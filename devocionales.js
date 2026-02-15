@@ -281,6 +281,29 @@ if (text) {
     btnOCR.style.opacity = "1";
   }
 });
+
+    // =========================
+  // ✅ ABRIR MODAL DEVOCIONALES desde el botón "Crear devocional"
+  // =========================
+  const btnAbrir = document.getElementById("btnAbrirDevModal");
+  if (btnAbrir) {
+    btnAbrir.addEventListener("click", () => {
+      const texto = (document.getElementById("devTexto")?.value || "").trim();
+      if (!texto) return alert("Primero necesitás texto (OCR o pegado).");
+
+      const [b1, b2] = partirEn2Bloques(texto);
+
+      DevModal.state.textoCompleto = texto;
+      DevModal.state.bloque1 = b1 || "";
+      DevModal.state.bloque2 = b2 || "";
+
+      // ✅ Render paso 1 y abrir
+      DevModal.renderStep1();
+      DevModal.open(1);
+    });
+  }
+
+  
 }); // ✅ CIERRA el document.addEventListener("DOMContentLoaded", () => { ... })
   
 // ✅ GLOBAL: para que lo pueda usar window.__devSiguiente
@@ -432,62 +455,114 @@ ${footer2}`.trim();
   return [bloque1, bloque2];
 }
 
-
 // =========================
-// ✅ DEVOCIONALES: flujo 3 pasos usando el modal de biblia.js
-// Bloque 1: CUADRADO + fondos galería
-// Bloque 2: STORY + solo color plano
-// Bloque 3: preview final (combinada)
+// ✅ MODAL DEVOCIONALES (nuevo) — abrir/cerrar/pasos
 // =========================
+const DevModal = {
+  state: {
+    step: 1,
+    textoCompleto: "",
+    bloque1: "",
+    bloque2: "",
+  },
 
-window.__devSiguiente = (paso) => {
-  const ta = document.getElementById("devTexto");
-  const texto = (ta?.value || "").trim();
-  if (!texto) { alert("Primero necesitás texto (OCR o pegado)."); return; }
+  el() { return document.getElementById("modalDevocionales"); },
 
-  // guardo texto completo para el audio final
-  Modal.state.dev.textoCompleto = texto;
-  window.__devTextoCompleto = texto; // por compatibilidad
+  open(step = 1) {
+    const m = this.el();
+    if (!m) return alert("No existe #modalDevocionales en el HTML");
+    this.setStep(step);
+    m.classList.add("abierto");
+    m.setAttribute("aria-hidden", "false");
+  },
 
-  const [b1, b2] = partirEn2Bloques(texto);
+  close() {
+    const m = this.el();
+    if (!m) return;
+    m.classList.remove("abierto");
+    m.setAttribute("aria-hidden", "true");
+  },
 
-  if (paso === 1) {
-    if (!b1) return alert("No hay texto para Bloque 1");
-    // abrir paso 1
-    modoTextoExterno = true;
-    textoExternoModal = b1;
-    Modal.open("DEV1");
-      aplicarChecksDevUI(); // ✅ AQUI
-    crearListaVisualFuentes();
-    cargarFondos();
-    actualizarPreview();
-    return;
-  }
+  setStep(step) {
+    const m = this.el();
+    if (!m) return;
+    this.state.step = Number(step);
+    m.dataset.step = String(step);
+  },
 
-  if (paso === 2) {
-    if (!b2) return alert("No hay texto para Bloque 2");
-    modoTextoExterno = true;
-    textoExternoModal = b2;
-    Modal.open("DEV2");
-      aplicarChecksDevUI(); // ✅ AQUI
-    crearListaVisualFuentes();
-    // fondo plano default blanco
-    const picker = document.getElementById("colorFondoPlano");
-    if (picker) picker.value = Modal.state.dev.fondoPlano || "#ffffff";
-    aplicarFondoPlanoDesdePicker();
-    actualizarPreview();
-    return;
-  }
-
-  if (paso === 3) {
-    // abrir final
-    modoTextoExterno = false;
-    textoExternoModal = "";
-    Modal.open("DEV3");
-      aplicarChecksDevUI(); // ✅ AQUI
-    // arma el canvas combinado
-    dev_armarFinal().then(() => Modal.applyUI());
-  }
+  // ✅ rellena previews simple (por ahora texto plano)
+  renderStep1() {
+    const box = document.getElementById("previewDevPaso1");
+    if (box) box.textContent = this.state.bloque1 || "";
+  },
+  renderStep2() {
+    const box = document.getElementById("previewDevPaso2");
+    if (box) box.textContent = this.state.bloque2 || "";
+  },
+  renderStep3() {
+    const box = document.getElementById("previewDevPaso3");
+    if (box) box.textContent = (this.state.bloque1 + "\n\n" + this.state.bloque2).trim();
+  },
 };
 
+// ✅ para el botón X del modal
+window.cerrarModalDevocionales = () => DevModal.close();
+
+// =========================
+// ✅ NAV DEVOCIONALES: botones Anterior/Siguiente
+// =========================
+document.addEventListener("DOMContentLoaded", () => {
+  const sig1 = document.getElementById("devBtnSig1");
+  const ant2 = document.getElementById("devBtnAnt2");
+  const sig2 = document.getElementById("devBtnSig2");
+  const ant3 = document.getElementById("devBtnAnt3");
+
+  if (sig1) sig1.addEventListener("click", () => {
+    DevModal.renderStep2();
+    DevModal.setStep(2);
+  });
+
+  if (ant2) ant2.addEventListener("click", () => {
+    DevModal.renderStep1();
+    DevModal.setStep(1);
+  });
+
+  if (sig2) sig2.addEventListener("click", () => {
+    DevModal.renderStep3();
+    DevModal.setStep(3);
+  });
+
+  if (ant3) ant3.addEventListener("click", () => {
+    DevModal.renderStep2();
+    DevModal.setStep(2);
+  });
+});
+
+
+// =========================
+// ✅ AUDIO: abrir modalAudio y pasarle el texto completo
+// =========================
+function abrirModalAudioDev() {
+  const m = document.getElementById("modalAudio");
+  if (!m) return alert("No existe #modalAudio en el HTML");
+
+  // texto para audio = el texto completo OCR (editable luego)
+  const ta = document.getElementById("textoAudio");
+  if (ta) ta.value = DevModal.state.textoCompleto || "";
+
+  m.classList.add("abierto");
+  m.setAttribute("aria-hidden", "false");
+}
+
+window.cerrarModalAudio = () => {
+  const m = document.getElementById("modalAudio");
+  if (!m) return;
+  m.classList.remove("abierto");
+  m.setAttribute("aria-hidden", "true");
+};
+
+document.addEventListener("DOMContentLoaded", () => {
+  const btnAudio = document.getElementById("devBtnAudio");
+  if (btnAudio) btnAudio.addEventListener("click", abrirModalAudioDev);
+});
 
