@@ -768,7 +768,7 @@ color: #000; /* 🔥 Modal SIEMPRE legible (no gris) */
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 5px;
   background: var(--ui-azul-claro);
   color: #000;
   font-weight: 800;
@@ -1061,6 +1061,8 @@ body.oscuro .subir-iglesia-btn:has(input:checked){
   background: var(--ui-azul-hover);
   color:#fff;
 }
+
+#modalPersonalizar .style-row{ margin:0; }
 
 #modalPersonalizar .style-row button.activo,
 #modalPersonalizar .fila-opciones button.activo,
@@ -1609,13 +1611,20 @@ body.oscuro #modalAudio textarea{
 #personalizarFondos::-webkit-scrollbar-thumb{ border-radius:999px; }
 
 /* Row A: Formato + Opacidad + Color fuente (TODO EN UNA FILA) */
-#rowA,
-#rowB{
+#rowA{
   display:flex;
   align-items:center;
   justify-content:center;
   gap:10px;
-  flex-wrap:wrap;
+  flex-wrap:wrap;  /* rowA puede envolver (está bien) */
+}
+
+#rowB{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;         /* 👈 antes 10 */
+  flex-wrap:nowrap;/* ✅ CLAVE: NO se parte en 2 filas */
 }
 
 /* Ajustes de controles */
@@ -1629,7 +1638,7 @@ body.oscuro #modalAudio textarea{
 .opacidad-slider{ width:120px; }
 .tamano-input{
   width:40px;
-  height:38px;
+  height:34px;
   text-align:center;
   border-radius:10px;
 }
