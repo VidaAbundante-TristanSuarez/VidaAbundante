@@ -539,7 +539,151 @@
   </div>
 </div>
 
-  
+<!-- ================= MODAL DEVOCIONALES (3 PASOS) 🚚================= -->
+<div id="modalDevocionales" class="modal-overlay" aria-hidden="true" data-step="1">
+  <div class="modal-card">
+
+    <!-- Header -->
+    <div style="padding:12px 14px; border-bottom:1px solid #ddd; display:flex; align-items:center; justify-content:space-between;">
+      <b>📅 Crear Devocional</b>
+      <button type="button" onclick="cerrarModalDevocionales()"
+        style="border:none; background:#eee; border-radius:999px; width:34px; height:34px; cursor:pointer;">✖</button>
+    </div>
+
+    <div style="padding:12px 14px; display:flex; flex-direction:column; gap:12px;">
+
+      <!-- ================= PASO 1 ================= -->
+      <section class="dev-step step-1">
+        <div class="dev-preview dev-preview-1">
+          <!-- ✅ JS va a meter el contenido acá -->
+          <div id="previewDevPaso1" class="dev-preview-inner"></div>
+        </div>
+
+        <!-- Galería de fondos (scroll horizontal) -->
+        <div id="galeriaFondosPaso1" class="dev-galeria-fondos">
+          <!-- ✅ JS mete miniaturas acá -->
+        </div>
+
+        <!-- Fila botones 1: Fuentes - Estilos - Tamaño - + -->
+        <div class="dev-row">
+          <div class="dev-font-box" style="position:relative;">
+            <button id="btnFuentesDev1" type="button" class="btn-mini">🔤 Fuentes</button>
+            <div id="listaFuentesDev1" class="lista-fuentes"></div>
+          </div>
+
+          <div class="style-row">
+            <button type="button" id="dev1Upper" class="btn-mini">Aa</button>
+            <button type="button" id="dev1Bold" class="btn-mini">B</button>
+            <button type="button" id="dev1Italic" class="btn-mini">I</button>
+            <button type="button" id="dev1Underline" class="btn-mini">U</button>
+          </div>
+
+          <button type="button" id="dev1Minus" class="btn-mini">−</button>
+          <input id="dev1Size" type="number" value="24" min="10" max="120" class="tamano-input">
+          <button type="button" id="dev1Plus" class="btn-mini">+</button>
+        </div>
+
+        <!-- Fila botones 2: Opacidad - Color fuente -->
+        <div class="dev-row">
+          <input id="dev1Opacidad" class="opacidad-slider" type="range" min="0" max="1" step="0.05" value="0.30">
+          <input id="dev1Color" class="color-input" type="color" value="#000000">
+        </div>
+
+        <!-- Fila final: Siguiente -->
+        <div class="dev-nav">
+          <span></span>
+          <button type="button" id="devBtnSig1" class="btn-primary">
+            <i class="fa-solid fa-circle-right"></i>
+          </button>
+        </div>
+      </section>
+
+      <!-- ================= PASO 2 ================= -->
+      <section class="dev-step step-2">
+        <div class="dev-preview dev-preview-2">
+          <div id="previewDevPaso2" class="dev-preview-inner"></div>
+        </div>
+
+        <!-- Fila botones 1: color fondo plano - opacidad - color fuente -->
+        <div class="dev-row">
+          <input id="dev2FondoPlano" type="color" value="#ffffff" class="color-input" title="Fondo plano">
+          <input id="dev2Opacidad" class="opacidad-slider" type="range" min="0" max="1" step="0.05" value="0.30">
+          <input id="dev2Color" class="color-input" type="color" value="#000000" title="Color fuente">
+        </div>
+
+        <!-- Fila botones 2: fuentes - estilos - tamaño - + -->
+        <div class="dev-row">
+          <div class="dev-font-box" style="position:relative;">
+            <button id="btnFuentesDev2" type="button" class="btn-mini">🔤 Fuentes</button>
+            <div id="listaFuentesDev2" class="lista-fuentes"></div>
+          </div>
+
+          <div class="style-row">
+            <button type="button" id="dev2Upper" class="btn-mini">Aa</button>
+            <button type="button" id="dev2Bold" class="btn-mini">B</button>
+            <button type="button" id="dev2Italic" class="btn-mini">I</button>
+            <button type="button" id="dev2Underline" class="btn-mini">U</button>
+          </div>
+
+          <button type="button" id="dev2Minus" class="btn-mini">−</button>
+          <input id="dev2Size" type="number" value="22" min="10" max="120" class="tamano-input">
+          <button type="button" id="dev2Plus" class="btn-mini">+</button>
+        </div>
+
+        <!-- Fila final: Anterior - Siguiente -->
+        <div class="dev-nav">
+          <button type="button" id="devBtnAnt2" class="btn-primary">
+            <i class="fa-solid fa-circle-left"></i>
+          </button>
+
+          <button type="button" id="devBtnSig2" class="btn-primary">
+            <i class="fa-solid fa-circle-right"></i>
+          </button>
+        </div>
+      </section>
+
+      <!-- ================= PASO 3 ================= -->
+      <section class="dev-step step-3">
+        <div class="dev-preview dev-preview-3">
+          <div id="previewDevPaso3" class="dev-preview-inner"></div>
+        </div>
+
+        <!-- Fila única de botones -->
+        <div class="fila-final dev-final">
+          <button type="button" id="devBtnAnt3" title="Anterior">
+            <i class="fa-solid fa-circle-left"></i>
+          </button>
+
+          <button type="button" id="devBtnAudio" title="Audio">
+            <i class="fa-solid fa-headphones"></i>
+          </button>
+
+          <button type="button" id="devBtnDescargar" title="Descargar">
+            <i class="fa-solid fa-download"></i>
+          </button>
+
+          <button type="button" id="devBtnCompartir" title="Compartir">
+            <i class="fa-solid fa-share-nodes"></i>
+          </button>
+
+          <!-- ✅ Subir a mi panel (tilde visual) -->
+          <label class="subir-iglesia-btn" id="lblSubirPanelDev" title="Subir a mi panel">
+            <input type="checkbox" id="checkSubirPanelDev" checked>
+            <i class="fa-solid fa-user"></i>
+          </label>
+        </div>
+
+        <div style="font-size:12px; opacity:.8; text-align:center; line-height:1.25;">
+          * Por defecto se sube a <b>iglesia-devocionales</b>. (En JS lo dejamos automático)
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+<!-- ================= FIN MODAL DEVOCIONALES ================= -->
+
+    
 <!-- ================= SCRIPT PRINCIPAL ================= -->
 <!-- ⚠️ biblia.js CONTROLA TODO -->
 <script type="module" src="biblia.js"></script>
@@ -547,6 +691,7 @@
   
 </body>
 </html>
+
 
 
 
