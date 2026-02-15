@@ -169,6 +169,23 @@ btnRecortar.style.opacity = "0.6";
   const btnOCR = $("btnDevOCR");
   const ta = $("devTexto");
 
+// ✅ Botón "Crear devocional": solo se habilita si hay texto
+const btnAbrirDev = document.getElementById("btnAbrirDevModal");
+
+function syncBtnCrearDevocional() {
+  if (!btnAbrirDev || !ta) return;
+  const hayTexto = (ta.value || "").trim().length > 0;
+
+  btnAbrirDev.disabled = !hayTexto;
+  btnAbrirDev.style.opacity = hayTexto ? "1" : "0.6";
+}
+
+// ✅ si la persona pega/edita texto a mano, también habilita
+ta?.addEventListener("input", syncBtnCrearDevocional);
+
+// estado inicial
+syncBtnCrearDevocional();
+  
   if (!input || !btnRecortar || !btnOCR || !ta) return;
 
   bindPointerCropEvents();
@@ -267,9 +284,12 @@ if (text) {
   document.getElementById("devTextoBox")?.classList.remove("hidden");
 
   ocrSetStatus("✅ OCR listo.");
+  syncBtnCrearDevocional();
+
 } else {
   ta.value = "";
   ocrSetStatus("⚠️ No se detectó texto. Probá con mejor luz y texto más grande.");
+  syncBtnCrearDevocional();
 }
 
   } catch (e) {
@@ -285,23 +305,39 @@ if (text) {
     // =========================
   // ✅ ABRIR MODAL DEVOCIONALES desde el botón "Crear devocional"
   // =========================
-  const btnAbrir = document.getElementById("btnAbrirDevModal");
-  if (btnAbrir) {
-    btnAbrir.addEventListener("click", () => {
-      const texto = (document.getElementById("devTexto")?.value || "").trim();
-      if (!texto) return alert("Primero necesitás texto (OCR o pegado).");
+const btnAbrir = document.getElementById("btnAbrirDevModal");
 
-      const [b1, b2] = partirEn2Bloques(texto);
+if (btnAbrir) {
+  btnAbrir.addEventListener("click", () => {
 
-      DevModal.state.textoCompleto = texto;
-      DevModal.state.bloque1 = b1 || "";
-      DevModal.state.bloque2 = b2 || "";
+    const texto = (document.getElementById("devTexto")?.value || "").trim();
+    if (!texto) {
+      alert("Primero necesitás texto (OCR o pegado).");
+      return;
+    }
 
-      // ✅ Render paso 1 y abrir
-      DevModal.renderStep1();
-      DevModal.open(1);
-    });
-  }
+    // 👉 Separar en bloques
+    const [b1, b2] = partirEn2Bloques(texto);
+
+    // 👉 Guardar en variables globales simples
+    window.__devBloque1 = b1 || "";
+    window.__devBloque2 = b2 || "";
+    window.__devTextoCompleto = texto;
+
+    // 👉 Cargar el bloque 1 en el preview
+    const preview = document.getElementById("previewDevPaso1");
+    if (preview) preview.textContent = window.__devBloque1;
+
+    // 👉 Abrir el modal en paso 1
+    const modal = document.getElementById("modalDevocionales");
+    if (modal) {
+      modal.dataset.step = "1";
+      modal.classList.add("abierto");
+      modal.setAttribute("aria-hidden", "false");
+    }
+
+  });
+}
 
   
 }); // ✅ CIERRA el document.addEventListener("DOMContentLoaded", () => { ... })
