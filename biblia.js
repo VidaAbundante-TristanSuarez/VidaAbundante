@@ -947,14 +947,14 @@ async function generarImagenFinal() {
   const canvasFinal = document.getElementById("canvasFinal");
   const modal = document.getElementById("modalPersonalizar");
 
-  if (!preview || !canvasFinal) {
-  return false;
-}
+  if (!preview || !canvasFinal) return false;
 
-if (modal && getComputedStyle(modal).display === "none") {
-  canvasFinal.width = 0; canvasFinal.height = 0;
-  return false;
-}
+  if (modal && getComputedStyle(modal).display === "none") {
+    canvasFinal.width = 0; 
+    canvasFinal.height = 0;
+    return false;
+  }
+
   // refrescar estilos
   actualizarPreview();
 
@@ -972,113 +972,73 @@ if (modal && getComputedStyle(modal).display === "none") {
   if (t1) t1.style.display = "block";
   if (t2) t2.style.display = "block";
 
-  let canvasTemp;
-
-try {
   const fondoUsable = fondoFinalBlobUrl || fondoFinal;
 
-  // ✅ scale rápido: PC=1, CELU=max 2 (no más)
-  const dpr = window.devicePixelRatio || 1;
-  const SCALE = (rect.width <= 480 && rect.height <= 480) ? 1 : Math.min(2, dpr);
+  try {
+    // ✅ scale rápido: PC=1, CELU=max 2 (no más)
+    const dpr = window.devicePixelRatio || 1;
+    const SCALE = (rect.width <= 480 && rect.height <= 480) ? 1 : Math.min(2, dpr);
 
-  // ✅ si hay fondo imagen, esperar decode (evita “pintadas raras”)
-  if (fondoUsable && typeof fondoUsable === "string" && /^blob:|^https?:/.test(fondoUsable)) {
-    await new Promise((resolve) => {
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.onload = () => resolve();
-      img.onerror = () => resolve();
-      img.src = fondoUsable;
+    // ✅ si hay fondo imagen, esperar decode (evita “pintadas raras”)
+    if (fondoUsable && typeof fondoUsable === "string" && /^blob:|^https?:/.test(fondoUsable)) {
+      await new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.onload = () => resolve();
+        img.onerror = () => resolve();
+        img.src = fondoUsable;
+      });
+    }
+
+    const canvasTemp = await html2canvas(preview, {
+      scale: SCALE,
+      useCORS: true,
+      allowTaint: false,
+      logging: false,
+      width: Math.round(rect.width),
+      height: Math.round(rect.height),
+      backgroundColor: fondoUsable ? null : "#ffffff"
     });
+
+    canvasFinal.width = canvasTemp.width;
+    canvasFinal.height = canvasTemp.height;
+
+    const ctx = canvasFinal.getContext("2d");
+    ctx.clearRect(0, 0, canvasFinal.width, canvasFinal.height);
+    ctx.drawImage(canvasTemp, 0, 0);
+
+  } catch (err) {
+    console.error("html2canvas falló:", err);
+    alert("No se pudo generar PNG. Probable problema de CORS con el fondo elegido.\nProbá con otro fondo o sin fondo.");
+    return false;
   }
 
-  canvasTemp = await html2canvas(preview, {
-    scale: SCALE,
-    useCORS: true,
-    allowTaint: false,
-    logging: false,
-    width: Math.round(rect.width),
-    height: Math.round(rect.height),
-    backgroundColor: fondoUsable ? null : "#ffffff"
-  });
+  // ✅ Subir SOLO si NO estamos capturando pasos devocional
+  if (!window.__devPasoCaptura) {
 
-} catch (err) {
-  console.error("html2canvas falló:", err);
-  alert("No se pudo generar PNG. Probable problema de CORS con el fondo elegido.\nProbá con otro fondo o sin fondo.");
-  return false;
-}
+    // ✅ Si estamos en DEV FINAL (paso 3), se maneja distinto
+    if (window.__devPaso === 3) {
+      await subirDevocionalFinal();
 
-  // ✅ scale rápido: PC=1, CELU=max 2 (no más)
-  const dpr = window.devicePixelRatio || 1;
-  const SCALE = (rect.width <= 480 && rect.height <= 480) ? 1 : Math.min(2, dpr); 
-  // si tu preview es 420x420, esto te deja SCALE=1 casi siempre
+    } else {
+      // ✅ Biblia normal: lo de siempre
+      if (typeof subirImagen !== "function") return true;
 
-  // ✅ si hay fondo imagen, esperar decode (evita “pintadas raras”)
-  if (fondoUsable && typeof fondoUsable === "string" && /^blob:|^https?:/.test(fondoUsable)) {
-    await new Promise((resolve) => {
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.onload = () => resolve();
-      img.onerror = () => resolve(); // no bloquea
-      img.src = fondoUsable;
-    });
-  }
+      const subirIglesia = !!document.getElementById("checkIglesia")?.checked;
 
-  canvasTemp = await html2canvas(preview, {
-    scale: SCALE,
-    useCORS: true,
-    allowTaint: false,
-    logging: false,
+      const tareas = [];
+      if (subirIglesia) tareas.push(subirImagen("iglesia"));
+      tareas.push(subirImagen("personal"));
 
-    // ✅ recorte exacto: menos laburo
-    width: Math.round(rect.width),
-    height: Math.round(rect.height),
-
-    // ✅ fondo transparente si hay fondo (para esquinas), blanco si no
-    backgroundColor: fondoUsable ? null : "#ffffff"
-  });
-
-} catch (err) {
-  console.error("html2canvas falló:", err);
-  alert("No se pudo generar PNG. Probable problema de CORS con el fondo elegido.\nProbá con otro fondo o sin fondo.");
-  return false;
-}
-
-  canvasFinal.width = canvasTemp.width;
-  canvasFinal.height = canvasTemp.height;
-
-  const ctx = canvasFinal.getContext("2d");
-  ctx.clearRect(0, 0, canvasFinal.width, canvasFinal.height);
-  ctx.drawImage(canvasTemp, 0, 0);
-
-// ✅ Subir SOLO si NO estamos capturando pasos devocional
-if (!window.__devPasoCaptura) {
-
-  // ✅ Si estamos en DEV FINAL (paso 3), se maneja distinto
-  if (window.__devPaso === 3) {
-    // acá va la subida especial del devocional final
-    await subirDevocionalFinal();
-
-  } else {
-    // ✅ Biblia normal: lo de siempre
-    if (typeof subirImagen !== "function") return true;
-
-    const subirIglesia = !!document.getElementById("checkIglesia")?.checked;
-
-    const tareas = [];
-    if (subirIglesia) tareas.push(subirImagen("iglesia"));
-    tareas.push(subirImagen("personal"));
-
-    const resultados = await Promise.allSettled(tareas);
-    const fallos = resultados.filter(r => r.status === "rejected");
-    if (fallos.length) {
-      console.warn("⚠️ Subida falló:", fallos);
-      mostrarToast("⚠️ Se descargó la imagen, pero no se pudo subir.");
+      const resultados = await Promise.allSettled(tareas);
+      const fallos = resultados.filter(r => r.status === "rejected");
+      if (fallos.length) {
+        console.warn("⚠️ Subida falló:", fallos);
+        mostrarToast("⚠️ Se descargó la imagen, pero no se pudo subir.");
+      }
     }
   }
-}
 
-  
   return true;
 }
 
