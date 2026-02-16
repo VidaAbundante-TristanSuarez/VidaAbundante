@@ -1792,15 +1792,18 @@ body.oscuro .dev-galeria-fondos{
   font-weight: 800;
   font-size: 14px;
 
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  display: block;         /* ✅ evita el “bajón” raro del input */
+  align-self: center;     /* ✅ lo centra dentro de tu rowB (flex) */
+  vertical-align: middle; /* ✅ por si la fila no es flex en algún lado */
+
 }
 
 /* el num centrado */
 #modalPersonalizar #personalizarTamaño{
   text-align: center;
   padding: 0;               /* que no agrande raro */
+  font-weight: 400;
+
 }
 
 /* ✅ sacar flechitas del number */
@@ -1814,6 +1817,9 @@ body.oscuro .dev-galeria-fondos{
 #modalPersonalizar #personalizarColor{
   padding: 0;               /* el swatch necesita 0 */
   cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+
 }
 
 /* el “swatch” (lo que muestra el color) ocupa todo y respeta forma */
