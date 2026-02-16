@@ -2458,11 +2458,11 @@ window.escucharPreviaAudio = async () => {
     if (estado) estado.textContent = "🎧 Generando previa real…";
 
     // 👇 pedimos el MP3 real (tu misma voz/SSML) en base64
-    const r = await fetch(AUDIO_WEBAPP_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ texto, modo: "raw" })
-    });
+   const r = await fetch(AUDIO_WEBAPP_URL, {
+  method: "POST",
+  headers: { "Content-Type": "text/plain;charset=utf-8" }, // ✅ evita preflight
+  body: JSON.stringify({ texto, modo: "raw" })
+});
 
     const data = await r.json().catch(() => ({}));
     if (!r.ok || !data.audioBase64) {
@@ -2560,7 +2560,7 @@ window.subirAudioAGithub = async ({ texto, subirIglesia, ts }) => {
 
   const r = await fetch(AUDIO_WEBAPP_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" }, // ✅ importante
+    headers: { "Content-Type": "text/plain;charset=utf-8" }
     body: JSON.stringify({
       modo: "github",
       texto,
@@ -2589,7 +2589,7 @@ async function subirAudioAFirebase({ texto, subirIglesia }) {
   // 1) pedir audio base64 al Apps Script (modo RAW)
   const r = await fetch(AUDIO_WEBAPP_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "text/plain;charset=utf-8" }
     body: JSON.stringify({ texto, modo: "raw" })
   });
 
