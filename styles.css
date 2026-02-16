@@ -1781,6 +1781,7 @@ body.oscuro .dev-galeria-fondos{
 #modalPersonalizar #personalizarColor{
   height: var(--alto-ui);
   width: var(--ancho-control);
+  margin: 0;
 
   border-radius: 10px;
   border: none;
