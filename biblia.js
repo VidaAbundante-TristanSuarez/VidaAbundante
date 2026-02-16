@@ -2460,42 +2460,48 @@ window.escucharPreviaAudio = async () => {
     return;
   }
 
+  // ✅ limpiar ANTES del fetch (acá sí va)
+  const textoLimpio = texto
+    .replace(/[•▪●■□◆◇▶►◼◻]/g, "")  // saca viñetas/cuadrados
+    .replace(/\s{2,}/g, " ")
+    .trim();
+
   try {
     window.__audioBase64 = null; // limpia audio anterior
     if (estado) estado.textContent = "🎧 Generando previa real…";
 
-  const r = await fetch(AUDIO_WEBAPP_URL, {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ texto })
-});
+    const r = await fetch(AUDIO_WEBAPP_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ texto: textoLimpio })
+    });
 
-const data = await r.json().catch(() => ({}));
+    const data = await r.json().catch(() => ({}));
 
-if (!r.ok) {
-  throw new Error(data?.error || "Error HTTP " + r.status);
-}
+    if (!r.ok) {
+      throw new Error(data?.error || "Error HTTP " + r.status);
+    }
 
-if (!data.audioBase64) {
-  throw new Error("No devolvió audioBase64");
-}
+    if (!data.audioBase64) {
+      throw new Error("No devolvió audioBase64");
+    }
 
-window.__audioBase64 = data.audioBase64;
+    window.__audioBase64 = data.audioBase64;
 
-const bytes = Uint8Array.from(atob(data.audioBase64), c => c.charCodeAt(0));
-const blob = new Blob([bytes], { type: "audio/mpeg" });
-const localUrl = URL.createObjectURL(blob);
+    const bytes = Uint8Array.from(atob(data.audioBase64), c => c.charCodeAt(0));
+    const blob = new Blob([bytes], { type: "audio/mpeg" });
+    const localUrl = URL.createObjectURL(blob);
 
-audio.src = localUrl;
-audio.load();
-await audio.play();
+    audio.src = localUrl;
+    audio.load();
+    await audio.play();
 
-if (estado) estado.textContent = "✅ Previa reproduciendo.";
+    if (estado) estado.textContent = "✅ Previa reproduciendo.";
   } catch (e) {
     console.error(e);
     if (estado) estado.textContent = "❌ No se pudo generar la previa real.";
   }
-}; // ✅ cierra escucha previa
+};
 
 
 // ✅ Correcto: NO sube nada. Solo “guarda” el audio para usarlo al finalizar imagen.
