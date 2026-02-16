@@ -1434,21 +1434,6 @@ body.modo-marcador #bannerModoMarcador { display: block; }
   color:#fff;
 }
 
-/* ================= MODALES: ABRIR/CERRAR PROLIGO ================= */
-#loginModal,
-#modalPersonalizar,
-#modalMarcadores,
-#modalCompartirMarcador {
-  display: none;
-}
-
-#loginModal.abierto,
-#modalPersonalizar.abierto,
-#modalMarcadores.abierto,
-#modalCompartirMarcador.abierto {
-  display: flex;
-}
-
 /* ================= DEVOCIONALES: SCROLL LOCAL (SOLO CELU) ================= */
 @media (max-width: 600px){
   /* el contenedor de devocionales ocupa pantalla real */
@@ -1541,9 +1526,6 @@ body.oscuro #modalAudio textarea{
 /* =========================================================
    ✅ MODAL B (Devocionales)
    ========================================================= */
-#modalDevocionales.modal-overlay { display:none; }
-#modalDevocionales.modal-overlay.abierto { display:flex; }
-
 #previewDevocional{
   width: 100%;
   max-width: 420px;
