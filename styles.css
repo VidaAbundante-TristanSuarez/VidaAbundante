@@ -894,27 +894,6 @@ body.oscuro #modalPersonalizar .cerrar-modal{
   margin: 0;
 }
 
-/* ✅ Color picker: tamaño definitivo */
-#personalizarColor {
-  width: 66px;
-  height: 34px;
-  border-radius: 8px;
-  border: none;
-  padding: 0;
-  margin: 0;
-  background: transparent;
-  cursor: pointer;
-}
-
-/* ✅ (Opcional pero recomendado) que el “swatch” respete la forma */
-#personalizarColor::-webkit-color-swatch-wrapper {
-  padding: 0;
-}
-#personalizarColor::-webkit-color-swatch {
-  border: none;
-  border-radius: 8px;
-}
-
 /* ================= ALINEAR CONTROLES CON PREVIEW ================= */
 
 .fila-opciones,
@@ -1616,22 +1595,6 @@ body.oscuro #modalAudio textarea{
 }
 
 .opacidad-slider{ width:120px; }
-.tamano-input{
-  width:34px;
-  height:34px;
-  text-align:center;
-  border-radius:10px;
-}
-
-/* Color picker más prolijo */
-.color-input{
-  width:34px;
-  height:34px;
-  border:none;
-  background:transparent;
-  padding:0;
-  cursor:pointer;
-}
 
 /* Fila final: botones iguales y centrados */
 #rowFinal{
@@ -1641,6 +1604,7 @@ body.oscuro #modalAudio textarea{
   gap:10px;
   flex-wrap:wrap;
 }
+
 #rowFinal button,
 #rowFinal .subir-iglesia-btn{
   height:38px;
@@ -1798,6 +1762,74 @@ body.oscuro .dev-galeria-fondos{
   justify-content:center;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+/* =========================================================
+   ✅ CONTROLES (Tamaño + Color) igual alto que botones estilo
+   + 0,5 cm más anchos (≈ 19px)
+   ========================================================= */
+
+:root{
+  --alto-ui: 38px;           /* igual que tus botones del modal */
+  --extra-ancho: 19px;       /* 0,5 cm aprox */
+  --ancho-base-btn: 38px;    /* min-width de tus botones */
+  --ancho-control: calc(var(--ancho-base-btn) + var(--extra-ancho));
+}
+
+/* El input numérico y el color picker */
+#modalPersonalizar #personalizarTamaño,
+#modalPersonalizar #personalizarColor{
+  height: var(--alto-ui);
+  width: var(--ancho-control);
+
+  border-radius: 10px;
+  border: none;
+
+  background: var(--ui-azul-claro);
+  color: #000;
+
+  padding: 0 10px;
+  font-weight: 800;
+  font-size: 14px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* el num centrado */
+#modalPersonalizar #personalizarTamaño{
+  text-align: center;
+  padding: 0;               /* que no agrande raro */
+}
+
+/* ✅ sacar flechitas del number */
+#modalPersonalizar #personalizarTamaño::-webkit-inner-spin-button,
+#modalPersonalizar #personalizarTamaño::-webkit-outer-spin-button{
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* ✅ Color picker: que se vea “botón” prolijo */
+#modalPersonalizar #personalizarColor{
+  padding: 0;               /* el swatch necesita 0 */
+  cursor: pointer;
+}
+
+/* el “swatch” (lo que muestra el color) ocupa todo y respeta forma */
+#modalPersonalizar #personalizarColor::-webkit-color-swatch-wrapper{
+  padding: 0;
+}
+#modalPersonalizar #personalizarColor::-webkit-color-swatch{
+  border: none;
+  border-radius: 10px;
+}
+
+/* modo oscuro: mantener legible */
+body.oscuro #modalPersonalizar #personalizarTamaño,
+body.oscuro #modalPersonalizar #personalizarColor{
+  background: #d1eeff;
+  color: #000;
 }
 
 
