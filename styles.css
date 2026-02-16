@@ -1391,9 +1391,7 @@ body.modo-marcador #bannerModoMarcador { display: block; }
 #modalMarcadores{
   z-index: 3000;
 }
-#modalMarcadores *{
-  pointer-events: auto;
-}
+
 
 /* ✅ Mi Panel > Marcadores: barra en 1 sola línea */
 .panel-marcadores-bar{
