@@ -2481,74 +2481,33 @@ window.escucharPreviaAudio = async () => {
 };
 
 
-// ✅ Subir audio REAL (vía tu AppSheet/GitHub)
-// IMPORTANTE: esto NO inventa tu sistema. Solo llama a una función si ya existe.
+// ✅ Correcto: NO sube nada. Solo “guarda” el audio para usarlo al finalizar imagen.
 window.finalizarYSubirAudio = async () => {
   const estado = document.getElementById("audioEstado");
   const ta = document.getElementById("textoAudio");
-  const chk = document.getElementById("checkIglesiaAudio");
 
   if (!ta) return;
   const texto = (ta.value || "").trim();
   if (!texto) {
-    if (estado) estado.textContent = "⚠️ Pegá o escribí el texto antes de subir.";
+    if (estado) estado.textContent = "⚠️ Pegá o escribí el texto antes de confirmar.";
     return;
   }
 
-if (!window.__audioBase64) {
-  if (estado) estado.textContent = "⚠️ Primero generá la previa real.";
-  return;
-}
-  
-  const subirIglesia = !!chk?.checked;
-
-  const esDevocional = (window.__devPaso === 3); // solo el final
-
-if (!esDevocional) {
-  // ✅ Biblia: NO GitHub. Acá llamamos a Firebase (te dejo función abajo)
-  if (estado) estado.textContent = "⬆ Subiendo audio a Firebase…";
-  const url = await subirAudioAFirebase({ texto, subirIglesia });
-  const audio = document.getElementById("audioPreview");
-  if (audio && url) audio.src = url;
-  if (estado) estado.textContent = url ? "✅ Audio subido (Firebase)." : "✅ Subido.";
-  return;
-}
-
-  // 1) Si vos ya tenés una función global (por ejemplo, la traés desde otro JS),
-  //    la usamos tal cual:
-  //    window.subirAudioAGithub({ texto, subirIglesia, ... }) => debería devolver {url}
-  if (typeof window.subirAudioAGithub === "function") {
-    try {
-      if (estado) estado.textContent = "⬆ Subiendo audio…";
-      const resp = await window.subirAudioAGithub({
-        texto,
-        subirIglesia,
-        ts: Date.now()
-      });
-
-      const url = resp?.url || resp?.audioUrl || "";
-      __audioLastUrl = url || "";
-      __audioLastTs = Date.now();
-
-      // poner en el player si hay url
-      const audio = document.getElementById("audioPreview");
-      if (audio && url) audio.src = url;
-
-      if (estado) estado.textContent = url ? "✅ Audio subido y listo para escuchar." : "✅ Subido (sin URL devuelta).";
-      return;
-    } catch (e) {
-      console.error(e);
-      if (estado) estado.textContent = "❌ No se pudo subir el audio (falló tu función).";
-      return;
-    }
+  if (!window.__audioBase64) {
+    if (estado) estado.textContent = "⚠️ Primero generá la previa (para tener el audio real).";
+    return;
   }
 
-  // 2) Si NO existe tu función todavía, dejamos un mensaje claro:
-  if (estado) estado.textContent =
-    "⚠️ Falta conectar tu subida real (AppSheet/GitHub). " +
-    "Decime el nombre EXACTO de tu función o pegá ese bloque acá y lo conecto sin romper nada.";
-  alert("Todavía no está conectado el bloque real de subida (AppSheet/GitHub).");
+  // ✅ Guardamos “pendiente” para que el modal de imagen lo suba cuando finalices ahí
+  window.__pendingAudio = {
+    texto,
+    audioBase64: window.__audioBase64,
+    ts: Date.now()
+  };
+
+  if (estado) estado.textContent = "✅ Audio confirmado. Volvé a la imagen para finalizar.";
 };
+
 
 async function uiBloqueo(btn, fn) {
   if (!btn) return fn();
