@@ -2560,7 +2560,7 @@ window.subirAudioAGithub = async ({ texto, subirIglesia, ts }) => {
 
   const r = await fetch(AUDIO_WEBAPP_URL, {
     method: "POST",
-    headers: { "Content-Type": "text/plain;charset=utf-8" }
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
     body: JSON.stringify({
       modo: "github",
       texto,
