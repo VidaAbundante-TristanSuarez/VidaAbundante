@@ -1617,7 +1617,7 @@ body.oscuro #modalAudio textarea{
 
 .opacidad-slider{ width:120px; }
 .tamano-input{
-  width:40px;
+  width:34px;
   height:34px;
   text-align:center;
   border-radius:10px;
@@ -1625,8 +1625,8 @@ body.oscuro #modalAudio textarea{
 
 /* Color picker más prolijo */
 .color-input{
-  gap: 8px;
-  margin: 8px 0;
+  width:34px;
+  height:34px;
   border:none;
   background:transparent;
   padding:0;
