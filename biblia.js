@@ -974,27 +974,47 @@ if (modal && getComputedStyle(modal).display === "none") {
 
   let canvasTemp;
   
-// ✅ esperar a que el navegador “pinte” stroke/shadow y fondo
-await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-await new Promise(r => setTimeout(r, 120));
-
 try {
   const fondoUsable = fondoFinalBlobUrl || fondoFinal;
 
+  try {
+  const fondoUsable = fondoFinalBlobUrl || fondoFinal;
+
+  // ✅ scale rápido: PC=1, CELU=max 2 (no más)
+  const dpr = window.devicePixelRatio || 1;
+  const SCALE = (rect.width <= 480 && rect.height <= 480) ? 1 : Math.min(2, dpr); 
+  // si tu preview es 420x420, esto te deja SCALE=1 casi siempre
+
+  // ✅ si hay fondo imagen, esperar decode (evita “pintadas raras”)
+  if (fondoUsable && typeof fondoUsable === "string" && /^blob:|^https?:/.test(fondoUsable)) {
+    await new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => resolve();
+      img.onerror = () => resolve(); // no bloquea
+      img.src = fondoUsable;
+    });
+  }
+
   canvasTemp = await html2canvas(preview, {
-    scale: Math.max(2, window.devicePixelRatio || 2),
+    scale: SCALE,
     useCORS: true,
     allowTaint: false,
-     // ✅ Si hay fondo, TRANSPARENTE (evita esquinas blancas con border-radius)
-  // ✅ Si no hay fondo, BLANCO (evita fondo negro)
+    logging: false,
+
+    // ✅ recorte exacto: menos laburo
+    width: Math.round(rect.width),
+    height: Math.round(rect.height),
+
+    // ✅ fondo transparente si hay fondo (para esquinas), blanco si no
     backgroundColor: fondoUsable ? null : "#ffffff"
   });
 
-    } catch (err) {
-    console.error("html2canvas falló:", err);
-    alert("No se pudo generar PNG. Probable problema de CORS con el fondo elegido.\nProbá con otro fondo o sin fondo.");
-    return false;
-  }
+} catch (err) {
+  console.error("html2canvas falló:", err);
+  alert("No se pudo generar PNG. Probable problema de CORS con el fondo elegido.\nProbá con otro fondo o sin fondo.");
+  return false;
+}
 
   canvasFinal.width = canvasTemp.width;
   canvasFinal.height = canvasTemp.height;
