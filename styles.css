@@ -1645,8 +1645,8 @@ body.oscuro #modalAudio textarea{
 
 /* Color picker más prolijo */
 .color-input{
-  width:42px;
-  height:36px;
+  width:36px;
+  height:40px;
   border:none;
   background:transparent;
   padding:0;
