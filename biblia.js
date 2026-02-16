@@ -1468,7 +1468,7 @@ window.abrirMarcadores = () => {
   lista.style.display = "block";
 
   renderListaMarcadores();
-  modal.style.display = "flex";
+  modal.classList.add("abierto");
   modal.setAttribute("aria-hidden", "false");
 };
 
@@ -1476,8 +1476,9 @@ window.abrirMarcadores = () => {
 window.cerrarMarcadores = () => {
   const modal = document.getElementById("modalMarcadores");
   if (modal) {
-    modal.style.display = "none";
+    modal.classList.remove("abierto");
     modal.setAttribute("aria-hidden", "true");
+
   }
   refrescarBotonGuardarMarcador();
 };
