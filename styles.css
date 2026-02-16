@@ -729,8 +729,8 @@ color: #000; /* 🔥 Modal SIEMPRE legible (no gris) */
   color: #000;
 }
 
-#modalPersonalizar input,
-#modalPersonalizar select {
+#modalPersonalizar label input,
+#modalPersonalizar label select {
   margin-top: 5px;
   padding: 6px 8px;
   border-radius: 6px;
