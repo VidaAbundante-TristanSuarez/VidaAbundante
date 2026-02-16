@@ -2589,7 +2589,7 @@ async function subirAudioAFirebase({ texto, subirIglesia }) {
   // 1) pedir audio base64 al Apps Script (modo RAW)
   const r = await fetch(AUDIO_WEBAPP_URL, {
     method: "POST",
-    headers: { "Content-Type": "text/plain;charset=utf-8" }
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
     body: JSON.stringify({ texto, modo: "raw" })
   });
 
