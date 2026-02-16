@@ -514,26 +514,12 @@
       </div>
 
       <!-- ✅ Botones finales: mismos que imagen -->
-      <div class="fila-final" style="margin-top:6px;">
-
-        <button type="button" onclick="descargarImagenFinal()" title="Descargar imagen">
-          <i class="fa-solid fa-download"></i>
-        </button>
-
-        <button type="button" onclick="compartirImagenFinal()" title="Compartir imagen">
-          <i class="fa-solid fa-share-nodes"></i>
-        </button>
-
-        <button type="button" onclick="finalizarEdicion()" title="Finalizar">
-          <i class="fa-solid fa-circle-check"></i>
-        </button>
-
-        <label class="subir-iglesia-btn" title="Subir a Iglesia">
-          <input type="checkbox" id="checkIglesiaAudio" checked>
-          <i class="fa-solid fa-church"></i>
-        </label>
-
-      </div>
+<button type="button" class="btn-primary"
+  onclick="finalizarYSubirAudio(); cerrarModalAudio();"
+  title="Correcto">
+  <i class="fa-solid fa-circle-check"></i>
+  <span>Correcto</span>
+</button>
 
     </div>
   </div>
@@ -691,6 +677,7 @@
   
 </body>
 </html>
+
 
 
 
