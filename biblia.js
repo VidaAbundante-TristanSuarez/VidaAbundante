@@ -609,19 +609,26 @@ function colorOutlineDesdeBase(color) {
 }
 
 // ================= 🎀 FUENTES  =======================
-// 🔗 Listeners de personalización 
-["personalizarOpacidad", "personalizarTamaño", "personalizarColor"].forEach(id => {
-  const el = document.getElementById(id);
-  if (!el) return;
+// 🔗 Listeners de personalización (✅ se enganchan cuando el DOM ya existe)
+function initPersonalizarListeners() {
+  ["personalizarOpacidad", "personalizarTamaño", "personalizarColor"].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) {
+      console.warn("⚠️ No existe:", id);
+      return;
+    }
 
-  const handler = () => {
-    if (id === "personalizarTamaño") userSetFontSize = true; // ✅ manual SOLO si tocan tamaño
-    actualizarPreview();
-  };
+    const handler = () => {
+      if (id === "personalizarTamaño") userSetFontSize = true; // manual si tocan tamaño
+      actualizarPreview();
+    };
 
-  el.addEventListener("input", handler);
-  el.addEventListener("change", handler);
-});
+    el.addEventListener("input", handler);
+    el.addEventListener("change", handler);
+  });
+}
+
+document.addEventListener("DOMContentLoaded", initPersonalizarListeners);
 
 // ================= 🎀 LISTA VISUAL DE FUENTES =================
 const fuentesGoogle = [
