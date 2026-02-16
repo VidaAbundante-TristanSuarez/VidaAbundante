@@ -2447,7 +2447,7 @@ window.restaurarTextoAudio = () => {
   ta.value = __audioTextoOriginal || "";
 };
 
-// ✅ Escucha previa: usa la voz del dispositivo (NO genera archivo)
+// ✅ previa real llama a Cloud Function y reproduce MP3
 window.escucharPreviaAudio = async () => {
   const ta = document.getElementById("textoAudio");
   const estado = document.getElementById("audioEstado");
