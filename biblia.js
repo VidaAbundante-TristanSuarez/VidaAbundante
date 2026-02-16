@@ -1173,12 +1173,11 @@ function resetModalPersonalizar() {
   document.getElementById("personalizarOpacidad").value = 0.35;
   fuenteActual = "Arial";
 
-  const colorInput = document.getElementById("personalizarColor");
-  if (colorInput) {
-    colorInput.value = document.body.classList.contains("oscuro")
-      ? "#ffffff"
-      : "#000000";
-  }
+ const colorInput = document.getElementById("personalizarColor");
+ if (colorInput) {
+ colorInput.value = "#000000"; // ✅ siempre negro por defecto
+}
+
 
   const preview = document.getElementById("previewImagen");
   if (preview) {
