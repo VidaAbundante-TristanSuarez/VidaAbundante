@@ -2476,28 +2476,33 @@ window.escucharPreviaAudio = async () => {
     window.__audioBase64 = null; // limpia audio anterior
     if (estado) estado.textContent = "🎧 Generando previa real…";
 
-    // 👇 pedimos el MP3 real (tu misma voz/SSML) en base64
-   const r = await fetch(AUDIO_WEBAPP_URL, {
+  const r = await fetch(AUDIO_WEBAPP_URL, {
   method: "POST",
-  headers: { "Content-Type": "text/plain;charset=utf-8" }, // ✅ evita preflight
-  body: JSON.stringify({ texto, modo: "raw" })
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ texto })
 });
 
-    const data = await r.json().catch(() => ({}));
-    if (!r.ok || !data.audioBase64) {
-      throw new Error(data?.error || "No devolvió audioBase64");
-    }
+const data = await r.json().catch(() => ({}));
 
-    window.__audioBase64 = data.audioBase64; // ✅ guardo el audio generado
-    
-    // base64 -> blob -> url local
-    const bytes = Uint8Array.from(atob(data.audioBase64), c => c.charCodeAt(0));
-    const blob = new Blob([bytes], { type: "audio/mpeg" });
-    const localUrl = URL.createObjectURL(blob);
+if (!r.ok) {
+  throw new Error(data?.error || "Error HTTP " + r.status);
+}
 
-    audio.src = localUrl;
-    audio.load();
-    await audio.play();
+if (!data.audioBase64) {
+  throw new Error("No devolvió audioBase64");
+}
+
+window.__audioBase64 = data.audioBase64;
+
+const bytes = Uint8Array.from(atob(data.audioBase64), c => c.charCodeAt(0));
+const blob = new Blob([bytes], { type: "audio/mpeg" });
+const localUrl = URL.createObjectURL(blob);
+
+audio.src = localUrl;
+audio.load();
+await audio.play();
+
+if (estado) estado.textContent = "✅ Previa reproduciendo.";
 
     if (estado) estado.textContent = "✅ Previa real reproduciendo (misma voz que el MP3).";
   } catch (e) {
@@ -2568,7 +2573,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // ================= mas de AUDIOS 😆 =================
 // ✅ URL del Web App de Apps Script (Deploy -> Web app)
-const AUDIO_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbwDgVe2-aMdEEoqEF0ZFGnQYWArTFjU1TPoGR4WytbYitz6q3CkAtjmz0HobAcqJbs9Uw/exec";
+const AUDIO_WEBAPP_URL = "https://us-central1-vidaabundante-f118a.cloudfunctions.net/ttsAudio";
 
 window.subirAudioAGithub = async ({ texto, subirIglesia, ts }) => {
 
