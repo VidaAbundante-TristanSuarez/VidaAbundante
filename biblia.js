@@ -973,12 +973,40 @@ if (modal && getComputedStyle(modal).display === "none") {
   if (t2) t2.style.display = "block";
 
   let canvasTemp;
-  
+
 try {
   const fondoUsable = fondoFinalBlobUrl || fondoFinal;
 
-  try {
-  const fondoUsable = fondoFinalBlobUrl || fondoFinal;
+  // ✅ scale rápido: PC=1, CELU=max 2 (no más)
+  const dpr = window.devicePixelRatio || 1;
+  const SCALE = (rect.width <= 480 && rect.height <= 480) ? 1 : Math.min(2, dpr);
+
+  // ✅ si hay fondo imagen, esperar decode (evita “pintadas raras”)
+  if (fondoUsable && typeof fondoUsable === "string" && /^blob:|^https?:/.test(fondoUsable)) {
+    await new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => resolve();
+      img.onerror = () => resolve();
+      img.src = fondoUsable;
+    });
+  }
+
+  canvasTemp = await html2canvas(preview, {
+    scale: SCALE,
+    useCORS: true,
+    allowTaint: false,
+    logging: false,
+    width: Math.round(rect.width),
+    height: Math.round(rect.height),
+    backgroundColor: fondoUsable ? null : "#ffffff"
+  });
+
+} catch (err) {
+  console.error("html2canvas falló:", err);
+  alert("No se pudo generar PNG. Probable problema de CORS con el fondo elegido.\nProbá con otro fondo o sin fondo.");
+  return false;
+}
 
   // ✅ scale rápido: PC=1, CELU=max 2 (no más)
   const dpr = window.devicePixelRatio || 1;
@@ -2503,8 +2531,6 @@ audio.load();
 await audio.play();
 
 if (estado) estado.textContent = "✅ Previa reproduciendo.";
-
-    if (estado) estado.textContent = "✅ Previa real reproduciendo (misma voz que el MP3).";
   } catch (e) {
     console.error(e);
     if (estado) estado.textContent = "❌ No se pudo generar la previa real.";
