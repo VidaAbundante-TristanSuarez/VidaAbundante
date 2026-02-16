@@ -1838,5 +1838,36 @@ body.oscuro #modalPersonalizar #personalizarColor{
   color: #000;
 }
 
+/* ✅ En la fila, todo con el MISMO alto real */
+#modalPersonalizar .style-row > *{
+  height: var(--alto-ui);
+  box-sizing: border-box;
+  margin: 0;            /* inputs a veces traen margen raro */
+}
+
+/* ✅ Botones: que el icono/texto queden perfectamente centrados */
+#modalPersonalizar .style-row button{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;       /* evita “bajón” por line-height */
+  padding: 0 10px;      /* o el padding que uses */
+}
+
+/* ✅ Number: que no “baje” por la línea interna */
+#modalPersonalizar #personalizarTamaño{
+  line-height: var(--alto-ui);
+}
+
+/* ✅ Color: Chrome necesita esto para que respete el alto */
+#modalPersonalizar #personalizarColor{
+  min-height: var(--alto-ui);
+}
+#modalPersonalizar #personalizarColor::-webkit-color-swatch-wrapper{
+  height: 100%;
+}
+#modalPersonalizar #personalizarColor::-webkit-color-swatch{
+  height: 100%;
+}
 
   </style>
