@@ -2484,7 +2484,7 @@ window.escucharPreviaAudio = async () => {
     console.error(e);
     if (estado) estado.textContent = "❌ No se pudo generar la previa real.";
   }
-};
+}; // ✅ cierra escucha previa
 
 
 // ✅ Correcto: NO sube nada. Solo “guarda” el audio para usarlo al finalizar imagen.
