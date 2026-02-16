@@ -200,23 +200,20 @@
 </button>
 <input id="devImg" type="file" accept="image/*" hidden>
 
- <button id="btnDevRecortar" type="button" class="btn-ghost">✂️ Recortar</button>
+   <button id="btnDevRecortar" type="button" class="btn-ghost">✂️ Recortar</button>
   <button id="btnDevOCR" type="button" class="btn-primary">🧠 OCR</button>
-</div>
 
-<!-- ✅ (oculto hasta que se cargue imagen) -->
-<div id="devTextoBox" class="hidden" style="margin-top:12px;">
-  <label style="display:block; font-weight:700; margin-bottom:6px;">Texto detectado (editable)</label>
-  <textarea id="devTexto" style="width:100%; height:220px; border-radius:12px; padding:12px;"></textarea>
+  <!-- ✅ (oculto hasta que se cargue imagen) -->
+  <div id="devTextoBox" class="hidden" style="margin-top:12px;">
+    <label style="display:block; font-weight:700; margin-bottom:6px;">Texto detectado (editable)</label>
+    <textarea id="devTexto" style="width:100%; height:220px; border-radius:12px; padding:12px;"></textarea>
 
-  <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;">
-    <button id="btnAbrirDevModal" class="btn-primary" type="button">
-  Crear devocional
-</button>
+    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;">
+      <button id="btnAbrirDevModal" class="btn-primary" type="button">Crear devocional</button>
+    </div>
   </div>
-</div>
 
-  </div>
+</div> <!-- ✅ AHORA SÍ cerrás #iglesia-devocionales -->
 
   <!-- ✅ SUB-SECCIÓN: ABC (OCULTA por default) -->
   <div id="iglesia-abc" style="display:none">
@@ -328,26 +325,23 @@
   </div> <!-- ✅ cierra boxControlesTexto -->
 
   </div>   <!-- ✅ ESTE te faltaba: cierra rowA -->
+    
     <!-- ================= GRUPO 2: FILA B ================= -->
-    <div id="rowB" class="fila-texto">
-      <div style="position:relative;">
-        <button id="btnFuentes" class="style-btn">🔤 Fuentes</button>
-        <div id="listaFuentes"></div>
-      </div>
+<div id="rowB" class="fila-texto">
+  <div style="position:relative;">
+    <button id="btnFuentes" class="style-btn">🔤 Fuentes</button>
+    <div id="listaFuentes"></div>
+  </div>
 
-      <div class="style-row" id="textStyles">
-        <button type="button" onclick="toggleUpper()" id="btnUpper">Aa</button>
-        <button type="button" onclick="toggleBold()" id="btnBold">B</button>
-        <button type="button" onclick="toggleItalic()" id="btnItalic">I</button>
-        <button type="button" onclick="toggleUnderline()" id="btnUnderline">U</button>
-      </div>
+  <div class="style-row" id="textStyles">
+    <button type="button" onclick="toggleUpper()" id="btnUpper">Aa</button>
+    <button type="button" onclick="toggleBold()" id="btnBold">B</button>
+    <button type="button" onclick="toggleItalic()" id="btnItalic">I</button>
+    <button type="button" onclick="toggleUnderline()" id="btnUnderline">U</button>
+  </div>
 
-      <!-- ✅ Color fuente en esta fila (como querías) -->
-      <input id="personalizarColor" class="color-input" type="color" value="#000000">
-      
-      </div>
-      
-    </div>
+  <input id="personalizarColor" class="color-input" type="color" value="#000000">
+</div> <!-- ✅ cierra rowB -->
 
     <!-- ================= GRUPO 3: FILA FINAL ================= -->
     <div id="rowFinal" class="fila-final">
@@ -697,6 +691,7 @@
   
 </body>
 </html>
+
 
 
 
