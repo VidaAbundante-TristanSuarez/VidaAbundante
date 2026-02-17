@@ -186,6 +186,16 @@
 
   <!-- ✅ SUB-SECCIÓN: DEVOCIONALES (VISIBLE por default) -->
   <div id="iglesia-devocionales">
+
+    <!-- ✅ (oculto hasta que se cargue imagen) -->
+  <div id="devTextoBox" class="hidden" style="margin-top:12px;">
+    <label style="display:block; font-weight:700; margin-bottom:6px;">Texto detectado (editable)</label>
+    <textarea id="devTexto" style="width:100%; height:220px; border-radius:12px; padding:12px;"></textarea>
+
+    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;">
+      <button id="btnAbrirDevModal" class="btn-primary" type="button">Crear devocional</button>
+    </div>
+  </div>
    
     <p id="estadoOCRDev" style="margin-top:10px; opacity:.8; font-size:13px;"></p>
 
@@ -202,16 +212,6 @@
 
    <button id="btnDevRecortar" type="button" class="btn-ghost">✂️ Recortar</button>
   <button id="btnDevOCR" type="button" class="btn-primary">🧠 OCR</button>
-
-  <!-- ✅ (oculto hasta que se cargue imagen) -->
-  <div id="devTextoBox" class="hidden" style="margin-top:12px;">
-    <label style="display:block; font-weight:700; margin-bottom:6px;">Texto detectado (editable)</label>
-    <textarea id="devTexto" style="width:100%; height:220px; border-radius:12px; padding:12px;"></textarea>
-
-    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;">
-      <button id="btnAbrirDevModal" class="btn-primary" type="button">Crear devocional</button>
-    </div>
-  </div>
 
 </div> <!-- ✅ AHORA SÍ cerrás #iglesia-devocionales -->
 
@@ -703,6 +703,7 @@
   
 </body>
 </html>
+
 
 
 
