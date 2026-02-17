@@ -938,11 +938,14 @@ if (window.__devPaso === 2 && devFondoPlano) {
   previewImagen.style.backgroundImage = "none";
   previewImagen.style.backgroundColor = devFondoPlano;
 }
+invalidarRenderFinal();
 
 }
 
 // ================= ⭐ CANVAS GENERA IMAGEN FINAL (FIX REAL) ============================
-async function generarImagenFinal() {
+async function generarImagenFinal(opts = {}) {
+  const { subir = true } = opts; // ✅ por defecto sube (Finalizar), pero Descargar/Compartir pasan false
+
   const preview = document.getElementById("previewImagen");
   const canvasFinal = document.getElementById("canvasFinal");
   const modal = document.getElementById("modalPersonalizar");
@@ -950,22 +953,19 @@ async function generarImagenFinal() {
   if (!preview || !canvasFinal) return false;
 
   if (modal && getComputedStyle(modal).display === "none") {
-    canvasFinal.width = 0; 
+    canvasFinal.width = 0;
     canvasFinal.height = 0;
     return false;
   }
 
-  // refrescar estilos
   actualizarPreview();
 
-  // asegurar layout real
   await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
   await document.fonts.ready;
 
   const rect = preview.getBoundingClientRect();
   if (rect.width < 10 || rect.height < 10) return false;
 
-  // asegurar texto visible
   preview.classList.remove("render-final");
   const t1 = document.getElementById("previewTexto");
   const t2 = document.getElementById("previewTextoBack");
@@ -975,11 +975,9 @@ async function generarImagenFinal() {
   const fondoUsable = fondoFinalBlobUrl || fondoFinal;
 
   try {
-    // ✅ scale rápido: PC=1, CELU=max 2 (no más)
     const dpr = window.devicePixelRatio || 1;
     const SCALE = (rect.width <= 480 && rect.height <= 480) ? 1 : Math.min(2, dpr);
 
-    // ✅ si hay fondo imagen, esperar decode (evita “pintadas raras”)
     if (fondoUsable && typeof fondoUsable === "string" && /^blob:|^https?:/.test(fondoUsable)) {
       await new Promise((resolve) => {
         const img = new Image();
@@ -1013,15 +1011,11 @@ async function generarImagenFinal() {
     return false;
   }
 
-  // ✅ Subir SOLO si NO estamos capturando pasos devocional
-  if (!window.__devPasoCaptura) {
-
-    // ✅ Si estamos en DEV FINAL (paso 3), se maneja distinto
+  // ✅ SOLO SUBE SI subir=true
+  if (subir && !window.__devPasoCaptura) {
     if (window.__devPaso === 3) {
       await subirDevocionalFinal();
-
     } else {
-      // ✅ Biblia normal: lo de siempre
       if (typeof subirImagen !== "function") return true;
 
       const subirIglesia = !!document.getElementById("checkIglesia")?.checked;
@@ -1115,7 +1109,7 @@ async function descargarImagenFinal() {
   if (!canvas) return;
 
   // ✅ SIEMPRE regenerar antes de descargar (evita “me baja el PNG viejo”)
-  const ok = await generarImagenFinal();
+ const ok = await generarImagenFinal({ subir: false });
   if (!ok) return;
 
   const descargarDesdeDataURL = () => {
@@ -1144,9 +1138,9 @@ async function descargarImagenFinal() {
 async function compartirImagenFinal() {
   const canvas = document.getElementById("canvasFinal");
   if (!canvas) return;
-// ✅ SIEMPRE regenerar antes de descargar (evita “me baja el PNG viejo”)
-const ok = await generarImagenFinal();
-if (!ok) return;
+
+  const ok = await asegurarCanvasFinal({ subir: false }); // ✅ NO SUBE
+  if (!ok) return;
 
   canvas.toBlob(async blob => {
     if (!blob) {
@@ -1156,11 +1150,18 @@ if (!ok) return;
 
     const file = new File([blob], "versiculo.png", { type: "image/png" });
 
-    if (navigator.share && navigator.canShare?.({ files: [file] })) {
-      await navigator.share({ files: [file], title: "Versículo" });
-    } else {
+    try {
+      if (navigator.share && navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: "Versículo" });
+      } else {
+        await descargarImagenFinal();
+        alert("Tu dispositivo/navegador no permite compartir directo. La imagen se descargó para compartirla manualmente.");
+      }
+    } catch (e) {
+      // ✅ si el usuario cancela, o el navegador falla, no hagas nada raro
+      console.warn("Share cancelado o falló:", e);
+      // opcional: mostrarToast("No se pudo compartir. Se descargó la imagen.");
       await descargarImagenFinal();
-      alert("Tu dispositivo no permite compartir directamente. La imagen se descargó para que la compartas manualmente.");
     }
   }, "image/png");
 }
@@ -1249,6 +1250,84 @@ function salirModoImagen() {
   refrescarBotonGuardarMarcador();
 
 }
+
+// ================= ⭐ CACHE de render del canvasFinal =================
+window.__canvasFinalCache = {
+  key: "",       // firma del estado renderizado
+  busy: false,   // evita renders dobles
+  lastOk: false
+};
+
+function getRenderKey() {
+  const preview = document.getElementById("previewImagen");
+  if (!preview) return "no-preview";
+
+  const rect = preview.getBoundingClientRect();
+  const fondoUsable = (window.fondoFinalBlobUrl || window.fondoFinal || "") + "";
+  const texto = (document.getElementById("previewTexto")?.textContent || "").trim();
+  const font = getComputedStyle(document.getElementById("previewTexto") || preview).fontFamily || "";
+  const color = getComputedStyle(document.getElementById("previewTexto") || preview).color || "";
+  const opBack = getComputedStyle(document.getElementById("previewTextoBack") || preview).opacity || "";
+
+  // ✅ incluimos tamaño porque si cambia el layout, hay que rerender
+  return [
+    Math.round(rect.width),
+    Math.round(rect.height),
+    fondoUsable,
+    texto,
+    font,
+    color,
+    opBack
+  ].join("|");
+}
+
+// Marca el cache como “sucio” cuando cambias algo (fondo, texto, etc.)
+function invalidarRenderFinal() {
+  window.__canvasFinalCache.key = "";
+  window.__canvasFinalCache.lastOk = false;
+}
+
+// Render SOLO si hace falta (si cambió algo)
+async function asegurarCanvasFinal({ subir = false } = {}) {
+  const modal = document.getElementById("modalPersonalizar");
+  const canvas = document.getElementById("canvasFinal");
+  if (!canvas) return false;
+
+  // si el modal no está visible, no renderices
+  if (modal && getComputedStyle(modal).display === "none") return false;
+
+  const nuevaKey = getRenderKey();
+
+  // ✅ si ya está renderizado con el mismo estado, no hacemos nada
+  if (
+    window.__canvasFinalCache.lastOk &&
+    window.__canvasFinalCache.key === nuevaKey &&
+    canvas.width > 10 && canvas.height > 10
+  ) {
+    // Si alguien pidió "subir" y el render ya está ok, solo subimos
+    if (subir) {
+      await generarImagenFinal({ subir: true }); // usa tu función existente (que ya separaste subir con opts)
+    }
+    return true;
+  }
+
+  // ✅ evitar renders simultáneos
+  if (window.__canvasFinalCache.busy) return false;
+  window.__canvasFinalCache.busy = true;
+
+  try {
+    // Genera canvas (y opcionalmente sube)
+    const ok = await asegurarCanvasFinal({ subir: false }); // ✅ NO SUBE y NO re-renderiza si ya está listo
+    if (ok) {
+      window.__canvasFinalCache.key = nuevaKey;
+      window.__canvasFinalCache.lastOk = true;
+    }
+    return ok;
+  } finally {
+    window.__canvasFinalCache.busy = false;
+  }
+}
+
 
 // ================= 🔺 WINDOW / UI ⭕ ===============================
 window.irA = (seccion) => {
@@ -1352,11 +1431,11 @@ window.finalizarEdicion = async () => {
 
   // Si querés: antes de finalizar, aseguramos que el PNG se pueda generar
   // (así no salís sin poder descargar). Si no querés esto, decime y lo saco.
-  const ok = await generarImagenFinal();
-  if (!ok) {
-    alert("No se pudo generar la imagen (PNG). Revisá consola (F12) para ver el error.");
-    return; // no dejamos finalizar si no hay PNG
-  }
+ const ok = await asegurarCanvasFinal({ subir: true });
+if (!ok) {
+  alert("No se pudo generar la imagen (PNG). Revisá consola (F12) para ver el error.");
+  return;
+}
 
   const terminar = confirm(
     "¿Terminar edición?\n\nOK = Terminar edición y volver a Biblia\nCancelar = Volver a edición"
