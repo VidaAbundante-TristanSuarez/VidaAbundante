@@ -2883,18 +2883,19 @@ if (labelPanelDev) labelPanelDev.style.display = "none";
       return;
     }
 
-    if (this.state.mode === "DEV1") {
-      E.modal.classList.add("modo-devocional");
-      show(E.fondos, true);
-      show(E.boxFormato, false);      // NO formato manual
-      show(E.fondoPlanoBox, false);   // no color plano acá
-      show(E.bSig1, true);            // solo siguiente
+   if (this.state.mode === "DEV1") {
+  E.modal.classList.add("modo-devocional");
+  show(E.fondos, true);
+  show(E.boxFormato, false);
+  show(E.fondoPlanoBox, false);
+  show(E.bSig1, true);
 
-      // Paso 1: CUADRADO 210x210
-      setFormatoImagen("post");
-      uiModoFondosSolo();
-      return;
-    }
+  setFormatoImagen("post");
+  uiModoFondosSolo();
+  cargarFondos(); // ✅ ESTA es la galería
+
+  return;
+}
 
     if (this.state.mode === "DEV2") {
       E.modal.classList.add("modo-devocional");
