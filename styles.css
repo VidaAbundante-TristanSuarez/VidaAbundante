@@ -1871,4 +1871,61 @@ body.oscuro #modalPersonalizar #personalizarColor{
   height: 100%;
 }
 
+/* ✅ Devocional: layout dentro del preview */
+#modalPersonalizar.modo-devocional #previewTextoWrapper{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding: 18px;
+  text-align:center;
+}
+
+#modalPersonalizar.modo-devocional #previewTexto,
+#modalPersonalizar.modo-devocional #previewTextoBack{
+  width:100%;
+}
+
+/* Bloque 1 */
+#modalPersonalizar.modo-devocional .dev-titulo{
+  font-weight:900;
+  font-size: 22px;
+  letter-spacing: .5px;
+}
+#modalPersonalizar.modo-devocional .dev-fecha{
+  margin-top: 4px;
+  font-weight:700;
+  font-size: 14px;
+  opacity:.9;
+}
+#modalPersonalizar.modo-devocional .dev-versiculo{
+  margin-top: 14px;
+  font-weight:900;
+  font-size: 28px;
+  line-height:1.15;
+}
+#modalPersonalizar.modo-devocional .dev-cita{
+  margin-top: 12px;
+  font-weight:900;
+  font-size: 16px;
+}
+#modalPersonalizar.modo-devocional .dev-footer{
+  margin-top: 10px;
+  font-weight:800;
+  font-size: 12px;
+  opacity:.95;
+}
+
+/* Bloque 2 */
+#modalPersonalizar.modo-devocional .dev-reflexion{
+  font-weight:800;
+  font-size: 16px;
+  line-height:1.25;
+}
+#modalPersonalizar.modo-devocional .dev-oracion{
+  margin-top: 12px;
+  font-weight:900;
+  font-size: 16px;
+}
+
+
   </style>
