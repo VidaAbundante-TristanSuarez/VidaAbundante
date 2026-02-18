@@ -302,43 +302,27 @@ if (text) {
   }
 });
 
-    // =========================
-  // ✅ ABRIR MODAL DEVOCIONALES desde el botón "Crear devocional"
-  // =========================
-const btnAbrir = document.getElementById("btnAbrirDevModal");
-
-if (btnAbrir) {
-  btnAbrir.addEventListener("click", () => {
-
-    const texto = (document.getElementById("devTexto")?.value || "").trim();
+// =========================
+// ✅ ABRIR MODAL desde el botón "Crear devocional"
+// =========================
+if (btnAbrirDev) {
+  btnAbrirDev.addEventListener("click", () => {
+    const texto = (ta.value || "").trim();
     if (!texto) {
       alert("Primero necesitás texto (OCR o pegado).");
       return;
     }
 
-    // 👉 Separar en bloques
     const [b1, b2] = partirEn2Bloques(texto);
 
-    // 👉 Guardar en variables globales simples
-    window.__devBloque1 = b1 || "";
-    window.__devBloque2 = b2 || "";
-    window.__devTextoCompleto = texto;
+    window.__dev.textoCompleto = texto;
+    window.__dev.bloque1 = b1 || "";
+    window.__dev.bloque2 = b2 || "";
 
-    // 👉 Cargar el bloque 1 en el preview
-    const preview = document.getElementById("previewDevPaso1");
-    if (preview) preview.textContent = window.__devBloque1;
-
-    // 👉 Abrir el modal en paso 1
-    const modal = document.getElementById("modalDevocionales");
-    if (modal) {
-      modal.dataset.step = "1";
-      modal.classList.add("abierto");
-      modal.setAttribute("aria-hidden", "false");
-    }
-
+    renderPaso1();
+    abrirModal("modalDevPaso1");
   });
 }
-
   
 }); // ✅ CIERRA el document.addEventListener("DOMContentLoaded", () => { ... })
   
@@ -492,113 +476,89 @@ ${footer2}`.trim();
 }
 
 // =========================
-// ✅ MODAL DEVOCIONALES (nuevo) — abrir/cerrar/pasos
+// ✅ MODALES DEVOCIONAL (Paso 1/2/3) — helpers
 // =========================
-const DevModal = {
-  state: {
-    step: 1,
-    textoCompleto: "",
-    bloque1: "",
-    bloque2: "",
-  },
-
-  el() { return document.getElementById("modalDevocionales"); },
-
-  open(step = 1) {
-    const m = this.el();
-    if (!m) return alert("No existe #modalDevocionales en el HTML");
-    this.setStep(step);
-    m.classList.add("abierto");
-    m.setAttribute("aria-hidden", "false");
-  },
-
-  close() {
-    const m = this.el();
-    if (!m) return;
-    m.classList.remove("abierto");
-    m.setAttribute("aria-hidden", "true");
-  },
-
-  setStep(step) {
-    const m = this.el();
-    if (!m) return;
-    this.state.step = Number(step);
-    m.dataset.step = String(step);
-  },
-
-  // ✅ rellena previews simple (por ahora texto plano)
-  renderStep1() {
-    const box = document.getElementById("previewDevPaso1");
-    if (box) box.textContent = this.state.bloque1 || "";
-  },
-  renderStep2() {
-    const box = document.getElementById("previewDevPaso2");
-    if (box) box.textContent = this.state.bloque2 || "";
-  },
-  renderStep3() {
-    const box = document.getElementById("previewDevPaso3");
-    if (box) box.textContent = (this.state.bloque1 + "\n\n" + this.state.bloque2).trim();
-  },
-};
-
-// ✅ para el botón X del modal
-window.cerrarModalDevocionales = () => DevModal.close();
-
-// =========================
-// ✅ NAV DEVOCIONALES: botones Anterior/Siguiente
-// =========================
-document.addEventListener("DOMContentLoaded", () => {
-  const sig1 = document.getElementById("devBtnSig1");
-  const ant2 = document.getElementById("devBtnAnt2");
-  const sig2 = document.getElementById("devBtnSig2");
-  const ant3 = document.getElementById("devBtnAnt3");
-
-  if (sig1) sig1.addEventListener("click", () => {
-    DevModal.renderStep2();
-    DevModal.setStep(2);
-  });
-
-  if (ant2) ant2.addEventListener("click", () => {
-    DevModal.renderStep1();
-    DevModal.setStep(1);
-  });
-
-  if (sig2) sig2.addEventListener("click", () => {
-    DevModal.renderStep3();
-    DevModal.setStep(3);
-  });
-
-  if (ant3) ant3.addEventListener("click", () => {
-    DevModal.renderStep2();
-    DevModal.setStep(2);
-  });
-});
-
-
-// =========================
-// ✅ AUDIO: abrir modalAudio y pasarle el texto completo
-// =========================
-function abrirModalAudioDev() {
-  const m = document.getElementById("modalAudio");
-  if (!m) return alert("No existe #modalAudio en el HTML");
-
-  // texto para audio = el texto completo OCR (editable luego)
-  const ta = document.getElementById("textoAudio");
-  if (ta) ta.value = DevModal.state.textoCompleto || "";
-
+function abrirModal(id) {
+  const m = document.getElementById(id);
+  if (!m) return;
   m.classList.add("abierto");
   m.setAttribute("aria-hidden", "false");
 }
 
-window.cerrarModalAudio = () => {
-  const m = document.getElementById("modalAudio");
+function cerrarModal(id) {
+  const m = document.getElementById(id);
   if (!m) return;
   m.classList.remove("abierto");
   m.setAttribute("aria-hidden", "true");
+}
+
+// Hacemos globales las X (porque tu HTML las llama con onclick="...")
+window.cerrarDevPaso1 = () => cerrarModal("modalDevPaso1");
+window.cerrarDevPaso2 = () => cerrarModal("modalDevPaso2");
+window.cerrarDevPaso3 = () => cerrarModal("modalDevPaso3");
+
+// =========================
+// ✅ Estado del devocional (global simple)
+// =========================
+window.__dev = window.__dev || {
+  textoCompleto: "",
+  bloque1: "",
+  bloque2: ""
 };
 
-document.addEventListener("DOMContentLoaded", () => {
-  const btnAudio = document.getElementById("devBtnAudio");
-  if (btnAudio) btnAudio.addEventListener("click", abrirModalAudioDev);
-});
+function renderPaso1() {
+  const el = document.getElementById("previewDevPaso1");
+  if (el) el.textContent = window.__dev.bloque1 || "";
+}
+function renderPaso2() {
+  const el = document.getElementById("previewDevPaso2");
+  if (el) el.textContent = window.__dev.bloque2 || "";
+}
+function renderPaso3() {
+  const el = document.getElementById("previewDevPaso3");
+  if (el) el.textContent = ((window.__dev.bloque1 || "") + "\n\n" + (window.__dev.bloque2 || "")).trim();
+}
+
+// =========================
+// ✅ Navegación entre pasos (tu HTML llama estas funciones)
+// =========================
+window.irDevPaso2 = () => {
+  cerrarModal("modalDevPaso1");
+  renderPaso2();
+  abrirModal("modalDevPaso2");
+};
+
+window.volverDevPaso1 = () => {
+  cerrarModal("modalDevPaso2");
+  renderPaso1();
+  abrirModal("modalDevPaso1");
+};
+
+window.irDevPaso3 = () => {
+  cerrarModal("modalDevPaso2");
+  renderPaso3();
+  abrirModal("modalDevPaso3");
+};
+
+window.volverDevPaso2 = () => {
+  cerrarModal("modalDevPaso3");
+  renderPaso2();
+  abrirModal("modalDevPaso2");
+};
+
+// =========================
+// ✅ Audio: tu HTML usa onclick="abrirAudioDev()"
+// =========================
+window.abrirAudioDev = () => {
+  const m = document.getElementById("modalAudio");
+  if (!m) return alert("No existe #modalAudio en el HTML");
+
+  const ta = document.getElementById("textoAudio");
+  if (ta) ta.value = window.__dev.textoCompleto || "";
+
+  abrirModal("modalAudio");
+};
+
+// ya tenías cerrarModalAudio en HTML
+window.cerrarModalAudio = () => cerrarModal("modalAudio");
 
