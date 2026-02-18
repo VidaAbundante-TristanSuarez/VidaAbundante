@@ -318,9 +318,8 @@ if (btnAbrirDev) {
     window.__dev.textoCompleto = texto;
     window.__dev.bloque1 = b1 || "";
     window.__dev.bloque2 = b2 || "";
+    window.__devSiguiente(1);
 
-    renderPaso1();
-    abrirModal("modalDevPaso1");
   });
 }
   
@@ -562,3 +561,78 @@ window.abrirAudioDev = () => {
 // ya tenías cerrarModalAudio en HTML
 window.cerrarModalAudio = () => cerrarModal("modalAudio");
 
+// ===============================
+// ✅ DEVOCIONAL: cambiar de paso usando #modalPersonalizar
+// ===============================
+window.__devSiguiente = (paso) => {
+  paso = Number(paso || 1);
+  window.__devPaso = paso;
+
+  // 1) Elegir modo del controller
+  const mode =
+    paso === 1 ? "DEV1" :
+    paso === 2 ? "DEV2" : "DEV3";
+
+  // 2) Abrir el modal único
+  Modal.open(mode);
+
+  // 3) Cargar el texto correcto en la vista previa
+  const texto = (paso === 1) ? (window.__dev.bloque1 || "") : (window.__dev.bloque2 || "");
+
+  // devPaso:true solo para que tu función sepa que es devocional
+  window.abrirPersonalizarConTexto(texto, { devPaso: true, paso });
+
+  // 4) Refrescar UI (fondos / fondo plano / botones)
+  Modal.applyUI();
+};
+
+function devBloque1AHTML(txt) {
+  const lines = String(txt || "").split("\n").map(s => s.trim()).filter(Boolean);
+
+  const titulo = lines[0] || "DEVOCIONAL";
+  const fecha  = lines[1] || "";
+  const footer2 = lines[lines.length - 1] || "";
+  const footer1 = lines[lines.length - 2] || "";
+
+  // cita: buscá la primera que parezca "Mateo 19:13-14"
+  let citaIdx = -1;
+  for (let i = 0; i < lines.length; i++) {
+    if (/\d+:\d+/.test(lines[i])) { citaIdx = i; break; }
+  }
+  const cita = citaIdx >= 0 ? lines[citaIdx] : "";
+
+  // versículo: todo lo que esté entre fecha y cita
+  const verseStart = fecha ? 2 : 1;
+  const verseEnd = (citaIdx >= 0 ? citaIdx : lines.length - 2);
+  const versiculo = lines.slice(verseStart, verseEnd).join(" ");
+
+  return `
+    <div class="dev-head">
+      <div class="dev-titulo">${titulo}</div>
+      <div class="dev-fecha">${fecha}</div>
+    </div>
+
+    <div class="dev-versiculo">${versiculo}</div>
+
+    <div class="dev-cita">${cita}</div>
+
+    <div class="dev-footer">
+      <div>${footer1}</div>
+      <div>${footer2}</div>
+    </div>
+  `;
+}
+
+function devBloque2AHTML(txt) {
+  const raw = String(txt || "").trim();
+  if (!raw) return "";
+
+  const parts = raw.split(/\n\s*\n/); // separa por doble salto
+  const reflexion = parts[0] || "";
+  const oracion = parts.slice(1).join("\n\n") || "";
+
+  return `
+    <div class="dev-reflexion">${reflexion}</div>
+    ${oracion ? `<div class="dev-oracion">${oracion}</div>` : ""}
+  `;
+}
