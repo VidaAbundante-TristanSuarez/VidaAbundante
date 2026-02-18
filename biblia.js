@@ -1105,65 +1105,67 @@ await set(ref(db, dbPath), {
 
 // ======================== ⭐ OPCION DESCARGAR (FIX) ====================================
 async function descargarImagenFinal() {
-  const canvas = document.getElementById("canvasFinal");
-  if (!canvas) return;
+  return withRenderLock(async () => {
+    const canvas = document.getElementById("canvasFinal");
+    if (!canvas) return;
 
-  // ✅ SIEMPRE regenerar antes de descargar (evita “me baja el PNG viejo”)
- const ok = await generarImagenFinal({ subir: false });
-  if (!ok) return;
+    // ✅ regenerar antes de descargar
+    const ok = await generarImagenFinal({ subir: false });
+    if (!ok) return;
 
-  const descargarDesdeDataURL = () => {
-    const link = document.createElement("a");
-    link.href = canvas.toDataURL("image/png");
-    link.download = "versiculo.png";
-    clickLink(link);
-  };
-
-  try {
-    canvas.toBlob(blob => {
-      if (!blob) return descargarDesdeDataURL();
-
+    const descargarDesdeDataURL = () => {
       const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
+      link.href = canvas.toDataURL("image/png");
       link.download = "versiculo.png";
       clickLink(link);
-      URL.revokeObjectURL(link.href);
-    }, "image/png");
-  } catch (e) {
-    descargarDesdeDataURL();
-  }
+    };
+
+    try {
+      canvas.toBlob(blob => {
+        if (!blob) return descargarDesdeDataURL();
+
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "versiculo.png";
+        clickLink(link);
+        URL.revokeObjectURL(link.href);
+      }, "image/png");
+    } catch (e) {
+      descargarDesdeDataURL();
+    }
+  });
 }
 
 // ========================⭐ OPCION COMPARTIR ====================================
 async function compartirImagenFinal() {
-  const canvas = document.getElementById("canvasFinal");
-  if (!canvas) return;
+  return withRenderLock(async () => {
+    const canvas = document.getElementById("canvasFinal");
+    if (!canvas) return;
 
-  const ok = await asegurarCanvasFinal({ subir: false }); // ✅ NO SUBE
-  if (!ok) return;
+    const ok = await asegurarCanvasFinal({ subir: false }); // ✅ NO SUBE
+    if (!ok) return;
 
-  canvas.toBlob(async blob => {
-    if (!blob) {
-      await descargarImagenFinal();
-      return;
-    }
-
-    const file = new File([blob], "versiculo.png", { type: "image/png" });
-
-    try {
-      if (navigator.share && navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], title: "Versículo" });
-      } else {
+    canvas.toBlob(async blob => {
+      if (!blob) {
         await descargarImagenFinal();
-        alert("Tu dispositivo/navegador no permite compartir directo. La imagen se descargó para compartirla manualmente.");
+        return;
       }
-    } catch (e) {
-      // ✅ si el usuario cancela, o el navegador falla, no hagas nada raro
-      console.warn("Share cancelado o falló:", e);
-      // opcional: mostrarToast("No se pudo compartir. Se descargó la imagen.");
-      await descargarImagenFinal();
-    }
-  }, "image/png");
+
+      const file = new File([blob], "versiculo.png", { type: "image/png" });
+
+      try {
+        if (navigator.share && navigator.canShare?.({ files: [file] })) {
+          await navigator.share({ files: [file], title: "Versículo" });
+        } else {
+          await descargarImagenFinal();
+          alert("Tu dispositivo/navegador no permite compartir directo. La imagen se descargó para compartirla manualmente.");
+        }
+      } catch (e) {
+        console.warn("Share cancelado o falló:", e);
+        await descargarImagenFinal();
+      }
+    }, "image/png");
+  });
 }
 
 // ================= ⭐ RESET DEL MODAL  =======================
@@ -1251,6 +1253,35 @@ function salirModoImagen() {
 
 }
 
+// ================= 🔒 LOCK GLOBAL (evita doble click / doble render) =================
+window.__renderLock = window.__renderLock || {
+  busy: false,
+  promise: null,
+  lastAt: 0
+};
+
+async function withRenderLock(fn) {
+  // Si ya hay un render corriendo, devolvemos la MISMA promesa
+  if (window.__renderLock.busy && window.__renderLock.promise) {
+    return window.__renderLock.promise;
+  }
+
+  window.__renderLock.busy = true;
+  window.__renderLock.lastAt = Date.now();
+
+  const p = (async () => {
+    try {
+      return await fn();
+    } finally {
+      window.__renderLock.busy = false;
+      window.__renderLock.promise = null;
+    }
+  })();
+
+  window.__renderLock.promise = p;
+  return p;
+}
+
 // ================= ⭐ CACHE de render del canvasFinal =================
 window.__canvasFinalCache = {
   key: "",       // firma del estado renderizado
@@ -1304,30 +1335,35 @@ async function asegurarCanvasFinal({ subir = false } = {}) {
     window.__canvasFinalCache.key === nuevaKey &&
     canvas.width > 10 && canvas.height > 10
   ) {
-    // Si alguien pidió "subir" y el render ya está ok, solo subimos
+    // Si alguien pidió "subir", subimos sin re-render
     if (subir) {
-      await generarImagenFinal({ subir: true }); // usa tu función existente (que ya separaste subir con opts)
+      await generarImagenFinal({ subir: true });
     }
     return true;
   }
 
-  // ✅ evitar renders simultáneos
+  // ✅ evita renders simultáneos: si ya está ocupado, devolvemos false
   if (window.__canvasFinalCache.busy) return false;
   window.__canvasFinalCache.busy = true;
 
   try {
-    // Genera canvas (y opcionalmente sube)
-    const ok = await asegurarCanvasFinal({ subir: false }); // ✅ NO SUBE y NO re-renderiza si ya está listo
+    // ✅ acá estaba tu bug: NO hay que llamarse a sí misma
+    const ok = await generarImagenFinal({ subir: false });
+
     if (ok) {
       window.__canvasFinalCache.key = nuevaKey;
       window.__canvasFinalCache.lastOk = true;
+
+      if (subir) {
+        await generarImagenFinal({ subir: true }); // sube con el canvas ya listo
+      }
     }
+
     return ok;
   } finally {
     window.__canvasFinalCache.busy = false;
   }
 }
-
 
 // ================= 🔺 WINDOW / UI ⭕ ===============================
 window.irA = (seccion) => {
@@ -1428,28 +1464,23 @@ window.cancelarCrearImagen = () => {
 
 // ================= ✅ FINALIZAR EDICIÓN (CONFIRMAR) =================
 window.finalizarEdicion = async () => {
+  return withRenderLock(async () => {
+    const ok = await asegurarCanvasFinal({ subir: true });
+    if (!ok) {
+      alert("No se pudo generar la imagen (PNG). Revisá consola (F12) para ver el error.");
+      return;
+    }
 
-  // Si querés: antes de finalizar, aseguramos que el PNG se pueda generar
-  // (así no salís sin poder descargar). Si no querés esto, decime y lo saco.
- const ok = await asegurarCanvasFinal({ subir: true });
-if (!ok) {
-  alert("No se pudo generar la imagen (PNG). Revisá consola (F12) para ver el error.");
-  return;
-}
+    const terminar = confirm(
+      "¿Terminar edición?\n\nOK = Terminar edición y volver a Biblia\nCancelar = Volver a edición"
+    );
 
-  const terminar = confirm(
-    "¿Terminar edición?\n\nOK = Terminar edición y volver a Biblia\nCancelar = Volver a edición"
-  );
+    if (!terminar) return;
 
-  if (!terminar) {
-    // Volver a edición = no hacer nada (modal sigue abierto)
-    return;
-  }
-
-  // Terminar edición:
-  resetModalPersonalizar();  // limpia controles
-  salirModoImagen();         // sale de modo imagen y cierra modal
-  irA("biblia");             // vuelve a biblia
+    resetModalPersonalizar();
+    salirModoImagen();
+    irA("biblia");
+  });
 };
 
 // ================= 🔺 CAMBIAR LETRA ===============================
@@ -3214,7 +3245,7 @@ async function dev_armarFinal() {
   canvasFinal.width = W;
   canvasFinal.height = H;
 
-  const ctx = canvasFinal.getContext("2d");
+  const ctx = canvasFinal.getContext("2d", { willReadFrequently: true });
   ctx.clearRect(0, 0, W, H);
 
   // dibujar img1 ajustada a W x H1
