@@ -824,8 +824,22 @@ function actualizarPreview() {
   ? (textoExternoModal || "")
   : obtenerVersiculoSeleccionado();
 
-previewTexto.innerText = textoFinal || "";
-previewTextoBack.innerText = textoFinal || "";
+const esDev = (window.__devPaso === 1 || window.__devPaso === 2 || window.__devPaso === 3);
+
+if (esDev) {
+  // ✅ en devocional usamos HTML con layout
+  const html = (window.__devPaso === 1)
+    ? devBloque1AHTML(textoFinal)
+    : devBloque2AHTML(textoFinal);
+
+  previewTexto.innerHTML = html;
+  previewTextoBack.innerHTML = html;
+} else {
+  // Biblia normal
+  previewTexto.innerText = textoFinal || "";
+  previewTextoBack.innerText = textoFinal || "";
+}
+
 
   // ================= Fondo =================
 const fondoUsable = fondoFinalBlobUrl || fondoFinal;
@@ -3236,9 +3250,10 @@ async function dev_armarFinal() {
   const H = 3508;
 
   // Alturas: bloque1 cuadrado 210mm => 2480px
-  // bloque2 resto => 3508-2480=1028px
-  const H1 = 2480;
-  const H2 = H - H1;
+  // bloque2 resto => 3508-2480=1028px bloque 2 gana espacio automáticamente.
+ const H1 = Math.round(H * 0.60);
+const H2 = H - H1;
+
 
   const canvasFinal = document.getElementById("canvasFinal");
   if (!canvasFinal) return;
