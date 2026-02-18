@@ -29,7 +29,7 @@ function fitCanvasToImage(image, maxW = 420) {
 
 // Dibuja imagen + overlay del recorte
 function draw() {
-  if (!img) return;
+  if (!img || !canvas || !ctx) return;
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
@@ -71,6 +71,8 @@ function canvasPointFromClient(clientX, clientY) {
 
 // Eventos de recorte (mouse + touch + pen)
 function bindPointerCropEvents() {
+  if (!canvas) return;
+
   // clave cel: que no “mueva” la página al tocar el canvas
   canvas.style.touchAction = "none";
 
@@ -119,7 +121,7 @@ function bindPointerCropEvents() {
 
 // Devuelve blob del recorte (o toda la imagen si no recortó)
 async function getCroppedBlob() {
-  if (!img) return null;
+  if (!img || !canvas) return null;
 
   const r = (crop && crop.w > 10 && crop.h > 10)
     ? crop
@@ -163,30 +165,35 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const input = $("devImg");
   const btnRecortar = $("btnDevRecortar");
-  // ✅ Al inicio deshabilitado
-btnRecortar.disabled = true;
-btnRecortar.style.opacity = "0.6";
   const btnOCR = $("btnDevOCR");
   const ta = $("devTexto");
 
-// ✅ Botón "Crear devocional": solo se habilita si hay texto
-const btnAbrirDev = document.getElementById("btnAbrirDevModal");
+  // Botón "Crear devocional"
+  const btnAbrirDev = $("btnAbrirDevModal");
 
-function syncBtnCrearDevocional() {
-  if (!btnAbrirDev || !ta) return;
-  const hayTexto = (ta.value || "").trim().length > 0;
+  // Si faltan elementos base, no rompemos nada
+  if (!input || !btnRecortar || !btnOCR || !ta) {
+    console.warn("Devocionales: faltan elementos (#devImg/#btnDevRecortar/#btnDevOCR/#devTexto).");
+    return;
+  }
 
-  btnAbrirDev.disabled = !hayTexto;
-  btnAbrirDev.style.opacity = hayTexto ? "1" : "0.6";
-}
+  // ✅ Al inicio: recorte deshabilitado
+  btnRecortar.disabled = true;
+  btnRecortar.style.opacity = "0.6";
 
-// ✅ si la persona pega/edita texto a mano, también habilita
-ta?.addEventListener("input", syncBtnCrearDevocional);
+  // ✅ Botón "Crear devocional": solo se habilita si hay texto
+  function syncBtnCrearDevocional() {
+    if (!btnAbrirDev) return;
+    const hayTexto = (ta.value || "").trim().length > 0;
+    btnAbrirDev.disabled = !hayTexto;
+    btnAbrirDev.style.opacity = hayTexto ? "1" : "0.6";
+  }
 
-// estado inicial
-syncBtnCrearDevocional();
-  
-  if (!input || !btnRecortar || !btnOCR || !ta) return;
+  // ✅ si pegan/editar texto a mano, también habilita
+  ta.addEventListener("input", syncBtnCrearDevocional);
+
+  // estado inicial
+  syncBtnCrearDevocional();
 
   bindPointerCropEvents();
   ocrSetStatus("✅ Cargá una imagen, recortá si querés y tocá OCR.");
@@ -199,46 +206,47 @@ syncBtnCrearDevocional();
     const url = URL.createObjectURL(file);
     const image = new Image();
 
-   image.onload = () => {
-  img = image;
+    image.onload = () => {
+      img = image;
 
-  // reset recorte
-  crop = null;
-  start = null;
-  drawing = false;
-  // ✅ activar recorte automáticamente
-recortando = true;
-btnRecortar.disabled = false;
-btnRecortar.style.opacity = "1";
-btnRecortar.innerHTML = '✅ Listo <i class="fa-solid fa-crop"></i>';
+      // reset recorte
+      crop = null;
+      start = null;
+      drawing = false;
 
+      // ✅ activar recorte automáticamente
+      recortando = true;
+      btnRecortar.disabled = false;
+      btnRecortar.style.opacity = "1";
+      btnRecortar.innerHTML = '✅ Listo <i class="fa-solid fa-crop"></i>';
 
-  fitCanvasToImage(img, 420);
-  draw();
+      fitCanvasToImage(img, 420);
+      draw();
 
-  // ✅ mostrar canvas
-document.getElementById("devCanvasBox")?.classList.remove("hidden");
+      // ✅ mostrar canvas
+      $("devCanvasBox")?.classList.remove("hidden");
 
-// ✅ el textarea solo aparece cuando haya OCR
-document.getElementById("devTextoBox")?.classList.add("hidden");
-const devTA = document.getElementById("devTexto");
-if (devTA) devTA.value = "";
+      // ✅ el textarea solo aparece cuando haya OCR
+      $("devTextoBox")?.classList.add("hidden");
+      ta.value = "";
+      syncBtnCrearDevocional();
 
-  URL.revokeObjectURL(url);
-  ocrSetStatus("✅ Imagen cargada. Podés recortar o tocar OCR.");
-};
+      URL.revokeObjectURL(url);
+      ocrSetStatus("✅ Imagen cargada. Podés recortar o tocar OCR.");
+    };
 
     image.src = url;
   });
 
-  // Toggle recorte
+  // Toggle recorte (por si querés apagarlo/encenderlo)
   btnRecortar.addEventListener("click", () => {
     if (!img) { alert("Primero cargá una imagen"); return; }
 
     recortando = !recortando;
-   btnRecortar.innerHTML = recortando
-  ? '✅ Listo <i class="fa-solid fa-crop"></i>'
-  : '✂️ Recortar <i class="fa-solid fa-crop"></i>';
+
+    btnRecortar.innerHTML = recortando
+      ? '✅ Listo <i class="fa-solid fa-crop"></i>'
+      : '✂️ Recortar <i class="fa-solid fa-crop"></i>';
 
     if (!recortando) {
       start = null;
@@ -247,63 +255,155 @@ if (devTA) devTA.value = "";
   });
 
   // OCR por Cloud Function
-btnOCR.addEventListener("click", async () => {
-  if (!img) { alert("Primero cargá una imagen"); return; }
+  btnOCR.addEventListener("click", async () => {
+    if (!img) { alert("Primero cargá una imagen"); return; }
 
-  // ✅ Evita doble click
-  btnOCR.disabled = true;
-  btnOCR.style.opacity = "0.6";
+    // ✅ Evita doble click
+    btnOCR.disabled = true;
+    btnOCR.style.opacity = "0.6";
 
-  ocrSetStatus("⏳ Enviando imagen al OCR…");
+    ocrSetStatus("⏳ Enviando imagen al OCR…");
 
-  try {
-    const blob = await getCroppedBlob();
-    if (!blob) return;
+    try {
+      const blob = await getCroppedBlob();
+      if (!blob) return;
 
-    const imageBase64 = await blobToBase64(blob);
+      const imageBase64 = await blobToBase64(blob);
 
-    const r = await fetch(OCR_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ imageBase64 })
-    });
+      const r = await fetch(OCR_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageBase64 })
+      });
 
-    const data = await r.json().catch(() => ({}));
+      const data = await r.json().catch(() => ({}));
 
-    if (!r.ok) {
-      ocrSetStatus("❌ Error OCR: " + (data?.error || r.status));
-      return;
+      if (!r.ok) {
+        ocrSetStatus("❌ Error OCR: " + (data?.error || r.status));
+        return;
+      }
+
+      const text = (data?.text || "").trim();
+
+      if (text) {
+        ta.value = text;
+
+        // ✅ Mostrar textarea SOLO si hay texto real
+        $("devTextoBox")?.classList.remove("hidden");
+
+        ocrSetStatus("✅ OCR listo.");
+        syncBtnCrearDevocional();
+      } else {
+        ta.value = "";
+        ocrSetStatus("⚠️ No se detectó texto. Probá con mejor luz y texto más grande.");
+        syncBtnCrearDevocional();
+      }
+
+    } catch (e) {
+      console.error(e);
+      ocrSetStatus("❌ Error OCR: " + (e?.message || e));
+    } finally {
+      // ✅ Pase lo que pase, volver a habilitar
+      btnOCR.disabled = false;
+      btnOCR.style.opacity = "1";
     }
+  });
 
-   const text = (data?.text || "").trim();
+ // =========================
+// ✅ ABRIR “DEVOCIONAL” desde el botón "Crear devocional"
+// ✅ Usa TUS modales (#modalDevPaso1/2/3) y NO pisa audio de Biblia
+// =========================
 
-if (text) {
-  ta.value = text;
-
-  // ✅ Mostrar textarea SOLO si hay texto real
-  document.getElementById("devTextoBox")?.classList.remove("hidden");
-
-  ocrSetStatus("✅ OCR listo.");
-  syncBtnCrearDevocional();
-
-} else {
-  ta.value = "";
-  ocrSetStatus("⚠️ No se detectó texto. Probá con mejor luz y texto más grande.");
-  syncBtnCrearDevocional();
+// helpers modales (usa tu CSS .abierto)
+function abrirModal(id) {
+  const m = document.getElementById(id);
+  if (!m) return;
+  m.classList.add("abierto");
+  m.setAttribute("aria-hidden", "false");
+}
+function cerrarModal(id) {
+  const m = document.getElementById(id);
+  if (!m) return;
+  m.classList.remove("abierto");
+  m.setAttribute("aria-hidden", "true");
 }
 
-  } catch (e) {
-    console.error(e);
-    ocrSetStatus("❌ Error OCR: " + (e?.message || e));
-  } finally {
-    // ✅ Pase lo que pase, volver a habilitar
-    btnOCR.disabled = false;
-    btnOCR.style.opacity = "1";
+// X de cada paso (tu HTML ya los llama)
+window.cerrarDevPaso1 = () => cerrarModal("modalDevPaso1");
+window.cerrarDevPaso2 = () => cerrarModal("modalDevPaso2");
+window.cerrarDevPaso3 = () => cerrarModal("modalDevPaso3");
+
+// Navegación pasos (tu HTML ya los llama)
+window.irDevPaso2 = () => {
+  renderPaso2();                // importante: pintar preview antes de mostrar
+  cerrarModal("modalDevPaso1");
+  abrirModal("modalDevPaso2");
+};
+window.volverDevPaso1 = () => {
+  renderPaso1();
+  cerrarModal("modalDevPaso2");
+  abrirModal("modalDevPaso1");
+};
+window.irDevPaso3 = () => {
+  renderPaso3();
+  cerrarModal("modalDevPaso2");
+  abrirModal("modalDevPaso3");
+};
+window.volverDevPaso2 = () => {
+  renderPaso2();
+  cerrarModal("modalDevPaso3");
+  abrirModal("modalDevPaso2");
+};
+
+// ✅ Audio Dev: NO redefinimos cerrarModalAudio ni abrirModalAudio.
+// Solo usamos el audio de Biblia si existe.
+window.abrirAudioDev = () => {
+  // Si biblia.audio.js está cargado, esto existe:
+  if (typeof window.abrirModalAudio === "function") {
+    const ta = document.getElementById("textoAudio");
+    if (ta) ta.value = (window.__dev?.textoCompleto || "");
+    window.abrirModalAudio();
+    return;
   }
-});
+  alert("No está cargado el audio (biblia.audio.js).");
+};
+
+// (opcional) estos quedan por si después implementás descargar/compartir/finalizar
+window.descargarDevFinal = () => alert("Descargar devocional: falta implementar.");
+window.compartirDevFinal  = () => alert("Compartir devocional: falta implementar.");
+window.finalizarDevFinal  = () => alert("Finalizar devocional: falta implementar.");
 
 // =========================
-// ✅ ABRIR MODAL desde el botón "Crear devocional"
+// ✅ Render previews
+// =========================
+function renderPaso1() {
+  const el = document.getElementById("previewDevPaso1");
+  if (!el) return;
+  el.innerHTML = devBloque1AHTML(window.__dev?.bloque1 || "");
+}
+function renderPaso2() {
+  const el = document.getElementById("previewDevPaso2");
+  if (!el) return;
+  el.innerHTML = devBloque2AHTML(window.__dev?.bloque2 || "");
+}
+function renderPaso3() {
+  const el = document.getElementById("previewDevPaso3");
+  if (!el) return;
+
+  // Paso 3 puede mostrar todo junto o solo bloque2, vos elegís.
+  // Yo lo dejo mostrando TODO (bloque1 + bloque2) para que sea “A4 completo”.
+  const b1 = devBloque1AHTML(window.__dev?.bloque1 || "");
+  const b2 = devBloque2AHTML(window.__dev?.bloque2 || "");
+  el.innerHTML = `
+    <div style="display:flex; flex-direction:column; gap:14px;">
+      ${b1}
+      ${b2}
+    </div>
+  `;
+}
+
+// =========================
+// ✅ Botón "Crear devocional" -> abre Paso 1
 // =========================
 if (btnAbrirDev) {
   btnAbrirDev.addEventListener("click", () => {
@@ -315,324 +415,13 @@ if (btnAbrirDev) {
 
     const [b1, b2] = partirEn2Bloques(texto);
 
+    window.__dev = window.__dev || {};
     window.__dev.textoCompleto = texto;
     window.__dev.bloque1 = b1 || "";
     window.__dev.bloque2 = b2 || "";
-    window.__devSiguiente(1);
 
+    // pintar + abrir paso 1
+    renderPaso1();
+    abrirModal("modalDevPaso1");
   });
-}
-  
-}); // ✅ CIERRA el document.addEventListener("DOMContentLoaded", () => { ... })
-  
-// ✅ GLOBAL: para que lo pueda usar window.__devSiguiente
-function partirEn2Bloques(txt) {
-  const raw = String(txt || "").replace(/\r/g, "").trim();
-  if (!raw) return ["", ""];
-
-  // -------- helpers ----------
-  const norm = (s) =>
-    String(s || "")
-      .trim()
-      .replace(/[•·▪●■▶►➤➔➡️]/g, "")
-      .replace(/\s+/g, " ");
-
-  const sinAcentos = (s) =>
-    s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-
-  const isOracionLine = (s) => {
-    const n = sinAcentos(norm(s)).toLowerCase();
-    return /\boracion\b/.test(n);
-  };
-
-  const isCitaLine = (s) => {
-    return /([A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+)\s+\d+:\d+(-\d+)?/.test(norm(s));
-  };
-
-  const letters = (s) => (norm(s).match(/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/g) || []).length;
-  const uppers  = (s) => (norm(s).match(/[A-ZÁÉÍÓÚÜÑ]/g) || []).length;
-
-  const isMostlyUpper = (s) => {
-    const L = letters(s);
-    if (L < 6) return false;
-    return (uppers(s) / L) >= 0.75;
-  };
-
-  const isBasuraLogo = (s) => {
-    const raw = String(s || "").trim();
-    if (!raw) return true;
-
-    const clean = sinAcentos(norm(raw));
-    const n = clean.toUpperCase();
-
-    if (n.length <= 2) return true;
-
-    const ltrs = (clean.match(/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/g) || []).length;
-    const ups  = (clean.match(/[A-ZÁÉÍÓÚÜÑ]/g) || []).length;
-    const upperRatio = ltrs ? (ups / ltrs) : 0;
-
-    const esCorta = n.length <= 28;
-    const esMayus = upperRatio >= 0.75;
-
-    if (!esCorta || !esMayus) return false;
-
-    const keys = [
-      "IGLESIA", "CRISTIANA", "VIDA", "ABUNDANTE",
-      "DE LA VIDA", "LA VIDA", "VIDA ABUNDANTE",
-      "ABUNDAN", "ABUNDA", "AB", "DE LA", "DE", "LA"
-    ];
-
-    const tieneKey = keys.some(k => n.includes(sinAcentos(k).toUpperCase()));
-    return !!tieneKey;
-  };
-
-  // -------- preparar líneas ----------
-  let lineas = raw
-    .split("\n")
-    .map(norm)
-    .filter(Boolean)
-    .filter(l => !isBasuraLogo(l));
-
-  const titulo = lineas.find(l => /^DEVOCIONAL$/i.test(l)) || "DEVOCIONAL";
-
-  const fecha =
-    lineas.find(l =>
-      /(lunes|martes|miércoles|miercoles|jueves|viernes|sábado|sabado|domingo)\s+\d{1,2}\s+de\s+\w+/i.test(l)
-    ) || "";
-
-  const idxOracion = lineas.findIndex(isOracionLine);
-
-  let idxCita = -1;
-  for (let i = lineas.length - 1; i >= 0; i--) {
-    if (isCitaLine(lineas[i])) { idxCita = i; break; }
-  }
-  const cita = idxCita >= 0 ? lineas[idxCita] : "";
-
-  // -------- bloque versículo (mayúsculas antes de la cita) ----------
-  let verseStart = -1;
-  let verseEnd = -1;
-
-  if (idxCita > 0) {
-    let i = idxCita - 1;
-
-    if (i >= 0 && isMostlyUpper(lineas[i])) {
-      verseEnd = i;
-      while (i >= 0 && isMostlyUpper(lineas[i])) i--;
-      verseStart = i + 1;
-    } else {
-      for (let k = idxCita - 1; k >= 0; k--) {
-        if (isMostlyUpper(lineas[k])) {
-          verseEnd = k;
-          let j = k;
-          while (j >= 0 && isMostlyUpper(lineas[j])) j--;
-          verseStart = j + 1;
-          break;
-        }
-      }
-    }
-  }
-
-  const versiculoLines =
-    (verseStart >= 0 && verseEnd >= verseStart)
-      ? lineas.slice(verseStart, verseEnd + 1)
-      : [];
-
-  const versiculo = versiculoLines.join(" ").replace(/\s+/g, " ").trim();
-
-  // -------- Bloque 2: Reflexión + Oración ----------
-  const idxFecha = fecha ? lineas.indexOf(fecha) : -1;
-  const inicioCuerpo = (idxFecha >= 0) ? (idxFecha + 1) : 0;
-
-  const corteAntesVersiculo = (verseStart >= 0) ? verseStart : (idxCita >= 0 ? idxCita : lineas.length);
-
-  const reflexionEnd = (idxOracion >= 0 ? idxOracion : corteAntesVersiculo);
-  const reflexion = lineas.slice(inicioCuerpo, reflexionEnd).join(" ").replace(/\s+/g, " ").trim();
-
-  let oracion = "";
-  if (idxOracion >= 0) {
-    oracion = lineas.slice(idxOracion, corteAntesVersiculo).join(" ").replace(/\s+/g, " ").trim();
-    oracion = oracion.replace(/^.*?\bOraci[oó]n\b\s*:\s*/i, "Oración: ");
-    if (!/^Oración:/i.test(oracion)) oracion = "Oración: " + oracion;
-  }
-
-  const bloque2 = [reflexion, oracion].filter(Boolean).join("\n\n").trim();
-
-  const footer1 = "IGLESIA CRISTIANA DE LA VIDA ABUNDANTE";
-  const footer2 = "ROCA 123 - TRISTAN SUAREZ";
-
-  const bloque1 =
-`${titulo}
-${fecha}
-
-${versiculo}
-
-${cita}
-
-${footer1}
-${footer2}`.trim();
-
-  return [bloque1, bloque2];
-}
-
-// =========================
-// ✅ MODALES DEVOCIONAL (Paso 1/2/3) — helpers
-// =========================
-function abrirModal(id) {
-  const m = document.getElementById(id);
-  if (!m) return;
-  m.classList.add("abierto");
-  m.setAttribute("aria-hidden", "false");
-}
-
-function cerrarModal(id) {
-  const m = document.getElementById(id);
-  if (!m) return;
-  m.classList.remove("abierto");
-  m.setAttribute("aria-hidden", "true");
-}
-
-// Hacemos globales las X (porque tu HTML las llama con onclick="...")
-window.cerrarDevPaso1 = () => cerrarModal("modalDevPaso1");
-window.cerrarDevPaso2 = () => cerrarModal("modalDevPaso2");
-window.cerrarDevPaso3 = () => cerrarModal("modalDevPaso3");
-
-// =========================
-// ✅ Estado del devocional (global simple)
-// =========================
-window.__dev = window.__dev || {
-  textoCompleto: "",
-  bloque1: "",
-  bloque2: ""
-};
-
-function renderPaso1() {
-  const el = document.getElementById("previewDevPaso1");
-  if (el) el.textContent = window.__dev.bloque1 || "";
-}
-function renderPaso2() {
-  const el = document.getElementById("previewDevPaso2");
-  if (el) el.textContent = window.__dev.bloque2 || "";
-}
-function renderPaso3() {
-  const el = document.getElementById("previewDevPaso3");
-  if (el) el.textContent = ((window.__dev.bloque1 || "") + "\n\n" + (window.__dev.bloque2 || "")).trim();
-}
-
-// =========================
-// ✅ Navegación entre pasos (tu HTML llama estas funciones)
-// =========================
-window.irDevPaso2 = () => {
-  cerrarModal("modalDevPaso1");
-  renderPaso2();
-  abrirModal("modalDevPaso2");
-};
-
-window.volverDevPaso1 = () => {
-  cerrarModal("modalDevPaso2");
-  renderPaso1();
-  abrirModal("modalDevPaso1");
-};
-
-window.irDevPaso3 = () => {
-  cerrarModal("modalDevPaso2");
-  renderPaso3();
-  abrirModal("modalDevPaso3");
-};
-
-window.volverDevPaso2 = () => {
-  cerrarModal("modalDevPaso3");
-  renderPaso2();
-  abrirModal("modalDevPaso2");
-};
-
-// =========================
-// ✅ Audio: tu HTML usa onclick="abrirAudioDev()"
-// =========================
-window.abrirAudioDev = () => {
-  const m = document.getElementById("modalAudio");
-  if (!m) return alert("No existe #modalAudio en el HTML");
-
-  const ta = document.getElementById("textoAudio");
-  if (ta) ta.value = window.__dev.textoCompleto || "";
-
-  abrirModal("modalAudio");
-};
-
-// ya tenías cerrarModalAudio en HTML
-window.cerrarModalAudio = () => cerrarModal("modalAudio");
-
-// ===============================
-// ✅ DEVOCIONAL: cambiar de paso usando #modalPersonalizar
-// ===============================
-window.__devSiguiente = (paso) => {
-  paso = Number(paso || 1);
-  window.__devPaso = paso;
-
-  // 1) Elegir modo del controller
-  const mode =
-    paso === 1 ? "DEV1" :
-    paso === 2 ? "DEV2" : "DEV3";
-
-  // 2) Abrir el modal único
-  Modal.open(mode);
-
-  // 3) Cargar el texto correcto en la vista previa
-  const texto = (paso === 1) ? (window.__dev.bloque1 || "") : (window.__dev.bloque2 || "");
-
-  // devPaso:true solo para que tu función sepa que es devocional
-  window.abrirPersonalizarConTexto(texto, { devPaso: true, paso });
-
-  // 4) Refrescar UI (fondos / fondo plano / botones)
-  Modal.applyUI();
-};
-
-function devBloque1AHTML(txt) {
-  const lines = String(txt || "").split("\n").map(s => s.trim()).filter(Boolean);
-
-  const titulo = lines[0] || "DEVOCIONAL";
-  const fecha  = lines[1] || "";
-  const footer2 = lines[lines.length - 1] || "";
-  const footer1 = lines[lines.length - 2] || "";
-
-  // cita: buscá la primera que parezca "Mateo 19:13-14"
-  let citaIdx = -1;
-  for (let i = 0; i < lines.length; i++) {
-    if (/\d+:\d+/.test(lines[i])) { citaIdx = i; break; }
-  }
-  const cita = citaIdx >= 0 ? lines[citaIdx] : "";
-
-  // versículo: todo lo que esté entre fecha y cita
-  const verseStart = fecha ? 2 : 1;
-  const verseEnd = (citaIdx >= 0 ? citaIdx : lines.length - 2);
-  const versiculo = lines.slice(verseStart, verseEnd).join(" ");
-
-  return `
-    <div class="dev-head">
-      <div class="dev-titulo">${titulo}</div>
-      <div class="dev-fecha">${fecha}</div>
-    </div>
-
-    <div class="dev-versiculo">${versiculo}</div>
-
-    <div class="dev-cita">${cita}</div>
-
-    <div class="dev-footer">
-      <div>${footer1}</div>
-      <div>${footer2}</div>
-    </div>
-  `;
-}
-
-function devBloque2AHTML(txt) {
-  const raw = String(txt || "").trim();
-  if (!raw) return "";
-
-  const parts = raw.split(/\n\s*\n/); // separa por doble salto
-  const reflexion = parts[0] || "";
-  const oracion = parts.slice(1).join("\n\n") || "";
-
-  return `
-    <div class="dev-reflexion">${reflexion}</div>
-    ${oracion ? `<div class="dev-oracion">${oracion}</div>` : ""}
-  `;
 }
