@@ -45,7 +45,6 @@ let size = 18;
 let fuenteActual = "Arial";
 let colorActual = "#fff3b0"; // 💛 amarillo por default
 let resaltadorBloqueado = false; // 🔒 nuevo estado
-let devFondoPlano = ""; // "#rrggbb" o ""
 
 // ================= MARCADORES (NUEVO LIMPIO) =================
 let modoMarcador = false;
@@ -70,32 +69,6 @@ let textStyle = {
   italic: false,
   underline: false
 };
-
-// ================= DEVOCIONALES: TEXTO EXTERNO PARA EL MODAL =================
-let textoExternoModal = "";     // si hay texto acá, el modal usa esto
-let modoTextoExterno = false;   // true = no usar versículos seleccionados
-
-window.__devPasoCaptura = false; // ✅ si true: NO subir a firebase
-
-
-function aplicarChecksDevUI() {
-  const chkIglesiaLabel = document.querySelector('#rowFinal .subir-iglesia-btn input#checkIglesia')?.closest('label');
-  const chkPanelLabel = document.getElementById("chkPanelDevLabel");
-
-  // Si NO estamos en devocional paso 3 -> comportamiento normal
-  if (window.__devPaso !== 3) {
-    if (chkPanelLabel) chkPanelLabel.style.display = "none";
-    if (chkIglesiaLabel) chkIglesiaLabel.style.display = "inline-flex";
-    return;
-  }
-
-  // ✅ DEV FINAL (paso 3):
-  // Iglesia es SIEMPRE (sin checkbox visible)
-  if (chkIglesiaLabel) chkIglesiaLabel.style.display = "none";
-
-  // Panel es opcional (checkbox visible)
-  if (chkPanelLabel) chkPanelLabel.style.display = "inline-flex";
-}
 
 
 // ================= AUTH =====================================
@@ -819,27 +792,11 @@ function actualizarPreview() {
 
   if (!previewImagen || !previewTexto || !previewTextoBack || !wrapper) return;
 
-  // ================= Texto Versiculos Biblia o Bloque OCR Devocional =================
- const textoFinal = modoTextoExterno
-  ? (textoExternoModal || "")
-  : obtenerVersiculoSeleccionado();
+  // ================= Texto Versiculos Biblia =================
+const textoFinal = obtenerVersiculoSeleccionado();
 
-const esDev = (window.__devPaso === 1 || window.__devPaso === 2 || window.__devPaso === 3);
-
-if (esDev) {
-  // ✅ en devocional usamos HTML con layout
-  const html = (window.__devPaso === 1)
-    ? devBloque1AHTML(textoFinal)
-    : devBloque2AHTML(textoFinal);
-
-  previewTexto.innerHTML = html;
-  previewTextoBack.innerHTML = html;
-} else {
-  // Biblia normal
-  previewTexto.innerText = textoFinal || "";
-  previewTextoBack.innerText = textoFinal || "";
-}
-
+previewTexto.innerText = textoFinal || "";
+previewTextoBack.innerText = textoFinal || "";
 
   // ================= Fondo =================
 const fondoUsable = fondoFinalBlobUrl || fondoFinal;
@@ -947,11 +904,6 @@ previewTextoBack.style.textShadow = `
   previewTextoBack.style.fontStyle = previewTexto.style.fontStyle;
   previewTextoBack.style.textDecoration = previewTexto.style.textDecoration;
 
-  // ✅ DEVOCIONAL PASO 2: forzar fondo plano siempre
-if (window.__devPaso === 2 && devFondoPlano) {
-  previewImagen.style.backgroundImage = "none";
-  previewImagen.style.backgroundColor = devFondoPlano;
-}
 invalidarRenderFinal();
 
 }
@@ -1025,28 +977,19 @@ async function generarImagenFinal(opts = {}) {
     return false;
   }
 
-  // ✅ SOLO SUBE SI subir=true
-  if (subir && !window.__devPasoCaptura) {
-    if (window.__devPaso === 3) {
-      await subirDevocionalFinal();
-    } else {
-      if (typeof subirImagen !== "function") return true;
+    // ================= ✅ SI pidieron "subir", subimos a Firebase =================
+  if (subir) {
+    // Siempre a Mi Panel
+    await subirImagen("personal");
 
-      const subirIglesia = !!document.getElementById("checkIglesia")?.checked;
-
-      const tareas = [];
-      if (subirIglesia) tareas.push(subirImagen("iglesia"));
-      tareas.push(subirImagen("personal"));
-
-      const resultados = await Promise.allSettled(tareas);
-      const fallos = resultados.filter(r => r.status === "rejected");
-      if (fallos.length) {
-        console.warn("⚠️ Subida falló:", fallos);
-        mostrarToast("⚠️ Se descargó la imagen, pero no se pudo subir.");
-      }
+    // Si está tildado "Iglesia", también sube a Iglesia
+    const chk = document.getElementById("checkIglesia");
+    if (chk && chk.checked) {
+      await subirImagen("iglesia");
     }
   }
 
+  
   return true;
 }
 
@@ -1057,13 +1000,6 @@ function clickLink(link) {
   link.remove();
 }
 
-function consumirUltimoAudioUrl() {
-  const u = window.__lastAudioUrl || "";
-  // ✅ lo “gastamos” acá para que no se pegue a otra imagen
-  window.__lastAudioUrl = "";
-  window.__lastAudioTs = 0;
-  return u;
-}
 
 // ================= ⭐ SUBIR IMAGEN (personal / iglesia) ☁️ =================
 async function subirImagen(destino = "personal") {
@@ -1105,7 +1041,6 @@ await set(ref(db, dbPath), {
   fecha: ts,
   libro: libroSel?.value || "",
   capitulo: Number(capSel?.value || 0),
-  audioUrl: consumirUltimoAudioUrl()
 
 });
 
@@ -1308,7 +1243,7 @@ function getRenderKey() {
   if (!preview) return "no-preview";
 
   const rect = preview.getBoundingClientRect();
-  const fondoUsable = (window.fondoFinalBlobUrl || window.fondoFinal || "") + "";
+  const fondoUsable = (fondoFinalBlobUrl || fondoFinal || "") + "";
   const texto = (document.getElementById("previewTexto")?.textContent || "").trim();
   const font = getComputedStyle(document.getElementById("previewTexto") || preview).fontFamily || "";
   const color = getComputedStyle(document.getElementById("previewTexto") || preview).color || "";
@@ -1350,9 +1285,12 @@ async function asegurarCanvasFinal({ subir = false } = {}) {
     canvas.width > 10 && canvas.height > 10
   ) {
     // Si alguien pidió "subir", subimos sin re-render
-    if (subir) {
-      await generarImagenFinal({ subir: true });
-    }
+if (subir) {
+  await subirImagen("personal");
+  const chk = document.getElementById("checkIglesia");
+  if (chk && chk.checked) await subirImagen("iglesia");
+}
+
     return true;
   }
 
@@ -1369,8 +1307,11 @@ async function asegurarCanvasFinal({ subir = false } = {}) {
       window.__canvasFinalCache.lastOk = true;
 
       if (subir) {
-        await generarImagenFinal({ subir: true }); // sube con el canvas ya listo
-      }
+  await subirImagen("personal");
+  const chk = document.getElementById("checkIglesia");
+  if (chk && chk.checked) await subirImagen("iglesia");
+}
+
     }
 
     return ok;
@@ -2486,636 +2427,12 @@ function salirModoMarcadorLimpio() {
   mostrarTexto();
 }
 
-// ================= MODAL 3: AUDIO (DEVOCIONAL) =================
-let __audioTextoOriginal = "";
-let __audioLastUrl = "";     // si tu AppSheet devuelve URL final del mp3/wav
-let __audioLastTs = 0;       // para asociar subidas
-let __audioSpeaking = false;
-
-// ✅ Fonética: si vos ya tenés un sistema, esto NO lo pisa.
-// Solo agrega Joiada con J si hace falta.
-window.__FONETICA = window.__FONETICA || {};
-if (!window.__FONETICA["Joiada"]) {
-  // Truco: “Joíada” suele forzar mejor la J en TTS español
-  window.__FONETICA["Joiada"] = "Joíada";
-}
-
-// ✅ Normaliza texto para lectura (respeta ¿?¡! y agrega micro pausas)
-function audio_prepararTextoParaVoz(txt) {
-  let t = String(txt || "");
-
-  // 1) aplicar fonética (mapa)
-  const mapa = window.__FONETICA || {};
-  Object.keys(mapa).forEach(k => {
-    const val = mapa[k];
-    // reemplazo simple (no regex raro)
-    t = t.split(k).join(val);
-  });
-
-  // 2) pausas suaves: sin borrar signos, solo ayudamos al “tono”
-  //    (algunos TTS ignoran signos, esto ayuda)
-  t = t
-    .replace(/([¿¡])/g, "$1 ")     // espacio después de ¿¡
-    .replace(/([?.!])(\S)/g, "$1 $2");
-
-  return t.trim();
-}
-
-// ✅ Obtener texto que hoy está en tu preview (el de la imagen)
-function audio_getTextoDesdePreview() {
-  const el = document.getElementById("previewTexto");
-  const t = el ? (el.innerText || "") : "";
-  return t.trim();
-}
-
-// ✅ Abrir/Cerrar modal
-window.abrirModalAudio = () => {
-  const modal = document.getElementById("modalAudio");
-  const ta = document.getElementById("textoAudio");
-  const estado = document.getElementById("audioEstado");
-  const audio = document.getElementById("audioPreview");
-
-  if (!modal || !ta) return;
-
-  // ✅ TEXTO BASE: en devocional final usar SIEMPRE el texto completo guardado
-  const base =
-    (window.__devPaso === 3 && window.__devTextoCompleto)
-      ? String(window.__devTextoCompleto || "").trim()
-      : audio_getTextoDesdePreview();
-
-  __audioTextoOriginal = base;
-  ta.value = base;
-
-  // limpiar player (hasta que exista audio real)
-  if (audio) audio.removeAttribute("src");
-  if (estado) estado.textContent = "Listo para previsualizar.";
-
-  // ✅ abrir como el resto de tus modales
-  modal.style.display = "flex";
-  modal.setAttribute("aria-hidden", "false");
-};
-
-window.cerrarModalAudio = () => {
-  const modal = document.getElementById("modalAudio");
-  if (!modal) return;
-
-  try { window.speechSynthesis?.cancel(); } catch(e){}
-
-  modal.style.display = "none";
-  modal.setAttribute("aria-hidden", "true");
-};
-
-window.restaurarTextoAudio = () => {
-  const ta = document.getElementById("textoAudio");
-  if (!ta) return;
-  ta.value = __audioTextoOriginal || "";
-};
-
-// ✅ previa real llama a Cloud Function y reproduce MP3
-window.escucharPreviaAudio = async () => {
-  const ta = document.getElementById("textoAudio");
-  const estado = document.getElementById("audioEstado");
-  const audio = document.getElementById("audioPreview");
-  if (!ta || !audio) return;
-
-  const texto = (ta.value || "").trim();
-  if (!texto) {
-    if (estado) estado.textContent = "⚠️ No hay texto para previsualizar.";
-    return;
-  }
-
-  // ✅ limpiar ANTES del fetch (acá sí va)
-  const textoLimpio = texto
-    .replace(/[•▪●■□◆◇▶►◼◻]/g, "")  // saca viñetas/cuadrados
-    .replace(/\s{2,}/g, " ")
-    .trim();
-
-  try {
-    window.__audioBase64 = null; // limpia audio anterior
-    if (estado) estado.textContent = "🎧 Generando previa real…";
-
-    const r = await fetch(AUDIO_WEBAPP_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ texto: textoLimpio })
-    });
-
-    const data = await r.json().catch(() => ({}));
-
-    if (!r.ok) {
-      throw new Error(data?.error || "Error HTTP " + r.status);
-    }
-
-    if (!data.audioBase64) {
-      throw new Error("No devolvió audioBase64");
-    }
-
-    window.__audioBase64 = data.audioBase64;
-
-    const bytes = Uint8Array.from(atob(data.audioBase64), c => c.charCodeAt(0));
-    const blob = new Blob([bytes], { type: "audio/mpeg" });
-    const localUrl = URL.createObjectURL(blob);
-
-    audio.src = localUrl;
-    audio.load();
-    await audio.play();
-
-    if (estado) estado.textContent = "✅ Previa reproduciendo.";
-  } catch (e) {
-    console.error(e);
-    if (estado) estado.textContent = "❌ No se pudo generar la previa real.";
-  }
-};
-
-
-// ✅ Correcto: NO sube nada. Solo “guarda” el audio para usarlo al finalizar imagen.
-window.finalizarYSubirAudio = async () => {
-  const estado = document.getElementById("audioEstado");
-  const ta = document.getElementById("textoAudio");
-
-  if (!ta) return;
-  const texto = (ta.value || "").trim();
-  if (!texto) {
-    if (estado) estado.textContent = "⚠️ Pegá o escribí el texto antes de confirmar.";
-    return;
-  }
-
-  if (!window.__audioBase64) {
-    if (estado) estado.textContent = "⚠️ Primero generá la previa (para tener el audio real).";
-    return;
-  }
-
-  // ✅ Guardamos “pendiente” para que el modal de imagen lo suba cuando finalices ahí
-  window.__pendingAudio = {
-    texto,
-    audioBase64: window.__audioBase64,
-    ts: Date.now()
-  };
-
-  if (estado) estado.textContent = "✅ Audio confirmado. Volvé a la imagen para finalizar.";
-};
-
-
-async function uiBloqueo(btn, fn) {
-  if (!btn) return fn();
-
-  btn.disabled = true;
-  const old = btn.innerHTML;
-  btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i>';
-
-  // ✅ dejar que el DOM pinte el spinner (2 frames)
-  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-
-  try {
-    return await fn();
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = old;
-  }
-}
-
-// ✅ Botón del modal de imagen -> abre modal audio
-document.addEventListener("DOMContentLoaded", () => {
-  const b = document.getElementById("btnAbrirAudio");
-  if (b) {
-    b.type = "button";
-    b.onclick = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      window.abrirModalAudio?.();
-    };
-  }
-});
-
-// ================= mas de AUDIOS 😆 =================
-// ✅ URL del Web App de Apps Script (Deploy -> Web app)
-const AUDIO_WEBAPP_URL = "https://us-central1-vidaabundante-f118a.cloudfunctions.net/ttsAudio";
-
-window.subirAudioAGithub = async ({ texto, subirIglesia, ts }) => {
-
-  // 🚨 BLOQUEO: si no existe previa real, no permitir subir
-  if (!window.__audioBase64) {
-    throw new Error("Primero generá la previa real del audio");
-  }
-
-  const r = await fetch(AUDIO_WEBAPP_URL, {
-    method: "POST",
-    headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify({
-      modo: "github",
-      texto,
-      audioBase64: window.__audioBase64, // ya sabemos que existe
-      subirIglesia,
-      ts
-    })
-  });
-
-  const data = await r.json().catch(() => ({}));
-  if (!r.ok || !data.url) {
-    throw new Error(data?.error || "No devolvió URL");
-  }
-
-  return { url: data.url };
-};
-
-
-// ================= mas de AUDIOS 😆 =================
-window.__lastAudioUrl = "";   // ultimo audio generado/subido (biblia)
-window.__lastAudioTs  = 0;    // para evitar mezclar
-
-async function subirAudioAFirebase({ texto, subirIglesia }) {
-  if (!uid) throw new Error("No hay uid");
-
-  // 1) pedir audio base64 al Apps Script (modo RAW)
-  const r = await fetch(AUDIO_WEBAPP_URL, {
-    method: "POST",
-    headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify({ texto, modo: "raw" })
-  });
-
-  const data = await r.json().catch(() => ({}));
-  if (!r.ok || !data.audioBase64) {
-    throw new Error(data?.error || "No devolvió audioBase64");
-  }
-
-  // 2) base64 -> Blob mp3
-  const bytes = Uint8Array.from(atob(data.audioBase64), c => c.charCodeAt(0));
-  const blob = new Blob([bytes], { type: "audio/mpeg" });
-
-  // 3) subir a Firebase Storage
-  const ts = Date.now();
-  const fileName = `audio_${ts}.mp3`;
-  const storagePath = subirIglesia
-    ? `audios_iglesia/${uid}/${fileName}`
-    : `audios_personal/${uid}/${fileName}`;
-
-  const storageRef = sRef(storage, storagePath);
-  await uploadBytes(storageRef, blob, { contentType: "audio/mpeg" });
-  const url = await getDownloadURL(storageRef);
-
-  // 4) guardar referencia en Realtime DB (para tu panel / appsheet después)
-  const dbPath = subirIglesia
-    ? `panelAudiosIglesia/${uid}/${ts}`
-    : `panelAudiosPersonal/${uid}/${ts}`;
-
-  await set(ref(db, dbPath), {
-    url,
-    storagePath,
-    fecha: ts,
-    origen: "biblia"
-  });
-
-window.__lastAudioUrl = url;
-window.__lastAudioTs  = ts;
-  return url;
-}
-
 // ================= 🔺 HACER FUNCIONES GLOBALES (FIX DESCARGAR/COMPARTIR EN PC) =================
 window.generarImagenFinal = generarImagenFinal;
 window.descargarImagenFinal = descargarImagenFinal;
 window.compartirImagenFinal = compartirImagenFinal;
 window.finalizarEdicion = window.finalizarEdicion;
 window.cancelarCrearImagen = window.cancelarCrearImagen;
-
-// ===============================
-// ✅ MODAL CONTROLLER (SIN MEZCLAS)
-// ===============================
-const Modal = {
-  state: {
-    mode: null, // 'BIBLE_IMAGE' | 'DEV1' | 'DEV2' | 'DEV3'
-    dev: { img1:null, img2:null, textoCompleto:"", fondoPlano:"#ffffff" },
-    audioContext: 'BIBLE', // 'BIBLE' | 'DEV'
-  },
-
-  el() {
-    return {
-      modal: document.getElementById("modalPersonalizar"),
-      preview: document.getElementById("previewImagen"),
-      fondos: document.getElementById("personalizarFondos"),
-      rowA: document.getElementById("rowA"),
-      rowB: document.getElementById("rowB"),
-      rowFinal: document.getElementById("rowFinal"),
-      boxFormato: document.getElementById("boxFormato"),
-      fondoPlanoBox: document.getElementById("fondoPlanoBox"),
-
-      // botones dev
-      bSig1: document.getElementById("btnDevSiguiente1"),
-      bSig2: document.getElementById("btnDevSiguiente2"),
-      bVol2: document.getElementById("btnDevVolver2"),
-      bVol3: document.getElementById("btnDevVolver3"),
-      bVerFinal: document.getElementById("btnDevVerFinal"),
-
-      // botones finales (los buscás dentro de rowFinal)
-      btnDesc: document.querySelector('#rowFinal button[onclick="descargarImagenFinal()"]'),
-      btnShare: document.querySelector('#rowFinal button[onclick="compartirImagenFinal()"]'),
-      btnFin: document.querySelector('#rowFinal button[onclick="finalizarEdicion()"]'),
-      btnAudio: document.getElementById("btnAbrirAudio"),
-
-      chkIglesia: document.getElementById("checkIglesia"),
-      chkIglesiaLabel: document.getElementById("checkIglesia")?.closest(".subir-iglesia-btn"),
-      chkPanelDevLabel: document.getElementById("chkPanelDevLabel"),
-
-    };
-  },
-
-  open(mode) {
-    this.state.mode = mode;
-
-    // siempre arrancamos limpio
-    resetModalPersonalizar();
-
-    const { modal } = this.el();
-    if (!modal) return;
-
-    abrirModalPersonalizar();
-
-    modal.classList.remove("solo-imagen", "modo-devocional");
-
-    // configurar UI por modo
-    this.applyUI();
-  },
-
-  close() {
-    const { modal } = this.el();
-    if (!modal) return;
-    cerrarModalPersonalizar();
-
-    modal.classList.remove("solo-imagen", "modo-devocional");
-    this.state.mode = null;
-  },
-
-  applyUI() {
-    const E = this.el();
-    if (!E.modal) return;
-
-    // helpers
-    const show = (el, on=true) => { if (el) el.style.display = on ? "" : "none"; };
-
-    // reset de visibilidad (todo apagado y prendemos lo que corresponde)
-    show(E.boxFormato, false);
-    show(E.fondoPlanoBox, false);
-
-    show(E.bSig1, false);
-    show(E.bSig2, false);
-    show(E.bVol2, false);
-    show(E.bVol3, false);
-    show(E.bVerFinal, false);
-
-    show(E.btnDesc, false);
-    show(E.btnShare, false);
-    show(E.btnFin, false);
-    show(E.btnAudio, false);
-    // el check iglesia lo usás en imagen; en dev final lo querés "subir a mi panel" tilde (lo resolvemos después)
-    // por ahora lo dejamos visible solo donde corresponda:
-    const labelIglesia = E.chkIglesiaLabel;
-const labelPanelDev = E.chkPanelDevLabel;
-
-if (labelIglesia) labelIglesia.style.display = "none";
-if (labelPanelDev) labelPanelDev.style.display = "none";
-
-    // ========= MODOS =========
-    if (this.state.mode === "BIBLE_IMAGE") {
-      E.modal.classList.add("solo-imagen");
-
-      // Biblia: preview post/story, fondos, formato, opacidad, color, fuentes, estilos, tamaño, audio, descargar, compartir, finalizar, check iglesia
-      show(E.boxFormato, true);
-      show(E.fondos, true);
-
-      show(E.btnAudio, true);
-      show(E.btnDesc, true);
-      show(E.btnShare, true);
-      show(E.btnFin, true);
-
-      if (labelIglesia) labelIglesia.style.display = "inline-flex";
-
-      // default: sube personal SIEMPRE; iglesia opcional (como ya tenés)
-      forceDefaultCheckIglesia();
-
-      if (labelIglesia) labelIglesia.style.display = "inline-flex";
-  if (labelPanelDev) labelPanelDev.style.display = "none";
-      // tamaños: depende del formato que elijas (ya lo maneja setFormatoImagen)
-      return;
-    }
-
-   if (this.state.mode === "DEV1") {
-  E.modal.classList.add("modo-devocional");
-  show(E.fondos, true);
-  show(E.boxFormato, false);
-  show(E.fondoPlanoBox, false);
-  show(E.bSig1, true);
-
-  setFormatoImagen("post");
-  uiModoFondosSolo();
-  cargarFondos(); // ✅ ESTA es la galería
-
-  return;
-}
-
-    if (this.state.mode === "DEV2") {
-      E.modal.classList.add("modo-devocional");
-      show(E.fondos, false);          // NO galería
-      show(E.fondoPlanoBox, true);    // SI color plano
-      show(E.boxFormato, false);
-
-      show(E.bVol2, true);
-      show(E.bSig2, true);
-
-      // Paso 2: STORY 210x87 aprox (lo resolvemos por formato story y luego armado A4)
-      setFormatoImagen("story");
-      uiModoFondoPlanoSolo();
-      return;
-    }
-
-    if (this.state.mode === "DEV3") {
-      E.modal.classList.add("modo-devocional");
-
-      // En final: NO mostramos fondos ni formato ni fondoPlano
-      show(E.fondos, false);
-      show(E.boxFormato, false);
-      show(E.fondoPlanoBox, false);
-
-      // botones: anterior, audio, descargar, compartir, tilde panel/iglesia (lo resolvemos abajo)
-      show(E.bVol3, true);
-      show(E.bVerFinal, true); // lo usamos como "ver final" o "refrescar final"
-      show(E.btnAudio, true);
-      show(E.btnDesc, true);
-      show(E.btnShare, true);
-
-       if (labelIglesia) labelIglesia.style.display = "none";
-  if (labelPanelDev) labelPanelDev.style.display = "inline-flex";
-      // ojo: el check actual es "iglesia". En dev final vos querés:
-      // - subir por default a iglesia-devocionales
-      // - y tilde para subir a mi panel
-      // eso lo hacemos con OTRO checkbox (te lo dejo más abajo).
-      return;
-    }
-  }
-};
-
-async function subirDevocionalFinal() {
-  if (!uid) return;
-
-  const canvas = document.getElementById("canvasFinal");
-  if (!canvas || canvas.width < 10 || canvas.height < 10) return;
-
-  const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
-  if (!blob) return;
-
-  const ts = Date.now();
-  const fileName = `devocional_${ts}.png`;
-
-  // ✅ siempre iglesia-devocionales
-  const storageIglesia = `devocionales_iglesia/${uid}/${fileName}`;
-  const dbIglesia = `iglesiaDevocionales/${uid}/${ts}`;
-
-  // ☑️ opcional mi panel devocionales
-  const subirPanel = !!document.getElementById("checkPanelDev")?.checked;
-  const storagePanel = `devocionales_personal/${uid}/${fileName}`;
-  const dbPanel = `panelDevocionalesPersonal/${uid}/${ts}`;
-
-  // 1) subir a Iglesia SIEMPRE
-  const refI = sRef(storage, storageIglesia);
-  await uploadBytes(refI, blob, { contentType: "image/png" });
-  const urlI = await getDownloadURL(refI);
-
-  await set(ref(db, dbIglesia), {
-    url: urlI,
-    storagePath: storageIglesia,
-    fecha: ts,
-    tipo: "devocional"
-  });
-
-  // 2) subir a Panel SOLO si tildado
-  if (subirPanel) {
-    const refP = sRef(storage, storagePanel);
-    await uploadBytes(refP, blob, { contentType: "image/png" });
-    const urlP = await getDownloadURL(refP);
-
-    await set(ref(db, dbPanel), {
-      url: urlP,
-      storagePath: storagePanel,
-      fecha: ts,
-      tipo: "devocional"
-    });
-  }
-
-  mostrarToast("✅ Devocional subido");
-}
-
-// ================= 💛 DEVOCIONALES =================
-function uiModoFondosSolo() {
-  const fondos = document.getElementById("personalizarFondos");
-  const plano  = document.getElementById("fondoPlanoBox");
-  if (fondos) fondos.style.display = "flex";
-  if (plano)  plano.style.display  = "none";
-}
-
-function uiModoFondoPlanoSolo() {
-  const fondos = document.getElementById("personalizarFondos");
-  const plano  = document.getElementById("fondoPlanoBox");
-  if (fondos) fondos.style.display = "none";
-  if (plano)  plano.style.display  = "block";
-}
-
-// botón “Aplicar”
-window.aplicarFondoPlanoDesdePicker = () => {
-  const c = document.getElementById("colorFondoPlano")?.value || "#ffffff";
-  const previewImagen = document.getElementById("previewImagen");
-
-  // ✅ guardar fondo plano para paso 2
-  devFondoPlano = c;
-
-  if (previewImagen) {
-    // fondo plano: sin imagen
-    fondoFinal = null;
-    if (fondoFinalBlobUrl) {
-      URL.revokeObjectURL(fondoFinalBlobUrl);
-      fondoFinalBlobUrl = null;
-    }
-    previewImagen.style.backgroundImage = "none";
-    previewImagen.style.backgroundColor = c;
-  }
-
-  const back = document.getElementById("previewTextoWrapper");
-  if (back) back.style.backgroundColor = "rgba(0,0,0,0)";
-
-  actualizarPreview();
-};
-
-// ================= 💛 DEVOCIONALES =================
-window.abrirPersonalizarConTexto = function(texto, opts = {}) {
-  if (!texto) return;
-
-  // ✅ siempre arrancamos limpio
-  resetModalPersonalizar();
-  
-window.__devPaso = Number(opts.paso || 1);
-aplicarChecksDevUI();
-
-  modoTextoExterno = true;
-  textoExternoModal = String(texto);
-
-    const modal = document.getElementById("modalPersonalizar");
-  if (modal) {
-    // ✅ MODO: DEVOCIONAL
-    modal.classList.add("modo-devocional");
-    modal.classList.remove("solo-imagen");
-    modal.style.display = "flex";
-  }
-
-  const boxFormato = document.getElementById("boxFormato");
-  const esDev = !!opts.devPaso;
-
-  // ✅ En devocionales NO se elige formato manual
-  if (boxFormato) boxFormato.style.display = esDev ? "none" : "flex";
-
-  const paso = Number(opts.paso || 1);
-
-  if (paso === 1) {
-    // ✅ Bloque 1: CUADRADO + fondos galería
-    setFormatoImagen("post");
-    uiModoFondosSolo();
-    cargarFondos();
-
-    const previewImagen = document.getElementById("previewImagen");
-    if (previewImagen) {
-      previewImagen.style.backgroundImage = "none";
-      previewImagen.style.backgroundColor = "#ffffff";
-    }
-  }
-
-  if (paso === 2) {
-    // ✅ Bloque 2: STORY + solo color plano
-    setFormatoImagen("story");
-    uiModoFondoPlanoSolo();
-
-    const color = opts.color || "#ffffff";
-    const picker = document.getElementById("colorFondoPlano");
-    if (picker) picker.value = color;
-    window.aplicarFondoPlanoDesdePicker();
-  }
-
-  // fuentes (siempre)
-  crearListaVisualFuentes();
-
-  actualizarPreview();
-};
-
-// ================= IGLESIA: SUBSECCIONES =================
-window.mostrarIglesiaSub = (sub) => {
-  const dev = document.getElementById("iglesia-devocionales");
-  const abc = document.getElementById("iglesia-abc");
-
-  if (dev) dev.style.display = (sub === "devocionales") ? "block" : "none";
-  if (abc) abc.style.display = (sub === "abc") ? "block" : "none";
-
-  // marcar botón activo
-  const tabsIglesia = document.querySelectorAll("#seccion-iglesia .panel-tabs button");
-  tabsIglesia.forEach(b => b.classList.remove("activo"));
-
-  const btn = document.querySelector(`#seccion-iglesia .panel-tabs button[onclick="mostrarIglesiaSub('${sub}')"]`);
-  if (btn) btn.classList.add("activo");
-};
 
 // ================= ✅ INIT ÚNICO =================
 document.addEventListener("DOMContentLoaded", () => {
@@ -3124,16 +2441,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // 2) check iglesia por defecto
   forceDefaultCheckIglesia();
-
-// ✅ BOTÓN CARGAR IMAGEN (DEVOCIONAL)
-  const btnDevImg = document.getElementById("btnDevImg");
-  const inputDevImg = document.getElementById("devImg");
-
-  if (btnDevImg && inputDevImg) {
-    btnDevImg.addEventListener("click", () => {
-      inputDevImg.click();
-    });
-  }
   
   // 3) listeners botones (sin depender del onclick en HTML)
   const btnGuardar = document.getElementById("btnGuardarMarcador");
@@ -3168,162 +2475,5 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // 4) arrancar en biblia
   window.irA?.("biblia");
-});
-
-// ================= ✅ DEVOCIONAL 3 PASOS arma la imagen final combinada =================
-window.__devPaso = 0;
-window.__devImg1 = null;
-window.__devImg2 = null;
-
-function dev_setUI(paso) {
-  const b1 = document.getElementById("btnDevSiguiente1");
-  const b2 = document.getElementById("btnDevSiguiente2");
-  const bf = document.getElementById("btnDevVerFinal");
-  const acciones = document.querySelector("#modalPersonalizar .fila-final");
-  const btnAudio = document.getElementById("btnAbrirAudio");
-
-  // botones finales (download/share/check/iglesia)
-  const btnDesc = acciones?.querySelector('button[onclick="descargarImagenFinal()"]');
-  const btnShare = acciones?.querySelector('button[onclick="compartirImagenFinal()"]');
-  const btnFin = acciones?.querySelector('button[onclick="finalizarEdicion()"]');
-  const chk = acciones?.querySelector(".subir-iglesia-btn");
-
-  // reset
-  if (b1) b1.style.display = "none";
-  if (b2) b2.style.display = "none";
-  if (bf) bf.style.display = "none";
-
-  if (btnDesc) btnDesc.style.display = "none";
-  if (btnShare) btnShare.style.display = "none";
-  if (btnFin) btnFin.style.display = "none";
-  if (chk) chk.style.display = "none";
-  if (btnAudio) btnAudio.style.display = "none";
-
-  // pasos
-  if (paso === 1) {
-    if (b1) b1.style.display = "inline-flex";
-  } else if (paso === 2) {
-    if (b2) b2.style.display = "inline-flex";
-  } else if (paso === 3) {
-    if (bf) bf.style.display = "inline-flex";
-    // acciones finales SOLO en final
-    if (btnDesc) btnDesc.style.display = "inline-flex";
-    if (btnShare) btnShare.style.display = "inline-flex";
-    if (btnFin) btnFin.style.display = "inline-flex";
-    if (chk) chk.style.display = "inline-flex";
-    if (btnAudio) btnAudio.style.display = "inline-flex";
-
-  }
-}
-
-async function dev_capturar() {
-  const ok = await generarImagenFinal();
-  if (!ok) return null;
-  const c = document.getElementById("canvasFinal");
-  return c ? c.toDataURL("image/png") : null;
-}
-
-function dev_cargarImg(src) {
-  return new Promise((res, rej) => {
-    const i = new Image();
-    i.onload = () => res(i);
-    i.onerror = rej;
-    i.src = src;
-  });
-}
-
-async function dev_armarFinal() {
-  const img1src = Modal.state.dev.img1 || window.__devImg1;
-  const img2src = Modal.state.dev.img2 || window.__devImg2;
-
-  if (!img1src || !img2src) {
-    alert("Falta Bloque 1 o Bloque 2.");
-    return;
-  }
-
-  const img1 = await dev_cargarImg(img1src);
-  const img2 = await dev_cargarImg(img2src);
-
-  // ✅ A4 a 300dpi aprox (podés bajar si pesa mucho)
-  // A4 = 210x297mm => 2480x3508px @300dpi (aprox)
-  const W = 2480;
-  const H = 3508;
-
-  // Alturas: bloque1 cuadrado 210mm => 2480px
-  // bloque2 resto => 3508-2480=1028px bloque 2 gana espacio automáticamente.
- const H1 = Math.round(H * 0.60);
-const H2 = H - H1;
-
-
-  const canvasFinal = document.getElementById("canvasFinal");
-  if (!canvasFinal) return;
-
-  canvasFinal.width = W;
-  canvasFinal.height = H;
-
-  const ctx = canvasFinal.getContext("2d", { willReadFrequently: true });
-  ctx.clearRect(0, 0, W, H);
-
-  // dibujar img1 ajustada a W x H1
-  ctx.drawImage(img1, 0, 0, W, H1);
-
-  // dibujar img2 ajustada a W x H2
-  ctx.drawImage(img2, 0, H1, W, H2);
-
-  // mostrar canvas final
-  const previewImagen = document.getElementById("previewImagen");
-  if (previewImagen) {
-    previewImagen.style.backgroundImage = "none";
-    previewImagen.style.backgroundColor = "#ffffff";
-  }
-
-  document.getElementById("previewTexto")?.style && (document.getElementById("previewTexto").style.display = "none");
-  document.getElementById("previewTextoBack")?.style && (document.getElementById("previewTextoBack").style.display = "none");
-
-  canvasFinal.style.display = "block";
-  canvasFinal.style.width = "100%";
-  canvasFinal.style.maxWidth = "420px";
-  canvasFinal.style.borderRadius = "12px";
-}
-
-
-document.addEventListener("DOMContentLoaded", () => {
-  const b1 = document.getElementById("btnDevSiguiente1");
-  const b2 = document.getElementById("btnDevSiguiente2");
-  const v2 = document.getElementById("btnDevVolver2");
-  const v3 = document.getElementById("btnDevVolver3");
-  const verFinal = document.getElementById("btnDevVerFinal");
-
-  if (b1) b1.onclick = () => uiBloqueo(b1, async () => {
-    window.__devPasoCaptura = true;
-    const snap = await dev_capturar();
-    window.__devPasoCaptura = false;
-
-    if (!snap) return alert("No se pudo guardar Bloque 1.");
-    Modal.state.dev.img1 = snap;
-    window.__devImg1 = snap;
-
-    window.__devSiguiente(2);
-  });
-
-  if (b2) b2.onclick = () => uiBloqueo(b2, async () => {
-    window.__devPasoCaptura = true;
-    const snap = await dev_capturar();
-    window.__devPasoCaptura = false;
-
-    if (!snap) return alert("No se pudo guardar Bloque 2.");
-    Modal.state.dev.img2 = snap;
-    window.__devImg2 = snap;
-
-    window.__devSiguiente(3);
-  });
-
-  if (v2) v2.onclick = () => window.__devSiguiente(1);
-  if (v3) v3.onclick = () => window.__devSiguiente(2);
-
-  if (verFinal) verFinal.onclick = () => uiBloqueo(verFinal, async () => {
-    await dev_armarFinal();
-    Modal.applyUI();
-  });
 });
 
