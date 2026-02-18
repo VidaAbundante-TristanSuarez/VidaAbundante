@@ -37,6 +37,9 @@ const db = getDatabase(app);
 // ✅ Opción blindada (recomendada):
 const storage = getStorage(app, "gs://vidaabundante-f118a.firebasestorage.app");
 
+window.__FB = { db, storage };
+window.__FB_API = { ref, set, sRef, uploadBytes, getDownloadURL };
+
 // ================= ESTADO GLOBAL =================
 let uid = null;
 let bibliaData = [];
@@ -74,6 +77,8 @@ let textStyle = {
 // ================= AUTH =====================================
 onAuthStateChanged(auth, user => {
   uid = user ? user.uid : null;
+
+  window.__UID = uid;
 
   if (!uid) {
     window.location.href = "login.html";
@@ -1420,6 +1425,21 @@ window.cancelarCrearImagen = () => {
 // ================= ✅ FINALIZAR EDICIÓN (CONFIRMAR) =================
 window.finalizarEdicion = async () => {
   return withRenderLock(async () => {
+   
+        // ✅ Si hay audio confirmado, lo subimos AHORA y lo dejamos listo para que la imagen lo “consuma”
+    if (window.__pendingAudio?.audioBase64) {
+      try {
+        // si querés respetar el check de iglesia, cambialo acá:
+        // const subirIglesia = !!document.getElementById("checkIglesia")?.checked;
+        const subirIglesia = false; // ✅ simple: Biblia audio siempre a personal
+        await subirPendingAudioAFirebase({ subirIglesia });
+      } catch (e) {
+        console.error(e);
+        alert("No se pudo subir el audio. Probá generar la previa otra vez.");
+        return;
+      }
+    }
+    
     const ok = await asegurarCanvasFinal({ subir: true });
     if (!ok) {
       alert("No se pudo generar la imagen (PNG). Revisá consola (F12) para ver el error.");
