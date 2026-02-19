@@ -425,3 +425,6 @@ if (btnAbrirDev) {
     abrirModal("modalDevPaso1");
   });
 }
+
+}); // ✅ cierra DOMContentLoaded
+
