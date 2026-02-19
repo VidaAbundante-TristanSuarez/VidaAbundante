@@ -1125,8 +1125,6 @@ async function compartirImagenFinal() {
 // ================= ⭐ RESET DEL MODAL  =======================
 function resetModalPersonalizar() {
   userSetFontSize = false;
-  modoTextoExterno = false;
-  textoExternoModal = "";
   fondoFinal = null;
   
   if (fondoFinalBlobUrl) {
