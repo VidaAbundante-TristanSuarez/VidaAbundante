@@ -167,6 +167,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const btnRecortar = $("btnDevRecortar");
   const btnOCR = $("btnDevOCR");
   const ta = $("devTexto");
+  const btnImg = $("btnDevImg");
+if (btnImg) {
+  btnImg.addEventListener("click", () => input.click());
+}
 
   // Botón "Crear devocional"
   const btnAbrirDev = $("btnAbrirDevModal");
