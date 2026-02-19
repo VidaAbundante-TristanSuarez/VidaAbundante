@@ -378,6 +378,46 @@ window.compartirDevFinal  = () => alert("Compartir devocional: falta implementar
 window.finalizarDevFinal  = () => alert("Finalizar devocional: falta implementar.");
 
 // =========================
+// ✅ Helpers Devocional (SI NO EXISTEN)
+// =========================
+
+// Parte el texto en 2 bloques de forma simple y robusta
+function partirEn2Bloques(texto) {
+  const t = String(texto || "").trim();
+
+  // Intento 1: separar por doble salto de línea (más “natural”)
+  const partes = t.split(/\n\s*\n/).map(s => s.trim()).filter(Boolean);
+  if (partes.length >= 2) {
+    const mitad = Math.ceil(partes.length / 2);
+    const b1 = partes.slice(0, mitad).join("\n\n");
+    const b2 = partes.slice(mitad).join("\n\n");
+    return [b1, b2];
+  }
+
+  // Intento 2: si es todo un bloque, partir por longitud
+  const mid = Math.ceil(t.length / 2);
+  return [t.slice(0, mid).trim(), t.slice(mid).trim()];
+}
+
+// Render básico de Bloque 1 (Paso 1)
+function devBloque1AHTML(txt) {
+  const safe = String(txt || "")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\n/g, "<br>");
+  return `<div style="white-space:normal; line-height:1.35; font-size:18px;">${safe}</div>`;
+}
+
+// Render básico de Bloque 2 (Paso 2)
+function devBloque2AHTML(txt) {
+  const safe = String(txt || "")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\n/g, "<br>");
+  return `<div style="white-space:normal; line-height:1.35; font-size:16px;">${safe}</div>`;
+}
+  
+// =========================
 // ✅ Render previews
 // =========================
 function renderPaso1() {
