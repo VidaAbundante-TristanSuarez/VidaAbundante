@@ -348,7 +348,7 @@ function buildBloquesFromOCR(raw){
   const idxOr = findOracionLineIndex(bodyAntesDelVerso);
 
   if (idxOr >= 0) {
-    reflexion = bodyAntesDelVerso.slice(0, idxOr).join("\n").trim();
+    reflexion = bodyAntesDelVerso.slice(0, idxOr).join(" ").trim();
 
     const orLines = bodyAntesDelVerso.slice(idxOr);
     if (orLines.length) {
@@ -386,7 +386,8 @@ function buildBloquesFromOCR(raw){
 
   // texto para audio (simple, legible)
   const audioText = buildAudioFromParts(p1, p2);
-
+  return { p1, p2, audioText };
+}
 /* =========================================================
    4) MODALES (abrir/cerrar)
    ========================================================= */
@@ -969,26 +970,33 @@ window.devToggleStyle = (fase, key) => {
 };
 
 function bindInputs(){
-  // fase 1
+
+  // =========================
+  // FASE 1 (imagen) - opacidad / tamaño / color
+  // =========================
   ["Opacidad","Tamano","Color"].forEach(k=>{
     const el = $(`dev1${k}`);
     if (!el) return;
-    el.addEventListener("input", ()=>{
-      DEV.f1.op = Number($("dev1Opacidad")?.value || 0.35);
-      const sugerido = sugerirTamanoVersiculo(p1.versiculo);
-      DEV.f1.size = sugerido;
 
-      const s1 = $("dev1Tamano");
-      if (s1) s1.value = String(sugerido);
+    el.addEventListener("input", ()=>{
+      // opacidad y color siempre desde los inputs
+      DEV.f1.op = Number($("dev1Opacidad")?.value || 0.35);
       DEV.f1.color = $("dev1Color")?.value || "#000000";
+
+      // tamaño SIEMPRE desde el slider (el usuario lo mueve)
+      DEV.f1.size = Number($("dev1Tamano")?.value || 30);
+
       devRenderFase(1);
     });
   });
 
-  // fase 2
+  // =========================
+  // FASE 2 (color plano) - opacidad / tamaño / color
+  // =========================
   ["Opacidad","Tamano","Color"].forEach(k=>{
     const el = $(`dev2${k}`);
     if (!el) return;
+
     el.addEventListener("input", ()=>{
       DEV.f2.op = Number($("dev2Opacidad")?.value || 0.15);
       DEV.f2.size = Number($("dev2Tamano")?.value || 26);
@@ -997,6 +1005,7 @@ function bindInputs(){
     });
   });
 
+  // Fondo fase 2
   const fondo2 = $("dev2Fondo");
   if (fondo2) {
     fondo2.addEventListener("input", ()=>{
@@ -1286,39 +1295,46 @@ function initDevocionales(){
     }
   });
 
-  // CREAR DEVOCIONAL => construir bloques y abrir fase 1
-  if (btnCrear) {
-    btnCrear.addEventListener("click", ()=>{
-      const texto = (ta.value || "").trim();
-      if (!texto) { alert("Primero necesitás texto (OCR o pegado)."); return; }
+ // CREAR DEVOCIONAL => construir bloques y abrir fase 1
+if (btnCrear) {
+  btnCrear.addEventListener("click", ()=>{
+    const texto = (ta.value || "").trim();
+    if (!texto) { alert("Primero necesitás texto (OCR o pegado)."); return; }
 
-     const { p1, p2, audioText } = buildBloquesFromOCR(texto);
+    const { p1, p2, audioText } = buildBloquesFromOCR(texto);
 
-      DEV.p1 = p1;
-      DEV.p2 = p2;
-      DEV.audioText = audioText;
+    DEV.p1 = p1;
+    DEV.p2 = p2;
+    DEV.audioText = audioText;
 
-      // reset gate audio
-      DEV.audioOk = false;
-      devSetFinalButtons(false);
+    // reset gate audio
+    DEV.audioOk = false;
+    devSetFinalButtons(false);
 
-      // set controles actuales desde inputs (por si el usuario tocó algo antes)
-      DEV.f1.op = Number($("dev1Opacidad")?.value || 0.35);
-      DEV.f1.size = Number($("dev1Tamano")?.value || 30);
-      DEV.f1.color = $("dev1Color")?.value || "#000000";
+    // ===== FASE 1: setear opacidad + color desde inputs
+    DEV.f1.op = Number($("dev1Opacidad")?.value || 0.35);
+    DEV.f1.color = $("dev1Color")?.value || "#000000";
 
-      DEV.f2.op = Number($("dev2Opacidad")?.value || 0.15);
-      DEV.f2.size = Number($("dev2Tamano")?.value || 26);
-      DEV.f2.color = $("dev2Color")?.value || "#000000";
-      DEV.f2.fondoColor = $("dev2Fondo")?.value || "#ffffff";
+    // ✅ Tamaño sugerido SOLO una vez, al crear (según longitud del versículo)
+    const sugerido = sugerirTamanoVersiculo(p1.versiculo);
+    DEV.f1.size = sugerido;
 
-      // abrir fase 1
-      abrirModal("modalDevFase1");
-      devRenderFase(1);
-    });
-  }
+    const s1 = $("dev1Tamano");
+    if (s1) s1.value = String(sugerido);
+
+    // ===== FASE 2
+    DEV.f2.op = Number($("dev2Opacidad")?.value || 0.15);
+    DEV.f2.size = Number($("dev2Tamano")?.value || 26);
+    DEV.f2.color = $("dev2Color")?.value || "#000000";
+    DEV.f2.fondoColor = $("dev2Fondo")?.value || "#ffffff";
+
+    // abrir fase 1
+    abrirModal("modalDevFase1");
+    devRenderFase(1);
+  });
 }
 
+} // ✅ CIERRA initDevocionales()   
 /* =========================================================
    INIT
    ========================================================= */
