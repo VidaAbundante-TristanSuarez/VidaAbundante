@@ -24,22 +24,20 @@
   position:absolute;
   inset: 8%;
   border-radius:14px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding: 14px;
+  /* ❌ sacamos flex centrado */
+  display:block;
+  padding: 0;           /* ❌ fuera padding que corre todo */
   text-align:center;
 }
 
 .dev-text{
   position:absolute;
   inset:0;
-  display:flex;
-  align-items:center;
-  justify-content:center;
+  /* ❌ sacamos flex centrado */
+  display:block;
   text-align:center;
-  white-space:pre-wrap;
-  line-height:1.25;
+  white-space:normal;
+  line-height:1.12;
 }
 
 .dev-text.front{ z-index: 2; }
