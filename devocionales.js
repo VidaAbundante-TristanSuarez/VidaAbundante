@@ -651,7 +651,7 @@ function buildFase1HTML(versiculoPx){
   const direPx       = 12;
 
   // ✅ CITA = 90% del versículo (se mueve con el versículo)
-  const citaPx = Math.max(10, Math.round(versiculoPx * 0.90));
+  const citaPx = Math.max(9, Math.round(versiculoPx * 0.75));
 
   // helper: centrado real + interlineado apretado
   const base = (px, weight)=>`
@@ -673,12 +673,12 @@ function buildFase1HTML(versiculoPx){
   const Y_FECHA = 8.2;   // ✅ más cerca (antes quedaba muy separado)
 
   // Abajo (pie)
-  const Y_IGL   = 84;    // iglesia
+  const Y_IGL   = 88;    // iglesia
   const Y_DIR   = 89;    // ✅ más pegado a iglesia (menos salto)
 
   // Caja central (versículo + cita) MÁS GRANDE
   const Y_VBOX  = 16;    // empieza
-  const H_VBOX  = 66;    // ✅ más alto (antes era chico)
+  const H_VBOX  = 92.5;    // ✅ más alto (antes era chico)
 
   return `
     <div style="position:relative; width:100%; height:100%;">
@@ -716,7 +716,7 @@ function buildFase1HTML(versiculoPx){
         ">
           <div style="
             font-size:${versiculoPx}px;
-            font-weight:700;
+            font-weight:${DEV.f1.style.bold ? 700 : 400};
             width:100%;
             white-space:normal;
             word-break:break-word;
@@ -726,7 +726,7 @@ function buildFase1HTML(versiculoPx){
 
           <div style="
             font-size:${citaPx}px;
-            font-weight:700;
+            font-weight:${DEV.f1.style.bold ? 700 : 400};
             width:100%;
             white-space:normal;
             word-break:break-word;
