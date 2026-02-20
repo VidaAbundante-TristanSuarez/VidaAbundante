@@ -195,8 +195,8 @@ async function blobToBase64(blob){
 function normText(t){
   return String(t || "")
     .replace(/\r/g,"")
-    .replace(/[ \t]+\n/g,"\n")
-    .replace(/\n{3,}/g,"\n\n")
+    .replace(/\n+/g," ")   // 🔥 convierte saltos en espacios
+    .replace(/\s+/g," ")   // limpia espacios dobles
     .trim();
 }
 
@@ -312,6 +312,11 @@ function buildBloquesFromOCR(raw){
 
   // El bloque de reflexión/oración termina justo antes de verseStart
   const bodyAntesDelVerso = (verseStart >= 0) ? body.slice(0, verseStart) : body.slice();
+   // eliminar líneas basura al final (logo)
+  while (bodyAntesDelVerso.length &&
+  isLogoJunk(bodyAntesDelVerso[bodyAntesDelVerso.length - 1])) {
+  bodyAntesDelVerso.pop();
+}
 
   const idxOr = findOracionLineIndex(bodyAntesDelVerso);
 
@@ -575,26 +580,47 @@ function buildFase1HTML(basePx){
   const p1 = DEV.p1;
   if (!p1) return "";
 
-  const main = basePx;          // versículo
-  const title = Math.round(main * 0.70); // -30%
-  const small = Math.round(title * 0.90);// -10% sobre title
-  const cita = Math.round(main * 0.90);  // -10% sobre main
+  const main = basePx;        // versículo (controlado por slider)
+  const cita = Math.round(main * 0.90);
 
   return `
-    <div style="display:flex; flex-direction:column; gap:6px; width:100%;">
-      <div style="font-size:${title}px; font-weight:700;">DEVOCIONAL</div>
-      <div style="font-size:${small}px; opacity:.95;">${esc(p1.fecha)}</div>
+  <div style="
+    position:relative;
+    width:100%;
+    height:100%;
+    text-align:center;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+  ">
 
-      <div style="height:8px;"></div>
-
-      <div style="font-size:${main}px; font-weight:700; white-space:pre-wrap;">${esc(p1.versiculo)}</div>
-      <div style="font-size:${cita}px; font-weight:700; white-space:pre-wrap;">${esc(p1.cita)}</div>
-
-      <div style="height:8px;"></div>
-
-      <div style="font-size:${title}px; font-weight:700;">${esc(p1.iglesia)}</div>
-      <div style="font-size:${small}px;">${esc(p1.direccion)}</div>
+    <!-- ENCABEZADO FIJO -->
+    <div>
+      <div style="font-size:22px; font-weight:700;">DEVOCIONAL</div>
+      <div style="font-size:18px;">${esc(p1.fecha)}</div>
     </div>
+
+    <!-- VERSICULO (ÚNICO BLOQUE QUE ESCALA) -->
+    <div style="padding:0 8px;">
+      <div style="font-size:${main}px; font-weight:700; white-space:pre-wrap;">
+        ${esc(p1.versiculo)}
+      </div>
+      <div style="font-size:${cita}px; font-weight:700; margin-top:6px;">
+        ${esc(p1.cita)}
+      </div>
+    </div>
+
+    <!-- PIE FIJO -->
+    <div>
+      <div style="font-size:18px; font-weight:700;">
+        ${esc(p1.iglesia)}
+      </div>
+      <div style="font-size:16px;">
+        ${esc(p1.direccion)}
+      </div>
+    </div>
+
+  </div>
   `;
 }
 
@@ -602,20 +628,19 @@ function buildFase2HTML(basePx){
   const p2 = DEV.p2;
   if (!p2) return "";
 
-  const head = Math.round(basePx * 1.05);
+  const texto = (p2.reflexion + " " + p2.oracion).trim();
 
   return `
-    <div style="display:flex; flex-direction:column; gap:10px; width:100%; text-align:left;">
-      <div>
-        <div style="font-size:${head}px; font-weight:800;">Reflexión</div>
-        <div style="white-space:pre-wrap;">${esc(p2.reflexion || "")}</div>
-      </div>
-
-      <div>
-        <div style="font-size:${head}px; font-weight:800;">Oración</div>
-        <div style="white-space:pre-wrap;">${esc(p2.oracion || "")}</div>
-      </div>
-    </div>
+  <div style="
+    width:100%;
+    height:100%;
+    text-align:left;
+    white-space:pre-wrap;
+    line-height:1.4;
+    padding:6px;
+  ">
+    ${esc(texto)}
+  </div>
   `;
 }
 
@@ -970,8 +995,13 @@ function bindInputs(){
    11) AUDIO (bloquea botones hasta "Correcto")
    ========================================================= */
 window.devAbrirAudio = () => {
-  // texto para audio
-  DEV.audioText = (DEV.bloque1 + "\n\n" + DEV.bloque2).trim();
+  cerrarModal("modalDevFase3");
+   
+   // texto para audio
+   DEV.audioText =
+  (DEV.p1?.versiculo || "") + "\n\n" +
+  (DEV.p2?.reflexion || "") + "\n\n" +
+  (DEV.p2?.oracion || "");
 
   const ta = $("textoAudio");
   if (ta) ta.value = DEV.audioText;
