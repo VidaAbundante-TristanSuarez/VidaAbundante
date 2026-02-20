@@ -394,7 +394,7 @@ if (modoImagen) {
   // ✅ MODO MARCADOR: selección bien visible (especialmente en oscuro)
   if (selMarcador) {
     div.style.background = enOscuro
-      ? "rgba(209, 238, 255, 0.55)"   // más fuerte en oscuro
+      ? "rgba(209, 238, 255, 0.92)"   // más fuerte en oscuro
       : "rgba(209, 238, 255, 0.92)";  // casi sólido en claro
   } else if (aplicado && ultimoMarcadorAplicado?.color) {
     // ✅ si hay marcador "keep", lo mostramos aunque estés seleccionando
