@@ -190,6 +190,37 @@ async function blobToBase64(blob){
 }
 
 /* =========================================================
+   3) LIMPIEZA Y SALTOS DE TEXTO OCR (tus reglas)
+   ========================================================= */
+function oneLine(s){
+  // Convierte saltos OCR en espacios y limpia dobles espacios
+  return String(s || "")
+    .replace(/\r/g, "")
+    .replace(/\n+/g, " ")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
+function buildAudioFromParts(p1, p2){
+  // Acá definimos los ÚNICOS saltos de línea permitidos
+  const reflex = oneLine(p2?.reflexion || "");
+  const orac  = oneLine(p2?.oracion || "");
+
+  return [
+    "DEVOCIONAL",
+    oneLine(p1?.fecha || ""),
+    "", // 👈 1 salto de línea (línea en blanco)
+    oneLine(p1?.versiculo || ""),
+    oneLine(p1?.cita || ""),
+    oneLine(p1?.iglesia || ""),
+    oneLine(p1?.direccion || ""),
+    "",
+    // FASE 2: Sin salto entre “Reflexión” y “Oración”
+    `Reflexión: ${reflex} Oración: ${orac}`.trim()
+  ].join("\n").trim();
+}
+
+/* =========================================================
    3) PARSEO DE TEXTO OCR (tus reglas)
    ========================================================= */
 function normText(t){
@@ -305,7 +336,7 @@ function buildBloquesFromOCR(raw){
   const { verseStart, verseLines } = extractVerseBlock(body);
 
   // si no encontró versículo, fallback: cuerpo entero
-  const versiculo = verseLines.length ? verseLines.join("\n") : (body.join("\n") || "(Versículo)");
+  const versiculo = verseLines.length ? verseLines.join(" ") : (body.join(" ") || "(Versículo)");
 
   // fase 2: reflexión y oración
   let reflexion = "";
@@ -323,20 +354,21 @@ function buildBloquesFromOCR(raw){
     if (orLines.length) {
       // primera línea: quitar "◾ Oración"
       orLines[0] = cleanOracionHeader(orLines[0]);
-    }
-    oracion = orLines.join("\n").trim();
+  }
+    oracion = orLines.join(" ").trim();
   } else {
     // si no encontró "Oración", todo es reflexión
-    reflexion = bodyAntesDelVerso.join("\n").trim();
+    reflexion = bodyAntesDelVerso.join(" ").trim();
     oracion = "";
   }
 
   // Limpieza extra: a veces queda basura del logo mezclada arriba de reflexión
-  reflexion = reflexion
+    reflexion = oneLine(
+    reflexion
     .split("\n")
     .filter(l => !isLogoJunk(l))
-    .join("\n")
-    .trim();
+    .join(" ")
+ );
 
   // Partes estructuradas (NO un string gigante)
   const p1 = {
@@ -353,25 +385,7 @@ function buildBloquesFromOCR(raw){
   };
 
   // texto para audio (simple, legible)
-  const audioText =
-`DEVOCIONAL
-${p1.fecha}
-
-${p1.versiculo}
-
-${p1.cita}
-
-${p1.iglesia}
-${p1.direccion}
-
-Reflexión:
-${p2.reflexion || ""}
-
-Oración:
-${p2.oracion || ""}`.trim();
-
-  return { p1, p2, audioText };
-}
+  const audioText = buildAudioFromParts(p1, p2);
 
 /* =========================================================
    4) MODALES (abrir/cerrar)
@@ -572,29 +586,56 @@ function esc(s){
     .replace(/>/g,"&gt;");
 }
 
-function buildFase1HTML(basePx){
+function sugerirTamanoVersiculo(texto){
+  const n = oneLine(texto).length;
+
+  if (n <= 80)  return 44;
+  if (n <= 140) return 38;
+  if (n <= 220) return 34;
+  if (n <= 320) return 30;
+  if (n <= 420) return 26;
+  return 24;
+}
+   
+  function buildFase1HTML(versiculoPx){
   const p1 = DEV.p1;
   if (!p1) return "";
 
-  const main = basePx;          // versículo
-  const title = Math.round(main * 0.70); // -30%
-  const small = Math.round(title * 0.90);// -10% sobre title
-  const cita = Math.round(main * 0.90);  // -10% sobre main
+  // ✅ Tamaños FIJOS (no los toca el slider)
+  // Elegí un tamaño “base” para DEVOCIONAL y desde ahí salen los demás.
+  const devocionalPx = 26;                  // "Devocional" fijo
+  const fechaPx      = Math.round(devocionalPx * 0.90); // 10% más chico
+  const citaPx       = Math.round(devocionalPx * 0.98); // 2% más chico
+  const iglesiaPx    = Math.round(devocionalPx * 0.90); // 10% más chico
+  const direPx       = Math.round(devocionalPx * 0.92); // 8% más chico aprox (0.92)
+
+  // ✅ Versículo: ÚNICO tamaño ajustable (slider)
+  const versoPx = versiculoPx;
 
   return `
-    <div style="display:flex; flex-direction:column; gap:6px; width:100%;">
-      <div style="font-size:${title}px; font-weight:700;">DEVOCIONAL</div>
-      <div style="font-size:${small}px; opacity:.95;">${esc(p1.fecha)}</div>
+    <div style="display:flex; flex-direction:column; width:100%; text-align:center;">
+      <div style="font-size:${devocionalPx}px; font-weight:700;">DEVOCIONAL</div>
+      <div style="font-size:${fechaPx}px; opacity:.95;">${esc(p1.fecha)}</div>
 
-      <div style="height:8px;"></div>
+      <!-- ✅ 1 salto de línea real (separación) -->
+      <div style="height:10px;"></div>
 
-      <div style="font-size:${main}px; font-weight:700; white-space:pre-wrap;">${esc(p1.versiculo)}</div>
-      <div style="font-size:${cita}px; font-weight:700; white-space:pre-wrap;">${esc(p1.cita)}</div>
+      <div style="font-size:${versoPx}px; font-weight:700; white-space:normal;">
+        ${esc(p1.versiculo)}
+      </div>
 
-      <div style="height:8px;"></div>
+      <div style="margin-top:6px; font-size:${citaPx}px; font-weight:700; white-space:normal;">
+        ${esc(p1.cita)}
+      </div>
 
-      <div style="font-size:${title}px; font-weight:700;">${esc(p1.iglesia)}</div>
-      <div style="font-size:${small}px;">${esc(p1.direccion)}</div>
+      <div style="height:10px;"></div>
+
+      <div style="font-size:${iglesiaPx}px; font-weight:700;">
+        ${esc(p1.iglesia)}
+      </div>
+      <div style="font-size:${direPx}px;">
+        ${esc(p1.direccion)}
+      </div>
     </div>
   `;
 }
@@ -603,18 +644,12 @@ function buildFase2HTML(basePx){
   const p2 = DEV.p2;
   if (!p2) return "";
 
-  const head = Math.round(basePx * 1.05);
+  const txt = `Reflexión: ${oneLine(p2.reflexion || "")} Oración: ${oneLine(p2.oracion || "")}`.trim();
 
   return `
-    <div style="display:flex; flex-direction:column; gap:10px; width:100%; text-align:left;">
-      <div>
-        <div style="font-size:${head}px; font-weight:800;">Reflexión</div>
-        <div style="white-space:pre-wrap;">${esc(p2.reflexion || "")}</div>
-      </div>
-
-      <div>
-        <div style="font-size:${head}px; font-weight:800;">Oración</div>
-        <div style="white-space:pre-wrap;">${esc(p2.oracion || "")}</div>
+    <div style="width:100%; text-align:left;">
+      <div style="font-size:${basePx}px; font-weight:600; white-space:normal;">
+        ${esc(txt)}
       </div>
     </div>
   `;
@@ -940,7 +975,11 @@ function bindInputs(){
     if (!el) return;
     el.addEventListener("input", ()=>{
       DEV.f1.op = Number($("dev1Opacidad")?.value || 0.35);
-      DEV.f1.size = Number($("dev1Tamano")?.value || 30);
+      const sugerido = sugerirTamanoVersiculo(p1.versiculo);
+      DEV.f1.size = sugerido;
+
+      const s1 = $("dev1Tamano");
+      if (s1) s1.value = String(sugerido);
       DEV.f1.color = $("dev1Color")?.value || "#000000";
       devRenderFase(1);
     });
@@ -971,8 +1010,8 @@ function bindInputs(){
    11) AUDIO (bloquea botones hasta "Correcto")
    ========================================================= */
 window.devAbrirAudio = () => {
-  // texto para audio
-  DEV.audioText = (DEV.bloque1 + "\n\n" + DEV.bloque2).trim();
+  // ✅ Texto completo y limpio para audio (ya armado al crear devocional)
+  DEV.audioText = buildAudioFromParts(DEV.p1, DEV.p2);
 
   const ta = $("textoAudio");
   if (ta) ta.value = DEV.audioText;
