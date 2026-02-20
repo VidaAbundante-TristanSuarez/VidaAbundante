@@ -125,4 +125,15 @@
   color:#fff;
 }
 
+/* ✅ Asegura que el modal de AUDIO quede arriba de todo */
+#modalAudio.modal-overlay,
+#modalAudio {
+  z-index: 9999 !important;
+}
+
+/* ✅ Tus fases por debajo */
+#modalDevFase1, #modalDevFase2, #modalDevFase3 {
+  z-index: 3000;
+}
+
 </style>
