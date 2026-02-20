@@ -132,4 +132,29 @@
   z-index: 3000;
 }
 
+button{
+  border-radius:999px;   /* ✔️ todos redondeados */
+}
+
+/* ===== ESTADO ACTIVO ===== */
+button.activo{
+  background:#4f6fa8;
+  color:#fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,.18);
+}
+
+/* botones estilo Aa B I U */
+.dev-row button{
+  border:none;
+  padding:8px 12px;
+  background:#eee;
+  font-weight:700;
+  cursor:pointer;
+  border-radius:999px;
+}
+
+.dev-row button:hover{
+  background:#ddd;
+}
+
 </style>
