@@ -24,7 +24,9 @@ const DEV = {
   bloque1: "",  // Devocional + Fecha + Versículo + Cita + Iglesia + Dirección
   bloque2: "",  // Reflexión + Oración
   audioText: "",
-
+  p1: null,   // {fecha,versiculo,cita,iglesia,direccion}
+  p2: null,   // {reflexion,oracion}
+   
   // fase1 (9:9) settings
   f1: {
     fondoUrl: null,
@@ -220,101 +222,154 @@ function limpiarBasuraIcono(lines){
   return lines.filter(l => !ban.some(rx => rx.test(l)));
 }
 
+function onlyLetters(s){
+  return (s || "").replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/g, "");
+}
+
+function isMostlyUpper(line){
+  const s = (line || "").trim();
+  if (!s) return false;
+  // si parece cita (Mateo 3:16) NO lo tomamos como versículo
+  if (detectCita(s)) return false;
+
+  const letters = onlyLetters(s);
+  if (letters.length < 6) return false;
+
+  let upper = 0;
+  for (const ch of letters) if (ch === ch.toUpperCase()) upper++;
+  const ratio = upper / letters.length;
+  return ratio >= 0.85; // bastante estricto
+}
+
+function isLogoJunk(line){
+  const s = (line || "").trim().toUpperCase();
+  // basura típica que aparece justo antes del versículo en el fondo oscuro
+  return (
+    s === "DE" ||
+    s === "DE LA" ||
+    s === "DE LA VIDA" ||
+    s === "VIDA" ||
+    s === "DE LA VIDA ABUNDANTE" ||
+    s === "VIDA ABUNDANTE"
+  );
+}
+
+function findOracionLineIndex(lines){
+  // acepta viñetas variadas y con/sin acento
+  return lines.findIndex(l => /^(\s*[-•◾▪●]?\s*)?oraci[oó]n\b/i.test((l || "").trim()));
+}
+
+function cleanOracionHeader(line){
+  return (line || "")
+    .replace(/^(\s*[-•◾▪●]?\s*)?oraci[oó]n\s*:?\s*/i, "")
+    .trim();
+}
+
+function extractVerseBlock(body){
+  // busca el ÚLTIMO bloque consecutivo en MAYÚSCULAS (versículo)
+  let end = -1;
+  for (let i = body.length - 1; i >= 0; i--) {
+    if (isMostlyUpper(body[i])) { end = i; break; }
+  }
+  if (end === -1) return { verseStart: -1, verseLines: [] };
+
+  let start = end;
+  while (start - 1 >= 0 && isMostlyUpper(body[start - 1])) start--;
+
+  let verseLines = body.slice(start, end + 1).map(x => x.trim()).filter(Boolean);
+
+  // quitar basura del logo al comienzo del versículo
+  while (verseLines.length && isLogoJunk(verseLines[0])) verseLines.shift();
+
+  return { verseStart: start, verseLines };
+}
+
 function buildBloquesFromOCR(raw){
   const t = normText(raw);
   const lines = t.split("\n").map(x => x.trim()).filter(Boolean);
 
-  if (lines.length < 3) {
-    const fecha = lines[0] || "";
-    const bloque1 =
-`DEVOCIONAL
-${fecha}
+  const fecha = lines[0] || "";
 
-(PEGÁ/EDITÁ EL VERSÍCULO AQUÍ)
-(PEGÁ/EDITÁ LA CITA AQUÍ)
-
-Iglesia Cristiana de la Vida Abundante
-Roca 123, Tristan Suarez.`;
-
-    const bloque2 = lines.slice(1).join("\n") || "";
-    return { bloque1, bloque2, audioText: (bloque1 + "\n\n" + bloque2).trim() };
+  // cita = última línea que parezca cita; si no, última línea igual
+  let cita = lines[lines.length - 1] || "";
+  for (let i = lines.length - 1; i >= 0; i--) {
+    if (detectCita(lines[i])) { cita = lines[i]; break; }
   }
 
-  // 1) fecha = primer renglón
-  const fecha = lines[0];
+  // body = todo lo que queda entre fecha y cita
+  // (si cita está al final, esto funciona perfecto)
+  const body = lines.slice(1, lines.length - 1);
 
-  // 2) cita = último renglón (si parece cita); si no, igual tomamos último
-  let cita = lines[lines.length - 1];
-  if (!detectCita(cita) && lines.length >= 4 && detectCita(lines[lines.length - 2])) {
-    cita = lines[lines.length - 2];
-  }
+  // detectar versículo como último bloque en mayúsculas dentro del body
+  const { verseStart, verseLines } = extractVerseBlock(body);
 
-  // trabajamos con el “cuerpo” sin fecha ni cita
-  let body = lines.slice(1, lines.length - 1);
+  // si no encontró versículo, fallback: cuerpo entero
+  const versiculo = verseLines.length ? verseLines.join("\n") : (body.join("\n") || "(Versículo)");
 
-  // 3) localizar Oración
-  const idxOr = findOracionIndex(body);
+  // fase 2: reflexión y oración
   let reflexion = "";
   let oracion = "";
-  let despuesDeOracion = [];
+
+  // El bloque de reflexión/oración termina justo antes de verseStart
+  const bodyAntesDelVerso = (verseStart >= 0) ? body.slice(0, verseStart) : body.slice();
+
+  const idxOr = findOracionLineIndex(bodyAntesDelVerso);
 
   if (idxOr >= 0) {
-    reflexion = body.slice(0, idxOr).join("\n");
-    oracion = body.slice(idxOr).join("\n");
-    // después de oración “real” pueden quedar líneas de logo + versículo,
-    // pero si el OCR lo pegó todo junto, eso suele quedar al final:
-    // tomamos lo que venga después de oración como posible versículo.
-    const orLines = body.slice(idxOr);
-    // heurística: si hay muchas líneas y la oración es corta, separar
-    // (buscamos el primer bloque que ya NO contiene la palabra oración)
-    const split = orLines.findIndex((l, i) => i>0 && !/oraci[oó]n/i.test(l) && detectCita(l));
-    // no usamos split acá; solo dejamos “después” limpio
-    despuesDeOracion = [];
+    reflexion = bodyAntesDelVerso.slice(0, idxOr).join("\n").trim();
+
+    const orLines = bodyAntesDelVerso.slice(idxOr);
+    if (orLines.length) {
+      // primera línea: quitar "◾ Oración"
+      orLines[0] = cleanOracionHeader(orLines[0]);
+    }
+    oracion = orLines.join("\n").trim();
   } else {
-    // si no hay “Oración”, todo es reflexión
-    reflexion = body.join("\n");
+    // si no encontró "Oración", todo es reflexión
+    reflexion = bodyAntesDelVerso.join("\n").trim();
     oracion = "";
   }
 
-  // 4) Versículo: lo buscamos como “bloque más bíblico” antes de la cita.
-  // estrategia: agarramos las ÚLTIMAS líneas del body (sin iglesia/logo) y las usamos como versículo.
-  let candidatoVers = limpiarBasuraIcono(body).join("\n").trim();
+  // Limpieza extra: a veces queda basura del logo mezclada arriba de reflexión
+  reflexion = reflexion
+    .split("\n")
+    .filter(l => !isLogoJunk(l))
+    .join("\n")
+    .trim();
 
-  // Si existe oración, intentamos cortar el candidato para que el versículo no se mezcle:
-  // nos quedamos con lo que parezca “texto en mayúsculas / bíblico” hacia el final.
-  const clean = limpiarBasuraIcono(body);
-  let versiculo = "";
-  if (clean.length) {
-    // tomamos últimas 6-12 líneas (según largo) como versículo probable
-    const take = Math.max(3, Math.min(12, Math.floor(clean.length/2)));
-    versiculo = clean.slice(-take).join("\n").trim();
-  }
-  if (!versiculo) versiculo = candidatoVers || "(Versículo)";
+  // Partes estructuradas (NO un string gigante)
+  const p1 = {
+    fecha,
+    versiculo,
+    cita,
+    iglesia: "Iglesia Cristiana de la Vida Abundante",
+    direccion: "Roca 123, Tristan Suarez."
+  };
 
-  // 5) Bloque 2 = Reflexión + Oración (con rótulo)
-  let bloque2 = "";
-  if (reflexion.trim()) bloque2 += `Reflexión:\n${reflexion.trim()}\n\n`;
-  if (oracion.trim()) {
-    // normaliza viñetas antes de Oración
-    const o = oracion.replace(/^[-•◾▪●\s]*/i, "").trim();
-    bloque2 += `Oración:\n${o}`;
-  }
-  bloque2 = bloque2.trim();
+  const p2 = {
+    reflexion,
+    oracion
+  };
 
-  // 6) Bloque 1 (tu formato fijo)
-  const bloque1 =
+  // texto para audio (simple, legible)
+  const audioText =
 `DEVOCIONAL
-${fecha}
+${p1.fecha}
 
-${versiculo}
+${p1.versiculo}
 
-${cita}
+${p1.cita}
 
-Iglesia Cristiana de la Vida Abundante
-Roca 123, Tristan Suarez.`;
+${p1.iglesia}
+${p1.direccion}
 
-  const audioText = [bloque1, bloque2].filter(Boolean).join("\n\n").trim();
-  return { bloque1, bloque2, audioText };
+Reflexión:
+${p2.reflexion || ""}
+
+Oración:
+${p2.oracion || ""}`.trim();
+
+  return { p1, p2, audioText };
 }
 
 /* =========================================================
@@ -509,6 +564,61 @@ function applyTextStyles(front, back, st){
   front.style.textDecoration = td; back.style.textDecoration = td;
 }
 
+function esc(s){
+  return String(s || "")
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;");
+}
+
+function buildFase1HTML(basePx){
+  const p1 = DEV.p1;
+  if (!p1) return "";
+
+  const main = basePx;          // versículo
+  const title = Math.round(main * 0.70); // -30%
+  const small = Math.round(title * 0.90);// -10% sobre title
+  const cita = Math.round(main * 0.90);  // -10% sobre main
+
+  return `
+    <div style="display:flex; flex-direction:column; gap:6px; width:100%;">
+      <div style="font-size:${title}px; font-weight:700;">DEVOCIONAL</div>
+      <div style="font-size:${small}px; opacity:.95;">${esc(p1.fecha)}</div>
+
+      <div style="height:8px;"></div>
+
+      <div style="font-size:${main}px; font-weight:700; white-space:pre-wrap;">${esc(p1.versiculo)}</div>
+      <div style="font-size:${cita}px; font-weight:700; white-space:pre-wrap;">${esc(p1.cita)}</div>
+
+      <div style="height:8px;"></div>
+
+      <div style="font-size:${title}px; font-weight:700;">${esc(p1.iglesia)}</div>
+      <div style="font-size:${small}px;">${esc(p1.direccion)}</div>
+    </div>
+  `;
+}
+
+function buildFase2HTML(basePx){
+  const p2 = DEV.p2;
+  if (!p2) return "";
+
+  const head = Math.round(basePx * 1.05);
+
+  return `
+    <div style="display:flex; flex-direction:column; gap:10px; width:100%; text-align:left;">
+      <div>
+        <div style="font-size:${head}px; font-weight:800;">Reflexión</div>
+        <div style="white-space:pre-wrap;">${esc(p2.reflexion || "")}</div>
+      </div>
+
+      <div>
+        <div style="font-size:${head}px; font-weight:800;">Oración</div>
+        <div style="white-space:pre-wrap;">${esc(p2.oracion || "")}</div>
+      </div>
+    </div>
+  `;
+}
+
 function devRenderFase(fase){
   if (fase === 1) {
     const p = $("dev1Preview");
@@ -520,8 +630,9 @@ function devRenderFase(fase){
     const st = DEV.f1;
 
     // texto
-    t.textContent = DEV.bloque1;
-    b.textContent = DEV.bloque1;
+    t.innerHTML = buildFase1HTML(st.size);
+    // ya no usamos la capa back para no romper tamaños diferentes
+    if (b) b.style.display = "none";
 
     // fondo
     const fondoUsable = st.fondoBlob || st.fondoUrl;
@@ -530,20 +641,16 @@ function devRenderFase(fase){
     p.style.backgroundPosition = "center";
     p.style.backgroundColor = fondoUsable ? "transparent" : "#ffffff";
 
-    // fuente + tamaño + color
-    t.style.fontFamily = st.fuente;
-    b.style.fontFamily = st.fuente;
-    t.style.fontSize = st.size + "px";
-    b.style.fontSize = st.size + "px";
-    t.style.color = st.color;
+   // fuente + tamaño + color
+   t.style.fontFamily = st.fuente;
+   t.style.fontSize = st.size + "px";
+   t.style.color = st.color;
 
-    // borde/back
-    const oc = outlineColor(st.color);
-    const px = 0.6;
-    b.style.color = oc;
-    b.style.webkitTextFillColor = "transparent";
-    b.style.WebkitTextStroke = `${px}px ${oc}`;
-    b.style.textShadow = `-${px}px 0 ${oc}, ${px}px 0 ${oc}, 0 -${px}px ${oc}, 0 ${px}px ${oc}`;
+   // outline usando sombras (sirve con HTML interno)
+   const oc = outlineColor(st.color);
+   t.style.textShadow = `
+  -1px 0 ${oc}, 1px 0 ${oc}, 0 -1px ${oc}, 0 1px ${oc},
+  -1px -1px ${oc}, 1px 1px ${oc}, -1px 1px ${oc}, 1px -1px ${oc}`;
 
     // wrapper bg
     w.style.backgroundColor = wrapperBgFromOpacity(st.op);
@@ -561,25 +668,23 @@ function devRenderFase(fase){
 
     const st = DEV.f2;
 
-    t.textContent = DEV.bloque2;
-    b.textContent = DEV.bloque2;
+    t.innerHTML = buildFase2HTML(st.size);
+    if (b) b.style.display = "none";
 
     // fondo plano
     p.style.backgroundImage = "none";
     p.style.backgroundColor = st.fondoColor || "#ffffff";
 
-    t.style.fontFamily = st.fuente;
-    b.style.fontFamily = st.fuente;
-    t.style.fontSize = st.size + "px";
-    b.style.fontSize = st.size + "px";
-    t.style.color = st.color;
+    // fuente + tamaño + color
+   t.style.fontFamily = st.fuente;
+   t.style.fontSize = st.size + "px";
+   t.style.color = st.color;
 
-    const oc = outlineColor(st.color);
-    const px = 0.6;
-    b.style.color = oc;
-    b.style.webkitTextFillColor = "transparent";
-    b.style.WebkitTextStroke = `${px}px ${oc}`;
-    b.style.textShadow = `-${px}px 0 ${oc}, ${px}px 0 ${oc}, 0 -${px}px ${oc}, 0 ${px}px ${oc}`;
+   // outline usando sombras (sirve con HTML interno)
+   const oc = outlineColor(st.color);
+   t.style.textShadow = `
+  -1px 0 ${oc}, 1px 0 ${oc}, 0 -1px ${oc}, 0 1px ${oc},
+  -1px -1px ${oc}, 1px 1px ${oc}, -1px 1px ${oc}, 1px -1px ${oc}`;
 
     w.style.backgroundColor = wrapperBgFromOpacity(st.op);
 
@@ -738,7 +843,12 @@ async function renderFinalCanvas(){
   ctx.fillRect(W*0.08, H1*0.08, W*0.84, H1*0.84);
 
   // texto
-  drawTextBlock(ctx, DEV.bloque1, W*0.08, H1*0.08, W*0.84, H1*0.84, DEV.f1);
+  drawTextBlock(
+  ctx,
+  (DEV.p1?.versiculo || "") + "\n" + (DEV.p1?.cita || ""),
+  W*0.08, H1*0.08, W*0.84, H1*0.84,
+  DEV.f1
+);
 
   // ---------- FASE 2 ----------
   ctx.fillStyle = DEV.f2.fondoColor || "#ffffff";
@@ -747,7 +857,12 @@ async function renderFinalCanvas(){
   ctx.fillStyle = wrapperBgFromOpacity(DEV.f2.op);
   ctx.fillRect(W*0.08, H1 + H2*0.08, W*0.84, H2*0.84);
 
-  drawTextBlock(ctx, DEV.bloque2, W*0.08, H1 + H2*0.08, W*0.84, H2*0.84, DEV.f2);
+  drawTextBlock(
+  ctx,
+  (DEV.p2?.reflexion || "") + "\n\n" + (DEV.p2?.oracion || ""),
+  W*0.08, H1 + H2*0.08, W*0.84, H2*0.84,
+  DEV.f2
+);
 
   // a data url para preview
   DEV.finalDataUrl = cFinal.toDataURL("image/png");
@@ -1137,10 +1252,10 @@ function initDevocionales(){
       const texto = (ta.value || "").trim();
       if (!texto) { alert("Primero necesitás texto (OCR o pegado)."); return; }
 
-      const { bloque1, bloque2, audioText } = buildBloquesFromOCR(texto);
+     const { p1, p2, audioText } = buildBloquesFromOCR(texto);
 
-      DEV.bloque1 = bloque1;
-      DEV.bloque2 = bloque2 || "Reflexión:\n\nOración:\n";
+      DEV.p1 = p1;
+      DEV.p2 = p2;
       DEV.audioText = audioText;
 
       // reset gate audio
