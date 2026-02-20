@@ -245,6 +245,7 @@ function isLogoJunk(line){
   const s = (line || "").trim().toUpperCase();
   // basura típica que aparece justo antes del versículo en el fondo oscuro
   return (
+    s === "ANA" ||
     s === "DE" ||
     s === "DE LA" ||
     s === "DE LA VIDA" ||
