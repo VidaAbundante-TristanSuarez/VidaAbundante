@@ -1,0 +1,128 @@
+ <style>
+/* ================= DEVOCIONALES - MODALES LIMPIOS ================= */
+
+.modal-dev{
+  max-width: 520px;
+  width: 100%;
+}
+
+.dev-preview{
+  width:100%;
+  border-radius:16px;
+  overflow:hidden;
+  background:#fff;
+  position:relative;
+  border:1px solid #e5e5e5;
+}
+
+/* Aspect ratios */
+.dev-99{ aspect-ratio: 1 / 1; }
+.dev-97{ aspect-ratio: 9 / 7; }
+.dev-916{ aspect-ratio: 9 / 16; }
+
+.dev-textwrap{
+  position:absolute;
+  inset: 8%;
+  border-radius:14px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding: 14px;
+  text-align:center;
+}
+
+.dev-text{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  white-space:pre-wrap;
+  line-height:1.25;
+}
+
+.dev-text.front{ z-index: 2; }
+.dev-text.back{ z-index: 1; }
+
+.dev-fondos{
+  display:flex;
+  gap:10px;
+  overflow:auto;
+  padding:10px 4px;
+  margin-top:10px;
+}
+
+.dev-fondos img{
+  width:70px;
+  height:70px;
+  border-radius:12px;
+  object-fit:cover;
+  cursor:pointer;
+  border:2px solid transparent;
+}
+.dev-fondos img.activo{
+  border-color:#4f6fa8;
+}
+
+.dev-row{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  justify-content:center;
+  flex-wrap:wrap;
+  margin-top:10px;
+}
+
+.dev-final button{
+  border:none;
+  border-radius:999px;
+  padding:10px 12px;
+  cursor:pointer;
+  background:#eee;
+}
+
+.dev-final button.btn-primary{
+  background:#4f6fa8;
+  color:#fff;
+}
+
+.dev-final button:disabled{
+  opacity:.45;
+  cursor:not-allowed;
+}
+
+/* Lista fuentes (dropdown ancho modal) */
+.dev-lista-fuentes{
+  display:none;
+  position:fixed;
+  z-index: 5000;
+  background:#fff;
+  border:1px solid #ddd;
+  border-radius:14px;
+  padding:10px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.12);
+  overflow:auto;
+  white-space:nowrap;
+}
+
+.dev-lista-fuentes.abierto{
+  display:flex;
+  gap:10px;
+}
+
+.dev-lista-fuentes button{
+  border:none;
+  border-radius:999px;
+  padding:10px 12px;
+  cursor:pointer;
+  background:#eee;
+  font-weight:700;
+}
+
+.dev-lista-fuentes button.activo{
+  background:#4f6fa8;
+  color:#fff;
+}
+
+</style>
