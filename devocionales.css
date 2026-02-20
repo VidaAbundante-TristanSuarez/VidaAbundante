@@ -22,22 +22,20 @@
 
 .dev-textwrap{
   position:absolute;
-  inset: 8%;
+  inset: 6%;          /* ✅ menos margen contra la imagen */
   border-radius:14px;
-  /* ❌ sacamos flex centrado */
   display:block;
-  padding: 0;           /* ❌ fuera padding que corre todo */
+  padding: 0;
   text-align:center;
 }
 
 .dev-text{
   position:absolute;
   inset:0;
-  /* ❌ sacamos flex centrado */
   display:block;
   text-align:center;
   white-space:normal;
-  line-height:1.12;
+  line-height:1.04;
 }
 
 .dev-text.front{ z-index: 2; }
