@@ -9,8 +9,8 @@
 
 /* ================= COLOR UNIFICADO UI 🌈================= */
 :root {
-  --ui-azul-claro: #d1eeff;
-  --ui-azul-hover: #4f6fa8;
+  --ui-azul-claro: #bcdcff;
+  --ui-azul-hover: #1c6fcb;
 }
 
 /* ================= ESTILOS GENERALES ================= */
@@ -106,11 +106,11 @@ body.oscuro .nav-btn:hover i {
 
 /* oscuro */
 body.oscuro .nav-btn.activo{
-  background: #ffbf69;
-  color: #000;
+  background: var(--ui-azul-hover);
+  color: #fff;
 }
 body.oscuro .nav-btn.activo i{
-  color: #000;
+  color: #fff;
 }
 
   /* ================= SECCIONES GENERALES ================= */
