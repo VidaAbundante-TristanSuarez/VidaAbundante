@@ -643,36 +643,42 @@ function buildFase1HTML(versiculoPx){
   const p1 = DEV.p1;
   if (!p1) return "";
 
-  // tamaños fijos (50% menos)
+  // tamaños fijos (50% menos aprox)
   const devocionalPx = 13;
   const fechaPx      = 12;
-  const citaPx       = 13;
-  const iglesiaPx    = 12;
+
+  const iglesiaPx    = 12; // mismo tamaño para ambos
   const direPx       = 12;
 
-  // helper de estilo común (centrado REAL)
-  const base = (px, weight=700)=>`
+  // ✅ CITA = 90% del versículo (se mueve con el versículo)
+  const citaPx = Math.max(10, Math.round(versiculoPx * 0.90));
+
+  // helper: centrado real + interlineado apretado
+  const base = (px, weight)=>`
     position:absolute;
     left:50%;
     transform:translateX(-50%);
-    width:92%;
+    width:96%;
     text-align:center;
     margin:0;
     padding:0;
     font-size:${px}px;
     font-weight:${weight};
-    line-height:1.12;
+    line-height:1.05;     /* ✅ menos interlineado */
   `;
 
-  // 🔒 “coordenadas” (como tu y_60 / y_150 / etc pero en %)
-  // Ajustá estos números una sola vez y queda clavado.
-  const Y_DEV   = 2;    // top 2%
-  const Y_FECHA = 10;   // top 10%
-  const Y_VBOX  = 18;   // caja del versículo empieza 18%
-  const H_VBOX  = 46;   // caja del versículo ocupa 46% del alto del wrapper
-  const Y_CITA  = 66;   // cita alrededor del 66%
-  const Y_IGL   = 78;   // iglesia
-  const Y_DIR   = 86;   // dirección (pegada)
+  // ===== Coordenadas fijas tipo Cloudinary (porcentaje del wrapper) =====
+  // Arriba
+  const Y_DEV   = 2;     // DEVOCIONAL
+  const Y_FECHA = 8.2;   // ✅ más cerca (antes quedaba muy separado)
+
+  // Abajo (pie)
+  const Y_IGL   = 84;    // iglesia
+  const Y_DIR   = 89;    // ✅ más pegado a iglesia (menos salto)
+
+  // Caja central (versículo + cita) MÁS GRANDE
+  const Y_VBOX  = 16;    // empieza
+  const H_VBOX  = 66;    // ✅ más alto (antes era chico)
 
   return `
     <div style="position:relative; width:100%; height:100%;">
@@ -685,14 +691,14 @@ function buildFase1HTML(versiculoPx){
         ${esc(p1.fecha)}
       </div>
 
-      <!-- Caja fija del versículo (NO empuja nada) -->
+      <!-- ✅ Caja fija grande: Versículo + Cita juntos -->
       <div style="
         position:absolute;
         left:50%;
         transform:translateX(-50%);
         top:${Y_VBOX}%;
         height:${H_VBOX}%;
-        width:92%;
+        width:96%;
         display:flex;
         align-items:center;
         justify-content:center;
@@ -700,19 +706,34 @@ function buildFase1HTML(versiculoPx){
         overflow:hidden;
       ">
         <div style="
-          font-size:${versiculoPx}px;
-          font-weight:700;
-          line-height:1.12;
           width:100%;
-          white-space:normal;
-          word-break:break-word;
+          display:flex;
+          flex-direction:column;
+          align-items:center;
+          justify-content:center;
+          gap:6px;                 /* ✅ espacio corto entre versículo y cita */
+          line-height:1.08;
         ">
-          ${esc(p1.versiculo)}
-        </div>
-      </div>
+          <div style="
+            font-size:${versiculoPx}px;
+            font-weight:700;
+            width:100%;
+            white-space:normal;
+            word-break:break-word;
+          ">
+            ${esc(p1.versiculo)}
+          </div>
 
-      <div style="${base(citaPx,700)} top:${Y_CITA}%;">
-        ${esc(p1.cita)}
+          <div style="
+            font-size:${citaPx}px;
+            font-weight:700;
+            width:100%;
+            white-space:normal;
+            word-break:break-word;
+          ">
+            ${esc(p1.cita)}
+          </div>
+        </div>
       </div>
 
       <div style="${base(iglesiaPx,700)} top:${Y_IGL}%;">
@@ -962,7 +983,7 @@ async function renderFinalCanvas(){
 
   // overlay opacidad (wrapper)
   ctx.fillStyle = wrapperBgFromOpacity(DEV.f1.op);
-  ctx.fillRect(W*0.08, H1*0.08, W*0.84, H1*0.84);
+  ctx.fillRect(W*0.06, H1*0.06, W*0.88, H1*0.88);
 
   // texto
   drawTextBlock(
@@ -977,7 +998,7 @@ async function renderFinalCanvas(){
   ctx.fillRect(0, H1, W, H2);
 
   ctx.fillStyle = wrapperBgFromOpacity(DEV.f2.op);
-  ctx.fillRect(W*0.08, H1 + H2*0.08, W*0.84, H2*0.84);
+  ctx.fillRect(W*0.06, H1 + H2*0.06, W*0.88, H2*0.88);
 
   drawTextBlock(
   ctx,
