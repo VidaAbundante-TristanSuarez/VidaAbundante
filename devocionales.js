@@ -617,8 +617,8 @@ function sugerirTamanoVersiculoAuto(versiculo){
   const maxW = Math.max(100, rect.width * 0.92);
 
   // Reservamos “zonas fijas” arriba/abajo (devocional/fecha/cita/iglesia/dirección + gaps)
-  // Como bajamos 50%, esto es bastante estable.
-  const altoDisponible = Math.max(80, rect.height * 0.50); // ~50% del wrapper para el versículo
+  // medí dentro de la “caja del versículo”, no del wrapper entero.
+  const altoDisponible = Math.max(80, rect.height * 0.46); // mismo H_VBOX (46%)
 
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
@@ -643,43 +643,86 @@ function buildFase1HTML(versiculoPx){
   const p1 = DEV.p1;
   if (!p1) return "";
 
-  // ✅ 50% menos que antes (tus "fijos" estaban cerca de 26)
-  const devocionalPx = 13; // antes 26
-  const fechaPx      = 12; // más chico que devocional
-  const citaPx       = 13; // similar a devocional
+  // tamaños fijos (50% menos)
+  const devocionalPx = 13;
+  const fechaPx      = 12;
+  const citaPx       = 13;
   const iglesiaPx    = 12;
   const direPx       = 12;
 
-  // ✅ espacios más chicos (antes 10px y 6px)
-  const gap1 = 4;   // entre fecha y versículo (antes 10)
-  const gap2 = 4;   // entre cita y iglesia (antes 10)
-  const citaTop = 3; // margen arriba de la cita (antes 6)
+  // helper de estilo común (centrado REAL)
+  const base = (px, weight=700)=>`
+    position:absolute;
+    left:50%;
+    transform:translateX(-50%);
+    width:92%;
+    text-align:center;
+    margin:0;
+    padding:0;
+    font-size:${px}px;
+    font-weight:${weight};
+    line-height:1.12;
+  `;
 
-  const versoPx = versiculoPx;
+  // 🔒 “coordenadas” (como tu y_60 / y_150 / etc pero en %)
+  // Ajustá estos números una sola vez y queda clavado.
+  const Y_DEV   = 2;    // top 2%
+  const Y_FECHA = 10;   // top 10%
+  const Y_VBOX  = 18;   // caja del versículo empieza 18%
+  const H_VBOX  = 46;   // caja del versículo ocupa 46% del alto del wrapper
+  const Y_CITA  = 66;   // cita alrededor del 66%
+  const Y_IGL   = 78;   // iglesia
+  const Y_DIR   = 86;   // dirección (pegada)
 
   return `
-    <div style="display:flex; flex-direction:column; width:100%; text-align:center; line-height:1.12;">
-      <div style="font-size:${devocionalPx}px; font-weight:700;">DEVOCIONAL</div>
-      <div style="font-size:${fechaPx}px; opacity:.95; margin-top:1px;">${esc(p1.fecha)}</div>
+    <div style="position:relative; width:100%; height:100%;">
 
-      <div style="height:${gap1}px;"></div>
-
-      <div style="font-size:${versoPx}px; font-weight:700; white-space:normal;">
-        ${esc(p1.versiculo)}
+      <div style="${base(devocionalPx,700)} top:${Y_DEV}%;">
+        DEVOCIONAL
       </div>
 
-      <div style="margin-top:${citaTop}px; font-size:${citaPx}px; font-weight:700; white-space:normal;">
+      <div style="${base(fechaPx,400)} top:${Y_FECHA}%; opacity:.95;">
+        ${esc(p1.fecha)}
+      </div>
+
+      <!-- Caja fija del versículo (NO empuja nada) -->
+      <div style="
+        position:absolute;
+        left:50%;
+        transform:translateX(-50%);
+        top:${Y_VBOX}%;
+        height:${H_VBOX}%;
+        width:92%;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        text-align:center;
+        overflow:hidden;
+      ">
+        <div style="
+          font-size:${versiculoPx}px;
+          font-weight:700;
+          line-height:1.12;
+          width:100%;
+          white-space:normal;
+          word-break:break-word;
+        ">
+          ${esc(p1.versiculo)}
+        </div>
+      </div>
+
+      <div style="${base(citaPx,700)} top:${Y_CITA}%;">
         ${esc(p1.cita)}
       </div>
 
-      <div style="height:${gap2}px;"></div>
-
-      <div style="font-size:${iglesiaPx}px; font-weight:700; margin-top:1px;">
+      <div style="${base(iglesiaPx,700)} top:${Y_IGL}%;">
         ${esc(p1.iglesia)}
       </div>
-      <div style="font-size:${direPx}px; margin-top:1px;">
+
+      <div style="${base(direPx,400)} top:${Y_DIR}%;">
         ${esc(p1.direccion)}
       </div>
+
     </div>
   `;
 }
