@@ -281,9 +281,9 @@ body.oscuro .versiculo { color:#fff; }
 
 /* Versículo seleccionado para imagen */
 .versiculo.imagen {
-  background: #a9ffef !important;
+  background: #94cef4 !important;
   color: #000 !important;
-  border: 2px solid #1f6d76 !important;
+  border: 2px solid #e1f3ff !important;
 }
 
  /* ================= MI PANEL TABS REDONDOS + PRO .panel-tabs button================= */
