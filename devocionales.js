@@ -587,54 +587,97 @@ function esc(s){
     .replace(/>/g,"&gt;");
 }
 
-function sugerirTamanoVersiculo(texto){
-  const n = oneLine(texto).length;
+function wrapMeasureLines(ctx, text, maxWidth){
+  const words = String(text||"").trim().split(/\s+/);
+  const lines = [];
+  let line = "";
 
-  if (n <= 80)  return 44;
-  if (n <= 140) return 38;
-  if (n <= 220) return 34;
-  if (n <= 320) return 30;
-  if (n <= 420) return 26;
-  return 24;
+  for (const w of words) {
+    const test = line ? (line + " " + w) : w;
+    if (ctx.measureText(test).width <= maxWidth) line = test;
+    else {
+      if (line) lines.push(line);
+      line = w;
+    }
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
+// ✅ Sugerencia REAL: mide el preview y busca el mayor tamaño que entre
+function sugerirTamanoVersiculoAuto(versiculo){
+  const wWrap = $("dev1TextoWrapper");
+  const tWrap = $("dev1Texto");
+  if (!wWrap || !tWrap) {
+    // fallback seguro
+    return 18;
+  }
+
+  const rect = wWrap.getBoundingClientRect();
+  const maxW = Math.max(100, rect.width * 0.92);
+
+  // Reservamos “zonas fijas” arriba/abajo (devocional/fecha/cita/iglesia/dirección + gaps)
+  // Como bajamos 50%, esto es bastante estable.
+  const altoDisponible = Math.max(80, rect.height * 0.50); // ~50% del wrapper para el versículo
+
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+
+  // probamos de grande a chico
+  const maxPx = 26; // techo (ya 50% menos)
+  const minPx = 10; // piso
+
+  for (let px = maxPx; px >= minPx; px--) {
+    ctx.font = `700 ${px}px ${DEV.f1.fuente}, Arial`;
+    const lines = wrapMeasureLines(ctx, oneLine(versiculo), maxW);
+    const lineH = px * 1.18;
+    const totalH = lines.length * lineH;
+
+    if (totalH <= altoDisponible) return px;
+  }
+
+  return minPx;
 }
    
-  function buildFase1HTML(versiculoPx){
+function buildFase1HTML(versiculoPx){
   const p1 = DEV.p1;
   if (!p1) return "";
 
-  // ✅ Tamaños FIJOS (no los toca el slider)
-  // Elegí un tamaño “base” para DEVOCIONAL y desde ahí salen los demás.
-  const devocionalPx = 26;                  // "Devocional" fijo
-  const fechaPx      = Math.round(devocionalPx * 0.90); // 10% más chico
-  const citaPx       = Math.round(devocionalPx * 0.98); // 2% más chico
-  const iglesiaPx    = Math.round(devocionalPx * 0.90); // 10% más chico
-  const direPx       = Math.round(devocionalPx * 0.92); // 8% más chico aprox (0.92)
+  // ✅ 50% menos que antes (tus "fijos" estaban cerca de 26)
+  const devocionalPx = 13; // antes 26
+  const fechaPx      = 12; // más chico que devocional
+  const citaPx       = 13; // similar a devocional
+  const iglesiaPx    = 12;
+  const direPx       = 12;
 
-  // ✅ Versículo: ÚNICO tamaño ajustable (slider)
+  // ✅ espacios más chicos (antes 10px y 6px)
+  const gap1 = 4;   // entre fecha y versículo (antes 10)
+  const gap2 = 4;   // entre cita y iglesia (antes 10)
+  const citaTop = 3; // margen arriba de la cita (antes 6)
+
   const versoPx = versiculoPx;
 
   return `
-    <div style="display:flex; flex-direction:column; width:100%; text-align:center;">
+    <div style="display:flex; flex-direction:column; width:100%; text-align:center; line-height:1.12;">
       <div style="font-size:${devocionalPx}px; font-weight:700;">DEVOCIONAL</div>
-      <div style="font-size:${fechaPx}px; opacity:.95;">${esc(p1.fecha)}</div>
+      <div style="font-size:${fechaPx}px; opacity:.95; margin-top:1px;">${esc(p1.fecha)}</div>
 
-      <!-- ✅ 1 salto de línea real (separación) -->
-      <div style="height:10px;"></div>
+      <div style="height:${gap1}px;"></div>
 
       <div style="font-size:${versoPx}px; font-weight:700; white-space:normal;">
         ${esc(p1.versiculo)}
       </div>
 
-      <div style="margin-top:6px; font-size:${citaPx}px; font-weight:700; white-space:normal;">
+      <div style="margin-top:${citaTop}px; font-size:${citaPx}px; font-weight:700; white-space:normal;">
         ${esc(p1.cita)}
       </div>
 
-      <div style="height:10px;"></div>
+      <div style="height:${gap2}px;"></div>
 
-      <div style="font-size:${iglesiaPx}px; font-weight:700;">
+      <div style="font-size:${iglesiaPx}px; font-weight:700; margin-top:1px;">
         ${esc(p1.iglesia)}
       </div>
-      <div style="font-size:${direPx}px;">
+      <div style="font-size:${direPx}px; margin-top:1px;">
         ${esc(p1.direccion)}
       </div>
     </div>
@@ -680,7 +723,6 @@ function devRenderFase(fase){
 
    // fuente + tamaño + color
    t.style.fontFamily = st.fuente;
-   t.style.fontSize = st.size + "px";
    t.style.color = st.color;
 
    // outline usando sombras (sirve con HTML interno)
@@ -1315,22 +1357,24 @@ if (btnCrear) {
     DEV.f1.op = Number($("dev1Opacidad")?.value || 0.35);
     DEV.f1.color = $("dev1Color")?.value || "#000000";
 
-    // ✅ Tamaño sugerido SOLO una vez, al crear (según longitud del versículo)
-    const sugerido = sugerirTamanoVersiculo(p1.versiculo);
-    DEV.f1.size = sugerido;
+// abrir fase 1 primero (para poder medir tamaño real)
+abrirModal("modalDevFase1");
 
-    const s1 = $("dev1Tamano");
-    if (s1) s1.value = String(sugerido);
+// render inicial rápido
+devRenderFase(1);
 
-    // ===== FASE 2
-    DEV.f2.op = Number($("dev2Opacidad")?.value || 0.15);
-    DEV.f2.size = Number($("dev2Tamano")?.value || 26);
-    DEV.f2.color = $("dev2Color")?.value || "#000000";
-    DEV.f2.fondoColor = $("dev2Fondo")?.value || "#ffffff";
+// ✅ esperar 1 frame para que el layout tenga tamaño real
+requestAnimationFrame(()=>{
+  const sugerido = sugerirTamanoVersiculoAuto(p1.versiculo);
 
-    // abrir fase 1
-    abrirModal("modalDevFase1");
-    devRenderFase(1);
+  DEV.f1.size = sugerido;
+
+  const s1 = $("dev1Tamano");
+  if (s1) s1.value = String(sugerido);
+
+  // re-render con tamaño sugerido ya aplicado
+  devRenderFase(1);
+});
   });
 }
 
