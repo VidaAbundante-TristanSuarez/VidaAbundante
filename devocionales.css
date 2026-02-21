@@ -22,21 +22,26 @@
 
 .dev-textwrap{
   position:absolute;
-  inset: 6%;          /* ✅ menos margen contra la imagen */
+  inset: 6%;
   border-radius:14px;
-  display:block;
   padding: 0;
   text-align:center;
+  overflow:hidden;          /* ✅ importante */
+  display:flex;             /* ✅ */
 }
 
 .dev-text{
   position:absolute;
   inset:0;
-  display:block;
+  display:flex;             /* ✅ */
+  align-items:center;       /* ✅ */
+  justify-content:center;   /* ✅ */
   text-align:center;
   white-space:normal;
-  line-height:1.04;
 }
+
+#dev2TextoWrapper { height: 100%; }
+#dev2Texto { height: 100%; display:flex; align-items:center; justify-content:center; }
 
 .dev-text.front{ z-index: 2; }
 .dev-text.back{ z-index: 1; }
@@ -172,5 +177,6 @@ input[type="number"]{
   font-weight:700;
   width:60px;
 }
+
 
 </style>
