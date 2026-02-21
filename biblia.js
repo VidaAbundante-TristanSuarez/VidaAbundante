@@ -47,7 +47,7 @@ let marcados = {};
 let size = 18;
 let fuenteActual = "Arial";
 let colorActual = "#fff3b0"; // 💛 amarillo por default
-let resaltadorBloqueado = false; // 🔒 nuevo estado
+let resaltadorBloqueado = true; // 🔒 nuevo estado
 
 // ================= MARCADORES (NUEVO LIMPIO) =================
 let modoMarcador = false;
