@@ -272,6 +272,12 @@ function isMostlyUpper(line){
   return ratio >= 0.85; // bastante estricto
 }
 
+function stripTailLogoJunk(lines){
+  const out = lines.slice();
+  while (out.length && isLogoJunk(out[out.length - 1])) out.pop();
+  return out;
+}
+
 function isLogoJunk(line){
   const s = (line || "").trim();
 
@@ -357,7 +363,9 @@ function buildBloquesFromOCR(raw){
   let oracion = "";
 
   // El bloque de reflexión/oración termina justo antes de verseStart
-  const bodyAntesDelVerso = (verseStart >= 0) ? body.slice(0, verseStart) : body.slice();
+ const bodyAntesDelVerso = stripTailLogoJunk(
+  (verseStart >= 0) ? body.slice(0, verseStart) : body.slice()
+  );
 
   const idxOr = findOracionLineIndex(bodyAntesDelVerso);
 
@@ -618,6 +626,14 @@ function wrapMeasureLines(ctx, text, maxWidth){
   return lines;
 }
 
+function roundToHalf(x){
+  return Math.round(Number(x) * 2) / 2;
+}
+function fmtSize(x){
+  const n = Number(x);
+  return (n % 1 === 0) ? String(n.toFixed(0)) : String(n.toFixed(1));
+}
+
 // ✅ Sugerencia REAL: mide el preview y busca el mayor tamaño que entre
 function sugerirTamanoVersiculoAuto(versiculo){
   const wWrap = $("dev1TextoWrapper");
@@ -672,10 +688,10 @@ function sugerirTamanoFase2Auto(texto){
     const totalH = lines.length * lineH;
     if (totalH <= altoDisponible) {
   const sc = scalePreviewF2() || 1;
-  return +(px / sc).toFixed(1); // ✅ devuelve tamaño de canvas
+  return roundToHalf(px / sc);
 }
   }
-  return +(minPx / (scalePreviewF2() || 1)).toFixed(1);
+  return roundToHalf(minPx / (scalePreviewF2() || 1));
 }
 
 function buildFase1HTML(versiculoPx){
@@ -840,7 +856,7 @@ function devRenderFase(fase){
     const st = DEV.f1;
 
     // texto
-   const pxPreview = Math.max(8, Math.round(st.size * scalePreviewF1()));
+   const pxPreview = Math.max(8, (st.size * scalePreviewF1()));
    t.innerHTML = buildFase1HTML(pxPreview);
     // ya no usamos la capa back para no romper tamaños diferentes
     if (b) b.style.display = "none";
@@ -878,7 +894,7 @@ function devRenderFase(fase){
 
     const st = DEV.f2;
 
-    const pxPreview = Math.max(8, Math.round(st.size * scalePreviewF2()));
+    const pxPreview = Math.max(8, (st.size * scalePreviewF2()));
     t.innerHTML = buildFase2HTML(pxPreview);
     if (b) b.style.display = "none";
 
@@ -1058,8 +1074,41 @@ function drawTextBlock(ctx, text, x, y, w, h, st){
     yy += lineH;
   });
 }
+ 
+  function drawVerseAndCitaBox(ctx, verse, cita, x, y, w, h, st, versePx){
+  const italic = st.style.italic ? "italic " : "";
+  const weight = st.style.bold ? "700" : "400";
+  const stroke = outlineColor(st.color);
+  const fill = st.color;
 
-function drawVerseAndCitaBox(ctx, verse, cita, x, y, w, h, st, versePx){
+  const vv = st.style.upper ? String(verse||"").toUpperCase() : String(verse||"");
+  const cc = st.style.upper ? String(cita||"").toUpperCase() : String(cita||"");
+
+  // ✅ AUTO-FIT: baja tamaño hasta que (verso+cita) entre en la caja
+  let vp = Math.max(10, Math.round(versePx));
+  while (vp >= 10) {
+    const gap = Math.round(vp * 0.35);
+    const cp = Math.max(8, Math.round(vp * 0.75));
+
+    ctx.font = `${italic}${weight} ${vp}px ${st.fuente}, Arial`;
+    const verseLines = wrapLines(ctx, vv, w);
+
+    ctx.font = `${italic}${weight} ${cp}px ${st.fuente}, Arial`;
+    const citaLines = wrapLines(ctx, cc, w);
+
+    const totalH =
+      verseLines.length * (vp * 1.20) +
+      gap +
+      citaLines.length * (cp * 1.20);
+
+    if (totalH <= h) {
+      // ✅ usa estos tamaños finales y sigue con el dibujo normal
+      versePx = vp;
+      break;
+    }
+    vp -= 1;
+  }
+
   const gap = Math.round(versePx * 0.35);
   const citaPx = Math.max(8, Math.round(versePx * 0.75)); // 25% menor
 
@@ -1176,8 +1225,8 @@ const H_VBOX  = 0.66;
 const Y_IGL   = 0.88;
 const Y_DIR   = 0.94;
 
-drawLineCentered(ctx, "DEVOCIONAL", innerY + innerH*Y_DEV, DEV.f1, 13, "700");
-drawLineCentered(ctx, DEV.p1?.fecha || "", innerY + innerH*Y_FECHA, DEV.f1, 12, "600");
+drawLineCentered(ctx, "DEVOCIONAL", innerY + innerH*Y_DEV, DEV.f1, 24, "700");
+drawLineCentered(ctx, DEV.p1?.fecha || "", innerY + innerH*Y_FECHA, DEV.f1, 18, "600");
 
 // caja central versículo + cita centrados
 const boxX = innerX + innerW*0.02;
@@ -1195,17 +1244,23 @@ drawVerseAndCitaBox(
 );
 
 // footer
-drawLineCentered(ctx, DEV.p1?.iglesia || "", innerY + innerH*Y_IGL, DEV.f1, 12, "700");
-drawLineCentered(ctx, DEV.p1?.direccion || "", innerY + innerH*Y_DIR, DEV.f1, 12, "700");
+drawLineCentered(ctx, DEV.p1?.iglesia || "", innerY + innerH*Y_IGL, DEV.f1, 18, "700");
+drawLineCentered(ctx, DEV.p1?.direccion || "", innerY + innerH*Y_DIR, DEV.f1, 18, "700");
 
   // ---------- FASE 2 ----------
   ctx.fillStyle = DEV.f2.fondoColor || "#ffffff";
   ctx.fillRect(0, H1, W, H2);
 
+  // ~3mm aprox en 1080px de ancho (no es exacto universal, pero es consistente)
+  const m = 36;
+
   drawTextBlock(
   ctx,
   (DEV.p2?.reflexion || "") + "\n\n" + (DEV.p2?.oracion || ""),
-  W*0.08, H1 + H2*0.08, W*0.84, H2*0.84,
+  m,           // x
+  H1 + m,      // y (arranca dentro de la fase 2)
+  W - m*2,     // ancho
+  H2 - m*2,    // alto
   DEV.f2
 );
 
@@ -1236,7 +1291,7 @@ window.devIrFase2 = () => {
     DEV.f2.size = sugerido;
 
     const s2 = $("dev2Tamano");
-    if (s2) s2.value = String(sugerido);
+    if (s2) s2.value = fmtSize(sugerido);
 
     // ✔️ Render FINAL (solo una vez)
     devRenderFase(2);
