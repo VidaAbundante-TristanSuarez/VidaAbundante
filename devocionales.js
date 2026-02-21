@@ -670,11 +670,11 @@ function buildFase1HTML(versiculoPx){
   // ===== Coordenadas fijas tipo Cloudinary (porcentaje del wrapper) =====
   // Arriba
   const Y_DEV   = 2;     // DEVOCIONAL
-  const Y_FECHA = 8.2;   // ✅ más cerca (antes quedaba muy separado)
+  const Y_FECHA = 7;   // ✅ más cerca (antes quedaba muy separado)
 
   // Abajo (pie)
-  const Y_IGL   = 88;   // iglesia
-  const Y_DIR   = 92.5; // dirección casi pegada al borde
+  const Y_IGL   = 90;   // iglesia
+  const Y_DIR   = 94; // dirección casi pegada al borde
 
   // Caja central (versículo + cita) MÁS GRANDE
   const Y_VBOX  = 16;    // empieza
