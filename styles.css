@@ -120,6 +120,12 @@ body.oscuro .nav-btn.activo i{
 
   /* ================= SECCIÓN BIBLIA ================= */
   /* Filtros para seleccionar libro y capítulo */
+  .filtros {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+  }
+
   /* Estilo select de filtros */
   .filtros select {
   padding: 10px;
@@ -143,6 +149,9 @@ body.oscuro .nav-btn.activo i{
   border-bottom: 1px solid rgba(0,0,0,.08);
   box-shadow: 0 6px 14px rgba(0,0,0,.06);
 
+  /* 👇 rompe el padding lateral del contenedor */
+  margin-left: -15px;
+  margin-right: -15px;
   margin-bottom: 12px;
 }
 
@@ -1987,32 +1996,93 @@ body.oscuro #barraTituloBiblia .nav-capitulo{
   font-size: 13px;
 }
 
-/* ================= FILTROS TARJETA ANCLADA A 🔍 (FINAL) ================= */
+/* ================= FILTROS TARJETA ANCLADA A 🔍 (FIX) ================= */
 
-/* ✅ ancla */
+/* oculto por defecto */
+#wrapFiltrosBiblia .filtros{
+  display: none;
+}
+
+/* el ancla real */
+#wrapFiltrosBiblia{
+  position: relative;   /* ✅ la tarjeta se posiciona respecto a esto */
+  display: inline-flex;
+  align-items: center;
+}
+
+/* cuando se abre */
+#wrapFiltrosBiblia.abierto .filtros{
+  display: flex;
+
+  position: absolute;
+  top: calc(100% + 8px);     /* ✅ justo debajo de la lupa */
+  right: 0;                  /* ✅ alineada a la derecha del botón */
+
+  z-index: 9999;
+
+  width: min(420px, calc(100vw - 24px));
+  padding: 10px;
+  gap: 10px;
+
+  background: #ffffff;
+  border: 1px solid rgba(0,0,0,.10);
+  border-radius: 14px;
+  box-shadow: 0 10px 26px rgba(0,0,0,.12);
+
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+}
+
+/* oscuro */
+body.oscuro #wrapFiltrosBiblia.abierto .filtros{
+  background: #1e1e1e;
+  border-color: rgba(255,255,255,.12);
+  box-shadow: 0 10px 26px rgba(0,0,0,.45);
+}
+
+/* selects prolijos */
+#wrapFiltrosBiblia .filtros select{
+  height: 38px;
+  padding: 0 12px;
+  font-size: 14px;
+  border-radius: 999px;
+}
+
+/* asegura que la tarjeta NO tape el click de la lupa */
+#wrapFiltrosBiblia{
+  position: relative;
+  z-index: 9999;
+}
+#wrapFiltrosBiblia .filtros{
+  z-index: 9999;
+}
+
+/* ✅ Wrapper anclado a la lupa */
 #wrapFiltrosBiblia{
   position: relative;
   display: inline-flex;
   align-items: center;
 }
 
-/* ✅ ocultos por defecto */
+/* ✅ Ocultos por defecto */
 #wrapFiltrosBiblia .filtros{
   display: none;
 }
 
-/* ✅ abiertos: tarjeta debajo de la lupa */
+/* ✅ Abiertos: tarjeta debajo de la lupa */
 #wrapFiltrosBiblia.abierto .filtros{
   display: flex;
+
   position: absolute;
   top: calc(100% + 8px);
-  right: 0;
+  right: 0; /* queda pegada a la lupa */
 
   width: min(420px, calc(100vw - 24px));
   padding: 10px;
   gap: 10px;
 
-  background: #fff;
+  background: #ffffff;
   border: 1px solid rgba(0,0,0,.10);
   border-radius: 14px;
   box-shadow: 0 10px 26px rgba(0,0,0,.12);
@@ -2023,20 +2093,19 @@ body.oscuro #barraTituloBiblia .nav-capitulo{
   z-index: 9999;
 }
 
-/* ✅ selects */
-#wrapFiltrosBiblia .filtros select{
-  height: 38px;
-  padding: 0 12px;
-  font-size: 14px;
-  border-radius: 999px;
-}
-
-/* ✅ oscuro */
+/* Oscuro */
 body.oscuro #wrapFiltrosBiblia.abierto .filtros{
   background: #1e1e1e;
   border-color: rgba(255,255,255,.12);
   box-shadow: 0 10px 26px rgba(0,0,0,.45);
 }
 
+/* Selects */
+#wrapFiltrosBiblia .filtros select{
+  height: 38px;
+  padding: 0 12px;
+  font-size: 14px;
+  border-radius: 999px;
+}
 
   </style>
