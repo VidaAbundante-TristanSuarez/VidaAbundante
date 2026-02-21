@@ -621,27 +621,22 @@ function wrapMeasureLines(ctx, text, maxWidth){
 // ✅ Sugerencia REAL: mide el preview y busca el mayor tamaño que entre
 function sugerirTamanoVersiculoAuto(versiculo){
   const wWrap = $("dev1TextoWrapper");
-  const tWrap = $("dev1Texto");
-  if (!wWrap || !tWrap) {
-    // fallback seguro
-    return 18;
-  }
+  if (!wWrap) return 18;
 
   const rect = wWrap.getBoundingClientRect();
   const maxW = Math.max(100, rect.width * 0.92);
 
-const altoDisponible = Math.max(80, rect.height * 0.62); // ✅ más espacio para versículo
-const maxPx = 18; // ✅ tus tamaños “buenos” están en esta zona (por lo que mostrás)
-const minPx = 9;
+  // ✅ más espacio para versículo
+  const altoDisponible = Math.max(80, rect.height * 0.62);
 
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
 
-  // probamos de grande a chico
-  const maxPx = 26; // techo (ya 50% menos)
-  const minPx = 10; // piso
+  // ✅ probamos de grande a chico (UNA SOLA VEZ)
+  const MAX_PX = 26;
+  const MIN_PX = 9;
 
-  for (let px = maxPx; px >= minPx; px--) {
+  for (let px = MAX_PX; px >= MIN_PX; px--) {
     ctx.font = `700 ${px}px ${DEV.f1.fuente}, Arial`;
     const lines = wrapMeasureLines(ctx, oneLine(versiculo), maxW);
     const lineH = px * 1.18;
@@ -650,7 +645,7 @@ const minPx = 9;
     if (totalH <= altoDisponible) return px;
   }
 
-  return minPx;
+  return MIN_PX;
 }
 
 function sugerirTamanoFase2Auto(texto){
