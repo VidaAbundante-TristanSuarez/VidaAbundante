@@ -2206,19 +2206,12 @@ window.toggleFiltrosBiblia = () => {
   const wrap = document.getElementById("wrapFiltrosBiblia");
   const btn  = document.getElementById("btnToggleFiltros");
   const libroSel = document.getElementById("libro");
-
   if (!wrap) return;
 
-  // abre/cierra
   const abierto = wrap.classList.toggle("abierto");
 
-  // estado visual + aria
-  if (btn) {
-    btn.classList.toggle("activo", abierto);
-    btn.setAttribute("aria-label", abierto ? "Cerrar búsqueda (ocultar filtros)" : "Buscar (mostrar filtros)");
-  }
+  if (btn) btn.classList.toggle("activo", abierto);
 
-  // (opcional) enfocar el select al abrir
   if (abierto && libroSel) setTimeout(() => libroSel.focus(), 0);
 };
 
