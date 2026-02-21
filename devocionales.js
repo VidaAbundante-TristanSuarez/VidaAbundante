@@ -648,7 +648,7 @@ function buildFase1HTML(versiculoPx){
   const fechaPx      = 11;
 
   const iglesiaPx    = 12; // mismo tamaño para ambos
-  const direPx       = 11;
+  const direPx       = 12;
 
   // ✅ CITA = 90% del versículo (se mueve con el versículo)
   const citaPx = Math.max(9, Math.round(versiculoPx * 0.75));
@@ -673,7 +673,7 @@ function buildFase1HTML(versiculoPx){
   const Y_FECHA = 7;   // ✅ más cerca (antes quedaba muy separado)
 
   // Abajo (pie)
-  const Y_IGL   = 90;   // iglesia
+  const Y_IGL   = 88;   // iglesia
   const Y_DIR   = 94; // dirección casi pegada al borde
 
   // Caja central (versículo + cita) MÁS GRANDE
