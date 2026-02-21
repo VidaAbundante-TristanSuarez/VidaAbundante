@@ -1945,58 +1945,6 @@ body.oscuro #modalPersonalizar #personalizarColor{
   font-size: 16px;
 }
 
-/* ================= FILTROS “TARJETA” DEBAJO DE LA LUPA ================= */
-
-/* ancla: la barra */
-#barraTituloBiblia{
-  position: sticky;
-  top: 0;
-  z-index: 80; /* por encima del resto */
-}
-
-/* la lupa será el “ancla” */
-#btnToggleFiltros{
-  position: relative; /* permite anclar la tarjeta */
-}
-
-/* cuando se abren filtros: que la tarjeta sea flotante */
-#seccion-biblia.filtros-abiertos .filtros{
-  position: absolute;
-  top: calc(100% + 8px); /* debajo de la barra */
-  left: 0;
-  z-index: 70;
-
-  width: min(420px, calc(100vw - 24px));
-  margin: 0;            /* importante: anulamos los márgenes de tarjeta anterior */
-  padding: 10px;
-
-  background: #ffffff;
-  border: 1px solid rgba(0,0,0,.10);
-  border-radius: 14px;
-  box-shadow: 0 10px 26px rgba(0,0,0,.12);
-
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-}
-
-/* ✅ moverla debajo de la lupa (no al borde izquierdo) */
-#seccion-biblia.filtros-abiertos #barraTituloBiblia{
-  position: relative; /* contenedor para “absolute” */
-}
-#seccion-biblia.filtros-abiertos .filtros{
-  left: 12px; /* arranca cerca de la lupa */
-}
-
-/* oscuro */
-body.oscuro #seccion-biblia.filtros-abiertos .filtros{
-  background: #1e1e1e;
-  border-color: rgba(255,255,255,.12);
-  box-shadow: 0 10px 26px rgba(0,0,0,.45);
-}
-
 /* ================= BARRA BIBLIA: LUPA + FLECHAS PRO (sin pisar) ================= */
 
 /* Lupa: misma “forma botón” que el resto */
@@ -2059,5 +2007,58 @@ body.oscuro #barraTituloBiblia .nav-capitulo{
 
 #btnCapAnt i, #btnCapSig i{
   font-size: 13px;
+}
+
+/* ================= FILTROS TARJETA ANCLADA A 🔍 (FIX) ================= */
+
+/* oculto por defecto */
+#wrapFiltrosBiblia .filtros{
+  display: none;
+}
+
+/* el ancla real */
+#wrapFiltrosBiblia{
+  position: relative;   /* ✅ la tarjeta se posiciona respecto a esto */
+  display: inline-flex;
+  align-items: center;
+}
+
+/* cuando se abre */
+#wrapFiltrosBiblia.abierto .filtros{
+  display: flex;
+
+  position: absolute;
+  top: calc(100% + 8px);     /* ✅ justo debajo de la lupa */
+  right: 0;                  /* ✅ alineada a la derecha del botón */
+
+  z-index: 9999;
+
+  width: min(420px, calc(100vw - 24px));
+  padding: 10px;
+  gap: 10px;
+
+  background: #ffffff;
+  border: 1px solid rgba(0,0,0,.10);
+  border-radius: 14px;
+  box-shadow: 0 10px 26px rgba(0,0,0,.12);
+
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+}
+
+/* oscuro */
+body.oscuro #wrapFiltrosBiblia.abierto .filtros{
+  background: #1e1e1e;
+  border-color: rgba(255,255,255,.12);
+  box-shadow: 0 10px 26px rgba(0,0,0,.45);
+}
+
+/* selects prolijos */
+#wrapFiltrosBiblia .filtros select{
+  height: 38px;
+  padding: 0 12px;
+  font-size: 14px;
+  border-radius: 999px;
 }
   </style>
