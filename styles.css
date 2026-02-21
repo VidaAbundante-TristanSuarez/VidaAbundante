@@ -2061,4 +2061,14 @@ body.oscuro #wrapFiltrosBiblia.abierto .filtros{
   font-size: 14px;
   border-radius: 999px;
 }
+
+/* asegura que la tarjeta NO tape el click de la lupa */
+#wrapFiltrosBiblia{
+  position: relative;
+  z-index: 9999;
+}
+#wrapFiltrosBiblia .filtros{
+  z-index: 9999;
+}
+
   </style>
