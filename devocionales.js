@@ -644,11 +644,11 @@ function buildFase1HTML(versiculoPx){
   if (!p1) return "";
 
   // tamaños fijos (50% menos aprox)
-  const devocionalPx = 13;
-  const fechaPx      = 12;
+  const devocionalPx = 12;
+  const fechaPx      = 11;
 
   const iglesiaPx    = 12; // mismo tamaño para ambos
-  const direPx       = 12;
+  const direPx       = 11;
 
   // ✅ CITA = 90% del versículo (se mueve con el versículo)
   const citaPx = Math.max(9, Math.round(versiculoPx * 0.75));
@@ -673,12 +673,12 @@ function buildFase1HTML(versiculoPx){
   const Y_FECHA = 8.2;   // ✅ más cerca (antes quedaba muy separado)
 
   // Abajo (pie)
-  const Y_IGL   = 88;    // iglesia
-  const Y_DIR   = 89;    // ✅ más pegado a iglesia (menos salto)
+  const Y_IGL   = 88;   // iglesia
+  const Y_DIR   = 92.5; // dirección casi pegada al borde
 
   // Caja central (versículo + cita) MÁS GRANDE
   const Y_VBOX  = 16;    // empieza
-  const H_VBOX  = 92.5;    // ✅ más alto (antes era chico)
+  const H_VBOX  = 66;    // ✅ más alto (antes era chico)
 
   return `
     <div style="position:relative; width:100%; height:100%;">
