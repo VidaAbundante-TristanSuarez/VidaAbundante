@@ -273,16 +273,30 @@ function isMostlyUpper(line){
 }
 
 function isLogoJunk(line){
-  const s = (line || "").trim().toUpperCase();
-  // basura típica que aparece justo antes del versículo en el fondo oscuro
+  const s = (line || "").trim();
+
+  if (!s) return true;
+
+  const onlyLetters = s.replace(/[^A-Za-zÁÉÍÓÚÜÑ]/g, "");
+
+  // ✅ REGLA NUEVA:
+  // Si está en mayúsculas y tiene menos de 15 letras → basura
+  if (onlyLetters.length > 0 &&
+      onlyLetters === onlyLetters.toUpperCase() &&
+      onlyLetters.length < 15) {
+    return true;
+  }
+
+  // basura típica conocida
+  const up = s.toUpperCase();
+
   return (
-    s === "ANA" ||
-    s === "DE" ||
-    s === "DE LA" ||
-    s === "DE LA VIDA" ||
-    s === "VIDA" ||
-    s === "DE LA VIDA ABUNDANTE" ||
-    s === "VIDA ABUNDANTE"
+    up === "ANA" ||
+    up === "DE" ||
+    up === "DE LA" ||
+    up === "VIDA" ||
+    up === "VIDA ABUNDANTE" ||
+    up === "DE LA VIDA ABUNDANTE"
   );
 }
 
@@ -638,7 +652,34 @@ function sugerirTamanoVersiculoAuto(versiculo){
 
   return minPx;
 }
-   
+
+function sugerirTamanoFase2Auto(texto){
+  const wWrap = $("dev2TextoWrapper");
+  if (!wWrap) return 22;
+
+  const rect = wWrap.getBoundingClientRect();
+  const maxW = rect.width * 0.92;
+  const maxH = rect.height * 0.88;
+
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+
+  const maxPx = 28;
+  const minPx = 14;
+
+  for (let px = maxPx; px >= minPx; px--) {
+    ctx.font = `400 ${px}px ${DEV.f2.fuente}, Arial`;
+
+    const lines = wrapMeasureLines(ctx, texto, maxW);
+    const lineH = px * 1.18;
+    const totalH = lines.length * lineH;
+
+    if (totalH <= maxH) return px;
+  }
+
+  return minPx;
+}
+
 function buildFase1HTML(versiculoPx){
   const p1 = DEV.p1;
   if (!p1) return "";
@@ -752,11 +793,24 @@ function buildFase2HTML(basePx){
   const p2 = DEV.p2;
   if (!p2) return "";
 
-  const txt = `Reflexión: ${oneLine(p2.reflexion || "")} Oración: ${oneLine(p2.oracion || "")}`.trim();
+  const txt = `Reflexión: ${oneLine(p2.reflexion || "")}\nOración: ${oneLine(p2.oracion || "")}`;
 
   return `
-    <div style="width:100%; text-align:left;">
-      <div style="font-size:${basePx}px; font-weight:600; white-space:normal;">
+    <div style="
+      width:100%;
+      text-align:center;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      height:100%;
+    ">
+      <div style="
+        font-size:${basePx}px;
+        font-weight:600;
+        white-space:pre-line;
+        line-height:1.2;
+        max-width:95%;
+      ">
         ${esc(txt)}
       </div>
     </div>
@@ -1021,9 +1075,24 @@ async function renderFinalCanvas(){
 window.devIrFase2 = () => {
   // render fase1 antes de pasar
   devRenderFase(1);
+
   cerrarModal("modalDevFase1");
   abrirModal("modalDevFase2");
-  devRenderFase(2);
+
+  // ⏳ Esperar a que el modal tenga tamaño real
+  requestAnimationFrame(()=>{
+    const texto = `Reflexión: ${DEV.p2?.reflexion || ""}\nOración: ${DEV.p2?.oracion || ""}`;
+
+    const sugerido = sugerirTamanoFase2Auto(texto);
+
+    DEV.f2.size = sugerido;
+
+    const s2 = $("dev2Tamano");
+    if (s2) s2.value = String(sugerido);
+
+    // ✔️ Render FINAL (solo una vez)
+    devRenderFase(2);
+  });
 };
 
 window.devVolverFase1 = () => {
