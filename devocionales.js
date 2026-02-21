@@ -630,9 +630,9 @@ function sugerirTamanoVersiculoAuto(versiculo){
   const rect = wWrap.getBoundingClientRect();
   const maxW = Math.max(100, rect.width * 0.92);
 
-  // Reservamos “zonas fijas” arriba/abajo (devocional/fecha/cita/iglesia/dirección + gaps)
-  // medí dentro de la “caja del versículo”, no del wrapper entero.
-  const altoDisponible = Math.max(80, rect.height * 0.46); // mismo H_VBOX (46%)
+const altoDisponible = Math.max(80, rect.height * 0.62); // ✅ más espacio para versículo
+const maxPx = 18; // ✅ tus tamaños “buenos” están en esta zona (por lo que mostrás)
+const minPx = 9;
 
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
@@ -655,28 +655,25 @@ function sugerirTamanoVersiculoAuto(versiculo){
 
 function sugerirTamanoFase2Auto(texto){
   const wWrap = $("dev2TextoWrapper");
-  if (!wWrap) return 22;
+  if (!wWrap) return 16;
 
   const rect = wWrap.getBoundingClientRect();
-  const maxW = rect.width * 0.92;
-  const maxH = rect.height * 0.88;
+  const maxW = Math.max(100, rect.width * 0.92);
+  const altoDisponible = Math.max(80, rect.height * 0.82);
 
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
 
-  const maxPx = 28;
-  const minPx = 14;
+  const maxPx = 18;
+  const minPx = 9;
 
-  for (let px = maxPx; px >= minPx; px--) {
-    ctx.font = `400 ${px}px ${DEV.f2.fuente}, Arial`;
-
-    const lines = wrapMeasureLines(ctx, texto, maxW);
-    const lineH = px * 1.18;
+  for (let px = maxPx; px >= minPx; px -= 0.5) {
+    ctx.font = `600 ${px}px ${DEV.f2.fuente}, Arial`;
+    const lines = wrapMeasureLines(ctx, oneLine(texto), maxW);
+    const lineH = px * 1.20;
     const totalH = lines.length * lineH;
-
-    if (totalH <= maxH) return px;
+    if (totalH <= altoDisponible) return +px.toFixed(1);
   }
-
   return minPx;
 }
 
@@ -781,7 +778,7 @@ function buildFase1HTML(versiculoPx){
         ${esc(p1.iglesia)}
       </div>
 
-      <div style="${base(direPx,400)} top:${Y_DIR}%;">
+      <div style="${base(direPx,700)} top:${Y_DIR}%;">
         ${esc(p1.direccion)}
       </div>
 
@@ -808,7 +805,7 @@ function buildFase2HTML(basePx){
         font-size:${basePx}px;
         font-weight:600;
         white-space:pre-line;
-        line-height:1.2;
+        line-height:1.25;
         max-width:95%;
       ">
         ${esc(txt)}
@@ -883,7 +880,7 @@ function devRenderFase(fase){
   -1px 0 ${oc}, 1px 0 ${oc}, 0 -1px ${oc}, 0 1px ${oc},
   -1px -1px ${oc}, 1px 1px ${oc}, -1px 1px ${oc}, 1px -1px ${oc}`;
 
-    w.style.backgroundColor = wrapperBgFromOpacity(st.op);
+   w.style.backgroundColor = "transparent"; // ✅ sin opacidad en Fase 2
 
     applyTextStyles(t,b,st);
     return;
@@ -947,6 +944,55 @@ function setFont(ctx, st){
   const weight = st.style.bold ? "700" : "400";
   const italic = st.style.italic ? "italic " : "";
   ctx.font = `${italic}${weight} ${st.size}px ${st.fuente}, Arial`;
+}
+
+function drawLineCentered(ctx, text, y, st, sizePx, weight="700") {
+  const raw = st.style.upper ? String(text||"").toUpperCase() : String(text||"");
+  const italic = st.style.italic ? "italic " : "";
+  ctx.font = `${italic}${weight} ${sizePx}px ${st.fuente}, Arial`;
+
+  const fill = st.color;
+  const stroke = outlineColor(st.color);
+
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = stroke;
+  ctx.fillStyle = fill;
+
+  ctx.strokeText(raw, 1080/2, y);
+  ctx.fillText(raw, 1080/2, y);
+}
+
+function drawParagraphCentered(ctx, text, topY, maxW, st, sizePx, weight="700") {
+  const italic = st.style.italic ? "italic " : "";
+  ctx.font = `${italic}${weight} ${sizePx}px ${st.fuente}, Arial`;
+
+  const lines = wrapLines(ctx, st.style.upper ? String(text||"").toUpperCase() : String(text||""), maxW);
+  const lineH = sizePx * 1.20;
+
+  let y = topY;
+  const cx = 1080/2;
+
+  const fill = st.color;
+  const stroke = outlineColor(st.color);
+
+  ctx.textAlign = "center";
+  ctx.textBaseline = "alphabetic";
+
+  lines.forEach(line=>{
+    if (!line) { y += lineH; return; }
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = stroke;
+    ctx.strokeText(line, cx, y);
+
+    ctx.fillStyle = fill;
+    ctx.fillText(line, cx, y);
+
+    y += lineH;
+  });
+
+  return y; // devuelve el final
 }
 
 function drawTextBlock(ctx, text, x, y, w, h, st){
@@ -1035,24 +1081,33 @@ async function renderFinalCanvas(){
     ctx.fillRect(0,0,W,H1);
   }
 
-  // overlay opacidad (wrapper)
-  ctx.fillStyle = wrapperBgFromOpacity(DEV.f1.op);
-  ctx.fillRect(W*0.06, H1*0.06, W*0.88, H1*0.88);
+// overlay opacidad (wrapper) - más cerca del borde (menos margen)
+const pad = W * 0.06; // antes 0.08
+ctx.fillStyle = wrapperBgFromOpacity(DEV.f1.op);
+ctx.fillRect(pad, pad, W - pad*2, H1 - pad*2);
 
-  // texto
-  drawTextBlock(
-  ctx,
-  (DEV.p1?.versiculo || "") + "\n" + (DEV.p1?.cita || ""),
-  W*0.08, H1*0.08, W*0.84, H1*0.84,
-  DEV.f1
-);
+// ====== TEXTO FASE 1 (ANCLAS) ======
+const versoPx = DEV.f1.size;                 // el del slider
+const citaPx  = Math.max(8, versoPx * 0.75); // ✅ 25% más chico que versículo
+
+// Top (north)
+drawLineCentered(ctx, "DEVOCIONAL", pad + 28, DEV.f1, 13, "700");
+drawLineCentered(ctx, DEV.p1?.fecha || "",  pad + 52, DEV.f1, 12, "600");
+
+// Center: versículo (arranca más arriba, para que entre más texto)
+const verseTop = pad + 120;
+drawParagraphCentered(ctx, DEV.p1?.versiculo || "", verseTop, W - pad*2 - 40, DEV.f1, versoPx, "700");
+
+// Cita justo debajo del versículo (no en el “south”)
+drawLineCentered(ctx, DEV.p1?.cita || "", H1 * 0.62, DEV.f1, citaPx, "700");
+
+// Bottom (south) — con menos margen abajo
+drawLineCentered(ctx, DEV.p1?.iglesia || "", H1 - pad - 70, DEV.f1, 12, "700");
+drawLineCentered(ctx, DEV.p1?.direccion || "", H1 - pad - 42, DEV.f1, 12, "700");
 
   // ---------- FASE 2 ----------
   ctx.fillStyle = DEV.f2.fondoColor || "#ffffff";
   ctx.fillRect(0, H1, W, H2);
-
-  ctx.fillStyle = wrapperBgFromOpacity(DEV.f2.op);
-  ctx.fillRect(W*0.06, H1 + H2*0.06, W*0.88, H2*0.88);
 
   drawTextBlock(
   ctx,
@@ -1112,14 +1167,28 @@ window.devIrFase3 = async () => {
   await renderFinalCanvas();
 };
 
+window.devVolverFase2 = () => {
+  cerrarModal("modalDevFase3");
+  abrirModal("modalDevFase2");
+  devRenderFase(2);
+};
+
+window.devAudioDesdeFase3 = () => {
+  // abre audio pero NO te saca de fase 3
+  devAbrirAudio();
+};
+
 /* =========================================================
    10) CONTROLES UI (sliders, size, color, fondo)
    ========================================================= */
 window.devCambiarTamano = (fase, delta) => {
   const inp = $(`dev${fase}Tamano`);
   if (!inp) return;
+
+  const step = 0.5; // ✅ medio punto
   const cur = Number(inp.value || 24);
-  const next = Math.max(10, Math.min(90, cur + delta));
+  const next = Math.max(8, Math.min(90, +(cur + delta * step).toFixed(1)));
+
   inp.value = String(next);
 
   if (fase === 1) DEV.f1.size = next;
@@ -1166,19 +1235,18 @@ function bindInputs(){
   });
 
   // =========================
-  // FASE 2 (color plano) - opacidad / tamaño / color
+  // FASE 2 (color plano) - tamaño / color (SIN opacidad)
   // =========================
-  ["Opacidad","Tamano","Color"].forEach(k=>{
-    const el = $(`dev2${k}`);
-    if (!el) return;
+ ["Tamano","Color"].forEach(k=>{
+  const el = $(`dev2${k}`);
+  if (!el) return;
 
-    el.addEventListener("input", ()=>{
-      DEV.f2.op = Number($("dev2Opacidad")?.value || 0.15);
-      DEV.f2.size = Number($("dev2Tamano")?.value || 26);
-      DEV.f2.color = $("dev2Color")?.value || "#000000";
-      devRenderFase(2);
-    });
+  el.addEventListener("input", ()=>{
+    DEV.f2.size = Number($("dev2Tamano")?.value || 26);
+    DEV.f2.color = $("dev2Color")?.value || "#000000";
+    devRenderFase(2);
   });
+});
 
   // Fondo fase 2
   const fondo2 = $("dev2Fondo");
