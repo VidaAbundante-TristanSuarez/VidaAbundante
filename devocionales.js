@@ -1075,9 +1075,9 @@ function drawTextBlock(ctx, text, x, y, w, h, st){
   });
 }
  
-  function drawVerseAndCitaBox(ctx, verse, cita, x, y, w, h, st, versePx){
-  const italic = st.style.italic ? "italic " : "";
-  const weight = st.style.bold ? "700" : "400";
+function drawVerseAndCitaBox(ctx, verse, cita, x, y, w, h, st, versePx){
+  const italicStr = st.style.italic ? "italic " : "";
+  const weightStr = st.style.bold ? "700" : "400";
   const stroke = outlineColor(st.color);
   const fill = st.color;
 
@@ -1087,50 +1087,37 @@ function drawTextBlock(ctx, text, x, y, w, h, st){
   // ✅ AUTO-FIT: baja tamaño hasta que (verso+cita) entre en la caja
   let vp = Math.max(10, Math.round(versePx));
   while (vp >= 10) {
-    const gap = Math.round(vp * 0.35);
-    const cp = Math.max(8, Math.round(vp * 0.75));
+    const gapTry = Math.round(vp * 0.35);
+    const cpTry = Math.max(8, Math.round(vp * 0.75));
 
-    ctx.font = `${italic}${weight} ${vp}px ${st.fuente}, Arial`;
-    const verseLines = wrapLines(ctx, vv, w);
+    ctx.font = `${italicStr}${weightStr} ${vp}px ${st.fuente}, Arial`;
+    const verseLinesTry = wrapLines(ctx, vv, w);
 
-    ctx.font = `${italic}${weight} ${cp}px ${st.fuente}, Arial`;
-    const citaLines = wrapLines(ctx, cc, w);
+    ctx.font = `${italicStr}${weightStr} ${cpTry}px ${st.fuente}, Arial`;
+    const citaLinesTry = wrapLines(ctx, cc, w);
 
-    const totalH =
-      verseLines.length * (vp * 1.20) +
-      gap +
-      citaLines.length * (cp * 1.20);
+    const totalHTry =
+      verseLinesTry.length * (vp * 1.20) +
+      gapTry +
+      citaLinesTry.length * (cpTry * 1.20);
 
-    if (totalH <= h) {
-      // ✅ usa estos tamaños finales y sigue con el dibujo normal
-      versePx = vp;
-      break;
-    }
+    if (totalHTry <= h) break;
     vp -= 1;
   }
 
-  const gap = Math.round(versePx * 0.35);
-  const citaPx = Math.max(8, Math.round(versePx * 0.75)); // 25% menor
-
-  const italic = st.style.italic ? "italic " : "";
-  const weight = st.style.bold ? "700" : "400";
-
-  const stroke = outlineColor(st.color);
-  const fill = st.color;
-
-  const vv = st.style.upper ? String(verse||"").toUpperCase() : String(verse||"");
-  const cc = st.style.upper ? String(cita||"").toUpperCase() : String(cita||"");
+  const gap = Math.round(vp * 0.35);
+  const citaPx = Math.max(8, Math.round(vp * 0.75));
 
   // wrap versículo
-  ctx.font = `${italic}${weight} ${versePx}px ${st.fuente}, Arial`;
+  ctx.font = `${italicStr}${weightStr} ${vp}px ${st.fuente}, Arial`;
   const verseLines = wrapLines(ctx, vv, w);
 
   // wrap cita
-  ctx.font = `${italic}${weight} ${citaPx}px ${st.fuente}, Arial`;
+  ctx.font = `${italicStr}${weightStr} ${citaPx}px ${st.fuente}, Arial`;
   const citaLines = wrapLines(ctx, cc, w);
 
-  const verseLH = versePx * 1.20;
-  const citaLH  = citaPx  * 1.20;
+  const verseLH = vp * 1.20;
+  const citaLH  = citaPx * 1.20;
 
   const totalH =
     verseLines.length * verseLH +
@@ -1144,7 +1131,7 @@ function drawTextBlock(ctx, text, x, y, w, h, st){
   ctx.textBaseline = "alphabetic";
 
   // draw verse
-  ctx.font = `${italic}${weight} ${versePx}px ${st.fuente}, Arial`;
+  ctx.font = `${italicStr}${weightStr} ${vp}px ${st.fuente}, Arial`;
   verseLines.forEach(line=>{
     if (!line) { yy += verseLH; return; }
     ctx.lineWidth = 2;
@@ -1158,7 +1145,7 @@ function drawTextBlock(ctx, text, x, y, w, h, st){
   yy += gap;
 
   // draw cita
-  ctx.font = `${italic}${weight} ${citaPx}px ${st.fuente}, Arial`;
+  ctx.font = `${italicStr}${weightStr} ${citaPx}px ${st.fuente}, Arial`;
   citaLines.forEach(line=>{
     if (!line) { yy += citaLH; return; }
     ctx.lineWidth = 2;
