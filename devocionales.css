@@ -40,8 +40,18 @@
   white-space:normal;
 }
 
-#dev2TextoWrapper { height: 100%; }
-#dev2Texto { height: 100%; display:flex; align-items:center; justify-content:center; }
+/* ===== FASE 2 — TEXTO ===== */
+#dev2TextoWrapper{
+  height: 100%;
+  inset: 12px;           /* margen tipo 3mm aprox en preview */
+}
+
+#dev2Texto{
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
 .dev-text.front{ z-index: 2; }
 .dev-text.back{ z-index: 1; }
