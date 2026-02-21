@@ -157,4 +157,20 @@ button.activo{
   background:#ddd;
 }
 
+/* ===== INPUTS NUMÉRICOS Y COLOR ===== */
+
+input[type="number"],
+input[type="color"]{
+  border-radius:12px;
+  border:1px solid #ccc;
+  padding:4px 6px;
+}
+
+/* centrado del número */
+input[type="number"]{
+  text-align:center;
+  font-weight:700;
+  width:60px;
+}
+
 </style>
