@@ -633,7 +633,7 @@ function sugerirTamanoVersiculoAuto(versiculo){
   const ctx = canvas.getContext("2d");
 
   // ✅ probamos de grande a chico (UNA SOLA VEZ)
-  const MAX_PX = 26;
+  const MAX_PX = 42;
   const MIN_PX = 9;
 
   for (let px = MAX_PX; px >= MIN_PX; px--) {
@@ -642,10 +642,13 @@ function sugerirTamanoVersiculoAuto(versiculo){
     const lineH = px * 1.18;
     const totalH = lines.length * lineH;
 
-    if (totalH <= altoDisponible) return px;
+    if (totalH <= altoDisponible) {
+    const sc = scalePreviewF1() || 1;
+    return Math.round(px / sc); // ✅ devuelve tamaño de canvas
+}
   }
 
-  return MIN_PX;
+ return Math.round(MIN_PX / (scalePreviewF1() || 1));
 }
 
 function sugerirTamanoFase2Auto(texto){
@@ -667,9 +670,12 @@ function sugerirTamanoFase2Auto(texto){
     const lines = wrapMeasureLines(ctx, oneLine(texto), maxW);
     const lineH = px * 1.20;
     const totalH = lines.length * lineH;
-    if (totalH <= altoDisponible) return +px.toFixed(1);
+    if (totalH <= altoDisponible) {
+  const sc = scalePreviewF2() || 1;
+  return +(px / sc).toFixed(1); // ✅ devuelve tamaño de canvas
+}
   }
-  return minPx;
+  return +(minPx / (scalePreviewF2() || 1)).toFixed(1);
 }
 
 function buildFase1HTML(versiculoPx){
@@ -809,6 +815,20 @@ function buildFase2HTML(basePx){
   `;
 }
 
+function scalePreviewF1(){
+  const p = $("dev1Preview");
+  if (!p) return 1;
+  const h = p.getBoundingClientRect().height || 1;
+  return h / 1080; // fase 1 = 9:9 = 1080 de alto en canvas
+}
+
+function scalePreviewF2(){
+  const p = $("dev2Preview");
+  if (!p) return 1;
+  const h = p.getBoundingClientRect().height || 1;
+  return h / 840; // fase 2 = 9:7 = 840 de alto en canvas
+}
+
 function devRenderFase(fase){
   if (fase === 1) {
     const p = $("dev1Preview");
@@ -820,7 +840,8 @@ function devRenderFase(fase){
     const st = DEV.f1;
 
     // texto
-    t.innerHTML = buildFase1HTML(st.size);
+   const pxPreview = Math.max(8, Math.round(st.size * scalePreviewF1()));
+   t.innerHTML = buildFase1HTML(pxPreview);
     // ya no usamos la capa back para no romper tamaños diferentes
     if (b) b.style.display = "none";
 
@@ -857,7 +878,8 @@ function devRenderFase(fase){
 
     const st = DEV.f2;
 
-    t.innerHTML = buildFase2HTML(st.size);
+    const pxPreview = Math.max(8, Math.round(st.size * scalePreviewF2()));
+    t.innerHTML = buildFase2HTML(pxPreview);
     if (b) b.style.display = "none";
 
     // fondo plano
@@ -866,7 +888,6 @@ function devRenderFase(fase){
 
     // fuente + tamaño + color
    t.style.fontFamily = st.fuente;
-   t.style.fontSize = st.size + "px";
    t.style.color = st.color;
 
    // outline usando sombras (sirve con HTML interno)
@@ -906,33 +927,31 @@ async function imgFromUrl(url){
 }
 
 function wrapLines(ctx, text, maxWidth){
-  const words = String(text||"").split(/\s+/);
-  const lines = [];
-  let line = "";
+  const out = [];
 
-  for (const w of words) {
-    const test = line ? (line + " " + w) : w;
-    if (ctx.measureText(test).width <= maxWidth) line = test;
-    else {
-      if (line) lines.push(line);
-      line = w;
+  const parts = String(text || "").split("\n");
+  for (const part of parts) {
+    const p = part.trim();
+
+    // línea en blanco real
+    if (!p) { out.push(""); continue; }
+
+    const words = p.split(/\s+/);
+    let line = "";
+
+    for (const w of words) {
+      const test = line ? (line + " " + w) : w;
+      if (ctx.measureText(test).width <= maxWidth) {
+        line = test;
+      } else {
+        if (line) out.push(line);
+        line = w;
+      }
     }
-  }
-  if (line) lines.push(line);
-
-  // respetar saltos reales
-  const byBreaks = String(text||"").split("\n");
-  if (byBreaks.length > 1) {
-    const out = [];
-    byBreaks.forEach(par=>{
-      const p = par.trim();
-      if (!p) { out.push(""); return; }
-      out.push(...wrapLines(ctx, p, maxWidth));
-    });
-    return out;
+    if (line) out.push(line);
   }
 
-  return lines;
+  return out;
 }
 
 function setFont(ctx, st){
@@ -1040,6 +1059,68 @@ function drawTextBlock(ctx, text, x, y, w, h, st){
   });
 }
 
+function drawVerseAndCitaBox(ctx, verse, cita, x, y, w, h, st, versePx){
+  const gap = Math.round(versePx * 0.35);
+  const citaPx = Math.max(8, Math.round(versePx * 0.75)); // 25% menor
+
+  const italic = st.style.italic ? "italic " : "";
+  const weight = st.style.bold ? "700" : "400";
+
+  const stroke = outlineColor(st.color);
+  const fill = st.color;
+
+  const vv = st.style.upper ? String(verse||"").toUpperCase() : String(verse||"");
+  const cc = st.style.upper ? String(cita||"").toUpperCase() : String(cita||"");
+
+  // wrap versículo
+  ctx.font = `${italic}${weight} ${versePx}px ${st.fuente}, Arial`;
+  const verseLines = wrapLines(ctx, vv, w);
+
+  // wrap cita
+  ctx.font = `${italic}${weight} ${citaPx}px ${st.fuente}, Arial`;
+  const citaLines = wrapLines(ctx, cc, w);
+
+  const verseLH = versePx * 1.20;
+  const citaLH  = citaPx  * 1.20;
+
+  const totalH =
+    verseLines.length * verseLH +
+    gap +
+    citaLines.length * citaLH;
+
+  let yy = y + Math.max(0, (h - totalH)/2) + verseLH;
+
+  const cx = x + w/2;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "alphabetic";
+
+  // draw verse
+  ctx.font = `${italic}${weight} ${versePx}px ${st.fuente}, Arial`;
+  verseLines.forEach(line=>{
+    if (!line) { yy += verseLH; return; }
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = stroke;
+    ctx.fillStyle = fill;
+    ctx.strokeText(line, cx, yy);
+    ctx.fillText(line, cx, yy);
+    yy += verseLH;
+  });
+
+  yy += gap;
+
+  // draw cita
+  ctx.font = `${italic}${weight} ${citaPx}px ${st.fuente}, Arial`;
+  citaLines.forEach(line=>{
+    if (!line) { yy += citaLH; return; }
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = stroke;
+    ctx.fillStyle = fill;
+    ctx.strokeText(line, cx, yy);
+    ctx.fillText(line, cx, yy);
+    yy += citaLH;
+  });
+}
+
 async function renderFinalCanvas(){
   const cFinal = $("devCanvasFinal");
   if (!cFinal) return null;
@@ -1081,24 +1162,41 @@ const pad = W * 0.06; // antes 0.08
 ctx.fillStyle = wrapperBgFromOpacity(DEV.f1.op);
 ctx.fillRect(pad, pad, W - pad*2, H1 - pad*2);
 
-// ====== TEXTO FASE 1 (ANCLAS) ======
-const versoPx = DEV.f1.size;                 // el del slider
-const citaPx  = Math.max(8, versoPx * 0.75); // ✅ 25% más chico que versículo
+// ====== TEXTO FASE 1 (IGUAL A FASE 1 HTML) ======
+const innerX = pad;
+const innerY = pad;
+const innerW = W - pad*2;
+const innerH = H1 - pad*2;
 
-// Top (north)
-drawLineCentered(ctx, "DEVOCIONAL", pad + 28, DEV.f1, 13, "700");
-drawLineCentered(ctx, DEV.p1?.fecha || "",  pad + 52, DEV.f1, 12, "600");
+// posiciones por % igual que tu buildFase1HTML
+const Y_DEV   = 0.02;
+const Y_FECHA = 0.07;
+const Y_VBOX  = 0.16;
+const H_VBOX  = 0.66;
+const Y_IGL   = 0.88;
+const Y_DIR   = 0.94;
 
-// Center: versículo (arranca más arriba, para que entre más texto)
-const verseTop = pad + 120;
-drawParagraphCentered(ctx, DEV.p1?.versiculo || "", verseTop, W - pad*2 - 40, DEV.f1, versoPx, "700");
+drawLineCentered(ctx, "DEVOCIONAL", innerY + innerH*Y_DEV, DEV.f1, 13, "700");
+drawLineCentered(ctx, DEV.p1?.fecha || "", innerY + innerH*Y_FECHA, DEV.f1, 12, "600");
 
-// Cita justo debajo del versículo (no en el “south”)
-drawLineCentered(ctx, DEV.p1?.cita || "", H1 * 0.62, DEV.f1, citaPx, "700");
+// caja central versículo + cita centrados
+const boxX = innerX + innerW*0.02;
+const boxW = innerW*0.96;
+const boxY = innerY + innerH*Y_VBOX;
+const boxH = innerH*H_VBOX;
 
-// Bottom (south) — con menos margen abajo
-drawLineCentered(ctx, DEV.p1?.iglesia || "", H1 - pad - 70, DEV.f1, 12, "700");
-drawLineCentered(ctx, DEV.p1?.direccion || "", H1 - pad - 42, DEV.f1, 12, "700");
+drawVerseAndCitaBox(
+  ctx,
+  DEV.p1?.versiculo || "",
+  DEV.p1?.cita || "",
+  boxX, boxY, boxW, boxH,
+  DEV.f1,
+  DEV.f1.size // ✅ tamaño real canvas
+);
+
+// footer
+drawLineCentered(ctx, DEV.p1?.iglesia || "", innerY + innerH*Y_IGL, DEV.f1, 12, "700");
+drawLineCentered(ctx, DEV.p1?.direccion || "", innerY + innerH*Y_DIR, DEV.f1, 12, "700");
 
   // ---------- FASE 2 ----------
   ctx.fillStyle = DEV.f2.fondoColor || "#ffffff";
