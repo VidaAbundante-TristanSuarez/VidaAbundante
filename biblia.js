@@ -2179,25 +2179,25 @@ window.capituloSiguiente = () => {
 
 // ================= 🔍 TOGGLE FILTROS BIBLIA =================
 window.toggleFiltrosBiblia = () => {
-  const sec = document.getElementById("seccion-biblia");
-  const btn = document.getElementById("btnToggleFiltros");
+  const wrap = document.getElementById("wrapFiltrosBiblia");
+  const btn  = document.getElementById("btnToggleFiltros");
   const libroSel = document.getElementById("libro");
 
-  if (!sec) return;
+  if (!wrap) return;
 
-  const abierto = sec.classList.toggle("filtros-abiertos");
+  // abre/cierra
+  const abierto = wrap.classList.toggle("abierto");
 
-  // (opcional) estado visual + aria
+  // estado visual + aria
   if (btn) {
     btn.classList.toggle("activo", abierto);
     btn.setAttribute("aria-label", abierto ? "Cerrar búsqueda (ocultar filtros)" : "Buscar (mostrar filtros)");
   }
 
-  // (opcional) cuando abre, enfocar el select de libro
-  if (abierto && libroSel) {
-    setTimeout(() => libroSel.focus(), 0);
-  }
+  // (opcional) enfocar el select al abrir
+  if (abierto && libroSel) setTimeout(() => libroSel.focus(), 0);
 };
+
 // ================= 🔺 PANEL ===================
 window.mostrarSeccion = (tipo) => {
   ["imagenes", "marcadores"].forEach(s => {
