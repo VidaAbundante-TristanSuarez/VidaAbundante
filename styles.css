@@ -2009,4 +2009,68 @@ body.oscuro #seccion-biblia.filtros-abiertos .filtros{
   background: var(--ui-azul-hover);
   color:#fff;
 }
+
+/* ================= BARRA BIBLIA: LUPA + FLECHAS PRO (sin pisar) ================= */
+
+/* Lupa: misma “forma botón” que el resto */
+#btnToggleFiltros{
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  background: var(--ui-azul-claro);
+  color: #000;
+
+  font-size: 16px;   /* tamaño del 🔍 */
+  line-height: 1;
+  padding: 0;
+}
+
+#btnToggleFiltros:hover{
+  background: var(--ui-azul-hover);
+  color:#fff;
+}
+
+/* cuando está activo (cuando abrís filtros) */
+#btnToggleFiltros.activo{
+  background: var(--ui-azul-hover);
+  color:#fff;
+}
+
+/* Contenedor de flechas (izq/der) más prolijo */
+#barraTituloBiblia .nav-capitulo{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  background: rgba(255,255,255,.65);
+  border: 1px solid rgba(0,0,0,.08);
+  border-radius: 999px;
+  padding: 4px;
+
+  box-shadow: 0 6px 14px rgba(0,0,0,.06);
+}
+
+/* oscuro: contenedor de flechas */
+body.oscuro #barraTituloBiblia .nav-capitulo{
+  background: rgba(0,0,0,.35);
+  border-color: rgba(255,255,255,.12);
+  box-shadow: 0 6px 14px rgba(0,0,0,.35);
+}
+
+/* Flechas: un toque más grandes y alineadas */
+#btnCapAnt, #btnCapSig{
+  width: 32px;
+  height: 32px;
+}
+
+#btnCapAnt i, #btnCapSig i{
+  font-size: 13px;
+}
   </style>
