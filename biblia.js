@@ -229,6 +229,7 @@ function initResaltadorCompacto() {
   paleta.style.display = "none";
   btnActivo.style.background = colorActual;
   btnActivo.textContent = "💛";
+  btnBloquear.textContent = "🔒";
 
   // 🟡 CLICK PRINCIPAL → abrir / cerrar paleta
   btnActivo.onclick = e => {
@@ -1345,7 +1346,12 @@ window.irA = (seccion) => {
   }
 
   // 4) repintar biblia solo cuando estás en biblia
-  if (seccion === "biblia") mostrarTexto();
+  if (seccion === "biblia") {
+  resaltadorBloqueado = true;
+  const btnBloq = document.getElementById("btnBloquearResaltador");
+  if (btnBloq) btnBloq.textContent = "🔒";
+  mostrarTexto();
+}
 };
 
 // ================= 🔺 MODO IMAGEN ===============================
