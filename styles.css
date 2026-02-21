@@ -2071,4 +2071,16 @@ body.oscuro #wrapFiltrosBiblia.abierto .filtros{
   z-index: 9999;
 }
 
+/* ✅ Cuando se abren: tarjeta centrada (NO se sale en celu) */
+#seccion-biblia.filtros-abiertos #barraTituloBiblia .filtros{
+  position: absolute;
+  top: calc(100% + 8px);
+
+  left: 50%;
+  transform: translateX(-50%);
+
+  width: min(420px, calc(100vw - 24px)); /* deja 12px de margen a cada lado */
+  margin: 0;
+}
+
   </style>
