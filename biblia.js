@@ -263,38 +263,54 @@ function initResaltadorCompacto() {
 
   // 🔒 BLOQUEAR / DESBLOQUEAR
   btnBloquear.onclick = e => {
-    e.preventDefault();
-    e.stopPropagation();
+  e.preventDefault();
+  e.stopPropagation();
 
-    resaltadorBloqueado = !resaltadorBloqueado;
-    btnBloquear.textContent = resaltadorBloqueado ? "🔒" : "🔓";
+  resaltadorBloqueado = !resaltadorBloqueado;
 
-    paleta.querySelectorAll("button[data-color] span.icono-candado").forEach(c => c.remove());
-
-    if (resaltadorBloqueado) {
-      const botonColor = Array.from(paleta.querySelectorAll("button[data-color]"))
-        .find(b => b.dataset.color === colorActual);
-      if (botonColor) {
-        const span = document.createElement("span");
-        span.textContent = "🔒";
-        span.className = "icono-candado";
-        span.style.position = "absolute";
-        span.style.top = "-4px";
-        span.style.right = "-4px";
-        span.style.fontSize = "10px";
-        span.style.background = "#fff";
-        span.style.borderRadius = "50%";
-        span.style.padding = "1px";
-        botonColor.style.position = "relative";
-        botonColor.appendChild(span);
-      }
-    }
-  };
+  // ✅ misma UI para manual y automático
+  actualizarUICandadoResaltador();
+};
 
   // ❌ cerrar clic fuera
   document.addEventListener("click", e => {
     if (!cont.contains(e.target)) paleta.style.display = "none";
   });
+  actualizarUICandadoResaltador();
+}
+
+// ================= ⭐ BLOQUEO DE RESALTADOR =======================
+function actualizarUICandadoResaltador() {
+  const paleta = document.getElementById("paletaResaltadores");
+  const btnBloquear = document.getElementById("btnBloquearResaltador");
+  if (!paleta || !btnBloquear) return;
+
+  // icono grande
+  btnBloquear.textContent = resaltadorBloqueado ? "🔒" : "🔓";
+
+  // limpiar candaditos pequeños anteriores
+  paleta.querySelectorAll("button[data-color] span.icono-candado").forEach(c => c.remove());
+
+  // si está bloqueado, poner el candadito pequeño en el color actual
+  if (resaltadorBloqueado) {
+    const botonColor = Array.from(paleta.querySelectorAll("button[data-color]"))
+      .find(b => b.dataset.color === colorActual);
+
+    if (botonColor) {
+      const span = document.createElement("span");
+      span.textContent = "🔒";
+      span.className = "icono-candado";
+      span.style.position = "absolute";
+      span.style.top = "-4px";
+      span.style.right = "-4px";
+      span.style.fontSize = "10px";
+      span.style.background = "#fff";
+      span.style.borderRadius = "50%";
+      span.style.padding = "1px";
+      botonColor.style.position = "relative";
+      botonColor.appendChild(span);
+    }
+  }
 }
 
 // ================= ⭐ MOSTRAR TEXTO =======================
@@ -1348,8 +1364,10 @@ window.irA = (seccion) => {
   // 4) repintar biblia solo cuando estás en biblia
   if (seccion === "biblia") {
   resaltadorBloqueado = true;
-  const btnBloq = document.getElementById("btnBloquearResaltador");
-  if (btnBloq) btnBloq.textContent = "🔒";
+
+  // ✅ pinta candado grande + candadito pequeño igual que el manual
+  actualizarUICandadoResaltador();
+
   mostrarTexto();
 }
 };
