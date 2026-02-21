@@ -2177,6 +2177,27 @@ window.capituloSiguiente = () => {
   }
 };
 
+// ================= 🔍 TOGGLE FILTROS BIBLIA =================
+window.toggleFiltrosBiblia = () => {
+  const sec = document.getElementById("seccion-biblia");
+  const btn = document.getElementById("btnToggleFiltros");
+  const libroSel = document.getElementById("libro");
+
+  if (!sec) return;
+
+  const abierto = sec.classList.toggle("filtros-abiertos");
+
+  // (opcional) estado visual + aria
+  if (btn) {
+    btn.classList.toggle("activo", abierto);
+    btn.setAttribute("aria-label", abierto ? "Cerrar búsqueda (ocultar filtros)" : "Buscar (mostrar filtros)");
+  }
+
+  // (opcional) cuando abre, enfocar el select de libro
+  if (abierto && libroSel) {
+    setTimeout(() => libroSel.focus(), 0);
+  }
+};
 // ================= 🔺 PANEL ===================
 window.mostrarSeccion = (tipo) => {
   ["imagenes", "marcadores"].forEach(s => {
@@ -2443,6 +2464,7 @@ function salirModoMarcadorLimpio() {
   refrescarBotonGuardarMarcador();
   renderPreviewVersiculosMarcador();
   mostrarTexto();
+
 }
 
 // ================= 🔺 HACER FUNCIONES GLOBALES (FIX DESCARGAR/COMPARTIR EN PC) =================
@@ -2459,7 +2481,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // 2) check iglesia por defecto
   forceDefaultCheckIglesia();
-  
+
   // 3) listeners botones (sin depender del onclick en HTML)
   const btnGuardar = document.getElementById("btnGuardarMarcador");
   if (btnGuardar) {
@@ -2491,7 +2513,22 @@ document.addEventListener("DOMContentLoaded", () => {
     };
   }
 
+  // ✅ NUEVO: botón 🔍 (si lo querés sin onclick en HTML)
+  const btnFiltros = document.getElementById("btnToggleFiltros");
+  if (btnFiltros) {
+    btnFiltros.type = "button";
+    btnFiltros.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleFiltrosBiblia();
+    };
+  }
+
   // 4) arrancar en biblia
   window.irA?.("biblia");
-});
 
+  // ✅ asegurar filtros cerrados al iniciar
+  const secBiblia = document.getElementById("seccion-biblia");
+  if (secBiblia) secBiblia.classList.remove("filtros-abiertos");
+  
+}); // ================= ✅ CIERRA INIT ÚNICO =====
