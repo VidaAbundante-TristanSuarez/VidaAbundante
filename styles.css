@@ -1945,69 +1945,56 @@ body.oscuro #modalPersonalizar #personalizarColor{
   font-size: 16px;
 }
 
-/* ================= BIBLIA: FILTROS COMO TARJETA BAJO LA BARRA ================= */
+/* ================= FILTROS “TARJETA” DEBAJO DE LA LUPA ================= */
 
-/* La barra (sticky) debe quedar por encima de la tarjeta */
+/* ancla: la barra */
 #barraTituloBiblia{
-  z-index: 60; /* más que el contenido normal */
+  position: sticky;
+  top: 0;
+  z-index: 80; /* por encima del resto */
 }
 
-/* Contenedor de la sección: lo usamos para posicionar la tarjeta */
-#seccion-biblia{
-  position: relative; /* ancla de la tarjeta */
+/* la lupa será el “ancla” */
+#btnToggleFiltros{
+  position: relative; /* permite anclar la tarjeta */
 }
 
-/* Base: filtros ocultos (YA LO TENÉS) - lo dejamos */
-#seccion-biblia .filtros{
-  display:none;
-}
-
-/* Cuando se abre: se muestra y se vuelve tarjeta */
+/* cuando se abren filtros: que la tarjeta sea flotante */
 #seccion-biblia.filtros-abiertos .filtros{
-  display:flex;
+  position: absolute;
+  top: calc(100% + 8px); /* debajo de la barra */
+  left: 0;
+  z-index: 70;
 
-  /* 👇 “tarjeta” */
+  width: min(420px, calc(100vw - 24px));
+  margin: 0;            /* importante: anulamos los márgenes de tarjeta anterior */
+  padding: 10px;
+
   background: #ffffff;
   border: 1px solid rgba(0,0,0,.10);
   border-radius: 14px;
   box-shadow: 0 10px 26px rgba(0,0,0,.12);
 
-  padding: 10px;
+  display: flex;
   gap: 10px;
-
-  /* 👇 se coloca justo debajo de la barra */
-  margin-top: -6px;
-  margin-bottom: 12px;
-
-  /* 👇 que no se pegue a los bordes del contenido */
-  max-width: 420px;
-  margin-left: auto;
-  margin-right: auto;
-
-  /* 👇 si hay muchos controles */
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
 }
 
-/* Oscuro */
+/* ✅ moverla debajo de la lupa (no al borde izquierdo) */
+#seccion-biblia.filtros-abiertos #barraTituloBiblia{
+  position: relative; /* contenedor para “absolute” */
+}
+#seccion-biblia.filtros-abiertos .filtros{
+  left: 12px; /* arranca cerca de la lupa */
+}
+
+/* oscuro */
 body.oscuro #seccion-biblia.filtros-abiertos .filtros{
   background: #1e1e1e;
   border-color: rgba(255,255,255,.12);
   box-shadow: 0 10px 26px rgba(0,0,0,.45);
-}
-
-/* Los select que ya tenés: solo aseguramos altura consistente */
-#seccion-biblia.filtros-abiertos .filtros select{
-  height: 38px;
-  padding: 0 12px;
-  font-size: 14px;
-}
-
-/* (Opcional) botón 🔍 activo: más claro visualmente */
-#btnToggleFiltros.activo{
-  background: var(--ui-azul-hover);
-  color:#fff;
 }
 
 /* ================= BARRA BIBLIA: LUPA + FLECHAS PRO (sin pisar) ================= */
