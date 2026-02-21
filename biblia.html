@@ -57,11 +57,7 @@
 
 <!-- ================= SECCIÓN BIBLIA ================= -->
 <div id="seccion-biblia" class="seccion">
-<!-- Select de libro + capítulo -->
-<div class="filtros">
-  <select id="libro"></select>
-  <select id="capitulo"></select>
-</div>
+
  <!-- ================= BANNER MODO IMAGEN 🌄 ================= -->
  <!-- Solo se muestra cuando body tiene la clase modo-imagen -->
     <div id="bannerModoImagen">
@@ -81,9 +77,17 @@
   <div class="nav-capitulo">
 
    <!-- ✅ NUEVO: mostrar/ocultar filtros -->
+  <div id="wrapFiltrosBiblia">
   <button type="button" id="btnToggleFiltros" onclick="toggleFiltrosBiblia()" aria-label="Buscar (mostrar filtros)">
-  🔍
-</button>
+    🔍
+  </button>
+
+  <!-- ✅ movemos la tarjeta acá -->
+  <div class="filtros" id="filtrosBiblia">
+    <select id="libro"></select>
+    <select id="capitulo"></select>
+  </div>
+</div>
    
    <button type="button" id="btnCapAnt" onclick="capituloAnterior()" aria-label="Capítulo anterior">
       <i class="fa-solid fa-chevron-left"></i>
@@ -688,6 +692,7 @@
   
 </body>
 </html>
+
 
 
 
