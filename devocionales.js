@@ -933,7 +933,6 @@ function devSetFinalButtons(enabled){
   setFinalCanvasDisabled(!enabled);
 }
 
-// ✅ ESTA ES LA ÚNICA FUNCIÓN FINAL (NO HAY DIBUJO A MANO)
 async function renderFinalCanvasCaptureReal(){
   const cFinal = $("devCanvasFinal");
   if (!cFinal) return null;
@@ -947,34 +946,82 @@ async function renderFinalCanvasCaptureReal(){
     return null;
   }
 
-  const W = 1080;
-  const H1 = 1080;
-  const H2 = 840;
-  const H = 1920;
+  const W = 1080, H1 = 1080, H2 = 840, H = 1920;
 
+  // ===== canvas final =====
   cFinal.width = W;
   cFinal.height = H;
-
   const ctx = cFinal.getContext("2d");
   ctx.clearRect(0,0,W,H);
 
-  // Asegurar que lo visual esté actualizado
+  // Asegurar que el HTML esté actualizado ANTES de clonar
   devRenderFase(1);
   devRenderFase(2);
 
-  // Esperar 2 frames para layout + fuentes
+  // Esperar layout + fuentes
   await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+  if (document.fonts?.ready) await document.fonts.ready;
 
-  // Capturas reales
-  const cap1 = await html2canvas(p1, { backgroundColor: null, scale: 2, useCORS: true });
-  const cap2 = await html2canvas(p2, { backgroundColor: null, scale: 2, useCORS: true });
+  // ===== crear “escenario” offscreen (visible para medir, invisible para el usuario) =====
+  let stage = document.getElementById("devCaptureStage");
+  if (!stage) {
+    stage = document.createElement("div");
+    stage.id = "devCaptureStage";
+    stage.style.position = "fixed";
+    stage.style.left = "-99999px";
+    stage.style.top = "0";
+    stage.style.width = "0";
+    stage.style.height = "0";
+    stage.style.opacity = "0";
+    stage.style.pointerEvents = "none";
+    stage.style.zIndex = "-1";
+    document.body.appendChild(stage);
+  } else {
+    stage.innerHTML = "";
+  }
 
-  // Pegamos arriba y abajo
+  // helper: clonar SIN ids (para no romper querySelector / duplicar ids)
+  const stripIds = (root)=>{
+    root.removeAttribute?.("id");
+    root.querySelectorAll?.("[id]").forEach(n => n.removeAttribute("id"));
+    return root;
+  };
+
+  // ===== clones con tamaño REAL fijo =====
+  const c1 = stripIds(p1.cloneNode(true));
+  c1.style.display = "block";
+  c1.style.width = W + "px";
+  c1.style.height = H1 + "px";
+
+  const c2 = stripIds(p2.cloneNode(true));
+  c2.style.display = "block";
+  c2.style.width = W + "px";
+  c2.style.height = H2 + "px";
+
+  stage.appendChild(c1);
+  stage.appendChild(c2);
+
+  // 1 frame más para que el clone tenga layout real
+  await new Promise(r => requestAnimationFrame(r));
+
+  // VALIDACIÓN: si sigue 0, cortamos con mensaje claro
+  const r1 = c1.getBoundingClientRect();
+  const r2 = c2.getBoundingClientRect();
+  if (r1.width < 10 || r1.height < 10 || r2.width < 10 || r2.height < 10) {
+    console.warn("Cap sizes:", r1, r2);
+    alert("❌ No pude capturar porque los previews están en 0x0. Revisá CSS del preview (width/height).");
+    return null;
+  }
+
+  // ===== capturas =====
+  const cap1 = await html2canvas(c1, { backgroundColor: null, scale: 2, useCORS: true });
+  const cap2 = await html2canvas(c2, { backgroundColor: null, scale: 2, useCORS: true });
+
+  // ===== pegar arriba y abajo =====
   ctx.drawImage(cap1, 0, 0, W, H1);
   ctx.drawImage(cap2, 0, H1, W, H2);
 
   DEV.finalDataUrl = cFinal.toDataURL("image/png");
-
   const img = $("devFinalImg");
   if (img) img.src = DEV.finalDataUrl;
 
