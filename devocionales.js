@@ -40,13 +40,14 @@ const DEV = {
 
   // fase2 (9:7) settings
   f2: {
-    fondoColor: "#ffffff",
-    fuente: "Roboto",
-    color: "#000000",
-    op: 0.15,
-    size: 26,
-    style: { upper:false, bold:false, italic:false, underline:false }
-  },
+  fondoColor: "#ffffff",
+  fuente: "Roboto",
+  color: "#000000",
+  op: 0.15,
+  size: 26,
+  userChanged: false, // ✅ AGREGAR ESTO
+  style: { upper:false, bold:false, italic:false, underline:false }
+},
 
   // audio gate
   audioOk: false,
@@ -920,7 +921,7 @@ function devRenderFase(fase){
 }
 
 /* =========================================================
-   8) CANVAS FINAL 9:16 (1080x1920)
+   8) FINAL 9:16 — CAPTURA REAL (COMO BIBLIA)
    ========================================================= */
 function setFinalCanvasDisabled(disabled){
   ["devBtnDescargar","devBtnCompartir","devBtnIglesia","devBtnFinalizar"].forEach(id=>{
@@ -932,240 +933,24 @@ function devSetFinalButtons(enabled){
   setFinalCanvasDisabled(!enabled);
 }
 
-async function imgFromUrl(url){
-  return await new Promise((resolve, reject)=>{
-    const im = new Image();
-    im.crossOrigin = "anonymous";
-    im.onload = ()=>resolve(im);
-    im.onerror = reject;
-    im.src = url;
-  });
-}
-
-function wrapLines(ctx, text, maxWidth){
-  const out = [];
-
-  const parts = String(text || "").split("\n");
-  for (const part of parts) {
-    const p = part.trim();
-
-    // línea en blanco real
-    if (!p) { out.push(""); continue; }
-
-    const words = p.split(/\s+/);
-    let line = "";
-
-    for (const w of words) {
-      const test = line ? (line + " " + w) : w;
-      if (ctx.measureText(test).width <= maxWidth) {
-        line = test;
-      } else {
-        if (line) out.push(line);
-        line = w;
-      }
-    }
-    if (line) out.push(line);
-  }
-
-  return out;
-}
-
-function setFont(ctx, st){
-  const weight = st.style.bold ? "700" : "400";
-  const italic = st.style.italic ? "italic " : "";
-  ctx.font = `${italic}${weight} ${st.size}px ${st.fuente}, Arial`;
-}
-
-function drawLineCentered(ctx, text, y, st, sizePx, weight="700") {
-  const raw = st.style.upper ? String(text||"").toUpperCase() : String(text||"");
-  const italic = st.style.italic ? "italic " : "";
-  ctx.font = `${italic}${weight} ${sizePx}px ${st.fuente}, Arial`;
-
-  const fill = st.color;
-  const stroke = outlineColor(st.color);
-
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.lineWidth = 2;
-  ctx.strokeStyle = stroke;
-  ctx.fillStyle = fill;
-
-  ctx.strokeText(raw, 1080/2, y);
-  ctx.fillText(raw, 1080/2, y);
-}
-
-function drawParagraphCentered(ctx, text, topY, maxW, st, sizePx, weight="700") {
-  const italic = st.style.italic ? "italic " : "";
-  ctx.font = `${italic}${weight} ${sizePx}px ${st.fuente}, Arial`;
-
-  const lines = wrapLines(ctx, st.style.upper ? String(text||"").toUpperCase() : String(text||""), maxW);
-  const lineH = sizePx * 1.20;
-
-  let y = topY;
-  const cx = 1080/2;
-
-  const fill = st.color;
-  const stroke = outlineColor(st.color);
-
-  ctx.textAlign = "center";
-  ctx.textBaseline = "alphabetic";
-
-  lines.forEach(line=>{
-    if (!line) { y += lineH; return; }
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = stroke;
-    ctx.strokeText(line, cx, y);
-
-    ctx.fillStyle = fill;
-    ctx.fillText(line, cx, y);
-
-    y += lineH;
-  });
-
-  return y; // devuelve el final
-}
-
-function drawTextBlock(ctx, text, x, y, w, h, st){
-  const raw = st.style.upper ? String(text||"").toUpperCase() : String(text||"");
-  setFont(ctx, st);
-
-  const lineH = Math.round(st.size * 1.25);
-  const maxW = w;
-  const lines = wrapLines(ctx, raw, maxW);
-
-  // centrado vertical
-  const totalH = lines.length * lineH;
-  let yy = y + Math.max(0, (h - totalH) / 2) + lineH;
-
-  const fill = st.color;
-  const stroke = outlineColor(st.color);
-
-  ctx.textAlign = "center";
-  ctx.textBaseline = "alphabetic";
-
-  const cx = x + w/2;
-
-  lines.forEach(line=>{
-    if (yy > y + h) return;
-    if (!line) { yy += lineH; return; }
-
-    // borde
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = stroke;
-    ctx.strokeText(line, cx, yy);
-
-    // relleno
-    ctx.fillStyle = fill;
-    ctx.fillText(line, cx, yy);
-
-    // underline simple
-    if (st.style.underline) {
-      const m = ctx.measureText(line).width;
-      const ux1 = cx - m/2;
-      const ux2 = cx + m/2;
-      ctx.strokeStyle = fill;
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(ux1, yy + 6);
-      ctx.lineTo(ux2, yy + 6);
-      ctx.stroke();
-    }
-
-    yy += lineH;
-  });
-}
- 
-function drawVerseAndCitaBox(ctx, verse, cita, x, y, w, h, st, versePx){
-  const italicStr = st.style.italic ? "italic " : "";
-  const weightStr = st.style.bold ? "700" : "400";
-  const stroke = outlineColor(st.color);
-  const fill = st.color;
-
-  const vv = st.style.upper ? String(verse||"").toUpperCase() : String(verse||"");
-  const cc = st.style.upper ? String(cita||"").toUpperCase() : String(cita||"");
-
-  // ✅ AUTO-FIT: baja tamaño hasta que (verso+cita) entre en la caja
-  let vp = Math.max(10, Math.round(versePx));
-  while (vp >= 10) {
-    const gapTry = Math.round(vp * 0.35);
-    const cpTry = Math.max(8, Math.round(vp * 0.75));
-
-    ctx.font = `${italicStr}${weightStr} ${vp}px ${st.fuente}, Arial`;
-    const verseLinesTry = wrapLines(ctx, vv, w);
-
-    ctx.font = `${italicStr}${weightStr} ${cpTry}px ${st.fuente}, Arial`;
-    const citaLinesTry = wrapLines(ctx, cc, w);
-
-    const totalHTry =
-      verseLinesTry.length * (vp * 1.20) +
-      gapTry +
-      citaLinesTry.length * (cpTry * 1.20);
-
-    if (totalHTry <= h) break;
-    vp -= 1;
-  }
-
-  const gap = Math.round(vp * 0.35);
-  const citaPx = Math.max(8, Math.round(vp * 0.75));
-
-  // wrap versículo
-  ctx.font = `${italicStr}${weightStr} ${vp}px ${st.fuente}, Arial`;
-  const verseLines = wrapLines(ctx, vv, w);
-
-  // wrap cita
-  ctx.font = `${italicStr}${weightStr} ${citaPx}px ${st.fuente}, Arial`;
-  const citaLines = wrapLines(ctx, cc, w);
-
-  const verseLH = vp * 1.20;
-  const citaLH  = citaPx * 1.20;
-
-  const totalH =
-    verseLines.length * verseLH +
-    gap +
-    citaLines.length * citaLH;
-
-  let yy = y + Math.max(0, (h - totalH)/2) + verseLH;
-
-  const cx = x + w/2;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "alphabetic";
-
-  // draw verse
-  ctx.font = `${italicStr}${weightStr} ${vp}px ${st.fuente}, Arial`;
-  verseLines.forEach(line=>{
-    if (!line) { yy += verseLH; return; }
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = stroke;
-    ctx.fillStyle = fill;
-    ctx.strokeText(line, cx, yy);
-    ctx.fillText(line, cx, yy);
-    yy += verseLH;
-  });
-
-  yy += gap;
-
-  // draw cita
-  ctx.font = `${italicStr}${weightStr} ${citaPx}px ${st.fuente}, Arial`;
-  citaLines.forEach(line=>{
-    if (!line) { yy += citaLH; return; }
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = stroke;
-    ctx.fillStyle = fill;
-    ctx.strokeText(line, cx, yy);
-    ctx.fillText(line, cx, yy);
-    yy += citaLH;
-  });
-}
-
-async function renderFinalCanvas(){
+// ✅ ESTA ES LA ÚNICA FUNCIÓN FINAL (NO HAY DIBUJO A MANO)
+async function renderFinalCanvasCaptureReal(){
   const cFinal = $("devCanvasFinal");
   if (!cFinal) return null;
 
-  // tamaños exactos
+  const p1 = $("dev1Preview");
+  const p2 = $("dev2Preview");
+  if (!p1 || !p2) return null;
+
+  if (typeof html2canvas !== "function") {
+    alert("❌ Falta html2canvas. Agregalo en el HTML como en Biblia.");
+    return null;
+  }
+
   const W = 1080;
-  const H1 = 1080; // 9:9
-  const H2 = 840;  // 9:7
-  const H = 1920;  // 9:16
+  const H1 = 1080;
+  const H2 = 840;
+  const H = 1920;
 
   cFinal.width = W;
   cFinal.height = H;
@@ -1173,86 +958,23 @@ async function renderFinalCanvas(){
   const ctx = cFinal.getContext("2d");
   ctx.clearRect(0,0,W,H);
 
-  // ---------- FASE 1 ----------
-  // fondo imagen o blanco
-  if (DEV.f1.fondoBlob || DEV.f1.fondoUrl) {
-    const url = DEV.f1.fondoBlob || DEV.f1.fondoUrl;
-    try{
-      const im = await imgFromUrl(url);
-      // cover
-      const s = Math.max(W/im.width, H1/im.height);
-      const dw = im.width*s, dh = im.height*s;
-      const dx = (W - dw)/2, dy = (H1 - dh)/2;
-      ctx.drawImage(im, dx, dy, dw, dh);
-    }catch{
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0,0,W,H1);
-    }
-  } else {
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0,0,W,H1);
-  }
+  // Asegurar que lo visual esté actualizado
+  devRenderFase(1);
+  devRenderFase(2);
 
-// overlay opacidad (wrapper) - más cerca del borde (menos margen)
-const pad = W * 0.06; // antes 0.08
-ctx.fillStyle = wrapperBgFromOpacity(DEV.f1.op);
-ctx.fillRect(pad, pad, W - pad*2, H1 - pad*2);
+  // Esperar 2 frames para layout + fuentes
+  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 
-// ====== TEXTO FASE 1 (IGUAL A FASE 1 HTML) ======
-const innerX = pad;
-const innerY = pad;
-const innerW = W - pad*2;
-const innerH = H1 - pad*2;
+  // Capturas reales
+  const cap1 = await html2canvas(p1, { backgroundColor: null, scale: 2, useCORS: true });
+  const cap2 = await html2canvas(p2, { backgroundColor: null, scale: 2, useCORS: true });
 
-// posiciones por % igual que tu buildFase1HTML
-const Y_DEV   = 0.02;
-const Y_FECHA = 0.07;
-const Y_VBOX  = 0.16;
-const H_VBOX  = 0.66;
-const Y_IGL   = 0.88;
-const Y_DIR   = 0.94;
+  // Pegamos arriba y abajo
+  ctx.drawImage(cap1, 0, 0, W, H1);
+  ctx.drawImage(cap2, 0, H1, W, H2);
 
-drawLineCentered(ctx, "DEVOCIONAL", innerY + innerH*Y_DEV, DEV.f1, 24, "700");
-drawLineCentered(ctx, DEV.p1?.fecha || "", innerY + innerH*Y_FECHA, DEV.f1, 18, "600");
-
-// caja central versículo + cita centrados
-const boxX = innerX + innerW*0.02;
-const boxW = innerW*0.96;
-const boxY = innerY + innerH*Y_VBOX;
-const boxH = innerH*H_VBOX;
-
-drawVerseAndCitaBox(
-  ctx,
-  DEV.p1?.versiculo || "",
-  DEV.p1?.cita || "",
-  boxX, boxY, boxW, boxH,
-  DEV.f1,
-  DEV.f1.size // ✅ tamaño real canvas
-);
-
-// footer
-drawLineCentered(ctx, DEV.p1?.iglesia || "", innerY + innerH*Y_IGL, DEV.f1, 18, "700");
-drawLineCentered(ctx, DEV.p1?.direccion || "", innerY + innerH*Y_DIR, DEV.f1, 18, "700");
-
-  // ---------- FASE 2 ----------
-  ctx.fillStyle = DEV.f2.fondoColor || "#ffffff";
-  ctx.fillRect(0, H1, W, H2);
-
-  // ~3mm aprox en 1080px de ancho (no es exacto universal, pero es consistente)
-  const m = 36;
-
-  drawTextBlock(
-  ctx,
-  (DEV.p2?.reflexion || "") + "\n\n" + (DEV.p2?.oracion || ""),
-  m,           // x
-  H1 + m,      // y (arranca dentro de la fase 2)
-  W - m*2,     // ancho
-  H2 - m*2,    // alto
-  DEV.f2
-);
-
-  // a data url para preview
   DEV.finalDataUrl = cFinal.toDataURL("image/png");
+
   const img = $("devFinalImg");
   if (img) img.src = DEV.finalDataUrl;
 
@@ -1263,24 +985,24 @@ drawLineCentered(ctx, DEV.p1?.direccion || "", innerY + innerH*Y_DIR, DEV.f1, 18
    9) NAV fases
    ========================================================= */
 window.devIrFase2 = () => {
-  // render fase1 antes de pasar
   devRenderFase(1);
 
   cerrarModal("modalDevFase1");
   abrirModal("modalDevFase2");
 
-  // ⏳ Esperar a que el modal tenga tamaño real
   requestAnimationFrame(()=>{
-    const texto = `Reflexión: ${DEV.p2?.reflexion || ""}\nOración: ${DEV.p2?.oracion || ""}`;
 
-    const sugerido = sugerirTamanoFase2Auto(texto);
+    // ✅ SOLO sugerimos una vez (si el usuario no tocó nada aún)
+    if (!DEV.f2.userChanged) {
+      const texto = `Reflexión: ${DEV.p2?.reflexion || ""}\nOración: ${DEV.p2?.oracion || ""}`;
+      const sugerido = sugerirTamanoFase2Auto(texto);
 
-    DEV.f2.size = sugerido;
+      DEV.f2.size = sugerido;
 
-    const s2 = $("dev2Tamano");
-    if (s2) s2.value = fmtSize(sugerido);
+      const s2 = $("dev2Tamano");
+      if (s2) s2.value = fmtSize(sugerido);
+    }
 
-    // ✔️ Render FINAL (solo una vez)
     devRenderFase(2);
   });
 };
@@ -1299,7 +1021,12 @@ window.devIrFase3 = async () => {
   DEV.audioOk = false;
   devSetFinalButtons(false);
 
-  await renderFinalCanvas();
+  // ✅ captura real como biblia.js
+  if (typeof html2canvas === "function") {
+    await renderFinalCanvasCaptureReal();
+  } else {
+    alert("❌ Falta html2canvas. Cargalo como en biblia.js");
+  }
 };
 
 window.devVolverFase2 = () => {
@@ -1369,14 +1096,16 @@ function bindInputs(){
     });
   });
 
-  // =========================
-  // FASE 2 (color plano) - tamaño / color (SIN opacidad)
-  // =========================
- ["Tamano","Color"].forEach(k=>{
+// =========================
+// FASE 2 (color plano) - tamaño / color (SIN opacidad)
+// =========================
+["Tamano","Color"].forEach(k=>{
   const el = $(`dev2${k}`);
   if (!el) return;
 
   el.addEventListener("input", ()=>{
+    DEV.f2.userChanged = true; // ✅ el usuario modificó fase 2 (NO volver a sugerir)
+
     DEV.f2.size = Number($("dev2Tamano")?.value || 26);
     DEV.f2.color = $("dev2Color")?.value || "#000000";
     devRenderFase(2);
@@ -1441,7 +1170,7 @@ function hookAudioCorrecto(){
    12) BOTONES FINALES (descargar / compartir / iglesia / finalizar)
    ========================================================= */
 window.devDescargarFinal = async () => {
-  const c = await renderFinalCanvas();
+  const c = await renderFinalCanvasCaptureReal();
   if (!c) return;
 
   const link = document.createElement("a");
@@ -1453,7 +1182,7 @@ window.devDescargarFinal = async () => {
 };
 
 window.devCompartirFinal = async () => {
-  const c = await renderFinalCanvas();
+  const c = await renderFinalCanvasCaptureReal();
   if (!c) return;
 
   c.toBlob(async (blob)=>{
@@ -1484,7 +1213,7 @@ window.devCompartirIglesia = async () => {
     return;
   }
 
-  const c = await renderFinalCanvas();
+  const c = await renderFinalCanvasCaptureReal();
   if (!c) return;
 
   const uid = window.__UID;
@@ -1684,7 +1413,8 @@ if (btnCrear) {
     DEV.p1 = p1;
     DEV.p2 = p2;
     DEV.audioText = audioText;
-
+    DEV.f2.userChanged = false; // ✅ nuevo devocional => permitir sugerencia inicial
+     
     // reset gate audio
     DEV.audioOk = false;
     devSetFinalButtons(false);
