@@ -498,10 +498,17 @@ function crearListaFuentes(fase){
    6) FONDOS (fase 1)
    ========================================================= */
 const fondos = [
-  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/puente_gox2gz",
-  "https://images.unsplash.com/photo-1496307042754-b4aa456c4a2d",
-  "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429",
-  "https://images.unsplash.com/photo-1519681393784-d120267933ba"
+  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_1_qttkkt",
+  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_l02emm",
+  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/puertaflroesvioletas_q4f1bq",
+  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/puertaangostaflores_fvdw8o",
+  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/puertafloresblancas_ouomif",
+  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/puenteotoñoagua_r9tskw",
+  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/rosabotes_bwnvws",
+  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/playaarenamarolas_oxkh2z",
+  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/plazaamanecer_nvjtqa",
+  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/piedrasaguamontañas_lseoki",
+  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/pastofloresrosas_i0woqq"
 ];
 
 async function urlToBlobURL(url){
