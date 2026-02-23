@@ -2549,26 +2549,3 @@ document.addEventListener("DOMContentLoaded", () => {
   if (secBiblia) secBiblia.classList.remove("filtros-abiertos");
   
 }); // ================= ✅ CIERRA INIT ÚNICO =====
-
-// ✅ Cerrar filtros tocando afuera
-document.addEventListener("click", (e) => {
-  const wrap = document.getElementById("wrapFiltrosBiblia");
-  const btn  = document.getElementById("btnToggleFiltros");
-  if (!wrap || !btn) return;
-
-  // si el click fue afuera del wrap → cerrar
-  if (!wrap.contains(e.target)) {
-    wrap.classList.remove("abierto");
-    btn.classList.remove("activo");
-  }
-});
-
-// ✅ Evitar que el click en la lupa "burbujee" y cierre instantáneo
-document.getElementById("btnToggleFiltros")?.addEventListener("click", (e) => {
-  e.stopPropagation();
-});
-
-// ✅ Evitar que click dentro de la tarjeta cierre
-document.querySelector("#wrapFiltrosBiblia .filtros")?.addEventListener("click", (e) => {
-  e.stopPropagation();
-});
