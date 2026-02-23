@@ -205,20 +205,16 @@ function oneLine(s){
 }
 
 function buildAudioFromParts(p1, p2){
-  // Acá definimos los ÚNICOS saltos de línea permitidos
   const reflex = oneLine(p2?.reflexion || "");
-  const orac  = oneLine(p2?.oracion || "");
+  const orac   = oneLine(p2?.oracion || "");
 
   return [
     "DEVOCIONAL",
     oneLine(p1?.fecha || ""),
-    "", // 👈 1 salto de línea (línea en blanco)
+    "",
     oneLine(p1?.versiculo || ""),
     oneLine(p1?.cita || ""),
-    oneLine(p1?.iglesia || ""),
-    oneLine(p1?.direccion || ""),
     "",
-    // FASE 2: Sin salto entre “Reflexión” y “Oración”
     `Reflexión: ${reflex} Oración: ${orac}`.trim()
   ].join("\n").trim();
 }
@@ -902,22 +898,24 @@ function buildFase2HTML(basePx){
   const adorno = DEV.f2.adornoUrl;
   const adornoW = Math.max(30, Math.min(95, Number(DEV.f2.adornoWidth || 70)));
 
-  return `
+    return `
     <div style="
       width:100%;
       height:100%;
       display:flex;
-      align-items:center;
+      align-items:stretch;
       justify-content:center;
       text-align:center;
     ">
       <div style="
         width:95%;
+        height:100%;
         display:flex;
         flex-direction:column;
         align-items:center;
-        justify-content:center;
-        gap:14px;
+        justify-content:space-between;   /* ✅ texto arriba, adorno abajo */
+        padding:14px 0 16px 0;           /* ✅ margen superior chico */
+        box-sizing:border-box;
       ">
         <div style="
           font-size:${basePx}px;
@@ -939,7 +937,7 @@ function buildFase2HTML(basePx){
               opacity:0.95;
             "
           />
-        ` : ``}
+        ` : `<div style="height:10px;"></div>`}
       </div>
     </div>
   `;
@@ -1045,6 +1043,34 @@ function devSetLoadingFase3(on, msg){
   if (previewBox) {
     previewBox.style.display = on ? "none" : "block";
   }
+}
+
+function roundedRectPath(ctx, x, y, w, h, r){
+  const rr = Math.max(0, Math.min(r, w/2, h/2));
+  ctx.beginPath();
+  ctx.moveTo(x+rr, y);
+  ctx.arcTo(x+w, y,   x+w, y+h, rr);
+  ctx.arcTo(x+w, y+h, x,   y+h, rr);
+  ctx.arcTo(x,   y+h, x,   y,   rr);
+  ctx.arcTo(x,   y,   x+w, y,   rr);
+  ctx.closePath();
+}
+
+function makeRoundedCanvas(srcCanvas, radius){
+  const out = document.createElement("canvas");
+  out.width = srcCanvas.width;
+  out.height = srcCanvas.height;
+
+  const octx = out.getContext("2d");
+  octx.clearRect(0,0,out.width,out.height);
+
+  octx.save();
+  roundedRectPath(octx, 0, 0, out.width, out.height, radius);
+  octx.clip();
+  octx.drawImage(srcCanvas, 0, 0);
+  octx.restore();
+
+  return out;
 }
 
 /* =========================================================
@@ -1200,11 +1226,15 @@ async function renderFinalCanvasCaptureReal(){
   ctx.drawImage(cap1, 0, 0, W, H1);
   ctx.drawImage(cap2, 0, H1, W, H2);
 
-  DEV.finalDataUrl = cFinal.toDataURL("image/png");
+  // ✅ redondear como preview (aprox)
+  const RADIO_FINAL = 40; // si querés más redondo probá 50
+  const rounded = makeRoundedCanvas(cFinal, RADIO_FINAL);
+
+  DEV.finalDataUrl = rounded.toDataURL("image/png");
   const img = $("devFinalImg");
   if (img) img.src = DEV.finalDataUrl;
 
-  return cFinal;
+  return rounded; // 👈 devolvemos el canvas redondeado
 }
 
 /* =========================================================
