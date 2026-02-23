@@ -1319,10 +1319,6 @@ body.oscuro .filtros select{
 }
 
 /* (opcional) que el botón se vea “activo” */
-#btnToggleFiltros.activo {
-  transform: scale(1.05);
-}
-
 body.barra-oculta #accionesBiblia{
   display:none !important;
 }
@@ -1959,12 +1955,6 @@ body.oscuro #modalPersonalizar #personalizarColor{
   color:#fff;
 }
 
-/* cuando está activo (cuando abrís filtros) */
-#btnToggleFiltros.activo{
-  background: var(--ui-azul-hover);
-  color:#fff;
-}
-
 /* Contenedor de flechas (izq/der) más prolijo */
 #barraTituloBiblia .nav-capitulo{
   display: inline-flex;
@@ -2080,17 +2070,19 @@ body.oscuro #wrapFiltrosBiblia.abierto .filtros{
   box-shadow: none;
 }
 
-#btnToggleFiltros{
-  -webkit-tap-highlight-color: transparent;
+/* ✅ Botón activo SOLO cuando el panel está abierto */
+#wrapFiltrosBiblia.abierto #btnToggleFiltros{
+  background: var(--ui-azul-hover);
+  color:#fff;
+  transform: scale(1.05);
 }
 
-/* ✅ Mobile: que NO quede "pegado" el estado al cerrar */
+/* ✅ Evitar “focus pegado” visual en celu */
 #btnToggleFiltros{
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
 }
 
-/* Safari/iOS y algunos Android dejan focus "sticky" */
 #btnToggleFiltros:focus,
 #btnToggleFiltros:focus-visible,
 #btnToggleFiltros:active{
