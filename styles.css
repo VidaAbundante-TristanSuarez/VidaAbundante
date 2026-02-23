@@ -199,9 +199,11 @@ body.oscuro #barraTituloBiblia{
   font-size: 12px;
 }
 
-#btnCapAnt:hover, #btnCapSig:hover{
-  background: var(--ui-azul-hover);
-  color:#fff;
+@media (hover: hover) and (pointer: fine) {
+  #btnCapAnt:hover, #btnCapSig:hover{
+    background: var(--ui-azul-hover);
+    color:#fff;
+  }
 }
 
   /* ================= BOTONES FILTROS (marcadores) ================= */
@@ -1950,9 +1952,21 @@ body.oscuro #modalPersonalizar #personalizarColor{
   padding: 0;
 }
 
-#btnToggleFiltros:hover{
-  background: var(--ui-azul-hover);
-  color:#fff;
+/* ✅ Hover SOLO en PC (mouse). Evita "hover pegado" en celu */
+@media (hover: hover) and (pointer: fine) {
+  #btnToggleFiltros:hover{
+    background: var(--ui-azul-hover);
+    color:#fff;
+  }
+}
+
+/* ✅ En mobile, el toque NO debe dejar estilos pegados */
+@media (hover: none) and (pointer: coarse) {
+  #btnToggleFiltros:hover{
+    background: var(--ui-azul-claro);
+    color:#000;
+    transform: none;
+  }
 }
 
 /* Contenedor de flechas (izq/der) más prolijo */
