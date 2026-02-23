@@ -942,12 +942,16 @@ function devRenderFase(fase){
 
 function devSetLoadingFase3(on, msg){
   const box = $("devF3Loading");
-  const img = $("devFinalImg");
+  const previewBox = $("devF3PreviewBox");
+
   if (box) {
     box.style.display = on ? "block" : "none";
     if (msg) box.textContent = msg;
   }
-  if (img) img.style.visibility = on ? "hidden" : "visible";
+
+  if (previewBox) {
+    previewBox.style.display = on ? "none" : "block";
+  }
 }
 
 /* =========================================================
