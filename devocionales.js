@@ -1025,7 +1025,7 @@ async function renderFinalCanvasCaptureReal(){
 
     const texto = document.createElement("div");
     texto.style.position = "absolute";
-    texto.style.inset = "10";
+    texto.style.inset = "10px";
     texto.style.fontFamily = st.fuente;
     texto.style.color = st.color;
     applyTextStylesToOne(texto, st);
