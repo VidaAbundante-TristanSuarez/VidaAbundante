@@ -971,10 +971,6 @@ async function renderFinalCanvasCaptureReal(){
   const cFinal = $("devCanvasFinal");
   if (!cFinal) return null;
 
-  const p1 = $("dev1Preview");
-  const p2 = $("dev2Preview");
-  if (!p1 || !p2) return null;
-
   if (typeof html2canvas !== "function") {
     alert("❌ Falta html2canvas. Agregalo en el HTML como en Biblia.");
     return null;
@@ -987,14 +983,7 @@ async function renderFinalCanvasCaptureReal(){
   const ctx = cFinal.getContext("2d");
   ctx.clearRect(0,0,W,H);
 
-  devRenderFase(1);
-  devRenderFase(2);
-
-  // esperar layout + fuentes
-  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-  if (document.fonts?.ready) await document.fonts.ready;
-
-  // stage offscreen
+  // ✅ Escenario offscreen
   let stage = document.getElementById("devCaptureStage");
   if (!stage) {
     stage = document.createElement("div");
@@ -1009,51 +998,95 @@ async function renderFinalCanvasCaptureReal(){
   }
   stage.innerHTML = "";
 
-  const stripIds = (root)=>{
-    root.removeAttribute?.("id");
-    root.querySelectorAll?.("[id]").forEach(n => n.removeAttribute("id"));
-    return root;
+  // ✅ Construir nodos “a tamaño real” (NO dependen del preview chico)
+  const makeFase1Node = () => {
+    const st = DEV.f1;
+    const node = document.createElement("div");
+    node.style.width = W + "px";
+    node.style.height = H1 + "px";
+    node.style.position = "relative";
+    node.style.overflow = "hidden";
+    node.style.borderRadius = "0";
+
+    const fondoUsable = st.fondoBlob || st.fondoUrl;
+    node.style.backgroundImage = fondoUsable ? `url("${fondoUsable}")` : "none";
+    node.style.backgroundSize = "cover";
+    node.style.backgroundPosition = "center";
+    node.style.backgroundColor = fondoUsable ? "transparent" : "#ffffff";
+
+    const wrap = document.createElement("div");
+    wrap.style.position = "absolute";
+    wrap.style.inset = "0";
+    wrap.style.backgroundColor = wrapperBgFromOpacity(st.op);
+
+    const texto = document.createElement("div");
+    texto.style.position = "absolute";
+    texto.style.inset = "0";
+    texto.style.fontFamily = st.fuente;
+    texto.style.color = st.color;
+
+    const oc = outlineColor(st.color);
+    texto.style.textShadow = `
+      -1px 0 ${oc}, 1px 0 ${oc}, 0 -1px ${oc}, 0 1px ${oc},
+      -1px -1px ${oc}, 1px 1px ${oc}, -1px 1px ${oc}, 1px -1px ${oc}`;
+
+    // ✅ IMPORTANTE: tamaño real (sin scalePreviewF1)
+    texto.innerHTML = buildFase1HTML(st.size);
+
+    wrap.appendChild(texto);
+    node.appendChild(wrap);
+    return node;
   };
 
-  const c1 = stripIds(p1.cloneNode(true));
-  c1.style.display = "block";
-  c1.style.width = W + "px";
-  c1.style.height = H1 + "px";
+  const makeFase2Node = () => {
+    const st = DEV.f2;
+    const node = document.createElement("div");
+    node.style.width = W + "px";
+    node.style.height = H2 + "px";
+    node.style.position = "relative";
+    node.style.overflow = "hidden";
+    node.style.borderRadius = "0";
+    node.style.backgroundImage = "none";
+    node.style.backgroundColor = st.fondoColor || "#ffffff";
 
-  const c2 = stripIds(p2.cloneNode(true));
-  c2.style.display = "block";
-  c2.style.width = W + "px";
-  c2.style.height = H2 + "px";
+    const texto = document.createElement("div");
+    texto.style.position = "absolute";
+    texto.style.inset = "0";
+    texto.style.display = "flex";
+    texto.style.alignItems = "center";
+    texto.style.justifyContent = "center";
+    texto.style.fontFamily = st.fuente;
+    texto.style.color = st.color;
 
-  stage.appendChild(c1);
-  stage.appendChild(c2);
+    const oc = outlineColor(st.color);
+    texto.style.textShadow = `
+      -1px 0 ${oc}, 1px 0 ${oc}, 0 -1px ${oc}, 0 1px ${oc},
+      -1px -1px ${oc}, 1px 1px ${oc}, -1px 1px ${oc}, 1px -1px ${oc}`;
 
-  // ✅ esperar hasta que tengan tamaño real (sin “30 segundos”)
-  const waitNonZero = async (el, maxFrames=60) => {
-    for (let i=0; i<maxFrames; i++){
-      await new Promise(r => requestAnimationFrame(r));
-      const rr = el.getBoundingClientRect();
-      if (rr.width > 10 && rr.height > 10) return rr;
-    }
-    return null;
+    // ✅ IMPORTANTE: tamaño real (sin scalePreviewF2)
+    texto.innerHTML = buildFase2HTML(st.size);
+
+    node.appendChild(texto);
+    return node;
   };
 
-  const r1 = await waitNonZero(c1, 90);
-  const r2 = await waitNonZero(c2, 90);
-  if (!r1 || !r2) {
-    console.warn("Cap sizes:", c1.getBoundingClientRect(), c2.getBoundingClientRect());
-    alert("❌ No pude capturar: los previews quedaron en 0x0. Revisá CSS de dev1Preview/dev2Preview (width/height).");
-    return null;
-  }
+  // ✅ Agregar al stage y esperar fuentes/layout
+  const n1 = makeFase1Node();
+  const n2 = makeFase2Node();
+  stage.appendChild(n1);
+  stage.appendChild(n2);
 
-  const cap1 = await html2canvas(c1, { backgroundColor: null, scale: 2, useCORS: true });
-  const cap2 = await html2canvas(c2, { backgroundColor: null, scale: 2, useCORS: true });
+  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+  if (document.fonts?.ready) await document.fonts.ready;
+
+  // ✅ Capturar
+  const cap1 = await html2canvas(n1, { backgroundColor: null, scale: 2, useCORS: true });
+  const cap2 = await html2canvas(n2, { backgroundColor: null, scale: 2, useCORS: true });
 
   ctx.drawImage(cap1, 0, 0, W, H1);
   ctx.drawImage(cap2, 0, H1, W, H2);
 
   DEV.finalDataUrl = cFinal.toDataURL("image/png");
-
   const img = $("devFinalImg");
   if (img) img.src = DEV.finalDataUrl;
 
