@@ -2214,10 +2214,18 @@ window.toggleFiltrosBiblia = () => {
     btn.classList.toggle("activo", abierto);
 
     // ✅ CLAVE: en celular saca el "focus pegado"
-    if (!abierto) btn.blur();
+    if (!abierto) {
+      btn.blur();
+      if (document.activeElement && document.activeElement.blur) {
+        document.activeElement.blur();
+      }
+    }
   }
 
-  if (abierto && libroSel) setTimeout(() => libroSel.focus(), 0);
+  // ✅ cuando se abre → foco en Libro
+  if (abierto && libroSel) {
+    setTimeout(() => libroSel.focus(), 0);
+  }
 };
 
 // ================= 🔺 PANEL ===================
