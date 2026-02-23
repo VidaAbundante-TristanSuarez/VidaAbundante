@@ -74,9 +74,12 @@
 .dev-fondos{
   display:flex;
   gap:10px;
-  overflow:auto;
+  overflow-x:auto;
+  overflow-y:hidden;
   padding:10px 4px;
-  margin-top:10px;
+  margin:10px auto 0;
+  width: min(420px, 92vw);     /* ✅ mismo ancho que preview */
+  justify-content:flex-start;  /* ✅ arranca a la izquierda */
 }
 
 .dev-fondos img{
@@ -218,7 +221,11 @@ input[type="number"]{
   display:flex;
   gap:10px;
   overflow-x:auto;
+  overflow-y:hidden;
   padding: 6px 2px;
+  margin: 0 auto;
+  width: min(420px, 92vw);     /* ✅ mismo ancho que preview */
+  justify-content:flex-start;
 }
 
 .dev-adorno-btn{
@@ -239,6 +246,26 @@ input[type="number"]{
   height:26px;
   object-fit:contain;
   display:block;
+}
+
+/* ✅ Overlay oscuro tipo "Biblia" */
+#modalDevFase1.modal-overlay,
+#modalDevFase2.modal-overlay,
+#modalDevFase3.modal-overlay{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.55);
+  display: none;                /* se prende con abrirModal() */
+  align-items: center;
+  justify-content: center;
+  padding: 14px;
+}
+
+/* ✅ cuando abrís, vos ya ponés display:flex desde JS */
+#modalDevFase1.abierto,
+#modalDevFase2.abierto,
+#modalDevFase3.abierto{
+  display: flex;
 }
 
 </style>
