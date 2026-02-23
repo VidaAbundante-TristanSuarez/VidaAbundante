@@ -2075,4 +2075,11 @@ body.oscuro #wrapFiltrosBiblia.abierto .filtros{
   }
 }
 
+/* ✅ El botón SOLO se ve activo si el panel está abierto */
+#btnToggleFiltros.activo{ background: var(--ui-azul-hover); color:#fff; } /* lo dejás si querés */
+#wrapFiltrosBiblia:not(.abierto) #btnToggleFiltros.activo{
+  background: var(--ui-azul-claro) !important;
+  color:#000 !important;
+}
+
   </style>
