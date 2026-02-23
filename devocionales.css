@@ -188,5 +188,27 @@ input[type="number"]{
   width:60px;
 }
 
+/* ✅ FASE 2: centrado vertical real */
+#dev2Preview{
+  position: relative;
+}
+
+#dev2TextoWrapper{
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+#dev2Texto{
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
 </style>
