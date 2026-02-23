@@ -7,11 +7,9 @@
 }
 
 .dev-preview{
-  width: min(420px, 92vw);   /* ✅ tamaño visible (no mini) */
-  margin: 0 auto;            /* ✅ centrado */
-  aspect-ratio: auto;        /* (lo define .dev-99/.dev-97/.dev-916) */
-  height: auto;
-
+  width: min(420px, 92vw);
+  margin: 0 auto;
+  height: auto;                 /* lo define aspect-ratio */
   border-radius:16px;
   overflow:hidden;
   background:#fff;
@@ -28,43 +26,38 @@
   border-radius: 14px;
 }
 
-/* Aspect ratios */
+/* ratios */
 .dev-99{ aspect-ratio: 1 / 1; }
 .dev-97{ aspect-ratio: 9 / 7; }
 .dev-916{ aspect-ratio: 9 / 16; }
 
+/* wrapper del texto (caja interna) */
 .dev-textwrap{
   position:absolute;
   inset: 6%;
   border-radius:14px;
-  padding: 0;
+  overflow:hidden;
+  padding:0;
   text-align:center;
-  overflow:hidden;          /* ✅ importante */
-  display:flex;             /* ✅ */
 }
 
+/* capa de texto */
 .dev-text{
   position:absolute;
   inset:0;
-  display:flex;             /* ✅ */
-  align-items:center;       /* ✅ */
-  justify-content:center;   /* ✅ */
   text-align:center;
   white-space:normal;
+
+  /* ✅ clave para que NO “corte” letras con sombras/stroke */
+  overflow: visible;
 }
 
-
-/* ===== FASE 2 — TEXTO (único, sin pisadas) ===== */
+/* Fase 2: wrapper real */
 #dev2TextoWrapper{
-  position: absolute;
-  inset: 12px;           /* ✅ margen uniforme real */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  padding: 0;
-  margin: 0;
-  border-radius: 14px;   /* opcional, queda prolijo */
+  position:absolute;
+  inset: 12px;
+  border-radius:14px;
+  overflow:hidden;
 }
 
 #dev2Texto{
