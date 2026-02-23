@@ -46,6 +46,8 @@ const DEV = {
   op: 0.15,
   size: 26,
   userChanged: false, // ✅ AGREGAR ESTO
+  adornoUrl: null,     // ✅ ruta del adorno (o null = ninguno)
+  adornoWidth: 70,     // ✅ % de ancho (podés cambiar luego)
   style: { upper:false, bold:false, italic:false, underline:false }
 },
 
@@ -551,6 +553,54 @@ function cargarFondosDev(){
   });
 }
 
+// =========================
+// ADORNOS FASE 2
+// =========================
+const adornosF2 = [
+  { nombre: "Ninguno", url: null },
+  { nombre: "Adorno 1", url: "./img/ornamentos/adorno1.png" },
+  { nombre: "Adorno 2", url: "./img/ornamentos/adorno2.png" },
+  { nombre: "Adorno 3", url: "./img/ornamentos/adorno3.png" }
+];
+
+function cargarAdornosF2(){
+  const cont = $("dev2Adornos");
+  if (!cont) return;
+
+  cont.innerHTML = "";
+
+  adornosF2.forEach(item=>{
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "dev-adorno-btn";
+    b.textContent = item.nombre;
+
+    if (item.url) {
+      // mini imagen adentro del botón
+      const img = document.createElement("img");
+      img.src = item.url;
+      img.alt = item.nombre;
+      img.className = "dev-adorno-thumb";
+      b.textContent = ""; // vaciar texto y poner la imagen
+      b.appendChild(img);
+    }
+
+    // marcar activo
+    const activo = (DEV.f2.adornoUrl === item.url);
+    b.classList.toggle("activo", activo);
+
+    b.onclick = ()=>{
+      DEV.f2.adornoUrl = item.url;
+      // refrescar activo
+      cont.querySelectorAll("button").forEach(x=>x.classList.remove("activo"));
+      b.classList.add("activo");
+      devRenderFase(2);
+    };
+
+    cont.appendChild(b);
+  });
+}
+
 /* =========================================================
    7) RENDER PREVIEW (HTML) + COMPOSICION FINAL (canvas)
    ========================================================= */
@@ -833,26 +883,49 @@ function buildFase2HTML(basePx){
   if (!p2) return "";
 
   const txt = `Reflexión: ${oneLine(p2.reflexion || "")}\nOración: ${oneLine(p2.oracion || "")}`;
-
   const fw = DEV.f2.style.bold ? 700 : 400;
+
+  const adorno = DEV.f2.adornoUrl;
+  const adornoW = Math.max(30, Math.min(95, Number(DEV.f2.adornoWidth || 70)));
 
   return `
     <div style="
       width:100%;
-      text-align:center;
+      height:100%;
       display:flex;
       align-items:center;
       justify-content:center;
-      height:100%;
+      text-align:center;
     ">
       <div style="
-        font-size:${basePx}px;
-        font-weight:${fw};
-        white-space:pre-line;
-        line-height:1.25;
-        max-width:95%;
+        width:95%;
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        justify-content:center;
+        gap:14px;
       ">
-        ${esc(txt)}
+        <div style="
+          font-size:${basePx}px;
+          font-weight:${fw};
+          white-space:pre-line;
+          line-height:1.25;
+        ">
+          ${esc(txt)}
+        </div>
+
+        ${adorno ? `
+          <img
+            src="${adorno}"
+            alt="adorno"
+            style="
+              width:${adornoW}%;
+              max-height:90px;
+              object-fit:contain;
+              opacity:0.95;
+            "
+          />
+        ` : ``}
       </div>
     </div>
   `;
@@ -1470,10 +1543,11 @@ function initDevocionales(){
   bindInputs();
   hookAudioCorrecto();
 
-  // fuentes/listas y fondos
+  // fuentes/listas y fondos y adornos
   crearListaFuentes(1);
   crearListaFuentes(2);
   cargarFondosDev();
+  cargarAdornosF2();
 
   // estado inicial
   btnRecortar.disabled = true;
