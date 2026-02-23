@@ -986,7 +986,7 @@ async function renderFinalCanvasCaptureReal(){
     stage.style.position = "fixed";
     stage.style.left = "-10000px";     // ✅ lejos sin transform
     stage.style.top  = "-10000px";
-    stage.style.opacity = "1";      
+    stage.style.opacity = "0.01";      // ✅ NO 0 (evita bugs en algunos navegadores)
     stage.style.visibility = "visible";
     stage.style.pointerEvents = "none";
     stage.style.transform = "none";    // ✅ importantísimo
@@ -1617,4 +1617,3 @@ requestAnimationFrame(()=>{
    INIT
    ========================================================= */
 document.addEventListener("DOMContentLoaded", initDevocionales);
-
