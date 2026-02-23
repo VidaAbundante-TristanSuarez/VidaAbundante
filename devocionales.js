@@ -577,19 +577,11 @@ function outlineColor(hex){
   return lum > 160 ? "#000000" : "#ffffff";
 }
 
-function textShadowLegible(textHex){
-  const same = textHex || "#000000";
-  const oc = outlineColor(same);
-
-  // 1) “engorda” con el MISMO color (micro outline)
-  // 2) sombra suave SIN desplazamiento con oc (blanco/negro automático)
-  return `
-    -0.7px 0 ${same},
-     0.7px 0 ${same},
-     0 -0.7px ${same},
-     0  0.7px ${same},
-     0 0 2px ${oc}
-  `;
+function applyTextStylesToOne(el, st){
+  el.style.textTransform = st.style.upper ? "uppercase" : "none";
+  el.style.fontWeight    = st.style.bold ? "700" : "400";
+  el.style.fontStyle     = st.style.italic ? "italic" : "normal";
+  el.style.textDecoration= st.style.underline ? "underline" : "none";
 }
 
 function wrapperBgFromOpacity(op){
@@ -910,12 +902,17 @@ function devRenderFase(fase){
    t.style.color = st.color;
 
    // outline usando sombras (sirve con HTML interno)
-   t.style.textShadow = textShadowLegible(st.color);
+   const oc = outlineColor(st.color);
+
+   // ✅ stroke real (más limpio que 8 sombras)
+   t.style.webkitTextStroke = `2px ${oc}`;
+   t.style.paintOrder = "stroke fill";
+   t.style.textShadow = "none";
 
     // wrapper bg
     w.style.backgroundColor = wrapperBgFromOpacity(st.op);
 
-    applyTextStyles(t,b,st);
+    applyTextStylesToOne(t, st);
     devSyncStyleButtons(1);
     return;
   }
@@ -942,11 +939,16 @@ function devRenderFase(fase){
    t.style.color = st.color;
 
    // outline usando sombras (sirve con HTML interno)
-   t.style.textShadow = textShadowLegible(st.color);
+   const oc = outlineColor(st.color);
+
+   // ✅ stroke real (más limpio que 8 sombras)
+   t.style.webkitTextStroke = `2px ${oc}`;
+   t.style.paintOrder = "stroke fill";
+   t.style.textShadow = "none";
 
    w.style.backgroundColor = "transparent"; // ✅ sin opacidad en Fase 2
 
-    applyTextStyles(t,b,st);
+    applyTextStylesToOne(t, st);
     devSyncStyleButtons(2);
     return;
   }
@@ -1038,8 +1040,12 @@ async function renderFinalCanvasCaptureReal(){
     texto.style.inset = "0";
     texto.style.fontFamily = st.fuente;
     texto.style.color = st.color;
-
-    texto.style.textShadow = textShadowLegible(st.color);
+    applyTextStylesToOne(texto, st);
+     
+    const oc = outlineColor(st.color);
+    texto.style.webkitTextStroke = `2px ${oc}`;
+    texto.style.paintOrder = "stroke fill";
+    texto.style.textShadow = "none";
 
     // ✅ IMPORTANTE: tamaño real (sin scalePreviewF1)
     texto.innerHTML = buildFase1HTML(st.size, 1);
@@ -1079,8 +1085,12 @@ async function renderFinalCanvasCaptureReal(){
   texto.style.justifyContent = "center";
   texto.style.fontFamily = st.fuente;
   texto.style.color = st.color;
-
-  texto.style.textShadow = textShadowLegible(st.color);
+  applyTextStylesToOne(texto, st);
+     
+  const oc = outlineColor(st.color);
+  texto.style.webkitTextStroke = `2px ${oc}`;
+  texto.style.paintOrder = "stroke fill";
+  texto.style.textShadow = "none";
 
   // ✅ tamaño real (canvas)
   texto.innerHTML = buildFase2HTML(st.size);
