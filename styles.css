@@ -1996,90 +1996,86 @@ body.oscuro #barraTituloBiblia .nav-capitulo{
   font-size: 13px;
 }
 
-/* ================= FILTROS: TARJETA CENTRADA Y NO TAPA LA 🔍 ================= */
+/* ================= FILTROS: DENTRO DE LA BARRA (1 SOLA LINEA) ================= */
 
-/* Ocultos por defecto */
+/* ocultos por defecto */
 #wrapFiltrosBiblia .filtros{ display:none; }
 
-/* Ancla */
+/* ancla: el wrap queda como referencia, pero la tarjeta la vamos a “meter” en la barra */
 #wrapFiltrosBiblia{
   position: relative;
   display: inline-flex;
   align-items: center;
 }
 
+/* ✅ Cuando está abierto: los filtros se posicionan DENTRO de la barra */
+#barraTituloBiblia{
+  position: sticky; /* ya lo tenés, lo reafirmo */
+}
+
 #wrapFiltrosBiblia.abierto .filtros{
   display:flex;
-  position: fixed;
 
-  top: 64px;
-  left: 50%;
-  transform: translateX(-50%);
+  /* ✅ clave: ya NO es fixed */
+  position: absolute;
 
-  /* ✅ MENOS ANCHA + SIN AIRE NEGRO EXAGERADO */
-  width: calc(100vw - 60px);   /* deja 30px de margen a cada lado */
-  max-width: 360px;            /* tope en celu (ajustable) */
+  /* lo centramos verticalmente dentro de la barra */
+  top: 50%;
+  transform: translateY(-50%);
 
-  padding: 10px;
+  /* arranca desde la izquierda de la barra */
+  left: 12px;
+
+  /* ✅ deja “hueco” a la derecha para la lupa + flechas
+     Ajustable: si querés más/menos, tocá este número */
+  right: 120px;
+
+  /* estilo “integrado” a la barra (sin caja negra enorme) */
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  margin: 0;
+
+  /* ✅ 1 sola línea */
+  flex-direction: row;
+  flex-wrap: nowrap;
   gap: 10px;
-
-  background:#fff;
-  border:1px solid rgba(0,0,0,.10);
-  border-radius:14px;
-  box-shadow: 0 12px 28px rgba(0,0,0,.25);
-
-  flex-wrap: wrap;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
 
-  z-index: 99999;
+  z-index: 9999;
 }
 
-/* Oscuro */
-body.oscuro #wrapFiltrosBiblia.abierto .filtros{
-  background:#1e1e1e;
-  border-color: rgba(255,255,255,.12);
-  box-shadow: 0 12px 28px rgba(0,0,0,.45);
-}
-
-/* Selects prolijos */
-#wrapFiltrosBiblia .filtros select{
-  height: 38px;
+/* ✅ Los selects se estiran sin romper la línea */
+#wrapFiltrosBiblia.abierto .filtros select{
+  height: 34px;
   padding: 0 12px;
   font-size: 14px;
   border-radius: 999px;
+
+  /* ✅ importantísimo para que entren en 1 línea */
+  flex: 1 1 0;
+  min-width: 0;
 }
 
-/* ================= FILTROS CELU: IZQUIERDA + MEDIA PANTALLA (SIN DESBORDES) ================= */
-@media (max-width: 600px){
-
-  /* tarjeta */
-  #wrapFiltrosBiblia.abierto .filtros{
-    left: 12px !important;
-    right: auto !important;
-    transform: none !important;
-
-    width: min(52vw, 260px) !important; /* mitad aprox, con tope */
-    max-width: none !important;
-
-    justify-content: flex-start !important;
-    align-items: stretch !important;
-    flex-direction: column !important;  /* ✅ clave: sin “aire” a los costados */
-    gap: 8px !important;
-  }
-
-  /* selects: que NO agranden la tarjeta */
-  #wrapFiltrosBiblia.abierto .filtros select{
-    width: 100% !important;
-    min-width: 0 !important;
-  }
+/* ✅ Mientras está abierto, ocultamos el título para que no se vea “duplicado” */
+#wrapFiltrosBiblia.abierto ~ h3,
+#wrapFiltrosBiblia.abierto ~ #titulo{
+  display:none;
 }
 
-/* ✅ El botón SOLO se ve activo si el panel está abierto */
-#btnToggleFiltros.activo{ background: var(--ui-azul-hover); color:#fff; } /* lo dejás si querés */
-#wrapFiltrosBiblia:not(.abierto) #btnToggleFiltros.activo{
-  background: var(--ui-azul-claro) !important;
-  color:#000 !important;
+/* (si tu h3 NO es hermano del wrap, usamos una alternativa segura) */
+#barraTituloBiblia.filtros-on h3,
+#barraTituloBiblia.filtros-on #titulo{
+  display:none;
+}
+
+/* Modo oscuro */
+body.oscuro #wrapFiltrosBiblia.abierto .filtros select{
+  background:#1e1e1e;
+  color:#fff;
+  border: 1px solid rgba(255,255,255,.18);
 }
 
   </style>
