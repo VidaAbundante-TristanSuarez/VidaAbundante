@@ -7,12 +7,25 @@
 }
 
 .dev-preview{
-  width:100%;
+  width: min(420px, 92vw);   /* ✅ tamaño visible (no mini) */
+  margin: 0 auto;            /* ✅ centrado */
+  aspect-ratio: auto;        /* (lo define .dev-99/.dev-97/.dev-916) */
+  height: auto;
+
   border-radius:16px;
   overflow:hidden;
   background:#fff;
   position:relative;
   border:1px solid #e5e5e5;
+}
+
+/* Imagen final en fase 3 */
+#devFinalImg{
+  width: min(420px, 92vw);
+  height: auto;
+  display: block;
+  margin: 0 auto;
+  border-radius: 14px;
 }
 
 /* Aspect ratios */
@@ -42,10 +55,6 @@
 
 
 /* ===== FASE 2 — TEXTO (único, sin pisadas) ===== */
-#dev2Preview{
-  position: relative;
-}
-
 #dev2TextoWrapper{
   position: absolute;
   inset: 12px;           /* ✅ margen uniforme real */
