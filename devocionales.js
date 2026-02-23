@@ -574,6 +574,17 @@ function textShadowLegible(textHex){
   `;
 }
 
+function textShadowLegibleFinal(textHex){
+  const oc = outlineColor(textHex || "#000000");
+  return `
+    -2px 0 ${oc},
+     2px 0 ${oc},
+     0 -2px ${oc},
+     0  2px ${oc},
+     0 0 3px ${oc}
+  `;
+}
+
 function applyTextStylesToOne(el, st){
   el.style.textTransform = st.style.upper ? "uppercase" : "none";
   el.style.fontWeight    = st.style.bold ? "700" : "400";
@@ -1026,7 +1037,7 @@ async function renderFinalCanvasCaptureReal(){
     applyTextStylesToOne(texto, st);
      
     // ✅ OUTLINE estable
-    texto.style.textShadow = textShadowLegible(st.color);
+    texto.style.textShadow = textShadowLegibleFinal(st.color);
     texto.style.webkitTextStroke = "0px";
     texto.style.paintOrder = "normal";
 
@@ -1056,14 +1067,16 @@ async function renderFinalCanvasCaptureReal(){
   wrap.style.inset = "6px 12px 12px 12px";            
   wrap.style.overflow = "hidden";
   wrap.style.display = "flex";
-  wrap.style.alignItems = "center";
-  wrap.style.justifyContent = "center";
+  wrap.style.alignItems = "flex-start";      // ✅ empieza arriba
+  wrap.style.justifyContent = "center";      // ✅ centrado horizontal
+  wrap.style.paddingTop = "14px";            // ✅ un poquito de aire arriba
   wrap.style.textAlign = "center";
 
   // ✅ TEXTO adentro del wrapper
   const texto = document.createElement("div");
   texto.style.width = "100%";
-  texto.style.display = "flex";
+  texto.style.display = "block";
+  texto.style.textAlign = "center";
   texto.style.alignItems = "center";
   texto.style.justifyContent = "center";
   texto.style.fontFamily = st.fuente;
@@ -1071,7 +1084,7 @@ async function renderFinalCanvasCaptureReal(){
   applyTextStylesToOne(texto, st);
      
   // ✅ OUTLINE estable
-  texto.style.textShadow = textShadowLegible(st.color);
+  texto.style.textShadow = textShadowLegibleFinal(st.color);
   texto.style.webkitTextStroke = "0px";
   texto.style.paintOrder = "normal";
 
