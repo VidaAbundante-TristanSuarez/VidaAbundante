@@ -720,10 +720,10 @@ function buildFase1HTML(versiculoCanvasPx, scale){
   const versiculoPx = Math.max(8, versiculoCanvasPx * scale);
 
   // ✅ tamaños reales en canvas 1080 (se escalan en preview)
-  const devocionalPx = Math.round(26 * scale);
-  const fechaPx      = Math.round(20 * scale);
-  const iglesiaPx    = Math.round(22 * scale);
-  const direPx       = Math.round(22 * scale);
+  const devocionalPx = Math.round(44 * scale);
+  const fechaPx      = Math.round(32 * scale);
+  const iglesiaPx    = Math.round(34 * scale);
+  const direPx       = Math.round(34 * scale);
 
   // cita proporcional al versículo
   const citaPx = Math.max(Math.round(14 * scale), Math.round(versiculoPx * 0.75));
@@ -994,10 +994,10 @@ async function renderFinalCanvasCaptureReal(){
     stage.style.position = "fixed";
     stage.style.left = "0";
     stage.style.top = "0";
-    stage.style.transform = "translateX(-200vw)";  // ✅ lejos pero NO -99999px
-    stage.style.opacity = "1";
-    stage.style.visibility = "hidden";            // ✅ no se ve pero html2canvas lo renderiza bien
+    stage.style.opacity = "0";               // ✅ invisible
+    stage.style.visibility = "visible";      // ✅ pero renderizable
     stage.style.pointerEvents = "none";
+    stage.style.transform = "translateX(-200vw)";
     stage.style.zIndex = "-1";
     document.body.appendChild(stage);
   }
