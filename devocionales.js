@@ -232,26 +232,10 @@ function normText(t){
     .trim();
 }
 
-function findOracionIndex(lines){
-  return lines.findIndex(l => /oraci[oó]n/i.test(l));
-}
-
 function detectCita(line){
   // intenta detectar referencias típicas: "Mateo 19:13-14", "MATEO 19:13–14", "Jn 3:16", etc.
   const s = (line || "").trim();
   return /([1-3]\s*)?[A-Za-zÁÉÍÓÚÑáéíóúñ\.]+\s+\d+\s*:\s*\d+/i.test(s);
-}
-
-function limpiarBasuraIcono(lines){
-  // elimina cosas típicas del logo/iglesia repetidas por OCR
-  const ban = [
-    /iglesia cristiana/i,
-    /vida abundante/i,
-    /\broca\b/i,
-    /tristan/i,
-    /tristán/i
-  ];
-  return lines.filter(l => !ban.some(rx => rx.test(l)));
 }
 
 function onlyLetters(s){
@@ -544,21 +528,23 @@ function cargarFondosDev(){
       try{
         // limpiar blob anterior
         if (DEV.f1.fondoBlob) URL.revokeObjectURL(DEV.f1.fondoBlob);
-        DEV.f1.fondoUrl = finalUrl;
+        DEV.f1.fondoUrl = null;              // ✅ no guardes la url si ya tenés blob
         DEV.f1.fondoBlob = await urlToBlobURL(finalUrl);
 
         cont.querySelectorAll("img").forEach(x=>x.classList.remove("activo"));
         im.classList.add("activo");
 
         devRenderFase(1);
-      }catch(e){
-        console.error(e);
+        } catch (e) {
+        console.error("Fondo error real:", e);
+
         DEV.f1.fondoUrl = null;
         if (DEV.f1.fondoBlob) URL.revokeObjectURL(DEV.f1.fondoBlob);
         DEV.f1.fondoBlob = null;
-        alert("Ese fondo no se puede usar (CORS). Probá otro.");
-        devRenderFase(1);
-      }
+
+       alert("No se pudo usar este fondo.\n\nDetalle: " + (e?.message || e));
+       devRenderFase(1);
+}
     };
 
     cont.appendChild(im);
@@ -578,15 +564,12 @@ function outlineColor(hex){
 }
 
 function textShadowLegible(textHex){
-  const same = textHex || "#000000";
-  const oc = outlineColor(same);
-
-  // micro-outline con el mismo color + glow suave con blanco/negro automático
+  const oc = outlineColor(textHex || "#000000");
   return `
-    -0.7px 0 ${same},
-     0.7px 0 ${same},
-     0 -0.7px ${same},
-     0  0.7px ${same},
+    -1px 0 ${oc},
+     1px 0 ${oc},
+     0 -1px ${oc},
+     0  1px ${oc},
      0 0 2px ${oc}
   `;
 }
@@ -609,19 +592,6 @@ function wrapperBgFromOpacity(op){
     return `rgba(255,255,255,${a})`;
   }
   return "rgba(0,0,0,0)";
-}
-
-function applyTextStyles(front, back, st){
-  const transform = st.style.upper ? "uppercase" : "none";
-  const fw = st.style.bold ? "700" : "400";
-  const fs = st.style.italic ? "italic" : "normal";
-  const td = st.style.underline ? "underline" : "none";
-
-  front.style.textTransform = transform;
-  back.style.textTransform = transform;
-  front.style.fontWeight = fw; back.style.fontWeight = fw;
-  front.style.fontStyle = fs;  back.style.fontStyle = fs;
-  front.style.textDecoration = td; back.style.textDecoration = td;
 }
 
 function esc(s){
@@ -918,15 +888,10 @@ function devRenderFase(fase){
    t.style.fontFamily = st.fuente;
    t.style.color = st.color;
 
-   // outline usando sombras (sirve con HTML interno)
-   t.style.webkitTextStroke = "0px transparent";
-   t.style.paintOrder = "normal";
+   // ✅ OUTLINE estable (para preview + captura)
    t.style.textShadow = textShadowLegible(st.color);
-
-   // ✅ stroke real (más limpio que 8 sombras)
-   t.style.webkitTextStroke = `2px ${oc}`;
-   t.style.paintOrder = "stroke fill";
-   t.style.textShadow = "none";
+   t.style.webkitTextStroke = "0px";
+   t.style.paintOrder = "normal";
 
     // wrapper bg
     w.style.backgroundColor = wrapperBgFromOpacity(st.op);
@@ -957,15 +922,10 @@ function devRenderFase(fase){
    t.style.fontFamily = st.fuente;
    t.style.color = st.color;
 
-   // outline usando sombras (sirve con HTML interno)
-   t.style.webkitTextStroke = "0px transparent";
-   t.style.paintOrder = "normal";
+   // ✅ OUTLINE estable (para preview + captura)
    t.style.textShadow = textShadowLegible(st.color);
-
-   // ✅ stroke real (más limpio que 8 sombras)
-   t.style.webkitTextStroke = `2px ${oc}`;
-   t.style.paintOrder = "stroke fill";
-   t.style.textShadow = "none";
+   t.style.webkitTextStroke = "0px";
+   t.style.paintOrder = "normal";
 
    w.style.backgroundColor = "transparent"; // ✅ sin opacidad en Fase 2
 
@@ -1053,7 +1013,9 @@ async function renderFinalCanvasCaptureReal(){
 
     const wrap = document.createElement("div");
     wrap.style.position = "absolute";
-    wrap.style.inset = "0";
+    wrap.style.inset = "6%";           // ✅ igual que .dev-textwrap
+    wrap.style.borderRadius = "14px";  // ✅ igual que preview
+    wrap.style.overflow = "hidden";    // ✅ igual que preview
     wrap.style.backgroundColor = wrapperBgFromOpacity(st.op);
 
     const texto = document.createElement("div");
@@ -1063,13 +1025,10 @@ async function renderFinalCanvasCaptureReal(){
     texto.style.color = st.color;
     applyTextStylesToOne(texto, st);
      
-    t.style.webkitTextStroke = "0px transparent";
-    t.style.paintOrder = "normal";
-    t.style.textShadow = textShadowLegible(st.color);
-     
-    texto.style.webkitTextStroke = `2px ${oc}`;
-    texto.style.paintOrder = "stroke fill";
-    texto.style.textShadow = "none";
+    // ✅ OUTLINE estable
+    texto.style.textShadow = textShadowLegible(st.color);
+    texto.style.webkitTextStroke = "0px";
+    texto.style.paintOrder = "normal";
 
     // ✅ IMPORTANTE: tamaño real (sin scalePreviewF1)
     texto.innerHTML = buildFase1HTML(st.size, 1);
@@ -1111,13 +1070,10 @@ async function renderFinalCanvasCaptureReal(){
   texto.style.color = st.color;
   applyTextStylesToOne(texto, st);
      
-  t.style.webkitTextStroke = "0px transparent";
-  t.style.paintOrder = "normal";
-  t.style.textShadow = textShadowLegible(st.color);
-     
-  texto.style.webkitTextStroke = `2px ${oc}`;
-  texto.style.paintOrder = "stroke fill";
-  texto.style.textShadow = "none";
+  // ✅ OUTLINE estable
+  texto.style.textShadow = textShadowLegible(st.color);
+  texto.style.webkitTextStroke = "0px";
+  texto.style.paintOrder = "normal";
 
   // ✅ tamaño real (canvas)
   texto.innerHTML = buildFase2HTML(st.size);
