@@ -577,6 +577,20 @@ function outlineColor(hex){
   return lum > 160 ? "#000000" : "#ffffff";
 }
 
+function textShadowLegible(textHex){
+  const same = textHex || "#000000";
+  const oc = outlineColor(same);
+
+  // micro-outline con el mismo color + glow suave con blanco/negro automático
+  return `
+    -0.7px 0 ${same},
+     0.7px 0 ${same},
+     0 -0.7px ${same},
+     0  0.7px ${same},
+     0 0 2px ${oc}
+  `;
+}
+
 function applyTextStylesToOne(el, st){
   el.style.textTransform = st.style.upper ? "uppercase" : "none";
   el.style.fontWeight    = st.style.bold ? "700" : "400";
@@ -737,17 +751,17 @@ function buildFase1HTML(versiculoCanvasPx, scale){
 
   // helper: centrado real + interlineado apretado
   const base = (px, weight)=>`
-    position:absolute;
-    left:50%;
-    transform:translateX(-50%);
-    width:96%;
-    text-align:center;
-    margin:0;
-    padding:0;
-    font-size:${px}px;
-    font-weight:${weight};
-    line-height:1.05;     /* ✅ menos interlineado */
-  `;
+  position:absolute;
+  left:0;
+  right:0;
+  margin:0 auto;
+  width:96%;
+  text-align:center;
+  padding:0;
+  font-size:${px}px;
+  font-weight:${weight};
+  line-height:1.05;
+`;
 
   // ===== Coordenadas fijas tipo Cloudinary (porcentaje del wrapper) =====
   // Arriba
@@ -776,11 +790,14 @@ function buildFase1HTML(versiculoCanvasPx, scale){
       <!-- ✅ Caja fija grande: Versículo + Cita juntos -->
       <div style="
         position:absolute;
-        left:50%;
-        transform:translateX(-50%);
+        left:0;
+        right:0;
+        margin:0 auto;
         top:${Y_VBOX}%;
         height:${H_VBOX}%;
         width:96%;
+        padding: 0 36px;
+        box-sizing: border-box;
         display:flex;
         align-items:center;
         justify-content:center;
@@ -902,7 +919,9 @@ function devRenderFase(fase){
    t.style.color = st.color;
 
    // outline usando sombras (sirve con HTML interno)
-   const oc = outlineColor(st.color);
+   t.style.webkitTextStroke = "0px transparent";
+   t.style.paintOrder = "normal";
+   t.style.textShadow = textShadowLegible(st.color);
 
    // ✅ stroke real (más limpio que 8 sombras)
    t.style.webkitTextStroke = `2px ${oc}`;
@@ -939,7 +958,9 @@ function devRenderFase(fase){
    t.style.color = st.color;
 
    // outline usando sombras (sirve con HTML interno)
-   const oc = outlineColor(st.color);
+   t.style.webkitTextStroke = "0px transparent";
+   t.style.paintOrder = "normal";
+   t.style.textShadow = textShadowLegible(st.color);
 
    // ✅ stroke real (más limpio que 8 sombras)
    t.style.webkitTextStroke = `2px ${oc}`;
@@ -1042,7 +1063,10 @@ async function renderFinalCanvasCaptureReal(){
     texto.style.color = st.color;
     applyTextStylesToOne(texto, st);
      
-    const oc = outlineColor(st.color);
+    t.style.webkitTextStroke = "0px transparent";
+    t.style.paintOrder = "normal";
+    t.style.textShadow = textShadowLegible(st.color);
+     
     texto.style.webkitTextStroke = `2px ${oc}`;
     texto.style.paintOrder = "stroke fill";
     texto.style.textShadow = "none";
@@ -1087,7 +1111,10 @@ async function renderFinalCanvasCaptureReal(){
   texto.style.color = st.color;
   applyTextStylesToOne(texto, st);
      
-  const oc = outlineColor(st.color);
+  t.style.webkitTextStroke = "0px transparent";
+  t.style.paintOrder = "normal";
+  t.style.textShadow = textShadowLegible(st.color);
+     
   texto.style.webkitTextStroke = `2px ${oc}`;
   texto.style.paintOrder = "stroke fill";
   texto.style.textShadow = "none";
