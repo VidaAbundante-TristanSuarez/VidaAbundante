@@ -1996,7 +1996,7 @@ body.oscuro #barraTituloBiblia .nav-capitulo{
   font-size: 13px;
 }
 
-/* ================= FILTROS TARJETA (MISMO LUGAR LIBRO/CAPITULO) ================= */
+/* ================= FILTROS TARJETA ANCLADA A 🔍 (FIX DEFINITIVO CELU) ================= */
 
 /* oculto por defecto */
 #wrapFiltrosBiblia .filtros{
@@ -2011,15 +2011,21 @@ body.oscuro #barraTituloBiblia .nav-capitulo{
   z-index: 9999;
 }
 
-/* ✅ cuando se abre: pegada a la IZQUIERDA del mismo grupo (Libro/Capítulo) */
+/* cuando se abre */
 #wrapFiltrosBiblia.abierto .filtros{
   display: flex;
 
-  position: absolute;          /* ✅ ya NO fixed */
-  top: calc(100% + 8px);       /* ✅ justo debajo de la barra (tarjetita) */
-  left: 0;                     /* ✅ alineada a la izquierda del mismo lugar */
-  right: auto;
+  /* 🔥 CLAVE: respecto a la pantalla, no a la barra */
+  position: fixed;
 
+  /* debajo de la barra */
+  top: 70px;   /* si queda muy abajo o arriba, ajustamos */
+
+  /* pegada al borde derecho REAL */
+  right: 12px;
+  left: auto;
+
+  /* entra SIEMPRE en pantalla */
   width: min(420px, calc(100vw - 24px));
   max-width: calc(100vw - 24px);
   box-sizing: border-box;
@@ -2032,10 +2038,9 @@ body.oscuro #barraTituloBiblia .nav-capitulo{
   border-radius: 14px;
   box-shadow: 0 12px 28px rgba(0,0,0,.25);
 
-  /* ✅ en 1 fila */
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
 
   z-index: 99999;
 }
@@ -2046,26 +2051,12 @@ body.oscuro #wrapFiltrosBiblia.abierto .filtros{
   border-color: rgba(255,255,255,.12);
 }
 
-/* ✅ selects */
+/* selects */
 #wrapFiltrosBiblia .filtros select{
   height: 38px;
   padding: 0 12px;
   font-size: 14px;
   border-radius: 999px;
-  min-width: 0;
-}
-
-/* ✅ Libro ocupa lo que queda */
-#wrapFiltrosBiblia .filtros #libro{
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-/* ✅ Capítulo 50% más chico */
-#wrapFiltrosBiblia .filtros #capitulo{
-  flex: 0 0 70px;   /* 👈 angosto (capítulos son 1-3 dígitos) */
-  width: 70px;
-  min-width: 70px;
 }
 
   </style> 
