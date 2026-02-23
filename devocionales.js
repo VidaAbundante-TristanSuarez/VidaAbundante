@@ -711,19 +711,22 @@ function devSyncStyleButtons(fase){
   });
 }
 
-function buildFase1HTML(versiculoPx){
+function buildFase1HTML(versiculoCanvasPx, scale){
   const p1 = DEV.p1;
   if (!p1) return "";
 
-  // tamaños fijos (50% menos aprox)
-  const devocionalPx = 12;
-  const fechaPx      = 11;
+  scale = scale || 1;
 
-  const iglesiaPx    = 12; // mismo tamaño para ambos
-  const direPx       = 12;
+  const versiculoPx = Math.max(8, versiculoCanvasPx * scale);
 
-  // ✅ CITA = 90% del versículo (se mueve con el versículo)
-  const citaPx = Math.max(9, Math.round(versiculoPx * 0.75));
+  // ✅ tamaños reales en canvas 1080 (se escalan en preview)
+  const devocionalPx = Math.round(26 * scale);
+  const fechaPx      = Math.round(20 * scale);
+  const iglesiaPx    = Math.round(22 * scale);
+  const direPx       = Math.round(22 * scale);
+
+  // cita proporcional al versículo
+  const citaPx = Math.max(Math.round(14 * scale), Math.round(versiculoPx * 0.75));
 
   // helper: centrado real + interlineado apretado
   const base = (px, weight)=>`
@@ -875,8 +878,8 @@ function devRenderFase(fase){
     const st = DEV.f1;
 
     // texto
-   const pxPreview = Math.max(8, (st.size * scalePreviewF1()));
-   t.innerHTML = buildFase1HTML(pxPreview);
+   const sc = scalePreviewF1();
+   t.innerHTML = buildFase1HTML(st.size, sc);
     // ya no usamos la capa back para no romper tamaños diferentes
     if (b) b.style.display = "none";
 
@@ -989,9 +992,11 @@ async function renderFinalCanvasCaptureReal(){
     stage = document.createElement("div");
     stage.id = "devCaptureStage";
     stage.style.position = "fixed";
-    stage.style.left = "-99999px";
+    stage.style.left = "0";
     stage.style.top = "0";
-    stage.style.opacity = "0";
+    stage.style.transform = "translateX(-200vw)";  // ✅ lejos pero NO -99999px
+    stage.style.opacity = "1";
+    stage.style.visibility = "hidden";            // ✅ no se ve pero html2canvas lo renderiza bien
     stage.style.pointerEvents = "none";
     stage.style.zIndex = "-1";
     document.body.appendChild(stage);
@@ -1031,7 +1036,7 @@ async function renderFinalCanvasCaptureReal(){
       -1px -1px ${oc}, 1px 1px ${oc}, -1px 1px ${oc}, 1px -1px ${oc}`;
 
     // ✅ IMPORTANTE: tamaño real (sin scalePreviewF1)
-    texto.innerHTML = buildFase1HTML(st.size);
+    texto.innerHTML = buildFase1HTML(st.size, 1);
 
     wrap.appendChild(texto);
     node.appendChild(wrap);
@@ -1039,36 +1044,49 @@ async function renderFinalCanvasCaptureReal(){
   };
 
   const makeFase2Node = () => {
-    const st = DEV.f2;
-    const node = document.createElement("div");
-    node.style.width = W + "px";
-    node.style.height = H2 + "px";
-    node.style.position = "relative";
-    node.style.overflow = "hidden";
-    node.style.borderRadius = "0";
-    node.style.backgroundImage = "none";
-    node.style.backgroundColor = st.fondoColor || "#ffffff";
+  const st = DEV.f2;
 
-    const texto = document.createElement("div");
-    texto.style.position = "absolute";
-    texto.style.inset = "0";
-    texto.style.display = "flex";
-    texto.style.alignItems = "center";
-    texto.style.justifyContent = "center";
-    texto.style.fontFamily = st.fuente;
-    texto.style.color = st.color;
+  const node = document.createElement("div");
+  node.style.width = W + "px";
+  node.style.height = H2 + "px";
+  node.style.position = "relative";
+  node.style.overflow = "hidden";
+  node.style.borderRadius = "0";
+  node.style.backgroundImage = "none";
+  node.style.backgroundColor = st.fondoColor || "#ffffff";
 
-    const oc = outlineColor(st.color);
-    texto.style.textShadow = `
-      -1px 0 ${oc}, 1px 0 ${oc}, 0 -1px ${oc}, 0 1px ${oc},
-      -1px -1px ${oc}, 1px 1px ${oc}, -1px 1px ${oc}, 1px -1px ${oc}`;
+  // ✅ WRAPPER igual al modal: margen uniforme (inset 12px) + centrado real
+  const wrap = document.createElement("div");
+  wrap.style.position = "absolute";
+  wrap.style.inset = "12px";            // ✅ MISMO margen que querés ver en la captura
+  wrap.style.overflow = "hidden";
+  wrap.style.display = "flex";
+  wrap.style.alignItems = "center";
+  wrap.style.justifyContent = "center";
+  wrap.style.textAlign = "center";
 
-    // ✅ IMPORTANTE: tamaño real (sin scalePreviewF2)
-    texto.innerHTML = buildFase2HTML(st.size);
+  // ✅ TEXTO adentro del wrapper
+  const texto = document.createElement("div");
+  texto.style.width = "100%";
+  texto.style.display = "flex";
+  texto.style.alignItems = "center";
+  texto.style.justifyContent = "center";
+  texto.style.fontFamily = st.fuente;
+  texto.style.color = st.color;
 
-    node.appendChild(texto);
-    return node;
-  };
+  const oc = outlineColor(st.color);
+  texto.style.textShadow = `
+    -1px 0 ${oc}, 1px 0 ${oc}, 0 -1px ${oc}, 0 1px ${oc},
+    -1px -1px ${oc}, 1px 1px ${oc}, -1px 1px ${oc}, 1px -1px ${oc}`;
+
+  // ✅ tamaño real (canvas)
+  texto.innerHTML = buildFase2HTML(st.size);
+
+  wrap.appendChild(texto);
+  node.appendChild(wrap);
+
+  return node;
+};
 
   // ✅ Agregar al stage y esperar fuentes/layout
   const n1 = makeFase1Node();
