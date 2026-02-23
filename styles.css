@@ -2017,7 +2017,7 @@ body.oscuro #barraTituloBiblia .nav-capitulo{
   transform: translateX(-50%);
 
   /* ✅ MENOS ANCHA + SIN AIRE NEGRO EXAGERADO */
-  width: calc(100vw - 80px);   /* deja 40px de margen a cada lado */
+  width: calc(100vw - 60px);   /* deja 30px de margen a cada lado */
   max-width: 360px;            /* tope en celu (ajustable) */
 
   padding: 10px;
@@ -2048,6 +2048,22 @@ body.oscuro #wrapFiltrosBiblia.abierto .filtros{
   padding: 0 12px;
   font-size: 14px;
   border-radius: 999px;
+}
+
+/* ================= FILTROS: IZQUIERDA EN CELU ================= */
+@media (max-width: 600px){
+
+  #wrapFiltrosBiblia.abierto .filtros{
+
+    left: 12px;        /* margen desde el borde */
+    right: auto;
+    transform: none;   /* ❗ anulamos el centrado */
+
+    width: calc(100vw - 24px);  /* ocupa casi todo sin salirse */
+    max-width: none;
+
+  }
+
 }
 
   </style>
