@@ -766,7 +766,7 @@ function buildFase1HTML(versiculoCanvasPx, scale){
         top:${Y_VBOX}%;
         height:${H_VBOX}%;
         width:96%;
-        padding: 0 36px;
+        padding: 0 ${Math.round(36 * scale)}px;
         box-sizing: border-box;
         display:flex;
         align-items:center;
@@ -986,7 +986,7 @@ async function renderFinalCanvasCaptureReal(){
     stage.style.position = "fixed";
     stage.style.left = "-10000px";     // ✅ lejos sin transform
     stage.style.top  = "-10000px";
-    stage.style.opacity = "0.01";      // ✅ NO 0 (evita bugs en algunos navegadores)
+    stage.style.opacity = "1";      
     stage.style.visibility = "visible";
     stage.style.pointerEvents = "none";
     stage.style.transform = "none";    // ✅ importantísimo
@@ -1053,7 +1053,7 @@ async function renderFinalCanvasCaptureReal(){
   // ✅ WRAPPER igual al modal: margen uniforme (inset 12px) + centrado real
   const wrap = document.createElement("div");
   wrap.style.position = "absolute";
-  wrap.style.inset = "12px";            // ✅ MISMO margen que querés ver en la captura
+  wrap.style.inset = "6px 12px 12px 12px";            
   wrap.style.overflow = "hidden";
   wrap.style.display = "flex";
   wrap.style.alignItems = "center";
