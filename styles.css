@@ -1996,14 +1996,14 @@ body.oscuro #barraTituloBiblia .nav-capitulo{
   font-size: 13px;
 }
 
-/* ================= FILTROS TARJETA ANCLADA A 🔍 (FIX DEFINITIVO CELU) ================= */
+/* ================= FILTROS TARJETA: MISMO LUGAR QUE “LIBRO / CAPÍTULO” ================= */
 
 /* oculto por defecto */
 #wrapFiltrosBiblia .filtros{
   display: none;
 }
 
-/* el ancla real */
+/* el ancla */
 #wrapFiltrosBiblia{
   position: relative;
   display: inline-flex;
@@ -2011,21 +2011,21 @@ body.oscuro #barraTituloBiblia .nav-capitulo{
   z-index: 9999;
 }
 
-/* cuando se abre */
+/* cuando se abre: alineado a la IZQUIERDA (como Libro/Capítulo) */
 #wrapFiltrosBiblia.abierto .filtros{
   display: flex;
 
-  /* 🔥 CLAVE: respecto a la pantalla, no a la barra */
+  /* ✅ pegado a la pantalla para que sea igual en PC y CELU */
   position: fixed;
 
-  /* debajo de la barra */
-  top: 70px;   /* si queda muy abajo o arriba, ajustamos */
+  /* ✅ debajo de tu barra sticky */
+  top: 70px;
 
-  /* pegada al borde derecho REAL */
-  right: 12px;
-  left: auto;
+  /* ✅ IZQUIERDA (no centrado, no derecha) */
+  left: 12px;
+  right: auto;
 
-  /* entra SIEMPRE en pantalla */
+  /* ✅ tamaño controlado */
   width: min(420px, calc(100vw - 24px));
   max-width: calc(100vw - 24px);
   box-sizing: border-box;
@@ -2040,7 +2040,9 @@ body.oscuro #barraTituloBiblia .nav-capitulo{
 
   flex-wrap: wrap;
   align-items: center;
-  justify-content: center;
+
+  /* ✅ contenido a la izquierda */
+  justify-content: flex-start;
 
   z-index: 99999;
 }
@@ -2051,12 +2053,28 @@ body.oscuro #wrapFiltrosBiblia.abierto .filtros{
   border-color: rgba(255,255,255,.12);
 }
 
-/* selects */
+/* selects base */
 #wrapFiltrosBiblia .filtros select{
   height: 38px;
   padding: 0 12px;
   font-size: 14px;
   border-radius: 999px;
+}
+
+/* ✅ CELU: el select de CAPÍTULO 50% más angosto */
+@media (max-width: 600px){
+  /* primer select (Libro): ocupa “normal” */
+  #wrapFiltrosBiblia.abierto .filtros select:nth-of-type(1){
+    flex: 1 1 220px;
+    min-width: 180px;
+  }
+
+  /* segundo select (Capítulo): 50% del ancho del bloque */
+  #wrapFiltrosBiblia.abierto .filtros select:nth-of-type(2){
+    flex: 0 0 50%;
+    max-width: 50%;
+    min-width: 110px;
+  }
 }
 
   </style> 
