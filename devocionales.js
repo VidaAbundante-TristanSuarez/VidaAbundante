@@ -637,19 +637,23 @@ function textShadowLegible(textHex){
 function textShadowLegibleFinal(textHex){
   const oc = outlineColor(textHex || "#000000");
   return `
-    -2px 0 ${oc},
-     2px 0 ${oc},
-     0 -2px ${oc},
-     0  2px ${oc},
-     0 0 3px ${oc}
+    -3px 0 ${oc},
+     3px 0 ${oc},
+     0 -3px ${oc},
+     0  3px ${oc},
+    -2px -2px ${oc},
+     2px -2px ${oc},
+    -2px  2px ${oc},
+     2px  2px ${oc},
+     0 0 6px ${oc}
   `;
 }
 
 function applyTextStylesToOne(el, st){
-  el.style.textTransform = st.style.upper ? "uppercase" : "none";
-  el.style.fontWeight    = st.style.bold ? "700" : "400";
-  el.style.fontStyle     = st.style.italic ? "italic" : "normal";
-  el.style.textDecoration= st.style.underline ? "underline" : "none";
+  el.style.textTransform  = st.style.upper ? "uppercase" : "none";
+  el.style.fontWeight     = st.style.bold ? "900" : "500"; /* ✅ más fuerte */
+  el.style.fontStyle      = st.style.italic ? "italic" : "normal";
+  el.style.textDecoration = st.style.underline ? "underline" : "none";
 }
 
 function wrapperBgFromOpacity(op){
@@ -928,14 +932,10 @@ function buildFase2HTML(basePx){
 
         ${adorno ? `
           <img
-            src="${adorno}"
-            alt="adorno"
-            style="
-              width:${adornoW}%;
-              max-height:90px;
-              object-fit:contain;
-              opacity:0.95;
-            "
+          src="${adorno}"
+          alt="adorno"
+          class="dev-adorno-img"
+          style="opacity:0.95;"
           />
         ` : `<div style="height:10px;"></div>`}
       </div>
@@ -986,7 +986,7 @@ function devRenderFase(fase){
 
    // ✅ OUTLINE estable (para preview + captura)
    t.style.textShadow = textShadowLegible(st.color);
-   t.style.webkitTextStroke = "0px";
+   t.style.webkitTextStroke = "0.8px " + outlineColor(st.color);
    t.style.paintOrder = "normal";
 
     // wrapper bg
@@ -1020,7 +1020,7 @@ function devRenderFase(fase){
 
    // ✅ OUTLINE estable (para preview + captura)
    t.style.textShadow = textShadowLegible(st.color);
-   t.style.webkitTextStroke = "0px";
+   t.style.webkitTextStroke = "0.8px " + outlineColor(st.color);
    t.style.paintOrder = "normal";
 
    w.style.backgroundColor = "transparent"; // ✅ sin opacidad en Fase 2
@@ -1151,7 +1151,7 @@ async function renderFinalCanvasCaptureReal(){
      
     // ✅ OUTLINE estable
     texto.style.textShadow = textShadowLegibleFinal(st.color);
-    texto.style.webkitTextStroke = "0px";
+    texto.style.webkitTextStroke = "1.2px " + outlineColor(st.color);
     texto.style.paintOrder = "normal";
 
     // ✅ IMPORTANTE: tamaño real (sin scalePreviewF1)
@@ -1198,7 +1198,7 @@ async function renderFinalCanvasCaptureReal(){
      
   // ✅ OUTLINE estable
   texto.style.textShadow = textShadowLegibleFinal(st.color);
-  texto.style.webkitTextStroke = "0px";
+  texto.style.webkitTextStroke = "1.2px " + outlineColor(st.color);
   texto.style.paintOrder = "normal";
 
   // ✅ tamaño real (canvas)
