@@ -2084,4 +2084,18 @@ body.oscuro #wrapFiltrosBiblia.abierto .filtros{
   -webkit-tap-highlight-color: transparent;
 }
 
+/* ✅ Mobile: que NO quede "pegado" el estado al cerrar */
+#btnToggleFiltros{
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* Safari/iOS y algunos Android dejan focus "sticky" */
+#btnToggleFiltros:focus,
+#btnToggleFiltros:focus-visible,
+#btnToggleFiltros:active{
+  outline: none;
+  box-shadow: none;
+}
+
   </style> 
