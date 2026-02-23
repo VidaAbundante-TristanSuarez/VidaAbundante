@@ -2050,17 +2050,17 @@ body.oscuro #wrapFiltrosBiblia.abierto .filtros{
   border-radius: 999px;
 }
 
-/* ================= FILTROS: IZQUIERDA EN CELU ================= */
+/* ================= FILTROS: MEDIA PANTALLA IZQUIERDA EN CELU ================= */
 @media (max-width: 600px){
 
   #wrapFiltrosBiblia.abierto .filtros{
 
-    left: 12px;        /* margen desde el borde */
+    left: 12px;        /* margen desde el borde izquierdo */
     right: auto;
-    transform: none;   /* ❗ anulamos el centrado */
+    transform: none;   /* ❗ anula centrado */
 
-    width: calc(100vw - 24px);  /* ocupa casi todo sin salirse */
-    max-width: none;
+    width: 50vw;       /* 👈 mitad de la pantalla */
+    max-width: 50vw;
 
   }
 
