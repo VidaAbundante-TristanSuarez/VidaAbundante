@@ -2008,17 +2008,18 @@ body.oscuro #barraTituloBiblia .nav-capitulo{
   align-items: center;
 }
 
-/* Abiertos: tarjeta SIEMPRE debajo de la barra */
 #wrapFiltrosBiblia.abierto .filtros{
   display:flex;
   position: fixed;
 
-  /* ✅ CLAVE: debajo de la barra celeste (#barraTituloBiblia) */
-  top: 64px;                 /* 👈 si tu barra es más alta/baja, ajustá 56–76 */
+  top: 64px;
   left: 50%;
   transform: translateX(-50%);
 
-  width: min(420px, calc(100vw - 24px));
+  /* ✅ MENOS ANCHA + SIN AIRE NEGRO EXAGERADO */
+  width: calc(100vw - 80px);   /* deja 40px de margen a cada lado */
+  max-width: 360px;            /* tope en celu (ajustable) */
+
   padding: 10px;
   gap: 10px;
 
