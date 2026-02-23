@@ -1996,46 +1996,35 @@ body.oscuro #barraTituloBiblia .nav-capitulo{
   font-size: 13px;
 }
 
-/* ================= FILTROS TARJETA ANCLADA A 🔍 (FIX DEFINITIVO CELU) ================= */
+/* ================= FILTROS: TARJETA CENTRADA Y NO TAPA LA 🔍 ================= */
 
-/* oculto por defecto */
-#wrapFiltrosBiblia .filtros{
-  display: none;
-}
+/* Ocultos por defecto */
+#wrapFiltrosBiblia .filtros{ display:none; }
 
-/* el ancla real */
+/* Ancla */
 #wrapFiltrosBiblia{
   position: relative;
   display: inline-flex;
   align-items: center;
-  z-index: 9999;
 }
 
-/* cuando se abre */
+/* Abiertos: tarjeta SIEMPRE debajo de la barra */
 #wrapFiltrosBiblia.abierto .filtros{
-  display: flex;
-
-  /* 🔥 CLAVE: respecto a la pantalla, no a la barra */
+  display:flex;
   position: fixed;
 
-  /* debajo de la barra */
-  top: 70px;   /* si queda muy abajo o arriba, ajustamos */
+  /* ✅ CLAVE: debajo de la barra celeste (#barraTituloBiblia) */
+  top: 64px;                 /* 👈 si tu barra es más alta/baja, ajustá 56–76 */
+  left: 50%;
+  transform: translateX(-50%);
 
-  /* pegada al borde derecho REAL */
-  right: 12px;
-  left: auto;
-
-  /* entra SIEMPRE en pantalla */
   width: min(420px, calc(100vw - 24px));
-  max-width: calc(100vw - 24px);
-  box-sizing: border-box;
-
   padding: 10px;
   gap: 10px;
 
-  background: #ffffff;
-  border: 1px solid rgba(0,0,0,.10);
-  border-radius: 14px;
+  background:#fff;
+  border:1px solid rgba(0,0,0,.10);
+  border-radius:14px;
   box-shadow: 0 12px 28px rgba(0,0,0,.25);
 
   flex-wrap: wrap;
@@ -2045,13 +2034,14 @@ body.oscuro #barraTituloBiblia .nav-capitulo{
   z-index: 99999;
 }
 
-/* oscuro */
+/* Oscuro */
 body.oscuro #wrapFiltrosBiblia.abierto .filtros{
-  background: #1e1e1e;
+  background:#1e1e1e;
   border-color: rgba(255,255,255,.12);
+  box-shadow: 0 12px 28px rgba(0,0,0,.45);
 }
 
-/* selects */
+/* Selects prolijos */
 #wrapFiltrosBiblia .filtros select{
   height: 38px;
   padding: 0 12px;
