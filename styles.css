@@ -1996,14 +1996,14 @@ body.oscuro #barraTituloBiblia .nav-capitulo{
   font-size: 13px;
 }
 
-/* ================= FILTROS TARJETA ANCLADA A 🔍 (FIX DEFINITIVO CELU) ================= */
+/* ================= FILTROS: 1 RENGLÓN, SOBRE LIBRO/CAP, SIN TAPAR LUPA ================= */
 
 /* oculto por defecto */
 #wrapFiltrosBiblia .filtros{
-  display: none;
+  display:none;
 }
 
-/* el ancla real */
+/* ancla (solo para el botón) */
 #wrapFiltrosBiblia{
   position: relative;
   display: inline-flex;
@@ -2011,52 +2011,70 @@ body.oscuro #barraTituloBiblia .nav-capitulo{
   z-index: 9999;
 }
 
-/* cuando se abre */
-#wrapFiltrosBiblia.abierto .filtros{
-  display: flex;
+/* ✅ botón SIEMPRE clickeable (por arriba de la tarjeta) */
+#btnToggleFiltros{
+  position: relative;
+  z-index: 100000;
+}
 
-  /* 🔥 CLAVE: respecto a la pantalla, no a la barra */
+/* ✅ cuando se abre */
+#wrapFiltrosBiblia.abierto .filtros{
+  display:flex;
   position: fixed;
 
-  /* debajo de la barra */
-  top: 70px;   /* si queda muy abajo o arriba, ajustamos */
+  /* ✅ misma altura/área de la barra */
+  top: 6px;                 /* si querés ajustar: 4px–10px */
+  left: 12px;
 
-  /* pegada al borde derecho REAL */
-  right: 12px;
-  left: auto;
+  /* ✅ CLAVE: termina antes de la lupa + flechas */
+  right: 132px;             /* si todavía tapa algo: subí a 140px */
 
-  /* entra SIEMPRE en pantalla */
-  width: min(420px, calc(100vw - 24px));
-  max-width: calc(100vw - 24px);
-  box-sizing: border-box;
+  height: 40px;             /* un poco más bajo */
+  padding: 4px 8px;         /* ✅ márgenes más chicos */
+  gap: 8px;
 
-  padding: 10px;
-  gap: 10px;
-
-  background: #ffffff;
+  background: #fff;
   border: 1px solid rgba(0,0,0,.10);
   border-radius: 14px;
-  box-shadow: 0 12px 28px rgba(0,0,0,.25);
+  box-shadow: 0 10px 24px rgba(0,0,0,.22);
 
-  flex-wrap: wrap;
+  /* ✅ 1 sola línea */
+  flex-wrap: nowrap;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
 
-  z-index: 99999;
+  box-sizing: border-box;
+  z-index: 99990;           /* por debajo del botón (arriba) */
 }
 
 /* oscuro */
 body.oscuro #wrapFiltrosBiblia.abierto .filtros{
-  background: #1e1e1e;
+  background:#1e1e1e;
   border-color: rgba(255,255,255,.12);
+  box-shadow: 0 10px 24px rgba(0,0,0,.45);
 }
 
 /* selects */
 #wrapFiltrosBiblia .filtros select{
-  height: 38px;
-  padding: 0 12px;
+  height: 32px;
+  padding: 0 10px;
   font-size: 14px;
   border-radius: 999px;
+  min-width: 0;           /* ✅ evita que empujen y rompan */
+}
+
+/* ✅ Libro ocupa lo que queda */
+#wrapFiltrosBiblia .filtros #libro{
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* ✅ Capítulo MUCHO más angosto (3 caracteres) */
+#wrapFiltrosBiblia .filtros #capitulo{
+  flex: 0 0 64px;         /* ~50% del ancho anterior típico */
+  width: 64px;
+  min-width: 64px;
+  text-align: center;
 }
 
   </style> 
