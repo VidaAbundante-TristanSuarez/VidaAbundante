@@ -31,25 +31,25 @@
 .dev-97{ aspect-ratio: 9 / 7; }
 .dev-916{ aspect-ratio: 9 / 16; }
 
-#dev2TextoWrapper{
+/* wrapper del texto (caja interna) */
+.dev-textwrap{
   position:absolute;
-  inset: 12px;
+  inset: 6%;
   border-radius:14px;
   overflow:hidden;
-
-  /* ✅ el único centrado vertical real */
-  display:flex;
-  align-items:center;
-  justify-content:center;
+  padding:0;
   text-align:center;
 }
 
-#dev2Texto{
-  width:100%;
-  height:auto;
-  display:block;          /* ✅ no flex */
-  padding: 0 10px;
-  box-sizing: border-box;
+/* capa de texto */
+.dev-text{
+  position:absolute;
+  inset:0;
+  text-align:center;
+  white-space:normal;
+
+  /* ✅ clave para que NO “corte” letras con sombras/stroke */
+  overflow: visible;
 }
 
 /* Fase 2: wrapper real */
