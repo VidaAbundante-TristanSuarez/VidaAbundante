@@ -2210,7 +2210,12 @@ window.toggleFiltrosBiblia = () => {
 
   const abierto = wrap.classList.toggle("abierto");
 
-  if (btn) btn.classList.toggle("activo", abierto);
+  if (btn) {
+    btn.classList.toggle("activo", abierto);
+
+    // ✅ CLAVE: en celular saca el "focus pegado"
+    if (!abierto) btn.blur();
+  }
 
   if (abierto && libroSel) setTimeout(() => libroSel.focus(), 0);
 };
