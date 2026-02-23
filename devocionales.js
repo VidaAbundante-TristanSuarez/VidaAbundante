@@ -498,7 +498,7 @@ function crearListaFuentes(fase){
    6) FONDOS (fase 1)
    ========================================================= */
 const fondos = [
-  "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee",
+  "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/puente_gox2gz",
   "https://images.unsplash.com/photo-1496307042754-b4aa456c4a2d",
   "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429",
   "https://images.unsplash.com/photo-1519681393784-d120267933ba"
@@ -560,7 +560,14 @@ const adornosF2 = [
   { nombre: "Ninguno", url: null },
   { nombre: "Adorno 1", url: "./img/ornamentos/adorno1.png" },
   { nombre: "Adorno 2", url: "./img/ornamentos/adorno2.png" },
-  { nombre: "Adorno 3", url: "./img/ornamentos/adorno3.png" }
+  { nombre: "Adorno 3", url: "./img/ornamentos/adorno3.png" },
+  { nombre: "Adorno 3", url: "./img/ornamentos/adorno4.png" },
+  { nombre: "Adorno 3", url: "./img/ornamentos/adorno5.png" },
+  { nombre: "Adorno 3", url: "./img/ornamentos/adorno6.png" },
+  { nombre: "Adorno 3", url: "./img/ornamentos/adorno7.png" },
+  { nombre: "Adorno 3", url: "./img/ornamentos/adorno8.png" },
+  { nombre: "Adorno 3", url: "./img/ornamentos/adorno9.png" },
+  { nombre: "Adorno 3", url: "./img/ornamentos/adorno10.png" }
 ];
 
 function cargarAdornosF2(){
