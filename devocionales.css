@@ -1,15 +1,43 @@
- <style>
-/* ================= DEVOCIONALES - MODALES LIMPIOS ================= */
+<style>
+/* ================= DEVOCIONALES - MODALES (FIX REAL) ================= */
 
-.modal-dev{
-  max-width: 520px;
-  width: 100%;
+/* overlay */
+#modalDevFase1.modal-overlay,
+#modalDevFase2.modal-overlay,
+#modalDevFase3.modal-overlay{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.55);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
 }
 
+#modalDevFase1.abierto,
+#modalDevFase2.abierto,
+#modalDevFase3.abierto{
+  display:flex;
+}
+
+/* caja modal */
+.modal-contenido.modal-dev{
+  background:#fff;
+  border-radius:18px;
+  width: min(560px, 96vw);
+  max-height: 92vh;      /* entra en pantalla */
+  overflow: hidden;      /* ✅ NO scroll vertical */
+  padding: 12px;
+  box-shadow: 0 18px 60px rgba(0,0,0,.30);
+
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+/* preview base */
 .dev-preview{
-  width: min(420px, 92vw);
   margin: 0 auto;
-  height: auto;                 /* lo define aspect-ratio */
   border-radius:16px;
   overflow:hidden;
   background:#fff;
@@ -17,21 +45,31 @@
   border:1px solid #e5e5e5;
 }
 
-/* Imagen final en fase 3 */
-#devFinalImg{
-  width: min(420px, 92vw);
-  height: auto;
-  display: block;
-  margin: 0 auto;
-  border-radius: 14px;
-}
-
 /* ratios */
 .dev-99{ aspect-ratio: 1 / 1; }
 .dev-97{ aspect-ratio: 9 / 7; }
 .dev-916{ aspect-ratio: 9 / 16; }
 
-/* wrapper del texto (caja interna) */
+/* ✅ tamaños “inteligentes” por fase (evita modales enormes) */
+#dev1Preview{
+  width: min(92vw, 46vh); /* 1:1: limita por alto del celu */
+}
+#dev2Preview{
+  width: min(92vw, 62vh); /* 9:7: puede ser más ancho */
+}
+#devF3PreviewBox{
+  width: min(92vw, calc(72vh * 9 / 16)); /* 9:16: limita por alto */
+}
+
+/* imagen final */
+#devFinalImg{
+  width:100%;
+  height:100%;
+  display:block;
+  object-fit:cover;
+}
+
+/* wrapper texto */
 .dev-textwrap{
   position:absolute;
   inset: 6%;
@@ -40,19 +78,17 @@
   padding:0;
   text-align:center;
 }
-
-/* capa de texto */
 .dev-text{
   position:absolute;
   inset:0;
   text-align:center;
   white-space:normal;
-
-  /* ✅ clave para que NO “corte” letras con sombras/stroke */
   overflow: visible;
 }
+.dev-text.front{ z-index:2; }
+.dev-text.back{ z-index:1; }
 
-/* Fase 2: wrapper real */
+/* wrapper fase2 */
 #dev2TextoWrapper{
   position:absolute;
   inset: 12px;
@@ -60,68 +96,89 @@
   overflow:hidden;
 }
 
-#dev2Texto{
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* ======= filas de controles: NO se bajan a otra fila en celu ======= */
+.dev-row, .dev-tools{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  justify-content:flex-start;
+
+  flex-wrap: nowrap;        /* ✅ no rompe filas */
+  overflow-x: auto;         /* ✅ si no entra, scroll horizontal */
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 2px;
 }
 
-.dev-text.front{ z-index: 2; }
-.dev-text.back{ z-index: 1; }
+/* centrado de botones “finales” */
+.dev-row.dev-final{
+  justify-content:center;
+}
 
-.dev-fondos{
+/* galería fondos y adornos: horizontal */
+.dev-fondos,
+.dev-adorno-list{
   display:flex;
   gap:10px;
   overflow-x:auto;
   overflow-y:hidden;
-  padding:10px 4px;
-  margin:10px auto 0;
-  width: min(420px, 92vw);     /* ✅ mismo ancho que preview */
-  justify-content:flex-start;  /* ✅ arranca a la izquierda */
+  padding:8px 2px;
+  -webkit-overflow-scrolling: touch;
+  justify-content:flex-start;
 }
 
+/* thumbs */
 .dev-fondos img{
-  width:70px;
-  height:70px;
+  width:64px;
+  height:64px;
   border-radius:12px;
   object-fit:cover;
   cursor:pointer;
   border:2px solid transparent;
 }
-.dev-fondos img.activo{
-  border-color:#4f6fa8;
-}
+.dev-fondos img.activo{ border-color:#4f6fa8; }
 
-.dev-row{
-  display:flex;
-  gap:10px;
-  align-items:center;
-  justify-content:center;
-  flex-wrap:wrap;
-  margin-top:10px;
-}
-
-.dev-final button{
+/* botones base */
+.dev-row button,
+.dev-tools button{
   border:none;
-  border-radius:999px;
-  padding:10px 12px;
-  cursor:pointer;
+  padding:8px 12px;
   background:#eee;
+  font-weight:700;
+  cursor:pointer;
+  border-radius:999px;
+  flex: 0 0 auto; /* para que no se aplasten */
 }
+.dev-row button:hover,
+.dev-tools button:hover{ background:#ddd; }
 
-.dev-final button.btn-primary{
+button.activo{
   background:#4f6fa8;
   color:#fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,.18);
 }
 
-.dev-final button:disabled{
-  opacity:.45;
-  cursor:not-allowed;
+/* inputs */
+input[type="number"]{
+  text-align:center;
+  font-weight:700;
+  width:60px;
+  border-radius:12px;
+  border:1px solid #ccc;
+  padding:4px 6px;
+  flex: 0 0 auto;
+}
+input[type="color"]{
+  width:46px;
+  height:38px;
+  border-radius:12px;
+  border:1px solid #ccc;
+  padding:0;
+  background:transparent;
+  cursor:pointer;
+  flex: 0 0 auto;
 }
 
-/* Lista fuentes (dropdown ancho modal) */
+/* dropdown fuentes */
 .dev-lista-fuentes{
   display:none;
   position:fixed;
@@ -134,12 +191,10 @@
   overflow:auto;
   white-space:nowrap;
 }
-
 .dev-lista-fuentes.abierto{
   display:flex;
   gap:10px;
 }
-
 .dev-lista-fuentes button{
   border:none;
   border-radius:999px;
@@ -148,86 +203,12 @@
   background:#eee;
   font-weight:700;
 }
-
 .dev-lista-fuentes button.activo{
   background:#4f6fa8;
   color:#fff;
 }
 
-/* ✅ Asegura que el modal de AUDIO quede arriba de todo */
-#modalAudio.modal-overlay,
-#modalAudio {
-  z-index: 9999 !important;
-}
-
-/* ✅ Tus fases por debajo */
-#modalDevFase1, #modalDevFase2, #modalDevFase3 {
-  z-index: 3000;
-}
-
-button{
-  border-radius:999px;   /* ✔️ todos redondeados */
-}
-
-/* ===== ESTADO ACTIVO ===== */
-button.activo{
-  background:#4f6fa8;
-  color:#fff;
-  box-shadow: 0 2px 8px rgba(0,0,0,.18);
-}
-
-/* botones estilo Aa B I U */
-.dev-row button{
-  border:none;
-  padding:8px 12px;
-  background:#eee;
-  font-weight:700;
-  cursor:pointer;
-  border-radius:999px;
-}
-
-.dev-row button:hover{
-  background:#ddd;
-}
-
-/* ===== INPUTS NUMÉRICOS Y COLOR ===== */
-
-input[type="number"],
-input[type="color"]{
-  border-radius:12px;
-  border:1px solid #ccc;
-  padding:4px 6px;
-}
-
-/* centrado del número */
-input[type="number"]{
-  text-align:center;
-  font-weight:700;
-  width:60px;
-}
-
-/* ================= AODRNOS ================= */
-.dev-adorno-row{
-  margin-top: 10px;
-}
-
-.dev-adorno-label{
-  font-size: 12px;
-  opacity: .8;
-  margin-bottom: 6px;
-}
-
-.dev-adorno-list{
-  display:flex;
-  gap:10px;
-  overflow-x:auto;
-  overflow-y:hidden;
-  padding: 6px 2px;
-  margin: 0 auto;
-  width: min(420px, 92vw);     /* ✅ mismo ancho que preview */
-  justify-content:flex-start;
-}
-
+/* adornos */
 .dev-adorno-btn{
   flex:0 0 auto;
   border:1px solid #ddd;
@@ -236,133 +217,33 @@ input[type="number"]{
   padding:8px;
   cursor:pointer;
 }
-
 .dev-adorno-btn.activo{
-  outline:2px solid var(--ui-azul-hover);
+  outline:2px solid #4f6fa8;
 }
-
 .dev-adorno-thumb{
-  width:70px;
-  height:26px;
+  width:64px;
+  height:24px;
   object-fit:contain;
   display:block;
 }
 
-/* ✅ Overlay oscuro tipo "Biblia" */
-#modalDevFase1.modal-overlay,
-#modalDevFase2.modal-overlay,
-#modalDevFase3.modal-overlay{
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,.55);
-  display: none;                /* se prende con abrirModal() */
-  align-items: center;
-  justify-content: center;
-  padding: 14px;
-}
-
-/* ✅ cuando abrís, vos ya ponés display:flex desde JS */
-#modalDevFase1.abierto,
-#modalDevFase2.abierto,
-#modalDevFase3.abierto{
-  display: flex;
-}
-
-/* ================= MODAL como "Biblia" (contenido real, no flotante raro) ================= */
-.modal-dev{
-  max-width: 560px;              /* un poco más ancho */
-  width: min(560px, 96vw);
-}
-
-.modal-overlay .modal-contenido.modal-dev{
-  background: #fff;
-  border-radius: 18px;
-  padding: 14px;
-  max-height: 92vh;              /* clave: no se sale */
-  overflow: auto;                 /* scroll adentro */
-  box-shadow: 0 18px 60px rgba(0,0,0,.30);
-}
-
-/* Preview un toque más grande */
-.dev-preview{
-  width: min(460px, 94vw);
-}
-
-/* ================= FASE 2: fila única de controles + fondo plano vistoso ================= */
-.dev-tools{
-  width: min(460px, 94vw);
-  margin: 10px auto 0;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:10px;
-  flex-wrap:wrap;
-}
-
-/* “Pastillita” grande y vistosa para el fondo plano */
-.dev-fondo-chip{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  padding: 10px 12px;
-  border-radius: 16px;
-  background: #f2f2f2;
-  border: 1px solid #ddd;
-}
-
-.dev-fondo-chip input[type="color"]{
-  width: 58px;
-  height: 44px;
-  border-radius: 14px;
-  border: 1px solid #ccc;
-  padding: 0;
-  background: transparent;
-  cursor:pointer;
-}
-
-/* Adornos: sin títulos, más compacto */
-.dev-adorno-row{
-  width: min(460px, 94vw);
-  margin: 8px auto 0;
-}
-
-.dev-adorno-label{ display:none; }   /* ✅ chau “Adorno” */
-.dev-adorno-list{
-  width: 100%;
-  padding: 6px 2px;
-  margin: 0 auto;
-}
-
-/* ================= FASE 3: botones texto negro ================= */
-.btn-light{
-  background:#f2f2f2;
-  color:#000;
-  border:1px solid #ddd;
-}
-
-.btn-light:hover{ background:#e8e8e8; }
-
-/* ================= OUTLINE / BOLD más fuerte (se nota en preview y captura) ================= */
-
-/* 1) cuando bold está activo, que sea MÁS fuerte */
-.dev-text{
-  font-weight: 500; /* base */
-}
-
-/* 2) permite stroke real (en algunos navegadores) */
-.dev-text{
-  -webkit-text-stroke-width: 0.8px; /* lo ajustamos por JS también */
-  -webkit-text-stroke-color: transparent;
-  paint-order: stroke fill;
-}
-
-/* ================= Evitar estiramiento del adorno (fase 2 y en final) ================= */
+/* adorno dentro del preview (fase 2) */
 .dev-adorno-img{
   display:block;
   width: min(360px, 78%);
-  height: auto;             /* ✅ NO se estira */
+  height:auto;
   max-height: 90px;
-  object-fit: contain;
-  margin: 10px auto 0;
+  object-fit:contain;
+  margin: 0 auto;
 }
+
+/* ✅ AUDIO arriba de todo (siempre visible) */
+#modalAudio.modal-overlay,
+#modalAudio{
+  z-index: 9999;
+}
+#modalDevFase1, #modalDevFase2, #modalDevFase3{
+  z-index: 3000;
+}
+
 </style>
