@@ -577,6 +577,21 @@ function outlineColor(hex){
   return lum > 160 ? "#000000" : "#ffffff";
 }
 
+function textShadowLegible(textHex){
+  const same = textHex || "#000000";
+  const oc = outlineColor(same);
+
+  // 1) “engorda” con el MISMO color (micro outline)
+  // 2) sombra suave SIN desplazamiento con oc (blanco/negro automático)
+  return `
+    -0.7px 0 ${same},
+     0.7px 0 ${same},
+     0 -0.7px ${same},
+     0  0.7px ${same},
+     0 0 2px ${oc}
+  `;
+}
+
 function wrapperBgFromOpacity(op){
   const x = parseFloat(op);
   if (isNaN(x)) return "rgba(0,0,0,0)";
@@ -895,10 +910,7 @@ function devRenderFase(fase){
    t.style.color = st.color;
 
    // outline usando sombras (sirve con HTML interno)
-   const oc = outlineColor(st.color);
-   t.style.textShadow = `
-  -1px 0 ${oc}, 1px 0 ${oc}, 0 -1px ${oc}, 0 1px ${oc},
-  -1px -1px ${oc}, 1px 1px ${oc}, -1px 1px ${oc}, 1px -1px ${oc}`;
+   t.style.textShadow = textShadowLegible(st.color);
 
     // wrapper bg
     w.style.backgroundColor = wrapperBgFromOpacity(st.op);
@@ -930,10 +942,7 @@ function devRenderFase(fase){
    t.style.color = st.color;
 
    // outline usando sombras (sirve con HTML interno)
-   const oc = outlineColor(st.color);
-   t.style.textShadow = `
-  -1px 0 ${oc}, 1px 0 ${oc}, 0 -1px ${oc}, 0 1px ${oc},
-  -1px -1px ${oc}, 1px 1px ${oc}, -1px 1px ${oc}, 1px -1px ${oc}`;
+   t.style.textShadow = textShadowLegible(st.color);
 
    w.style.backgroundColor = "transparent"; // ✅ sin opacidad en Fase 2
 
@@ -992,12 +1001,12 @@ async function renderFinalCanvasCaptureReal(){
     stage = document.createElement("div");
     stage.id = "devCaptureStage";
     stage.style.position = "fixed";
-    stage.style.left = "0";
-    stage.style.top = "0";
-    stage.style.opacity = "0";               // ✅ invisible
-    stage.style.visibility = "visible";      // ✅ pero renderizable
+    stage.style.left = "-10000px";     // ✅ lejos sin transform
+    stage.style.top  = "-10000px";
+    stage.style.opacity = "0.01";      // ✅ NO 0 (evita bugs en algunos navegadores)
+    stage.style.visibility = "visible";
     stage.style.pointerEvents = "none";
-    stage.style.transform = "translateX(-200vw)";
+    stage.style.transform = "none";    // ✅ importantísimo
     stage.style.zIndex = "-1";
     document.body.appendChild(stage);
   }
@@ -1030,10 +1039,7 @@ async function renderFinalCanvasCaptureReal(){
     texto.style.fontFamily = st.fuente;
     texto.style.color = st.color;
 
-    const oc = outlineColor(st.color);
-    texto.style.textShadow = `
-      -1px 0 ${oc}, 1px 0 ${oc}, 0 -1px ${oc}, 0 1px ${oc},
-      -1px -1px ${oc}, 1px 1px ${oc}, -1px 1px ${oc}, 1px -1px ${oc}`;
+    texto.style.textShadow = textShadowLegible(st.color);
 
     // ✅ IMPORTANTE: tamaño real (sin scalePreviewF1)
     texto.innerHTML = buildFase1HTML(st.size, 1);
@@ -1074,10 +1080,7 @@ async function renderFinalCanvasCaptureReal(){
   texto.style.fontFamily = st.fuente;
   texto.style.color = st.color;
 
-  const oc = outlineColor(st.color);
-  texto.style.textShadow = `
-    -1px 0 ${oc}, 1px 0 ${oc}, 0 -1px ${oc}, 0 1px ${oc},
-    -1px -1px ${oc}, 1px 1px ${oc}, -1px 1px ${oc}, 1px -1px ${oc}`;
+  texto.style.textShadow = textShadowLegible(st.color);
 
   // ✅ tamaño real (canvas)
   texto.innerHTML = buildFase2HTML(st.size);
@@ -1304,16 +1307,53 @@ function hookAudioCorrecto(){
 /* =========================================================
    12) BOTONES FINALES (descargar / compartir / iglesia / finalizar)
    ========================================================= */
+async function devDescargarAudioSiExiste(){
+  // 1) probamos encontrar un <audio> típico del modal
+  const audioEl =
+    document.querySelector("#modalAudio audio") ||
+    document.querySelector("audio#audioPreview") ||
+    document.querySelector("audio");
+
+  const src = audioEl?.currentSrc || audioEl?.src || "";
+  if (!src) return false;
+
+  try{
+    // Si es blob: o url normal, intentamos fetch para bajarlo
+    const r = await fetch(src);
+    const blob = await r.blob();
+
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "devocional_audio.mp3"; // si fuera wav/ogg igual se baja (nombre es solo nombre)
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=> URL.revokeObjectURL(a.href), 2000);
+
+    return true;
+  }catch(e){
+    console.warn("No se pudo descargar audio:", e);
+    return false;
+  }
+}
+
 window.devDescargarFinal = async () => {
   const c = await renderFinalCanvasCaptureReal();
   if (!c) return;
 
+  // ✅ 1) imagen
   const link = document.createElement("a");
   link.href = c.toDataURL("image/png");
   link.download = "devocional.png";
   document.body.appendChild(link);
   link.click();
   link.remove();
+
+  // ✅ 2) audio (si existe)
+  const okAudio = await devDescargarAudioSiExiste();
+  if (!okAudio) {
+    alert("Se descargó la imagen ✅\n\nEl audio no se pudo descargar automáticamente.\nPrimero generá/confirmá el audio en el modal y volvé a intentar.");
+  }
 };
 
 window.devCompartirFinal = async () => {
