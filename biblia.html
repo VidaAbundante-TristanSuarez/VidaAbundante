@@ -644,13 +644,27 @@
 
     <button class="cerrar-modal" type="button" onclick="devCerrarTodo()">✖</button>
 
-    <!-- PREVIEW FINAL (9:16) -->
-    <div class="dev-preview dev-916">
-      <img id="devFinalImg" alt="Devocional final" style="width:100%; height:100%; object-fit:cover; border-radius:16px; display:block;">
-    </div>
+  <!-- PREVIEW FINAL (9:16) -->
+<div id="devF3Loading" style="
+  display:none;
+  padding:10px 12px;
+  border-radius:12px;
+  background:rgba(0,0,0,.08);
+  font-weight:700;
+  text-align:center;
+  margin-bottom:10px;
+">
+  ⏳ Generando…
+</div>
 
-  <button type="button" class="btn-primary" onclick="devVolverFase2()">⬅ Volver</button>
-  <button type="button" class="btn-primary" onclick="devAudioDesdeFase3()">🔊 Audio</button>
+<div id="devF3PreviewBox" class="dev-preview dev-916">
+  <img id="devFinalImg"
+       alt="Devocional final"
+       style="width:100%; height:100%; object-fit:cover; border-radius:16px; display:block;">
+</div>
+
+<button type="button" class="btn-primary" onclick="devVolverFase2()">⬅ Volver</button>
+<button type="button" class="btn-primary" onclick="devAudioDesdeFase3()">🔊 Audio</button>
    
    <!-- BOTON AUDIO -->
     <div class="dev-row" style="justify-content:center;">
@@ -692,6 +706,7 @@
   
 </body>
 </html>
+
 
 
 
