@@ -695,6 +695,22 @@ function sugerirTamanoFase2Auto(texto){
   return roundToHalf(minPx / (scalePreviewF2() || 1));
 }
 
+function devSyncStyleButtons(fase){
+  const st = (fase===1) ? DEV.f1 : DEV.f2;
+
+  const map = {
+    upper: `dev${fase}Upper`,
+    bold:  `dev${fase}Bold`,
+    italic:`dev${fase}Italic`,
+    underline:`dev${fase}Under`
+  };
+
+  Object.keys(map).forEach(k=>{
+    const b = $(map[k]);
+    if (b) b.classList.toggle("activo", !!st.style[k]);
+  });
+}
+
 function buildFase1HTML(versiculoPx){
   const p1 = DEV.p1;
   if (!p1) return "";
@@ -810,6 +826,8 @@ function buildFase2HTML(basePx){
 
   const txt = `Reflexión: ${oneLine(p2.reflexion || "")}\nOración: ${oneLine(p2.oracion || "")}`;
 
+  const fw = DEV.f2.style.bold ? 700 : 400;
+
   return `
     <div style="
       width:100%;
@@ -821,7 +839,7 @@ function buildFase2HTML(basePx){
     ">
       <div style="
         font-size:${basePx}px;
-        font-weight:600;
+        font-weight:${fw};
         white-space:pre-line;
         line-height:1.25;
         max-width:95%;
@@ -883,6 +901,7 @@ function devRenderFase(fase){
     w.style.backgroundColor = wrapperBgFromOpacity(st.op);
 
     applyTextStyles(t,b,st);
+    devSyncStyleButtons(1);
     return;
   }
 
@@ -916,8 +935,19 @@ function devRenderFase(fase){
    w.style.backgroundColor = "transparent"; // ✅ sin opacidad en Fase 2
 
     applyTextStyles(t,b,st);
+    devSyncStyleButtons(2);
     return;
   }
+}
+
+function devSetLoadingFase3(on, msg){
+  const box = $("devF3Loading");
+  const img = $("devFinalImg");
+  if (box) {
+    box.style.display = on ? "block" : "none";
+    if (msg) box.textContent = msg;
+  }
+  if (img) img.style.visibility = on ? "hidden" : "visible";
 }
 
 /* =========================================================
@@ -948,21 +978,19 @@ async function renderFinalCanvasCaptureReal(){
 
   const W = 1080, H1 = 1080, H2 = 840, H = 1920;
 
-  // ===== canvas final =====
   cFinal.width = W;
   cFinal.height = H;
   const ctx = cFinal.getContext("2d");
   ctx.clearRect(0,0,W,H);
 
-  // Asegurar que el HTML esté actualizado ANTES de clonar
   devRenderFase(1);
   devRenderFase(2);
 
-  // Esperar layout + fuentes
+  // esperar layout + fuentes
   await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
   if (document.fonts?.ready) await document.fonts.ready;
 
-  // ===== crear “escenario” offscreen (visible para medir, invisible para el usuario) =====
+  // stage offscreen
   let stage = document.getElementById("devCaptureStage");
   if (!stage) {
     stage = document.createElement("div");
@@ -970,24 +998,19 @@ async function renderFinalCanvasCaptureReal(){
     stage.style.position = "fixed";
     stage.style.left = "-99999px";
     stage.style.top = "0";
-    stage.style.width = "0";
-    stage.style.height = "0";
     stage.style.opacity = "0";
     stage.style.pointerEvents = "none";
     stage.style.zIndex = "-1";
     document.body.appendChild(stage);
-  } else {
-    stage.innerHTML = "";
   }
+  stage.innerHTML = "";
 
-  // helper: clonar SIN ids (para no romper querySelector / duplicar ids)
   const stripIds = (root)=>{
     root.removeAttribute?.("id");
     root.querySelectorAll?.("[id]").forEach(n => n.removeAttribute("id"));
     return root;
   };
 
-  // ===== clones con tamaño REAL fijo =====
   const c1 = stripIds(p1.cloneNode(true));
   c1.style.display = "block";
   c1.style.width = W + "px";
@@ -1001,27 +1024,32 @@ async function renderFinalCanvasCaptureReal(){
   stage.appendChild(c1);
   stage.appendChild(c2);
 
-  // 1 frame más para que el clone tenga layout real
-  await new Promise(r => requestAnimationFrame(r));
+  // ✅ esperar hasta que tengan tamaño real (sin “30 segundos”)
+  const waitNonZero = async (el, maxFrames=60) => {
+    for (let i=0; i<maxFrames; i++){
+      await new Promise(r => requestAnimationFrame(r));
+      const rr = el.getBoundingClientRect();
+      if (rr.width > 10 && rr.height > 10) return rr;
+    }
+    return null;
+  };
 
-  // VALIDACIÓN: si sigue 0, cortamos con mensaje claro
-  const r1 = c1.getBoundingClientRect();
-  const r2 = c2.getBoundingClientRect();
-  if (r1.width < 10 || r1.height < 10 || r2.width < 10 || r2.height < 10) {
-    console.warn("Cap sizes:", r1, r2);
-    alert("❌ No pude capturar porque los previews están en 0x0. Revisá CSS del preview (width/height).");
+  const r1 = await waitNonZero(c1, 90);
+  const r2 = await waitNonZero(c2, 90);
+  if (!r1 || !r2) {
+    console.warn("Cap sizes:", c1.getBoundingClientRect(), c2.getBoundingClientRect());
+    alert("❌ No pude capturar: los previews quedaron en 0x0. Revisá CSS de dev1Preview/dev2Preview (width/height).");
     return null;
   }
 
-  // ===== capturas =====
   const cap1 = await html2canvas(c1, { backgroundColor: null, scale: 2, useCORS: true });
   const cap2 = await html2canvas(c2, { backgroundColor: null, scale: 2, useCORS: true });
 
-  // ===== pegar arriba y abajo =====
   ctx.drawImage(cap1, 0, 0, W, H1);
   ctx.drawImage(cap2, 0, H1, W, H2);
 
   DEV.finalDataUrl = cFinal.toDataURL("image/png");
+
   const img = $("devFinalImg");
   if (img) img.src = DEV.finalDataUrl;
 
@@ -1068,11 +1096,16 @@ window.devIrFase3 = async () => {
   DEV.audioOk = false;
   devSetFinalButtons(false);
 
-  // ✅ captura real como biblia.js
-  if (typeof html2canvas === "function") {
-    await renderFinalCanvasCaptureReal();
-  } else {
-    alert("❌ Falta html2canvas. Cargalo como en biblia.js");
+  devSetLoadingFase3(true, "⏳ Generando…");
+
+  try {
+    if (typeof html2canvas === "function") {
+      await renderFinalCanvasCaptureReal();
+    } else {
+      alert("❌ Falta html2canvas. Cargalo como en biblia.js");
+    }
+  } finally {
+    devSetLoadingFase3(false);
   }
 };
 
