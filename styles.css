@@ -2050,20 +2050,29 @@ body.oscuro #wrapFiltrosBiblia.abierto .filtros{
   border-radius: 999px;
 }
 
-/* ================= FILTROS: MEDIA PANTALLA IZQUIERDA EN CELU ================= */
+/* ================= FILTROS CELU: IZQUIERDA + MEDIA PANTALLA (SIN DESBORDES) ================= */
 @media (max-width: 600px){
 
+  /* tarjeta */
   #wrapFiltrosBiblia.abierto .filtros{
+    left: 12px !important;
+    right: auto !important;
+    transform: none !important;
 
-    left: 12px;        /* margen desde el borde izquierdo */
-    right: auto;
-    transform: none;   /* ❗ anula centrado */
+    width: min(52vw, 260px) !important; /* mitad aprox, con tope */
+    max-width: none !important;
 
-    width: 50vw;       /* 👈 mitad de la pantalla */
-    max-width: 50vw;
-
+    justify-content: flex-start !important;
+    align-items: stretch !important;
+    flex-direction: column !important;  /* ✅ clave: sin “aire” a los costados */
+    gap: 8px !important;
   }
 
+  /* selects: que NO agranden la tarjeta */
+  #wrapFiltrosBiblia.abierto .filtros select{
+    width: 100% !important;
+    min-width: 0 !important;
+  }
 }
 
   </style>
