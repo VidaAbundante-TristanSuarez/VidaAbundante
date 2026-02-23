@@ -574,17 +574,6 @@ function textShadowLegible(textHex){
   `;
 }
 
-function applyShadowDeep(rootEl, colorHex){
-  if (!rootEl) return;
-  const sh = textShadowLegible(colorHex);
-  rootEl.style.textShadow = sh;
-
-  // ✅ text-shadow NO se hereda → lo aplicamos a todos los hijos
-  rootEl.querySelectorAll("*").forEach(el=>{
-    el.style.textShadow = sh;
-  });
-}
-
 function applyTextStylesToOne(el, st){
   el.style.textTransform = st.style.upper ? "uppercase" : "none";
   el.style.fontWeight    = st.style.bold ? "700" : "400";
@@ -833,17 +822,27 @@ function buildFase2HTML(basePx){
   if (!p2) return "";
 
   const txt = `Reflexión: ${oneLine(p2.reflexion || "")}\nOración: ${oneLine(p2.oracion || "")}`;
+
   const fw = DEV.f2.style.bold ? 700 : 400;
 
   return `
     <div style="
-      font-size:${basePx}px;
-      font-weight:${fw};
-      white-space:pre-line;
-      line-height:1.25;
       width:100%;
+      text-align:center;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      height:100%;
     ">
-      ${esc(txt)}
+      <div style="
+        font-size:${basePx}px;
+        font-weight:${fw};
+        white-space:pre-line;
+        line-height:1.25;
+        max-width:95%;
+      ">
+        ${esc(txt)}
+      </div>
     </div>
   `;
 }
@@ -875,7 +874,6 @@ function devRenderFase(fase){
     // texto
    const sc = scalePreviewF1();
    t.innerHTML = buildFase1HTML(st.size, sc);
-     applyShadowDeep(t, st.color);
     // ya no usamos la capa back para no romper tamaños diferentes
     if (b) b.style.display = "none";
 
@@ -914,7 +912,6 @@ function devRenderFase(fase){
 
     const pxPreview = Math.max(8, (st.size * scalePreviewF2()));
     t.innerHTML = buildFase2HTML(pxPreview);
-     applyShadowDeep(t, st.color);
     if (b) b.style.display = "none";
 
     // fondo plano
@@ -989,7 +986,7 @@ async function renderFinalCanvasCaptureReal(){
     stage.style.position = "fixed";
     stage.style.left = "-10000px";     // ✅ lejos sin transform
     stage.style.top  = "-10000px";
-    stage.style.opacity = "0.01";      // ✅ NO 0 (evita bugs en algunos navegadores)
+    stage.style.opacity = "1";      
     stage.style.visibility = "visible";
     stage.style.pointerEvents = "none";
     stage.style.transform = "none";    // ✅ importantísimo
@@ -1020,12 +1017,10 @@ async function renderFinalCanvasCaptureReal(){
     wrap.style.borderRadius = "14px";  // ✅ igual que preview
     wrap.style.overflow = "hidden";    // ✅ igual que preview
     wrap.style.backgroundColor = wrapperBgFromOpacity(st.op);
-    wrap.style.padding = "10px";
-    wrap.style.boxSizing = "border-box";
 
     const texto = document.createElement("div");
     texto.style.position = "absolute";
-    texto.style.inset = "10px";
+    texto.style.inset = "0";
     texto.style.fontFamily = st.fuente;
     texto.style.color = st.color;
     applyTextStylesToOne(texto, st);
@@ -1037,8 +1032,7 @@ async function renderFinalCanvasCaptureReal(){
 
     // ✅ IMPORTANTE: tamaño real (sin scalePreviewF1)
     texto.innerHTML = buildFase1HTML(st.size, 1);
-    applyShadowDeep(texto, st.color);
-     
+
     wrap.appendChild(texto);
     node.appendChild(wrap);
     return node;
@@ -1083,8 +1077,7 @@ async function renderFinalCanvasCaptureReal(){
 
   // ✅ tamaño real (canvas)
   texto.innerHTML = buildFase2HTML(st.size);
-  applyShadowDeep(texto, st.color);
-     
+
   wrap.appendChild(texto);
   node.appendChild(wrap);
 
@@ -1624,3 +1617,4 @@ requestAnimationFrame(()=>{
    INIT
    ========================================================= */
 document.addEventListener("DOMContentLoaded", initDevocionales);
+
