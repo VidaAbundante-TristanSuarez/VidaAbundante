@@ -2073,4 +2073,15 @@ body.oscuro #wrapFiltrosBiblia.abierto .filtros{
   text-align: center;
 }
 
+/* 🔧 Evita que la lupa quede visualmente activa al cerrar */
+#btnToggleFiltros:focus,
+#btnToggleFiltros:active{
+  outline: none;
+  box-shadow: none;
+}
+
+#btnToggleFiltros{
+  -webkit-tap-highlight-color: transparent;
+}
+
   </style> 
