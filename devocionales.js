@@ -930,8 +930,12 @@ function buildFase2HTML(basePx){
           <img
           src="${adorno}"
           alt="adorno"
-          class="dev-adorno-img"
-          style="opacity:0.95;"
+          style="
+          width:${adornoW}%;
+          max-height:90px;
+          object-fit:contain;
+          opacity:0.95;
+          "
           />
         ` : `<div style="height:10px;"></div>`}
       </div>
