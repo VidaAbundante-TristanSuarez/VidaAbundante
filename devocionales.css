@@ -90,8 +90,9 @@
   cursor:pointer;
   border:2px solid transparent;
 }
+
 .dev-fondos img.activo{
-  border-color:#4f6fa8;
+  border-color: var(--ui-azul-hover);
 }
 
 .dev-row{
@@ -101,19 +102,6 @@
   justify-content:center;
   flex-wrap:wrap;
   margin-top:10px;
-}
-
-.dev-final button{
-  border:none;
-  border-radius:999px;
-  padding:10px 12px;
-  cursor:pointer;
-  background:#eee;
-}
-
-.dev-final button.btn-primary{
-  background:#4f6fa8;
-  color:#fff;
 }
 
 .dev-final button:disabled{
@@ -140,20 +128,6 @@
   gap:10px;
 }
 
-.dev-lista-fuentes button{
-  border:none;
-  border-radius:999px;
-  padding:10px 12px;
-  cursor:pointer;
-  background:#eee;
-  font-weight:700;
-}
-
-.dev-lista-fuentes button.activo{
-  background:#4f6fa8;
-  color:#fff;
-}
-
 /* ✅ Asegura que el modal de AUDIO quede arriba de todo */
 #modalAudio.modal-overlay,
 #modalAudio {
@@ -167,27 +141,6 @@
 
 button{
   border-radius:999px;   /* ✔️ todos redondeados */
-}
-
-/* ===== ESTADO ACTIVO ===== */
-button.activo{
-  background:#4f6fa8;
-  color:#fff;
-  box-shadow: 0 2px 8px rgba(0,0,0,.18);
-}
-
-/* botones estilo Aa B I U */
-.dev-row button{
-  border:none;
-  padding:8px 12px;
-  background:#eee;
-  font-weight:700;
-  cursor:pointer;
-  border-radius:999px;
-}
-
-.dev-row button:hover{
-  background:#ddd;
 }
 
 /* ===== INPUTS NUMÉRICOS Y COLOR ===== */
@@ -238,7 +191,7 @@ input[type="number"]{
 }
 
 .dev-adorno-btn.activo{
-  outline:2px solid var(--ui-azul-hover);
+  outline:3px solid var(--ui-azul-hover);
 }
 
 .dev-adorno-thumb{
@@ -275,13 +228,28 @@ input[type="number"]{
 }
 
 .modal-overlay .modal-contenido.modal-dev{
-  background: #fff;
-  border-radius: 18px;
-  padding: 14px;
-  max-height: 92vh;              /* clave: no se sale */
-  overflow: auto;                 /* scroll adentro */
+  background:#fff;
+  border-radius:18px;
+  padding: 12px;
+  max-height: calc(100dvh - 24px); /* altura real móvil */
+  overflow: hidden;                /* ✅ NO scroll */
   box-shadow: 0 18px 60px rgba(0,0,0,.30);
+
+  display:flex;                    /* ✅ ordena el contenido */
+  flex-direction:column;
+  gap:10px;
 }
+
+/* Las galerías se mantienen horizontales y “compactas” */
+.dev-fondos,
+.dev-adorno-list{
+  max-height: 92px;      /* limita altura */
+  padding: 8px 4px;
+}
+
+/* Thumbs un toque más chicos para asegurar que quepa todo */
+.dev-fondos img{ width:64px; height:64px; }
+.dev-adorno-thumb{ width:64px; height:24px; }
 
 /* Preview un toque más grande */
 .dev-preview{
@@ -365,8 +333,89 @@ input[type="number"]{
   object-fit: contain;
   margin: 10px auto 0;
 }
+
+/* ================= BOTONES (unificados con tus variables) ================= */
+
+button{
+  border-radius:999px;
+}
+
+/* Base: botón “neutro” */
+.dev-final button,
+.dev-row button,
+.dev-lista-fuentes button{
+  border: 1px solid #d6d6d6;
+  background: var(--ui-azul-claro);
+  color:#000;
+  font-weight:700;
+  cursor:pointer;
+  padding:10px 12px;
+}
+
+/* Hover (PC) */
+.dev-final button:hover,
+.dev-row button:hover,
+.dev-lista-fuentes button:hover{
+  background: var(--ui-azul-hover);
+  color:#fff;
+  border-color: var(--ui-azul-hover);
+}
+
+/* Botón principal (CTA) */
+.dev-final button.btn-primary{
+  background: var(--ui-azul-hover);
+  color:#fff;
+  border-color: var(--ui-azul-hover);
+}
+
+/* Estado activo (cuando vos le ponés .activo desde JS) */
+button.activo,
+.dev-lista-fuentes button.activo{
+  background: var(--ui-azul-hover);
+  color:#fff;
+  border-color: var(--ui-azul-hover);
+  box-shadow: 0 2px 10px rgba(0,0,0,.18);
+}
+
+.dev-final button:disabled{
+  opacity:.45;
+  cursor:not-allowed;
+}
+
+
+@media (max-height: 740px){
+  .modal-overlay{
+    padding: 10px;
+  }
+
+  .modal-overlay .modal-contenido.modal-dev{
+    padding: 10px;
+    gap: 8px;
+  }
+
+  .dev-preview{ width: min(420px, 90vw); }
+
+  .dev-tools{
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .dev-fondo-chip{
+    padding: 8px 10px;
+    border-radius: 14px;
+  }
+
+  .dev-fondo-chip input[type="color"]{
+    width: 50px;
+    height: 38px;
+    border-radius: 12px;
+  }
+
+  .dev-fondos img{ width:58px; height:58px; }
+  .dev-adorno-thumb{ width:58px; height:22px; }
+}
+
 </style>
 
---
 
 
