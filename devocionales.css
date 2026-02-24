@@ -7,15 +7,35 @@
   width: 100%;
 }
 
+/* Preview: que pueda achicarse según alto disponible */
 .dev-preview{
-  width: min(420px, 92vw);
+  width: 100%;
   margin: 0 auto;
-  height: auto;                 /* lo define aspect-ratio */
+  height: auto;
   border-radius:16px;
   overflow:hidden;
   background:#fff;
   position:relative;
   border:1px solid #e5e5e5;
+
+  max-height: 48dvh;     /* ✅ clave para que el modal entre */
+}
+
+/* En móviles chicos, un poco más agresivo */
+@media (max-width: 420px){
+  .modal-overlay .modal-contenido.modal-dev{
+    padding: 10px;
+    gap: 8px;
+  }
+  .dev-preview{
+    max-height: 42dvh;
+    border-radius: 14px;
+  }
+}
+
+/* Preview un toque más grande */
+.dev-preview{
+  width: min(460px, 94vw);
 }
 
 /* Imagen final en fase 3 */
@@ -249,17 +269,18 @@ input[type="number"]{
   display:block;
 }
 
-/* ✅ Overlay oscuro tipo "Biblia" */
+/* Overlay: sin scroll, centrado real */
 #modalDevFase1.modal-overlay,
 #modalDevFase2.modal-overlay,
 #modalDevFase3.modal-overlay{
   position: fixed;
   inset: 0;
   background: rgba(0,0,0,.55);
-  display: none;                /* se prende con abrirModal() */
+  display: none;
   align-items: center;
   justify-content: center;
-  padding: 14px;
+  padding: 12px;
+  overflow: hidden;             /* ✅ evita scroll del overlay */
 }
 
 /* ✅ cuando abrís, vos ya ponés display:flex desde JS */
@@ -275,29 +296,61 @@ input[type="number"]{
   width: min(560px, 96vw);
 }
 
+/* Modal contenido: NO scroll interno, se adapta a pantalla */
 .modal-overlay .modal-contenido.modal-dev{
+  box-sizing: border-box;
   background: #fff;
   border-radius: 18px;
-  padding: 14px;
-  max-height: 92vh;              /* clave: no se sale */
-  overflow: auto;                 /* scroll adentro */
+
+  width: min(560px, calc(100dvw - 24px));  /* ✅ evita corrimiento */
+  max-height: calc(100dvh - 24px);         /* ✅ entra en pantalla */
+  overflow: hidden;                         /* ✅ NO scroll vertical/horizontal */
+
+  padding: 12px;
+  display: flex;                            /* ✅ layout controlado */
+  flex-direction: column;
+  gap: 10px;
+
   box-shadow: 0 18px 60px rgba(0,0,0,.30);
 }
 
-/* Preview un toque más grande */
-.dev-preview{
-  width: min(460px, 94vw);
+/* ✅ Corta cualquier desborde lateral dentro del modal */
+.modal-overlay .modal-contenido.modal-dev *{
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+.modal-overlay .modal-contenido.modal-dev{
+  overflow-x: hidden;
 }
 
 /* ================= FASE 2: fila única de controles + fondo plano vistoso ================= */
 .dev-tools{
-  width: min(460px, 94vw);
-  margin: 10px auto 0;
+  width: 100%;
+  margin: 0 auto;
   display:flex;
   align-items:center;
   justify-content:center;
   gap:10px;
   flex-wrap:wrap;
+}
+
+/* ✅ En móvil: 2 columnas (nada queda colgado abajo raro) */
+@media (max-width: 420px){
+  .dev-tools{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    align-items:center;
+  }
+
+  /* Inputs ocupan todo el ancho de su celda */
+  .dev-tools input[type="range"],
+  .dev-tools input[type="number"],
+  .dev-tools input[type="color"],
+  .dev-tools button{
+    width: 100%;
+  }
 }
 
 /* “Pastillita” grande y vistosa para el fondo plano */
@@ -334,6 +387,22 @@ input[type="number"]{
   margin: 0 auto;
 }
 
+.dev-fondos,
+.dev-adorno-list{
+  width: 100%;
+  padding: 8px 2px;
+  margin: 0 auto;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Evita que el scroll horizontal cree “rebote” feo */
+.dev-fondos::-webkit-scrollbar,
+.dev-adorno-list::-webkit-scrollbar{
+  height: 6px;
+}
+
 /* ================= FASE 3: botones texto negro ================= */
 .btn-light{
   background:#f2f2f2;
@@ -357,5 +426,32 @@ input[type="number"]{
   paint-order: stroke fill;
 }
 
+/* ✅ Stepper (+/-) siempre legible en móvil */
+.dev-stepper{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
+.dev-stepper button{
+  border:1px solid #ddd;
+  background:#f2f2f2;
+  color:#000;                 /* ✅ negro */
+  padding: 8px 12px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.dev-stepper button:active{
+  background:#e6e6e6;
+  color:#000;
+}
+
+/* Si por alguna razón les cae .activo, lo anulamos */
+.dev-stepper button.activo{
+  background:#f2f2f2 !important;
+  color:#000 !important;
+  box-shadow:none !important;
+}
 
 </style>
