@@ -928,14 +928,14 @@ function buildFase2HTML(basePx){
 
         ${adorno ? `
           <img
-          src="${adorno}"
-          alt="adorno"
-          style="
-          width:${adornoW}%;
-          max-height:90px;
-          object-fit:contain;
-          opacity:0.95;
-          "
+            src="${adorno}"
+            alt="adorno"
+            style="
+              width:${adornoW}%;
+              max-height:90px;
+              object-fit:contain;
+              opacity:0.95;
+            "
           />
         ` : `<div style="height:10px;"></div>`}
       </div>
@@ -986,7 +986,9 @@ function devRenderFase(fase){
 
    // ✅ OUTLINE estable (para preview + captura)
    t.style.textShadow = textShadowLegible(st.color);
-  
+   t.style.webkitTextStroke = "0px";
+   t.style.paintOrder = "normal";
+
     // wrapper bg
     w.style.backgroundColor = wrapperBgFromOpacity(st.op);
 
@@ -1018,7 +1020,9 @@ function devRenderFase(fase){
 
    // ✅ OUTLINE estable (para preview + captura)
    t.style.textShadow = textShadowLegible(st.color);
-   
+   t.style.webkitTextStroke = "0px";
+   t.style.paintOrder = "normal";
+
    w.style.backgroundColor = "transparent"; // ✅ sin opacidad en Fase 2
 
     applyTextStylesToOne(t, st);
@@ -1147,7 +1151,7 @@ async function renderFinalCanvasCaptureReal(){
      
     // ✅ OUTLINE estable
     texto.style.textShadow = textShadowLegibleFinal(st.color);
-    texto.style.webkitTextStroke = "0.5px " + outlineColor(st.color);
+    texto.style.webkitTextStroke = "0px";
     texto.style.paintOrder = "normal";
 
     // ✅ IMPORTANTE: tamaño real (sin scalePreviewF1)
@@ -1194,7 +1198,7 @@ async function renderFinalCanvasCaptureReal(){
      
   // ✅ OUTLINE estable
   texto.style.textShadow = textShadowLegibleFinal(st.color);
-  texto.style.webkitTextStroke = "1.2px " + outlineColor(st.color);
+  texto.style.webkitTextStroke = "0px";
   texto.style.paintOrder = "normal";
 
   // ✅ tamaño real (canvas)
