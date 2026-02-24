@@ -750,16 +750,11 @@ function sugerirTamanoFase2Auto(texto){
     const lineH = px * 1.20;
     const totalH = lines.length * lineH;
     if (totalH <= altoDisponible) {
-    const sc = scalePreviewF2() || 1;
-    const sugerido = roundToHalf(px / sc);
-
-    /* ✅ clamp: evita tamaños gigantes en celular */
-    return Math.min(34, Math.max(14, sugerido));
+  const sc = scalePreviewF2() || 1;
+  return roundToHalf(px / sc);
 }
   }
-    const sc = scalePreviewF2() || 1;
-    const sugerido = roundToHalf(minPx / sc);
-    return Math.min(34, Math.max(14, sugerido));
+  return roundToHalf(minPx / (scalePreviewF2() || 1));
 }
 
 function devSyncStyleButtons(fase){
@@ -991,7 +986,7 @@ function devRenderFase(fase){
 
    // ✅ OUTLINE estable (para preview + captura)
    t.style.textShadow = textShadowLegible(st.color);
- 
+  
     // wrapper bg
     w.style.backgroundColor = wrapperBgFromOpacity(st.op);
 
@@ -1009,10 +1004,8 @@ function devRenderFase(fase){
 
     const st = DEV.f2;
 
-    // ✅ st.size = tamaño EN PREVIEW (lo que el usuario ve)
-    const pxPreview = Math.max(8, Number(st.size || 26));
+    const pxPreview = Math.max(8, (st.size * scalePreviewF2()));
     t.innerHTML = buildFase2HTML(pxPreview);
-     
     if (b) b.style.display = "none";
 
     // fondo plano
@@ -1025,7 +1018,7 @@ function devRenderFase(fase){
 
    // ✅ OUTLINE estable (para preview + captura)
    t.style.textShadow = textShadowLegible(st.color);
- 
+   
    w.style.backgroundColor = "transparent"; // ✅ sin opacidad en Fase 2
 
     applyTextStylesToOne(t, st);
@@ -1191,7 +1184,6 @@ async function renderFinalCanvasCaptureReal(){
   // ✅ TEXTO adentro del wrapper
   const texto = document.createElement("div");
   texto.style.width = "100%";
-  texto.style.height = "100%";  
   texto.style.display = "block";
   texto.style.textAlign = "center";
   texto.style.alignItems = "center";
@@ -1205,11 +1197,8 @@ async function renderFinalCanvasCaptureReal(){
   texto.style.webkitTextStroke = "1.2px " + outlineColor(st.color);
   texto.style.paintOrder = "normal";
 
-  // ✅ Convertimos de “preview px” a “canvas px”
-  const sc = scalePreviewF2() || 1;
-  const canvasPx = Math.max(10, Math.round((Number(st.size || 26) / sc)));
-
-  texto.innerHTML = buildFase2HTML(canvasPx);
+  // ✅ tamaño real (canvas)
+  texto.innerHTML = buildFase2HTML(st.size);
 
   wrap.appendChild(texto);
   node.appendChild(wrap);
