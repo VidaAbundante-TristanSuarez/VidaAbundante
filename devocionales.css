@@ -181,14 +181,14 @@ button.activo{
 .dev-row button{
   border:none;
   padding:8px 12px;
-  background:#eee;
+  background:#bcdcff;
   font-weight:700;
   cursor:pointer;
   border-radius:999px;
 }
 
 .dev-row button:hover{
-  background:#ddd;
+  background:#bcdcff;
 }
 
 /* ===== INPUTS NUMÉRICOS Y COLOR ===== */
@@ -357,106 +357,71 @@ input[type="number"]{
   paint-order: stroke fill;
 }
 
-/* ================= DEVOCIONALES: MOBILE SIN SCROLL VERTICAL ================= */
+/* ================= MOBILE (MODAL REAL, SIN SCROLL VERTICAL) ================= */
 @media (max-width: 520px){
 
   html, body{ overflow-x:hidden; }
 
-  /* overlay sin padding extra */
+  /* overlay igual, pero con padding chico */
   #modalDevFase1.modal-overlay,
   #modalDevFase2.modal-overlay,
   #modalDevFase3.modal-overlay{
-    padding: 0;
-  }
-
-  /* modal = pantalla completa */
-  .modal-overlay .modal-contenido.modal-dev{
-    width: 100vw;
-    max-width: 100vw;
-    height: 100dvh;
-    max-height: 100dvh;
-    border-radius: 0;
     padding: 10px;
-
-    overflow: hidden;            /* ✅ sin scroll vertical */
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
   }
 
-  /* botón cerrar: fijo arriba a la derecha */
-  .modal-overlay .cerrar-modal{
-    align-self: flex-end;
-    flex: 0 0 auto;
+  /* modal centrado (NO full screen) y sin scroll vertical */
+  .modal-overlay .modal-contenido.modal-dev{
+    width: min(520px, 96vw);
+    max-width: 96vw;
+    max-height: 92dvh;      /* ✅ dVH real en móvil */
+    overflow: hidden;       /* ✅ sin scroll vertical */
+    display: grid;
+    grid-template-rows: auto 1fr auto auto auto; /* cerrar / preview / galerías / controles / botones */
+    gap: 10px;
+    padding: 12px;
+    border-radius: 18px;
   }
 
-  /* ===== PREVIEW: se limita por ALTURA (no por ancho) ===== */
+  /* preview ocupa el espacio disponible (sin “vacío” raro) */
   .dev-preview{
-    margin: 0 auto;
-    width: auto !important;      /* ✅ que no fuerce ancho */
-    max-width: calc(100vw - 20px);
-    flex: 0 0 auto;
-  }
-
-  /* alturas por fase (ajustá 1 o 2 dvh si querés más/menos grande) */
-  .dev-preview.dev-99{  height: 34dvh; }
-  .dev-preview.dev-97{  height: 32dvh; }
-  .dev-preview.dev-916{ height: 52dvh; }
-
-  /* si hay imagen final en fase 3, que respete el contenedor */
-  #devFinalImg{
     width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 14px;
+    max-width: 100%;
+    margin: 0 auto;
+    height: auto;
   }
 
-  /* ===== GALERÍAS: solo scroll horizontal ===== */
-  .dev-fondos,
-  .dev-adorno-list{
+  /* galerías: solo horizontal */
+  .dev-fondos, .dev-adorno-list{
     width: 100%;
     margin: 0;
     padding: 6px 2px;
-
     overflow-x: auto;
     overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
   }
 
-  /* miniaturas más chicas para que no “empujen” */
-  .dev-fondos img{ width: 58px; height: 58px; border-radius: 12px; }
-  .dev-adorno-thumb{ width: 58px; height: 22px; }
-
-  /* ===== CONTROLES: compactos y sin márgenes grandes ===== */
-  .dev-row,
-  .dev-tools,
-  .dev-adorno-row{
-    width: 100%;
+  /* controles compactos para que entren */
+  .dev-row, .dev-tools, .dev-adorno-row{
     margin-top: 0;
     gap: 8px;
   }
 
-  /* botones y inputs más compactos (para que entren sin scroll) */
-  .dev-row button,
-  .dev-final button,
-  .dev-lista-fuentes button{
+  .dev-row button, .dev-tools button{
     padding: 8px 10px;
     font-size: 14px;
   }
 
-  input[type="number"]{ width: 54px; }
+  input[type="number"]{ width: 56px; }
   .dev-fondo-chip{ padding: 8px 10px; border-radius: 14px; }
 
-  /* dropdown de fuentes: que no se salga */
+  /* dropdown fuentes dentro de pantalla */
   .dev-lista-fuentes{
     left: 10px;
     right: 10px;
     max-width: calc(100vw - 20px);
     max-height: 45dvh;
   }
-
-  /* loader fase 3 no agranda el modal */
-  #devF3Loading{ margin-bottom: 0; }
 }
+
 
 </style>
