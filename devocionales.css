@@ -2,29 +2,20 @@
 
 /* ================= DEVOCIONALES - MODALES LIMPIOS ================= */
 
-/* Preview: que pueda achicarse según alto disponible */
-.dev-preview{
+.modal-dev{
+  max-width: 520px;
   width: 100%;
+}
+
+.dev-preview{
+  width: min(420px, 92vw);
   margin: 0 auto;
-  aspect-ratio: 1 / 1;     /* o la clase dev-99 / dev-97 / dev-916 */
+  height: auto;                 /* lo define aspect-ratio */
   border-radius:16px;
   overflow:hidden;
   background:#fff;
   position:relative;
   border:1px solid #e5e5e5;
-  max-height: 48dvh;
-}
-
-/* En móviles chicos, un poco más agresivo */
-@media (max-width: 420px){
-  .modal-overlay .modal-contenido.modal-dev{
-    padding: 10px;
-    gap: 8px;
-  }
-  .dev-preview{
-    max-height: 42dvh;
-    border-radius: 14px;
-  }
 }
 
 /* Imagen final en fase 3 */
@@ -141,18 +132,13 @@
   border-radius:14px;
   padding:10px;
   box-shadow: 0 10px 30px rgba(0,0,0,.12);
-
-  max-width: calc(100dvw - 24px); /* ✅ no agranda viewport */
-  overflow-x: auto;               /* ✅ scroll horizontal propio */
-  overflow-y: hidden;             /* ✅ evita que meta scroll vertical raro */
-  white-space: nowrap;
-  -webkit-overflow-scrolling: touch;
+  overflow:auto;
+  white-space:nowrap;
 }
 
 .dev-lista-fuentes.abierto{
   display:flex;
   gap:10px;
-  flex-wrap: nowrap; 
 }
 
 .dev-lista-fuentes button{
@@ -263,18 +249,17 @@ input[type="number"]{
   display:block;
 }
 
-/* Overlay: sin scroll, centrado real */
+/* ✅ Overlay oscuro tipo "Biblia" */
 #modalDevFase1.modal-overlay,
 #modalDevFase2.modal-overlay,
 #modalDevFase3.modal-overlay{
   position: fixed;
   inset: 0;
   background: rgba(0,0,0,.55);
-  display: none;
+  display: none;                /* se prende con abrirModal() */
   align-items: center;
   justify-content: center;
-  padding: 12px;
-  overflow: hidden;             /* ✅ evita scroll del overlay */
+  padding: 14px;
 }
 
 /* ✅ cuando abrís, vos ya ponés display:flex desde JS */
@@ -290,61 +275,29 @@ input[type="number"]{
   width: min(560px, 96vw);
 }
 
-/* Modal contenido: NO scroll interno, se adapta a pantalla */
 .modal-overlay .modal-contenido.modal-dev{
-  box-sizing: border-box;
   background: #fff;
   border-radius: 18px;
-
-  width: min(560px, calc(100dvw - 24px));  /* ✅ evita corrimiento */
-  max-height: calc(100dvh - 24px);         /* ✅ entra en pantalla */
-  overflow: hidden;                         /* ✅ NO scroll vertical/horizontal */
-
-  padding: 12px;
-  display: flex;                            /* ✅ layout controlado */
-  flex-direction: column;
-  gap: 10px;
-
+  padding: 14px;
+  max-height: 92vh;              /* clave: no se sale */
+  overflow: auto;                 /* scroll adentro */
   box-shadow: 0 18px 60px rgba(0,0,0,.30);
 }
 
-/* ✅ Corta cualquier desborde lateral dentro del modal */
-.modal-overlay .modal-contenido.modal-dev *{
-  box-sizing: border-box;
-  max-width: 100%;
-}
-
-.modal-overlay .modal-contenido.modal-dev{
-  overflow-x: hidden;
+/* Preview un toque más grande */
+.dev-preview{
+  width: min(460px, 94vw);
 }
 
 /* ================= FASE 2: fila única de controles + fondo plano vistoso ================= */
 .dev-tools{
-  width: 100%;
-  margin: 0 auto;
+  width: min(460px, 94vw);
+  margin: 10px auto 0;
   display:flex;
   align-items:center;
   justify-content:center;
   gap:10px;
   flex-wrap:wrap;
-}
-
-/* ✅ En móvil: 2 columnas (nada queda colgado abajo raro) */
-@media (max-width: 420px){
-  .dev-tools{
-    display:grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    align-items:center;
-  }
-
-  /* Inputs ocupan todo el ancho de su celda */
-  .dev-tools input[type="range"],
-  .dev-tools input[type="number"],
-  .dev-tools input[type="color"],
-  .dev-tools button{
-    width: 100%;
-  }
 }
 
 /* “Pastillita” grande y vistosa para el fondo plano */
@@ -381,22 +334,6 @@ input[type="number"]{
   margin: 0 auto;
 }
 
-.dev-fondos,
-.dev-adorno-list{
-  width: 100%;
-  padding: 8px 2px;
-  margin: 0 auto;
-  overflow-x: auto;
-  overflow-y: hidden;
-  -webkit-overflow-scrolling: touch;
-}
-
-/* Evita que el scroll horizontal cree “rebote” feo */
-.dev-fondos::-webkit-scrollbar,
-.dev-adorno-list::-webkit-scrollbar{
-  height: 6px;
-}
-
 /* ================= FASE 3: botones texto negro ================= */
 .btn-light{
   background:#f2f2f2;
@@ -420,32 +357,82 @@ input[type="number"]{
   paint-order: stroke fill;
 }
 
-/* ✅ Stepper (+/-) siempre legible en móvil */
-.dev-stepper{
-  display:flex;
-  align-items:center;
-  gap:8px;
-}
+/* ================= MOBILE: MODALES SIN SCROLL (solo galerías) ================= */
+@media (max-width: 520px){
 
-.dev-stepper button{
-  border:1px solid #ddd;
-  background:#f2f2f2;
-  color:#000;                 /* ✅ negro */
-  padding: 8px 12px;
-  font-weight: 900;
-  line-height: 1;
-}
+  /* evita scroll horizontal fantasma */
+  html, body{
+    width: 100%;
+    overflow-x: hidden;
+  }
 
-.dev-stepper button:active{
-  background:#e6e6e6;
-  color:#000;
-}
+  /* overlay: sin padding extra */
+  #modalDevFase1.modal-overlay,
+  #modalDevFase2.modal-overlay,
+  #modalDevFase3.modal-overlay{
+    padding: 0;
+  }
 
-/* Si por alguna razón les cae .activo, lo anulamos */
-.dev-stepper button.activo{
-  background:#f2f2f2 !important;
-  color:#000 !important;
-  box-shadow:none !important;
+  /* modal como “pantalla” (sin scroll vertical) */
+  .modal-overlay .modal-contenido.modal-dev{
+    width: 100%;
+    max-width: 100%;
+    height: 100dvh;          /* clave en móvil (mejor que vh) */
+    max-height: 100dvh;
+    border-radius: 0;
+    padding: 10px;
+
+    overflow: hidden;        /* ✅ NO scroll vertical dentro del modal */
+    display: grid;
+    grid-template-rows: auto 1fr auto; /* header / preview / controles */
+    gap: 10px;
+  }
+
+  /* preview se adapta al alto disponible */
+  .dev-preview{
+    width: 100%;
+    max-width: 100%;
+    margin: 0 auto;
+    aspect-ratio: auto; /* dejamos que tus clases dev-99/dev-97/dev-916 manden */
+  }
+
+  /* fase 3 imagen final también sin excederse */
+  #devFinalImg{
+    width: 100%;
+    max-width: 100%;
+  }
+
+  /* controles: que entren sin empujar altura */
+  .dev-tools,
+  .dev-row,
+  .dev-adorno-row{
+    width: 100%;
+    margin: 0 auto;
+  }
+
+  /* ✅ SOLO galerías con scroll horizontal */
+  .dev-fondos,
+  .dev-adorno-list{
+    width: 100%;
+    padding: 6px 2px;
+    margin: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
+  }
+
+  /* chips un poco más compactos */
+  .dev-fondos img{ width: 62px; height: 62px; }
+  .dev-adorno-thumb{ width: 62px; height: 24px; }
+
+  /* dropdown fuentes: que no se salga de pantalla */
+  .dev-lista-fuentes{
+    left: 10px;
+    right: 10px;
+    max-width: calc(100vw - 20px);
+    max-height: 45dvh;
+  }
 }
 
 </style>
