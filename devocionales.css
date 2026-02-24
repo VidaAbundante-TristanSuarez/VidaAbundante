@@ -2,23 +2,17 @@
 
 /* ================= DEVOCIONALES - MODALES LIMPIOS ================= */
 
-.modal-dev{
-  max-width: 520px;
-  width: 100%;
-}
-
 /* Preview: que pueda achicarse según alto disponible */
 .dev-preview{
   width: 100%;
   margin: 0 auto;
-  height: auto;
+  aspect-ratio: 1 / 1;     /* o la clase dev-99 / dev-97 / dev-916 */
   border-radius:16px;
   overflow:hidden;
   background:#fff;
   position:relative;
   border:1px solid #e5e5e5;
-
-  max-height: 48dvh;     /* ✅ clave para que el modal entre */
+  max-height: 48dvh;
 }
 
 /* En móviles chicos, un poco más agresivo */
@@ -31,11 +25,6 @@
     max-height: 42dvh;
     border-radius: 14px;
   }
-}
-
-/* Preview un toque más grande */
-.dev-preview{
-  width: min(460px, 94vw);
 }
 
 /* Imagen final en fase 3 */
@@ -152,13 +141,18 @@
   border-radius:14px;
   padding:10px;
   box-shadow: 0 10px 30px rgba(0,0,0,.12);
-  overflow:auto;
-  white-space:nowrap;
+
+  max-width: calc(100dvw - 24px); /* ✅ no agranda viewport */
+  overflow-x: auto;               /* ✅ scroll horizontal propio */
+  overflow-y: hidden;             /* ✅ evita que meta scroll vertical raro */
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
 }
 
 .dev-lista-fuentes.abierto{
   display:flex;
   gap:10px;
+  flex-wrap: nowrap; 
 }
 
 .dev-lista-fuentes button{
