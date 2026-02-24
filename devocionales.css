@@ -357,82 +357,106 @@ input[type="number"]{
   paint-order: stroke fill;
 }
 
-/* ================= MOBILE: MODALES SIN SCROLL (solo galerías) ================= */
+/* ================= DEVOCIONALES: MOBILE SIN SCROLL VERTICAL ================= */
 @media (max-width: 520px){
 
-  /* evita scroll horizontal fantasma */
-  html, body{
-    width: 100%;
-    overflow-x: hidden;
-  }
+  html, body{ overflow-x:hidden; }
 
-  /* overlay: sin padding extra */
+  /* overlay sin padding extra */
   #modalDevFase1.modal-overlay,
   #modalDevFase2.modal-overlay,
   #modalDevFase3.modal-overlay{
     padding: 0;
   }
 
-  /* modal como “pantalla” (sin scroll vertical) */
+  /* modal = pantalla completa */
   .modal-overlay .modal-contenido.modal-dev{
-    width: 100%;
-    max-width: 100%;
-    height: 100dvh;          /* clave en móvil (mejor que vh) */
+    width: 100vw;
+    max-width: 100vw;
+    height: 100dvh;
     max-height: 100dvh;
     border-radius: 0;
     padding: 10px;
 
-    overflow: hidden;        /* ✅ NO scroll vertical dentro del modal */
-    display: grid;
-    grid-template-rows: auto 1fr auto; /* header / preview / controles */
-    gap: 10px;
+    overflow: hidden;            /* ✅ sin scroll vertical */
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
   }
 
-  /* preview se adapta al alto disponible */
+  /* botón cerrar: fijo arriba a la derecha */
+  .modal-overlay .cerrar-modal{
+    align-self: flex-end;
+    flex: 0 0 auto;
+  }
+
+  /* ===== PREVIEW: se limita por ALTURA (no por ancho) ===== */
   .dev-preview{
-    width: 100%;
-    max-width: 100%;
     margin: 0 auto;
-    aspect-ratio: auto; /* dejamos que tus clases dev-99/dev-97/dev-916 manden */
+    width: auto !important;      /* ✅ que no fuerce ancho */
+    max-width: calc(100vw - 20px);
+    flex: 0 0 auto;
   }
 
-  /* fase 3 imagen final también sin excederse */
+  /* alturas por fase (ajustá 1 o 2 dvh si querés más/menos grande) */
+  .dev-preview.dev-99{  height: 34dvh; }
+  .dev-preview.dev-97{  height: 32dvh; }
+  .dev-preview.dev-916{ height: 52dvh; }
+
+  /* si hay imagen final en fase 3, que respete el contenedor */
   #devFinalImg{
     width: 100%;
-    max-width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 14px;
   }
 
-  /* controles: que entren sin empujar altura */
-  .dev-tools,
-  .dev-row,
-  .dev-adorno-row{
-    width: 100%;
-    margin: 0 auto;
-  }
-
-  /* ✅ SOLO galerías con scroll horizontal */
+  /* ===== GALERÍAS: solo scroll horizontal ===== */
   .dev-fondos,
   .dev-adorno-list{
     width: 100%;
-    padding: 6px 2px;
     margin: 0;
+    padding: 6px 2px;
+
     overflow-x: auto;
     overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
-    scroll-snap-type: x proximity;
   }
 
-  /* chips un poco más compactos */
-  .dev-fondos img{ width: 62px; height: 62px; }
-  .dev-adorno-thumb{ width: 62px; height: 24px; }
+  /* miniaturas más chicas para que no “empujen” */
+  .dev-fondos img{ width: 58px; height: 58px; border-radius: 12px; }
+  .dev-adorno-thumb{ width: 58px; height: 22px; }
 
-  /* dropdown fuentes: que no se salga de pantalla */
+  /* ===== CONTROLES: compactos y sin márgenes grandes ===== */
+  .dev-row,
+  .dev-tools,
+  .dev-adorno-row{
+    width: 100%;
+    margin-top: 0;
+    gap: 8px;
+  }
+
+  /* botones y inputs más compactos (para que entren sin scroll) */
+  .dev-row button,
+  .dev-final button,
+  .dev-lista-fuentes button{
+    padding: 8px 10px;
+    font-size: 14px;
+  }
+
+  input[type="number"]{ width: 54px; }
+  .dev-fondo-chip{ padding: 8px 10px; border-radius: 14px; }
+
+  /* dropdown de fuentes: que no se salga */
   .dev-lista-fuentes{
     left: 10px;
     right: 10px;
     max-width: calc(100vw - 20px);
     max-height: 45dvh;
   }
+
+  /* loader fase 3 no agranda el modal */
+  #devF3Loading{ margin-bottom: 0; }
 }
 
 </style>
