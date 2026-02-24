@@ -1,5 +1,4 @@
-<style>
-
+ <style>
 /* ================= DEVOCIONALES - MODALES LIMPIOS ================= */
 
 .modal-dev{
@@ -181,14 +180,14 @@ button.activo{
 .dev-row button{
   border:none;
   padding:8px 12px;
-  background:#bcdcff;
+  background:#eee;
   font-weight:700;
   cursor:pointer;
   border-radius:999px;
 }
 
 .dev-row button:hover{
-  background:#bcdcff;
+  background:#ddd;
 }
 
 /* ===== INPUTS NUMÉRICOS Y COLOR ===== */
@@ -357,71 +356,17 @@ input[type="number"]{
   paint-order: stroke fill;
 }
 
-/* ================= MOBILE (MODAL REAL, SIN SCROLL VERTICAL) ================= */
-@media (max-width: 520px){
-
-  html, body{ overflow-x:hidden; }
-
-  /* overlay igual, pero con padding chico */
-  #modalDevFase1.modal-overlay,
-  #modalDevFase2.modal-overlay,
-  #modalDevFase3.modal-overlay{
-    padding: 10px;
-  }
-
-  /* modal centrado (NO full screen) y sin scroll vertical */
-  .modal-overlay .modal-contenido.modal-dev{
-    width: min(520px, 96vw);
-    max-width: 96vw;
-    max-height: 92dvh;      /* ✅ dVH real en móvil */
-    overflow: hidden;       /* ✅ sin scroll vertical */
-    display: grid;
-    grid-template-rows: auto 1fr auto auto auto; /* cerrar / preview / galerías / controles / botones */
-    gap: 10px;
-    padding: 12px;
-    border-radius: 18px;
-  }
-
-  /* preview ocupa el espacio disponible (sin “vacío” raro) */
-  .dev-preview{
-    width: 100%;
-    max-width: 100%;
-    margin: 0 auto;
-    height: auto;
-  }
-
-  /* galerías: solo horizontal */
-  .dev-fondos, .dev-adorno-list{
-    width: 100%;
-    margin: 0;
-    padding: 6px 2px;
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  /* controles compactos para que entren */
-  .dev-row, .dev-tools, .dev-adorno-row{
-    margin-top: 0;
-    gap: 8px;
-  }
-
-  .dev-row button, .dev-tools button{
-    padding: 8px 10px;
-    font-size: 14px;
-  }
-
-  input[type="number"]{ width: 56px; }
-  .dev-fondo-chip{ padding: 8px 10px; border-radius: 14px; }
-
-  /* dropdown fuentes dentro de pantalla */
-  .dev-lista-fuentes{
-    left: 10px;
-    right: 10px;
-    max-width: calc(100vw - 20px);
-    max-height: 45dvh;
-  }
+/* ================= Evitar estiramiento del adorno (fase 2 y en final) ================= */
+.dev-adorno-img{
+  display:block;
+  width: min(360px, 78%);
+  height: auto;             /* ✅ NO se estira */
+  max-height: 90px;
+  object-fit: contain;
+  margin: 10px auto 0;
 }
-
-
 </style>
+
+--
+
+
