@@ -637,15 +637,11 @@ function textShadowLegible(textHex){
 function textShadowLegibleFinal(textHex){
   const oc = outlineColor(textHex || "#000000");
   return `
-    -3px 0 ${oc},
-     3px 0 ${oc},
-     0 -3px ${oc},
-     0  3px ${oc},
-    -2px -2px ${oc},
-     2px -2px ${oc},
-    -2px  2px ${oc},
-     2px  2px ${oc},
-     0 0 6px ${oc}
+    -2px 0 ${oc},
+     2px 0 ${oc},
+     0 -2px ${oc},
+     0  2px ${oc},
+     0 0 3px ${oc}
   `;
 }
 
