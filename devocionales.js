@@ -1004,8 +1004,10 @@ function devRenderFase(fase){
 
     const st = DEV.f2;
 
-    const pxPreview = Math.max(8, (st.size * scalePreviewF2()));
+    // ✅ st.size = tamaño EN PREVIEW (lo que el usuario ve)
+    const pxPreview = Math.max(8, Number(st.size || 26));
     t.innerHTML = buildFase2HTML(pxPreview);
+     
     if (b) b.style.display = "none";
 
     // fondo plano
@@ -1197,8 +1199,11 @@ async function renderFinalCanvasCaptureReal(){
   texto.style.webkitTextStroke = "1.2px " + outlineColor(st.color);
   texto.style.paintOrder = "normal";
 
-  // ✅ tamaño real (canvas)
-  texto.innerHTML = buildFase2HTML(st.size);
+  // ✅ Convertimos de “preview px” a “canvas px”
+  const sc = scalePreviewF2() || 1;
+  const canvasPx = Math.max(10, Math.round((Number(st.size || 26) / sc)));
+
+  texto.innerHTML = buildFase2HTML(canvasPx);
 
   wrap.appendChild(texto);
   node.appendChild(wrap);
