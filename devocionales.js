@@ -986,9 +986,7 @@ function devRenderFase(fase){
 
    // ✅ OUTLINE estable (para preview + captura)
    t.style.textShadow = textShadowLegible(st.color);
-   t.style.webkitTextStroke = "0.8px " + outlineColor(st.color);
-   t.style.paintOrder = "normal";
-
+ 
     // wrapper bg
     w.style.backgroundColor = wrapperBgFromOpacity(st.op);
 
@@ -1020,9 +1018,7 @@ function devRenderFase(fase){
 
    // ✅ OUTLINE estable (para preview + captura)
    t.style.textShadow = textShadowLegible(st.color);
-   t.style.webkitTextStroke = "0.8px " + outlineColor(st.color);
-   t.style.paintOrder = "normal";
-
+ 
    w.style.backgroundColor = "transparent"; // ✅ sin opacidad en Fase 2
 
     applyTextStylesToOne(t, st);
