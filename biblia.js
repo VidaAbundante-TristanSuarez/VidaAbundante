@@ -2567,5 +2567,28 @@ document.addEventListener("DOMContentLoaded", () => {
   // ✅ asegurar filtros cerrados al iniciar
   const secBiblia = document.getElementById("seccion-biblia");
   if (secBiblia) secBiblia.classList.remove("filtros-abiertos");
+
+  // ================= 🔺 IGLESIA: SUB-SECCIONES =================
+  window.mostrarIglesiaSub = (sub) => {
+  // oculta todas las sub-secciones de iglesia
+  ["devocionales", "abc", "xyz"].forEach(k => {
+    const el = document.getElementById("iglesia-" + k);
+    if (el) el.style.display = (k === sub) ? "block" : "none";
+  });
+
+  // marcar botón activo (si tenés botones dentro de #seccion-iglesia)
+  const wrap = document.getElementById("seccion-iglesia");
+  if (wrap) {
+    wrap.querySelectorAll(".iglesia-tab, .nav-btn, button").forEach(b => b.classList.remove("activo"));
+    const btn = wrap.querySelector(`[onclick="mostrarIglesiaSub('${sub}')"]`);
+    if (btn) btn.classList.add("activo");
+  }
+
+  // demo / fallback (si no existe la sección, al menos muestra un texto)
+  const cont = document.getElementById("iglesia-contenido");
+  if (cont && !document.getElementById("iglesia-" + sub)) {
+    cont.innerHTML = `Aquí va tu contenido de ${sub}`;
+  }
+};
   
 }); // ================= ✅ CIERRA INIT ÚNICO =====
