@@ -122,80 +122,31 @@ function canvasPointFromClient(clientX, clientY){
 function bindPointerCropEvents(){
   const canvas = DEV.canvas;
   if (!canvas) return;
-
   canvas.style.touchAction = "none";
-
-  let mode = null; // "new" | "move"
-  let moveOff = null;
-
-  function insideCrop(p){
-    const c = DEV.crop;
-    if (!c) return false;
-    return p.x >= c.x && p.x <= (c.x + c.w) && p.y >= c.y && p.y <= (c.y + c.h);
-  }
-
-  function clampCrop(){
-    const c = DEV.crop;
-    if (!c) return;
-    c.x = Math.max(0, Math.min(c.x, DEV.canvas.width  - c.w));
-    c.y = Math.max(0, Math.min(c.y, DEV.canvas.height - c.h));
-  }
 
   canvas.addEventListener("pointerdown", (e)=>{
     if (!DEV.recortando || !DEV.img) return;
-
     canvas.setPointerCapture?.(e.pointerId);
-
-    const p = canvasPointFromClient(e.clientX, e.clientY);
-
-    // ✅ si ya hay recorte y tocás adentro: mover (NO reinicia)
-    if (DEV.crop && insideCrop(p)) {
-      mode = "move";
-      DEV.drawing = true;
-      moveOff = { dx: p.x - DEV.crop.x, dy: p.y - DEV.crop.y };
-      e.preventDefault();
-      return;
-    }
-
-    // ✅ si tocás afuera: crear uno nuevo
-    mode = "new";
     DEV.drawing = true;
-    DEV.start = p;
-    DEV.crop = { x: p.x, y: p.y, w: 1, h: 1 };
+    DEV.start = canvasPointFromClient(e.clientX, e.clientY);
+    DEV.crop = { x: DEV.start.x, y: DEV.start.y, w: 1, h: 1 };
     draw();
     e.preventDefault();
   }, {passive:false});
 
   canvas.addEventListener("pointermove", (e)=>{
-    if (!DEV.recortando || !DEV.img || !DEV.drawing) return;
-
+    if (!DEV.recortando || !DEV.img || !DEV.drawing || !DEV.start) return;
     const p = canvasPointFromClient(e.clientX, e.clientY);
-
-    if (mode === "move" && DEV.crop && moveOff) {
-      DEV.crop.x = p.x - moveOff.dx;
-      DEV.crop.y = p.y - moveOff.dy;
-      clampCrop();
-      draw();
-      e.preventDefault();
-      return;
-    }
-
-    if (mode === "new" && DEV.start) {
-      DEV.crop = normalizeRect(DEV.start, p);
-      draw();
-      e.preventDefault();
-    }
+    DEV.crop = normalizeRect(DEV.start, p);
+    draw();
+    e.preventDefault();
   }, {passive:false});
 
   const end = (e)=>{
     if (!DEV.recortando || !DEV.drawing) return;
-
     DEV.drawing = false;
     DEV.start = null;
-    mode = null;
-    moveOff = null;
 
-    // ✅ si quedó muy chico, lo anulamos
     if (DEV.crop && (DEV.crop.w < 10 || DEV.crop.h < 10)) {
       DEV.crop = null;
       draw();
@@ -949,50 +900,45 @@ function buildFase2HTML(basePx){
   const fw = DEV.f2.style.bold ? 700 : 400;
 
   const adorno = DEV.f2.adornoUrl;
+  const adornoW = Math.max(30, Math.min(95, Number(DEV.f2.adornoWidth || 70)));
 
-  // ✅ Reservamos espacio abajo para el adorno SIEMPRE
-  const ADORNO_RESERVA = adorno ? 110 : 20; // px aprox (adorno + aire)
-
-  return `
-    <div style="position:relative; width:100%; height:100%;">
-
-      <!-- TEXTO: centrado en el espacio disponible (sin tapar el adorno) -->
+    return `
+    <div style="
+      width:100%;
+      height:100%;
+      display:flex;
+      align-items:stretch;
+      justify-content:center;
+      text-align:center;
+    ">
       <div style="
-        position:absolute;
-        left:0; right:0; top:0; bottom:${ADORNO_RESERVA}px;
+        width:95%;
+        height:100%;
         display:flex;
+        flex-direction:column;
         align-items:center;
-        justify-content:center;
-        text-align:center;
-        padding: 10px 10px 0 10px;
+        justify-content:space-between;   /* ✅ texto arriba, adorno abajo */
+        padding:14px 0 16px 0;           /* ✅ margen superior chico */
         box-sizing:border-box;
       ">
         <div style="
-          width:100%;
           font-size:${basePx}px;
           font-weight:${fw};
           white-space:pre-line;
           line-height:1.25;
-          word-break:break-word;
         ">
           ${esc(txt)}
         </div>
+
+        ${adorno ? `
+          <img
+          src="${adorno}"
+          alt="adorno"
+          class="dev-adorno-img"
+          style="opacity:0.95;"
+          />
+        ` : `<div style="height:10px;"></div>`}
       </div>
-
-      <!-- ADORNO: fijo abajo, SIEMPRE visible -->
-      ${adorno ? `
-        <div style="
-          position:absolute;
-          left:0; right:0;
-          bottom:8px;
-          display:flex;
-          justify-content:center;
-          pointer-events:none;
-        ">
-          <img src="${adorno}" alt="adorno" class="dev-adorno-img" style="opacity:.95;">
-        </div>
-      ` : ``}
-
     </div>
   `;
 }
@@ -1040,7 +986,9 @@ function devRenderFase(fase){
 
    // ✅ OUTLINE estable (para preview + captura)
    t.style.textShadow = textShadowLegible(st.color);
-   
+   t.style.webkitTextStroke = "0.8px " + outlineColor(st.color);
+   t.style.paintOrder = "normal";
+
     // wrapper bg
     w.style.backgroundColor = wrapperBgFromOpacity(st.op);
 
@@ -1072,7 +1020,9 @@ function devRenderFase(fase){
 
    // ✅ OUTLINE estable (para preview + captura)
    t.style.textShadow = textShadowLegible(st.color);
-  
+   t.style.webkitTextStroke = "0.8px " + outlineColor(st.color);
+   t.style.paintOrder = "normal";
+
    w.style.backgroundColor = "transparent"; // ✅ sin opacidad en Fase 2
 
     applyTextStylesToOne(t, st);
