@@ -750,11 +750,16 @@ function sugerirTamanoFase2Auto(texto){
     const lineH = px * 1.20;
     const totalH = lines.length * lineH;
     if (totalH <= altoDisponible) {
-  const sc = scalePreviewF2() || 1;
-  return roundToHalf(px / sc);
+    const sc = scalePreviewF2() || 1;
+    const sugerido = roundToHalf(px / sc);
+
+    /* ✅ clamp: evita tamaños gigantes en celular */
+    return Math.min(34, Math.max(14, sugerido));
 }
   }
-  return roundToHalf(minPx / (scalePreviewF2() || 1));
+    const sc = scalePreviewF2() || 1;
+    const sugerido = roundToHalf(minPx / sc);
+    return Math.min(34, Math.max(14, sugerido));
 }
 
 function devSyncStyleButtons(fase){
@@ -1186,6 +1191,7 @@ async function renderFinalCanvasCaptureReal(){
   // ✅ TEXTO adentro del wrapper
   const texto = document.createElement("div");
   texto.style.width = "100%";
+  texto.style.height = "100%";  
   texto.style.display = "block";
   texto.style.textAlign = "center";
   texto.style.alignItems = "center";
