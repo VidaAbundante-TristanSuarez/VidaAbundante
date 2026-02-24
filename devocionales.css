@@ -357,14 +357,5 @@ input[type="number"]{
   paint-order: stroke fill;
 }
 
-/* ================= Evitar estiramiento del adorno (fase 2 y en final) ================= */
-.dev-adorno-img{
-  display:block;
-  width: min(360px, 78%);
-  height: auto;             /* ✅ NO se estira */
-  max-height: 90px;
-  object-fit: contain;
-  margin: 10px auto 0;
-}
 
 </style>
