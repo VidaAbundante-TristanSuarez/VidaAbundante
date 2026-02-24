@@ -581,19 +581,20 @@
     <button class="cerrar-modal" type="button" onclick="devCerrarTodo()">✖</button>
 
     <!-- PREVIEW (9:7) -->
-<div id="dev2Preview" class="dev-preview dev-97">
-  <div id="dev2TextoWrapper">
-    <div id="dev2TextoBack" class="dev-text back"></div>
-    <div id="dev2Texto" class="dev-text front"></div>
+    <div id="dev2Preview" class="dev-preview dev-97">
+      <div id="dev2TextoWrapper">
+        <div id="dev2TextoBack" class="dev-text back"></div>
+        <div id="dev2Texto" class="dev-text front"></div>
+      </div>
+    </div>
+ 
+   <!-- ADORNOS -->
+  <div class="dev-adorno-row">
+    <div class="dev-adorno-label">Adorno</div>
+    <div id="dev2Adornos" class="dev-adorno-list"></div>
   </div>
-</div>
-
-<!-- ADORNOS (sin título) -->
-<div class="dev-adorno-row">
-  <div id="dev2Adornos" class="dev-adorno-list"></div>
-</div>
-
-<!-- CONTROLES en UNA sola fila + Fondo plano vistoso (sin títulos) -->
+   
+   <!-- CONTROLES en UNA sola fila + Fondo plano vistoso (sin títulos) -->
 <div class="dev-tools">
   <div class="dev-fondo-chip" title="Fondo plano">
     <input id="dev2Fondo" type="color" value="#ffffff">
@@ -605,109 +606,21 @@
 
   <input id="dev2Color" class="color-input" type="color" value="#000000">
 </div>
-   
-    <!-- ANTERIOR / SIGUIENTE -->
-    <div class="dev-row dev-final" style="justify-content:space-between;">
-      <button type="button" class="btn-ghost" onclick="devVolverFase1()">
-        <i class="fa-solid fa-chevron-left"></i> Anterior
-      </button>
-
-      <button type="button" class="btn-primary" onclick="devIrFase3()">
-        Siguiente <i class="fa-solid fa-chevron-right"></i>
-      </button>
-    </div>
-
-    <canvas id="devCanvas2" style="display:none;"></canvas>
-  </div>
-</div>
-
-<!-- ================= MODAL DEVOCIONAL - FASE 1 (9:9) ================= -->
-<div id="modalDevFase1" class="modal-overlay" aria-hidden="true">
-  <div class="modal-contenido modal-dev">
-
-    <!-- CERRAR -->
-    <button class="cerrar-modal" type="button" onclick="devCerrarTodo()">✖</button>
-
-    <!-- PREVIEW (9:9) -->
-    <div id="dev1Preview" class="dev-preview dev-99">
-      <div id="dev1TextoWrapper" class="dev-textwrap">
-        <div id="dev1TextoBack" class="dev-text back"></div>
-        <div id="dev1Texto" class="dev-text front"></div>
-      </div>
-    </div>
-
-    <!-- GALERIA FONDOS -->
-    <div id="dev1Fondos" class="dev-fondos"></div>
-
-    <!-- CONTROLES (igual lógica que Biblia) -->
-    <div class="dev-row">
-      <input id="dev1Opacidad" class="opacidad-slider" type="range" min="0" max="1" step="0.05" value="0.35">
-
-      <button type="button" class="btn-ghost" onclick="devCambiarTamano(1,-1)">−</button>
-      <input id="dev1Tamano" class="tamano-input" type="number" value="30" min="10" max="90" step="0.5">
-      <button type="button" class="btn-ghost" onclick="devCambiarTamano(1,1)">+</button>
-
-      <input id="dev1Color" class="color-input" type="color" value="#000000">
-    </div>
 
     <div class="dev-row">
       <div style="position:relative;">
-        <button id="dev1BtnFuentes" class="style-btn" type="button">🔤 Fuentes</button>
-        <div id="dev1ListaFuentes" class="dev-lista-fuentes"></div>
+        <button id="dev2BtnFuentes" class="style-btn" type="button">🔤 Fuentes</button>
+        <div id="dev2ListaFuentes" class="dev-lista-fuentes"></div>
       </div>
 
       <div class="style-row">
-        <button type="button" id="dev1Upper" onclick="devToggleStyle(1,'upper')">Aa</button>
-        <button type="button" id="dev1Bold" onclick="devToggleStyle(1,'bold')">B</button>
-        <button type="button" id="dev1Italic" onclick="devToggleStyle(1,'italic')">I</button>
-        <button type="button" id="dev1Under" onclick="devToggleStyle(1,'underline')">U</button>
+        <button type="button" id="dev2Upper" onclick="devToggleStyle(2,'upper')">Aa</button>
+        <button type="button" id="dev2Bold" onclick="devToggleStyle(2,'bold')">B</button>
+        <button type="button" id="dev2Italic" onclick="devToggleStyle(2,'italic')">I</button>
+        <button type="button" id="dev2Under" onclick="devToggleStyle(2,'underline')">U</button>
       </div>
     </div>
 
-    <!-- SOLO SIGUIENTE -->
-    <div class="dev-row dev-final">
-      <button type="button" class="btn-primary" onclick="devIrFase2()">
-        Siguiente <i class="fa-solid fa-chevron-right"></i>
-      </button>
-    </div>
-
-    <!-- canvas internos -->
-    <canvas id="devCanvas1" style="display:none;"></canvas>
-  </div>
-</div>
-
-<!-- ================= MODAL DEVOCIONAL - FASE 2 (9:7) ================= -->
-<div id="modalDevFase2" class="modal-overlay" aria-hidden="true">
-  <div class="modal-contenido modal-dev">
-
-    <button class="cerrar-modal" type="button" onclick="devCerrarTodo()">✖</button>
-
-    <!-- PREVIEW (9:7) -->
-<div id="dev2Preview" class="dev-preview dev-97">
-  <div id="dev2TextoWrapper">
-    <div id="dev2TextoBack" class="dev-text back"></div>
-    <div id="dev2Texto" class="dev-text front"></div>
-  </div>
-</div>
-
-<!-- ADORNOS (sin título) -->
-<div class="dev-adorno-row">
-  <div id="dev2Adornos" class="dev-adorno-list"></div>
-</div>
-
-<!-- CONTROLES en UNA sola fila + Fondo plano vistoso (sin títulos) -->
-<div class="dev-tools">
-  <div class="dev-fondo-chip" title="Fondo plano">
-    <input id="dev2Fondo" type="color" value="#ffffff">
-  </div>
-
-  <button type="button" class="btn-ghost" onclick="devCambiarTamano(2,-1)">−</button>
-  <input id="dev2Tamano" class="tamano-input" type="number" value="26" min="10" max="90" step="0.5">
-  <button type="button" class="btn-ghost" onclick="devCambiarTamano(2,1)">+</button>
-
-  <input id="dev2Color" class="color-input" type="color" value="#000000">
-</div>
-   
     <!-- ANTERIOR / SIGUIENTE -->
     <div class="dev-row dev-final" style="justify-content:space-between;">
       <button type="button" class="btn-ghost" onclick="devVolverFase1()">
@@ -748,16 +661,16 @@
 
    
    <!-- BOTON AUDIO -->
-   <div class="dev-row" style="justify-content:center;">
-      
-      <button type="button" class="btn-light" onclick="devVolverFase2()">
-      <i class="fa-solid fa-chevron-left"></i> Anterior
-      </button>
+    <div class="dev-row" style="justify-content:center;">
+    
+<button type="button" class="btn-light" onclick="devVolverFase2()">
+  <i class="fa-solid fa-chevron-left"></i> Anterior
+</button>
 
-     <button type="button" id="devBtnAudio" class="btn-light" onclick="devAbrirAudio()">
-     <i class="fa-solid fa-headphones"></i> Audio
-     </button>
-   </div>
+<button type="button" id="devBtnAudio" class="btn-light" onclick="devAbrirAudio()">
+  <i class="fa-solid fa-headphones"></i> Audio
+</button>
+    </div>
 
     <!-- BOTONES FINALES (bloqueados hasta audio OK) -->
     <div class="dev-row dev-final" style="justify-content:center; gap:10px;">
@@ -791,6 +704,7 @@
   
 </body>
 </html>
+
 
 
 
