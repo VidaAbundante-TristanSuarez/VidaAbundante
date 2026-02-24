@@ -1147,7 +1147,7 @@ async function renderFinalCanvasCaptureReal(){
      
     // ✅ OUTLINE estable
     texto.style.textShadow = textShadowLegibleFinal(st.color);
-    texto.style.webkitTextStroke = "1.2px " + outlineColor(st.color);
+    texto.style.webkitTextStroke = "0.5px " + outlineColor(st.color);
     texto.style.paintOrder = "normal";
 
     // ✅ IMPORTANTE: tamaño real (sin scalePreviewF1)
