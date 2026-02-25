@@ -751,10 +751,14 @@ function sugerirTamanoFase2Auto(texto){
     const totalH = lines.length * lineH;
     if (totalH <= altoDisponible) {
   const sc = scalePreviewF2() || 1;
-  return roundToHalf(px / sc);
+  let suger = roundToHalf(px / sc);
+suger = Math.max(8, roundToHalf(suger - 4));   // ✅ baja ~4 puntos
+return suger;
 }
   }
-  return roundToHalf(minPx / (scalePreviewF2() || 1));
+  let suger = roundToHalf(minPx / (scalePreviewF2() || 1));
+suger = Math.max(8, roundToHalf(suger - 4));
+return suger;
 }
 
 function devSyncStyleButtons(fase){
@@ -892,13 +896,14 @@ function buildFase2HTML(basePx){
   const p2 = DEV.p2;
   if (!p2) return "";
 
-  const txt = `Reflexión: ${oneLine(p2.reflexion || "")}\nOración: ${oneLine(p2.oracion || "")}`;
+  const ref = oneLine(p2.reflexion || "");
+  const ora = oneLine(p2.oracion || "");
   const fw = DEV.f2.style.bold ? 700 : 400;
 
   const adorno = DEV.f2.adornoUrl;
   const adornoW = Math.max(30, Math.min(95, Number(DEV.f2.adornoWidth || 70)));
 
-    return `
+  return `
     <div style="
       width:100%;
       height:100%;
@@ -913,28 +918,36 @@ function buildFase2HTML(basePx){
         display:flex;
         flex-direction:column;
         align-items:center;
-        justify-content:space-between;   /* ✅ texto arriba, adorno abajo */
-        padding:14px 0 16px 0;           /* ✅ margen superior chico */
+        padding:14px 0 18px 0;
         box-sizing:border-box;
       ">
+
+        <!-- ✅ 2 párrafos SIN línea vacía entre medio -->
         <div style="
+          width:100%;
           font-size:${basePx}px;
           font-weight:${fw};
-          white-space:pre-line;
           line-height:1.25;
         ">
-          ${esc(txt)}
+          <div style="margin:0;">Reflexión: ${esc(ref)}</div>
+          <div style="margin-top:10px;">Oración: ${esc(ora)}</div>
         </div>
+
+        <!-- ✅ separador flexible: empuja el adorno hacia abajo -->
+        <div style="flex:1;"></div>
 
         ${adorno ? `
           <img
             src="${adorno}"
             alt="adorno"
+            class="dev-adorno-img"
             style="
               width:${adornoW}%;
               max-height:90px;
               object-fit:contain;
               opacity:0.95;
+              margin-top:14px;   /* ✅ más lejos del texto */
+              margin-bottom:2px;
             "
           />
         ` : `<div style="height:10px;"></div>`}
@@ -1488,17 +1501,31 @@ window.devCompartirFinal = async () => {
 
     const file = new File([blob], "devocional.png", { type:"image/png" });
 
+    // ✅ 1) Share sheet real (celulares compatibles)
     try{
       if (navigator.share && navigator.canShare?.({ files:[file] })) {
         await navigator.share({ files:[file], title:"Devocional" });
-      } else {
-        await devDescargarFinal();
-        alert("Tu dispositivo no permite compartir directo. Se descargó la imagen.");
+        return;
       }
     }catch(e){
-      console.warn(e);
-      await devDescargarFinal();
+      console.warn("Share falló:", e);
     }
+
+    // ✅ 2) Fallback: copiar imagen al portapapeles (muchos navegadores lo permiten)
+    try{
+      if (navigator.clipboard && window.ClipboardItem) {
+        await navigator.clipboard.write([ new ClipboardItem({ "image/png": blob }) ]);
+        alert("✅ Imagen copiada. Pegala en WhatsApp / Instagram / Facebook.");
+        return;
+      }
+    }catch(e){
+      console.warn("Clipboard falló:", e);
+    }
+
+    // ✅ 3) Último fallback: abrir la imagen en una pestaña (y/o descargar)
+    const url = URL.createObjectURL(blob);
+    window.open(url, "_blank");
+    setTimeout(()=> URL.revokeObjectURL(url), 60000);
   }, "image/png");
 };
 
