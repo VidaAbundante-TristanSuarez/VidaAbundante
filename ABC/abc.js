@@ -83,7 +83,7 @@ async function cargarABCTema() {
   document.getElementById("abcTitulo").textContent = tema.titulo;
   document.getElementById("abcAudio").src = tema.audio;
 
-  const r = await fetch(tema.html);
+  const r = await fetch(encodeURI(tema.html));
   const html = await r.text();
 
   document.getElementById("abcContenido").innerHTML = html;
