@@ -2568,26 +2568,23 @@ document.addEventListener("DOMContentLoaded", () => {
   const secBiblia = document.getElementById("seccion-biblia");
   if (secBiblia) secBiblia.classList.remove("filtros-abiertos");
 
-  // ================= 🔺 IGLESIA: SUB-SECCIONES =================
+// ================= 🔺 IGLESIA: SUB-SECCIONES =================
 window.mostrarIglesiaSub = (sub) => {
-
-  // 1) mostrar/ocultar sub-secciones
   ["devocionales", "abc", "xyz"].forEach(k => {
     const el = document.getElementById("iglesia-" + k);
     if (el) el.style.display = (k === sub) ? "block" : "none";
   });
 
-  // 2) marcar botón activo (solo los tabs de iglesia)
   const wrap = document.getElementById("seccion-iglesia");
   if (wrap) {
-    wrap.querySelectorAll(".panel-tabs button").forEach(b => b.classList.remove("activo"));
-    const btn = wrap.querySelector(`.panel-tabs button[onclick="mostrarIglesiaSub('${sub}')"]`);
+    wrap.querySelectorAll(".iglesia-tab, .nav-btn, button").forEach(b => b.classList.remove("activo"));
+    const btn = wrap.querySelector(`[onclick="mostrarIglesiaSub('${sub}')"]`);
     if (btn) btn.classList.add("activo");
   }
 
-  // 3) ✅ si entro a ABC, inicializarlo (si existe)
+  // ✅ CLAVE: cuando entro a ABC, lo inicializo
   if (sub === "abc") {
-    window.abcInit?.();   // la vamos a definir en abc.js
+    window.abcInit?.();
   }
 };
   
