@@ -2,12 +2,10 @@
 
 const ABC_TEMAS = [
   {
-    titulo: "INTRO",
     html: "ABC/INTRO.html",
     audio: "https://firebasestorage.googleapis.com/v0/b/vidaabundante-f118a.firebasestorage.app/o/ABC%2Fintro_abc.mp3?alt=media&token=c51321da-2f7f-4092-b90d-a61df6da671a"
   },
   {
-    titulo: "SALVACIÓN",
     html: "ABC/1 Salvación.html",
     audio: "https://firebasestorage.googleapis.com/v0/b/vidaabundante-f118a.firebasestorage.app/o/ABC%2F1%20Salvaci%C3%B3n.mp3?alt=media&token=7da0ae0f-da01-4a58-8ae0-5e0a037c8076"
   },
