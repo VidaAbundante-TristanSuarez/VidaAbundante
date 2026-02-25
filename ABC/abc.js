@@ -33,13 +33,20 @@ window.mostrarABC = async () => {
           padding: 8px 0 10px;
         }
         #abcIndice{
-          flex:1;
-          display:flex; gap:8px; overflow-x:auto; overflow-y:hidden;
-          padding: 6px 2px;
-          -webkit-overflow-scrolling: touch;
-          scroll-snap-type: x proximity;
-        }
+  flex:1;
+  display:flex; gap:8px;
+  overflow-x:auto; overflow-y:hidden;
+  padding: 6px 2px;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x proximity;
+
+  touch-action: pan-x;     /* ✅ permite arrastre horizontal (cel) */
+  scroll-behavior: smooth; /* ✅ se siente mejor */
+}
         #abcIndice::-webkit-scrollbar{ height: 8px; }
+#abcIndice{ cursor: grab; }
+#abcIndice.drag{ cursor: grabbing; }
+        
         #abcIndice button{
           border:none; cursor:pointer;
           padding: 10px 12px;
@@ -175,6 +182,43 @@ function construirIndiceABC() {
   });
 
   refrescarUIIndice();
+  habilitarScrollArrastrandoIndice();
+}
+
+function habilitarScrollArrastrandoIndice() {
+  const el = document.getElementById("abcIndice");
+  if (!el) return;
+
+  // ✅ PC: rueda vertical -> scroll horizontal
+  el.addEventListener("wheel", (e) => {
+    if (e.shiftKey) return;          // si usan shift, no molestamos
+    e.preventDefault();
+    el.scrollLeft += e.deltaY;
+  }, { passive: false });
+
+  // ✅ Drag para PC (mouse) y también sirve con touch en algunos browsers
+  let down = false;
+  let startX = 0;
+  let startLeft = 0;
+
+  el.addEventListener("mousedown", (e) => {
+    down = true;
+    startX = e.pageX;
+    startLeft = el.scrollLeft;
+    el.classList.add("drag");
+  });
+
+  window.addEventListener("mouseup", () => {
+    down = false;
+    el.classList.remove("drag");
+  });
+
+  window.addEventListener("mousemove", (e) => {
+    if (!down) return;
+    e.preventDefault();
+    const dx = e.pageX - startX;
+    el.scrollLeft = startLeft - dx;
+  });
 }
 
 function refrescarUIIndice() {
