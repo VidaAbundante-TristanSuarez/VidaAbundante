@@ -2583,9 +2583,9 @@ window.mostrarIglesiaSub = (sub) => {
   }
 
   // ✅ CLAVE: cuando entro a ABC, lo inicializo
-  if (sub === "abc") {
-    window.abcInit?.();
-  }
+if (sub === "abc") {
+  window.mostrarABC?.();
+}
 };
   
 }); // ================= ✅ CIERRA INIT ÚNICO =====
