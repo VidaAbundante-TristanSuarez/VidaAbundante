@@ -1,4 +1,10 @@
  <style>
+/* ================= COLOR UNIFICADO UI 🌈================= */
+:root {
+  --ui-azul-claro: #bcdcff;
+  --ui-azul-hover: #1c6fcb;
+}
+
 /* ================= DEVOCIONALES - MODALES LIMPIOS ================= */
 
 .modal-dev{
