@@ -421,6 +421,55 @@ button.activo,
   .dev-adorno-thumb{ width:58px; height:22px; }
 }
 
+/* ================= CERRAR (X) prolija y chica ================= */
+.modal-overlay .modal-contenido{
+  position: relative;  /* ✅ para que la X se posicione dentro */
+}
+
+.cerrar-modal{
+  position:absolute;
+  top:10px;
+  right:10px;
+  width:32px;
+  height:32px;
+  border-radius:999px;
+  font-size:16px;
+  line-height:32px;
+  padding:0;
+  background:#fff;
+  border:1px solid #ddd;
+  cursor:pointer;
+}
+
+/* ================= FASE 3: que SIEMPRE entre sin scroll ================= */
+#modalDevFase3 .modal-contenido.modal-dev{
+  height: calc(100dvh - 24px);   /* ocupa el alto disponible real */
+  max-height: calc(100dvh - 24px);
+}
+
+#modalDevFase3 .modal-contenido.modal-dev{
+  display:flex;
+  flex-direction:column;
+}
+
+/* caja donde va la imagen final */
+#devF3PreviewBox{
+  flex: 1;
+  min-height: 0;                 /* ✅ clave para evitar cortes raros en mobile */
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+/* imagen final: se adapta al espacio libre */
+#devFinalImg{
+  width: min(420px, 92vw);
+  height: auto;
+  max-height: calc(100dvh - 260px); /* ✅ resta header + botones aprox */
+  object-fit: contain;
+}
+
+
 </style>
 
 
