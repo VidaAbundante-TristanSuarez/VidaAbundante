@@ -88,6 +88,45 @@ window.mostrarABC = async () => {
           background: rgba(255,255,255,.06);
           border-color: rgba(255,255,255,.12);
         }
+
+        /* ===== DOC RESPONSIVE (muy importante) ===== */
+#abcDoc{
+  width:100%;
+  max-width:100%;
+  margin:0;
+  padding:0;
+  overflow-x:hidden;
+}
+
+/* quitar márgenes heredados del Word */
+#abcDoc *{
+  max-width:100% !important;
+}
+
+/* párrafos y títulos sin margen lateral exagerado */
+#abcDoc p,
+#abcDoc h1,
+#abcDoc h2,
+#abcDoc h3,
+#abcDoc h4,
+#abcDoc h5,
+#abcDoc h6{
+  margin-left:0 !important;
+  margin-right:0 !important;
+}
+
+/* imágenes adaptables */
+#abcDoc img{
+  max-width:100% !important;
+  height:auto !important;
+}
+
+/* tablas adaptables */
+#abcDoc table{
+  width:100% !important;
+  display:block;
+  overflow-x:auto;
+}
       </style>
 
       <div id="abcWrap">
@@ -185,7 +224,7 @@ async function cargarABCTema(desdeIndice = false) {
     const html = await r.text();
 
     // ✅ metemos el HTML exportado dentro. (si trae <html> completo, igual lo muestra)
-    cont.innerHTML = html;
+    cont.innerHTML = `<div id="abcDoc">${html}</div>`;
 
   } catch (e) {
     cont.innerHTML = `
