@@ -560,7 +560,66 @@ window.generarImagen = () => {
 
 // Llamalo cada vez que entras a ABC (lo invoco desde mostrarABC)
 window.__abcOnEnter = () => {
+  abcPortalBarraOn();      // ✅ ESTA ES LA CLAVE
   abcAjustarBarraUI();
   abcAplicarFontSize();
 };
 
+// =====================================================
+// ✅ ABC: MOSTRAR BARRA BIBLIA TAMBIÉN EN ABC (PORTAL)
+// (sin tocar biblia.js)
+// =====================================================
+let __abcBarParent = null;
+let __abcBarNext = null;
+let __abcBtnParent = null;
+let __abcBtnNext = null;
+
+function abcPortalBarraOn() {
+  const bar = document.getElementById("accionesBiblia");
+  const btn = document.getElementById("btnMostrarBarra");
+
+  if (!bar) {
+    console.warn("❌ No existe #accionesBiblia en el DOM. La barra está dentro de otra sección o no está cargada.");
+    return;
+  }
+
+  // guardar ubicación original (solo la primera vez)
+  if (!__abcBarParent) {
+    __abcBarParent = bar.parentNode;
+    __abcBarNext = bar.nextSibling;
+  }
+
+  if (btn && !__abcBtnParent) {
+    __abcBtnParent = btn.parentNode;
+    __abcBtnNext = btn.nextSibling;
+  }
+
+  // mover al body para que no dependa del display:none del contenedor
+  document.body.appendChild(bar);
+  if (btn) document.body.appendChild(btn);
+
+  // asegurar que se vea (por si algún contenedor la estaba ocultando)
+  bar.style.display = "";
+  bar.style.visibility = "visible";
+  bar.style.opacity = "1";
+}
+
+function abcPortalBarraOff() {
+  const bar = document.getElementById("accionesBiblia");
+  const btn = document.getElementById("btnMostrarBarra");
+
+  // devolver a su lugar original
+  if (bar && __abcBarParent) {
+    if (__abcBarNext) __abcBarParent.insertBefore(bar, __abcBarNext);
+    else __abcBarParent.appendChild(bar);
+  }
+
+  if (btn && __abcBtnParent) {
+    if (__abcBtnNext) __abcBtnParent.insertBefore(btn, __abcBtnNext);
+    else __abcBtnParent.appendChild(btn);
+  }
+}
+
+// 👉 opcional: si tenés una función global que cambia de secciones,
+// podés llamar abcPortalBarraOff() al salir de ABC.
+// Si no, no pasa nada: puede quedar “portaleada” y sigue funcionando.
