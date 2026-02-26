@@ -1492,24 +1492,32 @@ window.devDescargarFinal = async () => {
   }
 };
 
+// ========================⭐ COMPARTIR DEVOCIONAL (como Biblia) ====================
 window.devCompartirFinal = async () => {
   const c = await renderFinalCanvasCaptureReal();
   if (!c) return;
 
-  c.toBlob(async (blob)=>{
-    if (!blob) return devDescargarFinal();
-
-    const file = new File([blob], "devocional.png", { type:"image/png" });
-
-    // ✅ 1) Share sheet real (celulares compatibles)
-    try{
-      if (navigator.share && navigator.canShare?.({ files:[file] })) {
-        await navigator.share({ files:[file], title:"Devocional" });
-        return;
-      }
-    }catch(e){
-      console.warn("Share falló:", e);
+  c.toBlob(async (blob) => {
+    if (!blob) {
+      await devDescargarFinal();
+      return;
     }
+
+    const file = new File([blob], "devocional.png", { type: "image/png" });
+
+    try {
+      if (navigator.share && navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: "Devocional" });
+      } else {
+        await devDescargarFinal();
+        alert("Tu dispositivo/navegador no permite compartir directo. La imagen se descargó para compartirla manualmente.");
+      }
+    } catch (e) {
+      console.warn("Share cancelado o falló:", e);
+      await devDescargarFinal();
+    }
+  }, "image/png");
+};
 
     // ✅ 2) Fallback: copiar imagen al portapapeles (muchos navegadores lo permiten)
     try{
