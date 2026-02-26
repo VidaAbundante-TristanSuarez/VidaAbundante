@@ -469,6 +469,32 @@ button.activo,
   object-fit: contain;
 }
 
+/* ✅ cuando modal está abierto, sin scroll raro del body */
+body.modal-open{
+  overflow:hidden;
+  touch-action:none;
+}
+
+/* ✅ Fase 3: imagen ocupa todo el ancho útil del modal */
+#devF3PreviewBox{
+  flex: 1;
+  min-height: 0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding: 0;           /* ✅ sin “bordes” */
+}
+
+/* ✅ imagen: llena el contenedor */
+#devFinalImg{
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 14px;
+  display:block;
+}
 
 </style>
 
