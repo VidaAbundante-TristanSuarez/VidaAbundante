@@ -315,7 +315,11 @@ abcGuardarProgreso();
  // ================= ABC: FIREBASE + BLOQUES =================
 const FB = () => window.__FB || {};
 const API = () => window.__FB_API || {};
-const UID = () => window.__UID || null;
+const UID = () => {
+  // Biblia guarda __UID como string, no función
+  if (typeof window.__UID === "function") return window.__UID();
+  return window.__UID || null;
+};
 
 let abcSeleccionado = null;
 let abcColor = "#fff3b0"; // igual que Biblia
@@ -642,8 +646,8 @@ window.generarImagen = () => {
 // Llamalo cada vez que entras a ABC (lo invoco desde mostrarABC)
 window.__abcOnEnter = () => {
   abcPortalBarraOn();
-  abcAjustarBarraUI();
   abcAplicarFontSize();
+  abcUIEnABC(); // ✅ (nuevo) oculta "Crear imagen" y acomoda botones
 };
 
 // =====================================================
@@ -705,6 +709,23 @@ function abcPortalBarraOff() {
   }
 }
 
-// 👉 opcional: si tenés una función global que cambia de secciones,
-// podés llamar abcPortalBarraOff() al salir de ABC.
-// Si no, no pasa nada: puede quedar “portaleada” y sigue funcionando.
+function abcUIEnABC(){
+  // ✅ esconder botones de imagen si estás en ABC
+  const btnImagen = document.getElementById("btnImagen");       // icon panorama
+  const btnCrear  = document.getElementById("btnCrearImagen");  // Crear Imagen
+  if (btnImagen) btnImagen.style.display = "none";
+  if (btnCrear)  btnCrear.style.display  = "none";
+
+  // ✅ asegurar que el botón de “lista” (📌/alfiler) funcione como NOTA en ABC
+  // (en Biblia ese botón llama abrirMarcadores)
+  const btnLista = document.getElementById("btnListaMarcadores");
+  if (btnLista) {
+    btnLista.style.display = "inline-flex";
+    btnLista.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      // en ABC: abre nota del bloque seleccionado
+      abcAbrirNota();
+    };
+  }
+}
