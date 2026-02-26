@@ -1519,24 +1519,6 @@ window.devCompartirFinal = async () => {
   }, "image/png");
 };
 
-    // ✅ 2) Fallback: copiar imagen al portapapeles (muchos navegadores lo permiten)
-    try{
-      if (navigator.clipboard && window.ClipboardItem) {
-        await navigator.clipboard.write([ new ClipboardItem({ "image/png": blob }) ]);
-        alert("✅ Imagen copiada. Pegala en WhatsApp / Instagram / Facebook.");
-        return;
-      }
-    }catch(e){
-      console.warn("Clipboard falló:", e);
-    }
-
-    // ✅ 3) Último fallback: abrir la imagen en una pestaña (y/o descargar)
-    const url = URL.createObjectURL(blob);
-    window.open(url, "_blank");
-    setTimeout(()=> URL.revokeObjectURL(url), 60000);
-  }, "image/png");
-};
-
 // Compartir a Iglesia (sube a Firebase si existe window.__FB)
 window.devCompartirIglesia = async () => {
   const fb = window.__FB;
