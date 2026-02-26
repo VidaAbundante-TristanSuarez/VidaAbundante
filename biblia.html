@@ -520,7 +520,30 @@
   </div>
 </div>
 
-<!-- ================= MODAL DEVOCIONAL - FASE 1 (9:9) ================= -->
+<!-- ================= MODAL DEVOCIONAL - FASE 0 (OCR) ================= -->
+<div id="modalDevFase0" class="modal-overlay" aria-hidden="true">
+  <div class="modal-contenido modal-dev">
+
+    <button class="cerrar-modal" type="button" onclick="devCerrarTodo()">✖</button>
+
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <img id="dev0Img" style="width:100%; border-radius:14px; display:block;" alt="recorte" />
+
+      <textarea id="dev0Texto"
+        style="width:100%; min-height:160px; resize:none; border-radius:12px; border:1px solid #ddd; padding:10px;"
+        placeholder="Texto OCR (editable)"></textarea>
+
+      <div class="dev-row">
+        <button type="button" class="btn-primary" onclick="devIrFase1Desde0()">
+        Siguiente <i class="fa-solid fa-chevron-right"></i>
+      </button> 
+      </div>
+    </div>
+
+  </div>
+</div>
+ 
+ <!-- ================= MODAL DEVOCIONAL - FASE 1 (9:9) ================= -->
 <div id="modalDevFase1" class="modal-overlay" aria-hidden="true">
   <div class="modal-contenido modal-dev">
 
@@ -564,7 +587,13 @@
       </div>
     </div>
 
-    <!-- SOLO SIGUIENTE -->
+   
+      <!-- ANTERIOR / SIGUIENTE -->
+    <div class="dev-row dev-final" style="justify-content:space-between;">
+      <button type="button" class="btn-ghost" onclick="devVolverFase0()">
+        <i class="fa-solid fa-chevron-left"></i> Anterior
+      </button>
+  
     <div class="dev-row dev-final">
       <button type="button" class="btn-primary" onclick="devIrFase2()">
         Siguiente <i class="fa-solid fa-chevron-right"></i>
@@ -709,6 +738,7 @@
  
 </body>
 </html>
+
 
 
 
