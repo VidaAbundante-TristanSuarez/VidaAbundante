@@ -363,11 +363,18 @@ function abcMarcarSeleccionUI(){
 
 // ===== Guardar progreso =====
 async function abcGuardarProgreso(){
-  const uid = UID(); if(!uid) return;
-  const { db } = FB();
-  const { ref, set } = API();
-  if(!db || !ref || !set) return;
-  await set(ref(db, `${abcPath("abcProgreso")}/ultimoIndex`), abcIndex);
+  try{
+    const uid = UID(); if(!uid) return;
+    const { db } = FB();
+    const { ref, set } = API();
+    if(!db || !ref || !set) return;
+
+    await set(ref(db, `${abcPath("abcProgreso")}/ultimoIndex`), abcIndex);
+
+  } catch (e){
+    console.warn("⚠️ No se pudo guardar progreso ABC:", e?.code || e?.message || e);
+    // no hacemos nada más: que siga funcionando igual
+  }
 }
 
 // ===== Cargar progreso (llamar 1 vez al entrar a ABC) =====
