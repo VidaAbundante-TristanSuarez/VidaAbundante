@@ -75,11 +75,14 @@ document.addEventListener("DOMContentLoaded", () => {
       window.__audioBase64 = null;
       if (estado) estado.textContent = "🎧 Generando previa real…";
 
+      const voiceName = window.__AUDIO_VOICE_NAME || "es-US-Wavenet-B";
       const r = await fetch(AUDIO_WEBAPP_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ texto: textoLimpio })
+         body: JSON.stringify({ texto: textoLimpio, voiceName })
       });
+
+      
 
       const data = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(data?.error || "Error HTTP " + r.status);
