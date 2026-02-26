@@ -4,6 +4,8 @@
 // ✅ Reusa modalAudio existente (si está cargado biblia.audio.js)
 
 const OCR_URL = "https://us-central1-vidaabundante-f118a.cloudfunctions.net/ocrDevocional";
+const GH_UPLOAD_URL = "https://us-central1-vidaabundante-f118a.cloudfunctions.net/subirAudioDevocionalGithub";
+const TTS_URL = "https://us-central1-vidaabundante-f118a.cloudfunctions.net/ttsAudio";
 
 function $(id){ return document.getElementById(id); }
 
@@ -178,6 +180,50 @@ async function getCroppedBlob(){
   );
 
   return await new Promise(res => out.toBlob(res, "image/jpeg", 0.92));
+}
+
+async function audioElementToBase64(){
+  const audioEl =
+    document.querySelector("#modalAudio audio") ||
+    document.querySelector("audio#audioPreview") ||
+    document.querySelector("audio");
+
+  const src = audioEl?.currentSrc || audioEl?.src || "";
+  if (!src) return null;
+
+  const r = await fetch(src);
+  if (!r.ok) throw new Error("No pude leer el audio para subirlo");
+
+  const blob = await r.blob();
+  const b64 = await blobToBase64(blob); // reutiliza tu helper
+  return { base64: b64, blob };
+}
+
+async function subirAudioAGithubDesdeWeb(audioBase64){
+  // nombre basado en la fecha del devocional (si existe)
+  const fecha = DEV?.p1?.fecha || "";
+  const ts = Date.now();
+
+  // si fecha viene tipo "26 de febrero de 2026" igual sirve como nombre “lindo”
+  const fileName = `devocional_${safeFilePart(fecha || String(ts))}.mp3`;
+
+  const r = await fetch(GH_UPLOAD_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      audioBase64,
+      fileName,
+      // opcional si querés forzar desde acá:
+      // repo: "TUUSUARIO/TUREPO",
+      // folder: "devocionales_audio"
+    })
+  });
+
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok || !data?.ok) {
+    throw new Error(data?.error || data?.detail || "No se pudo subir a GitHub");
+  }
+  return data; // {ok,url,path,fileName}
 }
 
 async function blobToBase64(blob){
@@ -393,12 +439,14 @@ function buildBloquesFromOCR(raw){
   const audioText = buildAudioFromParts(p1, p2);
   return { p1, p2, audioText };
 }
+
 /* =========================================================
    4) MODALES (abrir/cerrar)
    ========================================================= */
 function abrirModal(id){
   const m = $(id);
   if (!m) return;
+  document.body.classList.add("modal-open"); // ✅
   m.classList.add("abierto");
   m.style.display = "flex";
   m.setAttribute("aria-hidden","false");
@@ -410,6 +458,12 @@ function cerrarModal(id){
   m.classList.remove("abierto");
   m.style.display = "none";
   m.setAttribute("aria-hidden","true");
+
+  // ✅ si no hay ningún modal abierto, liberar body
+  const algunoAbierto =
+    document.querySelector(".modal-overlay.abierto") ||
+    document.querySelector(".modal-overlay[style*='display: flex']");
+  if (!algunoAbierto) document.body.classList.remove("modal-open");
 }
 
 window.devCerrarTodo = () => {
@@ -903,26 +957,23 @@ function buildFase2HTML(basePx){
   const adorno = DEV.f2.adornoUrl;
   const adornoW = Math.max(30, Math.min(95, Number(DEV.f2.adornoWidth || 70)));
 
-  return `
-    <div style="
-      width:100%;
-      height:100%;
-      display:flex;
-      align-items:stretch;
-      justify-content:center;
-      text-align:center;
-    ">
-      <div style="
-        width:95%;
-        height:100%;
-        display:flex;
-        flex-direction:column;
-        align-items:center;
-        padding:14px 0 18px 0;
-        box-sizing:border-box;
-      ">
+  // alto reservado para “pie”
+  const FOOT_H = adorno ? 110 : 16;
 
-        <!-- ✅ 2 párrafos SIN línea vacía entre medio -->
+  return `
+    <div style="width:100%; height:100%; display:flex; flex-direction:column;">
+      
+      <!-- ✅ Zona texto (se centra verticalmente en el espacio disponible) -->
+      <div style="
+        flex:1;
+        min-height:0;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        padding: 14px 12px 0 12px;
+        box-sizing:border-box;
+        text-align:center;
+      ">
         <div style="
           width:100%;
           font-size:${basePx}px;
@@ -932,26 +983,33 @@ function buildFase2HTML(basePx){
           <div style="margin:0;">Reflexión: ${esc(ref)}</div>
           <div style="margin-top:10px;">Oración: ${esc(ora)}</div>
         </div>
+      </div>
 
-        <!-- ✅ separador flexible: empuja el adorno hacia abajo -->
-        <div style="flex:1;"></div>
-
+      <!-- ✅ Pie fijo (adorno al final de la “página”) -->
+      <div style="
+        height:${FOOT_H}px;
+        display:flex;
+        align-items:flex-end;
+        justify-content:center;
+        padding: 0 0 10px 0;
+        box-sizing:border-box;
+      ">
         ${adorno ? `
           <img
             src="${adorno}"
             alt="adorno"
-            class="dev-adorno-img"
             style="
               width:${adornoW}%;
               max-height:90px;
+              height:auto;
               object-fit:contain;
               opacity:0.95;
-              margin-top:14px;   /* ✅ más lejos del texto */
-              margin-bottom:2px;
+              display:block;
             "
           />
         ` : `<div style="height:10px;"></div>`}
       </div>
+
     </div>
   `;
 }
@@ -1252,7 +1310,55 @@ async function renderFinalCanvasCaptureReal(){
 
 /* =========================================================
    9) NAV fases
-   ========================================================= */
+========================================================= */
+// guarda preview del recorte para el modal 0
+DEV.cropPreviewUrl = null;
+
+async function devAbrirFase0(){
+  // muestra imagen recortada
+  const blob = await getCroppedBlob();
+  if (blob) {
+    if (DEV.cropPreviewUrl) URL.revokeObjectURL(DEV.cropPreviewUrl);
+    DEV.cropPreviewUrl = URL.createObjectURL(blob);
+    const img = $("dev0Img");
+    if (img) img.src = DEV.cropPreviewUrl;
+  }
+
+  // texto editable
+  const t0 = $("dev0Texto");
+  if (t0) t0.value = DEV.rawText || "";
+
+  abrirModal("modalDevFase0");
+}
+
+// Fase 0 -> Fase 1
+window.devIrFase1Desde0 = () => {
+  const t0 = ($("dev0Texto")?.value || "").trim();
+  if (!t0) { alert("Pegá o generá el texto primero."); return; }
+
+  DEV.rawText = t0;
+
+  const { p1, p2, audioText } = buildBloquesFromOCR(t0);
+  DEV.p1 = p1;
+  DEV.p2 = p2;
+  DEV.audioText = audioText;
+
+  // NO resetear f1/f2 (solo final)
+  DEV.finalDataUrl = "";
+  const imgF = $("devFinalImg");
+  if (imgF) imgF.src = "";
+
+  cerrarModal("modalDevFase0");
+  abrirModal("modalDevFase1");
+  devRenderFase(1);
+};
+
+// Fase 1 -> volver a Fase 0
+window.devVolverFase0 = () => {
+  cerrarModal("modalDevFase1");
+  abrirModal("modalDevFase0");
+};
+
 window.devIrFase2 = () => {
   devRenderFase(1);
 
@@ -1400,13 +1506,16 @@ function bindInputs(){
    11) AUDIO (bloquea botones hasta "Correcto")
    ========================================================= */
 window.devAbrirAudio = () => {
+  window.__AUDIO_VOICE_NAME = "es-US-Studio-B"; // ✅ DEVOCIONALES = STUDIO
+  window.__AUDIO_ORIGEN = "devocional";         // ✅ etiqueta opcional
+
   // ✅ Texto completo y limpio para audio (ya armado al crear devocional)
   DEV.audioText = buildAudioFromParts(DEV.p1, DEV.p2);
 
   const ta = $("textoAudio");
   if (ta) ta.value = DEV.audioText;
-
-  // abrir modal audio existente
+   
+   // abrir modal audio existente
   if (typeof window.abrirModalAudio === "function") {
     window.abrirModalAudio();
     return;
@@ -1440,11 +1549,7 @@ function hookAudioCorrecto(){
   };
 }
 
-/* =========================================================
-   12) BOTONES FINALES (descargar / compartir / iglesia / finalizar)
-   ========================================================= */
 async function devDescargarAudioSiExiste(){
-  // 1) probamos encontrar un <audio> típico del modal
   const audioEl =
     document.querySelector("#modalAudio audio") ||
     document.querySelector("audio#audioPreview") ||
@@ -1454,13 +1559,20 @@ async function devDescargarAudioSiExiste(){
   if (!src) return false;
 
   try{
-    // Si es blob: o url normal, intentamos fetch para bajarlo
     const r = await fetch(src);
     const blob = await r.blob();
 
+    const fecha = DEV?.p1?.fecha || "sin_fecha";
+    const baseName = "Audio_" + safeFilePart(fecha);
+
+    const ext =
+      blob.type.includes("mpeg") ? "mp3" :
+      blob.type.includes("wav")  ? "wav" :
+      blob.type.includes("ogg")  ? "ogg" : "mp3";
+
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = "devocional_audio.mp3"; // si fuera wav/ogg igual se baja (nombre es solo nombre)
+    a.download = `${baseName}.${ext}`;
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -1473,33 +1585,25 @@ async function devDescargarAudioSiExiste(){
   }
 }
 
-window.devDescargarFinal = async () => {
-  const c = await renderFinalCanvasCaptureReal();
-  if (!c) return;
-
-  // ✅ 1) imagen
+/* =========================================================
+   12) BOTONES FINALES (descargar / compartir / iglesia / finalizar)
+   ========================================================= */
+async function devDescargarImagenSolo(canvas){
   const link = document.createElement("a");
-  link.href = c.toDataURL("image/png");
+  link.href = canvas.toDataURL("image/png");
   link.download = "devocional.png";
   document.body.appendChild(link);
   link.click();
   link.remove();
+}
 
-  // ✅ 2) audio (si existe)
-  const okAudio = await devDescargarAudioSiExiste();
-  if (!okAudio) {
-    alert("Se descargó la imagen ✅\n\nEl audio no se pudo descargar automáticamente.\nPrimero generá/confirmá el audio en el modal y volvé a intentar.");
-  }
-};
-
-// ========================⭐ COMPARTIR DEVOCIONAL (como Biblia) ====================
 window.devCompartirFinal = async () => {
   const c = await renderFinalCanvasCaptureReal();
   if (!c) return;
 
   c.toBlob(async (blob) => {
     if (!blob) {
-      await devDescargarFinal();
+      await devDescargarImagenSolo(c);
       return;
     }
 
@@ -1509,14 +1613,86 @@ window.devCompartirFinal = async () => {
       if (navigator.share && navigator.canShare?.({ files: [file] })) {
         await navigator.share({ files: [file], title: "Devocional" });
       } else {
-        await devDescargarFinal();
-        alert("Tu dispositivo/navegador no permite compartir directo. La imagen se descargó para compartirla manualmente.");
+        await devDescargarImagenSolo(c);
+        alert("Tu dispositivo/navegador no permite compartir directo. Se descargó la imagen para compartirla manualmente.");
       }
     } catch (e) {
       console.warn("Share cancelado o falló:", e);
-      await devDescargarFinal();
+      await devDescargarImagenSolo(c);
     }
   }, "image/png");
+};
+
+function safeFilePart(s){
+  return String(s || "")
+    .trim()
+    .replace(/[\/\\:*?"<>|]/g, " ")
+    .replace(/\s+/g, " ")
+    .replace(/\s/g, "_")
+    .slice(0, 60);
+}
+
+window.devDescargarFinal = async () => {
+  try {
+    // 1) obtener base64 desde el <audio>
+   let pack = await audioElementToBase64();
+
+if (!pack?.base64 || !pack?.blob) {
+  // ✅ si no existe audio, lo generamos automáticamente
+  window.__AUDIO_VOICE_NAME = "es-US-Studio-B"; // devocional
+  const texto = (DEV.audioText || "").trim();
+  if (!texto) { alert("No hay texto para audio."); return; }
+
+  const r = await fetch(TTS_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ texto, voiceName: "es-US-Studio-B" })
+  });
+
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok || !data?.audioBase64) {
+    alert("No pude generar el audio automáticamente.");
+    return;
+  }
+
+  // convertir base64 a blob
+  const bytes = Uint8Array.from(atob(data.audioBase64), c => c.charCodeAt(0));
+  const blob = new Blob([bytes], { type: "audio/mpeg" });
+
+  pack = { base64: data.audioBase64, blob };
+}
+
+    // 2) subir a GitHub
+    let gh = null;
+    try {
+      gh = await subirAudioAGithubDesdeWeb(pack.base64);
+      // si querés guardar la URL en DEV:
+      DEV.audioGithubUrl = gh.url || "";
+    } catch (e) {
+      console.warn("GitHub upload falló:", e);
+      // seguimos igual descargando local
+      alert("⚠️ No pude subir a GitHub, pero igual te lo descargo.\n\nDetalle: " + (e?.message || e));
+    }
+
+    // 3) descargar local (siempre)
+    const fecha = DEV?.p1?.fecha || "sin_fecha";
+    const baseName = "Audio_" + safeFilePart(fecha);
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(pack.blob);
+    a.download = `${baseName}.mp3`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+
+    // 4) mensaje final
+    if (gh?.url) {
+      alert("✅ Audio subido a GitHub y descargado.\n\nURL:\n" + gh.url);
+    }
+  } catch (e) {
+    console.error(e);
+    alert("❌ No se pudo descargar/subir el audio.\n\nDetalle: " + (e?.message || e));
+  }
 };
 
 // Compartir a Iglesia (sube a Firebase si existe window.__FB)
@@ -1708,6 +1884,7 @@ function initDevocionales(){
 
       syncBtnCrear();
       ocrSetStatus("✅ OCR listo.");
+      await devAbrirFase0();  // ✅ abre el modal 0 al terminar OCR
 
     }catch(e){
       console.error(e);
