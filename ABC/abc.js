@@ -54,24 +54,6 @@ window.mostrarABC = async () => {
 #abcIndice::-webkit-scrollbar-thumb{ background: rgba(0,0,0,.22); border-radius: 999px; }
 body.oscuro #abcIndice::-webkit-scrollbar-thumb{ background: rgba(255,255,255,.22); }
 
-        #abcNav{
-          display:flex; gap:8px; align-items:center;
-          justify-content:flex-end;
-          min-width: 86px;
-        }
-        #abcNav button{
-          border:none; background: transparent; cursor:pointer;
-          font-size: 26px;
-          padding: 6px;
-          line-height: 1;
-          color: #4f6fa8;
-        }
-        #abcNav button:disabled{ opacity:.35; cursor:default; }
-
-        #abcAudio{
-          width:100%;
-          margin: 8px 0 12px;
-        }
 
 #abcAudioBar{
   position: sticky;
@@ -145,29 +127,76 @@ body.oscuro #abcContenido a{ color:#1c6fcb; }
     padding: 10px; /* podés bajarlo a 8 si querés más full */
   }
 }
+
+/* ✅ BLOQUES (wrapper) */
+.abc-block{
+  display:block;
+  padding: 6px 8px;
+  border-radius: 10px;
+}
+.abc-block > *{
+  margin: 0;              /* evita huecos raros de márgenes del Word */
+}
+.abc-block + .abc-block{
+  margin-top: 6px;
+}
+
+/* ✅ Forzar tamaño global dentro de ABC aunque Word traiga tamaños */
+#abcDoc, #abcDoc *{
+  font-size: var(--abc-font, 18px) !important;
+}
+
+/* botones modal */
+.btn-pri{
+  background: var(--ui-azul-claro, #bcdcff);
+  border:none; padding:10px 14px; border-radius:12px; cursor:pointer;
+}
+.btn-pri:hover{ background: var(--ui-azul-hover, #1c6fcb); color:#fff; }
+
+.btn-sec{
+  background: rgba(0,0,0,.06);
+  border:none; padding:10px 14px; border-radius:12px; cursor:pointer;
+}
+
+/* ✅ cuando un bloque está resaltado, el fondo lo maneja el wrapper */
+.abc-block *{
+  background: transparent !important;
+}
       </style>
 
-      <div id="abcWrap">
-        <!-- Índice + navegación (debajo de tabs de Iglesia) -->
-        <div id="abcTop">
-          <div id="abcIndice" aria-label="Índice ABC"></div>
+     <div id="abcWrap">
 
-          <div id="abcNav">
-            <button id="abcBtnPrev" type="button" title="Anterior" onclick="abcPrev()">
-              <i class="fa-solid fa-circle-chevron-left"></i>
-            </button>
-            <button id="abcBtnNext" type="button" title="Siguiente" onclick="abcNext()">
-              <i class="fa-solid fa-circle-chevron-right"></i>
-            </button>
-          </div>
-        </div>
+  <!-- ✅ Audio arriba (sticky) -->
+  <div id="abcAudioBar">
+    <audio id="abcAudio" controls preload="metadata"></audio>
+  </div>
 
-        <div id="abcAudioBar">
-  <audio id="abcAudio" controls preload="metadata"></audio>
-</div>
+  <!-- ✅ Índice (solo scroll, sin flechas) -->
+  <div id="abcTop">
+    <div id="abcIndice" aria-label="Índice ABC"></div>
+  </div>
 
-        <div id="abcContenido"></div>
+  <div id="abcContenido"></div>
+
+  <!-- ✅ Modal Nota ABC (tipo Biblia) -->
+  <div id="abcNotaModal" class="modal-overlay" style="display:none;">
+    <div class="modal-contenido" style="max-width:520px; width:92vw;">
+      <button class="cerrar-modal" type="button" onclick="abcCerrarNota()">✖</button>
+      <h3 style="margin:0 0 6px;">Nota</h3>
+      <div style="font-size:12px; opacity:.7; margin-bottom:10px;" id="abcNotaInfo"></div>
+
+      <textarea id="abcNotaTexto"
+        style="width:100%; min-height:160px; padding:10px; border-radius:12px; border:1px solid rgba(0,0,0,.15);"></textarea>
+
+      <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:10px;">
+        <button type="button" onclick="abcEliminarNota()" class="btn-sec">Eliminar</button>
+        <button type="button" onclick="abcGuardarNotaDesdeModal()" class="btn-pri">Guardar</button>
       </div>
+    </div>
+  </div>
+
+</div>
+</div>
     `;
 
     construirIndiceABC();
@@ -220,11 +249,6 @@ function refrescarUIIndice() {
     }
   }
 
-  // prev/next
-  const prev = document.getElementById("abcBtnPrev");
-  const next = document.getElementById("abcBtnNext");
-  if (prev) prev.disabled = (abcIndex === 0);
-  if (next) next.disabled = (abcIndex === ABC_TEMAS.length - 1);
 }
 
 async function cargarABCTema(desdeIndice = false) {
@@ -280,20 +304,6 @@ abcGuardarProgreso();
   }
 }
 
-window.abcNext = () => {
-  if (abcIndex < ABC_TEMAS.length - 1) {
-    abcIndex++;
-    cargarABCTema();
-  }
-};
-
-window.abcPrev = () => {
-  if (abcIndex > 0) {
-    abcIndex--;
-    cargarABCTema();
-  }
-};
-
  // ================= ABC: FIREBASE + BLOQUES =================
 const FB = () => window.__FB || {};
 const API = () => window.__FB_API || {};
@@ -345,6 +355,9 @@ doc.onclick = (e) => {
   // usa el color actual de Biblia
   const color = window.colorActual || "#fff3b0";
   abcSetResaltado(abcSeleccionado, color);
+b.style.background = color;
+const child = b.firstElementChild;
+if (child) child.style.background = "transparent";
 };
 
   abcMarcarSeleccionUI();
@@ -423,7 +436,11 @@ function abcAplicarResaltadosEnPantalla(data){
 
   Object.entries(data || {}).forEach(([bid, obj]) => {
     const el = doc.querySelector(`.abc-block[data-bid="${bid}"]`);
-    if (el && obj?.color) el.style.background = obj.color;
+    if (el && obj?.color) {
+  el.style.background = obj.color;
+  const child = el.firstElementChild;
+  if (child) child.style.background = "transparent";
+}
   });
 }
 
@@ -451,13 +468,75 @@ async function abcGuardarNota(bid, nota){
 }
 
 async function abcAbrirNota(){
-  if(!abcSeleccionado) return alert("Tocá un párrafo primero 🙂");
-  const nota = prompt("Escribí tu nota para este párrafo:");
-  if (nota === null) return;
-  await abcGuardarNota(abcSeleccionado, nota);
-  alert("✅ Nota guardada");
+  if(!abcSeleccionado) return alert("Tocá un bloque primero 🙂");
+
+  const uid = UID();
+  const loginModal = document.getElementById("loginModal");
+  if (!uid) { if (loginModal) loginModal.style.display = "flex"; return; }
+
+  // cargar nota existente
+  const { db } = FB();
+  const { ref, get } = API();
+  const modal = document.getElementById("abcNotaModal");
+  const ta = document.getElementById("abcNotaTexto");
+  const info = document.getElementById("abcNotaInfo");
+
+  if (!modal || !ta || !info || !db || !ref || !get) return;
+
+  info.textContent = `Tema: ${ABC_TEMAS[abcIndex]?.titulo || abcIndex} · Bloque: ${abcSeleccionado}`;
+
+  try{
+    const snap = await get(ref(db, `${abcPath("abcNotas")}/${abcIndex}/${abcSeleccionado}`));
+    ta.value = snap.exists() ? (snap.val()?.nota || "") : "";
+  }catch(e){
+    ta.value = "";
+  }
+
+  modal.style.display = "flex";
 }
 
+function abcCerrarNota(){
+  const modal = document.getElementById("abcNotaModal");
+  if (modal) modal.style.display = "none";
+}
+
+async function abcGuardarNotaDesdeModal(){
+  const ta = document.getElementById("abcNotaTexto");
+  if (!ta) return;
+  await abcGuardarNota(abcSeleccionado, ta.value);
+  abcCerrarNota();
+}
+
+async function abcEliminarNota(){
+  const uid = UID(); if(!uid || !abcSeleccionado) return;
+  const { db } = FB();
+  const { ref, remove } = API();
+  if(!db || !ref || !remove) return;
+  await remove(ref(db, `${abcPath("abcNotas")}/${abcIndex}/${abcSeleccionado}`));
+  abcCerrarNota();
+}
+
+async function abcListarNotasTema(){
+  const uid = UID();
+  const loginModal = document.getElementById("loginModal");
+  if (!uid) { if (loginModal) loginModal.style.display = "flex"; return; }
+
+  const { db } = FB();
+  const { ref, get } = API();
+  if(!db || !ref || !get) return;
+
+  try{
+    const snap = await get(ref(db, `${abcPath("abcNotas")}/${abcIndex}`));
+    const data = snap.exists() ? snap.val() : null;
+
+    if (!data) return alert("No hay notas en este tema todavía.");
+
+    const keys = Object.keys(data);
+    alert(`Notas en "${ABC_TEMAS[abcIndex]?.titulo}":\n\n` + keys.map((k,i)=>`${i+1}) ${k}`).join("\n") + `\n\nTocá un bloque y apretá el alfiler para editar.`);
+  }catch(e){
+    alert("No pude cargar las notas.");
+  }
+}
 
 // =====================================================
 // ✅ ABC: ROUTER DE BARRA (sin tocar biblia.js)
@@ -487,15 +566,9 @@ let abcFontSize = 18; // default parecido a biblia
 function abcAplicarFontSize(){
   const doc = document.getElementById("abcDoc");
   if (!doc) return;
-  doc.style.fontSize = abcFontSize + "px";
-}
 
-// oculta botones de imagen cuando estoy en ABC
-function abcAjustarBarraUI(){
-  const btnImg = document.getElementById("btnImagen");
-  const btnCrear = document.getElementById("btnCrearImagen");
-  if (btnImg) btnImg.style.display = estoyEnABC() ? "none" : "";
-  if (btnCrear) btnCrear.style.display = estoyEnABC() ? "none" : "";
+  // usamos variable CSS para no pelear con estilos del Word
+  doc.style.setProperty("--abc-font", abcFontSize + "px");
 }
 
 // ---------- router: tamaño letra ----------
@@ -516,9 +589,9 @@ window.toggleModoMarcador = () => {
   }
 
   // requiere login como biblia (si tenés loginModal)
-  const uid = (window.__UID || null);
-  const loginModal = document.getElementById("loginModal");
-  if (!uid) { if (loginModal) loginModal.style.display = "flex"; return; }
+const uid = (typeof window.__UID === "function") ? window.__UID() : null;
+const loginModal = document.getElementById("loginModal");
+if (!uid) { if (loginModal) loginModal.style.display = "flex"; return; }
 
   abcModoMarcador = !abcModoMarcador;
 
@@ -557,6 +630,8 @@ window.generarImagen = () => {
     if (typeof __BIBLIA.generarImagen === "function") return __BIBLIA.generarImagen();
   }
 };
+
+abcAjustarBarraUI();
 
 // Llamalo cada vez que entras a ABC (lo invoco desde mostrarABC)
 window.__abcOnEnter = () => {
