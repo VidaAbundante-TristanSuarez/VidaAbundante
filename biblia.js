@@ -38,7 +38,7 @@ const db = getDatabase(app);
 const storage = getStorage(app, "gs://vidaabundante-f118a.firebasestorage.app");
 
 window.__FB = { db, storage };
-window.__FB_API = { ref, set, sRef, uploadBytes, getDownloadURL };
+window.__FB_API = { ref, set, remove, onValue, sRef, uploadBytes, getDownloadURL };
 
 // ================= ESTADO GLOBAL =================
 let uid = null;
