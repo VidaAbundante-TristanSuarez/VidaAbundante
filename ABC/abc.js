@@ -21,7 +21,6 @@ window.mostrarABC = async () => {
   const cont = document.getElementById("abcApp");
   if (!cont) return;
 
-  // no volver a “rearmar” la UI si ya está
   if (!abcIniciado) {
     cont.innerHTML = `
       <style>
@@ -76,10 +75,16 @@ body.oscuro #abcIndice::-webkit-scrollbar-thumb{ background: rgba(255,255,255,.2
 
 #abcAudioBar{
   position: sticky;
-  top: 58px;            /* ✅ ajusta si tu header mide distinto */
-  z-index: 20;
-  background: inherit;
+  top: 0;              /* ✅ arriba del todo */
+  z-index: 50;
+  background: #fff;    /* ✅ para que no se mezcle con texto al scrollear */
   padding: 8px 0 10px;
+  border-bottom: 1px solid rgba(0,0,0,.08);
+}
+
+/* en oscuro igual lo dejamos blanco para legibilidad */
+body.oscuro #abcAudioBar{
+  background:#fff;
 }
 
 /* el audio como antes */
@@ -167,9 +172,16 @@ body.oscuro #abcContenido a{ color:#1c6fcb; }
 
     construirIndiceABC();
     abcIniciado = true;
-    abcCargarProgreso();
+
+    // ✅ ajustes barra / ocultar botones imagen, etc.
+    if (window.__abcOnEnter) window.__abcOnEnter();
+
+    // ✅ IMPORTANTE: acá cargamos progreso y CORTAMOS para no cargar 2 veces
+    await abcCargarProgreso();
+    return;
   }
 
+  // ✅ si ya estaba iniciado, recién acá cargamos tema normal
   await cargarABCTema();
 };
 
@@ -312,12 +324,28 @@ function abcPrepararBloques() {
     wrap.appendChild(el);
   });
 
-  doc.onclick = (e) => {
-    const b = e.target.closest(".abc-block");
-    if (!b) return;
-    abcSeleccionado = b.dataset.bid;
-    abcMarcarSeleccionUI();
-  };
+doc.onclick = (e) => {
+  const b = e.target.closest(".abc-block");
+  if (!b) return;
+
+  abcSeleccionado = b.dataset.bid;
+  abcMarcarSeleccionUI();
+
+  // si NO estoy en modo marcador, solo selecciono (borde)
+  if (!abcModoMarcador) return;
+
+  // requiere login
+  const uid = UID();
+  const loginModal = document.getElementById("loginModal");
+  if (!uid) { if (loginModal) loginModal.style.display = "flex"; return; }
+
+  // respeta candado de Biblia
+  if (window.resaltadorBloqueado) return;
+
+  // usa el color actual de Biblia
+  const color = window.colorActual || "#fff3b0";
+  abcSetResaltado(abcSeleccionado, color);
+};
 
   abcMarcarSeleccionUI();
 }
@@ -344,17 +372,32 @@ async function abcGuardarProgreso(){
 
 // ===== Cargar progreso (llamar 1 vez al entrar a ABC) =====
 async function abcCargarProgreso(){
-  const uid = UID(); if(!uid) return;
+  const uid = UID(); if(!uid) { abcIndex = 0; await cargarABCTema(); return; }
+
   const { db } = FB();
   const { ref, onValue } = API();
-  if(!db || !ref || !onValue) return;
+  if(!db || !ref || !onValue) { abcIndex = 0; await cargarABCTema(); return; }
 
   onValue(ref(db, `${abcPath("abcProgreso")}/ultimoIndex`), snap => {
     const v = snap.val();
+
+    // ✅ si todavía no hay nada guardado, arrancar en 0
+    if (v === null || v === undefined) {
+      abcIndex = 0;
+      cargarABCTema();
+      return;
+    }
+
+    // ✅ si hay valor válido, usarlo
     if (typeof v === "number" && v >= 0 && v < ABC_TEMAS.length) {
       abcIndex = v;
       cargarABCTema();
+      return;
     }
+
+    // ✅ si vino algo raro, fallback
+    abcIndex = 0;
+    cargarABCTema();
   }, { onlyOnce: true });
 }
 
@@ -407,3 +450,110 @@ async function abcAbrirNota(){
   await abcGuardarNota(abcSeleccionado, nota);
   alert("✅ Nota guardada");
 }
+
+
+// =====================================================
+// ✅ ABC: ROUTER DE BARRA (sin tocar biblia.js)
+// =====================================================
+
+// guardo originales de Biblia (si existen)
+const __BIBLIA = {
+  cambiarLetra: window.cambiarLetra,
+  toggleModoMarcador: window.toggleModoMarcador,
+  abrirMarcadores: window.abrirMarcadores,
+  ocultarBarraAcciones: window.ocultarBarraAcciones,
+  mostrarBarraAcciones: window.mostrarBarraAcciones,
+  toggleModoImagen: window.toggleModoImagen,
+  generarImagen: window.generarImagen
+};
+
+function estoyEnABC(){
+  const sec = document.getElementById("seccion-iglesia");
+  const abc = document.getElementById("iglesia-abc");
+  return !!(sec && sec.style.display !== "none" && abc && abc.style.display !== "none");
+}
+
+// ---------- estado ABC ----------
+let abcModoMarcador = false;
+let abcFontSize = 18; // default parecido a biblia
+
+function abcAplicarFontSize(){
+  const doc = document.getElementById("abcDoc");
+  if (!doc) return;
+  doc.style.fontSize = abcFontSize + "px";
+}
+
+// oculta botones de imagen cuando estoy en ABC
+function abcAjustarBarraUI(){
+  const btnImg = document.getElementById("btnImagen");
+  const btnCrear = document.getElementById("btnCrearImagen");
+  if (btnImg) btnImg.style.display = estoyEnABC() ? "none" : "";
+  if (btnCrear) btnCrear.style.display = estoyEnABC() ? "none" : "";
+}
+
+// ---------- router: tamaño letra ----------
+window.cambiarLetra = (delta) => {
+  if (!estoyEnABC()) {
+    if (typeof __BIBLIA.cambiarLetra === "function") return __BIBLIA.cambiarLetra(delta);
+    return;
+  }
+  abcFontSize = Math.max(12, Math.min(36, abcFontSize + (delta > 0 ? 1 : -1)));
+  abcAplicarFontSize();
+};
+
+// ---------- router: modo marcador ----------
+window.toggleModoMarcador = () => {
+  if (!estoyEnABC()) {
+    if (typeof __BIBLIA.toggleModoMarcador === "function") return __BIBLIA.toggleModoMarcador();
+    return;
+  }
+
+  // requiere login como biblia (si tenés loginModal)
+  const uid = (window.__UID || null);
+  const loginModal = document.getElementById("loginModal");
+  if (!uid) { if (loginModal) loginModal.style.display = "flex"; return; }
+
+  abcModoMarcador = !abcModoMarcador;
+
+  document.body.classList.toggle("modo-marcador", abcModoMarcador);
+
+  const btn = document.getElementById("btnModoMarcadorBarra");
+  if (btn) btn.classList.toggle("activo", abcModoMarcador);
+};
+
+// ---------- router: lista marcadores (en ABC = abrir nota) ----------
+window.abrirMarcadores = () => {
+  if (!estoyEnABC()) {
+    if (typeof __BIBLIA.abrirMarcadores === "function") return __BIBLIA.abrirMarcadores();
+    return;
+  }
+  // ABC: nota por bloque (mínimo viable igual biblia: guarda en Firebase)
+  abcAbrirNota();
+};
+
+// ---------- router: ocultar/mostrar barra (igual) ----------
+window.ocultarBarraAcciones = () => {
+  if (typeof __BIBLIA.ocultarBarraAcciones === "function") return __BIBLIA.ocultarBarraAcciones();
+};
+window.mostrarBarraAcciones = () => {
+  if (typeof __BIBLIA.mostrarBarraAcciones === "function") return __BIBLIA.mostrarBarraAcciones();
+};
+
+// ---------- impedir modo imagen en ABC ----------
+window.toggleModoImagen = () => {
+  if (!estoyEnABC()) {
+    if (typeof __BIBLIA.toggleModoImagen === "function") return __BIBLIA.toggleModoImagen();
+  }
+};
+window.generarImagen = () => {
+  if (!estoyEnABC()) {
+    if (typeof __BIBLIA.generarImagen === "function") return __BIBLIA.generarImagen();
+  }
+};
+
+// Llamalo cada vez que entras a ABC (lo invoco desde mostrarABC)
+window.__abcOnEnter = () => {
+  abcAjustarBarraUI();
+  abcAplicarFontSize();
+};
+
