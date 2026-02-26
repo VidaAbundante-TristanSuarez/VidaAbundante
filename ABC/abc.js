@@ -44,8 +44,6 @@ window.mostrarABC = async () => {
   scroll-behavior: smooth; /* ✅ se siente mejor */
 }
         #abcIndice::-webkit-scrollbar{ height: 8px; }
-#abcIndice{ cursor: grab; }
-#abcIndice.drag{ cursor: grabbing; }
         
         #abcIndice button{
           border:none; cursor:pointer;
@@ -82,6 +80,20 @@ window.mostrarABC = async () => {
           margin: 8px 0 12px;
         }
 
+        #abcAudioBar{
+  position: sticky;
+  top: 0;               /* si molesta con tu header, lo ajustamos a 52px/60px */
+  z-index: 5;
+  background: inherit;  /* respeta claro/oscuro */
+  padding: 8px 0 10px;
+}
+
+/* el audio como antes */
+#abcAudio{
+  width:100%;
+  margin: 0;            /* ahora el margen lo maneja la barra */
+}
+
         #abcContenido{
           background: #fff;
           border: 1px solid rgba(0,0,0,.10);
@@ -97,12 +109,19 @@ window.mostrarABC = async () => {
         }
 
         /* ===== DOC RESPONSIVE (muy importante) ===== */
-#abcDoc{
-  width:100%;
-  max-width:100%;
-  margin:0;
-  padding:0;
-  overflow-x:hidden;
+/* ✅ “bulldozer” real: neutraliza anchos fijos del Word sin romper todo */
+#abcDoc [style*="width"],
+#abcDoc table[width],
+#abcDoc td[width],
+#abcDoc img[width]{
+  width: auto !important;
+  max-width: 100% !important;
+}
+
+#abcDoc [style*="margin-left"],
+#abcDoc [style*="margin-right"]{
+  margin-left: 0 !important;
+  margin-right: 0 !important;
 }
 
 /* quitar márgenes heredados del Word */
@@ -151,7 +170,9 @@ window.mostrarABC = async () => {
           </div>
         </div>
 
-        <audio id="abcAudio" controls preload="metadata"></audio>
+        <div id="abcAudioBar">
+  <audio id="abcAudio" controls preload="metadata"></audio>
+</div>
 
         <div id="abcContenido"></div>
       </div>
@@ -182,43 +203,6 @@ function construirIndiceABC() {
   });
 
   refrescarUIIndice();
-  habilitarScrollArrastrandoIndice();
-}
-
-function habilitarScrollArrastrandoIndice() {
-  const el = document.getElementById("abcIndice");
-  if (!el) return;
-
-  // ✅ PC: rueda vertical -> scroll horizontal
-  el.addEventListener("wheel", (e) => {
-    if (e.shiftKey) return;          // si usan shift, no molestamos
-    e.preventDefault();
-    el.scrollLeft += e.deltaY;
-  }, { passive: false });
-
-  // ✅ Drag para PC (mouse) y también sirve con touch en algunos browsers
-  let down = false;
-  let startX = 0;
-  let startLeft = 0;
-
-  el.addEventListener("mousedown", (e) => {
-    down = true;
-    startX = e.pageX;
-    startLeft = el.scrollLeft;
-    el.classList.add("drag");
-  });
-
-  window.addEventListener("mouseup", () => {
-    down = false;
-    el.classList.remove("drag");
-  });
-
-  window.addEventListener("mousemove", (e) => {
-    if (!down) return;
-    e.preventDefault();
-    const dx = e.pageX - startX;
-    el.scrollLeft = startLeft - dx;
-  });
 }
 
 function refrescarUIIndice() {
