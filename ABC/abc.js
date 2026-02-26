@@ -1,16 +1,16 @@
 // ================= ABC - MÓDULO =================
 
 const ABC_TEMAS = [
-  { titulo: "INTRO", html: "ABC/INTRO.html", audio: "https://firebasestorage.googleapis.com/v0/b/vidaabundante-f118a.firebasestorage.app/o/ABC%2Fintro_abc.mp3?alt=media&token=c51321da-2f7f-4092-b90d-a61df6da671a" },
-  { titulo: "SALVACIÓN", html: "ABC/1 Salvación.html", audio: "https://firebasestorage.googleapis.com/v0/b/vidaabundante-f118a.firebasestorage.app/o/ABC%2F1%20Salvaci%C3%B3n.mp3?alt=media&token=7da0ae0f-da01-4a58-8ae0-5e0a037c8076" },
-  { titulo: "PECADO", html: "ABC/2 Pecado.html", audio: "https://firebasestorage.googleapis.com/v0/b/vidaabundante-f118a.firebasestorage.app/o/ABC%2F2%20Pecado.mp3?alt=media&token=54fe4210-37e9-4cf0-b0bf-c7f0564e881f" },
-  { titulo: "LA PALABRA", html: "ABC/3 La Palabra.html", audio: "https://firebasestorage.googleapis.com/v0/b/vidaabundante-f118a.firebasestorage.app/o/ABC%2F3%20La%20Palabra.mp3?alt=media&token=73fbd70f-e008-47de-b557-28fcd6a5ac36" },
-  { titulo: "LA ORACIÓN", html: "ABC/4 La Oración.html", audio: "https://firebasestorage.googleapis.com/v0/b/vidaabundante-f118a.firebasestorage.app/o/ABC%2F4%20La%20Oraci%C3%B3n.mp3?alt=media&token=096b3b09-6179-4c80-8718-a800954907b3" },
-  { titulo: "ESPÍRITU SANTO", html: "ABC/5 Espíritu Santo.html", audio: "https://firebasestorage.googleapis.com/v0/b/vidaabundante-f118a.firebasestorage.app/o/ABC%2F5%20Esp%C3%ADritu%20Santo.mp3?alt=media&token=68ad750b-4449-433f-b7dc-be457879c61f" },
-  { titulo: "BAUTISMO", html: "ABC/6 Bautismo.html", audio: "https://firebasestorage.googleapis.com/v0/b/vidaabundante-f118a.firebasestorage.app/o/ABC%2F6%20Bautismo.mp3?alt=media&token=e85836f1-9f5d-42be-83de-93797cdf3c22" },
-  { titulo: "LA MAYORDOMÍA", html: "ABC/7 La Mayordomía.html", audio: "https://firebasestorage.googleapis.com/v0/b/vidaabundante-f118a.firebasestorage.app/o/ABC%2F7%20La%20Mayordom%C3%ADa.mp3?alt=media&token=4994a81a-be99-4f39-8bd3-9888df880fcf" },
-  { titulo: "EVANGELISMO", html: "ABC/8 Evangelismo.html", audio: "https://firebasestorage.googleapis.com/v0/b/vidaabundante-f118a.firebasestorage.app/o/ABC%2F8%20Evangelismo.mp3?alt=media&token=4d197527-1f36-4378-9389-5e248e44533b" },
-  { titulo: "VISIÓN DE LA IGLESIA", html: "ABC/9 La visión de la iglesia.html", audio: "https://firebasestorage.googleapis.com/v0/b/vidaabundante-f118a.firebasestorage.app/o/ABC%2F9%20La%20vision%20de%20la%20iglesia.mp3?alt=media&token=c81cd672-6fd8-46df-b086-e564fed73974" }
+  { titulo: " ", html: "ABC/INTRO.html", audio: "https://firebasestorage.googleapis.com/v0/b/vidaabundante-f118a.firebasestorage.app/o/ABC%2Fintro_abc.mp3?alt=media&token=c51321da-2f7f-4092-b90d-a61df6da671a" },
+  { titulo: "Salvación", html: "ABC/1 Salvación.html", audio: "https://firebasestorage.googleapis.com/v0/b/vidaabundante-f118a.firebasestorage.app/o/ABC%2F1%20Salvaci%C3%B3n.mp3?alt=media&token=7da0ae0f-da01-4a58-8ae0-5e0a037c8076" },
+  { titulo: "Pecado", html: "ABC/2 Pecado.html", audio: "https://firebasestorage.googleapis.com/v0/b/vidaabundante-f118a.firebasestorage.app/o/ABC%2F2%20Pecado.mp3?alt=media&token=54fe4210-37e9-4cf0-b0bf-c7f0564e881f" },
+  { titulo: "La Palabra", html: "ABC/3 La Palabra.html", audio: "https://firebasestorage.googleapis.com/v0/b/vidaabundante-f118a.firebasestorage.app/o/ABC%2F3%20La%20Palabra.mp3?alt=media&token=73fbd70f-e008-47de-b557-28fcd6a5ac36" },
+  { titulo: "La Oración", html: "ABC/4 La Oración.html", audio: "https://firebasestorage.googleapis.com/v0/b/vidaabundante-f118a.firebasestorage.app/o/ABC%2F4%20La%20Oraci%C3%B3n.mp3?alt=media&token=096b3b09-6179-4c80-8718-a800954907b3" },
+  { titulo: "Espíritu Santo", html: "ABC/5 Espíritu Santo.html", audio: "https://firebasestorage.googleapis.com/v0/b/vidaabundante-f118a.firebasestorage.app/o/ABC%2F5%20Esp%C3%ADritu%20Santo.mp3?alt=media&token=68ad750b-4449-433f-b7dc-be457879c61f" },
+  { titulo: "Bautismo", html: "ABC/6 Bautismo.html", audio: "https://firebasestorage.googleapis.com/v0/b/vidaabundante-f118a.firebasestorage.app/o/ABC%2F6%20Bautismo.mp3?alt=media&token=e85836f1-9f5d-42be-83de-93797cdf3c22" },
+  { titulo: "La Mayordomía", html: "ABC/7 La Mayordomía.html", audio: "https://firebasestorage.googleapis.com/v0/b/vidaabundante-f118a.firebasestorage.app/o/ABC%2F7%20La%20Mayordom%C3%ADa.mp3?alt=media&token=4994a81a-be99-4f39-8bd3-9888df880fcf" },
+  { titulo: "Evangelismo", html: "ABC/8 Evangelismo.html", audio: "https://firebasestorage.googleapis.com/v0/b/vidaabundante-f118a.firebasestorage.app/o/ABC%2F8%20Evangelismo.mp3?alt=media&token=4d197527-1f36-4378-9389-5e248e44533b" },
+  { titulo: "Visión de la iglesia", html: "ABC/9 La visión de la iglesia.html", audio: "https://firebasestorage.googleapis.com/v0/b/vidaabundante-f118a.firebasestorage.app/o/ABC%2F9%20La%20vision%20de%20la%20iglesia.mp3?alt=media&token=c81cd672-6fd8-46df-b086-e564fed73974" }
 ];
 
 let abcIndex = 0;
@@ -47,6 +47,14 @@ window.mostrarABC = async () => {
   /* ✅ nada de "mano / drag" */
   cursor: default;
   scroll-snap-type: none;
+}
+
+#abcIndice button{
+  white-space: nowrap;     /* ✅ no partir en 2 líneas */
+  flex: 0 0 auto;          /* ✅ que no se achique raro */
+  line-height: 1.05;
+  padding: 8px 10px;
+  border-radius: 999px;
 }
 
 /* ✅ scrollbar visible */
@@ -631,11 +639,9 @@ window.generarImagen = () => {
   }
 };
 
-abcAjustarBarraUI();
-
 // Llamalo cada vez que entras a ABC (lo invoco desde mostrarABC)
 window.__abcOnEnter = () => {
-  abcPortalBarraOn();      // ✅ ESTA ES LA CLAVE
+  abcPortalBarraOn();
   abcAjustarBarraUI();
   abcAplicarFontSize();
 };
@@ -654,7 +660,7 @@ function abcPortalBarraOn() {
   const btn = document.getElementById("btnMostrarBarra");
 
   if (!bar) {
-    console.warn("❌ No existe #accionesBiblia en el DOM. La barra está dentro de otra sección o no está cargada.");
+    console.warn("❌ No existe #accionesBiblia en el DOM.");
     return;
   }
 
@@ -663,20 +669,24 @@ function abcPortalBarraOn() {
     __abcBarParent = bar.parentNode;
     __abcBarNext = bar.nextSibling;
   }
-
   if (btn && !__abcBtnParent) {
     __abcBtnParent = btn.parentNode;
     __abcBtnNext = btn.nextSibling;
   }
 
-  // mover al body para que no dependa del display:none del contenedor
+  // mover al body para que no dependa del display:none
   document.body.appendChild(bar);
   if (btn) document.body.appendChild(btn);
 
-  // asegurar que se vea (por si algún contenedor la estaba ocultando)
+  // ✅ forzar que quede como barra flotante visible
   bar.style.display = "";
   bar.style.visibility = "visible";
   bar.style.opacity = "1";
+  bar.style.position = "fixed";
+  bar.style.left = "0";
+  bar.style.right = "0";
+  bar.style.bottom = "0";
+  bar.style.zIndex = "9999";
 }
 
 function abcPortalBarraOff() {
