@@ -23,12 +23,12 @@ const DEV = {
 
   // texto y bloques
   rawText: "",
-  bloque1: "",  // Devocional + Fecha + Versículo + Cita + Iglesia + Dirección
-  bloque2: "",  // Reflexión + Oración
+  bloque1: "",
+  bloque2: "",
   audioText: "",
-  p1: null,   // {fecha,versiculo,cita,iglesia,direccion}
-  p2: null,   // {reflexion,oracion}
-   
+  p1: null,
+  p2: null,
+
   // fase1 (9:9) settings
   f1: {
     fondoUrl: null,
@@ -42,22 +42,29 @@ const DEV = {
 
   // fase2 (9:7) settings
   f2: {
-  fondoColor: "#ffffff",
-  fuente: "Roboto",
-  color: "#000000",
-  op: 0.15,
-  size: 26,
-  userChanged: false, // ✅ AGREGAR ESTO
-  adornoUrl: null,     // ✅ ruta del adorno (o null = ninguno)
-  adornoWidth: 70,     // ✅ % de ancho (podés cambiar luego)
-  style: { upper:false, bold:false, italic:false, underline:false }
-},
+    fondoColor: "#ffffff",
+    fuente: "Roboto",
+    color: "#000000",
+    op: 0.15,
+    size: 26,
+    userChanged: false,
+    adornoUrl: null,
+    adornoWidth: 70,
+    style: { upper:false, bold:false, italic:false, underline:false }
+  },
 
   // audio gate
   audioOk: false,
 
   // final image
-  finalDataUrl: ""
+  finalDataUrl: "",
+
+  // ✅ ESTAS DOS TENÍAN QUE ESTAR ADENTRO
+  subirPanel: false,
+  audioGithubUrl: "",
+
+  // modal 0 preview
+  cropPreviewUrl: null
 };
 
 /* =========================================================
@@ -467,6 +474,7 @@ function cerrarModal(id){
 }
 
 window.devCerrarTodo = () => {
+  cerrarModal("modalDevFase0");
   cerrarModal("modalDevFase1");
   cerrarModal("modalDevFase2");
   cerrarModal("modalDevFase3");
@@ -618,13 +626,13 @@ const adornosF2 = [
   { nombre: "Adorno 1", url: "./img/ornamentos/adorno1.png" },
   { nombre: "Adorno 2", url: "./img/ornamentos/adorno2.png" },
   { nombre: "Adorno 3", url: "./img/ornamentos/adorno3.png" },
-  { nombre: "Adorno 3", url: "./img/ornamentos/adorno4.png" },
-  { nombre: "Adorno 3", url: "./img/ornamentos/adorno5.png" },
-  { nombre: "Adorno 3", url: "./img/ornamentos/adorno6.png" },
-  { nombre: "Adorno 3", url: "./img/ornamentos/adorno7.png" },
-  { nombre: "Adorno 3", url: "./img/ornamentos/adorno8.png" },
-  { nombre: "Adorno 3", url: "./img/ornamentos/adorno9.png" },
-  { nombre: "Adorno 3", url: "./img/ornamentos/adorno10.png" }
+  { nombre: "Adorno 4", url: "./img/ornamentos/adorno4.png" },
+  { nombre: "Adorno 5", url: "./img/ornamentos/adorno5.png" },
+  { nombre: "Adorno 6", url: "./img/ornamentos/adorno6.png" },
+  { nombre: "Adorno 7", url: "./img/ornamentos/adorno7.png" },
+  { nombre: "Adorno 8", url: "./img/ornamentos/adorno8.png" },
+  { nombre: "Adorno 9", url: "./img/ornamentos/adorno9.png" },
+  { nombre: "Adorno 10", url: "./img/ornamentos/adorno10.png" }
 ];
 
 function cargarAdornosF2(){
@@ -882,7 +890,7 @@ function buildFase1HTML(versiculoCanvasPx, scale){
         DEVOCIONAL
       </div>
 
-      <div style="${base(fechaPx,400)} top:${Y_FECHA}%; opacity:.95;">
+      <div style="${base(fechaPx,550)} top:${Y_FECHA}%; opacity:.95;">
         ${esc(p1.fecha)}
       </div>
 
@@ -914,7 +922,7 @@ function buildFase1HTML(versiculoCanvasPx, scale){
         ">
           <div style="
             font-size:${versiculoPx}px;
-            font-weight:${DEV.f1.style.bold ? 700 : 400};
+            font-weight:${DEV.f1.style.bold ? 800 : 400};
             width:100%;
             white-space:normal;
             word-break:break-word;
@@ -957,20 +965,20 @@ function buildFase2HTML(basePx){
   const adorno = DEV.f2.adornoUrl;
   const adornoW = Math.max(30, Math.min(95, Number(DEV.f2.adornoWidth || 70)));
 
-  // alto reservado para “pie”
-  const FOOT_H = adorno ? 110 : 16;
+  // ✅ alto reservado para el adorno (si no hay, casi nada)
+  const FOOT_H = adorno ? 110 : 10;
 
   return `
     <div style="width:100%; height:100%; display:flex; flex-direction:column;">
-      
-      <!-- ✅ Zona texto (se centra verticalmente en el espacio disponible) -->
+
+      <!-- ✅ Zona texto: centrado vertical entre margen superior y adorno -->
       <div style="
         flex:1;
         min-height:0;
         display:flex;
-        align-items:center;
+        align-items:center;        /* ✅ centrado vertical real */
         justify-content:center;
-        padding: 14px 12px 0 12px;
+        padding: 0 6px;            /* ✅ sin desperdicio */
         box-sizing:border-box;
         text-align:center;
       ">
@@ -978,20 +986,20 @@ function buildFase2HTML(basePx){
           width:100%;
           font-size:${basePx}px;
           font-weight:${fw};
-          line-height:1.25;
+          line-height:1.24;
         ">
-          <div style="margin:0;">Reflexión: ${esc(ref)}</div>
-          <div style="margin-top:10px;">Oración: ${esc(ora)}</div>
+          <div>Reflexión: ${esc(ref)}</div>
+          ${ora ? `<div style="margin-top:10px;">Oración: ${esc(ora)}</div>` : ``}
         </div>
       </div>
 
-      <!-- ✅ Pie fijo (adorno al final de la “página”) -->
+      <!-- ✅ Pie fijo: el adorno queda al límite inferior (con un mini margen) -->
       <div style="
         height:${FOOT_H}px;
         display:flex;
         align-items:flex-end;
         justify-content:center;
-        padding: 0 0 10px 0;
+        padding: 0 0 2px 0;        /* ✅ casi pegado abajo */
         box-sizing:border-box;
       ">
         ${adorno ? `
@@ -1000,14 +1008,13 @@ function buildFase2HTML(basePx){
             alt="adorno"
             style="
               width:${adornoW}%;
-              max-height:90px;
+              max-height:100px;
               height:auto;
               object-fit:contain;
-              opacity:0.95;
               display:block;
             "
           />
-        ` : `<div style="height:10px;"></div>`}
+        ` : ``}
       </div>
 
     </div>
@@ -1148,7 +1155,7 @@ function makeRoundedCanvas(srcCanvas, radius){
    8) FINAL 9:16 — CAPTURA REAL (COMO BIBLIA)
    ========================================================= */
 function setFinalCanvasDisabled(disabled){
-  ["devBtnDescargar","devBtnCompartir","devBtnIglesia","devBtnFinalizar"].forEach(id=>{
+  ["devBtnDescargar","devBtnCompartir","devBtnPanelToggle","devBtnIglesia","devBtnFinalizar"].forEach(id=>{
     const b = $(id);
     if (b) b.disabled = disabled;
   });
@@ -1248,7 +1255,7 @@ async function renderFinalCanvasCaptureReal(){
   // ✅ WRAPPER igual al modal: margen uniforme (inset 12px) + centrado real
   const wrap = document.createElement("div");
   wrap.style.position = "absolute";
-  wrap.style.inset = "6px 12px 12px 12px";            
+  wrap.style.inset = "16px";  // ✅ igual que el preview, margen uniforme           
   wrap.style.overflow = "hidden";
   wrap.style.display = "flex";
   wrap.style.alignItems = "flex-start";      // ✅ empieza arriba
@@ -1308,12 +1315,40 @@ async function renderFinalCanvasCaptureReal(){
   return rounded; // 👈 devolvemos el canvas redondeado
 }
 
+window.devToggleSubirPanel = () => {
+  DEV.subirPanel = !DEV.subirPanel;
+  const tick = $("devPanelTick");
+  if (tick) tick.style.display = DEV.subirPanel ? "inline" : "none";
+};
+
+// ✅ descarga PNG
+async function devDescargarPNG(){
+  const c = await renderFinalCanvasCaptureReal();
+  if (!c) return;
+
+  const fecha = DEV?.p1?.fecha || "sin_fecha";
+  const name = "Devocional_" + safeFilePart(fecha) + ".png";
+
+  c.toBlob((blob)=>{
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=> URL.revokeObjectURL(a.href), 2000);
+  }, "image/png");
+}
+
+// ✅ descarga pack: primero PNG, luego audio
+window.devDescargarPack = async () => {
+  await devDescargarPNG();
+  await devDescargarFinal(); // tu función actual (audio + intenta GitHub)
+};
+
 /* =========================================================
    9) NAV fases
 ========================================================= */
-// guarda preview del recorte para el modal 0
-DEV.cropPreviewUrl = null;
-
 async function devAbrirFase0(){
   // muestra imagen recortada
   const blob = await getCroppedBlob();
@@ -1741,10 +1776,65 @@ window.devCompartirIglesia = async () => {
   }
 };
 
-window.devFinalizar = () => {
-  const ok = confirm("¿Finalizar devocional?\n\nOK = cerrar y volver\nCancelar = seguir editando");
+async function devSubirMiPanel(){
+  const fb = window.__FB;
+  const api = window.__FB_API;
+  if (!fb || !api || !window.__UID) {
+    alert("No encuentro Firebase listo o no estás logueado.");
+    return;
+  }
+
+  const c = await renderFinalCanvasCaptureReal();
+  if (!c) return;
+
+  const uid = window.__UID;
+  const ts = Date.now();
+  const fileName = `devocional_${ts}.png`;
+
+  const storagePath = `devocionales_panel/${uid}/${fileName}`;
+  const dbPath = `miPanelDevocionales/${uid}/${ts}`;
+
+  const blob = await new Promise(res => c.toBlob(res, "image/png"));
+  if (!blob) return;
+
+  const { db, storage } = fb;
+  const { ref, set, sRef, uploadBytes, getDownloadURL } = api;
+
+  const storageRef = sRef(storage, storagePath);
+  await uploadBytes(storageRef, blob, { contentType:"image/png" });
+  const url = await getDownloadURL(storageRef);
+
+  await set(ref(db, dbPath), {
+    url,
+    storagePath,
+    fecha: ts,
+    texto: DEV.audioText || "",
+    audioOk: !!DEV.audioOk,
+    audioGithubUrl: DEV.audioGithubUrl || ""
+  });
+}
+
+window.devFinalizar = async () => {
+  const ok = confirm("¿Finalizar devocional?\n\nSe sube a Iglesia.\nSi está tildado Mi Panel, también se sube ahí.");
   if (!ok) return;
-  devCerrarTodo();
+
+  try{
+    // ✅ siempre sube a Iglesia
+    await window.devCompartirIglesia();
+
+    // ✅ opcional: también a Mi Panel
+    if (DEV.subirPanel) {
+      await devSubirMiPanel();
+      alert("✅ Subido a Iglesia y a Mi Panel");
+    } else {
+      alert("✅ Subido a Iglesia");
+    }
+
+    devCerrarTodo();
+  }catch(e){
+    console.error(e);
+    alert("❌ Error al finalizar/subir.\n\nDetalle: " + (e?.message || e));
+  }
 };
 
 /* =========================================================
@@ -1941,4 +2031,140 @@ requestAnimationFrame(()=>{
 /* =========================================================
    INIT
    ========================================================= */
-document.addEventListener("DOMContentLoaded", initDevocionales);
+document.addEventListener("DOMContentLoaded", ()=>{
+  initDevocionales();
+  cargarDevocionales();
+});
+
+function isAdmin(){
+  // ✅ adaptalo a tu app:
+  // return window.__ROL === "admin";
+  return !!window.__ES_ADMIN; // si ya lo manejás así
+}
+
+async function cargarDevocionales(){
+  const fb = window.__FB;
+  const api = window.__FB_API;
+  if (!fb || !api) return;
+
+  const { db } = fb;
+  const { ref, onValue } = api;
+
+  // ✅ ejemplo: traigo “Iglesia” (ajustá path según tu DB real)
+  const r = ref(db, `devocionalesIglesia/${window.__UID || ""}`);
+
+  onValue(r, (snap)=>{
+    const val = snap.val() || {};
+    const items = Object.entries(val).map(([k,v])=>({ id:k, ...v }))
+      .sort((a,b)=>(b.fecha||0)-(a.fecha||0)); // ✅ más nuevo primero
+
+    renderDevIndex(items);
+    renderDevFeed(items);
+
+    // ✅ botón nuevo solo admin
+    const btnNuevo = $("btnDevNuevo");
+    if (btnNuevo) {
+      btnNuevo.style.display = isAdmin() ? "inline-flex" : "none";
+      btnNuevo.onclick = ()=> abrirModal("modalDevFase0"); // o tu flujo “nuevo”
+    }
+  });
+}
+
+function fmtFecha(ts){
+  try{
+    const d = new Date(ts);
+    return d.toLocaleDateString("es-AR", { day:"2-digit", month:"2-digit", year:"2-digit" });
+  }catch{ return ""; }
+}
+
+function getCitaDeTexto(texto){
+  // ultra simple: intenta encontrar la última línea tipo “Juan 3:16”
+  const t = String(texto||"");
+  const m = t.match(/([1-3]\s*)?[A-Za-zÁÉÍÓÚÑáéíóúñ\.]+\s+\d+\s*:\s*\d+(-\d+)?/);
+  return m ? m[0] : "Devocional";
+}
+
+function renderDevIndex(items){
+  const row = $("devIndexRow");
+  if (!row) return;
+  row.innerHTML = "";
+
+  items.forEach((it, idx)=>{
+    const card = document.createElement("div");
+    card.className = "devIndexCard";
+    card.innerHTML = `
+      <img src="${it.url || ""}" alt="dev">
+      <div class="devIndexMeta">
+        <div style="font-weight:800;">${getCitaDeTexto(it.texto)}</div>
+        <div style="opacity:.75;">${fmtFecha(it.fecha)}</div>
+      </div>
+    `;
+    card.onclick = ()=>{
+      const el = document.getElementById("devBig_" + it.id);
+      el?.scrollIntoView({ behavior:"smooth", block:"start" });
+    };
+    row.appendChild(card);
+  });
+}
+
+function renderDevFeed(items){
+  const feed = $("devFeed");
+  if (!feed) return;
+  feed.innerHTML = "";
+
+  items.forEach((it)=>{
+    const card = document.createElement("div");
+    card.className = "devBigCard";
+    card.id = "devBig_" + it.id;
+
+    card.innerHTML = `
+      <img src="${it.url || ""}" alt="dev grande">
+      <div class="devBigActions">
+        <button class="btn-primary" type="button" onclick="devReproducirAudioItem('${it.audioGithubUrl || ""}')">
+          <i class="fa-solid fa-play"></i> Audio
+        </button>
+        <button class="btn-primary" type="button" onclick="devCompartirImagenUrl('${it.url || ""}')">
+          <i class="fa-solid fa-share-nodes"></i> Compartir
+        </button>
+        <button class="btn-primary" type="button" onclick="devDescargarImagenUrl('${it.url || ""}')">
+          <i class="fa-solid fa-download"></i> PNG
+        </button>
+      </div>
+    `;
+
+    feed.appendChild(card);
+  });
+}
+
+window.devReproducirAudioItem = (url)=>{
+  if (!url) { alert("Este devocional no tiene audio."); return; }
+  // simple: abre en pestaña o lo cargas en tu player
+  window.open(url, "_blank");
+};
+
+window.devDescargarImagenUrl = async (url)=>{
+  if (!url) return;
+  const r = await fetch(url);
+  const blob = await r.blob();
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "devocional.png";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=> URL.revokeObjectURL(a.href), 2000);
+};
+
+window.devCompartirImagenUrl = async (url)=>{
+  if (!url) return;
+  const r = await fetch(url);
+  const blob = await r.blob();
+  const file = new File([blob], "devocional.png", { type:"image/png" });
+
+  if (navigator.share && navigator.canShare?.({ files:[file] })) {
+    await navigator.share({ files:[file], title:"Devocional" });
+  } else {
+    await devDescargarImagenUrl(url);
+    alert("Tu navegador no permite compartir directo. Se descargó la imagen.");
+  }
+};
