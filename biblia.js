@@ -11,7 +11,8 @@ import {
   ref,
   set,
   remove,
-  onValue
+  onValue,
+  get
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 import {
@@ -38,7 +39,7 @@ const db = getDatabase(app);
 const storage = getStorage(app, "gs://vidaabundante-f118a.firebasestorage.app");
 
 window.__FB = { db, storage };
-window.__FB_API = { ref, set, remove, onValue, sRef, uploadBytes, getDownloadURL };
+window.__FB_API = { ref, set, remove, onValue, get, sRef, uploadBytes, getDownloadURL };
 
 // ================= ESTADO GLOBAL =================
 let uid = null;
