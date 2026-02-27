@@ -49,6 +49,8 @@ let size = 18;
 let fuenteActual = "Arial";
 let colorActual = "#fff3b0"; // 💛 amarillo por default
 let resaltadorBloqueado = true; // 🔒 nuevo estado
+window.colorActual = colorActual;
+window.resaltadorBloqueado = resaltadorBloqueado;
 
 // ================= MARCADORES (NUEVO LIMPIO) =================
 let modoMarcador = false;
@@ -258,6 +260,8 @@ function initResaltadorCompacto() {
       btnActivo.textContent = btn.textContent;
 
       resaltadorBloqueado = false;
+      window.colorActual = colorActual;
+      window.resaltadorBloqueado = resaltadorBloqueado;
       paleta.style.display = "none";
     };
   });
@@ -268,6 +272,7 @@ function initResaltadorCompacto() {
   e.stopPropagation();
 
   resaltadorBloqueado = !resaltadorBloqueado;
+  window.resaltadorBloqueado = resaltadorBloqueado;
 
   // ✅ misma UI para manual y automático
   actualizarUICandadoResaltador();
