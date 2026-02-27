@@ -1,5 +1,3 @@
-parece una joda lo que me decis. las haba borrado porque me diste un bloque que lo reemplazaba. puedes ver los codigos linea por linea y analizar si estan bien completos funcionales ? 
-
 // ================= ABC - MÓDULO =================
 
 const ABC_TEMAS = [
