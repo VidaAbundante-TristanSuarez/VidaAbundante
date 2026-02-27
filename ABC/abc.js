@@ -350,41 +350,46 @@ function abcPrepararBloques() {
   abcMarcarSeleccionUI();
 
   // ✅ IMPORTANTE: registrar click UNA SOLA VEZ por tema cargado
-  doc.onclick = async (e) => {
-    const b = e.target.closest(".abc-block");
-    if (!b) return;
+doc.onclick = async (e) => {
+  const b = e.target.closest(".abc-block");
+  if (!b) return;
 
-    abcSeleccionado = b.dataset.bid;
-    abcMarcarSeleccionUI();
+  abcSeleccionado = b.dataset.bid;
+  abcMarcarSeleccionUI();
 
-    // 🔐 requiere login
-    const uid = UID();
-    const loginModal = document.getElementById("loginModal");
-    if (!uid) {
-      if (loginModal) loginModal.style.display = "flex";
-      return;
-    }
+  // 🔐 requiere login
+  const uid = UID();
+  const loginModal = document.getElementById("loginModal");
+  if (!uid) {
+    if (loginModal) loginModal.style.display = "flex";
+    return;
+  }
 
-    // ✅ Igual Biblia: SOLO actúa si estás en modo marcador
-    if (!abcModoMarcador) return;
-
-    // 🔒 candado igual Biblia
-    if (window.resaltadorBloqueado === true) return;
-
+  // =========================
+  // ✅ 1) RESALTADOR 💛: pinta / despinta (si NO hay candado)
+  // =========================
+  if (window.resaltadorBloqueado !== true) {
     const bid = abcSeleccionado;
 
-    // ✅ si ya estaba resaltado → quitar
+    // si ya estaba resaltado → quitar
     if (abcResaltadosCache && abcResaltadosCache[bid]) {
       await abcQuitarResaltado(bid);
       abcLimpiarFondoBloque(b);
-      abcMarcarSeleccionUI();
       return;
     }
 
-    // ✅ si no estaba → poner
+    // si no estaba → poner
     const color = window.colorActual || "#fff3b0";
     await abcSetResaltado(bid, color);
     abcAplicarFondoBloque(b, color);
+    return;
+  }
+
+  // =========================
+  // ✅ 2) CANDADO 🔒: no hace nada (solo deja selección + borde)
+  // =========================
+  // si está bloqueado, no pintamos ni despintamos.
+};
 
     abcMarcarSeleccionUI();
   };
@@ -924,13 +929,19 @@ function abcUIEnABC(){
   const btnLista   = document.getElementById("btnListaMarcadores");     // lista
 
   // ✓ abre nota del bloque (solo útil en modo marcador)
-  if (btnGuardar) {
-    btnGuardar.onclick = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      abcAbrirNota();
-    };
-  }
+if (btnGuardar) {
+  btnGuardar.onclick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!abcModoMarcador) {
+      abcToast("Activá 📌 para guardar notas");
+      return;
+    }
+
+    abcAbrirNota();
+  };
+}
 
   // lista abre “lista de notas” estilo Biblia (modal)
  if (btnLista) {
@@ -939,11 +950,17 @@ function abcUIEnABC(){
     e.stopPropagation();
     // ✅ en ABC, la lista abre el Panel de Marcadores filtrado en "abc"
     irA("panel");
-    setTimeout(() => {
-      mostrarSeccion?.("marcadores");
-      filtroNotasPanel = "abc";
-      renderPanelMarcadores?.();
-    }, 0);
+setTimeout(() => {
+  mostrarSeccion?.("marcadores");
+
+  // ✅ crea si no existe
+  window.filtroNotasPanel = "abc";
+
+  // ✅ si existe la función, renderiza
+  if (typeof window.renderPanelMarcadores === "function") {
+    window.renderPanelMarcadores();
+  }
+}, 0);
   };
 }
   
@@ -985,7 +1002,7 @@ function abcToggleModoMarcador(){
     document.activeElement && document.activeElement.blur && document.activeElement.blur();
   }
 
-  if (abcModoMarcador) abcToast("📌 Tocá un bloque para marcar / despintar");
+  if (abcModoMarcador) abcToast("📌 Tocá un bloque y apretá ✓ para escribir una nota");
   abcRefrescarBarraABC();
 }
 
