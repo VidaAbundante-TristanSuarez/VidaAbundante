@@ -1930,7 +1930,7 @@ let modoEliminarMarcadores = false;
 let seleccionEliminarMarcadores = {}; // {id:true}
 
 // (agregá esta si no existe en otro lado)
-let filtroNotasPanel = "con"; // "con" | "sin"
+let filtroNotasPanel = "con"; // "con" | "sin" | "abc"
 
 function renderPanelMarcadores() {
   const panel = document.getElementById("panel-marcadores");
@@ -1949,10 +1949,17 @@ function renderPanelMarcadores() {
     return (b.fecha || 0) - (a.fecha || 0);
   });
 
-  // ✅ Filtro: SOLO NOTAS (con versículo / sin versículo)
-  const filtrados = ordenados.filter(m => {
+  // ✅ Filtro: SOLO NOTAS (con versículo / sin versículo / abc)
+   const filtrados = ordenados.filter(m => {
     const tieneNota = !!(m.nota && String(m.nota).trim());
     if (!tieneNota) return false;
+
+    // ✅ filtro ABC
+    if (filtroNotasPanel === "abc") return m?.origen === "abc";
+
+    // ✅ filtro Biblia (con/sin versículo)
+    const esABC = (m?.origen === "abc");
+    if (esABC) return false; // en con/sin no mezclar ABC
 
     const cantVers = (m.versiculos || []).length;
     if (filtroNotasPanel === "con") return cantVers > 0;
@@ -1966,9 +1973,11 @@ function renderPanelMarcadores() {
     ? `<i class="fa-regular fa-calendar"></i>`
     : `<i class="fa-solid fa-book-bible"></i>`;
 
-  const iconFiltroNotas = (filtroNotasPanel === "con")
+   const iconFiltroNotas = (filtroNotasPanel === "con")
     ? `<i class="fa-solid fa-thumbtack"></i>`
-    : `<i class="fa-solid fa-sheet-plastic"></i>`;
+    : (filtroNotasPanel === "sin")
+      ? `<i class="fa-solid fa-sheet-plastic"></i>`
+      : `<i class="fa-solid fa-graduation-cap"></i>`;
 
   panel.innerHTML = `
     <div class="panel-marcadores-bar">
@@ -2065,15 +2074,45 @@ window.toggleOrdenMarcadoresPanel = () => {
 };
 
 window.toggleFiltroNotasPanel = () => {
-  filtroNotasPanel = (filtroNotasPanel === "con") ? "sin" : "con";
+  if (filtroNotasPanel === "con") filtroNotasPanel = "sin";
+  else if (filtroNotasPanel === "sin") filtroNotasPanel = "abc";
+  else filtroNotasPanel = "con";
   renderPanelMarcadores();
 };
 
-// ✅ FIX: desde el panel SIEMPRE ir a la Biblia y recién ahí abrir marcador
 window.abrirMarcadorDesdePanel = (idMarcador) => {
-  irA("biblia"); // cambia de sección
+  const m = (marcadores || {})[idMarcador];
+  if (!m) return;
 
-  // esperamos un pelín para que ya esté visible
+  // ✅ si es ABC, ir a Iglesia > ABC
+  if (m.origen === "abc" && m.abc) {
+    irA("iglesia"); // tu router principal
+    setTimeout(async () => {
+      // mostrar sub-sección abc (ajustá si tu función se llama distinto)
+      if (typeof window.mostrarIglesiaSub === "function") window.mostrarIglesiaSub("abc");
+      if (typeof window.mostrarABC === "function") await window.mostrarABC();
+
+      // cargar el tema
+      if (typeof m.abc.temaIndex === "number") {
+        abcIndex = m.abc.temaIndex;
+        await cargarABCTema(true);
+      }
+
+      // seleccionar bloque y abrir nota
+      if (m.abcBid) {
+        abcSeleccionado = m.abcBid;
+        abcMarcarSeleccionUI();
+        const doc = document.getElementById("abcDoc");
+        const el = doc ? doc.querySelector(`.abc-block[data-bid="${m.abcBid}"]`) : null;
+        if (el && el.scrollIntoView) el.scrollIntoView({ behavior:"smooth", block:"center" });
+        setTimeout(()=> abcAbrirNota(), 150);
+      }
+    }, 0);
+    return;
+  }
+
+  // ✅ si NO es ABC, es Biblia como antes
+  irA("biblia");
   setTimeout(() => {
     abrirMarcador(idMarcador);
   }, 0);
