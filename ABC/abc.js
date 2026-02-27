@@ -362,7 +362,7 @@ doc.onclick = async (e) => {
   const loginModal = document.getElementById("loginModal");
   if (!uid) { if (loginModal) loginModal.style.display = "flex"; return; }
 
-  // ✅ Igual Biblia: SOLO actúa si estás en modo marcador
+    // ✅ Igual Biblia: SOLO actúa si estás en modo marcador
   if (!abcModoMarcador) return;
 
   // 🔒 candado igual Biblia
@@ -373,20 +373,14 @@ doc.onclick = async (e) => {
   // ✅ si ya estaba resaltado → quitar
   if (abcResaltadosCache && abcResaltadosCache[bid]) {
     await abcQuitarResaltado(bid);
-    b.style.background = "transparent";
-    const child = b.firstElementChild;
-    if (child) child.style.background = "transparent";
+    abcLimpiarFondoBloque(b);
     return;
   }
 
   // ✅ si no estaba → poner
   const color = window.colorActual || "#fff3b0";
   await abcSetResaltado(bid, color);
-
-  b.style.background = color;
-  const child = b.firstElementChild;
-  if (child) child.style.background = "transparent";
-};
+  abcAplicarFondoBloque(b, color);
 
   abcMarcarSeleccionUI();
 }
@@ -467,17 +461,27 @@ async function abcSetResaltado(bid, color){
   await set(ref(db, `${abcPath("abcResaltados")}/${abcIndex}/${bid}`), { color });
 }
 
+function abcLimpiarFondoBloque(el){
+  if (!el) return;
+  el.style.background = "transparent";
+  // limpiar fondos internos que Word pueda traer
+  el.querySelectorAll("*").forEach(x => x.style.background = "transparent");
+}
+
+function abcAplicarFondoBloque(el, color){
+  if (!el) return;
+  el.style.background = color;
+  // hijos transparentes para que se vea el bloque parejo
+  el.querySelectorAll("*").forEach(x => x.style.background = "transparent");
+}
+  
 function abcAplicarResaltadosEnPantalla(data){
   const doc = document.getElementById("abcDoc");
   if(!doc) return;
 
   Object.entries(data || {}).forEach(([bid, obj]) => {
     const el = doc.querySelector(`.abc-block[data-bid="${bid}"]`);
-    if (el && obj?.color) {
-  el.style.background = obj.color;
-  const child = el.firstElementChild;
-  if (child) child.style.background = "transparent";
-}
+    if (el && obj?.color) abcAplicarFondoBloque(el, obj.color);
   });
 }
 
@@ -500,11 +504,9 @@ function abcEscucharResaltados(){
     const data = snap.val() || {};
     abcResaltadosCache = data;
 
-    const doc = document.getElementById("abcDoc");
+        const doc = document.getElementById("abcDoc");
     if (doc) {
-      doc.querySelectorAll(".abc-block").forEach(el => {
-        el.style.background = "transparent";
-      });
+      doc.querySelectorAll(".abc-block").forEach(el => abcLimpiarFondoBloque(el));
     }
 
     abcAplicarResaltadosEnPantalla(data);
@@ -518,14 +520,64 @@ function abcEscucharResaltados(){
   };
 }
 
-// ===== Notas por bloque =====
-async function abcGuardarNota(bid, nota){
+// =====================================================
+// ✅ ABC: NOTAS GUARDADAS EN /marcadores (Mi Panel)
+// =====================================================
+
+// id estable por tema+bloque (así “editar” siempre edita la misma)
+function abcNotaId(bid){ return `abc_${abcIndex}_${bid}`; }
+
+function abcDataNotaBase(){
+  return {
+    origen: "abc",
+    tipo: "nota",
+    fecha: Date.now(),
+    // para poder volver desde panel:
+    abc: {
+      temaIndex: abcIndex,
+      temaTitulo: ABC_TEMAS[abcIndex]?.titulo || "",
+      html: ABC_TEMAS[abcIndex]?.html || ""
+    }
+  };
+}
+
+async function abcGuardarNotaEnMarcadores(bid, titulo, nota){
   const uid = UID(); if(!uid || !bid) return;
   const { db } = FB();
   const { ref, set } = API();
   if(!db || !ref || !set) return;
-  await set(ref(db, `${abcPath("abcNotas")}/${abcIndex}/${bid}`), { nota: nota || "", fecha: Date.now() });
+
+  const id = abcNotaId(bid);
+
+  const data = {
+    ...abcDataNotaBase(),
+    titulo: (titulo || "Nota ABC").trim(),
+    nota: (nota || "").trim(),
+    // compat con panel actual
+    libro: "",
+    capitulo: 0,
+    versiculos: [],     // ABC = sin versículo
+    keep: false,
+    color: "#fff3b0",
+    // extra:
+    abcBid: bid
+  };
+
+  await set(ref(db, `marcadores/${uid}/${id}`), data);
 }
+
+async function abcBorrarNotaEnMarcadores(bid){
+  const uid = UID(); if(!uid || !bid) return;
+  const { db } = FB();
+  const { ref, remove } = API();
+  if(!db || !ref || !remove) return;
+
+  const id = abcNotaId(bid);
+  await remove(ref(db, `marcadores/${uid}/${id}`));
+}
+
+// ===== Modal Nota ABC (ya lo tenés en el HTML) =====
+let __abcEditTitulo = "";
 
 async function abcAbrirNota(){
   if(!abcSeleccionado) return alert("Tocá un bloque primero 🙂");
@@ -534,21 +586,25 @@ async function abcAbrirNota(){
   const loginModal = document.getElementById("loginModal");
   if (!uid) { if (loginModal) loginModal.style.display = "flex"; return; }
 
-  // cargar nota existente
   const { db } = FB();
   const { ref, get } = API();
+
   const modal = document.getElementById("abcNotaModal");
   const ta = document.getElementById("abcNotaTexto");
   const info = document.getElementById("abcNotaInfo");
-
   if (!modal || !ta || !info || !db || !ref || !get) return;
 
   info.textContent = `Tema: ${ABC_TEMAS[abcIndex]?.titulo || abcIndex} · Bloque: ${abcSeleccionado}`;
 
+  // cargar desde /marcadores
   try{
-    const snap = await get(ref(db, `${abcPath("abcNotas")}/${abcIndex}/${abcSeleccionado}`));
-    ta.value = snap.exists() ? (snap.val()?.nota || "") : "";
+    const id = abcNotaId(abcSeleccionado);
+    const snap = await get(ref(db, `marcadores/${uid}/${id}`));
+    const v = snap.exists() ? (snap.val() || {}) : {};
+    __abcEditTitulo = (v.titulo || "Nota ABC");
+    ta.value = v.nota || "";
   }catch(e){
+    __abcEditTitulo = "Nota ABC";
     ta.value = "";
   }
 
@@ -562,41 +618,117 @@ function abcCerrarNota(){
 
 async function abcGuardarNotaDesdeModal(){
   const ta = document.getElementById("abcNotaTexto");
-  if (!ta) return;
-  await abcGuardarNota(abcSeleccionado, ta.value);
+  if (!ta || !abcSeleccionado) return;
+  await abcGuardarNotaEnMarcadores(abcSeleccionado, __abcEditTitulo || "Nota ABC", ta.value);
   abcCerrarNota();
 }
 
 async function abcEliminarNota(){
-  const uid = UID(); if(!uid || !abcSeleccionado) return;
-  const { db } = FB();
-  const { ref, remove } = API();
-  if(!db || !ref || !remove) return;
-  await remove(ref(db, `${abcPath("abcNotas")}/${abcIndex}/${abcSeleccionado}`));
+  if (!abcSeleccionado) return;
+  await abcBorrarNotaEnMarcadores(abcSeleccionado);
   abcCerrarNota();
 }
+  
+  // ✅ Exponer para onclick inline
+window.abcCerrarNota = abcCerrarNota;
+window.abcEliminarNota = abcEliminarNota;
+window.abcGuardarNotaDesdeModal = abcGuardarNotaDesdeModal;
+window.abcAbrirNota = abcAbrirNota;
 
-async function abcListarNotasTema(){
+// =====================================================
+// ✅ ABC: LISTA DE NOTAS (MODAL estilo Biblia)
+// (reusa el modalMarcadores si existe)
+// =====================================================
+window.abcAbrirListaNotasModal = () => {
   const uid = UID();
   const loginModal = document.getElementById("loginModal");
   if (!uid) { if (loginModal) loginModal.style.display = "flex"; return; }
 
-  const { db } = FB();
-  const { ref, get } = API();
-  if(!db || !ref || !get) return;
+  // Si existe el modal de Biblia, lo reutilizamos (se ve igual)
+  const modal = document.getElementById("modalMarcadores");
+  const lista = document.getElementById("listaMarcadores");
+  const form  = document.getElementById("formNuevoMarcador");
 
-  try{
-    const snap = await get(ref(db, `${abcPath("abcNotas")}/${abcIndex}`));
-    const data = snap.exists() ? snap.val() : null;
-
-    if (!data) return alert("No hay notas en este tema todavía.");
-
-    const keys = Object.keys(data);
-    alert(`Notas en "${ABC_TEMAS[abcIndex]?.titulo}":\n\n` + keys.map((k,i)=>`${i+1}) ${k}`).join("\n") + `\n\nTocá un bloque y apretá el alfiler para editar.`);
-  }catch(e){
-    alert("No pude cargar las notas.");
+  if (!modal || !lista || !form) {
+    alert("No encontré el modal de Marcadores de Biblia (modalMarcadores).");
+    return;
   }
+
+  // abrir lista
+  form.style.display = "none";
+  lista.style.display = "block";
+
+  // render especial: solo notas ABC del tema actual
+  abcRenderListaNotasEnModalBiblia();
+
+  modal.classList.add("abierto");
+  modal.setAttribute("aria-hidden", "false");
+};
+
+function abcRenderListaNotasEnModalBiblia(){
+  const lista = document.getElementById("listaMarcadores");
+  if (!lista) return;
+
+  const uid = UID();
+  const data = window.marcadores || {};
+
+  const items = Object.entries(data)
+    .map(([id, m]) => ({...m, id}))
+    .filter(m => m?.origen === "abc" && m?.abc?.temaIndex === abcIndex)
+    .sort((a,b)=> (b.fecha||0) - (a.fecha||0));
+
+  const tituloTema = ABC_TEMAS[abcIndex]?.titulo || "ABC";
+
+  // CTA: “Tocá un bloque y apretá ✓”
+  const header = `
+    <div class="card-marcador" style="background:#fff3b0;">
+      <b>Notas ABC · ${tituloTema}</b><br>
+      <span class="muted">Para crear/editar: activá 📌, tocá un bloque, y apretá ✓</span>
+    </div>
+  `;
+
+  if (!items.length){
+    lista.innerHTML = header + `<p class="muted">Todavía no guardaste notas en este tema.</p>`;
+    return;
+  }
+
+  lista.innerHTML = header + items.map(m => {
+    const fechaTxt = m.fecha ? new Date(m.fecha).toLocaleDateString("es-AR") : "";
+    const t = (m.titulo || "Nota ABC").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    const linea = `${t} - ${fechaTxt}`;
+
+    return `
+      <div class="card-marcador" style="cursor:pointer;" onclick="abcIrNotaDesdeLista('${m.abcBid || ''}')">
+        <div style="font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+          ${linea}
+        </div>
+      </div>
+    `;
+  }).join("");
 }
+
+window.abcIrNotaDesdeLista = async (bid) => {
+  // cerrar modal de marcadores
+  const modal = document.getElementById("modalMarcadores");
+  if (modal) {
+    modal.classList.remove("abierto");
+    modal.setAttribute("aria-hidden", "true");
+  }
+
+  // si no hay bid, solo cerramos
+  if (!bid) return;
+
+  // seleccionar bloque, scrollear, abrir nota
+  abcSeleccionado = bid;
+  abcMarcarSeleccionUI();
+
+  const doc = document.getElementById("abcDoc");
+  const el = doc ? doc.querySelector(`.abc-block[data-bid="${bid}"]`) : null;
+  if (el && el.scrollIntoView) el.scrollIntoView({ behavior:"smooth", block:"center" });
+
+  // abrir modal nota
+  setTimeout(()=> abcAbrirNota(), 150);
+};
 
 // ✅ Exponer handlers para onclick inline (necesario si el script es module)
 window.abcCerrarNota = abcCerrarNota;
@@ -605,19 +737,13 @@ window.abcGuardarNotaDesdeModal = abcGuardarNotaDesdeModal;
 window.abcAbrirNota = abcAbrirNota;
 
 // =====================================================
-// ✅ ABC: ROUTER DE BARRA (sin tocar biblia.js)
+// ✅ ABC: INTEGRACIÓN CON BARRA (SIN PISAR FUNCIONES DE BIBLIA)
 // =====================================================
 
-// guardo originales de Biblia (si existen)
-const __BIBLIA = {
-  cambiarLetra: window.cambiarLetra,
-  toggleModoMarcador: window.toggleModoMarcador,
-  abrirMarcadores: window.abrirMarcadores,
-  ocultarBarraAcciones: window.ocultarBarraAcciones,
-  mostrarBarraAcciones: window.mostrarBarraAcciones,
-  toggleModoImagen: window.toggleModoImagen,
-  generarImagen: window.generarImagen
-};
+// ---------- estado ABC ----------
+let abcModoMarcador = false;
+let abcFontSize = 18; // default
+let abcBarObserver = null;
 
 function estoyEnABC(){
   const sec = document.getElementById("seccion-iglesia");
@@ -625,93 +751,14 @@ function estoyEnABC(){
   return !!(sec && sec.style.display !== "none" && abc && abc.style.display !== "none");
 }
 
-// ---------- estado ABC ----------
-let abcModoMarcador = false;
-let abcFontSize = 18; // default parecido a biblia
-
 function abcAplicarFontSize(){
   const doc = document.getElementById("abcDoc");
   if (!doc) return;
-
-  // usamos variable CSS para no pelear con estilos del Word
   doc.style.setProperty("--abc-font", abcFontSize + "px");
 }
 
-// ---------- router: tamaño letra ----------
-window.cambiarLetra = (delta) => {
-  if (!estoyEnABC()) {
-    if (typeof __BIBLIA.cambiarLetra === "function") return __BIBLIA.cambiarLetra(delta);
-    return;
-  }
-  abcFontSize = Math.max(12, Math.min(36, abcFontSize + (delta > 0 ? 1 : -1)));
-  abcAplicarFontSize();
-};
-
-// ---------- router: modo marcador ----------
-window.toggleModoMarcador = () => {
-  if (!estoyEnABC()) {
-    if (typeof __BIBLIA.toggleModoMarcador === "function") return __BIBLIA.toggleModoMarcador();
-    return;
-  }
-
-  const uid = UID();
-  const loginModal = document.getElementById("loginModal");
-  if (!uid) { if (loginModal) loginModal.style.display = "flex"; return; }
-
-  abcModoMarcador = !abcModoMarcador;
-
-  document.body.classList.toggle("modo-marcador", abcModoMarcador);
-
-  const btn = document.getElementById("btnModoMarcadorBarra");
-  if (btn) btn.classList.toggle("activo", abcModoMarcador);
-
-  // ✅ Toast como Biblia
-  if (abcModoMarcador) abcToast("Seleccione dónde abrir la nota");
-
-  // ✅ refrescar barra (solo 📌 y ✓)
-  abcRefrescarBarraABC();
-};
-
-// ---------- router: lista marcadores (en ABC = abrir nota) ----------
-window.abrirMarcadores = () => {
-  if (!estoyEnABC()) {
-    if (typeof __BIBLIA.abrirMarcadores === "function") return __BIBLIA.abrirMarcadores();
-    return;
-  }
-  // ABC: nota por bloque (mínimo viable igual biblia: guarda en Firebase)
-  abcAbrirNota();
-};
-
-// ---------- router: ocultar/mostrar barra (igual) ----------
-window.ocultarBarraAcciones = () => {
-  if (typeof __BIBLIA.ocultarBarraAcciones === "function") return __BIBLIA.ocultarBarraAcciones();
-};
-window.mostrarBarraAcciones = () => {
-  if (typeof __BIBLIA.mostrarBarraAcciones === "function") return __BIBLIA.mostrarBarraAcciones();
-};
-
-// ---------- impedir modo imagen en ABC ----------
-window.toggleModoImagen = () => {
-  if (!estoyEnABC()) {
-    if (typeof __BIBLIA.toggleModoImagen === "function") return __BIBLIA.toggleModoImagen();
-  }
-};
-window.generarImagen = () => {
-  if (!estoyEnABC()) {
-    if (typeof __BIBLIA.generarImagen === "function") return __BIBLIA.generarImagen();
-  }
-};
-
-// Llamalo cada vez que entras a ABC (lo invoco desde mostrarABC)
-window.__abcOnEnter = () => {
-  abcPortalBarraOn();
-  abcAplicarFontSize();
-  abcUIEnABC(); // ✅ (nuevo) oculta "Crear imagen" y acomoda botones
-};
-
 // =====================================================
-// ✅ ABC: MOSTRAR BARRA BIBLIA TAMBIÉN EN ABC (PORTAL)
-// (sin tocar biblia.js)
+// ✅ PORTAL: mover barra al body para que no dependa del display:none
 // =====================================================
 let __abcBarParent = null;
 let __abcBarNext = null;
@@ -737,11 +784,10 @@ function abcPortalBarraOn() {
     __abcBtnNext = btn.nextSibling;
   }
 
-  // mover al body para que no dependa del display:none
   document.body.appendChild(bar);
   if (btn) document.body.appendChild(btn);
 
-  // ✅ forzar que quede como barra flotante visible
+  // visible y fijo abajo
   bar.style.display = "";
   bar.style.visibility = "visible";
   bar.style.opacity = "1";
@@ -756,7 +802,6 @@ function abcPortalBarraOff() {
   const bar = document.getElementById("accionesBiblia");
   const btn = document.getElementById("btnMostrarBarra");
 
-  // devolver a su lugar original
   if (bar && __abcBarParent) {
     if (__abcBarNext) __abcBarParent.insertBefore(bar, __abcBarNext);
     else __abcBarParent.appendChild(bar);
@@ -766,50 +811,34 @@ function abcPortalBarraOff() {
     if (__abcBtnNext) __abcBtnParent.insertBefore(btn, __abcBtnNext);
     else __abcBtnParent.appendChild(btn);
   }
+
+  // cortar observer si existía
+  if (abcBarObserver) {
+    try { abcBarObserver.disconnect(); } catch(e){}
+    abcBarObserver = null;
+  }
 }
 
-function abcUIEnABC(){
-  // ❌ esconder botones de imagen siempre en ABC
+// =====================================================
+// ✅ ABC: UI barra (oculta imagen, y define acciones ABC)
+// =====================================================
+function abcHideImagenButtonsSiempre(){
   const btnImagen = document.getElementById("btnImagen");
   const btnCrear  = document.getElementById("btnCrearImagen");
-  if (btnImagen) btnImagen.style.display = "none";
-  if (btnCrear)  btnCrear.style.display  = "none";
 
-  const btnGuardar = document.getElementById("btnGuardarMarcador");     // ✓
-  const btnPin     = document.getElementById("btnModoMarcadorBarra");   // 📌
-  const btnLista   = document.getElementById("btnListaMarcadores");     // lista
-
-  // ✓ abre nota (solo tiene sentido cuando estás en modo marcador)
-  if (btnGuardar) {
-    btnGuardar.onclick = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      abcAbrirNota();
-    };
+  if (btnImagen) {
+    btnImagen.style.display = "none";
+    btnImagen.onclick = (e)=>{ e.preventDefault(); e.stopPropagation(); };
   }
-
-  // lista muestra notas (fuera de modo marcador)
-  if (btnLista) {
-    btnLista.onclick = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      abcListarNotasTema();
-    };
+  if (btnCrear) {
+    btnCrear.style.display = "none";
+    btnCrear.onclick = (e)=>{ e.preventDefault(); e.stopPropagation(); };
   }
-
-  // 📌 NO lo tocamos acá: lo maneja el router window.toggleModoMarcador
-  if (btnPin) btnPin.style.display = "inline-flex";
-
-  // ✅ estado inicial
-  abcRefrescarBarraABC();
 }
 
-// ================= ABC: TOAST + UI MODO MARCADOR (como Biblia) =================
 function abcToast(msg, ms = 1600){
-  // si Biblia ya tiene toast, úsalo
   if (typeof window.mostrarToast === "function") return window.mostrarToast(msg);
 
-  // fallback simple
   let t = document.getElementById("abcToast");
   if (!t){
     t = document.createElement("div");
@@ -817,7 +846,7 @@ function abcToast(msg, ms = 1600){
     t.style.position = "fixed";
     t.style.left = "50%";
     t.style.transform = "translateX(-50%)";
-    t.style.bottom = "86px"; // arriba de la barra
+    t.style.bottom = "86px";
     t.style.zIndex = "10000";
     t.style.padding = "10px 14px";
     t.style.borderRadius = "999px";
@@ -839,10 +868,16 @@ function abcRefrescarBarraABC(){
   const btnLista   = document.getElementById("btnListaMarcadores");     // lista
   const btnPin     = document.getElementById("btnModoMarcadorBarra");   // 📌
 
+  // ❌ botones de imagen (SIEMPRE ocultos en ABC)
+  const btnImagen = document.getElementById("btnImagen");
+  const btnCrear  = document.getElementById("btnCrearImagen");
+  if (btnImagen) btnImagen.style.display = "none";
+  if (btnCrear)  btnCrear.style.display  = "none";
+
   // Otros botones que NO deben verse en modo marcador (ajustá ids si alguno difiere)
   const otros = [
     "btnCopiar", "btnCompartir", "btnAudio", "btnLeer",
-    "btnImagen", "btnCrearImagen", "btnDescargar",
+    "btnDescargar",
     "btnMas", "btnMenos"
   ].map(id => document.getElementById(id)).filter(Boolean);
 
@@ -860,4 +895,96 @@ function abcRefrescarBarraABC(){
     if (btnLista)   btnLista.style.display   = "inline-flex";
     otros.forEach(el => el.style.display = ""); // vuelve a lo normal
   }
+
+  // ✅ por las dudas: volver a esconder imagen al final (si otro código “lo revive”)
+  if (btnImagen) btnImagen.style.display = "none";
+  if (btnCrear)  btnCrear.style.display  = "none";
 }
+
+function abcUIEnABC(){
+  // ✅ esconder imagen siempre (aunque biblia la muestre)
+  abcHideImagenButtonsSiempre();
+
+  const btnGuardar = document.getElementById("btnGuardarMarcador");     // ✓
+  const btnPin     = document.getElementById("btnModoMarcadorBarra");   // 📌
+  const btnLista   = document.getElementById("btnListaMarcadores");     // lista
+
+  // ✓ abre nota del bloque (solo útil en modo marcador)
+  if (btnGuardar) {
+    btnGuardar.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      abcAbrirNota();
+    };
+  }
+
+  // lista abre “lista de notas” estilo Biblia (modal)
+ if (btnLista) {
+  btnLista.onclick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // ✅ en ABC, la lista abre el Panel de Marcadores filtrado en "abc"
+    irA("panel");
+    setTimeout(() => {
+      mostrarSeccion?.("marcadores");
+      filtroNotasPanel = "abc";
+      renderPanelMarcadores?.();
+    }, 0);
+  };
+}
+  
+  // 📌 toggle modo marcador ABC
+  if (btnPin) {
+    btnPin.style.display = "inline-flex";
+    btnPin.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      abcToggleModoMarcador();
+    };
+  }
+
+  abcRefrescarBarraABC();
+
+  // ✅ watchdog: si algo intenta volver a mostrar “Crear imagen”, lo escondemos
+  if (!abcBarObserver) {
+    const bar = document.getElementById("accionesBiblia");
+    if (bar) {
+      abcBarObserver = new MutationObserver(() => abcHideImagenButtonsSiempre());
+      abcBarObserver.observe(bar, { attributes:true, childList:true, subtree:true });
+    }
+  }
+}
+
+function abcToggleModoMarcador(){
+  const uid = UID();
+  const loginModal = document.getElementById("loginModal");
+  if (!uid) { if (loginModal) loginModal.style.display = "flex"; return; }
+
+  abcModoMarcador = !abcModoMarcador;
+  document.body.classList.toggle("modo-marcador", abcModoMarcador);
+
+  const btn = document.getElementById("btnModoMarcadorBarra");
+  if (btn) {
+    btn.classList.toggle("activo", abcModoMarcador);
+    // ✅ sacar focus pegado en cel
+    btn.blur && btn.blur();
+    document.activeElement && document.activeElement.blur && document.activeElement.blur();
+  }
+
+  if (abcModoMarcador) abcToast("📌 Tocá un bloque para marcar / despintar");
+  abcRefrescarBarraABC();
+}
+
+// =====================================================
+// ✅ Hook al entrar a ABC (lo llamás desde mostrarABC)
+// =====================================================
+window.__abcOnEnter = () => {
+  abcPortalBarraOn();
+  abcAplicarFontSize();
+  abcUIEnABC();
+};
+
+// ✅ si tenés un “onExit” de Iglesia, llamá esto al salir de ABC
+window.__abcOnExit = () => {
+  abcPortalBarraOff();
+};
