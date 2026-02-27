@@ -349,52 +349,40 @@ function abcPrepararBloques() {
 
   abcMarcarSeleccionUI();
 
-  // ✅ IMPORTANTE: registrar click UNA SOLA VEZ por tema cargado
-doc.onclick = async (e) => {
-  const b = e.target.closest(".abc-block");
-  if (!b) return;
+  // ✅ CLICK EN BLOQUE: selecciona + (si no hay candado) pinta/despinta
+  doc.onclick = async (e) => {
+    const b = e.target.closest(".abc-block");
+    if (!b) return;
 
-  abcSeleccionado = b.dataset.bid;
-  abcMarcarSeleccionUI();
+    abcSeleccionado = b.dataset.bid;
+    abcMarcarSeleccionUI();
 
-  // 🔐 requiere login
-  const uid = UID();
-  const loginModal = document.getElementById("loginModal");
-  if (!uid) {
-    if (loginModal) loginModal.style.display = "flex";
-    return;
-  }
+    // 🔐 requiere login
+    const uid = UID();
+    const loginModal = document.getElementById("loginModal");
+    if (!uid) {
+      if (loginModal) loginModal.style.display = "flex";
+      return;
+    }
 
-  // =========================
-  // ✅ 1) RESALTADOR 💛: pinta / despinta (si NO hay candado)
-  // =========================
-  if (window.resaltadorBloqueado !== true) {
+    // ✅ si hay candado: NO pintar/despintar
+    if (window.resaltadorBloqueado === true) return;
+
     const bid = abcSeleccionado;
 
-    // si ya estaba resaltado → quitar
+    // ✅ si ya estaba resaltado → quitar
     if (abcResaltadosCache && abcResaltadosCache[bid]) {
       await abcQuitarResaltado(bid);
       abcLimpiarFondoBloque(b);
       return;
     }
 
-    // si no estaba → poner
+    // ✅ si no estaba → poner
     const color = window.colorActual || "#fff3b0";
     await abcSetResaltado(bid, color);
     abcAplicarFondoBloque(b, color);
-    return;
-  }
-
-  // =========================
-  // ✅ 2) CANDADO 🔒: no hace nada (solo deja selección + borde)
-  // =========================
-  // si está bloqueado, no pintamos ni despintamos.
-};
-
-    abcMarcarSeleccionUI();
   };
 }
-  
 
 function abcMarcarSeleccionUI(){
   const doc = document.getElementById("abcDoc");
