@@ -207,7 +207,6 @@ body.oscuro #abcContenido a{ color:#1c6fcb; }
   </div>
 
 </div>
-</div>
     `;
 
     construirIndiceABC();
@@ -350,41 +349,46 @@ function abcPrepararBloques() {
 
   abcMarcarSeleccionUI();
 
-doc.onclick = async (e) => {
-  const b = e.target.closest(".abc-block");
-  if (!b) return;
+  // ✅ IMPORTANTE: registrar click UNA SOLA VEZ por tema cargado
+  doc.onclick = async (e) => {
+    const b = e.target.closest(".abc-block");
+    if (!b) return;
 
-  abcSeleccionado = b.dataset.bid;
-  abcMarcarSeleccionUI();
+    abcSeleccionado = b.dataset.bid;
+    abcMarcarSeleccionUI();
 
-  // 🔐 requiere login
-  const uid = UID();
-  const loginModal = document.getElementById("loginModal");
-  if (!uid) { if (loginModal) loginModal.style.display = "flex"; return; }
+    // 🔐 requiere login
+    const uid = UID();
+    const loginModal = document.getElementById("loginModal");
+    if (!uid) {
+      if (loginModal) loginModal.style.display = "flex";
+      return;
+    }
 
     // ✅ Igual Biblia: SOLO actúa si estás en modo marcador
-  if (!abcModoMarcador) return;
+    if (!abcModoMarcador) return;
 
-  // 🔒 candado igual Biblia
-  if (window.resaltadorBloqueado === true) return;
+    // 🔒 candado igual Biblia
+    if (window.resaltadorBloqueado === true) return;
 
-  const bid = abcSeleccionado;
+    const bid = abcSeleccionado;
 
-  // ✅ si ya estaba resaltado → quitar
-  if (abcResaltadosCache && abcResaltadosCache[bid]) {
-    await abcQuitarResaltado(bid);
-    abcLimpiarFondoBloque(b);
-    return;
-  }
+    // ✅ si ya estaba resaltado → quitar
+    if (abcResaltadosCache && abcResaltadosCache[bid]) {
+      await abcQuitarResaltado(bid);
+      abcLimpiarFondoBloque(b);
+      abcMarcarSeleccionUI();
+      return;
+    }
 
-  // ✅ si no estaba → poner
-  const color = window.colorActual || "#fff3b0";
-  await abcSetResaltado(bid, color);
-  abcAplicarFondoBloque(b, color);
+    // ✅ si no estaba → poner
+    const color = window.colorActual || "#fff3b0";
+    await abcSetResaltado(bid, color);
+    abcAplicarFondoBloque(b, color);
 
-  abcMarcarSeleccionUI();
+    abcMarcarSeleccionUI();
+  };
 }
-  
 
 function abcMarcarSeleccionUI(){
   const doc = document.getElementById("abcDoc");
@@ -805,6 +809,15 @@ function abcPortalBarraOff() {
   if (bar && __abcBarParent) {
     if (__abcBarNext) __abcBarParent.insertBefore(bar, __abcBarNext);
     else __abcBarParent.appendChild(bar);
+
+    // ✅ reset estilos que ABC fijó
+    bar.style.position = "";
+    bar.style.left = "";
+    bar.style.right = "";
+    bar.style.bottom = "";
+    bar.style.zIndex = "";
+    bar.style.opacity = "";
+    bar.style.visibility = "";
   }
 
   if (btn && __abcBtnParent) {
