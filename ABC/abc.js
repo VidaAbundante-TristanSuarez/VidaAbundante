@@ -888,14 +888,29 @@ function abcMostrarSolo(idsVisibles = []){
   const bar = document.getElementById("accionesBiblia");
   if (!bar) return;
 
-  // oculto todo
-  bar.querySelectorAll("button, a").forEach(el => { el.style.display = "none"; });
+  const items = Array.from(bar.querySelectorAll("button, a"));
 
-  // muestro solo los que quiero
+  // ✅ Si no hay ids, NO ocultamos todo (evita "barra desaparecida")
+  if (!idsVisibles || !idsVisibles.length) {
+    items.forEach(el => el.style.display = "");
+    abcHideImagenButtonsSiempre();
+    return;
+  }
+
+  // oculto todo primero
+  items.forEach(el => { el.style.display = "none"; });
+
+  // muestro solo los que EXISTEN
+  let algunoMostrado = false;
   idsVisibles.forEach(id => {
     const el = document.getElementById(id);
-    if (el) el.style.display = "inline-flex";
+    if (el) { el.style.display = "inline-flex"; algunoMostrado = true; }
   });
+
+  // ✅ si ninguno existía, no mates la barra: volver a mostrar todo
+  if (!algunoMostrado) {
+    items.forEach(el => el.style.display = "");
+  }
 
   // ocultar imagen siempre
   abcHideImagenButtonsSiempre();
@@ -974,7 +989,7 @@ function abcUIEnABC(){
   const btnLista   = document.getElementById("btnListaMarcadores");   // lista
 
   // 🟡 corazón/flor (ajustá el id si el tuyo es otro)
-  const btnCorazon = document.getElementById("btnColorMarcador");
+  const btnCorazon = document.getElementById("btnResaltadorActivo");
 
   // 📌 => modo nota
   if (btnPin) {
@@ -1020,3 +1035,61 @@ function abcUIEnABC(){
   // estado inicial
   abcRefrescarBarraABC();
 }
+
+// =====================================================
+// ✅ ABC: ENTRAR / SALIR (OBLIGATORIO)
+// =====================================================
+
+function abcForzarBarraVisible(){
+  const bar = document.getElementById("accionesBiblia");
+  if (!bar) return;
+
+  // ✅ por si otro código la dejó "apagada"
+  bar.style.display = "flex";
+  bar.style.visibility = "visible";
+  bar.style.opacity = "1";
+
+  // ✅ aseguramos flotante abajo
+  bar.style.position = "fixed";
+  bar.style.left = "0";
+  bar.style.right = "0";
+  bar.style.bottom = "0";
+  bar.style.zIndex = "9999";
+}
+
+// 🔥 Watchdog: si alguien oculta la barra, la revive
+let __abcWatchdog = null;
+function abcIniciarWatchdogBarra(){
+  const bar = document.getElementById("accionesBiblia");
+  if (!bar || __abcWatchdog) return;
+
+  __abcWatchdog = new MutationObserver(() => {
+    if (estoyEnABC()) {
+      abcForzarBarraVisible();
+      abcHideImagenButtonsSiempre();
+    }
+  });
+
+  __abcWatchdog.observe(bar, { attributes:true, childList:true, subtree:true });
+}
+
+function abcDetenerWatchdogBarra(){
+  if (__abcWatchdog) {
+    try { __abcWatchdog.disconnect(); } catch(e){}
+    __abcWatchdog = null;
+  }
+}
+
+// ✅ Hook real (lo llama mostrarABC)
+window.__abcOnEnter = () => {
+  abcPortalBarraOn();        // mover al body
+  abcForzarBarraVisible();   // asegurar visible
+  abcUIEnABC();              // asignar handlers + ocultar crear imagen
+  abcIniciarWatchdogBarra(); // por si otro script la oculta
+};
+
+// (opcional) si tenés un "salir de ABC"
+window.__abcOnExit = () => {
+  abcDetenerWatchdogBarra();
+  abcPortalBarraOff();
+};
