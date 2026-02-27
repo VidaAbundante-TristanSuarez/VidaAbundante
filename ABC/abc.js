@@ -329,6 +329,9 @@ let abcColor = "#fff3b0"; // igual que Biblia
 function abcPath(base){ return `${base}/${UID()}`; }
 
 // Llamar después de cargar el HTML del tema
+let abcModoResaltador = false; // 🟡 corazón/flor
+let abcModoNota = false;       // 📌 notas
+
 function abcPrepararBloques() {
   const doc = document.getElementById("abcDoc");
   if (!doc) return;
@@ -337,9 +340,7 @@ function abcPrepararBloques() {
   let n = 0;
 
   targets.forEach(el => {
-    // no tocar elementos dentro de tabla (suele romper layout Word)
     if (el.closest("table")) return;
-
     if (el.classList.contains("abc-block")) return;
 
     const id = `t${abcIndex}_b${n++}`;
@@ -349,7 +350,9 @@ function abcPrepararBloques() {
 
   abcMarcarSeleccionUI();
 
-  // ✅ IMPORTANTE: registrar click UNA SOLA VEZ por tema cargado
+  // ✅ evita que se acumulen listeners
+  doc.onclick = null;
+
   doc.onclick = async (e) => {
     const b = e.target.closest(".abc-block");
     if (!b) return;
@@ -360,33 +363,47 @@ function abcPrepararBloques() {
     // 🔐 requiere login
     const uid = UID();
     const loginModal = document.getElementById("loginModal");
-    if (!uid) {
-      if (loginModal) loginModal.style.display = "flex";
+    if (!uid) { if (loginModal) loginModal.style.display = "flex"; return; }
+
+    // 🔒 candado: SOLO bloquea el resaltador (no las notas)
+    const candado = (window.resaltadorBloqueado === true);
+
+    // ===========================
+    // 📌 MODO NOTA: NO PINTA
+    // ===========================
+    if (abcModoNota) {
+      // solo selección (outline) — el ✓ abre la nota
       return;
     }
 
-    // ✅ Igual Biblia: SOLO actúa si estás en modo marcador
-    if (!abcModoMarcador) return;
+    // ===========================
+    // 🟡 MODO RESALTADOR: PINTA
+    // ===========================
+    if (abcModoResaltador) {
+      if (candado) return; // ✅ si hay candado, no hace nada
 
-    // 🔒 candado igual Biblia
-    if (window.resaltadorBloqueado === true) return;
+      const bid = abcSeleccionado;
 
-    const bid = abcSeleccionado;
+      // quitar
+      if (abcResaltadosCache && abcResaltadosCache[bid]) {
+        delete abcResaltadosCache[bid];
+        abcLimpiarFondoBloque(b);
+        await abcQuitarResaltado(bid);
+        return;
+      }
 
-    // ✅ si ya estaba resaltado → quitar
-    if (abcResaltadosCache && abcResaltadosCache[bid]) {
-      await abcQuitarResaltado(bid);
-      abcLimpiarFondoBloque(b);
-      abcMarcarSeleccionUI();
+      // poner
+      const color = window.colorActual || "#fff3b0";
+      abcResaltadosCache[bid] = { color };
+      abcAplicarFondoBloque(b, color);
+      await abcSetResaltado(bid, color);
       return;
     }
 
-    // ✅ si no estaba → poner
-    const color = window.colorActual || "#fff3b0";
-    await abcSetResaltado(bid, color);
-    abcAplicarFondoBloque(b, color);
-
-    abcMarcarSeleccionUI();
+    // ===========================
+    // modo normal: solo selecciona
+    // ===========================
+    return;
   };
 }
 
@@ -832,21 +849,11 @@ function abcPortalBarraOff() {
   }
 }
 
-// =====================================================
-// ✅ ABC: UI barra (oculta imagen, y define acciones ABC)
-// =====================================================
 function abcHideImagenButtonsSiempre(){
   const btnImagen = document.getElementById("btnImagen");
   const btnCrear  = document.getElementById("btnCrearImagen");
-
-  if (btnImagen) {
-    btnImagen.style.display = "none";
-    btnImagen.onclick = (e)=>{ e.preventDefault(); e.stopPropagation(); };
-  }
-  if (btnCrear) {
-    btnCrear.style.display = "none";
-    btnCrear.onclick = (e)=>{ e.preventDefault(); e.stopPropagation(); };
-  }
+  if (btnImagen) btnImagen.style.display = "none";
+  if (btnCrear)  btnCrear.style.display  = "none";
 }
 
 function abcToast(msg, ms = 1600){
@@ -876,128 +883,140 @@ function abcToast(msg, ms = 1600){
   window.__abcToastTimer = setTimeout(() => (t.style.display = "none"), ms);
 }
 
+// ✅ helpers: mostrar/ocultar acciones de barra
+function abcMostrarSolo(idsVisibles = []){
+  const bar = document.getElementById("accionesBiblia");
+  if (!bar) return;
+
+  // oculto todo
+  bar.querySelectorAll("button, a").forEach(el => { el.style.display = "none"; });
+
+  // muestro solo los que quiero
+  idsVisibles.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = "inline-flex";
+  });
+
+  // ocultar imagen siempre
+  abcHideImagenButtonsSiempre();
+}
+
 function abcRefrescarBarraABC(){
-  const btnGuardar = document.getElementById("btnGuardarMarcador");     // ✓
-  const btnLista   = document.getElementById("btnListaMarcadores");     // lista
-  const btnPin     = document.getElementById("btnModoMarcadorBarra");   // 📌
+  // ids clave (estos son los que YA usás)
+  const ID_PIN   = "btnModoMarcadorBarra";   // 📌
+  const ID_CHECK = "btnGuardarMarcador";     // ✓
+  const ID_LISTA = "btnListaMarcadores";     // lista
 
-  // ❌ botones de imagen (SIEMPRE ocultos en ABC)
-  const btnImagen = document.getElementById("btnImagen");
-  const btnCrear  = document.getElementById("btnCrearImagen");
-  if (btnImagen) btnImagen.style.display = "none";
-  if (btnCrear)  btnCrear.style.display  = "none";
+  // 🟡 ESTE es el corazón/flor (ajustá si tu id es distinto)
+  // Si no existe con este id, NO rompe nada.
+  const ID_CORAZON = "btnResaltadorActivo";     // 🟡 (si tu app usa otro id, cambialo acá)
 
-  // Otros botones que NO deben verse en modo marcador (ajustá ids si alguno difiere)
-  const otros = [
-    "btnCopiar", "btnCompartir", "btnAudio", "btnLeer",
-    "btnDescargar",
-    "btnMas", "btnMenos"
-  ].map(id => document.getElementById(id)).filter(Boolean);
-
-  // En ABC siempre mostramos 📌
-  if (btnPin) btnPin.style.display = "inline-flex";
-
-  if (abcModoMarcador) {
-    // ✅ modo marcador: SOLO 📌 y ✓
-    if (btnGuardar) btnGuardar.style.display = "inline-flex";
-    if (btnLista)   btnLista.style.display   = "none";
-    otros.forEach(el => el.style.display = "none");
-  } else {
-    // ✅ normal: 📌 + lista; ✓ oculto
-    if (btnGuardar) btnGuardar.style.display = "none";
-    if (btnLista)   btnLista.style.display   = "inline-flex";
-    otros.forEach(el => el.style.display = ""); // vuelve a lo normal
+  if (abcModoNota) {
+    // ✅ modo nota: SOLO 📌 + ✓
+    abcMostrarSolo([ID_PIN, ID_CHECK]);
+    return;
   }
 
-  // ✅ por las dudas: volver a esconder imagen al final (si otro código “lo revive”)
-  if (btnImagen) btnImagen.style.display = "none";
-  if (btnCrear)  btnCrear.style.display  = "none";
+  if (abcModoResaltador) {
+    // ✅ modo resaltador: se puede ver 🟡 + 📌 + lista (✓ NO)
+    // (si querés que quede SOLO 🟡 + 📌, sacá ID_LISTA)
+    abcMostrarSolo([ID_CORAZON, ID_PIN, ID_LISTA]);
+    return;
+  }
+
+  // ✅ modo normal: 📌 + lista + 🟡
+  abcMostrarSolo([ID_CORAZON, ID_PIN, ID_LISTA]);
+}
+
+function abcActivarModoResaltador(){
+  // si estás en nota, lo apago
+  abcModoNota = false;
+
+  // toggle resaltador
+  abcModoResaltador = !abcModoResaltador;
+
+  // UI
+  abcRefrescarBarraABC();
+
+  if (abcModoResaltador){
+    if (window.resaltadorBloqueado === true) {
+      abcToast("🔒 Candado activo: el resaltador no pinta");
+    } else {
+      abcToast("🟡 Tocá un bloque para pintar / despintar");
+    }
+  } else {
+    abcToast("Modo resaltador desactivado");
+  }
+}
+
+function abcActivarModoNota(){
+  // ✅ al entrar a notas, apago resaltador
+  abcModoResaltador = false;
+
+  // toggle nota
+  abcModoNota = !abcModoNota;
+
+  // UI
+  abcRefrescarBarraABC();
+
+  if (abcModoNota) {
+    abcToast("📌 Tocá un bloque y luego apretá ✓ para escribir la nota");
+  } else {
+    abcToast("Modo nota desactivado");
+  }
 }
 
 function abcUIEnABC(){
-  // ✅ esconder imagen siempre (aunque biblia la muestre)
   abcHideImagenButtonsSiempre();
 
-  const btnGuardar = document.getElementById("btnGuardarMarcador");     // ✓
-  const btnPin     = document.getElementById("btnModoMarcadorBarra");   // 📌
-  const btnLista   = document.getElementById("btnListaMarcadores");     // lista
+  const btnPin     = document.getElementById("btnModoMarcadorBarra"); // 📌
+  const btnCheck   = document.getElementById("btnGuardarMarcador");   // ✓
+  const btnLista   = document.getElementById("btnListaMarcadores");   // lista
 
-  // ✓ abre nota del bloque (solo útil en modo marcador)
-  if (btnGuardar) {
-    btnGuardar.onclick = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
+  // 🟡 corazón/flor (ajustá el id si el tuyo es otro)
+  const btnCorazon = document.getElementById("btnColorMarcador");
+
+  // 📌 => modo nota
+  if (btnPin) {
+    btnPin.onclick = (e) => {
+      e.preventDefault(); e.stopPropagation();
+      abcActivarModoNota();
+      btnPin.blur && btnPin.blur();
+    };
+  }
+
+  // ✓ => abrir modal nota (solo útil en modo nota)
+  if (btnCheck) {
+    btnCheck.onclick = (e) => {
+      e.preventDefault(); e.stopPropagation();
+      if (!abcModoNota) {
+        abcToast("Activá 📌 primero");
+        return;
+      }
       abcAbrirNota();
     };
   }
 
-  // lista abre “lista de notas” estilo Biblia (modal)
- if (btnLista) {
-  btnLista.onclick = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    // ✅ en ABC, la lista abre el Panel de Marcadores filtrado en "abc"
-    irA("panel");
-    setTimeout(() => {
-      mostrarSeccion?.("marcadores");
-      filtroNotasPanel = "abc";
-      renderPanelMarcadores?.();
-    }, 0);
-  };
-}
-  
-  // 📌 toggle modo marcador ABC
-  if (btnPin) {
-    btnPin.style.display = "inline-flex";
-    btnPin.onclick = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      abcToggleModoMarcador();
+  // lista => lista de notas / panel (si querés mantenerlo)
+  if (btnLista) {
+    btnLista.onclick = (e) => {
+      e.preventDefault(); e.stopPropagation();
+      // si querés abrir tu modal de lista ABC:
+      if (typeof window.abcAbrirListaNotasModal === "function") return window.abcAbrirListaNotasModal();
+      // fallback:
+      abcToast("Lista no disponible");
     };
   }
 
-  abcRefrescarBarraABC();
-
-  // ✅ watchdog: si algo intenta volver a mostrar “Crear imagen”, lo escondemos
-  if (!abcBarObserver) {
-    const bar = document.getElementById("accionesBiblia");
-    if (bar) {
-      abcBarObserver = new MutationObserver(() => abcHideImagenButtonsSiempre());
-      abcBarObserver.observe(bar, { attributes:true, childList:true, subtree:true });
-    }
-  }
-}
-
-function abcToggleModoMarcador(){
-  const uid = UID();
-  const loginModal = document.getElementById("loginModal");
-  if (!uid) { if (loginModal) loginModal.style.display = "flex"; return; }
-
-  abcModoMarcador = !abcModoMarcador;
-  document.body.classList.toggle("modo-marcador", abcModoMarcador);
-
-  const btn = document.getElementById("btnModoMarcadorBarra");
-  if (btn) {
-    btn.classList.toggle("activo", abcModoMarcador);
-    // ✅ sacar focus pegado en cel
-    btn.blur && btn.blur();
-    document.activeElement && document.activeElement.blur && document.activeElement.blur();
+  // 🟡 corazón/flor => modo resaltador
+  if (btnCorazon) {
+    btnCorazon.onclick = (e) => {
+      e.preventDefault(); e.stopPropagation();
+      abcActivarModoResaltador();
+      btnCorazon.blur && btnCorazon.blur();
+    };
   }
 
-  if (abcModoMarcador) abcToast("📌 Tocá un bloque para marcar / despintar");
+  // estado inicial
   abcRefrescarBarraABC();
 }
-
-// =====================================================
-// ✅ Hook al entrar a ABC (lo llamás desde mostrarABC)
-// =====================================================
-window.__abcOnEnter = () => {
-  abcPortalBarraOn();
-  abcAplicarFontSize();
-  abcUIEnABC();
-};
-
-// ✅ si tenés un “onExit” de Iglesia, llamá esto al salir de ABC
-window.__abcOnExit = () => {
-  abcPortalBarraOff();
-};
