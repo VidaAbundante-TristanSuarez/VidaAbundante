@@ -527,7 +527,9 @@
     <button class="cerrar-modal" type="button" onclick="devCerrarTodo()">✖</button>
 
     <div style="display:flex; flex-direction:column; gap:10px;">
-      <img id="dev0Img" style="width:100%; border-radius:14px; display:block;" alt="recorte" />
+    <img id="dev0Img"
+  style="width:100%; border-radius:14px; display:block; object-fit:contain; max-height:32dvh;"
+  alt="recorte" />
 
       <textarea id="dev0Texto"
         style="width:100%; min-height:160px; resize:none; border-radius:12px; border:1px solid #ddd; padding:10px;"
@@ -737,6 +739,7 @@
  
 </body>
 </html>
+
 
 
 
