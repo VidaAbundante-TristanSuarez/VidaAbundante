@@ -1355,6 +1355,12 @@ if (subir) {
 
 // ================= 🔺 WINDOW / UI ⭕ ===============================
 window.irA = (seccion) => {
+
+  // ✅ si me voy de IGLESIA/BIBLIA a otra sección, apago ABC por las dudas
+  if (seccion !== "iglesia") {
+    window.__abcOnExit?.();
+  }
+
   // 1) mostrar/ocultar secciones principales
   ["biblia", "iglesia", "panel"].forEach(s => {
     const el = document.getElementById("seccion-" + s);
@@ -1368,21 +1374,22 @@ window.irA = (seccion) => {
 
   // 3) defaults internos
   if (seccion === "iglesia") {
-    window.mostrarIglesiaSub?.("devocionales"); // que arranque ahí
+    window.mostrarIglesiaSub?.("devocionales"); // arranca ahí (y ahí no porta barra)
   }
   if (seccion === "panel") {
-    window.mostrarSeccion?.("imagenes"); // que arranque en imágenes
+    window.mostrarSeccion?.("imagenes"); // arranca en imágenes
   }
 
   // 4) repintar biblia solo cuando estás en biblia
   if (seccion === "biblia") {
-  resaltadorBloqueado = true;
+    resaltadorBloqueado = true;
+    actualizarUICandadoResaltador();
+    mostrarTexto();
 
-  // ✅ pinta candado grande + candadito pequeño igual que el manual
-  actualizarUICandadoResaltador();
-
-  mostrarTexto();
-}
+    // ✅ IMPORTANTE: por si venías de ABC, que ya la había porteado:
+    // acá NO hacemos portal (Biblia ya tiene su barra normal en su lugar).
+    // Si quisieras, podrías tener un __bibliaOnEnter, pero no hace falta.
+  }
 };
 
 // ================= 🔺 MODO IMAGEN ===============================
@@ -2615,6 +2622,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // ================= 🔺 IGLESIA: SUB-SECCIONES =================
 window.mostrarIglesiaSub = (sub) => {
+
+  // ✅ si estaba en ABC y me voy a otro sub, apago ABC (devuelvo barra)
+  const abcAntes = document.getElementById("iglesia-abc");
+  const estabaEnABC = !!(abcAntes && abcAntes.style.display !== "none");
+  if (estabaEnABC && sub !== "abc") {
+    window.__abcOnExit?.();
+  }
+
   ["devocionales", "abc", "xyz"].forEach(k => {
     const el = document.getElementById("iglesia-" + k);
     if (el) el.style.display = (k === sub) ? "block" : "none";
@@ -2627,10 +2642,10 @@ window.mostrarIglesiaSub = (sub) => {
     if (btn) btn.classList.add("activo");
   }
 
-  // ✅ CLAVE: cuando entro a ABC, lo inicializo
-if (sub === "abc") {
-  window.mostrarABC?.();
-}
+  // ✅ CLAVE: cuando entro a ABC, inicializo ABC + barra
+  if (sub === "abc") {
+    window.mostrarABC?.();     // crea UI / carga tema si hace falta
+    window.__abcOnEnter?.();   // porta barra + engancha botones ABC
+  }
 };
-  
 }); // ================= ✅ CIERRA INIT ÚNICO =====
