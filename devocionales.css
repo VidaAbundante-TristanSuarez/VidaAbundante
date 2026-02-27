@@ -61,7 +61,7 @@
 /* Fase 2: wrapper real */
 #dev2TextoWrapper{
   position:absolute;
-  inset: 12px;
+  inset: 16px;
   border-radius:14px;
   overflow:hidden;
 }
@@ -452,23 +452,6 @@ button.activo,
   flex-direction:column;
 }
 
-/* caja donde va la imagen final */
-#devF3PreviewBox{
-  flex: 1;
-  min-height: 0;                 /* ✅ clave para evitar cortes raros en mobile */
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
-
-/* imagen final: se adapta al espacio libre */
-#devFinalImg{
-  width: min(420px, 92vw);
-  height: auto;
-  max-height: calc(100dvh - 260px); /* ✅ resta header + botones aprox */
-  object-fit: contain;
-}
-
 /* ✅ cuando modal está abierto, sin scroll raro del body */
 body.modal-open{
   overflow:hidden;
@@ -494,6 +477,61 @@ body.modal-open{
   object-fit: contain;
   border-radius: 14px;
   display:block;
+}
+
+/* ✅ FASE 0: que entre SIEMPRE en móvil y no “salte” al cerrar teclado */
+#modalDevFase0.modal-overlay{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.55);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 14px;
+}
+
+#modalDevFase0.abierto{ display:flex; }
+
+#modalDevFase0 .modal-contenido.modal-dev{
+  background:#fff;
+  border-radius:18px;
+  padding: 12px;
+  width: min(560px, 96vw);
+  height: calc(100dvh - 24px);
+  max-height: calc(100dvh - 24px);
+  overflow: hidden;       /* ✅ sin scroll del modal */
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+/* ✅ textarea sin zoom raro en móvil */
+#dev0Texto{
+  font-size:16px;         /* clave para iOS */
+  flex: 1;
+  min-height: 0;
+}
+
+.devIndexCard{
+  flex:0 0 auto;
+  width:120px;
+  border:1px solid #ddd;
+  border-radius:12px;
+  overflow:hidden;
+  background:#fff;
+  cursor:pointer;
+}
+.devIndexCard img{ width:100%; height:70px; object-fit:cover; display:block; }
+.devIndexMeta{ padding:6px 8px; font-size:11px; line-height:1.15; }
+.devBigCard{
+  border:1px solid #ddd;
+  border-radius:16px;
+  overflow:hidden;
+  background:#fff;
+}
+.devBigCard img{ width:100%; display:block; }
+.devBigActions{
+  display:flex; gap:10px; padding:10px; justify-content:center; flex-wrap:wrap;
 }
 
 </style>
