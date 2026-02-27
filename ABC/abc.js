@@ -352,25 +352,23 @@ doc.onclick = (e) => {
   abcSeleccionado = b.dataset.bid;
   abcMarcarSeleccionUI();
 
-// 🔐 requiere login
-const uid = UID();
-const loginModal = document.getElementById("loginModal");
-if (!uid) { if (loginModal) loginModal.style.display = "flex"; return; }
+  // 🔐 requiere login
+  const uid = UID();
+  const loginModal = document.getElementById("loginModal");
+  if (!uid) { if (loginModal) loginModal.style.display = "flex"; return; }
 
-// 🔒 candado igual Biblia
-if (window.resaltadorBloqueado === true) return;
+  // 🔒 candado igual Biblia
+  if (window.resaltadorBloqueado === true) return;
 
-// 🎨 color igual Biblia
-const color = window.colorActual || "#fff3b0";
+  // 🎨 color igual Biblia
+  const color = window.colorActual || "#fff3b0";
 
-// guardar + pintar
-abcSetResaltado(abcSeleccionado, color);
-b.style.background = color;
-const child = b.firstElementChild;
-if (child) child.style.background = "transparent";;
-  
-const child = b.firstElementChild;
-if (child) child.style.background = "transparent";
+  // guardar + pintar
+  abcSetResaltado(abcSeleccionado, color);
+  b.style.background = color;
+
+  const child = b.firstElementChild;
+  if (child) child.style.background = "transparent";
 };
 
   abcMarcarSeleccionUI();
