@@ -150,11 +150,6 @@ body.oscuro #abcContenido a{ color:#1c6fcb; }
   font-size: var(--abc-font, 18px) !important;
 }
 
-/* ✅ IMPORTANTÍSIMO: el fondo lo maneja el bloque, no el Word */
-.abc-block,
-.abc-block *{
-  background: transparent !important;
-}
 
 /* ✅ Forzar tamaño global dentro de ABC aunque Word traiga tamaños */
 #abcDoc, #abcDoc *{
@@ -173,7 +168,8 @@ body.oscuro #abcContenido a{ color:#1c6fcb; }
   border:none; padding:10px 14px; border-radius:12px; cursor:pointer;
 }
 
-/* ✅ cuando un bloque está resaltado, el fondo lo maneja el wrapper */
+/* ✅ En ABC: NO borres el fondo del bloque (si no, nunca se ve el resaltado) */
+/* Solo limpiamos fondos internos del Word */
 .abc-block *{
   background: transparent !important;
 }
@@ -652,14 +648,12 @@ window.cambiarLetra = (delta) => {
 };
 
 // ---------- router: modo marcador ----------
-// ---------- router: modo marcador ----------
 window.toggleModoMarcador = () => {
   if (!estoyEnABC()) {
     if (typeof __BIBLIA.toggleModoMarcador === "function") return __BIBLIA.toggleModoMarcador();
     return;
   }
 
-  // requiere login como biblia (si tenés loginModal)
   const uid = UID();
   const loginModal = document.getElementById("loginModal");
   if (!uid) { if (loginModal) loginModal.style.display = "flex"; return; }
@@ -671,9 +665,13 @@ window.toggleModoMarcador = () => {
   const btn = document.getElementById("btnModoMarcadorBarra");
   if (btn) btn.classList.toggle("activo", abcModoMarcador);
 
-  // ✅ IMPORTANTÍSIMO: refleja UI (✓ y lista) como Biblia
+  // ✅ Toast como Biblia
+  if (abcModoMarcador) abcToast("Seleccione dónde abrir la nota");
+
+  // ✅ refrescar barra (solo 📌 y ✓)
   abcRefrescarBarraABC();
 };
+
 // ---------- router: lista marcadores (en ABC = abrir nota) ----------
 window.abrirMarcadores = () => {
   if (!estoyEnABC()) {
@@ -771,23 +769,17 @@ function abcPortalBarraOff() {
 }
 
 function abcUIEnABC(){
-  // ❌ esconder botones de imagen
+  // ❌ esconder botones de imagen siempre en ABC
   const btnImagen = document.getElementById("btnImagen");
   const btnCrear  = document.getElementById("btnCrearImagen");
   if (btnImagen) btnImagen.style.display = "none";
   if (btnCrear)  btnCrear.style.display  = "none";
 
-  const btnGuardar = document.getElementById("btnGuardarMarcador"); // ✅ (✓)
-  const btnPin     = document.getElementById("btnModoMarcadorBarra"); // 📌 (modo marcador)
-  const btnLista   = document.getElementById("btnListaMarcadores"); // lista
+  const btnGuardar = document.getElementById("btnGuardarMarcador");     // ✓
+  const btnPin     = document.getElementById("btnModoMarcadorBarra");   // 📌
+  const btnLista   = document.getElementById("btnListaMarcadores");     // lista
 
-  // 📌 = toggle modo marcador (como Biblia)
-  if (btnPin) {
-    btnPin.style.display = "inline-flex";
-    // NO lo pisamos acá: ya lo maneja window.toggleModoMarcador router
-  }
-
-  // ✅ ✓ = abrir nota del bloque seleccionado
+  // ✓ abre nota (solo tiene sentido cuando estás en modo marcador)
   if (btnGuardar) {
     btnGuardar.onclick = (e) => {
       e.preventDefault();
@@ -796,7 +788,7 @@ function abcUIEnABC(){
     };
   }
 
-  // lista: fuera de modo marcador sí; dentro no
+  // lista muestra notas (fuera de modo marcador)
   if (btnLista) {
     btnLista.onclick = (e) => {
       e.preventDefault();
@@ -805,7 +797,10 @@ function abcUIEnABC(){
     };
   }
 
-  // aplicar visibilidad inicial según estado
+  // 📌 NO lo tocamos acá: lo maneja el router window.toggleModoMarcador
+  if (btnPin) btnPin.style.display = "inline-flex";
+
+  // ✅ estado inicial
   abcRefrescarBarraABC();
 }
 
@@ -815,4 +810,62 @@ function abcRefrescarBarraABC(){
 
   if (btnGuardar) btnGuardar.style.display = abcModoMarcador ? "inline-flex" : "none";
   if (btnLista)   btnLista.style.display   = abcModoMarcador ? "none" : "inline-flex";
+}
+
+// ================= ABC: TOAST + UI MODO MARCADOR (como Biblia) =================
+function abcToast(msg, ms = 1600){
+  // si Biblia ya tiene toast, úsalo
+  if (typeof window.mostrarToast === "function") return window.mostrarToast(msg);
+
+  // fallback simple
+  let t = document.getElementById("abcToast");
+  if (!t){
+    t = document.createElement("div");
+    t.id = "abcToast";
+    t.style.position = "fixed";
+    t.style.left = "50%";
+    t.style.transform = "translateX(-50%)";
+    t.style.bottom = "86px"; // arriba de la barra
+    t.style.zIndex = "10000";
+    t.style.padding = "10px 14px";
+    t.style.borderRadius = "999px";
+    t.style.background = "rgba(0,0,0,.80)";
+    t.style.color = "#fff";
+    t.style.fontSize = "14px";
+    t.style.maxWidth = "92vw";
+    t.style.textAlign = "center";
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.display = "block";
+  clearTimeout(window.__abcToastTimer);
+  window.__abcToastTimer = setTimeout(() => (t.style.display = "none"), ms);
+}
+
+function abcRefrescarBarraABC(){
+  const btnGuardar = document.getElementById("btnGuardarMarcador");     // ✓
+  const btnLista   = document.getElementById("btnListaMarcadores");     // lista
+  const btnPin     = document.getElementById("btnModoMarcadorBarra");   // 📌
+
+  // Otros botones que NO deben verse en modo marcador (ajustá ids si alguno difiere)
+  const otros = [
+    "btnCopiar", "btnCompartir", "btnAudio", "btnLeer",
+    "btnImagen", "btnCrearImagen", "btnDescargar",
+    "btnMas", "btnMenos"
+  ].map(id => document.getElementById(id)).filter(Boolean);
+
+  // En ABC siempre mostramos 📌
+  if (btnPin) btnPin.style.display = "inline-flex";
+
+  if (abcModoMarcador) {
+    // ✅ modo marcador: SOLO 📌 y ✓
+    if (btnGuardar) btnGuardar.style.display = "inline-flex";
+    if (btnLista)   btnLista.style.display   = "none";
+    otros.forEach(el => el.style.display = "none");
+  } else {
+    // ✅ normal: 📌 + lista; ✓ oculto
+    if (btnGuardar) btnGuardar.style.display = "none";
+    if (btnLista)   btnLista.style.display   = "inline-flex";
+    otros.forEach(el => el.style.display = ""); // vuelve a lo normal
+  }
 }
