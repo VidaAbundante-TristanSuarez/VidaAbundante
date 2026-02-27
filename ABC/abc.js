@@ -804,14 +804,6 @@ function abcUIEnABC(){
   abcRefrescarBarraABC();
 }
 
-function abcRefrescarBarraABC(){
-  const btnGuardar = document.getElementById("btnGuardarMarcador");
-  const btnLista   = document.getElementById("btnListaMarcadores");
-
-  if (btnGuardar) btnGuardar.style.display = abcModoMarcador ? "inline-flex" : "none";
-  if (btnLista)   btnLista.style.display   = abcModoMarcador ? "none" : "inline-flex";
-}
-
 // ================= ABC: TOAST + UI MODO MARCADOR (como Biblia) =================
 function abcToast(msg, ms = 1600){
   // si Biblia ya tiene toast, úsalo
