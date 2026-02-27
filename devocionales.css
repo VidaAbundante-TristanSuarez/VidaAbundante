@@ -23,15 +23,6 @@
   border:1px solid #e5e5e5;
 }
 
-/* Imagen final en fase 3 */
-#devFinalImg{
-  width: min(420px, 92vw);
-  height: auto;
-  display: block;
-  margin: 0 auto;
-  border-radius: 14px;
-}
-
 /* ratios */
 .dev-99{ aspect-ratio: 1 / 1; }
 .dev-97{ aspect-ratio: 9 / 7; }
@@ -207,25 +198,6 @@ input[type="number"]{
   display:block;
 }
 
-/* ✅ Overlay oscuro tipo "Biblia" */
-#modalDevFase1.modal-overlay,
-#modalDevFase2.modal-overlay,
-#modalDevFase3.modal-overlay{
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,.55);
-  display: none;                /* se prende con abrirModal() */
-  align-items: center;
-  justify-content: center;
-  padding: 14px;
-}
-
-/* ✅ cuando abrís, vos ya ponés display:flex desde JS */
-#modalDevFase1.abierto,
-#modalDevFase2.abierto,
-#modalDevFase3.abierto{
-  display: flex;
-}
 
 /* ================= MODAL como "Biblia" (contenido real, no flotante raro) ================= */
 .modal-dev{
@@ -479,32 +451,6 @@ body.modal-open{
   display:block;
 }
 
-/* ✅ FASE 0: que entre SIEMPRE en móvil y no “salte” al cerrar teclado */
-#modalDevFase0.modal-overlay{
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,.55);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  padding: 14px;
-}
-
-#modalDevFase0.abierto{ display:flex; }
-
-#modalDevFase0 .modal-contenido.modal-dev{
-  background:#fff;
-  border-radius:18px;
-  padding: 12px;
-  width: min(560px, 96vw);
-  height: calc(100dvh - 24px);
-  max-height: calc(100dvh - 24px);
-  overflow: hidden;       /* ✅ sin scroll del modal */
-  display:flex;
-  flex-direction:column;
-  gap:10px;
-}
-
 /* ✅ textarea sin zoom raro en móvil */
 #dev0Texto{
   font-size:16px;         /* clave para iOS */
@@ -532,6 +478,45 @@ body.modal-open{
 .devBigCard img{ width:100%; display:block; }
 .devBigActions{
   display:flex; gap:10px; padding:10px; justify-content:center; flex-wrap:wrap;
+}
+
+/* ✅ DEVOCIONALES: overlay igual a Biblia */
+#modalDevFase0.modal-overlay,
+#modalDevFase1.modal-overlay,
+#modalDevFase2.modal-overlay,
+#modalDevFase3.modal-overlay{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.55);
+  align-items: center;
+  justify-content: center;
+  padding: 14px;
+}
+
+#modalDevFase0.abierto,
+#modalDevFase1.abierto,
+#modalDevFase2.abierto,
+#modalDevFase3.abierto{
+  display:flex;
+}
+
+/* ✅ tarjeta interna igual a Biblia, sin scroll */
+#modalDevFase0 .modal-contenido.modal-dev,
+#modalDevFase1 .modal-contenido.modal-dev,
+#modalDevFase2 .modal-contenido.modal-dev,
+#modalDevFase3 .modal-contenido.modal-dev{
+  background:#fff;
+  border-radius:18px;
+  padding: 12px;
+  width: min(560px, 96vw);
+  height: calc(100dvh - 24px);
+  max-height: calc(100dvh - 24px);
+  overflow: hidden;
+  box-shadow: 0 18px 60px rgba(0,0,0,.30);
+
+  display:flex;
+  flex-direction:column;
+  gap:10px;
 }
 
 </style>
