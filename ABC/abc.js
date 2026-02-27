@@ -601,7 +601,7 @@ window.toggleModoMarcador = () => {
   }
 
   // requiere login como biblia (si tenés loginModal)
-const uid = (typeof window.__UID === "function") ? window.__UID() : null;
+const uid = UID();
 const loginModal = document.getElementById("loginModal");
 if (!uid) { if (loginModal) loginModal.style.display = "flex"; return; }
 
