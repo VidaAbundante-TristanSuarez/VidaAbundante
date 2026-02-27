@@ -448,36 +448,36 @@ function buildBloquesFromOCR(raw){
 }
 
 /* =========================================================
-   4) MODALES (abrir/cerrar)
+   4) MODALES (abrir/cerrar)  ✅ SOLO con .abierto (como Biblia)
    ========================================================= */
 function abrirModal(id){
   const m = $(id);
   if (!m) return;
-  document.body.classList.add("modal-open"); // ✅
+
+  // ✅ abrir SOLO con clase
   m.classList.add("abierto");
-  m.style.display = "flex";
   m.setAttribute("aria-hidden","false");
+
+  // ✅ bloquear scroll del body
+  document.body.classList.add("modal-open");
 }
 
 function cerrarModal(id){
   const m = $(id);
   if (!m) return;
+
+  // ✅ cerrar SOLO con clase
   m.classList.remove("abierto");
-  m.style.display = "none";
   m.setAttribute("aria-hidden","true");
 
-  // ✅ si no hay ningún modal abierto, liberar body
-  const algunoAbierto =
-    document.querySelector(".modal-overlay.abierto") ||
-    document.querySelector(".modal-overlay[style*='display: flex']");
-  if (!algunoAbierto) document.body.classList.remove("modal-open");
+  // ✅ liberar body si ya no hay ningún modal abierto
+  const alguno = document.querySelector(".modal-overlay.abierto");
+  if (!alguno) document.body.classList.remove("modal-open");
 }
 
 window.devCerrarTodo = () => {
-  cerrarModal("modalDevFase0");
-  cerrarModal("modalDevFase1");
-  cerrarModal("modalDevFase2");
-  cerrarModal("modalDevFase3");
+  ["modalDevFase0","modalDevFase1","modalDevFase2","modalDevFase3"].forEach(cerrarModal);
+
   DEV.audioOk = false;
   devSetFinalButtons(false);
 };
@@ -965,57 +965,64 @@ function buildFase2HTML(basePx){
   const adorno = DEV.f2.adornoUrl;
   const adornoW = Math.max(30, Math.min(95, Number(DEV.f2.adornoWidth || 70)));
 
-  // ✅ alto reservado para el adorno (si no hay, casi nada)
-  const FOOT_H = adorno ? 110 : 10;
+  // ✅ Pie fijo real (si hay adorno). Si no hay, no reservamos nada.
+  const FOOT_H = adorno ? 140 : 0;  // subí/bajá este número si querés más/menos “aire”
+  const FOOT_PAD_BOTTOM = adorno ? 8 : 0; // margen inferior visual del adorno
 
   return `
-    <div style="width:100%; height:100%; display:flex; flex-direction:column;">
+    <div style="position:relative; width:100%; height:100%; overflow:hidden;">
 
-      <!-- ✅ Zona texto: centrado vertical entre margen superior y adorno -->
+      <!-- ✅ TEXTO: ocupa TODO menos el pie, y se centra verticalmente -->
       <div style="
-        flex:1;
-        min-height:0;
+        position:absolute;
+        left:0; right:0; top:0;
+        bottom:${FOOT_H}px;
         display:flex;
-        align-items:center;        /* ✅ centrado vertical real */
+        align-items:center;
         justify-content:center;
-        padding: 0 6px;            /* ✅ sin desperdicio */
+        padding: 0 12px;
         box-sizing:border-box;
         text-align:center;
+        overflow:hidden;
       ">
         <div style="
           width:100%;
           font-size:${basePx}px;
           font-weight:${fw};
           line-height:1.24;
+          word-break:break-word;
         ">
           <div>Reflexión: ${esc(ref)}</div>
           ${ora ? `<div style="margin-top:10px;">Oración: ${esc(ora)}</div>` : ``}
         </div>
       </div>
 
-      <!-- ✅ Pie fijo: el adorno queda al límite inferior (con un mini margen) -->
-      <div style="
-        height:${FOOT_H}px;
-        display:flex;
-        align-items:flex-end;
-        justify-content:center;
-        padding: 0 0 2px 0;        /* ✅ casi pegado abajo */
-        box-sizing:border-box;
-      ">
-        ${adorno ? `
+      <!-- ✅ PIE: adorno fijo abajo (no lo empuja el texto) -->
+      ${adorno ? `
+        <div style="
+          position:absolute;
+          left:0; right:0;
+          bottom:${FOOT_PAD_BOTTOM}px;
+          height:${FOOT_H}px;
+          display:flex;
+          align-items:flex-end;
+          justify-content:center;
+          box-sizing:border-box;
+          pointer-events:none;
+        ">
           <img
             src="${adorno}"
             alt="adorno"
             style="
               width:${adornoW}%;
-              max-height:100px;
+              max-height:110px;
               height:auto;
               object-fit:contain;
               display:block;
             "
           />
-        ` : ``}
-      </div>
+        </div>
+      ` : ``}
 
     </div>
   `;
@@ -1252,34 +1259,26 @@ async function renderFinalCanvasCaptureReal(){
   node.style.backgroundImage = "none";
   node.style.backgroundColor = st.fondoColor || "#ffffff";
 
-  // ✅ WRAPPER igual al modal: margen uniforme (inset 12px) + centrado real
+  // ✅ WRAPPER limpio: margen uniforme y sin padding extra
   const wrap = document.createElement("div");
   wrap.style.position = "absolute";
-  wrap.style.inset = "16px";  // ✅ igual que el preview, margen uniforme           
+  wrap.style.inset = "16px";
   wrap.style.overflow = "hidden";
-  wrap.style.display = "flex";
-  wrap.style.alignItems = "flex-start";      // ✅ empieza arriba
-  wrap.style.justifyContent = "center";      // ✅ centrado horizontal
-  wrap.style.paddingTop = "14px";            // ✅ un poquito de aire arriba
   wrap.style.textAlign = "center";
 
-  // ✅ TEXTO adentro del wrapper
   const texto = document.createElement("div");
   texto.style.width = "100%";
-  texto.style.display = "block";
-  texto.style.textAlign = "center";
-  texto.style.alignItems = "center";
-  texto.style.justifyContent = "center";
+  texto.style.height = "100%"; // ✅ importante para el layout interno absoluto de buildFase2HTML()
   texto.style.fontFamily = st.fuente;
   texto.style.color = st.color;
   applyTextStylesToOne(texto, st);
-     
+
   // ✅ OUTLINE estable
   texto.style.textShadow = textShadowLegibleFinal(st.color);
   texto.style.webkitTextStroke = "0px";
   texto.style.paintOrder = "normal";
 
-  // ✅ tamaño real (canvas)
+  // ✅ HTML fase 2 ya maneja: texto centrado + adorno fijo abajo
   texto.innerHTML = buildFase2HTML(st.size);
 
   wrap.appendChild(texto);
@@ -1558,11 +1557,11 @@ window.devAbrirAudio = () => {
 
   // fallback (si no existe abrirModalAudio)
   const m = $("modalAudio");
-  if (m) {
-    m.classList.add("abierto");
-    m.style.display = "flex";
-    m.setAttribute("aria-hidden","false");
-  }
+if (m) {
+  m.classList.add("abierto");
+  m.setAttribute("aria-hidden","false");
+  document.body.classList.add("modal-open");
+}
 };
 
 // Hook: cuando se confirme audio (Correcto), habilitamos finales
@@ -1575,7 +1574,7 @@ function hookAudioCorrecto(){
 
     // ✅ si estoy en fase 3, habilito botones
     const m3 = $("modalDevFase3");
-    const visible = m3 && m3.style.display !== "none" && m3.classList.contains("abierto");
+    const visible = m3 && m3.classList.contains("abierto");
     if (visible) {
       DEV.audioOk = true;
       devSetFinalButtons(true);
