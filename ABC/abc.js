@@ -134,7 +134,6 @@ body.oscuro #abcContenido a{ color:#1c6fcb; }
     border-right: 0;
     padding: 10px; /* podés bajarlo a 8 si querés más full */
   }
-}
 
 /* ✅ BLOQUES (wrapper) */
 .abc-block{
