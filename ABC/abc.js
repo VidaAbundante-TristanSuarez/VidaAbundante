@@ -353,21 +353,23 @@ doc.onclick = (e) => {
   abcSeleccionado = b.dataset.bid;
   abcMarcarSeleccionUI();
 
-  // si NO estoy en modo marcador, solo selecciono (borde)
-  if (!abcModoMarcador) return;
+// 🔐 requiere login
+const uid = UID();
+const loginModal = document.getElementById("loginModal");
+if (!uid) { if (loginModal) loginModal.style.display = "flex"; return; }
 
-  // requiere login
-  const uid = UID();
-  const loginModal = document.getElementById("loginModal");
-  if (!uid) { if (loginModal) loginModal.style.display = "flex"; return; }
+// 🔒 candado igual Biblia
+if (window.resaltadorBloqueado === true) return;
 
-  // respeta candado de Biblia
-  if (window.resaltadorBloqueado) return;
+// 🎨 color igual Biblia
+const color = window.colorActual || "#fff3b0";
 
-  // usa el color actual de Biblia
-  const color = window.colorActual || "#fff3b0";
-  abcSetResaltado(abcSeleccionado, color);
+// guardar + pintar
+abcSetResaltado(abcSeleccionado, color);
 b.style.background = color;
+const child = b.firstElementChild;
+if (child) child.style.background = "transparent";;
+  
 const child = b.firstElementChild;
 if (child) child.style.background = "transparent";
 };
@@ -710,22 +712,35 @@ function abcPortalBarraOff() {
 }
 
 function abcUIEnABC(){
-  // ✅ esconder botones de imagen si estás en ABC
-  const btnImagen = document.getElementById("btnImagen");       // icon panorama
-  const btnCrear  = document.getElementById("btnCrearImagen");  // Crear Imagen
+  // ❌ esconder botones de imagen
+  const btnImagen = document.getElementById("btnImagen");
+  const btnCrear  = document.getElementById("btnCrearImagen");
   if (btnImagen) btnImagen.style.display = "none";
   if (btnCrear)  btnCrear.style.display  = "none";
 
-  // ✅ asegurar que el botón de “lista” (📌/alfiler) funcione como NOTA en ABC
-  // (en Biblia ese botón llama abrirMarcadores)
+  // ✅ ocultar ✅ guardar marcador (no aplica en ABC)
+  const btnGuardar = document.getElementById("btnGuardarMarcador");
+  if (btnGuardar) btnGuardar.style.display = "none";
+
+  // ✅ TU 📌 (thumbtack) = abrir nota del bloque seleccionado
+  const btnPin = document.getElementById("btnModoMarcadorBarra");
+  if (btnPin) {
+    btnPin.style.display = "inline-flex";
+    btnPin.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      abcAbrirNota();   // 📌 abre modal nota
+    };
+  }
+
+  // ✅ botón lista = listar notas del tema (por ahora alert, después si querés lo hacemos modal)
   const btnLista = document.getElementById("btnListaMarcadores");
   if (btnLista) {
     btnLista.style.display = "inline-flex";
     btnLista.onclick = (e) => {
       e.preventDefault();
       e.stopPropagation();
-      // en ABC: abre nota del bloque seleccionado
-      abcAbrirNota();
+      abcListarNotasTema();
     };
   }
 }
