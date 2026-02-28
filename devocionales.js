@@ -305,16 +305,21 @@ function onlyLetters(s){
 function isMostlyUpper(line){
   const s = (line || "").trim();
   if (!s) return false;
+
   // si parece cita (Mateo 3:16) NO lo tomamos como versículo
   if (detectCita(s)) return false;
 
-  const letters = onlyLetters(s);
+  // letras (incluye acentos)
+  const letters = (s.match(/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/g) || []);
   if (letters.length < 6) return false;
 
-  let upper = 0;
-  for (const ch of letters) if (ch === ch.toUpperCase()) upper++;
-  const ratio = upper / letters.length;
-  return ratio >= 0.85; // bastante estricto
+  // ✅ REGLA FUERTE:
+  // si aparece alguna minúscula, NO es versículo
+  const hasLower = letters.some(ch => ch === ch.toLowerCase() && ch !== ch.toUpperCase());
+  if (hasLower) return false;
+
+  // si llegamos acá, es todo MAYÚSCULA (o sin letras)
+  return true;
 }
 
 function stripTailLogoJunk(lines){
@@ -504,46 +509,6 @@ window.devReparseFase0 = () => {
   DEV.audioText = audioText;
 
   alert("✅ Listo. Campos re-detectados. (Podés corregirlos manualmente)");
-};
-
-// Convierte campos → texto completo (por si querés “armar” un OCR limpio)
-window.devCopiarCamposATexto = () => {
-  devReadFieldsFromUI();
-
-  const f = DEV.fields;
-  const armado = [
-    (f.fecha || "").trim(),
-    "",
-    (f.versiculo || "").trim(),
-    (f.cita || "").trim(),
-    "",
-    (f.reflexion ? ("Reflexión: " + oneLine(f.reflexion)) : "").trim(),
-    (f.oracion ? ("Oración: " + oneLine(f.oracion)) : "").trim()
-  ].filter(x => x !== "").join("\n").trim();
-
-  const ta = $("dev0Texto");
-  if (ta) ta.value = armado;
-
-  DEV.rawText = armado;
-  alert("✅ Campos → Texto completo.");
-};
-
-// Convierte texto completo → campos (igual que reparse, pero sin alert grande)
-window.devCopiarTextoACampos = () => {
-  const t0 = ($("dev0Texto")?.value || "").trim();
-  if (!t0) { alert("No hay texto en el OCR completo."); return; }
-  DEV.rawText = t0;
-
-  const { p1, p2 } = buildBloquesFromOCR(t0);
-
-  DEV.fields.fecha     = p1?.fecha || "";
-  DEV.fields.versiculo = p1?.versiculo || "";
-  DEV.fields.cita      = p1?.cita || "";
-  DEV.fields.reflexion = p2?.reflexion || "";
-  DEV.fields.oracion   = p2?.oracion || "";
-
-  devWriteFieldsToUI();
-  alert("✅ Texto → Campos.");
 };
 
 // Aplica fields (manuales) a DEV.p1/p2 y arma audioText SIEMPRE desde fields
@@ -1490,11 +1455,11 @@ async function devAbrirFase0(){
 
   if (!tieneAlgo && (DEV.rawText || "").trim()) {
     const { p1, p2, audioText } = buildBloquesFromOCR(DEV.rawText);
-    DEV.fields.fecha     = p1?.fecha || "";
-    DEV.fields.versiculo = p1?.versiculo || "";
-    DEV.fields.cita      = p1?.cita || "";
-    DEV.fields.reflexion = p2?.reflexion || "";
-    DEV.fields.oracion   = p2?.oracion || "";
+    DEV.fields.fecha     = oneLine(p1?.fecha || "");
+    DEV.fields.versiculo = oneLine(p1?.versiculo || "");
+    DEV.fields.cita      = oneLine(p1?.cita || "");
+    DEV.fields.reflexion = oneLine(p2?.reflexion || "");
+    DEV.fields.oracion   = oneLine(p2?.oracion || "");
     DEV.audioText = audioText;
     DEV.p1 = p1;
     DEV.p2 = p2;
@@ -1505,7 +1470,6 @@ async function devAbrirFase0(){
   abrirModal("modalDevFase0");
 }
 
-// Fase 0 -> Fase 1
 // Fase 0 -> Fase 1  ✅ usa CAMPOS MANUALES si los tocaste
 window.devIrFase1Desde0 = () => {
   const t0 = ($("dev0Texto")?.value || "").trim();
@@ -1532,11 +1496,11 @@ window.devIrFase1Desde0 = () => {
     DEV.audioText = audioText;
 
     // y de paso llenamos fields para que queden
-    DEV.fields.fecha     = p1?.fecha || "";
-    DEV.fields.versiculo = p1?.versiculo || "";
-    DEV.fields.cita      = p1?.cita || "";
-    DEV.fields.reflexion = p2?.reflexion || "";
-    DEV.fields.oracion   = p2?.oracion || "";
+DEV.fields.fecha     = oneLine(p1?.fecha || "");
+DEV.fields.versiculo = oneLine(p1?.versiculo || "");
+DEV.fields.cita      = oneLine(p1?.cita || "");
+DEV.fields.reflexion = oneLine(p2?.reflexion || "");
+DEV.fields.oracion   = oneLine(p2?.oracion || "");
   }
 
   // reset final
