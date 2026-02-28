@@ -558,6 +558,105 @@ body.modal-open{
   resize: none;
 }
 
+/* ================= FASE 0 (ROOT): header fijo + body scroll ================= */
+#modalDevFase0 .modal-contenido.modal-dev{
+  overflow: hidden;         /* el modal NO scrollea */
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* header fijo */
+#modalDevFase0 .dev0-head{
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* body scrolleable (acá vive el OCR + campos) */
+#modalDevFase0 .dev0-body{
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+/* footer fijo */
+#modalDevFase0 .dev0-foot{
+  flex: 0 0 auto;
+}
+
+/* textarea OCR grande y siempre visible */
+#modalDevFase0 #dev0Texto{
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 240px;        /* en PC */
+  height: 38dvh;            /* en móvil crece */
+  resize: none;
+  border-radius: 14px;
+  border: 1px solid #ddd;
+  padding: 10px;
+  line-height: 1.35;
+  font-size: 16px;
+}
+
+/* grid prolijo */
+#modalDevFase0 .dev0-grid{
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+#modalDevFase0 input,
+#modalDevFase0 textarea{
+  width: 100%;
+  box-sizing: border-box;
+  border-radius: 12px;
+  border: 1px solid #ddd;
+  padding: 10px;
+}
+
+#modalDevFase0 input{
+  font-weight: 700;
+}
+
+#modalDevFase0 #dev0Versiculo{ min-height: 90px; resize:none; }
+#modalDevFase0 #dev0Reflexion{ min-height: 110px; resize:none; }
+#modalDevFase0 #dev0Oracion{   min-height: 110px; resize:none; }
+
+/* ================= FASE 2 ROOT: preview crece por ALTURA ================= */
+#modalDevFase2 .modal-contenido.modal-dev{
+  min-height: 0;
+}
+
+/* caja que se come el espacio disponible */
+#modalDevFase2 .dev-preview-box{
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ahora el preview se ajusta por altura disponible (no por ancho) */
+#modalDevFase2 #dev2Preview{
+  height: 100%;
+  width: auto;
+  max-height: 100%;
+  max-width: 100%;
+}
+
+/* el resto (adornos/controles/botones) no crece */
+#modalDevFase2 .dev-adorno-row,
+#modalDevFase2 .dev-tools,
+#modalDevFase2 .dev-row{
+  flex: 0 0 auto;
+}
+
 </style>
 
 
