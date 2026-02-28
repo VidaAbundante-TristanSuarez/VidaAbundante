@@ -593,7 +593,7 @@ function abcAbrirModalBibliaParaNota() {
   titulo.value = `Nota ABC · ${temaTitulo}`;
   nota.value = "";
   color.value = "#fff3b0";
-  keep.checked = false; // en ABC no usamos keep
+  keep.checked = true; // ✅ en ABC SI lo usamos: mantener bloque resaltado
 
   btnGuardar.onclick = async () => {
     try {
@@ -618,8 +618,8 @@ function abcAbrirModalBibliaParaNota() {
           fecha: ahora,
           titulo: t,
           nota: n,
-          color: "#fff3b0",
-          keep: false,
+          color: (color.value || "#fff3b0"),
+          keep: !!keep.checked,
 
           libro: "",
           capitulo: 0,
@@ -629,6 +629,11 @@ function abcAbrirModalBibliaParaNota() {
           abcBid: bid
         };
         await set(ref(db, `marcadores/${uid}/${id}`), data);
+        
+        // ✅ si "Mantener resaltado" está activo, aplicamos resaltado al bloque
+if (keep.checked) {
+  await abcSetResaltado(bid, color.value || "#fff3b0");
+}
       }
 
       // cerrar modal de Biblia
@@ -638,9 +643,17 @@ function abcAbrirModalBibliaParaNota() {
         modal.setAttribute("aria-hidden", "true");
       }
 
-      // volver a ABC sin modo marcador
-      abcResetModoMarcador();
-      abcToast("✅ Nota guardada");
+// ✅ cerrar y resetear modo marcador
+abcResetModoMarcador();
+
+// ✅ IMPORTANTÍSIMO: reenganchar la barra para que el ✓ vuelva a tener onclick en ABC
+abcUIEnABC();
+
+// ✅ re-aplicar visibilidad (por si biblia lo dejó "bloqueado")
+abcAplicarUIAccionesPorModo();
+
+abcToast("✅ Nota guardada");
+      
     } catch (e) {
       console.error(e);
       alert("No pude guardar la nota.");
@@ -650,6 +663,103 @@ function abcAbrirModalBibliaParaNota() {
   modal.classList.add("abierto");
   modal.setAttribute("aria-hidden", "false");
 }
+
+function abcAbrirListaNotasABC(){
+  const uid = UID();
+  const loginModal = document.getElementById("loginModal");
+  if (!uid) { if (loginModal) loginModal.style.display = "flex"; return; }
+
+  const modal = document.getElementById("modalMarcadores");
+  const lista = document.getElementById("listaMarcadores");
+  const form  = document.getElementById("formNuevoMarcador");
+  if (!modal || !lista || !form) {
+    alert("No encontré modalMarcadores (Biblia).");
+    return;
+  }
+
+  // ✅ mostrar lista (no el form)
+  form.style.display = "none";
+  lista.style.display = "block";
+
+  // ✅ filtrar SOLO ABC (y si querés solo del tema actual, lo hacemos)
+  const items = Object.entries(window.marcadores || {})
+    .map(([id, m]) => ({...m, id}))
+    .filter(m => m?.origen === "abc") // <-- solo ABC
+    .sort((a,b)=> (b.fecha||0) - (a.fecha||0));
+
+  if (!items.length){
+    lista.innerHTML = `<p class="muted">Todavía no guardaste notas de ABC.</p>`;
+  } else {
+    lista.innerHTML = items.map(m => {
+      const fechaTxt = m.fecha ? new Date(m.fecha).toLocaleDateString("es-AR") : "";
+      const titulo = (m.titulo || "Nota ABC").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+      const temaTxt = m?.abc?.temaTitulo ? ` · ${m.abc.temaTitulo}` : "";
+      const linea = `${titulo}${temaTxt} · ${fechaTxt}`;
+
+      return `
+        <div class="card-marcador" style="cursor:pointer; display:flex; justify-content:space-between; gap:10px; align-items:center;">
+          <div style="font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" onclick="abcIrANota('${m.id}')">
+            ${linea}
+          </div>
+          <button type="button" class="pm-btn" onclick="abcEditarNota('${m.id}')" title="Editar">✏️</button>
+        </div>
+      `;
+    }).join("");
+  }
+
+  // abrir modal
+  modal.classList.add("abierto");
+  modal.setAttribute("aria-hidden","false");
+}
+
+window.abcIrANota = async (id) => {
+  const m = (window.marcadores || {})[id];
+  if (!m) return;
+
+  // cerrar modal
+  if (typeof cerrarMarcadores === "function") cerrarMarcadores();
+  else {
+    const modal = document.getElementById("modalMarcadores");
+    if (modal) { modal.classList.remove("abierto"); modal.setAttribute("aria-hidden","true"); }
+  }
+
+  // ir a ABC y al tema
+  if (typeof window.mostrarIglesiaSub === "function") window.mostrarIglesiaSub("abc");
+  abcIndex = m?.abc?.temaIndex ?? 0;
+  await cargarABCTema(true);
+
+  // scrollear al bloque
+  const bid = m.abcBid;
+  const doc = document.getElementById("abcDoc");
+  const el = doc ? doc.querySelector(`.abc-block[data-bid="${bid}"]`) : null;
+  if (el && el.scrollIntoView) el.scrollIntoView({behavior:"smooth", block:"center"});
+
+  // dejarlo seleccionado
+  abcSeleccionado = bid;
+  abcSeleccionados.clear();
+  abcSeleccionados.add(bid);
+  abcMarcarSeleccionUI();
+};
+
+window.abcEditarNota = async (id) => {
+  const m = (window.marcadores || {})[id];
+  if (!m) return;
+  // ir primero al bloque
+  await window.abcIrANota(id);
+  // activar modo marcador y abrir form para editar (reusa tu modal)
+  abcModoMarcador = true;
+  abcAplicarUIAccionesPorModo();
+  abcAbrirModalBibliaParaNota();
+  // precargar en el form
+  const titulo= document.getElementById("marcadorTitulo");
+  const nota  = document.getElementById("marcadorNota");
+  const color = document.getElementById("marcadorColor");
+  const keep  = document.getElementById("marcadorKeep");
+  if (titulo) titulo.value = m.titulo || "";
+  if (nota)   nota.value = m.nota || "";
+  if (color)  color.value = m.color || "#fff3b0";
+  if (keep)   keep.checked = !!m.keep;
+};
 
 // -------------------------
 // ✅ ABC: modo marcador ON/OFF
@@ -808,17 +918,12 @@ function abcUIEnABC(){
     };
   }
 
-  if (btnLista) {
-    btnLista.onclick = (e) => {
-      e.preventDefault(); e.stopPropagation();
-      irA("panel");
-      setTimeout(() => {
-        mostrarSeccion?.("marcadores");
-        window.filtroNotasPanel = "abc";
-        window.renderPanelMarcadores?.();
-      }, 0);
-    };
-  }
+if (btnLista) {
+  btnLista.onclick = (e) => {
+    e.preventDefault(); e.stopPropagation();
+    abcAbrirListaNotasABC(); // ✅ abre el modal como Biblia, pero filtrado a ABC
+  };
+}
 
   abcAplicarUIAccionesPorModo();
 }
