@@ -308,6 +308,119 @@ const UID = () => {
 function abcPath(base){ return `${base}/${UID()}`; }
 
 // =====================================================
+// ✅ ABC: PROGRESO (último tema) + RESALTADOS por bloque
+// =====================================================
+
+// ----- PROGRESO -----
+async function abcGuardarProgreso(){
+  try{
+    const uid = UID(); if(!uid) return;
+    const { db } = FB();
+    const { ref, set } = API();
+    if(!db || !ref || !set) return;
+
+    await set(ref(db, `${abcPath("abcProgreso")}/ultimoIndex`), abcIndex);
+  } catch (e){
+    console.warn("⚠️ No se pudo guardar progreso ABC:", e?.code || e?.message || e);
+  }
+}
+
+async function abcCargarProgreso(){
+  const uid = UID();
+  // si no hay login: arrancá en 0 y cargá tema igual
+  if(!uid){ abcIndex = 0; await cargarABCTema(); return; }
+
+  const { db } = FB();
+  const { ref, get } = API();
+  if(!db || !ref || !get){ abcIndex = 0; await cargarABCTema(); return; }
+
+  try{
+    const snap = await get(ref(db, `${abcPath("abcProgreso")}/ultimoIndex`));
+    const v = snap.exists() ? snap.val() : null;
+
+    if (typeof v === "number" && v >= 0 && v < ABC_TEMAS.length) abcIndex = v;
+    else abcIndex = 0;
+
+    await cargarABCTema();
+  }catch(e){
+    abcIndex = 0;
+    await cargarABCTema();
+  }
+}
+
+// ----- RESALTADOS -----
+async function abcSetResaltado(bid, color){
+  const uid = UID(); if(!uid || !bid) return;
+  const { db } = FB();
+  const { ref, set } = API();
+  if(!db || !ref || !set) return;
+
+  await set(ref(db, `${abcPath("abcResaltados")}/${abcIndex}/${bid}`), { color });
+}
+
+async function abcQuitarResaltado(bid){
+  const uid = UID(); if(!uid || !bid) return;
+  const { db } = FB();
+  const { ref, remove } = API();
+  if(!db || !ref || !remove) return;
+
+  await remove(ref(db, `${abcPath("abcResaltados")}/${abcIndex}/${bid}`));
+}
+
+function abcLimpiarFondoBloque(el){
+  if (!el) return;
+  el.style.background = "transparent";
+  el.querySelectorAll("*").forEach(x => x.style.background = "transparent");
+}
+
+function abcAplicarFondoBloque(el, color){
+  if (!el) return;
+  el.style.background = color;
+  el.querySelectorAll("*").forEach(x => x.style.background = "transparent");
+}
+
+function abcAplicarResaltadosEnPantalla(data){
+  const doc = document.getElementById("abcDoc");
+  if(!doc) return;
+
+  Object.entries(data || {}).forEach(([bid, obj]) => {
+    const el = doc.querySelector(`.abc-block[data-bid="${bid}"]`);
+    if (el && obj?.color) abcAplicarFondoBloque(el, obj.color);
+  });
+}
+
+let abcUnsubResaltados = null;
+
+function abcEscucharResaltados(){
+  const uid = UID(); if(!uid) return;
+  const { db } = FB();
+  const { ref, onValue, off } = API();
+  if(!db || !ref || !onValue) return;
+
+  // cortar escucha anterior
+  try{ if (abcUnsubResaltados) abcUnsubResaltados(); }catch(e){}
+
+  const r = ref(db, `${abcPath("abcResaltados")}/${abcIndex}`);
+
+  const handler = (snap) => {
+    const data = snap.val() || {};
+    abcResaltadosCache = data;
+
+    // limpiar pantalla primero
+    const doc = document.getElementById("abcDoc");
+    if (doc) doc.querySelectorAll(".abc-block").forEach(el => abcLimpiarFondoBloque(el));
+
+    abcAplicarResaltadosEnPantalla(data);
+  };
+
+  onValue(r, handler);
+
+  abcUnsubResaltados = () => {
+    try { off(r, "value", handler); } catch(e){}
+  };
+}
+
+// =====================================================
 // ✅ ABC: selección múltiple + NOTAS usando el MISMO modalMarcadores (Biblia)
 // =====================================================
 
