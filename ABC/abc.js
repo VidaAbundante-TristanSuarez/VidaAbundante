@@ -851,11 +851,16 @@ function abcAplicarUIAccionesPorModo() {
   const btnPin    = document.getElementById("btnModoMarcadorBarra"); // 📌
   const btnCheck  = document.getElementById("btnGuardarMarcador");   // ✓
 
-  // imagen siempre off en ABC
+  // ✅ imagen siempre off en ABC (blindado, aunque Biblia intente mostrar)
   const btnImagen = document.getElementById("btnImagen");
   const btnCrear  = document.getElementById("btnCrearImagen");
-  if (btnImagen) btnImagen.style.display = "none";
-  if (btnCrear)  btnCrear.style.display  = "none";
+
+  [btnImagen, btnCrear].forEach(b => {
+    if (!b) return;
+    b.style.display = "none";
+    b.style.visibility = "hidden";
+    b.style.pointerEvents = "none";
+  });
 
   if (btnPin) btnPin.style.display = "inline-flex";
 
@@ -863,9 +868,14 @@ function abcAplicarUIAccionesPorModo() {
     "btnListaMarcadores",
     "btnCopiar", "btnCompartir", "btnAudio", "btnLeer",
     "btnDescargar",
-    "btnMas", "btnMenos"
+    "btnMas", "btnMenos",
+    // ✅ por si algún template los reinyecta con otros IDs (opcional)
+    "btnImagen", "btnCrearImagen"
   ];
-  const otros = idsOcultar.map(id => document.getElementById(id)).filter(Boolean);
+
+  const otros = idsOcultar
+    .map(id => document.getElementById(id))
+    .filter(Boolean);
 
   if (abcModoMarcador) {
     if (btnCheck) btnCheck.style.display = "inline-flex";
@@ -873,10 +883,16 @@ function abcAplicarUIAccionesPorModo() {
   } else {
     if (btnCheck) btnCheck.style.display = "none";
     otros.forEach(el => el.style.display = "");
-    if (btnImagen) btnImagen.style.display = "none";
-    if (btnCrear)  btnCrear.style.display  = "none";
   }
-  
+
+  // ✅ blindaje final (por si el else los “revive”)
+  [btnImagen, btnCrear].forEach(b => {
+    if (!b) return;
+    b.style.display = "none";
+    b.style.visibility = "hidden";
+    b.style.pointerEvents = "none";
+  });
+
   // ✅ refresca estado del ✓ en ABC
   abcHabilitarCheckUI();
 }
