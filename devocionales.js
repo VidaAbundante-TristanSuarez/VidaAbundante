@@ -23,6 +23,15 @@ const DEV = {
 
   // texto y bloques
   rawText: "",
+  // ====== CAMPOS EDITABLES (FASE 0) ======
+  fields: {
+    fecha: "",
+    versiculo: "",
+    cita: "",
+    reflexion: "",
+    oracion: ""
+  },
+   
   bloque1: "",
   bloque2: "",
   audioText: "",
@@ -445,6 +454,118 @@ function buildBloquesFromOCR(raw){
   // texto para audio (simple, legible)
   const audioText = buildAudioFromParts(p1, p2);
   return { p1, p2, audioText };
+}
+
+/* =========================================================
+   FASE 0 — CAMPOS EDITABLES (sync texto <-> campos)
+   ========================================================= */
+
+// Lee inputs de Fase 0 hacia DEV.fields
+function devReadFieldsFromUI(){
+  DEV.fields.fecha     = ($("dev0Fecha")?.value || "").trim();
+  DEV.fields.versiculo = ($("dev0Versiculo")?.value || "").trim();
+  DEV.fields.cita      = ($("dev0Cita")?.value || "").trim();
+  DEV.fields.reflexion = ($("dev0Reflexion")?.value || "").trim();
+  DEV.fields.oracion   = ($("dev0Oracion")?.value || "").trim();
+}
+
+// Escribe DEV.fields hacia inputs de Fase 0
+function devWriteFieldsToUI(){
+  const f = DEV.fields || {};
+  const set = (id,val)=>{ const el=$(id); if(el) el.value = val || ""; };
+
+  set("dev0Fecha", f.fecha);
+  set("dev0Versiculo", f.versiculo);
+  set("dev0Cita", f.cita);
+  set("dev0Reflexion", f.reflexion);
+  set("dev0Oracion", f.oracion);
+}
+
+// Toma el texto completo (dev0Texto) y re-detecta campos usando tu parser
+window.devReparseFase0 = () => {
+  const t0 = ($("dev0Texto")?.value || "").trim();
+  if (!t0) { alert("No hay texto en el OCR completo."); return; }
+
+  DEV.rawText = t0;
+  const { p1, p2, audioText } = buildBloquesFromOCR(t0);
+
+  // actualizar fields desde parser
+  DEV.fields.fecha     = p1?.fecha || "";
+  DEV.fields.versiculo = p1?.versiculo || "";
+  DEV.fields.cita      = p1?.cita || "";
+  DEV.fields.reflexion = p2?.reflexion || "";
+  DEV.fields.oracion   = p2?.oracion || "";
+
+  devWriteFieldsToUI();
+
+  // también guarda DEV.p1/p2 tentativo (se confirma al pasar a fase1)
+  DEV.p1 = p1;
+  DEV.p2 = p2;
+  DEV.audioText = audioText;
+
+  alert("✅ Listo. Campos re-detectados. (Podés corregirlos manualmente)");
+};
+
+// Convierte campos → texto completo (por si querés “armar” un OCR limpio)
+window.devCopiarCamposATexto = () => {
+  devReadFieldsFromUI();
+
+  const f = DEV.fields;
+  const armado = [
+    (f.fecha || "").trim(),
+    "",
+    (f.versiculo || "").trim(),
+    (f.cita || "").trim(),
+    "",
+    (f.reflexion ? ("Reflexión: " + oneLine(f.reflexion)) : "").trim(),
+    (f.oracion ? ("Oración: " + oneLine(f.oracion)) : "").trim()
+  ].filter(x => x !== "").join("\n").trim();
+
+  const ta = $("dev0Texto");
+  if (ta) ta.value = armado;
+
+  DEV.rawText = armado;
+  alert("✅ Campos → Texto completo.");
+};
+
+// Convierte texto completo → campos (igual que reparse, pero sin alert grande)
+window.devCopiarTextoACampos = () => {
+  const t0 = ($("dev0Texto")?.value || "").trim();
+  if (!t0) { alert("No hay texto en el OCR completo."); return; }
+  DEV.rawText = t0;
+
+  const { p1, p2 } = buildBloquesFromOCR(t0);
+
+  DEV.fields.fecha     = p1?.fecha || "";
+  DEV.fields.versiculo = p1?.versiculo || "";
+  DEV.fields.cita      = p1?.cita || "";
+  DEV.fields.reflexion = p2?.reflexion || "";
+  DEV.fields.oracion   = p2?.oracion || "";
+
+  devWriteFieldsToUI();
+  alert("✅ Texto → Campos.");
+};
+
+// Aplica fields (manuales) a DEV.p1/p2 y arma audioText SIEMPRE desde fields
+function devApplyFieldsToParts(){
+  devReadFieldsFromUI();
+
+  const f = DEV.fields;
+
+  DEV.p1 = {
+    fecha: f.fecha || "",
+    versiculo: f.versiculo || "",
+    cita: f.cita || "",
+    iglesia: "Iglesia Cristiana de la Vida Abundante",
+    direccion: "Roca 123, Tristan Suarez."
+  };
+
+  DEV.p2 = {
+    reflexion: f.reflexion || "",
+    oracion: f.oracion || ""
+  };
+
+  DEV.audioText = buildAudioFromParts(DEV.p1, DEV.p2);
 }
 
 /* =========================================================
@@ -1358,26 +1479,67 @@ async function devAbrirFase0(){
     if (img) img.src = DEV.cropPreviewUrl;
   }
 
-  // texto editable
+  // texto editable completo
   const t0 = $("dev0Texto");
   if (t0) t0.value = DEV.rawText || "";
+
+  // Si ya tengo campos cargados, los muestro.
+  // Si no, intento detectarlos a partir del texto.
+  const tieneAlgo =
+    (DEV.fields?.fecha || DEV.fields?.versiculo || DEV.fields?.cita || DEV.fields?.reflexion || DEV.fields?.oracion);
+
+  if (!tieneAlgo && (DEV.rawText || "").trim()) {
+    const { p1, p2, audioText } = buildBloquesFromOCR(DEV.rawText);
+    DEV.fields.fecha     = p1?.fecha || "";
+    DEV.fields.versiculo = p1?.versiculo || "";
+    DEV.fields.cita      = p1?.cita || "";
+    DEV.fields.reflexion = p2?.reflexion || "";
+    DEV.fields.oracion   = p2?.oracion || "";
+    DEV.audioText = audioText;
+    DEV.p1 = p1;
+    DEV.p2 = p2;
+  }
+
+  devWriteFieldsToUI();
 
   abrirModal("modalDevFase0");
 }
 
 // Fase 0 -> Fase 1
+// Fase 0 -> Fase 1  ✅ usa CAMPOS MANUALES si los tocaste
 window.devIrFase1Desde0 = () => {
   const t0 = ($("dev0Texto")?.value || "").trim();
   if (!t0) { alert("Pegá o generá el texto primero."); return; }
 
+  // Guardar rawText siempre
   DEV.rawText = t0;
 
-  const { p1, p2, audioText } = buildBloquesFromOCR(t0);
-  DEV.p1 = p1;
-  DEV.p2 = p2;
-  DEV.audioText = audioText;
+  // 1) Primero intentamos aplicar CAMPOS (manuales)
+  //    Si están vacíos, hacemos parse desde el texto.
+  devReadFieldsFromUI();
 
-  // NO resetear f1/f2 (solo final)
+  const hayCampos =
+    (DEV.fields.fecha || DEV.fields.versiculo || DEV.fields.cita || DEV.fields.reflexion || DEV.fields.oracion);
+
+  if (hayCampos) {
+    // ✅ tu corrección manual manda
+    devApplyFieldsToParts();
+  } else {
+    // ✅ fallback: parser OCR
+    const { p1, p2, audioText } = buildBloquesFromOCR(t0);
+    DEV.p1 = p1;
+    DEV.p2 = p2;
+    DEV.audioText = audioText;
+
+    // y de paso llenamos fields para que queden
+    DEV.fields.fecha     = p1?.fecha || "";
+    DEV.fields.versiculo = p1?.versiculo || "";
+    DEV.fields.cita      = p1?.cita || "";
+    DEV.fields.reflexion = p2?.reflexion || "";
+    DEV.fields.oracion   = p2?.oracion || "";
+  }
+
+  // reset final
   DEV.finalDataUrl = "";
   const imgF = $("devFinalImg");
   if (imgF) imgF.src = "";
