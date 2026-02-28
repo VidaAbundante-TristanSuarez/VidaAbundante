@@ -323,7 +323,9 @@ const UID = () => {
   return window.__UID || null;
 };
 
-let abcSeleccionado = null;
+// ✅ selección múltiple para notas (modo 📌)
+let abcSeleccionados = new Set(); // varios bids
+let abcSeleccionado = null;       // último tocado (para abrir nota)
 let abcColor = "#fff3b0"; // igual que Biblia
 
 function abcPath(base){ return `${base}/${UID()}`; }
@@ -347,35 +349,51 @@ function abcPrepararBloques() {
 
   abcMarcarSeleccionUI();
 
-  doc.onclick = async (e) => {
-    const b = e.target.closest(".abc-block");
-    if (!b) return;
+doc.onclick = async (e) => {
+  const b = e.target.closest(".abc-block");
+  if (!b) return;
 
-    abcSeleccionado = b.dataset.bid;
+  const bid = b.dataset.bid;
+
+  // 🔐 requiere login
+  const uid = UID();
+  const loginModal = document.getElementById("loginModal");
+  if (!uid) { if (loginModal) loginModal.style.display = "flex"; return; }
+
+  // =========================
+  // ✅ MODO MARCADOR (📌): selección múltiple
+  // =========================
+  if (abcModoMarcador === true) {
+    // toggle selección
+    if (abcSeleccionados.has(bid)) abcSeleccionados.delete(bid);
+    else abcSeleccionados.add(bid);
+
+    // último tocado
+    abcSeleccionado = bid;
+
     abcMarcarSeleccionUI();
+    return;
+  }
 
-    const uid = UID();
-    const loginModal = document.getElementById("loginModal");
-    if (!uid) { if (loginModal) loginModal.style.display = "flex"; return; }
+  // =========================
+  // ✅ RESALTADOR (💛): solo si NO hay candado
+  // =========================
+  if (window.resaltadorBloqueado === true) return;
 
-    // ✅ SI ESTÁ ACTIVO 📌 → SOLO seleccionar, NO pintar, NO despintar
-    if (abcModoMarcador === true) return;
+  // en modo normal, dejamos selección simple “visual” opcional
+  abcSeleccionado = bid;
+  abcMarcarSeleccionUI();
 
-    // ✅ Resaltador (💛): pinta/despinta solo si NO hay candado
-    if (window.resaltadorBloqueado === true) return;
+  if (abcResaltadosCache && abcResaltadosCache[bid]) {
+    await abcQuitarResaltado(bid);
+    abcLimpiarFondoBloque(b);
+    return;
+  }
 
-    const bid = abcSeleccionado;
-
-    if (abcResaltadosCache && abcResaltadosCache[bid]) {
-      await abcQuitarResaltado(bid);
-      abcLimpiarFondoBloque(b);
-      return;
-    }
-
-    const color = window.colorActual || "#fff3b0";
-    await abcSetResaltado(bid, color);
-    abcAplicarFondoBloque(b, color);
-  };
+  const color = window.colorActual || "#fff3b0";
+  await abcSetResaltado(bid, color);
+  abcAplicarFondoBloque(b, color);
+};
 }
 
 function abcMarcarSeleccionUI(){
@@ -383,9 +401,18 @@ function abcMarcarSeleccionUI(){
   if (!doc) return;
 
   doc.querySelectorAll(".abc-block").forEach(b => {
-    b.style.outline = (b.dataset.bid === abcSeleccionado) ? "2px solid #4f6fa8" : "none";
+    const bid = b.dataset.bid;
+
+    const sel = abcSeleccionados && abcSeleccionados.has(bid);
+    const ultimo = (bid === abcSeleccionado);
+
+    // ✅ borde para seleccionados
+    b.style.outline = sel ? "2px solid #4f6fa8" : "none";
     b.style.outlineOffset = "4px";
     b.style.borderRadius = "10px";
+
+    // ✅ si es el “último tocado”, lo hacemos un poquito más fuerte
+    if (sel && ultimo) b.style.outlineWidth = "3px";
   });
 }
 
@@ -572,7 +599,11 @@ async function abcBorrarNotaEnMarcadores(bid){
 let __abcEditTitulo = "";
 
 async function abcAbrirNota(){
-  if(!abcSeleccionado) return alert("Tocá un bloque primero 🙂");
+ if(!abcSeleccionado) return alert("Tocá un bloque primero 🙂");
+// si el último tocado no quedó en el set (por cualquier cosa), lo agrego
+if (abcSeleccionado && abcSeleccionados && !abcSeleccionados.has(abcSeleccionado)) {
+  abcSeleccionados.add(abcSeleccionado);
+}
 
   const uid = UID();
   const loginModal = document.getElementById("loginModal");
@@ -1027,6 +1058,24 @@ function abcToggleModoMarcador(){
   abcRefrescarBarraABC();
 }
 
+function abcResetModoMarcador() {
+  abcModoMarcador = false;
+
+  // ✅ sacar clase global
+  document.body.classList.remove("modo-marcador");
+
+  // ✅ sacar activo del botón 📌
+  const btn = document.getElementById("btnModoMarcadorBarra");
+  if (btn) btn.classList.remove("activo");
+
+  // ✅ limpiar selección múltiple
+  if (abcSeleccionados) abcSeleccionados.clear();
+  abcSeleccionado = null;
+
+  abcMarcarSeleccionUI();
+  abcRefrescarBarraABC();
+}
+
 // =====================================================
 // ✅ Hook al entrar a ABC (lo llamás desde mostrarABC)
 // =====================================================
@@ -1034,11 +1083,13 @@ window.__abcOnEnter = () => {
   abcPortalBarraOn();
   abcAplicarFontSize();
   abcUIEnABC();
-  abcConectarMasMenos(); // ✅
 };
 
 // ✅ si tenés un “onExit” de Iglesia, llamá esto al salir de ABC
 window.__abcOnExit = () => {
+  // ✅ apaga modo marcador de ABC sí o sí
+  try { abcResetModoMarcador(); } catch(e){}
+
+  // ✅ devuelve barra a su lugar
   abcPortalBarraOff();
 };
-
