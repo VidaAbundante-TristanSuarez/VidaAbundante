@@ -337,9 +337,7 @@ function abcPrepararBloques() {
   let n = 0;
 
   targets.forEach(el => {
-    // no tocar elementos dentro de tabla (suele romper layout Word)
     if (el.closest("table")) return;
-
     if (el.classList.contains("abc-block")) return;
 
     const id = `t${abcIndex}_b${n++}`;
@@ -349,7 +347,6 @@ function abcPrepararBloques() {
 
   abcMarcarSeleccionUI();
 
-  // ✅ CLICK EN BLOQUE: selecciona + (si no hay candado) pinta/despinta
   doc.onclick = async (e) => {
     const b = e.target.closest(".abc-block");
     if (!b) return;
@@ -357,27 +354,24 @@ function abcPrepararBloques() {
     abcSeleccionado = b.dataset.bid;
     abcMarcarSeleccionUI();
 
-    // 🔐 requiere login
     const uid = UID();
     const loginModal = document.getElementById("loginModal");
-    if (!uid) {
-      if (loginModal) loginModal.style.display = "flex";
-      return;
-    }
+    if (!uid) { if (loginModal) loginModal.style.display = "flex"; return; }
 
-    // ✅ si hay candado: NO pintar/despintar
+    // ✅ SI ESTÁ ACTIVO 📌 → SOLO seleccionar, NO pintar, NO despintar
+    if (abcModoMarcador === true) return;
+
+    // ✅ Resaltador (💛): pinta/despinta solo si NO hay candado
     if (window.resaltadorBloqueado === true) return;
 
     const bid = abcSeleccionado;
 
-    // ✅ si ya estaba resaltado → quitar
     if (abcResaltadosCache && abcResaltadosCache[bid]) {
       await abcQuitarResaltado(bid);
       abcLimpiarFondoBloque(b);
       return;
     }
 
-    // ✅ si no estaba → poner
     const color = window.colorActual || "#fff3b0";
     await abcSetResaltado(bid, color);
     abcAplicarFondoBloque(b, color);
@@ -755,6 +749,29 @@ function abcAplicarFontSize(){
   doc.style.setProperty("--abc-font", abcFontSize + "px");
 }
 
+function abcConectarMasMenos() {
+  const btnMas = document.getElementById("btnMas");
+  const btnMenos = document.getElementById("btnMenos");
+
+  if (btnMas) {
+    btnMas.onclick = (e) => {
+      if (!estoyEnABC()) return; // ✅ en otras secciones no hace nada
+      e.preventDefault(); e.stopPropagation();
+      abcFontSize = Math.min(28, (abcFontSize || 18) + 1);
+      abcAplicarFontSize();
+    };
+  }
+
+  if (btnMenos) {
+    btnMenos.onclick = (e) => {
+      if (!estoyEnABC()) return;
+      e.preventDefault(); e.stopPropagation();
+      abcFontSize = Math.max(12, (abcFontSize || 18) - 1);
+      abcAplicarFontSize();
+    };
+  }
+}
+
 // =====================================================
 // ✅ PORTAL: mover barra al body para que no dependa del display:none
 // =====================================================
@@ -819,10 +836,21 @@ function abcPortalBarraOff() {
     else __abcBtnParent.appendChild(btn);
   }
 
-  // cortar observer si existía
+  // ✅ cortar observer si existía
   if (abcBarObserver) {
-    try { abcBarObserver.disconnect(); } catch(e){}
+    try { abcBarObserver.disconnect(); } catch (e) {}
     abcBarObserver = null;
+  }
+
+  // ✅ CLAVE: como la barra es SOLO Biblia+ABC, si NO estoy en Biblia => ocultar
+  const secBiblia = document.getElementById("seccion-biblia");
+  const estoyEnBiblia = !!(secBiblia && secBiblia.style.display !== "none");
+
+  if (bar && !estoyEnBiblia) {
+    bar.style.display = "none";
+  }
+  if (btn && !estoyEnBiblia) {
+    btn.style.display = "none";
   }
 }
 
@@ -923,7 +951,12 @@ if (btnGuardar) {
     e.stopPropagation();
 
     if (!abcModoMarcador) {
-      abcToast("Activá 📌 para guardar notas");
+      abcToast("Activá 📌 y tocá un bloque");
+      return;
+    }
+
+    if (!abcSeleccionado) {
+      abcToast("Primero tocá un bloque 🙂");
       return;
     }
 
@@ -1001,6 +1034,7 @@ window.__abcOnEnter = () => {
   abcPortalBarraOn();
   abcAplicarFontSize();
   abcUIEnABC();
+  abcConectarMasMenos(); // ✅
 };
 
 // ✅ si tenés un “onExit” de Iglesia, llamá esto al salir de ABC
