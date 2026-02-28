@@ -495,7 +495,8 @@ function abcPrepararBloques() {
   });
 
   abcMarcarSeleccionUI();
-
+  abcHabilitarCheckUI(); 
+  
   doc.onclick = async (e) => {
     const b = e.target.closest(".abc-block");
     if (!b) return;
@@ -552,6 +553,21 @@ function abcMarcarSeleccionUI(){
     b.style.borderRadius = "10px";
     b.style.outlineWidth = (sel && ultimo) ? "3px" : (sel ? "2px" : "");
   });
+}
+
+function abcHabilitarCheckUI(){
+  const btnCheck = document.getElementById("btnGuardarMarcador");
+  if (!btnCheck) return;
+
+  // ✅ en ABC el ✓ se habilita si hay al menos 1 bloque seleccionado
+  const habil = abcModoMarcador && abcSeleccionados && abcSeleccionados.size > 0;
+
+  btnCheck.disabled = !habil;
+  btnCheck.style.opacity = habil ? "1" : ".45";
+  btnCheck.style.pointerEvents = habil ? "auto" : "auto"; // (sí, auto: igual lo dejamos clickeable para mostrar toast)
+
+  // si está "bloqueado" y tocás, te explico qué falta (no 🚫 mudo)
+  btnCheck.title = habil ? "Guardar nota" : "Seleccioná al menos 1 bloque (📌)";
 }
 
 // -------------------------
@@ -763,6 +779,8 @@ window.abcIrANota = async (id) => {
   abcSeleccionados.clear();
   abcSeleccionados.add(bid);
   abcMarcarSeleccionUI();
+  // ✅ refresca UI del ✓ por si venías de lista
+  abcAplicarUIAccionesPorModo();
 };
 
 window.abcEditarNota = async (id) => {
@@ -858,6 +876,9 @@ function abcAplicarUIAccionesPorModo() {
     if (btnImagen) btnImagen.style.display = "none";
     if (btnCrear)  btnCrear.style.display  = "none";
   }
+  
+  // ✅ refresca estado del ✓ en ABC
+  abcHabilitarCheckUI();
 }
 
 // -------------------------
@@ -934,10 +955,19 @@ function abcUIEnABC(){
     btnPin.onclick = (e) => { e.preventDefault(); e.stopPropagation(); abcToggleModoMarcador(); };
   }
 
-  if (btnCheck) {
+    if (btnCheck) {
     btnCheck.onclick = (e) => {
       e.preventDefault(); e.stopPropagation();
+
+      // ✅ si no estás en modo marcador, avisá
       if (!abcModoMarcador) return abcToast("Activá 📌 y seleccioná bloques");
+
+      // ✅ si no hay selección, avisá (en vez de 🚫 mudo)
+      if (!abcSeleccionados || abcSeleccionados.size === 0) {
+        return abcToast("Seleccioná al menos 1 bloque 🙂");
+      }
+
+      // ✅ abrir form de nota
       abcAbrirModalBibliaParaNota();
     };
   }
