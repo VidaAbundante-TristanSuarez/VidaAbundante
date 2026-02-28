@@ -1064,7 +1064,7 @@ window.__abcOnEnter = () => {
   abcUIEnABC();
 
   // ✅ al entrar a ABC, aplicar el estado de barra de ABC
-  aplicarEstadoBarra("abc");
+  window.aplicarEstadoBarra?.("abc");
 };
 
 window.__abcOnExit = () => {
@@ -1082,5 +1082,5 @@ window.__abcOnExit = () => {
   }
 
   // ✅ IMPORTANTÍSIMO: al salir de ABC, aplicar el estado de barra de Biblia
-  aplicarEstadoBarra("biblia");
+ window.aplicarEstadoBarra?.("biblia");
 };
