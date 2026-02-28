@@ -2652,6 +2652,7 @@ function aplicarUIAccionesPorModo() {
   if (btnCrear) btnCrear.style.display = "none";
 }
 
+window.aplicarUIAccionesPorModo = aplicarUIAccionesPorModo;
 // ================= Salir de modal limpio ================
 function salirModoMarcadorLimpio() {
   modoMarcador = false;
