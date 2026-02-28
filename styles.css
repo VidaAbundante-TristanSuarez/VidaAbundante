@@ -2104,4 +2104,53 @@ body.oscuro #wrapFiltrosBiblia.abierto .filtros{
   box-shadow: none;
 }
 
+/* ================= MODAL MARCADORES: RESPONSIVE ================= */
+#modalMarcadores .modal-contenido{
+  width: min(560px, 94vw);
+  max-height: min(82vh, 760px);
+  overflow: hidden;             /* evita scroll horizontal del modal */
+  border-radius: 16px;
+}
+
+/* lista scrollea por dentro */
+#listaMarcadores{
+  max-height: calc(min(82vh, 760px) - 120px); /* ajusta si tu header cambia */
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 6px;
+}
+
+/* cards estables */
+#listaMarcadores .card-marcador{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+}
+
+/* IMPORTANTÍSIMO para ellipsis */
+#listaMarcadores .card-marcador > div{
+  min-width: 0;
+}
+
+/* texto de una línea con “…” */
+#listaMarcadores .card-marcador .linea,
+#listaMarcadores .card-marcador div[onclick]{
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* CEL: modal full width como hoja */
+@media (max-width: 640px){
+  #modalMarcadores .modal-contenido{
+    width: 100vw;
+    max-height: 92vh;
+    border-radius: 0;
+  }
+  #listaMarcadores{
+    max-height: calc(92vh - 120px);
+  }
+}
   </style> 
