@@ -1640,6 +1640,28 @@ window.abrirMarcadores = () => {
   modal.setAttribute("aria-hidden", "false");
 };
 
+// ================= ✨ edita marcador desde lista 📌=================
+window.editarMarcadorDesdeLista = (idMarcador) => {
+  const m = (marcadores || {})[idMarcador];
+  if (!m) return;
+
+  // ✅ marcamos “modo edición”
+  window.__editMarcadorId = idMarcador;
+  window.__editMarcadorBase = { ...m };
+
+  // ✅ abrimos el formulario (sin depender de selección)
+  abrirFormNuevoMarcador();
+
+  // ✅ precargar campos
+  document.getElementById("marcadorTitulo").value = m.titulo || "";
+  document.getElementById("marcadorNota").value   = m.nota || "";
+  document.getElementById("marcadorColor").value  = m.color || "#fff3b0";
+  document.getElementById("marcadorKeep").checked = !!m.keep;
+
+  // ✅ refrescar preview para edición
+  renderPreviewVersiculosMarcador();
+};
+
 // ================= ✨ Cerrar Marcadores 📌=================
 window.cerrarMarcadores = () => {
   const modal = document.getElementById("modalMarcadores");
@@ -1681,24 +1703,25 @@ function renderListaMarcadores() {
 
   lista.innerHTML =
     header +
-    items
-      .map(m => {
-        const fechaTxt = m.fecha ? new Date(m.fecha).toLocaleDateString("es-AR") : "";
-        const refTxt = m.ref || (m.libro && m.capitulo ? `${m.libro} ${m.capitulo}` : "Nota");
-        const titulo = (m.titulo || "Marcador").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    items.map(m => {
+      const fechaTxt = m.fecha ? new Date(m.fecha).toLocaleDateString("es-AR") : "";
+      const refTxt = m.ref || (m.libro && m.capitulo ? `${m.libro} ${m.capitulo}` : "Nota");
+      const titulo = (m.titulo || "Marcador").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      const linea = `${refTxt} - ${fechaTxt} - ${titulo}`;
 
-        // ✅ línea simple
-        const linea = `${refTxt} - ${fechaTxt} - ${titulo}`;
-
-        return `
-          <div class="card-marcador" style="cursor:pointer;" onclick="abrirMarcador('${m.id}')">
-            <div style="font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-              ${linea}
-            </div>
+      return `
+        <div class="card-marcador" style="display:flex; justify-content:space-between; gap:10px; align-items:center;">
+          <div style="cursor:pointer; flex:1; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"
+               onclick="abrirMarcador('${m.id}')">
+            ${linea}
           </div>
-        `;
-      })
-      .join("");
+
+          <button type="button" class="pm-btn"
+                  onclick="editarMarcadorDesdeLista('${m.id}')"
+                  title="Editar">✏️</button>
+        </div>
+      `;
+    }).join("");
 }
 
 // ================= ✨ RENDER PREVIEW VERSICULOS MARCADOR 📌=================
@@ -1873,6 +1896,19 @@ async function guardarNuevoMarcador() {
     mostrarTexto();
     refrescarBotonGuardarMarcador();
 
+        // ✅ al terminar de guardar: volver a Biblia normal (sin modo marcador)
+    if (typeof salirModoMarcadorLimpio === "function") {
+      salirModoMarcadorLimpio();
+    } else {
+      modoMarcador = false;
+      seleccionMarcador = {};
+      document.body.classList.remove("modo-marcador");
+      const btnPin = document.getElementById("btnModoMarcadorBarra");
+      if (btnPin) btnPin.classList.remove("activo");
+      aplicarUIAccionesPorModo();
+      refrescarBotonGuardarMarcador();
+    }
+    
   } catch (e) {
     console.error("❌ Error guardando marcador:", e);
 
