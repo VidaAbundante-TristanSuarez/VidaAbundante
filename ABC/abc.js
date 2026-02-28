@@ -515,6 +515,7 @@ function abcPrepararBloques() {
 
       abcSeleccionado = bid;
       abcMarcarSeleccionUI();
+      abcHabilitarCheckUI();
       return;
     }
 
@@ -559,14 +560,13 @@ function abcHabilitarCheckUI(){
   const btnCheck = document.getElementById("btnGuardarMarcador");
   if (!btnCheck) return;
 
-  // ✅ en ABC el ✓ se habilita si hay al menos 1 bloque seleccionado
   const habil = abcModoMarcador && abcSeleccionados && abcSeleccionados.size > 0;
 
-  btnCheck.disabled = !habil;
-  btnCheck.style.opacity = habil ? "1" : ".45";
-  btnCheck.style.pointerEvents = habil ? "auto" : "auto"; // (sí, auto: igual lo dejamos clickeable para mostrar toast)
+  // 🚫 IMPORTANTE: NO usar disabled (si no, el onclick no corre)
+  btnCheck.disabled = false;
 
-  // si está "bloqueado" y tocás, te explico qué falta (no 🚫 mudo)
+  // solo look & feel
+  btnCheck.style.opacity = habil ? "1" : ".55";
   btnCheck.title = habil ? "Guardar nota" : "Seleccioná al menos 1 bloque (📌)";
 }
 
@@ -915,7 +915,8 @@ function abcPortalBarraOn() {
   bar.style.bottom = "0";
   bar.style.zIndex = "9999";
 
-  if (btn) btn.style.display = "";
+   // ✅ en ABC: si la barra está visible, el botón flotante NO se muestra
+  if (btn) btn.style.display = "none";
 }
 
 function abcPortalBarraOff() {
@@ -939,6 +940,8 @@ function abcPortalBarraOff() {
   if (btn && __abcBtnParent) {
     if (__abcBtnNext) __abcBtnParent.insertBefore(btn, __abcBtnNext);
     else __abcBtnParent.appendChild(btn);
+
+    // ✅ vuelve al control normal de Biblia (solo aparece cuando la barra está escondida)
     btn.style.display = "";
   }
 }
