@@ -467,11 +467,11 @@ function buildBloquesFromOCR(raw){
 
 // Lee inputs de Fase 0 hacia DEV.fields
 function devReadFieldsFromUI(){
-  DEV.fields.fecha     = ($("dev0Fecha")?.value || "").trim();
-  DEV.fields.versiculo = ($("dev0Versiculo")?.value || "").trim();
-  DEV.fields.cita      = ($("dev0Cita")?.value || "").trim();
-  DEV.fields.reflexion = ($("dev0Reflexion")?.value || "").trim();
-  DEV.fields.oracion   = ($("dev0Oracion")?.value || "").trim();
+  DEV.fields.fecha     = oneLine($("dev0Fecha")?.value || "");
+  DEV.fields.versiculo = oneLine($("dev0Versiculo")?.value || "");
+  DEV.fields.cita      = oneLine($("dev0Cita")?.value || "");
+  DEV.fields.reflexion = oneLine($("dev0Reflexion")?.value || "");
+  DEV.fields.oracion   = oneLine($("dev0Oracion")?.value || "");
 }
 
 // Escribe DEV.fields hacia inputs de Fase 0
