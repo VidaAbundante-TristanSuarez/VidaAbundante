@@ -1356,11 +1356,6 @@ if (subir) {
 // ================= 🔺 WINDOW / UI ⭕ ===============================
 window.irA = (seccion) => {
 
-  // ✅ si me voy de IGLESIA/BIBLIA a otra sección, apago ABC por las dudas
-  if (seccion !== "iglesia") {
-    window.__abcOnExit?.();
-  }
-
   // 1) mostrar/ocultar secciones principales
   ["biblia", "iglesia", "panel"].forEach(s => {
     const el = document.getElementById("seccion-" + s);
@@ -1372,23 +1367,31 @@ window.irA = (seccion) => {
   const btnActivo = document.querySelector(`#menu .nav-btn[onclick="irA('${seccion}')"]`);
   if (btnActivo) btnActivo.classList.add("activo");
 
+  // ✅ 2.5) si me fui de IGLESIA (donde vive ABC) a otra sección, apago ABC
+  // (AHORA es seguro porque ya está visible biblia/panel)
+  if (seccion !== "iglesia") {
+    window.__abcOnExit?.();
+  }
+
   // 3) defaults internos
   if (seccion === "iglesia") {
-    window.mostrarIglesiaSub?.("devocionales"); // arranca ahí (y ahí no porta barra)
+    window.mostrarIglesiaSub?.("devocionales"); // arranca ahí
   }
   if (seccion === "panel") {
     window.mostrarSeccion?.("imagenes"); // arranca en imágenes
   }
 
-  // 4) repintar biblia solo cuando estás en biblia
+  // 4) biblia
   if (seccion === "biblia") {
+    // ✅ asegurar barra visible (por si venías de ABC)
+    const bar = document.getElementById("accionesBiblia");
+    const btn = document.getElementById("btnMostrarBarra");
+    if (bar) bar.style.display = "";
+    if (btn) btn.style.display = "";
+
     resaltadorBloqueado = true;
     actualizarUICandadoResaltador();
     mostrarTexto();
-
-    // ✅ IMPORTANTE: por si venías de ABC, que ya la había porteado:
-    // acá NO hacemos portal (Biblia ya tiene su barra normal en su lugar).
-    // Si quisieras, podrías tener un __bibliaOnEnter, pero no hace falta.
   }
 };
 
