@@ -664,7 +664,7 @@ abcToast("✅ Nota guardada");
   modal.setAttribute("aria-hidden", "false");
 }
 
-function abcAbrirListaNotasABC(){
+async function abcAbrirListaNotasABC(){
   const uid = UID();
   const loginModal = document.getElementById("loginModal");
   if (!uid) { if (loginModal) loginModal.style.display = "flex"; return; }
@@ -682,10 +682,34 @@ function abcAbrirListaNotasABC(){
   lista.style.display = "block";
 
   // ✅ filtrar SOLO ABC (y si querés solo del tema actual, lo hacemos)
-  const items = Object.entries(window.marcadores || {})
-    .map(([id, m]) => ({...m, id}))
-    .filter(m => m?.origen === "abc") // <-- solo ABC
-    .sort((a,b)=> (b.fecha||0) - (a.fecha||0));
+let data = window.marcadores || {};
+let items = Object.entries(data)
+  .map(([id, m]) => ({...m, id}))
+  .filter(m => m?.origen === "abc")
+  .sort((a,b)=> (b.fecha||0) - (a.fecha||0));
+
+// ✅ si todavía no cargó window.marcadores, lo traemos directo de Firebase
+if (!items.length) {
+  try {
+    const { db } = FB();
+    const { ref, get } = API();
+    const uid = UID();
+    if (db && ref && get && uid) {
+      const snap = await get(ref(db, `marcadores/${uid}`));
+      const fresh = snap.exists() ? (snap.val() || {}) : {};
+
+      // ✅ guardamos cache global para que las próximas veces ya esté
+      window.marcadores = fresh;
+
+      items = Object.entries(fresh)
+        .map(([id, m]) => ({...m, id}))
+        .filter(m => m?.origen === "abc")
+        .sort((a,b)=> (b.fecha||0) - (a.fecha||0));
+    }
+  } catch (e) {
+    console.warn("No pude cargar marcadores desde Firebase:", e);
+  }
+}
 
   if (!items.length){
     lista.innerHTML = `<p class="muted">Todavía no guardaste notas de ABC.</p>`;
