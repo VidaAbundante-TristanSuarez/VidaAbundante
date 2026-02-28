@@ -637,6 +637,7 @@ if (abcSeleccionado && abcSeleccionados && !abcSeleccionados.has(abcSeleccionado
 function abcCerrarNota(){
   const modal = document.getElementById("abcNotaModal");
   if (modal) modal.style.display = "none";
+  abcResetModoMarcador();
 }
 
 async function abcGuardarNotaDesdeModal(){
@@ -644,6 +645,7 @@ async function abcGuardarNotaDesdeModal(){
   if (!ta || !abcSeleccionado) return;
   await abcGuardarNotaEnMarcadores(abcSeleccionado, __abcEditTitulo || "Nota ABC", ta.value);
   abcCerrarNota();
+  abcResetModoMarcador();
 }
 
 async function abcEliminarNota(){
@@ -780,26 +782,48 @@ function abcAplicarFontSize(){
   doc.style.setProperty("--abc-font", abcFontSize + "px");
 }
 
-function abcConectarMasMenos() {
-  const btnMas = document.getElementById("btnMas");
-  const btnMenos = document.getElementById("btnMenos");
+// =====================================================
+// ✅ ABC: UI de barra (SOLO 📌 + ✓ cuando abcModoMarcador)
+// =====================================================
+function abcAplicarUIAccionesPorModo() {
+  const bar = document.getElementById("accionesBiblia");
+  if (!bar) return;
 
-  if (btnMas) {
-    btnMas.onclick = (e) => {
-      if (!estoyEnABC()) return; // ✅ en otras secciones no hace nada
-      e.preventDefault(); e.stopPropagation();
-      abcFontSize = Math.min(28, (abcFontSize || 18) + 1);
-      abcAplicarFontSize();
-    };
-  }
+  // botones clave
+  const btnPin    = document.getElementById("btnModoMarcadorBarra"); // 📌
+  const btnCheck  = document.getElementById("btnGuardarMarcador");   // ✓
 
-  if (btnMenos) {
-    btnMenos.onclick = (e) => {
-      if (!estoyEnABC()) return;
-      e.preventDefault(); e.stopPropagation();
-      abcFontSize = Math.max(12, (abcFontSize || 18) - 1);
-      abcAplicarFontSize();
-    };
+  // todo lo demás se oculta en modo marcador ABC
+  const idsOcultar = [
+    "btnListaMarcadores",
+    "btnCopiar", "btnCompartir", "btnAudio", "btnLeer",
+    "btnDescargar",
+    "btnImagen", "btnCrearImagen",
+    // + y - (porque en ABC los queremos igual? vos dijiste NO, o sea: ocultar en modo marcador)
+    // pero en modo normal sí pueden estar
+    "btnMas", "btnMenos"
+  ];
+
+  const otros = idsOcultar
+    .map(id => document.getElementById(id))
+    .filter(Boolean);
+
+  // 📌 siempre visible en ABC
+  if (btnPin) btnPin.style.display = "inline-flex";
+
+  if (abcModoMarcador) {
+    // ✅ SOLO 📌 + ✓
+    if (btnCheck) btnCheck.style.display = "inline-flex";
+    otros.forEach(el => el.style.display = "none");
+  } else {
+    // ✅ normal ABC: 📌 visible, ✓ oculto
+    if (btnCheck) btnCheck.style.display = "none";
+    otros.forEach(el => el.style.display = ""); // vuelve a lo normal (Biblia lo manejará cuando entres a Biblia)
+    // y en ABC SIEMPRE escondemos imagen
+    const btnImagen = document.getElementById("btnImagen");
+    const btnCrear  = document.getElementById("btnCrearImagen");
+    if (btnImagen) btnImagen.style.display = "none";
+    if (btnCrear)  btnCrear.style.display  = "none";
   }
 }
 
@@ -848,11 +872,12 @@ function abcPortalBarraOff() {
   const bar = document.getElementById("accionesBiblia");
   const btn = document.getElementById("btnMostrarBarra");
 
+  // devolver a su lugar original
   if (bar && __abcBarParent) {
     if (__abcBarNext) __abcBarParent.insertBefore(bar, __abcBarNext);
     else __abcBarParent.appendChild(bar);
 
-    // ✅ reset estilos que ABC fijó
+    // reset estilos de portal
     bar.style.position = "";
     bar.style.left = "";
     bar.style.right = "";
@@ -860,28 +885,19 @@ function abcPortalBarraOff() {
     bar.style.zIndex = "";
     bar.style.opacity = "";
     bar.style.visibility = "";
+    bar.style.display = ""; // ✅ importante: no la mates
   }
 
   if (btn && __abcBtnParent) {
     if (__abcBtnNext) __abcBtnParent.insertBefore(btn, __abcBtnNext);
     else __abcBtnParent.appendChild(btn);
+    btn.style.display = "";
   }
 
-  // ✅ cortar observer si existía
+  // cortar observer
   if (abcBarObserver) {
-    try { abcBarObserver.disconnect(); } catch (e) {}
+    try { abcBarObserver.disconnect(); } catch(e){}
     abcBarObserver = null;
-  }
-
-  // ✅ CLAVE: como la barra es SOLO Biblia+ABC, si NO estoy en Biblia => ocultar
-  const secBiblia = document.getElementById("seccion-biblia");
-  const estoyEnBiblia = !!(secBiblia && secBiblia.style.display !== "none");
-
-  if (bar && !estoyEnBiblia) {
-    bar.style.display = "none";
-  }
-  if (btn && !estoyEnBiblia) {
-    btn.style.display = "none";
   }
 }
 
@@ -1055,7 +1071,7 @@ function abcToggleModoMarcador(){
   }
 
   if (abcModoMarcador) abcToast("📌 Tocá un bloque y apretá ✓ para escribir una nota");
-  abcRefrescarBarraABC();
+  abcAplicarUIAccionesPorModo();
 }
 
 function abcResetModoMarcador() {
