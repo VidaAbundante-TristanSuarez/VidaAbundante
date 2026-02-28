@@ -1355,7 +1355,6 @@ if (subir) {
 
 // ================= 🔺 WINDOW / UI ⭕ ===============================
 window.irA = (seccion) => {
-
   // 1) mostrar/ocultar secciones principales
   ["biblia", "iglesia", "panel"].forEach(s => {
     const el = document.getElementById("seccion-" + s);
@@ -1367,31 +1366,36 @@ window.irA = (seccion) => {
   const btnActivo = document.querySelector(`#menu .nav-btn[onclick="irA('${seccion}')"]`);
   if (btnActivo) btnActivo.classList.add("activo");
 
-  // ✅ 2.5) si me fui de IGLESIA (donde vive ABC) a otra sección, apago ABC
-  // (AHORA es seguro porque ya está visible biblia/panel)
+  // ✅ si me fui de IGLESIA (donde vive ABC) a otra sección, apago ABC
   if (seccion !== "iglesia") {
     window.__abcOnExit?.();
   }
 
   // 3) defaults internos
   if (seccion === "iglesia") {
-    window.mostrarIglesiaSub?.("devocionales"); // arranca ahí
+    window.mostrarIglesiaSub?.("devocionales");
   }
   if (seccion === "panel") {
-    window.mostrarSeccion?.("imagenes"); // arranca en imágenes
+    window.mostrarSeccion?.("imagenes");
   }
 
   // 4) biblia
   if (seccion === "biblia") {
-    // ✅ asegurar barra visible (por si venías de ABC)
+    // ✅ barra visible en Biblia
     const bar = document.getElementById("accionesBiblia");
     const btn = document.getElementById("btnMostrarBarra");
     if (bar) bar.style.display = "";
     if (btn) btn.style.display = "";
 
+    // ✅ Biblia: refrescar su UI normal
     resaltadorBloqueado = true;
     actualizarUICandadoResaltador();
     mostrarTexto();
+
+    // ✅ MUY IMPORTANTE: si Biblia tiene modo marcador activo, que su UI lo aplique bien
+    if (typeof aplicarUIAccionesPorModo === "function") {
+      aplicarUIAccionesPorModo();
+    }
   }
 };
 
@@ -1504,20 +1508,26 @@ window.finalizarEdicion = async () => {
 };
 
 // ================= 🔺 CAMBIAR LETRA ===============================
-// ✅ Router: + y - funcionan distinto según dónde estés
+// ✅ Router: + y - cambian según la sección visible (Biblia o ABC)
 window.cambiarLetra = (delta) => {
   // =========================
-  // ✅ Si estoy en ABC: cambia SOLO ABC
+  // ✅ Si estoy en ABC -> SOLO ABC
   // =========================
-  if (typeof estoyEnABC === "function" && estoyEnABC()) {
-    // delta viene -1 / +1
-    abcFontSize = Math.max(12, Math.min(28, (abcFontSize || 18) + delta));
-    abcAplicarFontSize();
+  const secIglesia = document.getElementById("seccion-iglesia");
+  const subABC = document.getElementById("iglesia-abc");
+  const estoyEnABC =
+    !!(secIglesia && secIglesia.style.display !== "none" &&
+       subABC && subABC.style.display !== "none");
+
+  if (estoyEnABC) {
+    window.abcFontSize = Math.max(12, Math.min(28, (window.abcFontSize || 18) + delta));
+    const doc = document.getElementById("abcDoc");
+    if (doc) doc.style.setProperty("--abc-font", window.abcFontSize + "px");
     return;
   }
 
   // =========================
-  // ✅ Si NO estoy en ABC: cambia SOLO Biblia (tu lógica original)
+  // ✅ Si NO estoy en ABC -> Biblia (tu lógica actual)
   // =========================
   size = Math.max(14, size + delta * 2);
   mostrarTexto();
@@ -2639,10 +2649,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // ================= 🔺 IGLESIA: SUB-SECCIONES =================
 window.mostrarIglesiaSub = (sub) => {
-
-  // ✅ si estaba en ABC y me voy a otro sub, apago ABC (devuelvo barra)
+  // ✅ detecto si estaba en ABC antes
   const abcAntes = document.getElementById("iglesia-abc");
   const estabaEnABC = !!(abcAntes && abcAntes.style.display !== "none");
+
+  // ✅ si salgo de ABC a otro sub, apago ABC (devuelvo barra + resetea modo)
   if (estabaEnABC && sub !== "abc") {
     window.__abcOnExit?.();
   }
@@ -2659,9 +2670,11 @@ window.mostrarIglesiaSub = (sub) => {
     if (btn) btn.classList.add("activo");
   }
 
-  // ✅ CLAVE: cuando entro a ABC, inicializo ABC + barra
-if (sub === "abc") {
-  window.mostrarABC?.();
-   }
+  // ✅ cuando entro a ABC: inicializo ABC + engancho barra SIEMPRE
+  if (sub === "abc") {
+    window.mostrarABC?.();
+    window.__abcOnEnter?.();
+  }
 };
+  
 }); // ================= ✅ CIERRA INIT ÚNICO =====
