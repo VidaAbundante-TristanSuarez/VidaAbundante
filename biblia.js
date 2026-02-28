@@ -1504,7 +1504,21 @@ window.finalizarEdicion = async () => {
 };
 
 // ================= 🔺 CAMBIAR LETRA ===============================
-window.cambiarLetra = delta => {
+// ✅ Router: + y - funcionan distinto según dónde estés
+window.cambiarLetra = (delta) => {
+  // =========================
+  // ✅ Si estoy en ABC: cambia SOLO ABC
+  // =========================
+  if (typeof estoyEnABC === "function" && estoyEnABC()) {
+    // delta viene -1 / +1
+    abcFontSize = Math.max(12, Math.min(28, (abcFontSize || 18) + delta));
+    abcAplicarFontSize();
+    return;
+  }
+
+  // =========================
+  // ✅ Si NO estoy en ABC: cambia SOLO Biblia (tu lógica original)
+  // =========================
   size = Math.max(14, size + delta * 2);
   mostrarTexto();
 };
@@ -2646,9 +2660,8 @@ window.mostrarIglesiaSub = (sub) => {
   }
 
   // ✅ CLAVE: cuando entro a ABC, inicializo ABC + barra
-  if (sub === "abc") {
-    window.mostrarABC?.();     // crea UI / carga tema si hace falta
-    window.__abcOnEnter?.();   // porta barra + engancha botones ABC
-  }
+if (sub === "abc") {
+  window.mostrarABC?.();
+   }
 };
 }); // ================= ✅ CIERRA INIT ÚNICO =====
