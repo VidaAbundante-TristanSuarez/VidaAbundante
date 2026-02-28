@@ -1382,10 +1382,18 @@ window.irA = (seccion) => {
   // 4) biblia
   if (seccion === "biblia") {
     // ✅ barra visible en Biblia
-    const bar = document.getElementById("accionesBiblia");
-    const btn = document.getElementById("btnMostrarBarra");
-    if (bar) bar.style.display = "";
-    if (btn) btn.style.display = "";
+   if (seccion === "biblia") {
+  aplicarEstadoBarra("biblia");
+
+  // ✅ Biblia: refrescar su UI normal
+  resaltadorBloqueado = true;
+  actualizarUICandadoResaltador();
+  mostrarTexto();
+
+  if (typeof aplicarUIAccionesPorModo === "function") {
+    aplicarUIAccionesPorModo();
+  }
+}
 
     // ✅ Biblia: refrescar su UI normal
     resaltadorBloqueado = true;
@@ -2445,34 +2453,76 @@ window.cambiarTamanoPreview = (delta) => {
   actualizarPreview();
 };
 
+// ===============================
+// ✅ Estado de barra por sección (Biblia vs ABC)
+// ===============================
+window.__barraState = window.__barraState || {
+  bibliaOculta: false,
+  abcOculta: false
+};
+
+function estoyEnABCAhora(){
+  const secIglesia = document.getElementById("seccion-iglesia");
+  const subABC = document.getElementById("iglesia-abc");
+  return !!(secIglesia && secIglesia.style.display !== "none" &&
+            subABC && subABC.style.display !== "none");
+}
+
+function ctxBarraActual(){
+  return estoyEnABCAhora() ? "abc" : "biblia";
+}
+
+function aplicarEstadoBarra(ctx){
+  const bar = document.getElementById("accionesBiblia");
+  const btn = document.getElementById("btnMostrarBarra");
+  if (!bar || !btn) return;
+
+  const oculta = (ctx === "abc") ? !!window.__barraState.abcOculta
+                                 : !!window.__barraState.bibliaOculta;
+
+  // clase global (ok) PERO la manejamos según contexto
+  document.body.classList.toggle("barra-oculta", oculta);
+
+  // ✅ regla: si barra visible => botón flotante NO
+  // ✅ si barra oculta  => botón flotante SÍ
+  bar.style.display = oculta ? "none" : "";
+  btn.style.display = oculta ? "inline-flex" : "none";
+  btn.style.opacity = oculta ? "0.55" : "0.55"; // tu default
+}
+
 // ================= 🔺 OCLTAR BARRA DE ACCIONES ===========================
 let timerBarra = null;
 
 window.ocultarBarraAcciones = () => {
-  document.body.classList.add("barra-oculta");
-  const btn = document.getElementById("btnMostrarBarra");
-  if (btn) btn.style.display = "inline-flex";
+  const ctx = ctxBarraActual();
+
+  if (ctx === "abc") window.__barraState.abcOculta = true;
+  else window.__barraState.bibliaOculta = true;
+
+  aplicarEstadoBarra(ctx);
 
   // 🔥 después de unos segundos lo dejo más transparente
   clearTimeout(timerBarra);
   timerBarra = setTimeout(() => {
+    const btn = document.getElementById("btnMostrarBarra");
     if (btn) btn.style.opacity = "0.35";
   }, 2500);
 };
 
 // ================= 🔺 MOSTRAR BARRA DE ACCIONES ===========================
 window.mostrarBarraAcciones = () => {
-  document.body.classList.remove("barra-oculta");
-  const btn = document.getElementById("btnMostrarBarra");
-  if (btn) {
-    btn.style.display = "none";
-    btn.style.opacity = "0.55";
-  }
+  const ctx = ctxBarraActual();
+
+  if (ctx === "abc") window.__barraState.abcOculta = false;
+  else window.__barraState.bibliaOculta = false;
+
+  clearTimeout(timerBarra);
+  aplicarEstadoBarra(ctx);
 };
 
+// ================= 🔺 ABRIR COMPARTIR MARCADOR ===========================
 let __compartirMarcadorId = null;
 
-// ================= 🔺 ABRIR COMPARTIR MARCADOR ===========================
 window.abrirCompartirMarcador = (id) => {
   __compartirMarcadorId = id;
   const modal = document.getElementById("modalCompartirMarcador");
