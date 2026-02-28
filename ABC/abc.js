@@ -1071,16 +1071,24 @@ window.__abcOnExit = () => {
   try { abcResetModoMarcador(); } catch(e){}
   abcPortalBarraOff();
 
-  // ✅ devolver handlers y estilos a Biblia (MUY IMPORTANTE)
+  // ✅ devolver handlers y estilos a Biblia
   abcRestoreBarBiblia();
 
-  // ✅ y ahora que Biblia recupere su UI normal
+  // ✅ IMPORTANTÍSIMO: limpiar ocultamiento “forzado” que dejó ABC
+  const btnImagen = document.getElementById("btnImagen");
+  const btnCrear  = document.getElementById("btnCrearImagen");
+  [btnImagen, btnCrear].forEach(b => {
+    if (!b) return;
+    b.style.visibility = "";
+    b.style.pointerEvents = "";
+  });
+
+  // ✅ si ya estoy en Biblia, que Biblia recalcule qué botones mostrar
   const secBiblia = document.getElementById("seccion-biblia");
   const enBiblia = !!(secBiblia && secBiblia.style.display !== "none");
   if (enBiblia && typeof window.aplicarUIAccionesPorModo === "function") {
     window.aplicarUIAccionesPorModo();
   }
 
-  // ✅ IMPORTANTÍSIMO: al salir de ABC, aplicar el estado de barra de Biblia
- window.aplicarEstadoBarra?.("biblia");
+  window.aplicarEstadoBarra?.("biblia");
 };
