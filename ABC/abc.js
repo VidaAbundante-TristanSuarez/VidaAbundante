@@ -519,9 +519,6 @@ function abcPrepararBloques() {
       return;
     }
 
-    // ✅ RESALTADOR (💛): solo si NO hay candado
-    if (window.resaltadorBloqueado === true) return;
-
     // selección simple “visual”
     abcSeleccionado = bid;
     abcMarcarSeleccionUI();
@@ -962,10 +959,73 @@ function abcPortalBarraOff() {
   }
 }
 
+// ===============================
+// ✅ ABC: guardar/restaurar barra Biblia (handlers + estilos)
+// ===============================
+window.__abcBarBackup = window.__abcBarBackup || {
+  saved: false,
+  onclick: {},
+  style: {}
+};
+
+function abcBackupBarBiblia() {
+  const pin   = document.getElementById("btnModoMarcadorBarra");
+  const check = document.getElementById("btnGuardarMarcador");
+  const lista = document.getElementById("btnListaMarcadores");
+  const img   = document.getElementById("btnImagen");
+  const crear = document.getElementById("btnCrearImagen");
+
+  if (window.__abcBarBackup.saved) return;
+
+  window.__abcBarBackup.onclick = {
+    pin:   pin   ? pin.onclick   : null,
+    check: check ? check.onclick : null,
+    lista: lista ? lista.onclick : null
+  };
+
+  // guardo estilos que tocamos (para devolverlos a Biblia)
+  window.__abcBarBackup.style = {
+    img:   img   ? { display: img.style.display, visibility: img.style.visibility, pointerEvents: img.style.pointerEvents } : null,
+    crear: crear ? { display: crear.style.display, visibility: crear.style.visibility, pointerEvents: crear.style.pointerEvents } : null
+  };
+
+  window.__abcBarBackup.saved = true;
+}
+
+function abcRestoreBarBiblia() {
+  const pin   = document.getElementById("btnModoMarcadorBarra");
+  const check = document.getElementById("btnGuardarMarcador");
+  const lista = document.getElementById("btnListaMarcadores");
+  const img   = document.getElementById("btnImagen");
+  const crear = document.getElementById("btnCrearImagen");
+
+  if (!window.__abcBarBackup.saved) return;
+
+  // ✅ restaurar onclick originales de Biblia
+  if (pin)   pin.onclick   = window.__abcBarBackup.onclick.pin   || null;
+  if (check) check.onclick = window.__abcBarBackup.onclick.check || null;
+  if (lista) lista.onclick = window.__abcBarBackup.onclick.lista || null;
+
+  // ✅ restaurar estilos (para que Biblia recupere Crear Imagen)
+  if (img && window.__abcBarBackup.style.img) {
+    img.style.display = window.__abcBarBackup.style.img.display || "";
+    img.style.visibility = window.__abcBarBackup.style.img.visibility || "";
+    img.style.pointerEvents = window.__abcBarBackup.style.img.pointerEvents || "";
+  }
+  if (crear && window.__abcBarBackup.style.crear) {
+    crear.style.display = window.__abcBarBackup.style.crear.display || "";
+    crear.style.visibility = window.__abcBarBackup.style.crear.visibility || "";
+    crear.style.pointerEvents = window.__abcBarBackup.style.crear.pointerEvents || "";
+  }
+}
+
 // -------------------------
 // ✅ ABC: enganchar botones de barra
 // -------------------------
 function abcUIEnABC(){
+  // ✅ guardar handlers originales de Biblia ANTES de pisarlos
+  abcBackupBarBiblia();
+
   const btnPin   = document.getElementById("btnModoMarcadorBarra");
   const btnCheck = document.getElementById("btnGuardarMarcador");
   const btnLista = document.getElementById("btnListaMarcadores");
@@ -974,29 +1034,23 @@ function abcUIEnABC(){
     btnPin.onclick = (e) => { e.preventDefault(); e.stopPropagation(); abcToggleModoMarcador(); };
   }
 
-    if (btnCheck) {
+  if (btnCheck) {
     btnCheck.onclick = (e) => {
       e.preventDefault(); e.stopPropagation();
 
-      // ✅ si no estás en modo marcador, avisá
       if (!abcModoMarcador) return abcToast("Activá 📌 y seleccioná bloques");
+      if (!abcSeleccionados || abcSeleccionados.size === 0) return abcToast("Seleccioná al menos 1 bloque 🙂");
 
-      // ✅ si no hay selección, avisá (en vez de 🚫 mudo)
-      if (!abcSeleccionados || abcSeleccionados.size === 0) {
-        return abcToast("Seleccioná al menos 1 bloque 🙂");
-      }
-
-      // ✅ abrir form de nota
       abcAbrirModalBibliaParaNota();
     };
   }
 
-if (btnLista) {
-  btnLista.onclick = (e) => {
-    e.preventDefault(); e.stopPropagation();
-    abcAbrirListaNotasABC(); // ✅ abre el modal como Biblia, pero filtrado a ABC
-  };
-}
+  if (btnLista) {
+    btnLista.onclick = (e) => {
+      e.preventDefault(); e.stopPropagation();
+      abcAbrirListaNotasABC();
+    };
+  }
 
   abcAplicarUIAccionesPorModo();
 }
@@ -1014,7 +1068,10 @@ window.__abcOnExit = () => {
   try { abcResetModoMarcador(); } catch(e){}
   abcPortalBarraOff();
 
-  // si vuelvo a Biblia, que Biblia re-aplique su UI
+  // ✅ devolver handlers y estilos a Biblia (MUY IMPORTANTE)
+  abcRestoreBarBiblia();
+
+  // ✅ y ahora que Biblia recupere su UI normal
   const secBiblia = document.getElementById("seccion-biblia");
   const enBiblia = !!(secBiblia && secBiblia.style.display !== "none");
   if (enBiblia && typeof window.aplicarUIAccionesPorModo === "function") {
