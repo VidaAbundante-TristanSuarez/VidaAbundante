@@ -520,26 +520,68 @@
   </div>
 </div>
 
-<!-- ================= MODAL DEVOCIONAL - FASE 0 (OCR) ================= -->
+<!-- ================= MODAL DEVOCIONAL - FASE 0 (OCR + CAMPOS) ================= -->
 <div id="modalDevFase0" class="modal-overlay" aria-hidden="true">
   <div class="modal-contenido modal-dev">
 
+    <!-- CERRAR -->
     <button class="cerrar-modal" type="button" onclick="devCerrarTodo()">✖</button>
 
-    <div style="display:flex; flex-direction:column; gap:10px;">
-    <img id="dev0Img"
-  style="width:100%; border-radius:14px; display:block; object-fit:contain; max-height:32dvh;"
-  alt="recorte" />
+    <h3 style="margin:0; text-align:center;">Crear Devocional</h3>
 
-      <textarea id="dev0Texto"
-        style="width:100%; min-height:160px; resize:none; border-radius:12px; border:1px solid #ddd; padding:10px;"
-        placeholder="Texto OCR (editable)"></textarea>
+    <!-- Imagen recorte preview -->
+    <div style="display:flex; justify-content:center;">
+      <img id="dev0Img" alt="recorte" style="max-width:100%; max-height:180px; border-radius:14px; border:1px solid #ddd;">
+    </div>
 
-      <div class="dev-row">
-        <button type="button" class="btn-primary" onclick="devIrFase1Desde0()">
-        Siguiente <i class="fa-solid fa-chevron-right"></i>
-      </button> 
+    <!-- Acciones -->
+    <div class="dev-row" style="margin-top:0;">
+      <button type="button" class="btn-primary" onclick="devReparseFase0()">🔄 Re-detectar campos</button>
+      <button type="button" onclick="devCopiarCamposATexto()">🧩 Campos → Texto</button>
+      <button type="button" onclick="devCopiarTextoACampos()">🧾 Texto → Campos</button>
+    </div>
+
+    <!-- Texto OCR completo -->
+    <label style="font-weight:800; margin-top:6px;">Texto OCR completo (editable)</label>
+    <textarea id="dev0Texto" placeholder="Acá va el texto completo del OCR..."
+      style="width:100%; resize:none; flex:1; min-height:0; border-radius:14px; border:1px solid #ddd; padding:10px;"></textarea>
+
+    <!-- Campos separados -->
+    <div style="display:grid; grid-template-columns:1fr; gap:8px;">
+      <div>
+        <label style="font-weight:800;">Fecha</label>
+        <input id="dev0Fecha" type="text" placeholder="Ej: 28 de febrero de 2026"
+          style="width:100%; border-radius:12px; border:1px solid #ddd; padding:10px; font-weight:700;">
       </div>
+
+      <div>
+        <label style="font-weight:800;">Versículo</label>
+        <textarea id="dev0Versiculo" placeholder="Versículo..."
+          style="width:100%; height:70px; border-radius:12px; border:1px solid #ddd; padding:10px;"></textarea>
+      </div>
+
+      <div>
+        <label style="font-weight:800;">Cita bíblica</label>
+        <input id="dev0Cita" type="text" placeholder="Ej: Juan 3:16"
+          style="width:100%; border-radius:12px; border:1px solid #ddd; padding:10px; font-weight:800;">
+      </div>
+
+      <div>
+        <label style="font-weight:800;">Reflexión</label>
+        <textarea id="dev0Reflexion" placeholder="Reflexión..."
+          style="width:100%; height:80px; border-radius:12px; border:1px solid #ddd; padding:10px;"></textarea>
+      </div>
+
+      <div>
+        <label style="font-weight:800;">Oración</label>
+        <textarea id="dev0Oracion" placeholder="Oración..."
+          style="width:100%; height:80px; border-radius:12px; border:1px solid #ddd; padding:10px;"></textarea>
+      </div>
+    </div>
+
+    <!-- CTA -->
+    <div class="dev-row dev-final" style="margin-top:8px;">
+      <button type="button" class="btn-primary" onclick="devIrFase1Desde0()">➡️ Siguiente</button>
     </div>
 
   </div>
@@ -743,6 +785,7 @@
  
 </body>
 </html>
+
 
 
 
