@@ -1062,6 +1062,9 @@ window.__abcOnEnter = () => {
   abcPortalBarraOn();
   abcAplicarFontSize();
   abcUIEnABC();
+
+  // ✅ al entrar a ABC, aplicar el estado de barra de ABC
+  aplicarEstadoBarra("abc");
 };
 
 window.__abcOnExit = () => {
@@ -1077,4 +1080,7 @@ window.__abcOnExit = () => {
   if (enBiblia && typeof window.aplicarUIAccionesPorModo === "function") {
     window.aplicarUIAccionesPorModo();
   }
+
+  // ✅ IMPORTANTÍSIMO: al salir de ABC, aplicar el estado de barra de Biblia
+  aplicarEstadoBarra("biblia");
 };
