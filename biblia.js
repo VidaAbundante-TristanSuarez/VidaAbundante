@@ -2490,6 +2490,8 @@ function aplicarEstadoBarra(ctx){
   btn.style.opacity = oculta ? "0.55" : "0.55"; // tu default
 }
 
+window.aplicarEstadoBarra = aplicarEstadoBarra;
+
 // ================= 🔺 OCLTAR BARRA DE ACCIONES ===========================
 let timerBarra = null;
 
