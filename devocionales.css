@@ -519,6 +519,35 @@ body.modal-open{
   gap:10px;
 }
 
+/* ================= FASE 0: PERMITIR SCROLL (solo aquí) ================= */
+/* Va al FINAL del CSS, así pisa la regla general sin usar !important */
+#modalDevFase0.modal-overlay.abierto .modal-contenido.modal-dev{
+  overflow: auto;                 /* ✅ ahora sí scroll dentro del modal */
+}
+
+/* ================= FASE 0: MÁS ANCHO para leer el OCR ================= */
+#modalDevFase0.modal-overlay.abierto .modal-contenido.modal-dev{
+  width: min(720px, 96vw);        /* ✅ más ancho SOLO fase 0 */
+  max-width: 720px;
+}
+
+/* ================= FASE 0: TEXTAREA OCR que ocupe todo el ancho ================= */
+#modalDevFase0.modal-overlay.abierto #dev0Texto{
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 220px;              /* ajustable */
+  line-height: 1.35;
+}
+
+/* ================= FASE 0: que el CTA quede visible ================= */
+#modalDevFase0.modal-overlay.abierto .modal-contenido.modal-dev{
+  display: flex;
+  flex-direction: column;
+}
+
+#modalDevFase0.modal-overlay.abierto #dev0Texto{
+  flex: 0 0 auto;  /* ✅ deja de estirarse infinito */
+}
 </style>
 
 
