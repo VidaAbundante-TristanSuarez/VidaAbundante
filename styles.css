@@ -233,37 +233,57 @@ body.oscuro #barraTituloBiblia{
   font-weight: bold;
   }
 
-/* ================= VERSÍCULOS: NÚMERO AFUERA + TEXTO ALINEADO (PC/CEL) ================= */
-/* ================= Versículo (num + texto + icono nota) ================= */
+/* ================= VERSÍCULOS (num | texto | pluma) ================= */
+
 .versiculo{
   padding: 7px 10px;
   border-radius: 8px;
   margin-bottom: 2px;
   cursor: pointer;
   transition: background .2s;
-  line-height: 1.25;
-  text-indent: 0;
 
-  /* ✅ grid estable: num | texto | icono */
+  /* ✅ El interlineado lo define el texto, NO el contenedor */
+  line-height: normal;
+
   display: grid;
-  grid-template-columns: 22px 1fr auto;
+  grid-template-columns: 22px 1fr 18px; /* num | texto | pluma (fijo) */
   column-gap: 6px;
-  align-items: center;
+  align-items: start; /* ✅ evita que la pluma “empuje” verticalmente */
 }
 
+/* Número */
+.versiculo .num{
+  grid-column: 1;
+  display:flex;
+  align-items:flex-start;
+  justify-content:center;
+  width: 22px;
+  font-weight: 800;
+  font-size: 0.68em;
+  opacity: .8;
+  line-height: 1;
+  padding-top: 2px; /* micro ajuste opcional */
+}
+
+/* Texto (único que define interlineado) */
 .versiculo .txt{
   grid-column: 2;
-  display: block;
-  min-width: 0;              /* ✅ evita desborde */
+  display:block;
+  min-width:0;
+  line-height: 1.25;  /* ✅ tu interlineado real */
 }
 
+/* Pluma: SIEMPRE fuera del texto */
 .versiculo .icono-nota{
   grid-column: 3;
   justify-self: end;
+  align-self: start;
+
   font-size: 12px;
+  line-height: 1;      /* ✅ jamás afecta renglones */
+  margin: 0;           /* ✅ sin margen que empuje altura */
   opacity: .35;
-  margin-left: 8px;
-  color: var(--ui-azul-hover, #1c6fcb); /* ✅ tus colores */
+  color: var(--ui-azul-hover, #1c6fcb);
   pointer-events: none;
 }
 
@@ -271,56 +291,27 @@ body.oscuro .versiculo .icono-nota{
   opacity: .45;
 }
 
-
-/* ✅ ABC: para ubicar la pluma dentro del bloque */
-/* ===== ABC BLOQUES ===== */
+/* ================= ABC: pluma absoluta (NO afecta interlineado) ================= */
 .abc-block{
   position: relative;
-  padding-right: 28px;   /* ✅ espacio reservado para la pluma */
+  padding-right: 28px;
 }
 
-/* ===== PLUMA ===== */
 .abc-block .icono-nota{
   position: absolute;
   right: 8px;
-  top: 8px;              /* mejor arriba que abajo */
+  top: 8px;
   font-size: 13px;
+  line-height: 1;
   opacity: .35;
   color: var(--ui-azul-hover, #1c6fcb);
-  cursor: pointer;       /* 👈 ahora será clickeable */
-  pointer-events: auto;  /* 👈 importante */
+  cursor: pointer;
+  pointer-events: auto;
   transition: opacity .2s;
 }
 
-.abc-block .icono-nota:hover{
-  opacity: .8;
-}
-
-body.oscuro .abc-block .icono-nota{
-  opacity: .5;
-  color: var(--ui-azul-claro, #bcdcff);
-}
-
-/* Número del versículo */
-.num{
-  grid-column: 1;
-  display: flex;                 /* 👈 para centrado real */
-  align-items: center;           /* 👈 centra vertical */
-  justify-content: center;       /* 👈 centra horizontal */
-
-  width: 22px;                   /* 👈 igual que columna */
-  text-align: center;            /* 👈 antes right */
-
-  font-weight: 800;
-  font-size: 0.68em;
-  opacity: .8;
-
-  line-height: 1;                /* mantiene compacto */
-  padding-top: 0;                /* 👈 quitamos el ajuste manual */
-}
-
-/* ✅ el texto siempre empieza alineado en la columna 2 */
-.versiculo > :not(.num){
+/* ✅ SOLO el contenido de texto va a columna 2 (NO la pluma) */
+.versiculo > :not(.num):not(.icono-nota){
   grid-column: 2;
 }
 
@@ -367,6 +358,7 @@ body.oscuro .panel-tabs button:hover{
   background: var(--ui-azul-hover);
   color:#fff;
 }
+
 body.oscuro .panel-tabs button.activo{
   background: #ffbf69;
   color:#000;
@@ -2199,17 +2191,5 @@ body.oscuro #wrapFiltrosBiblia.abierto .filtros{
   }
 }
 
-/* ================= ICONO "TIENE NOTA" (pluma) ================= */
-.icono-nota{
-  margin-left: 8px;
-  font-size: 12px;
-  opacity: .35;
-  flex: 0 0 auto;
-  pointer-events: none;
-}
-
-body.oscuro .icono-nota{
-  opacity: .45;
-}
 
   </style> 
