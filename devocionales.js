@@ -845,37 +845,51 @@ function fmtSize(x){
   return (n % 1 === 0) ? String(n.toFixed(0)) : String(n.toFixed(1));
 }
 
-// ✅ Sugerencia REAL: mide el preview y busca el mayor tamaño que entre
 function sugerirTamanoVersiculoAuto(versiculo){
-  const wWrap = $("dev1TextoWrapper");
-  if (!wWrap) return 18;
+  const wrap = $("dev1TextoWrapper");
+  if (!wrap) return 18;
 
-  const rect = wWrap.getBoundingClientRect();
-  const maxW = Math.max(100, rect.width * 0.92);
+  // medimos el área real del wrapper (preview)
+  const rect = wrap.getBoundingClientRect();
+  const maxW = Math.max(120, rect.width * 0.92);
 
-  // ✅ más espacio para versículo
-  const altoDisponible = Math.max(80, rect.height * 0.62);
+  // tu layout usa: Y_VBOX = 16% y H_VBOX = 66% del wrapper
+  const altoDisponible = Math.max(90, rect.height * 0.66);
+
+  const cita = oneLine(DEV?.p1?.cita || "");
+  const vtxt = oneLine(versiculo || "").toUpperCase();
 
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
 
-  // ✅ probamos de grande a chico (UNA SOLA VEZ)
-  const MAX_PX = 42;
-  const MIN_PX = 9;
+  // probamos de grande a chico (tamaño en PIXELES DE PREVIEW)
+  const MAX_PREVIEW_PX = 44;
+  const MIN_PREVIEW_PX = 10;
 
-  for (let px = MAX_PX; px >= MIN_PX; px--) {
-    ctx.font = `700 ${px}px ${DEV.f1.fuente}, Arial`;
-    const lines = wrapMeasureLines(ctx, oneLine(versiculo), maxW);
-    const lineH = px * 1.18;
-    const totalH = lines.length * lineH;
+  for (let px = MAX_PREVIEW_PX; px >= MIN_PREVIEW_PX; px--) {
+    // versículo
+    ctx.font = `800 ${px}px ${DEV.f1.fuente}, Arial`;
+    const vLines = wrapMeasureLines(ctx, vtxt, maxW);
+    const vH = vLines.length * (px * 1.14);
 
-    if (totalH <= altoDisponible) {
-    const sc = scalePreviewF1() || 1;
-    return Math.round(px / sc); // ✅ devuelve tamaño de canvas
-}
+    // cita proporcional (~0.75)
+    const citaPx = Math.max(12, Math.round(px * 0.75));
+    ctx.font = `700 ${citaPx}px ${DEV.f1.fuente}, Arial`;
+    const cLines = wrapMeasureLines(ctx, cita, maxW);
+    const cH = cLines.length * (citaPx * 1.14);
+
+    // gap entre ambos
+    const gap = px * 0.25;
+
+    if ((vH + gap + cH) <= altoDisponible) {
+      // pasamos a “canvas size” (tu slider guarda tamaño canvas)
+      const sc = scalePreviewF1() || 1;
+      return Math.max(8, Math.round(px / sc));
+    }
   }
 
- return Math.round(MIN_PX / (scalePreviewF1() || 1));
+  const sc = scalePreviewF1() || 1;
+  return Math.max(8, Math.round(MIN_PREVIEW_PX / sc));
 }
 
 function sugerirTamanoFase2Auto(texto){
