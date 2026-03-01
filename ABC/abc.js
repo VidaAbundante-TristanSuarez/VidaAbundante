@@ -550,11 +550,39 @@ function abcPrepararBloques() {
     abcMarcarSeleccionUI();
 
     // toggle resaltado
-    if (abcResaltadosCache && abcResaltadosCache[bid]) {
-      await abcQuitarResaltado(bid);
-      abcLimpiarFondoBloque(b);
-      return;
+if (abcResaltadosCache && abcResaltadosCache[bid]) {
+
+  // 🔒 verificar si este bloque pertenece a una nota con keep:true
+  const data = window.marcadores || {};
+  let bloqueBloqueado = false;
+
+  for (const m of Object.values(data)) {
+    if (m?.origen !== "abc") continue;
+    if ((m?.abc?.temaIndex ?? null) !== abcIndex) continue;
+    if (!m?.keep) continue;
+
+    // nuevo formato (varios bloques)
+    if (Array.isArray(m?.abcBids) && m.abcBids.includes(bid)) {
+      bloqueBloqueado = true;
+      break;
     }
+
+    // compatibilidad con notas viejas
+    if (m?.abcBid && m.abcBid === bid) {
+      bloqueBloqueado = true;
+      break;
+    }
+  }
+
+  if (bloqueBloqueado) {
+    abcToast("🔒 Este bloque está bloqueado por una nota");
+    return;
+  }
+
+  await abcQuitarResaltado(bid);
+  abcLimpiarFondoBloque(b);
+  return;
+}
 
     const color = window.colorActual || "#fff3b0";
     await abcSetResaltado(bid, color);
