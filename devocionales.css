@@ -1,19 +1,35 @@
- <style>
+<style>
+
 /* ================= COLOR UNIFICADO UI 🌈================= */
-:root {
-  --ui-azul-claro: #bcdcff;
-  --ui-azul-hover: #1c6fcb;
+:root{
+  --ui-azul-claro:#bcdcff;
+  --ui-azul-hover:#1c6fcb;
 }
 
-/* ================= DEVOCIONALES - MODALES LIMPIOS ================= */
+/* ================= BASE UI ================= */
+button{ border-radius:999px; }
 
+input[type="number"],
+input[type="color"]{
+  border-radius:12px;
+  border:1px solid #ccc;
+  padding:4px 6px;
+}
+
+input[type="number"]{
+  text-align:center;
+  font-weight:700;
+  width:60px;
+}
+
+/* ================= DEVOCIONALES: PREVIEW / TEXT ================= */
 .modal-dev{
-  max-width: 520px;
-  width: 100%;
+  max-width: 560px;
+  width: min(560px, 96vw);
 }
 
 .dev-preview{
-  width: min(420px, 92vw);
+  width: min(460px, 94vw);
   margin: 0 auto;
   height: auto;                 /* lo define aspect-ratio */
   border-radius:16px;
@@ -44,12 +60,17 @@
   inset:0;
   text-align:center;
   white-space:normal;
-
-  /* ✅ clave para que NO “corte” letras con sombras/stroke */
-  overflow: visible;
+  overflow: visible; /* para que no corte sombras/stroke */
+  font-weight: 500;  /* base */
+  -webkit-text-stroke-width: 0.8px;
+  -webkit-text-stroke-color: transparent;
+  paint-order: stroke fill;
 }
 
-/* Fase 2: wrapper real */
+.dev-text.front{ z-index: 2; }
+.dev-text.back{ z-index: 1; }
+
+/* Fase 2: wrapper real (layout interno absoluto) */
 #dev2TextoWrapper{
   position:absolute;
   inset: 16px;
@@ -60,28 +81,27 @@
 #dev2Texto{
   width: 100%;
   height: 100%;
-  display: block;        /* ✅ NO flex */
-  position: relative;    /* ✅ para los absolutos internos */
+  display: block;     /* NO flex */
+  position: relative; /* para los absolutos internos */
   overflow: hidden;
 }
 
-.dev-text.front{ z-index: 2; }
-.dev-text.back{ z-index: 1; }
-
+/* ================= GALERÍA FONDOS ================= */
 .dev-fondos{
   display:flex;
   gap:10px;
   overflow-x:auto;
   overflow-y:hidden;
-  padding:10px 4px;
-  margin:10px auto 0;
-  width: min(420px, 92vw);     /* ✅ mismo ancho que preview */
-  justify-content:flex-start;  /* ✅ arranca a la izquierda */
+  padding: 8px 4px;
+  margin: 10px auto 0;
+  width: min(460px, 94vw);
+  justify-content:flex-start;
+  max-height: 92px;
 }
 
 .dev-fondos img{
-  width:70px;
-  height:70px;
+  width:64px;
+  height:64px;
   border-radius:12px;
   object-fit:cover;
   cursor:pointer;
@@ -92,6 +112,7 @@
   border-color: var(--ui-azul-hover);
 }
 
+/* ================= ROWS / TOOLS ================= */
 .dev-row{
   display:flex;
   gap:10px;
@@ -101,140 +122,6 @@
   margin-top:10px;
 }
 
-.dev-final button:disabled{
-  opacity:.45;
-  cursor:not-allowed;
-}
-
-/* Lista fuentes (dropdown ancho modal) */
-.dev-lista-fuentes{
-  display:none;
-  position:fixed;
-  z-index: 5000;
-  background:#fff;
-  border:1px solid #ddd;
-  border-radius:14px;
-  padding:10px;
-  box-shadow: 0 10px 30px rgba(0,0,0,.12);
-  overflow:auto;
-  white-space:nowrap;
-}
-
-.dev-lista-fuentes.abierto{
-  display:flex;
-  gap:10px;
-}
-
-/* ✅ Asegura que el modal de AUDIO quede arriba de todo */
-#modalAudio.modal-overlay,
-#modalAudio {
-  z-index: 9999 !important;
-}
-
-/* ✅ Tus fases por debajo */
-#modalDevFase1, #modalDevFase2, #modalDevFase3 {
-  z-index: 3000;
-}
-
-button{
-  border-radius:999px;   /* ✔️ todos redondeados */
-}
-
-/* ===== INPUTS NUMÉRICOS Y COLOR ===== */
-
-input[type="number"],
-input[type="color"]{
-  border-radius:12px;
-  border:1px solid #ccc;
-  padding:4px 6px;
-}
-
-/* centrado del número */
-input[type="number"]{
-  text-align:center;
-  font-weight:700;
-  width:60px;
-}
-
-/* ================= AODRNOS ================= */
-.dev-adorno-row{
-  margin-top: 10px;
-}
-
-.dev-adorno-label{
-  font-size: 12px;
-  opacity: .8;
-  margin-bottom: 6px;
-}
-
-.dev-adorno-list{
-  display:flex;
-  gap:10px;
-  overflow-x:auto;
-  overflow-y:hidden;
-  padding: 6px 2px;
-  margin: 0 auto;
-  width: min(420px, 92vw);     /* ✅ mismo ancho que preview */
-  justify-content:flex-start;
-}
-
-.dev-adorno-btn{
-  flex:0 0 auto;
-  border:1px solid #ddd;
-  border-radius:12px;
-  background:#fff;
-  padding:8px;
-  cursor:pointer;
-}
-
-.dev-adorno-btn.activo{
-  outline:3px solid var(--ui-azul-hover);
-}
-
-.dev-adorno-thumb{
-  width:70px;
-  height:26px;
-  object-fit:contain;
-  display:block;
-}
-
-
-/* ================= MODAL como "Biblia" (contenido real, no flotante raro) ================= */
-.modal-dev{
-  max-width: 560px;              /* un poco más ancho */
-  width: min(560px, 96vw);
-}
-
-.modal-overlay .modal-contenido.modal-dev{
-  background:#fff;
-  border-radius:18px;
-  padding: 12px;
-  max-height: calc(100dvh - 24px); /* altura real móvil */
-  overflow: hidden;                /* ✅ NO scroll */
-  box-shadow: 0 18px 60px rgba(0,0,0,.30);
-
-  display:flex;                    /* ✅ ordena el contenido */
-  flex-direction:column;
-  gap:10px;
-}
-
-/* Las galerías se mantienen horizontales y “compactas” */
-.dev-fondos,
-.dev-adorno-list{
-  max-height: 92px;      /* limita altura */
-  padding: 8px 4px;
-}
-
-/* Thumbs un toque más chicos para asegurar que quepa todo */
-.dev-fondos img{ width:64px; height:64px; }
-.dev-adorno-thumb{ width:64px; height:24px; }
-
-/* Preview un toque más grande */
-.dev-preview{
-  width: min(460px, 94vw);
-}
-
-/* ================= FASE 2: fila única de controles + fondo plano vistoso ================= */
 .dev-tools{
   width: min(460px, 94vw);
   margin: 10px auto 0;
@@ -245,7 +132,7 @@ input[type="number"]{
   flex-wrap:wrap;
 }
 
-/* “Pastillita” grande y vistosa para el fondo plano */
+/* “Pastillita” fondo plano */
 .dev-fondo-chip{
   display:flex;
   align-items:center;
@@ -266,59 +153,76 @@ input[type="number"]{
   cursor:pointer;
 }
 
-/* Adornos: sin títulos, más compacto */
+/* ================= ADORNOS (UNIFICADO) ================= */
 .dev-adorno-row{
   width: min(460px, 94vw);
   margin: 8px auto 0;
 }
 
-.dev-adorno-label{ display:none; }   /* ✅ chau “Adorno” */
+.dev-adorno-label{ display:none; }
+
 .dev-adorno-list{
-  width: 100%;
+  display:flex;
+  gap:10px;
+  overflow-x:auto;
+  overflow-y:hidden;
   padding: 6px 2px;
   margin: 0 auto;
+  width: 100%;
+  justify-content:flex-start;
+  max-height: 92px;
 }
 
-/* ================= FASE 3: botones texto negro ================= */
-.btn-light{
-  background:#f2f2f2;
-  color:#000;
+.dev-adorno-btn{
+  flex:0 0 auto;
   border:1px solid #ddd;
+  border-radius:12px;
+  background:#fff;
+  padding:8px;
+  cursor:pointer;
 }
 
-.btn-light:hover{ background:#e8e8e8; }
-
-/* ================= OUTLINE / BOLD más fuerte (se nota en preview y captura) ================= */
-
-/* 1) cuando bold está activo, que sea MÁS fuerte */
-.dev-text{
-  font-weight: 500; /* base */
+.dev-adorno-btn.activo{
+  outline:3px solid var(--ui-azul-hover);
 }
 
-/* 2) permite stroke real (en algunos navegadores) */
-.dev-text{
-  -webkit-text-stroke-width: 0.8px; /* lo ajustamos por JS también */
-  -webkit-text-stroke-color: transparent;
-  paint-order: stroke fill;
+.dev-adorno-thumb{
+  width:64px;
+  height:24px;
+  object-fit:contain;
+  display:block;
 }
 
-/* ================= Evitar estiramiento del adorno (fase 2 y en final) ================= */
+/* Evitar estiramiento */
 .dev-adorno-img{
   display:block;
   width: min(360px, 78%);
-  height: auto;             /* ✅ NO se estira */
-  max-height: 90px;
-  object-fit: contain;
-  margin: 10px auto 0;
+  height:auto;
+  max-height:90px;
+  object-fit:contain;
+  margin:10px auto 0;
 }
 
-/* ================= BOTONES (unificados con tus variables) ================= */
-
-button{
-  border-radius:999px;
+/* ================= LISTA FUENTES ================= */
+.dev-lista-fuentes{
+  display:none;
+  position:fixed;
+  z-index:5000;
+  background:#fff;
+  border:1px solid #ddd;
+  border-radius:14px;
+  padding:10px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.12);
+  overflow:auto;
+  white-space:nowrap;
 }
 
-/* Base: botón “neutro” */
+.dev-lista-fuentes.abierto{
+  display:flex;
+  gap:10px;
+}
+
+/* ================= BOTONES (UNIFICADO) ================= */
 .dev-final button,
 .dev-row button,
 .dev-lista-fuentes button{
@@ -330,7 +234,6 @@ button{
   padding:10px 12px;
 }
 
-/* Hover (PC) */
 .dev-final button:hover,
 .dev-row button:hover,
 .dev-lista-fuentes button:hover{
@@ -339,14 +242,12 @@ button{
   border-color: var(--ui-azul-hover);
 }
 
-/* Botón principal (CTA) */
 .dev-final button.btn-primary{
   background: var(--ui-azul-hover);
   color:#fff;
   border-color: var(--ui-azul-hover);
 }
 
-/* Estado activo (cuando vos le ponés .activo desde JS) */
 button.activo,
 .dev-lista-fuentes button.activo{
   background: var(--ui-azul-hover);
@@ -360,127 +261,20 @@ button.activo,
   cursor:not-allowed;
 }
 
-
-@media (max-height: 740px){
-  .modal-overlay{
-    padding: 10px;
-  }
-
-  .modal-overlay .modal-contenido.modal-dev{
-    padding: 10px;
-    gap: 8px;
-  }
-
-  .dev-preview{ width: min(420px, 90vw); }
-
-  .dev-tools{
-    gap: 8px;
-    margin-top: 8px;
-  }
-
-  .dev-fondo-chip{
-    padding: 8px 10px;
-    border-radius: 14px;
-  }
-
-  .dev-fondo-chip input[type="color"]{
-    width: 50px;
-    height: 38px;
-    border-radius: 12px;
-  }
-
-  .dev-fondos img{ width:58px; height:58px; }
-  .dev-adorno-thumb{ width:58px; height:22px; }
+/* Botón secundario (Anterior) */
+.btn-light{
+  background: var(--ui-azul-claro);
+  color:#000;
+  border: 1px solid #d6d6d6;
+  font-weight:700;
+}
+.btn-light:hover{
+  background: var(--ui-azul-hover);
+  color:#fff;
+  border-color: var(--ui-azul-hover);
 }
 
-/* ================= CERRAR (X) prolija y chica ================= */
-.modal-overlay .modal-contenido{
-  position: relative;  /* ✅ para que la X se posicione dentro */
-}
-
-.cerrar-modal{
-  position:absolute;
-  top:10px;
-  right:10px;
-  width:32px;
-  height:32px;
-  border-radius:999px;
-  font-size:16px;
-  line-height:32px;
-  padding:0;
-  background:#fff;
-  border:1px solid #ddd;
-  cursor:pointer;
-}
-
-/* ================= FASE 3: que SIEMPRE entre sin scroll ================= */
-#modalDevFase3 .modal-contenido.modal-dev{
-  height: calc(100dvh - 24px);   /* ocupa el alto disponible real */
-  max-height: calc(100dvh - 24px);
-}
-
-#modalDevFase3 .modal-contenido.modal-dev{
-  display:flex;
-  flex-direction:column;
-}
-
-/* ✅ cuando modal está abierto, sin scroll raro del body */
-body.modal-open{
-  overflow:hidden;
-  touch-action:none;
-}
-
-/* ✅ Fase 3: imagen ocupa todo el ancho útil del modal */
-#devF3PreviewBox{
-  flex: 1;
-  min-height: 0;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding: 0;           /* ✅ sin “bordes” */
-}
-
-/* ✅ imagen: llena el contenedor */
-#devFinalImg{
-  width: 100%;
-  max-width: 100%;
-  height: auto;
-  max-height: 100%;
-  object-fit: contain;
-  border-radius: 14px;
-  display:block;
-}
-
-/* ✅ textarea sin zoom raro en móvil */
-#dev0Texto{
-  font-size:16px;         /* clave para iOS */
-  flex: 1;
-  min-height: 0;
-}
-
-.devIndexCard{
-  flex:0 0 auto;
-  width:120px;
-  border:1px solid #ddd;
-  border-radius:12px;
-  overflow:hidden;
-  background:#fff;
-  cursor:pointer;
-}
-.devIndexCard img{ width:100%; height:70px; object-fit:cover; display:block; }
-.devIndexMeta{ padding:6px 8px; font-size:11px; line-height:1.15; }
-.devBigCard{
-  border:1px solid #ddd;
-  border-radius:16px;
-  overflow:hidden;
-  background:#fff;
-}
-.devBigCard img{ width:100%; display:block; }
-.devBigActions{
-  display:flex; gap:10px; padding:10px; justify-content:center; flex-wrap:wrap;
-}
-
-/* ✅ DEVOCIONALES: overlay igual a Biblia */
+/* ================= MODALES (overlay + tarjeta) ================= */
 #modalDevFase0.modal-overlay,
 #modalDevFase1.modal-overlay,
 #modalDevFase2.modal-overlay,
@@ -500,161 +294,216 @@ body.modal-open{
   display:flex;
 }
 
-/* ✅ tarjeta interna igual a Biblia, sin scroll */
 #modalDevFase0 .modal-contenido.modal-dev,
 #modalDevFase1 .modal-contenido.modal-dev,
 #modalDevFase2 .modal-contenido.modal-dev,
 #modalDevFase3 .modal-contenido.modal-dev{
   background:#fff;
   border-radius:18px;
-  padding: 12px;
+  padding:12px;
   width: min(560px, 96vw);
   height: calc(100dvh - 24px);
   max-height: calc(100dvh - 24px);
-  overflow: hidden;
+  overflow: hidden; /* por defecto no scroll */
   box-shadow: 0 18px 60px rgba(0,0,0,.30);
 
   display:flex;
   flex-direction:column;
   gap:10px;
+
+  position:relative; /* para la X */
 }
 
-/* ================= FASE 0: PERMITIR SCROLL (solo aquí) ================= */
-/* Va al FINAL del CSS, así pisa la regla general sin usar !important */
-#modalDevFase0.modal-overlay.abierto .modal-contenido.modal-dev{
-  overflow: auto;                 /* ✅ ahora sí scroll dentro del modal */
+/* ================= CERRAR (X) ================= */
+.cerrar-modal{
+  position:absolute;
+  top:10px;
+  right:10px;
+  width:32px;
+  height:32px;
+  border-radius:999px;
+  font-size:16px;
+  line-height:32px;
+  padding:0;
+  background:#fff;
+  border:1px solid #ddd;
+  cursor:pointer;
 }
 
-/* ================= FASE 0: MÁS ANCHO para leer el OCR ================= */
-#modalDevFase0.modal-overlay.abierto .modal-contenido.modal-dev{
-  width: min(720px, 96vw);        /* ✅ más ancho SOLO fase 0 */
-  max-width: 720px;
+/* ================= AUDIO arriba ================= */
+#modalAudio.modal-overlay,
+#modalAudio{
+  z-index: 9999 !important;
 }
 
-/* ================= FASE 0: TEXTAREA OCR que ocupe todo el ancho ================= */
-#modalDevFase0.modal-overlay.abierto #dev0Texto{
-  width: 100%;
-  box-sizing: border-box;
-  min-height: 220px;              /* ajustable */
-  line-height: 1.35;
+#modalDevFase1, #modalDevFase2, #modalDevFase3{
+  z-index: 3000;
 }
 
-/* ================= FASE 0: OCR LEGIBLE (alto + scroll interno) ================= */
-#modalDevFase0.modal-overlay.abierto .modal-contenido.modal-dev{
-  overflow: auto;                 /* ✅ scroll dentro del modal */
+/* ================= BODY lock ================= */
+body.modal-open{
+  overflow:hidden;
+  touch-action:none;
+}
+
+/* ================= FASE 0 (ROOT): head fijo + body scroll ================= */
+#modalDevFase0 .modal-contenido.modal-dev{
+  overflow: hidden;
+  display:flex;
+  flex-direction:column;
+  min-height:0;
+}
+
+#modalDevFase0 .dev0-head{
+  flex:0 0 auto;
   display:flex;
   flex-direction:column;
   gap:10px;
 }
 
-/* textarea grande y usable */
-#modalDevFase0.modal-overlay.abierto #dev0Texto{
+#modalDevFase0 .dev0-body{
+  flex:1 1 auto;
+  min-height:0;
+  overflow:auto;      /* ✅ scroll SOLO acá */
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  padding-top:4px;
+}
+
+#modalDevFase0 .dev0-foot{
+  flex:0 0 auto;
+}
+
+#modalDevFase0 #dev0Texto{
   width:100%;
   box-sizing:border-box;
-  flex: 1 1 auto;                 /* ✅ ahora SÍ crece */
-  min-height: 38dvh;              /* ✅ alto real en celular */
-  font-size:16px;
+  min-height:240px;
+  height:38dvh;
+  resize:none;
+  border-radius:14px;
+  border:1px solid #ddd;
+  padding:10px;
   line-height:1.35;
-  resize: none;
+  font-size:16px;
 }
 
-/* ================= FASE 0 (ROOT): header fijo + body scroll ================= */
-#modalDevFase0 .modal-contenido.modal-dev{
-  overflow: hidden;         /* el modal NO scrollea */
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
-
-/* header fijo */
-#modalDevFase0 .dev0-head{
-  flex: 0 0 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-/* body scrolleable (acá vive el OCR + campos) */
-#modalDevFase0 .dev0-body{
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding-top: 4px;
-}
-
-/* footer fijo */
-#modalDevFase0 .dev0-foot{
-  flex: 0 0 auto;
-}
-
-/* textarea OCR grande y siempre visible */
-#modalDevFase0 #dev0Texto{
-  width: 100%;
-  box-sizing: border-box;
-  min-height: 240px;        /* en PC */
-  height: 38dvh;            /* en móvil crece */
-  resize: none;
-  border-radius: 14px;
-  border: 1px solid #ddd;
-  padding: 10px;
-  line-height: 1.35;
-  font-size: 16px;
-}
-
-/* grid prolijo */
 #modalDevFase0 .dev0-grid{
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 8px;
+  display:grid;
+  grid-template-columns:1fr;
+  gap:8px;
 }
 
 #modalDevFase0 input,
 #modalDevFase0 textarea{
-  width: 100%;
-  box-sizing: border-box;
-  border-radius: 12px;
-  border: 1px solid #ddd;
-  padding: 10px;
+  width:100%;
+  box-sizing:border-box;
+  border-radius:12px;
+  border:1px solid #ddd;
+  padding:10px;
 }
 
-#modalDevFase0 input{
-  font-weight: 700;
+#modalDevFase0 input{ font-weight:700; }
+#modalDevFase0 #dev0Versiculo{ min-height:90px; resize:none; }
+#modalDevFase0 #dev0Reflexion{ min-height:110px; resize:none; }
+#modalDevFase0 #dev0Oracion{   min-height:110px; resize:none; }
+
+#modalDevFase0 h3,
+#modalDevFase0 label{
+  color:#0e286f;
 }
 
-#modalDevFase0 #dev0Versiculo{ min-height: 90px; resize:none; }
-#modalDevFase0 #dev0Reflexion{ min-height: 110px; resize:none; }
-#modalDevFase0 #dev0Oracion{   min-height: 110px; resize:none; }
-
-/* ================= FASE 2 ROOT: preview crece por ALTURA ================= */
-#modalDevFase2 .modal-contenido.modal-dev{
-  min-height: 0;
+/* ✅ FASE 0 más ancho */
+#modalDevFase0 .modal-contenido.modal-dev{
+  width: min(720px, 96vw);
+  max-width: 720px;
 }
 
-/* caja que se come el espacio disponible */
+/* ================= FASE 2: preview crece por ALTURA ================= */
+#modalDevFase2 .modal-contenido.modal-dev{ min-height:0; }
+
 #modalDevFase2 .dev-preview-box{
   flex: 1 1 auto;
-  min-height: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  min-height:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
 }
 
-/* ahora el preview se ajusta por altura disponible (no por ancho) */
 #modalDevFase2 #dev2Preview{
-  height: 100%;
-  width: auto;
-  max-height: 100%;
-  max-width: 100%;
+  height:100%;
+  width:auto;
+  max-height:100%;
+  max-width:100%;
 }
 
-/* el resto (adornos/controles/botones) no crece */
 #modalDevFase2 .dev-adorno-row,
 #modalDevFase2 .dev-tools,
 #modalDevFase2 .dev-row{
-  flex: 0 0 auto;
+  flex:0 0 auto;
+}
+
+/* ================= FASE 3: imagen ocupa el área útil ================= */
+#modalDevFase3 .modal-contenido.modal-dev{
+  padding:10px;
+  gap:8px;
+}
+
+#devF3PreviewBox{
+  flex: 1 1 auto;
+  min-height:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+#devFinalImg{
+  height:100%;
+  max-height:100%;
+  width:auto;
+  max-width:100%;
+  object-fit:contain;
+  border-radius:14px;
+  display:block;
+}
+
+/* ================= RESPONSIVE (pantallas bajas) ================= */
+@media (max-height:740px){
+  #modalDevFase0.modal-overlay,
+  #modalDevFase1.modal-overlay,
+  #modalDevFase2.modal-overlay,
+  #modalDevFase3.modal-overlay{
+    padding:10px;
+  }
+
+  #modalDevFase0 .modal-contenido.modal-dev,
+  #modalDevFase1 .modal-contenido.modal-dev,
+  #modalDevFase2 .modal-contenido.modal-dev,
+  #modalDevFase3 .modal-contenido.modal-dev{
+    padding:10px;
+    gap:8px;
+  }
+
+  .dev-preview{ width: min(420px, 90vw); }
+
+  .dev-tools{
+    gap:8px;
+    margin-top:8px;
+  }
+
+  .dev-fondo-chip{
+    padding:8px 10px;
+    border-radius:14px;
+  }
+
+  .dev-fondo-chip input[type="color"]{
+    width:50px;
+    height:38px;
+    border-radius:12px;
+  }
+
+  .dev-fondos img{ width:58px; height:58px; }
+  .dev-adorno-thumb{ width:58px; height:22px; }
 }
 
 </style>
