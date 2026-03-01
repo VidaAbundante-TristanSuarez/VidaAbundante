@@ -2827,3 +2827,101 @@ window.mostrarIglesiaSub = (sub) => {
 };
   
 }); // ================= ✅ CIERRA INIT ÚNICO =====
+
+// ================= IGLESIA > DEVOCIONALES (UI + CARGA) =================
+function devMostrarHome() {
+  const home = document.getElementById("devHome");
+  const crear = document.getElementById("devCrear");
+  if (home) home.style.display = "block";
+  if (crear) crear.style.display = "none";
+}
+
+function devMostrarCrear() {
+  const home = document.getElementById("devHome");
+  const crear = document.getElementById("devCrear");
+  if (home) home.style.display = "none";
+  if (crear) crear.style.display = "block";
+}
+
+// Render mínimo (para que NO se vea vacío)
+function renderDevFeed(items) {
+  const feed = document.getElementById("devFeed");
+  if (!feed) return;
+
+  if (!items.length) {
+    feed.innerHTML = `
+      <div style="opacity:.8; padding:12px; border:1px dashed #ccc; border-radius:12px;">
+        No hay devocionales todavía.
+      </div>
+    `;
+    return;
+  }
+
+  feed.innerHTML = items.map(d => {
+    const titulo = (d.titulo || "Devocional").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    const fecha = d.fecha ? new Date(d.fecha).toLocaleDateString("es-AR") : "";
+    const texto  = (d.texto || "").toString().slice(0, 220).replace(/</g,"&lt;").replace(/>/g,"&gt;");
+
+    return `
+      <div style="border:1px solid #e5e5e5; border-radius:14px; padding:12px; background:#fff;">
+        <div style="display:flex; justify-content:space-between; gap:10px;">
+          <b>${titulo}</b>
+          <span style="opacity:.65; font-size:12px;">${fecha}</span>
+        </div>
+        <div style="margin-top:8px; opacity:.9; white-space:pre-wrap;">${texto}</div>
+      </div>
+    `;
+  }).join("");
+}
+
+// Lee devocionales de Iglesia (ruta estándar)
+function initDevocionalesIglesiaFeed() {
+  const feed = document.getElementById("devFeed");
+  if (feed) feed.innerHTML = `<div style="opacity:.7; padding:12px;">Cargando devocionales...</div>`;
+
+  // ✅ Ruta sugerida (si tu proyecto usa otra, la cambiamos)
+  const r = ref(db, "devocionalesIglesia");
+
+  onValue(r, (s) => {
+    const data = s.val() || {};
+    const items = Object.entries(data)
+      .map(([id, obj]) => ({ id, ...(obj || {}) }))
+      .sort((a,b) => (b.fecha || 0) - (a.fecha || 0));
+
+    renderDevFeed(items);
+  }, (err) => {
+    console.error("Devocionales read error:", err);
+    if (feed) {
+      feed.innerHTML = `
+        <div style="padding:12px; border:1px solid #f1c0c0; background:#fff5f5; border-radius:12px;">
+          No pude leer devocionales (permiso o ruta). Mirá consola (F12).
+        </div>
+      `;
+    }
+  });
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  // botón +
+  const btnNuevo = document.getElementById("btnDevNuevo");
+  if (btnNuevo) {
+    btnNuevo.type = "button";
+    btnNuevo.onclick = () => {
+      if (!window.__ES_ADMIN) return; // solo admin
+      devMostrarCrear();
+    };
+  }
+
+  // volver
+  const btnVolver = document.getElementById("btnDevVolverHome");
+  if (btnVolver) {
+    btnVolver.type = "button";
+    btnVolver.onclick = () => devMostrarHome();
+  }
+
+  // default: Home visible
+  devMostrarHome();
+
+  // cargar feed (para que no se vea vacío)
+  initDevocionalesIglesiaFeed();
+});
