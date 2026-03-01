@@ -302,8 +302,6 @@ button.activo,
   border-radius:18px;
   padding:12px;
   width: min(560px, 96vw);
-  height: calc(100dvh - 24px);
-  max-height: calc(100dvh - 24px);
   overflow: hidden; /* por defecto no scroll */
   box-shadow: 0 18px 60px rgba(0,0,0,.30);
 
@@ -312,6 +310,19 @@ button.activo,
   gap:10px;
 
   position:relative; /* para la X */
+}
+
+#modalDevFase0 .modal-contenido.modal-dev,
+#modalDevFase3 .modal-contenido.modal-dev{
+ height: calc(100dvh - 24px);
+ max-height: calc(100dvh - 24px);
+}
+
+/* ================= AJUSTE: FASE 1/2 no forzar altura completa ================= */
+#modalDevFase1 .modal-contenido.modal-dev,
+#modalDevFase2 .modal-contenido.modal-dev{
+  height: auto;                     /* ✅ achica el modal al contenido */
+  max-height: calc(100dvh - 24px);  /* ✅ límite real de pantalla */
 }
 
 /* ================= CERRAR (X) ================= */
@@ -458,12 +469,11 @@ body.modal-open{
 }
 
 #devFinalImg{
-  height:100%;
-  max-height:100%;
-  width:auto;
-  max-width:100%;
-  object-fit:contain;
-  border-radius:14px;
+  width: 100%;        /* ✅ llena el ancho útil */
+  height: auto;       /* ✅ mantiene proporción */
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 14px;
   display:block;
 }
 
