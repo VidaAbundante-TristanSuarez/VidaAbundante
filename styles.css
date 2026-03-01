@@ -234,21 +234,60 @@ body.oscuro #barraTituloBiblia{
   }
 
 /* ================= VERSÍCULOS: NÚMERO AFUERA + TEXTO ALINEADO (PC/CEL) ================= */
+/* ================= Versículo (num + texto + icono nota) ================= */
 .versiculo{
-  padding: 7px 10px;            /* 👈 antes 14px → ahora menos espacio lateral */
+  padding: 7px 10px;
   border-radius: 8px;
   margin-bottom: 2px;
   cursor: pointer;
   transition: background .2s;
   line-height: 1.25;
-
-  /* ✅ layout estable */
-  display: grid;
-  grid-template-columns: 22px 1fr; /* 👈 antes 24px */
-  column-gap: 6px;                /* 👈 antes 8px */
-  align-items: center;            /* 👈 antes start (esto centra verticalmente) */
-
   text-indent: 0;
+
+  /* ✅ grid estable: num | texto | icono */
+  display: grid;
+  grid-template-columns: 22px 1fr auto;
+  column-gap: 6px;
+  align-items: center;
+}
+
+.versiculo .txt{
+  grid-column: 2;
+  display: block;
+  min-width: 0;              /* ✅ evita desborde */
+}
+
+.versiculo .icono-nota{
+  grid-column: 3;
+  justify-self: end;
+  font-size: 12px;
+  opacity: .35;
+  margin-left: 8px;
+  color: var(--ui-azul-hover, #1c6fcb); /* ✅ tus colores */
+  pointer-events: none;
+}
+
+body.oscuro .versiculo .icono-nota{
+  opacity: .45;
+}
+
+/* ✅ ABC: para ubicar la pluma dentro del bloque */
+.abc-block{
+  position: relative;
+}
+
+.abc-block .icono-nota{
+  position: absolute;
+  right: 10px;
+  bottom: 8px;
+  font-size: 12px;
+  opacity: .35;
+  color: var(--ui-azul-hover, #1c6fcb); /* ✅ tus colores */
+  pointer-events: none;
+}
+
+body.oscuro .abc-block .icono-nota{
+  opacity: .45;
 }
 
 /* Número del versículo */
@@ -272,11 +311,6 @@ body.oscuro #barraTituloBiblia{
 /* ✅ el texto siempre empieza alineado en la columna 2 */
 .versiculo > :not(.num){
   grid-column: 2;
-}
-
-.versiculo .txt{
-  grid-column: 2;
-  display: block;
 }
 
 body.oscuro .versiculo { color:#fff; }
@@ -2153,4 +2187,18 @@ body.oscuro #wrapFiltrosBiblia.abierto .filtros{
     max-height: calc(92vh - 120px);
   }
 }
+
+/* ================= ICONO "TIENE NOTA" (pluma) ================= */
+.icono-nota{
+  margin-left: 8px;
+  font-size: 12px;
+  opacity: .35;
+  flex: 0 0 auto;
+  pointer-events: none;
+}
+
+body.oscuro .icono-nota{
+  opacity: .45;
+}
+
   </style> 
