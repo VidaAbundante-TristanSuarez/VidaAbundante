@@ -311,6 +311,8 @@ abcPrepararBloques();
 abcAplicarFontSize();
 abcEscucharResaltados();
 abcGuardarProgreso();
+await abcAsegurarMarcadoresCargados();
+abcMarcarSeleccionUI();
     
   } catch (e) {
     cont.innerHTML = `
@@ -446,6 +448,25 @@ function abcEscucharResaltados(){
   };
 }
 
+async function abcAsegurarMarcadoresCargados(){
+  // si ya hay cache, listo
+  if (window.marcadores && Object.keys(window.marcadores).length) return true;
+
+  try{
+    const uid = UID();
+    const { db } = FB();
+    const { ref, get } = API();
+    if (!uid || !db || !ref || !get) return false;
+
+    const snap = await get(ref(db, `marcadores/${uid}`));
+    window.marcadores = snap.exists() ? (snap.val() || {}) : {};
+    return true;
+  }catch(e){
+    console.warn("No pude cargar marcadores:", e);
+    return false;
+  }
+}
+
 // =====================================================
 // ✅ ABC: selección múltiple + NOTAS usando el MISMO modalMarcadores (Biblia)
 // =====================================================
@@ -521,8 +542,8 @@ function abcPrepararBloques() {
   });
 
   abcMarcarSeleccionUI();
-  abcHabilitarCheckUI(); 
-  
+  abcHabilitarCheckUI();
+
   doc.onclick = async (e) => {
     const b = e.target.closest(".abc-block");
     if (!b) return;
@@ -549,45 +570,66 @@ function abcPrepararBloques() {
     abcSeleccionado = bid;
     abcMarcarSeleccionUI();
 
-    // toggle resaltado
-if (abcResaltadosCache && abcResaltadosCache[bid]) {
+    // ✅ asegurar marcadores antes de bloquear (para que funcione al entrar a ABC)
+    if (typeof abcAsegurarMarcadoresCargados === "function") {
+      await abcAsegurarMarcadoresCargados();
+    }
 
-  // 🔒 verificar si este bloque pertenece a una nota con keep:true
+    // 🔒 bloquear tanto pintar como despintar si está asociado a una nota keep:true
+    let bloqueBloqueado = false;
+    const data = window.marcadores || {};
+
+    for (const m of Object.values(data)) {
+      if (m?.origen !== "abc") continue;
+      if ((m?.abc?.temaIndex ?? null) !== abcIndex) continue;
+      if (!m?.keep) continue;
+
+      // nuevo formato (1 nota con varios bloques)
+      if (Array.isArray(m?.abcBids) && m.abcBids.includes(bid)) {
+        bloqueBloqueado = true;
+        break;
+      }
+
+      // compatibilidad notas viejas (1 bloque)
+      if (m?.abcBid && m.abcBid === bid) {
+        bloqueBloqueado = true;
+        break;
+      }
+    }
+
+    if (bloqueBloqueado) {
+      abcToast("🔒 Este bloque está bloqueado por una nota");
+      return;
+    }
+
+    // toggle resaltado normal (si NO está bloqueado)
+    if (abcResaltadosCache && abcResaltadosCache[bid]) {
+      await abcQuitarResaltado(bid);
+      abcLimpiarFondoBloque(b);
+      return;
+    }
+
+    const color = window.colorActual || "#fff3b0";
+    await abcSetResaltado(bid, color);
+    abcAplicarFondoBloque(b, color);
+  };
+}
+
+function abcBloqueadoPorKeep(bid){
   const data = window.marcadores || {};
-  let bloqueBloqueado = false;
 
   for (const m of Object.values(data)) {
     if (m?.origen !== "abc") continue;
     if ((m?.abc?.temaIndex ?? null) !== abcIndex) continue;
     if (!m?.keep) continue;
 
-    // nuevo formato (varios bloques)
-    if (Array.isArray(m?.abcBids) && m.abcBids.includes(bid)) {
-      bloqueBloqueado = true;
-      break;
-    }
+    // nuevo formato (1 nota con varios bloques)
+    if (Array.isArray(m?.abcBids) && m.abcBids.includes(bid)) return true;
 
-    // compatibilidad con notas viejas
-    if (m?.abcBid && m.abcBid === bid) {
-      bloqueBloqueado = true;
-      break;
-    }
+    // compatibilidad notas viejas (1 bloque)
+    if (m?.abcBid && m.abcBid === bid) return true;
   }
-
-  if (bloqueBloqueado) {
-    abcToast("🔒 Este bloque está bloqueado por una nota");
-    return;
-  }
-
-  await abcQuitarResaltado(bid);
-  abcLimpiarFondoBloque(b);
-  return;
-}
-
-    const color = window.colorActual || "#fff3b0";
-    await abcSetResaltado(bid, color);
-    abcAplicarFondoBloque(b, color);
-  };
+  return false;
 }
 
 function abcMarcarSeleccionUI(){
@@ -889,18 +931,25 @@ window.abcIrANota = async (id) => {
   await cargarABCTema(true);
 
   // scrollear al bloque
-  const bid = m.abcBid;
+  const bid = m.abcBidLast || m.abcBid || (Array.isArray(m.abcBids) ? m.abcBids[m.abcBids.length - 1] : null);
   const doc = document.getElementById("abcDoc");
   const el = doc ? doc.querySelector(`.abc-block[data-bid="${bid}"]`) : null;
   if (el && el.scrollIntoView) el.scrollIntoView({behavior:"smooth", block:"center"});
 
   // dejarlo seleccionado
   abcSeleccionado = bid;
-  abcSeleccionados.clear();
+abcSeleccionados.clear();
+
+// ✅ si es nota nueva con varios bloques, seleccionarlos todos
+if (Array.isArray(m.abcBids) && m.abcBids.length) {
+  m.abcBids.forEach(x => abcSeleccionados.add(x));
+} else if (bid) {
   abcSeleccionados.add(bid);
+}
   abcMarcarSeleccionUI();
   // ✅ refresca UI del ✓ por si venías de lista
   abcAplicarUIAccionesPorModo();
+  abcMarcarSeleccionUI();
 };
 
 window.abcEditarNota = async (id) => {
