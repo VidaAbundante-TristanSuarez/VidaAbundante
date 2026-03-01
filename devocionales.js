@@ -2230,6 +2230,7 @@ devRenderFase(1);
    ========================================================= */
 document.addEventListener("DOMContentLoaded", ()=>{
   initDevocionales();
+  devMostrarHome();       // ✅ arranca siempre en el índice/feed
   cargarDevocionales();
 });
 
