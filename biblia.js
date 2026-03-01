@@ -56,6 +56,10 @@ window.resaltadorBloqueado = resaltadorBloqueado;
 let modoMarcador = false;
 let seleccionMarcador = {};         // {idVersiculo:true}
 let marcadores = {};                // cache firebase
+// ================= ✅ INDICE DE NOTAS (para mostrar pluma) =================
+let notasBibliaIndex = {}; // { "Libro_Cap_Versiculo": true }
+let notasABCIndex = {};    // { "tX_bY": true }  (bid)
+
 let ultimoMarcadorAplicado = null;  // resaltado al volver (opcional)
 // ✅ cuando edito desde "Mi Panel", guardo acá la info original del marcador
 window.__editMarcadorBase = null;  // {libro, capitulo, versiculos, ref}
@@ -103,11 +107,47 @@ onValue(ref(db, "panelImagenesPersonal/" + uid), s => {
 onValue(ref(db, "marcadores/" + uid), s => {
   marcadores = s.val() || {};
 
+  // ✅ reconstruir índices de notas (Biblia / ABC)
+  notasBibliaIndex = {};
+  notasABCIndex = {};
+
+  Object.values(marcadores).forEach(m => {
+    const tieneNota = !!(m?.nota && String(m.nota).trim());
+    if (!tieneNota) return;
+
+    // --- ABC ---
+    if (m?.origen === "abc" && m?.abcBid) {
+      notasABCIndex[m.abcBid] = true;
+      return;
+    }
+
+    // --- Biblia ---
+    const libro = m?.libro;
+    const cap = Number(m?.capitulo);
+    const vers = Array.isArray(m?.versiculos) ? m.versiculos : [];
+    if (libro && cap && vers.length) {
+      vers.forEach(vn => {
+        const n = Number(vn);
+        if (!isNaN(n)) {
+          notasBibliaIndex[`${libro}_${cap}_${n}`] = true;
+        }
+      });
+    }
+  });
+
   // si estoy viendo panel marcadores, refrescar
   const panelMarcadores = document.getElementById("panel-marcadores");
-if (panelMarcadores && panelMarcadores.offsetParent !== null) {
-  renderPanelMarcadores();
-}
+  if (panelMarcadores && panelMarcadores.offsetParent !== null) {
+    renderPanelMarcadores();
+  }
+
+  // ✅ repintar Biblia (para que aparezca la pluma sin recargar)
+  mostrarTexto();
+
+  // ✅ si estoy en ABC, refrescar la UI de selección (agrega pluma a bloques)
+  if (typeof abcMarcarSeleccionUI === "function") {
+    abcMarcarSeleccionUI();
+  }
 });
 
 });
@@ -474,11 +514,14 @@ if (modoImagen && !imagen) {
 }
 
   // ================= Contenido =================
+const tieneNota = !!notasBibliaIndex[id];
+
 div.innerHTML = `
   <span class="num">${v.Versiculo}</span>
   <span class="txt">${v.RV1960}</span>
+  ${tieneNota ? `<i class="fa-solid fa-feather-pointed icono-nota" aria-hidden="true"></i>` : ``}
 `;
-
+  
   // ================= Click =================
   div.onclick = () => toggleVersiculo(id, v.Versiculo);
 
