@@ -37,6 +37,7 @@ input[type="number"]{
   background:#fff;
   position:relative;
   border:1px solid #e5e5e5;
+  z-index: 1;
 }
 
 /* ratios */
@@ -261,17 +262,29 @@ button.activo,
   cursor:not-allowed;
 }
 
-/* Botón secundario (Anterior) */
-.btn-light{
+/* ================= BOTONES DEV: reglas por clase (solo dentro de modales dev) ================= */
+#modalDevFase0 .btn-ghost,
+#modalDevFase1 .btn-ghost,
+#modalDevFase2 .btn-ghost,
+#modalDevFase3 .btn-ghost,
+#modalDevFase0 .btn-light,
+#modalDevFase1 .btn-light,
+#modalDevFase2 .btn-light,
+#modalDevFase3 .btn-light{
   background: var(--ui-azul-claro);
   color:#000;
   border: 1px solid #d6d6d6;
   font-weight:700;
 }
-.btn-light:hover{
+
+#modalDevFase0 .btn-primary,
+#modalDevFase1 .btn-primary,
+#modalDevFase2 .btn-primary,
+#modalDevFase3 .btn-primary{
   background: var(--ui-azul-hover);
   color:#fff;
-  border-color: var(--ui-azul-hover);
+  border: 1px solid var(--ui-azul-hover);
+  font-weight:800;
 }
 
 /* ================= MODALES (overlay + tarjeta) ================= */
@@ -335,6 +348,7 @@ button.activo,
   position:absolute;
   top:10px;
   right:10px;
+  z-index: 10;          /* ✅ clave: arriba del preview */
   width:32px;
   height:32px;
   border-radius:999px;
@@ -344,6 +358,7 @@ button.activo,
   background:#fff;
   border:1px solid #ddd;
   cursor:pointer;
+  box-shadow: 0 8px 20px rgba(0,0,0,.18);
 }
 
 /* ================= AUDIO arriba ================= */
