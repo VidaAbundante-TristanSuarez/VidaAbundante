@@ -552,7 +552,8 @@ function abcMarcarSeleccionUI(){
     b.style.outlineWidth = (sel && ultimo) ? "3px" : (sel ? "2px" : "");
 
     // ✅ PLUMA si este bloque tiene nota guardada
-    const bidTieneNota = !!notasABCIndex[bid];
+    const idx = window.notasABCIndex || {};
+    const bidTieneNota = !!idx[bid];
     const ya = b.querySelector(".icono-nota");
 
     if (bidTieneNota) {
