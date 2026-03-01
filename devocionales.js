@@ -364,6 +364,7 @@ function isLogoJunk(line){
   // ✅ 1) basura conocida explícita
   const basuraExacta = [
     "ANA",
+    "ABUNDANTS",
     "DE LA VID",
     "DE",
     "DE LA",
