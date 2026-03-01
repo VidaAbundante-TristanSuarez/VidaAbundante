@@ -330,30 +330,33 @@ function stripTailLogoJunk(lines){
 
 function isLogoJunk(line){
   const s = (line || "").trim();
-
   if (!s) return true;
 
-  const onlyLetters = s.replace(/[^A-Za-zÁÉÍÓÚÜÑ]/g, "");
+  const up = s.toUpperCase();
 
-  // ✅ REGLA NUEVA:
-  // Si está en mayúsculas y tiene menos de 15 letras → basura
-  if (onlyLetters.length > 0 &&
-      onlyLetters === onlyLetters.toUpperCase() &&
-      onlyLetters.length < 15) {
+  // ✅ 1) basura conocida explícita
+  const basuraExacta = [
+    "ANA",
+    "DE",
+    "DE LA",
+    "VIDA",
+    "VIDA ABUNDANTE",
+    "DE LA VIDA ABUNDANTE",
+    "IGLESIA CRISTIANA DE LA VIDA ABUNDANTE"
+  ];
+
+  if (basuraExacta.includes(up)) return true;
+
+  // ✅ 2) líneas MUY cortas (pero solo si no tienen signos ni números)
+  const lettersOnly = s.replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/g, "");
+  const hasSignos = /[¿?¡!]/.test(s);
+  const hasNumeros = /\d/.test(s);
+
+  if (!hasSignos && !hasNumeros && lettersOnly.length > 0 && lettersOnly.length <= 5) {
     return true;
   }
 
-  // basura típica conocida
-  const up = s.toUpperCase();
-
-  return (
-    up === "ANA" ||
-    up === "DE" ||
-    up === "DE LA" ||
-    up === "VIDA" ||
-    up === "VIDA ABUNDANTE" ||
-    up === "DE LA VIDA ABUNDANTE"
-  );
+  return false;
 }
 
 function findOracionLineIndex(lines){
@@ -846,16 +849,19 @@ function fmtSize(x){
 }
 
 function sugerirTamanoVersiculoAuto(versiculo){
-  const wrap = $("dev1TextoWrapper");
-  if (!wrap) return 18;
+  // ✅ Medimos contra el “canvas real” (1080x1080), no contra el DOM
+  // Así el sugerido VARÍA según la cantidad de texto.
 
-  const rect = wrap.getBoundingClientRect();
+  const W = 1080;
+  const H = 1080;
 
-  // ✅ área real del wrapper (un poco más generosa)
-  const maxW = Math.max(140, rect.width * 0.94);
+  // === Esto replica tu layout en buildFase1HTML ===
+  // Caja central: top 16% y height 66%
+  const boxH = H * 0.66;
 
-  // tu layout usa Y_VBOX=16% y H_VBOX=66% (lo respetamos)
-  const altoDisponible = Math.max(120, rect.height * 0.66);
+  // width 96% con padding horizontal (36px * 2)
+  // (en buildFase1HTML usás width:96% y padding: 36px*scale)
+  const boxW = (W * 0.96) - (36 * 2);
 
   const cita = oneLine(DEV?.p1?.cita || "");
   const vtxt = oneLine(versiculo || "").toUpperCase();
@@ -863,32 +869,31 @@ function sugerirTamanoVersiculoAuto(versiculo){
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
 
-  const MAX_PREVIEW_PX = 50;  // ✅ antes 44
-  const MIN_PREVIEW_PX = 12;  // ✅ antes 10
+  // rango de búsqueda (en “px de canvas”)
+  const MAX_PX = 60;
+  const MIN_PX = 12;
 
-  for (let px = MAX_PREVIEW_PX; px >= MIN_PREVIEW_PX; px--) {
+  for (let px = MAX_PX; px >= MIN_PX; px--) {
+    // versículo
     ctx.font = `800 ${px}px ${DEV.f1.fuente}, Arial`;
-    const vLines = wrapMeasureLines(ctx, vtxt, maxW);
+    const vLines = wrapMeasureLines(ctx, vtxt, boxW);
     const vH = vLines.length * (px * 1.12);
 
-    const citaPx = Math.max(12, Math.round(px * 0.78));
+    // cita proporcional
+    const citaPx = Math.max(12, Math.round(px * 0.75));
     ctx.font = `700 ${citaPx}px ${DEV.f1.fuente}, Arial`;
-    const cLines = wrapMeasureLines(ctx, cita, maxW);
+    const cLines = wrapMeasureLines(ctx, cita, boxW);
     const cH = cLines.length * (citaPx * 1.12);
 
     const gap = px * 0.22;
 
-    if ((vH + gap + cH) <= altoDisponible) {
-      const sc = scalePreviewF1() || 1;
-
-      // ✅ Bias a “un poquito más grande” para que casi no tengas que tocarlo:
-      const pxMejor = px + 3; // empujoncito
-      return Math.max(8, Math.round(pxMejor / sc));
+    if ((vH + gap + cH) <= boxH) {
+      // ✅ clamp para respetar tu input (10..90)
+      return Math.max(10, Math.min(90, px));
     }
   }
 
-  const sc = scalePreviewF1() || 1;
-  return Math.max(8, Math.round(MIN_PREVIEW_PX / sc));
+  return Math.max(10, Math.min(90, MIN_PX));
 }
 
 function sugerirTamanoFase2Auto(texto){
