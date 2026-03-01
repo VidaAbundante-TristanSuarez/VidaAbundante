@@ -1661,7 +1661,7 @@ function bindInputs(){
 
     DEV.f2.size = Number($("dev2Tamano")?.value || 26);
     DEV.f2.color = $("dev2Color")?.value || "#000000";
-    devRenderFase(2);
+    requestAnimationFrame(()=> devRenderFase(2));
   });
 });
 
