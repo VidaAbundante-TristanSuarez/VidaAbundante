@@ -406,7 +406,7 @@ function buildBloquesFromOCR(raw){
   const { verseStart, verseLines } = extractVerseBlock(body);
 
   // si no encontró versículo, fallback: cuerpo entero
-  const versiculo = verseLines.length ? verseLines.join(" ") : (body.join(" ") || "(Versículo)");
+ const versiculo = verseLines.length ? verseLines.join(" ") : "(REVISAR: versículo no detectado en MAYÚSCULAS)";
 
   // fase 2: reflexión y oración
   let reflexion = "";
@@ -849,12 +849,13 @@ function sugerirTamanoVersiculoAuto(versiculo){
   const wrap = $("dev1TextoWrapper");
   if (!wrap) return 18;
 
-  // medimos el área real del wrapper (preview)
   const rect = wrap.getBoundingClientRect();
-  const maxW = Math.max(120, rect.width * 0.92);
 
-  // tu layout usa: Y_VBOX = 16% y H_VBOX = 66% del wrapper
-  const altoDisponible = Math.max(90, rect.height * 0.66);
+  // ✅ área real del wrapper (un poco más generosa)
+  const maxW = Math.max(140, rect.width * 0.94);
+
+  // tu layout usa Y_VBOX=16% y H_VBOX=66% (lo respetamos)
+  const altoDisponible = Math.max(120, rect.height * 0.66);
 
   const cita = oneLine(DEV?.p1?.cita || "");
   const vtxt = oneLine(versiculo || "").toUpperCase();
@@ -862,29 +863,27 @@ function sugerirTamanoVersiculoAuto(versiculo){
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
 
-  // probamos de grande a chico (tamaño en PIXELES DE PREVIEW)
-  const MAX_PREVIEW_PX = 44;
-  const MIN_PREVIEW_PX = 10;
+  const MAX_PREVIEW_PX = 50;  // ✅ antes 44
+  const MIN_PREVIEW_PX = 12;  // ✅ antes 10
 
   for (let px = MAX_PREVIEW_PX; px >= MIN_PREVIEW_PX; px--) {
-    // versículo
     ctx.font = `800 ${px}px ${DEV.f1.fuente}, Arial`;
     const vLines = wrapMeasureLines(ctx, vtxt, maxW);
-    const vH = vLines.length * (px * 1.14);
+    const vH = vLines.length * (px * 1.12);
 
-    // cita proporcional (~0.75)
-    const citaPx = Math.max(12, Math.round(px * 0.75));
+    const citaPx = Math.max(12, Math.round(px * 0.78));
     ctx.font = `700 ${citaPx}px ${DEV.f1.fuente}, Arial`;
     const cLines = wrapMeasureLines(ctx, cita, maxW);
-    const cH = cLines.length * (citaPx * 1.14);
+    const cH = cLines.length * (citaPx * 1.12);
 
-    // gap entre ambos
-    const gap = px * 0.25;
+    const gap = px * 0.22;
 
     if ((vH + gap + cH) <= altoDisponible) {
-      // pasamos a “canvas size” (tu slider guarda tamaño canvas)
       const sc = scalePreviewF1() || 1;
-      return Math.max(8, Math.round(px / sc));
+
+      // ✅ Bias a “un poquito más grande” para que casi no tengas que tocarlo:
+      const pxMejor = px + 3; // empujoncito
+      return Math.max(8, Math.round(pxMejor / sc));
     }
   }
 
