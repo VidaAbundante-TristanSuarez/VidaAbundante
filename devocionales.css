@@ -318,11 +318,15 @@ button.activo,
  max-height: calc(100dvh - 24px);
 }
 
-/* ================= AJUSTE: FASE 1/2 no forzar altura completa ================= */
-#modalDevFase1 .modal-contenido.modal-dev,
+/* ================= AJUSTE: FASE 1 auto / FASE 2 con altura ================= */
+#modalDevFase1 .modal-contenido.modal-dev{
+  height: auto;
+  max-height: calc(100dvh - 24px);
+}
+
 #modalDevFase2 .modal-contenido.modal-dev{
-  height: auto;                     /* ✅ achica el modal al contenido */
-  max-height: calc(100dvh - 24px);  /* ✅ límite real de pantalla */
+  height: calc(100dvh - 24px);      /* ✅ NECESARIO para que el preview tenga alto */
+  max-height: calc(100dvh - 24px);
 }
 
 /* ================= CERRAR (X) ================= */
@@ -430,28 +434,16 @@ body.modal-open{
   max-width: 720px;
 }
 
-/* ================= FASE 2: preview crece por ALTURA ================= */
-#modalDevFase2 .modal-contenido.modal-dev{ min-height:0; }
-
+/* ================= FASE 2: preview estable (no colapsa) ================= */
 #modalDevFase2 .dev-preview-box{
-  flex: 1 1 auto;
-  min-height:0;
   display:flex;
-  align-items:center;
   justify-content:center;
+  align-items:center;
 }
 
 #modalDevFase2 #dev2Preview{
-  height:100%;
-  width:auto;
-  max-height:100%;
-  max-width:100%;
-}
-
-#modalDevFase2 .dev-adorno-row,
-#modalDevFase2 .dev-tools,
-#modalDevFase2 .dev-row{
-  flex:0 0 auto;
+  width: min(460px, 94vw);  /* ✅ usa el tamaño normal del preview */
+  height: auto;
 }
 
 /* ================= FASE 3: imagen ocupa el área útil ================= */
