@@ -324,8 +324,9 @@ button.activo,
   max-height: calc(100dvh - 24px);
 }
 
+/* ================= FASE 2: AUTO ALTURA (como Fase 1) ================= */
 #modalDevFase2 .modal-contenido.modal-dev{
-  height: calc(100dvh - 24px);      /* ✅ NECESARIO para que el preview tenga alto */
+  height: auto;
   max-height: calc(100dvh - 24px);
 }
 
