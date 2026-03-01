@@ -366,6 +366,7 @@ function isLogoJunk(line){
     "ANA",
     "ABUNDANTS",
     "DE LA VID",
+    "DE LA VIDA",
     "DE",
     "DE LA",
     "VIDA",
