@@ -272,18 +272,27 @@ body.oscuro .versiculo .icono-nota{
 }
 
 /* ✅ ABC: para ubicar la pluma dentro del bloque */
+/* ===== ABC BLOQUES ===== */
 .abc-block{
   position: relative;
+  padding-right: 28px;   /* ✅ espacio reservado para la pluma */
 }
 
+/* ===== PLUMA ===== */
 .abc-block .icono-nota{
   position: absolute;
-  right: 10px;
-  bottom: 8px;
-  font-size: 12px;
+  right: 8px;
+  top: 8px;              /* mejor arriba que abajo */
+  font-size: 13px;
   opacity: .35;
-  color: var(--ui-azul-hover, #1c6fcb); /* ✅ tus colores */
-  pointer-events: none;
+  color: var(--ui-azul-hover, #1c6fcb);
+  cursor: pointer;       /* 👈 ahora será clickeable */
+  pointer-events: auto;  /* 👈 importante */
+  transition: opacity .2s;
+}
+
+.abc-block .icono-nota:hover{
+  opacity: .8;
 }
 
 body.oscuro .abc-block .icono-nota{
