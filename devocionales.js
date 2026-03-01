@@ -1059,23 +1059,24 @@ function buildFase2HTML(basePx){
 
   const ref = oneLine(p2.reflexion || "");
   const ora = oneLine(p2.oracion || "");
-  const fw = DEV.f2.style.bold ? 700 : 400;
+  const fw  = DEV.f2.style.bold ? 700 : 400;
 
-  const adorno = DEV.f2.adornoUrl;
+  const adorno  = DEV.f2.adornoUrl;
   const adornoW = Math.max(30, Math.min(95, Number(DEV.f2.adornoWidth || 70)));
 
-  // ✅ Pie fijo real (si hay adorno). Si no hay, no reservamos nada.
-  const FOOT_H = adorno ? 140 : 0;  // subí/bajá este número si querés más/menos “aire”
-  const FOOT_PAD_BOTTOM = adorno ? 8 : 0; // margen inferior visual del adorno
-
   return `
-    <div style="position:relative; width:100%; height:100%; overflow:hidden;">
+    <div style="
+      width:100%;
+      height:100%;
+      display:flex;
+      flex-direction:column;
+      overflow:hidden;
+    ">
 
-      <!-- ✅ TEXTO: ocupa TODO menos el pie, y se centra verticalmente -->
+      <!-- ✅ TEXTO: ocupa el espacio disponible y queda centrado -->
       <div style="
-        position:absolute;
-        left:0; right:0; top:0;
-        bottom:${FOOT_H}px;
+        flex:1 1 auto;
+        min-height:0;
         display:flex;
         align-items:center;
         justify-content:center;
@@ -1096,16 +1097,14 @@ function buildFase2HTML(basePx){
         </div>
       </div>
 
-      <!-- ✅ PIE: adorno fijo abajo (no lo empuja el texto) -->
+      <!-- ✅ ADORNO: fijo abajo, no empuja ni corta el texto -->
       ${adorno ? `
         <div style="
-          position:absolute;
-          left:0; right:0;
-          bottom:${FOOT_PAD_BOTTOM}px;
-          height:${FOOT_H}px;
+          flex:0 0 auto;
           display:flex;
           align-items:flex-end;
           justify-content:center;
+          padding: 0 0 8px;
           box-sizing:border-box;
           pointer-events:none;
         ">
@@ -2151,17 +2150,24 @@ abrirModal("modalDevFase1");
 devRenderFase(1);
 
 // ✅ esperar 1 frame para que el layout tenga tamaño real
-requestAnimationFrame(()=>{
+(async ()=>{
+  // ✅ esperar layout real
+  await new Promise(r => requestAnimationFrame(()=>requestAnimationFrame(r)));
+
+  // ✅ esperar que la fuente esté lista (clave para medir bien)
+  if (document.fonts?.ready) await document.fonts.ready;
+
+  // ✅ ahora sí medir
   const sugerido = sugerirTamanoVersiculoAuto(p1.versiculo);
 
   DEV.f1.size = sugerido;
 
   const s1 = $("dev1Tamano");
-  if (s1) s1.value = String(sugerido);
+  if (s1) s1.value = fmtSize(sugerido);
 
-  // re-render con tamaño sugerido ya aplicado
   devRenderFase(1);
-});
+})();
+     
   });
 }
 
