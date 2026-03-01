@@ -90,6 +90,33 @@ function show(id, on){
   el.classList.toggle("hidden", !on);
 }
 
+function devMostrarHome(){
+  const home = $("devHome");
+  const crear = $("devCrear");
+  if (home) home.style.display = "block";
+  if (crear) crear.style.display = "none";
+
+  // ✅ reset recorte para que no “quede activo”
+  DEV.recortando = false;
+  DEV.drawing = false;
+  DEV.start = null;
+  DEV.crop = null;
+
+  show("devCanvasBox", false);
+  show("devTextoBox", false);
+
+  // opcional: limpiar input file
+  const inp = $("devImg");
+  if (inp) inp.value = "";
+}
+
+function devMostrarCrear(){
+  const home = $("devHome");
+  const crear = $("devCrear");
+  if (home) home.style.display = "none";
+  if (crear) crear.style.display = "block";
+}
+
 /* =========================================================
    2) RECORTE (canvas)
    ========================================================= */
@@ -569,6 +596,9 @@ window.devCerrarTodo = () => {
 
   DEV.audioOk = false;
   devSetFinalButtons(false);
+
+  // ✅ volver al Home (NO recorte)
+  devMostrarHome();
 };
 
 /* =========================================================
@@ -1492,32 +1522,26 @@ window.devIrFase1Desde0 = () => {
   const t0 = ($("dev0Texto")?.value || "").trim();
   if (!t0) { alert("Pegá o generá el texto primero."); return; }
 
-  // Guardar rawText siempre
   DEV.rawText = t0;
 
-  // 1) Primero intentamos aplicar CAMPOS (manuales)
-  //    Si están vacíos, hacemos parse desde el texto.
+  // 1) Si hay campos manuales, mandan
   devReadFieldsFromUI();
-
   const hayCampos =
     (DEV.fields.fecha || DEV.fields.versiculo || DEV.fields.cita || DEV.fields.reflexion || DEV.fields.oracion);
 
   if (hayCampos) {
-    // ✅ tu corrección manual manda
     devApplyFieldsToParts();
   } else {
-    // ✅ fallback: parser OCR
     const { p1, p2, audioText } = buildBloquesFromOCR(t0);
     DEV.p1 = p1;
     DEV.p2 = p2;
     DEV.audioText = audioText;
 
-    // y de paso llenamos fields para que queden
-DEV.fields.fecha     = oneLine(p1?.fecha || "");
-DEV.fields.versiculo = oneLine(p1?.versiculo || "");
-DEV.fields.cita      = oneLine(p1?.cita || "");
-DEV.fields.reflexion = oneLine(p2?.reflexion || "");
-DEV.fields.oracion   = oneLine(p2?.oracion || "");
+    DEV.fields.fecha     = oneLine(p1?.fecha || "");
+    DEV.fields.versiculo = oneLine(p1?.versiculo || "");
+    DEV.fields.cita      = oneLine(p1?.cita || "");
+    DEV.fields.reflexion = oneLine(p2?.reflexion || "");
+    DEV.fields.oracion   = oneLine(p2?.oracion || "");
   }
 
   // reset final
@@ -1525,9 +1549,29 @@ DEV.fields.oracion   = oneLine(p2?.oracion || "");
   const imgF = $("devFinalImg");
   if (imgF) imgF.src = "";
 
+  // reset gate audio
+  DEV.audioOk = false;
+  devSetFinalButtons(false);
+
   cerrarModal("modalDevFase0");
   abrirModal("modalDevFase1");
+
+  // render inicial
   devRenderFase(1);
+
+  // ✅ AUTO-SUGERIDO FASE 1 (igual que en btnCrear)
+  (async ()=>{
+    await new Promise(r => requestAnimationFrame(()=>requestAnimationFrame(r)));
+    if (document.fonts?.ready) await document.fonts.ready;
+
+    const sugerido = sugerirTamanoVersiculoAuto(DEV?.p1?.versiculo || "");
+    DEV.f1.size = sugerido;
+
+    const s1 = $("dev1Tamano");
+    if (s1) s1.value = fmtSize(sugerido);
+
+    devRenderFase(1);
+  })();
 };
 
 // Fase 1 -> volver a Fase 0
@@ -2199,24 +2243,31 @@ async function cargarDevocionales(){
   const { db } = fb;
   const { ref, onValue } = api;
 
-  // ✅ ejemplo: traigo “Iglesia” (ajustá path según tu DB real)
-  const r = ref(db, `devocionalesIglesia/${window.__UID || ""}`);
+  // ✅ feed GLOBAL
+  const r = ref(db, `devocionalesIglesia`);
 
   onValue(r, (snap)=>{
     const val = snap.val() || {};
-    const items = Object.entries(val).map(([k,v])=>({ id:k, ...v }))
-      .sort((a,b)=>(b.fecha||0)-(a.fecha||0)); // ✅ más nuevo primero
+
+    const items = Object.entries(val)
+      .map(([k,v])=>({ id:k, ...v }))
+      .sort((a,b)=>(b.fecha||0)-(a.fecha||0));
 
     renderDevIndex(items);
     renderDevFeed(items);
-
-    // ✅ botón nuevo solo admin
-    const btnNuevo = $("btnDevNuevo");
-    if (btnNuevo) {
-      btnNuevo.style.display = isAdmin() ? "inline-flex" : "none";
-      btnNuevo.onclick = ()=> abrirModal("modalDevFase0"); // o tu flujo “nuevo”
-    }
   });
+
+  // ✅ configurar botones UNA sola vez
+  const btnNuevo = $("btnDevNuevo");
+  if (btnNuevo) {
+    btnNuevo.style.display = isAdmin() ? "inline-flex" : "none";
+    btnNuevo.onclick = ()=> devMostrarCrear();
+  }
+
+  const btnVolver = $("btnDevVolverHome");
+  if (btnVolver) {
+    btnVolver.onclick = ()=> devMostrarHome();
+  }
 }
 
 function fmtFecha(ts){
