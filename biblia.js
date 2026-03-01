@@ -57,8 +57,12 @@ let modoMarcador = false;
 let seleccionMarcador = {};         // {idVersiculo:true}
 let marcadores = {};                // cache firebase
 // ================= ✅ INDICE DE NOTAS (para mostrar pluma) =================
-let notasBibliaIndex = {}; // { "Libro_Cap_Versiculo": true }
-let notasABCIndex = {};    // { "tX_bY": true }  (bid)
+window.notasBibliaIndex = window.notasBibliaIndex || {};
+window.notasABCIndex    = window.notasABCIndex || {};
+
+// (si tu código usa las variables locales, podés dejar alias)
+let notasBibliaIndex = window.notasBibliaIndex;
+let notasABCIndex    = window.notasABCIndex;
 
 let ultimoMarcadorAplicado = null;  // resaltado al volver (opcional)
 // ✅ cuando edito desde "Mi Panel", guardo acá la info original del marcador
@@ -108,8 +112,10 @@ onValue(ref(db, "marcadores/" + uid), s => {
   marcadores = s.val() || {};
 
   // ✅ reconstruir índices de notas (Biblia / ABC)
-  notasBibliaIndex = {};
-  notasABCIndex = {};
+ window.notasBibliaIndex = {};
+window.notasABCIndex = {};
+notasBibliaIndex = window.notasBibliaIndex;
+notasABCIndex = window.notasABCIndex;
 
   Object.values(marcadores).forEach(m => {
     const tieneNota = !!(m?.nota && String(m.nota).trim());
@@ -1729,9 +1735,10 @@ function renderListaMarcadores() {
   const lista = document.getElementById("listaMarcadores");
   if (!lista) return;
 
-  const items = Object.entries(marcadores || {})
-    .map(([id, m]) => ({ ...m, id }))
-    .sort((a, b) => (b.fecha || 0) - (a.fecha || 0));
+const items = Object.entries(marcadores || {})
+  .map(([id, m]) => ({ ...m, id }))
+  .filter(m => m?.origen !== "abc")   // ✅ NO mezclar ABC en lista Biblia
+  .sort((a, b) => (b.fecha || 0) - (a.fecha || 0));
 
   // CTA Guardar (solo si está en modo marcador y hay selección)
   let header = "";
