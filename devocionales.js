@@ -388,13 +388,14 @@ function isLogoJunk(line){
 }
 
 function findOracionLineIndex(lines){
-  // acepta viñetas variadas y con/sin acento
-  return lines.findIndex(l => /^(\s*[-•◾▪●]?\s*)?oraci[oó]n\b/i.test((l || "").trim()));
+  return lines.findIndex(l =>
+    /^[^\w]*oraci[oó]n\b/i.test((l || "").trim())
+  );
 }
 
 function cleanOracionHeader(line){
   return (line || "")
-    .replace(/^(\s*[-•◾▪●]?\s*)?oraci[oó]n\s*:?\s*/i, "")
+    .replace(/^[^\w]*oraci[oó]n\s*:?\s*/i, "")
     .trim();
 }
 
