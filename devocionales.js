@@ -2235,34 +2235,21 @@ document.addEventListener("DOMContentLoaded", ()=>{
 });
 
 function isAdmin(){
-  // ✅ adaptalo a tu app:
-  // return window.__ROL === "admin";
-  return !!window.__ES_ADMIN; // si ya lo manejás así
+  // si biblia.js te setea este flag, lo usamos
+  return !!window.__ES_ADMIN;
 }
 
 async function cargarDevocionales(){
-  const fb = window.__FB;
+  const fb  = window.__FB;
   const api = window.__FB_API;
-  if (!fb || !api) return;
 
-  const { db } = fb;
-  const { ref, onValue } = api;
+  // Si todavía no está Firebase listo, al menos mostramos HOME con mensaje
+  const row  = $("devIndexRow");
+  const feed = $("devFeed");
+  if (row)  row.innerHTML  = "";
+  if (feed) feed.innerHTML = `<div style="opacity:.8; padding:10px;">Cargando devocionales…</div>`;
 
-  // ✅ feed GLOBAL
-  const r = ref(db, `devocionalesIglesia`);
-
-  onValue(r, (snap)=>{
-    const val = snap.val() || {};
-
-    const items = Object.entries(val)
-      .map(([k,v])=>({ id:k, ...v }))
-      .sort((a,b)=>(b.fecha||0)-(a.fecha||0));
-
-    renderDevIndex(items);
-    renderDevFeed(items);
-  });
-
-  // ✅ configurar botones UNA sola vez
+  // ✅ Botón “+” (solo admin)
   const btnNuevo = $("btnDevNuevo");
   if (btnNuevo) {
     btnNuevo.style.display = isAdmin() ? "inline-flex" : "none";
@@ -2270,9 +2257,49 @@ async function cargarDevocionales(){
   }
 
   const btnVolver = $("btnDevVolverHome");
-  if (btnVolver) {
-    btnVolver.onclick = ()=> devMostrarHome();
+  if (btnVolver) btnVolver.onclick = ()=> devMostrarHome();
+
+  if (!fb || !api) {
+    if (feed) feed.innerHTML = `<div style="opacity:.8; padding:10px;">
+      No encuentro Firebase listo (window.__FB / window.__FB_API).<br>
+      Asegurate que biblia.js inicializa Firebase y setea esas variables.
+    </div>`;
+    return;
   }
+
+  const { db } = fb;
+  const { ref, onValue } = api;
+
+  // ✅ FEED GLOBAL (aplanado por UID -> TS)
+  const r = ref(db, "devocionalesIglesia");
+
+  onValue(r, (snap)=>{
+    const val = snap.val() || {};
+
+    // aplanar: UID -> TS -> item
+    const items = [];
+    for (const [uid, byTs] of Object.entries(val)) {
+      if (!byTs || typeof byTs !== "object") continue;
+      for (const [ts, it] of Object.entries(byTs)) {
+        if (!it || typeof it !== "object") continue;
+        items.push({ id: `${uid}_${ts}`, uid, ts: Number(ts) || 0, ...it });
+      }
+    }
+
+    items.sort((a,b)=>(b.fecha||b.ts||0)-(a.fecha||a.ts||0));
+
+    if (!items.length) {
+      if (feed) feed.innerHTML = `<div style="opacity:.8; padding:10px;">
+        No hay devocionales todavía.<br>
+        ${isAdmin() ? "Tocá el botón + para crear el primero." : "Pedile a un admin que publique uno."}
+      </div>`;
+      if (row) row.innerHTML = "";
+      return;
+    }
+
+    renderDevIndex(items);
+    renderDevFeed(items);
+  });
 }
 
 function fmtFecha(ts){
