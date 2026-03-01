@@ -91,6 +91,16 @@ onAuthStateChanged(auth, user => {
 
   window.__UID = uid;
 
+    // ================= ✅ ADMIN FLAG GLOBAL =================
+  // Lee /admins/{uid} = true|false y lo guarda en window.__ES_ADMIN
+  onValue(ref(db, "admins/" + uid), (s) => {
+    window.__ES_ADMIN = !!s.val();
+
+    // opcional: si existe un botón de "nuevo devocional", lo muestra/oculta
+    const btn = document.getElementById("btnDevNuevo");
+    if (btn) btn.style.display = window.__ES_ADMIN ? "inline-flex" : "none";
+  });
+  
   if (!uid) {
     window.location.href = "login.html";
     return;
