@@ -556,17 +556,40 @@ function abcMarcarSeleccionUI(){
     const bidTieneNota = !!idx[bid];
     const ya = b.querySelector(".icono-nota");
 
-    if (bidTieneNota) {
-      if (!ya) {
-        const ico = document.createElement("i");
-        ico.className = "fa-solid fa-feather-pointed icono-nota";
-        ico.setAttribute("aria-hidden", "true");
-        b.appendChild(ico);
-      }
-    } else {
-      if (ya) ya.remove();
-    }
+if (bidTieneNota) {
+  if (!ya) {
+    const ico = document.createElement("i");
+    ico.className = "fa-solid fa-feather-pointed icono-nota";
+    ico.setAttribute("aria-hidden", "true");
+
+    // ✅ click abre nota
+    ico.onclick = (e) => {
+      e.stopPropagation();  // 🚫 evita que dispare selección/resaltado
+      abcAbrirNotaDesdePluma(bid);
+    };
+
+    b.appendChild(ico);
+  }
+} else {
+  if (ya) ya.remove();
+}
   });
+}
+
+function abcAbrirNotaDesdePluma(bid){
+  const data = window.marcadores || {};
+  const nota = Object.values(data).find(m =>
+    m?.origen === "abc" &&
+    m?.abcBid === bid &&
+    m?.abc?.temaIndex === abcIndex
+  );
+
+  if (!nota) return;
+
+  // reutilizamos tu función existente
+  if (typeof window.abcEditarNota === "function") {
+    window.abcEditarNota(nota.id);
+  }
 }
 
 function abcHabilitarCheckUI(){
