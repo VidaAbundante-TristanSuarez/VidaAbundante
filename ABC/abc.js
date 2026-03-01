@@ -16,6 +16,7 @@ const ABC_TEMAS = [
 let abcIndex = 0;
 let abcIniciado = false;
 let abcResaltadosCache = {}; // { bid: {color} }
+let abcBloqueadosKeep = new Set();
 
 // ✅ Esta es la que debe llamar mostrarIglesiaSub('abc')
 window.mostrarABC = async () => {
@@ -430,7 +431,7 @@ function abcEscucharResaltados(){
 
   const r = ref(db, `${abcPath("abcResaltados")}/${abcIndex}`);
 
-  const handler = (snap) => {
+  const handler = async (snap) => {
     const data = snap.val() || {};
     abcResaltadosCache = data;
 
@@ -438,7 +439,37 @@ function abcEscucharResaltados(){
     const doc = document.getElementById("abcDoc");
     if (doc) doc.querySelectorAll(".abc-block").forEach(el => abcLimpiarFondoBloque(el));
 
+    // volver a aplicar resaltados
     abcAplicarResaltadosEnPantalla(data);
+
+    // ✅ asegurar marcadores cargados (para poder bloquear)
+    if ((!window.marcadores || !Object.keys(window.marcadores).length) &&
+        typeof abcAsegurarMarcadoresCargados === "function") {
+      await abcAsegurarMarcadoresCargados();
+    }
+
+    // 🔒 reconstruir bloqueados keep desde marcadores
+    abcBloqueadosKeep.clear();
+
+    const marcadores = window.marcadores || {};
+    for (const m of Object.values(marcadores)) {
+      if (m?.origen !== "abc") continue;
+      if ((m?.abc?.temaIndex ?? null) !== abcIndex) continue;
+      if (!m?.keep) continue;
+
+      // nuevo formato (varios bloques)
+      if (Array.isArray(m?.abcBids)) {
+        m.abcBids.forEach(b => abcBloqueadosKeep.add(b));
+      }
+
+      // compatibilidad con notas viejas
+      if (m?.abcBid) {
+        abcBloqueadosKeep.add(m.abcBid);
+      }
+    }
+
+    // ✅ y de paso refrescamos plumas cuando se actualiza todo
+    if (typeof abcMarcarSeleccionUI === "function") abcMarcarSeleccionUI();
   };
 
   onValue(r, handler);
@@ -449,7 +480,6 @@ function abcEscucharResaltados(){
 }
 
 async function abcAsegurarMarcadoresCargados(){
-  // si ya hay cache, listo
   if (window.marcadores && Object.keys(window.marcadores).length) return true;
 
   try{
@@ -536,15 +566,20 @@ function abcPrepararBloques() {
   targets.forEach(el => {
     if (el.closest("table")) return;
     if (el.classList.contains("abc-block")) return;
+
     const id = `t${abcIndex}_b${n++}`;
     el.classList.add("abc-block");
     el.dataset.bid = id;
   });
 
+  // refresco visual inicial
   abcMarcarSeleccionUI();
   abcHabilitarCheckUI();
 
   doc.onclick = async (e) => {
+    // ✅ si tocó la pluma, no hagas nada acá (la pluma maneja su click)
+    if (e.target.closest(".icono-nota")) return;
+
     const b = e.target.closest(".abc-block");
     if (!b) return;
 
@@ -570,39 +605,19 @@ function abcPrepararBloques() {
     abcSeleccionado = bid;
     abcMarcarSeleccionUI();
 
-    // ✅ asegurar marcadores antes de bloquear (para que funcione al entrar a ABC)
-    if (typeof abcAsegurarMarcadoresCargados === "function") {
+    // ✅ asegurá marcadores cargados (para que el set exista bien)
+    if ((!window.marcadores || !Object.keys(window.marcadores).length) &&
+        typeof abcAsegurarMarcadoresCargados === "function") {
       await abcAsegurarMarcadoresCargados();
     }
 
-    // 🔒 bloquear tanto pintar como despintar si está asociado a una nota keep:true
-    let bloqueBloqueado = false;
-    const data = window.marcadores || {};
-
-    for (const m of Object.values(data)) {
-      if (m?.origen !== "abc") continue;
-      if ((m?.abc?.temaIndex ?? null) !== abcIndex) continue;
-      if (!m?.keep) continue;
-
-      // nuevo formato (1 nota con varios bloques)
-      if (Array.isArray(m?.abcBids) && m.abcBids.includes(bid)) {
-        bloqueBloqueado = true;
-        break;
-      }
-
-      // compatibilidad notas viejas (1 bloque)
-      if (m?.abcBid && m.abcBid === bid) {
-        bloqueBloqueado = true;
-        break;
-      }
-    }
-
-    if (bloqueBloqueado) {
+    // 🔒 BLOQUEO DEFINITIVO (pintar y despintar)
+    if (abcBloqueadosKeep && abcBloqueadosKeep.has(bid)) {
       abcToast("🔒 Este bloque está bloqueado por una nota");
       return;
     }
 
-    // toggle resaltado normal (si NO está bloqueado)
+    // toggle resaltado normal
     if (abcResaltadosCache && abcResaltadosCache[bid]) {
       await abcQuitarResaltado(bid);
       abcLimpiarFondoBloque(b);
