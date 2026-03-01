@@ -550,6 +550,21 @@ function abcMarcarSeleccionUI(){
     b.style.outlineOffset = "4px";
     b.style.borderRadius = "10px";
     b.style.outlineWidth = (sel && ultimo) ? "3px" : (sel ? "2px" : "");
+
+    // ✅ PLUMA si este bloque tiene nota guardada
+    const bidTieneNota = !!notasABCIndex[bid];
+    const ya = b.querySelector(".icono-nota");
+
+    if (bidTieneNota) {
+      if (!ya) {
+        const ico = document.createElement("i");
+        ico.className = "fa-solid fa-feather-pointed icono-nota";
+        ico.setAttribute("aria-hidden", "true");
+        b.appendChild(ico);
+      }
+    } else {
+      if (ya) ya.remove();
+    }
   });
 }
 
