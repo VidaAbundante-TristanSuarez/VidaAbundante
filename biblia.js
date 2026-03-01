@@ -90,25 +90,7 @@ onAuthStateChanged(auth, user => {
   uid = user ? user.uid : null;
 
   window.__UID = uid;
-  // ✅ mostrar UID en pantalla (temporal)
-const box = document.getElementById("uidBox") || (() => {
-  const d = document.createElement("div");
-  d.id = "uidBox";
-  d.style.position = "fixed";
-  d.style.top = "10px";
-  d.style.right = "10px";
-  d.style.zIndex = "99999";
-  d.style.background = "rgba(0,0,0,.75)";
-  d.style.color = "#fff";
-  d.style.padding = "8px 10px";
-  d.style.borderRadius = "10px";
-  d.style.fontSize = "12px";
-  d.style.fontFamily = "monospace";
-  document.body.appendChild(d);
-  return d;
-})();
-box.textContent = "UID: " + (uid || "(sin uid)");
- // ✅ mostrar UID en pantalla (temporal)
+
   if (!uid) {
     window.location.href = "login.html";
     return;
