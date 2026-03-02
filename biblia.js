@@ -91,6 +91,11 @@ onAuthStateChanged(auth, user => {
 
   window.__UID = uid;
 
+  if (!uid) {
+    window.location.href = "login.html";
+    return;
+  }
+  
     // ================= ✅ ADMIN FLAG GLOBAL =================
   // Lee /admins/{uid} = true|false y lo guarda en window.__ES_ADMIN
   onValue(ref(db, "admins/" + uid), (s) => {
@@ -100,11 +105,6 @@ onAuthStateChanged(auth, user => {
     const btn = document.getElementById("btnDevNuevo");
     if (btn) btn.style.display = window.__ES_ADMIN ? "inline-flex" : "none";
   });
-  
-  if (!uid) {
-    window.location.href = "login.html";
-    return;
-  }
 
   onValue(ref(db, "marcados/" + uid), s => {
     marcados = s.val() || {};
