@@ -2228,10 +2228,46 @@ devRenderFase(1);
 /* =========================================================
    INIT
    ========================================================= */
+async function esperarFirebaseListo(timeoutMs = 8000){
+  const t0 = Date.now();
+  while (Date.now() - t0 < timeoutMs) {
+    if (window.__FB && window.__FB_API && window.__UID) return true;
+    await new Promise(r => setTimeout(r, 80));
+  }
+  return false;
+}
+
+async function resolverAdminYArrancar(){
+  const ok = await esperarFirebaseListo();
+  if (!ok) {
+    // igual arranca UI, pero va a mostrar “No encuentro Firebase listo…”
+    cargarDevocionales();
+    return;
+  }
+
+  try{
+    const { db } = window.__FB;
+    const { ref, get } = window.__FB_API;
+
+    const uid = window.__UID;
+    const snap = await get(ref(db, "admins/" + uid));
+    window.__ES_ADMIN = !!snap.val();
+  }catch(e){
+    console.warn("No pude chequear admin:", e);
+    window.__ES_ADMIN = false;
+  }
+
+  // mostrar/ocultar botón +
+  const btnNuevo = document.getElementById("btnDevNuevo");
+  if (btnNuevo) btnNuevo.style.display = window.__ES_ADMIN ? "inline-flex" : "none";
+
+  cargarDevocionales();
+}
+
 document.addEventListener("DOMContentLoaded", ()=>{
   initDevocionales();
-  devMostrarHome();       // ✅ arranca siempre en el índice/feed
-  cargarDevocionales();
+  devMostrarHome();
+  resolverAdminYArrancar();
 });
 
 function isAdmin(){
