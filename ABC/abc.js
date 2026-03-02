@@ -310,10 +310,15 @@ cont.innerHTML = `
 
 abcPrepararBloques();
 abcAplicarFontSize();
+// ✅ 1) cargá marcadores ANTES de armar bloqueados/plumas
+await abcAsegurarMarcadoresCargados();
+// ✅ 2) armá bloqueados inmediatamente (sin esperar Firebase)
+abcRebuildBloqueadosKeep();
+// ✅ 3) ahora sí pintá plumas/estado visual
+abcMarcarSeleccionUI();
+// ✅ 4) recién después escuchá resaltados (Firebase)
 abcEscucharResaltados();
 abcGuardarProgreso();
-await abcAsegurarMarcadoresCargados();
-abcMarcarSeleccionUI();
     
   } catch (e) {
     cont.innerHTML = `
@@ -470,6 +475,8 @@ function abcEscucharResaltados(){
 
     // ✅ y de paso refrescamos plumas cuando se actualiza todo
     if (typeof abcMarcarSeleccionUI === "function") abcMarcarSeleccionUI();
+    // ✅ por si cambió keep / bloques desde otro lado
+    abcRebuildBloqueadosKeep();
   };
 
   onValue(r, handler);
@@ -553,6 +560,24 @@ function abcToast(msg, ms = 1600){
   window.__abcToastTimer = setTimeout(() => (t.style.display = "none"), ms);
 }
 
+function abcRebuildBloqueadosKeep(){
+  abcBloqueadosKeep.clear();
+  const marcadores = window.marcadores || {};
+
+  for (const m of Object.values(marcadores)) {
+    if (m?.origen !== "abc") continue;
+    if ((m?.abc?.temaIndex ?? null) !== abcIndex) continue;
+    if (!m?.keep) continue;
+
+    if (Array.isArray(m?.abcBids)) {
+      m.abcBids.forEach(b => abcBloqueadosKeep.add(b));
+    }
+    if (m?.abcBid) {
+      abcBloqueadosKeep.add(m.abcBid);
+    }
+  }
+}
+
 // -------------------------
 // ✅ BLOQUES ABC: click
 // -------------------------
@@ -577,7 +602,7 @@ function abcPrepararBloques() {
   abcHabilitarCheckUI();
 
   doc.onclick = async (e) => {
-    // ✅ si tocó la pluma, no hagas nada acá (la pluma maneja su click)
+    // si tocó la pluma, no hagas nada acá
     if (e.target.closest(".icono-nota")) return;
 
     const b = e.target.closest(".abc-block");
@@ -585,12 +610,12 @@ function abcPrepararBloques() {
 
     const bid = b.dataset.bid;
 
-    // 🔐 requiere login
+    // requiere login
     const uid = UID();
     const loginModal = document.getElementById("loginModal");
     if (!uid) { if (loginModal) loginModal.style.display = "flex"; return; }
 
-    // ✅ MODO MARCADOR (📌): selección múltiple
+    // modo marcador: selección múltiple
     if (abcModoMarcador) {
       if (abcSeleccionados.has(bid)) abcSeleccionados.delete(bid);
       else abcSeleccionados.add(bid);
@@ -601,18 +626,16 @@ function abcPrepararBloques() {
       return;
     }
 
-    // selección simple “visual”
+    // selección simple visual
     abcSeleccionado = bid;
     abcMarcarSeleccionUI();
 
-    // ✅ asegurá marcadores cargados (para que el set exista bien)
-    if ((!window.marcadores || !Object.keys(window.marcadores).length) &&
-        typeof abcAsegurarMarcadoresCargados === "function") {
-      await abcAsegurarMarcadoresCargados();
-    }
+    // ✅ asegurar marcadores cargados SIEMPRE antes de decidir bloqueo
+    await abcAsegurarMarcadoresCargados();
+    abcRebuildBloqueadosKeep();
 
-    // 🔒 BLOQUEO DEFINITIVO (pintar y despintar)
-    if (abcBloqueadosKeep && abcBloqueadosKeep.has(bid)) {
+    // 🔒 bloqueo definitivo (pintar y despintar)
+    if (abcBloqueadosKeep.has(bid)) {
       abcToast("🔒 Este bloque está bloqueado por una nota");
       return;
     }
