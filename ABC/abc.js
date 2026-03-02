@@ -382,6 +382,13 @@ async function abcCargarProgreso(){
   }
 }
 
+function abcResaltadorGlobalBloqueado(){
+  const paleta = document.getElementById("paletaResaltadores");
+  if (!paleta) return false;
+
+  return paleta.classList.contains("bloqueado");
+}
+
 // ----- RESALTADOS -----
 async function abcSetResaltado(bid, color){
   const uid = UID(); if(!uid || !bid) return;
@@ -622,6 +629,11 @@ function abcPrepararBloques() {
 
       abcSeleccionado = bid;
       abcMarcarSeleccionUI();
+      // 🔒 bloqueo por candado global (paleta Biblia)
+if (abcResaltadorGlobalBloqueado()) {
+  abcToast("🔒 El resaltador está bloqueado");
+  return;
+}
       abcHabilitarCheckUI();
       return;
     }
