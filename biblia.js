@@ -633,14 +633,20 @@ div.innerHTML = `
 const pluma = div.querySelector(".icono-nota[data-mid]");
 if (pluma) {
   pluma.style.cursor = "pointer";
-  pluma.onclick = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
+pluma.onclick = (e) => {
+  e.preventDefault();
+  e.stopPropagation();
 
-    const mid = pluma.getAttribute("data-mid");
-    if (!mid) return;
+  const mid = pluma.getAttribute("data-mid");
+  if (!mid) return;
 
-    // Reusa tu flujo existente (abre modal y precarga campos)
+  // ✅ 1) Abrir modal de marcadores SIEMPRE
+  if (typeof window.abrirMarcadores === "function") {
+    window.abrirMarcadores();
+  }
+
+  // ✅ 2) Luego cargar la edición (cuando el modal ya está visible)
+  setTimeout(() => {
     if (typeof window.editarMarcadorDesdeLista === "function") {
       window.editarMarcadorDesdeLista(mid);
       return;
@@ -649,10 +655,8 @@ if (pluma) {
       window.editarMarcadorEnPanel(mid);
       return;
     }
-
-    // fallback
-    if (typeof window.abrirMarcadores === "function") window.abrirMarcadores();
-  };
+  }, 0);
+};
 }
   
   texto.appendChild(div);
