@@ -623,7 +623,7 @@ const idMarcadorPluma = (window.notasBibliaPluma || {})[id] || null;
 div.innerHTML = `
   <span class="num">${v.Versiculo}</span>
   <span class="txt">${v.RV1960}</span>
-  ${idMarcadorPluma ? `<i class="fa-solid fa-feather-pointed icono-nota" aria-hidden="true" data-mid="${idMarcadorPluma}"></i>` : ``}
+  ${idMarcadorPluma ? `<i class="fa-solid fa-comment-dots icono-nota" aria-hidden="true" data-mid="${idMarcadorPluma}"></i>` : ``}
 `;
   
   // ================= Click =================
@@ -659,58 +659,86 @@ if (pluma) {
 }
 
 // ================= ⭐ OBTIENE VERSICULO SELECCIONADO =======================
+// ================= ⭐ OBTIENE VERSICULO SELECCIONADO (FIX MULTI CAP) =======================
 function obtenerVersiculoSeleccionado() {
-  const ids = Object.keys(seleccionImagen);
+  const ids = Object.keys(seleccionImagen || {});
   if (ids.length === 0) return "";
 
-  // ordenar por número de versículo
- ids.sort((a,b) => {
-  const [la, ca, va] = a.split("_");
-  const [lb, cb, vb] = b.split("_");
-  if (la !== lb) return la.localeCompare(lb);
-  if (Number(ca) !== Number(cb)) return Number(ca) - Number(cb);
-  return Number(va) - Number(vb);
-});
+  // 1) Parse + ordenar por Libro, Cap, Vers
+  const items = ids.map(id => {
+    const [Libro, Capitulo, Versiculo] = id.split("_");
+    return {
+      id,
+      Libro,
+      Capitulo: Number(Capitulo),
+      Versiculo: Number(Versiculo)
+    };
+  }).filter(x => x.Libro && !isNaN(x.Capitulo) && !isNaN(x.Versiculo));
 
-  let textos = [];
-  let numeros = [];
-  let libro = "";
-  let cap = "";
-
-  ids.forEach(id => {
-    const [l, c, v] = id.split("_");
-    const vers = bibliaData.find(x =>
-      x.Libro === l &&
-      x.Capitulo == c &&
-      x.Versiculo == v
-    );
-
-    if (vers) {
-      libro = l;
-      cap = c;
-      textos.push(vers.RV1960);
-      numeros.push(Number(v));
-    }
+  items.sort((a, b) => {
+    if (a.Libro !== b.Libro) return a.Libro.localeCompare(b.Libro);
+    if (a.Capitulo !== b.Capitulo) return a.Capitulo - b.Capitulo;
+    return a.Versiculo - b.Versiculo;
   });
 
-  // convertir a rangos
-  const partes = [];
-  let inicio = numeros[0];
-  let anterior = numeros[0];
-
-  for (let i = 1; i < numeros.length; i++) {
-    if (numeros[i] === anterior + 1) {
-      anterior = numeros[i];
-    } else {
-      partes.push(inicio === anterior ? `${inicio}` : `${inicio}-${anterior}`);
-      inicio = numeros[i];
-      anterior = numeros[i];
-    }
+  // 2) Armar texto (en el orden ya ordenado)
+  const textos = [];
+  for (const it of items) {
+    const vers = bibliaData.find(x =>
+      x.Libro === it.Libro &&
+      Number(x.Capitulo) === it.Capitulo &&
+      Number(x.Versiculo) === it.Versiculo
+    );
+    if (vers?.RV1960) textos.push(vers.RV1960);
   }
-  partes.push(inicio === anterior ? `${inicio}` : `${inicio}-${anterior}`);
 
-  const referencia = `${libro} ${cap}:${partes.join(",")}`;
-  return textos.join(" ") + "\n\n▪ " + referencia;
+  // 3) Agrupar por Libro + Capítulo para referencia
+  const porLibro = {}; // {Libro: {Capitulo: [versiculos]}}
+  for (const it of items) {
+    porLibro[it.Libro] = porLibro[it.Libro] || {};
+    porLibro[it.Libro][it.Capitulo] = porLibro[it.Libro][it.Capitulo] || [];
+    porLibro[it.Libro][it.Capitulo].push(it.Versiculo);
+  }
+
+  // helper: rangos "5-7,9,11-13"
+  const rangos = (nums) => {
+    const a = Array.from(new Set(nums.map(Number).filter(n => !isNaN(n)))).sort((x,y)=>x-y);
+    if (!a.length) return "";
+    const partes = [];
+    let ini = a[0], ant = a[0];
+    for (let i = 1; i < a.length; i++) {
+      if (a[i] === ant + 1) ant = a[i];
+      else {
+        partes.push(ini === ant ? `${ini}` : `${ini}-${ant}`);
+        ini = ant = a[i];
+      }
+    }
+    partes.push(ini === ant ? `${ini}` : `${ini}-${ant}`);
+    return partes.join(",");
+  };
+
+  // 4) Construir referencia bonita
+  const librosOrdenados = Object.keys(porLibro).sort((a,b)=>a.localeCompare(b));
+
+  let referencia = "";
+  if (librosOrdenados.length === 1) {
+    // ✅ MISMO LIBRO: "Génesis 1:5-7 y 2:1-3"
+    const L = librosOrdenados[0];
+    const caps = Object.keys(porLibro[L]).map(Number).sort((a,b)=>a-b);
+    const partes = caps.map(c => `${c}:${rangos(porLibro[L][c])}`);
+    referencia = `${L} ${partes.join(" y ")}`;
+  } else {
+    // ✅ VARIOS LIBROS: "Génesis 1:5-7; Éxodo 2:1-3"
+    const partesLibros = librosOrdenados.map(L => {
+      const caps = Object.keys(porLibro[L]).map(Number).sort((a,b)=>a-b);
+      const partes = caps.map(c => `${c}:${rangos(porLibro[L][c])}`);
+      return `${L} ${partes.join(" , ")}`;
+    });
+    referencia = partesLibros.join("; ");
+  }
+
+  // 5) Salida final
+  return (textos.join(" ") + "\n\n▪ " + referencia).trim();
 }
 
 // ================= ⭐ FORMATEA: JUAN 1:5-10  =======================
