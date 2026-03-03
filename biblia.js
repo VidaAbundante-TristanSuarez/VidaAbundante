@@ -122,18 +122,23 @@ onValue(ref(db, "marcadores/" + uid), s => {
   marcadores = s.val() || {};
 
   // ✅ reconstruir índices de notas (Biblia / ABC)
- window.notasBibliaIndex = {};
-window.notasABCIndex = {};
-notasBibliaIndex = window.notasBibliaIndex;
-notasABCIndex = window.notasABCIndex;
+  window.notasBibliaIndex = {};
+  window.notasBibliaPluma = {}; // 👈 NUEVO: solo el último versículo de cada nota
+  window.notasABCIndex = {};
 
-  Object.values(marcadores).forEach(m => {
+  notasBibliaIndex = window.notasBibliaIndex;
+  notasBibliaPluma = window.notasBibliaPluma;
+  notasABCIndex = window.notasABCIndex;
+
+  Object.entries(marcadores || {}).forEach(([idMarcador, m]) => {
     const tieneNota = !!(m?.nota && String(m.nota).trim());
     if (!tieneNota) return;
 
-    // --- ABC ---
-    if (m?.origen === "abc" && m?.abcBid) {
-      notasABCIndex[m.abcBid] = true;
+    // --- ABC (lo dejamos como estaba en tu sistema actual) ---
+    if (m?.origen === "abc") {
+      // si existe abcBidLast, mejor; si no, cae a abcBid
+      const bid = m?.abcBidLast || m?.abcBid || null;
+      if (bid) notasABCIndex[bid] = true;
       return;
     }
 
@@ -141,13 +146,20 @@ notasABCIndex = window.notasABCIndex;
     const libro = m?.libro;
     const cap = Number(m?.capitulo);
     const vers = Array.isArray(m?.versiculos) ? m.versiculos : [];
-    if (libro && cap && vers.length) {
-      vers.forEach(vn => {
-        const n = Number(vn);
-        if (!isNaN(n)) {
-          notasBibliaIndex[`${libro}_${cap}_${n}`] = true;
-        }
-      });
+
+    if (!libro || !cap || !vers.length) return;
+
+    // marcamos “tiene nota” para todos (opcional, por si lo usás en otra parte)
+    const nums = vers.map(vn => Number(vn)).filter(n => !isNaN(n));
+    nums.forEach(n => {
+      notasBibliaIndex[`${libro}_${cap}_${n}`] = true;
+    });
+
+    // ✅ SOLO UNA PLUMA: en el último versículo (máximo número)
+    const last = Math.max(...nums);
+    if (isFinite(last)) {
+      const idVersiculo = `${libro}_${cap}_${last}`;
+      notasBibliaPluma[idVersiculo] = idMarcador; // guardo el id real del marcador para editar
     }
   });
 
@@ -605,17 +617,44 @@ if (modoImagen && !imagen) {
 }
 
   // ================= Contenido =================
-const tieneNota = !!notasBibliaIndex[id];
+// ✅ Pluma SOLO si este versículo es el ÚLTIMO de alguna nota
+const idMarcadorPluma = (window.notasBibliaPluma || {})[id] || null;
 
 div.innerHTML = `
   <span class="num">${v.Versiculo}</span>
   <span class="txt">${v.RV1960}</span>
-  ${tieneNota ? `<i class="fa-solid fa-feather-pointed icono-nota" aria-hidden="true"></i>` : ``}
+  ${idMarcadorPluma ? `<i class="fa-solid fa-feather-pointed icono-nota" aria-hidden="true" data-mid="${idMarcadorPluma}"></i>` : ``}
 `;
   
   // ================= Click =================
   div.onclick = () => toggleVersiculo(id, v.Versiculo);
 
+  // ✅ click en pluma => abrir edición del marcador (sin togglear versículo)
+const pluma = div.querySelector(".icono-nota[data-mid]");
+if (pluma) {
+  pluma.style.cursor = "pointer";
+  pluma.onclick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const mid = pluma.getAttribute("data-mid");
+    if (!mid) return;
+
+    // Reusa tu flujo existente (abre modal y precarga campos)
+    if (typeof window.editarMarcadorDesdeLista === "function") {
+      window.editarMarcadorDesdeLista(mid);
+      return;
+    }
+    if (typeof window.editarMarcadorEnPanel === "function") {
+      window.editarMarcadorEnPanel(mid);
+      return;
+    }
+
+    // fallback
+    if (typeof window.abrirMarcadores === "function") window.abrirMarcadores();
+  };
+}
+  
   texto.appendChild(div);
 }
 
