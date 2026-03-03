@@ -721,29 +721,30 @@ function abcMarcarSeleccionUI(){
 
     const ya = b.querySelector(".icono-nota");
 
-    if (notaIdParaEsteBloque) {
-      if (!ya) {
-        const ico = document.createElement("i");
-        ico.className = "fa-solid fa-comment-dots icono-nota";
-        ico.setAttribute("aria-hidden", "true");
+if (notaIdParaEsteBloque) {
+  if (!ya) {
+    const ico = document.createElement("i");
+    ico.className = "fa-solid fa-comment-dots icono-nota";
+    ico.setAttribute("aria-hidden", "true");
 
-        ico.onclick = (e) => {
-          e.stopPropagation();
-          // ✅ abrimos edición de ESA nota
-          if (typeof window.abcEditarNota === "function") window.abcEditarNota(notaIdParaEsteBloque);
-        };
+    ico.onclick = (e) => {
+      e.stopPropagation();
+      if (typeof window.abcEditarNota === "function") window.abcEditarNota(notaIdParaEsteBloque);
+    };
 
-        b.appendChild(ico);
-      } else {
-        // si ya existe, actualizamos por si cambió el id
-        ya.onclick = (e) => {
-          e.stopPropagation();
-          if (typeof window.abcEditarNota === "function") window.abcEditarNota(notaIdParaEsteBloque);
-        };
-      }
-    } else {
-      if (ya) ya.remove();
-    }
+    b.appendChild(ico);
+  } else {
+    // ✅ CLAVE: si ya existía (quizás era pluma), lo actualizamos al icono nuevo
+    ya.className = "fa-solid fa-comment-dots icono-nota";
+
+    ya.onclick = (e) => {
+      e.stopPropagation();
+      if (typeof window.abcEditarNota === "function") window.abcEditarNota(notaIdParaEsteBloque);
+    };
+  }
+} else {
+  if (ya) ya.remove();
+}
   });
 }
 
