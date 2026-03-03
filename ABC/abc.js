@@ -724,7 +724,7 @@ function abcMarcarSeleccionUI(){
     if (notaIdParaEsteBloque) {
       if (!ya) {
         const ico = document.createElement("i");
-        ico.className = "fa-solid fa-feather-pointed icono-nota";
+        ico.className = "fa-solid fa-comment-dots icono-nota";
         ico.setAttribute("aria-hidden", "true");
 
         ico.onclick = (e) => {
