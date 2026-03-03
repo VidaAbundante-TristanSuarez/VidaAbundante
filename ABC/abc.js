@@ -383,10 +383,9 @@ async function abcCargarProgreso(){
 }
 
 function abcResaltadorGlobalBloqueado(){
-  const paleta = document.getElementById("paletaResaltadores");
-  if (!paleta) return false;
-
-  return paleta.classList.contains("bloqueado");
+  // ✅ ABC usa EXACTAMENTE el mismo lock real que Biblia
+  // (no depende de clases CSS ni del DOM de la paleta)
+  return !!window.resaltadorBloqueado;
 }
 
 // ----- RESALTADOS -----
@@ -629,11 +628,7 @@ function abcPrepararBloques() {
 
       abcSeleccionado = bid;
       abcMarcarSeleccionUI();
-      // 🔒 bloqueo por candado global (paleta Biblia)
-if (abcResaltadorGlobalBloqueado()) {
-  abcToast("🔒 El resaltador está bloqueado");
-  return;
-}
+    
       abcHabilitarCheckUI();
       return;
     }
@@ -649,6 +644,12 @@ if (abcResaltadorGlobalBloqueado()) {
     // 🔒 bloqueo definitivo (pintar y despintar)
     if (abcBloqueadosKeep.has(bid)) {
       abcToast("🔒 Este bloque está bloqueado por una nota");
+      return;
+    }
+
+    // 🔒 bloqueo global real (mismo que Biblia)
+    if (abcResaltadorGlobalBloqueado()) {
+      abcToast("🔒 El resaltador está bloqueado");
       return;
     }
 
