@@ -56,6 +56,7 @@ window.resaltadorBloqueado = resaltadorBloqueado;
 let modoMarcador = false;
 let seleccionMarcador = {};         // {idVersiculo:true}
 let marcadores = {};                // cache firebase
+
 // ================= ✅ INDICE DE NOTAS (para mostrar pluma) =================
 window.notasBibliaIndex = window.notasBibliaIndex || {};
 window.notasABCIndex    = window.notasABCIndex || {};
@@ -83,7 +84,6 @@ let textStyle = {
   italic: false,
   underline: false
 };
-
 
 // ================= AUTH =====================================
 onAuthStateChanged(auth, user => {
@@ -174,6 +174,81 @@ const capSel = document.getElementById("capitulo");
 const texto = document.getElementById("texto");
 const titulo = document.getElementById("titulo");
 const loginModal = document.getElementById("loginModal");
+
+// ================= CONTEXTO: AISLAR MODOS BIBLIA vs ABC =================
+// Guarda el estado de Biblia y lo apaga visualmente al entrar en ABC.
+// Luego lo restaura al volver a Biblia.
+
+window.__bibliaUIBackup = window.__bibliaUIBackup || null;
+
+function bibliaBackupUI() {
+  // guardo flags + selecciones (lo importante)
+  window.__bibliaUIBackup = {
+    modoImagen: !!modoImagen,
+    modoMarcador: !!modoMarcador,
+    seleccionImagen: { ...(seleccionImagen || {}) },
+    seleccionMarcador: { ...(seleccionMarcador || {}) },
+    userSetFontSize: !!userSetFontSize
+  };
+}
+
+function bibliaApagarModosParaCambiarSeccion() {
+  // cerrar modal de imagen si estaba abierto (pero no “romper” nada)
+  try { cerrarModalPersonalizar?.(); } catch(e){}
+
+  // apagar flags (para que NO afecten UI de otras secciones)
+  modoImagen = false;
+  modoMarcador = false;
+
+  // limpiar clases visuales
+  document.body.classList.remove("modo-imagen", "modo-marcador");
+
+  // ocultar banners si existen
+  const bImg = document.getElementById("bannerModoImagen");
+  if (bImg) bImg.style.display = "none";
+
+  const bMar = document.getElementById("bannerModoMarcador");
+  if (bMar) bMar.style.display = "none";
+
+  // sacar “activo” del botón 📌 por si quedó pegado
+  const btnPin = document.getElementById("btnModoMarcadorBarra");
+  if (btnPin) btnPin.classList.remove("activo");
+
+  // dejar UI consistente
+  try { aplicarUIAccionesPorModo?.(); } catch(e){}
+  try { refrescarBotonGuardarMarcador?.(); } catch(e){}
+}
+
+function bibliaRestaurarUIAlVolver() {
+  const bk = window.__bibliaUIBackup;
+  if (!bk) return;
+
+  modoImagen = !!bk.modoImagen;
+  modoMarcador = !!bk.modoMarcador;
+  seleccionImagen = { ...(bk.seleccionImagen || {}) };
+  seleccionMarcador = { ...(bk.seleccionMarcador || {}) };
+  userSetFontSize = !!bk.userSetFontSize;
+
+  // restaurar clases visuales
+  document.body.classList.toggle("modo-imagen", modoImagen);
+  document.body.classList.toggle("modo-marcador", modoMarcador);
+
+  // banners
+  const bImg = document.getElementById("bannerModoImagen");
+  if (bImg) bImg.style.display = modoImagen ? "block" : "none";
+
+  const bMar = document.getElementById("bannerModoMarcador");
+  if (bMar) bMar.style.display = modoMarcador ? "block" : "none";
+
+  // botón 📌 activo o no
+  const btnPin = document.getElementById("btnModoMarcadorBarra");
+  if (btnPin) btnPin.classList.toggle("activo", modoMarcador);
+
+  // UI normal
+  try { aplicarUIAccionesPorModo?.(); } catch(e){}
+  try { refrescarBotonGuardarMarcador?.(); } catch(e){}
+  try { mostrarTexto?.(); } catch(e){}
+}
 
 // ================= ⭐ CARGA BIBLIA ==============================
 fetch("VidaAbundante - RV1960.json")
@@ -1433,33 +1508,29 @@ window.irA = (seccion) => {
   // 3) defaults internos
   if (seccion === "iglesia") {
     window.mostrarIglesiaSub?.("devocionales");
+    return;
   }
+
   if (seccion === "panel") {
     window.mostrarSeccion?.("imagenes");
+    return;
   }
 
   // 4) biblia
   if (seccion === "biblia") {
-    // ✅ barra visible en Biblia
-   if (seccion === "biblia") {
-  aplicarEstadoBarra("biblia");
+    // ✅ al volver a Biblia: restaurar estado previo (modo imagen / modo marcador)
+    // (si no existe, no pasa nada)
+    try { bibliaRestaurarUIAlVolver?.(); } catch(e){}
 
-  // ✅ Biblia: refrescar su UI normal
-  resaltadorBloqueado = true;
-  actualizarUICandadoResaltador();
-  mostrarTexto();
+    // ✅ barra visible según estado guardado de Biblia
+    aplicarEstadoBarra?.("biblia");
 
-  if (typeof aplicarUIAccionesPorModo === "function") {
-    aplicarUIAccionesPorModo();
-  }
-}
-
-    // ✅ Biblia: refrescar su UI normal
+    // ✅ Biblia: refrescar UI normal
     resaltadorBloqueado = true;
-    actualizarUICandadoResaltador();
-    mostrarTexto();
+    actualizarUICandadoResaltador?.();
+    mostrarTexto?.();
 
-    // ✅ MUY IMPORTANTE: si Biblia tiene modo marcador activo, que su UI lo aplique bien
+    // ✅ aplica botones según modo actual (normal / marcador / imagen)
     if (typeof aplicarUIAccionesPorModo === "function") {
       aplicarUIAccionesPorModo();
     }
@@ -2820,7 +2891,11 @@ window.mostrarIglesiaSub = (sub) => {
   }
 
   // ✅ cuando entro a ABC: inicializo ABC + engancho barra SIEMPRE
+  // ✅ cuando entro a ABC: guardo estado de Biblia y apago modos para que NO contaminen ABC
   if (sub === "abc") {
+    try { bibliaBackupUI(); } catch(e){}
+    try { bibliaApagarModosParaCambiarSeccion(); } catch(e){}
+
     window.mostrarABC?.();
     window.__abcOnEnter?.();
   }
