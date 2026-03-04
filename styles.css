@@ -317,6 +317,40 @@ body.oscuro .versiculo .icono-nota{
 
 body.oscuro .versiculo { color:#fff; }
 
+/* ================= ICONO NOTA BIBLIA ================= */
+
+.versiculo{
+  position: relative;
+  padding-right: 28px;   /* espacio reservado para el icono */
+}
+
+/* icono comentario */
+.versiculo .icono-nota{
+  position: absolute;
+  right: 8px;
+  top: 6px;
+
+  font-size: 13px;
+  opacity: .35;
+
+  color: var(--ui-azul-hover, #1c6fcb);
+
+  cursor: pointer;
+  pointer-events: auto;
+
+  transition: opacity .2s;
+}
+
+/* hover (PC) */
+.versiculo .icono-nota:hover{
+  opacity: .85;
+}
+
+/* modo oscuro */
+body.oscuro .versiculo .icono-nota{
+  opacity: .45;
+}
+
 /* Versículo seleccionado para imagen */
 .versiculo.imagen {
   background: #94cef4 !important;
