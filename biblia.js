@@ -648,12 +648,6 @@ function pintarVersiculo(v) {
   texto.appendChild(div);
 }
 
-  // ================= Click =================
-  div.onclick = () => toggleVersiculo(id, v.Versiculo);
-
-  texto.appendChild(div);
-}
-
 // ================= ⭐ OBTIENE VERSICULO SELECCIONADO (FIX MULTI CAP) =======================
 function obtenerVersiculoSeleccionado() {
   const ids = Object.keys(seleccionImagen || {});
