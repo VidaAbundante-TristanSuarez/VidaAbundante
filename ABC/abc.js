@@ -319,7 +319,7 @@ abcMarcarSeleccionUI();
 // ✅ 4) recién después escuchá resaltados (Firebase)
 abcEscucharResaltados();
 abcGuardarProgreso();
-
+    
   } catch (e) {
     cont.innerHTML = `
       <div style="padding:12px; border-radius:12px; background:rgba(217,83,79,.12); color:inherit;">
@@ -628,7 +628,7 @@ function abcPrepararBloques() {
 
       abcSeleccionado = bid;
       abcMarcarSeleccionUI();
-
+    
       abcHabilitarCheckUI();
       return;
     }
@@ -721,29 +721,6 @@ function abcMarcarSeleccionUI(){
 
     const ya = b.querySelector(".icono-nota");
 
-    if (notaIdParaEsteBloque) {
-      if (!ya) {
-        const ico = document.createElement("i");
-        ico.className = "fa-solid fa-comment-dots icono-nota";
-        ico.setAttribute("aria-hidden", "true");
-
-        ico.onclick = (e) => {
-          e.stopPropagation();
-          // ✅ abrimos edición de ESA nota
-          if (typeof window.abcEditarNota === "function") window.abcEditarNota(notaIdParaEsteBloque);
-        };
-
-        b.appendChild(ico);
-      } else {
-        // si ya existe, actualizamos por si cambió el id
-        ya.onclick = (e) => {
-          e.stopPropagation();
-          if (typeof window.abcEditarNota === "function") window.abcEditarNota(notaIdParaEsteBloque);
-        };
-      }
-    } else {
-      if (ya) ya.remove();
-    }
 if (notaIdParaEsteBloque) {
   if (!ya) {
     const ico = document.createElement("i");
