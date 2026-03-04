@@ -1283,6 +1283,17 @@ function abcUIEnABC(){
 // ✅ Hooks ABC
 // -------------------------
 window.__abcOnEnter = () => {
+  // ✅ ABC SIEMPRE entra con resaltador bloqueado (independiente de Biblia)
+  resaltadorBloqueado = true;
+  window.resaltadorBloqueado = true;
+  try { actualizarUICandadoResaltador?.(); } catch(e){}
+
+  // (opcional) cerrar paleta si estaba abierta
+  try {
+    const pal = document.getElementById("paletaResaltadores");
+    if (pal) pal.style.display = "none";
+  } catch(e){}
+
   abcPortalBarraOn();
   abcAplicarFontSize();
   abcUIEnABC();
