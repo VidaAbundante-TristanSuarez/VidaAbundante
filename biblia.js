@@ -616,57 +616,39 @@ if (modoImagen && !imagen) {
   div.style.opacity = "1";
 }
 
-  // ================= Contenido =================
-// ✅ Pluma SOLO si este versículo es el ÚLTIMO de alguna nota
-const idMarcadorPluma = (window.notasBibliaPluma || {})[id] || null;
-
-div.innerHTML = `
-  <span class="num">${v.Versiculo}</span>
-  <span class="txt">${v.RV1960}</span>
-  ${idMarcadorPluma ? `<i class="fa-solid fa-comment-dots icono-nota" aria-hidden="true" data-mid="${idMarcadorPluma}"></i>` : ``}
-`;
-  
-  // ================= Click (versículo) =================
+  // ================= Click =================
   div.onclick = () => toggleVersiculo(id, v.Versiculo);
 
-  // ✅ CLICK EN PLUMA (ACÁ VA) ===========================
-  const pluma = div.querySelector(".icono-nota[data-mid]");
-  if (pluma) {
-    pluma.style.cursor = "pointer";
+  // ✅ click en pluma => abrir edición del marcador (sin togglear versículo)
+const pluma = div.querySelector(".icono-nota[data-mid]");
+if (pluma) {
+  pluma.style.cursor = "pointer";
+pluma.onclick = (e) => {
+  e.preventDefault();
+  e.stopPropagation();
 
-    pluma.onclick = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
+  const mid = pluma.getAttribute("data-mid");
+  if (!mid) return;
 
-      const mid = pluma.getAttribute("data-mid");
-      if (!mid) return;
-
-      // ✅ abrir modal (visible)
-      if (typeof window.abrirMarcadores === "function") {
-        window.abrirMarcadores();
-      }
-
-      // ✅ editar directo (recomendado)
-      if (typeof window.editarMarcadorDirecto === "function") {
-        setTimeout(() => window.editarMarcadorDirecto(mid), 0);
-        return;
-      }
-
-      // fallback a tus funciones existentes
-      setTimeout(() => {
-        if (typeof window.editarMarcadorDesdeLista === "function") {
-          window.editarMarcadorDesdeLista(mid);
-          return;
-        }
-        if (typeof window.editarMarcadorEnPanel === "function") {
-          window.editarMarcadorEnPanel(mid);
-          return;
-        }
-      }, 0);
-    };
+  // ✅ 1) Abrir modal de marcadores SIEMPRE
+  if (typeof window.abrirMarcadores === "function") {
+    window.abrirMarcadores();
   }
-  // ✅ FIN PLUMA ========================================
 
+  // ✅ 2) Luego cargar la edición (cuando el modal ya está visible)
+  setTimeout(() => {
+    if (typeof window.editarMarcadorDesdeLista === "function") {
+      window.editarMarcadorDesdeLista(mid);
+      return;
+    }
+    if (typeof window.editarMarcadorEnPanel === "function") {
+      window.editarMarcadorEnPanel(mid);
+      return;
+    }
+  }, 0);
+};
+}
+  
   texto.appendChild(div);
 }
 
@@ -3107,3 +3089,37 @@ document.addEventListener("DOMContentLoaded", () => {
   // cargar feed (para que no se vea vacío)
   initDevocionalesIglesiaFeed();
 });
+
+
+// ✅ Click global en cualquier pluma (Biblia/ABC/etc)
+document.addEventListener("click", (e) => {
+  const pluma = e.target.closest(".icono-nota[data-mid]");
+  if (!pluma) return;
+
+  e.preventDefault();
+  e.stopPropagation();
+
+  const mid = pluma.getAttribute("data-mid");
+  if (!mid) return;
+
+  // abrir modal
+  if (typeof window.abrirMarcadores === "function") {
+    window.abrirMarcadores();
+  }
+
+  // editar directo
+  setTimeout(() => {
+    if (typeof window.editarMarcadorDirecto === "function") {
+      window.editarMarcadorDirecto(mid);
+      return;
+    }
+    if (typeof window.editarMarcadorDesdeLista === "function") {
+      window.editarMarcadorDesdeLista(mid);
+      return;
+    }
+    if (typeof window.editarMarcadorEnPanel === "function") {
+      window.editarMarcadorEnPanel(mid);
+      return;
+    }
+  }, 0);
+}, true);
