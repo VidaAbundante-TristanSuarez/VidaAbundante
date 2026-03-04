@@ -48,9 +48,29 @@ let marcados = {};
 let size = 18;
 let fuenteActual = "Arial";
 let colorActual = "#fff3b0"; // 💛 amarillo por default
-let resaltadorBloqueado = true; // 🔒 nuevo estado
 window.colorActual = colorActual;
-window.resaltadorBloqueado = resaltadorBloqueado;
+
+// ✅ Locks separados por sección
+window.__resaltadorLock = window.__resaltadorLock || {
+  biblia: true,  // Biblia arranca bloqueado
+  abc: true      // ABC arranca bloqueado
+};
+
+function ctxActualResaltador(){
+  // ABC vive dentro de Iglesia > abc
+  const secIglesia = document.getElementById("seccion-iglesia");
+  const subABC = document.getElementById("iglesia-abc");
+  const enABC = !!(secIglesia && secIglesia.style.display !== "none" &&
+                   subABC && subABC.style.display !== "none");
+  return enABC ? "abc" : "biblia";
+}
+
+function getLock(ctx){
+  return !!window.__resaltadorLock?.[ctx];
+}
+function setLock(ctx, val){
+  window.__resaltadorLock[ctx] = !!val;
+}
 
 // ================= MARCADORES (NUEVO LIMPIO) =================
 let modoMarcador = false;
@@ -403,24 +423,23 @@ function initResaltadorCompacto() {
       colorActual = btn.dataset.color;
       btnActivo.style.background = colorActual;
       btnActivo.textContent = btn.textContent;
-
-      resaltadorBloqueado = false;
+  
       window.colorActual = colorActual;
-      window.resaltadorBloqueado = resaltadorBloqueado;
       paleta.style.display = "none";
+      setLock("biblia", false);
+      actualizarUICandadoResaltador();
     };
   });
 
   // 🔒 BLOQUEAR / DESBLOQUEAR
-  btnBloquear.onclick = e => {
+btnBloquear.onclick = e => {
   e.preventDefault();
   e.stopPropagation();
 
-  resaltadorBloqueado = !resaltadorBloqueado;
-  window.resaltadorBloqueado = resaltadorBloqueado;
+  const ctx = ctxActualResaltador();          // "biblia" o "abc"
+  setLock(ctx, !getLock(ctx));                // toggle lock de ese contexto
 
-  // ✅ misma UI para manual y automático
-  actualizarUICandadoResaltador();
+  actualizarUICandadoResaltador();            // refresca icono
 };
 
   // ❌ cerrar clic fuera
@@ -436,32 +455,38 @@ function actualizarUICandadoResaltador() {
   const btnBloquear = document.getElementById("btnBloquearResaltador");
   if (!paleta || !btnBloquear) return;
 
-  // icono grande
-  btnBloquear.textContent = resaltadorBloqueado ? "🔒" : "🔓";
+  // ✅ contexto actual (abc o biblia)
+  const ctx = (typeof ctxActualResaltador === "function")
+    ? ctxActualResaltador()
+    : "biblia";
 
-  // limpiar candaditos pequeños anteriores
+  // ✅ icono grande según contexto
+  btnBloquear.textContent = (typeof getLock === "function" && getLock(ctx)) ? "🔒" : "🔓";
+
+  // ✅ limpiar candaditos pequeños anteriores
   paleta.querySelectorAll("button[data-color] span.icono-candado").forEach(c => c.remove());
 
-  // si está bloqueado, poner el candadito pequeño en el color actual
-  if (resaltadorBloqueado) {
-    const botonColor = Array.from(paleta.querySelectorAll("button[data-color]"))
-      .find(b => b.dataset.color === colorActual);
+  // ✅ candadito chico SOLO aplica a Biblia (porque la paleta es de Biblia)
+  if (!(typeof getLock === "function" && getLock("biblia"))) return;
 
-    if (botonColor) {
-      const span = document.createElement("span");
-      span.textContent = "🔒";
-      span.className = "icono-candado";
-      span.style.position = "absolute";
-      span.style.top = "-4px";
-      span.style.right = "-4px";
-      span.style.fontSize = "10px";
-      span.style.background = "#fff";
-      span.style.borderRadius = "50%";
-      span.style.padding = "1px";
-      botonColor.style.position = "relative";
-      botonColor.appendChild(span);
-    }
-  }
+  const botonColor = Array.from(paleta.querySelectorAll("button[data-color]"))
+    .find(b => b.dataset.color === (window.colorActual || colorActual));
+
+  if (!botonColor) return;
+
+  const span = document.createElement("span");
+  span.textContent = "🔒";
+  span.className = "icono-candado";
+  span.style.position = "absolute";
+  span.style.top = "-4px";
+  span.style.right = "-4px";
+  span.style.fontSize = "10px";
+  span.style.background = "#fff";
+  span.style.borderRadius = "50%";
+  span.style.padding = "1px";
+
+  botonColor.style.position = "relative";
+  botonColor.appendChild(span);
 }
 
 // ================= ⭐ MOSTRAR TEXTO =======================
@@ -531,8 +556,8 @@ function toggleVersiculo(id, num) {
   // 🔐 requiere login
   if (!uid) return;
 
-  // 🔒 resaltador bloqueado
-  if (resaltadorBloqueado) return;
+// 🔒 resaltador bloqueado (por contexto)
+if (getLock(ctxActualResaltador())) return;
 
   // 🎨 marcar / desmarcar versículo
   const r = ref(db, "marcados/" + uid + "/" + id);
@@ -545,7 +570,8 @@ function toggleVersiculo(id, num) {
 }
 
 // ================= ⭐ PINTAR VERSICULO =======================
-function pintarVersiculo(v) {
+function pintarVersiculo(v, lastSelId = null) {
+
   const id = `${v.Libro}_${v.Capitulo}_${v.Versiculo}`;
   const marcado = marcados[id];
   const imagen = modoImagen && seleccionImagen[id];
@@ -818,8 +844,6 @@ function initPersonalizarListeners() {
     el.addEventListener("change", handler);
   });
 }
-
-document.addEventListener("DOMContentLoaded", initPersonalizarListeners);
 
 // ================= 🎀 LISTA VISUAL DE FUENTES =================
 const fuentesGoogle = [
@@ -1558,8 +1582,11 @@ window.irA = (seccion) => {
 
   // ✅ si me fui de IGLESIA (donde vive ABC) a otra sección, apago ABC
   if (seccion !== "iglesia") {
-    window.__abcOnExit?.();
-  }
+  try { window.__abcOnExit?.(); } catch(e){}
+  try { bibliaRestaurarUIAlVolver?.(); } catch(e){}
+  try { aplicarEstadoBarra?.("biblia"); } catch(e){}
+  try { actualizarUICandadoResaltador?.(); } catch(e){}
+}
 
   // 3) defaults internos
   if (seccion === "iglesia") {
@@ -1582,7 +1609,6 @@ window.irA = (seccion) => {
     aplicarEstadoBarra?.("biblia");
 
     // ✅ Biblia: refrescar UI normal
-    resaltadorBloqueado = true;
     actualizarUICandadoResaltador?.();
     mostrarTexto?.();
 
@@ -2869,6 +2895,7 @@ function aplicarUIAccionesPorModo() {
 }
 
 window.aplicarUIAccionesPorModo = aplicarUIAccionesPorModo;
+  
 // ================= Salir de modal limpio ================
 function salirModoMarcadorLimpio() {
   modoMarcador = false;
@@ -2888,6 +2915,57 @@ function salirModoMarcadorLimpio() {
 
 }
 
+// ================= 🔺 IGLESIA: SUB-SECCIONES =================
+// ✅ Definir UNA sola vez, a nivel global (NO dentro de DOMContentLoaded)
+window.mostrarIglesiaSub = (sub) => {
+  // ✅ detecto si estaba en ABC antes
+  const abcAntes = document.getElementById("iglesia-abc");
+  const estabaEnABC = !!(abcAntes && abcAntes.style.display !== "none");
+
+  // ✅ si salgo de ABC a otro sub: apago ABC + restauro Biblia (para que no quede rota)
+  if (estabaEnABC && sub !== "abc") {
+    try { window.__abcOnExit?.(); } catch(e){}
+
+    // ✅ devolver estados de Biblia que ABC apagó
+    try { bibliaRestaurarUIAlVolver?.(); } catch(e){}
+    try { aplicarEstadoBarra?.("biblia"); } catch(e){}
+    try { actualizarUICandadoResaltador?.(); } catch(e){}
+  }
+
+  // ✅ mostrar/ocultar sub-secciones
+  ["devocionales", "abc", "xyz"].forEach(k => {
+    const el = document.getElementById("iglesia-" + k);
+    if (el) el.style.display = (k === sub) ? "block" : "none";
+  });
+
+  // ✅ marcar tab activo
+  const wrap = document.getElementById("seccion-iglesia");
+  if (wrap) {
+    wrap.querySelectorAll(".iglesia-tab, .nav-btn, button").forEach(b => b.classList.remove("activo"));
+
+    // 1) intento por onclick (como lo tenés hoy)
+    let btn = wrap.querySelector(`[onclick="mostrarIglesiaSub('${sub}')"]`);
+
+    // 2) fallback (por si un día cambiás el HTML): data-sub="abc" etc.
+    if (!btn) btn = wrap.querySelector(`[data-sub="${sub}"]`);
+
+    if (btn) btn.classList.add("activo");
+  }
+
+  // ✅ si entro a ABC: guardo estado Biblia y apago modos para que NO contaminen ABC
+  if (sub === "abc") {
+    try { bibliaBackupUI?.(); } catch(e){}
+    try { bibliaApagarModosParaCambiarSeccion?.(); } catch(e){}
+
+    // ✅ inicializa ABC + engancha barra
+    window.mostrarABC?.();
+    window.__abcOnEnter?.();
+
+    // ✅ refrescar icono candado según contexto
+    try { actualizarUICandadoResaltador?.(); } catch(e){}
+  }
+};
+  
 // ================= 🔺 HACER FUNCIONES GLOBALES (FIX DESCARGAR/COMPARTIR EN PC) =================
 window.generarImagenFinal = generarImagenFinal;
 window.descargarImagenFinal = descargarImagenFinal;
@@ -2897,6 +2975,10 @@ window.cancelarCrearImagen = window.cancelarCrearImagen;
 
 // ================= ✅ INIT ÚNICO =================
 document.addEventListener("DOMContentLoaded", () => {
+
+  // ✅ PERSONALIZAR
+  initPersonalizarListeners();
+
   // 1) UI resaltador
   initResaltadorCompacto();
 
@@ -2934,7 +3016,6 @@ document.addEventListener("DOMContentLoaded", () => {
     };
   }
 
-  // ✅ NUEVO: botón 🔍 (si lo querés sin onclick en HTML)
   const btnFiltros = document.getElementById("btnToggleFiltros");
   if (btnFiltros) {
     btnFiltros.type = "button";
@@ -2948,44 +3029,9 @@ document.addEventListener("DOMContentLoaded", () => {
   // 4) arrancar en biblia
   window.irA?.("biblia");
 
-  // ✅ asegurar filtros cerrados al iniciar
   const secBiblia = document.getElementById("seccion-biblia");
   if (secBiblia) secBiblia.classList.remove("filtros-abiertos");
 
-// ================= 🔺 IGLESIA: SUB-SECCIONES =================
-window.mostrarIglesiaSub = (sub) => {
-  // ✅ detecto si estaba en ABC antes
-  const abcAntes = document.getElementById("iglesia-abc");
-  const estabaEnABC = !!(abcAntes && abcAntes.style.display !== "none");
-
-  // ✅ si salgo de ABC a otro sub, apago ABC (devuelvo barra + resetea modo)
-  if (estabaEnABC && sub !== "abc") {
-    window.__abcOnExit?.();
-  }
-
-  ["devocionales", "abc", "xyz"].forEach(k => {
-    const el = document.getElementById("iglesia-" + k);
-    if (el) el.style.display = (k === sub) ? "block" : "none";
-  });
-
-  const wrap = document.getElementById("seccion-iglesia");
-  if (wrap) {
-    wrap.querySelectorAll(".iglesia-tab, .nav-btn, button").forEach(b => b.classList.remove("activo"));
-    const btn = wrap.querySelector(`[onclick="mostrarIglesiaSub('${sub}')"]`);
-    if (btn) btn.classList.add("activo");
-  }
-
-  // ✅ cuando entro a ABC: inicializo ABC + engancho barra SIEMPRE
-  // ✅ cuando entro a ABC: guardo estado de Biblia y apago modos para que NO contaminen ABC
-  if (sub === "abc") {
-    try { bibliaBackupUI(); } catch(e){}
-    try { bibliaApagarModosParaCambiarSeccion(); } catch(e){}
-
-    window.mostrarABC?.();
-    window.__abcOnEnter?.();
-  }
-};
-  
 }); // ================= ✅ CIERRA INIT ÚNICO =====
 
 // ================= IGLESIA > DEVOCIONALES (UI + CARGA) =================
