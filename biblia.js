@@ -59,10 +59,12 @@ let marcadores = {};                // cache firebase
 
 // ================= ✅ INDICE DE NOTAS (para mostrar pluma) =================
 window.notasBibliaIndex = window.notasBibliaIndex || {};
+window.notasBibliaPluma = window.notasBibliaPluma || {}; // ✅ faltaba
 window.notasABCIndex    = window.notasABCIndex || {};
 
-// (si tu código usa las variables locales, podés dejar alias)
+// alias locales (si tu código usa variables locales)
 let notasBibliaIndex = window.notasBibliaIndex;
+let notasBibliaPluma = window.notasBibliaPluma; // ✅ faltaba
 let notasABCIndex    = window.notasABCIndex;
 
 let ultimoMarcadorAplicado = null;  // resaltado al volver (opcional)
@@ -529,126 +531,94 @@ function toggleVersiculo(id, num) {
   }
 }
 
-// ======================= ⭐ PINTAR VERSICULO  =============================
 function pintarVersiculo(v) {
   const id = `${v.Libro}_${v.Capitulo}_${v.Versiculo}`;
   const marcado = marcados[id];
   const imagen = modoImagen && seleccionImagen[id];
-
   const selMarcador = modoMarcador && seleccionMarcador[id];
 
-const aplicado = ultimoMarcadorAplicado &&
-  ultimoMarcadorAplicado.libro === v.Libro &&
-  Number(ultimoMarcadorAplicado.capitulo) === Number(v.Capitulo) &&
-  (ultimoMarcadorAplicado.versiculos || []).includes(Number(v.Versiculo));
-  
+  const aplicado = ultimoMarcadorAplicado &&
+    ultimoMarcadorAplicado.libro === v.Libro &&
+    Number(ultimoMarcadorAplicado.capitulo) === Number(v.Capitulo) &&
+    (ultimoMarcadorAplicado.versiculos || []).includes(Number(v.Versiculo));
+
   const div = document.createElement("div");
   div.className = "versiculo";
   div.dataset.id = id;
-  if (imagen) div.classList.add("imagen");
-  
-  const enOscuro = document.body.classList.contains("oscuro");
-
-  // ================= Tamaño Letra =================
   div.style.fontSize = size + "px";
 
-// ================= Fondo =================
-if (modoImagen) {
-  div.style.background = imagen ? "rgba(255, 214, 232, 0.6)" : "transparent";
+  const enOscuro = document.body.classList.contains("oscuro");
 
-} else if (modoMarcador) {
-  // ✅ MODO MARCADOR: selección bien visible (especialmente en oscuro)
-  if (selMarcador) {
-    div.style.background = enOscuro
-      ? "rgba(209, 238, 255, 0.92)"   // más fuerte en oscuro
-      : "rgba(209, 238, 255, 0.92)";  // casi sólido en claro
-  } else if (aplicado && ultimoMarcadorAplicado?.color) {
-    // ✅ si hay marcador "keep", lo mostramos aunque estés seleccionando
-    div.style.background = ultimoMarcadorAplicado.color;
-  } else {
-    // ✅ ocultar resaltados viejos
-    div.style.background = "transparent";
-  }
-
-} else {
-  // modo normal
-  if (aplicado && ultimoMarcadorAplicado?.color) {
-    div.style.background = ultimoMarcadorAplicado.color;
-  } else {
-    div.style.background = marcado?.color || "transparent";
-  }
-}
-
-if (selMarcador) div.style.border = "2px solid #4f6fa8";
-else div.style.border = "none";
-
-// ================= Color de Texto (FIX MODO MARCADOR) =================
-if (modoImagen) {
-  // modo imagen: seleccionado negro, no seleccionado según tema
-  div.style.color = imagen ? "#000000" : (enOscuro ? "#ffffff" : "#000000");
-} else {
-
-  // ✅ si estoy seleccionando para marcador, quiero que SIEMPRE se lea
-  if (modoMarcador && selMarcador) {
-    div.style.color = "#000000"; // el fondo de selección es claro
-  } else {
-    // fondo real SOLO cuando realmente estás mostrando un fondo
-    let fondo = null;
-
-    if (modoMarcador) {
-      // ✅ en modo marcador NO usar "marcado.color" si NO lo estás pintando
-      if (aplicado && ultimoMarcadorAplicado?.color) fondo = ultimoMarcadorAplicado.color;
-      // si no hay aplicado, fondo queda null -> color por tema
+  // ================= Fondo =================
+  if (modoImagen) {
+    div.style.background = imagen ? "rgba(255, 214, 232, 0.6)" : "transparent";
+  } else if (modoMarcador) {
+    if (selMarcador) {
+      div.style.background = "rgba(209, 238, 255, 0.92)";
+    } else if (aplicado && ultimoMarcadorAplicado?.color) {
+      div.style.background = ultimoMarcadorAplicado.color;
     } else {
-      if (aplicado && ultimoMarcadorAplicado?.color) fondo = ultimoMarcadorAplicado.color;
-      else if (marcado?.color) fondo = marcado.color;
+      div.style.background = "transparent";
     }
-
-    if (fondo) div.style.color = colorContraste(fondo);
-    else div.style.color = enOscuro ? "#ffffff" : "#000000";
+  } else {
+    if (aplicado && ultimoMarcadorAplicado?.color) div.style.background = ultimoMarcadorAplicado.color;
+    else div.style.background = marcado?.color || "transparent";
   }
-}
 
- // ================= Opacidad (UX Modo imagen y Modo Marcador) =================
-if (modoImagen && !imagen) {
-  div.style.opacity = "0.6";
-} else {
-  div.style.opacity = "1";
-}
+  div.style.border = selMarcador ? "2px solid #4f6fa8" : "none";
+
+  // ================= Color texto =================
+  if (modoImagen) {
+    div.style.color = imagen ? "#000000" : (enOscuro ? "#ffffff" : "#000000");
+  } else {
+    if (modoMarcador && selMarcador) {
+      div.style.color = "#000000";
+    } else {
+      let fondo = null;
+      if (modoMarcador) {
+        if (aplicado && ultimoMarcadorAplicado?.color) fondo = ultimoMarcadorAplicado.color;
+      } else {
+        if (aplicado && ultimoMarcadorAplicado?.color) fondo = ultimoMarcadorAplicado.color;
+        else if (marcado?.color) fondo = marcado.color;
+      }
+      div.style.color = fondo ? colorContraste(fondo) : (enOscuro ? "#ffffff" : "#000000");
+    }
+  }
+
+  div.style.opacity = (modoImagen && !imagen) ? "0.6" : "1";
+
+  // ================= CONTENIDO (num | txt | pluma) =================
+  const num = document.createElement("span");
+  num.className = "num";
+  num.textContent = v.Versiculo;
+
+  const txt = document.createElement("span");
+  txt.className = "txt";
+  txt.textContent = v.RV1960 || "";
+
+  div.appendChild(num);
+  div.appendChild(txt);
+
+  // ✅ SOLO UNA PLUMA: si este versículo es "el último" de una nota
+  const mid = window.notasBibliaPluma?.[id] || null;
+  if (mid) {
+    const pluma = document.createElement("span");
+    pluma.className = "icono-nota";
+    pluma.setAttribute("data-mid", mid);
+    pluma.textContent = "✍️";
+    div.appendChild(pluma);
+  } else {
+    // para mantener el grid parejo (opcional): celda vacía
+    const vacio = document.createElement("span");
+    vacio.className = "icono-nota";
+    vacio.style.visibility = "hidden";
+    vacio.textContent = "✍️";
+    div.appendChild(vacio);
+  }
 
   // ================= Click =================
   div.onclick = () => toggleVersiculo(id, v.Versiculo);
 
-  // ✅ click en pluma => abrir edición del marcador (sin togglear versículo)
-const pluma = div.querySelector(".icono-nota[data-mid]");
-if (pluma) {
-  pluma.style.cursor = "pointer";
-pluma.onclick = (e) => {
-  e.preventDefault();
-  e.stopPropagation();
-
-  const mid = pluma.getAttribute("data-mid");
-  if (!mid) return;
-
-  // ✅ 1) Abrir modal de marcadores SIEMPRE
-  if (typeof window.abrirMarcadores === "function") {
-    window.abrirMarcadores();
-  }
-
-  // ✅ 2) Luego cargar la edición (cuando el modal ya está visible)
-  setTimeout(() => {
-    if (typeof window.editarMarcadorDesdeLista === "function") {
-      window.editarMarcadorDesdeLista(mid);
-      return;
-    }
-    if (typeof window.editarMarcadorEnPanel === "function") {
-      window.editarMarcadorEnPanel(mid);
-      return;
-    }
-  }, 0);
-};
-}
-  
   texto.appendChild(div);
 }
 
