@@ -319,7 +319,7 @@ abcMarcarSeleccionUI();
 // ✅ 4) recién después escuchá resaltados (Firebase)
 abcEscucharResaltados();
 abcGuardarProgreso();
-    
+
   } catch (e) {
     cont.innerHTML = `
       <div style="padding:12px; border-radius:12px; background:rgba(217,83,79,.12); color:inherit;">
@@ -383,7 +383,9 @@ async function abcCargarProgreso(){
 }
 
 function abcResaltadorGlobalBloqueado(){
-  return getLock("abc");
+  // ✅ ABC usa EXACTAMENTE el mismo lock real que Biblia
+  // (no depende de clases CSS ni del DOM de la paleta)
+  return !!window.resaltadorBloqueado;
 }
 
 // ----- RESALTADOS -----
@@ -626,7 +628,7 @@ function abcPrepararBloques() {
 
       abcSeleccionado = bid;
       abcMarcarSeleccionUI();
-    
+
       abcHabilitarCheckUI();
       return;
     }
@@ -717,21 +719,51 @@ function abcMarcarSeleccionUI(){
       }
     }
 
-    // creás/actualizás icono-nota
-const ya = b.querySelector(".icono-nota");
+    const ya = b.querySelector(".icono-nota");
 
+    if (notaIdParaEsteBloque) {
+      if (!ya) {
+        const ico = document.createElement("i");
+        ico.className = "fa-solid fa-comment-dots icono-nota";
+        ico.setAttribute("aria-hidden", "true");
+
+        ico.onclick = (e) => {
+          e.stopPropagation();
+          // ✅ abrimos edición de ESA nota
+          if (typeof window.abcEditarNota === "function") window.abcEditarNota(notaIdParaEsteBloque);
+        };
+
+        b.appendChild(ico);
+      } else {
+        // si ya existe, actualizamos por si cambió el id
+        ya.onclick = (e) => {
+          e.stopPropagation();
+          if (typeof window.abcEditarNota === "function") window.abcEditarNota(notaIdParaEsteBloque);
+        };
+      }
+    } else {
+      if (ya) ya.remove();
+    }
 if (notaIdParaEsteBloque) {
   if (!ya) {
-    const pluma = document.createElement("span");
-    pluma.className = "icono-nota";
-    pluma.setAttribute("data-mid", notaIdParaEsteBloque);
-    pluma.innerHTML = '<i class="fa-solid fa-comment-dots" aria-hidden="true"></i>';
-    b.appendChild(pluma);
+    const ico = document.createElement("i");
+    ico.className = "fa-solid fa-comment-dots icono-nota";
+    ico.setAttribute("aria-hidden", "true");
+
+    ico.onclick = (e) => {
+      e.stopPropagation();
+      if (typeof window.abcEditarNota === "function") window.abcEditarNota(notaIdParaEsteBloque);
+    };
+
+    b.appendChild(ico);
   } else {
-    // si ya existía, lo dejamos igual pero lo "normalizamos"
-    ya.className = "icono-nota";
-    ya.setAttribute("data-mid", notaIdParaEsteBloque);
-    ya.innerHTML = '<i class="fa-solid fa-comment-dots" aria-hidden="true"></i>';
+    // ✅ CLAVE: si ya existía (quizás era pluma), lo actualizamos al icono nuevo
+    ya.className = "fa-solid fa-comment-dots icono-nota";
+
+    ya.onclick = (e) => {
+      e.stopPropagation();
+      if (typeof window.abcEditarNota === "function") window.abcEditarNota(notaIdParaEsteBloque);
+    };
   }
 } else {
   if (ya) ya.remove();
@@ -1274,19 +1306,6 @@ function abcUIEnABC(){
 // ✅ Hooks ABC
 // -------------------------
 window.__abcOnEnter = () => {
-  // ✅ 0) APAGAR modo marcador de Biblia si venía activo (para que no se arrastre a ABC)
-  try{
-    const btnBibliaPin = document.getElementById("btnModoMarcadorBarra");
-    if (btnBibliaPin?.classList.contains("activo") && typeof window.toggleModoMarcador === "function") {
-      window.toggleModoMarcador(); // lo apaga
-    }
-
-    // por las dudas: sacar foco visual pegado
-    btnBibliaPin?.blur?.();
-    document.activeElement?.blur?.();
-  }catch(e){}
-
-  // ✅ 1) ahora sí: entrar a ABC normalmente
   abcPortalBarraOn();
   abcAplicarFontSize();
   abcUIEnABC();
@@ -1302,12 +1321,6 @@ window.__abcOnExit = () => {
   // ✅ devolver handlers y estilos a Biblia
   abcRestoreBarBiblia();
 
-  // ✅ si Biblia quedó con el botón activo por algún bug visual, lo limpiamos
-const btnPin = document.getElementById("btnModoMarcadorBarra");
-btnPin?.classList.remove("activo");
-btnPin?.blur?.();
-document.activeElement?.blur?.();
-  
   // ✅ IMPORTANTÍSIMO: limpiar ocultamiento “forzado” que dejó ABC
   const btnImagen = document.getElementById("btnImagen");
   const btnCrear  = document.getElementById("btnCrearImagen");
