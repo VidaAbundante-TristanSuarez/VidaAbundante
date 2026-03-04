@@ -321,7 +321,7 @@ body.oscuro .versiculo { color:#fff; }
 
 .versiculo{
   position: relative;
-  padding-right: 28px;   /* espacio reservado para el icono */
+  padding-right: 8px;   /* espacio reservado para el icono */
 }
 
 /* icono comentario */
