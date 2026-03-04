@@ -242,53 +242,60 @@ body.oscuro #barraTituloBiblia{
   cursor: pointer;
   transition: background .2s;
 
-  /* ✅ El interlineado lo define el texto, NO el contenedor */
-  line-height: normal;
-
   display: grid;
-  grid-template-columns: 22px 1fr 18px; /* num | texto | pluma (fijo) */
-  column-gap: 6px;
-  align-items: start; /* ✅ evita que la pluma “empuje” verticalmente */
+  grid-template-columns: 24px 1fr 24px; /* num | texto | pluma */
+  column-gap: 8px;
+
+  align-items: center; /* ✅ centra verticalmente num y pluma al “alto total” del versículo */
 }
 
-/* Número */
+/* Número (col 1) */
 .versiculo .num{
   grid-column: 1;
-  display:flex;
-  align-items:flex-start;
-  justify-content:center;
-  width: 22px;
+  justify-self: center;   /* ✅ centrado horizontal en su columna */
+  align-self: center;     /* ✅ centrado vertical */
+  width: 24px;
+
   font-weight: 800;
   font-size: 0.68em;
   opacity: .8;
-  line-height: 1;
-  padding-top: 2px; /* micro ajuste opcional */
+  line-height: 1;         /* ✅ no estira la celda */
+  margin: 0;
 }
 
-/* Texto (único que define interlineado) */
+/* Texto (col 2) */
 .versiculo .txt{
   grid-column: 2;
-  display:block;
-  min-width:0;
-  line-height: 1.25;  /* ✅ tu interlineado real */
+  min-width: 0;
+  display: block;
+
+  line-height: 1.25;      /* ✅ tu interlineado real */
 }
 
-/* Pluma: SIEMPRE fuera del texto */
+/* Pluma (col 3) */
 .versiculo .icono-nota{
   grid-column: 3;
-  justify-self: end;
-  align-self: start;
+  justify-self: center;   /* ✅ centrado horizontal en su columna */
+  align-self: center;     /* ✅ centrado vertical */
+  width: 24px;
 
-  font-size: 12px;
-  line-height: 1;      /* ✅ jamás afecta renglones */
-  margin: 0;           /* ✅ sin margen que empuje altura */
+  font-size: 13px;
+  line-height: 1;
   opacity: .35;
   color: var(--ui-azul-hover, #1c6fcb);
-  pointer-events: none;
+
+  cursor: pointer;
+  pointer-events: auto;
+  margin: 0;
 }
 
-body.oscuro .versiculo .icono-nota{
-  opacity: .45;
+.versiculo .icono-nota:hover{ opacity: .85; }
+body.oscuro .versiculo .icono-nota{ opacity: .45; }
+
+/* ✅ Asegura que cualquier otro hijo quede en la columna del texto
+   (por si metés spans extra dentro del versículo) */
+.versiculo > :not(.num):not(.icono-nota){
+  grid-column: 2;
 }
 
 /* ================= ABC: pluma absoluta (NO afecta interlineado) ================= */
