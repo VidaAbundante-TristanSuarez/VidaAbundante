@@ -626,43 +626,50 @@ div.innerHTML = `
   ${idMarcadorPluma ? `<i class="fa-solid fa-comment-dots icono-nota" aria-hidden="true" data-mid="${idMarcadorPluma}"></i>` : ``}
 `;
   
-  // ================= Click =================
+  // ================= Click (versículo) =================
   div.onclick = () => toggleVersiculo(id, v.Versiculo);
 
-  // ✅ click en pluma => abrir edición del marcador (sin togglear versículo)
-const pluma = div.querySelector(".icono-nota[data-mid]");
-if (pluma) {
-  pluma.style.cursor = "pointer";
-pluma.onclick = (e) => {
-  e.preventDefault();
-  e.stopPropagation();
+  // ✅ CLICK EN PLUMA (ACÁ VA) ===========================
+  const pluma = div.querySelector(".icono-nota[data-mid]");
+  if (pluma) {
+    pluma.style.cursor = "pointer";
 
-  const mid = pluma.getAttribute("data-mid");
-  if (!mid) return;
+    pluma.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
 
-  // ✅ 1) Abrir modal de marcadores SIEMPRE
-  if (typeof window.abrirMarcadores === "function") {
-    window.abrirMarcadores();
+      const mid = pluma.getAttribute("data-mid");
+      if (!mid) return;
+
+      // ✅ abrir modal (visible)
+      if (typeof window.abrirMarcadores === "function") {
+        window.abrirMarcadores();
+      }
+
+      // ✅ editar directo (recomendado)
+      if (typeof window.editarMarcadorDirecto === "function") {
+        setTimeout(() => window.editarMarcadorDirecto(mid), 0);
+        return;
+      }
+
+      // fallback a tus funciones existentes
+      setTimeout(() => {
+        if (typeof window.editarMarcadorDesdeLista === "function") {
+          window.editarMarcadorDesdeLista(mid);
+          return;
+        }
+        if (typeof window.editarMarcadorEnPanel === "function") {
+          window.editarMarcadorEnPanel(mid);
+          return;
+        }
+      }, 0);
+    };
   }
+  // ✅ FIN PLUMA ========================================
 
-  // ✅ 2) Luego cargar la edición (cuando el modal ya está visible)
-  setTimeout(() => {
-    if (typeof window.editarMarcadorDesdeLista === "function") {
-      window.editarMarcadorDesdeLista(mid);
-      return;
-    }
-    if (typeof window.editarMarcadorEnPanel === "function") {
-      window.editarMarcadorEnPanel(mid);
-      return;
-    }
-  }, 0);
-};
-}
-  
   texto.appendChild(div);
 }
 
-// ================= ⭐ OBTIENE VERSICULO SELECCIONADO =======================
 // ================= ⭐ OBTIENE VERSICULO SELECCIONADO (FIX MULTI CAP) =======================
 function obtenerVersiculoSeleccionado() {
   const ids = Object.keys(seleccionImagen || {});
@@ -1821,30 +1828,22 @@ window.toggleModoMarcador = () => {
 };
 
 // ================= 📁 BOTÓN 2: LISTA MARCADORES 📌=================
-// ================= 📁 BOTÓN: ABRIR MODAL MARCADORES =================
+// ================= 📁 ABRIR/CERRAR MODAL MARCADORES (FIX) =================
 window.abrirMarcadores = () => {
-  if (!uid) {
-    loginModal.style.display = "flex";
-    return;
-  }
+  if (!uid) { loginModal.style.display = "flex"; return; }
 
   const modal = document.getElementById("modalMarcadores");
   const lista = document.getElementById("listaMarcadores");
-  const form = document.getElementById("formNuevoMarcador");
+  const form  = document.getElementById("formNuevoMarcador");
   if (!modal || !lista || !form) return;
 
-  // ✅ Si está abierto, cerrar
-  const abierto = getComputedStyle(modal).display !== "none";
-  if (abierto) {
-    cerrarMarcadores();
-    return;
-  }
-
-  // ✅ Por defecto: abrir lista
+  // ✅ abrir SIEMPRE visible
   form.style.display = "none";
   lista.style.display = "block";
 
   renderListaMarcadores();
+
+  modal.style.display = "flex";           // ✅ CLAVE
   modal.classList.add("abierto");
   modal.setAttribute("aria-hidden", "false");
 };
@@ -1874,12 +1873,49 @@ window.editarMarcadorDesdeLista = (idMarcador) => {
 // ================= ✨ Cerrar Marcadores 📌=================
 window.cerrarMarcadores = () => {
   const modal = document.getElementById("modalMarcadores");
-  if (modal) {
-    modal.classList.remove("abierto");
-    modal.setAttribute("aria-hidden", "true");
+  if (!modal) return;
 
+  modal.classList.remove("abierto");
+  modal.style.display = "none";           // ✅ CLAVE
+  modal.setAttribute("aria-hidden", "true");
+
+  refrescarBotonGuardarMarcador?.();
+};
+
+// ================= ✨ EDITAR DIRECTO (no depende de selección) =================
+window.editarMarcadorDirecto = (idMarcador) => {
+  const m = (marcadores || {})[idMarcador];
+  if (!m) return;
+
+  // modo edición
+  window.__editMarcadorId = idMarcador;
+  window.__editMarcadorBase = { ...m };
+
+  // abrir modal y mostrar FORM (no lista)
+  window.abrirMarcadores();
+
+  const lista = document.getElementById("listaMarcadores");
+  const form  = document.getElementById("formNuevoMarcador");
+  const info  = document.getElementById("infoMarcadorNuevo");
+
+  if (lista) lista.style.display = "none";
+  if (form)  form.style.display  = "block";
+
+  // info arriba (ref real del marcador)
+  if (info) {
+    const refTxt = m.ref || (m.libro && m.capitulo ? `${m.libro} ${m.capitulo}` : "Nota");
+    const hoy = new Date().toLocaleDateString("es-AR", { day:"2-digit", month:"2-digit", year:"numeric" });
+    info.textContent = `✏️ Editando · ${refTxt} · ${hoy}`;
   }
-  refrescarBotonGuardarMarcador();
+
+  // precargar campos
+  document.getElementById("marcadorTitulo").value = m.titulo || "";
+  document.getElementById("marcadorNota").value   = m.nota || "";
+  document.getElementById("marcadorColor").value  = m.color || "#fff3b0";
+  document.getElementById("marcadorKeep").checked = !!m.keep;
+
+  // preview (si querés que muestre versículos aunque no haya selección)
+  renderPreviewVersiculosMarcador?.();
 };
 
 // ================= ✨ Render Lista Marcadores 📌=================
