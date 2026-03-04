@@ -95,7 +95,7 @@ onAuthStateChanged(auth, user => {
     window.location.href = "login.html";
     return;
   }
-
+  
     // ================= ✅ ADMIN FLAG GLOBAL =================
   // Lee /admins/{uid} = true|false y lo guarda en window.__ES_ADMIN
   onValue(ref(db, "admins/" + uid), (s) => {
@@ -541,12 +541,12 @@ const aplicado = ultimoMarcadorAplicado &&
   ultimoMarcadorAplicado.libro === v.Libro &&
   Number(ultimoMarcadorAplicado.capitulo) === Number(v.Capitulo) &&
   (ultimoMarcadorAplicado.versiculos || []).includes(Number(v.Versiculo));
-
+  
   const div = document.createElement("div");
   div.className = "versiculo";
   div.dataset.id = id;
   if (imagen) div.classList.add("imagen");
-
+  
   const enOscuro = document.body.classList.contains("oscuro");
 
   // ================= Tamaño Letra =================
@@ -625,7 +625,7 @@ div.innerHTML = `
   <span class="txt">${v.RV1960}</span>
   ${idMarcadorPluma ? `<i class="fa-solid fa-comment-dots icono-nota" aria-hidden="true" data-mid="${idMarcadorPluma}"></i>` : ``}
 `;
-
+  
   // ================= Click =================
   div.onclick = () => toggleVersiculo(id, v.Versiculo);
 
@@ -633,9 +633,6 @@ div.innerHTML = `
 const pluma = div.querySelector(".icono-nota[data-mid]");
 if (pluma) {
   pluma.style.cursor = "pointer";
-  pluma.onclick = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
 pluma.onclick = (e) => {
   e.preventDefault();
   e.stopPropagation();
@@ -643,14 +640,11 @@ pluma.onclick = (e) => {
   const mid = pluma.getAttribute("data-mid");
   if (!mid) return;
 
-    const mid = pluma.getAttribute("data-mid");
-    if (!mid) return;
   // ✅ 1) Abrir modal de marcadores SIEMPRE
   if (typeof window.abrirMarcadores === "function") {
     window.abrirMarcadores();
   }
 
-    // Reusa tu flujo existente (abre modal y precarga campos)
   // ✅ 2) Luego cargar la edición (cuando el modal ya está visible)
   setTimeout(() => {
     if (typeof window.editarMarcadorDesdeLista === "function") {
@@ -661,14 +655,10 @@ pluma.onclick = (e) => {
       window.editarMarcadorEnPanel(mid);
       return;
     }
-
-    // fallback
-    if (typeof window.abrirMarcadores === "function") window.abrirMarcadores();
-  };
   }, 0);
 };
 }
-
+  
   texto.appendChild(div);
 }
 
@@ -1101,7 +1091,7 @@ previewTextoBack.style.fontSize = finalSize + "px";
   // ✅ NO tocar position acá. La define el CSS para que queden idénticos.
 previewTexto.style.zIndex = "2";
 previewTextoBack.style.zIndex = "1";
-
+  
 // reset acumulables (back)
 previewTextoBack.style.transform = "none";     // ✅ sin desplazamiento
 previewTextoBack.style.filter = "none";        // ✅ sin blur
@@ -1239,7 +1229,7 @@ async function generarImagenFinal(opts = {}) {
     }
   }
 
-
+  
   return true;
 }
 
@@ -1299,7 +1289,7 @@ await set(ref(db, dbPath), {
     console.error("❌ Error subiendo imagen:", e);
     mostrarToast("❌ No se pudo subir la imagen");
   }
-
+  
 }
 
 // ======================== ⭐ OPCION DESCARGAR (FIX) ====================================
@@ -1371,7 +1361,7 @@ async function compartirImagenFinal() {
 function resetModalPersonalizar() {
   userSetFontSize = false;
   fondoFinal = null;
-
+  
   if (fondoFinalBlobUrl) {
   URL.revokeObjectURL(fondoFinalBlobUrl);
   fondoFinalBlobUrl = null;
@@ -1666,7 +1656,7 @@ window.generarImagen = async () => {
     // ✅ MODO: CREAR IMAGEN
   modal.classList.add("solo-imagen");
   modal.classList.remove("modo-devocional");
-
+  
   abrirModalPersonalizar();
   setFormatoImagen("post");
   cargarFondos();
@@ -1693,7 +1683,7 @@ window.cancelarCrearImagen = () => {
 // ================= ✅ FINALIZAR EDICIÓN (CONFIRMAR) =================
 window.finalizarEdicion = async () => {
   return withRenderLock(async () => {
-
+   
         // ✅ Si hay audio confirmado, lo subimos AHORA y lo dejamos listo para que la imagen lo “consuma”
     if (window.__pendingAudio?.audioBase64) {
       try {
@@ -1707,7 +1697,7 @@ window.finalizarEdicion = async () => {
         return;
       }
     }
-
+    
     const ok = await asegurarCanvasFinal({ subir: true });
     if (!ok) {
       alert("No se pudo generar la imagen (PNG). Revisá consola (F12) para ver el error.");
@@ -2128,7 +2118,7 @@ async function guardarNuevoMarcador() {
       aplicarUIAccionesPorModo();
       refrescarBotonGuardarMarcador();
     }
-
+    
   } catch (e) {
     console.error("❌ Error guardando marcador:", e);
 
@@ -2641,7 +2631,7 @@ window.setFormatoImagen = tipo => {
   if (bStory) bStory.classList.toggle("activo", tipo === "story");
 
   actualizarPreview(); // ✅ para recalcular tamaño automático
-
+    
   // ✅ si la lista de fuentes está abierta, la reubicamos
   if (typeof posicionarListaFuentes === "function") {
     const lf = document.getElementById("listaFuentes");
@@ -2948,8 +2938,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const secBiblia = document.getElementById("seccion-biblia");
   if (secBiblia) secBiblia.classList.remove("filtros-abiertos");
 
-}); // ================= ✅ CIERRA INIT ÚNICO =====
-  
 // ================= 🔺 IGLESIA: SUB-SECCIONES =================
 window.mostrarIglesiaSub = (sub) => {
   // ✅ detecto si estaba en ABC antes
@@ -2983,6 +2971,8 @@ window.mostrarIglesiaSub = (sub) => {
     window.__abcOnEnter?.();
   }
 };
+  
+}); // ================= ✅ CIERRA INIT ÚNICO =====
 
 // ================= IGLESIA > DEVOCIONALES (UI + CARGA) =================
 function devMostrarHome() {
