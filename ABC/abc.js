@@ -1050,6 +1050,7 @@ function abcToggleModoMarcador(){
   }
 
   abcAplicarUIAccionesPorModo();
+  setTimeout(abcAplicarUIAccionesPorModo, 50);
 }
 
 function abcResetModoMarcador() {
@@ -1066,74 +1067,85 @@ function abcResetModoMarcador() {
 }
 
 // -------------------------
-// ✅ ABC: barra (solo 📌 + ✓ en modo marcador)
+// ✅ ABC: barra (solo 📌 + ✓ en modo marcador) - versión blindada
 // -------------------------
-window.__abcAccionesBackup = window.__abcAccionesBackup || {}; // id -> display anterior
-
 function abcAplicarUIAccionesPorModo() {
+  const bar = document.getElementById("accionesBiblia");
+  if (!bar) return;
+
   const btnPin   = document.getElementById("btnModoMarcadorBarra"); // 📌
   const btnCheck = document.getElementById("btnGuardarMarcador");   // ✓
 
-  // ✅ imagen siempre OFF en ABC (blindado)
+  // ✅ en ABC: SIEMPRE ocultar imagen/crear imagen (blindado)
   const btnImagen = document.getElementById("btnImagen");
   const btnCrear  = document.getElementById("btnCrearImagen");
-  [btnImagen, btnCrear].forEach(b => {
-    if (!b) return;
-    b.style.display = "none";
-    b.style.visibility = "hidden";
-    b.style.pointerEvents = "none";
+  [btnImagen, btnCrear].forEach(el => {
+    if (!el) return;
+    el.style.display = "none";
+    el.style.visibility = "hidden";
+    el.style.pointerEvents = "none";
   });
 
-  // 📌 siempre visible en ABC
-  if (btnPin) btnPin.style.display = "inline-flex";
+  // Elementos “accionables” dentro de la barra (botones, links, etc.)
+  const items = bar.querySelectorAll("button, a, input, .pm-btn, [role='button']");
 
-  // 👇 todos los demás botones de la barra (los que querés ocultar en modo marcador)
-  const idsOtros = [
-    "btnListaMarcadores",
-    "btnCopiar", "btnCompartir", "btnAudio", "btnLeer",
-    "btnDescargar",
-    "btnMas", "btnMenos",
-    "btnImagen", "btnCrearImagen"
-  ];
+  // helper: guardar display original una sola vez
+  const saveOriginal = (el) => {
+    if (!el.dataset) return;
+    if (el.dataset.abcDisplaySaved === "1") return;
+    el.dataset.abcDisplaySaved = "1";
+    el.dataset.abcDisplay = el.style.display; // puede ser "" (vacío)
+  };
 
-  const otros = idsOtros
-    .map(id => document.getElementById(id))
-    .filter(Boolean);
+  // helper: restaurar display original
+  const restoreOriginal = (el) => {
+    if (!el.dataset) return;
+    if (el.dataset.abcDisplaySaved !== "1") return;
+    el.style.display = el.dataset.abcDisplay || "";
+  };
 
   if (abcModoMarcador) {
-    // ✅ ON: mostrar ✓ y ocultar TODO lo demás
+    // ✅ ON: solo 📌 + ✓ visibles
+    items.forEach(el => {
+      saveOriginal(el);
+
+      const id = el.id || "";
+      const esPin = (id === "btnModoMarcadorBarra");
+      const esCheck = (id === "btnGuardarMarcador");
+
+      if (esPin || esCheck) {
+        // mostrarlos
+        el.style.display = "inline-flex";
+      } else {
+        // ocultar TODO lo demás
+        el.style.display = "none";
+      }
+    });
+
+    // por las dudas, aseguramos
+    if (btnPin) btnPin.style.display = "inline-flex";
     if (btnCheck) btnCheck.style.display = "inline-flex";
 
-    otros.forEach(el => {
-      // guardar display anterior solo 1 vez
-      if (window.__abcAccionesBackup[el.id] === undefined) {
-        window.__abcAccionesBackup[el.id] = el.style.display; // puede ser ""
-      }
-      el.style.display = "none";
-    });
-
   } else {
-    // ✅ OFF: ocultar ✓ y restaurar TODO lo demás como estaba
+    // ✅ OFF: restaurar todo como estaba (menos imagen/crear imagen)
+    items.forEach(el => restoreOriginal(el));
+
+    // ✓ oculto cuando no estoy en modo marcador (como querías)
     if (btnCheck) btnCheck.style.display = "none";
 
-    otros.forEach(el => {
-      const prev = window.__abcAccionesBackup[el.id];
-      el.style.display = (prev !== undefined) ? prev : "";
-    });
+    // 📌 visible
+    if (btnPin) btnPin.style.display = "inline-flex";
 
-    // opcional: limpiar backup para que no crezca
-    window.__abcAccionesBackup = {};
+    // blindaje otra vez: imagen/crear imagen no vuelven
+    [btnImagen, btnCrear].forEach(el => {
+      if (!el) return;
+      el.style.display = "none";
+      el.style.visibility = "hidden";
+      el.style.pointerEvents = "none";
+    });
   }
 
-  // ✅ blindaje final (por si algo lo revive)
-  [btnImagen, btnCrear].forEach(b => {
-    if (!b) return;
-    b.style.display = "none";
-    b.style.visibility = "hidden";
-    b.style.pointerEvents = "none";
-  });
-
-  // ✅ refresca estado del ✓
+  // ✅ refresca estado del ✓ (opacidad/tooltip)
   abcHabilitarCheckUI();
 }
 
