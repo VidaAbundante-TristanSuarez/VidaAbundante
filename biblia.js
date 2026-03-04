@@ -48,29 +48,9 @@ let marcados = {};
 let size = 18;
 let fuenteActual = "Arial";
 let colorActual = "#fff3b0"; // 💛 amarillo por default
+let resaltadorBloqueado = true; // 🔒 nuevo estado
 window.colorActual = colorActual;
-
-// ✅ Locks separados por sección
-window.__resaltadorLock = window.__resaltadorLock || {
-  biblia: true,  // Biblia arranca bloqueado
-  abc: true      // ABC arranca bloqueado
-};
-
-function ctxActualResaltador(){
-  // ABC vive dentro de Iglesia > abc
-  const secIglesia = document.getElementById("seccion-iglesia");
-  const subABC = document.getElementById("iglesia-abc");
-  const enABC = !!(secIglesia && secIglesia.style.display !== "none" &&
-                   subABC && subABC.style.display !== "none");
-  return enABC ? "abc" : "biblia";
-}
-
-function getLock(ctx){
-  return !!window.__resaltadorLock?.[ctx];
-}
-function setLock(ctx, val){
-  window.__resaltadorLock[ctx] = !!val;
-}
+window.resaltadorBloqueado = resaltadorBloqueado;
 
 // ================= MARCADORES (NUEVO LIMPIO) =================
 let modoMarcador = false;
@@ -79,12 +59,10 @@ let marcadores = {};                // cache firebase
 
 // ================= ✅ INDICE DE NOTAS (para mostrar pluma) =================
 window.notasBibliaIndex = window.notasBibliaIndex || {};
-window.notasBibliaPluma = window.notasBibliaPluma || {}; // ✅ faltaba
 window.notasABCIndex    = window.notasABCIndex || {};
 
-// alias locales (si tu código usa variables locales)
+// (si tu código usa las variables locales, podés dejar alias)
 let notasBibliaIndex = window.notasBibliaIndex;
-let notasBibliaPluma = window.notasBibliaPluma; // ✅ faltaba
 let notasABCIndex    = window.notasABCIndex;
 
 let ultimoMarcadorAplicado = null;  // resaltado al volver (opcional)
@@ -117,7 +95,7 @@ onAuthStateChanged(auth, user => {
     window.location.href = "login.html";
     return;
   }
-  
+
     // ================= ✅ ADMIN FLAG GLOBAL =================
   // Lee /admins/{uid} = true|false y lo guarda en window.__ES_ADMIN
   onValue(ref(db, "admins/" + uid), (s) => {
@@ -423,23 +401,24 @@ function initResaltadorCompacto() {
       colorActual = btn.dataset.color;
       btnActivo.style.background = colorActual;
       btnActivo.textContent = btn.textContent;
-  
+
+      resaltadorBloqueado = false;
       window.colorActual = colorActual;
+      window.resaltadorBloqueado = resaltadorBloqueado;
       paleta.style.display = "none";
-      setLock("biblia", false);
-      actualizarUICandadoResaltador();
     };
   });
 
   // 🔒 BLOQUEAR / DESBLOQUEAR
-btnBloquear.onclick = e => {
+  btnBloquear.onclick = e => {
   e.preventDefault();
   e.stopPropagation();
 
-  const ctx = ctxActualResaltador();          // "biblia" o "abc"
-  setLock(ctx, !getLock(ctx));                // toggle lock de ese contexto
+  resaltadorBloqueado = !resaltadorBloqueado;
+  window.resaltadorBloqueado = resaltadorBloqueado;
 
-  actualizarUICandadoResaltador();            // refresca icono
+  // ✅ misma UI para manual y automático
+  actualizarUICandadoResaltador();
 };
 
   // ❌ cerrar clic fuera
@@ -455,43 +434,37 @@ function actualizarUICandadoResaltador() {
   const btnBloquear = document.getElementById("btnBloquearResaltador");
   if (!paleta || !btnBloquear) return;
 
-  // ✅ contexto actual (abc o biblia)
-  const ctx = (typeof ctxActualResaltador === "function")
-    ? ctxActualResaltador()
-    : "biblia";
+  // icono grande
+  btnBloquear.textContent = resaltadorBloqueado ? "🔒" : "🔓";
 
-  // ✅ icono grande según contexto
-  btnBloquear.textContent = (typeof getLock === "function" && getLock(ctx)) ? "🔒" : "🔓";
-
-  // ✅ limpiar candaditos pequeños anteriores
+  // limpiar candaditos pequeños anteriores
   paleta.querySelectorAll("button[data-color] span.icono-candado").forEach(c => c.remove());
 
-  // ✅ candadito chico SOLO aplica a Biblia (porque la paleta es de Biblia)
-  if (!(typeof getLock === "function" && getLock("biblia"))) return;
+  // si está bloqueado, poner el candadito pequeño en el color actual
+  if (resaltadorBloqueado) {
+    const botonColor = Array.from(paleta.querySelectorAll("button[data-color]"))
+      .find(b => b.dataset.color === colorActual);
 
-  const botonColor = Array.from(paleta.querySelectorAll("button[data-color]"))
-    .find(b => b.dataset.color === (window.colorActual || colorActual));
-
-  if (!botonColor) return;
-
-  const span = document.createElement("span");
-  span.textContent = "🔒";
-  span.className = "icono-candado";
-  span.style.position = "absolute";
-  span.style.top = "-4px";
-  span.style.right = "-4px";
-  span.style.fontSize = "10px";
-  span.style.background = "#fff";
-  span.style.borderRadius = "50%";
-  span.style.padding = "1px";
-
-  botonColor.style.position = "relative";
-  botonColor.appendChild(span);
+    if (botonColor) {
+      const span = document.createElement("span");
+      span.textContent = "🔒";
+      span.className = "icono-candado";
+      span.style.position = "absolute";
+      span.style.top = "-4px";
+      span.style.right = "-4px";
+      span.style.fontSize = "10px";
+      span.style.background = "#fff";
+      span.style.borderRadius = "50%";
+      span.style.padding = "1px";
+      botonColor.style.position = "relative";
+      botonColor.appendChild(span);
+    }
+  }
 }
 
 // ================= ⭐ MOSTRAR TEXTO =======================
 function mostrarTexto() {
-  texto.innerHTML = "";
+  texto.innerHTML = ""; 
   titulo.innerText = `${libroSel.value} ${capSel.value}`;
 
   const versos = bibliaData.filter(v =>
@@ -499,20 +472,7 @@ function mostrarTexto() {
     v.Capitulo == capSel.value
   );
 
-  // ✅ último versículo seleccionado (solo para mostrar UNA pluma en modo marcador)
-  let lastSelId = null;
-  if (modoMarcador) {
-    const nums = Object.keys(seleccionMarcador || {})
-      .map(id => Number(id.split("_").pop()))
-      .filter(n => !isNaN(n));
-
-    if (nums.length) {
-      const last = Math.max(...nums);
-      lastSelId = `${libroSel.value}_${capSel.value}_${last}`;
-    }
-  }
-
-  versos.forEach(v => pintarVersiculo(v, lastSelId));
+  versos.forEach(v => pintarVersiculo(v));
 }
 
 // ================= ⭐ TOGGLE VERSICULO =======================
@@ -556,8 +516,8 @@ function toggleVersiculo(id, num) {
   // 🔐 requiere login
   if (!uid) return;
 
-// 🔒 resaltador bloqueado (por contexto)
-if (getLock(ctxActualResaltador())) return;
+  // 🔒 resaltador bloqueado
+  if (resaltadorBloqueado) return;
 
   // 🎨 marcar / desmarcar versículo
   const r = ref(db, "marcados/" + uid + "/" + id);
@@ -569,111 +529,150 @@ if (getLock(ctxActualResaltador())) return;
   }
 }
 
-// ================= ⭐ PINTAR VERSICULO =======================
-function pintarVersiculo(v, lastSelId = null) {
-
+// ======================= ⭐ PINTAR VERSICULO  =============================
+function pintarVersiculo(v) {
   const id = `${v.Libro}_${v.Capitulo}_${v.Versiculo}`;
   const marcado = marcados[id];
   const imagen = modoImagen && seleccionImagen[id];
+
   const selMarcador = modoMarcador && seleccionMarcador[id];
 
-  const aplicado = ultimoMarcadorAplicado &&
-    ultimoMarcadorAplicado.libro === v.Libro &&
-    Number(ultimoMarcadorAplicado.capitulo) === Number(v.Capitulo) &&
-    (ultimoMarcadorAplicado.versiculos || []).includes(Number(v.Versiculo));
+const aplicado = ultimoMarcadorAplicado &&
+  ultimoMarcadorAplicado.libro === v.Libro &&
+  Number(ultimoMarcadorAplicado.capitulo) === Number(v.Capitulo) &&
+  (ultimoMarcadorAplicado.versiculos || []).includes(Number(v.Versiculo));
 
   const div = document.createElement("div");
   div.className = "versiculo";
   div.dataset.id = id;
-  div.style.fontSize = size + "px";
+  if (imagen) div.classList.add("imagen");
 
   const enOscuro = document.body.classList.contains("oscuro");
 
-  // ================= Fondo =================
-  if (modoImagen) {
-    div.style.background = imagen ? "rgba(255, 214, 232, 0.6)" : "transparent";
-  } else if (modoMarcador) {
-    if (selMarcador) {
-      div.style.background = "rgba(209, 238, 255, 0.92)";
-    } else if (aplicado && ultimoMarcadorAplicado?.color) {
-      div.style.background = ultimoMarcadorAplicado.color;
+  // ================= Tamaño Letra =================
+  div.style.fontSize = size + "px";
+
+// ================= Fondo =================
+if (modoImagen) {
+  div.style.background = imagen ? "rgba(255, 214, 232, 0.6)" : "transparent";
+
+} else if (modoMarcador) {
+  // ✅ MODO MARCADOR: selección bien visible (especialmente en oscuro)
+  if (selMarcador) {
+    div.style.background = enOscuro
+      ? "rgba(209, 238, 255, 0.92)"   // más fuerte en oscuro
+      : "rgba(209, 238, 255, 0.92)";  // casi sólido en claro
+  } else if (aplicado && ultimoMarcadorAplicado?.color) {
+    // ✅ si hay marcador "keep", lo mostramos aunque estés seleccionando
+    div.style.background = ultimoMarcadorAplicado.color;
+  } else {
+    // ✅ ocultar resaltados viejos
+    div.style.background = "transparent";
+  }
+
+} else {
+  // modo normal
+  if (aplicado && ultimoMarcadorAplicado?.color) {
+    div.style.background = ultimoMarcadorAplicado.color;
+  } else {
+    div.style.background = marcado?.color || "transparent";
+  }
+}
+
+if (selMarcador) div.style.border = "2px solid #4f6fa8";
+else div.style.border = "none";
+
+// ================= Color de Texto (FIX MODO MARCADOR) =================
+if (modoImagen) {
+  // modo imagen: seleccionado negro, no seleccionado según tema
+  div.style.color = imagen ? "#000000" : (enOscuro ? "#ffffff" : "#000000");
+} else {
+
+  // ✅ si estoy seleccionando para marcador, quiero que SIEMPRE se lea
+  if (modoMarcador && selMarcador) {
+    div.style.color = "#000000"; // el fondo de selección es claro
+  } else {
+    // fondo real SOLO cuando realmente estás mostrando un fondo
+    let fondo = null;
+
+    if (modoMarcador) {
+      // ✅ en modo marcador NO usar "marcado.color" si NO lo estás pintando
+      if (aplicado && ultimoMarcadorAplicado?.color) fondo = ultimoMarcadorAplicado.color;
+      // si no hay aplicado, fondo queda null -> color por tema
     } else {
-      div.style.background = "transparent";
+      if (aplicado && ultimoMarcadorAplicado?.color) fondo = ultimoMarcadorAplicado.color;
+      else if (marcado?.color) fondo = marcado.color;
     }
-  } else {
-    if (aplicado && ultimoMarcadorAplicado?.color) div.style.background = ultimoMarcadorAplicado.color;
-    else div.style.background = marcado?.color || "transparent";
+
+    if (fondo) div.style.color = colorContraste(fondo);
+    else div.style.color = enOscuro ? "#ffffff" : "#000000";
+  }
+}
+
+ // ================= Opacidad (UX Modo imagen y Modo Marcador) =================
+if (modoImagen && !imagen) {
+  div.style.opacity = "0.6";
+} else {
+  div.style.opacity = "1";
+}
+
+  // ================= Contenido =================
+// ✅ Pluma SOLO si este versículo es el ÚLTIMO de alguna nota
+const idMarcadorPluma = (window.notasBibliaPluma || {})[id] || null;
+
+div.innerHTML = `
+  <span class="num">${v.Versiculo}</span>
+  <span class="txt">${v.RV1960}</span>
+  ${idMarcadorPluma ? `<i class="fa-solid fa-comment-dots icono-nota" aria-hidden="true" data-mid="${idMarcadorPluma}"></i>` : ``}
+`;
+
+  // ================= Click =================
+  div.onclick = () => toggleVersiculo(id, v.Versiculo);
+
+  // ✅ click en pluma => abrir edición del marcador (sin togglear versículo)
+const pluma = div.querySelector(".icono-nota[data-mid]");
+if (pluma) {
+  pluma.style.cursor = "pointer";
+  pluma.onclick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+pluma.onclick = (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+
+  const mid = pluma.getAttribute("data-mid");
+  if (!mid) return;
+
+    const mid = pluma.getAttribute("data-mid");
+    if (!mid) return;
+  // ✅ 1) Abrir modal de marcadores SIEMPRE
+  if (typeof window.abrirMarcadores === "function") {
+    window.abrirMarcadores();
   }
 
-  div.style.border = selMarcador ? "2px solid #4f6fa8" : "none";
-
-  // ================= Color texto =================
-  if (modoImagen) {
-    div.style.color = imagen ? "#000000" : (enOscuro ? "#ffffff" : "#000000");
-  } else {
-    if (modoMarcador && selMarcador) {
-      div.style.color = "#000000";
-    } else {
-      let fondo = null;
-      if (modoMarcador) {
-        if (aplicado && ultimoMarcadorAplicado?.color) fondo = ultimoMarcadorAplicado.color;
-      } else {
-        if (aplicado && ultimoMarcadorAplicado?.color) fondo = ultimoMarcadorAplicado.color;
-        else if (marcado?.color) fondo = marcado.color;
-      }
-      div.style.color = fondo ? colorContraste(fondo) : (enOscuro ? "#ffffff" : "#000000");
+    // Reusa tu flujo existente (abre modal y precarga campos)
+  // ✅ 2) Luego cargar la edición (cuando el modal ya está visible)
+  setTimeout(() => {
+    if (typeof window.editarMarcadorDesdeLista === "function") {
+      window.editarMarcadorDesdeLista(mid);
+      return;
     }
-  }
+    if (typeof window.editarMarcadorEnPanel === "function") {
+      window.editarMarcadorEnPanel(mid);
+      return;
+    }
 
-  div.style.opacity = (modoImagen && !imagen) ? "0.6" : "1";
-
-   // ================= CONTENIDO (num | txt) =================
-  const num = document.createElement("span");
-  num.className = "num";
-  num.textContent = v.Versiculo;
-
-  const txt = document.createElement("span");
-  txt.className = "txt";
-  txt.textContent = v.RV1960 || "";
-
-  div.appendChild(num);
-  div.appendChild(txt);
-
-  // ================= ✅ PLUMA: SOLO UNA =================
-  let mostrarPluma = false;
-  let mid = null;
-
-  if (modoMarcador) {
-    // ✅ durante creación: solo en el último seleccionado
-    mostrarPluma = !!lastSelId && id === lastSelId;
-    mid = null; // no hay id real todavía
-  } else {
-    // ✅ notas ya guardadas: solo en el último verso de cada nota
-    mid = window.notasBibliaPluma?.[id] || null;
-    mostrarPluma = !!mid;
-  }
-
-  if (mostrarPluma) {
-    const pluma = document.createElement("span");
-    pluma.className = "icono-nota";
-    pluma.innerHTML = '<i class="fa-solid fa-comment-dots"></i>';
-    
-    // ✅ solo si existe marcador real la hacemos clickeable
-    if (mid) pluma.setAttribute("data-mid", mid);
-
-    div.appendChild(pluma);
-  } else {
-    // opcional: celda vacía para que el grid quede perfecto
-    const vacio = document.createElement("span");
-    vacio.className = "icono-nota";
-    vacio.style.visibility = "hidden";
-    vacio.textContent = "✍️";
-    div.appendChild(vacio);
-  }
+    // fallback
+    if (typeof window.abrirMarcadores === "function") window.abrirMarcadores();
+  };
+  }, 0);
+};
+}
 
   texto.appendChild(div);
 }
 
+// ================= ⭐ OBTIENE VERSICULO SELECCIONADO =======================
 // ================= ⭐ OBTIENE VERSICULO SELECCIONADO (FIX MULTI CAP) =======================
 function obtenerVersiculoSeleccionado() {
   const ids = Object.keys(seleccionImagen || {});
@@ -844,6 +843,8 @@ function initPersonalizarListeners() {
     el.addEventListener("change", handler);
   });
 }
+
+document.addEventListener("DOMContentLoaded", initPersonalizarListeners);
 
 // ================= 🎀 LISTA VISUAL DE FUENTES =================
 const fuentesGoogle = [
@@ -1100,7 +1101,7 @@ previewTextoBack.style.fontSize = finalSize + "px";
   // ✅ NO tocar position acá. La define el CSS para que queden idénticos.
 previewTexto.style.zIndex = "2";
 previewTextoBack.style.zIndex = "1";
-  
+
 // reset acumulables (back)
 previewTextoBack.style.transform = "none";     // ✅ sin desplazamiento
 previewTextoBack.style.filter = "none";        // ✅ sin blur
@@ -1238,7 +1239,7 @@ async function generarImagenFinal(opts = {}) {
     }
   }
 
-  
+
   return true;
 }
 
@@ -1298,7 +1299,7 @@ await set(ref(db, dbPath), {
     console.error("❌ Error subiendo imagen:", e);
     mostrarToast("❌ No se pudo subir la imagen");
   }
-  
+
 }
 
 // ======================== ⭐ OPCION DESCARGAR (FIX) ====================================
@@ -1370,7 +1371,7 @@ async function compartirImagenFinal() {
 function resetModalPersonalizar() {
   userSetFontSize = false;
   fondoFinal = null;
-  
+
   if (fondoFinalBlobUrl) {
   URL.revokeObjectURL(fondoFinalBlobUrl);
   fondoFinalBlobUrl = null;
@@ -1582,11 +1583,8 @@ window.irA = (seccion) => {
 
   // ✅ si me fui de IGLESIA (donde vive ABC) a otra sección, apago ABC
   if (seccion !== "iglesia") {
-  try { window.__abcOnExit?.(); } catch(e){}
-  try { bibliaRestaurarUIAlVolver?.(); } catch(e){}
-  try { aplicarEstadoBarra?.("biblia"); } catch(e){}
-  try { actualizarUICandadoResaltador?.(); } catch(e){}
-}
+    window.__abcOnExit?.();
+  }
 
   // 3) defaults internos
   if (seccion === "iglesia") {
@@ -1609,6 +1607,7 @@ window.irA = (seccion) => {
     aplicarEstadoBarra?.("biblia");
 
     // ✅ Biblia: refrescar UI normal
+    resaltadorBloqueado = true;
     actualizarUICandadoResaltador?.();
     mostrarTexto?.();
 
@@ -1667,7 +1666,7 @@ window.generarImagen = async () => {
     // ✅ MODO: CREAR IMAGEN
   modal.classList.add("solo-imagen");
   modal.classList.remove("modo-devocional");
-  
+
   abrirModalPersonalizar();
   setFormatoImagen("post");
   cargarFondos();
@@ -1694,7 +1693,7 @@ window.cancelarCrearImagen = () => {
 // ================= ✅ FINALIZAR EDICIÓN (CONFIRMAR) =================
 window.finalizarEdicion = async () => {
   return withRenderLock(async () => {
-   
+
         // ✅ Si hay audio confirmado, lo subimos AHORA y lo dejamos listo para que la imagen lo “consuma”
     if (window.__pendingAudio?.audioBase64) {
       try {
@@ -1708,7 +1707,7 @@ window.finalizarEdicion = async () => {
         return;
       }
     }
-    
+
     const ok = await asegurarCanvasFinal({ subir: true });
     if (!ok) {
       alert("No se pudo generar la imagen (PNG). Revisá consola (F12) para ver el error.");
@@ -1832,22 +1831,30 @@ window.toggleModoMarcador = () => {
 };
 
 // ================= 📁 BOTÓN 2: LISTA MARCADORES 📌=================
-// ================= 📁 ABRIR/CERRAR MODAL MARCADORES (FIX) =================
+// ================= 📁 BOTÓN: ABRIR MODAL MARCADORES =================
 window.abrirMarcadores = () => {
-  if (!uid) { loginModal.style.display = "flex"; return; }
+  if (!uid) {
+    loginModal.style.display = "flex";
+    return;
+  }
 
   const modal = document.getElementById("modalMarcadores");
   const lista = document.getElementById("listaMarcadores");
-  const form  = document.getElementById("formNuevoMarcador");
+  const form = document.getElementById("formNuevoMarcador");
   if (!modal || !lista || !form) return;
 
-  // ✅ abrir SIEMPRE visible
+  // ✅ Si está abierto, cerrar
+  const abierto = getComputedStyle(modal).display !== "none";
+  if (abierto) {
+    cerrarMarcadores();
+    return;
+  }
+
+  // ✅ Por defecto: abrir lista
   form.style.display = "none";
   lista.style.display = "block";
 
   renderListaMarcadores();
-
-  modal.style.display = "flex";           // ✅ CLAVE
   modal.classList.add("abierto");
   modal.setAttribute("aria-hidden", "false");
 };
@@ -1877,49 +1884,12 @@ window.editarMarcadorDesdeLista = (idMarcador) => {
 // ================= ✨ Cerrar Marcadores 📌=================
 window.cerrarMarcadores = () => {
   const modal = document.getElementById("modalMarcadores");
-  if (!modal) return;
+  if (modal) {
+    modal.classList.remove("abierto");
+    modal.setAttribute("aria-hidden", "true");
 
-  modal.classList.remove("abierto");
-  modal.style.display = "none";           // ✅ CLAVE
-  modal.setAttribute("aria-hidden", "true");
-
-  refrescarBotonGuardarMarcador?.();
-};
-
-// ================= ✨ EDITAR DIRECTO (no depende de selección) =================
-window.editarMarcadorDirecto = (idMarcador) => {
-  const m = (marcadores || {})[idMarcador];
-  if (!m) return;
-
-  // modo edición
-  window.__editMarcadorId = idMarcador;
-  window.__editMarcadorBase = { ...m };
-
-  // abrir modal y mostrar FORM (no lista)
-  window.abrirMarcadores();
-
-  const lista = document.getElementById("listaMarcadores");
-  const form  = document.getElementById("formNuevoMarcador");
-  const info  = document.getElementById("infoMarcadorNuevo");
-
-  if (lista) lista.style.display = "none";
-  if (form)  form.style.display  = "block";
-
-  // info arriba (ref real del marcador)
-  if (info) {
-    const refTxt = m.ref || (m.libro && m.capitulo ? `${m.libro} ${m.capitulo}` : "Nota");
-    const hoy = new Date().toLocaleDateString("es-AR", { day:"2-digit", month:"2-digit", year:"numeric" });
-    info.textContent = `✏️ Editando · ${refTxt} · ${hoy}`;
   }
-
-  // precargar campos
-  document.getElementById("marcadorTitulo").value = m.titulo || "";
-  document.getElementById("marcadorNota").value   = m.nota || "";
-  document.getElementById("marcadorColor").value  = m.color || "#fff3b0";
-  document.getElementById("marcadorKeep").checked = !!m.keep;
-
-  // preview (si querés que muestre versículos aunque no haya selección)
-  renderPreviewVersiculosMarcador?.();
+  refrescarBotonGuardarMarcador();
 };
 
 // ================= ✨ Render Lista Marcadores 📌=================
@@ -2158,7 +2128,7 @@ async function guardarNuevoMarcador() {
       aplicarUIAccionesPorModo();
       refrescarBotonGuardarMarcador();
     }
-    
+
   } catch (e) {
     console.error("❌ Error guardando marcador:", e);
 
@@ -2671,7 +2641,7 @@ window.setFormatoImagen = tipo => {
   if (bStory) bStory.classList.toggle("activo", tipo === "story");
 
   actualizarPreview(); // ✅ para recalcular tamaño automático
-    
+
   // ✅ si la lista de fuentes está abierta, la reubicamos
   if (typeof posicionarListaFuentes === "function") {
     const lf = document.getElementById("listaFuentes");
@@ -2895,7 +2865,6 @@ function aplicarUIAccionesPorModo() {
 }
 
 window.aplicarUIAccionesPorModo = aplicarUIAccionesPorModo;
-  
 // ================= Salir de modal limpio ================
 function salirModoMarcadorLimpio() {
   modoMarcador = false;
@@ -2915,57 +2884,6 @@ function salirModoMarcadorLimpio() {
 
 }
 
-// ================= 🔺 IGLESIA: SUB-SECCIONES =================
-// ✅ Definir UNA sola vez, a nivel global (NO dentro de DOMContentLoaded)
-window.mostrarIglesiaSub = (sub) => {
-  // ✅ detecto si estaba en ABC antes
-  const abcAntes = document.getElementById("iglesia-abc");
-  const estabaEnABC = !!(abcAntes && abcAntes.style.display !== "none");
-
-  // ✅ si salgo de ABC a otro sub: apago ABC + restauro Biblia (para que no quede rota)
-  if (estabaEnABC && sub !== "abc") {
-    try { window.__abcOnExit?.(); } catch(e){}
-
-    // ✅ devolver estados de Biblia que ABC apagó
-    try { bibliaRestaurarUIAlVolver?.(); } catch(e){}
-    try { aplicarEstadoBarra?.("biblia"); } catch(e){}
-    try { actualizarUICandadoResaltador?.(); } catch(e){}
-  }
-
-  // ✅ mostrar/ocultar sub-secciones
-  ["devocionales", "abc", "xyz"].forEach(k => {
-    const el = document.getElementById("iglesia-" + k);
-    if (el) el.style.display = (k === sub) ? "block" : "none";
-  });
-
-  // ✅ marcar tab activo
-  const wrap = document.getElementById("seccion-iglesia");
-  if (wrap) {
-    wrap.querySelectorAll(".iglesia-tab, .nav-btn, button").forEach(b => b.classList.remove("activo"));
-
-    // 1) intento por onclick (como lo tenés hoy)
-    let btn = wrap.querySelector(`[onclick="mostrarIglesiaSub('${sub}')"]`);
-
-    // 2) fallback (por si un día cambiás el HTML): data-sub="abc" etc.
-    if (!btn) btn = wrap.querySelector(`[data-sub="${sub}"]`);
-
-    if (btn) btn.classList.add("activo");
-  }
-
-  // ✅ si entro a ABC: guardo estado Biblia y apago modos para que NO contaminen ABC
-  if (sub === "abc") {
-    try { bibliaBackupUI?.(); } catch(e){}
-    try { bibliaApagarModosParaCambiarSeccion?.(); } catch(e){}
-
-    // ✅ inicializa ABC + engancha barra
-    window.mostrarABC?.();
-    window.__abcOnEnter?.();
-
-    // ✅ refrescar icono candado según contexto
-    try { actualizarUICandadoResaltador?.(); } catch(e){}
-  }
-};
-  
 // ================= 🔺 HACER FUNCIONES GLOBALES (FIX DESCARGAR/COMPARTIR EN PC) =================
 window.generarImagenFinal = generarImagenFinal;
 window.descargarImagenFinal = descargarImagenFinal;
@@ -2975,10 +2893,6 @@ window.cancelarCrearImagen = window.cancelarCrearImagen;
 
 // ================= ✅ INIT ÚNICO =================
 document.addEventListener("DOMContentLoaded", () => {
-
-  // ✅ PERSONALIZAR
-  initPersonalizarListeners();
-
   // 1) UI resaltador
   initResaltadorCompacto();
 
@@ -3016,6 +2930,7 @@ document.addEventListener("DOMContentLoaded", () => {
     };
   }
 
+  // ✅ NUEVO: botón 🔍 (si lo querés sin onclick en HTML)
   const btnFiltros = document.getElementById("btnToggleFiltros");
   if (btnFiltros) {
     btnFiltros.type = "button";
@@ -3029,10 +2944,45 @@ document.addEventListener("DOMContentLoaded", () => {
   // 4) arrancar en biblia
   window.irA?.("biblia");
 
+  // ✅ asegurar filtros cerrados al iniciar
   const secBiblia = document.getElementById("seccion-biblia");
   if (secBiblia) secBiblia.classList.remove("filtros-abiertos");
 
 }); // ================= ✅ CIERRA INIT ÚNICO =====
+  
+// ================= 🔺 IGLESIA: SUB-SECCIONES =================
+window.mostrarIglesiaSub = (sub) => {
+  // ✅ detecto si estaba en ABC antes
+  const abcAntes = document.getElementById("iglesia-abc");
+  const estabaEnABC = !!(abcAntes && abcAntes.style.display !== "none");
+
+  // ✅ si salgo de ABC a otro sub, apago ABC (devuelvo barra + resetea modo)
+  if (estabaEnABC && sub !== "abc") {
+    window.__abcOnExit?.();
+  }
+
+  ["devocionales", "abc", "xyz"].forEach(k => {
+    const el = document.getElementById("iglesia-" + k);
+    if (el) el.style.display = (k === sub) ? "block" : "none";
+  });
+
+  const wrap = document.getElementById("seccion-iglesia");
+  if (wrap) {
+    wrap.querySelectorAll(".iglesia-tab, .nav-btn, button").forEach(b => b.classList.remove("activo"));
+    const btn = wrap.querySelector(`[onclick="mostrarIglesiaSub('${sub}')"]`);
+    if (btn) btn.classList.add("activo");
+  }
+
+  // ✅ cuando entro a ABC: inicializo ABC + engancho barra SIEMPRE
+  // ✅ cuando entro a ABC: guardo estado de Biblia y apago modos para que NO contaminen ABC
+  if (sub === "abc") {
+    try { bibliaBackupUI(); } catch(e){}
+    try { bibliaApagarModosParaCambiarSeccion(); } catch(e){}
+
+    window.mostrarABC?.();
+    window.__abcOnEnter?.();
+  }
+};
 
 // ================= IGLESIA > DEVOCIONALES (UI + CARGA) =================
 function devMostrarHome() {
@@ -3131,37 +3081,3 @@ document.addEventListener("DOMContentLoaded", () => {
   // cargar feed (para que no se vea vacío)
   initDevocionalesIglesiaFeed();
 });
-
-
-// ✅ Click global en cualquier pluma (Biblia/ABC/etc)
-document.addEventListener("click", (e) => {
-  const pluma = e.target.closest(".icono-nota[data-mid]");
-  if (!pluma) return;
-
-  e.preventDefault();
-  e.stopPropagation();
-
-  const mid = pluma.getAttribute("data-mid");
-  if (!mid) return;
-
-  // abrir modal
-  if (typeof window.abrirMarcadores === "function") {
-    window.abrirMarcadores();
-  }
-
-  // editar directo
-  setTimeout(() => {
-    if (typeof window.editarMarcadorDirecto === "function") {
-      window.editarMarcadorDirecto(mid);
-      return;
-    }
-    if (typeof window.editarMarcadorDesdeLista === "function") {
-      window.editarMarcadorDesdeLista(mid);
-      return;
-    }
-    if (typeof window.editarMarcadorEnPanel === "function") {
-      window.editarMarcadorEnPanel(mid);
-      return;
-    }
-  }, 0);
-}, true);
