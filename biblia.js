@@ -468,6 +468,27 @@ function actualizarUICandadoResaltador() {
   }
 }
 
+// ================= ⭐ FUERZA CANDADO PEQUEÑO =======================
+window.forceSyncResaltadorUI = function forceSyncResaltadorUI(intentos = 20) {
+  const tick = () => {
+    try { actualizarUICandadoResaltador?.(); } catch (e) {}
+
+    // ✅ chequeo si ya existe el candadito chico
+    const paleta = document.getElementById("paletaResaltadores");
+    const ok = paleta && paleta.querySelector("span.icono-candado");
+
+    if (ok) return;                  // listo
+    if (intentos <= 0) return;       // no se pudo
+
+    requestAnimationFrame(() => {
+      window.forceSyncResaltadorUI(intentos - 1);
+    });
+  };
+
+  // 1 frame + tick (para que el portal termine)
+  requestAnimationFrame(tick);
+};
+
 // ================= ⭐ MOSTRAR TEXTO =======================
 function mostrarTexto() {
   texto.innerHTML = ""; 
