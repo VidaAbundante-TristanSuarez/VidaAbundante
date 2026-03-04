@@ -1314,14 +1314,9 @@ function abcUIEnABC(){
 // ✅ Hooks ABC
 // -------------------------
 window.__abcOnEnter = () => {
-  // ✅ ABC SIEMPRE entra con resaltador bloqueado (independiente de Biblia)
+  // ✅ ABC SIEMPRE entra con resaltador bloqueado
   resaltadorBloqueado = true;
-window.resaltadorBloqueado = true;
-
-// ✅ forzar pintado del candado chico cuando el DOM ya quedó listo
-setTimeout(() => {
-  try { actualizarUICandadoResaltador?.(); } catch(e){}
-}, 0);
+  window.resaltadorBloqueado = true;
 
   // (opcional) cerrar paleta si estaba abierta
   try {
@@ -1329,7 +1324,12 @@ setTimeout(() => {
     if (pal) pal.style.display = "none";
   } catch(e){}
 
+  // ✅ 1) primero portaleamos la barra (mueve DOM)
   abcPortalBarraOn();
+
+  // ✅ 2) ahora sí: forzar sync del candadito chico (cuando el DOM ya está donde queda)
+  window.forceSyncResaltadorUI?.(25);
+
   abcAplicarFontSize();
   abcUIEnABC();
 
