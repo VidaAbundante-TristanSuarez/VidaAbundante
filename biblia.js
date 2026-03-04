@@ -434,18 +434,24 @@ function actualizarUICandadoResaltador() {
   const btnBloquear = document.getElementById("btnBloquearResaltador");
   if (!paleta || !btnBloquear) return;
 
+  // ✅ SIEMPRE leer del window (evita desync entre secciones)
+  const locked = !!window.resaltadorBloqueado;
+  const curColor = (window.colorActual || "#fff3b0") + "";
+
   // icono grande
-  btnBloquear.textContent = resaltadorBloqueado ? "🔒" : "🔓";
+  btnBloquear.textContent = locked ? "🔒" : "🔓";
 
   // limpiar candaditos pequeños anteriores
   paleta.querySelectorAll("button[data-color] span.icono-candado").forEach(c => c.remove());
 
   // si está bloqueado, poner el candadito pequeño en el color actual
-  if (resaltadorBloqueado) {
+  if (locked) {
     const botonColor = Array.from(paleta.querySelectorAll("button[data-color]"))
-      .find(b => b.dataset.color === colorActual);
+      .find(b => ((b.dataset.color || "") + "") === curColor);
 
-    if (botonColor) {
+    // ✅ si no encontró exacto, igual lo mostramos en el primer color (fallback)
+    const target = botonColor || paleta.querySelector("button[data-color]");
+    if (target) {
       const span = document.createElement("span");
       span.textContent = "🔒";
       span.className = "icono-candado";
@@ -456,8 +462,8 @@ function actualizarUICandadoResaltador() {
       span.style.background = "#fff";
       span.style.borderRadius = "50%";
       span.style.padding = "1px";
-      botonColor.style.position = "relative";
-      botonColor.appendChild(span);
+      target.style.position = "relative";
+      target.appendChild(span);
     }
   }
 }
