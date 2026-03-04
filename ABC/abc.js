@@ -719,28 +719,21 @@ function abcMarcarSeleccionUI(){
       }
     }
 
-    const ya = b.querySelector(".icono-nota");
+    // creás/actualizás icono-nota
+const ya = b.querySelector(".icono-nota");
 
 if (notaIdParaEsteBloque) {
   if (!ya) {
-    const ico = document.createElement("i");
-    ico.className = "fa-solid fa-comment-dots icono-nota";
-    ico.setAttribute("aria-hidden", "true");
-
-    ico.onclick = (e) => {
-      e.stopPropagation();
-      if (typeof window.abcEditarNota === "function") window.abcEditarNota(notaIdParaEsteBloque);
-    };
-
-    b.appendChild(ico);
+    const pluma = document.createElement("span");
+    pluma.className = "icono-nota";
+    pluma.setAttribute("data-mid", notaIdParaEsteBloque);
+    pluma.innerHTML = '<i class="fa-solid fa-comment-dots" aria-hidden="true"></i>';
+    b.appendChild(pluma);
   } else {
-    // ✅ CLAVE: si ya existía (quizás era pluma), lo actualizamos al icono nuevo
-    ya.className = "fa-solid fa-comment-dots icono-nota";
-
-    ya.onclick = (e) => {
-      e.stopPropagation();
-      if (typeof window.abcEditarNota === "function") window.abcEditarNota(notaIdParaEsteBloque);
-    };
+    // si ya existía, lo dejamos igual pero lo "normalizamos"
+    ya.className = "icono-nota";
+    ya.setAttribute("data-mid", notaIdParaEsteBloque);
+    ya.innerHTML = '<i class="fa-solid fa-comment-dots" aria-hidden="true"></i>';
   }
 } else {
   if (ya) ya.remove();
