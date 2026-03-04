@@ -2374,7 +2374,12 @@ async function cargarDevocionales(){
       if (!byTs || typeof byTs !== "object") continue;
       for (const [ts, it] of Object.entries(byTs)) {
         if (!it || typeof it !== "object") continue;
-        items.push({ id: `${uid}_${ts}`, uid, ts: Number(ts) || 0, ...it });
+        items.push({
+  id: `${uid}_${ts}`,
+  uidOwner: uid,          // ✅ de quién es
+  tsKey: Number(ts) || 0, // ✅ la clave exacta en la DB
+  ...it
+});
       }
     }
 
@@ -2436,6 +2441,8 @@ function renderDevFeed(items){
   if (!feed) return;
   feed.innerHTML = "";
 
+  const esAdmin = isAdmin(); // ✅ una sola vez
+
   items.forEach((it)=>{
     const card = document.createElement("div");
     card.className = "devBigCard";
@@ -2443,25 +2450,65 @@ function renderDevFeed(items){
 
     card.innerHTML = `
       <img src="${it.url || ""}" alt="dev grande">
+
       <div class="devBigActions">
-        <button class="btn-primary" type="button" onclick="devReproducirAudioItem('${it.audioGithubUrl || ""}')">
+        <button class="btn-primary" type="button"
+          onclick="devReproducirAudioItem('${it.audioGithubUrl || ""}')">
           <i class="fa-solid fa-play"></i> Audio
         </button>
-        <button class="btn-primary" type="button"
-  onclick="devCompartirImagenItem('${it.storagePath || ""}', 'devocional.png')">
-  <i class="fa-solid fa-share-nodes"></i> Compartir
-</button>
 
-<button class="btn-primary" type="button"
-  onclick="devDescargarImagenItem('${it.storagePath || ""}', 'devocional.png')">
-  <i class="fa-solid fa-download"></i> PNG
-</button>
+        <button class="btn-primary" type="button"
+          onclick="devCompartirImagenItem('${it.storagePath || ""}', 'devocional.png')">
+          <i class="fa-solid fa-share-nodes"></i> Compartir
+        </button>
+
+        <button class="btn-primary" type="button"
+          onclick="devDescargarImagenItem('${it.storagePath || ""}', 'devocional.png')">
+          <i class="fa-solid fa-download"></i> PNG
+        </button>
+
+        ${esAdmin ? `
+          <button class="btn-primary devDanger" type="button"
+            onclick="devBorrarDevocional('${it.uidOwner || ""}','${it.tsKey || 0}','${it.storagePath || ""}')">
+            <i class="fa-solid fa-trash"></i> Borrar
+          </button>
+        ` : ``}
       </div>
     `;
 
     feed.appendChild(card);
   });
 }
+
+window.devBorrarDevocional = async (uidOwner, tsKey, storagePath) => {
+  if (!isAdmin()) { alert("Solo admin."); return; }
+
+  const ok = confirm("¿Borrar este devocional?\n\nEsto elimina la imagen de Storage y el registro de la Iglesia.");
+  if (!ok) return;
+
+  const fb  = window.__FB;
+  const api = window.__FB_API;
+  if (!fb || !api) { alert("Firebase no listo."); return; }
+
+  const { db, storage } = fb;
+  const { ref, remove, sRef, deleteObject } = api;
+
+  try {
+    // 1) borrar Storage (si existe)
+    if (storagePath) {
+      await deleteObject(sRef(storage, storagePath));
+    }
+
+    // 2) borrar DB
+    const dbPath = `devocionalesIglesia/${uidOwner}/${tsKey}`;
+    await remove(ref(db, dbPath));
+
+    alert("✅ Devocional borrado.");
+  } catch (e) {
+    console.error(e);
+    alert("❌ No se pudo borrar.\n\nDetalle: " + (e?.message || e));
+  }
+};
 
 window.devReproducirAudioItem = (url)=>{
   if (!url) { alert("Este devocional no tiene audio."); return; }
