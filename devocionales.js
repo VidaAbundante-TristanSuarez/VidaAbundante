@@ -293,16 +293,25 @@ function oneLine(s){
     .trim();
 }
 
+function ensurePeriod(s){
+  s = oneLine(s);
+  if (!s) return "";
+  return /[.!?…]$/.test(s) ? s : (s + ".");
+}
+
 function buildAudioFromParts(p1, p2){
   const reflex = oneLine(p2?.reflexion || "");
   const orac   = oneLine(p2?.oracion || "");
 
+  const fecha = ensurePeriod(p1?.fecha || "");
+  const cita  = ensurePeriod(p1?.cita || "");
+
   return [
     "DEVOCIONAL",
-    oneLine(p1?.fecha || ""),
+    fecha,
     "",
     oneLine(p1?.versiculo || ""),
-    oneLine(p1?.cita || ""),
+    cita,
     "",
     `Reflexión: ${reflex} Oración: ${orac}`.trim()
   ].join("\n").trim();
@@ -1926,11 +1935,11 @@ window.devCompartirIglesia = async () => {
   const api = window.__FB_API;
   if (!fb || !api || !window.__UID) {
     alert("No encuentro Firebase listo. Asegurate que biblia.js cargó y que estás logueado.");
-    return;
+    throw new Error("Firebase no listo");
   }
 
   const c = await renderFinalCanvasCaptureReal();
-  if (!c) return;
+  if (!c) throw new Error("No se pudo renderizar el canvas final");
 
   const uid = window.__UID;
   const ts = Date.now();
@@ -1940,9 +1949,9 @@ window.devCompartirIglesia = async () => {
   const dbPath = `devocionalesIglesia/${uid}/${ts}`;
 
   const blob = await new Promise(res => c.toBlob(res, "image/png"));
-  if (!blob) return;
+  if (!blob) throw new Error("No se pudo convertir a PNG");
 
-  try{
+  try {
     const { db, storage } = fb;
     const { ref, set, sRef, uploadBytes, getDownloadURL } = api;
 
@@ -1955,14 +1964,17 @@ window.devCompartirIglesia = async () => {
       storagePath,
       fecha: ts,
       texto: DEV.audioText || "",
-      // si querés guardar estado de audio confirmado:
-      audioOk: !!DEV.audioOk
+      audioOk: !!DEV.audioOk,
+      audioGithubUrl: DEV.audioGithubUrl || ""   // ✅ CLAVE (ver punto 4)
     });
 
     alert("✅ Devocional compartido en Iglesia");
-  }catch(e){
+    return true;
+
+  } catch (e) {
     console.error(e);
-    alert("❌ No se pudo compartir en Iglesia");
+    alert("❌ No se pudo compartir en Iglesia\n\nDetalle: " + (e?.message || e));
+    throw e; // ✅ CLAVE: si falla, no “finjas éxito”
   }
 };
 
@@ -2009,7 +2021,20 @@ window.devFinalizar = async () => {
   if (!ok) return;
 
   try{
-    // ✅ siempre sube a Iglesia
+
+     // ✅ asegurar audio en GitHub antes de publicar (si no existe)
+if (!DEV.audioGithubUrl) {
+  try {
+    // genera y sube audio (y setea DEV.audioGithubUrl)
+    await window.devDescargarFinal(); 
+  } catch (e) {
+    console.warn("No se pudo subir audio a GitHub antes de publicar:", e);
+    // podés decidir: bloquear o dejar publicar sin audio
+    // return;  // <- si querés obligar audio sí o sí
+  }
+}
+     
+     // ✅ siempre sube a Iglesia
     await window.devCompartirIglesia();
 
     // ✅ opcional: también a Mi Panel
@@ -2071,8 +2096,11 @@ function initDevocionales(){
   btnRecortar.style.opacity = "0.6";
   syncBtnCrear();
   ta.addEventListener("input", syncBtnCrear);
-  ocrSetStatus("✅ Cargá una imagen, recortá si querés y tocá OCR.");
+  ocrSetStatus("✅ Cargá una imagen, recortá si querés y tocá Crear devocional.");
 
+ btnOCR.style.display = "none";
+ btnOCR.textContent = "🧠 Crear devocional";
+   
   // cargar imagen
   input.addEventListener("change", ()=>{
     const file = input.files?.[0];
@@ -2083,7 +2111,7 @@ function initDevocionales(){
 
     image.onload = ()=>{
       DEV.img = image;
-
+btnOCR.style.display = "none";
       // reset crop
       DEV.crop = null;
       DEV.start = null;
@@ -2113,15 +2141,25 @@ function initDevocionales(){
   });
 
   // toggle recorte
-  btnRecortar.addEventListener("click", ()=>{
-    if (!DEV.img) { alert("Primero cargá una imagen"); return; }
-    DEV.recortando = !DEV.recortando;
-    btnRecortar.textContent = DEV.recortando ? "✅ Listo" : "✂️ Recortar";
-    if (!DEV.recortando) {
-      DEV.start = null;
-      DEV.drawing = false;
+btnRecortar.addEventListener("click", ()=>{
+  if (!DEV.img) { alert("Primero cargá una imagen"); return; }
+
+  DEV.recortando = !DEV.recortando;
+  btnRecortar.textContent = DEV.recortando ? "✅ Listo" : "✂️ Recortar";
+
+  if (!DEV.recortando) {
+    DEV.start = null;
+    DEV.drawing = false;
+
+    // mostrar botón crear devocional
+    if (btnOCR) {
+      btnOCR.style.display = "inline-flex";
+      btnOCR.textContent = "🧠 Crear devocional";
     }
-  });
+  } else {
+    if (btnOCR) btnOCR.style.display = "none";
+  }
+});
 
   // OCR
   btnOCR.addEventListener("click", async ()=>{
@@ -2165,6 +2203,7 @@ function initDevocionales(){
       syncBtnCrear();
       ocrSetStatus("✅ OCR listo.");
       await devAbrirFase0();  // ✅ abre el modal 0 al terminar OCR
+       btnOCR.style.display = "none";
 
     }catch(e){
       console.error(e);
