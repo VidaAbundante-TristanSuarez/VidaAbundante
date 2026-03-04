@@ -2447,12 +2447,15 @@ function renderDevFeed(items){
         <button class="btn-primary" type="button" onclick="devReproducirAudioItem('${it.audioGithubUrl || ""}')">
           <i class="fa-solid fa-play"></i> Audio
         </button>
-        <button class="btn-primary" type="button" onclick="devCompartirImagenUrl('${it.url || ""}')">
-          <i class="fa-solid fa-share-nodes"></i> Compartir
-        </button>
-        <button class="btn-primary" type="button" onclick="devDescargarImagenUrl('${it.url || ""}')">
-          <i class="fa-solid fa-download"></i> PNG
-        </button>
+        <button class="btn-primary" type="button"
+  onclick="devCompartirImagenItem('${it.storagePath || ""}', 'devocional.png')">
+  <i class="fa-solid fa-share-nodes"></i> Compartir
+</button>
+
+<button class="btn-primary" type="button"
+  onclick="devDescargarImagenItem('${it.storagePath || ""}', 'devocional.png')">
+  <i class="fa-solid fa-download"></i> PNG
+</button>
       </div>
     `;
 
