@@ -383,9 +383,7 @@ async function abcCargarProgreso(){
 }
 
 function abcResaltadorGlobalBloqueado(){
-  // ✅ ABC usa EXACTAMENTE el mismo lock real que Biblia
-  // (no depende de clases CSS ni del DOM de la paleta)
-  return !!window.resaltadorBloqueado;
+  return getLock("abc");
 }
 
 // ----- RESALTADOS -----
