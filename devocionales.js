@@ -74,6 +74,9 @@ const DEV = {
 
   // modal 0 preview
   cropPreviewUrl: null
+
+   publicando: false,
+   publishTs: 0,
 };
 
 /* =========================================================
@@ -1929,8 +1932,8 @@ if (!pack?.base64 || !pack?.blob) {
   }
 };
 
-// Compartir a Iglesia (sube a Firebase si existe window.__FB)
-window.devCompartirIglesia = async () => {
+// ✅ Devocional a Iglesia (usa un ts fijo si se lo pasás)
+window.devCompartirIglesia = async (tsParam) => {
   const fb = window.__FB;
   const api = window.__FB_API;
   if (!fb || !api || !window.__UID) {
@@ -1938,11 +1941,12 @@ window.devCompartirIglesia = async () => {
     throw new Error("Firebase no listo");
   }
 
+  // ✅ NO renderizar dos veces: si ya tenés finalDataUrl, reutilizá
   const c = await renderFinalCanvasCaptureReal();
   if (!c) throw new Error("No se pudo renderizar el canvas final");
 
   const uid = window.__UID;
-  const ts = Date.now();
+  const ts = Number(tsParam) || Date.now();     // ✅ MISMO TS si viene
   const fileName = `devocional_${ts}.png`;
 
   const storagePath = `devocionales_iglesia/${uid}/${fileName}`;
@@ -1965,39 +1969,40 @@ window.devCompartirIglesia = async () => {
       fecha: ts,
       texto: DEV.audioText || "",
       audioOk: !!DEV.audioOk,
-      audioGithubUrl: DEV.audioGithubUrl || ""   // ✅ CLAVE (ver punto 4)
+      audioGithubUrl: DEV.audioGithubUrl || ""
     });
 
-    alert("✅ Devocional compartido en Iglesia");
-    return true;
+    return { ok:true, ts, url, storagePath, dbPath };
 
   } catch (e) {
     console.error(e);
     alert("❌ No se pudo compartir en Iglesia\n\nDetalle: " + (e?.message || e));
-    throw e; // ✅ CLAVE: si falla, no “finjas éxito”
+    throw e;
   }
 };
 
-async function devSubirMiPanel(){
+
+// ✅ Devocional a Mi Panel (usa el MISMO ts)
+async function devSubirMiPanel(tsParam){
   const fb = window.__FB;
   const api = window.__FB_API;
   if (!fb || !api || !window.__UID) {
     alert("No encuentro Firebase listo o no estás logueado.");
-    return;
+    throw new Error("Firebase no listo");
   }
 
   const c = await renderFinalCanvasCaptureReal();
-  if (!c) return;
+  if (!c) throw new Error("No se pudo renderizar el canvas final");
 
   const uid = window.__UID;
-  const ts = Date.now();
+  const ts = Number(tsParam) || Date.now();     // ✅ MISMO TS si viene
   const fileName = `devocional_${ts}.png`;
 
   const storagePath = `devocionales_panel/${uid}/${fileName}`;
   const dbPath = `miPanelDevocionales/${uid}/${ts}`;
 
   const blob = await new Promise(res => c.toBlob(res, "image/png"));
-  if (!blob) return;
+  if (!blob) throw new Error("No se pudo convertir a PNG");
 
   const { db, storage } = fb;
   const { ref, set, sRef, uploadBytes, getDownloadURL } = api;
@@ -2014,41 +2019,53 @@ async function devSubirMiPanel(){
     audioOk: !!DEV.audioOk,
     audioGithubUrl: DEV.audioGithubUrl || ""
   });
+
+  return { ok:true, ts, url, storagePath, dbPath };
 }
+
+// ✅ candado anti doble submit
+DEV.publicando = DEV.publicando || false;
 
 window.devFinalizar = async () => {
+  if (DEV.publicando) return;
+  DEV.publicando = true;
+
+  const btn = document.getElementById("devBtnFinalizar");
+  if (btn) btn.disabled = true;
+
   const ok = confirm("¿Finalizar devocional?\n\nSe sube a Iglesia.\nSi está tildado Mi Panel, también se sube ahí.");
-  if (!ok) return;
-
-  try{
-
-     // ✅ asegurar audio en GitHub antes de publicar (si no existe)
-if (!DEV.audioGithubUrl) {
-  try {
-    // genera y sube audio (y setea DEV.audioGithubUrl)
-    await window.devDescargarFinal(); 
-  } catch (e) {
-    console.warn("No se pudo subir audio a GitHub antes de publicar:", e);
-    // podés decidir: bloquear o dejar publicar sin audio
-    // return;  // <- si querés obligar audio sí o sí
+  if (!ok) {
+    DEV.publicando = false;
+    if (btn) btn.disabled = false;
+    return;
   }
-}
-     
-     // ✅ siempre sube a Iglesia
-    await window.devCompartirIglesia();
+
+  try {
+    const ts = Date.now(); // ✅ 1 solo TS para todo
+
+    // ✅ asegurar audio en GitHub antes de publicar
+    if (!DEV.audioGithubUrl) {
+      try { await window.devDescargarFinal(); } catch (e) { console.warn(e); }
+    }
+
+    // ✅ siempre a Iglesia
+    await window.devCompartirIglesia(ts);
 
     // ✅ opcional: también a Mi Panel
     if (DEV.subirPanel) {
-      await devSubirMiPanel();
+      await devSubirMiPanel(ts);
       alert("✅ Subido a Iglesia y a Mi Panel");
     } else {
       alert("✅ Subido a Iglesia");
     }
 
     devCerrarTodo();
-  }catch(e){
+  } catch (e) {
     console.error(e);
     alert("❌ Error al finalizar/subir.\n\nDetalle: " + (e?.message || e));
+  } finally {
+    DEV.publicando = false;
+    if (btn) btn.disabled = false;
   }
 };
 
@@ -2445,11 +2462,48 @@ function renderDevFeed(items){
 
 window.devReproducirAudioItem = (url)=>{
   if (!url) { alert("Este devocional no tiene audio."); return; }
-  // simple: abre en pestaña o lo cargas en tu player
-  window.open(url, "_blank");
+
+  // abrir modal de audio
+  if (typeof window.abrirModalAudio === "function") window.abrirModalAudio();
+  else $("modalAudio")?.classList.add("abierto");
+
+  const audio = $("audioPreview");
+  if (audio) {
+    audio.src = url;
+    audio.load();
+    audio.play().catch(()=>{});
+  }
+
+  const est = $("audioEstado");
+  if (est) est.textContent = "Reproduciendo audio del devocional…";
 };
 
-window.devDescargarImagenUrl = async (url)=>{
+window.devDescargarImagenItem = async (storagePath, nombre = "devocional.png") => {
+  const fb = window.__FB;
+  const api = window.__FB_API;
+  if (!fb || !api) { alert("Firebase no listo."); return; }
+
+  if (!storagePath) { alert("Este devocional no tiene storagePath."); return; }
+
+  const { storage } = fb;
+  const { sRef, getBytes } = api;
+
+  try {
+    const bytes = await getBytes(sRef(storage, storagePath));
+    const blob = new Blob([bytes], { type: "image/png" });
+
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = nombre;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  } catch (e) {
+    console.error(e);
+    alert("❌ No se pudo descargar el PNG.\n\nDetalle: " + (e?.message || e));
+  }
+};Url = async (url)=>{
   if (!url) return;
   const r = await fetch(url);
   const blob = await r.blob();
@@ -2462,16 +2516,30 @@ window.devDescargarImagenUrl = async (url)=>{
   setTimeout(()=> URL.revokeObjectURL(a.href), 2000);
 };
 
-window.devCompartirImagenUrl = async (url)=>{
-  if (!url) return;
-  const r = await fetch(url);
-  const blob = await r.blob();
-  const file = new File([blob], "devocional.png", { type:"image/png" });
+window.devCompartirImagenItem = async (storagePath, nombre = "devocional.png") => {
+  const fb = window.__FB;
+  const api = window.__FB_API;
+  if (!fb || !api) { alert("Firebase no listo."); return; }
 
-  if (navigator.share && navigator.canShare?.({ files:[file] })) {
-    await navigator.share({ files:[file], title:"Devocional" });
-  } else {
-    await devDescargarImagenUrl(url);
-    alert("Tu navegador no permite compartir directo. Se descargó la imagen.");
+  if (!storagePath) { alert("Este devocional no tiene storagePath."); return; }
+
+  const { storage } = fb;
+  const { sRef, getBytes } = api;
+
+  try {
+    const bytes = await getBytes(sRef(storage, storagePath));
+    const blob = new Blob([bytes], { type: "image/png" });
+    const file = new File([blob], nombre, { type: "image/png" });
+
+    if (navigator.share && navigator.canShare?.({ files: [file] })) {
+      await navigator.share({ files: [file], title: "Devocional" });
+    } else {
+      // fallback: descarga el archivo (igual sin links)
+      await window.devDescargarImagenItem(storagePath, nombre);
+      alert("Tu dispositivo/navegador no permite compartir directo. Se descargó el archivo.");
+    }
+  } catch (e) {
+    console.error(e);
+    alert("❌ No se pudo compartir el archivo.\n\nDetalle: " + (e?.message || e));
   }
 };
