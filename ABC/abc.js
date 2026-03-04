@@ -1274,6 +1274,19 @@ function abcUIEnABC(){
 // ✅ Hooks ABC
 // -------------------------
 window.__abcOnEnter = () => {
+  // ✅ 0) APAGAR modo marcador de Biblia si venía activo (para que no se arrastre a ABC)
+  try{
+    const btnBibliaPin = document.getElementById("btnModoMarcadorBarra");
+    if (btnBibliaPin?.classList.contains("activo") && typeof window.toggleModoMarcador === "function") {
+      window.toggleModoMarcador(); // lo apaga
+    }
+
+    // por las dudas: sacar foco visual pegado
+    btnBibliaPin?.blur?.();
+    document.activeElement?.blur?.();
+  }catch(e){}
+
+  // ✅ 1) ahora sí: entrar a ABC normalmente
   abcPortalBarraOn();
   abcAplicarFontSize();
   abcUIEnABC();
@@ -1289,6 +1302,12 @@ window.__abcOnExit = () => {
   // ✅ devolver handlers y estilos a Biblia
   abcRestoreBarBiblia();
 
+  // ✅ si Biblia quedó con el botón activo por algún bug visual, lo limpiamos
+const btnPin = document.getElementById("btnModoMarcadorBarra");
+btnPin?.classList.remove("activo");
+btnPin?.blur?.();
+document.activeElement?.blur?.();
+  
   // ✅ IMPORTANTÍSIMO: limpiar ocultamiento “forzado” que dejó ABC
   const btnImagen = document.getElementById("btnImagen");
   const btnCrear  = document.getElementById("btnCrearImagen");
