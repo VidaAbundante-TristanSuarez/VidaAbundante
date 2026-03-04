@@ -1316,8 +1316,12 @@ function abcUIEnABC(){
 window.__abcOnEnter = () => {
   // ✅ ABC SIEMPRE entra con resaltador bloqueado (independiente de Biblia)
   resaltadorBloqueado = true;
-  window.resaltadorBloqueado = true;
+window.resaltadorBloqueado = true;
+
+// ✅ forzar pintado del candado chico cuando el DOM ya quedó listo
+setTimeout(() => {
   try { actualizarUICandadoResaltador?.(); } catch(e){}
+}, 0);
 
   // (opcional) cerrar paleta si estaba abierta
   try {
