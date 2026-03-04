@@ -466,7 +466,7 @@ function actualizarUICandadoResaltador() {
 
 // ================= ⭐ MOSTRAR TEXTO =======================
 function mostrarTexto() {
-  texto.innerHTML = ""; 
+  texto.innerHTML = "";
   titulo.innerText = `${libroSel.value} ${capSel.value}`;
 
   const versos = bibliaData.filter(v =>
@@ -474,7 +474,20 @@ function mostrarTexto() {
     v.Capitulo == capSel.value
   );
 
-  versos.forEach(v => pintarVersiculo(v));
+  // ✅ último versículo seleccionado (solo para mostrar UNA pluma en modo marcador)
+  let lastSelId = null;
+  if (modoMarcador) {
+    const nums = Object.keys(seleccionMarcador || {})
+      .map(id => Number(id.split("_").pop()))
+      .filter(n => !isNaN(n));
+
+    if (nums.length) {
+      const last = Math.max(...nums);
+      lastSelId = `${libroSel.value}_${capSel.value}_${last}`;
+    }
+  }
+
+  versos.forEach(v => pintarVersiculo(v, lastSelId));
 }
 
 // ================= ⭐ TOGGLE VERSICULO =======================
@@ -531,6 +544,7 @@ function toggleVersiculo(id, num) {
   }
 }
 
+// ================= ⭐ PINTAR VERSICULO =======================
 function pintarVersiculo(v) {
   const id = `${v.Libro}_${v.Capitulo}_${v.Versiculo}`;
   const marcado = marcados[id];
@@ -587,7 +601,7 @@ function pintarVersiculo(v) {
 
   div.style.opacity = (modoImagen && !imagen) ? "0.6" : "1";
 
-  // ================= CONTENIDO (num | txt | pluma) =================
+   // ================= CONTENIDO (num | txt) =================
   const num = document.createElement("span");
   num.className = "num";
   num.textContent = v.Versiculo;
@@ -599,22 +613,40 @@ function pintarVersiculo(v) {
   div.appendChild(num);
   div.appendChild(txt);
 
-  // ✅ SOLO UNA PLUMA: si este versículo es "el último" de una nota
-  const mid = window.notasBibliaPluma?.[id] || null;
-  if (mid) {
+  // ================= ✅ PLUMA: SOLO UNA =================
+  let mostrarPluma = false;
+  let mid = null;
+
+  if (modoMarcador) {
+    // ✅ durante creación: solo en el último seleccionado
+    mostrarPluma = !!lastSelId && id === lastSelId;
+    mid = null; // no hay id real todavía
+  } else {
+    // ✅ notas ya guardadas: solo en el último verso de cada nota
+    mid = window.notasBibliaPluma?.[id] || null;
+    mostrarPluma = !!mid;
+  }
+
+  if (mostrarPluma) {
     const pluma = document.createElement("span");
     pluma.className = "icono-nota";
-    pluma.setAttribute("data-mid", mid);
-    pluma.textContent = "✍️";
+    pluma.innerHTML = '<i class="fa-solid fa-comment-dots"></i>';
+    
+    // ✅ solo si existe marcador real la hacemos clickeable
+    if (mid) pluma.setAttribute("data-mid", mid);
+
     div.appendChild(pluma);
   } else {
-    // para mantener el grid parejo (opcional): celda vacía
+    // opcional: celda vacía para que el grid quede perfecto
     const vacio = document.createElement("span");
     vacio.className = "icono-nota";
     vacio.style.visibility = "hidden";
     vacio.textContent = "✍️";
     div.appendChild(vacio);
   }
+
+  texto.appendChild(div);
+}
 
   // ================= Click =================
   div.onclick = () => toggleVersiculo(id, v.Versiculo);
