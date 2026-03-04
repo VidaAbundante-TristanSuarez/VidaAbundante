@@ -1877,8 +1877,27 @@ window.cerrarMarcadores = () => {
   if (modal) {
     modal.classList.remove("abierto");
     modal.setAttribute("aria-hidden", "true");
-
   }
+
+  // ✅ Si estoy en ABC, NO dejes que Biblia esconda el ✓
+  // porque en ABC el ✓ depende de abcModoMarcador/selección de bloques.
+  try {
+    const secIglesia = document.getElementById("seccion-iglesia");
+    const subABC = document.getElementById("iglesia-abc");
+    const estoyEnABC =
+      !!(secIglesia && secIglesia.style.display !== "none" &&
+         subABC && subABC.style.display !== "none");
+
+    if (estoyEnABC) {
+      // re-aplicar UI de ABC (vuelve el ✓ y se actualiza su estado)
+      if (typeof abcAplicarUIAccionesPorModo === "function") abcAplicarUIAccionesPorModo();
+      if (typeof abcHabilitarCheckUI === "function") abcHabilitarCheckUI();
+      if (typeof abcMarcarSeleccionUI === "function") abcMarcarSeleccionUI();
+      return; // ✅ IMPORTANTÍSIMO: no ejecutes el refresco de Biblia
+    }
+  } catch(e){}
+
+  // ✅ caso Biblia normal
   refrescarBotonGuardarMarcador();
 };
 
