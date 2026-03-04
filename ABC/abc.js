@@ -1068,14 +1068,15 @@ function abcResetModoMarcador() {
 // -------------------------
 // ✅ ABC: barra (solo 📌 + ✓ en modo marcador)
 // -------------------------
-function abcAplicarUIAccionesPorModo() {
-  const btnPin    = document.getElementById("btnModoMarcadorBarra"); // 📌
-  const btnCheck  = document.getElementById("btnGuardarMarcador");   // ✓
+window.__abcAccionesBackup = window.__abcAccionesBackup || {}; // id -> display anterior
 
-  // ✅ imagen siempre off en ABC (blindado, aunque Biblia intente mostrar)
+function abcAplicarUIAccionesPorModo() {
+  const btnPin   = document.getElementById("btnModoMarcadorBarra"); // 📌
+  const btnCheck = document.getElementById("btnGuardarMarcador");   // ✓
+
+  // ✅ imagen siempre OFF en ABC (blindado)
   const btnImagen = document.getElementById("btnImagen");
   const btnCrear  = document.getElementById("btnCrearImagen");
-
   [btnImagen, btnCrear].forEach(b => {
     if (!b) return;
     b.style.display = "none";
@@ -1083,30 +1084,48 @@ function abcAplicarUIAccionesPorModo() {
     b.style.pointerEvents = "none";
   });
 
+  // 📌 siempre visible en ABC
   if (btnPin) btnPin.style.display = "inline-flex";
 
-  const idsOcultar = [
+  // 👇 todos los demás botones de la barra (los que querés ocultar en modo marcador)
+  const idsOtros = [
     "btnListaMarcadores",
     "btnCopiar", "btnCompartir", "btnAudio", "btnLeer",
     "btnDescargar",
     "btnMas", "btnMenos",
-    // ✅ por si algún template los reinyecta con otros IDs (opcional)
     "btnImagen", "btnCrearImagen"
   ];
 
-  const otros = idsOcultar
+  const otros = idsOtros
     .map(id => document.getElementById(id))
     .filter(Boolean);
 
   if (abcModoMarcador) {
+    // ✅ ON: mostrar ✓ y ocultar TODO lo demás
     if (btnCheck) btnCheck.style.display = "inline-flex";
-    otros.forEach(el => el.style.display = "none");
+
+    otros.forEach(el => {
+      // guardar display anterior solo 1 vez
+      if (window.__abcAccionesBackup[el.id] === undefined) {
+        window.__abcAccionesBackup[el.id] = el.style.display; // puede ser ""
+      }
+      el.style.display = "none";
+    });
+
   } else {
+    // ✅ OFF: ocultar ✓ y restaurar TODO lo demás como estaba
     if (btnCheck) btnCheck.style.display = "none";
-    otros.forEach(el => el.style.display = "");
+
+    otros.forEach(el => {
+      const prev = window.__abcAccionesBackup[el.id];
+      el.style.display = (prev !== undefined) ? prev : "";
+    });
+
+    // opcional: limpiar backup para que no crezca
+    window.__abcAccionesBackup = {};
   }
 
-  // ✅ blindaje final (por si el else los “revive”)
+  // ✅ blindaje final (por si algo lo revive)
   [btnImagen, btnCrear].forEach(b => {
     if (!b) return;
     b.style.display = "none";
@@ -1114,7 +1133,7 @@ function abcAplicarUIAccionesPorModo() {
     b.style.pointerEvents = "none";
   });
 
-  // ✅ refresca estado del ✓ en ABC
+  // ✅ refresca estado del ✓
   abcHabilitarCheckUI();
 }
 
