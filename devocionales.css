@@ -577,13 +577,28 @@ body.modal-open{
   display:block;
 }
 
-.devIndexMeta{
-  padding:8px 10px;
-  display:flex;
-  flex-direction:column;
-  gap:2px;
+.devIndexImgWrap{
+  position: relative;
+}
+
+.devIndexCita{
+  position:absolute;
+  left:8px;
+  right:8px;
+  bottom:10px;
+  text-align:center;
+  font-weight:900;
   font-size:12px;
-  line-height:1.2;
+  color:#fff;
+  text-shadow: 0 2px 10px rgba(0,0,0,.6);
+  line-height:1.15;
+}
+
+.devIndexFecha{
+  padding: 8px 10px;
+  text-align:center;
+  font-size:12px;
+  opacity:.75;
 }
 
 /* feed vertical */
@@ -630,6 +645,16 @@ body.modal-open{
 .devDanger:hover{
   background:#ffb5b5 !important;
   color:#000 !important;
+}
+
+.devAudioBox{
+  padding: 10px 10px 0;
+  display:flex;
+  justify-content:center;
+}
+.devAudioBox audio{
+  width: 100%;
+  max-width: 420px;
 }
 
 </style>
