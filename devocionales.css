@@ -532,12 +532,21 @@ body.modal-open{
   padding: 10px 0 18px;
 }
 
-/* fila superior: solo el botón + */
+/* fila superior: botón + (que no quede tapado en celu) */
 #devTopRow{
+  position: sticky;
+  top: 0;
+  z-index: 5;
   display:flex;
   justify-content:flex-end;
   align-items:center;
-  margin: 6px 0 8px;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-right: 6px;
+  background: #fff;
+}
+
+#btnDevNuevo{
+  margin-top: 6px;
 }
 
 /* índice horizontal */
