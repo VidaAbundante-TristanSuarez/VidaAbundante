@@ -602,40 +602,6 @@ body.modal-open{
   opacity:.85;
 }
 
-.devIndexCita{
-  position:absolute;
-  left:8px;
-  right:8px;
-  top:8px;
-
-  padding:4px 6px;           /* ✅ menos alto */
-  border-radius:10px;
-  background: rgba(0,0,0,.45);
-  color:#fff;
-
-  font-family: Georgia, "Times New Roman", serif;
-  font-weight: 700;
-  text-decoration: underline;
-  font-size:11px;            /* ✅ 1 punto menos */
-  line-height:1.1;
-  text-align:center;
-
-  display:-webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow:hidden;
-}
-
-.devIndexFecha{
-  padding:4px 8px;           /* ✅ menos alto */
-  font-family: Georgia, "Times New Roman", serif;
-  font-weight: 700;
-  text-decoration: underline;
-  font-size:11px;            /* ✅ 1 punto menos */
-  opacity:.80;
-  text-align:center;
-}
-
 /* feed vertical */
 #devFeed{
   display:flex;
@@ -693,6 +659,3 @@ body.modal-open{
 }
 
 </style>
-
-
-
