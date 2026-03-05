@@ -6,6 +6,8 @@
 const OCR_URL = "https://us-central1-vidaabundante-f118a.cloudfunctions.net/ocrDevocional";
 const GH_UPLOAD_URL = "https://us-central1-vidaabundante-f118a.cloudfunctions.net/subirAudioDevocionalGithub";
 const TTS_URL = "https://us-central1-vidaabundante-f118a.cloudfunctions.net/ttsAudio";
+console.log("✅ devocionales.js cargó (module)", "VERSION 1");
+window.__DEV_DEVOCIONALES_LOADED__ = true;
 
 function $(id){ return document.getElementById(id); }
 
