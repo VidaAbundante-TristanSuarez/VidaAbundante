@@ -2341,10 +2341,15 @@ async function cargarDevocionales(){
   if (feed) feed.innerHTML = `<div style="opacity:.8; padding:10px;">Cargando devocionales…</div>`;
 
   const btnNuevo = $("btnDevNuevo");
-  if (btnNuevo) {
-    btnNuevo.style.display = isAdmin() ? "inline-flex" : "none";
-    btnNuevo.onclick = ()=> devMostrarCrear();
-  }
+if (btnNuevo) {
+  btnNuevo.style.display = isAdmin() ? "inline-flex" : "none";
+  btnNuevo.onclick = ()=> {
+    devMostrarCrear();
+    // ✅ abrir selector de imagen directo
+    const inp = document.getElementById("devImg");
+    if (inp) inp.click();
+  };
+}
 
   const btnVolver = $("btnDevVolverHome");
   if (btnVolver) btnVolver.onclick = ()=> devMostrarHome();
@@ -2416,20 +2421,27 @@ function renderDevIndex(items){
   if (!row) return;
   row.innerHTML = "";
 
-  items.forEach((it, idx)=>{
+  items.forEach((it)=>{
+    const cita = getCitaDeTexto(it.texto);
+    const fecha = fmtFecha(it.fecha);
+
     const card = document.createElement("div");
     card.className = "devIndexCard";
+
     card.innerHTML = `
-      <img src="${it.url || ""}" alt="dev">
-      <div class="devIndexMeta">
-        <div style="font-weight:800;">${getCitaDeTexto(it.texto)}</div>
-        <div style="opacity:.75;">${fmtFecha(it.fecha)}</div>
+      <div class="devIndexImgWrap">
+        <img src="${it.url || ""}" alt="dev">
+        <div class="devIndexCita">${cita}</div>
       </div>
+
+      <div class="devIndexFecha">${fecha}</div>
     `;
+
     card.onclick = ()=>{
       const el = document.getElementById("devBig_" + it.id);
       el?.scrollIntoView({ behavior:"smooth", block:"start" });
     };
+
     row.appendChild(card);
   });
 }
@@ -2439,36 +2451,44 @@ function renderDevFeed(items){
   if (!feed) return;
   feed.innerHTML = "";
 
-  const esAdmin = isAdmin(); // ✅ una sola vez
+  const esAdmin = isAdmin();
 
   items.forEach((it)=>{
     const card = document.createElement("div");
     card.className = "devBigCard";
     card.id = "devBig_" + it.id;
 
+    const audioHtml = it.audioGithubUrl
+      ? `
+        <div class="devAudioBox">
+          <audio controls preload="none" src="${it.audioGithubUrl}"></audio>
+        </div>
+      `
+      : ``;
+
     card.innerHTML = `
       <img src="${it.url || ""}" alt="dev grande">
 
+      ${audioHtml}
+
       <div class="devBigActions">
         <button class="btn-primary" type="button"
-          onclick="devReproducirAudioItem('${it.audioGithubUrl || ""}')">
-          <i class="fa-solid fa-play"></i> Audio
+          onclick="devCompartirImagenItem('${it.storagePath || ""}', 'devocional.png')"
+          aria-label="Compartir">
+          <i class="fa-solid fa-share-nodes"></i>
         </button>
 
         <button class="btn-primary" type="button"
-          onclick="devCompartirImagenItem('${it.storagePath || ""}', 'devocional.png')">
-          <i class="fa-solid fa-share-nodes"></i> Compartir
-        </button>
-
-        <button class="btn-primary" type="button"
-          onclick="devDescargarImagenItem('${it.storagePath || ""}', 'devocional.png')">
-          <i class="fa-solid fa-download"></i> PNG
+          onclick="devDescargarImagenItem('${it.storagePath || ""}', 'devocional.png')"
+          aria-label="Descargar PNG">
+          <i class="fa-solid fa-download"></i>
         </button>
 
         ${esAdmin ? `
           <button class="btn-primary devDanger" type="button"
-            onclick="devBorrarDevocional('${it.uidOwner || ""}','${it.tsKey || 0}','${it.storagePath || ""}')">
-            <i class="fa-solid fa-trash"></i> Borrar
+            onclick="devBorrarDevocional('${it.uidOwner || ""}','${it.tsKey || 0}','${it.storagePath || ""}')"
+            aria-label="Borrar">
+            <i class="fa-solid fa-trash"></i>
           </button>
         ` : ``}
       </div>
