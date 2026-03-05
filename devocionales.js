@@ -73,10 +73,10 @@ const DEV = {
   audioGithubUrl: "",
 
   // modal 0 preview
-  cropPreviewUrl: null
+  cropPreviewUrl: null,
 
    publicando: false,
-   publishTs: 0,
+   publishTs: 0
 };
 
 /* =========================================================
@@ -2335,13 +2335,11 @@ async function cargarDevocionales(){
   const fb  = window.__FB;
   const api = window.__FB_API;
 
-  // Si todavía no está Firebase listo, al menos mostramos HOME con mensaje
   const row  = $("devIndexRow");
   const feed = $("devFeed");
   if (row)  row.innerHTML  = "";
   if (feed) feed.innerHTML = `<div style="opacity:.8; padding:10px;">Cargando devocionales…</div>`;
 
-  // ✅ Botón “+” (solo admin)
   const btnNuevo = $("btnDevNuevo");
   if (btnNuevo) {
     btnNuevo.style.display = isAdmin() ? "inline-flex" : "none";
@@ -2362,28 +2360,28 @@ async function cargarDevocionales(){
   const { db } = fb;
   const { ref, onValue } = api;
 
-  // ✅ FEED GLOBAL (aplanado por UID -> TS)
   const r = ref(db, "devocionalesIglesia");
 
   onValue(r, (snap)=>{
     const val = snap.val() || {};
 
-    // aplanar: UID -> TS -> item
     const items = [];
     for (const [uid, byTs] of Object.entries(val)) {
       if (!byTs || typeof byTs !== "object") continue;
+
       for (const [ts, it] of Object.entries(byTs)) {
         if (!it || typeof it !== "object") continue;
+
         items.push({
-  id: `${uid}_${ts}`,
-  uidOwner: uid,          // ✅ de quién es
-  tsKey: Number(ts) || 0, // ✅ la clave exacta en la DB
-  ...it
-});
+          id: `${uid}_${ts}`,
+          uidOwner: uid,
+          tsKey: Number(ts) || 0,
+          ...it
+        });
       }
     }
 
-    items.sort((a,b)=>(b.fecha||b.ts||0)-(a.fecha||a.ts||0));
+    items.sort((a,b)=>(b.fecha||b.tsKey||0)-(a.fecha||a.tsKey||0));
 
     if (!items.length) {
       if (feed) feed.innerHTML = `<div style="opacity:.8; padding:10px;">
