@@ -570,35 +570,48 @@ body.modal-open{
   cursor:pointer;
 }
 
-.devIndexCard img{
+/* contenedor imagen para overlay */
+.devIndexImgWrap{
+  position:relative;
+  width:100%;
+}
+
+/* imagen */
+.devIndexImgWrap img{
   width:100%;
   aspect-ratio: 9 / 16;
   object-fit: cover;
   display:block;
 }
 
-.devIndexImgWrap{
-  position: relative;
-}
-
+/* CITA arriba sobre la imagen */
 .devIndexCita{
   position:absolute;
   left:8px;
   right:8px;
-  bottom:10px;
-  text-align:center;
-  font-weight:900;
-  font-size:12px;
+  top:8px;
+  padding:6px 8px;
+  border-radius:10px;
+  background: rgba(0,0,0,.45);
   color:#fff;
-  text-shadow: 0 2px 10px rgba(0,0,0,.6);
+  font-weight:800;
+  font-size:12px;
   line-height:1.15;
+  text-align:center;
+
+  display:-webkit-box;
+  -webkit-line-clamp: 2;     /* máximo 2 líneas */
+  -webkit-box-orient: vertical;
+  overflow:hidden;
 }
 
+/* FECHA debajo, centrada */
 .devIndexFecha{
-  padding: 8px 10px;
-  text-align:center;
+  padding:8px 10px;
   font-size:12px;
+  font-weight:700;
   opacity:.75;
+  text-align:center;
 }
 
 /* feed vertical */
