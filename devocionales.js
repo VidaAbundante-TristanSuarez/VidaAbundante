@@ -2424,26 +2424,34 @@ function renderDevIndex(items){
   row.innerHTML = "";
 
   items.forEach((it)=>{
-    const cita  = getCitaDeTexto(it.texto);
-    const fecha = fmtFecha(it.fecha || it.tsKey || 0);
-
     const card = document.createElement("div");
     card.className = "devIndexCard";
 
-    card.innerHTML = `
-      <div class="devIndexBar devIndexBarTop">${cita}</div>
+    const wrap = document.createElement("div");
+    wrap.className = "devIndexImgWrap";
 
-      <div class="devIndexImgWrap">
-        <img src="${it.url || ""}" alt="dev">
-      </div>
+    const img = document.createElement("img");
+    img.src = it.url || "";
+    img.alt = "dev";
 
-      <div class="devIndexBar devIndexBarBottom">${fecha}</div>
-    `;
+    const cita = document.createElement("div");
+    cita.className = "devIndexCita";
+    cita.textContent = getCitaDeTexto(it.texto);
 
-    card.onclick = ()=>{
+    wrap.appendChild(img);
+    wrap.appendChild(cita);
+
+    const fecha = document.createElement("div");
+    fecha.className = "devIndexFecha";
+    fecha.textContent = fmtFecha(it.fecha || it.tsKey || 0);
+
+    card.appendChild(wrap);
+    card.appendChild(fecha);
+
+    card.addEventListener("click", ()=>{
       const el = document.getElementById("devBig_" + it.id);
       el?.scrollIntoView({ behavior:"smooth", block:"start" });
-    };
+    });
 
     row.appendChild(card);
   });
@@ -2461,42 +2469,70 @@ function renderDevFeed(items){
     card.className = "devBigCard";
     card.id = "devBig_" + it.id;
 
-    const audioHtml = it.audioGithubUrl
-      ? `
-        <div class="devAudioBox">
-          <audio controls preload="none" src="${it.audioGithubUrl}"></audio>
-        </div>
-      `
-      : ``;
+    // imagen
+    const img = document.createElement("img");
+    img.src = it.url || "";
+    img.alt = "dev grande";
+    card.appendChild(img);
 
-    card.innerHTML = `
-      <img src="${it.url || ""}" alt="dev grande">
+    // ✅ reproductor (sin modal) debajo de la imagen
+    if (it.audioGithubUrl) {
+      const audioBox = document.createElement("div");
+      audioBox.className = "devAudioBox";
 
-      ${audioHtml}
+      const audio = document.createElement("audio");
+      audio.controls = true;
+      audio.preload = "none";
+      audio.src = it.audioGithubUrl;
 
-      <div class="devBigActions">
-        <button class="btn-primary" type="button"
-          onclick="devCompartirImagenItem('${it.storagePath || ""}', 'devocional.png')"
-          aria-label="Compartir">
-          <i class="fa-solid fa-share-nodes"></i>
-        </button>
+      audioBox.appendChild(audio);
+      card.appendChild(audioBox);
+    }
 
-        <button class="btn-primary" type="button"
-          onclick="devDescargarImagenItem('${it.storagePath || ""}', 'devocional.png')"
-          aria-label="Descargar PNG">
-          <i class="fa-solid fa-download"></i>
-        </button>
+    // acciones (solo iconos)
+    const actions = document.createElement("div");
+    actions.className = "devBigActions";
 
-        ${esAdmin ? `
-          <button class="btn-primary devDanger" type="button"
-            onclick="devBorrarDevocional('${it.uidOwner || ""}','${it.tsKey || 0}','${it.storagePath || ""}')"
-            aria-label="Borrar">
-            <i class="fa-solid fa-trash"></i>
-          </button>
-        ` : ``}
-      </div>
-    `;
+    // compartir (icono)
+    const btnShare = document.createElement("button");
+    btnShare.className = "btn-primary";
+    btnShare.type = "button";
+    btnShare.innerHTML = `<i class="fa-solid fa-share-nodes"></i>`;
+    btnShare.title = "Compartir";
+    btnShare.addEventListener("click", (e)=>{
+      e.preventDefault(); e.stopPropagation();
+      devCompartirImagenItem(it.storagePath || "", "devocional.png");
+    });
 
+    // descargar (icono)
+    const btnDown = document.createElement("button");
+    btnDown.className = "btn-primary";
+    btnDown.type = "button";
+    btnDown.innerHTML = `<i class="fa-solid fa-download"></i>`;
+    btnDown.title = "Descargar PNG";
+    btnDown.addEventListener("click", (e)=>{
+      e.preventDefault(); e.stopPropagation();
+      devDescargarImagenItem(it.storagePath || "", "devocional.png");
+    });
+
+    actions.appendChild(btnShare);
+    actions.appendChild(btnDown);
+
+    // borrar (admin)
+    if (esAdmin) {
+      const btnDel = document.createElement("button");
+      btnDel.className = "btn-primary devDanger";
+      btnDel.type = "button";
+      btnDel.innerHTML = `<i class="fa-solid fa-trash"></i>`;
+      btnDel.title = "Borrar";
+      btnDel.addEventListener("click", (e)=>{
+        e.preventDefault(); e.stopPropagation();
+        devBorrarDevocional(it.uidOwner || "", it.tsKey || 0, it.storagePath || "");
+      });
+      actions.appendChild(btnDel);
+    }
+
+    card.appendChild(actions);
     feed.appendChild(card);
   });
 }
