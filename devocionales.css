@@ -529,30 +529,30 @@ body.modal-open{
 #devHome{
   width: min(560px, 96vw);
   margin: 0 auto;
+  padding: 10px 0 18px;
 }
 
-/* ✅ fila superior: solo el botón + */
+/* fila superior: solo el botón + */
 #devTopRow{
   display:flex;
   justify-content:flex-end;
-  margin-top:10px;
+  align-items:center;
+  margin: 6px 0 8px;
 }
 
-/* ✅ índice horizontal debajo del + */
+/* índice horizontal */
 #devIndexRow{
   display:flex;
   gap:10px;
   overflow-x:auto;
   padding: 8px 2px;
-  margin-top:8px;
-  scroll-snap-type: x mandatory;
+  margin: 0;
 }
 
 /* tarjeta índice */
 .devIndexCard{
   flex:0 0 auto;
-  width: 120px;
-  scroll-snap-align: start;
+  width:120px;
   border:1px solid #e5e5e5;
   border-radius:14px;
   overflow:hidden;
@@ -563,7 +563,7 @@ body.modal-open{
 
 .devIndexCard img{
   width:100%;
-  aspect-ratio: 9/16;          /* ✅ “estado” */
+  aspect-ratio: 9 / 16;
   object-fit: cover;
   display:block;
 }
@@ -577,16 +577,18 @@ body.modal-open{
   line-height:1.2;
 }
 
-/* ✅ feed vertical */
+/* feed vertical */
 #devFeed{
   display:flex;
   flex-direction:column;
   gap:14px;
-  margin-top: 12px;
+  margin-top:12px;
 }
 
-/* “post” grande pero normal (9:16 dentro de un card) */
+/* cada “post” centrado y tamaño tipo estado */
 .devBigCard{
+  width: min(420px, 96vw);     /* ✅ esto evita “enorme” en PC */
+  margin: 0 auto;              /* ✅ centrado */
   border:1px solid #e8e8e8;
   border-radius:16px;
   overflow:hidden;
@@ -594,27 +596,20 @@ body.modal-open{
   box-shadow: 0 12px 28px rgba(0,0,0,.08);
 }
 
-/* ✅ acá está el FIX del “enorme” */
 .devBigCard img{
   width:100%;
-  height:auto;
+  aspect-ratio: 9 / 16;        /* ✅ estado */
+  object-fit: cover;
   display:block;
-  aspect-ratio: 9 / 16;        /* ✅ tamaño estado */
-  object-fit: cover;           /* si preferís ver todo: cambiá a contain */
   background:#f7f7f7;
 }
 
-/* acciones debajo */
 .devBigActions{
   display:flex;
   gap:10px;
   padding:10px;
   justify-content:center;
   flex-wrap:wrap;
-}
-
-.devBigActions button{
-  padding:10px 12px;
 }
 
 /* ✅ botón borrar (solo admin) */
