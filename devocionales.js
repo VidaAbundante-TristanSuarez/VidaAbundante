@@ -2528,68 +2528,64 @@ window.devReproducirAudioItem = (url)=>{
   if (est) est.textContent = "Reproduciendo audio del devocional…";
 };
 
-window.devDescargarImagenItem = async (storagePath, nombre = "devocional.png") => {
-  const fb = window.__FB;
-  const api = window.__FB_API;
-  if (!fb || !api) { alert("Firebase no listo."); return; }
+function base64ToBlob(b64, contentType="application/octet-stream"){
+  const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+  return new Blob([bytes], { type: contentType });
+}
 
-  if (!storagePath) { alert("Este devocional no tiene storagePath."); return; }
+// ✅ descarga desde StoragePath (sin CORS de URL)
+window.devDescargarImagenItem = async (storagePath, fileName="devocional.png") => {
+  try{
+    const fb  = window.__FB;
+    const api = window.__FB_API;
+    if (!fb || !api) throw new Error("Firebase no listo");
 
-  const { storage } = fb;
-  const { sRef, getBytes } = api;
+    const { storage } = fb;
+    const { sRef, getBytes } = api;
 
-  try {
+    if (!storagePath) throw new Error("No hay storagePath");
+
     const bytes = await getBytes(sRef(storage, storagePath));
-    const blob = new Blob([bytes], { type: "image/png" });
+    const blob = new Blob([bytes], { type:"image/png" });
 
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = nombre;
+    a.download = fileName;
     document.body.appendChild(a);
     a.click();
     a.remove();
-    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-  } catch (e) {
+    setTimeout(()=>URL.revokeObjectURL(a.href), 1500);
+  }catch(e){
     console.error(e);
-    alert("❌ No se pudo descargar el PNG.\n\nDetalle: " + (e?.message || e));
+    alert("❌ No se pudo descargar.\n\nDetalle: " + (e?.message || e));
   }
-};Url = async (url)=>{
-  if (!url) return;
-  const r = await fetch(url);
-  const blob = await r.blob();
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = "devocional.png";
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(()=> URL.revokeObjectURL(a.href), 2000);
 };
 
-window.devCompartirImagenItem = async (storagePath, nombre = "devocional.png") => {
-  const fb = window.__FB;
-  const api = window.__FB_API;
-  if (!fb || !api) { alert("Firebase no listo."); return; }
+// ✅ compartir ARCHIVO (no link) desde StoragePath
+window.devCompartirImagenItem = async (storagePath, fileName="devocional.png") => {
+  try{
+    const fb  = window.__FB;
+    const api = window.__FB_API;
+    if (!fb || !api) throw new Error("Firebase no listo");
 
-  if (!storagePath) { alert("Este devocional no tiene storagePath."); return; }
+    const { storage } = fb;
+    const { sRef, getBytes } = api;
 
-  const { storage } = fb;
-  const { sRef, getBytes } = api;
+    if (!storagePath) throw new Error("No hay storagePath");
 
-  try {
     const bytes = await getBytes(sRef(storage, storagePath));
-    const blob = new Blob([bytes], { type: "image/png" });
-    const file = new File([blob], nombre, { type: "image/png" });
+    const blob = new Blob([bytes], { type:"image/png" });
+    const file = new File([blob], fileName, { type:"image/png" });
 
-    if (navigator.share && navigator.canShare?.({ files: [file] })) {
-      await navigator.share({ files: [file], title: "Devocional" });
+    if (navigator.share && navigator.canShare?.({ files:[file] })) {
+      await navigator.share({ files:[file], title:"Devocional" });
     } else {
-      // fallback: descarga el archivo (igual sin links)
-      await window.devDescargarImagenItem(storagePath, nombre);
-      alert("Tu dispositivo/navegador no permite compartir directo. Se descargó el archivo.");
+      // si no puede compartir, descargamos
+      await window.devDescargarImagenItem(storagePath, fileName);
+      alert("Tu dispositivo/navegador no permite compartir directo. Se descargó la imagen.");
     }
-  } catch (e) {
+  }catch(e){
     console.error(e);
-    alert("❌ No se pudo compartir el archivo.\n\nDetalle: " + (e?.message || e));
+    alert("❌ No se pudo compartir.\n\nDetalle: " + (e?.message || e));
   }
 };
