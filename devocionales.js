@@ -2552,74 +2552,60 @@ function base64ToBlob(b64, contentType="application/octet-stream"){
   return new Blob([bytes], { type: contentType });
 }
 
-// ✅ descarga desde StoragePath (sin CORS de URL)
-async function devDescargarImagenItem(storagePath, fileName="devocional.png"){
-  const fb = window.__FB;
-  const api = window.__FB_API;
-
-  if (!fb || !api) {
-    alert("Firebase no está listo.");
-    return;
-  }
-
+// =========================
+// ✅ EXPORT BLINDADO A window (para onclick del HTML)
+// =========================
+window.devDescargarImagenItem = window.devDescargarImagenItem || async function(storagePath, fileName="devocional.png"){
   try{
+    const fb  = window.__FB;
+    const api = window.__FB_API;
+    if (!fb || !api) throw new Error("Firebase no listo");
+
     const { storage } = fb;
     const { sRef, getBytes } = api;
 
+    if (!storagePath) throw new Error("No hay storagePath");
+
     const bytes = await getBytes(sRef(storage, storagePath));
-
-    const blob = new Blob([bytes], { type: "image/png" });
-
-    const url = URL.createObjectURL(blob);
+    const blob = new Blob([bytes], { type:"image/png" });
 
     const a = document.createElement("a");
-    a.href = url;
+    a.href = URL.createObjectURL(blob);
     a.download = fileName;
-
     document.body.appendChild(a);
     a.click();
     a.remove();
-
-    URL.revokeObjectURL(url);
-
+    setTimeout(()=>URL.revokeObjectURL(a.href), 1500);
   }catch(e){
     console.error(e);
-    alert("No se pudo descargar la imagen.");
+    alert("❌ No se pudo descargar.\n\nDetalle: " + (e?.message || e));
   }
-}
+};
 
-// ✅ compartir ARCHIVO (no link) desde StoragePath
-async function devCompartirImagenItem(storagePath, fileName="devocional.png"){
-  const fb = window.__FB;
-  const api = window.__FB_API;
-
-  if (!fb || !api) {
-    alert("Firebase no está listo.");
-    return;
-  }
-
+window.devCompartirImagenItem = window.devCompartirImagenItem || async function(storagePath, fileName="devocional.png"){
   try{
+    const fb  = window.__FB;
+    const api = window.__FB_API;
+    if (!fb || !api) throw new Error("Firebase no listo");
+
     const { storage } = fb;
     const { sRef, getBytes } = api;
 
+    if (!storagePath) throw new Error("No hay storagePath");
+
     const bytes = await getBytes(sRef(storage, storagePath));
-
-    const blob = new Blob([bytes], { type: "image/png" });
-
-    const file = new File([blob], fileName, { type: "image/png" });
+    const blob = new Blob([bytes], { type:"image/png" });
+    const file = new File([blob], fileName, { type:"image/png" });
 
     if (navigator.share && navigator.canShare?.({ files:[file] })) {
-      await navigator.share({
-        files:[file],
-        title:"Devocional"
-      });
+      await navigator.share({ files:[file], title:"Devocional" });
     } else {
-      devDescargarImagenItem(storagePath,fileName);
-      alert("Tu navegador no permite compartir directo. Se descargó la imagen.");
+      // fallback: descargar
+      await window.devDescargarImagenItem(storagePath, fileName);
+      alert("Tu dispositivo/navegador no permite compartir directo. Se descargó la imagen.");
     }
-
   }catch(e){
     console.error(e);
-    alert("No se pudo compartir la imagen.");
+    alert("❌ No se pudo compartir.\n\nDetalle: " + (e?.message || e));
   }
-}
+};
