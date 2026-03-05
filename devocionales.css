@@ -540,9 +540,9 @@ body.modal-open{
   display:flex;
   justify-content:flex-end;
   align-items:center;
-  padding-top: env(safe-area-inset-top, 0px);
-  padding-right: 6px;
-  background: #fff;
+  padding-top: env(safe-area-inset-top,0);
+  padding-right: 12px; /* antes estaba más a la derecha */
+  background:#fff;
 }
 
 #btnDevNuevo{
