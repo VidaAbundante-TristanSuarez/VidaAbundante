@@ -2429,12 +2429,13 @@ function renderDevIndex(items){
     card.className = "devIndexCard";
 
     card.innerHTML = `
+      <div class="devIndexBar devIndexBarTop">${cita}</div>
+
       <div class="devIndexImgWrap">
         <img src="${it.url || ""}" alt="dev">
-        <div class="devIndexCita">${cita}</div>
       </div>
 
-      <div class="devIndexFecha">${fecha}</div>
+      <div class="devIndexBar devIndexBarBottom">${fecha}</div>
     `;
 
     card.onclick = ()=>{
