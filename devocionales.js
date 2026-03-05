@@ -2422,8 +2422,8 @@ function renderDevIndex(items){
   row.innerHTML = "";
 
   items.forEach((it)=>{
-    const cita = getCitaDeTexto(it.texto);
-    const fecha = fmtFecha(it.fecha);
+    const cita  = getCitaDeTexto(it.texto);
+    const fecha = fmtFecha(it.fecha || it.tsKey || 0);
 
     const card = document.createElement("div");
     card.className = "devIndexCard";
