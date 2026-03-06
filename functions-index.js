@@ -113,7 +113,8 @@ function runFFmpeg(args) {
   return new Promise((resolve, reject) => {
     execFile(ffmpegPath, args, { windowsHide: true }, (err, stdout, stderr) => {
       if (err) {
-        console.error("FFmpeg error:", stderr || err);
+        err.stdout = stdout;
+        err.stderr = stderr;
         reject(err);
       } else {
         resolve({ stdout, stderr });
@@ -125,41 +126,91 @@ function runFFmpeg(args) {
 async function mezclarConBackground(audioBuffer) {
   const bgPath = path.join(__dirname, "background.mp3");
 
+  // ✅ si no existe la música, devolvemos la voz sola
   if (!fs.existsSync(bgPath)) {
-    // ✅ si no existe la música, devolvemos la voz sola
     return audioBuffer;
   }
 
   const tmp = os.tmpdir();
-  const voicePath = path.join(tmp, `voz_${Date.now()}.mp3`);
-  const outPath = path.join(tmp, `mix_${Date.now()}.mp3`);
+  const now = Date.now();
+
+  const voicePath = path.join(tmp, `voz_${now}.mp3`);
+  const mixedBgPath = path.join(tmp, `bgmix_${now}.mp3`);
+  const outPath = path.join(tmp, `mix_${now}.mp3`);
 
   fs.writeFileSync(voicePath, audioBuffer);
 
   try {
+    // =========================================================
+    // 1) Medir duración de la voz con ffmpeg (stderr)
+    // =========================================================
+    const probe = await runFFmpeg([
+      "-i", voicePath,
+      "-f", "null",
+      "-"
+    ]).catch(err => {
+      // ffmpeg devuelve error en null output a veces; igual revisamos stderr
+      return err;
+    });
+
+    const probeText =
+      String(probe?.stderr || probe?.message || probe || "");
+
+    const m = probeText.match(/Duration:\s*(\d+):(\d+):(\d+(?:\.\d+)?)/i);
+
+    let durSec = 0;
+    if (m) {
+      durSec =
+        Number(m[1]) * 3600 +
+        Number(m[2]) * 60 +
+        Number(m[3]);
+    }
+
+    // ✅ fade out de 3s, pero evitando valores negativos
+    const fadeOutDur = 3;
+    const fadeOutStart = Math.max(0, durSec - fadeOutDur);
+
+    // =========================================================
+    // 2) Preparar SOLO la música:
+    //    - loop infinito
+    //    - volumen bajo
+    //    - fade in 3s
+    //    - fade out 3s al final de la voz
+    //    - cortar exactamente a la duración de la voz
+    // =========================================================
     await runFFmpeg([
       "-y",
-
-      // música de fondo en loop
       "-stream_loop", "-1",
       "-i", bgPath,
+      "-t", String(Math.max(0.1, durSec || 600)),
+      "-filter:a",
+      `volume=0.07,afade=t=in:st=0:d=3,afade=t=out:st=${fadeOutStart}:d=${fadeOutDur}`,
+      "-c:a", "libmp3lame",
+      "-b:a", "224k",
+      mixedBgPath
+    ]);
 
-      // voz
+    // =========================================================
+    // 3) Mezclar música + voz con ducking
+    //    [0:a] = música ya preparada
+    //    [1:a] = voz
+    // =========================================================
+    await runFFmpeg([
+      "-y",
+      "-i", mixedBgPath,
       "-i", voicePath,
-
-      // mezcla: fondo muy bajito + voz normal
       "-filter_complex",
-      "[0:a]volume=0.08[a0];[1:a]volume=1.0[a1];[a0][a1]amix=inputs=2:duration=shortest:dropout_transition=2",
-
-      // mp3 final
+      "[0:a][1:a]sidechaincompress=threshold=0.02:ratio=8:attack=20:release=800:makeup=1[bgduck];[bgduck][1:a]amix=inputs=2:duration=shortest:dropout_transition=2,volume=1.1",
       "-c:a", "libmp3lame",
       "-b:a", "224k",
       outPath
     ]);
 
     return fs.readFileSync(outPath);
+
   } finally {
     try { if (fs.existsSync(voicePath)) fs.unlinkSync(voicePath); } catch(e){}
+    try { if (fs.existsSync(mixedBgPath)) fs.unlinkSync(mixedBgPath); } catch(e){}
     try { if (fs.existsSync(outPath)) fs.unlinkSync(outPath); } catch(e){}
   }
 }
