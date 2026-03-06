@@ -579,6 +579,23 @@ function toggleVersiculo(id, num) {
   }
 }
 
+// ======================= ⭐ Obtener Marcador Keep Para Versiculo  ====
+function obtenerMarcadorKeepParaVersiculo(libro, capitulo, versiculo) {
+  const items = Object.values(marcadores || {});
+  for (const m of items) {
+    if (m?.origen === "abc") continue;
+    if (!m?.keep) continue;
+    if (m?.libro !== libro) continue;
+    if (Number(m?.capitulo) !== Number(capitulo)) continue;
+
+    const vers = Array.isArray(m?.versiculos) ? m.versiculos.map(Number) : [];
+    if (vers.includes(Number(versiculo))) {
+      return m;
+    }
+  }
+  return null;
+}
+
 // ======================= ⭐ PINTAR VERSICULO  =============================
 function pintarVersiculo(v) {
   const id = `${v.Libro}_${v.Capitulo}_${v.Versiculo}`;
@@ -587,10 +604,15 @@ function pintarVersiculo(v) {
 
   const selMarcador = modoMarcador && seleccionMarcador[id];
 
-const aplicado = ultimoMarcadorAplicado &&
+const marcadorKeepDelVersiculo = obtenerMarcadorKeepParaVersiculo(v.Libro, v.Capitulo, v.Versiculo);
+
+const aplicado = (
+  const colorAplicadoKeep = ultimoMarcadorAplicado?.color || marcadorKeepDelVersiculo?.color || null;
+  ultimoMarcadorAplicado &&
   ultimoMarcadorAplicado.libro === v.Libro &&
   Number(ultimoMarcadorAplicado.capitulo) === Number(v.Capitulo) &&
-  (ultimoMarcadorAplicado.versiculos || []).includes(Number(v.Versiculo));
+  (ultimoMarcadorAplicado.versiculos || []).includes(Number(v.Versiculo))
+) || !!marcadorKeepDelVersiculo;
   
   const div = document.createElement("div");
   div.className = "versiculo";
@@ -612,9 +634,9 @@ if (modoImagen) {
     div.style.background = enOscuro
       ? "rgba(209, 238, 255, 0.92)"   // más fuerte en oscuro
       : "rgba(209, 238, 255, 0.92)";  // casi sólido en claro
-  } else if (aplicado && ultimoMarcadorAplicado?.color) {
-    // ✅ si hay marcador "keep", lo mostramos aunque estés seleccionando
-    div.style.background = ultimoMarcadorAplicado.color;
+   } else if (aplicado && colorAplicadoKeep) {
+    div.style.background = colorAplicadoKeep;
+    
   } else {
     // ✅ ocultar resaltados viejos
     div.style.background = "transparent";
@@ -622,8 +644,9 @@ if (modoImagen) {
 
 } else {
   // modo normal
-  if (aplicado && ultimoMarcadorAplicado?.color) {
-    div.style.background = ultimoMarcadorAplicado.color;
+   if (aplicado && colorAplicadoKeep) {
+    div.style.background = colorAplicadoKeep;
+     
   } else {
     div.style.background = marcado?.color || "transparent";
   }
@@ -647,10 +670,10 @@ if (modoImagen) {
 
     if (modoMarcador) {
       // ✅ en modo marcador NO usar "marcado.color" si NO lo estás pintando
-      if (aplicado && ultimoMarcadorAplicado?.color) fondo = ultimoMarcadorAplicado.color;
+          if (aplicado && colorAplicadoKeep) fondo = colorAplicadoKeep;
       // si no hay aplicado, fondo queda null -> color por tema
     } else {
-      if (aplicado && ultimoMarcadorAplicado?.color) fondo = ultimoMarcadorAplicado.color;
+          if (aplicado && colorAplicadoKeep) fondo = colorAplicadoKeep;
       else if (marcado?.color) fondo = marcado.color;
     }
 
@@ -1680,7 +1703,7 @@ window.irA = (seccion) => {
 
   // 4) biblia
   if (seccion === "biblia") {
-        setMarcadorCtx("biblia");
+       window.setMarcadorCtx("biblia");
     // ✅ al volver a Biblia: restaurar estado previo (modo imagen / modo marcador)
     // (si no existe, no pasa nada)
     try { bibliaRestaurarUIAlVolver?.(); } catch(e){}
@@ -2057,23 +2080,39 @@ function renderPreviewVersiculosMarcador() {
     return;
   }
 
-  const ids = Object.keys(seleccionMarcador || {});
-  if (ids.length === 0) {
+  // ✅ si estoy en contexto ABC, no renderices preview bíblica
+  const ctx = window.getMarcadorCtx ? window.getMarcadorCtx() : { origen: "biblia" };
+  if (ctx.origen === "abc") {
     box.innerHTML = "";
     return;
   }
 
-  ids.sort((a,b) => {
-    const va = Number(a.split("_")[2]);
-    const vb = Number(b.split("_")[2]);
-    return va - vb;
-  });
+  // ✅ prioridad 1: si estoy editando, usar base original
+  const base = window.__editMarcadorBase || null;
+  let versiculos = [];
+  let libro = "";
+  let cap = 0;
 
-  const libro = libroSel.value;
-  const cap = Number(capSel.value);
+  if (base && Array.isArray(base.versiculos) && base.versiculos.length) {
+    versiculos = base.versiculos.map(Number).filter(n => !isNaN(n));
+    libro = base.libro || libroSel.value;
+    cap = Number(base.capitulo || capSel.value || 0);
+  } else {
+    // ✅ prioridad 2: selección actual
+    const ids = Object.keys(seleccionMarcador || {});
+    if (ids.length === 0) {
+      box.innerHTML = "";
+      return;
+    }
 
-  const partes = ids.map(id => {
-    const n = Number(id.split("_")[2]);
+    versiculos = ids.map(id => Number(id.split("_")[2])).filter(n => !isNaN(n));
+    libro = libroSel.value;
+    cap = Number(capSel.value);
+  }
+
+  versiculos.sort((a,b) => a - b);
+
+  const partes = versiculos.map(n => {
     const vv = bibliaData.find(x => x.Libro === libro && x.Capitulo == cap && x.Versiculo == n);
     const txt = vv ? vv.RV1960 : "";
     return `<div><span style="opacity:.75">${n}</span> ${txt}</div>`;
@@ -2084,7 +2123,7 @@ function renderPreviewVersiculosMarcador() {
 
 // ================= ✨ Abrir Form Nuevo Marcador 📌=================
 window.abrirFormNuevoMarcador = () => {
-    setMarcadorCtx("biblia");
+    window.setMarcadorCtx("biblia");
   const lista = document.getElementById("listaMarcadores");
   const form = document.getElementById("formNuevoMarcador");
   const info = document.getElementById("infoMarcadorNuevo");
@@ -3032,9 +3071,9 @@ document.addEventListener("DOMContentLoaded", () => {
       const ctx = getMarcadorCtx();
 
       if (ctx.origen === "abc") {
-        await guardarNuevoMarcadorABC();
+        await window.guardarNuevoMarcadorABC();
       } else {
-        await guardarNuevoMarcador();
+        await window.guardarNuevoMarcadorABC();
       }
     };
   }
