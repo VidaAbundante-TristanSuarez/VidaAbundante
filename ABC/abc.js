@@ -222,13 +222,9 @@ body.oscuro .abc-block .icono-nota{
     construirIndiceABC();
     abcIniciado = true;
 
-    // ✅ ajustes barra / ocultar botones imagen, etc.
-    if (window.__abcOnEnter) window.__abcOnEnter();
-
     // ✅ IMPORTANTE: acá cargamos progreso y CORTAMOS para no cargar 2 veces
     await abcCargarProgreso();
     return;
-  }
 
   // ✅ si ya estaba iniciado, recién acá cargamos tema normal
   await cargarABCTema();
@@ -819,13 +815,28 @@ function abcAbrirModalBibliaParaNota() {
   color.value = "#fff3b0";
   keep.checked = true; // ✅ en ABC SI lo usamos: mantener bloque resaltado
 
-btnGuardar.onclick = async () => {
+  setMarcadorCtx("abc", {
+    abcEditId: window.__abcEditMarcadorId || null
+  });
+
+  modal.classList.add("abierto");
+  modal.setAttribute("aria-hidden", "false");
+}
+
+async function guardarNuevoMarcadorABC() {
   try {
     const uid = UID();
     if (!uid) return;
 
-    const t = (titulo.value || "Nota ABC").trim();
-    const n = (nota.value || "").trim();
+    const titulo = document.getElementById("marcadorTitulo");
+    const nota   = document.getElementById("marcadorNota");
+    const color  = document.getElementById("marcadorColor");
+    const keep   = document.getElementById("marcadorKeep");
+
+    const t = (titulo?.value || "Nota ABC").trim();
+    const n = (nota?.value || "").trim();
+    const c = (color?.value || "#fff3b0");
+    const k = !!keep?.checked;
 
     const { db } = FB();
     const { ref, set } = API();
@@ -834,11 +845,16 @@ btnGuardar.onclick = async () => {
     const ahora = Date.now();
     const tema = ABC_TEMAS?.[abcIndex] || {};
 
-    // ✅ UNA sola nota con varios bloques
-    const bids = Array.from(abcSeleccionados);
+    const bids = Array.from(abcSeleccionados || []);
     const lastBid = abcSeleccionado || bids[bids.length - 1];
+    if (!bids.length) {
+      abcToast("Seleccioná al menos 1 bloque 🙂");
+      return;
+    }
 
-    const id = `abc_${abcIndex}_${ahora}`;
+    const ctx = getMarcadorCtx();
+    const editId = ctx?.abcEditId || null;
+    const id = editId || `abc_${abcIndex}_${ahora}`;
 
     const data = {
       origen: "abc",
@@ -846,54 +862,72 @@ btnGuardar.onclick = async () => {
       fecha: ahora,
       titulo: t,
       nota: n,
-      color: (color.value || "#fff3b0"),
-      keep: !!keep.checked,
+      color: c,
+      keep: k,
 
       libro: "",
       capitulo: 0,
       versiculos: [],
 
-      abc: { temaIndex: abcIndex, temaTitulo: tema.titulo || "", html: tema.html || "" },
+      abc: {
+        temaIndex: abcIndex,
+        temaTitulo: tema.titulo || "",
+        html: tema.html || ""
+      },
 
-      // ✅ nuevo formato
       abcBids: bids,
       abcBidLast: lastBid
     };
 
     await set(ref(db, `marcadores/${uid}/${id}`), data);
 
-    // ✅ si "Mantener resaltado" está activo, aplicamos resaltado a TODOS los bloques
-    if (keep.checked) {
-      for (const bid of bids) {
-        await abcSetResaltado(bid, color.value || "#fff3b0");
+    // limpiar resaltados previos si estoy editando
+    if (editId) {
+      const previo = (window.marcadores || {})[editId];
+      const prevBids = Array.isArray(previo?.abcBids)
+        ? previo.abcBids
+        : (previo?.abcBid ? [previo.abcBid] : []);
+
+      for (const bid of prevBids) {
+        if (!k || !bids.includes(bid)) {
+          try { await abcQuitarResaltado(bid); } catch(e){}
+        }
       }
     }
 
-    // cerrar modal de Biblia
-    if (typeof cerrarMarcadores === "function") cerrarMarcadores();
-    else {
-      modal.classList.remove("abierto");
-      modal.setAttribute("aria-hidden", "true");
+    if (k) {
+      for (const bid of bids) {
+        await abcSetResaltado(bid, c);
+      }
+    } else {
+      for (const bid of bids) {
+        try { await abcQuitarResaltado(bid); } catch(e){}
+      }
     }
 
-    // ✅ cerrar y resetear modo marcador
-    abcResetModoMarcador();
+    window.__abcEditMarcadorId = null;
+    setMarcadorCtx("abc", { abcEditId: null });
 
-    // ✅ reenganchar barra
+    if (typeof cerrarMarcadores === "function") cerrarMarcadores();
+    else {
+      const modal = document.getElementById("modalMarcadores");
+      if (modal) {
+        modal.classList.remove("abierto");
+        modal.setAttribute("aria-hidden", "true");
+      }
+    }
+
+    abcResetModoMarcador();
     abcUIEnABC();
     abcAplicarUIAccionesPorModo();
 
-    abcToast("✅ Nota guardada");
+    abcToast(editId ? "✅ Nota ABC actualizada" : "✅ Nota ABC guardada");
   } catch (e) {
     console.error(e);
-    alert("No pude guardar la nota.");
+    alert("No pude guardar la nota de ABC.");
   }
-};
-
-  modal.classList.add("abierto");
-  modal.setAttribute("aria-hidden", "false");
 }
-
+  
 async function abcAbrirListaNotasABC(){
   const uid = UID();
   const loginModal = document.getElementById("loginModal");
@@ -1005,6 +1039,7 @@ if (Array.isArray(m.abcBids) && m.abcBids.length) {
 };
 
 window.abcEditarNota = async (id) => {
+  window.__abcEditMarcadorId = id;
   const m = (window.marcadores || {})[id];
   if (!m) return;
   // ir primero al bloque
@@ -1338,6 +1373,9 @@ window.__abcOnEnter = () => {
 };
 
 window.__abcOnExit = () => {
+    window.__abcEditMarcadorId = null;
+  setMarcadorCtx("biblia");
+  
   try { abcResetModoMarcador(); } catch(e){}
   abcPortalBarraOff();
 
