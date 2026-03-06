@@ -153,7 +153,7 @@ async function mezclarConBackground(audioBuffer) {
 
       // mp3 final
       "-c:a", "libmp3lame",
-      "-b:a", "192k",
+      "-b:a", "224k",
       outPath
     ]);
 
@@ -177,7 +177,7 @@ exports.ttsAudio = onRequest(async (req, res) => {
       }
 
       const ssml = prepararTextoSSML(normalizarVersiculosMayus(texto));
-      const voiceName = String(req.body?.voiceName || "es-US-Wavenet-B");
+      const voiceName = String(req.body?.voiceName || "es-US-Neural2-B");
 
       const request = {
         input: { ssml },
