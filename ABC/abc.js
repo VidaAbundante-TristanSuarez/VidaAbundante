@@ -815,7 +815,7 @@ function abcAbrirModalBibliaParaNota() {
   color.value = "#fff3b0";
   keep.checked = true; // ✅ en ABC SI lo usamos: mantener bloque resaltado
 
-  setMarcadorCtx("abc", {
+ window.setMarcadorCtx("abc", {
     abcEditId: window.__abcEditMarcadorId || null
   });
 
@@ -852,7 +852,7 @@ async function guardarNuevoMarcadorABC() {
       return;
     }
 
-    const ctx = getMarcadorCtx();
+    const ctx = window.getMarcadorCtx();
     const editId = ctx?.abcEditId || null;
     const id = editId || `abc_${abcIndex}_${ahora}`;
 
@@ -906,7 +906,7 @@ async function guardarNuevoMarcadorABC() {
     }
 
     window.__abcEditMarcadorId = null;
-    setMarcadorCtx("abc", { abcEditId: null });
+    window.setMarcadorCtx("abc", { abcEditId: null });
 
     if (typeof cerrarMarcadores === "function") cerrarMarcadores();
     else {
@@ -1374,7 +1374,7 @@ window.__abcOnEnter = () => {
 
 window.__abcOnExit = () => {
     window.__abcEditMarcadorId = null;
-  setMarcadorCtx("biblia");
+ window.setMarcadorCtx("biblia");
   
   try { abcResetModoMarcador(); } catch(e){}
   abcPortalBarraOff();
