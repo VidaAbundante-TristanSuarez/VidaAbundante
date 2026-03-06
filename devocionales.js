@@ -2555,56 +2555,48 @@ function base64ToBlob(b64, contentType="application/octet-stream"){
 }
 
 // =========================
-// ✅ EXPORT BLINDADO A window (para onclick del HTML)
+// ✅ CON FUNCTIONS COMPARTIR Y DESCARGAR
 // =========================
-window.devDescargarImagenItem = window.devDescargarImagenItem || async function(storagePath, fileName="devocional.png"){
+const DEV_PNG_PROXY =
+  "https://us-central1-vidaabundante-f118a.cloudfunctions.net/devocionalPng";
+
+async function fetchDevocionalBlob(storagePath, fileName="devocional.png"){
+  const url = `${DEV_PNG_PROXY}?path=${encodeURIComponent(storagePath)}&name=${encodeURIComponent(fileName)}`;
+  const r = await fetch(url);
+  if (!r.ok) throw new Error("No pude bajar PNG (" + r.status + ")");
+  return await r.blob();
+}
+
+window.devDescargarImagenItem = async function(storagePath, fileName="devocional.png"){
   try{
-    const fb  = window.__FB;
-    const api = window.__FB_API;
-    if (!fb || !api) throw new Error("Firebase no listo");
-
-    const { storage } = fb;
-    const { sRef, getBytes } = api;
-
     if (!storagePath) throw new Error("No hay storagePath");
 
-    const bytes = await getBytes(sRef(storage, storagePath));
-    const blob = new Blob([bytes], { type:"image/png" });
-
+    const blob = await fetchDevocionalBlob(storagePath, fileName);
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = fileName;
     document.body.appendChild(a);
     a.click();
     a.remove();
-    setTimeout(()=>URL.revokeObjectURL(a.href), 1500);
+    setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
   }catch(e){
     console.error(e);
     alert("❌ No se pudo descargar.\n\nDetalle: " + (e?.message || e));
   }
 };
 
-window.devCompartirImagenItem = window.devCompartirImagenItem || async function(storagePath, fileName="devocional.png"){
+window.devCompartirImagenItem = async function(storagePath, fileName="devocional.png"){
   try{
-    const fb  = window.__FB;
-    const api = window.__FB_API;
-    if (!fb || !api) throw new Error("Firebase no listo");
-
-    const { storage } = fb;
-    const { sRef, getBytes } = api;
-
     if (!storagePath) throw new Error("No hay storagePath");
 
-    const bytes = await getBytes(sRef(storage, storagePath));
-    const blob = new Blob([bytes], { type:"image/png" });
+    const blob = await fetchDevocionalBlob(storagePath, fileName);
     const file = new File([blob], fileName, { type:"image/png" });
 
     if (navigator.share && navigator.canShare?.({ files:[file] })) {
       await navigator.share({ files:[file], title:"Devocional" });
     } else {
-      // fallback: descargar
       await window.devDescargarImagenItem(storagePath, fileName);
-      alert("Tu dispositivo/navegador no permite compartir directo. Se descargó la imagen.");
+      alert("Tu dispositivo/navegador no permite compartir directo. Se descargó el PNG.");
     }
   }catch(e){
     console.error(e);
