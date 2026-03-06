@@ -187,17 +187,22 @@
 <div id="seccion-iglesia" class="seccion" style="display:none">
 
   <!-- Sub menú dentro de Iglesia -->
-  <div class="panel-tabs" style="margin-bottom:12px;">
-    <button type="button" onclick="mostrarIglesiaSub('devocionales')">
-      <i class="fa-solid fa-calendar-days"></i>
-      <span>Devocionales</span>
-    </button>
+<div class="panel-tabs" style="margin-bottom:12px;">
+  <button type="button" onclick="mostrarIglesiaSub('devocionales')">
+    <i class="fa-solid fa-calendar-days"></i>
+    <span>Devocionales</span>
+  </button>
 
-    <button type="button" onclick="mostrarIglesiaSub('abc')">
-      <i class="fa-solid fa-font"></i>
-      <span>ABC</span>
-    </button>
-  </div>
+  <button type="button" onclick="mostrarIglesiaSub('abc')">
+    <i class="fa-solid fa-font"></i>
+    <span>ABC</span>
+  </button>
+
+  <button type="button" onclick="mostrarIglesiaSub('subidos')">
+    <i class="fa-solid fa-calendar-check"></i>
+    <span>Subidos</span>
+  </button>
+</div>
 
   <!-- ✅ SUB-SECCIÓN: DEVOCIONALES (VISIBLE por default) -->
   <div id="iglesia-devocionales">
@@ -255,6 +260,31 @@
   <div id="abcApp"></div>
 </div>
 
+<!-- ✅ SUB-SECCIÓN: SUBIDOS -->
+<div id="iglesia-subidos" style="display:none">
+  <div id="subidosApp">
+
+    <!-- barra superior -->
+    <div id="subidosTopRow" style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:12px;">
+      <div style="display:flex; align-items:center; gap:8px;">
+        <button type="button" id="btnSubidosMesAnt" class="btn-ghost">◀</button>
+        <div id="subidosMesTitulo" style="font-weight:800;"></div>
+        <button type="button" id="btnSubidosMesSig" class="btn-ghost">▶</button>
+      </div>
+
+      <button id="btnSubidoNuevo" type="button" class="btn-primary" style="display:none;">
+        <i class="fa-solid fa-circle-plus"></i>
+      </button>
+    </div>
+
+    <!-- calendario -->
+    <div id="subidosCalendario"></div>
+
+    <!-- feed -->
+    <div id="subidosFeed" style="margin-top:14px;"></div>
+  </div>
+</div>
+ 
 </div>
 
 <!-- ================= PANEL ================= -->
@@ -791,6 +821,46 @@
     <canvas id="devCanvasFinal" style="display:none;"></canvas>
   </div>
 </div>
+
+<!-- ================= MODAL SUBIDOS ================= -->
+<div id="modalSubidos" class="modal-overlay" aria-hidden="true">
+  <div class="modal-card" style="max-width:560px; width:100%;">
+
+    <div style="padding:12px 14px; border-bottom:1px solid #ddd; display:flex; align-items:center; justify-content:space-between;">
+      <b>📤 Nuevo subido</b>
+      <button type="button" onclick="cerrarModalSubidos()"
+        style="border:none; background:#eee; border-radius:999px; width:34px; height:34px; cursor:pointer;">✖</button>
+    </div>
+
+    <div style="padding:12px 14px; display:flex; flex-direction:column; gap:12px;">
+
+      <label style="font-weight:700;">Archivo</label>
+      <input id="subidosArchivo" type="file" accept="image/*,video/*,audio/*">
+
+      <label style="font-weight:700;">Fecha</label>
+      <input id="subidosFecha" type="date">
+
+      <label style="font-weight:700;">Etiqueta</label>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <select id="subidosEtiqueta" style="flex:1; min-width:220px;">
+          <option value="">Seleccionar…</option>
+        </select>
+        <button type="button" id="btnAgregarEtiquetaSubidos" class="btn-ghost">+ Etiqueta</button>
+      </div>
+
+      <label style="font-weight:700;">Descripción</label>
+      <textarea id="subidosDescripcion" rows="5" style="width:100%; border-radius:12px; padding:12px;"></textarea>
+
+      <div id="subidosEstado" style="font-size:13px; opacity:.8;"></div>
+
+      <div style="display:flex; justify-content:flex-end; gap:10px;">
+        <button type="button" class="btn-ghost" onclick="cerrarModalSubidos()">Cancelar</button>
+        <button type="button" class="btn-primary" id="btnGuardarSubido">Guardar</button>
+      </div>
+
+    </div>
+  </div>
+</div> 
  
 <!-- ================= SCRIPT PRINCIPAL ================= -->
 <!-- ⚠️ biblia.js CONTROLA TODO -->
@@ -798,8 +868,10 @@
 <script type="module" src="biblia.js"></script>
 <script type="module" src="biblia.audio.js"></script>
 <script type="module" src="devocionales.js"></script>
+<script type="module" src="Subidos.js"></script>
 <script type="module" src="ABC/abc.js"></script>
  
 </body>
 </html>
+
 
