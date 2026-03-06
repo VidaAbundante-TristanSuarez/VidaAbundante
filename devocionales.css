@@ -658,4 +658,46 @@ body.modal-open{
   max-width: 420px;
 }
 
+/* === SUBIDOS 💜 nunca superen 520px se centren mantengan proporción === */
+
+#subidosFeed img,
+#subidosFeed video {
+  display: block;
+  margin: 10px auto;
+  max-width: min(520px, 100%);
+  width: 100%;
+  height: auto;
+  border-radius: 14px;
+}
+
+#subidosFeed audio{
+  display:block;
+  margin:10px auto;
+  width:min(420px,100%);
+}
+
+/* === tarjetas quedan centradas y del mismo ancho === */
+#subidosFeed > div{
+  max-width:620px;
+  margin:0 auto 14px auto;
+}
+
+/* ================= SUBIDOS MODO OSCURO ================= */
+
+body.oscuro #subidosFeed > div{
+  background:#1c1c1c;
+  border-color:#333;
+  color:#eee;
+}
+
+body.oscuro #subidosFeed a{
+  color:#9ecbff;
+}
+
+body.oscuro #subidosCalendario > div > div{
+  background:#1c1c1c;
+  border-color:#333;
+  color:#eee;
+}
+
 </style>
