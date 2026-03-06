@@ -782,6 +782,10 @@ function abcHabilitarCheckUI(){
 // ✅ ABC -> ABRIR modalMarcadores (Biblia) para escribir nota
 // -------------------------
 function abcAbrirModalBibliaParaNota() {
+  if (!window.__abcEditandoId) {
+    window.__abcEditandoId = null;
+  }
+
   if (!abcSeleccionado && abcSeleccionados.size === 0) {
     abcToast("Primero tocá al menos un bloque 🙂");
     return;
@@ -831,14 +835,19 @@ btnGuardar.onclick = async () => {
     const { ref, set } = API();
     if (!db || !ref || !set) return;
 
-    const ahora = Date.now();
+       const ahora = Date.now();
     const tema = ABC_TEMAS?.[abcIndex] || {};
 
     // ✅ UNA sola nota con varios bloques
-    const bids = Array.from(abcSeleccionados);
-    const lastBid = abcSeleccionado || bids[bids.length - 1];
+    const bids = Array.from(abcSeleccionados || []).filter(Boolean);
+    const lastBid = abcSeleccionado || bids[bids.length - 1] || null;
 
-    const id = `abc_${abcIndex}_${ahora}`;
+    if (!bids.length) {
+      abcToast("Seleccioná al menos 1 bloque 🙂");
+      return;
+    }
+
+    const id = window.__abcEditandoId || `abc_${abcIndex}_${ahora}`;
 
     const data = {
       origen: "abc",
@@ -853,7 +862,11 @@ btnGuardar.onclick = async () => {
       capitulo: 0,
       versiculos: [],
 
-      abc: { temaIndex: abcIndex, temaTitulo: tema.titulo || "", html: tema.html || "" },
+      abc: {
+        temaIndex: abcIndex,
+        temaTitulo: tema.titulo || "",
+        html: tema.html || ""
+      },
 
       // ✅ nuevo formato
       abcBids: bids,
@@ -869,6 +882,7 @@ btnGuardar.onclick = async () => {
       }
     }
 
+       window.__abcEditandoId = null;
     // cerrar modal de Biblia
     if (typeof cerrarMarcadores === "function") cerrarMarcadores();
     else {
@@ -1007,17 +1021,24 @@ if (Array.isArray(m.abcBids) && m.abcBids.length) {
 window.abcEditarNota = async (id) => {
   const m = (window.marcadores || {})[id];
   if (!m) return;
+
+  // ✅ marcar que estamos editando esta nota
+  window.__abcEditandoId = id;
+
   // ir primero al bloque
   await window.abcIrANota(id);
-  // activar modo marcador y abrir form para editar (reusa tu modal)
+
+  // activar modo marcador y abrir form para editar
   abcModoMarcador = true;
   abcAplicarUIAccionesPorModo();
   abcAbrirModalBibliaParaNota();
+
   // precargar en el form
-  const titulo= document.getElementById("marcadorTitulo");
-  const nota  = document.getElementById("marcadorNota");
-  const color = document.getElementById("marcadorColor");
-  const keep  = document.getElementById("marcadorKeep");
+  const titulo = document.getElementById("marcadorTitulo");
+  const nota   = document.getElementById("marcadorNota");
+  const color  = document.getElementById("marcadorColor");
+  const keep   = document.getElementById("marcadorKeep");
+
   if (titulo) titulo.value = m.titulo || "";
   if (nota)   nota.value = m.nota || "";
   if (color)  color.value = m.color || "#fff3b0";
@@ -1220,7 +1241,8 @@ function abcPortalBarraOff() {
 window.__abcBarBackup = window.__abcBarBackup || {
   saved: false,
   onclick: {},
-  style: {}
+  style: {},
+  modal: {}
 };
 
 function abcBackupBarBiblia() {
@@ -1230,12 +1252,19 @@ function abcBackupBarBiblia() {
   const img   = document.getElementById("btnImagen");
   const crear = document.getElementById("btnCrearImagen");
 
+  const btnGuardarNuevo = document.getElementById("btnGuardarNuevoMarcador");
+
   if (window.__abcBarBackup.saved) return;
 
   window.__abcBarBackup.onclick = {
     pin:   pin   ? pin.onclick   : null,
     check: check ? check.onclick : null,
     lista: lista ? lista.onclick : null
+  };
+
+  // ✅ guardamos también el onclick ORIGINAL del modal compartido
+  window.__abcBarBackup.modal = {
+    btnGuardarNuevoMarcador: btnGuardarNuevo ? btnGuardarNuevo.onclick : null
   };
 
   // guardo estilos que tocamos (para devolverlos a Biblia)
@@ -1254,12 +1283,19 @@ function abcRestoreBarBiblia() {
   const img   = document.getElementById("btnImagen");
   const crear = document.getElementById("btnCrearImagen");
 
+  const btnGuardarNuevo = document.getElementById("btnGuardarNuevoMarcador");
+
   if (!window.__abcBarBackup.saved) return;
 
   // ✅ restaurar onclick originales de Biblia
   if (pin)   pin.onclick   = window.__abcBarBackup.onclick.pin   || null;
   if (check) check.onclick = window.__abcBarBackup.onclick.check || null;
   if (lista) lista.onclick = window.__abcBarBackup.onclick.lista || null;
+
+  // ✅ restaurar onclick original del botón GUARDAR del modal compartido
+  if (btnGuardarNuevo) {
+    btnGuardarNuevo.onclick = window.__abcBarBackup.modal.btnGuardarNuevoMarcador || null;
+  }
 
   // ✅ restaurar estilos (para que Biblia recupere Crear Imagen)
   if (img && window.__abcBarBackup.style.img) {
@@ -1272,6 +1308,9 @@ function abcRestoreBarBiblia() {
     crear.style.visibility = window.__abcBarBackup.style.crear.visibility || "";
     crear.style.pointerEvents = window.__abcBarBackup.style.crear.pointerEvents || "";
   }
+
+  // ✅ limpiar estado de edición ABC
+  window.__abcEditandoId = null;
 }
 
 // -------------------------
