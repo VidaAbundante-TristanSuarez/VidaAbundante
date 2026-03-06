@@ -32,24 +32,6 @@ const ETIQUETAS_DEFAULT = [
   "Taller"
 ];
 
-const SUBIDOS_COLOR_ETIQUETA = {
-  "Predica": "#fbbc04",
-  "Anuncio": "#a7ff83",
-  "Plan": "#aecbfa",
-  "Racimo": "#f28b82",
-  "Oración": "#d7aefb",
-  "Culto": "#fdcfe8",
-  "Santa Cena": "#ffe08a",
-  "Reunion Jovenes": "#81c995",
-  "Reunion Varones": "#9fc5e8",
-  "Reunion Mujeres": "#f6b26b",
-  "Taller": "#c9daf8"
-};
-
-function colorEtiqueta(nombre = "") {
-  return SUBIDOS_COLOR_ETIQUETA[nombre] || "#bcdcff";
-}
-
 // ================= HELPERS =================
 function pad(n) {
   return String(n).padStart(2, "0");
@@ -130,122 +112,70 @@ function renderCalendario() {
   const diasMes = ultimoDia.getDate();
 
   let inicioSemana = primerDia.getDay();
-  if (inicioSemana === 0) inicioSemana = 7;
-
-  const hoy = new Date();
-  const hoyYMD = fechaYMD(hoy);
+  if (inicioSemana === 0) inicioSemana = 7; // domingo = 7
 
   const porFecha = agruparPorFecha(subidosItems);
 
   let html = `
-    <div class="subidos-cal-wrap">
-      <div class="subidos-cal-head">
-        ${["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"].map(d => `<div>${d}</div>`).join("")}
-      </div>
-      <div class="subidos-cal-grid">
+    <div class="subidos-cal-grid" style="
+      display:grid;
+      grid-template-columns:repeat(7, 1fr);
+      gap:8px;
+    ">
+      ${["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"].map(d => `
+        <div style="font-weight:800; text-align:center; padding:6px 0;">${d}</div>
+      `).join("")}
   `;
 
   for (let i = 1; i < inicioSemana; i++) {
-    html += `<div class="subidos-day empty"></div>`;
+    html += `<div></div>`;
   }
 
   for (let dia = 1; dia <= diasMes; dia++) {
     const f = `${year}-${pad(month + 1)}-${pad(dia)}`;
     const itemsDia = (porFecha[f] || []).sort((a, b) => (b.fecha || 0) - (a.fecha || 0));
-    const esHoy = f === hoyYMD;
 
     html += `
-      <div class="subidos-day ${esHoy ? "today" : ""}">
-        <div class="subidos-day-num">${dia}</div>
-        <div class="subidos-day-events">
-          ${itemsDia.slice(0, 3).map(it => `
-            <button type="button"
-              class="subidos-chip"
-              style="background:${colorEtiqueta(it.etiqueta)}"
-              onclick="abrirSubidoDesdeCalendario('${it.id}')"
-              onmouseenter="subidosTooltipShow(event, '${it.id}')"
-              onmousemove="subidosTooltipMove(event)"
-              onmouseleave="subidosTooltipHide()">
-              ${escaparHtml(it.etiqueta || "Subido")}
-            </button>
-          `).join("")}
+      <div style="
+        border:1px solid #ddd;
+        border-radius:14px;
+        min-height:110px;
+        padding:8px;
+        background:var(--card-bg, #fff);
+      ">
+        <div style="font-weight:800; margin-bottom:8px;">${dia}</div>
 
-          ${itemsDia.length > 3 ? `
-            <button type="button"
-              class="subidos-more"
-              onclick="abrirSubidoDesdeCalendario('${itemsDia[0].id}')">
-              + ${itemsDia.length - 3} más
-            </button>
-          ` : ``}
-        </div>
-      </div>
-    `;
-  }
-
-  html += `
-      </div>
-    </div>
-  `;
-
-  box.innerHTML = html;
-}
-
-function renderAgenda() {
-  const box = document.getElementById("subidosAgenda");
-  if (!box) return;
-
-  const year = subidosMesActual.getFullYear();
-  const month = subidosMesActual.getMonth();
-
-  const inicio = `${year}-${pad(month + 1)}-01`;
-  const fin = `${year}-${pad(month + 1)}-${pad(new Date(year, month + 1, 0).getDate())}`;
-
-  const itemsMes = subidosItems.filter(it => {
-    const f = it.fechaEvento || "";
-    return f >= inicio && f <= fin;
-  });
-
-  if (!itemsMes.length) {
-    box.innerHTML = "";
-    return;
-  }
-
-  const porFecha = agruparPorFecha(itemsMes);
-  const fechas = Object.keys(porFecha).sort((a, b) => a.localeCompare(b));
-
-  box.innerHTML = fechas.map(f => {
-    const fechaBonita = new Date(f + "T00:00:00").toLocaleDateString("es-AR", {
-      weekday: "long",
-      day: "2-digit",
-      month: "long"
-    });
-
-    const lista = porFecha[f].sort((a, b) => (b.fecha || 0) - (a.fecha || 0));
-
-    return `
-      <div class="subidos-agenda-card">
-        <div class="subidos-agenda-date">${fechaBonita}</div>
-        <div style="display:flex; flex-direction:column; gap:8px;">
-          ${lista.map(it => `
+        <div style="display:flex; flex-direction:column; gap:6px;">
+          ${itemsDia.slice(0, 4).map(it => `
             <button type="button"
               onclick="abrirSubidoDesdeCalendario('${it.id}')"
               style="
                 border:none;
                 cursor:pointer;
                 text-align:left;
-                border-radius:10px;
-                padding:9px 10px;
-                background:${colorEtiqueta(it.etiqueta)};
-                color:#111;
-                font-weight:700;">
+                border-radius:999px;
+                padding:6px 10px;
+                background:#bcdcff;
+                color:#000;
+                font-size:12px;
+                white-space:nowrap;
+                overflow:hidden;
+                text-overflow:ellipsis;
+              ">
               ${escaparHtml(it.etiqueta || "Subido")}
-              ${it.descripcion ? `— ${escaparHtml(it.descripcion.slice(0, 90))}` : ``}
             </button>
           `).join("")}
+
+          ${itemsDia.length > 4 ? `
+            <div style="font-size:12px; opacity:.7;">+ ${itemsDia.length - 4} más</div>
+          ` : ``}
         </div>
       </div>
     `;
-  }).join("");
+  }
+
+  html += `</div>`;
+  box.innerHTML = html;
 }
 
 function iconoSegunTipo(tipo = "") {
@@ -261,7 +191,7 @@ function renderFeed() {
 
   if (!subidosItems.length) {
     feed.innerHTML = `
-      <div class="subidos-feed-card">
+      <div style="opacity:.8; padding:12px; border:1px dashed #ccc; border-radius:12px;">
         No hay archivos subidos todavía.
       </div>
     `;
@@ -278,32 +208,25 @@ function renderFeed() {
     const esAudio = (it.mimeType || "").startsWith("audio/");
 
     return `
-      <div id="subido-${it.id}" class="subidos-feed-card">
-        <div class="subidos-feed-head">
-          <div class="subidos-feed-left">
-            <div class="subidos-feed-badges">
-              <span class="subidos-badge" style="background:${colorEtiqueta(it.etiqueta)};">
-                <i class="fa-solid ${iconoSegunTipo(it.mimeType || "")}"></i>
-                ${escaparHtml(it.etiqueta || "Subido")}
-              </span>
-              <span class="subidos-feed-date">${fechaTxt}</span>
+      <div id="subido-${it.id}" style="border:1px solid #e5e5e5; border-radius:14px; padding:12px; background:#fff; margin-bottom:12px;">
+        <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start;">
+          <div>
+            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+              <i class="fa-solid ${iconoSegunTipo(it.mimeType || "")}"></i>
+              <b>${escaparHtml(it.etiqueta || "Subido")}</b>
+              <span style="opacity:.65; font-size:12px;">${fechaTxt}</span>
             </div>
-            <div class="subidos-feed-desc">${escaparHtml(it.descripcion || "")}</div>
+            <div style="margin-top:6px; opacity:.9;">${escaparHtml(it.descripcion || "")}</div>
           </div>
         </div>
 
-        <div class="subidos-media">
+        <div style="margin-top:10px;">
           ${
-            esImg ? `<img src="${it.url}" alt="Subido" loading="lazy">` :
-            esVideo ? `<video src="${it.url}" controls preload="metadata"></video>` :
-            esAudio ? `<audio src="${it.url}" controls preload="metadata"></audio>` :
+            esImg ? `<img src="${it.url}" alt="Subido" style="width:100%; max-width:520px; border-radius:12px; display:block;">` :
+            esVideo ? `<video src="${it.url}" controls preload="metadata" style="width:100%; max-width:520px; border-radius:12px; display:block;"></video>` :
+            esAudio ? `<audio src="${it.url}" controls preload="metadata" style="width:100%;"></audio>` :
             `<a href="${it.url}" target="_blank" rel="noopener">Abrir archivo</a>`
           }
-        </div>
-
-        <div class="subidos-feed-actions">
-          <a href="${it.url}" target="_blank" rel="noopener">Abrir</a>
-          ${esImg ? `<button type="button" onclick="compartirSubidoImagen('${it.id}')">Compartir</button>` : ``}
         </div>
       </div>
     `;
@@ -319,7 +242,6 @@ window.abrirSubidoDesdeCalendario = function abrirSubidoDesdeCalendario(id) {
 function refrescarSubidos() {
   renderMesTitulo();
   renderCalendario();
-  renderAgenda();
   renderFeed();
 
   const btnNuevo = document.getElementById("btnSubidoNuevo");
@@ -488,39 +410,3 @@ document.addEventListener("DOMContentLoaded", () => {
   refrescarSubidos();
   initLecturas();
 });
-
-window.compartirSubidoImagen = async function compartirSubidoImagen(id) {
-  const it = subidosItems.find(x => x.id === id);
-  if (!it) return;
-
-  if (!(it.mimeType || "").startsWith("image/")) {
-    alert("Solo se puede compartir directo en imágenes.");
-    return;
-  }
-
-  try {
-    const resp = await fetch(it.url);
-    const blob = await resp.blob();
-    const file = new File([blob], it.fileName || "imagen.png", { type: blob.type || "image/png" });
-
-    if (navigator.share && navigator.canShare?.({ files: [file] })) {
-      await navigator.share({
-        files: [file],
-        title: it.etiqueta || "Imagen",
-        text: it.descripcion || ""
-      });
-      return;
-    }
-
-    if (navigator.clipboard && window.isSecureContext) {
-      await navigator.clipboard.writeText(it.url);
-      alert("Tu navegador no permite compartir directo. Copié el enlace al portapapeles.");
-      return;
-    }
-
-    prompt("Copiá este enlace:", it.url);
-  } catch (e) {
-    console.error(e);
-    alert("No se pudo compartir la imagen.");
-  }
-};
