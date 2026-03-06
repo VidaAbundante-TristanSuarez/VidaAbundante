@@ -1,0 +1,412 @@
+// ================= SUBIDOS.JS =================
+const { db, storage } = window.__FB || {};
+const FB = window.__FB_API || {};
+
+const {
+  ref,
+  set,
+  onValue,
+  push,
+  sRef,
+  uploadBytes,
+  getDownloadURL
+} = FB;
+
+let subidosUID = null;
+let subidosEsAdmin = false;
+let subidosMesActual = new Date();
+let subidosItems = [];
+let subidosEtiquetas = [];
+
+const ETIQUETAS_DEFAULT = [
+  "Predica",
+  "Anuncio",
+  "Plan",
+  "Racimo",
+  "Oración",
+  "Culto",
+  "Santa Cena",
+  "Reunion Jovenes",
+  "Reunion Varones",
+  "Reunion Mujeres",
+  "Taller"
+];
+
+// ================= HELPERS =================
+function pad(n) {
+  return String(n).padStart(2, "0");
+}
+
+function fechaYMD(d) {
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+function escaparHtml(txt = "") {
+  return String(txt).replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function nombreMes(d) {
+  return d.toLocaleDateString("es-AR", { month: "long", year: "numeric" });
+}
+
+function abrirModalSubidos() {
+  const m = document.getElementById("modalSubidos");
+  if (!m) return;
+
+  const fecha = document.getElementById("subidosFecha");
+  const archivo = document.getElementById("subidosArchivo");
+  const descripcion = document.getElementById("subidosDescripcion");
+  const estado = document.getElementById("subidosEstado");
+
+  if (archivo) archivo.value = "";
+  if (descripcion) descripcion.value = "";
+  if (estado) estado.textContent = "";
+  if (fecha) fecha.value = fechaYMD(new Date());
+
+  m.style.display = "flex";
+  m.setAttribute("aria-hidden", "false");
+}
+
+window.cerrarModalSubidos = function cerrarModalSubidos() {
+  const m = document.getElementById("modalSubidos");
+  if (!m) return;
+  m.style.display = "none";
+  m.setAttribute("aria-hidden", "true");
+};
+
+function poblarEtiquetas() {
+  const sel = document.getElementById("subidosEtiqueta");
+  if (!sel) return;
+
+  const lista = Array.from(new Set([...(subidosEtiquetas || []), ...ETIQUETAS_DEFAULT])).sort((a, b) => a.localeCompare(b));
+  sel.innerHTML = `<option value="">Seleccionar…</option>` +
+    lista.map(x => `<option value="${escaparHtml(x)}">${escaparHtml(x)}</option>`).join("");
+}
+
+function renderMesTitulo() {
+  const el = document.getElementById("subidosMesTitulo");
+  if (!el) return;
+  el.textContent = nombreMes(subidosMesActual);
+}
+
+function agruparPorFecha(items) {
+  const map = {};
+  items.forEach(it => {
+    const f = it.fechaEvento || "";
+    if (!f) return;
+    map[f] = map[f] || [];
+    map[f].push(it);
+  });
+  return map;
+}
+
+function renderCalendario() {
+  const box = document.getElementById("subidosCalendario");
+  if (!box) return;
+
+  const year = subidosMesActual.getFullYear();
+  const month = subidosMesActual.getMonth();
+
+  const primerDia = new Date(year, month, 1);
+  const ultimoDia = new Date(year, month + 1, 0);
+  const diasMes = ultimoDia.getDate();
+
+  let inicioSemana = primerDia.getDay();
+  if (inicioSemana === 0) inicioSemana = 7; // domingo = 7
+
+  const porFecha = agruparPorFecha(subidosItems);
+
+  let html = `
+    <div class="subidos-cal-grid" style="
+      display:grid;
+      grid-template-columns:repeat(7, 1fr);
+      gap:8px;
+    ">
+      ${["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"].map(d => `
+        <div style="font-weight:800; text-align:center; padding:6px 0;">${d}</div>
+      `).join("")}
+  `;
+
+  for (let i = 1; i < inicioSemana; i++) {
+    html += `<div></div>`;
+  }
+
+  for (let dia = 1; dia <= diasMes; dia++) {
+    const f = `${year}-${pad(month + 1)}-${pad(dia)}`;
+    const itemsDia = (porFecha[f] || []).sort((a, b) => (b.fecha || 0) - (a.fecha || 0));
+
+    html += `
+      <div style="
+        border:1px solid #ddd;
+        border-radius:14px;
+        min-height:110px;
+        padding:8px;
+        background:var(--card-bg, #fff);
+      ">
+        <div style="font-weight:800; margin-bottom:8px;">${dia}</div>
+
+        <div style="display:flex; flex-direction:column; gap:6px;">
+          ${itemsDia.slice(0, 4).map(it => `
+            <button type="button"
+              onclick="abrirSubidoDesdeCalendario('${it.id}')"
+              style="
+                border:none;
+                cursor:pointer;
+                text-align:left;
+                border-radius:999px;
+                padding:6px 10px;
+                background:#bcdcff;
+                color:#000;
+                font-size:12px;
+                white-space:nowrap;
+                overflow:hidden;
+                text-overflow:ellipsis;
+              ">
+              ${escaparHtml(it.etiqueta || "Subido")}
+            </button>
+          `).join("")}
+
+          ${itemsDia.length > 4 ? `
+            <div style="font-size:12px; opacity:.7;">+ ${itemsDia.length - 4} más</div>
+          ` : ``}
+        </div>
+      </div>
+    `;
+  }
+
+  html += `</div>`;
+  box.innerHTML = html;
+}
+
+function iconoSegunTipo(tipo = "") {
+  if (tipo.startsWith("image/")) return "fa-image";
+  if (tipo.startsWith("video/")) return "fa-video";
+  if (tipo.startsWith("audio/")) return "fa-headphones";
+  return "fa-file";
+}
+
+function renderFeed() {
+  const feed = document.getElementById("subidosFeed");
+  if (!feed) return;
+
+  if (!subidosItems.length) {
+    feed.innerHTML = `
+      <div style="opacity:.8; padding:12px; border:1px dashed #ccc; border-radius:12px;">
+        No hay archivos subidos todavía.
+      </div>
+    `;
+    return;
+  }
+
+  feed.innerHTML = subidosItems.map(it => {
+    const fechaTxt = it.fechaEvento
+      ? new Date(it.fechaEvento + "T00:00:00").toLocaleDateString("es-AR")
+      : "";
+
+    const esImg = (it.mimeType || "").startsWith("image/");
+    const esVideo = (it.mimeType || "").startsWith("video/");
+    const esAudio = (it.mimeType || "").startsWith("audio/");
+
+    return `
+      <div id="subido-${it.id}" style="border:1px solid #e5e5e5; border-radius:14px; padding:12px; background:#fff; margin-bottom:12px;">
+        <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start;">
+          <div>
+            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+              <i class="fa-solid ${iconoSegunTipo(it.mimeType || "")}"></i>
+              <b>${escaparHtml(it.etiqueta || "Subido")}</b>
+              <span style="opacity:.65; font-size:12px;">${fechaTxt}</span>
+            </div>
+            <div style="margin-top:6px; opacity:.9;">${escaparHtml(it.descripcion || "")}</div>
+          </div>
+        </div>
+
+        <div style="margin-top:10px;">
+          ${
+            esImg ? `<img src="${it.url}" alt="Subido" style="width:100%; max-width:520px; border-radius:12px; display:block;">` :
+            esVideo ? `<video src="${it.url}" controls preload="metadata" style="width:100%; max-width:520px; border-radius:12px; display:block;"></video>` :
+            esAudio ? `<audio src="${it.url}" controls preload="metadata" style="width:100%;"></audio>` :
+            `<a href="${it.url}" target="_blank" rel="noopener">Abrir archivo</a>`
+          }
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+window.abrirSubidoDesdeCalendario = function abrirSubidoDesdeCalendario(id) {
+  const el = document.getElementById("subido-" + id);
+  if (!el) return;
+  el.scrollIntoView({ behavior: "smooth", block: "center" });
+};
+
+function refrescarSubidos() {
+  renderMesTitulo();
+  renderCalendario();
+  renderFeed();
+
+  const btnNuevo = document.getElementById("btnSubidoNuevo");
+  if (btnNuevo) btnNuevo.style.display = subidosEsAdmin ? "inline-flex" : "none";
+}
+
+async function guardarSubido() {
+  try {
+    if (!subidosUID) {
+      alert("Necesitás iniciar sesión.");
+      return;
+    }
+
+    if (!subidosEsAdmin) {
+      alert("Solo admin puede subir archivos.");
+      return;
+    }
+
+    const inpFile = document.getElementById("subidosArchivo");
+    const inpFecha = document.getElementById("subidosFecha");
+    const inpEtiqueta = document.getElementById("subidosEtiqueta");
+    const inpDesc = document.getElementById("subidosDescripcion");
+    const estado = document.getElementById("subidosEstado");
+
+    const file = inpFile?.files?.[0];
+    const fechaEvento = (inpFecha?.value || "").trim();
+    const etiqueta = (inpEtiqueta?.value || "").trim();
+    const descripcion = (inpDesc?.value || "").trim();
+
+    if (!file) {
+      alert("Elegí un archivo.");
+      return;
+    }
+
+    if (!fechaEvento) {
+      alert("Completá la fecha.");
+      return;
+    }
+
+    if (!etiqueta) {
+      alert("Elegí una etiqueta.");
+      return;
+    }
+
+    if (estado) estado.textContent = "Subiendo archivo...";
+
+    const ts = Date.now();
+    const limpio = file.name.replace(/[^\w.\-]+/g, "_");
+    const path = `subidos_iglesia/${subidosUID}/${ts}_${limpio}`;
+    const storageRef = sRef(storage, path);
+
+    await uploadBytes(storageRef, file, { contentType: file.type || "application/octet-stream" });
+    const url = await getDownloadURL(storageRef);
+
+    const nuevoRef = push(ref(db, "subidosIglesia"));
+    await set(nuevoRef, {
+      fecha: ts,
+      fechaEvento,
+      etiqueta,
+      descripcion,
+      url,
+      mimeType: file.type || "",
+      fileName: file.name || "",
+      storagePath: path,
+      uidCreador: subidosUID
+    });
+
+    const etiquetaNormalizada = etiqueta.trim();
+    if (etiquetaNormalizada) {
+      const lista = Array.from(new Set([...(subidosEtiquetas || []), etiquetaNormalizada]));
+      await set(ref(db, "subidosEtiquetas"), lista);
+    }
+
+    if (estado) estado.textContent = "✅ Guardado";
+    cerrarModalSubidos();
+  } catch (e) {
+    console.error("Error guardando subido:", e);
+    const estado = document.getElementById("subidosEstado");
+    if (estado) estado.textContent = "❌ No se pudo guardar";
+    alert("No se pudo guardar el archivo.");
+  }
+}
+
+function initSubidosBotones() {
+  const btnNuevo = document.getElementById("btnSubidoNuevo");
+  const btnAnt = document.getElementById("btnSubidosMesAnt");
+  const btnSig = document.getElementById("btnSubidosMesSig");
+  const btnGuardar = document.getElementById("btnGuardarSubido");
+  const btnAgregarEtiqueta = document.getElementById("btnAgregarEtiquetaSubidos");
+
+  if (btnNuevo) btnNuevo.onclick = abrirModalSubidos;
+
+  if (btnAnt) {
+    btnAnt.onclick = () => {
+      subidosMesActual = new Date(subidosMesActual.getFullYear(), subidosMesActual.getMonth() - 1, 1);
+      refrescarSubidos();
+    };
+  }
+
+  if (btnSig) {
+    btnSig.onclick = () => {
+      subidosMesActual = new Date(subidosMesActual.getFullYear(), subidosMesActual.getMonth() + 1, 1);
+      refrescarSubidos();
+    };
+  }
+
+  if (btnGuardar) btnGuardar.onclick = guardarSubido;
+
+  if (btnAgregarEtiqueta) {
+    btnAgregarEtiqueta.onclick = async () => {
+      if (!subidosEsAdmin) return;
+
+      const nueva = prompt("Nueva etiqueta:");
+      if (!nueva || !nueva.trim()) return;
+
+      const limpia = nueva.trim();
+      const lista = Array.from(new Set([...(subidosEtiquetas || []), limpia])).sort((a, b) => a.localeCompare(b));
+
+      try {
+        await set(ref(db, "subidosEtiquetas"), lista);
+      } catch (e) {
+        console.error(e);
+        alert("No se pudo guardar la etiqueta.");
+      }
+    };
+  }
+}
+
+function initLecturas() {
+  onValue(ref(db, "subidosIglesia"), (s) => {
+    const data = s.val() || {};
+    subidosItems = Object.entries(data)
+      .map(([id, obj]) => ({ id, ...(obj || {}) }))
+      .sort((a, b) => {
+        const fa = a.fechaEvento || "";
+        const fb = b.fechaEvento || "";
+        if (fa !== fb) return fb.localeCompare(fa);
+        return (b.fecha || 0) - (a.fecha || 0);
+      });
+
+    refrescarSubidos();
+  });
+
+  onValue(ref(db, "subidosEtiquetas"), (s) => {
+    const data = s.val();
+    subidosEtiquetas = Array.isArray(data) ? data : [...ETIQUETAS_DEFAULT];
+    poblarEtiquetas();
+    refrescarSubidos();
+  });
+
+  const esperarAuth = () => {
+    subidosUID = window.__UID || null;
+    subidosEsAdmin = !!window.__ES_ADMIN;
+
+    const btnNuevo = document.getElementById("btnSubidoNuevo");
+    if (btnNuevo) btnNuevo.style.display = subidosEsAdmin ? "inline-flex" : "none";
+
+    setTimeout(esperarAuth, 1200);
+  };
+  esperarAuth();
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  initSubidosBotones();
+  poblarEtiquetas();
+  refrescarSubidos();
+  initLecturas();
+});
