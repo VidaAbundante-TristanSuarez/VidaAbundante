@@ -2521,9 +2521,9 @@ function renderDevFeed(items){
 
       <div class="devBigActions">
         <button class="btn-primary" type="button"
-          onclick="devCompartirImagenItem('${it.storagePath || ""}', 'devocional.png')"
-          aria-label="Compartir">
-          <i class="fa-solid fa-share-nodes"></i>
+        onclick="devCompartirImagenItem('${it.storagePath || ""}', 'devocional.png')"
+        aria-label="Compartir">
+        <i class="fa-solid fa-share-nodes"></i>
         </button>
 
         <button class="btn-primary" type="button"
@@ -2634,16 +2634,32 @@ window.devCompartirImagenItem = async function(storagePath, fileName="devocional
   try{
     if (!storagePath) throw new Error("No hay storagePath");
 
+    // ✅ bajar blob
     const blob = await fetchDevocionalBlob(storagePath, fileName);
-    const file = new File([blob], fileName, { type:"image/png" });
+    const file = new File([blob], fileName, { type: "image/png" });
 
+    // ✅ intentar compartir archivo
     if (navigator.share && navigator.canShare?.({ files:[file] })) {
-      await navigator.share({ files:[file], title:"Devocional" });
-    } else {
-      await window.devDescargarImagenItem(storagePath, fileName);
-      alert("Tu dispositivo/navegador no permite compartir directo. Se descargó el PNG.");
+      try {
+        await navigator.share({
+          files: [file],
+          title: "Devocional"
+        });
+        return;
+      } catch (e) {
+        // ✅ si canceló o perdió gesto, no mostramos error duro
+        console.warn("Share falló o se canceló:", e);
+
+        // fallback: descargar
+        await window.devDescargarImagenItem(storagePath, fileName);
+        return;
+      }
     }
-  }catch(e){
+
+    // ✅ si no soporta share con files
+    await window.devDescargarImagenItem(storagePath, fileName);
+    alert("Tu dispositivo o navegador no permite compartir como archivo. Se descargó el PNG.");
+  } catch(e){
     console.error(e);
     alert("❌ No se pudo compartir.\n\nDetalle: " + (e?.message || e));
   }
