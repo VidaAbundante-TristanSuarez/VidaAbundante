@@ -78,17 +78,17 @@ window.__marcadorCtx = {
   abcEditId: null
 };
 
-function setMarcadorCtx(origen, extra = {}) {
+window.setMarcadorCtx = function(origen, extra = {}) {
   window.__marcadorCtx = {
     origen: origen || "biblia",
     abcEditId: null,
     ...extra
   };
-}
+};
 
-function getMarcadorCtx() {
+window.getMarcadorCtx = function() {
   return window.__marcadorCtx || { origen: "biblia", abcEditId: null };
-}
+};
 
 // =========
 
