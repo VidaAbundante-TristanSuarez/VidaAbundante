@@ -248,12 +248,17 @@ async function audioElementToBase64(){
 }
 
 async function subirAudioAGithubDesdeWeb(audioBase64){
-  // nombre basado en la fecha del devocional (si existe)
   const fecha = DEV?.p1?.fecha || "";
   const ts = Date.now();
 
-  // si fecha viene tipo "26 de febrero de 2026" igual sirve como nombre “lindo”
+  // nombre del mp3
   const fileName = `devocional_${safeFilePart(fecha || String(ts))}.mp3`;
+
+  // ✅ title para devocionales.json (formato "dd/mm")
+  const d = new Date();
+  const dd = String(d.getDate()).padStart(2,"0");
+  const mm = String(d.getMonth()+1).padStart(2,"0");
+  const title = `${dd}/${mm}`;
 
   const r = await fetch(GH_UPLOAD_URL, {
     method: "POST",
@@ -261,9 +266,7 @@ async function subirAudioAGithubDesdeWeb(audioBase64){
     body: JSON.stringify({
       audioBase64,
       fileName,
-      // opcional si querés forzar desde acá:
-      // repo: "TUUSUARIO/TUREPO",
-      // folder: "devocionales_audio"
+      title // ✅ ESTO ES LO QUE HACE QUE SE ACTUALICE devocionales.json
     })
   });
 
@@ -271,7 +274,7 @@ async function subirAudioAGithubDesdeWeb(audioBase64){
   if (!r.ok || !data?.ok) {
     throw new Error(data?.error || data?.detail || "No se pudo subir a GitHub");
   }
-  return data; // {ok,url,path,fileName}
+  return data; // {ok,url,path,fileName, jsonUpdated:true}
 }
 
 async function blobToBase64(blob){
