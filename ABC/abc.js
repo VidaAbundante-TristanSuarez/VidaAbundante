@@ -821,9 +821,45 @@ function abcAbrirModalBibliaParaNota() {
 
   modal.classList.add("abierto");
   modal.setAttribute("aria-hidden", "false");
+    abcRenderPreviewBloquesMarcador();
 }
 
-async function guardarNuevoMarcadorABC() {
+function abcRenderPreviewBloquesMarcador() {
+  const box = document.getElementById("previewVersiculosMarcador");
+  if (!box) return;
+
+  const form = document.getElementById("formNuevoMarcador");
+  const formVisible = form && getComputedStyle(form).display !== "none";
+  if (!formVisible) {
+    box.innerHTML = "";
+    return;
+  }
+
+  const doc = document.getElementById("abcDoc");
+  if (!doc) {
+    box.innerHTML = "";
+    return;
+  }
+
+  const bids = Array.from(abcSeleccionados || []);
+  if (!bids.length) {
+    box.innerHTML = `<div class="muted">No hay bloques seleccionados.</div>`;
+    return;
+  }
+
+  const partes = bids.map(bid => {
+    const el = doc.querySelector(`.abc-block[data-bid="${bid}"]`);
+    const txt = (el?.innerText || "")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    return txt ? `<div style="margin-bottom:8px;">${txt}</div>` : "";
+  }).filter(Boolean);
+
+  box.innerHTML = partes.join("") || `<div class="muted">No hay bloques seleccionados.</div>`;
+}
+
+window.guardarNuevoMarcadorABC = async function() {
   try {
     const uid = UID();
     if (!uid) return;
@@ -1057,6 +1093,7 @@ window.abcEditarNota = async (id) => {
   if (nota)   nota.value = m.nota || "";
   if (color)  color.value = m.color || "#fff3b0";
   if (keep)   keep.checked = !!m.keep;
+  abcRenderPreviewBloquesMarcador();
 };
 
 // -------------------------
