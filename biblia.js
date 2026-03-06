@@ -596,146 +596,133 @@ function obtenerMarcadorKeepParaVersiculo(libro, capitulo, versiculo) {
   return null;
 }
 
-// ======================= ⭐ PINTAR VERSICULO  =============================
+// ======================= ⭐ PINTAR VERSICULO  ====
 function pintarVersiculo(v) {
   const id = `${v.Libro}_${v.Capitulo}_${v.Versiculo}`;
   const marcado = marcados[id];
   const imagen = modoImagen && seleccionImagen[id];
-
   const selMarcador = modoMarcador && seleccionMarcador[id];
 
-const marcadorKeepDelVersiculo = obtenerMarcadorKeepParaVersiculo(v.Libro, v.Capitulo, v.Versiculo);
+  const marcadorKeepDelVersiculo = obtenerMarcadorKeepParaVersiculo(v.Libro, v.Capitulo, v.Versiculo);
 
-const aplicado = (
-  const colorAplicadoKeep = ultimoMarcadorAplicado?.color || marcadorKeepDelVersiculo?.color || null;
-  ultimoMarcadorAplicado &&
-  ultimoMarcadorAplicado.libro === v.Libro &&
-  Number(ultimoMarcadorAplicado.capitulo) === Number(v.Capitulo) &&
-  (ultimoMarcadorAplicado.versiculos || []).includes(Number(v.Versiculo))
-) || !!marcadorKeepDelVersiculo;
-  
+  const aplicado = (
+    !!ultimoMarcadorAplicado &&
+    ultimoMarcadorAplicado.libro === v.Libro &&
+    Number(ultimoMarcadorAplicado.capitulo) === Number(v.Capitulo) &&
+    (ultimoMarcadorAplicado.versiculos || []).includes(Number(v.Versiculo))
+  ) || !!marcadorKeepDelVersiculo;
+
+  const colorAplicadoKeep =
+    ultimoMarcadorAplicado?.color ||
+    marcadorKeepDelVersiculo?.color ||
+    null;
+
   const div = document.createElement("div");
   div.className = "versiculo";
   div.dataset.id = id;
   if (imagen) div.classList.add("imagen");
-  
+
   const enOscuro = document.body.classList.contains("oscuro");
 
   // ================= Tamaño Letra =================
   div.style.fontSize = size + "px";
 
-// ================= Fondo =================
-if (modoImagen) {
-  div.style.background = imagen ? "rgba(255, 214, 232, 0.6)" : "transparent";
+  // ================= Fondo =================
+  if (modoImagen) {
+    div.style.background = imagen ? "rgba(255, 214, 232, 0.6)" : "transparent";
 
-} else if (modoMarcador) {
-  // ✅ MODO MARCADOR: selección bien visible (especialmente en oscuro)
-  if (selMarcador) {
-    div.style.background = enOscuro
-      ? "rgba(209, 238, 255, 0.92)"   // más fuerte en oscuro
-      : "rgba(209, 238, 255, 0.92)";  // casi sólido en claro
-   } else if (aplicado && colorAplicadoKeep) {
-    div.style.background = colorAplicadoKeep;
-    
-  } else {
-    // ✅ ocultar resaltados viejos
-    div.style.background = "transparent";
-  }
-
-} else {
-  // modo normal
-   if (aplicado && colorAplicadoKeep) {
-    div.style.background = colorAplicadoKeep;
-     
-  } else {
-    div.style.background = marcado?.color || "transparent";
-  }
-}
-
-if (selMarcador) div.style.border = "2px solid #4f6fa8";
-else div.style.border = "none";
-
-// ================= Color de Texto (FIX MODO MARCADOR) =================
-if (modoImagen) {
-  // modo imagen: seleccionado negro, no seleccionado según tema
-  div.style.color = imagen ? "#000000" : (enOscuro ? "#ffffff" : "#000000");
-} else {
-
-  // ✅ si estoy seleccionando para marcador, quiero que SIEMPRE se lea
-  if (modoMarcador && selMarcador) {
-    div.style.color = "#000000"; // el fondo de selección es claro
-  } else {
-    // fondo real SOLO cuando realmente estás mostrando un fondo
-    let fondo = null;
-
-    if (modoMarcador) {
-      // ✅ en modo marcador NO usar "marcado.color" si NO lo estás pintando
-          if (aplicado && colorAplicadoKeep) fondo = colorAplicadoKeep;
-      // si no hay aplicado, fondo queda null -> color por tema
+  } else if (modoMarcador) {
+    if (selMarcador) {
+      div.style.background = enOscuro
+        ? "rgba(209, 238, 255, 0.92)"
+        : "rgba(209, 238, 255, 0.92)";
+    } else if (aplicado && colorAplicadoKeep) {
+      div.style.background = colorAplicadoKeep;
     } else {
-          if (aplicado && colorAplicadoKeep) fondo = colorAplicadoKeep;
-      else if (marcado?.color) fondo = marcado.color;
+      div.style.background = "transparent";
     }
 
-    if (fondo) div.style.color = colorContraste(fondo);
-    else div.style.color = enOscuro ? "#ffffff" : "#000000";
+  } else {
+    if (aplicado && colorAplicadoKeep) {
+      div.style.background = colorAplicadoKeep;
+    } else {
+      div.style.background = marcado?.color || "transparent";
+    }
   }
-}
 
- // ================= Opacidad (UX Modo imagen y Modo Marcador) =================
-if (modoImagen && !imagen) {
-  div.style.opacity = "0.6";
-} else {
-  div.style.opacity = "1";
-}
+  if (selMarcador) div.style.border = "2px solid #4f6fa8";
+  else div.style.border = "none";
+
+  // ================= Color de Texto =================
+  if (modoImagen) {
+    div.style.color = imagen ? "#000000" : (enOscuro ? "#ffffff" : "#000000");
+  } else {
+    if (modoMarcador && selMarcador) {
+      div.style.color = "#000000";
+    } else {
+      let fondo = null;
+
+      if (modoMarcador) {
+        if (aplicado && colorAplicadoKeep) fondo = colorAplicadoKeep;
+      } else {
+        if (aplicado && colorAplicadoKeep) fondo = colorAplicadoKeep;
+        else if (marcado?.color) fondo = marcado.color;
+      }
+
+      if (fondo) div.style.color = colorContraste(fondo);
+      else div.style.color = enOscuro ? "#ffffff" : "#000000";
+    }
+  }
+
+  // ================= Opacidad =================
+  if (modoImagen && !imagen) {
+    div.style.opacity = "0.6";
+  } else {
+    div.style.opacity = "1";
+  }
 
   // ================= Contenido =================
-// ✅ Pluma SOLO si este versículo es el ÚLTIMO de alguna nota
-const idMarcadorPluma = (window.notasBibliaPluma || {})[id] || null;
+  const idMarcadorPluma = (window.notasBibliaPluma || {})[id] || null;
 
-div.innerHTML = `
-  <span class="num">${v.Versiculo}</span>
-  <span class="txt">${v.RV1960}</span>
-  ${idMarcadorPluma ? `<i class="fa-solid fa-comment-dots icono-nota" aria-hidden="true" data-mid="${idMarcadorPluma}"></i>` : ``}
-`;
-  
+  div.innerHTML = `
+    <span class="num">${v.Versiculo}</span>
+    <span class="txt">${v.RV1960}</span>
+    ${idMarcadorPluma ? `<i class="fa-solid fa-comment-dots icono-nota" aria-hidden="true" data-mid="${idMarcadorPluma}"></i>` : ``}
+  `;
+
   // ================= Click =================
   div.onclick = () => toggleVersiculo(id, v.Versiculo);
 
-  // ✅ click en pluma => abrir edición del marcador (sin togglear versículo)
-const pluma = div.querySelector(".icono-nota[data-mid]");
-if (pluma) {
-  pluma.style.cursor = "pointer";
-pluma.onclick = (e) => {
-  e.preventDefault();
-  e.stopPropagation();
+  const pluma = div.querySelector(".icono-nota[data-mid]");
+  if (pluma) {
+    pluma.style.cursor = "pointer";
+    pluma.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
 
-  const mid = pluma.getAttribute("data-mid");
-  if (!mid) return;
+      const mid = pluma.getAttribute("data-mid");
+      if (!mid) return;
 
-  // ✅ 1) Abrir modal de marcadores SIEMPRE
-  if (typeof window.abrirMarcadores === "function") {
-    window.abrirMarcadores();
+      if (typeof window.abrirMarcadores === "function") {
+        window.abrirMarcadores();
+      }
+
+      setTimeout(() => {
+        if (typeof window.editarMarcadorDesdeLista === "function") {
+          window.editarMarcadorDesdeLista(mid);
+          return;
+        }
+        if (typeof window.editarMarcadorEnPanel === "function") {
+          window.editarMarcadorEnPanel(mid);
+          return;
+        }
+      }, 0);
+    };
   }
 
-  // ✅ 2) Luego cargar la edición (cuando el modal ya está visible)
-  setTimeout(() => {
-    if (typeof window.editarMarcadorDesdeLista === "function") {
-      window.editarMarcadorDesdeLista(mid);
-      return;
-    }
-    if (typeof window.editarMarcadorEnPanel === "function") {
-      window.editarMarcadorEnPanel(mid);
-      return;
-    }
-  }, 0);
-};
-}
-  
   texto.appendChild(div);
 }
 
-// ================= ⭐ OBTIENE VERSICULO SELECCIONADO =======================
 // ================= ⭐ OBTIENE VERSICULO SELECCIONADO (FIX MULTI CAP) =======================
 function obtenerVersiculoSeleccionado() {
   const ids = Object.keys(seleccionImagen || {});
