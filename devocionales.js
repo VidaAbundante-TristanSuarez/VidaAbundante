@@ -248,17 +248,18 @@ async function audioElementToBase64(){
 }
 
 async function subirAudioAGithubDesdeWeb(audioBase64){
-  const fecha = DEV?.p1?.fecha || "";
-  const ts = Date.now();
-
-  // nombre del mp3
-  const fileName = `devocional_${safeFilePart(fecha || String(ts))}.mp3`;
-
-  // ✅ title para devocionales.json (formato "dd/mm")
   const d = new Date();
-  const dd = String(d.getDate()).padStart(2,"0");
-  const mm = String(d.getMonth()+1).padStart(2,"0");
-  const title = `${dd}/${mm}`;
+
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  const yy = String(yyyy).slice(-2);
+
+  // ✅ nombre del mp3 en formato que la página entiende
+  const fileName = `devocional_${yyyy}-${mm}-${dd}.mp3`;
+
+  // ✅ texto visible en JSON
+  const title = `${dd}/${mm}/${yy}`;
 
   const r = await fetch(GH_UPLOAD_URL, {
     method: "POST",
@@ -266,7 +267,7 @@ async function subirAudioAGithubDesdeWeb(audioBase64){
     body: JSON.stringify({
       audioBase64,
       fileName,
-      title // ✅ ESTO ES LO QUE HACE QUE SE ACTUALICE devocionales.json
+      title
     })
   });
 
@@ -274,7 +275,7 @@ async function subirAudioAGithubDesdeWeb(audioBase64){
   if (!r.ok || !data?.ok) {
     throw new Error(data?.error || data?.detail || "No se pudo subir a GitHub");
   }
-  return data; // {ok,url,path,fileName, jsonUpdated:true}
+  return data;
 }
 
 async function blobToBase64(blob){
