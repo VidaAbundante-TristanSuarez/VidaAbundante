@@ -72,6 +72,26 @@ let ultimoMarcadorAplicado = null;  // resaltado al volver (opcional)
 // ✅ cuando edito desde "Mi Panel", guardo acá la info original del marcador
 window.__editMarcadorBase = null;  // {libro, capitulo, versiculos, ref}
 
+// ================= CONTEXTO MODAL MARCADORES =================
+window.__marcadorCtx = {
+  origen: "biblia",   // "biblia" | "abc"
+  abcEditId: null
+};
+
+function setMarcadorCtx(origen, extra = {}) {
+  window.__marcadorCtx = {
+    origen: origen || "biblia",
+    abcEditId: null,
+    ...extra
+  };
+}
+
+function getMarcadorCtx() {
+  return window.__marcadorCtx || { origen: "biblia", abcEditId: null };
+}
+
+// =========
+
 let modoImagen = false;
 let seleccionImagen = {};
 let fondoFinal = null;
@@ -1660,6 +1680,7 @@ window.irA = (seccion) => {
 
   // 4) biblia
   if (seccion === "biblia") {
+        setMarcadorCtx("biblia");
     // ✅ al volver a Biblia: restaurar estado previo (modo imagen / modo marcador)
     // (si no existe, no pasa nada)
     try { bibliaRestaurarUIAlVolver?.(); } catch(e){}
@@ -2063,6 +2084,7 @@ function renderPreviewVersiculosMarcador() {
 
 // ================= ✨ Abrir Form Nuevo Marcador 📌=================
 window.abrirFormNuevoMarcador = () => {
+    setMarcadorCtx("biblia");
   const lista = document.getElementById("listaMarcadores");
   const form = document.getElementById("formNuevoMarcador");
   const info = document.getElementById("infoMarcadorNuevo");
@@ -3003,10 +3025,17 @@ document.addEventListener("DOMContentLoaded", () => {
   const b = document.getElementById("btnGuardarNuevoMarcador");
   if (b) {
     b.type = "button";
-    b.onclick = (e) => {
+    b.onclick = async (e) => {
       e.preventDefault();
       e.stopPropagation();
-      guardarNuevoMarcador();
+
+      const ctx = getMarcadorCtx();
+
+      if (ctx.origen === "abc") {
+        await guardarNuevoMarcadorABC();
+      } else {
+        await guardarNuevoMarcador();
+      }
     };
   }
 
