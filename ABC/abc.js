@@ -225,7 +225,7 @@ body.oscuro .abc-block .icono-nota{
     // ✅ IMPORTANTE: acá cargamos progreso y CORTAMOS para no cargar 2 veces
     await abcCargarProgreso();
     return;
-
+}
   // ✅ si ya estaba iniciado, recién acá cargamos tema normal
   await cargarABCTema();
 };
