@@ -12,7 +12,8 @@ import {
   set,
   remove,
   onValue,
-  get
+  get,
+  push
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 import {
@@ -41,7 +42,7 @@ const db = getDatabase(app);
 const storage = getStorage(app, "gs://vidaabundante-f118a.firebasestorage.app");
 
 window.__FB = { db, storage };
-window.__FB_API = { ref, set, remove, onValue, get, sRef, uploadBytes, getDownloadURL, getBytes, deleteObject };
+window.__FB_API = { ref, set, remove, onValue, get, push, sRef, uploadBytes, getDownloadURL, getBytes, deleteObject };
 
 // ================= ESTADO GLOBAL =================
 let uid = null;
@@ -2997,7 +2998,7 @@ window.mostrarIglesiaSub = (sub) => {
     window.__abcOnExit?.();
   }
 
-  ["devocionales", "abc", "xyz"].forEach(k => {
+  ["devocionales", "abc", "subidos", "xyz"].forEach(k => {
     const el = document.getElementById("iglesia-" + k);
     if (el) el.style.display = (k === sub) ? "block" : "none";
   });
