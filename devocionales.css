@@ -1002,7 +1002,7 @@ body.oscuro .subidos-feed-actions a{
 
 @media (max-width: 800px){
   .subidos-day{
-    min-height:90px;
+    min-height:102px;
     padding:6px;
   }
 
@@ -1010,24 +1010,6 @@ body.oscuro .subidos-feed-actions a{
     font-size:11px;
     padding:4px 6px;
   }
-}
-
-@media (max-width:600px){
-
-#subidosMesTitulo{
-  font-size:16px;
-}
-
-.subidos-day-num{
-  font-size:12px;
-}
-
-.subidos-feed-actions button,
-.subidos-feed-actions a{
-  padding:10px 14px;
-  font-size:14px;
-}
-
 }
 
 </style>
