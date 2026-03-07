@@ -1917,6 +1917,7 @@ function safeFilePart(s){
 }
 
 window.devDescargarFinal = async () => {
+     devBusyShow("⏳ Preparando audio…");
   try {
     // 1) obtener base64 desde el <audio>
    let pack = await audioElementToBase64();
@@ -1973,9 +1974,11 @@ if (!pack?.base64 || !pack?.blob) {
     if (gh?.url) {
       alert("✅ Audio subido a GitHub y descargado.\n\nURL:\n" + gh.url);
     }
-  } catch (e) {
+    } catch (e) {
     console.error(e);
     alert("❌ No se pudo descargar/subir el audio.\n\nDetalle: " + (e?.message || e));
+  } finally {
+    devBusyHide();
   }
 };
 
@@ -2076,6 +2079,7 @@ DEV.publicando = DEV.publicando || false;
 window.devFinalizar = async () => {
   if (DEV.publicando) return;
   DEV.publicando = true;
+  devBusyShow("⏳ Finalizando devocional…");
 
   const btn = document.getElementById("devBtnFinalizar");
   if (btn) btn.disabled = true;
@@ -2110,10 +2114,11 @@ window.devFinalizar = async () => {
   } catch (e) {
     console.error(e);
     alert("❌ Error al finalizar/subir.\n\nDetalle: " + (e?.message || e));
-  } finally {
-    DEV.publicando = false;
-    if (btn) btn.disabled = false;
-  }
+} finally {
+  DEV.publicando = false;
+  if (btn) btn.disabled = false;
+  devBusyHide();
+}
 };
 
 /* =========================================================
@@ -2461,9 +2466,17 @@ function capitalizarCitaBonita(s){
   if (!s) return "";
 
   return s
-    .toLowerCase()
-    .replace(/\b([1-3])\s+([a-záéíóúñ])/g, (_, n, l) => `${n} ${l.toUpperCase()}`)
-    .replace(/\b[a-záéíóúñ]/g, c => c.toUpperCase());
+    .toLocaleLowerCase("es")
+    .split(/\s+/)
+    .map(palabra => {
+      if (!palabra) return palabra;
+
+      // si empieza con número, por ejemplo "1"
+      if (/^\d+$/.test(palabra)) return palabra;
+
+      return palabra.charAt(0).toLocaleUpperCase("es") + palabra.slice(1);
+    })
+    .join(" ");
 }
 
 function getCitaDeTexto(texto){
@@ -2548,6 +2561,8 @@ function renderDevFeed(items){
 
       <div class="devBigActions">
         <button class="btn-primary" type="button"
+        onpointerdown="devWarmShareImage('${it.storagePath || ""}', 'devocional.png')"
+        ontouchstart="devWarmShareImage('${it.storagePath || ""}', 'devocional.png')"
         onclick="devCompartirImagenItem('${it.storagePath || ""}', 'devocional.png')"
         aria-label="Compartir">
         <i class="fa-solid fa-share-nodes"></i>
@@ -2627,6 +2642,89 @@ function base64ToBlob(b64, contentType="application/octet-stream"){
 }
 
 // =========================
+// LOADING SIMPLE
+// =========================
+function devBusyEnsure(){
+  let box = document.getElementById("devBusyGlobal");
+  if (box) return box;
+
+  box = document.createElement("div");
+  box.id = "devBusyGlobal";
+  box.style.position = "fixed";
+  box.style.inset = "0";
+  box.style.background = "rgba(0,0,0,.38)";
+  box.style.display = "none";
+  box.style.alignItems = "center";
+  box.style.justifyContent = "center";
+  box.style.zIndex = "99999";
+
+  box.innerHTML = `
+    <div style="
+      min-width:220px;
+      max-width:88vw;
+      background:#fff;
+      color:#222;
+      border-radius:16px;
+      padding:18px 16px;
+      text-align:center;
+      box-shadow:0 10px 30px rgba(0,0,0,.18);
+      font-family:inherit;
+    ">
+      <div id="devBusyText" style="font-size:16px; font-weight:700;">Procesando…</div>
+      <div style="margin-top:10px; font-size:13px; opacity:.75;">Por favor esperá un momento</div>
+    </div>
+  `;
+
+  document.body.appendChild(box);
+  return box;
+}
+
+function devBusyShow(msg){
+  const box = devBusyEnsure();
+  const t = document.getElementById("devBusyText");
+  if (t) t.textContent = msg || "Procesando…";
+  box.style.display = "flex";
+}
+
+function devBusyHide(){
+  const box = document.getElementById("devBusyGlobal");
+  if (box) box.style.display = "none";
+}
+
+// =========================
+// CACHE DEL PNG PARA SHARE
+// =========================
+window.__devShareCache = window.__devShareCache || new Map();
+
+function devShareKey(storagePath, fileName){
+  return `${storagePath}__${fileName}`;
+}
+
+async function devWarmShareImage(storagePath, fileName="devocional.png"){
+  try{
+    if (!storagePath) return null;
+
+    const key = devShareKey(storagePath, fileName);
+    const cached = window.__devShareCache.get(key);
+    if (cached?.file) return cached.file;
+    if (cached?.promise) return await cached.promise;
+
+    const promise = (async ()=>{
+      const blob = await fetchDevocionalBlob(storagePath, fileName);
+      const file = new File([blob], fileName, { type:"image/png" });
+      window.__devShareCache.set(key, { file });
+      return file;
+    })();
+
+    window.__devShareCache.set(key, { promise });
+    return await promise;
+  } catch(e){
+    console.warn("No pude precalentar share:", e);
+    return null;
+  }
+}
+
+// =========================
 // ✅ CON FUNCTIONS COMPARTIR Y DESCARGAR
 // =========================
 const DEV_PNG_PROXY =
@@ -2643,6 +2741,8 @@ window.devDescargarImagenItem = async function(storagePath, fileName="devocional
   try{
     if (!storagePath) throw new Error("No hay storagePath");
 
+    devBusyShow("⏳ Preparando descarga…");
+
     const blob = await fetchDevocionalBlob(storagePath, fileName);
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
@@ -2654,6 +2754,8 @@ window.devDescargarImagenItem = async function(storagePath, fileName="devocional
   }catch(e){
     console.error(e);
     alert("❌ No se pudo descargar.\n\nDetalle: " + (e?.message || e));
+  }finally{
+    devBusyHide();
   }
 };
 
@@ -2661,33 +2763,42 @@ window.devCompartirImagenItem = async function(storagePath, fileName="devocional
   try{
     if (!storagePath) throw new Error("No hay storagePath");
 
-    // ✅ bajar blob
-    const blob = await fetchDevocionalBlob(storagePath, fileName);
-    const file = new File([blob], fileName, { type: "image/png" });
+    devBusyShow("⏳ Preparando para compartir…");
 
-    // ✅ intentar compartir archivo
-    if (navigator.share && navigator.canShare?.({ files:[file] })) {
-      try {
-        await navigator.share({
-          files: [file],
-          title: "Devocional"
-        });
-        return;
-      } catch (e) {
-        // ✅ si canceló o perdió gesto, no mostramos error duro
-        console.warn("Share falló o se canceló:", e);
+    // ✅ intentar usar archivo ya precargado
+    let file = await devWarmShareImage(storagePath, fileName);
 
-        // fallback: descargar
-        await window.devDescargarImagenItem(storagePath, fileName);
-        return;
-      }
+    // ✅ si no quedó en cache por alguna razón, lo traemos
+    if (!file) {
+      const blob = await fetchDevocionalBlob(storagePath, fileName);
+      file = new File([blob], fileName, { type:"image/png" });
     }
 
-    // ✅ si no soporta share con files
+    devBusyHide();
+
+    // ✅ compartir archivo
+    if (navigator.share && navigator.canShare?.({ files:[file] })) {
+      await navigator.share({
+        files: [file],
+        title: "Devocional"
+      });
+      return;
+    }
+
+    // ✅ fallback si ese navegador no soporta share con files
     await window.devDescargarImagenItem(storagePath, fileName);
     alert("Tu dispositivo o navegador no permite compartir como archivo. Se descargó el PNG.");
+
   } catch(e){
     console.error(e);
-    alert("❌ No se pudo compartir.\n\nDetalle: " + (e?.message || e));
+
+    // ✅ si falla compartir, bajamos imagen
+    try{
+      await window.devDescargarImagenItem(storagePath, fileName);
+    }catch(_){}
+
+    alert("⚠️ No se pudo abrir compartir directo. Se descargó la imagen para compartirla manualmente.\n\nDetalle: " + (e?.message || e));
+  } finally {
+    devBusyHide();
   }
 };
