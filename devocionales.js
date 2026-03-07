@@ -2540,6 +2540,8 @@ function renderDevFeed(items){
   feed.innerHTML = "";
 
   const esAdmin = isAdmin();
+     // ✅ precargar archivos para que compartir abra directo más seguido
+  devPrecacheFeedImages(items);
 
   items.forEach((it)=>{
     const card = document.createElement("div");
@@ -2565,8 +2567,6 @@ function renderDevFeed(items){
         ontouchstart="devWarmShareImage('${it.storagePath || ""}', 'devocional.png')"
         onclick="devCompartirImagenItem('${it.storagePath || ""}', 'devocional.png')"
         aria-label="Compartir">
-        <i class="fa-solid fa-share-nodes"></i>
-        </button>
 
         <button class="btn-primary" type="button"
           onclick="devDescargarImagenItem('${it.storagePath || ""}', 'devocional.png')"
@@ -2737,6 +2737,16 @@ async function fetchDevocionalBlob(storagePath, fileName="devocional.png"){
   return await r.blob();
 }
 
+function devPrecacheFeedImages(items){
+  (items || []).forEach(it => {
+    const storagePath = it?.storagePath || "";
+    if (!storagePath) return;
+
+    // ✅ calienta cache en segundo plano
+    devWarmShareImage(storagePath, "devocional.png").catch(()=>{});
+  });
+}
+
 window.devDescargarImagenItem = async function(storagePath, fileName="devocional.png"){
   try{
     if (!storagePath) throw new Error("No hay storagePath");
@@ -2763,20 +2773,20 @@ window.devCompartirImagenItem = async function(storagePath, fileName="devocional
   try{
     if (!storagePath) throw new Error("No hay storagePath");
 
-    devBusyShow("⏳ Preparando para compartir…");
+    const key = devShareKey(storagePath, fileName);
+    const cached = window.__devShareCache.get(key);
 
-    // ✅ intentar usar archivo ya precargado
-    let file = await devWarmShareImage(storagePath, fileName);
-
-    // ✅ si no quedó en cache por alguna razón, lo traemos
-    if (!file) {
-      const blob = await fetchDevocionalBlob(storagePath, fileName);
-      file = new File([blob], fileName, { type:"image/png" });
+    // ✅ si todavía no está listo, avisamos y seguimos calentando
+    if (!cached?.file) {
+      devBusyShow("⏳ Preparando imagen para compartir…");
+      devWarmShareImage(storagePath, fileName).catch(()=>{});
+      setTimeout(() => devBusyHide(), 900);
+      alert("Todavía estoy preparando la imagen. Tocá compartir otra vez en un instante.");
+      return;
     }
 
-    devBusyHide();
+    const file = cached.file;
 
-    // ✅ compartir archivo
     if (navigator.share && navigator.canShare?.({ files:[file] })) {
       await navigator.share({
         files: [file],
@@ -2785,19 +2795,12 @@ window.devCompartirImagenItem = async function(storagePath, fileName="devocional
       return;
     }
 
-    // ✅ fallback si ese navegador no soporta share con files
     await window.devDescargarImagenItem(storagePath, fileName);
     alert("Tu dispositivo o navegador no permite compartir como archivo. Se descargó el PNG.");
 
   } catch(e){
     console.error(e);
-
-    // ✅ si falla compartir, bajamos imagen
-    try{
-      await window.devDescargarImagenItem(storagePath, fileName);
-    }catch(_){}
-
-    alert("⚠️ No se pudo abrir compartir directo. Se descargó la imagen para compartirla manualmente.\n\nDetalle: " + (e?.message || e));
+    alert("❌ No se pudo compartir.\n\nDetalle: " + (e?.message || e));
   } finally {
     devBusyHide();
   }
