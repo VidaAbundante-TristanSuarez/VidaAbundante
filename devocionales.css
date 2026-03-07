@@ -582,7 +582,7 @@ body.modal-open{
   font-family: Georgia, "Times New Roman", serif;
   font-weight: 700;
   text-decoration: underline;
-  text-transform: capitalize;
+  
   font-size: 10px;       /* ✅ 1 punto más chica */
 }
 
