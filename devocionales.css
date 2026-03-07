@@ -583,7 +583,7 @@ body.modal-open{
   font-weight: 700;
   text-decoration: underline;
 
-  font-size: 11px;       /* ✅ 1 punto más chica */
+  font-size: 10px;       /* ✅ 1 punto más chica */
 }
 
 /* imagen */
