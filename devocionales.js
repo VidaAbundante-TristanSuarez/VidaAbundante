@@ -2456,11 +2456,38 @@ function fmtFecha(ts){
   }catch{ return ""; }
 }
 
+function capitalizarCitaBonita(s){
+  s = String(s || "").trim();
+  if (!s) return "";
+
+  return s
+    .toLowerCase()
+    .replace(/\b([1-3])\s+([a-záéíóúñ])/g, (_, n, l) => `${n} ${l.toUpperCase()}`)
+    .replace(/\b[a-záéíóúñ]/g, c => c.toUpperCase());
+}
+
 function getCitaDeTexto(texto){
-  // ultra simple: intenta encontrar la última línea tipo “Juan 3:16”
-  const t = String(texto||"");
-  const m = t.match(/([1-3]\s*)?[A-Za-zÁÉÍÓÚÑáéíóúñ\.]+\s+\d+\s*:\s*\d+(-\d+)?/);
-  return m ? m[0] : "Devocional";
+  let t = String(texto || "").trim();
+  if (!t) return "";
+
+  // ✅ acepta Mateo 6.6 y lo convierte a Mateo 6:6
+  t = t.replace(/(\d+)\.(\d+)(?!\d)/g, "$1:$2");
+
+  // ✅ busca referencias tipo:
+  // Juan 3:16
+  // 1 Juan 4:8
+  // Cantares 2:1-3
+  const re = /((?:[1-3]\s+)?[A-Za-zÁÉÍÓÚÑáéíóúñ]+(?:\s+[A-Za-zÁÉÍÓÚÑáéíóúñ]+)*)\s+(\d+)\s*:\s*(\d+(?:-\d+)?)/g;
+
+  let match;
+  let ultima = "";
+
+  while ((match = re.exec(t)) !== null) {
+    ultima = `${match[1]} ${match[2]}:${match[3]}`;
+  }
+
+  // ✅ si no encuentra cita, devolvemos vacío en vez de "Devocional"
+  return ultima ? capitalizarCitaBonita(ultima) : "";
 }
 
 function renderDevIndex(items){
@@ -2469,7 +2496,7 @@ function renderDevIndex(items){
   row.innerHTML = "";
 
   items.forEach((it)=>{
-    const cita  = getCitaDeTexto(it.texto);
+    const cita  = getCitaDeTexto(it.texto) || "Devocional";
     const fecha = fmtFecha(it.fecha || it.tsKey || 0);
 
     const card = document.createElement("div");
