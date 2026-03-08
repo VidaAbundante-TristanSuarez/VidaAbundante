@@ -2700,7 +2700,7 @@ function devShareKey(storagePath, fileName){
   return `${storagePath}__${fileName}`;
 }
 
-async function devWarmShareImage(storagePath, fileName="devocional.png"){
+window.devWarmShareImage = async function(storagePath, fileName="devocional.png"){
   try{
     if (!storagePath) return null;
 
@@ -2722,7 +2722,7 @@ async function devWarmShareImage(storagePath, fileName="devocional.png"){
     console.warn("No pude precalentar share:", e);
     return null;
   }
-}
+};
 
 // =========================
 // ✅ CON FUNCTIONS COMPARTIR Y DESCARGAR
