@@ -275,7 +275,7 @@ function renderFeed() {
 
   if (!subidosItems.length) {
     feed.innerHTML = `
-      <div style="opacity:.8; padding:12px; border:1px dashed #ccc; border-radius:12px;">
+      <div class="subidos-feed-card" style="opacity:.85;">
         No hay archivos subidos todavía.
       </div>
     `;
@@ -290,27 +290,48 @@ function renderFeed() {
     const esImg = (it.mimeType || "").startsWith("image/");
     const esVideo = (it.mimeType || "").startsWith("video/");
     const esAudio = (it.mimeType || "").startsWith("audio/");
+    const color = colorEtiquetaSubidos(it.etiqueta || "");
 
     return `
-      <div id="subido-${it.id}" style="border:1px solid #e5e5e5; border-radius:14px; padding:12px; background:#fff; margin-bottom:12px;">
-        <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start;">
-          <div>
-            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-              <i class="fa-solid ${iconoSegunTipo(it.mimeType || "")}"></i>
-              <b>${escaparHtml(it.etiqueta || "Subido")}</b>
-              <span style="opacity:.65; font-size:12px;">${fechaTxt}</span>
+      <div id="subido-${it.id}" class="subidos-feed-card">
+        <div class="subidos-feed-head">
+          <div class="subidos-feed-left">
+            <div class="subidos-feed-badges">
+              <span class="subidos-badge" style="background:${color.bg}; color:${color.fg};">
+                <i class="fa-solid ${iconoSegunTipo(it.mimeType || "")}"></i>
+                ${escaparHtml(it.etiqueta || "Subido")}
+              </span>
+              <span class="subidos-feed-date">${fechaTxt}</span>
             </div>
-            <div style="margin-top:6px; opacity:.9;">${escaparHtml(it.descripcion || "")}</div>
+
+            ${
+              it.descripcion
+                ? `<div class="subidos-feed-desc">${escaparHtml(it.descripcion || "")}</div>`
+                : ``
+            }
           </div>
         </div>
 
-        <div style="margin-top:10px;">
+        <div class="subidos-media">
           ${
-            esImg ? `<img src="${it.url}" alt="Subido" style="width:100%; max-width:520px; border-radius:12px; display:block;">` :
-            esVideo ? `<video src="${it.url}" controls preload="metadata" style="width:100%; max-width:520px; border-radius:12px; display:block;"></video>` :
-            esAudio ? `<audio src="${it.url}" controls preload="metadata" style="width:100%;"></audio>` :
-            `<a href="${it.url}" target="_blank" rel="noopener">Abrir archivo</a>`
+            esImg
+              ? `<img src="${it.url}" alt="${escaparHtml(it.fileName || "Imagen subida")}" loading="lazy">`
+              : esVideo
+              ? `<video src="${it.url}" controls preload="metadata"></video>`
+              : esAudio
+              ? `<audio src="${it.url}" controls preload="metadata"></audio>`
+              : `
+                <div style="text-align:center; padding-top:6px;">
+                  <a href="${it.url}" target="_blank" rel="noopener">Abrir archivo</a>
+                </div>
+              `
           }
+        </div>
+
+        <div class="subidos-feed-actions">
+          <a href="${it.url}" target="_blank" rel="noopener">Abrir</a>
+          <a href="${it.url}" download="${escaparHtml(it.fileName || "archivo")}">Descargar</a>
+          <button type="button" onclick="compartirSubido('${it.id}')">Compartir</button>
         </div>
       </div>
     `;
@@ -321,6 +342,39 @@ window.abrirSubidoDesdeCalendario = function abrirSubidoDesdeCalendario(id) {
   const el = document.getElementById("subido-" + id);
   if (!el) return;
   el.scrollIntoView({ behavior: "smooth", block: "center" });
+};
+
+window.compartirSubido = async function compartirSubido(id) {
+  try {
+    const it = subidosItems.find(x => x.id === id);
+    if (!it?.url) {
+      alert("No se encontró el archivo.");
+      return;
+    }
+
+    const texto = [it.etiqueta || "Subido", it.descripcion || ""]
+      .filter(Boolean)
+      .join(" — ");
+
+    if (navigator.share) {
+      await navigator.share({
+        title: it.etiqueta || "Subido",
+        text: texto,
+        url: it.url
+      });
+      return;
+    }
+
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(it.url);
+      alert("Link copiado.");
+      return;
+    }
+
+    prompt("Copiá este link:", it.url);
+  } catch (e) {
+    console.error("Error compartiendo:", e);
+  }
 };
 
 function refrescarSubidos() {
