@@ -2625,31 +2625,67 @@ window.abrirNotaLibre = () => {
 
 // ================= 🔺 RENDERPANELIMAGENES ===================
 function renderPanelImagenes(data) {
-  const grid = document.getElementById("grid-imagenes");
+  const grid = document.getElementById("grid-imagenes"); // compatibilidad
   const vacio = document.getElementById("imagenes-vacio");
-  if (!grid || !vacio) return;
+  const indexRow = document.getElementById("panelImgIndexRow");
+  const feed = document.getElementById("panelImgFeed");
+
+  if (!vacio || !indexRow || !feed) return;
+  if (grid) grid.innerHTML = "";
 
   const items = Object.entries(data || {})
     .map(([id, obj]) => ({ id, ...(obj || {}) }))
-    .sort((a,b) => (b.fecha || 0) - (a.fecha || 0));
+    .sort((a, b) => (b.fecha || 0) - (a.fecha || 0));
 
   if (!items.length) {
     vacio.style.display = "block";
-    grid.innerHTML = "";
+    indexRow.innerHTML = "";
+    feed.innerHTML = "";
     return;
   }
 
   vacio.style.display = "none";
 
-  grid.innerHTML = items.map(it => {
+  // índice horizontal arriba
+  indexRow.innerHTML = items.map(it => {
     const refTxt = (it.libro && it.capitulo) ? `${it.libro} ${it.capitulo}` : "Imagen";
     const fechaTxt = it.fecha ? new Date(it.fecha).toLocaleDateString("es-AR") : "";
     const url = (it.url || "").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 
     return `
-      <div class="card-imagen">
+      <div class="devIndexCard" onclick="document.getElementById('panelImgBig_${it.id}')?.scrollIntoView({behavior:'smooth', block:'start'})">
+        <div class="devIndexBar devIndexBarTop">${refTxt}</div>
+
+        <div class="devIndexImgWrap">
+          <img src="${url}" alt="Imagen generada" loading="lazy">
+        </div>
+
+        <div class="devIndexBar devIndexBarBottom">${fechaTxt}</div>
+      </div>
+    `;
+  }).join("");
+
+  // feed grande abajo
+  feed.innerHTML = items.map(it => {
+    const refTxt = (it.libro && it.capitulo) ? `${it.libro} ${it.capitulo}` : "Imagen";
+    const fechaTxt = it.fecha ? new Date(it.fecha).toLocaleDateString("es-AR") : "";
+    const url = (it.url || "").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+
+    return `
+      <div class="devBigCard" id="panelImgBig_${it.id}">
         <img src="${url}" alt="Imagen generada" loading="lazy">
-        <div class="nombre">${refTxt} · ${fechaTxt}</div>
+
+        <div class="devBigActions">
+          <button class="btn-primary" type="button"
+            onclick="descargarImagenPanel('${url}')"
+            aria-label="Descargar PNG">
+            <i class="fa-solid fa-download"></i>
+          </button>
+        </div>
+
+        <div style="padding:0 12px 12px; text-align:center; font-size:13px; opacity:.85;">
+          ${refTxt} · ${fechaTxt}
+        </div>
       </div>
     `;
   }).join("");
@@ -3058,10 +3094,10 @@ document.addEventListener("DOMContentLoaded", () => {
       const ctx = getMarcadorCtx();
 
       if (ctx.origen === "abc") {
-        await window.guardarNuevoMarcadorABC();
-      } else {
-        await window.guardarNuevoMarcadorABC();
-      }
+  await window.guardarNuevoMarcadorABC();
+} else {
+  await guardarNuevoMarcador();
+}
     };
   }
 
@@ -3216,3 +3252,22 @@ document.addEventListener("DOMContentLoaded", () => {
   // cargar feed (para que no se vea vacío)
   initDevocionalesIglesiaFeed();
 });
+
+window.descargarImagenPanel = async (url) => {
+  try {
+    const r = await fetch(url);
+    const blob = await r.blob();
+
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "imagen_panel.png";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  } catch (e) {
+    console.error(e);
+    alert("No se pudo descargar la imagen.");
+  }
+};
