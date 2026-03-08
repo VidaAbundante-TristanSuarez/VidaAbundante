@@ -2198,5 +2198,19 @@ body.oscuro #wrapFiltrosBiblia.abierto .filtros{
   }
 }
 
+/* ================= MI PANEL IMAGENES ================= */
 
+#panelImgIndexRow{
+  display:flex;
+  flex-direction:row;
+  gap:10px;
+  overflow-x:auto;
+  padding:8px 2px;
+  margin:0;
+  scroll-snap-type:x mandatory;
+}
+
+#panelImgIndexRow .devIndexCard{
+  flex:0 0 auto;
+}
   </style> 
