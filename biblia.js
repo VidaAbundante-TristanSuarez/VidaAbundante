@@ -2676,17 +2676,28 @@ function renderPanelImagenes(data) {
         <img src="${url}" alt="Imagen generada" loading="lazy">
 
         <div class="devBigActions">
-          <button class="btn-primary" type="button"
-            onclick="descargarImagenPanel('${url}')"
-            aria-label="Descargar PNG">
-            <i class="fa-solid fa-download"></i>
-          </button>
-        </div>
 
-        <div style="padding:0 12px 12px; text-align:center; font-size:13px; opacity:.85;">
-          ${refTxt} · ${fechaTxt}
-        </div>
-      </div>
+  <button class="btn-primary" type="button"
+    onclick="descargarImagenPanel('${url}')"
+    aria-label="Descargar PNG">
+    <i class="fa-solid fa-download"></i>
+  </button>
+
+  <button class="btn-primary" type="button"
+    onclick="compartirImagenPanel('${url}')"
+    aria-label="Compartir">
+    <i class="fa-solid fa-share-nodes"></i>
+  </button>
+
+  <button class="btn-danger" type="button"
+    onclick="eliminarImagenPanel('${it.id}')"
+    aria-label="Eliminar">
+    <i class="fa-solid fa-trash"></i>
+  </button>
+
+</div>
+
+          </div>
     `;
   }).join("");
 }
@@ -3269,5 +3280,42 @@ window.descargarImagenPanel = async (url) => {
   } catch (e) {
     console.error(e);
     alert("No se pudo descargar la imagen.");
+  }
+};
+
+window.compartirImagenPanel = async (url) => {
+  try {
+
+    if (navigator.share) {
+      await navigator.share({
+        title: "Vida Abundante",
+        url
+      });
+      return;
+    }
+
+    await navigator.clipboard.writeText(url);
+    alert("Link copiado para compartir");
+
+  } catch(e){
+    console.error(e);
+  }
+};
+
+window.eliminarImagenPanel = async (id) => {
+
+  if(!confirm("¿Eliminar esta imagen?")) return;
+
+  try{
+
+    const uid = window.__UID;
+
+    await remove(
+      ref(db, `imagenes/${uid}/${id}`)
+    );
+
+  }catch(e){
+    console.error(e);
+    alert("No se pudo eliminar la imagen");
   }
 };
