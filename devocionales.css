@@ -658,43 +658,7 @@ body.modal-open{
   max-width: 420px;
 }
 
-/* === SUBIDOS 💜 nunca superen 520px se centren mantengan proporción === */
-
-#subidosFeed img,
-#subidosFeed video {
-  display: block;
-  margin: 10px auto;
-  max-width: min(520px, 100%);
-  width: 100%;
-  height: auto;
-  border-radius: 14px;
-}
-
-#subidosFeed audio{
-  display:block;
-  margin:10px auto;
-  width:min(420px,100%);
-}
-
-/* === tarjetas quedan centradas y del mismo ancho === */
-#subidosFeed > div{
-  max-width:620px;
-  margin:0 auto 14px auto;
-}
-
-/* ================= SUBIDOS MODO OSCURO ================= */
-
-body.oscuro #subidosFeed > div{
-  background:#1c1c1c;
-  border-color:#333;
-  color:#eee;
-}
-
-body.oscuro #subidosFeed a{
-  color:#9ecbff;
-}
-
-/* ================= SUBIDOS / CALENDARIO ================= */
+/* ================= SUBIDOS COMPLETO ================= */
 
 #subidosApp{
   --sub-bg:#ffffff;
@@ -704,6 +668,7 @@ body.oscuro #subidosFeed a{
   --sub-mut:#6b7280;
   --sub-chip:#e8f0fe;
   --sub-shadow:0 2px 10px rgba(0,0,0,.05);
+  color:var(--sub-txt);
 }
 
 body.oscuro #subidosApp{
@@ -716,9 +681,7 @@ body.oscuro #subidosApp{
   --sub-shadow:none;
 }
 
-#subidosApp{
-  color:var(--sub-txt);
-}
+/* ===== top ===== */
 
 #subidosTopRow{
   margin-bottom:14px;
@@ -731,6 +694,8 @@ body.oscuro #subidosApp{
   text-transform:capitalize;
   color:var(--sub-txt);
 }
+
+/* ===== calendario ===== */
 
 #subidosCalendario{
   position:relative;
@@ -842,6 +807,8 @@ body.oscuro .subidos-day-num{
   padding-left:2px;
 }
 
+/* ===== tooltip preview ===== */
+
 #subidosPreviewTooltip{
   position:fixed;
   z-index:99999;
@@ -885,7 +852,10 @@ body.oscuro .subidos-day-num{
   font-size:13px;
   line-height:1.35;
   white-space:pre-wrap;
+  word-break:break-word;
 }
+
+/* ===== agenda ===== */
 
 #subidosAgenda{
   margin-top:14px;
@@ -907,6 +877,8 @@ body.oscuro .subidos-day-num{
   color:var(--sub-txt);
 }
 
+/* ===== feed ===== */
+
 .subidos-feed-card{
   max-width:760px;
   margin:0 auto 14px auto;
@@ -927,6 +899,7 @@ body.oscuro .subidos-day-num{
 
 .subidos-feed-left{
   min-width:0;
+  width:100%;
 }
 
 .subidos-feed-badges{
@@ -946,6 +919,7 @@ body.oscuro .subidos-day-num{
   font-size:12px;
   font-weight:800;
   color:#111;
+  max-width:100%;
 }
 
 .subidos-feed-date{
@@ -957,6 +931,7 @@ body.oscuro .subidos-day-num{
   color:var(--sub-txt);
   line-height:1.45;
   white-space:pre-wrap;
+  word-break:break-word;
 }
 
 .subidos-media{
@@ -968,8 +943,9 @@ body.oscuro .subidos-day-num{
   display:block;
   margin:10px auto 0 auto;
   max-width:min(560px,100%);
-  width:100%;
+  width:auto;
   height:auto;
+  max-height:70vh;
   border-radius:14px;
 }
 
@@ -997,6 +973,9 @@ body.oscuro .subidos-day-num{
   background:#e9eef6;
   color:#111;
   font-weight:700;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
 }
 
 body.oscuro .subidos-feed-actions button,
@@ -1004,6 +983,18 @@ body.oscuro .subidos-feed-actions a{
   background:#2a2a2a;
   color:#f5f5f5;
 }
+
+/* ===== fallback por si algo viejo del HTML inline aparece ===== */
+
+#subidosFeed > div{
+  max-width:none;
+}
+
+body.oscuro #subidosFeed a{
+  color:#9ecbff;
+}
+
+/* ===== responsive ===== */
 
 @media (max-width: 800px){
   .subidos-cal-head > div{
@@ -1029,6 +1020,32 @@ body.oscuro .subidos-feed-actions a{
 
   .subidos-more{
     font-size:10px;
+  }
+
+  .subidos-feed-card{
+    padding:10px;
+    border-radius:14px;
+  }
+
+  .subidos-feed-actions{
+    justify-content:center;
+  }
+
+  .subidos-feed-actions button,
+  .subidos-feed-actions a{
+    flex:1 1 auto;
+    min-width:110px;
+  }
+
+  .subidos-media img,
+  .subidos-media video{
+    max-width:100%;
+    width:100%;
+    max-height:none;
+  }
+
+  .subidos-media audio{
+    width:100%;
   }
 }
 
