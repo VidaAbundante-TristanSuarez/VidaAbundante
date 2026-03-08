@@ -107,6 +107,9 @@ function renderCalendario() {
   const year = subidosMesActual.getFullYear();
   const month = subidosMesActual.getMonth();
 
+  const hoy = new Date();
+  const hoyYMD = fechaYMD(hoy);
+
   const primerDia = new Date(year, month, 1);
   const ultimoDia = new Date(year, month + 1, 0);
   const diasMes = ultimoDia.getDate();
@@ -116,65 +119,71 @@ function renderCalendario() {
 
   const porFecha = agruparPorFecha(subidosItems);
 
+  const diasHeader = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
+
   let html = `
-    <div class="subidos-cal-grid" style="
-      display:grid;
-      grid-template-columns:repeat(7, 1fr);
-      gap:8px;
-    ">
-      ${["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"].map(d => `
-        <div style="font-weight:800; text-align:center; padding:6px 0;">${d}</div>
-      `).join("")}
+    <div class="subidos-cal-wrap">
+      <div class="subidos-cal-head">
+        ${diasHeader.map(d => `<div>${d}</div>`).join("")}
+      </div>
+
+      <div class="subidos-cal-grid">
   `;
 
   for (let i = 1; i < inicioSemana; i++) {
-    html += `<div></div>`;
+    html += `<div class="subidos-day empty" aria-hidden="true"></div>`;
   }
 
   for (let dia = 1; dia <= diasMes; dia++) {
     const f = `${year}-${pad(month + 1)}-${pad(dia)}`;
     const itemsDia = (porFecha[f] || []).sort((a, b) => (b.fecha || 0) - (a.fecha || 0));
+    const esHoy = f === hoyYMD;
 
     html += `
-      <div style="
-        border:1px solid #ddd;
-        border-radius:14px;
-        min-height:110px;
-        padding:8px;
-        background:var(--card-bg, #fff);
-      ">
-        <div style="font-weight:800; margin-bottom:8px;">${dia}</div>
+      <div class="subidos-day ${esHoy ? "today" : ""}">
+        <div class="subidos-day-num">${dia}</div>
+        <div class="subidos-day-events">
+          ${itemsDia.slice(0, 3).map(it => {
+            const color = colorEtiquetaSubidos(it.etiqueta || "");
+            const titulo = escaparHtml(it.etiqueta || "Subido");
+            const desc = escaparHtml(it.descripcion || "");
+            const fechaLegible = new Date((it.fechaEvento || f) + "T00:00:00").toLocaleDateString("es-AR");
 
-        <div style="display:flex; flex-direction:column; gap:6px;">
-          ${itemsDia.slice(0, 4).map(it => `
-            <button type="button"
-              onclick="abrirSubidoDesdeCalendario('${it.id}')"
-              style="
-                border:none;
-                cursor:pointer;
-                text-align:left;
-                border-radius:999px;
-                padding:6px 10px;
-                background:#bcdcff;
-                color:#000;
-                font-size:12px;
-                white-space:nowrap;
-                overflow:hidden;
-                text-overflow:ellipsis;
-              ">
-              ${escaparHtml(it.etiqueta || "Subido")}
-            </button>
-          `).join("")}
+            return `
+              <button
+                type="button"
+                class="subidos-chip"
+                onclick="abrirSubidoDesdeCalendario('${it.id}')"
+                onmouseenter="subidosMostrarPreview(event, '${it.id}')"
+                onmousemove="subidosMoverPreview(event)"
+                onmouseleave="subidosOcultarPreview()"
+                ontouchstart="subidosMostrarPreview(event, '${it.id}')"
+                ontouchend="setTimeout(subidosOcultarPreview, 1200)"
+                style="background:${color.bg}; color:${color.fg};"
+                title="${titulo}"
+                data-id="${it.id}"
+                data-tag="${titulo}"
+                data-desc="${desc}"
+                data-date="${fechaLegible}"
+              >
+                ${titulo}
+              </button>
+            `;
+          }).join("")}
 
-          ${itemsDia.length > 4 ? `
-            <div style="font-size:12px; opacity:.7;">+ ${itemsDia.length - 4} más</div>
+          ${itemsDia.length > 3 ? `
+            <div class="subidos-more">+ ${itemsDia.length - 3} más</div>
           ` : ``}
         </div>
       </div>
     `;
   }
 
-  html += `</div>`;
+  html += `
+      </div>
+    </div>
+  `;
+
   box.innerHTML = html;
 }
 
@@ -184,6 +193,81 @@ function iconoSegunTipo(tipo = "") {
   if (tipo.startsWith("audio/")) return "fa-headphones";
   return "fa-file";
 }
+
+function colorEtiquetaSubidos(etiqueta = "") {
+  const t = String(etiqueta).trim().toLowerCase();
+
+  const mapa = {
+    "predica":         { bg: "#dbeafe", fg: "#111111" },
+    "anuncio":         { bg: "#fef3c7", fg: "#111111" },
+    "plan":            { bg: "#dcfce7", fg: "#111111" },
+    "racimo":          { bg: "#f3e8ff", fg: "#111111" },
+    "oración":         { bg: "#fee2e2", fg: "#111111" },
+    "culto":           { bg: "#e0f2fe", fg: "#111111" },
+    "santa cena":      { bg: "#fde68a", fg: "#111111" },
+    "reunion jovenes": { bg: "#ddd6fe", fg: "#111111" },
+    "reunion varones": { bg: "#d1fae5", fg: "#111111" },
+    "reunion mujeres": { bg: "#fbcfe8", fg: "#111111" },
+    "taller":          { bg: "#e5e7eb", fg: "#111111" }
+  };
+
+  return mapa[t] || { bg: "#e8f0fe", fg: "#111111" };
+}
+
+window.subidosMostrarPreview = function subidosMostrarPreview(ev, id) {
+  const it = subidosItems.find(x => x.id === id);
+  if (!it) return;
+
+  let tt = document.getElementById("subidosPreviewTooltip");
+  if (!tt) {
+    tt = document.createElement("div");
+    tt.id = "subidosPreviewTooltip";
+    document.body.appendChild(tt);
+  }
+
+  const color = colorEtiquetaSubidos(it.etiqueta || "");
+  const fechaLegible = it.fechaEvento
+    ? new Date(it.fechaEvento + "T00:00:00").toLocaleDateString("es-AR")
+    : "";
+
+  const esImg = (it.mimeType || "").startsWith("image/");
+  const esVideo = (it.mimeType || "").startsWith("video/");
+
+  tt.innerHTML = `
+    <div class="tt-tag" style="background:${color.bg}; color:${color.fg};">
+      ${escaparHtml(it.etiqueta || "Subido")}
+    </div>
+    <div class="tt-date">${escaparHtml(fechaLegible)}</div>
+    ${
+      esImg ? `<img src="${it.url}" alt="Preview">` :
+      esVideo ? `<video src="${it.url}" muted playsinline preload="metadata"></video>` :
+      ``
+    }
+    <div class="tt-desc">${escaparHtml(it.descripcion || "")}</div>
+  `;
+
+  tt.style.display = "block";
+  subidosMoverPreview(ev);
+};
+
+window.subidosMoverPreview = function subidosMoverPreview(ev) {
+  const tt = document.getElementById("subidosPreviewTooltip");
+  if (!tt) return;
+
+  const x = (ev.touches?.[0]?.clientX ?? ev.clientX ?? 0) + 14;
+  const y = (ev.touches?.[0]?.clientY ?? ev.clientY ?? 0) + 14;
+
+  const maxX = window.innerWidth - tt.offsetWidth - 10;
+  const maxY = window.innerHeight - tt.offsetHeight - 10;
+
+  tt.style.left = Math.max(10, Math.min(x, maxX)) + "px";
+  tt.style.top = Math.max(10, Math.min(y, maxY)) + "px";
+};
+
+window.subidosOcultarPreview = function subidosOcultarPreview() {
+  const tt = document.getElementById("subidosPreviewTooltip");
+  if (tt) tt.style.display = "none";
+};
 
 function renderFeed() {
   const feed = document.getElementById("subidosFeed");
