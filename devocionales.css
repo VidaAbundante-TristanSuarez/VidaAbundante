@@ -633,6 +633,28 @@ body.modal-open{
   flex-wrap:wrap;
 }
 
+.devAudioBox{
+  padding: 10px 10px 0;
+  display:flex;
+  justify-content:center;
+}
+.devAudioBox audio{
+  width: 100%;
+  max-width: 420px;
+}
+
+/* ✅ botón borrar (solo admin) */
+.devDanger{
+  background:#ffe3e3 !important;
+  border-color:#ffb5b5 !important;
+  color:#a40000 !important;
+}
+
+.devDanger:hover{
+  background:#ffb5b5 !important;
+  color:#000 !important;
+}
+
 /* ================= SUBIDOS COMPLETO ⭐================= */
 
 #subidosApp{
