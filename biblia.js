@@ -90,13 +90,17 @@ window.getMarcadorCtx = function() {
   return window.__marcadorCtx || { origen: "biblia", abcEditId: null };
 };
 
-// =========
-
+// ========= Modo Imagen
 let modoImagen = false;
 let seleccionImagen = {};
 let fondoFinal = null;
 let fondoFinalBlobUrl = null; // ✅ fondo seguro para html2canvas
 let creandoNotaLibre = false; // ✅ estado: nota sin versículo
+
+// ✅ NUEVO: modal de imagen desde Biblia o desde Mi Panel
+let origenModalImagen = "biblia";   // "biblia" | "panel"
+let modoImagenLibre = false;        // true cuando el texto viene de un textarea libre
+let textoLibreImagen = "";          // texto escrito manualmente en Mi Panel
 
 // ================= AUTO TAMAÑO PREVIEW =================
 let userSetFontSize = false; // si el usuario tocó tamaño (slider o + -), queda manual hasta que cambie el texto
@@ -805,6 +809,67 @@ function obtenerVersiculoSeleccionado() {
   return (textos.join(" ") + "\n\n▪ " + referencia).trim();
 }
 
+// ================= ⭐ texto libre  =======================
+function obtenerTextoParaPreview() {
+  if (modoImagenLibre) {
+    return (textoLibreImagen || "").trim();
+  }
+  return obtenerVersiculoSeleccionado();
+}
+
+function asegurarCajaTextoLibrePanel() {
+  const modalBox = document.querySelector("#modalPersonalizar .modal-contenido");
+  const preview = document.getElementById("previewImagen");
+  if (!modalBox || !preview) return;
+
+  let box = document.getElementById("boxTextoLibrePanel");
+
+  if (!box) {
+    box = document.createElement("div");
+    box.id = "boxTextoLibrePanel";
+    box.style.display = "none";
+    box.style.maxWidth = "420px";
+    box.style.margin = "0 auto 10px auto";
+    box.style.width = "100%";
+
+    box.innerHTML = `
+      <textarea
+        id="textoLibrePanelInput"
+        placeholder="Escribí o pegá tu texto acá..."
+        style="
+          width:100%;
+          min-height:120px;
+          border-radius:14px;
+          border:1px solid #d9d9d9;
+          padding:12px;
+          resize:vertical;
+          font-size:15px;
+          line-height:1.35;
+          box-sizing:border-box;
+        "
+      ></textarea>
+    `;
+
+    modalBox.insertBefore(box, preview);
+  }
+
+  const input = document.getElementById("textoLibrePanelInput");
+  if (input && !input.dataset.ready) {
+    input.addEventListener("input", () => {
+      textoLibreImagen = input.value || "";
+      userSetFontSize = false;
+      actualizarPreview();
+    });
+    input.dataset.ready = "1";
+  }
+
+  box.style.display = modoImagenLibre ? "block" : "none";
+
+  if (input) {
+    input.value = textoLibreImagen || "";
+  }
+}
+
 // ================= ⭐ FORMATEA: JUAN 1:5-10  =======================
 function formatearVersiculosComoRango(numeros) {
   if (numeros.length === 0) return "";
@@ -1133,11 +1198,13 @@ function actualizarPreview() {
 
   if (!previewImagen || !previewTexto || !previewTextoBack || !wrapper) return;
 
-  // ================= Texto Versiculos Biblia =================
-const textoFinal = obtenerVersiculoSeleccionado();
+  // ================= Texto para preview (Biblia o libre) =================
+  asegurarCajaTextoLibrePanel();
 
-previewTexto.innerText = textoFinal || "";
-previewTextoBack.innerText = textoFinal || "";
+  const textoFinal = obtenerTextoParaPreview();
+
+  previewTexto.innerText = textoFinal || "";
+  previewTextoBack.innerText = textoFinal || "";
 
   // ================= Fondo =================
 const fondoUsable = fondoFinalBlobUrl || fondoFinal;
@@ -1380,9 +1447,11 @@ await set(ref(db, dbPath), {
   url,
   storagePath,
   fecha: ts,
-  libro: libroSel?.value || "",
-  capitulo: Number(capSel?.value || 0),
-
+  libro: modoImagenLibre ? "" : (libroSel?.value || ""),
+  capitulo: modoImagenLibre ? 0 : Number(capSel?.value || 0),
+  origen: origenModalImagen,
+  tipoTexto: modoImagenLibre ? "libre" : "biblia",
+  textoLibre: modoImagenLibre ? (textoLibreImagen || "") : ""
 });
 
     console.log("✅ Imagen subida:", destino, url);
@@ -1462,21 +1531,24 @@ async function compartirImagenFinal() {
 function resetModalPersonalizar() {
   userSetFontSize = false;
   fondoFinal = null;
+  modoImagenLibre = false;
+  textoLibreImagen = "";
+  origenModalImagen = "biblia";
   
   if (fondoFinalBlobUrl) {
-  URL.revokeObjectURL(fondoFinalBlobUrl);
-  fondoFinalBlobUrl = null;
-}
+    URL.revokeObjectURL(fondoFinalBlobUrl);
+    fondoFinalBlobUrl = null;
+  }
+
   textStyle = { upper:false, bold:false, italic:false, underline:false };
 
   document.getElementById("personalizarOpacidad").value = 0.35;
   fuenteActual = "Arial";
 
- const colorInput = document.getElementById("personalizarColor");
- if (colorInput) {
- colorInput.value = "#000000"; // ✅ siempre negro por defecto
-}
-
+  const colorInput = document.getElementById("personalizarColor");
+  if (colorInput) {
+    colorInput.value = "#000000";
+  }
 
   const preview = document.getElementById("previewImagen");
   if (preview) {
@@ -1497,7 +1569,6 @@ function resetModalPersonalizar() {
     wrapper.style.background = "";
   }
 
-  // ================= RESTAURAR UI (SEGURO) =================
   const fondosBox = document.getElementById("personalizarFondos");
   if (fondosBox) fondosBox.style.display = "flex";
 
@@ -1507,7 +1578,12 @@ function resetModalPersonalizar() {
   const acciones = document.getElementById("accionesFinales");
   if (acciones) acciones.remove();
 
-    // ✅ default TRUE cada vez que se abre / resetea el modal
+  const boxTextoLibre = document.getElementById("boxTextoLibrePanel");
+  if (boxTextoLibre) boxTextoLibre.style.display = "none";
+
+  const inputTextoLibre = document.getElementById("textoLibrePanelInput");
+  if (inputTextoLibre) inputTextoLibre.value = "";
+
   forceDefaultCheckIglesia();
   actualizarPreview();
 }
@@ -1752,20 +1828,62 @@ window.generarImagen = async () => {
   const modal = document.getElementById("modalPersonalizar");
   if (!modal) return;
 
-  // ✅ CLAVE: reset antes de mostrar (evita overlay negro por sliders viejos)
   resetModalPersonalizar();
 
-    // ✅ MODO: CREAR IMAGEN
+  origenModalImagen = "biblia";
+  modoImagenLibre = false;
+  textoLibreImagen = "";
+
   modal.classList.add("solo-imagen");
   modal.classList.remove("modo-devocional");
-  
+
   abrirModalPersonalizar();
+  asegurarCajaTextoLibrePanel();
   setFormatoImagen("post");
   cargarFondos();
   crearListaVisualFuentes();
 
-  // ✅ esperar 1 frame para que el modal ya tenga tamaño real
   await new Promise(r => requestAnimationFrame(r));
+
+  actualizarPreview();
+};
+
+// ================= 🔺 FUNCIÓN NUEVA PARA ABRIR EL MODAL DESDE MI PANEL ============
+window.abrirCrearImagenLibrePanel = async () => {
+  if (!uid) {
+    loginModal.style.display = "flex";
+    return;
+  }
+
+  const modal = document.getElementById("modalPersonalizar");
+  if (!modal) return;
+
+  resetModalPersonalizar();
+
+  origenModalImagen = "panel";
+  modoImagenLibre = true;
+  textoLibreImagen = "";
+
+  modal.classList.add("solo-imagen");
+  modal.classList.remove("modo-devocional");
+
+  abrirModalPersonalizar();
+  asegurarCajaTextoLibrePanel();
+  setFormatoImagen("post");
+  cargarFondos();
+  crearListaVisualFuentes();
+
+  await new Promise(r => requestAnimationFrame(r));
+
+  asegurarCajaTextoLibrePanel();
+
+  const input = document.getElementById("textoLibrePanelInput");
+  if (input) {
+    input.value = "ESCRIBÍ AQUÍ TU TEXTO";
+    textoLibreImagen = input.value;
+    input.focus();
+    input.select();
+  }
 
   actualizarPreview();
 };
@@ -1785,13 +1903,12 @@ window.cancelarCrearImagen = () => {
 // ================= ✅ FINALIZAR EDICIÓN (CONFIRMAR) =================
 window.finalizarEdicion = async () => {
   return withRenderLock(async () => {
-   
-        // ✅ Si hay audio confirmado, lo subimos AHORA y lo dejamos listo para que la imagen lo “consuma”
+
+    const volverAPanel = (origenModalImagen === "panel");
+
     if (window.__pendingAudio?.audioBase64) {
       try {
-        // si querés respetar el check de iglesia, cambialo acá:
-        // const subirIglesia = !!document.getElementById("checkIglesia")?.checked;
-        const subirIglesia = false; // ✅ simple: Biblia audio siempre a personal
+        const subirIglesia = false;
         await subirPendingAudioAFirebase({ subirIglesia });
       } catch (e) {
         console.error(e);
@@ -1799,7 +1916,7 @@ window.finalizarEdicion = async () => {
         return;
       }
     }
-    
+
     const ok = await asegurarCanvasFinal({ subir: true });
     if (!ok) {
       alert("No se pudo generar la imagen (PNG). Revisá consola (F12) para ver el error.");
@@ -1807,14 +1924,22 @@ window.finalizarEdicion = async () => {
     }
 
     const terminar = confirm(
-      "¿Terminar edición?\n\nOK = Terminar edición y volver a Biblia\nCancelar = Volver a edición"
+      volverAPanel
+        ? "¿Terminar edición?\n\nOK = Guardar imagen y volver a Mi Panel\nCancelar = Volver a edición"
+        : "¿Terminar edición?\n\nOK = Terminar edición y volver a Biblia\nCancelar = Volver a edición"
     );
 
     if (!terminar) return;
 
     resetModalPersonalizar();
     salirModoImagen();
-    irA("biblia");
+
+    if (volverAPanel) {
+      irA("panel");
+      mostrarSeccion("imagenes");
+    } else {
+      irA("biblia");
+    }
   });
 };
 
@@ -2637,17 +2762,34 @@ function renderPanelImagenes(data) {
     .map(([id, obj]) => ({ id, ...(obj || {}) }))
     .sort((a, b) => (b.fecha || 0) - (a.fecha || 0));
 
+// AGREGAR EL BOTÓN + EN MI PANEL
   if (!items.length) {
     vacio.style.display = "block";
-    indexRow.innerHTML = "";
+    indexRow.innerHTML = `
+      <button type="button"
+        class="btn-primary"
+        style="margin:0 0 8px 0;"
+        onclick="abrirCrearImagenLibrePanel()">
+        <i class="fa-solid fa-circle-plus"></i>
+      </button>
+    `;
     feed.innerHTML = "";
     return;
   }
 
   vacio.style.display = "none";
 
+  indexRow.innerHTML = `
+    <button type="button"
+      class="btn-primary"
+      style="flex:0 0 auto; align-self:flex-start;"
+      onclick="abrirCrearImagenLibrePanel()">
+      <i class="fa-solid fa-circle-plus"></i>
+    </button>
+  `;
+
   // índice horizontal arriba
-  indexRow.innerHTML = items.map(it => {
+   indexRow.innerHTML += items.map(it => {
     const refTxt = (it.libro && it.capitulo) ? `${it.libro} ${it.capitulo}` : "Imagen";
     const fechaTxt = it.fecha ? new Date(it.fecha).toLocaleDateString("es-AR") : "";
     const url = (it.url || "").replace(/</g,"&lt;").replace(/>/g,"&gt;");
