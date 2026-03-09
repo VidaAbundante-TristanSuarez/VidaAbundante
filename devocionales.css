@@ -536,7 +536,7 @@ body.modal-open{
   margin-top: 6px;
 }
 
-/* fila superior: botón + (que no quede tapado en celu) */
+/* fila superior: botón + */
 #devTopRow{
   position: sticky;
   top: 0;
@@ -545,7 +545,7 @@ body.modal-open{
   justify-content:flex-end;
   align-items:center;
   padding-top: env(safe-area-inset-top,0);
-  padding-right: 16px; /* antes estaba más a la derecha */
+  padding-right: 16px;
   background:#fff;
 }
 
@@ -558,8 +558,8 @@ body.modal-open{
   margin: 0;
 }
 
-/* tarjeta índice */
-.devIndexCard{
+/* tarjeta índice SOLO DEVOCIONALES */
+#devHome .devIndexCard{
   flex:0 0 auto;
   width:120px;
   border:1px solid #e5e5e5;
@@ -568,37 +568,33 @@ body.modal-open{
   background:#fff;
   box-shadow: 0 8px 20px rgba(0,0,0,.06);
   cursor:pointer;
-
   display:flex;
-  flex-direction:column; /* ✅ no regala altura */
+  flex-direction:column;
 }
 
-/* ✅ barras finitas (arriba cita / abajo fecha) */
-.devIndexBar{
-  padding: 4px 6px;      /* ✅ súper finito */
+/* barras SOLO DEVOCIONALES */
+#devHome .devIndexBar{
+  padding: 4px 6px;
   line-height: 1.05;
   text-align:center;
-
   font-family: Georgia, "Times New Roman", serif;
   font-weight: 700;
   text-decoration: underline;
-  
-  font-size: 10px;       /* ✅ 1 punto más chica */
+  font-size: 10px;
 }
 
-/* imagen */
-.devIndexImgWrap{
+/* imagen SOLO DEVOCIONALES */
+#devHome .devIndexImgWrap{
   width:100%;
 }
-.devIndexImgWrap img{
+#devHome .devIndexImgWrap img{
   width:100%;
   aspect-ratio: 9 / 16;
   object-fit: cover;
   display:block;
 }
 
-/* ✅ fecha un poquito más suave */
-.devIndexBarBottom{
+#devHome .devIndexBarBottom{
   opacity:.85;
 }
 
@@ -610,10 +606,10 @@ body.modal-open{
   margin-top:12px;
 }
 
-/* cada “post” centrado y tamaño tipo estado */
-.devBigCard{
-  width: min(420px, 96vw);     /* ✅ esto evita “enorme” en PC */
-  margin: 0 auto;              /* ✅ centrado */
+/* tarjeta grande SOLO DEVOCIONALES */
+#devHome .devBigCard{
+  width: min(420px, 96vw);
+  margin: 0 auto;
   border:1px solid #e8e8e8;
   border-radius:16px;
   overflow:hidden;
@@ -621,15 +617,15 @@ body.modal-open{
   box-shadow: 0 12px 28px rgba(0,0,0,.08);
 }
 
-.devBigCard img{
+#devHome .devBigCard img{
   width:100%;
-  aspect-ratio: 9 / 16;        /* ✅ estado */
+  aspect-ratio: 9 / 16;
   object-fit: cover;
   display:block;
   background:#f7f7f7;
 }
 
-.devBigActions{
+#devHome .devBigActions{
   display:flex;
   gap:10px;
   padding:10px;
@@ -637,28 +633,7 @@ body.modal-open{
   flex-wrap:wrap;
 }
 
-/* ✅ botón borrar (solo admin) */
-.devDanger{
-  background:#ffe3e3 !important;
-  border-color:#ffb5b5 !important;
-  color:#a40000 !important;
-}
-.devDanger:hover{
-  background:#ffb5b5 !important;
-  color:#000 !important;
-}
-
-.devAudioBox{
-  padding: 10px 10px 0;
-  display:flex;
-  justify-content:center;
-}
-.devAudioBox audio{
-  width: 100%;
-  max-width: 420px;
-}
-
-/* ================= SUBIDOS COMPLETO ================= */
+/* ================= SUBIDOS COMPLETO ⭐================= */
 
 #subidosApp{
   --sub-bg:#ffffff;
