@@ -2562,17 +2562,19 @@ function renderDevFeed(items){
       ${audioHtml}
 
       <div class="devBigActions">
-        <button class="btn-primary" type="button"
-        onpointerdown="devWarmShareImage('${it.storagePath || ""}', 'devocional.png')"
-        ontouchstart="devWarmShareImage('${it.storagePath || ""}', 'devocional.png')"
-        onclick="devCompartirImagenItem('${it.storagePath || ""}', 'devocional.png')"
-        aria-label="Compartir">
+<button class="btn-primary" type="button"
+  onpointerdown="devWarmShareImage('${it.storagePath || ""}', 'devocional.png')"
+  ontouchstart="devWarmShareImage('${it.storagePath || ""}', 'devocional.png')"
+  onclick="devCompartirImagenItem('${it.storagePath || ""}', 'devocional.png')"
+  aria-label="Compartir">
+  <i class="fa-solid fa-share-nodes"></i>
+</button>
 
-        <button class="btn-primary" type="button"
-          onclick="devDescargarImagenItem('${it.storagePath || ""}', 'devocional.png')"
-          aria-label="Descargar PNG">
-          <i class="fa-solid fa-download"></i>
-        </button>
+<button class="btn-primary" type="button"
+  onclick="devDescargarImagenItem('${it.storagePath || ""}', 'devocional.png')"
+  aria-label="Descargar PNG">
+  <i class="fa-solid fa-download"></i>
+</button>
 
         ${esAdmin ? `
           <button class="btn-primary devDanger" type="button"
