@@ -2199,8 +2199,8 @@ body.oscuro #wrapFiltrosBiblia.abierto .filtros{
 }
 
 /* ================= MI PANEL IMAGENES ================= */
+/* ================= MI PANEL IMAGENES ================= */
 
-/* índice horizontal superior */
 #panelImgIndexRow{
   display:flex;
   gap:10px;
@@ -2208,10 +2208,9 @@ body.oscuro #wrapFiltrosBiblia.abierto .filtros{
   padding:8px 2px;
   margin:0;
   scroll-snap-type:x mandatory;
-  align-items:flex-start;   /* ✅ NO stretch */
+  align-items:flex-start;
 }
 
-/* tarjeta mini */
 #panelImgIndexRow .devIndexCard{
   flex:0 0 120px;
   width:120px;
@@ -2230,7 +2229,6 @@ body.oscuro #wrapFiltrosBiblia.abierto .filtros{
   scroll-snap-align:start;
 }
 
-/* barras arriba/abajo */
 #panelImgIndexRow .devIndexBar{
   padding:4px 6px;
   line-height:1.05;
@@ -2239,27 +2237,57 @@ body.oscuro #wrapFiltrosBiblia.abierto .filtros{
   font-weight:700;
   text-decoration:underline;
   font-size:10px;
-  flex:0 0 auto;            /* ✅ no se estiran */
+  flex:0 0 auto;
 }
 
 #panelImgIndexRow .devIndexBarBottom{
   opacity:.85;
 }
 
-/* caja de imagen */
 #panelImgIndexRow .devIndexImgWrap{
   width:100%;
-  aspect-ratio:9 / 16;      /* ✅ la caja YA nace con forma */
+  aspect-ratio:9 / 16;
   overflow:hidden;
   background:#f7f7f7;
-  flex:0 0 auto;            /* ✅ no crece raro */
+  flex:0 0 auto;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
 }
 
-/* imagen */
 #panelImgIndexRow .devIndexImgWrap img{
   width:100%;
-  height:100%;              /* ✅ llena la caja */
-  object-fit:cover;
+  height:100%;
+  object-fit:contain;       /* ✅ se ve completa */
+  object-position:center;
   display:block;
+  background:#f7f7f7;
+}
+
+#panelImgFeed{
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+  margin-top:12px;
+}
+
+#panelImgFeed .devBigCard{
+  width:min(420px, 96vw);
+  margin:0 auto;
+  border:1px solid #e8e8e8;
+  border-radius:16px;
+  overflow:hidden;
+  background:#fff;
+  box-shadow:0 12px 28px rgba(0,0,0,.08);
+}
+
+#panelImgFeed .devBigCard img{
+  width:100%;
+  aspect-ratio:9 / 16;
+  object-fit:contain;       /* ✅ completa */
+  object-position:center;
+  display:block;
+  background:#f7f7f7;
 }
   </style> 
