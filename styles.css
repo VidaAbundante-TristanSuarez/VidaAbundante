@@ -2202,8 +2202,26 @@ body.oscuro #wrapFiltrosBiblia.abierto .filtros{
 
 /* solo imágenes del panel: mismo “aire” limpio */
 #panel-imagenes.panel-seccion{
-  background: transparent;
+  width: min(560px, 96vw);
+  margin: 0 auto;
   padding: 0;
+  background: transparent;
+}
+
+#panel-imagenes{
+  width: min(560px, 96vw);
+  margin: 0 auto;
+}
+
+#panelImgFeed .btn-danger{
+  background:#ffe3e3 !important;
+  border:1px solid #ffb5b5 !important;
+  color:#a40000 !important;
+}
+
+#panelImgFeed .btn-danger:hover{
+  background:#ffb5b5 !important;
+  color:#000 !important;
 }
 
 /* índice superior */
