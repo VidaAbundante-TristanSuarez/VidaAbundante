@@ -2291,16 +2291,10 @@ body.oscuro #wrapFiltrosBiblia.abierto .filtros{
 
 #panelImgFeed .devBigCard img{
   width:100%;
-  aspect-ratio:9 / 16;
+  height:auto;
   object-fit:contain;
-  object-position:center;
   display:block;
-
-  background:
-    radial-gradient(circle at center,
-      rgba(255,255,255,.9) 0%,
-      rgba(235,235,235,.95) 70%,
-      rgba(220,220,220,.95) 100%);
+  background:none;
 }
 
   </style> 
