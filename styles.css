@@ -2200,7 +2200,7 @@ body.oscuro #wrapFiltrosBiblia.abierto .filtros{
 
 /* ================= MI PANEL IMAGENES ================= */
 
-/* sacar fondo celeste solo en imágenes del panel */
+/* solo imágenes del panel: sin fondo celeste */
 #panel-imagenes.panel-seccion{
   background: transparent;
   padding: 0;
@@ -2217,7 +2217,6 @@ body.oscuro #wrapFiltrosBiblia.abierto .filtros{
   align-items:flex-start;
 }
 
-/* tarjeta mini SOLO MI PANEL */
 #panelImgIndexRow .devIndexCard{
   flex:0 0 120px;
   width:120px;
@@ -2234,7 +2233,6 @@ body.oscuro #wrapFiltrosBiblia.abierto .filtros{
   scroll-snap-align:start;
 }
 
-/* barras mini SOLO MI PANEL */
 #panelImgIndexRow .devIndexBar{
   padding:4px 6px;
   line-height:1.05;
@@ -2250,7 +2248,7 @@ body.oscuro #wrapFiltrosBiblia.abierto .filtros{
   opacity:.85;
 }
 
-/* miniatura: galería pareja, con color de fondo fijo */
+/* índice: caja fija para emparejar, fondo blanco */
 #panelImgIndexRow .devIndexImgWrap{
   width:100%;
   aspect-ratio:9 / 16;
@@ -2258,7 +2256,7 @@ body.oscuro #wrapFiltrosBiblia.abierto .filtros{
   display:flex;
   align-items:center;
   justify-content:center;
-  background:#f3f3f3;
+  background:#fff;
 }
 
 #panelImgIndexRow .devIndexImgWrap img{
@@ -2269,7 +2267,7 @@ body.oscuro #wrapFiltrosBiblia.abierto .filtros{
   display:block;
 }
 
-/* feed grande abajo */
+/* feed de abajo */
 #panelImgFeed{
   display:flex;
   flex-direction:column;
@@ -2277,10 +2275,9 @@ body.oscuro #wrapFiltrosBiblia.abierto .filtros{
   margin-top:12px;
 }
 
-/* tarjeta grande SOLO MI PANEL */
 #panelImgFeed .devBigCard{
-  width: fit-content;
-  max-width: min(420px, 96vw);
+  width:fit-content;
+  max-width:min(420px, 96vw);
   margin:0 auto;
   border:1px solid #e8e8e8;
   border-radius:16px;
@@ -2289,7 +2286,7 @@ body.oscuro #wrapFiltrosBiblia.abierto .filtros{
   box-shadow:0 12px 28px rgba(0,0,0,.08);
 }
 
-/* imagen real abajo: cuadrada si es cuadrada, vertical si es vertical */
+/* abajo: cuadrada queda cuadrada, vertical queda vertical */
 #panelImgFeed .devBigCard img{
   display:block;
   width:auto;
@@ -2299,6 +2296,16 @@ body.oscuro #wrapFiltrosBiblia.abierto .filtros{
   aspect-ratio:auto;
   object-fit:contain;
   background:none;
+}
+
+/* acciones abajo como devocionales: centradas y separadas */
+#panelImgFeed .devBigActions{
+  display:flex;
+  gap:10px;
+  padding:10px;
+  justify-content:center;
+  align-items:center;
+  flex-wrap:wrap;
 }
 
   </style> 
