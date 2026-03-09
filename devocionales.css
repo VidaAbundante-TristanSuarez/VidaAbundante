@@ -633,6 +633,42 @@ body.modal-open{
   flex-wrap:wrap;
 }
 
+/* ================= DEVOCIONALES: AUDIO + ACCIONES ================= */
+
+#devHome .devAudioBox{
+  width: min(420px, 96vw);
+  margin: 0 auto;
+  padding: 10px 10px 0;
+  display:flex;
+  justify-content:center;
+  box-sizing:border-box;
+}
+
+#devHome .devAudioBox audio{
+  width:100%;
+  max-width:100%;
+  display:block;
+}
+
+#devHome .devBigActions{
+  display:flex;
+  gap:10px;
+  padding:10px;
+  justify-content:center;
+  flex-wrap:wrap;
+}
+
+#devHome .devDanger{
+  background:#ffe3e3 !important;
+  border-color:#ffb5b5 !important;
+  color:#a40000 !important;
+}
+
+#devHome .devDanger:hover{
+  background:#ffb5b5 !important;
+  color:#000 !important;
+}
+
 /* ================= SUBIDOS COMPLETO ⭐================= */
 
 #subidosApp{
