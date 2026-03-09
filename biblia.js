@@ -3303,18 +3303,20 @@ window.compartirImagenPanel = async (url) => {
 };
 
 window.eliminarImagenPanel = async (id) => {
+  if (!confirm("¿Eliminar esta imagen?")) return;
 
-  if(!confirm("¿Eliminar esta imagen?")) return;
-
-  try{
-
+  try {
     const uid = window.__UID;
 
-    await remove(
-      ref(db, `imagenes/${uid}/${id}`)
-    );
+    const snap = await get(ref(db, `panelImagenesPersonal/${uid}/${id}`));
+    const data = snap.val();
 
-  }catch(e){
+    if (data?.storagePath) {
+      await deleteObject(sRef(storage, data.storagePath));
+    }
+
+    await remove(ref(db, `panelImagenesPersonal/${uid}/${id}`));
+  } catch (e) {
     console.error(e);
     alert("No se pudo eliminar la imagen");
   }
