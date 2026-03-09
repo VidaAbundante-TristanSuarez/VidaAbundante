@@ -2199,7 +2199,6 @@ body.oscuro #wrapFiltrosBiblia.abierto .filtros{
 }
 
 /* ================= MI PANEL IMAGENES ================= */
-/* ================= MI PANEL IMAGENES ================= */
 
 #panelImgIndexRow{
   display:flex;
@@ -2245,26 +2244,47 @@ body.oscuro #wrapFiltrosBiblia.abierto .filtros{
 }
 
 #panelImgIndexRow .devIndexImgWrap{
+  position:relative;
   width:100%;
   aspect-ratio:9 / 16;
   overflow:hidden;
-  background:#f7f7f7;
   flex:0 0 auto;
 
   display:flex;
   align-items:center;
   justify-content:center;
+
+  background-size:cover;
+  background-position:center;
+  background-repeat:no-repeat;
+}
+
+#panelImgIndexRow .devIndexImgWrap::before{
+  content:"";
+  position:absolute;
+  inset:0;
+
+  background:inherit;
+  background-size:cover;
+  background-position:center;
+  background-repeat:no-repeat;
+
+  filter:blur(18px);
+  transform:scale(1.15);
+  opacity:.55;
 }
 
 #panelImgIndexRow .devIndexImgWrap img{
+  position:relative;
+  z-index:2;
   width:100%;
   height:100%;
-  object-fit:contain;       /* ✅ se ve completa */
+  object-fit:contain;
   object-position:center;
   display:block;
-  background:#f7f7f7;
 }
 
+/* feed grande */
 #panelImgFeed{
   display:flex;
   flex-direction:column;
@@ -2285,9 +2305,10 @@ body.oscuro #wrapFiltrosBiblia.abierto .filtros{
 #panelImgFeed .devBigCard img{
   width:100%;
   aspect-ratio:9 / 16;
-  object-fit:contain;       /* ✅ completa */
+  object-fit:contain;
   object-position:center;
   display:block;
   background:#f7f7f7;
 }
+
   </style> 
