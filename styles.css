@@ -2199,8 +2199,14 @@ body.oscuro #wrapFiltrosBiblia.abierto .filtros{
 }
 
 /* ================= MI PANEL IMAGENES ================= */
-/* ================= MI PANEL IMAGENES ================= */
 
+/* sacar fondo celeste solo en imágenes del panel */
+#panel-imagenes.panel-seccion{
+  background: transparent;
+  padding: 0;
+}
+
+/* índice superior */
 #panelImgIndexRow{
   display:flex;
   gap:10px;
@@ -2211,24 +2217,24 @@ body.oscuro #wrapFiltrosBiblia.abierto .filtros{
   align-items:flex-start;
 }
 
+/* tarjeta mini SOLO MI PANEL */
 #panelImgIndexRow .devIndexCard{
   flex:0 0 120px;
   width:120px;
   min-width:120px;
   max-width:120px;
-
   border:1px solid #e5e5e5;
   border-radius:14px;
   overflow:hidden;
   background:#fff;
   box-shadow:0 8px 20px rgba(0,0,0,.06);
   cursor:pointer;
-
   display:flex;
   flex-direction:column;
   scroll-snap-align:start;
 }
 
+/* barras mini SOLO MI PANEL */
 #panelImgIndexRow .devIndexBar{
   padding:4px 6px;
   line-height:1.05;
@@ -2244,24 +2250,17 @@ body.oscuro #wrapFiltrosBiblia.abierto .filtros{
   opacity:.85;
 }
 
-/* caja de imagen */
+/* miniatura: galería pareja, con color de fondo fijo */
 #panelImgIndexRow .devIndexImgWrap{
   width:100%;
   aspect-ratio:9 / 16;
   overflow:hidden;
-
   display:flex;
   align-items:center;
   justify-content:center;
-
-  background:
-    radial-gradient(circle at center,
-      rgba(255,255,255,.9) 0%,
-      rgba(235,235,235,.95) 70%,
-      rgba(220,220,220,.95) 100%);
+  background:#f3f3f3;
 }
 
-/* imagen completa */
 #panelImgIndexRow .devIndexImgWrap img{
   max-width:100%;
   max-height:100%;
@@ -2270,8 +2269,7 @@ body.oscuro #wrapFiltrosBiblia.abierto .filtros{
   display:block;
 }
 
-/* ABAJO */
-
+/* feed grande abajo */
 #panelImgFeed{
   display:flex;
   flex-direction:column;
@@ -2279,8 +2277,10 @@ body.oscuro #wrapFiltrosBiblia.abierto .filtros{
   margin-top:12px;
 }
 
+/* tarjeta grande SOLO MI PANEL */
 #panelImgFeed .devBigCard{
-  width:min(420px, 96vw);
+  width: fit-content;
+  max-width: min(420px, 96vw);
   margin:0 auto;
   border:1px solid #e8e8e8;
   border-radius:16px;
@@ -2289,11 +2289,15 @@ body.oscuro #wrapFiltrosBiblia.abierto .filtros{
   box-shadow:0 12px 28px rgba(0,0,0,.08);
 }
 
+/* imagen real abajo: cuadrada si es cuadrada, vertical si es vertical */
 #panelImgFeed .devBigCard img{
-  width:100%;
-  height:auto;
-  object-fit:contain;
   display:block;
+  width:auto;
+  max-width:min(420px, 96vw);
+  height:auto;
+  max-height:70vh;
+  aspect-ratio:auto;
+  object-fit:contain;
   background:none;
 }
 
