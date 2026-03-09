@@ -2200,17 +2200,97 @@ body.oscuro #wrapFiltrosBiblia.abierto .filtros{
 
 /* ================= MI PANEL IMAGENES ================= */
 
+/* contenedor general como devocionales */
+#panel-imagenes{
+  width: min(560px, 96vw);
+  margin: 0 auto;
+  padding: 10px 0 18px;
+}
+
+/* índice horizontal superior */
 #panelImgIndexRow{
   display:flex;
-  flex-direction:row;
   gap:10px;
   overflow-x:auto;
   padding:8px 2px;
   margin:0;
   scroll-snap-type:x mandatory;
+  align-items:stretch;
 }
 
+/* tarjetas mini SOLO de Mi Panel */
 #panelImgIndexRow .devIndexCard{
-  flex:0 0 auto;
+  flex:0 0 120px;
+  width:120px;
+  border:1px solid #e5e5e5;
+  border-radius:14px;
+  overflow:hidden;
+  background:#fff;
+  box-shadow: 0 8px 20px rgba(0,0,0,.06);
+  cursor:pointer;
+  display:flex;
+  flex-direction:column;
+  scroll-snap-align:start;
+}
+
+/* barras mini SOLO de Mi Panel */
+#panelImgIndexRow .devIndexBar{
+  padding:4px 6px;
+  line-height:1.05;
+  text-align:center;
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight:700;
+  text-decoration: underline;
+  font-size:10px;
+}
+
+#panelImgIndexRow .devIndexBarBottom{
+  opacity:.85;
+}
+
+/* imagen mini SOLO de Mi Panel */
+#panelImgIndexRow .devIndexImgWrap{
+  width:100%;
+}
+
+#panelImgIndexRow .devIndexImgWrap img{
+  width:100%;
+  aspect-ratio:9 / 16;
+  object-fit:cover;
+  display:block;
+}
+
+/* feed grande de abajo como devocionales */
+#panelImgFeed{
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+  margin-top:12px;
+}
+
+#panelImgFeed .devBigCard{
+  width: min(420px, 96vw);
+  margin: 0 auto;
+  border:1px solid #e8e8e8;
+  border-radius:16px;
+  overflow:hidden;
+  background:#fff;
+  box-shadow: 0 12px 28px rgba(0,0,0,.08);
+}
+
+#panelImgFeed .devBigCard img{
+  width:100%;
+  aspect-ratio:9 / 16;
+  object-fit:cover;
+  display:block;
+  background:#f7f7f7;
+}
+
+#panelImgFeed .devBigActions{
+  display:flex;
+  gap:10px;
+  padding:10px;
+  justify-content:center;
+  flex-wrap:wrap;
 }
   </style> 
