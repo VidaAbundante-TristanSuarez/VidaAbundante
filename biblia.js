@@ -2656,7 +2656,7 @@ function renderPanelImagenes(data) {
       <div class="devIndexCard" onclick="document.getElementById('panelImgBig_${it.id}')?.scrollIntoView({behavior:'smooth', block:'start'})">
         <div class="devIndexBar devIndexBarTop">${refTxt}</div>
 
-<div class="devIndexImgWrap" style="background-image:url('${url}')">
+<div class="devIndexImgWrap">
   <img src="${url}" loading="lazy">
 </div>
 
