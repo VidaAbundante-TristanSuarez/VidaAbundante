@@ -1850,6 +1850,7 @@ window.generarImagen = async () => {
 
 // ================= 🔺 FUNCIÓN NUEVA PARA ABRIR EL MODAL DESDE MI PANEL ============
 window.abrirCrearImagenLibrePanel = async () => {
+  alert("entró al modal libre");
   if (!uid) {
     loginModal.style.display = "flex";
     return;
@@ -2763,30 +2764,32 @@ function renderPanelImagenes(data) {
     .sort((a, b) => (b.fecha || 0) - (a.fecha || 0));
 
 // AGREGAR EL BOTÓN + EN MI PANEL
-  if (!items.length) {
-    vacio.style.display = "block";
-    indexRow.innerHTML = `
-      <button type="button"
-        class="btn-primary"
-        style="margin:0 0 8px 0;"
-        onclick="abrirCrearImagenLibrePanel()">
-        <i class="fa-solid fa-circle-plus"></i>
-      </button>
-    `;
-    feed.innerHTML = "";
-    return;
-  }
-
-  vacio.style.display = "none";
-
+if (!items.length) {
+  vacio.style.display = "block";
   indexRow.innerHTML = `
-    <button type="button"
+    <button
+      type="button"
       class="btn-primary"
-      style="flex:0 0 auto; align-self:flex-start;"
-      onclick="abrirCrearImagenLibrePanel()">
+      style="margin:0 0 8px 0;"
+      onclick="event.preventDefault(); event.stopPropagation(); abrirCrearImagenLibrePanel(); return false;">
       <i class="fa-solid fa-circle-plus"></i>
     </button>
   `;
+  feed.innerHTML = "";
+  return;
+}
+
+vacio.style.display = "none";
+
+indexRow.innerHTML = `
+  <button
+    type="button"
+    class="btn-primary"
+    style="flex:0 0 auto; align-self:flex-start;"
+    onclick="event.preventDefault(); event.stopPropagation(); abrirCrearImagenLibrePanel(); return false;">
+    <i class="fa-solid fa-circle-plus"></i>
+  </button>
+`;
 
   // índice horizontal arriba
    indexRow.innerHTML += items.map(it => {
