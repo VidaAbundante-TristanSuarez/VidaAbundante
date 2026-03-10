@@ -832,23 +832,23 @@ function asegurarCajaTextoLibrePanel() {
     box.style.margin = "0 auto 10px auto";
     box.style.width = "100%";
 
-    box.innerHTML = `
-      <textarea
-        id="textoLibrePanelInput"
-        placeholder="Escribí o pegá tu texto acá..."
-        style="
-          width:100%;
-          min-height:120px;
-          border-radius:14px;
-          border:1px solid #d9d9d9;
-          padding:12px;
-          resize:vertical;
-          font-size:15px;
-          line-height:1.35;
-          box-sizing:border-box;
-        "
-      ></textarea>
-    `;
+box.innerHTML = `
+  <textarea
+    id="textoLibrePanelInput"
+    placeholder="Escribí o pegá tu texto acá..."
+    style="
+      width:100%;
+      min-height:120px;
+      border-radius:14px;
+      border:1px solid #d9d9d9;
+      padding:12px;
+      resize:vertical;
+      font-size:15px;
+      line-height:1.35;
+      box-sizing:border-box;
+    "
+  ></textarea>
+`;
 
     modalBox.insertBefore(box, preview);
   }
@@ -1468,14 +1468,45 @@ async function descargarImagenFinal() {
     const canvas = document.getElementById("canvasFinal");
     if (!canvas) return;
 
-    // ✅ regenerar antes de descargar
     const ok = await generarImagenFinal({ subir: false });
     if (!ok) return;
+
+    let nombreArchivo = "versiculo.png";
+
+    // ===== TEXTO LIBRE (Mi Panel) =====
+    if (modoImagenLibre || origenModalImagen === "panel") {
+      const ahora = new Date();
+      const yyyy = ahora.getFullYear();
+      const mm = String(ahora.getMonth() + 1).padStart(2, "0");
+      const dd = String(ahora.getDate()).padStart(2, "0");
+      const hh = String(ahora.getHours()).padStart(2, "0");
+      const min = String(ahora.getMinutes()).padStart(2, "0");
+
+      nombreArchivo = `img_${yyyy}-${mm}-${dd}_${hh}-${min}.png`;
+    }
+
+    // ===== VERSÍCULOS BIBLIA =====
+    else {
+      const ref = obtenerVersiculoSeleccionado();
+
+      if (ref) {
+        const lineaRef = ref.split("\n").pop().replace("▪", "").trim();
+
+        const limpio = lineaRef
+          .toLowerCase()
+          .replace(/\s+/g, "_")
+          .replace(/:/g, "_")
+          .replace(/,/g, "")
+          .replace(/[^\w\-]/g, "");
+
+        nombreArchivo = `${limpio}.png`;
+      }
+    }
 
     const descargarDesdeDataURL = () => {
       const link = document.createElement("a");
       link.href = canvas.toDataURL("image/png");
-      link.download = "versiculo.png";
+      link.download = nombreArchivo;
       clickLink(link);
     };
 
@@ -1485,7 +1516,7 @@ async function descargarImagenFinal() {
 
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
-        link.download = "versiculo.png";
+        link.download = nombreArchivo;
         clickLink(link);
         URL.revokeObjectURL(link.href);
       }, "image/png");
@@ -1850,7 +1881,6 @@ window.generarImagen = async () => {
 
 // ================= 🔺 FUNCIÓN NUEVA PARA ABRIR EL MODAL DESDE MI PANEL ============
 window.abrirCrearImagenLibrePanel = async () => {
-  alert("entró al modal libre");
   if (!uid) {
     loginModal.style.display = "flex";
     return;
