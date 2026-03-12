@@ -783,7 +783,6 @@ function abcAbrirModalBibliaParaNota() {
     return;
   }
 
-  // asegurar que el último tocado esté dentro del set
   if (abcSeleccionado && !abcSeleccionados.has(abcSeleccionado)) {
     abcSeleccionados.add(abcSeleccionado);
   }
@@ -803,7 +802,6 @@ function abcAbrirModalBibliaParaNota() {
     return;
   }
 
-  // abrir en modo formulario
   lista.style.display = "none";
   form.style.display = "block";
 
@@ -813,15 +811,18 @@ function abcAbrirModalBibliaParaNota() {
   titulo.value = `Nota ABC · ${temaTitulo}`;
   nota.value = "";
   color.value = "#fff3b0";
-  keep.checked = true; // ✅ en ABC SI lo usamos: mantener bloque resaltado
+  keep.checked = true;
 
- window.setMarcadorCtx("abc", {
+  window.setMarcadorCtx("abc", {
     abcEditId: window.__abcEditMarcadorId || null
   });
 
+  // ✅ CLAVE: abrir de verdad
+  modal.style.display = "flex";
   modal.classList.add("abierto");
   modal.setAttribute("aria-hidden", "false");
-    abcRenderPreviewBloquesMarcador();
+
+  abcRenderPreviewBloquesMarcador();
 }
 
 function abcRenderPreviewBloquesMarcador() {
@@ -893,6 +894,9 @@ window.guardarNuevoMarcadorABC = async function() {
     const editId = ctx?.abcEditId || null;
     const id = editId || `abc_${abcIndex}_${ahora}`;
 
+    // ✅ guardar copia ANTES de pisar window.marcadores
+    const previoEdit = editId ? ((window.marcadores || {})[editId] || null) : null;
+
     const data = {
       origen: "abc",
       tipo: "nota",
@@ -918,11 +922,15 @@ window.guardarNuevoMarcadorABC = async function() {
 
     await set(ref(db, `marcadores/${uid}/${id}`), data);
 
-    if (editId) {
-      const previo = (window.marcadores || {})[editId];
-      const prevBids = Array.isArray(previo?.abcBids)
-        ? previo.abcBids
-        : (previo?.abcBid ? [previo.abcBid] : []);
+    // ✅ actualizar cache local al instante
+    window.marcadores = window.marcadores || {};
+    window.marcadores[id] = data;
+
+    // ✅ si estaba editando, limpiar resaltados viejos que ya no correspondan
+    if (previoEdit) {
+      const prevBids = Array.isArray(previoEdit?.abcBids)
+        ? previoEdit.abcBids
+        : (previoEdit?.abcBid ? [previoEdit.abcBid] : []);
 
       for (const bid of prevBids) {
         if (!k || !bids.includes(bid)) {
@@ -931,6 +939,7 @@ window.guardarNuevoMarcadorABC = async function() {
       }
     }
 
+    // ✅ aplicar o quitar resaltados actuales
     if (k) {
       for (const bid of bids) {
         await abcSetResaltado(bid, c);
@@ -941,14 +950,21 @@ window.guardarNuevoMarcadorABC = async function() {
       }
     }
 
-    // ✅ PRIMERO limpiar modo y contexto
+    // ✅ refresco local inmediato para que aparezca la pluma sin esperar Firebase
+    abcRebuildBloqueadosKeep();
+    abcMarcarSeleccionUI();
+
+    // ✅ limpiar edición/contexto
     window.__abcEditMarcadorId = null;
     window.setMarcadorCtx("abc", { abcEditId: null });
+
+    // ✅ salir del modo marcador ANTES de cerrar
     abcResetModoMarcador();
 
-    // ✅ DESPUÉS cerrar modal
-    if (typeof cerrarMarcadores === "function") cerrarMarcadores();
-    else {
+    // ✅ cerrar modal de forma real
+    if (typeof cerrarMarcadores === "function") {
+      cerrarMarcadores();
+    } else {
       const modal = document.getElementById("modalMarcadores");
       if (modal) {
         modal.classList.remove("abierto");
@@ -957,10 +973,11 @@ window.guardarNuevoMarcadorABC = async function() {
       }
     }
 
-    // ✅ dejar ABC en estado normal
+    // ✅ reenganchar UI de ABC
     abcUIEnABC();
     abcAplicarUIAccionesPorModo();
     abcMarcarSeleccionUI();
+    abcHabilitarCheckUI();
 
     abcToast(editId ? "✅ Nota ABC actualizada" : "✅ Nota ABC guardada");
   } catch (e) {
@@ -982,39 +999,36 @@ async function abcAbrirListaNotasABC(){
     return;
   }
 
-  // ✅ mostrar lista (no el form)
+  // ✅ mostrar lista
   form.style.display = "none";
   lista.style.display = "block";
 
-  // ✅ filtrar SOLO ABC (y si querés solo del tema actual, lo hacemos)
-let data = window.marcadores || {};
-let items = Object.entries(data)
-  .map(([id, m]) => ({...m, id}))
-  .filter(m => m?.origen === "abc")
-  .sort((a,b)=> (b.fecha||0) - (a.fecha||0));
+  let data = window.marcadores || {};
+  let items = Object.entries(data)
+    .map(([id, m]) => ({...m, id}))
+    .filter(m => m?.origen === "abc")
+    .sort((a,b)=> (b.fecha||0) - (a.fecha||0));
 
-// ✅ si todavía no cargó window.marcadores, lo traemos directo de Firebase
-if (!items.length) {
-  try {
-    const { db } = FB();
-    const { ref, get } = API();
-    const uid = UID();
-    if (db && ref && get && uid) {
-      const snap = await get(ref(db, `marcadores/${uid}`));
-      const fresh = snap.exists() ? (snap.val() || {}) : {};
+  // ✅ fallback directo a Firebase si la cache todavía no está fresca
+  if (!items.length) {
+    try {
+      const { db } = FB();
+      const { ref, get } = API();
+      if (db && ref && get && uid) {
+        const snap = await get(ref(db, `marcadores/${uid}`));
+        const fresh = snap.exists() ? (snap.val() || {}) : {};
 
-      // ✅ guardamos cache global para que las próximas veces ya esté
-      window.marcadores = fresh;
+        window.marcadores = fresh;
 
-      items = Object.entries(fresh)
-        .map(([id, m]) => ({...m, id}))
-        .filter(m => m?.origen === "abc")
-        .sort((a,b)=> (b.fecha||0) - (a.fecha||0));
+        items = Object.entries(fresh)
+          .map(([id, m]) => ({...m, id}))
+          .filter(m => m?.origen === "abc")
+          .sort((a,b)=> (b.fecha||0) - (a.fecha||0));
+      }
+    } catch (e) {
+      console.warn("No pude cargar marcadores desde Firebase:", e);
     }
-  } catch (e) {
-    console.warn("No pude cargar marcadores desde Firebase:", e);
   }
-}
 
   if (!items.length){
     lista.innerHTML = `<p class="muted">Todavía no guardaste notas de ABC.</p>`;
@@ -1036,7 +1050,8 @@ if (!items.length) {
     }).join("");
   }
 
-  // abrir modal
+  // ✅ CLAVE: abrir de verdad
+  modal.style.display = "flex";
   modal.classList.add("abierto");
   modal.setAttribute("aria-hidden","false");
 }
@@ -1391,26 +1406,37 @@ function abcUIEnABC(){
 // ✅ Hooks ABC
 // -------------------------
 window.__abcOnEnter = () => {
-  // ✅ ABC SIEMPRE entra con resaltador bloqueado
   resaltadorBloqueado = true;
   window.resaltadorBloqueado = true;
 
-  // (opcional) cerrar paleta si estaba abierta
   try {
     const pal = document.getElementById("paletaResaltadores");
     if (pal) pal.style.display = "none";
   } catch(e){}
 
-  // ✅ 1) primero portaleamos la barra (mueve DOM)
   abcPortalBarraOn();
-
-  // ✅ 2) ahora sí: forzar sync del candadito chico (cuando el DOM ya está donde queda)
   window.forceSyncResaltadorUI?.(25);
 
   abcAplicarFontSize();
-  abcUIEnABC();
 
-  // ✅ al entrar a ABC, aplicar el estado de barra de ABC
+  // ✅ primer enganche inmediato
+  abcUIEnABC();
+  abcAplicarUIAccionesPorModo();
+
+  // ✅ segundo enganche blindado por si Biblia dejó handlers viejos un frame después
+  requestAnimationFrame(() => {
+    abcUIEnABC();
+    abcAplicarUIAccionesPorModo();
+    abcHabilitarCheckUI();
+  });
+
+  // ✅ tercer refuerzo
+  setTimeout(() => {
+    abcUIEnABC();
+    abcAplicarUIAccionesPorModo();
+    abcHabilitarCheckUI();
+  }, 60);
+
   window.aplicarEstadoBarra?.("abc");
 };
 
