@@ -2549,14 +2549,8 @@ function renderPanelMarcadores() {
       : `<i class="fa-solid fa-graduation-cap"></i>`;
 
   panel.innerHTML = `
-    <div class="pm-left" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+<div class="pm-left">
   <b>📌 Marcadores</b>
-
-  <button type="button"
-    onclick="limpiarTodoResaltadoBiblia()"
-    style="border:none; border-radius:999px; padding:8px 12px; cursor:pointer; background:#d9534f; color:#fff; font-weight:700;">
-    🧹 Limpiar Biblia
-  </button>
 </div>
 
       <div class="pm-right">
@@ -3574,56 +3568,3 @@ window.eliminarImagenPanel = async (id) => {
   }
 };
 
-window.limpiarTodoResaltadoBiblia = async function() {
-  try {
-    if (!uid) {
-      alert("Necesitás estar logueado.");
-      return;
-    }
-
-    const ok = confirm(
-      "Esto va a borrar TODO lo de Biblia: resaltados y notas/marcadores.\n\n¿Continuar?"
-    );
-    if (!ok) return;
-
-    // ✅ 1) borrar todos los resaltados comunes
-    await remove(ref(db, `marcados/${uid}`));
-
-    // ✅ 2) borrar solo notas/marcadores de Biblia (NO ABC)
-    const snap = await get(ref(db, `marcadores/${uid}`));
-    const data = snap.val() || {};
-
-    for (const [id, m] of Object.entries(data)) {
-      if (m?.origen === "abc") continue; // no tocar ABC
-      await remove(ref(db, `marcadores/${uid}/${id}`));
-    }
-
-    // ✅ 3) limpiar memoria local
-    marcados = {};
-    ultimoMarcadorAplicado = null;
-
-    if (window.marcadores) {
-      Object.keys(window.marcadores).forEach(id => {
-        const m = window.marcadores[id];
-        if (m?.origen !== "abc") {
-          delete window.marcadores[id];
-        }
-      });
-    }
-
-    // ✅ 4) limpiar índices de notas de Biblia
-    window.notasBibliaIndex = {};
-    window.notasBibliaPluma = {};
-    notasBibliaIndex = window.notasBibliaIndex;
-    notasBibliaPluma = window.notasBibliaPluma;
-
-    // ✅ 5) repintar todo
-    mostrarTexto();
-    renderPanelMarcadores();
-
-    alert("✅ Se borró todo lo de Biblia.");
-  } catch (e) {
-    console.error(e);
-    alert("No se pudo borrar todo lo de Biblia.");
-  }
-};
