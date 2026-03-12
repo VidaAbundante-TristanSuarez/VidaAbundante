@@ -3582,21 +3582,48 @@ window.limpiarTodoResaltadoBiblia = async function() {
     }
 
     const ok = confirm(
-      "Esto va a borrar TODOS los resaltados de Biblia.\n\nLas notas no se borran, solo el color.\n\n¿Continuar?"
+      "Esto va a borrar TODO lo de Biblia: resaltados y notas/marcadores.\n\n¿Continuar?"
     );
     if (!ok) return;
 
+    // ✅ 1) borrar todos los resaltados comunes
     await remove(ref(db, `marcados/${uid}`));
 
+    // ✅ 2) borrar solo notas/marcadores de Biblia (NO ABC)
+    const snap = await get(ref(db, `marcadores/${uid}`));
+    const data = snap.val() || {};
+
+    for (const [id, m] of Object.entries(data)) {
+      if (m?.origen === "abc") continue; // no tocar ABC
+      await remove(ref(db, `marcadores/${uid}/${id}`));
+    }
+
+    // ✅ 3) limpiar memoria local
     marcados = {};
     ultimoMarcadorAplicado = null;
 
+    if (window.marcadores) {
+      Object.keys(window.marcadores).forEach(id => {
+        const m = window.marcadores[id];
+        if (m?.origen !== "abc") {
+          delete window.marcadores[id];
+        }
+      });
+    }
+
+    // ✅ 4) limpiar índices de notas de Biblia
+    window.notasBibliaIndex = {};
+    window.notasBibliaPluma = {};
+    notasBibliaIndex = window.notasBibliaIndex;
+    notasBibliaPluma = window.notasBibliaPluma;
+
+    // ✅ 5) repintar todo
     mostrarTexto();
     renderPanelMarcadores();
 
-    alert("✅ Resaltados limpiados.");
+    alert("✅ Se borró todo lo de Biblia.");
   } catch (e) {
     console.error(e);
-    alert("No se pudo limpiar.");
+    alert("No se pudo borrar todo lo de Biblia.");
   }
 };
