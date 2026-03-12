@@ -883,6 +883,7 @@ window.guardarNuevoMarcadorABC = async function() {
 
     const bids = Array.from(abcSeleccionados || []);
     const lastBid = abcSeleccionado || bids[bids.length - 1];
+
     if (!bids.length) {
       abcToast("Seleccioná al menos 1 bloque 🙂");
       return;
@@ -917,7 +918,6 @@ window.guardarNuevoMarcadorABC = async function() {
 
     await set(ref(db, `marcadores/${uid}/${id}`), data);
 
-    // limpiar resaltados previos si estoy editando
     if (editId) {
       const previo = (window.marcadores || {})[editId];
       const prevBids = Array.isArray(previo?.abcBids)
@@ -941,28 +941,33 @@ window.guardarNuevoMarcadorABC = async function() {
       }
     }
 
+    // ✅ PRIMERO limpiar modo y contexto
     window.__abcEditMarcadorId = null;
     window.setMarcadorCtx("abc", { abcEditId: null });
+    abcResetModoMarcador();
 
+    // ✅ DESPUÉS cerrar modal
     if (typeof cerrarMarcadores === "function") cerrarMarcadores();
     else {
       const modal = document.getElementById("modalMarcadores");
       if (modal) {
         modal.classList.remove("abierto");
         modal.setAttribute("aria-hidden", "true");
+        modal.style.display = "none";
       }
     }
 
-    abcResetModoMarcador();
+    // ✅ dejar ABC en estado normal
     abcUIEnABC();
     abcAplicarUIAccionesPorModo();
+    abcMarcarSeleccionUI();
 
     abcToast(editId ? "✅ Nota ABC actualizada" : "✅ Nota ABC guardada");
   } catch (e) {
     console.error(e);
     alert("No pude guardar la nota de ABC.");
   }
-}
+};
   
 async function abcAbrirListaNotasABC(){
   const uid = UID();
