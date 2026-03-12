@@ -293,8 +293,28 @@ async function blobToBase64(blob){
 /* =========================================================
    3) LIMPIEZA Y SALTOS DE TEXTO OCR (tus reglas)
    ========================================================= */
+function normalizeEditableText(s){
+  // Regla:
+  // - OCR / pegado normal con saltos simples => se aplana a espacios
+  // - doble salto de línea del usuario => equivale a 1 salto real
+  //
+  // Ejemplo:
+  // "hola\nmundo"         => "hola mundo"
+  // "hola\n\nmundo"       => "hola\nmundo"
+  // "hola\n\n\n\nmundo"   => "hola\n\nmundo"
+
+  return String(s || "")
+    .replace(/\r/g, "")
+    .replace(/\n{2,}/g, "§BR§")   // guardar saltos dobles o más
+    .replace(/\n+/g, " ")         // saltos simples => espacio
+    .replace(/§BR§/g, "\n")       // doble salto => 1 salto real
+    .replace(/[ \t]+/g, " ")
+    .replace(/ *\n */g, "\n")
+    .trim();
+}
+
 function oneLine(s){
-  // Convierte saltos OCR en espacios y limpia dobles espacios
+  // totalmente en una línea
   return String(s || "")
     .replace(/\r/g, "")
     .replace(/\n+/g, " ")
@@ -302,15 +322,30 @@ function oneLine(s){
     .trim();
 }
 
+function normalizeForParagraph(s){
+  // conserva los saltos manuales “reales” (los que nacen de doble Enter)
+  return normalizeEditableText(s);
+}
+
 function ensurePeriod(s){
-  s = oneLine(s);
+  s = normalizeEditableText(s);
   if (!s) return "";
-  return /[.!?…]$/.test(s) ? s : (s + ".");
+  const lines = s.split("\n").map(x => x.trim()).filter(Boolean);
+  const out = lines.map(line => /[.!?…:]$/.test(line) ? line : (line + "."));
+  return out.join("\n");
+}
+
+function textToHtmlPreserveBreaks(s){
+  return String(s || "")
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/\n/g, "<br>");
 }
 
 function buildAudioFromParts(p1, p2){
-  const reflex = oneLine(p2?.reflexion || "");
-  const orac   = oneLine(p2?.oracion || "");
+  const reflex = normalizeEditableText(p2?.reflexion || "");
+  const orac   = normalizeEditableText(p2?.oracion || "");
 
   const fecha = ensurePeriod(p1?.fecha || "");
   const cita  = ensurePeriod(p1?.cita || "");
@@ -319,7 +354,7 @@ function buildAudioFromParts(p1, p2){
     "DEVOCIONAL",
     fecha,
     "",
-    oneLine(p1?.versiculo || ""),
+    normalizeEditableText(p1?.versiculo || ""),
     cita,
     "",
     `Reflexión: ${reflex} Oración: ${orac}`.trim()
@@ -517,16 +552,14 @@ function buildBloquesFromOCR(raw){
    FASE 0 — CAMPOS EDITABLES (sync texto <-> campos)
    ========================================================= */
 
-// Lee inputs de Fase 0 hacia DEV.fields
 function devReadFieldsFromUI(){
-  DEV.fields.fecha     = oneLine($("dev0Fecha")?.value || "");
-  DEV.fields.versiculo = oneLine($("dev0Versiculo")?.value || "");
-  DEV.fields.cita      = oneLine($("dev0Cita")?.value || "");
-  DEV.fields.reflexion = oneLine($("dev0Reflexion")?.value || "");
-  DEV.fields.oracion   = oneLine($("dev0Oracion")?.value || "");
+  DEV.fields.fecha     = normalizeForParagraph($("dev0Fecha")?.value || "");
+  DEV.fields.versiculo = normalizeForParagraph($("dev0Versiculo")?.value || "");
+  DEV.fields.cita      = normalizeForParagraph($("dev0Cita")?.value || "");
+  DEV.fields.reflexion = normalizeForParagraph($("dev0Reflexion")?.value || "");
+  DEV.fields.oracion   = normalizeForParagraph($("dev0Oracion")?.value || "");
 }
 
-// Escribe DEV.fields hacia inputs de Fase 0
 function devWriteFieldsToUI(){
   const f = DEV.fields || {};
   const set = (id,val)=>{ const el=$(id); if(el) el.value = val || ""; };
@@ -538,7 +571,6 @@ function devWriteFieldsToUI(){
   set("dev0Oracion", f.oracion);
 }
 
-// Toma el texto completo (dev0Texto) y re-detecta campos usando tu parser
 window.devReparseFase0 = () => {
   const t0 = ($("dev0Texto")?.value || "").trim();
   if (!t0) { alert("No hay texto en el OCR completo."); return; }
@@ -546,16 +578,14 @@ window.devReparseFase0 = () => {
   DEV.rawText = t0;
   const { p1, p2, audioText } = buildBloquesFromOCR(t0);
 
-  // actualizar fields desde parser
-  DEV.fields.fecha     = p1?.fecha || "";
-  DEV.fields.versiculo = p1?.versiculo || "";
-  DEV.fields.cita      = p1?.cita || "";
-  DEV.fields.reflexion = p2?.reflexion || "";
-  DEV.fields.oracion   = p2?.oracion || "";
+  DEV.fields.fecha     = normalizeForParagraph(p1?.fecha || "");
+  DEV.fields.versiculo = normalizeForParagraph(p1?.versiculo || "");
+  DEV.fields.cita      = normalizeForParagraph(p1?.cita || "");
+  DEV.fields.reflexion = normalizeForParagraph(p2?.reflexion || "");
+  DEV.fields.oracion   = normalizeForParagraph(p2?.oracion || "");
 
   devWriteFieldsToUI();
 
-  // también guarda DEV.p1/p2 tentativo (se confirma al pasar a fase1)
   DEV.p1 = p1;
   DEV.p2 = p2;
   DEV.audioText = audioText;
@@ -563,23 +593,22 @@ window.devReparseFase0 = () => {
   alert("✅ Listo. Campos re-detectados. (Podés corregirlos manualmente)");
 };
 
-// Aplica fields (manuales) a DEV.p1/p2 y arma audioText SIEMPRE desde fields
 function devApplyFieldsToParts(){
   devReadFieldsFromUI();
 
   const f = DEV.fields;
 
   DEV.p1 = {
-    fecha: f.fecha || "",
-    versiculo: f.versiculo || "",
-    cita: f.cita || "",
+    fecha: normalizeForParagraph(f.fecha || ""),
+    versiculo: normalizeForParagraph(f.versiculo || ""),
+    cita: normalizeForParagraph(f.cita || ""),
     iglesia: "Iglesia Cristiana de la Vida Abundante",
     direccion: "Roca 123, Tristan Suarez."
   };
 
   DEV.p2 = {
-    reflexion: f.reflexion || "",
-    oracion: f.oracion || ""
+    reflexion: normalizeForParagraph(f.reflexion || ""),
+    oracion: normalizeForParagraph(f.oracion || "")
   };
 
   DEV.audioText = buildAudioFromParts(DEV.p1, DEV.p2);
@@ -990,34 +1019,30 @@ function sugerirTamanoVersiculoAuto(versiculo){
 }
 
 function sugerirTamanoFase2Auto(texto){
-  const wWrap = $("dev2TextoWrapper");
-  if (!wWrap) return 16;
+  const W = 1080;
+  const H = 840;
 
-  const rect = wWrap.getBoundingClientRect();
-  const maxW = Math.max(100, rect.width * 0.92);
-  const altoDisponible = Math.max(80, rect.height * 0.82);
+  const maxW = W - 36;   // padding visual aproximado
+  const altoDisponible = H - 80;
 
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
 
-  const maxPx = 18;
-  const minPx = 9;
+  const maxPx = 34;
+  const minPx = 12;
 
   for (let px = maxPx; px >= minPx; px -= 0.5) {
     ctx.font = `600 ${px}px ${DEV.f2.fuente}, Arial`;
-    const lines = wrapMeasureLines(ctx, oneLine(texto), maxW);
-    const lineH = px * 1.20;
+    const lines = wrapMeasureLines(ctx, normalizeEditableText(texto), maxW);
+    const lineH = px * 1.24;
     const totalH = lines.length * lineH;
+
     if (totalH <= altoDisponible) {
-  const sc = scalePreviewF2() || 1;
-  let suger = roundToHalf(px / sc);
-suger = Math.max(8, roundToHalf(suger - 4));   // ✅ baja ~4 puntos
-return suger;
-}
+      return roundToHalf(px);
+    }
   }
-  let suger = roundToHalf(minPx / (scalePreviewF2() || 1));
-suger = Math.max(8, roundToHalf(suger - 4));
-return suger;
+
+  return roundToHalf(minPx);
 }
 
 function devSyncStyleButtons(fase){
@@ -1043,55 +1068,43 @@ function buildFase1HTML(versiculoCanvasPx, scale){
   scale = scale || 1;
 
   const versiculoPx = Math.max(8, versiculoCanvasPx * scale);
-
-  // ✅ tamaños reales en canvas 1080 (se escalan en preview)
   const devocionalPx = Math.round(44 * scale);
   const fechaPx      = Math.round(32 * scale);
   const iglesiaPx    = Math.round(34 * scale);
   const direPx       = Math.round(34 * scale);
+  const citaPx       = Math.max(Math.round(14 * scale), Math.round(versiculoPx * 0.75));
 
-  // cita proporcional al versículo
-  const citaPx = Math.max(Math.round(14 * scale), Math.round(versiculoPx * 0.75));
-
-  // helper: centrado real + interlineado apretado
   const base = (px, weight)=>`
-  position:absolute;
-  left:0;
-  right:0;
-  margin:0 auto;
-  width:96%;
-  text-align:center;
-  padding:0;
-  font-size:${px}px;
-  font-weight:${weight};
-  line-height:1.05;
-`;
+    position:absolute;
+    left:0;
+    right:0;
+    margin:0 auto;
+    width:96%;
+    text-align:center;
+    padding:0;
+    font-size:${px}px;
+    font-weight:${weight};
+    line-height:1.05;
+    white-space:pre-wrap;
+  `;
 
-  // ===== Coordenadas fijas tipo Cloudinary (porcentaje del wrapper) =====
-  // Arriba
-  const Y_DEV   = 2;     // DEVOCIONAL
-  const Y_FECHA = 7;   // ✅ más cerca (antes quedaba muy separado)
-
-  // Abajo (pie)
-  const Y_IGL   = 88;   // iglesia
-  const Y_DIR   = 94; // dirección casi pegada al borde
-
-  // Caja central (versículo + cita) MÁS GRANDE
-  const Y_VBOX  = 16;    // empieza
-  const H_VBOX  = 66;    // ✅ más alto (antes era chico)
+  const Y_DEV   = 2;
+  const Y_FECHA = 7;
+  const Y_IGL   = 88;
+  const Y_DIR   = 94;
+  const Y_VBOX  = 16;
+  const H_VBOX  = 66;
 
   return `
     <div style="position:relative; width:100%; height:100%;">
-
       <div style="${base(devocionalPx,700)} top:${Y_DEV}%;">
         DEVOCIONAL
       </div>
 
       <div style="${base(fechaPx,550)} top:${Y_FECHA}%; opacity:.95;">
-        ${esc(p1.fecha)}
+        ${textToHtmlPreserveBreaks(p1.fecha)}
       </div>
 
-      <!-- ✅ Caja fija grande: Versículo + Cita juntos -->
       <div style="
         position:absolute;
         left:0;
@@ -1114,39 +1127,38 @@ function buildFase1HTML(versiculoCanvasPx, scale){
           flex-direction:column;
           align-items:center;
           justify-content:center;
-          gap:6px;                 /* ✅ espacio corto entre versículo y cita */
+          gap:6px;
           line-height:1.08;
         ">
           <div style="
             font-size:${versiculoPx}px;
             font-weight:${DEV.f1.style.bold ? 800 : 400};
             width:100%;
-            white-space:normal;
+            white-space:pre-wrap;
             word-break:break-word;
           ">
-            ${esc(p1.versiculo)}
+            ${textToHtmlPreserveBreaks(p1.versiculo)}
           </div>
 
           <div style="
             font-size:${citaPx}px;
             font-weight:${DEV.f1.style.bold ? 700 : 400};
             width:100%;
-            white-space:normal;
+            white-space:pre-wrap;
             word-break:break-word;
           ">
-            ${esc(p1.cita)}
+            ${textToHtmlPreserveBreaks(p1.cita)}
           </div>
         </div>
       </div>
 
       <div style="${base(iglesiaPx,700)} top:${Y_IGL}%;">
-        ${esc(p1.iglesia)}
+        ${textToHtmlPreserveBreaks(p1.iglesia)}
       </div>
 
       <div style="${base(direPx,700)} top:${Y_DIR}%;">
-        ${esc(p1.direccion)}
+        ${textToHtmlPreserveBreaks(p1.direccion)}
       </div>
-
     </div>
   `;
 }
@@ -1155,8 +1167,8 @@ function buildFase2HTML(basePx){
   const p2 = DEV.p2;
   if (!p2) return "";
 
-  const ref = oneLine(p2.reflexion || "");
-  const ora = oneLine(p2.oracion || "");
+  const ref = normalizeForParagraph(p2.reflexion || "");
+  const ora = normalizeForParagraph(p2.oracion || "");
   const fw  = DEV.f2.style.bold ? 700 : 400;
 
   const adorno  = DEV.f2.adornoUrl;
@@ -1170,15 +1182,13 @@ function buildFase2HTML(basePx){
       flex-direction:column;
       overflow:hidden;
     ">
-
-      <!-- ✅ TEXTO: ocupa el espacio disponible y queda centrado -->
       <div style="
         flex:1 1 auto;
         min-height:0;
         display:flex;
         align-items:center;
         justify-content:center;
-        padding: 0 12px;
+        padding: 0 18px;
         box-sizing:border-box;
         text-align:center;
         overflow:hidden;
@@ -1189,13 +1199,13 @@ function buildFase2HTML(basePx){
           font-weight:${fw};
           line-height:1.24;
           word-break:break-word;
+          white-space:pre-wrap;
         ">
-          <div>Reflexión: ${esc(ref)}</div>
-          ${ora ? `<div style="margin-top:10px;">Oración: ${esc(ora)}</div>` : ``}
+          <div>Reflexión: ${textToHtmlPreserveBreaks(ref)}</div>
+          ${ora ? `<div style="margin-top:10px;">Oración: ${textToHtmlPreserveBreaks(ora)}</div>` : ``}
         </div>
       </div>
 
-      <!-- ✅ ADORNO: fijo abajo, no empuja ni corta el texto -->
       ${adorno ? `
         <div style="
           flex:0 0 auto;
@@ -1219,7 +1229,6 @@ function buildFase2HTML(basePx){
           />
         </div>
       ` : ``}
-
     </div>
   `;
 }
@@ -1238,75 +1247,129 @@ function scalePreviewF2(){
   return h / 840; // fase 2 = 9:7 = 840 de alto en canvas
 }
 
+function buildFase1NodeReal(){
+  const W = 1080;
+  const H1 = 1080;
+  const st = DEV.f1;
+
+  const node = document.createElement("div");
+  node.style.width = W + "px";
+  node.style.height = H1 + "px";
+  node.style.position = "relative";
+  node.style.overflow = "hidden";
+  node.style.borderRadius = "0";
+
+  const fondoUsable = st.fondoBlob || st.fondoUrl;
+  node.style.backgroundImage = fondoUsable ? `url("${fondoUsable}")` : "none";
+  node.style.backgroundSize = "cover";
+  node.style.backgroundPosition = "center";
+  node.style.backgroundColor = fondoUsable ? "transparent" : "#ffffff";
+
+  const wrap = document.createElement("div");
+  wrap.style.position = "absolute";
+  wrap.style.inset = "6%";
+  wrap.style.borderRadius = "14px";
+  wrap.style.overflow = "hidden";
+  wrap.style.backgroundColor = wrapperBgFromOpacity(st.op);
+
+  const texto = document.createElement("div");
+  texto.style.position = "absolute";
+  texto.style.inset = "0";
+  texto.style.fontFamily = st.fuente;
+  texto.style.color = st.color;
+  texto.style.textShadow = textShadowLegibleFinal(st.color);
+  texto.style.webkitTextStroke = "0px";
+  texto.style.paintOrder = "normal";
+  applyTextStylesToOne(texto, st);
+  texto.innerHTML = buildFase1HTML(st.size, 1);
+
+  wrap.appendChild(texto);
+  node.appendChild(wrap);
+  return node;
+}
+
+function buildFase2NodeReal(){
+  const W = 1080;
+  const H2 = 840;
+  const st = DEV.f2;
+
+  const node = document.createElement("div");
+  node.style.width = W + "px";
+  node.style.height = H2 + "px";
+  node.style.position = "relative";
+  node.style.overflow = "hidden";
+  node.style.borderRadius = "0";
+  node.style.backgroundImage = "none";
+  node.style.backgroundColor = st.fondoColor || "#ffffff";
+
+  const wrap = document.createElement("div");
+  wrap.style.position = "absolute";
+  wrap.style.inset = "16px";
+  wrap.style.overflow = "hidden";
+  wrap.style.textAlign = "center";
+
+  const texto = document.createElement("div");
+  texto.style.width = "100%";
+  texto.style.height = "100%";
+  texto.style.fontFamily = st.fuente;
+  texto.style.color = st.color;
+  texto.style.textShadow = textShadowLegibleFinal(st.color);
+  texto.style.webkitTextStroke = "0px";
+  texto.style.paintOrder = "normal";
+  applyTextStylesToOne(texto, st);
+  texto.innerHTML = buildFase2HTML(st.size);
+
+  wrap.appendChild(texto);
+  node.appendChild(wrap);
+  return node;
+}
+
+function renderNodeScaledIntoPreview(previewEl, realNode, realW, realH){
+  if (!previewEl) return;
+
+  previewEl.innerHTML = "";
+  previewEl.style.background = "transparent";
+  previewEl.style.position = "relative";
+  previewEl.style.overflow = "hidden";
+
+  const box = document.createElement("div");
+  box.style.position = "absolute";
+  box.style.left = "50%";
+  box.style.top = "50%";
+
+  const pw = previewEl.clientWidth || previewEl.getBoundingClientRect().width || 1;
+  const ph = previewEl.clientHeight || previewEl.getBoundingClientRect().height || 1;
+  const scale = Math.min(pw / realW, ph / realH);
+
+  box.style.width = realW + "px";
+  box.style.height = realH + "px";
+  box.style.transformOrigin = "center center";
+  box.style.transform = `translate(-50%, -50%) scale(${scale})`;
+
+  realNode.style.pointerEvents = "none";
+  box.appendChild(realNode);
+  previewEl.appendChild(box);
+}
+
 function devRenderFase(fase){
   if (fase === 1) {
     const p = $("dev1Preview");
-    const w = $("dev1TextoWrapper");
-    const t = $("dev1Texto");
-    const b = $("dev1TextoBack");
-    if (!p || !w || !t || !b) return;
+    if (!p) return;
 
-    const st = DEV.f1;
+    const node = buildFase1NodeReal();
+    renderNodeScaledIntoPreview(p, node, 1080, 1080);
 
-    // texto
-   const sc = scalePreviewF1();
-   t.innerHTML = buildFase1HTML(st.size, sc);
-    // ya no usamos la capa back para no romper tamaños diferentes
-    if (b) b.style.display = "none";
-
-    // fondo
-    const fondoUsable = st.fondoBlob || st.fondoUrl;
-    p.style.backgroundImage = fondoUsable ? `url("${fondoUsable}")` : "none";
-    p.style.backgroundSize = "cover";
-    p.style.backgroundPosition = "center";
-    p.style.backgroundColor = fondoUsable ? "transparent" : "#ffffff";
-
-   // fuente + tamaño + color
-   t.style.fontFamily = st.fuente;
-   t.style.color = st.color;
-
-   // ✅ OUTLINE estable (para preview + captura)
-   t.style.textShadow = textShadowLegible(st.color);
-   t.style.webkitTextStroke = "0px";
-   t.style.paintOrder = "normal";
-
-    // wrapper bg
-    w.style.backgroundColor = wrapperBgFromOpacity(st.op);
-
-    applyTextStylesToOne(t, st);
     devSyncStyleButtons(1);
     return;
   }
 
   if (fase === 2) {
     const p = $("dev2Preview");
-    const w = $("dev2TextoWrapper");
-    const t = $("dev2Texto");
-    const b = $("dev2TextoBack");
-    if (!p || !w || !t || !b) return;
+    if (!p) return;
 
-    const st = DEV.f2;
+    const node = buildFase2NodeReal();
+    renderNodeScaledIntoPreview(p, node, 1080, 840);
 
-    const pxPreview = Math.max(8, (st.size * scalePreviewF2()));
-    t.innerHTML = buildFase2HTML(pxPreview);
-    if (b) b.style.display = "none";
-
-    // fondo plano
-    p.style.backgroundImage = "none";
-    p.style.backgroundColor = st.fondoColor || "#ffffff";
-
-    // fuente + tamaño + color
-   t.style.fontFamily = st.fuente;
-   t.style.color = st.color;
-
-   // ✅ OUTLINE estable (para preview + captura)
-   t.style.textShadow = textShadowLegible(st.color);
-   t.style.webkitTextStroke = "0px";
-   t.style.paintOrder = "normal";
-
-   w.style.backgroundColor = "transparent"; // ✅ sin opacidad en Fase 2
-
-    applyTextStylesToOne(t, st);
     devSyncStyleButtons(2);
     return;
   }
@@ -1383,156 +1446,99 @@ async function renderFinalCanvasCaptureReal(){
   const ctx = cFinal.getContext("2d");
   ctx.clearRect(0,0,W,H);
 
-  // ✅ Escenario offscreen
   let stage = document.getElementById("devCaptureStage");
   if (!stage) {
     stage = document.createElement("div");
     stage.id = "devCaptureStage";
     stage.style.position = "fixed";
-    stage.style.left = "-10000px";     // ✅ lejos sin transform
+    stage.style.left = "-10000px";
     stage.style.top  = "-10000px";
-    stage.style.opacity = "1";      
+    stage.style.opacity = "1";
     stage.style.visibility = "visible";
     stage.style.pointerEvents = "none";
-    stage.style.transform = "none";    // ✅ importantísimo
+    stage.style.transform = "none";
     stage.style.zIndex = "-1";
     document.body.appendChild(stage);
   }
   stage.innerHTML = "";
 
-  // ✅ Construir nodos “a tamaño real” (NO dependen del preview chico)
-  const makeFase1Node = () => {
-    const st = DEV.f1;
-    const node = document.createElement("div");
-    node.style.width = W + "px";
-    node.style.height = H1 + "px";
-    node.style.position = "relative";
-    node.style.overflow = "hidden";
-    node.style.borderRadius = "0";
+  const n1 = buildFase1NodeReal();
+  const n2 = buildFase2NodeReal();
 
-    const fondoUsable = st.fondoBlob || st.fondoUrl;
-    node.style.backgroundImage = fondoUsable ? `url("${fondoUsable}")` : "none";
-    node.style.backgroundSize = "cover";
-    node.style.backgroundPosition = "center";
-    node.style.backgroundColor = fondoUsable ? "transparent" : "#ffffff";
-
-    const wrap = document.createElement("div");
-    wrap.style.position = "absolute";
-    wrap.style.inset = "6%";           // ✅ igual que .dev-textwrap
-    wrap.style.borderRadius = "14px";  // ✅ igual que preview
-    wrap.style.overflow = "hidden";    // ✅ igual que preview
-    wrap.style.backgroundColor = wrapperBgFromOpacity(st.op);
-
-    const texto = document.createElement("div");
-    texto.style.position = "absolute";
-    texto.style.inset = "0";
-    texto.style.fontFamily = st.fuente;
-    texto.style.color = st.color;
-    applyTextStylesToOne(texto, st);
-     
-    // ✅ OUTLINE estable
-    texto.style.textShadow = textShadowLegibleFinal(st.color);
-    texto.style.webkitTextStroke = "0px";
-    texto.style.paintOrder = "normal";
-
-    // ✅ IMPORTANTE: tamaño real (sin scalePreviewF1)
-    texto.innerHTML = buildFase1HTML(st.size, 1);
-
-    wrap.appendChild(texto);
-    node.appendChild(wrap);
-    return node;
-  };
-
-  const makeFase2Node = () => {
-  const st = DEV.f2;
-
-  const node = document.createElement("div");
-  node.style.width = W + "px";
-  node.style.height = H2 + "px";
-  node.style.position = "relative";
-  node.style.overflow = "hidden";
-  node.style.borderRadius = "0";
-  node.style.backgroundImage = "none";
-  node.style.backgroundColor = st.fondoColor || "#ffffff";
-
-  // ✅ WRAPPER limpio: margen uniforme y sin padding extra
-  const wrap = document.createElement("div");
-  wrap.style.position = "absolute";
-  wrap.style.inset = "16px";
-  wrap.style.overflow = "hidden";
-  wrap.style.textAlign = "center";
-
-  const texto = document.createElement("div");
-  texto.style.width = "100%";
-  texto.style.height = "100%"; // ✅ importante para el layout interno absoluto de buildFase2HTML()
-  texto.style.fontFamily = st.fuente;
-  texto.style.color = st.color;
-  applyTextStylesToOne(texto, st);
-
-  // ✅ OUTLINE estable
-  texto.style.textShadow = textShadowLegibleFinal(st.color);
-  texto.style.webkitTextStroke = "0px";
-  texto.style.paintOrder = "normal";
-
-  // ✅ HTML fase 2 ya maneja: texto centrado + adorno fijo abajo
-  texto.innerHTML = buildFase2HTML(st.size);
-
-  wrap.appendChild(texto);
-  node.appendChild(wrap);
-
-  return node;
-};
-
-  // ✅ Agregar al stage y esperar fuentes/layout
-  const n1 = makeFase1Node();
-  const n2 = makeFase2Node();
   stage.appendChild(n1);
   stage.appendChild(n2);
 
   await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
   if (document.fonts?.ready) await document.fonts.ready;
 
-  // ✅ Capturar
-  const cap1 = await html2canvas(n1, { backgroundColor: null, scale: 2, useCORS: true });
-  const cap2 = await html2canvas(n2, { backgroundColor: null, scale: 2, useCORS: true });
+  const cap1 = await html2canvas(n1, {
+    backgroundColor: null,
+    scale: 2,
+    useCORS: true
+  });
+
+  const cap2 = await html2canvas(n2, {
+    backgroundColor: null,
+    scale: 2,
+    useCORS: true
+  });
 
   ctx.drawImage(cap1, 0, 0, W, H1);
   ctx.drawImage(cap2, 0, H1, W, H2);
 
-  // ✅ redondear como preview (aprox)
-  const RADIO_FINAL = 40; // si querés más redondo probá 50
+  const RADIO_FINAL = 40;
   const rounded = makeRoundedCanvas(cFinal, RADIO_FINAL);
 
   DEV.finalDataUrl = rounded.toDataURL("image/png");
   const img = $("devFinalImg");
   if (img) img.src = DEV.finalDataUrl;
 
-  return rounded; // 👈 devolvemos el canvas redondeado
+  return rounded;
 }
 
 window.devToggleSubirPanel = () => {
   DEV.subirPanel = !DEV.subirPanel;
+
   const tick = $("devPanelTick");
   if (tick) tick.style.display = DEV.subirPanel ? "inline" : "none";
+
+  const btn = $("devBtnPanelToggle");
+  if (btn) {
+    btn.setAttribute("aria-pressed", DEV.subirPanel ? "true" : "false");
+    btn.classList.toggle("activo", DEV.subirPanel);
+  }
 };
 
 // ✅ descarga PNG
 async function devDescargarPNG(){
-  const c = await renderFinalCanvasCaptureReal();
-  if (!c) return;
+  await devBusyShowNow("⏳ Preparando PNG…");
 
-  const fecha = DEV?.p1?.fecha || "sin_fecha";
-  const name = "Devocional_" + safeFilePart(fecha) + ".png";
+  try {
+    const c = await renderFinalCanvasCaptureReal();
+    if (!c) return;
 
-  c.toBlob((blob)=>{
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = name;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(()=> URL.revokeObjectURL(a.href), 2000);
-  }, "image/png");
+    const fecha = DEV?.p1?.fecha || "sin_fecha";
+    const name = "Devocional_" + safeFilePart(fecha) + ".png";
+
+    c.toBlob((blob)=>{
+      if (!blob) {
+        devBusyHide();
+        return;
+      }
+
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(()=> URL.revokeObjectURL(a.href), 2000);
+      devBusyHide();
+    }, "image/png");
+  } catch (e) {
+    devBusyHide();
+    throw e;
+  }
 }
 
 // ✅ descarga pack: primero PNG, luego audio
@@ -1917,49 +1923,43 @@ function safeFilePart(s){
 }
 
 window.devDescargarFinal = async () => {
-     devBusyShow("⏳ Preparando audio…");
+  await devBusyShowNow("⏳ Preparando audio…");
+
   try {
-    // 1) obtener base64 desde el <audio>
-   let pack = await audioElementToBase64();
+    let pack = await audioElementToBase64();
 
-if (!pack?.base64 || !pack?.blob) {
-  // ✅ si no existe audio, lo generamos automáticamente
-  window.__AUDIO_VOICE_NAME = "es-US-Studio-B"; // devocional
-  const texto = (DEV.audioText || "").trim();
-  if (!texto) { alert("No hay texto para audio."); return; }
+    if (!pack?.base64 || !pack?.blob) {
+      window.__AUDIO_VOICE_NAME = "es-US-Studio-B";
+      const texto = (DEV.audioText || "").trim();
+      if (!texto) { alert("No hay texto para audio."); return; }
 
-  const r = await fetch(TTS_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ texto, voiceName: "es-US-Studio-B" })
-  });
+      const r = await fetch(TTS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ texto, voiceName: "es-US-Studio-B" })
+      });
 
-  const data = await r.json().catch(() => ({}));
-  if (!r.ok || !data?.audioBase64) {
-    alert("No pude generar el audio automáticamente.");
-    return;
-  }
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok || !data?.audioBase64) {
+        alert("No pude generar el audio automáticamente.");
+        return;
+      }
 
-  // convertir base64 a blob
-  const bytes = Uint8Array.from(atob(data.audioBase64), c => c.charCodeAt(0));
-  const blob = new Blob([bytes], { type: "audio/mpeg" });
+      const bytes = Uint8Array.from(atob(data.audioBase64), c => c.charCodeAt(0));
+      const blob = new Blob([bytes], { type: "audio/mpeg" });
 
-  pack = { base64: data.audioBase64, blob };
-}
+      pack = { base64: data.audioBase64, blob };
+    }
 
-    // 2) subir a GitHub
     let gh = null;
     try {
       gh = await subirAudioAGithubDesdeWeb(pack.base64);
-      // si querés guardar la URL en DEV:
       DEV.audioGithubUrl = gh.url || "";
     } catch (e) {
       console.warn("GitHub upload falló:", e);
-      // seguimos igual descargando local
       alert("⚠️ No pude subir a GitHub, pero igual te lo descargo.\n\nDetalle: " + (e?.message || e));
     }
 
-    // 3) descargar local (siempre)
     const fecha = DEV?.p1?.fecha || "sin_fecha";
     const baseName = "Audio_" + safeFilePart(fecha);
     const a = document.createElement("a");
@@ -1970,11 +1970,10 @@ if (!pack?.base64 || !pack?.blob) {
     a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 
-    // 4) mensaje final
     if (gh?.url) {
       alert("✅ Audio subido a GitHub y descargado.\n\nURL:\n" + gh.url);
     }
-    } catch (e) {
+  } catch (e) {
     console.error(e);
     alert("❌ No se pudo descargar/subir el audio.\n\nDetalle: " + (e?.message || e));
   } finally {
@@ -1983,54 +1982,40 @@ if (!pack?.base64 || !pack?.blob) {
 };
 
 // ✅ Devocional a Iglesia (usa un ts fijo si se lo pasás)
-window.devCompartirIglesia = async (tsParam) => {
-  const fb = window.__FB;
-  const api = window.__FB_API;
-  if (!fb || !api || !window.__UID) {
-    alert("No encuentro Firebase listo. Asegurate que biblia.js cargó y que estás logueado.");
-    throw new Error("Firebase no listo");
-  }
-
-  // ✅ NO renderizar dos veces: si ya tenés finalDataUrl, reutilizá
-  const c = await renderFinalCanvasCaptureReal();
-  if (!c) throw new Error("No se pudo renderizar el canvas final");
-
-  const uid = window.__UID;
-  const ts = Number(tsParam) || Date.now();     // ✅ MISMO TS si viene
-  const fileName = `devocional_${ts}.png`;
-
-  const storagePath = `devocionales_iglesia/${uid}/${fileName}`;
-  const dbPath = `devocionalesIglesia/${uid}/${ts}`;
-
-  const blob = await new Promise(res => c.toBlob(res, "image/png"));
-  if (!blob) throw new Error("No se pudo convertir a PNG");
+window.devCompartirFinal = async () => {
+  await devBusyShowNow("⏳ Preparando imagen para compartir…");
 
   try {
-    const { db, storage } = fb;
-    const { ref, set, sRef, uploadBytes, getDownloadURL } = api;
+    const c = await renderFinalCanvasCaptureReal();
+    if (!c) return;
 
-    const storageRef = sRef(storage, storagePath);
-    await uploadBytes(storageRef, blob, { contentType:"image/png" });
-    const url = await getDownloadURL(storageRef);
+    c.toBlob(async (blob) => {
+      try {
+        if (!blob) {
+          await devDescargarImagenSolo(c);
+          return;
+        }
 
-    await set(ref(db, dbPath), {
-      url,
-      storagePath,
-      fecha: ts,
-      texto: DEV.audioText || "",
-      audioOk: !!DEV.audioOk,
-      audioGithubUrl: DEV.audioGithubUrl || ""
-    });
+        const file = new File([blob], "devocional.png", { type: "image/png" });
 
-    return { ok:true, ts, url, storagePath, dbPath };
-
+        if (navigator.share && navigator.canShare?.({ files: [file] })) {
+          await navigator.share({ files: [file], title: "Devocional" });
+        } else {
+          await devDescargarImagenSolo(c);
+          alert("Tu dispositivo/navegador no permite compartir directo. Se descargó la imagen para compartirla manualmente.");
+        }
+      } catch (e) {
+        console.warn("Share cancelado o falló:", e);
+        await devDescargarImagenSolo(c);
+      } finally {
+        devBusyHide();
+      }
+    }, "image/png");
   } catch (e) {
-    console.error(e);
-    alert("❌ No se pudo compartir en Iglesia\n\nDetalle: " + (e?.message || e));
+    devBusyHide();
     throw e;
   }
 };
-
 
 // ✅ Devocional a Mi Panel (usa el MISMO ts)
 async function devSubirMiPanel(tsParam){
@@ -2079,32 +2064,41 @@ DEV.publicando = DEV.publicando || false;
 window.devFinalizar = async () => {
   if (DEV.publicando) return;
   DEV.publicando = true;
-  devBusyShow("⏳ Finalizando devocional…");
 
   const btn = document.getElementById("devBtnFinalizar");
   if (btn) btn.disabled = true;
+
+  await devBusyShowNow("⏳ Finalizando devocional…");
 
   const ok = confirm("¿Finalizar devocional?\n\nSe sube a Iglesia.\nSi está tildado Mi Panel, también se sube ahí.");
   if (!ok) {
     DEV.publicando = false;
     if (btn) btn.disabled = false;
+    devBusyHide();
     return;
   }
 
   try {
-    const ts = Date.now(); // ✅ 1 solo TS para todo
+    const ts = Date.now();
 
-    // ✅ asegurar audio en GitHub antes de publicar
     if (!DEV.audioGithubUrl) {
-      try { await window.devDescargarFinal(); } catch (e) { console.warn(e); }
+      try {
+        await window.devDescargarFinal();
+      } catch (e) {
+        console.warn("Audio previo no disponible:", e);
+      }
     }
 
-    // ✅ siempre a Iglesia
-    await window.devCompartirIglesia(ts);
+    const iglesiaRes = await window.devCompartirIglesia(ts);
+    if (!iglesiaRes?.ok) {
+      throw new Error("No se pudo guardar correctamente en Iglesia.");
+    }
 
-    // ✅ opcional: también a Mi Panel
     if (DEV.subirPanel) {
-      await devSubirMiPanel(ts);
+      const panelRes = await devSubirMiPanel(ts);
+      if (!panelRes?.ok) {
+        throw new Error("No se pudo guardar correctamente en Mi Panel.");
+      }
       alert("✅ Subido a Iglesia y a Mi Panel");
     } else {
       alert("✅ Subido a Iglesia");
@@ -2114,11 +2108,11 @@ window.devFinalizar = async () => {
   } catch (e) {
     console.error(e);
     alert("❌ Error al finalizar/subir.\n\nDetalle: " + (e?.message || e));
-} finally {
-  DEV.publicando = false;
-  if (btn) btn.disabled = false;
-  devBusyHide();
-}
+  } finally {
+    DEV.publicando = false;
+    if (btn) btn.disabled = false;
+    devBusyHide();
+  }
 };
 
 /* =========================================================
@@ -2686,6 +2680,11 @@ function devBusyShow(msg){
   const t = document.getElementById("devBusyText");
   if (t) t.textContent = msg || "Procesando…";
   box.style.display = "flex";
+}
+
+async function devBusyShowNow(msg){
+  devBusyShow(msg);
+  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 }
 
 function devBusyHide(){
