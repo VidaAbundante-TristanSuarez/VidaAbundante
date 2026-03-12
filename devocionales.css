@@ -1,1049 +1,2362 @@
-<style>
+ <style>
+
+/* ✅ Box sizing global: evita cortes y corrimientos */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
 
 /* ================= COLOR UNIFICADO UI 🌈================= */
-:root{
-  --ui-azul-claro:#bcdcff;
-  --ui-azul-hover:#1c6fcb;
+:root {
+  --ui-azul-claro: #bcdcff;
+  --ui-azul-hover: #1c6fcb;
 }
 
-/* ================= BASE UI ================= */
-button{ border-radius:999px; }
+/* ================= ESTILOS GENERALES ================= */
+    /* Estilo base para toda la página */
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      line-height: 1.6;
+      background: #fff;
+      color: #000;
+    }
 
-input[type="number"],
-input[type="color"]{
-  border-radius:12px;
-  border:1px solid #ccc;
-  padding:4px 6px;
-}
-
-input[type="number"]{
-  text-align:center;
-  font-weight:700;
-  width:60px;
-}
-
-/* ================= DEVOCIONALES: PREVIEW / TEXT ================= */
-.modal-dev{
-  max-width: 560px;
-  width: min(560px, 96vw);
-}
-
-.dev-preview{
-  width: min(460px, 94vw);
-  margin: 0 auto;
-  height: auto;                 /* lo define aspect-ratio */
-  border-radius:16px;
-  overflow:hidden;
-  background:#fff;
-  position:relative;
-  border:1px solid #e5e5e5;
-  z-index: 1;
-}
-
-/* ratios */
-.dev-99{ aspect-ratio: 1 / 1; }
-.dev-97{ aspect-ratio: 9 / 7; }
-.dev-916{ aspect-ratio: 9 / 16; }
-
-/* wrapper del texto (caja interna) */
-.dev-textwrap{
-  position:absolute;
-  inset: 6%;
-  border-radius:14px;
-  overflow:hidden;
-  padding:0;
-  text-align:center;
-}
-
-/* capa de texto */
-.dev-text{
-  position:absolute;
-  inset:0;
-  text-align:center;
-  white-space:normal;
-  overflow: visible; /* para que no corte sombras/stroke */
-  font-weight: 500;  /* base */
-  -webkit-text-stroke-width: 0.8px;
-  -webkit-text-stroke-color: transparent;
-  paint-order: stroke fill;
-}
-
-.dev-text.front{ z-index: 2; }
-.dev-text.back{ z-index: 1; }
-
-/* Fase 2: wrapper real (layout interno absoluto) */
-#dev2TextoWrapper{
-  position:absolute;
-  inset: 16px;
-  border-radius:14px;
-  overflow:hidden;
-}
-
-#dev2Texto{
-  width: 100%;
-  height: 100%;
-  display: block;     /* NO flex */
-  position: relative; /* para los absolutos internos */
-  overflow: hidden;
-}
-
-/* ================= GALERÍA FONDOS ================= */
-.dev-fondos{
-  display:flex;
-  gap:10px;
-  overflow-x:auto;
-  overflow-y:hidden;
-  padding: 8px 4px;
-  margin: 10px auto 0;
-  width: min(460px, 94vw);
-  justify-content:flex-start;
-  max-height: 92px;
-}
-
-.dev-fondos img{
-  width:64px;
-  height:64px;
-  border-radius:12px;
-  object-fit:cover;
-  cursor:pointer;
-  border:2px solid transparent;
-}
-
-.dev-fondos img.activo{
-  border-color: var(--ui-azul-hover);
-}
-
-/* ================= ROWS / TOOLS ================= */
-.dev-row{
-  display:flex;
-  gap:10px;
-  align-items:center;
-  justify-content:center;
-  flex-wrap:wrap;
-  margin-top:10px;
-}
-
-.dev-tools{
-  width: min(460px, 94vw);
-  margin: 10px auto 0;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:10px;
-  flex-wrap:wrap;
-}
-
-/* “Pastillita” fondo plano */
-.dev-fondo-chip{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  padding: 10px 12px;
-  border-radius: 16px;
-  background: #f2f2f2;
-  border: 1px solid #ddd;
-}
-
-.dev-fondo-chip input[type="color"]{
-  width: 58px;
-  height: 44px;
-  border-radius: 14px;
-  border: 1px solid #ccc;
-  padding: 0;
-  background: transparent;
-  cursor:pointer;
-}
-
-/* ================= ADORNOS (UNIFICADO) ================= */
-.dev-adorno-row{
-  width: min(460px, 94vw);
-  margin: 8px auto 0;
-}
-
-.dev-adorno-label{ display:none; }
-
-.dev-adorno-list{
-  display:flex;
-  gap:10px;
-  overflow-x:auto;
-  overflow-y:hidden;
-  padding: 6px 2px;
-  margin: 0 auto;
-  width: 100%;
-  justify-content:flex-start;
-  max-height: 92px;
-}
-
-.dev-adorno-btn{
-  flex:0 0 auto;
-  border:1px solid #ddd;
-  border-radius:12px;
-  background:#fff;
-  padding:8px;
-  cursor:pointer;
-}
-
-.dev-adorno-btn.activo{
-  outline:3px solid var(--ui-azul-hover);
-}
-
-.dev-adorno-thumb{
-  width:64px;
-  height:24px;
-  object-fit:contain;
-  display:block;
-}
-
-/* Evitar estiramiento */
-.dev-adorno-img{
-  display:block;
-  width: min(360px, 78%);
-  height:auto;
-  max-height:90px;
-  object-fit:contain;
-  margin:10px auto 0;
-}
-
-/* ================= LISTA FUENTES ================= */
-.dev-lista-fuentes{
-  display:none;
-  position:fixed;
-  z-index:5000;
-  background:#fff;
-  border:1px solid #ddd;
-  border-radius:14px;
-  padding:10px;
-  box-shadow: 0 10px 30px rgba(0,0,0,.12);
-  overflow:auto;
-  white-space:nowrap;
-}
-
-.dev-lista-fuentes.abierto{
-  display:flex;
-  gap:10px;
-}
-
-/* ================= BOTONES (UNIFICADO) ================= */
-.dev-final button,
-.dev-row button,
-.dev-lista-fuentes button{
-  border: 1px solid #d6d6d6;
-  background: var(--ui-azul-claro);
-  color:#000;
-  font-weight:700;
-  cursor:pointer;
-  padding:10px 12px;
-}
-
-.dev-final button:hover,
-.dev-row button:hover,
-.dev-lista-fuentes button:hover{
-  background: var(--ui-azul-hover);
-  color:#fff;
-  border-color: var(--ui-azul-hover);
-}
-
-.dev-final button.btn-primary{
-  background: var(--ui-azul-hover);
-  color:#fff;
-  border-color: var(--ui-azul-hover);
-}
-
-button.activo,
-.dev-lista-fuentes button.activo{
-  background: var(--ui-azul-hover);
-  color:#fff;
-  border-color: var(--ui-azul-hover);
-  box-shadow: 0 2px 10px rgba(0,0,0,.18);
-}
-
-.dev-final button:disabled{
-  opacity:.45;
-  cursor:not-allowed;
-}
-
-/* ================= BOTONES DEV: reglas por clase (solo dentro de modales dev) ================= */
-#modalDevFase0 .btn-ghost,
-#modalDevFase1 .btn-ghost,
-#modalDevFase2 .btn-ghost,
-#modalDevFase3 .btn-ghost,
-#modalDevFase0 .btn-light,
-#modalDevFase1 .btn-light,
-#modalDevFase2 .btn-light,
-#modalDevFase3 .btn-light{
-  background: var(--ui-azul-claro);
-  color:#000;
-  border: 1px solid #d6d6d6;
-  font-weight:700;
-}
-
-#modalDevFase0 .btn-primary,
-#modalDevFase1 .btn-primary,
-#modalDevFase2 .btn-primary,
-#modalDevFase3 .btn-primary{
-  background: var(--ui-azul-hover);
-  color:#fff;
-  border: 1px solid var(--ui-azul-hover);
-  font-weight:800;
-}
-
-/* ================= MODALES (overlay + tarjeta) ================= */
-#modalDevFase0.modal-overlay,
-#modalDevFase1.modal-overlay,
-#modalDevFase2.modal-overlay,
-#modalDevFase3.modal-overlay{
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,.55);
+   /* Modo oscuro: cambia fondo y texto */
+    body.oscuro {
+      background: #121212;
+      color: #e0e0e0;
+    }
+    
+ /* ================= HEADER SUPERIOR ================= */
+ /* Barra superior con botones de navegación */
+  #header {
+  position: static; /* ✅ NO sticky */
+  z-index: auto;
+  background: #ffffff;
+  border-bottom: 1px solid #ddd;
+  padding: 10px;
+  display: flex;
+  justify-content: space-between;
   align-items: center;
-  justify-content: center;
-  padding: 14px;
-}
-
-#modalDevFase0.abierto,
-#modalDevFase1.abierto,
-#modalDevFase2.abierto,
-#modalDevFase3.abierto{
-  display:flex;
-}
-
-#modalDevFase0 .modal-contenido.modal-dev,
-#modalDevFase1 .modal-contenido.modal-dev,
-#modalDevFase2 .modal-contenido.modal-dev,
-#modalDevFase3 .modal-contenido.modal-dev{
-  background:#fff;
-  border-radius:18px;
-  padding:12px;
-  width: min(560px, 96vw);
-  overflow: hidden; /* por defecto no scroll */
-  box-shadow: 0 18px 60px rgba(0,0,0,.30);
-
-  display:flex;
-  flex-direction:column;
-  gap:10px;
-
-  position:relative; /* para la X */
-}
-
-#modalDevFase0 .modal-contenido.modal-dev,
-#modalDevFase3 .modal-contenido.modal-dev{
- height: calc(100dvh - 24px);
- max-height: calc(100dvh - 24px);
-}
-
-/* ================= AJUSTE: FASE 1 auto / FASE 2 con altura ================= */
-#modalDevFase1 .modal-contenido.modal-dev{
-  height: auto;
-  max-height: calc(100dvh - 24px);
-}
-
-/* ================= FASE 2: AUTO ALTURA (como Fase 1) ================= */
-#modalDevFase2 .modal-contenido.modal-dev{
-  height: auto;
-  max-height: calc(100dvh - 24px);
-}
-
-/* ================= CERRAR (X) ================= */
-.cerrar-modal{
-  position:absolute;
-  top:10px;
-  right:10px;
-  z-index: 10;          /* ✅ clave: arriba del preview */
-  width:32px;
-  height:32px;
-  border-radius:999px;
-  font-size:16px;
-  line-height:32px;
-  padding:0;
-  background:#fff;
-  border:1px solid #ddd;
-  cursor:pointer;
-  box-shadow: 0 8px 20px rgba(0,0,0,.18);
-}
-
-/* ================= AUDIO arriba ================= */
-#modalAudio.modal-overlay,
-#modalAudio{
-  z-index: 9999 !important;
-}
-
-#modalDevFase1, #modalDevFase2, #modalDevFase3{
-  z-index: 3000;
-}
-
-/* ================= BODY lock ================= */
-body.modal-open{
-  overflow:hidden;
-  touch-action:none;
-}
-
-/* ================= FASE 0 (ROOT): head fijo + body scroll ================= */
-#modalDevFase0 .modal-contenido.modal-dev{
-  overflow: hidden;
-  display:flex;
-  flex-direction:column;
-  min-height:0;
-}
-
-#modalDevFase0 .dev0-head{
-  flex:0 0 auto;
-  display:flex;
-  flex-direction:column;
-  gap:10px;
-}
-
-#modalDevFase0 .dev0-body{
-  flex:1 1 auto;
-  min-height:0;
-  overflow:auto;      /* ✅ scroll SOLO acá */
-  display:flex;
-  flex-direction:column;
-  gap:10px;
-  padding-top:4px;
-}
-
-#modalDevFase0 .dev0-foot{
-  flex:0 0 auto;
-}
-
-#modalDevFase0 #dev0Texto{
-  width:100%;
-  box-sizing:border-box;
-  min-height:240px;
-  height:38dvh;
-  resize:none;
-  border-radius:14px;
-  border:1px solid #ddd;
-  padding:10px;
-  line-height:1.35;
-  font-size:16px;
-}
-
-#modalDevFase0 .dev0-grid{
-  display:grid;
-  grid-template-columns:1fr;
-  gap:8px;
-}
-
-#modalDevFase0 input,
-#modalDevFase0 textarea{
-  width:100%;
-  box-sizing:border-box;
-  border-radius:12px;
-  border:1px solid #ddd;
-  padding:10px;
-}
-
-#modalDevFase0 input{ font-weight:700; }
-#modalDevFase0 #dev0Versiculo{ min-height:90px; resize:none; }
-#modalDevFase0 #dev0Reflexion{ min-height:110px; resize:none; }
-#modalDevFase0 #dev0Oracion{   min-height:110px; resize:none; }
-
-#modalDevFase0 h3,
-#modalDevFase0 label{
-  color:#0e286f;
-}
-
-/* ✅ FASE 0 más ancho */
-#modalDevFase0 .modal-contenido.modal-dev{
-  width: min(720px, 96vw);
-  max-width: 720px;
-}
-
-/* ================= FASE 2: preview estable (no colapsa) ================= */
-#modalDevFase2 .dev-preview-box{
-  display:flex;
-  justify-content:center;
-  align-items:center;
-}
-
-#modalDevFase2 #dev2Preview{
-  width: min(460px, 94vw);  /* ✅ usa el tamaño normal del preview */
-  height: auto;
-}
-
-/* ================= FASE 3: imagen ocupa el área útil ================= */
-#modalDevFase3 .modal-contenido.modal-dev{
-  padding:10px;
-  gap:8px;
-}
-
-#devF3PreviewBox{
-  flex: 1 1 auto;
-  min-height:0;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
-
-#devFinalImg{
-  width: 100%;        /* ✅ llena el ancho útil */
-  height: auto;       /* ✅ mantiene proporción */
-  max-height: 100%;
-  object-fit: contain;
-  border-radius: 14px;
-  display:block;
-}
-
-/* ================= RESPONSIVE (pantallas bajas) ================= */
-@media (max-height:740px){
-  #modalDevFase0.modal-overlay,
-  #modalDevFase1.modal-overlay,
-  #modalDevFase2.modal-overlay,
-  #modalDevFase3.modal-overlay{
-    padding:10px;
+  }
+    
+ /* Cambios para modo oscuro en header */
+  body.oscuro #header {
+  background: #121212;
+  border-color: #333;
+ }   
+    
+/* Contenedor de botones del menú (flex horizontal)*/
+  #menu {
+  display: flex;
+  gap: 6px;
+  flex-wrap: nowrap;
   }
 
-  #modalDevFase0 .modal-contenido.modal-dev,
-  #modalDevFase1 .modal-contenido.modal-dev,
-  #modalDevFase2 .modal-contenido.modal-dev,
-  #modalDevFase3 .modal-contenido.modal-dev{
-    padding:10px;
-    gap:8px;
-  }
+/* ICONOS SECCIONES */
+/* Estilo para los botones de navegación .nav-btn*/
+ .nav-btn {
+ display: flex;
+ align-items: center;
+ gap: 4px;
+ padding: 8px 14px;
+ border-radius: 999px;
+ border: none;
+ font-weight: bold;
+ cursor: pointer;
+ background: #e9f6ff;
+ }
 
-  .dev-preview{ width: min(420px, 90vw); }
+ /* Estilo para los botones de navegación MODO OSCURO*/
+ body.oscuro .nav-btn {
+ background: #2a2a2a;
+ color: #fff;
+ }
 
-  .dev-tools{
-    gap:8px;
-    margin-top:8px;
-  }
-
-  .dev-fondo-chip{
-    padding:8px 10px;
-    border-radius:14px;
-  }
-
-  .dev-fondo-chip input[type="color"]{
-    width:50px;
-    height:38px;
-    border-radius:12px;
-  }
-
-  .dev-fondos img{ width:58px; height:58px; }
-  .dev-adorno-thumb{ width:58px; height:22px; }
+.nav-btn i {
+  font-size: 16px;
+  color: #4f6fa8;
 }
 
-/* ================= IGLESIA DEVOCIONALES (HOME) ================= */
-
-#devHome{
-  width: min(560px, 96vw);
-  margin: 0 auto;
-  padding: 10px 0 18px;
+/* 🌙 MODO OSCURO */
+body.oscuro .nav-btn i {
+  color: #ffd6a5;
+}
+    
+.nav-btn:hover i {
+  color: #3b5f9c;
 }
 
-#btnDevNuevo{
-  margin-top: 6px;
+body.oscuro .nav-btn:hover i {
+  color: #ffbf69;
 }
 
-/* fila superior: botón + */
-#devTopRow{
+/* ✅ Botón activo del menú (sección actual) */
+.nav-btn.activo{
+  background: var(--ui-azul-hover);
+  color: #fff;
+}
+
+.nav-btn.activo i{
+  color: #fff;
+}
+
+/* oscuro */
+body.oscuro .nav-btn.activo{
+  background: var(--ui-azul-hover);
+  color: #fff;
+}
+body.oscuro .nav-btn.activo i{
+  color: #fff;
+}
+
+  /* ================= SECCIONES GENERALES ================= */
+ .seccion {
+ padding: 12px;
+ }
+
+  /* ================= SECCIÓN BIBLIA ================= */
+  /* Filtros para seleccionar libro y capítulo */
+  .filtros {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+  }
+
+  /* Estilo select de filtros */
+  .filtros select {
+  padding: 10px;
+  font-size: 16px;
+  }
+
+     /* ✅ Título + flechas en la misma línea */
+#barraTituloBiblia{
   position: sticky;
   top: 0;
-  z-index: 5;
+  z-index: 50;
+
   display:flex;
-  justify-content:flex-end;
   align-items:center;
-  padding-top: env(safe-area-inset-top,0);
-  padding-right: 16px;
-  background:#fff;
+  justify-content:space-between;
+  gap:10px;
+
+  background: #eafaff;
+  padding: 6px 15px;   /* 👈 padding interno propio */
+  
+  border-bottom: 1px solid rgba(0,0,0,.08);
+  box-shadow: 0 6px 14px rgba(0,0,0,.06);
+
+  /* 👇 rompe el padding lateral del contenedor */
+  margin-left: -15px;
+  margin-right: -15px;
+  margin-bottom: 12px;
 }
 
-/* índice horizontal */
-#devIndexRow{
+
+#barraTituloBiblia h3{
+  margin: 0;                   /* 👈 elimina espacio extra */
+  padding: 2px 0 0 20px;          /* 👈 pequeño respiro arriba */
+    font-weight: 800;
+  font-size: 17px;             /* 👈 podés bajar si querés */
+  color: #000;
+}
+
+/* ✅ Botones flecha prolijos (celestito + redondos) */
+#barraTituloBiblia .nav-capitulo{
   display:flex;
-  gap:10px;
-  overflow-x:auto;
-  padding: 8px 2px;
+  gap: 8px;
+  align-items:center;
+}
+ 
+body.oscuro #barraTituloBiblia{
+  box-shadow: 0 6px 14px rgba(0,0,0,.35);
+  border-bottom: 1px solid rgba(255,255,255,.12);
+ }
+
+/* ✅ Título con Lora */
+#titulo{
+  font-family: "Lora", serif;
+  font-weight: 700;
+  letter-spacing: .2px;
+}
+
+#btnCapAnt, #btnCapSig{
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  background: var(--ui-azul-claro);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+#btnCapAnt i, #btnCapSig i{
+  font-size: 12px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  #btnCapAnt:hover, #btnCapSig:hover{
+    background: var(--ui-azul-hover);
+    color:#fff;
+  }
+}
+
+  /* ================= BOTONES FILTROS (marcadores) ================= */
+ .filtros button {
+  border: none;
+  border-radius: 999px;
+  padding: 10px 12px;
+  cursor: pointer;
+  background: var(--ui-azul-claro);
+  font-weight: 700;
+  }
+
+ .filtros button:hover {
+  background: var(--ui-azul-hover);
+  color: #fff;
+  }
+
+/* ✅ Botón activo cuando está en modo marcador */
+#btnModoMarcadorBarra.activo{
+  background: var(--ui-azul-hover);
+  color:#fff;
+}
+
+ /* Título del libro + capítulo */
+  #titulo {
+  margin: 12px 0;
+  font-weight: bold;
+  }
+
+/* ================= VERSÍCULOS (num | texto | pluma) ================= */
+
+.versiculo{
+  padding: 7px 10px;
+  border-radius: 8px;
+  margin-bottom: 2px;
+  cursor: pointer;
+  transition: background .2s;
+
+  display: grid;
+  grid-template-columns: 24px 1fr 24px; /* num | texto | pluma */
+  column-gap: 8px;
+
+  align-items: center; /* ✅ centra verticalmente num y pluma al “alto total” del versículo */
+}
+
+/* Número (col 1) */
+.versiculo .num{
+  grid-column: 1;
+  justify-self: center;   /* ✅ centrado horizontal en su columna */
+  align-self: center;     /* ✅ centrado vertical */
+  width: 24px;
+
+  font-weight: 800;
+  font-size: 0.68em;
+  opacity: .8;
+  line-height: 1;         /* ✅ no estira la celda */
   margin: 0;
 }
 
-/* tarjeta índice SOLO DEVOCIONALES */
-#devHome .devIndexCard{
+/* Texto (col 2) */
+.versiculo .txt{
+  grid-column: 2;
+  min-width: 0;
+  display: block;
+
+  line-height: 1.25;      /* ✅ tu interlineado real */
+}
+
+/* Pluma (col 3) */
+.versiculo .icono-nota{
+  grid-column: 3;
+  justify-self: center;   /* ✅ centrado horizontal en su columna */
+  align-self: center;     /* ✅ centrado vertical */
+  width: 24px;
+
+  font-size: 13px;
+  line-height: 1;
+  opacity: .35;
+  color: var(--ui-azul-hover, #1c6fcb);
+
+  cursor: pointer;
+  pointer-events: auto;
+  margin: 0;
+}
+
+.versiculo .icono-nota:hover{ opacity: .85; }
+body.oscuro .versiculo .icono-nota{ opacity: .45; }
+
+/* ✅ Asegura que cualquier otro hijo quede en la columna del texto
+   (por si metés spans extra dentro del versículo) */
+.versiculo > :not(.num):not(.icono-nota){
+  grid-column: 2;
+}
+
+/* ================= ABC: pluma absoluta (NO afecta interlineado) ================= */
+.abc-block{
+  position: relative;
+  padding-right: 28px;
+}
+
+.abc-block .icono-nota{
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  font-size: 13px;
+  line-height: 1;
+  opacity: .35;
+  color: var(--ui-azul-hover, #1c6fcb);
+  cursor: pointer;
+  pointer-events: auto;
+  transition: opacity .2s;
+}
+
+/* ✅ SOLO el contenido de texto va a columna 2 (NO la pluma) */
+.versiculo > :not(.num):not(.icono-nota){
+  grid-column: 2;
+}
+
+body.oscuro .versiculo { color:#fff; }
+
+/* Versículo seleccionado para imagen */
+.versiculo.imagen {
+  background: #94cef4 !important;
+  color: #000 !important;
+  border: 2px solid #e1f3ff !important;
+}
+
+ /* ================= MI PANEL TABS REDONDOS + PRO .panel-tabs button================= */
+.panel-tabs button{
+  border:none;
+  border-radius: 999px;
+  padding: 8px 12px;
+  cursor:pointer;
+  font-weight: 800;
+  background: var(--ui-azul-claro);
+  color:#000;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
+.panel-tabs button:hover{
+  background: var(--ui-azul-hover);
+  color:#fff;
+}
+
+body.oscuro .panel-tabs button{
+  background: #2a2a2a;
+  color:#fff;
+}
+
+body.oscuro .panel-tabs button:hover{
+  background: #ffbf69;
+  color:#000;
+}
+
+/* ✅ Tabs internos activos */
+.panel-tabs button.activo{
+  background: var(--ui-azul-hover);
+  color:#fff;
+}
+
+body.oscuro .panel-tabs button.activo{
+  background: #ffbf69;
+  color:#000;
+}
+
+/* ================= SUBSECCIONES (panel-tabs): PROLIJO + BARRA ================= */
+.panel-tabs{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+
+  margin: 4px 0 6px;        /* 👈 menos aire */
+  background: #eafaff;       /* 👈 barra */
+  padding: 8px 10px;
+  border-radius: 14px;
+  border: 1px solid rgba(0,0,0,.08);
+  box-shadow: 0 6px 14px rgba(0,0,0,.06);
+}
+
+body.oscuro .panel-tabs{
+  background: #1e1e1e;
+  border-color: rgba(255,255,255,.12);
+  box-shadow: 0 6px 14px rgba(0,0,0,.35);
+}
+
+  .panel-seccion {
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 10px;
+  background: #e9f6ff;
+  }
+
+  body.oscuro .panel-seccion {
+  background: #1e1e1e;
+  }
+
+   textarea {
+   width: 100%;
+   height: 80px;
+   border-radius: 10px;
+   padding: 10px;
+   }
+
+   .grid-imagenes {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+    margin-top: 10px;
+    }
+
+   .card-imagen {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    background: #fff;
+    }
+
+    body.oscuro .card-imagen {
+    background: #1e1e1e;
+    }
+
+    .card-imagen img {
+    width: 100%;
+    display: block;
+    }
+
+    .card-imagen .nombre {
+    padding: 6px;
+    font-size: 13px;
+    text-align: center;
+    font-weight: bold;
+    }
+
+/* ================= BARRA DE ACCIONES ================= */
+   .barra-acciones {
+   position: sticky;
+   bottom: 0;
+   z-index: 20;
+
+   display: flex;
+   align-items: center;
+   gap: 6px;
+   flex-wrap: wrap;
+
+   padding: 8px;
+   background: #eafaff;
+   border-top: 1px solid #ddd;
+   }
+
+   body.oscuro .barra-acciones {
+   background: #1e1e1e;
+   border-color: #333;
+   }
+
+  .barra-acciones button {
+  border-radius: 999px;
+  padding: 6px 10px;
+  border: none;
+  cursor: pointer;
+  }
+
+/* ================= MODO IMAGEN ================= */
+    /* Cuando está activo el modo imagen */
+#btnCrearImagen{
+  display:none;
+  border-radius: 999px;
+  padding: 6px 10px;
+  height: auto;
+  font-weight: 700;
+  font-size: 14px;
+  border: none;
+  cursor: pointer;
+  background: var(--ui-azul-hover);
+  color:#fff;
+}
+#btnCrearImagen:active{ transform: scale(0.98); }
+body.modo-imagen #btnCrearImagen{ display:inline-block; }
+
+body.modo-imagen #accionesBiblia .accion-normal {
+ display: none;
+ }
+
+ body.modo-imagen #btnImagen {
+ display: inline-block;
+ background: #99d6ff;
+ color: #fff;
+ }
+
+ body.modo-imagen #btnCrearImagen {
+ display: inline-block;
+ }
+
+ body.modo-imagen #header {
+ box-shadow: 0 4px 12px rgba(79,111,168,0.4);
+ }
+
+    
+ #seccion-biblia {
+ padding-bottom: 0px;
+ }
+
+#seccion-biblia{
+  padding-top: 10px;  /* ✅ “reserva” el lugar del header */
+}
+
+/* ✅ Espacio solo cuando la barra de acciones está visible */
+body:not(.barra-oculta) #seccion-biblia {
+  padding-bottom: 5px; /* altura real de la barra es 64 */
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+ /* ================= PREVIEW IMAGEN ================= */
+ #previewImagen {
+ position: relative;
+ width: 100%;
+ max-width: 420px;
+ margin: 0 auto;
+
+ aspect-ratio: 1 / 1;   /* 🔲 default */
+ border-radius: 18px;
+ overflow: hidden;
+
+  background-size: cover;
+  background-position: center;
+}
+
+.toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 5px;
+  font-size: 16px;
+  z-index: 999;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.toast[style="display: block;"] {
+  opacity: 1;
+}
+
+/* 📐 FORMATOS (FIX REAL) */
+#previewImagen.preview-post {
+  aspect-ratio: 1 / 1;
+  max-height: 60vh;
+}
+
+#previewImagen.preview-story {
+  aspect-ratio: 9 / 16;
+  max-height: 70vh;
+}
+   
+/* ================= TEXTO DOBLE (PREVIEW) ================= */
+
+/* Caja donde vive el texto (overlay dentro de la imagen) */
+#previewTextoWrapper{
+  position: absolute;
+  inset: 40px 24px;
+  overflow: hidden;
+  border-radius: 24px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+
+  contain: layout paint;
+}
+
+/* Ambas capas exactamente superpuestas */
+#previewTexto,
+#previewTextoBack{
+  position: absolute;
+  inset: 0;
+  padding: 20px;
+
+  white-space: pre-wrap;
+  max-width: 100%;
+  text-align: center;
+
+  line-height: 1.25;
+  font-size: 22px;
+  margin: 0;
+  pointer-events: none;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Back = capa de “borde” */
+#previewTextoBack{
+  z-index: 1;
+  opacity: 1;
+
+  /* ✅ IMPORTANTISIMO: desactivar cualquier stroke/transform viejo */
+  -webkit-text-stroke: 0 transparent;
+  transform: none;
+  filter: none;
+}
+
+/* Front = texto final */
+#previewTexto{
+  z-index: 2;
+}
+
+@media (max-width: 480px) {
+  #previewImagen {
+    margin-bottom: 24px;
+  }
+}
+
+.style-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+/* ================= RESALTADOR COMPACTO (ARRIBA / COSTADO) ================= */
+#btnResaltadorActivo {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  position: relative;
+  overflow: hidden;
+}
+
+#resaltadorCompacto {
+  position: relative;
+  z-index: 9999;
+}
+
+/* 🔼 Se abre HACIA ARRIBA por defecto */
+#paletaResaltadores {
+  position: absolute;
+  bottom: 110%;
+  left: 0;
+
+  display: none;              /* ✅ oculto por defecto */
+  background: #fff;
+  border-radius: 12px;
+  padding: 8px;
+  box-shadow: 0 6px 20px rgba(0,0,0,.25);
+
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  min-width: 160px;
+}
+
+/* 👉 Si no entra arriba, se corre al costado */
+#resaltadorCompacto.mover-derecha #paletaResaltadores {
+  bottom: 0;
+  left: 110%;
+}
+
+/* botones */
+#paletaResaltadores button {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+}
+
+  /* 🔥 FIX DEFINITIVO: evitar fondos fantasmas en imagen final */
+#previewImagen.render-final #previewTextoWrapper {
+  background: transparent !important;
+}
+
+/* 🔥 Cuando se genera la imagen, ocultar texto HTML real */
+#previewImagen.render-final #previewTexto,
+#previewImagen.render-final #previewTextoBack {
+  display: none !important;
+}
+
+#bannerModoImagen {
+display: none;
+text-align: center;
+font-size: 13px;
+padding: 6px;
+background: #d1eeff;
+color: #000;
+}
+
+body.oscuro #bannerModoImagen {
+background: #1f3a4d;
+color: #ffffff;
+}
+
+body.modo-imagen #texto {
+background: rgba(0,0,0,0.04);
+}
+
+body.oscuro.modo-imagen #texto {
+background: rgba(255,255,255,0.04);
+}
+
+/* 🖼️ Ocultar resaltador en modo imagen */
+body.modo-imagen #resaltadorCompacto {
+display: none;
+}
+
+/* ================= MODAL BASE ================= */
+#modalPersonalizar {
+display: none;
+position: fixed;
+top: 0; left: 0;
+width: 100%; height: 100%;
+background: rgba(0,0,0,0.7);
+z-index: 1000;
+justify-content: center;
+align-items: center;
+overflow-y: auto;
+color: #000; /* 🔥 Modal SIEMPRE legible (no gris) */
+}
+
+/* CONTENEDOR INTERNO DEL MODAL */
+#modalPersonalizar .modal-contenido {
+  position: relative;
+  background: #fff;
+  width: 100%;
+  max-width: 420px;
+  margin: auto;
+
+  max-height: 92vh;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  overflow-y: hidden;
+  padding-bottom: 16px;
+}
+
+@media (max-width: 600px) {
+  #modalPersonalizar {
+    padding: 0;               /* 👈 clave, sin margen fantasma */
+    align-items: stretch;     /* ocupa todo alto */
+  }
+
+  #modalPersonalizar .modal-contenido {
+    width: 100vw;             /* 👈 ocupa pantalla */
+    max-width: 100vw;
+    margin: 0;
+    border-radius: 0;
+    max-height: 100vh;
+  }
+}
+
+/* INPUTS DE PERSONALIZACION */
+#modalPersonalizar label {
+  display: flex;
+  flex-direction: column;
+  font-size: 14px;
+  color: #000;
+}
+
+#modalPersonalizar label input,
+#modalPersonalizar label select {
+  margin-top: 5px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+}
+
+#personalizarFondos img {
+  height: 60px;
+  width: 100px;
+  object-fit: cover;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all 0.2s ease;
+}
+
+#personalizarFondos img:hover,
+#personalizarFondos img.selected {
+  border-color: #007bff;
+  transform: scale(1.05);
+}
+
+
+#personalizarFondos::-webkit-scrollbar-track {
+  background: rgba(0,0,0,0.1);
+}
+
+/* ================= FUENTES (1 FILA + SCROLL HORIZONTAL + ANCHO TOTAL) 🎀 ================= */
+#btnFuentes{
+ min-width: 86px;        /* 👈 antes 110px */
+  height: 34px;
+  padding: 0 8px;         /* 👈 antes 0 10px */
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  background: var(--ui-azul-claro);
+  color: #000;
+  font-weight: 800;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  font-size: 12px;        /* 👈 un pelín más chico */
+  line-height: 1;
+}
+
+#btnFuentes.activo{
+  background: var(--ui-azul-hover);
+  color: #fff;
+}
+
+/* La lista ocupa TODO el ancho del modal y queda justo debajo de la fila */
+/* ================= LISTA FUENTES: ANCHO MODAL REAL ================= */
+#listaFuentes{
+  position: fixed;              /* 👈 clave */
+  display: none;
+  padding: 10px;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.25);
+  z-index: 99999;
+
+  /* ✅ una sola línea con scroll horizontal */
+  flex-wrap: nowrap;
+  gap: 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+#listaFuentes.abierto{
+  display: flex;
+}
+
+/* Botones: tamaño “contenido”, NO se cortan */
+#listaFuentes button{
+  width: max-content;
+  flex: 0 0 auto;
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  background: #e9f6ff;
+  white-space: nowrap;
+  font-size: 13px;
+  line-height: 1;
+}
+
+#listaFuentes button.activo{
+  background: var(--ui-azul-hover);
+  color: #fff;
+}
+
+/* ================= SCROLL LISTA FUENTES EN PC ================= */
+/* ✅ Ocultar scrollbar SOLO en mobile (igual hay scroll) */
+@media (max-width: 640px) {
+  #listaFuentes::-webkit-scrollbar { height: 0px; }
+  #listaFuentes { scrollbar-width: none; }
+}
+
+@media (min-width: 641px) {
+  #listaFuentes {
+    scrollbar-width: thin;              /* Firefox */
+  }
+  #listaFuentes::-webkit-scrollbar {
+    height: 10px;                       /* Chrome/Edge */
+  }
+  #listaFuentes::-webkit-scrollbar-thumb {
+    background: rgba(0,0,0,0.25);
+    border-radius: 999px;
+  }
+}
+
+.fila-opciones {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.fila-opciones label {
+  font-size: 12px;
+}
+
+.fila-texto.fila-texto{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+#modalPersonalizar .cerrar-modal{
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 99999;
+  background: rgba(255,255,255,0.85);
+  border-radius: 50%;
+  width: 34px;
+  height: 34px;
+}
+
+body.oscuro #modalPersonalizar .cerrar-modal{
+  background: rgba(0,0,0,0.55);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.25);
+}
+
+.opcion-color label {
+  font-size: 12px;
+}
+
+/* Chrome/Edge/Safari */
+.tamano-input::-webkit-inner-spin-button,
+.tamano-input::-webkit-outer-spin-button{
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* ================= ALINEAR CONTROLES CON PREVIEW ================= */
+
+.fila-opciones,
+.fila-texto {
+  max-width: 420px;       /* mismo max-width que preview */
+  margin-left: auto;
+  margin-right: auto;
+  justify-content: center;
+}
+    
+/* Iconos centrados en botones redondos */
+.fila-final button i,
+.subir-iglesia-btn i {
+  font-size: 16px;
+  line-height: 1;
+  margin: 0;
+}
+
+.fila-final button,
+.subir-iglesia-btn {
+  width: 40px;
+  height: 40px;
+
+  border-radius: 999px;   /* 🔥 vuelven los redonditos */
+  border: none;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  background: var(--ui-azul-claro);
+  color: #000;
+
+  box-shadow: 0 4px 10px rgba(0,0,0,.15);
+  cursor: pointer;
+}
+
+body.oscuro .fila-final button,
+body.oscuro .subir-iglesia-btn {
+  background: #d1eeff;   /* 👈 claro */
+  color: #000;
+}
+
+/* hover solo para botones reales (en mobile no aplica) */
+.fila-final button:hover{
+  background: var(--ui-azul-hover);
+  color: #fff;
+}
+
+body.oscuro .fila-final button:hover{
+  background: #ffbf69;
+  color: #000;
+}
+
+.fila-opciones button {
+  background: var(--ui-azul-claro);
+  color: #000;
+}
+
+.fila-opciones button.activo {
+  background: var(--ui-azul-hover);
+  color: #fff;
+}
+
+/* ✅ Checkbox real (NO display:none) para que Android repinte bien */
+.subir-iglesia-btn{
+  position: relative;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.subir-iglesia-btn input{
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;                 /* invisible pero clickeable */
+  margin: 0;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.subir-iglesia-btn i {
+  pointer-events: none;
+}
+
+/* ✅ Estado visual correcto (CSS puro, sin JS) */
+.subir-iglesia-btn{
+  background: var(--ui-azul-claro);
+  color: #000;
+  transition: background .15s ease, color .15s ease, transform .05s ease;
+}
+
+.subir-iglesia-btn:active{
+  transform: scale(0.98);
+}
+
+/* ✅ cuando está CHECKED: el botón se ve “marcado” */
+.subir-iglesia-btn input:checked + i{
+  color:#fff;
+}
+
+.subir-iglesia-btn input:checked ~ i::after{
+  content:"✓";
+  position:absolute;
+  bottom:-4px;
+  right:-4px;
+  background:#4f6fa8;
+  color:#fff;
+  font-size:10px;
+  border-radius:50%;
+  width:14px;
+  height:14px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+/* ✅ fondo activo según checked */
+.subir-iglesia-btn input:checked{
+  /* no pinta nada, pero obliga repintado */
+}
+
+.subir-iglesia-btn input:checked + i{
+  /* icon ya blanco por arriba */
+}
+
+.subir-iglesia-btn input:checked ~ i{
+  /* nada */
+}
+
+.subir-iglesia-btn:has(input:checked){
+  background: var(--ui-azul-hover);
+  color:#fff;
+}
+
+body.oscuro .subir-iglesia-btn{
+  background:#d1eeff;
+  color:#000;
+}
+
+body.oscuro .subir-iglesia-btn:has(input:checked){
+  background: var(--ui-azul-hover);
+  color:#fff;
+}
+
+#modalPersonalizar .style-row{ margin:0; }
+
+#modalPersonalizar .style-row button.activo,
+#modalPersonalizar .fila-opciones button.activo,
+#modalPersonalizar button.activo {
+  background: var(--ui-azul-hover);
+  color: #fff;
+}
+
+/* ================= BOTÓN MODO OSCURO (REDONDO + ANIMADO) /* 🌙 Modo oscuro ================= */
+#header button[onclick="toggleTema()"] {
+  width: 28px;
+  height: 28px;
+
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  background: var(--ui-azul-claro);
+  color: #000;
+
+  font-size: 14px;
+  cursor: pointer;
+
+  transition:
+    background 0.25s ease,
+    color 0.25s ease,
+    transform 0.35s ease;
+}
+
+/* Hover */
+#header button[onclick="toggleTema()"]:hover {
+  background: var(--ui-azul-hover);
+  color: #fff;
+  transform: scale(1.05);
+}
+
+/* 🌙 Modo oscuro */
+body.oscuro #header button[onclick="toggleTema()"] {
+  background: #d1eeff;
+  color: #000;
+}
+
+/* ✨ Animación al cambiar de modo */
+#header button[onclick="toggleTema()"].animar {
+  transform: rotate(360deg);
+}
+
+/* ================= BOTÓN CREAR IMAGEN ================= */
+/* ✅ Botón Crear Imagen: mismo tamaño que los demás */
+
+body.modo-imagen #btnCrearImagen{
+  display: inline-block;
+}
+
+#bannerModoMarcador {
+  display: none;
+  text-align: center;
+  font-size: 13px;
+  padding: 8px;
+  background: #d1eeff;
+  color: #000;
+}
+
+body.oscuro #bannerModoMarcador {
+  background: #1f3a4d;
+  color: #ffffff;
+}
+
+/* ✅ En modo marcador, ocultar botón de lista (📁) */
+body.modo-marcador #btnListaMarcadores {
+  display: none !important;
+}
+
+/* ================= MODAL MARCADORES: COLOR PRO ================= */
+
+.fila-color-marcador{
+  display:flex;
+  gap:12px;
+  align-items:center;
+  margin-top:8px;
+}
+
+.color-marcador{
+  display:flex;
+  gap:10px;
+  align-items:center;   /* ✅ centra verticalmente "Color" */
+  font-size:13px;
+}
+
+.color-marcador span{
+  line-height: 1;
+}
+
+#marcadorColor{
+  width:44px;
+  height:34px;
+  border:none;
+  padding:0;
+  background:transparent;
+  cursor:pointer;
+  border-radius:999px; /* ✅ forma redondeada del input */
+}
+
+/* ✅ redondear el swatch real (Chrome/Edge/Safari) */
+#marcadorColor::-webkit-color-swatch-wrapper{
+  padding:0;
+}
+#marcadorColor::-webkit-color-swatch{
+  border:none;
+  border-radius:999px;
+}
+
+/* checkbox alineado */
+.keep-marcador{
+  font-size:13px;
+  display:flex;
+  gap:8px;
+  align-items:center;
+}
+
+#btnGuardarMarcador{
+  display:none;
+  border:none;
+  border-radius:999px;
+  padding:10px 12px;
+  cursor:pointer;
+  background: var(--ui-azul-hover);
+  color:#fff;
+  font-weight:800;
+}
+#btnGuardarMarcador:disabled{
+  opacity:.4;
+  cursor:not-allowed;
+}
+
+/* =============== MODALES (BASE REUTILIZABLE) =============== */
+.modal-overlay{
+  display:none;                 /* cerrado por defecto */
+  position:fixed;
+  inset:0;
+  background: rgba(0,0,0,.6);
+  z-index: 2000;
+  align-items:center;
+  justify-content:center;
+  padding: 18px;
+}
+
+.modal-overlay.abierto{
+  display:flex;
+}
+
+.modal-card{
+  width: 100%;
+  max-width: 420px;
+  background:#fff;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.35);
+  padding: 16px;
+  color:#000;
+}
+
+.modal-card-sm{ max-width: 360px; }
+
+body.oscuro .modal-card{
+  background:#161616;
+  color:#fff;
+  box-shadow: 0 10px 30px rgba(0,0,0,.6);
+  border: 1px solid rgba(255,255,255,.08);
+}
+
+.modal-title{
+  margin: 0 0 6px;
+  font-size: 18px;
+}
+
+.modal-sub{
+  margin: 0 0 14px;
+  opacity: .85;
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+.modal-actions{
+  display:flex;
+  gap:10px;
+  justify-content:center;
+  flex-wrap: wrap;
+}
+
+/* =============== BOTONES (REUTILIZABLES) =============== */
+.btn-primary,
+.btn-ghost{
+  border: none;
+  border-radius: 999px;
+  padding: 10px 14px;
+  font-weight: 800;
+  cursor: pointer;
+  line-height: 1;
+}
+
+/* variantes */
+.btn-primary{
+  background: var(--ui-azul-hover);
+  color: #fff;
+}
+
+.btn-ghost{
+  background: rgba(0,0,0,.08);
+  color: #000;
+  font-weight: 700;
+}
+
+body.oscuro .btn-ghost{
+  background: rgba(255,255,255,.12);
+  color: #fff;
+}
+
+.hidden{ display:none !important; }
+.mt-15{ margin-top:15px; }
+
+/* ====== SOLO DEVOCIONALES: versión compacta (override limpio) ====== */
+#iglesia-devocionales .btn-primary,
+#iglesia-devocionales .btn-ghost{
+  padding: 8px 10px;
+  font-size: 13px;
+  border-radius: 10px; /* más “UI” */
+  height: 34px;
+}
+
+#iglesia-devocionales .btn-primary i,
+#iglesia-devocionales .btn-ghost i{
+  font-size: 14px;
+}
+
+/* ================= TARJETAS MARCADORES (para que en oscuro se lean) ================= */
+.card-marcador{
+  background:#e9f6ff;
+  color:#000;                 /* ✅ fuerza texto negro (importantísimo) */
+  border-radius:14px;
+  padding:10px;
+  margin-bottom:8px;
+}
+
+body.oscuro .card-marcador{
+  background:#d1eeff;         /* un poquito más brillante en oscuro */
+  color:#000;                 /* ✅ negro siempre */
+}
+
+.card-marcador .muted{
+  opacity:.8;
+  font-size: 13px;
+}
+
+.card-marcador .nota{
+  margin-top:8px;
+  font-size:13px;
+  opacity:.95;
+}
+
+/* ✅ select libro/capítulo más lindos */
+.filtros select{
+  border-radius: 999px;
+  border: 1px solid rgba(0,0,0,.15);
+  background: #fff;
+}
+
+body.oscuro .filtros select{
+  background:#1e1e1e;
+  color:#fff;
+  border-color: rgba(255,255,255,.18);
+}
+
+/* (opcional) que el botón se vea “activo” */
+body.barra-oculta #accionesBiblia{
+  display:none !important;
+}
+
+#btnMostrarBarra{
+  background: var(--ui-azul-claro);
+}
+
+body.oscuro #btnMostrarBarra{
+  background: #d1eeff;
+  color:#000;
+}
+
+#btnMostrarBarra{
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  padding: 0 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ui-azul-claro);
+  opacity: .75;
+}
+
+#btnMostrarBarra i{
+  font-size: 14px;
+}
+
+body.oscuro #btnMostrarBarra{
+  background: #d1eeff;
+  color:#000;
+}
+
+/* ✅ Banner automático por modo (no depende de JS) */
+body.modo-imagen #bannerModoImagen { display: block; }
+body.modo-marcador #bannerModoMarcador { display: block; }
+
+/* ✅ Versículos dentro del modal marcadores: Lora italic bold */
+.preview-versiculos-marcador{
+  font-family: "Lora", serif;
+  font-style: italic;
+  font-weight: 700;
+  line-height: 1.25;
+  font-size: 14px;
+  margin-top: 10px;
+}
+
+/* ✅ Si está abierto modal marcadores, que nada (lista fuentes) quede arriba */
+#modalMarcadores{
+  z-index: 3000;
+}
+
+
+/* ✅ Mi Panel > Marcadores: barra en 1 sola línea */
+.panel-marcadores-bar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:10px;
+  flex-wrap:nowrap;          /* ✅ NO baja de línea */
+}
+
+.pm-left{
+  min-width: 0;
+}
+
+.pm-right{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:nowrap;          /* ✅ NO baja de línea */
+}
+
+.pm-select{
+  padding:6px 10px;
+  border-radius:999px;
+  max-width: 120px;          /* ✅ más angosto */
+}
+
+.pm-btn{
+  border:none;
+  border-radius:999px;
+  padding:8px 10px;
+  cursor:pointer;
+  background: var(--ui-azul-claro);
+}
+.pm-btn:hover{
+  background: var(--ui-azul-hover);
+  color:#fff;
+}
+
+/* ================= DEVOCIONALES: SCROLL LOCAL (SOLO CELU) ================= */
+@media (max-width: 600px){
+  /* el contenedor de devocionales ocupa pantalla real */
+  #iglesia-devocionales{
+    height: calc(100vh - 60px); /* ajusta si tu header es más alto */
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 140px; /* tu margen para que no tape barras */
+  }
+}
+
+/* ================= MODAL AUDIO ================= */
+#audioEstado.audio-estado{
+  font-size: 12px;
+  opacity: .8;
+  margin-top: 6px;
+  text-align: center;
+}
+
+body.oscuro #modalAudio .modal-card{
+  background:#161616;
+  color:#fff;
+  border: 1px solid rgba(255,255,255,.08);
+}
+body.oscuro #modalAudio textarea{
+  background:#1e1e1e;
+  color:#fff;
+  border: 1px solid rgba(255,255,255,.18);
+}
+
+/* ✅ Player prolijo */
+#modalAudio .audio-player{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+
+#modalAudio textarea{
+  resize: vertical;
+  min-height: 160px;
+}
+
+/* =========================================================
+   ✅ MODAL A (Biblia)
+   ========================================================= */
+#modalBibliaImagen.modal-overlay { display:none; }
+#modalBibliaImagen.modal-overlay.abierto { display:flex; }
+
+#previewImagenBiblia{
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+  aspect-ratio: 1 / 1;
+  border-radius: 18px;
+  overflow: hidden;
+  background-size: cover;
+  background-position: center;
+}
+
+#previewTextoWrapperBiblia{
+  position:absolute;
+  inset: 40px 24px;
+  overflow:hidden;
+  border-radius: 24px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+}
+
+#previewTextoBiblia,
+#previewTextoBackBiblia{
+  position:absolute;
+  inset:0;
+  padding:20px;
+  white-space: pre-wrap;
+  text-align:center;
+  line-height:1.25;
+  pointer-events:none;
+}
+
+.galeria-fondos{
+  display:flex;
+  gap:10px;
+  overflow-x:auto;
+  padding-bottom:5px;
+}
+
+/* =========================================================
+   ✅ MODAL B (Devocionales)
+   ========================================================= */
+#previewDevocional{
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+  border-radius: 18px;
+  overflow: hidden;
+  background:#eee;
+  min-height: 240px; /* luego en JS lo ajustás a 210x210 / 210x87 / A4 */
+}
+
+/* listas de fuentes reutilizables */
+.lista-fuentes{
+  position: fixed;
+  display:none;
+  padding:10px;
+  background:#fff;
+  border-radius:14px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.25);
+  z-index: 99999;
+  flex-wrap:nowrap;
+  gap:8px;
+  overflow-x:auto;
+  overflow-y:hidden;
+}
+
+.lista-fuentes.abierto{ display:flex; }
+
+/* mini botones */
+.btn-mini{
+  border:none;
+  border-radius:10px;
+  padding:6px 10px;
+  cursor:pointer;
+  background: var(--ui-azul-claro);
+}
+
+/* ✅ FIX: labels de check en fila final sin romper estilos viejos */
+.fila-final .subir-iglesia-btn,
+#chkPanelDevLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* si querés que no salten feo */
+#chkPanelDevLabel { white-space: nowrap; }
+
+/* ================= MODAL CREAR IMAGEN (BIBLIA) ================= */
+
+#modalPersonalizar .modal-contenido{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+/* Fondos: galería horizontal con scroll */
+#personalizarFondos{
+  display:flex;
+  gap:10px;
+  overflow-x:auto;
+  padding:8px 6px;
+  scrollbar-width:thin;
+}
+#personalizarFondos::-webkit-scrollbar{ height:8px; }
+#personalizarFondos::-webkit-scrollbar-thumb{ border-radius:999px; }
+
+/* Row A: Formato + Opacidad + Color fuente (TODO EN UNA FILA) */
+#rowA{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  flex-wrap:wrap;  /* rowA puede envolver (está bien) */
+}
+
+#rowB{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;         /* 👈 antes 10 */
+  flex-wrap:nowrap;/* ✅ CLAVE: NO se parte en 2 filas */
+}
+
+/* Ajustes de controles */
+#boxFormato{ display:flex; gap:8px; }
+#boxControlesTexto{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
+.opacidad-slider{ width:120px; }
+
+/* Fila final: botones iguales y centrados */
+#rowFinal{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+#rowFinal button,
+#rowFinal .subir-iglesia-btn{
+  height:38px;
+  min-width:38px;
+  border-radius:999px;
+}
+
+/* === BOTONES UNIFICADOS MODAL BIBLIA === */
+
+/* ================= BOTONES MODAL BIBLIA LIMPIOS ================= */
+
+#modalPersonalizar button:not(.cerrar-modal){
+  height: 38px;
+  min-width: 38px;
+  padding: 0 12px;
+  border-radius: 10px;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  background: var(--ui-azul-claro);
+  border:none;
+  font-weight:700;
+  cursor:pointer;
+}
+
+/* Estado activo */
+#modalPersonalizar button.activo{
+  background: var(--ui-azul-hover);
+  color:#fff;
+}
+
+#modalPersonalizar .style-row button,
+#modalPersonalizar .fila-opciones button{
+  background: var(--ui-azul-claro);
+  border:none;
+  cursor:pointer;
+}
+
+#modalPersonalizar .style-row button.activo{
+  background: var(--ui-azul-hover);
+  color:#fff;
+}
+
+/* =========================================================
+   ✅ MODAL DEVOCIONALES (3 PASOS) — SOLO ESTRUCTURA
+   ========================================================= */
+
+/* Mostrar/ocultar pasos según data-step */
+#modalDevocionales .dev-step{ display:none; }
+#modalDevocionales[data-step="1"] .step-1{ display:block; }
+#modalDevocionales[data-step="2"] .step-2{ display:block; }
+#modalDevocionales[data-step="3"] .step-3{ display:block; }
+
+/* Preview base */
+.dev-preview{
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+  border-radius: 18px;
+  overflow: hidden;
+  background: #eee;
+  border: 1px solid rgba(0,0,0,.08);
+}
+
+body.oscuro .dev-preview{
+  background:#1e1e1e;
+  border-color: rgba(255,255,255,.12);
+}
+
+/* ✅ Tamaños EXACTOS por proporción (mm → ratio) */
+.dev-preview-1{ aspect-ratio: 1 / 1; }          /* 210x210 */
+.dev-preview-2{ aspect-ratio: 210 / 87; }       /* 210x87  */
+.dev-preview-3{ aspect-ratio: 210 / 297; }      /* A4      */
+
+/* Contenido interno (JS mete texto/imagen acá) */
+.dev-preview-inner{
+  width: 100%;
+  height: 100%;
+  position: relative;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  padding: 18px;
+}
+
+/* Galería fondos horizontal */
+.dev-galeria-fondos{
+  display:flex;
+  gap:10px;
+  overflow-x:auto;
+  padding: 8px 6px;
+  border-radius: 14px;
+  border: 1px solid rgba(0,0,0,.08);
+  background: rgba(0,0,0,.03);
+  max-width: 420px;
+  margin: 0 auto;
+  scrollbar-width: thin;
+}
+.dev-galeria-fondos::-webkit-scrollbar{ height: 8px; }
+.dev-galeria-fondos::-webkit-scrollbar-thumb{ border-radius: 999px; }
+
+body.oscuro .dev-galeria-fondos{
+  border-color: rgba(255,255,255,.12);
+  background: rgba(255,255,255,.06);
+}
+
+/* Filas de controles */
+.dev-row{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  flex-wrap:wrap;
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+/* Navegación */
+.dev-nav{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  max-width: 420px;
+  margin: 6px auto 0;
+}
+
+/* Ajustes mini botones (reusa tu UI) */
+#modalDevocionales .btn-mini{
+  height: 34px;
+  padding: 0 10px;
+  border-radius: 10px;
+  background: var(--ui-azul-claro);
+  border:none;
+  cursor:pointer;
+  font-weight: 800;
+}
+
+/* Para que los botones “círculo” de siguiente/anterior se vean pro */
+#modalDevocionales .btn-primary{
+  border-radius: 999px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+}
+
+/* En paso 3 usamos tu fila-final, solo ajustamos centrado */
+.dev-final{
+  justify-content:center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* =========================================================
+   ✅ CONTROLES (Tamaño + Color) igual alto que botones estilo
+   + 0,5 cm más anchos (≈ 19px)
+   ========================================================= */
+
+:root{
+  --alto-ui: 38px;           /* igual que tus botones del modal */
+  --extra-ancho: 19px;       /* 0,5 cm aprox */
+  --ancho-base-btn: 38px;    /* min-width de tus botones */
+  --ancho-control: calc(var(--ancho-base-btn) + var(--extra-ancho));
+}
+
+/* El input numérico y el color picker */
+#modalPersonalizar #personalizarTamaño,
+#modalPersonalizar #personalizarColor{
+  height: var(--alto-ui);
+  width: var(--ancho-control);
+  margin: 0;
+
+  border-radius: 10px;
+  border: none;
+
+  background: var(--ui-azul-claro);
+  color: #000;
+
+  padding: 0 10px;
+  font-weight: 800;
+  font-size: 14px;
+
+  display: block;         /* ✅ evita el “bajón” raro del input */
+  align-self: center;     /* ✅ lo centra dentro de tu rowB (flex) */
+  vertical-align: middle; /* ✅ por si la fila no es flex en algún lado */
+
+}
+
+/* el num centrado */
+#modalPersonalizar #personalizarTamaño{
+  text-align: center;
+  padding: 0;               /* que no agrande raro */
+  font-weight: 400;
+
+}
+
+/* ✅ sacar flechitas del number */
+#modalPersonalizar #personalizarTamaño::-webkit-inner-spin-button,
+#modalPersonalizar #personalizarTamaño::-webkit-outer-spin-button{
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* ✅ Color picker: que se vea “botón” prolijo */
+#modalPersonalizar #personalizarColor{
+  padding: 0;               /* el swatch necesita 0 */
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+
+}
+
+/* el “swatch” (lo que muestra el color) ocupa todo y respeta forma */
+#modalPersonalizar #personalizarColor::-webkit-color-swatch-wrapper{
+  padding: 0;
+}
+#modalPersonalizar #personalizarColor::-webkit-color-swatch{
+  border: none;
+  border-radius: 10px;
+}
+
+/* modo oscuro: mantener legible */
+body.oscuro #modalPersonalizar #personalizarTamaño,
+body.oscuro #modalPersonalizar #personalizarColor{
+  background: #d1eeff;
+  color: #000;
+}
+
+/* ✅ En la fila, todo con el MISMO alto real */
+#modalPersonalizar .style-row > *{
+  height: var(--alto-ui);
+  box-sizing: border-box;
+  margin: 0;            /* inputs a veces traen margen raro */
+}
+
+/* ✅ Botones: que el icono/texto queden perfectamente centrados */
+#modalPersonalizar .style-row button{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;       /* evita “bajón” por line-height */
+  padding: 0 10px;      /* o el padding que uses */
+}
+
+/* ✅ Number: que no “baje” por la línea interna */
+#modalPersonalizar #personalizarTamaño{
+  line-height: var(--alto-ui);
+}
+
+/* ✅ Color: Chrome necesita esto para que respete el alto */
+#modalPersonalizar #personalizarColor{
+  min-height: var(--alto-ui);
+}
+#modalPersonalizar #personalizarColor::-webkit-color-swatch-wrapper{
+  height: 100%;
+}
+#modalPersonalizar #personalizarColor::-webkit-color-swatch{
+  height: 100%;
+}
+
+/* ✅ Devocional: layout dentro del preview */
+#modalPersonalizar.modo-devocional #previewTextoWrapper{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding: 18px;
+  text-align:center;
+}
+
+#modalPersonalizar.modo-devocional #previewTexto,
+#modalPersonalizar.modo-devocional #previewTextoBack{
+  width:100%;
+}
+
+/* Bloque 1 */
+#modalPersonalizar.modo-devocional .dev-titulo{
+  font-weight:900;
+  font-size: 22px;
+  letter-spacing: .5px;
+}
+#modalPersonalizar.modo-devocional .dev-fecha{
+  margin-top: 4px;
+  font-weight:700;
+  font-size: 14px;
+  opacity:.9;
+}
+#modalPersonalizar.modo-devocional .dev-versiculo{
+  margin-top: 14px;
+  font-weight:900;
+  font-size: 28px;
+  line-height:1.15;
+}
+#modalPersonalizar.modo-devocional .dev-cita{
+  margin-top: 12px;
+  font-weight:900;
+  font-size: 16px;
+}
+#modalPersonalizar.modo-devocional .dev-footer{
+  margin-top: 10px;
+  font-weight:800;
+  font-size: 12px;
+  opacity:.95;
+}
+
+/* Bloque 2 */
+#modalPersonalizar.modo-devocional .dev-reflexion{
+  font-weight:800;
+  font-size: 16px;
+  line-height:1.25;
+}
+#modalPersonalizar.modo-devocional .dev-oracion{
+  margin-top: 12px;
+  font-weight:900;
+  font-size: 16px;
+}
+
+/* ================= BARRA BIBLIA: LUPA + FLECHAS PRO (sin pisar) ================= */
+
+/* Lupa: misma “forma botón” que el resto */
+#btnToggleFiltros{
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  background: var(--ui-azul-claro);
+  color: #000;
+
+  font-size: 16px;   /* tamaño del 🔍 */
+  line-height: 1;
+  padding: 0;
+}
+
+/* ✅ Hover SOLO en PC (mouse). Evita "hover pegado" en celu */
+@media (hover: hover) and (pointer: fine) {
+  #btnToggleFiltros:hover{
+    background: var(--ui-azul-hover);
+    color:#fff;
+  }
+}
+
+/* ✅ En mobile, el toque NO debe dejar estilos pegados */
+@media (hover: none) and (pointer: coarse) {
+  #btnToggleFiltros:hover{
+    background: var(--ui-azul-claro);
+    color:#000;
+    transform: none;
+  }
+}
+
+/* Contenedor de flechas (izq/der) más prolijo */
+#barraTituloBiblia .nav-capitulo{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  background: rgba(255,255,255,.65);
+  border: 1px solid rgba(0,0,0,.08);
+  border-radius: 999px;
+  padding: 4px;
+
+  box-shadow: 0 6px 14px rgba(0,0,0,.06);
+}
+
+/* oscuro: contenedor de flechas */
+body.oscuro #barraTituloBiblia .nav-capitulo{
+  background: rgba(0,0,0,.35);
+  border-color: rgba(255,255,255,.12);
+  box-shadow: 0 6px 14px rgba(0,0,0,.35);
+}
+
+/* Flechas: un toque más grandes y alineadas */
+#btnCapAnt, #btnCapSig{
+  width: 32px;
+  height: 32px;
+}
+
+#btnCapAnt i, #btnCapSig i{
+  font-size: 13px;
+}
+
+/* ================= FILTROS: 1 RENGLÓN, SOBRE LA BARRA, SIN TAPAR LUPA ================= */
+
+/* oculto por defecto */
+#wrapFiltrosBiblia .filtros{ display:none; }
+
+/* ✅ la barra es el "ancla" del popup */
+#barraTituloBiblia{
+  position: sticky;   /* ya lo tenés, lo dejo explícito */
+  top: 0;
+}
+
+/* ✅ IMPORTANTE: el ancla real tiene que ser la barra, NO el wrap */
+#wrapFiltrosBiblia{
+  position: static;   /* 🔥 clave */
+  display: inline-flex;
+  align-items: center;
+}
+
+/* botón clickeable */
+#btnToggleFiltros{
+  position: relative;
+  z-index: 30;
+}
+
+/* ✅ cuando se abre: aparece SOBRE la barra, alineado a la izquierda */
+#wrapFiltrosBiblia.abierto .filtros{
+  display: grid;
+  grid-template-columns: 1fr 64px; /* libro | capítulo (cap angosto) */
+  align-items: center;
+  gap: 8px;
+
+  position: absolute;            /* 🔥 ya NO fixed */
+  left: 12px;                    /* mismo margen de la barra */
+  top: 50%;
+  transform: translateY(-50%);
+
+  /* ✅ NO enorme en PC */
+  width: min(380px, calc(100% - 160px));
+  /* deja ~160px a la derecha para lupa + flechas */
+
+  padding: 6px 8px;
+  background: #fff;
+  border: 1px solid rgba(0,0,0,.10);
+  border-radius: 14px;
+  box-shadow: 0 10px 24px rgba(0,0,0,.22);
+
+  z-index: 20; /* debajo del botón (30) */
+  box-sizing: border-box;
+}
+
+/* oscuro */
+body.oscuro #wrapFiltrosBiblia.abierto .filtros{
+  background:#1e1e1e;
+  border-color: rgba(255,255,255,.12);
+  box-shadow: 0 10px 24px rgba(0,0,0,.45);
+}
+
+/* selects */
+#wrapFiltrosBiblia .filtros select{
+  height: 32px;
+  padding: 0 10px;
+  font-size: 14px;
+  border-radius: 999px;
+  min-width: 0;
+}
+
+/* libro ocupa lo que queda */
+#wrapFiltrosBiblia .filtros #libro{
+  width: 100%;
+}
+
+/* capítulo angosto (≈ 50%) y centrado */
+#wrapFiltrosBiblia .filtros #capitulo{
+  width: 64px;
+  text-align: center;
+}
+
+/* 🔧 Evita que la lupa quede visualmente activa al cerrar */
+#btnToggleFiltros:focus,
+#btnToggleFiltros:active{
+  outline: none;
+  box-shadow: none;
+}
+
+/* ✅ Botón activo SOLO cuando el panel está abierto */
+#wrapFiltrosBiblia.abierto #btnToggleFiltros{
+  background: var(--ui-azul-hover);
+  color:#fff;
+  transform: scale(1.05);
+}
+
+/* ✅ Evitar “focus pegado” visual en celu */
+#btnToggleFiltros{
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+#btnToggleFiltros:focus,
+#btnToggleFiltros:focus-visible,
+#btnToggleFiltros:active{
+  outline: none;
+  box-shadow: none;
+}
+
+/* ================= MODAL MARCADORES: RESPONSIVE ================= */
+#modalMarcadores .modal-contenido{
+  width: min(560px, 94vw);
+  max-height: min(82vh, 760px);
+  overflow: hidden;             /* evita scroll horizontal del modal */
+  border-radius: 16px;
+}
+
+/* lista scrollea por dentro */
+#listaMarcadores{
+  max-height: calc(min(82vh, 760px) - 120px); /* ajusta si tu header cambia */
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 6px;
+}
+
+/* cards estables */
+#listaMarcadores .card-marcador{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+}
+
+/* IMPORTANTÍSIMO para ellipsis */
+#listaMarcadores .card-marcador > div{
+  min-width: 0;
+}
+
+/* texto de una línea con “…” */
+#listaMarcadores .card-marcador .linea,
+#listaMarcadores .card-marcador div[onclick]{
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* CEL: modal full width como hoja */
+@media (max-width: 640px){
+  #modalMarcadores .modal-contenido{
+    width: 100vw;
+    max-height: 92vh;
+    border-radius: 0;
+  }
+  #listaMarcadores{
+    max-height: calc(92vh - 120px);
+  }
+}
+
+/* ================= MI PANEL IMAGENES ================= */
+
+/* solo imágenes del panel: mismo “aire” limpio */
+#panel-imagenes.panel-seccion{
+  width: min(560px, 96vw);
+  margin: 0 auto;
+  padding: 0;
+  background: transparent;
+}
+
+#panel-imagenes{
+  width: min(560px, 96vw);
+  margin: 0 auto;
+}
+
+#panelImgFeed .btn-danger{
+  background:#ffe3e3 !important;
+  border:1px solid #ffb5b5 !important;
+  color:#a40000 !important;
+}
+
+#panelImgFeed .btn-danger:hover{
+  background:#ffb5b5 !important;
+  color:#000 !important;
+}
+
+/* índice superior */
+#panelImgIndexRow{
+  display:flex;
+  gap:10px;
+  overflow-x:auto;
+  padding:8px 2px;
+  margin:0;
+  scroll-snap-type:x mandatory;
+  align-items:flex-start;
+}
+
+/* tarjeta índice: igual look que devocionales */
+#panelImgIndexRow .devIndexCard{
   flex:0 0 auto;
   width:120px;
+  min-width:120px;
+  max-width:120px;
   border:1px solid #e5e5e5;
   border-radius:14px;
   overflow:hidden;
   background:#fff;
-  box-shadow: 0 8px 20px rgba(0,0,0,.06);
+  box-shadow:0 8px 20px rgba(0,0,0,.06);
   cursor:pointer;
   display:flex;
   flex-direction:column;
+  scroll-snap-align:start;
 }
 
-/* barras SOLO DEVOCIONALES */
-#devHome .devIndexBar{
-  padding: 4px 6px;
-  line-height: 1.05;
+/* barras arriba/abajo */
+#panelImgIndexRow .devIndexBar{
+  padding:4px 6px;
+  line-height:1.05;
   text-align:center;
   font-family: Georgia, "Times New Roman", serif;
-  font-weight: 700;
-  text-decoration: underline;
-  font-size: 10px;
+  font-weight:700;
+  text-decoration:underline;
+  font-size:10px;
+  flex:0 0 auto;
 }
 
-/* imagen SOLO DEVOCIONALES */
-#devHome .devIndexImgWrap{
-  width:100%;
-}
-#devHome .devIndexImgWrap img{
-  width:100%;
-  aspect-ratio: 9 / 16;
-  object-fit: cover;
-  display:block;
-}
-
-#devHome .devIndexBarBottom{
+#panelImgIndexRow .devIndexBarBottom{
   opacity:.85;
 }
 
-/* feed vertical */
-#devFeed{
+/* caja fija para emparejar todas las miniaturas */
+#panelImgIndexRow .devIndexImgWrap{
+  width:100%;
+  aspect-ratio:9 / 16;
+  overflow:hidden;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:#fff; /* blanco, no gris */
+}
+
+/* la imagen se ve completa dentro de la caja */
+#panelImgIndexRow .devIndexImgWrap img{
+  max-width:100%;
+  max-height:100%;
+  width:auto;
+  height:auto;
+  object-fit:contain;
+  object-position:center;
+  display:block;
+  background:transparent;
+}
+
+/* feed de abajo */
+#panelImgFeed{
   display:flex;
   flex-direction:column;
   gap:14px;
   margin-top:12px;
 }
 
-/* tarjeta grande SOLO DEVOCIONALES */
-#devHome .devBigCard{
-  width: min(420px, 96vw);
-  margin: 0 auto;
+/* tarjeta grande */
+#panelImgFeed .devBigCard{
+  width:fit-content;
+  max-width:min(420px, 96vw);
+  margin:0 auto;
   border:1px solid #e8e8e8;
   border-radius:16px;
   overflow:hidden;
   background:#fff;
-  box-shadow: 0 12px 28px rgba(0,0,0,.08);
+  box-shadow:0 12px 28px rgba(0,0,0,.08);
 }
 
-#devHome .devBigCard img{
-  width:100%;
-  aspect-ratio: 9 / 16;
-  object-fit: cover;
+/* abajo: cuadrada queda cuadrada, vertical queda vertical */
+#panelImgFeed .devBigCard img{
   display:block;
-  background:#f7f7f7;
-}
-
-#devHome .devBigActions{
-  display:flex;
-  gap:10px;
-  padding:10px;
-  justify-content:center;
-  flex-wrap:wrap;
-}
-
-.devAudioBox{
-  padding: 10px 10px 0;
-  display:flex;
-  justify-content:center;
-}
-.devAudioBox audio{
-  width: 100%;
-  max-width: 420px;
-}
-
-/* ✅ botón borrar (solo admin) */
-.devDanger{
-  background:#ffe3e3 !important;
-  border-color:#ffb5b5 !important;
-  color:#a40000 !important;
-}
-
-.devDanger:hover{
-  background:#ffb5b5 !important;
-  color:#000 !important;
-}
-
-/* ================= SUBIDOS COMPLETO ⭐================= */
-
-#subidosApp{
-  --sub-bg:#ffffff;
-  --sub-card:#ffffff;
-  --sub-bd:#dcdfe3;
-  --sub-txt:#111111;
-  --sub-mut:#6b7280;
-  --sub-chip:#e8f0fe;
-  --sub-shadow:0 2px 10px rgba(0,0,0,.05);
-  color:var(--sub-txt);
-}
-
-body.oscuro #subidosApp{
-  --sub-bg:#121212;
-  --sub-card:#1b1b1b;
-  --sub-bd:#313131;
-  --sub-txt:#f5f5f5;
-  --sub-mut:#cfcfcf;
-  --sub-chip:#22324a;
-  --sub-shadow:none;
-}
-
-/* ===== top ===== */
-
-#subidosTopRow{
-  margin-bottom:14px;
-}
-
-#subidosMesTitulo{
-  min-width:170px;
-  text-align:center;
-  font-weight:800;
-  text-transform:capitalize;
-  color:var(--sub-txt);
-}
-
-/* ===== calendario ===== */
-
-#subidosCalendario{
-  position:relative;
-}
-
-.subidos-cal-wrap{
-  background:var(--sub-card);
-  border:1px solid var(--sub-bd);
-  border-radius:18px;
-  overflow:hidden;
-  box-shadow:var(--sub-shadow);
-}
-
-.subidos-cal-head{
-  display:grid;
-  grid-template-columns:repeat(7, minmax(0, 1fr));
-  border-bottom:1px solid var(--sub-bd);
-  background:var(--sub-card);
-}
-
-.subidos-cal-head > div{
-  padding:10px 6px;
-  text-align:center;
-  font-weight:800;
-  color:var(--sub-mut);
-  font-size:13px;
-}
-
-.subidos-cal-grid{
-  display:grid;
-  grid-template-columns:repeat(7, minmax(0, 1fr));
-}
-
-.subidos-day{
-  min-width:0;
-  height:126px;
-  border-right:1px solid var(--sub-bd);
-  border-bottom:1px solid var(--sub-bd);
-  padding:8px;
-  position:relative;
-  background:var(--sub-card);
-  overflow:hidden;
-}
-
-.subidos-day:nth-child(7n){
-  border-right:none;
-}
-
-.subidos-day.empty{
-  background:var(--sub-card);
-}
-
-.subidos-day-num{
-  font-size:13px;
-  font-weight:800;
-  margin-bottom:8px;
-  color:var(--sub-txt);
-}
-
-body.oscuro .subidos-day-num{
-  color:#ffffff;
-}
-
-.subidos-day.today .subidos-day-num{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  width:26px;
-  height:26px;
-  border-radius:999px;
-  background:#1a73e8;
-  color:#fff;
-}
-
-.subidos-day-events{
-  display:flex;
-  flex-direction:column;
-  gap:5px;
-  overflow:hidden;
-}
-
-.subidos-chip{
-  display:block;
-  width:100%;
-  max-width:100%;
-  min-width:0;
-  border:none;
-  cursor:pointer;
-  text-align:left;
-  border-radius:8px;
-  padding:5px 8px;
-  font-size:12px;
-  line-height:1.2;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  font-weight:700;
-  transition:transform .15s ease, opacity .15s ease;
-}
-
-.subidos-chip:hover{
-  transform:translateY(-1px);
-  opacity:.95;
-}
-
-.subidos-more{
-  font-size:12px;
-  color:var(--sub-mut);
-  padding-left:2px;
-}
-
-/* ===== tooltip preview ===== */
-
-#subidosPreviewTooltip{
-  position:fixed;
-  z-index:99999;
-  width:min(280px, 86vw);
-  background:var(--sub-card);
-  color:var(--sub-txt);
-  border:1px solid var(--sub-bd);
-  border-radius:14px;
-  box-shadow:0 10px 28px rgba(0,0,0,.18);
-  padding:10px;
-  display:none;
-  pointer-events:none;
-}
-
-#subidosPreviewTooltip .tt-tag{
-  display:inline-flex;
-  padding:4px 8px;
-  border-radius:999px;
-  font-size:12px;
-  font-weight:800;
-  margin-bottom:8px;
-}
-
-#subidosPreviewTooltip .tt-date{
-  font-size:12px;
-  color:var(--sub-mut);
-  margin-bottom:8px;
-}
-
-#subidosPreviewTooltip img,
-#subidosPreviewTooltip video{
-  width:100%;
-  max-height:170px;
-  object-fit:cover;
-  border-radius:10px;
-  display:block;
-  margin-bottom:8px;
-}
-
-#subidosPreviewTooltip .tt-desc{
-  font-size:13px;
-  line-height:1.35;
-  white-space:pre-wrap;
-  word-break:break-word;
-}
-
-/* ===== agenda ===== */
-
-#subidosAgenda{
-  margin-top:14px;
-}
-
-.subidos-agenda-card{
-  max-width:760px;
-  margin:0 auto 12px auto;
-  border:1px solid var(--sub-bd);
-  border-radius:16px;
-  background:var(--sub-card);
-  padding:12px;
-  box-shadow:var(--sub-shadow);
-}
-
-.subidos-agenda-date{
-  font-weight:800;
-  margin-bottom:10px;
-  color:var(--sub-txt);
-}
-
-/* ===== feed ===== */
-
-.subidos-feed-card{
-  max-width:760px;
-  margin:0 auto 14px auto;
-  border:1px solid var(--sub-bd);
-  border-radius:16px;
-  background:var(--sub-card);
-  padding:12px;
-  box-shadow:var(--sub-shadow);
-}
-
-.subidos-feed-head{
-  display:flex;
-  justify-content:space-between;
-  gap:10px;
-  align-items:flex-start;
-  margin-bottom:10px;
-}
-
-.subidos-feed-left{
-  min-width:0;
-  width:100%;
-}
-
-.subidos-feed-badges{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  flex-wrap:wrap;
-  margin-bottom:6px;
-}
-
-.subidos-badge{
-  display:inline-flex;
-  align-items:center;
-  gap:6px;
-  border-radius:999px;
-  padding:5px 10px;
-  font-size:12px;
-  font-weight:800;
-  color:#111;
-  max-width:100%;
-}
-
-.subidos-feed-date{
-  font-size:12px;
-  color:var(--sub-mut);
-}
-
-.subidos-feed-desc{
-  color:var(--sub-txt);
-  line-height:1.45;
-  white-space:pre-wrap;
-  word-break:break-word;
-}
-
-.subidos-media{
-  margin-top:10px;
-}
-
-.subidos-media img,
-.subidos-media video{
-  display:block;
-  margin:10px auto 0 auto;
-  max-width:min(560px,100%);
   width:auto;
   height:auto;
+  max-width:min(420px, 96vw);
   max-height:70vh;
-  border-radius:14px;
+  aspect-ratio:auto;
+  object-fit:contain;
+  object-position:center;
+  background:transparent;
 }
 
-.subidos-media audio{
-  display:block;
-  margin:10px auto 0 auto;
-  width:min(430px,100%);
-}
-
-.subidos-feed-actions{
+/* acciones como devocionales */
+#panelImgFeed .devBigActions{
   display:flex;
-  justify-content:flex-end;
-  gap:8px;
-  margin-top:12px;
+  gap:10px;
+  padding:10px;
+  justify-content:center;
+  align-items:center;
   flex-wrap:wrap;
 }
 
-.subidos-feed-actions button,
-.subidos-feed-actions a{
-  border:none;
-  border-radius:999px;
-  padding:8px 12px;
-  cursor:pointer;
-  text-decoration:none;
-  background:#e9eef6;
-  color:#111;
-  font-weight:700;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-}
-
-body.oscuro .subidos-feed-actions button,
-body.oscuro .subidos-feed-actions a{
-  background:#2a2a2a;
-  color:#f5f5f5;
-}
-
-/* ===== fallback por si algo viejo del HTML inline aparece ===== */
-
-#subidosFeed > div{
-  max-width:none;
-}
-
-body.oscuro #subidosFeed a{
-  color:#9ecbff;
-}
-
-/* ===== responsive ===== */
-
-@media (max-width: 800px){
-  .subidos-cal-head > div{
-    font-size:11px;
-    padding:8px 2px;
+/* ================= MI PANEL IMAGENES CELU ================= */
+@media (max-width: 600px){
+  #panel-imagenes{
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+    padding-bottom:140px;
   }
 
-  .subidos-day{
-    height:92px;
-    padding:5px;
+  #panelImgFeed .devBigCard{
+    max-width:96vw;
   }
 
-  .subidos-day-num{
-    font-size:12px;
-    margin-bottom:6px;
-  }
-
-  .subidos-chip{
-    font-size:10px;
-    padding:4px 5px;
-    border-radius:6px;
-  }
-
-  .subidos-more{
-    font-size:10px;
-  }
-
-  .subidos-feed-card{
-    padding:10px;
-    border-radius:14px;
-  }
-
-  .subidos-feed-actions{
-    justify-content:center;
-  }
-
-  .subidos-feed-actions button,
-  .subidos-feed-actions a{
-    flex:1 1 auto;
-    min-width:110px;
-  }
-
-  .subidos-media img,
-  .subidos-media video{
-    max-width:100%;
-    width:100%;
+  #panelImgFeed .devBigCard img{
+    max-width:96vw;
     max-height:none;
   }
 
-  .subidos-media audio{
-    width:100%;
+  #panelImgFeed .devBigActions{
+    justify-content:center;
   }
 }
 
-</style>
+  </style> 
