@@ -3568,3 +3568,28 @@ window.eliminarImagenPanel = async (id) => {
     alert("No se pudo eliminar la imagen");
   }
 };
+
+window.limpiarTodoResaltadoBiblia = async function() {
+  try {
+    if (!uid) {
+      alert("Necesitás estar logueado.");
+      return;
+    }
+
+    const ok = confirm(
+      "Esto va a borrar TODOS los resaltados de Biblia.\n\nLas notas no se borran, solo el color.\n\n¿Continuar?"
+    );
+    if (!ok) return;
+
+    await remove(ref(db, `marcados/${uid}`));
+
+    marcados = {};
+    ultimoMarcadorAplicado = null;
+
+    mostrarTexto();
+    alert("✅ Resaltados limpiados.");
+  } catch (e) {
+    console.error(e);
+    alert("No se pudo limpiar.");
+  }
+};
