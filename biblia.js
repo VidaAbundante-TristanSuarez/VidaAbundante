@@ -2549,10 +2549,15 @@ function renderPanelMarcadores() {
       : `<i class="fa-solid fa-graduation-cap"></i>`;
 
   panel.innerHTML = `
-    <div class="panel-marcadores-bar">
-      <div class="pm-left">
-        <b>📌 Marcadores</b>
-      </div>
+    <div class="pm-left" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+  <b>📌 Marcadores</b>
+
+  <button type="button"
+    onclick="limpiarTodoResaltadoBiblia()"
+    style="border:none; border-radius:999px; padding:8px 12px; cursor:pointer; background:#d9534f; color:#fff; font-weight:700;">
+    🧹 Limpiar Biblia
+  </button>
+</div>
 
       <div class="pm-right">
         <!-- 1) AGREGAR NOTA -->
@@ -3587,6 +3592,8 @@ window.limpiarTodoResaltadoBiblia = async function() {
     ultimoMarcadorAplicado = null;
 
     mostrarTexto();
+    renderPanelMarcadores();
+
     alert("✅ Resaltados limpiados.");
   } catch (e) {
     console.error(e);
