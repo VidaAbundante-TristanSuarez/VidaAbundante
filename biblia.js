@@ -2091,14 +2091,18 @@ window.abrirMarcadores = () => {
   const form = document.getElementById("formNuevoMarcador");
   if (!modal || !lista || !form) return;
 
-  // ✅ Si está abierto, cerrar
   const abierto = getComputedStyle(modal).display !== "none";
+
+  // ✅ si ya está abierto, cerrar prolijo
   if (abierto) {
     cerrarMarcadores();
     return;
   }
 
-  // ✅ Por defecto: abrir lista
+  // ✅ IMPORTANTÍSIMO: limpiar display inline que lo deja muerto después de guardar
+  modal.style.display = "flex";
+
+  // ✅ por defecto abrir lista
   form.style.display = "none";
   lista.style.display = "block";
 
@@ -2132,13 +2136,18 @@ window.editarMarcadorDesdeLista = (idMarcador) => {
 // ================= ✨ Cerrar Marcadores 📌=================
 window.cerrarMarcadores = () => {
   const modal = document.getElementById("modalMarcadores");
+  const lista = document.getElementById("listaMarcadores");
+  const form = document.getElementById("formNuevoMarcador");
+
   if (modal) {
     modal.classList.remove("abierto");
     modal.setAttribute("aria-hidden", "true");
+    modal.style.display = "none";
   }
 
-  // ✅ Si estoy en ABC, NO dejes que Biblia esconda el ✓
-  // porque en ABC el ✓ depende de abcModoMarcador/selección de bloques.
+  if (form) form.style.display = "none";
+  if (lista) lista.style.display = "block";
+
   try {
     const secIglesia = document.getElementById("seccion-iglesia");
     const subABC = document.getElementById("iglesia-abc");
@@ -2147,15 +2156,13 @@ window.cerrarMarcadores = () => {
          subABC && subABC.style.display !== "none");
 
     if (estoyEnABC) {
-      // re-aplicar UI de ABC (vuelve el ✓ y se actualiza su estado)
       if (typeof abcAplicarUIAccionesPorModo === "function") abcAplicarUIAccionesPorModo();
       if (typeof abcHabilitarCheckUI === "function") abcHabilitarCheckUI();
       if (typeof abcMarcarSeleccionUI === "function") abcMarcarSeleccionUI();
-      return; // ✅ IMPORTANTÍSIMO: no ejecutes el refresco de Biblia
+      return;
     }
   } catch(e){}
 
-  // ✅ caso Biblia normal
   refrescarBotonGuardarMarcador();
 };
 
@@ -2334,23 +2341,18 @@ async function guardarNuevoMarcador() {
       return;
     }
 
-    // ✅ Si estoy EDITANDO desde Mi Panel, uso la base original
     const editId = window.__editMarcadorId || null;
     const base = window.__editMarcadorBase || null;
 
     const libro = base?.libro || libroSel?.value || "";
     const capitulo = Number(base?.capitulo ?? capSel?.value ?? 0);
 
-    // versículos:
-    // - si edito: uso los versículos originales
-    // - si creo: uso selección actual
     const versiculos = (base?.versiculos && Array.isArray(base.versiculos))
       ? base.versiculos.map(Number).filter(n => !isNaN(n))
       : Object.keys(seleccionMarcador || {})
           .map(x => Number(x.split("_").pop()))
           .filter(n => !isNaN(n));
 
-    // si NO es nota libre y NO hay versículos, no dejamos guardar
     if (!creandoNotaLibre && versiculos.length === 0) {
       mostrarToast("Seleccioná al menos 1 versículo 📌");
       return;
@@ -2367,52 +2369,45 @@ async function guardarNuevoMarcador() {
       fecha: Date.now()
     };
 
-    // ✅ ruta: coincide con tu listener onValue(ref(db, "marcadores/" + uid))
     const id = editId || (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()));
     const ruta = `marcadores/${uid}/${id}`;
 
     await set(ref(db, ruta), data);
 
-    // ✅ estado post-guardado
     seleccionMarcador = {};
     creandoNotaLibre = false;
-
-    // el resaltado al volver (solo si keep)
     ultimoMarcadorAplicado = data.keep ? data : null;
 
-    // limpiar edición
     window.__editMarcadorId = null;
     window.__editMarcadorBase = null;
 
-    // cerrar UI del modal marcadores prolijo
-    const form = document.getElementById("formNuevoMarcador");
-    const lista = document.getElementById("listaMarcadores");
-    if (form) form.style.display = "none";
-    if (lista) lista.style.display = "block";
-
-    const modal = document.getElementById("modalMarcadores");
-    if (modal) {
-      modal.style.display = "none";
-      modal.setAttribute("aria-hidden", "true");
-    }
+    // ✅ cerrar SIEMPRE prolijo
+    cerrarMarcadores();
 
     mostrarToast(editId ? "✅ Marcador actualizado" : "✅ Marcador guardado");
     mostrarTexto();
     refrescarBotonGuardarMarcador();
 
-        // ✅ al terminar de guardar: volver a Biblia normal (sin modo marcador)
+    // ✅ salir completamente del modo marcador
     if (typeof salirModoMarcadorLimpio === "function") {
       salirModoMarcadorLimpio();
     } else {
       modoMarcador = false;
       seleccionMarcador = {};
       document.body.classList.remove("modo-marcador");
+
       const btnPin = document.getElementById("btnModoMarcadorBarra");
       if (btnPin) btnPin.classList.remove("activo");
+
+      const banner = document.getElementById("bannerModoMarcador");
+      if (banner) banner.style.display = "none";
+
       aplicarUIAccionesPorModo();
       refrescarBotonGuardarMarcador();
+      renderPreviewVersiculosMarcador();
+      mostrarTexto();
     }
-    
+
   } catch (e) {
     console.error("❌ Error guardando marcador:", e);
 
