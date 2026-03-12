@@ -2548,10 +2548,11 @@ function renderPanelMarcadores() {
       ? `<i class="fa-solid fa-sheet-plastic"></i>`
       : `<i class="fa-solid fa-graduation-cap"></i>`;
 
-  panel.innerHTML = `
-<div class="pm-left">
-  <b>📌 Marcadores</b>
-</div>
+ panel.innerHTML = `
+    <div class="panel-marcadores-bar">
+      <div class="pm-left">
+        <b>📌 Marcadores</b>
+      </div>
 
       <div class="pm-right">
         <!-- 1) AGREGAR NOTA -->
