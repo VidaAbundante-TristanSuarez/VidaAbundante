@@ -2728,6 +2728,49 @@ window.toggleSeleccionEliminarMarcador = (id, checked) => {
   renderPanelMarcadores();
 };
 
+
+// ================= 🔺 LIMPUAR RESALTADRO DE ABC NOTAS ==============
+async function limpiarResaltadoABCDeMarcador(marcador) {
+  try {
+    if (!marcador) return;
+    if (marcador?.origen !== "abc") return;
+
+    const temaIndex = marcador?.abc?.temaIndex;
+    const bids = Array.isArray(marcador?.abcBids)
+      ? marcador.abcBids
+      : (marcador?.abcBid ? [marcador.abcBid] : []);
+
+    if (typeof temaIndex !== "number" || !bids.length) return;
+
+    const { db } = FB();
+    const { ref, remove } = API();
+    if (!db || !ref || !remove) return;
+
+    for (const bid of bids) {
+      try {
+        await remove(ref(db, `abcResaltados/${uid}/${temaIndex}/${bid}`));
+      } catch (e) {
+        console.warn("No pude borrar resaltado ABC:", bid, e);
+      }
+    }
+
+    // ✅ si justo estoy parada en ese tema, también lo saco de la cache local
+    if (temaIndex === abcIndex && window.abcResaltadosCache) {
+      bids.forEach(bid => {
+        delete window.abcResaltadosCache[bid];
+      });
+    }
+    if (temaIndex === abcIndex && typeof abcResaltadosCache !== "undefined") {
+      bids.forEach(bid => {
+        delete abcResaltadosCache[bid];
+      });
+    }
+
+  } catch (e) {
+    console.warn("No pude limpiar resaltado ABC del marcador:", e);
+  }
+}
+
 // ================= 🔺 CONFIRMAR ELIMINAR MARCADORES ===================
 window.confirmarEliminarMarcadores = async () => {
   const ids = Object.keys(seleccionEliminarMarcadores);
@@ -2738,33 +2781,41 @@ window.confirmarEliminarMarcadores = async () => {
 
   try {
     for (const id of ids) {
-      const marcador = (marcadores || {})[id] || null;
+      const marcador = (marcadores || {})[id] || (window.marcadores || {})[id] || null;
 
-      // ✅ limpiar pintado relacionado ANTES de borrar el marcador
-      await limpiarPintadoDeMarcadorEliminado(id, marcador);
+      // ✅ si es ABC, borrar también su resaltado guardado
+      await limpiarResaltadoABCDeMarcador(marcador);
+
+      // ✅ si era Biblia y justo quedó aplicado en memoria, limpiarlo
+      if (
+        marcador &&
+        marcador?.origen !== "abc" &&
+        ultimoMarcadorAplicado &&
+        ultimoMarcadorAplicado.libro === marcador.libro &&
+        Number(ultimoMarcadorAplicado.capitulo) === Number(marcador.capitulo) &&
+        JSON.stringify((ultimoMarcadorAplicado.versiculos || []).map(Number).sort((a,b)=>a-b)) ===
+        JSON.stringify((marcador.versiculos || []).map(Number).sort((a,b)=>a-b))
+      ) {
+        ultimoMarcadorAplicado = null;
+      }
 
       // ✅ borrar marcador
       await remove(ref(db, `marcadores/${uid}/${id}`));
 
-      // ✅ limpiar cache local por si Firebase tarda un instante
-      if (window.marcadores && window.marcadores[id]) {
-        delete window.marcadores[id];
-      }
+      // ✅ limpiar cache local
+      if (window.marcadores && window.marcadores[id]) delete window.marcadores[id];
+      if (marcadores && marcadores[id]) delete marcadores[id];
     }
 
-    // ✅ limpiar selección / modo eliminar
     seleccionEliminarMarcadores = {};
     modoEliminarMarcadores = false;
 
-    // ✅ reconstruir bloqueados keep en ABC
-    if (typeof abcRebuildBloqueadosKeep === "function") {
-      abcRebuildBloqueadosKeep();
-    }
+    // ✅ reconstruir estado ABC
+    if (typeof abcRebuildBloqueadosKeep === "function") abcRebuildBloqueadosKeep();
 
-    // ✅ repintar todo de inmediato
-    if (typeof abcMarcarSeleccionUI === "function") {
-      abcMarcarSeleccionUI();
-    }
+    // ✅ refrescar pantalla actual
+    if (typeof abcMarcarSeleccionUI === "function") abcMarcarSeleccionUI();
+    if (typeof abcAplicarUIAccionesPorModo === "function") abcAplicarUIAccionesPorModo();
 
     mostrarTexto();
     renderPanelMarcadores();
