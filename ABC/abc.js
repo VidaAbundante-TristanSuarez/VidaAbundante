@@ -808,7 +808,8 @@ function abcAbrirModalBibliaParaNota() {
   const temaTitulo = ABC_TEMAS?.[abcIndex]?.titulo || `ABC ${abcIndex}`;
   info.textContent = `ABC · Tema: ${temaTitulo} · Bloques: ${abcSeleccionados.size}`;
 
-  titulo.value = `Nota ABC · ${temaTitulo}`;
+ titulo.value = "";
+titulo.placeholder = "Título (opcional)";
   nota.value = "";
   color.value = "#fff3b0";
   keep.checked = true;
@@ -870,10 +871,15 @@ window.guardarNuevoMarcadorABC = async function() {
     const color  = document.getElementById("marcadorColor");
     const keep   = document.getElementById("marcadorKeep");
 
-    const t = (titulo?.value || "Nota ABC").trim();
+    const t = (titulo?.value || "").trim();   // ✅ sin título por default
     const n = (nota?.value || "").trim();
     const c = (color?.value || "#fff3b0");
     const k = !!keep?.checked;
+
+if (!n) {
+  abcToast("Escribí una nota 🙏");
+  return;
+}
 
     const { db } = FB();
     const { ref, set } = API();
