@@ -2156,6 +2156,8 @@ window.cerrarMarcadores = () => {
          subABC && subABC.style.display !== "none");
 
     if (estoyEnABC) {
+      // ✅ al cerrar modal en ABC, salir del modo marcador
+      if (typeof abcResetModoMarcador === "function") abcResetModoMarcador();
       if (typeof abcAplicarUIAccionesPorModo === "function") abcAplicarUIAccionesPorModo();
       if (typeof abcHabilitarCheckUI === "function") abcHabilitarCheckUI();
       if (typeof abcMarcarSeleccionUI === "function") abcMarcarSeleccionUI();
@@ -2303,23 +2305,37 @@ info.textContent = `📌 ${refTxt} · ${hoy}`;
 
 // ================= ❌ Cancelar Nuevo Marcador 📌=================
 window.cancelarNuevoMarcador = () => {
-  // cerrar modal marcadores y volver a lista
-  const modal = document.getElementById("modalMarcadores");
   const form = document.getElementById("formNuevoMarcador");
   const lista = document.getElementById("listaMarcadores");
 
   window.__editMarcadorId = null;
   window.__editMarcadorBase = null;
+  window.__abcEditMarcadorId = null;
   creandoNotaLibre = false;
 
   if (form) form.style.display = "none";
   if (lista) lista.style.display = "block";
 
-  // ✅ si estoy en Panel (seccion-panel visible) NO dejo modo marcador prendido
+  try {
+    const secIglesia = document.getElementById("seccion-iglesia");
+    const subABC = document.getElementById("iglesia-abc");
+    const estoyEnABC =
+      !!(secIglesia && secIglesia.style.display !== "none" &&
+         subABC && subABC.style.display !== "none");
+
+    if (estoyEnABC) {
+      if (typeof abcResetModoMarcador === "function") abcResetModoMarcador();
+      if (typeof cerrarMarcadores === "function") cerrarMarcadores();
+      return;
+    }
+  } catch(e){}
+
   const seccionPanel = document.getElementById("seccion-panel");
   const estoyEnPanel = seccionPanel && seccionPanel.style.display !== "none";
   if (estoyEnPanel) {
     salirModoMarcadorLimpio();
+  } else {
+    cerrarMarcadores();
   }
 };
 
@@ -2340,6 +2356,10 @@ async function guardarNuevoMarcador() {
       mostrarToast("Poné un título 🙏");
       return;
     }
+    if (!nota) {
+  mostrarToast("Escribí una nota 🙏");
+  return;
+}
 
     const editId = window.__editMarcadorId || null;
     const base = window.__editMarcadorBase || null;
@@ -2755,16 +2775,25 @@ async function limpiarResaltadoABCDeMarcador(marcador) {
       }
     }
 
-    // ✅ si justo estoy parada en ese tema, también lo saco de la cache local
-    if (temaIndex === abcIndex && window.abcResaltadosCache) {
-      bids.forEach(bid => {
-        delete window.abcResaltadosCache[bid];
-      });
-    }
+    // ✅ limpiar cache local inmediata
     if (temaIndex === abcIndex && typeof abcResaltadosCache !== "undefined") {
       bids.forEach(bid => {
         delete abcResaltadosCache[bid];
       });
+    }
+
+    // ✅ limpiar visual inmediato en pantalla actual
+    if (temaIndex === abcIndex) {
+      const doc = document.getElementById("abcDoc");
+      if (doc) {
+        bids.forEach(bid => {
+          const el = doc.querySelector(`.abc-block[data-bid="${bid}"]`);
+          if (el) abcLimpiarFondoBloque(el);
+        });
+      }
+
+      abcRebuildBloqueadosKeep();
+      abcMarcarSeleccionUI();
     }
 
   } catch (e) {
@@ -2810,6 +2839,11 @@ window.confirmarEliminarMarcadores = async () => {
 
     seleccionEliminarMarcadores = {};
     modoEliminarMarcadores = false;
+
+    // ✅ si estoy en ABC, limpiar selección/modo por seguridad
+if (typeof abcResetModoMarcador === "function") {
+  abcResetModoMarcador();
+}
 
     // ✅ reconstruir estado ABC
     if (typeof abcRebuildBloqueadosKeep === "function") abcRebuildBloqueadosKeep();
