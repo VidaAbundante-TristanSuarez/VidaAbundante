@@ -147,7 +147,6 @@ onValue(ref(db, "panelImagenesPersonal/" + uid), s => {
 // ✅ Cargar marcadores
 onValue(ref(db, "marcadores/" + uid), s => {
   marcadores = s.val() || {};
-window.marcadores = marcadores;
 
   // ✅ reconstruir índices de notas (Biblia / ABC)
   window.notasBibliaIndex = {};
@@ -2157,10 +2156,9 @@ window.cerrarMarcadores = () => {
          subABC && subABC.style.display !== "none");
 
     if (estoyEnABC) {
-      abcResetModoMarcador();
-      abcAplicarUIAccionesPorModo();
-      abcHabilitarCheckUI();
-      abcMarcarSeleccionUI();
+      if (typeof abcAplicarUIAccionesPorModo === "function") abcAplicarUIAccionesPorModo();
+      if (typeof abcHabilitarCheckUI === "function") abcHabilitarCheckUI();
+      if (typeof abcMarcarSeleccionUI === "function") abcMarcarSeleccionUI();
       return;
     }
   } catch(e){}
@@ -2305,37 +2303,23 @@ info.textContent = `📌 ${refTxt} · ${hoy}`;
 
 // ================= ❌ Cancelar Nuevo Marcador 📌=================
 window.cancelarNuevoMarcador = () => {
+  // cerrar modal marcadores y volver a lista
+  const modal = document.getElementById("modalMarcadores");
   const form = document.getElementById("formNuevoMarcador");
   const lista = document.getElementById("listaMarcadores");
 
   window.__editMarcadorId = null;
   window.__editMarcadorBase = null;
-  window.__abcEditMarcadorId = null;
   creandoNotaLibre = false;
 
   if (form) form.style.display = "none";
   if (lista) lista.style.display = "block";
 
-  try {
-    const secIglesia = document.getElementById("seccion-iglesia");
-    const subABC = document.getElementById("iglesia-abc");
-    const estoyEnABC =
-      !!(secIglesia && secIglesia.style.display !== "none" &&
-         subABC && subABC.style.display !== "none");
-
-    if (estoyEnABC) {
-      if (typeof abcResetModoMarcador === "function") abcResetModoMarcador();
-      if (typeof cerrarMarcadores === "function") cerrarMarcadores();
-      return;
-    }
-  } catch(e){}
-
+  // ✅ si estoy en Panel (seccion-panel visible) NO dejo modo marcador prendido
   const seccionPanel = document.getElementById("seccion-panel");
   const estoyEnPanel = seccionPanel && seccionPanel.style.display !== "none";
   if (estoyEnPanel) {
     salirModoMarcadorLimpio();
-  } else {
-    cerrarMarcadores();
   }
 };
 
@@ -2356,10 +2340,6 @@ async function guardarNuevoMarcador() {
       mostrarToast("Poné un título 🙏");
       return;
     }
-    if (!nota) {
-  mostrarToast("Escribí una nota 🙏");
-  return;
-}
 
     const editId = window.__editMarcadorId || null;
     const base = window.__editMarcadorBase || null;
@@ -2753,37 +2733,42 @@ window.toggleSeleccionEliminarMarcador = (id, checked) => {
 // ================= 🔺 LIMPUAR RESALTADRO DE ABC NOTAS ==============
 async function limpiarResaltadoABCDeMarcador(marcador) {
   try {
-    if (!marcador) return false;
-    if (marcador?.origen !== "abc") return false;
+    if (!marcador) return;
+    if (marcador?.origen !== "abc") return;
 
     const temaIndex = marcador?.abc?.temaIndex;
     const bids = Array.isArray(marcador?.abcBids)
       ? marcador.abcBids
       : (marcador?.abcBid ? [marcador.abcBid] : []);
 
-    if (typeof temaIndex !== "number" || !bids.length) return false;
+    if (typeof temaIndex !== "number" || !bids.length) return;
 
     const { db } = FB();
     const { ref, remove } = API();
-    if (!db || !ref || !remove) return false;
+    if (!db || !ref || !remove) return;
 
     for (const bid of bids) {
       try {
-        await remove(ref(db, `abcResaltados/${UID()}/${temaIndex}/${bid}`));
+        await remove(ref(db, `abcResaltados/${uid}/${temaIndex}/${bid}`));
       } catch (e) {
         console.warn("No pude borrar resaltado ABC:", bid, e);
       }
     }
 
-    // limpiar cache local
+    // ✅ si justo estoy parada en ese tema, también lo saco de la cache local
+    if (temaIndex === abcIndex && window.abcResaltadosCache) {
+      bids.forEach(bid => {
+        delete window.abcResaltadosCache[bid];
+      });
+    }
     if (temaIndex === abcIndex && typeof abcResaltadosCache !== "undefined") {
-      bids.forEach(bid => delete abcResaltadosCache[bid]);
+      bids.forEach(bid => {
+        delete abcResaltadosCache[bid];
+      });
     }
 
-    return temaIndex === abcIndex;
   } catch (e) {
     console.warn("No pude limpiar resaltado ABC del marcador:", e);
-    return false;
   }
 }
 
@@ -2796,14 +2781,11 @@ window.confirmarEliminarMarcadores = async () => {
   if (!ok) return;
 
   try {
-    let recargarTemaABC = false;
-
     for (const id of ids) {
       const marcador = (marcadores || {})[id] || (window.marcadores || {})[id] || null;
 
       // ✅ si es ABC, borrar también su resaltado guardado
-      const afectoTemaActualABC = await limpiarResaltadoABCDeMarcador(marcador);
-      if (afectoTemaActualABC) recargarTemaABC = true;
+      await limpiarResaltadoABCDeMarcador(marcador);
 
       // ✅ si era Biblia y justo quedó aplicado en memoria, limpiarlo
       if (
@@ -2832,13 +2814,9 @@ window.confirmarEliminarMarcadores = async () => {
     // ✅ reconstruir estado ABC
     if (typeof abcRebuildBloqueadosKeep === "function") abcRebuildBloqueadosKeep();
 
-    // ✅ si estoy en ABC y borré una nota del tema actual, recargo TODO el tema limpio
-    if (recargarTemaABC) {
-      await cargarABCTema(true);
-    } else {
-      if (typeof abcMarcarSeleccionUI === "function") abcMarcarSeleccionUI();
-      if (typeof abcAplicarUIAccionesPorModo === "function") abcAplicarUIAccionesPorModo();
-    }
+    // ✅ refrescar pantalla actual
+    if (typeof abcMarcarSeleccionUI === "function") abcMarcarSeleccionUI();
+    if (typeof abcAplicarUIAccionesPorModo === "function") abcAplicarUIAccionesPorModo();
 
     mostrarTexto();
     renderPanelMarcadores();
@@ -3641,4 +3619,3 @@ window.eliminarImagenPanel = async (id) => {
     alert("No se pudo eliminar la imagen");
   }
 };
-
