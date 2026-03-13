@@ -2156,11 +2156,10 @@ window.cerrarMarcadores = () => {
          subABC && subABC.style.display !== "none");
 
     if (estoyEnABC) {
-      // ✅ al cerrar modal en ABC, salir del modo marcador
-      if (typeof abcResetModoMarcador === "function") abcResetModoMarcador();
-      if (typeof abcAplicarUIAccionesPorModo === "function") abcAplicarUIAccionesPorModo();
-      if (typeof abcHabilitarCheckUI === "function") abcHabilitarCheckUI();
-      if (typeof abcMarcarSeleccionUI === "function") abcMarcarSeleccionUI();
+      abcResetModoMarcador();
+      abcAplicarUIAccionesPorModo();
+      abcHabilitarCheckUI();
+      abcMarcarSeleccionUI();
       return;
     }
   } catch(e){}
@@ -2775,20 +2774,28 @@ async function limpiarResaltadoABCDeMarcador(marcador) {
       }
     }
 
-    // ✅ limpiar cache local inmediata
+    // cache local
     if (temaIndex === abcIndex && typeof abcResaltadosCache !== "undefined") {
       bids.forEach(bid => {
         delete abcResaltadosCache[bid];
       });
     }
 
-    // ✅ limpiar visual inmediato en pantalla actual
+    // limpieza visual inmediata
     if (temaIndex === abcIndex) {
       const doc = document.getElementById("abcDoc");
       if (doc) {
         bids.forEach(bid => {
           const el = doc.querySelector(`.abc-block[data-bid="${bid}"]`);
-          if (el) abcLimpiarFondoBloque(el);
+          if (el) {
+            abcLimpiarFondoBloque(el);
+
+            // refuerzo extra sobre spans conflictivos
+            el.querySelectorAll("span, font, b, i, u, strong, em").forEach(n => {
+              n.style.setProperty("background", "transparent", "important");
+              n.style.setProperty("background-color", "transparent", "important");
+            });
+          }
         });
       }
 
