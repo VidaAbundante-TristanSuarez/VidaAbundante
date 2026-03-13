@@ -147,6 +147,7 @@ onValue(ref(db, "panelImagenesPersonal/" + uid), s => {
 // ✅ Cargar marcadores
 onValue(ref(db, "marcadores/" + uid), s => {
   marcadores = s.val() || {};
+window.marcadores = marcadores;
 
   // ✅ reconstruir índices de notas (Biblia / ABC)
   window.notasBibliaIndex = {};
@@ -2752,59 +2753,37 @@ window.toggleSeleccionEliminarMarcador = (id, checked) => {
 // ================= 🔺 LIMPUAR RESALTADRO DE ABC NOTAS ==============
 async function limpiarResaltadoABCDeMarcador(marcador) {
   try {
-    if (!marcador) return;
-    if (marcador?.origen !== "abc") return;
+    if (!marcador) return false;
+    if (marcador?.origen !== "abc") return false;
 
     const temaIndex = marcador?.abc?.temaIndex;
     const bids = Array.isArray(marcador?.abcBids)
       ? marcador.abcBids
       : (marcador?.abcBid ? [marcador.abcBid] : []);
 
-    if (typeof temaIndex !== "number" || !bids.length) return;
+    if (typeof temaIndex !== "number" || !bids.length) return false;
 
     const { db } = FB();
     const { ref, remove } = API();
-    if (!db || !ref || !remove) return;
+    if (!db || !ref || !remove) return false;
 
     for (const bid of bids) {
       try {
-        await remove(ref(db, `abcResaltados/${uid}/${temaIndex}/${bid}`));
+        await remove(ref(db, `abcResaltados/${UID()}/${temaIndex}/${bid}`));
       } catch (e) {
         console.warn("No pude borrar resaltado ABC:", bid, e);
       }
     }
 
-    // cache local
+    // limpiar cache local
     if (temaIndex === abcIndex && typeof abcResaltadosCache !== "undefined") {
-      bids.forEach(bid => {
-        delete abcResaltadosCache[bid];
-      });
+      bids.forEach(bid => delete abcResaltadosCache[bid]);
     }
 
-    // limpieza visual inmediata
-    if (temaIndex === abcIndex) {
-      const doc = document.getElementById("abcDoc");
-      if (doc) {
-        bids.forEach(bid => {
-          const el = doc.querySelector(`.abc-block[data-bid="${bid}"]`);
-          if (el) {
-            abcLimpiarFondoBloque(el);
-
-            // refuerzo extra sobre spans conflictivos
-            el.querySelectorAll("span, font, b, i, u, strong, em").forEach(n => {
-              n.style.setProperty("background", "transparent", "important");
-              n.style.setProperty("background-color", "transparent", "important");
-            });
-          }
-        });
-      }
-
-      abcRebuildBloqueadosKeep();
-      abcMarcarSeleccionUI();
-    }
-
+    return temaIndex === abcIndex;
   } catch (e) {
     console.warn("No pude limpiar resaltado ABC del marcador:", e);
+    return false;
   }
 }
 
@@ -2817,11 +2796,14 @@ window.confirmarEliminarMarcadores = async () => {
   if (!ok) return;
 
   try {
+    let recargarTemaABC = false;
+
     for (const id of ids) {
       const marcador = (marcadores || {})[id] || (window.marcadores || {})[id] || null;
 
       // ✅ si es ABC, borrar también su resaltado guardado
-      await limpiarResaltadoABCDeMarcador(marcador);
+      const afectoTemaActualABC = await limpiarResaltadoABCDeMarcador(marcador);
+      if (afectoTemaActualABC) recargarTemaABC = true;
 
       // ✅ si era Biblia y justo quedó aplicado en memoria, limpiarlo
       if (
@@ -2847,17 +2829,16 @@ window.confirmarEliminarMarcadores = async () => {
     seleccionEliminarMarcadores = {};
     modoEliminarMarcadores = false;
 
-    // ✅ si estoy en ABC, limpiar selección/modo por seguridad
-if (typeof abcResetModoMarcador === "function") {
-  abcResetModoMarcador();
-}
-
     // ✅ reconstruir estado ABC
     if (typeof abcRebuildBloqueadosKeep === "function") abcRebuildBloqueadosKeep();
 
-    // ✅ refrescar pantalla actual
-    if (typeof abcMarcarSeleccionUI === "function") abcMarcarSeleccionUI();
-    if (typeof abcAplicarUIAccionesPorModo === "function") abcAplicarUIAccionesPorModo();
+    // ✅ si estoy en ABC y borré una nota del tema actual, recargo TODO el tema limpio
+    if (recargarTemaABC) {
+      await cargarABCTema(true);
+    } else {
+      if (typeof abcMarcarSeleccionUI === "function") abcMarcarSeleccionUI();
+      if (typeof abcAplicarUIAccionesPorModo === "function") abcAplicarUIAccionesPorModo();
+    }
 
     mostrarTexto();
     renderPanelMarcadores();
