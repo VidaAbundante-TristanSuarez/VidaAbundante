@@ -199,6 +199,7 @@ body.oscuro .abc-block .icono-nota{
 /* Solo limpiamos fondos internos del Word */
 .abc-block *{
   background: transparent !important;
+  background-color: transparent !important;
 }
       </style>
 
@@ -405,14 +406,30 @@ async function abcQuitarResaltado(bid){
 
 function abcLimpiarFondoBloque(el){
   if (!el) return;
-  el.style.background = "transparent";
-  el.querySelectorAll("*").forEach(x => x.style.background = "transparent");
+
+  // padre
+  el.style.setProperty("background", "transparent", "important");
+  el.style.setProperty("background-color", "transparent", "important");
+
+  // hijos internos del html exportado
+  el.querySelectorAll("*").forEach(x => {
+    x.style.setProperty("background", "transparent", "important");
+    x.style.setProperty("background-color", "transparent", "important");
+  });
 }
 
 function abcAplicarFondoBloque(el, color){
   if (!el) return;
-  el.style.background = color;
-  el.querySelectorAll("*").forEach(x => x.style.background = "transparent");
+
+  // el color va SOLO al bloque padre
+  el.style.setProperty("background", color, "important");
+  el.style.setProperty("background-color", color, "important");
+
+  // todo lo interno del Word queda transparente
+  el.querySelectorAll("*").forEach(x => {
+    x.style.setProperty("background", "transparent", "important");
+    x.style.setProperty("background-color", "transparent", "important");
+  });
 }
 
 function abcAplicarResaltadosEnPantalla(data){
