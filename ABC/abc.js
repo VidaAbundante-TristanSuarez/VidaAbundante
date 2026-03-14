@@ -16,6 +16,8 @@ const ABC_TEMAS = [
 let abcIndex = 0;
 let abcIniciado = false;
 let abcResaltadosCache = {}; // { bid: {color} }
+window.abcResaltadosCache = abcResaltadosCache;
+
 let abcBloqueadosKeep = new Set();
 
 // ✅ Esta es la que debe llamar mostrarIglesiaSub('abc')
@@ -457,7 +459,9 @@ function abcEscucharResaltados(){
 
   const handler = async (snap) => {
     const data = snap.val() || {};
-    abcResaltadosCache = data;
+
+abcResaltadosCache = data;
+window.abcResaltadosCache = abcResaltadosCache;
 
     // limpiar pantalla primero
     const doc = document.getElementById("abcDoc");
