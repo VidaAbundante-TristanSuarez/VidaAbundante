@@ -2135,6 +2135,13 @@ window.editarMarcadorDesdeLista = (idMarcador) => {
 
 // ================= ✨ Cerrar Marcadores 📌=================
 window.cerrarMarcadores = () => {
+
+  try {
+  if (document.activeElement && typeof document.activeElement.blur === "function") {
+    document.activeElement.blur();
+  }
+} catch(e){}
+  
   const modal = document.getElementById("modalMarcadores");
   const lista = document.getElementById("listaMarcadores");
   const form = document.getElementById("formNuevoMarcador");
@@ -2612,9 +2619,20 @@ function renderPanelMarcadores() {
 
  panel.innerHTML = `
     <div class="panel-marcadores-bar">
-      <div class="pm-left">
-        <b>📌 Marcadores</b>
-      </div>
+<div class="pm-left">
+  <b>📌 Marcadores</b><br>
+  <span class="muted" style="font-size:12px;">
+    ${filtroNotasPanel === "con"
+      ? "Filtro: con versículo"
+      : filtroNotasPanel === "sin"
+        ? "Filtro: sin versículo"
+        : "Filtro: ABC"}
+    ·
+    ${ordenMarcadores === "fecha"
+      ? "Orden: fecha"
+      : "Orden: bíblico"}
+  </span>
+</div>
 
       <div class="pm-right">
         <!-- 1) AGREGAR NOTA -->
@@ -2899,17 +2917,22 @@ window.confirmarEliminarMarcadores = async () => {
     refrescarBotonGuardarMarcador();
 
     // ✅ extra: si estoy en ABC actual, asegurar limpieza visual completa
-    const doc = document.getElementById("abcDoc");
-    if (doc) {
-      doc.querySelectorAll(".abc-block").forEach(b => {
-        const bid = b.dataset.bid;
-        if (!abcResaltadosCache?.[bid]) {
-          abcLimpiarFondoBloque(b);
-        }
+const doc = document.getElementById("abcDoc");
+if (doc) {
+  doc.querySelectorAll(".abc-block").forEach(b => {
+    const bid = b.dataset.bid;
+    const cache = window.abcResaltadosCache || {};
+    if (!cache[bid]) {
+      b.style.setProperty("background", "transparent", "important");
+      b.style.setProperty("background-color", "transparent", "important");
+
+      b.querySelectorAll("*").forEach(x => {
+        x.style.setProperty("background", "transparent", "important");
+        x.style.setProperty("background-color", "transparent", "important");
       });
     }
-
-
+  });
+}
     mostrarToast("🗑️ Marcadores eliminados");
   } catch (e) {
     console.error(e);
