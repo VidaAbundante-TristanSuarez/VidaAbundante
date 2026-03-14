@@ -442,25 +442,6 @@ function abcAplicarResaltadosEnPantalla(data){
   });
 }
 
-function abcRepintarTodoDesdeCache(){
-  const doc = document.getElementById("abcDoc");
-  if (!doc) return;
-
-  // 1) limpiar TODOS los bloques visibles
-  doc.querySelectorAll(".abc-block").forEach(el => {
-    abcLimpiarFondoBloque(el);
-  });
-
-  // 2) volver a aplicar solo los resaltados que realmente siguen existiendo
-  abcAplicarResaltadosEnPantalla(abcResaltadosCache || {});
-
-  // 3) reconstruir bloqueados keep
-  abcRebuildBloqueadosKeep();
-
-  // 4) refrescar selección / plumas
-  abcMarcarSeleccionUI();
-}
-
 let abcUnsubResaltados = null;
 
 function abcEscucharResaltados(){
