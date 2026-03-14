@@ -199,14 +199,8 @@ onValue(ref(db, "marcadores/" + uid), s => {
   // ✅ repintar Biblia (para que aparezca la pluma sin recargar)
   mostrarTexto();
 
-  // ✅ si estoy en ABC, reconstruir bloqueos y repintar TODO
-  if (typeof abcRebuildBloqueadosKeep === "function") {
-    abcRebuildBloqueadosKeep();
-  }
-
-  if (typeof abcRepintarTodoDesdeCache === "function") {
-    abcRepintarTodoDesdeCache();
-  } else if (typeof abcMarcarSeleccionUI === "function") {
+  // ✅ si estoy en ABC, refrescar la UI de selección (agrega pluma a bloques)
+  if (typeof abcMarcarSeleccionUI === "function") {
     abcMarcarSeleccionUI();
   }
 });
@@ -2815,7 +2809,7 @@ async function limpiarResaltadoABCDeMarcador(marcador) {
     const { ref, remove } = API();
     if (!db || !ref || !remove) return;
 
-    // 1) borrar resaltados de Firebase
+    // 1) borrar de Firebase
     for (const bid of bids) {
       try {
         await remove(ref(db, `abcResaltados/${uid}/${temaIndex}/${bid}`));
@@ -2825,10 +2819,14 @@ async function limpiarResaltadoABCDeMarcador(marcador) {
     }
 
     // 2) limpiar cache local SIEMPRE
-    if (!abcResaltadosCache) abcResaltadosCache = {};
-    bids.forEach(bid => delete abcResaltadosCache[bid]);
+    if (typeof abcResaltadosCache !== "undefined" && abcResaltadosCache) {
+      bids.forEach(bid => delete abcResaltadosCache[bid]);
+    }
+    if (window.abcResaltadosCache) {
+      bids.forEach(bid => delete window.abcResaltadosCache[bid]);
+    }
 
-    // 3) si estoy viendo ese mismo tema, limpiar visualmente YA
+    // 3) si estoy viendo justo ese tema, limpiar la pantalla YA
     if (temaIndex === abcIndex) {
       const doc = document.getElementById("abcDoc");
       if (doc) {
@@ -2838,8 +2836,9 @@ async function limpiarResaltadoABCDeMarcador(marcador) {
         });
       }
 
-      // 4) repintado completo, sin depender del listener
-      abcRepintarTodoDesdeCache();
+      // 4) reconstruir bloqueos/plumas para que no quede nada pegado
+      if (typeof abcRebuildBloqueadosKeep === "function") abcRebuildBloqueadosKeep();
+      if (typeof abcMarcarSeleccionUI === "function") abcMarcarSeleccionUI();
     }
 
   } catch (e) {
