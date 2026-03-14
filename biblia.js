@@ -2805,41 +2805,42 @@ async function limpiarResaltadoABCDeMarcador(marcador) {
 
     if (!Number.isFinite(temaIndex) || !bids.length) return;
 
-    const { db } = FB();
-    const { ref, remove } = API();
-    if (!db || !ref || !remove) return;
+    const fb = window.__FB || {};
+    const api = window.__FB_API || {};
+    const db = fb.db;
+    const refFn = api.ref;
+    const removeFn = api.remove;
+
+    if (!db || !refFn || !removeFn) return;
 
     // 1) borrar de Firebase
     for (const bid of bids) {
       try {
-        await remove(ref(db, `abcResaltados/${uid}/${temaIndex}/${bid}`));
+        await removeFn(refFn(db, `abcResaltados/${uid}/${temaIndex}/${bid}`));
       } catch (e) {
         console.warn("No pude borrar resaltado ABC:", bid, e);
       }
     }
 
-    // 2) limpiar cache local SIEMPRE
-    if (typeof abcResaltadosCache !== "undefined" && abcResaltadosCache) {
-      bids.forEach(bid => delete abcResaltadosCache[bid]);
-    }
+    // 2) limpiar cache global si existe
     if (window.abcResaltadosCache) {
       bids.forEach(bid => delete window.abcResaltadosCache[bid]);
     }
 
-    // 3) si estoy viendo justo ese tema, limpiar la pantalla YA
-    if (temaIndex === abcIndex) {
-      const doc = document.getElementById("abcDoc");
-      if (doc) {
-        bids.forEach(bid => {
-          const el = doc.querySelector(`.abc-block[data-bid="${bid}"]`);
-          if (el) abcLimpiarFondoBloque(el);
-        });
-      }
-
-      // 4) reconstruir bloqueos/plumas para que no quede nada pegado
-      if (typeof abcRebuildBloqueadosKeep === "function") abcRebuildBloqueadosKeep();
-      if (typeof abcMarcarSeleccionUI === "function") abcMarcarSeleccionUI();
+    // 3) si estoy viendo ese tema, limpiar visualmente YA
+    const doc = document.getElementById("abcDoc");
+    if (doc) {
+      bids.forEach(bid => {
+        const el = doc.querySelector(`.abc-block[data-bid="${bid}"]`);
+        if (el && typeof abcLimpiarFondoBloque === "function") {
+          abcLimpiarFondoBloque(el);
+        }
+      });
     }
+
+    // 4) refrescar UI ABC
+    if (typeof abcRebuildBloqueadosKeep === "function") abcRebuildBloqueadosKeep();
+    if (typeof abcMarcarSeleccionUI === "function") abcMarcarSeleccionUI();
 
   } catch (e) {
     console.warn("No pude limpiar resaltado ABC del marcador:", e);
