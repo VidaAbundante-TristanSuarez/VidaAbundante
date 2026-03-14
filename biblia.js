@@ -2139,6 +2139,15 @@ window.cerrarMarcadores = () => {
   const lista = document.getElementById("listaMarcadores");
   const form = document.getElementById("formNuevoMarcador");
 
+  const ctx = (typeof window.getMarcadorCtx === "function")
+    ? window.getMarcadorCtx()
+    : { origen: "biblia" };
+
+  const estabaEditandoABC =
+    ctx?.origen === "abc" &&
+    form &&
+    getComputedStyle(form).display !== "none";
+
   if (modal) {
     modal.classList.remove("abierto");
     modal.setAttribute("aria-hidden", "true");
@@ -2156,6 +2165,13 @@ window.cerrarMarcadores = () => {
          subABC && subABC.style.display !== "none");
 
     if (estoyEnABC) {
+      // ✅ si cerré el form de una nota ABC, vuelvo a ABC normal
+      if (estabaEditandoABC) {
+        window.__abcEditMarcadorId = null;
+        window.setMarcadorCtx("biblia");
+        if (typeof abcResetModoMarcador === "function") abcResetModoMarcador();
+      }
+
       if (typeof abcAplicarUIAccionesPorModo === "function") abcAplicarUIAccionesPorModo();
       if (typeof abcHabilitarCheckUI === "function") abcHabilitarCheckUI();
       if (typeof abcMarcarSeleccionUI === "function") abcMarcarSeleccionUI();
@@ -2321,6 +2337,52 @@ window.cancelarNuevoMarcador = () => {
   if (estoyEnPanel) {
     salirModoMarcadorLimpio();
   }
+
+  // ✅ SI ESTOY EN ABC → volver a modo normal (sin marcador)
+  try {
+    const ctx = (typeof window.getMarcadorCtx === "function")
+      ? window.getMarcadorCtx()
+      : { origen: "biblia" };
+
+    const secIglesia = document.getElementById("seccion-iglesia");
+    const subABC = document.getElementById("iglesia-abc");
+
+    const estoyEnABC =
+      !!(secIglesia && secIglesia.style.display !== "none" &&
+         subABC && subABC.style.display !== "none");
+
+    if (estoyEnABC && ctx.origen === "abc") {
+
+      window.__abcEditMarcadorId = null;
+
+      // volver contexto normal
+      if (typeof window.setMarcadorCtx === "function") {
+        window.setMarcadorCtx("biblia");
+      }
+
+      // resetear modo marcador
+      if (typeof abcResetModoMarcador === "function") {
+        abcResetModoMarcador();
+      }
+
+      // reconstruir UI ABC
+      if (typeof abcAplicarUIAccionesPorModo === "function") {
+        abcAplicarUIAccionesPorModo();
+      }
+
+      if (typeof abcHabilitarCheckUI === "function") {
+        abcHabilitarCheckUI();
+      }
+
+      if (typeof abcMarcarSeleccionUI === "function") {
+        abcMarcarSeleccionUI();
+      }
+
+      return;
+    }
+
+  } catch(e) {}
+
 };
 
 // ================= ✨ Guardar Nuevo Marcador 📌=================
@@ -2736,17 +2798,18 @@ async function limpiarResaltadoABCDeMarcador(marcador) {
     if (!marcador) return;
     if (marcador?.origen !== "abc") return;
 
-    const temaIndex = marcador?.abc?.temaIndex;
+    const temaIndex = Number(marcador?.abc?.temaIndex);
     const bids = Array.isArray(marcador?.abcBids)
       ? marcador.abcBids
       : (marcador?.abcBid ? [marcador.abcBid] : []);
 
-    if (typeof temaIndex !== "number" || !bids.length) return;
+    if (!Number.isFinite(temaIndex) || !bids.length) return;
 
     const { db } = FB();
     const { ref, remove } = API();
     if (!db || !ref || !remove) return;
 
+    // 1) borrar de Firebase
     for (const bid of bids) {
       try {
         await remove(ref(db, `abcResaltados/${uid}/${temaIndex}/${bid}`));
@@ -2755,16 +2818,27 @@ async function limpiarResaltadoABCDeMarcador(marcador) {
       }
     }
 
-    // ✅ si justo estoy parada en ese tema, también lo saco de la cache local
-    if (temaIndex === abcIndex && window.abcResaltadosCache) {
-      bids.forEach(bid => {
-        delete window.abcResaltadosCache[bid];
-      });
+    // 2) limpiar cache local SIEMPRE
+    if (typeof abcResaltadosCache !== "undefined" && abcResaltadosCache) {
+      bids.forEach(bid => delete abcResaltadosCache[bid]);
     }
-    if (temaIndex === abcIndex && typeof abcResaltadosCache !== "undefined") {
-      bids.forEach(bid => {
-        delete abcResaltadosCache[bid];
-      });
+    if (window.abcResaltadosCache) {
+      bids.forEach(bid => delete window.abcResaltadosCache[bid]);
+    }
+
+    // 3) si estoy viendo justo ese tema, limpiar la pantalla YA
+    if (temaIndex === abcIndex) {
+      const doc = document.getElementById("abcDoc");
+      if (doc) {
+        bids.forEach(bid => {
+          const el = doc.querySelector(`.abc-block[data-bid="${bid}"]`);
+          if (el) abcLimpiarFondoBloque(el);
+        });
+      }
+
+      // 4) reconstruir bloqueos/plumas para que no quede nada pegado
+      if (typeof abcRebuildBloqueadosKeep === "function") abcRebuildBloqueadosKeep();
+      if (typeof abcMarcarSeleccionUI === "function") abcMarcarSeleccionUI();
     }
 
   } catch (e) {
@@ -2814,13 +2888,26 @@ window.confirmarEliminarMarcadores = async () => {
     // ✅ reconstruir estado ABC
     if (typeof abcRebuildBloqueadosKeep === "function") abcRebuildBloqueadosKeep();
 
-    // ✅ refrescar pantalla actual
+    // ✅ refrescar ABC si estoy ahí
     if (typeof abcMarcarSeleccionUI === "function") abcMarcarSeleccionUI();
     if (typeof abcAplicarUIAccionesPorModo === "function") abcAplicarUIAccionesPorModo();
 
+    // ✅ refrescar Biblia / Panel
     mostrarTexto();
     renderPanelMarcadores();
     refrescarBotonGuardarMarcador();
+
+    // ✅ extra: si estoy en ABC actual, asegurar limpieza visual completa
+    const doc = document.getElementById("abcDoc");
+    if (doc) {
+      doc.querySelectorAll(".abc-block").forEach(b => {
+        const bid = b.dataset.bid;
+        if (!abcResaltadosCache?.[bid]) {
+          abcLimpiarFondoBloque(b);
+        }
+      });
+    }
+
 
     mostrarToast("🗑️ Marcadores eliminados");
   } catch (e) {
