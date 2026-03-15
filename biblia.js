@@ -2574,10 +2574,15 @@ function renderPanelMarcadores() {
   const panel = document.getElementById("panel-marcadores");
   if (!panel) return;
 
+  // ✅ si no estoy en "con", el orden siempre vuelve a fecha
+  if (filtroNotasPanel !== "con") {
+    ordenMarcadores = "fecha";
+  }
+
   const items = Object.entries(marcadores || {}).map(([id, m]) => ({ ...m, id }));
 
   const ordenados = items.sort((a, b) => {
-    if (ordenMarcadores === "biblia") {
+    if (filtroNotasPanel === "con" && ordenMarcadores === "biblia") {
       const la = (a.libro || "").localeCompare(b.libro || "");
       if (la !== 0) return la;
       const ca = (a.capitulo || 0) - (b.capitulo || 0);
@@ -2588,7 +2593,7 @@ function renderPanelMarcadores() {
   });
 
   // ✅ Filtro: SOLO NOTAS (con versículo / sin versículo / abc)
-   const filtrados = ordenados.filter(m => {
+  const filtrados = ordenados.filter(m => {
     const tieneNota = !!(m.nota && String(m.nota).trim());
     if (!tieneNota) return false;
 
@@ -2597,7 +2602,7 @@ function renderPanelMarcadores() {
 
     // ✅ filtro Biblia (con/sin versículo)
     const esABC = (m?.origen === "abc");
-    if (esABC) return false; // en con/sin no mezclar ABC
+    if (esABC) return false;
 
     const cantVers = (m.versiculos || []).length;
     if (filtroNotasPanel === "con") return cantVers > 0;
@@ -2611,28 +2616,24 @@ function renderPanelMarcadores() {
     ? `<i class="fa-regular fa-calendar"></i>`
     : `<i class="fa-solid fa-book-bible"></i>`;
 
-   const iconFiltroNotas = (filtroNotasPanel === "con")
+  const iconFiltroNotas = (filtroNotasPanel === "con")
     ? `<i class="fa-solid fa-thumbtack"></i>`
     : (filtroNotasPanel === "sin")
       ? `<i class="fa-solid fa-sheet-plastic"></i>`
       : `<i class="fa-solid fa-graduation-cap"></i>`;
 
- panel.innerHTML = `
+  panel.innerHTML = `
     <div class="panel-marcadores-bar">
-<div class="pm-left">
-  <b>📌 Marcadores</b><br>
-  <span class="muted" style="font-size:12px;">
-    ${filtroNotasPanel === "con"
-      ? "Filtro: con versículo"
-      : filtroNotasPanel === "sin"
-        ? "Filtro: sin versículo"
-        : "Filtro: ABC"}
-    ·
-    ${ordenMarcadores === "fecha"
-      ? "Orden: fecha"
-      : "Orden: bíblico"}
-  </span>
-</div>
+      <div class="pm-left">
+        <b>📌 Marcadores</b><br>
+        <span class="muted" style="font-size:12px;">
+          ${filtroNotasPanel === "con"
+            ? "Filtro: con versículo"
+            : filtroNotasPanel === "sin"
+              ? "Filtro: sin versículo"
+              : "Filtro: ABC"}
+        </span>
+      </div>
 
       <div class="pm-right">
         <!-- 1) AGREGAR NOTA -->
@@ -2640,12 +2641,14 @@ function renderPanelMarcadores() {
           <i class="fa-solid fa-square-plus"></i>
         </button>
 
-        <!-- 2) ORDEN FECHA / BIBLICO -->
-        <button type="button" class="pm-btn" onclick="toggleOrdenMarcadoresPanel()" title="Ordenar">
-          ${iconOrden}
-        </button>
+        <!-- 2) ORDEN FECHA / BIBLICO (solo con versículo) -->
+        ${filtroNotasPanel === "con" ? `
+          <button type="button" class="pm-btn" onclick="toggleOrdenMarcadoresPanel()" title="Ordenar">
+            ${iconOrden}
+          </button>
+        ` : ``}
 
-        <!-- 3) FILTRO NOTAS CON / SIN VERSICULO -->
+        <!-- 3) FILTRO NOTAS CON / SIN VERSICULO / ABC -->
         <button type="button" class="pm-btn" onclick="toggleFiltroNotasPanel()" title="Filtrar notas">
           ${iconFiltroNotas}
         </button>
