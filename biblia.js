@@ -2726,6 +2726,12 @@ window.toggleFiltroNotasPanel = () => {
   if (filtroNotasPanel === "con") filtroNotasPanel = "sin";
   else if (filtroNotasPanel === "sin") filtroNotasPanel = "abc";
   else filtroNotasPanel = "con";
+
+  // ✅ fuera de "con", siempre orden por fecha
+  if (filtroNotasPanel !== "con") {
+    ordenMarcadores = "fecha";
+  }
+
   renderPanelMarcadores();
 };
 
