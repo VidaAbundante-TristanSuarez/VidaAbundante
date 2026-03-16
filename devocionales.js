@@ -1376,138 +1376,57 @@ async function renderFinalCanvasCaptureReal(){
     return null;
   }
 
-  const W = 1080, H1 = 1080, H2 = 840, H = 1920;
+  const prev1 = $("dev1Preview");
+  const prev2 = $("dev2Preview");
+
+  if (!prev1 || !prev2) {
+    alert("❌ No encuentro las vistas previas de Fase 1 y/o Fase 2.");
+    return null;
+  }
+
+  const W  = 1080;
+  const H1 = 1080;
+  const H2 = 840;
+  const H  = 1920;
 
   cFinal.width = W;
   cFinal.height = H;
+
   const ctx = cFinal.getContext("2d");
-  ctx.clearRect(0,0,W,H);
+  ctx.clearRect(0, 0, W, H);
 
-  // ✅ Escenario offscreen
-  let stage = document.getElementById("devCaptureStage");
-  if (!stage) {
-    stage = document.createElement("div");
-    stage.id = "devCaptureStage";
-    stage.style.position = "fixed";
-    stage.style.left = "-10000px";     // ✅ lejos sin transform
-    stage.style.top  = "-10000px";
-    stage.style.opacity = "1";      
-    stage.style.visibility = "visible";
-    stage.style.pointerEvents = "none";
-    stage.style.transform = "none";    // ✅ importantísimo
-    stage.style.zIndex = "-1";
-    document.body.appendChild(stage);
-  }
-  stage.innerHTML = "";
-
-  // ✅ Construir nodos “a tamaño real” (NO dependen del preview chico)
-  const makeFase1Node = () => {
-    const st = DEV.f1;
-    const node = document.createElement("div");
-    node.style.width = W + "px";
-    node.style.height = H1 + "px";
-    node.style.position = "relative";
-    node.style.overflow = "hidden";
-    node.style.borderRadius = "0";
-
-    const fondoUsable = st.fondoBlob || st.fondoUrl;
-    node.style.backgroundImage = fondoUsable ? `url("${fondoUsable}")` : "none";
-    node.style.backgroundSize = "cover";
-    node.style.backgroundPosition = "center";
-    node.style.backgroundColor = fondoUsable ? "transparent" : "#ffffff";
-
-    const wrap = document.createElement("div");
-    wrap.style.position = "absolute";
-    wrap.style.inset = "6%";           // ✅ igual que .dev-textwrap
-    wrap.style.borderRadius = "14px";  // ✅ igual que preview
-    wrap.style.overflow = "hidden";    // ✅ igual que preview
-    wrap.style.backgroundColor = wrapperBgFromOpacity(st.op);
-
-    const texto = document.createElement("div");
-    texto.style.position = "absolute";
-    texto.style.inset = "0";
-    texto.style.fontFamily = st.fuente;
-    texto.style.color = st.color;
-    applyTextStylesToOne(texto, st);
-     
-    // ✅ OUTLINE estable
-    texto.style.textShadow = textShadowLegibleFinal(st.color);
-    texto.style.webkitTextStroke = "0px";
-    texto.style.paintOrder = "normal";
-
-    // ✅ IMPORTANTE: tamaño real (sin scalePreviewF1)
-    texto.innerHTML = buildFase1HTML(st.size, 1);
-
-    wrap.appendChild(texto);
-    node.appendChild(wrap);
-    return node;
-  };
-
-  const makeFase2Node = () => {
-  const st = DEV.f2;
-
-  const node = document.createElement("div");
-  node.style.width = W + "px";
-  node.style.height = H2 + "px";
-  node.style.position = "relative";
-  node.style.overflow = "hidden";
-  node.style.borderRadius = "0";
-  node.style.backgroundImage = "none";
-  node.style.backgroundColor = st.fondoColor || "#ffffff";
-
-  // ✅ WRAPPER limpio: margen uniforme y sin padding extra
-  const wrap = document.createElement("div");
-  wrap.style.position = "absolute";
-  wrap.style.inset = "16px";
-  wrap.style.overflow = "hidden";
-  wrap.style.textAlign = "center";
-
-  const texto = document.createElement("div");
-  texto.style.width = "100%";
-  texto.style.height = "100%"; // ✅ importante para el layout interno absoluto de buildFase2HTML()
-  texto.style.fontFamily = st.fuente;
-  texto.style.color = st.color;
-  applyTextStylesToOne(texto, st);
-
-  // ✅ OUTLINE estable
-  texto.style.textShadow = textShadowLegibleFinal(st.color);
-  texto.style.webkitTextStroke = "0px";
-  texto.style.paintOrder = "normal";
-
-  // ✅ HTML fase 2 ya maneja: texto centrado + adorno fijo abajo
-  texto.innerHTML = buildFase2HTML(st.size);
-
-  wrap.appendChild(texto);
-  node.appendChild(wrap);
-
-  return node;
-};
-
-  // ✅ Agregar al stage y esperar fuentes/layout
-  const n1 = makeFase1Node();
-  const n2 = makeFase2Node();
-  stage.appendChild(n1);
-  stage.appendChild(n2);
-
+  // ✅ esperar a que el DOM y las fuentes estén realmente listos
   await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
   if (document.fonts?.ready) await document.fonts.ready;
 
-  // ✅ Capturar
-  const cap1 = await html2canvas(n1, { backgroundColor: null, scale: 2, useCORS: true });
-  const cap2 = await html2canvas(n2, { backgroundColor: null, scale: 2, useCORS: true });
+  // ✅ capturamos el preview TAL CUAL se ve, en su tamaño real visible
+  const cap1 = await html2canvas(prev1, {
+    backgroundColor: null,
+    scale: 2,
+    useCORS: true
+  });
 
-  ctx.drawImage(cap1, 0, 0, W, H1);
-  ctx.drawImage(cap2, 0, H1, W, H2);
+  const cap2 = await html2canvas(prev2, {
+    backgroundColor: null,
+    scale: 2,
+    useCORS: true
+  });
 
-  // ✅ redondear como preview (aprox)
-  const RADIO_FINAL = 40; // si querés más redondo probá 50
+  // ✅ dibujamos las capturas como IMAGEN sobre el canvas final
+  // sin reconstruir HTML ni agrandar el DOM
+  ctx.drawImage(cap1, 0, 0, cap1.width, cap1.height, 0, 0, W, H1);
+  ctx.drawImage(cap2, 0, 0, cap2.width, cap2.height, 0, H1, W, H2);
+
+  // ✅ redondeado final
+  const RADIO_FINAL = 40;
   const rounded = makeRoundedCanvas(cFinal, RADIO_FINAL);
 
   DEV.finalDataUrl = rounded.toDataURL("image/png");
+
   const img = $("devFinalImg");
   if (img) img.src = DEV.finalDataUrl;
 
-  return rounded; // 👈 devolvemos el canvas redondeado
+  return rounded;
 }
 
 window.devToggleSubirPanel = () => {
