@@ -302,6 +302,15 @@ function oneLine(s){
     .trim();
 }
 
+function keepManualBreaks(s){
+  return String(s || "")
+    .replace(/\r/g, "")
+    .replace(/\n{2,}/g, "\n")   // ✅ doble enter o más = un solo salto real
+    .replace(/[ \t]*\n[ \t]*/g, "\n")
+    .replace(/[ \t]{2,}/g, " ")
+    .trim();
+}
+
 function ensurePeriod(s){
   s = oneLine(s);
   if (!s) return "";
@@ -519,11 +528,11 @@ function buildBloquesFromOCR(raw){
 
 // Lee inputs de Fase 0 hacia DEV.fields
 function devReadFieldsFromUI(){
-  DEV.fields.fecha     = oneLine($("dev0Fecha")?.value || "");
-  DEV.fields.versiculo = oneLine($("dev0Versiculo")?.value || "");
-  DEV.fields.cita      = oneLine($("dev0Cita")?.value || "");
-  DEV.fields.reflexion = oneLine($("dev0Reflexion")?.value || "");
-  DEV.fields.oracion   = oneLine($("dev0Oracion")?.value || "");
+  DEV.fields.fecha     = keepManualBreaks($("dev0Fecha")?.value || "");
+  DEV.fields.versiculo = keepManualBreaks($("dev0Versiculo")?.value || "");
+  DEV.fields.cita      = keepManualBreaks($("dev0Cita")?.value || "");
+  DEV.fields.reflexion = keepManualBreaks($("dev0Reflexion")?.value || "");
+  DEV.fields.oracion   = keepManualBreaks($("dev0Oracion")?.value || "");
 }
 
 // Escribe DEV.fields hacia inputs de Fase 0
@@ -958,7 +967,8 @@ function esc(s){
   return String(s || "")
     .replace(/&/g,"&amp;")
     .replace(/</g,"&lt;")
-    .replace(/>/g,"&gt;");
+    .replace(/>/g,"&gt;")
+    .replace(/\n/g, "<br>");
 }
 
 function wrapMeasureLines(ctx, text, maxWidth){
