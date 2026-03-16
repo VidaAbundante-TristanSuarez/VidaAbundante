@@ -1461,6 +1461,10 @@ body.modo-marcador #bannerModoMarcador { display: block; }
   color:#fff;
 }
 
+.pm-sub{
+  line-height: 1.1;
+}
+
 /* ================= DEVOCIONALES: SCROLL LOCAL (SOLO CELU) ================= */
 @media (max-width: 600px){
   /* el contenedor de devocionales ocupa pantalla real */
