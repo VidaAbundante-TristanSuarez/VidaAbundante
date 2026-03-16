@@ -2668,14 +2668,20 @@ function renderPanelMarcadores() {
       : `<i class="fa-solid fa-graduation-cap"></i>`;
 
   panel.innerHTML = `
-  <div class="pm-left">
-  <div class="pm-title">
-    ${filtroNotasPanel === "con"
-      ? "📌 Notas con versículo"
-      : filtroNotasPanel === "sin"
-        ? "🗒 Notas libres"
-        : "🎓 Notas ABC"}
-  </div>
+<div class="pm-left">
+  <b>
+    ${
+      filtroNotasPanel === "con"
+        ? `📌 Notas con versículo 
+           <span class="muted" style="font-size:12px;">
+           · ${ordenMarcadores === "fecha" ? "orden: fecha" : "orden: bíblico"}
+           </span>`
+        : filtroNotasPanel === "sin"
+          ? `🗒 Notas libres`
+          : `🎓 Notas ABC`
+    }
+  </b>
+</div>
 
   ${filtroNotasPanel === "con" ? `
     <div class="pm-sub">
