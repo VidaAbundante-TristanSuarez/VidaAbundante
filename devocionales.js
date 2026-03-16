@@ -996,83 +996,58 @@ function fmtSize(x){
   return (n % 1 === 0) ? String(n.toFixed(0)) : String(n.toFixed(1));
 }
 
-function sugerirTamanoVersiculoAuto(versiculo){
-  // ✅ Medimos contra el “canvas real” (1080x1080), no contra el DOM
-  // Así el sugerido VARÍA según la cantidad de texto.
+function sugerirTamanoVersiculoAuto(){
+  const wrapper = $("dev1TextoWrapper");
+  const front   = $("dev1Texto");
+  const back    = $("dev1TextoBack");
 
-  const W = 1080;
-  const H = 1080;
+  if (!wrapper || !front || !back) return 30;
 
-  // === Esto replica tu layout en buildFase1HTML ===
-  // Caja central: top 16% y height 66%
-  const boxH = H * 0.66;
-
-  // width 96% con padding horizontal (36px * 2)
-  // (en buildFase1HTML usás width:96% y padding: 36px*scale)
-  const boxW = (W * 0.96) - (36 * 2);
-
-  const cita = oneLine(DEV?.p1?.cita || "");
-  const vtxt = oneLine(versiculo || "").toUpperCase();
-
-  const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
-
-  // rango de búsqueda (en “px de canvas”)
-  const MAX_PX = 60;
-  const MIN_PX = 12;
-
-  for (let px = MAX_PX; px >= MIN_PX; px--) {
-    // versículo
-    ctx.font = `800 ${px}px ${DEV.f1.fuente}, Arial`;
-    const vLines = wrapMeasureLines(ctx, vtxt, boxW);
-    const vH = vLines.length * (px * 1.12);
-
-    // cita proporcional
-    const citaPx = Math.max(12, Math.round(px * 0.75));
-    ctx.font = `700 ${citaPx}px ${DEV.f1.fuente}, Arial`;
-    const cLines = wrapMeasureLines(ctx, cita, boxW);
-    const cH = cLines.length * (citaPx * 1.12);
-
-    const gap = px * 0.22;
-
-    if ((vH + gap + cH) <= boxH) {
-      // ✅ clamp para respetar tu input (10..90)
-      return Math.max(10, Math.min(90, px));
-    }
-  }
-
-  return Math.max(10, Math.min(90, MIN_PX));
+  return medirFontSizeQueEntre(wrapper, front, back, 64, 10, 0.5);
 }
 
-function sugerirTamanoFase2Auto(texto){
-  const wWrap = $("dev2TextoWrapper");
-  if (!wWrap) return 16;
+function sugerirTamanoFase2Auto(){
+  const wrapper = $("dev2TextoWrapper");
+  const front   = $("dev2Texto");
+  const back    = $("dev2TextoBack");
 
-  const rect = wWrap.getBoundingClientRect();
-  const maxW = Math.max(100, rect.width * 0.92);
-  const altoDisponible = Math.max(80, rect.height * 0.82);
+  if (!wrapper || !front || !back) return 26;
 
-  const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
-
-  const maxPx = 18;
-  const minPx = 9;
-
-  for (let px = maxPx; px >= minPx; px -= 0.5) {
-    ctx.font = `600 ${px}px ${DEV.f2.fuente}, Arial`;
-    const lines = wrapMeasureLines(ctx, oneLine(texto), maxW);
-    const lineH = px * 1.20;
-    const totalH = lines.length * lineH;
-    if (totalH <= altoDisponible) {
-  const sc = scalePreviewF2() || 1;
-  let suger = roundToHalf(px / sc);
-suger = Math.max(8, roundToHalf(suger - 4));   // ✅ baja ~4 puntos
-return suger;
+  return medirFontSizeQueEntre(wrapper, front, back, 34, 8, 0.5);
 }
+
+function medirFontSizeQueEntre(wrapper, elFront, elBack, maxPx = 64, minPx = 8, step = 0.5) {
+  if (!wrapper || !elFront || !elBack) return 24;
+
+  const cs = getComputedStyle(wrapper);
+  const padX = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+  const padY = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0);
+
+  const maxW = Math.max(10, wrapper.clientWidth - padX);
+  const maxH = Math.max(10, wrapper.clientHeight - padY);
+
+  const entra = (px) => {
+    elFront.style.fontSize = px + "px";
+    elBack.style.fontSize  = px + "px";
+
+    const okH = elFront.scrollHeight <= maxH && elBack.scrollHeight <= maxH;
+    const okW = elFront.scrollWidth  <= maxW && elBack.scrollWidth  <= maxW;
+
+    return okH && okW;
+  };
+
+  if (!entra(minPx)) return minPx;
+
+  let lo = minPx;
+  let hi = maxPx;
+
+  while ((hi - lo) > step) {
+    const mid = Math.floor(((lo + hi) / 2) / step) * step;
+    if (entra(mid)) lo = mid;
+    else hi = mid - step;
   }
-  let suger = roundToHalf(minPx / (scalePreviewF2() || 1));
-suger = Math.max(8, roundToHalf(suger - 4));
-return suger;
+
+  return Number(lo.toFixed(1));
 }
 
 function devSyncStyleButtons(fase){
@@ -1307,8 +1282,16 @@ function devRenderFase(fase){
    const sc = scalePreviewF1();
    t.innerHTML = buildFase1HTML(st.size, sc);
     // ya no usamos la capa back para no romper tamaños diferentes
-    if (b) b.style.display = "none";
-
+    if (b) {
+  b.style.display = "block";
+  b.innerHTML = t.innerHTML;
+  b.style.fontFamily = st.fuente;
+  b.style.color = "transparent";
+  b.style.textShadow = "none";
+  b.style.webkitTextStroke = "0px";
+  b.style.paintOrder = "normal";
+  applyTextStylesToOne(b, st);
+}
     // fondo
     const fondoUsable = st.fondoBlob || st.fondoUrl;
     p.style.backgroundImage = fondoUsable ? `url("${fondoUsable}")` : "none";
@@ -1344,7 +1327,16 @@ function devRenderFase(fase){
 
     const pxPreview = Math.max(8, (st.size * scalePreviewF2()));
     t.innerHTML = buildFase2HTML(pxPreview);
-    if (b) b.style.display = "none";
+   if (b) {
+  b.style.display = "block";
+  b.innerHTML = t.innerHTML;
+  b.style.fontFamily = st.fuente;
+  b.style.color = "transparent";
+  b.style.textShadow = "none";
+  b.style.webkitTextStroke = "0px";
+  b.style.paintOrder = "normal";
+  applyTextStylesToOne(b, st);
+}
 
     // fondo plano
     p.style.backgroundImage = "none";
@@ -1682,7 +1674,7 @@ window.devIrFase1Desde0 = () => {
     await new Promise(r => requestAnimationFrame(()=>requestAnimationFrame(r)));
     if (document.fonts?.ready) await document.fonts.ready;
 
-    const sugerido = sugerirTamanoVersiculoAuto(DEV?.p1?.versiculo || "");
+   const sugerido = sugerirTamanoVersiculoAuto();
     DEV.f1.size = sugerido;
 
     const s1 = $("dev1Tamano");
@@ -1708,8 +1700,7 @@ window.devIrFase2 = () => {
 
     // ✅ SOLO sugerimos una vez (si el usuario no tocó nada aún)
     if (!DEV.f2.userChanged) {
-      const texto = `Reflexión: ${DEV.p2?.reflexion || ""}\nOración: ${DEV.p2?.oracion || ""}`;
-      const sugerido = sugerirTamanoFase2Auto(texto);
+      const sugerido = sugerirTamanoFase2Auto();
 
       DEV.f2.size = sugerido;
 
@@ -2374,7 +2365,7 @@ devRenderFase(1);
   if (document.fonts?.ready) await document.fonts.ready;
 
   // ✅ ahora sí medir
-  const sugerido = sugerirTamanoVersiculoAuto(p1.versiculo);
+ const sugerido = sugerirTamanoVersiculoAuto();;
 
   DEV.f1.size = sugerido;
 
