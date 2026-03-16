@@ -2668,19 +2668,21 @@ function renderPanelMarcadores() {
       : `<i class="fa-solid fa-graduation-cap"></i>`;
 
   panel.innerHTML = `
-   <div class="pm-left" style="display:flex; flex-direction:column; justify-content:center;">
-  <b>
+  <div class="pm-left">
+  <div class="pm-title">
     ${filtroNotasPanel === "con"
       ? "📌 Notas con versículo"
       : filtroNotasPanel === "sin"
         ? "🗒 Notas libres"
         : "🎓 Notas ABC"}
-  </b>
+  </div>
 
   ${filtroNotasPanel === "con" ? `
-    <span class="muted" style="font-size:12px; line-height:1.1; margin-top:2px;">
-      Orden: ${ordenMarcadores === "fecha" ? "fecha" : "bíblico"}
-    </span>
+    <div class="pm-sub">
+      ${ordenMarcadores === "fecha"
+        ? "ordenado por fecha"
+        : "ordenado bíblicamente"}
+    </div>
   ` : ``}
 </div>
 
