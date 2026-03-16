@@ -2668,17 +2668,15 @@ function renderPanelMarcadores() {
       : `<i class="fa-solid fa-graduation-cap"></i>`;
 
   panel.innerHTML = `
-    <div class="panel-marcadores-bar">
-      <div class="pm-left">
-        <b>📌 Marcadores</b><br>
-        <span class="muted" style="font-size:12px;">
-          ${filtroNotasPanel === "con"
-            ? "Filtro: con versículo"
-            : filtroNotasPanel === "sin"
-              ? "Filtro: sin versículo"
-              : "Filtro: ABC"}
-        </span>
-      </div>
+   <div class="pm-left">
+  <b>
+    ${filtroNotasPanel === "con"
+      ? "📌 Notas con versículo"
+      : filtroNotasPanel === "sin"
+        ? "🗒 Notas libres"
+        : "🎓 Notas ABC"}
+  </b>
+</div>
 
       <div class="pm-right">
         <!-- 1) AGREGAR NOTA -->
