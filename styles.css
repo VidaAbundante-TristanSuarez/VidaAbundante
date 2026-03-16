@@ -664,10 +664,11 @@ html, body {
   border-radius: 16px;
   padding: 10px;
   box-shadow: 0 8px 24px rgba(0,0,0,.12);
-  min-width: 220px;
-  gap: 8px;
-  align-items: center;
   z-index: 9999;
+
+  grid-template-columns: auto auto;
+  gap: 8px;
+  align-items: stretch;
 }
 
 body.oscuro #paletaResaltadores{
@@ -683,14 +684,22 @@ body.oscuro #paletaResaltadores{
 
 #paletaColoresWrap{
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, 32px);
+  grid-template-rows: repeat(2, 32px);
   gap: 8px;
-  flex: 1;
+}
+
+#paletaAccionesWrap{
+  display: grid;
+  grid-template-rows: repeat(2, 32px);
+  gap: 8px;
 }
 
 .btn-color-marker{
   width: 32px;
   height: 32px;
+  min-width: 32px;
+  min-height: 32px;
   border: none;
   background: transparent;
   padding: 0;
@@ -709,24 +718,31 @@ body.oscuro #paletaResaltadores{
 
 .marker-shape{
   display: block;
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   background: var(--marker-color);
   box-shadow: 0 1px 4px rgba(0,0,0,.18);
+  border: 1.5px solid rgba(0,0,0,.28);
+  box-sizing: border-box;
 }
 
 /* círculo */
 .marker-shape.circle{
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
 }
 
-/* corazón */
 .marker-shape.heart{
   position: relative;
   width: 14px;
   height: 14px;
   transform: rotate(-45deg);
-  border-radius: 3px 0 0 3px;
+  border-radius: 2px;
+  margin-top: 2px;
+  background: var(--marker-color);
+  border: 1.5px solid rgba(0,0,0,.28);
+  box-sizing: border-box;
 }
 
 .marker-shape.heart::before,
@@ -736,23 +752,27 @@ body.oscuro #paletaResaltadores{
   width: 14px;
   height: 14px;
   background: var(--marker-color);
+  border: 1.5px solid rgba(0,0,0,.28);
   border-radius: 50%;
+  box-sizing: border-box;
 }
 
 .marker-shape.heart::before{
-  top: -7px;
-  left: 0;
+  top: -8px;
+  left: -1.5px;
 }
 
 .marker-shape.heart::after{
-  top: 0;
-  left: 7px;
+  top: -1.5px;
+  left: 6px;
 }
 
 #btnEditarPaleta,
 #btnBloquearResaltador{
   width: 32px;
   height: 32px;
+  min-width: 32px;
+  min-height: 32px;
   border: none;
   border-radius: 999px;
   cursor: pointer;
@@ -761,6 +781,7 @@ body.oscuro #paletaResaltadores{
   justify-content: center;
   background: rgba(0,0,0,.06);
   color: inherit;
+  padding: 0;
 }
 
 body.oscuro #btnEditarPaleta,
