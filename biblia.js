@@ -67,17 +67,68 @@ const DEFAULT_RESALTADORES = [
   { color: "#ffc9c9", forma: "circle" },
   { color: "#ccecff", forma: "circle" },
   { color: "#e6c9ff", forma: "circle" },
-  { color: "#ffe2c9", forma: "circle" }
+  { color: "#ffe2c9", forma: "circle" },
+  { color: "#efefef", forma: "circle" }
 ];
 
 let resaltadoresConfig = cargarResaltadoresConfig();
+
+async function cargarResaltadoresConfigFirebase() {
+  try {
+    if (!uid) return null;
+
+    const snap = await get(ref(db, `usuariosConfig/${uid}/resaltadores`));
+    const data = snap.val();
+
+    if (Array.isArray(data) && data.length === 8) {
+      return data.map(x => ({
+        color: x?.color || "#fff3b0",
+        forma: x?.forma === "heart" ? "heart" : "circle"
+      }));
+    }
+
+    return null;
+  } catch (e) {
+    console.warn("No pude leer resaltadores desde Firebase:", e);
+    return null;
+  }
+}
+
+async function guardarResaltadoresConfigFirebase() {
+  try {
+    if (!uid) return;
+    await set(ref(db, `usuariosConfig/${uid}/resaltadores`), resaltadoresConfig);
+  } catch (e) {
+    console.warn("No pude guardar resaltadores en Firebase:", e);
+  }
+}
+
+async function sincronizarResaltadoresUsuario() {
+  try {
+    // 1) Firebase primero
+    const remotos = await cargarResaltadoresConfigFirebase();
+
+    if (Array.isArray(remotos) && remotos.length === 8) {
+      resaltadoresConfig = remotos;
+      guardarResaltadoresConfigLocal(); // backup local
+      return;
+    }
+
+    // 2) si no había en Firebase, subimos lo local/default actual
+    guardarResaltadoresConfigLocal();
+    await guardarResaltadoresConfigFirebase();
+
+  } catch (e) {
+    console.warn("No pude sincronizar resaltadores del usuario:", e);
+  }
+}
 
 function cargarResaltadoresConfig() {
   try {
     const raw = localStorage.getItem("resaltadoresConfig");
     const parsed = raw ? JSON.parse(raw) : null;
 
-    if (Array.isArray(parsed) && parsed.length === 7) {
+    if (Array.isArray(parsed) && parsed.length === 8) {
       return parsed.map(x => ({
         color: x?.color || "#fff3b0",
         forma: x?.forma === "heart" ? "heart" : "circle"
@@ -179,6 +230,12 @@ onAuthStateChanged(auth, user => {
     window.location.href = "login.html";
     return;
   }
+
+    // ✅ cargar paleta de resaltadores del usuario
+  sincronizarResaltadoresUsuario().then(() => {
+    try { initResaltadorCompacto?.(); } catch(e){}
+    try { actualizarUICandadoResaltador?.(); } catch(e){}
+  });
   
     // ================= ✅ ADMIN FLAG GLOBAL =================
   // Lee /admins/{uid} = true|false y lo guarda en window.__ES_ADMIN
@@ -673,7 +730,7 @@ function cerrarModalEditarPaletaResaltador() {
   modal.style.display = "none";
 }
 
-function guardarModalEditarPaletaResaltador() {
+async function guardarModalEditarPaletaResaltador() {
   const colors = document.querySelectorAll(".input-color-paleta");
   const formas = document.querySelectorAll(".select-forma-paleta");
 
@@ -683,6 +740,7 @@ function guardarModalEditarPaletaResaltador() {
   }));
 
   guardarResaltadoresConfigLocal();
+  await guardarResaltadoresConfigFirebase();
 
   if (!resaltadoresConfig.some(x => x.color === colorActual)) {
     colorActual = resaltadoresConfig[0]?.color || "#fff3b0";
@@ -693,9 +751,10 @@ function guardarModalEditarPaletaResaltador() {
   cerrarModalEditarPaletaResaltador();
 }
 
-function resetearPaletaResaltador() {
+async function resetearPaletaResaltador() {
   resaltadoresConfig = JSON.parse(JSON.stringify(DEFAULT_RESALTADORES));
   guardarResaltadoresConfigLocal();
+  await guardarResaltadoresConfigFirebase();
 
   colorActual = resaltadoresConfig[1]?.color || "#fff3b0";
   window.colorActual = colorActual;
