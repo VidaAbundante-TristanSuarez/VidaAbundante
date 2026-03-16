@@ -59,6 +59,59 @@ let resaltadorBloqueado = true; // 🔒 nuevo estado
 window.colorActual = colorActual;
 window.resaltadorBloqueado = resaltadorBloqueado;
 
+// ================= 🎨 CONFIG RESALTADORES PERSONALIZABLES =================
+const DEFAULT_RESALTADORES = [
+  { color: "#ffd6e8", forma: "circle" },
+  { color: "#fff3b0", forma: "circle" },
+  { color: "#caffd1", forma: "circle" },
+  { color: "#ffc9c9", forma: "circle" },
+  { color: "#ccecff", forma: "circle" },
+  { color: "#e6c9ff", forma: "circle" },
+  { color: "#ffe2c9", forma: "circle" }
+];
+
+let resaltadoresConfig = cargarResaltadoresConfig();
+
+function cargarResaltadoresConfig() {
+  try {
+    const raw = localStorage.getItem("resaltadoresConfig");
+    const parsed = raw ? JSON.parse(raw) : null;
+
+    if (Array.isArray(parsed) && parsed.length === 7) {
+      return parsed.map(x => ({
+        color: x?.color || "#fff3b0",
+        forma: x?.forma === "heart" ? "heart" : "circle"
+      }));
+    }
+  } catch (e) {
+    console.warn("No pude leer resaltadoresConfig:", e);
+  }
+  return JSON.parse(JSON.stringify(DEFAULT_RESALTADORES));
+}
+
+function guardarResaltadoresConfigLocal() {
+  try {
+    localStorage.setItem("resaltadoresConfig", JSON.stringify(resaltadoresConfig));
+  } catch (e) {
+    console.warn("No pude guardar resaltadoresConfig:", e);
+  }
+}
+
+function obtenerConfigResaltadorActual() {
+  return (
+    resaltadoresConfig.find(x => x.color === colorActual) ||
+    resaltadoresConfig[0] ||
+    { color: "#fff3b0", forma: "circle" }
+  );
+}
+
+function crearNodoFormaResaltador(color, forma = "circle") {
+  const span = document.createElement("span");
+  span.className = `marker-shape ${forma === "heart" ? "heart" : "circle"}`;
+  span.style.setProperty("--marker-color", color || "#fff3b0");
+  return span;
+}
+
 // ================= MARCADORES (NUEVO LIMPIO) =================
 let modoMarcador = false;
 let seleccionMarcador = {};         // {idVersiculo:true}
@@ -465,23 +518,64 @@ function sugerirFontSizeQueEntre(wrapper, elFront, elBack, maxPx = 64, minPx = 1
 
 // ========================= 🎨 RESALTADOR COMPACTO  =======================================
 function initResaltadorCompacto() {
-
   const btnActivo = document.getElementById("btnResaltadorActivo");
   const paleta = document.getElementById("paletaResaltadores");
   const cont = document.getElementById("resaltadorCompacto");
   const btnBloquear = document.getElementById("btnBloquearResaltador");
+  const btnEditar = document.getElementById("btnEditarPaleta");
+  const wrapColores = document.getElementById("paletaColoresWrap");
 
-  if (!btnActivo || !paleta || !cont || !btnBloquear) {
+  if (!btnActivo || !paleta || !cont || !btnBloquear || !btnEditar || !wrapColores) {
     console.warn("❌ Resaltador no inicializado");
     return;
   }
 
   paleta.style.display = "none";
-  btnActivo.style.background = colorActual;
-  btnActivo.textContent = "💛";
-  btnBloquear.textContent = "🔒";
 
-  // 🟡 CLICK PRINCIPAL → abrir / cerrar paleta
+  function renderBotonActivo() {
+    const conf = obtenerConfigResaltadorActual();
+
+    btnActivo.innerHTML = "";
+    btnActivo.style.background = "transparent";
+    btnActivo.appendChild(crearNodoFormaResaltador(conf.color, conf.forma));
+  }
+
+  function renderPaletaColores() {
+    wrapColores.innerHTML = "";
+
+    resaltadoresConfig.forEach((item, i) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "btn-color-marker";
+      btn.dataset.color = item.color;
+      btn.dataset.index = i;
+
+      if (item.color === colorActual) {
+        btn.classList.add("activo");
+      }
+
+      btn.appendChild(crearNodoFormaResaltador(item.color, item.forma));
+
+      btn.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        colorActual = item.color;
+        window.colorActual = colorActual;
+
+        resaltadorBloqueado = false;
+        window.resaltadorBloqueado = resaltadorBloqueado;
+
+        renderBotonActivo();
+        renderPaletaColores();
+        actualizarUICandadoResaltador();
+        paleta.style.display = "none";
+      };
+
+      wrapColores.appendChild(btn);
+    });
+  }
+
   btnActivo.onclick = e => {
     e.preventDefault();
     e.stopPropagation();
@@ -494,82 +588,120 @@ function initResaltadorCompacto() {
     }
   };
 
-  // 🎨 ELEGIR COLOR
-  paleta.querySelectorAll("button[data-color]").forEach(btn => {
-    btn.onclick = e => {
-      e.preventDefault();
-      e.stopPropagation();
-
-      paleta.querySelectorAll("button[data-color] span.icono-candado").forEach(c => c.remove());
-
-      colorActual = btn.dataset.color;
-      btnActivo.style.background = colorActual;
-      btnActivo.textContent = btn.textContent;
-
-      resaltadorBloqueado = false;
-      window.colorActual = colorActual;
-      window.resaltadorBloqueado = resaltadorBloqueado;
-      paleta.style.display = "none";
-    };
-  });
-
-  // 🔒 BLOQUEAR / DESBLOQUEAR
   btnBloquear.onclick = e => {
-  e.preventDefault();
-  e.stopPropagation();
+    e.preventDefault();
+    e.stopPropagation();
 
-  resaltadorBloqueado = !resaltadorBloqueado;
-  window.resaltadorBloqueado = resaltadorBloqueado;
+    resaltadorBloqueado = !resaltadorBloqueado;
+    window.resaltadorBloqueado = resaltadorBloqueado;
 
-  // ✅ misma UI para manual y automático
-  actualizarUICandadoResaltador();
-};
+    actualizarUICandadoResaltador();
+  };
 
-  // ❌ cerrar clic fuera
+  btnEditar.onclick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    abrirModalEditarPaletaResaltador();
+  };
+
   document.addEventListener("click", e => {
     if (!cont.contains(e.target)) paleta.style.display = "none";
   });
+
+  renderBotonActivo();
+  renderPaletaColores();
   actualizarUICandadoResaltador();
 }
 
 // ================= ⭐ BLOQUEO DE RESALTADOR =======================
 function actualizarUICandadoResaltador() {
-  const paleta = document.getElementById("paletaResaltadores");
+  const wrapColores = document.getElementById("paletaColoresWrap");
   const btnBloquear = document.getElementById("btnBloquearResaltador");
-  if (!paleta || !btnBloquear) return;
+  if (!wrapColores || !btnBloquear) return;
 
-  // ✅ SIEMPRE leer del window (evita desync entre secciones)
   const locked = !!window.resaltadorBloqueado;
   const curColor = (window.colorActual || "#fff3b0") + "";
 
-  // icono grande
   btnBloquear.textContent = locked ? "🔒" : "🔓";
 
-  // limpiar candaditos pequeños anteriores
-  paleta.querySelectorAll("button[data-color] span.icono-candado").forEach(c => c.remove());
+  wrapColores.querySelectorAll(".icono-candado").forEach(c => c.remove());
 
-  // si está bloqueado, poner el candadito pequeño en el color actual
   if (locked) {
-    const botonColor = Array.from(paleta.querySelectorAll("button[data-color]"))
+    const botonColor = Array.from(wrapColores.querySelectorAll(".btn-color-marker"))
       .find(b => ((b.dataset.color || "") + "") === curColor);
 
-    // ✅ si no encontró exacto, igual lo mostramos en el primer color (fallback)
-    const target = botonColor || paleta.querySelector("button[data-color]");
+    const target = botonColor || wrapColores.querySelector(".btn-color-marker");
     if (target) {
       const span = document.createElement("span");
       span.textContent = "🔒";
       span.className = "icono-candado";
-      span.style.position = "absolute";
-      span.style.top = "-4px";
-      span.style.right = "-4px";
-      span.style.fontSize = "10px";
-      span.style.background = "#fff";
-      span.style.borderRadius = "50%";
-      span.style.padding = "1px";
-      target.style.position = "relative";
       target.appendChild(span);
     }
   }
+}
+
+// ================= 🧩 MODAL EDITAR PALETA RESALTADOR =================
+function abrirModalEditarPaletaResaltador() {
+  const modal = document.getElementById("modalEditarPaletaResaltador");
+  const lista = document.getElementById("listaEditarPaletaResaltador");
+  if (!modal || !lista) return;
+
+  lista.innerHTML = "";
+
+  resaltadoresConfig.forEach((item, i) => {
+    const row = document.createElement("div");
+    row.className = "row-editar-paleta";
+
+    row.innerHTML = `
+      <div><b>${i + 1}</b></div>
+      <input type="color" value="${item.color}" data-index="${i}" class="input-color-paleta">
+      <select data-index="${i}" class="select-forma-paleta">
+        <option value="circle" ${item.forma === "circle" ? "selected" : ""}>Círculo</option>
+        <option value="heart" ${item.forma === "heart" ? "selected" : ""}>Corazón</option>
+      </select>
+    `;
+
+    lista.appendChild(row);
+  });
+
+  modal.style.display = "flex";
+}
+
+function cerrarModalEditarPaletaResaltador() {
+  const modal = document.getElementById("modalEditarPaletaResaltador");
+  if (!modal) return;
+  modal.style.display = "none";
+}
+
+function guardarModalEditarPaletaResaltador() {
+  const colors = document.querySelectorAll(".input-color-paleta");
+  const formas = document.querySelectorAll(".select-forma-paleta");
+
+  resaltadoresConfig = resaltadoresConfig.map((item, i) => ({
+    color: colors[i]?.value || item.color,
+    forma: formas[i]?.value === "heart" ? "heart" : "circle"
+  }));
+
+  guardarResaltadoresConfigLocal();
+
+  if (!resaltadoresConfig.some(x => x.color === colorActual)) {
+    colorActual = resaltadoresConfig[0]?.color || "#fff3b0";
+    window.colorActual = colorActual;
+  }
+
+  initResaltadorCompacto();
+  cerrarModalEditarPaletaResaltador();
+}
+
+function resetearPaletaResaltador() {
+  resaltadoresConfig = JSON.parse(JSON.stringify(DEFAULT_RESALTADORES));
+  guardarResaltadoresConfigLocal();
+
+  colorActual = resaltadoresConfig[1]?.color || "#fff3b0";
+  window.colorActual = colorActual;
+
+  initResaltadorCompacto();
+  abrirModalEditarPaletaResaltador();
 }
 
 // ================= ⭐ FUERZA CANDADO PEQUEÑO =======================
@@ -577,19 +709,17 @@ window.forceSyncResaltadorUI = function forceSyncResaltadorUI(intentos = 20) {
   const tick = () => {
     try { actualizarUICandadoResaltador?.(); } catch (e) {}
 
-    // ✅ chequeo si ya existe el candadito chico
-    const paleta = document.getElementById("paletaResaltadores");
-    const ok = paleta && paleta.querySelector("span.icono-candado");
+    const wrapColores = document.getElementById("paletaColoresWrap");
+    const ok = wrapColores && wrapColores.querySelector("span.icono-candado");
 
-    if (ok) return;                  // listo
-    if (intentos <= 0) return;       // no se pudo
+    if (ok) return;
+    if (intentos <= 0) return;
 
     requestAnimationFrame(() => {
       window.forceSyncResaltadorUI(intentos - 1);
     });
   };
 
-  // 1 frame + tick (para que el portal termine)
   requestAnimationFrame(tick);
 };
 
@@ -3611,6 +3741,41 @@ window.cancelarCrearImagen = window.cancelarCrearImagen;
 document.addEventListener("DOMContentLoaded", () => {
   // 1) UI resaltador
   initResaltadorCompacto();
+
+    // ================= 🎨 modal editar paleta =================
+  const btnCerrarPaleta = document.getElementById("cerrarModalEditarPaleta");
+  if (btnCerrarPaleta) {
+    btnCerrarPaleta.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      cerrarModalEditarPaletaResaltador();
+    };
+  }
+
+  const btnGuardarPaleta = document.getElementById("btnGuardarPaletaResaltador");
+  if (btnGuardarPaleta) {
+    btnGuardarPaleta.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      guardarModalEditarPaletaResaltador();
+    };
+  }
+
+  const btnResetPaleta = document.getElementById("btnResetPaletaResaltador");
+  if (btnResetPaleta) {
+    btnResetPaleta.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      resetearPaletaResaltador();
+    };
+  }
+
+  const modalEditarPaleta = document.getElementById("modalEditarPaletaResaltador");
+  if (modalEditarPaleta) {
+    modalEditarPaleta.addEventListener("click", (e) => {
+      if (e.target === modalEditarPaleta) cerrarModalEditarPaletaResaltador();
+    });
+  }
 
   // 2) check iglesia por defecto
   forceDefaultCheckIglesia();
