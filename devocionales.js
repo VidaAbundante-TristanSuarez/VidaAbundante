@@ -1376,105 +1376,138 @@ async function renderFinalCanvasCaptureReal(){
     return null;
   }
 
-  const prev1 = $("dev1Preview");
-  const prev2 = $("dev2Preview");
-
-  if (!prev1 || !prev2) {
-    alert("❌ No encuentro las vistas previas de Fase 1 y/o Fase 2.");
-    return null;
-  }
-
-  const W  = 1080;
-  const H1 = 1080;
-  const H2 = 840;
-  const H  = 1920;
+  const W = 1080, H1 = 1080, H2 = 840, H = 1920;
 
   cFinal.width = W;
   cFinal.height = H;
-
   const ctx = cFinal.getContext("2d");
-  ctx.clearRect(0, 0, W, H);
+  ctx.clearRect(0,0,W,H);
 
-  // stage oculto para clonar EXACTAMENTE el preview ya renderizado
+  // ✅ Escenario offscreen
   let stage = document.getElementById("devCaptureStage");
   if (!stage) {
     stage = document.createElement("div");
     stage.id = "devCaptureStage";
     stage.style.position = "fixed";
-    stage.style.left = "-10000px";
-    stage.style.top = "-10000px";
-    stage.style.opacity = "1";
+    stage.style.left = "-10000px";     // ✅ lejos sin transform
+    stage.style.top  = "-10000px";
+    stage.style.opacity = "1";      
     stage.style.visibility = "visible";
     stage.style.pointerEvents = "none";
-    stage.style.transform = "none";
+    stage.style.transform = "none";    // ✅ importantísimo
     stage.style.zIndex = "-1";
     document.body.appendChild(stage);
   }
   stage.innerHTML = "";
 
-  function prepararClone(previewEl, outW, outH){
-    const clone = previewEl.cloneNode(true);
+  // ✅ Construir nodos “a tamaño real” (NO dependen del preview chico)
+  const makeFase1Node = () => {
+    const st = DEV.f1;
+    const node = document.createElement("div");
+    node.style.width = W + "px";
+    node.style.height = H1 + "px";
+    node.style.position = "relative";
+    node.style.overflow = "hidden";
+    node.style.borderRadius = "0";
 
-    clone.style.width = outW + "px";
-    clone.style.height = outH + "px";
-    clone.style.maxWidth = "none";
-    clone.style.minWidth = outW + "px";
-    clone.style.maxHeight = "none";
-    clone.style.minHeight = outH + "px";
-    clone.style.aspectRatio = "auto";
-    clone.style.margin = "0";
-    clone.style.position = "relative";
-    clone.style.display = "block";
-    clone.style.visibility = "visible";
-    clone.style.overflow = "hidden";
-    clone.style.borderRadius = "0";
-    clone.style.transform = "none";
-    clone.style.left = "0";
-    clone.style.top = "0";
+    const fondoUsable = st.fondoBlob || st.fondoUrl;
+    node.style.backgroundImage = fondoUsable ? `url("${fondoUsable}")` : "none";
+    node.style.backgroundSize = "cover";
+    node.style.backgroundPosition = "center";
+    node.style.backgroundColor = fondoUsable ? "transparent" : "#ffffff";
 
-    // neutralizar posibles transiciones/animaciones
-    clone.querySelectorAll("*").forEach(el => {
-      el.style.animation = "none";
-      el.style.transition = "none";
-      el.style.caretColor = "transparent";
-    });
+    const wrap = document.createElement("div");
+    wrap.style.position = "absolute";
+    wrap.style.inset = "6%";           // ✅ igual que .dev-textwrap
+    wrap.style.borderRadius = "14px";  // ✅ igual que preview
+    wrap.style.overflow = "hidden";    // ✅ igual que preview
+    wrap.style.backgroundColor = wrapperBgFromOpacity(st.op);
 
-    return clone;
-  }
+    const texto = document.createElement("div");
+    texto.style.position = "absolute";
+    texto.style.inset = "0";
+    texto.style.fontFamily = st.fuente;
+    texto.style.color = st.color;
+    applyTextStylesToOne(texto, st);
+     
+    // ✅ OUTLINE estable
+    texto.style.textShadow = textShadowLegibleFinal(st.color);
+    texto.style.webkitTextStroke = "0px";
+    texto.style.paintOrder = "normal";
 
-  const clone1 = prepararClone(prev1, W, H1);
-  const clone2 = prepararClone(prev2, W, H2);
+    // ✅ IMPORTANTE: tamaño real (sin scalePreviewF1)
+    texto.innerHTML = buildFase1HTML(st.size, 1);
 
-  stage.appendChild(clone1);
-  stage.appendChild(clone2);
+    wrap.appendChild(texto);
+    node.appendChild(wrap);
+    return node;
+  };
+
+  const makeFase2Node = () => {
+  const st = DEV.f2;
+
+  const node = document.createElement("div");
+  node.style.width = W + "px";
+  node.style.height = H2 + "px";
+  node.style.position = "relative";
+  node.style.overflow = "hidden";
+  node.style.borderRadius = "0";
+  node.style.backgroundImage = "none";
+  node.style.backgroundColor = st.fondoColor || "#ffffff";
+
+  // ✅ WRAPPER limpio: margen uniforme y sin padding extra
+  const wrap = document.createElement("div");
+  wrap.style.position = "absolute";
+  wrap.style.inset = "16px";
+  wrap.style.overflow = "hidden";
+  wrap.style.textAlign = "center";
+
+  const texto = document.createElement("div");
+  texto.style.width = "100%";
+  texto.style.height = "100%"; // ✅ importante para el layout interno absoluto de buildFase2HTML()
+  texto.style.fontFamily = st.fuente;
+  texto.style.color = st.color;
+  applyTextStylesToOne(texto, st);
+
+  // ✅ OUTLINE estable
+  texto.style.textShadow = textShadowLegibleFinal(st.color);
+  texto.style.webkitTextStroke = "0px";
+  texto.style.paintOrder = "normal";
+
+  // ✅ HTML fase 2 ya maneja: texto centrado + adorno fijo abajo
+  texto.innerHTML = buildFase2HTML(st.size);
+
+  wrap.appendChild(texto);
+  node.appendChild(wrap);
+
+  return node;
+};
+
+  // ✅ Agregar al stage y esperar fuentes/layout
+  const n1 = makeFase1Node();
+  const n2 = makeFase2Node();
+  stage.appendChild(n1);
+  stage.appendChild(n2);
 
   await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
   if (document.fonts?.ready) await document.fonts.ready;
 
-  const cap1 = await html2canvas(clone1, {
-    backgroundColor: null,
-    scale: 2,
-    useCORS: true
-  });
-
-  const cap2 = await html2canvas(clone2, {
-    backgroundColor: null,
-    scale: 2,
-    useCORS: true
-  });
+  // ✅ Capturar
+  const cap1 = await html2canvas(n1, { backgroundColor: null, scale: 2, useCORS: true });
+  const cap2 = await html2canvas(n2, { backgroundColor: null, scale: 2, useCORS: true });
 
   ctx.drawImage(cap1, 0, 0, W, H1);
   ctx.drawImage(cap2, 0, H1, W, H2);
 
-  const RADIO_FINAL = 40;
+  // ✅ redondear como preview (aprox)
+  const RADIO_FINAL = 40; // si querés más redondo probá 50
   const rounded = makeRoundedCanvas(cFinal, RADIO_FINAL);
 
   DEV.finalDataUrl = rounded.toDataURL("image/png");
-
   const img = $("devFinalImg");
   if (img) img.src = DEV.finalDataUrl;
 
-  return rounded;
+  return rounded; // 👈 devolvemos el canvas redondeado
 }
 
 window.devToggleSubirPanel = () => {
@@ -1641,6 +1674,8 @@ window.devVolverFase1 = () => {
 
 window.devIrFase3 = async () => {
   devRenderFase(2);
+  cerrarModal("modalDevFase2");
+  abrirModal("modalDevFase3");
 
   DEV.audioOk = false;
   devSetFinalButtons(false);
@@ -1648,22 +1683,11 @@ window.devIrFase3 = async () => {
   devSetLoadingFase3(true, "⏳ Generando…");
 
   try {
-    // ✅ aseguramos que fase 2 termine de pintar exactamente como se ve
-    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-    if (document.fonts?.ready) await document.fonts.ready;
-
-    // ✅ capturamos ANTES de cerrar la fase 2
     if (typeof html2canvas === "function") {
       await renderFinalCanvasCaptureReal();
     } else {
       alert("❌ Falta html2canvas. Cargalo como en biblia.js");
-      return;
     }
-
-    // ✅ recién ahora pasamos a fase 3
-    abrirModal("modalDevFase3");
-    cerrarModal("modalDevFase2");
-
   } finally {
     devSetLoadingFase3(false);
   }
