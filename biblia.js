@@ -47,6 +47,10 @@ window.__FB_API = { ref, set, remove, onValue, get, push, sRef, uploadBytes, get
 // ================= ESTADO GLOBAL =================
 let uid = null;
 let bibliaData = [];
+let bibliaDataRV = [];
+let bibliaDataNTV = [];
+let versionActual = "RV1960"; // "RV1960" | "NTV"
+
 let marcados = {};
 let size = 18;
 let fuenteActual = "Arial";
@@ -290,12 +294,25 @@ function bibliaRestaurarUIAlVolver() {
 }
 
 // ================= ⭐ CARGA BIBLIA ==============================
-fetch("VidaAbundante - RV1960.json")
-  .then(r => r.json())
-  .then(data => {
-    bibliaData = data;
-    iniciar();
-  });
+Promise.all([
+  fetch("VidaAbundante - RV1960.json").then(r => r.json()),
+  fetch("biblia_ntv.json").then(r => r.json())
+])
+.then(([rvData, ntvData]) => {
+  bibliaDataRV = Array.isArray(rvData) ? rvData : [];
+  bibliaDataNTV = Array.isArray(ntvData) ? ntvData : [];
+
+  // arranca por defecto en RV1960
+  bibliaData = bibliaDataRV;
+  versionActual = "RV1960";
+
+  iniciar();
+})
+.catch(err => {
+  console.error("❌ Error cargando Biblias:", err);
+});
+
+// =======
 
 document.fonts.ready.then(() => {
   console.log("✅ Fuentes cargadas");
@@ -346,6 +363,66 @@ function mostrarToast(msg, ms = 2200) {
     setTimeout(() => (t.style.display = "none"), 250);
   }, ms);
 }
+
+// ================= ⭐ helpers para cambiar versión ==============================
+function getCampoTextoVersion() {
+  return versionActual === "NTV" ? "NTV" : "RV1960";
+}
+
+function getTextoVersiculo(v) {
+  if (!v) return "";
+  return v[getCampoTextoVersion()] || "";
+}
+
+function actualizarTituloBiblia() {
+  if (!titulo) return;
+
+  titulo.innerHTML = `
+    <span>${libroSel.value} ${capSel.value}</span>
+    <span style="margin-left:10px; font-size:12px; opacity:.9;">
+      <button type="button"
+        onclick="cambiarVersionBiblia('RV1960')"
+        style="
+          border:none;
+          border-radius:999px;
+          padding:3px 8px;
+          margin-right:4px;
+          cursor:pointer;
+          background:${versionActual === "RV1960" ? "var(--ui-azul-claro)" : "rgba(0,0,0,.08)"};
+          color:inherit;
+          font-size:11px;
+          font-weight:700;
+        ">
+        RV1960
+      </button>
+
+      <button type="button"
+        onclick="cambiarVersionBiblia('NTV')"
+        style="
+          border:none;
+          border-radius:999px;
+          padding:3px 8px;
+          cursor:pointer;
+          background:${versionActual === "NTV" ? "var(--ui-azul-claro)" : "rgba(0,0,0,.08)"};
+          color:inherit;
+          font-size:11px;
+          font-weight:700;
+        ">
+        NTV
+      </button>
+    </span>
+  `;
+}
+
+window.cambiarVersionBiblia = function(version) {
+  if (version !== "RV1960" && version !== "NTV") return;
+
+  versionActual = version;
+  bibliaData = (version === "NTV") ? bibliaDataNTV : bibliaDataRV;
+
+  cargarCapitulos();
+  mostrarTexto();
+};
 
 // ================= ⭐ SUGERIR TAMAÑO QUE ENTRE (solo sugerencia) =================
 function sugerirFontSizeQueEntre(wrapper, elFront, elBack, maxPx = 64, minPx = 10, step = 0.5) {
@@ -519,7 +596,7 @@ window.forceSyncResaltadorUI = function forceSyncResaltadorUI(intentos = 20) {
 // ================= ⭐ MOSTRAR TEXTO =======================
 function mostrarTexto() {
   texto.innerHTML = ""; 
-  titulo.innerText = `${libroSel.value} ${capSel.value}`;
+ actualizarTituloBiblia();
 
   const versos = bibliaData.filter(v =>
     v.Libro === libroSel.value &&
@@ -690,7 +767,7 @@ function pintarVersiculo(v) {
 
   div.innerHTML = `
     <span class="num">${v.Versiculo}</span>
-    <span class="txt">${v.RV1960}</span>
+   <span class="txt">${getTextoVersiculo(v)}</span>
     ${idMarcadorPluma ? `<i class="fa-solid fa-comment-dots icono-nota" aria-hidden="true" data-mid="${idMarcadorPluma}"></i>` : ``}
   `;
 
@@ -757,7 +834,8 @@ function obtenerVersiculoSeleccionado() {
       Number(x.Capitulo) === it.Capitulo &&
       Number(x.Versiculo) === it.Versiculo
     );
-    if (vers?.RV1960) textos.push(vers.RV1960);
+    const txt = getTextoVersiculo(vers);
+if (txt) textos.push(txt);
   }
 
   // 3) Agrupar por Libro + Capítulo para referencia
@@ -2332,7 +2410,7 @@ function renderPreviewVersiculosMarcador() {
 
   const partes = versiculos.map(n => {
     const vv = bibliaData.find(x => x.Libro === libro && x.Capitulo == cap && x.Versiculo == n);
-    const txt = vv ? vv.RV1960 : "";
+   const txt = vv ? getTextoVersiculo(vv) : "";
     return `<div><span style="opacity:.75">${n}</span> ${txt}</div>`;
   }).join("");
 
@@ -2723,7 +2801,7 @@ function renderPanelMarcadores() {
       if (m.libro && m.capitulo && (m.versiculos || []).length) {
         const partes = (m.versiculos || []).map(n => {
           const vv = bibliaData.find(x => x.Libro === m.libro && x.Capitulo == m.capitulo && x.Versiculo == n);
-          return vv ? vv.RV1960 : "";
+         return vv ? getTextoVersiculo(vv) : "";
         }).filter(Boolean);
         if (partes.length) textoVers = partes.join(" ");
       }
@@ -3407,7 +3485,7 @@ window.compartirMarcador = async (destino) => {
   if (m.libro && m.capitulo && (m.versiculos || []).length) {
     const partes = (m.versiculos || []).map(n => {
       const vv = bibliaData.find(x => x.Libro === m.libro && x.Capitulo == m.capitulo && x.Versiculo == n);
-      return vv ? vv.RV1960 : "";
+    return vv ? getTextoVersiculo(vv) : "";
     }).filter(Boolean);
     textoVers = partes.join(" ");
   }
