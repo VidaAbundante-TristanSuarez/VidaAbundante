@@ -2409,4 +2409,9 @@ body.oscuro #wrapFiltrosBiblia.abierto .filtros{
   }
 }
 
+#panelImgTopRow{
+  display:flex;
+  justify-content:flex-end;
+  padding-right:4px;
+}
   </style> 
