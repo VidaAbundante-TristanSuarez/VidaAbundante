@@ -122,20 +122,37 @@
     <i class="fa-solid fa-circle-up"></i>
   </button>
 
-  <!-- ✅ Resaltador -->
-  <div id="resaltadorCompacto" style="position: relative;">
-    <button id="btnResaltadorActivo" class="btn-resaltador" type="button">💛</button>
-    <div id="paletaResaltadores">
-      <button data-color="#ffd6e8">🌸</button>
-      <button data-color="#fff3b0">💛</button>
-      <button data-color="#caffd1">💚</button>
-      <button data-color="#ffc9c9">❤️</button>
-      <button data-color="#ccecff">💙</button>
-      <button data-color="#e6c9ff">💜</button>
-      <button data-color="#ffe2c9">🧡</button>
-      <button id="btnBloquearResaltador" title="Bloquear resaltador" type="button">🔒</button>
+<!-- ✅ Resaltador -->
+<div id="resaltadorCompacto" style="position: relative;">
+  <button id="btnResaltadorActivo" class="btn-resaltador" type="button" aria-label="Resaltador activo"></button>
+
+  <div id="paletaResaltadores">
+    <div id="paletaColoresWrap"></div>
+
+    <button id="btnBloquearResaltador" title="Bloquear resaltador" type="button">🔒</button>
+
+    <button id="btnEditarPaleta" title="Configurar resaltadores" type="button">
+      <i class="fa-solid fa-ellipsis-vertical"></i>
+    </button>
+  </div>
+</div>
+
+<!-- ✅ Modal simple editar paleta -->
+<div id="modalEditarPaletaResaltador" class="modal-editar-paleta" style="display:none;">
+  <div class="modal-editar-paleta-box">
+    <div class="modal-editar-paleta-head">
+      <b>Configurar resaltadores</b>
+      <button type="button" id="cerrarModalEditarPaleta">✕</button>
+    </div>
+
+    <div id="listaEditarPaletaResaltador"></div>
+
+    <div class="modal-editar-paleta-foot">
+      <button type="button" id="btnResetPaletaResaltador">Restaurar</button>
+      <button type="button" id="btnGuardarPaletaResaltador">Guardar</button>
     </div>
   </div>
+</div>
 
   <!-- ✅ Modo marcador (oculta demás acciones y deja solo check/confirmación) -->
   <button id="btnModoMarcadorBarra" class="accion-normal" type="button" onclick="toggleModoMarcador()"
