@@ -2637,15 +2637,12 @@ function renderPanelMarcadores() {
     return (b.fecha || 0) - (a.fecha || 0);
   });
 
-  // ✅ Filtro: SOLO NOTAS (con versículo / sin versículo / abc)
   const filtrados = ordenados.filter(m => {
     const tieneNota = !!(m.nota && String(m.nota).trim());
     if (!tieneNota) return false;
 
-    // ✅ filtro ABC
     if (filtroNotasPanel === "abc") return m?.origen === "abc";
 
-    // ✅ filtro Biblia (con/sin versículo)
     const esABC = (m?.origen === "abc");
     if (esABC) return false;
 
@@ -2656,7 +2653,6 @@ function renderPanelMarcadores() {
 
   const cantSel = Object.keys(seleccionEliminarMarcadores || {}).length;
 
-  // iconos dinámicos
   const iconOrden = (ordenMarcadores === "fecha")
     ? `<i class="fa-regular fa-calendar"></i>`
     : `<i class="fa-solid fa-book-bible"></i>`;
@@ -2667,50 +2663,42 @@ function renderPanelMarcadores() {
       ? `<i class="fa-solid fa-sheet-plastic"></i>`
       : `<i class="fa-solid fa-graduation-cap"></i>`;
 
-  panel.innerHTML = `
-<div class="pm-left">
-  <b>
-    ${
-      filtroNotasPanel === "con"
-        ? `📌 Notas con versículo 
-           <span class="muted" style="font-size:12px;">
-           · ${ordenMarcadores === "fecha" ? "orden: fecha" : "orden: bíblico"}
-           </span>`
-        : filtroNotasPanel === "sin"
-          ? `🗒 Notas libres`
-          : `🎓 Notas ABC`
-    }
-  </b>
-</div>
+  const tituloPanel =
+    filtroNotasPanel === "con"
+      ? "📌 Notas con versículo"
+      : filtroNotasPanel === "sin"
+        ? "🗒 Notas libres"
+        : "🎓 Notas ABC";
 
-  ${filtroNotasPanel === "con" ? `
-    <div class="pm-sub">
-      ${ordenMarcadores === "fecha"
-        ? "ordenado por fecha"
-        : "ordenado bíblicamente"}
-    </div>
-  ` : ``}
-</div>
+  const subtituloOrden =
+    filtroNotasPanel === "con"
+      ? `<div class="pm-sub muted" style="font-size:12px; margin-top:2px;">
+           orden: ${ordenMarcadores === "fecha" ? "fecha" : "bíblico"}
+         </div>`
+      : "";
+
+  panel.innerHTML = `
+    <div class="panel-marcadores-bar">
+      <div class="pm-left">
+        <b>${tituloPanel}</b>
+        ${subtituloOrden}
+      </div>
 
       <div class="pm-right">
-        <!-- 1) AGREGAR NOTA -->
         <button type="button" class="pm-btn" onclick="abrirNotaLibre()" title="Agregar nota">
           <i class="fa-solid fa-square-plus"></i>
         </button>
 
-        <!-- 2) ORDEN FECHA / BIBLICO (solo con versículo) -->
         ${filtroNotasPanel === "con" ? `
           <button type="button" class="pm-btn" onclick="toggleOrdenMarcadoresPanel()" title="Ordenar">
             ${iconOrden}
           </button>
         ` : ``}
 
-        <!-- 3) FILTRO NOTAS CON / SIN VERSICULO / ABC -->
         <button type="button" class="pm-btn" onclick="toggleFiltroNotasPanel()" title="Filtrar notas">
           ${iconFiltroNotas}
         </button>
 
-        <!-- 4) ELIMINAR -->
         <button type="button" class="pm-btn" onclick="toggleModoEliminarMarcadores()" title="Eliminar">
           <i class="fa-solid fa-trash-can"></i>
         </button>
