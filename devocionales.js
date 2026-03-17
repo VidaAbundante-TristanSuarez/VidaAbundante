@@ -1411,17 +1411,21 @@ async function renderFinalCanvasCaptureReal(){
   stage.innerHTML = "";
 
   // ✅ FASE 1
-  const makeFase1Node = () => {
+const makeFase1Node = () => {
   const preview = document.getElementById("dev1Preview");
   if (!preview) return null;
 
   const clone = preview.cloneNode(true);
 
-  clone.style.width = W + "px";
-  clone.style.height = H1 + "px";
-  clone.style.position = "relative";
-  clone.style.transform = "none";
-  clone.style.borderRadius = "0";
+  const scale = W / preview.offsetWidth;
+
+  clone.style.width = preview.offsetWidth + "px";
+  clone.style.height = preview.offsetHeight + "px";
+  clone.style.transform = `scale(${scale})`;
+  clone.style.transformOrigin = "top left";
+  clone.style.position = "absolute";
+  clone.style.left = "0";
+  clone.style.top = "0";
 
   return clone;
 };
@@ -1433,11 +1437,15 @@ const makeFase2Node = () => {
 
   const clone = preview.cloneNode(true);
 
-  clone.style.width = W + "px";
-  clone.style.height = H2 + "px";
-  clone.style.position = "relative";
-  clone.style.transform = "none";
-  clone.style.borderRadius = "0";
+  const scale = W / preview.offsetWidth;
+
+  clone.style.width = preview.offsetWidth + "px";
+  clone.style.height = preview.offsetHeight + "px";
+  clone.style.transform = `scale(${scale})`;
+  clone.style.transformOrigin = "top left";
+  clone.style.position = "absolute";
+  clone.style.left = "0";
+  clone.style.top = "0";
 
   return clone;
 };
