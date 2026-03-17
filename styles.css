@@ -739,9 +739,9 @@ body.oscuro #paletaResaltadores{
 /* ================= CORAZÓN ================= */
 .marker-shape.heart{
   position: relative;
-  width: 20px;
-  height: 20px;
-  flex: 0 0 20px;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -752,7 +752,7 @@ body.oscuro #paletaResaltadores{
 /* usamos un corazón real, no formas inventadas */
 .marker-shape.heart::before{
   content: "❤";
-  font-size: 20px;
+  font-size: 22px;
   line-height: 1;
   color: var(--marker-color);
   font-family: Arial, "Segoe UI Symbol", sans-serif;
