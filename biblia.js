@@ -776,6 +776,7 @@ function initPickrEnHosts(selector = ".pickr-host") {
       default: input.value || "#ffffff",
       comparison: true,
       useAsButton: true,
+      position: "top-middle",
 
       components: {
         preview: true,
