@@ -181,24 +181,30 @@ function iconoSegunTipo(tipo = "") {
   return "fa-file";
 }
 
+const ETIQUETAS_COLOR = {
+  "predica": "#ffcb00",
+  "anuncio": "#ff0000",
+  "plan": "#d2ff00",
+  "racimo": "#00faff",
+  "oración": "#ff8000",
+  "culto": "#fff600",
+  "santa cena": "#a800ff",
+  "reunion jovenes": "#00ff79",
+  "reunion varones": "#008fff",
+  "reunion mujeres": "#ff00a0",
+  "taller": "#7200ff",
+  "retiro varones": "#0004ff"
+};
+
 function colorEtiquetaSubidos(etiqueta = "") {
   const t = String(etiqueta).trim().toLowerCase();
 
-  const mapa = {
-    "predica":         { bg: "#dbeafe", fg: "#111111" },
-    "anuncio":         { bg: "#fef3c7", fg: "#111111" },
-    "plan":            { bg: "#dcfce7", fg: "#111111" },
-    "racimo":          { bg: "#f3e8ff", fg: "#111111" },
-    "oración":         { bg: "#fee2e2", fg: "#111111" },
-    "culto":           { bg: "#e0f2fe", fg: "#111111" },
-    "santa cena":      { bg: "#fde68a", fg: "#111111" },
-    "reunion jovenes": { bg: "#ddd6fe", fg: "#111111" },
-    "reunion varones": { bg: "#d1fae5", fg: "#111111" },
-    "reunion mujeres": { bg: "#fbcfe8", fg: "#111111" },
-    "taller":          { bg: "#e5e7eb", fg: "#111111" }
-  };
+  const color = ETIQUETAS_COLOR[t] || "#e8f0fe";
 
-  return mapa[t] || { bg: "#e8f0fe", fg: "#111111" };
+  return {
+    bg: color,
+    fg: "#000"
+  };
 }
 
 window.subidosMostrarPreview = function subidosMostrarPreview() {};
@@ -302,12 +308,14 @@ function renderFeed() {
 
 window.abrirSubidoDesdeCalendario = function abrirSubidoDesdeCalendario(id) {
   const el = document.getElementById("subido-" + id);
-  if (!el) return;
+  const feed = document.getElementById("subidosFeed");
+  if (!el || !feed) return;
 
-  el.scrollIntoView({
-    behavior: "smooth",
-    inline: "center",
-    block: "nearest"
+  const left = el.offsetLeft - (feed.clientWidth / 2) + (el.clientWidth / 2);
+
+  feed.scrollTo({
+    left,
+    behavior: "smooth"
   });
 };
 
