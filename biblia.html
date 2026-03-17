@@ -403,7 +403,7 @@
       <div id="fondoPlanoBox" style="display:none;">
         <label style="font-weight:700; font-size:13px; display:block; margin-bottom:6px;">Fondo plano</label>
         <div style="display:flex; gap:10px; align-items:center;">
-          <input id="colorFondoPlano" type="color" value="#ffffff"
+          <input id="colorFondoPlano" class="color-picker" type="color" value="#ffffff"
                  style="width:44px; height:36px; border:none; padding:0; background:transparent;">
           <button type="button" class="btn-ghost" onclick="aplicarFondoPlanoDesdePicker()">Aplicar</button>
         </div>
@@ -451,7 +451,7 @@
     <button type="button" onclick="toggleUnderline()" id="btnUnderline">U</button>
   </div>
 
-  <input id="personalizarColor" class="color-input" type="color" value="#000000">
+ <input id="personalizarColor" class="color-input color-picker" type="color" value="#000000">
 </div> <!-- ✅ cierra rowB -->
 
     <!-- ================= GRUPO 3: FILA FINAL ================= -->
@@ -512,7 +512,7 @@
 <div class="fila-color-marcador">
   <div class="color-marcador">
     <span>Color</span>
-    <input id="marcadorColor" type="color" value="#fff3b0">
+    <input id="marcadorColor" class="color-picker" type="color" value="#fff3b0">
   </div>
 
   <label class="keep-marcador">
@@ -709,7 +709,7 @@
       <input id="dev1Tamano" class="tamano-input" type="number" value="30" min="10" max="90" step="0.5">
       <button type="button" class="btn-ghost" onclick="devCambiarTamano(1,1)">+</button>
       </div> 
-      <input id="dev1Color" class="color-input" type="color" value="#000000">
+     <input id="dev1Color" class="color-input color-picker" type="color" value="#000000">
     </div>
 
     <div class="dev-row">
@@ -768,7 +768,7 @@
    <!-- CONTROLES en UNA sola fila + Fondo plano vistoso (sin títulos) -->
 <div class="dev-tools">
   <div class="dev-fondo-chip" title="Fondo plano">
-    <input id="dev2Fondo" type="color" value="#ffffff">
+    <input id="dev2Fondo" class="color-picker" type="color" value="#ffffff">
   </div>
 
  <div class="dev-stepper">
@@ -777,7 +777,7 @@
   <button type="button" class="btn-ghost" onclick="devCambiarTamano(2,1)">+</button>
   </div>
   
-  <input id="dev2Color" class="color-input" type="color" value="#000000">
+ <input id="dev2Color" class="color-input color-picker" type="color" value="#000000">
 </div>
 
     <div class="dev-row">
