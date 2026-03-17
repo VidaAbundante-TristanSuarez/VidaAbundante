@@ -737,71 +737,51 @@ body.oscuro #paletaResaltadores{
 }
 
 /* ================= CORAZÓN SUAVE PRO ================= */
+/* ================= CORAZÓN ================= */
 .marker-shape.heart{
   position: relative;
-  width:24px;   /* más grande */
-  height:22px;
+  width: 24px;
+  height: 22px;
+  transform: rotate(-45deg);
+  background: var(--marker-color);
+  border-radius: 5px;
+  margin-top: 1px;
+  box-sizing: border-box;
 }
 
-/* base del corazón (rotado) */
-.marker-shape.heart::before{
-  content:"";
-  position:absolute;
-  left:50%;
-  bottom:0;
-  width:14px;
-  height:14px;
-  transform: translateX(-50%) rotate(45deg);
-
-  background: rgba(0,0,0,.30);
-}
-
-/* círculos superiores */
+/* lóbulos */
+.marker-shape.heart::before,
 .marker-shape.heart::after{
   content:"";
   position:absolute;
-  top:0;
-  left:50%;
   width:24px;
-  height:16px;
-  transform: translateX(-50%);
-
-  background: transparent;
+  height:24px;
+  background: var(--marker-color);
+  border-radius: 50%;
+  box-sizing: border-box;
 }
 
-/* usamos sombras internas para formar el corazón */
-.marker-shape.heart{
-  --borde: rgba(0,0,0,.30);
-  --color: var(--marker-color);
-
-  background:
-    radial-gradient(circle at 30% 30%, var(--color) 70%, transparent 71%),
-    radial-gradient(circle at 70% 30%, var(--color) 70%, transparent 71%),
-    linear-gradient(var(--color), var(--color));
-
-  background-size:
-    50% 60%,
-    50% 60%,
-    100% 60%;
-
-  background-position:
-    left top,
-    right top,
-    center bottom;
-
-  background-repeat: no-repeat;
-
-  border-radius: 4px;
+.marker-shape.heart::before{
+  top:-12px;
+  left:0;
 }
 
-/* borde tipo círculo */
-.marker-shape.heart{
-  box-shadow: 0 0 0 2px rgba(0,0,0,.30);
+.marker-shape.heart::after{
+  top:0;
+  left:12px;
 }
 
-/* modo oscuro */
-body.oscuro .marker-shape.heart{
-  box-shadow: 0 0 0 2px rgba(255,255,255,.35);
+/* contorno suave acorde al color */
+.marker-shape.heart,
+.marker-shape.heart::before,
+.marker-shape.heart::after{
+  box-shadow: 0 0 0 2px rgba(0,0,0,.22);
+}
+
+body.oscuro .marker-shape.heart,
+body.oscuro .marker-shape.heart::before,
+body.oscuro .marker-shape.heart::after{
+  box-shadow: 0 0 0 2px rgba(255,255,255,.22);
 }
 
 #btnEditarPaleta,
