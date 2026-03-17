@@ -4240,3 +4240,34 @@ window.eliminarImagenPanel = async (id) => {
     alert("No se pudo eliminar la imagen");
   }
 };
+
+(function initScrollTopGlobal(){
+  const btn = document.getElementById("btnScrollTopGlobal");
+  if (!btn) return;
+
+  function actualizarBotonScrollTop() {
+    const visible =
+      document.getElementById("iglesia-devocionales")?.style.display !== "none" ||
+      document.getElementById("iglesia-subidos")?.style.display !== "none" ||
+      document.getElementById("panel-imagenes")?.style.display !== "none" ||
+      document.getElementById("panel-marcadores")?.style.display !== "none";
+
+    if (visible && window.scrollY > 260) {
+      btn.classList.add("mostrar");
+    } else {
+      btn.classList.remove("mostrar");
+    }
+  }
+
+  window.addEventListener("scroll", actualizarBotonScrollTop, { passive: true });
+  window.addEventListener("resize", actualizarBotonScrollTop);
+
+  btn.addEventListener("click", () => {
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth"
+    });
+  });
+
+  setInterval(actualizarBotonScrollTop, 500);
+})();
