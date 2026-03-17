@@ -556,6 +556,7 @@ const esperarAuth = () => {
   setTimeout(esperarAuth, 1200);
 };
 esperarAuth();
+}
 
 document.addEventListener("DOMContentLoaded", () => {
   initSubidosBotones();
