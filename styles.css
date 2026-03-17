@@ -736,52 +736,53 @@ body.oscuro #paletaResaltadores{
   box-shadow:0 1px 3px rgba(0,0,0,.14);
 }
 
-/* ================= CORAZÓN SUAVE PRO ================= */
 /* ================= CORAZÓN ================= */
 .marker-shape.heart{
   position: relative;
-  width: 24px;
-  height: 22px;
+  width: 20px;
+  height: 18px;
   transform: rotate(-45deg);
-  background: var(--marker-color);
-  border-radius: 5px;
   margin-top: 1px;
   box-sizing: border-box;
 }
 
-/* lóbulos */
-.marker-shape.heart::before,
+/* corazón de atrás = BORDE */
+.marker-shape.heart::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background: rgba(0,0,0,.30);
+  border-radius: 4px;
+}
+
+/* lóbulos del corazón de atrás */
+.marker-shape.heart::before{
+  box-shadow:
+    0 -10px 0 0 rgba(0,0,0,.30),
+    10px 0 0 0 rgba(0,0,0,.30);
+}
+
+/* corazón de adelante = RELLENO */
 .marker-shape.heart::after{
   content:"";
   position:absolute;
-  width:24px;
-  height:24px;
+  top:2px;
+  left:2px;
+  width:16px;
+  height:14px;
   background: var(--marker-color);
-  border-radius: 50%;
-  box-sizing: border-box;
+  border-radius: 4px;
+  box-shadow:
+    0 -8px 0 0 var(--marker-color),
+    8px 0 0 0 var(--marker-color);
 }
 
-.marker-shape.heart::before{
-  top:-12px;
-  left:0;
-}
-
-.marker-shape.heart::after{
-  top:0;
-  left:12px;
-}
-
-/* contorno suave acorde al color */
-.marker-shape.heart,
-.marker-shape.heart::before,
-.marker-shape.heart::after{
-  box-shadow: 0 0 0 2px rgba(0,0,0,.22);
-}
-
-body.oscuro .marker-shape.heart,
-body.oscuro .marker-shape.heart::before,
-body.oscuro .marker-shape.heart::after{
-  box-shadow: 0 0 0 2px rgba(255,255,255,.22);
+/* borde claro en oscuro, igual lógica del círculo */
+body.oscuro .marker-shape.heart::before{
+  background: rgba(255,255,255,.35);
+  box-shadow:
+    0 -10px 0 0 rgba(255,255,255,.35),
+    10px 0 0 0 rgba(255,255,255,.35);
 }
 
 #btnEditarPaleta,
