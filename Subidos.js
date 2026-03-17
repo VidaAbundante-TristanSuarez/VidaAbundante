@@ -115,10 +115,9 @@ function renderCalendario() {
   const diasMes = ultimoDia.getDate();
 
   let inicioSemana = primerDia.getDay();
-  if (inicioSemana === 0) inicioSemana = 7; // domingo = 7
+  if (inicioSemana === 0) inicioSemana = 7;
 
   const porFecha = agruparPorFecha(subidosItems);
-
   const diasHeader = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 
   let html = `
@@ -126,7 +125,6 @@ function renderCalendario() {
       <div class="subidos-cal-head">
         ${diasHeader.map(d => `<div>${d}</div>`).join("")}
       </div>
-
       <div class="subidos-cal-grid">
   `;
 
@@ -146,25 +144,14 @@ function renderCalendario() {
           ${itemsDia.slice(0, 3).map(it => {
             const color = colorEtiquetaSubidos(it.etiqueta || "");
             const titulo = escaparHtml(it.etiqueta || "Subido");
-            const desc = escaparHtml(it.descripcion || "");
-            const fechaLegible = new Date((it.fechaEvento || f) + "T00:00:00").toLocaleDateString("es-AR");
 
             return `
               <button
                 type="button"
                 class="subidos-chip"
                 onclick="abrirSubidoDesdeCalendario('${it.id}')"
-                onmouseenter="subidosMostrarPreview(event, '${it.id}')"
-                onmousemove="subidosMoverPreview(event)"
-                onmouseleave="subidosOcultarPreview()"
-                ontouchstart="subidosMostrarPreview(event, '${it.id}')"
-                ontouchend="setTimeout(subidosOcultarPreview, 1200)"
                 style="background:${color.bg}; color:${color.fg};"
                 title="${titulo}"
-                data-id="${it.id}"
-                data-tag="${titulo}"
-                data-desc="${desc}"
-                data-date="${fechaLegible}"
               >
                 ${titulo}
               </button>
@@ -214,41 +201,9 @@ function colorEtiquetaSubidos(etiqueta = "") {
   return mapa[t] || { bg: "#e8f0fe", fg: "#111111" };
 }
 
-window.subidosMostrarPreview = function subidosMostrarPreview(ev, id) {
-  const it = subidosItems.find(x => x.id === id);
-  if (!it) return;
-
-  let tt = document.getElementById("subidosPreviewTooltip");
-  if (!tt) {
-    tt = document.createElement("div");
-    tt.id = "subidosPreviewTooltip";
-    document.body.appendChild(tt);
-  }
-
-  const color = colorEtiquetaSubidos(it.etiqueta || "");
-  const fechaLegible = it.fechaEvento
-    ? new Date(it.fechaEvento + "T00:00:00").toLocaleDateString("es-AR")
-    : "";
-
-  const esImg = (it.mimeType || "").startsWith("image/");
-  const esVideo = (it.mimeType || "").startsWith("video/");
-
-  tt.innerHTML = `
-    <div class="tt-tag" style="background:${color.bg}; color:${color.fg};">
-      ${escaparHtml(it.etiqueta || "Subido")}
-    </div>
-    <div class="tt-date">${escaparHtml(fechaLegible)}</div>
-    ${
-      esImg ? `<img src="${it.url}" alt="Preview">` :
-      esVideo ? `<video src="${it.url}" muted playsinline preload="metadata"></video>` :
-      ``
-    }
-    <div class="tt-desc">${escaparHtml(it.descripcion || "")}</div>
-  `;
-
-  tt.style.display = "block";
-  subidosMoverPreview(ev);
-};
+window.subidosMostrarPreview = function subidosMostrarPreview() {};
+window.subidosMoverPreview = function subidosMoverPreview() {};
+window.subidosOcultarPreview = function subidosOcultarPreview() {};
 
 window.subidosMoverPreview = function subidosMoverPreview(ev) {
   const tt = document.getElementById("subidosPreviewTooltip");
@@ -315,23 +270,47 @@ function renderFeed() {
         <div class="subidos-media">
           ${
             esImg
-              ? `<img src="${it.url}" alt="${escaparHtml(it.fileName || "Imagen subida")}" loading="lazy">`
+              ? `
+                <div class="subidos-media-frame is-image">
+                  <img src="${it.url}" alt="${escaparHtml(it.fileName || "Imagen subida")}" loading="lazy">
+                </div>
+              `
               : esVideo
-              ? `<video src="${it.url}" controls preload="metadata"></video>`
+              ? `
+                <div class="subidos-media-frame is-video">
+                  <video src="${it.url}" controls preload="metadata"></video>
+                </div>
+              `
               : esAudio
-              ? `<audio src="${it.url}" controls preload="metadata"></audio>`
+              ? `
+                <div class="subidos-media-frame is-audio">
+                  <audio src="${it.url}" controls preload="metadata"></audio>
+                </div>
+              `
               : `
-                <div style="text-align:center; padding-top:6px;">
-                  <a href="${it.url}" target="_blank" rel="noopener">Abrir archivo</a>
+                <div class="subidos-media-frame is-file">
+                  <a href="${it.url}" target="_blank" rel="noopener">Descargar archivo</a>
                 </div>
               `
           }
         </div>
 
         <div class="subidos-feed-actions">
-          <a href="${it.url}" target="_blank" rel="noopener">Abrir</a>
-          <a href="${it.url}" download="${escaparHtml(it.fileName || "archivo")}">Descargar</a>
-          <button type="button" onclick="compartirSubido('${it.id}')">Compartir</button>
+          <a href="${it.url}" download="${escaparHtml(it.fileName || "archivo")}">
+            <i class="fa-solid fa-download"></i>
+          </a>
+          <button type="button" onclick="compartirSubido('${it.id}')">
+            <i class="fa-solid fa-share-nodes"></i>
+          </button>
+          ${
+            subidosEsAdmin
+              ? `
+                <button type="button" class="subidosDanger" onclick="borrarSubido('${it.id}')">
+                  <i class="fa-solid fa-trash"></i>
+                </button>
+              `
+              : ``
+          }
         </div>
       </div>
     `;
@@ -383,6 +362,23 @@ window.compartirSubido = async function compartirSubido(id) {
   }
 };
 
+window.borrarSubido = async function borrarSubido(id) {
+  try {
+    if (!subidosEsAdmin) return;
+
+    const it = subidosItems.find(x => x.id === id);
+    if (!it) return;
+
+    const ok = confirm("¿Querés borrar este archivo?");
+    if (!ok) return;
+
+    await set(ref(db, `subidosIglesia/${id}`), null);
+  } catch (e) {
+    console.error("Error borrando subido:", e);
+    alert("No se pudo borrar el archivo.");
+  }
+};
+
 function refrescarSubidos() {
   renderMesTitulo();
   renderCalendario();
@@ -392,7 +388,11 @@ function refrescarSubidos() {
   if (btnNuevo) btnNuevo.style.display = subidosEsAdmin ? "inline-flex" : "none";
 }
 
+let subidosGuardando = false;
+
 async function guardarSubido() {
+  if (subidosGuardando) return;
+
   try {
     if (!subidosUID) {
       alert("Necesitás iniciar sesión.");
@@ -409,6 +409,7 @@ async function guardarSubido() {
     const inpEtiqueta = document.getElementById("subidosEtiqueta");
     const inpDesc = document.getElementById("subidosDescripcion");
     const estado = document.getElementById("subidosEstado");
+    const btnGuardar = document.getElementById("btnGuardarSubido");
 
     const file = inpFile?.files?.[0];
     const fechaEvento = (inpFecha?.value || "").trim();
@@ -430,6 +431,8 @@ async function guardarSubido() {
       return;
     }
 
+    subidosGuardando = true;
+    if (btnGuardar) btnGuardar.disabled = true;
     if (estado) estado.textContent = "Subiendo archivo...";
 
     const ts = Date.now();
@@ -466,6 +469,10 @@ async function guardarSubido() {
     const estado = document.getElementById("subidosEstado");
     if (estado) estado.textContent = "❌ No se pudo guardar";
     alert("No se pudo guardar el archivo.");
+  } finally {
+    subidosGuardando = false;
+    const btnGuardar = document.getElementById("btnGuardarSubido");
+    if (btnGuardar) btnGuardar.disabled = false;
   }
 }
 
