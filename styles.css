@@ -737,8 +737,8 @@ body.oscuro #paletaResaltadores{
 /* ================= CORAZÓN ================= */
 .marker-shape.heart{
   position:relative;
-  width:16px;
-  height:16px;
+  width:15px;
+  height:15px;
   transform:rotate(-45deg);
   background:var(--marker-color);
   border-radius:3px;
@@ -758,22 +758,22 @@ body.oscuro #paletaResaltadores{
 .marker-shape.heart::after{
   content:"";
   position:absolute;
-  width:16px;
-  height:16px;
+  width:15px;
+  height:15px;
   background:var(--marker-color);
   border-radius:50%;
 }
 
 /* lóbulo superior izquierdo */
 .marker-shape.heart::before{
-  top:-8px;
+  top:-7.5px;
   left:0;
 }
 
 /* lóbulo superior derecho */
 .marker-shape.heart::after{
   top:0;
-  left:8px;
+  left:7.5px;
 }
 
 #btnEditarPaleta,
