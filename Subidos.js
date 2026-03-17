@@ -539,17 +539,23 @@ function initLecturas() {
     refrescarSubidos();
   });
 
-  const esperarAuth = () => {
-    subidosUID = window.__UID || null;
-    subidosEsAdmin = !!window.__ES_ADMIN;
+const esperarAuth = () => {
+  const uidPrevio = subidosUID;
+  const adminPrevio = subidosEsAdmin;
 
-    const btnNuevo = document.getElementById("btnSubidoNuevo");
-    if (btnNuevo) btnNuevo.style.display = subidosEsAdmin ? "inline-flex" : "none";
+  subidosUID = window.__UID || null;
+  subidosEsAdmin = !!window.__ES_ADMIN;
 
-    setTimeout(esperarAuth, 1200);
-  };
-  esperarAuth();
-}
+  const btnNuevo = document.getElementById("btnSubidoNuevo");
+  if (btnNuevo) btnNuevo.style.display = subidosEsAdmin ? "inline-flex" : "none";
+
+  if (uidPrevio !== subidosUID || adminPrevio !== subidosEsAdmin) {
+    refrescarSubidos();
+  }
+
+  setTimeout(esperarAuth, 1200);
+};
+esperarAuth();
 
 document.addEventListener("DOMContentLoaded", () => {
   initSubidosBotones();
