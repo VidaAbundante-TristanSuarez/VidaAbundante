@@ -545,12 +545,13 @@ body.modal-open{
   background: transparent;
 }
 
-#btnDevNuevo{
+#btnDevNuevo,
+#btnPanelImgNuevo{
   width: 40px;
   height: 40px;
   min-width: 40px;
   min-height: 40px;
-  padding: 0;
+  padding: 0 !important;
   border: none;
   border-radius: 999px;
   display: inline-flex;
@@ -561,23 +562,39 @@ body.modal-open{
   box-shadow: 0 8px 18px rgba(0,0,0,.22);
   cursor: pointer;
   transition: transform .16s ease, box-shadow .16s ease, background .16s ease;
+  font-size: 0;
+  line-height: 1;
 }
 
-#btnDevNuevo:hover{
+#btnDevNuevo:hover,
+#btnPanelImgNuevo:hover{
   background: #155fc7;
   transform: translateY(-1px);
   box-shadow: 0 10px 22px rgba(0,0,0,.28);
 }
 
-#btnDevNuevo i{
+#btnDevNuevo i,
+#btnPanelImgNuevo i{
   font-size: 15px;
   line-height: 1;
+  margin: 0;
 }
 
-body.oscuro #btnDevNuevo{
+body.oscuro #btnDevNuevo,
+body.oscuro #btnPanelImgNuevo{
   background: #1a73e8;
   color: #fff;
 }
+
+#btnPanelImgNuevo.btn-primary,
+#btnDevNuevo.btn-primary{
+  padding: 0 !important;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  font-weight: 700;
+}
+
 /* índice horizontal */
 #devIndexRow{
   display:flex;
