@@ -710,24 +710,82 @@ function abrirModalEditarPaletaResaltador() {
     row.className = "row-editar-paleta";
 
     row.innerHTML = `
-      <div><b>${i + 1}</b></div>
-      <input type="color" value="${item.color}" data-index="${i}" class="input-color-paleta">
-      <select data-index="${i}" class="select-forma-paleta">
-        <option value="circle" ${item.forma === "circle" ? "selected" : ""}>Círculo</option>
-        <option value="heart" ${item.forma === "heart" ? "selected" : ""}>Corazón</option>
-      </select>
-    `;
+  <div><b>${i + 1}</b></div>
+  <input type="color" value="${item.color}" data-index="${i}" class="input-color-paleta color-picker">
+  <select data-index="${i}" class="select-forma-paleta">
+    <option value="circle" ${item.forma === "circle" ? "selected" : ""}>Círculo</option>
+    <option value="heart" ${item.forma === "heart" ? "selected" : ""}>Corazón</option>
+  </select>
+`;
 
     lista.appendChild(row);
   });
 
   modal.style.display = "flex";
+
+setTimeout(() => {
+  initPickrEnInputs("#listaEditarPaletaResaltador .color-picker");
+}, 0);
 }
 
 function cerrarModalEditarPaletaResaltador() {
   const modal = document.getElementById("modalEditarPaletaResaltador");
   if (!modal) return;
   modal.style.display = "none";
+}
+
+let pickrInstances = [];
+
+function destruirPickrsActivos() {
+  try {
+    pickrInstances.forEach(p => {
+      try { p.destroyAndRemove(); } catch(e){}
+    });
+  } catch(e){}
+  pickrInstances = [];
+}
+
+function initPickrEnInputs(selector = ".color-picker") {
+  if (typeof Pickr === "undefined") {
+    console.warn("Pickr no está cargado");
+    return;
+  }
+
+  const inputs = document.querySelectorAll(selector);
+  inputs.forEach(input => {
+    if (input.dataset.pickrReady === "1") return;
+
+    const pickr = Pickr.create({
+      el: input,
+      theme: "classic",
+      default: input.value || "#ffffff",
+      comparison: false,
+      useAsButton: true,
+      components: {
+        preview: true,
+        opacity: false,
+        hue: true,
+        interaction: {
+          hex: true,
+          input: true,
+          save: true,
+          cancel: true,
+          clear: false
+        }
+      }
+    });
+
+    pickr.on("save", (color) => {
+      const hex = color ? color.toHEXA().toString() : "#ffffff";
+      input.value = hex;
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+      pickr.hide();
+    });
+
+    input.dataset.pickrReady = "1";
+    pickrInstances.push(pickr);
+  });
 }
 
 async function guardarModalEditarPaletaResaltador() {
@@ -3928,6 +3986,13 @@ window.mostrarIglesiaSub = (sub) => {
     window.__abcOnEnter?.();
   }
 };
+
+ // ================= SELECTOR DE COLORES REUTILIZABLE =====  
+    setTimeout(() => {
+    initPickrEnInputs(
+      "#personalizarColor, #marcadorColor, #dev1Color, #dev2Color, #colorFondoPlano, #dev2Fondo"
+    );
+  }, 0);
   
 }); // ================= ✅ CIERRA INIT ÚNICO =====
 
