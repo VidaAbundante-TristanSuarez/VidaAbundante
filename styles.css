@@ -2636,4 +2636,9 @@ input[type="hidden"]#dev2Fondo,
   display:none !important;
 }
 
+/* Pickr popup por encima de modales */
+.pcr-app {
+  z-index: 200000 !important;
+}
+
   </style> 
