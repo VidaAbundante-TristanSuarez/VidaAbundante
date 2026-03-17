@@ -216,7 +216,7 @@ function colorEtiquetaSubidos(etiqueta = "") {
 
   return {
     bg: color,
-    fg: "#111111"
+    fg: "#ffffff"
   };
 }
 
