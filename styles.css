@@ -2630,33 +2630,26 @@ body.oscuro #wrapFiltrosBiblia.abierto .filtros{
   border-radius: 8px;
 }
 
-/* ================= PICKR: ocultar input color nativo ================= */
+/* ================= PICKR ================= */
 .color-picker{
-  position: absolute !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
-  width: 0 !important;
-  height: 0 !important;
-  border: 0 !important;
-  padding: 0 !important;
-  margin: 0 !important;
+  appearance: none;
+  -webkit-appearance: none;
 }
 
-/* botón visible de Pickr */
 .pcr-button{
-  width: 100% !important;
-  min-width: 44px;
+  width: 44px !important;
   height: 36px !important;
+  min-width: 44px !important;
   border-radius: 10px !important;
   border: 1px solid rgba(0,0,0,.18) !important;
   box-shadow: none !important;
+  padding: 0 !important;
 }
 
 body.oscuro .pcr-button{
   border-color: rgba(255,255,255,.18) !important;
 }
 
-/* preview del color sin iconitos raros */
 .pcr-button::before,
 .pcr-button::after{
   border-radius: 8px !important;
