@@ -709,9 +709,10 @@ function abrirModalEditarPaletaResaltador() {
     const row = document.createElement("div");
     row.className = "row-editar-paleta";
 
-    row.innerHTML = `
+row.innerHTML = `
   <div><b>${i + 1}</b></div>
-  <input type="color" value="${item.color}" data-index="${i}" class="input-color-paleta color-picker">
+  <input id="resaltadorColor_${i}" type="hidden" value="${item.color}" data-index="${i}" class="input-color-paleta">
+  <button type="button" class="pickr-host pickr-host--full" data-target="#resaltadorColor_${i}" aria-label="Color resaltador ${i + 1}"></button>
   <select data-index="${i}" class="select-forma-paleta">
     <option value="circle" ${item.forma === "circle" ? "selected" : ""}>Círculo</option>
     <option value="heart" ${item.forma === "heart" ? "selected" : ""}>Corazón</option>
@@ -724,7 +725,7 @@ function abrirModalEditarPaletaResaltador() {
   modal.style.display = "flex";
 
 setTimeout(() => {
-  initPickrEnInputs("#listaEditarPaletaResaltador .color-picker");
+  initPickrEnHosts("#listaEditarPaletaResaltador .pickr-host");
 }, 0);
 }
 
@@ -745,18 +746,31 @@ function destruirPickrsActivos() {
   pickrInstances = [];
 }
 
-function initPickrEnInputs(selector = ".color-picker") {
+let pickrInstances = [];
+
+function initPickrEnHosts(selector = ".pickr-host") {
   if (typeof Pickr === "undefined") {
     console.warn("Pickr no está cargado");
     return;
   }
 
-  const inputs = document.querySelectorAll(selector);
-  inputs.forEach(input => {
-    if (input.dataset.pickrReady === "1") return;
+  const hosts = document.querySelectorAll(selector);
+
+  hosts.forEach(host => {
+    if (host.dataset.pickrReady === "1") return;
+
+    const targetSel = host.dataset.target;
+    if (!targetSel) return;
+
+    const input = document.querySelector(targetSel);
+    if (!input) return;
+
+    const setColorVisual = (hex) => {
+      host.style.setProperty("--pickr-color", hex || "#ffffff");
+    };
 
     const pickr = Pickr.create({
-      el: input,
+      el: host,
       theme: "classic",
       default: input.value || "#ffffff",
       comparison: false,
@@ -774,31 +788,36 @@ function initPickrEnInputs(selector = ".color-picker") {
       },
 
       i18n: {
-        'ui:dialog': 'Selector de color',
-        'btn:toggle': 'Abrir selector',
-        'btn:swatch': 'Muestras',
-        'btn:last-color': 'Color anterior',
-        'btn:save': 'Guardar',
-        'btn:cancel': 'Cancelar',
-        'btn:clear': 'Limpiar',
-        'aria:btn:save': 'Guardar color',
-        'aria:btn:cancel': 'Cancelar',
-        'aria:input': 'Campo de color',
-        'aria:palette': 'Paleta de color',
-        'aria:hue': 'Tono',
-        'aria:opacity': 'Opacidad'
+        "ui:dialog": "Selector de color",
+        "btn:toggle": "Abrir selector",
+        "btn:swatch": "Muestras",
+        "btn:last-color": "Color anterior",
+        "btn:save": "Guardar",
+        "btn:cancel": "Cancelar",
+        "btn:clear": "Limpiar",
+        "aria:btn:save": "Guardar color",
+        "aria:btn:cancel": "Cancelar",
+        "aria:input": "Campo de color",
+        "aria:palette": "Paleta de color",
+        "aria:hue": "Tono",
+        "aria:opacity": "Opacidad"
       }
     });
+
+    setColorVisual(input.value || "#ffffff");
 
     pickr.on("save", (color) => {
       const hex = color ? color.toHEXA().toString() : "#ffffff";
       input.value = hex;
+      setColorVisual(hex);
+
       input.dispatchEvent(new Event("input", { bubbles: true }));
       input.dispatchEvent(new Event("change", { bubbles: true }));
+
       pickr.hide();
     });
 
-    input.dataset.pickrReady = "1";
+    host.dataset.pickrReady = "1";
     pickrInstances.push(pickr);
   });
 }
@@ -4003,11 +4022,11 @@ window.mostrarIglesiaSub = (sub) => {
 };
 
  // ================= SELECTOR DE COLORES REUTILIZABLE =====  
-    setTimeout(() => {
-    initPickrEnInputs(
-      "#personalizarColor, #marcadorColor, #dev1Color, #dev2Color, #colorFondoPlano, #dev2Fondo"
-    );
-  }, 0);
+   setTimeout(() => {
+  initPickrEnHosts(
+    "#personalizarColorHost, #marcadorColorHost, #dev1ColorHost, #dev2ColorHost, #colorFondoPlanoHost, #dev2FondoHost"
+  );
+}, 0);
   
 }); // ================= ✅ CIERRA INIT ÚNICO =====
 
