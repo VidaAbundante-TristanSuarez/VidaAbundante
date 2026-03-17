@@ -532,21 +532,55 @@ body.modal-open{
   padding: 10px 0 18px;
 }
 
-#btnDevNuevo{
-  margin-top: 6px;
-}
+/* ================= DEVOCIONALES: TOP ROW + BOTON ADD ================= */
 
-/* fila superior: botón + */
 #devTopRow{
   position: sticky;
   top: 0;
-  z-index: 5;
+  z-index: 8;
   display:flex;
   justify-content:flex-end;
   align-items:center;
-  padding-top: env(safe-area-inset-top,0);
-  padding-right: 16px;
-  background:#fff;
+  padding: 6px 16px 8px;
+  background: transparent;
+}
+
+#btnDevNuevo,
+#btnPanelImgNuevo{
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  min-height: 40px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #1a73e8;
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(0,0,0,.22);
+  cursor: pointer;
+  transition: transform .16s ease, box-shadow .16s ease, background .16s ease;
+}
+
+#btnDevNuevo:hover,
+#btnPanelImgNuevo:hover{
+  background: #155fc7;
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px rgba(0,0,0,.28);
+}
+
+#btnDevNuevo i,
+#btnPanelImgNuevo i{
+  font-size: 15px;
+  line-height: 1;
+}
+
+body.oscuro #btnDevNuevo,
+body.oscuro #btnPanelImgNuevo{
+  background: #1a73e8;
+  color: #fff;
 }
 
 /* índice horizontal */
@@ -581,6 +615,7 @@ body.modal-open{
   font-weight: 700;
   text-decoration: underline;
   font-size: 10px;
+  color: #000;
 }
 
 /* imagen SOLO DEVOCIONALES */
@@ -596,6 +631,21 @@ body.modal-open{
 
 #devHome .devIndexBarBottom{
   opacity:.85;
+}
+
+#devHome .devIndexBarTop,
+#devHome .devIndexBarBottom{
+  color:#000;
+}
+
+body.oscuro #devHome .devIndexBar,
+body.oscuro #devHome .devIndexBarTop,
+body.oscuro #devHome .devIndexBarBottom{
+  color:#000 !important;
+}
+
+body.oscuro #devHome .devIndexCard{
+  background:#fff;
 }
 
 /* feed vertical */
