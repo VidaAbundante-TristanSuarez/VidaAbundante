@@ -867,88 +867,34 @@ body.oscuro .subidos-day-num{
   padding-left:2px;
 }
 
-/* ===== tooltip preview ===== */
+/* ===== feed horizontal ===== */
 
-#subidosPreviewTooltip{
-  position:fixed;
-  z-index:99999;
-  width:min(280px, 86vw);
-  background:var(--sub-card);
-  color:var(--sub-txt);
-  border:1px solid var(--sub-bd);
-  border-radius:14px;
-  box-shadow:0 10px 28px rgba(0,0,0,.18);
-  padding:10px;
-  display:none;
-  pointer-events:none;
+#subidosFeed{
+  display:flex;
+  gap:14px;
+  overflow-x:auto;
+  overflow-y:hidden;
+  padding:4px 2px 10px;
+  margin-top:12px;
+  align-items:flex-start;
+  scroll-snap-type:x proximity;
 }
 
-#subidosPreviewTooltip .tt-tag{
-  display:inline-flex;
-  padding:4px 8px;
-  border-radius:999px;
-  font-size:12px;
-  font-weight:800;
-  margin-bottom:8px;
+#subidosFeed > div{
+  max-width:none;
+  flex:0 0 auto;
 }
-
-#subidosPreviewTooltip .tt-date{
-  font-size:12px;
-  color:var(--sub-mut);
-  margin-bottom:8px;
-}
-
-#subidosPreviewTooltip img,
-#subidosPreviewTooltip video{
-  width:100%;
-  max-height:170px;
-  object-fit:cover;
-  border-radius:10px;
-  display:block;
-  margin-bottom:8px;
-}
-
-#subidosPreviewTooltip .tt-desc{
-  font-size:13px;
-  line-height:1.35;
-  white-space:pre-wrap;
-  word-break:break-word;
-}
-
-/* ===== agenda ===== */
-
-#subidosAgenda{
-  margin-top:14px;
-}
-
-.subidos-agenda-card{
-  max-width:760px;
-  margin:0 auto 12px auto;
-  border:1px solid var(--sub-bd);
-  border-radius:16px;
-  background:var(--sub-card);
-  padding:12px;
-  box-shadow:var(--sub-shadow);
-}
-
-.subidos-agenda-date{
-  font-weight:800;
-  margin-bottom:10px;
-  color:var(--sub-txt);
-}
-
-/* ===== feed ===== */
 
 .subidos-feed-card{
-  width: min(420px, 96vw);
-  min-width: min(420px, 96vw);
-  margin: 0;
+  width:min(420px, 96vw);
+  min-width:min(420px, 96vw);
+  margin:0;
   border:1px solid var(--sub-bd);
   border-radius:16px;
   background:var(--sub-card);
   padding:12px;
   box-shadow:var(--sub-shadow);
-  scroll-snap-align: start;
+  scroll-snap-align:start;
 }
 
 .subidos-feed-head{
@@ -1000,20 +946,38 @@ body.oscuro .subidos-day-num{
   margin-top:10px;
 }
 
+.subidos-media-frame{
+  width:100%;
+  border-radius:14px;
+  overflow:hidden;
+  background:#f7f7f7;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.subidos-media-frame.is-image,
+.subidos-media-frame.is-video{
+  aspect-ratio: 9 / 16;
+}
+
+.subidos-media-frame.is-audio,
+.subidos-media-frame.is-file{
+  min-height:100px;
+  padding:14px;
+}
+
 .subidos-media img,
 .subidos-media video{
   display:block;
   width:100%;
-  aspect-ratio: 9 / 16;
-  object-fit: cover;
-  margin:10px 0 0;
-  border-radius:14px;
+  height:100%;
+  object-fit:contain;
   background:#f7f7f7;
 }
 
 .subidos-media audio{
   display:block;
-  margin:10px auto 0 auto;
   width:100%;
   max-width:100%;
 }
@@ -1030,58 +994,52 @@ body.oscuro .subidos-day-num{
 .subidos-feed-actions a{
   border:none;
   border-radius:999px;
-  padding:10px 14px;
+  width:40px;
+  height:40px;
+  min-width:40px;
+  min-height:40px;
+  padding:0;
   cursor:pointer;
   text-decoration:none;
-  background: var(--ui-azul-claro);
-  color:#000;
+  background: var(--ui-azul-hover);
+  color:#fff;
   font-weight:700;
   display:inline-flex;
   align-items:center;
   justify-content:center;
   line-height:1;
   transition: background .16s ease, color .16s ease, transform .16s ease;
+  box-shadow: 0 8px 18px rgba(0,0,0,.22);
 }
 
 .subidos-feed-actions button:hover,
 .subidos-feed-actions a:hover{
-  background: var(--ui-azul-hover);
+  background:#155fc7;
   color:#fff;
   transform: translateY(-1px);
+  box-shadow: 0 10px 22px rgba(0,0,0,.28);
 }
 
-body.oscuro .subidos-feed-actions button,
-body.oscuro .subidos-feed-actions a{
-  background: var(--ui-azul-claro);
-  color:#000;
+.subidos-feed-actions i{
+  font-size:15px;
+  line-height:1;
+  margin:0;
 }
 
-body.oscuro .subidos-feed-actions button:hover,
-body.oscuro .subidos-feed-actions a:hover{
-  background: var(--ui-azul-hover);
-  color:#fff;
+.subidosDanger{
+  background:#dc2626 !important;
+  color:#fff !important;
 }
 
-/* ===== fallback por si algo viejo del HTML inline aparece ===== */
-
-#subidosFeed{
-  display:flex;
-  gap:14px;
-  overflow-x:auto;
-  overflow-y:hidden;
-  padding: 4px 2px 10px;
-  margin-top: 12px;
-  align-items:flex-start;
-  scroll-snap-type: x proximity;
+.subidosDanger:hover{
+  background:#b91c1c !important;
+  color:#fff !important;
 }
 
-#subidosFeed > div{
-  max-width:none;
-  flex: 0 0 auto;
-}
+/* ===== fallback ===== */
 
 body.oscuro #subidosFeed a{
-  color:#9ecbff;
+  color:inherit;
 }
 
 /* ===== responsive ===== */
@@ -1113,8 +1071,8 @@ body.oscuro #subidosFeed a{
   }
 
 .subidos-feed-card{
-  width: min(360px, 92vw);
-  min-width: min(360px, 92vw);
+  width:min(360px, 92vw);
+  min-width:min(360px, 92vw);
   padding:10px;
   border-radius:14px;
 }
@@ -1125,8 +1083,11 @@ body.oscuro #subidosFeed a{
 
 .subidos-feed-actions button,
 .subidos-feed-actions a{
-  flex:1 1 auto;
-  min-width:110px;
+  width:40px;
+  height:40px;
+  min-width:40px;
+  min-height:40px;
+  flex:0 0 auto;
 }
 
 .subidos-media img,
@@ -1139,6 +1100,7 @@ body.oscuro #subidosFeed a{
 .subidos-media audio{
   width:100%;
 }
+  
 }
 
 </style>
