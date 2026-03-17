@@ -275,9 +275,12 @@ onAuthStateChanged(auth, user => {
   onValue(ref(db, "admins/" + uid), (s) => {
     window.__ES_ADMIN = !!s.val();
 
-    // opcional: si existe un botón de "nuevo devocional", lo muestra/oculta
+    // actualice el botón de Subidos directo
     const btn = document.getElementById("btnDevNuevo");
     if (btn) btn.style.display = window.__ES_ADMIN ? "inline-flex" : "none";
+  // opcional: si existe un botón de "nuevo devocional", lo muestra/oculta
+  const btnSubidos = document.getElementById("btnSubidoNuevo");
+  if (btnSubidos) btnSubidos.style.display = window.__ES_ADMIN ? "inline-flex" : "none";
   });
 
   onValue(ref(db, "marcados/" + uid), s => {
