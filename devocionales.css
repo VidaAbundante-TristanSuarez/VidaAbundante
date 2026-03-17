@@ -546,7 +546,8 @@ body.modal-open{
 }
 
 #btnDevNuevo,
-#btnPanelImgNuevo{
+#btnPanelImgNuevo,
+#btnSubidoNuevo{
   width: 40px;
   height: 40px;
   min-width: 40px;
@@ -567,27 +568,31 @@ body.modal-open{
 }
 
 #btnDevNuevo:hover,
-#btnPanelImgNuevo:hover{
+#btnPanelImgNuevo:hover,
+#btnSubidoNuevo:hover{
   background: #155fc7;
   transform: translateY(-1px);
   box-shadow: 0 10px 22px rgba(0,0,0,.28);
 }
 
 #btnDevNuevo i,
-#btnPanelImgNuevo i{
+#btnPanelImgNuevo i,
+#btnSubidoNuevo i{
   font-size: 15px;
   line-height: 1;
   margin: 0;
 }
 
 body.oscuro #btnDevNuevo,
-body.oscuro #btnPanelImgNuevo{
+body.oscuro #btnPanelImgNuevo,
+body.oscuro #btnSubidoNuevo{
   background: #1a73e8;
   color: #fff;
 }
 
 #btnPanelImgNuevo.btn-primary,
-#btnDevNuevo.btn-primary{
+#btnDevNuevo.btn-primary,
+#btnSubidoNuevo.btn-primary{
   padding: 0 !important;
   width: 40px;
   height: 40px;
@@ -935,13 +940,15 @@ body.oscuro .subidos-day-num{
 /* ===== feed ===== */
 
 .subidos-feed-card{
-  max-width:760px;
-  margin:0 auto 14px auto;
+  width: min(420px, 96vw);
+  min-width: min(420px, 96vw);
+  margin: 0;
   border:1px solid var(--sub-bd);
   border-radius:16px;
   background:var(--sub-card);
   padding:12px;
   box-shadow:var(--sub-shadow);
+  scroll-snap-align: start;
 }
 
 .subidos-feed-head{
@@ -996,25 +1003,26 @@ body.oscuro .subidos-day-num{
 .subidos-media img,
 .subidos-media video{
   display:block;
-  margin:10px auto 0 auto;
-  max-width:min(560px,100%);
-  width:auto;
-  height:auto;
-  max-height:70vh;
+  width:100%;
+  aspect-ratio: 9 / 16;
+  object-fit: cover;
+  margin:10px 0 0;
   border-radius:14px;
+  background:#f7f7f7;
 }
 
 .subidos-media audio{
   display:block;
   margin:10px auto 0 auto;
-  width:min(430px,100%);
+  width:100%;
+  max-width:100%;
 }
 
 .subidos-feed-actions{
   display:flex;
-  justify-content:flex-end;
-  gap:8px;
-  margin-top:12px;
+  gap:10px;
+  padding:10px 0 0;
+  justify-content:center;
   flex-wrap:wrap;
 }
 
@@ -1022,27 +1030,54 @@ body.oscuro .subidos-day-num{
 .subidos-feed-actions a{
   border:none;
   border-radius:999px;
-  padding:8px 12px;
+  padding:10px 14px;
   cursor:pointer;
   text-decoration:none;
-  background:#e9eef6;
-  color:#111;
+  background: var(--ui-azul-claro);
+  color:#000;
   font-weight:700;
   display:inline-flex;
   align-items:center;
   justify-content:center;
+  line-height:1;
+  transition: background .16s ease, color .16s ease, transform .16s ease;
+}
+
+.subidos-feed-actions button:hover,
+.subidos-feed-actions a:hover{
+  background: var(--ui-azul-hover);
+  color:#fff;
+  transform: translateY(-1px);
 }
 
 body.oscuro .subidos-feed-actions button,
 body.oscuro .subidos-feed-actions a{
-  background:#2a2a2a;
-  color:#f5f5f5;
+  background: var(--ui-azul-claro);
+  color:#000;
+}
+
+body.oscuro .subidos-feed-actions button:hover,
+body.oscuro .subidos-feed-actions a:hover{
+  background: var(--ui-azul-hover);
+  color:#fff;
 }
 
 /* ===== fallback por si algo viejo del HTML inline aparece ===== */
 
+#subidosFeed{
+  display:flex;
+  gap:14px;
+  overflow-x:auto;
+  overflow-y:hidden;
+  padding: 4px 2px 10px;
+  margin-top: 12px;
+  align-items:flex-start;
+  scroll-snap-type: x proximity;
+}
+
 #subidosFeed > div{
   max-width:none;
+  flex: 0 0 auto;
 }
 
 body.oscuro #subidosFeed a{
@@ -1077,31 +1112,33 @@ body.oscuro #subidosFeed a{
     font-size:10px;
   }
 
-  .subidos-feed-card{
-    padding:10px;
-    border-radius:14px;
-  }
+.subidos-feed-card{
+  width: min(360px, 92vw);
+  min-width: min(360px, 92vw);
+  padding:10px;
+  border-radius:14px;
+}
 
-  .subidos-feed-actions{
-    justify-content:center;
-  }
+.subidos-feed-actions{
+  justify-content:center;
+}
 
-  .subidos-feed-actions button,
-  .subidos-feed-actions a{
-    flex:1 1 auto;
-    min-width:110px;
-  }
+.subidos-feed-actions button,
+.subidos-feed-actions a{
+  flex:1 1 auto;
+  min-width:110px;
+}
 
-  .subidos-media img,
-  .subidos-media video{
-    max-width:100%;
-    width:100%;
-    max-height:none;
-  }
+.subidos-media img,
+.subidos-media video{
+  width:100%;
+  max-width:100%;
+  max-height:none;
+}
 
-  .subidos-media audio{
-    width:100%;
-  }
+.subidos-media audio{
+  width:100%;
+}
 }
 
 </style>
