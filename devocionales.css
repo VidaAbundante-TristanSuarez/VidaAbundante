@@ -545,8 +545,7 @@ body.modal-open{
   background: transparent;
 }
 
-#btnDevNuevo,
-#btnPanelImgNuevo{
+#btnDevNuevo{
   width: 40px;
   height: 40px;
   min-width: 40px;
@@ -564,25 +563,21 @@ body.modal-open{
   transition: transform .16s ease, box-shadow .16s ease, background .16s ease;
 }
 
-#btnDevNuevo:hover,
-#btnPanelImgNuevo:hover{
+#btnDevNuevo:hover{
   background: #155fc7;
   transform: translateY(-1px);
   box-shadow: 0 10px 22px rgba(0,0,0,.28);
 }
 
-#btnDevNuevo i,
-#btnPanelImgNuevo i{
+#btnDevNuevo i{
   font-size: 15px;
   line-height: 1;
 }
 
-body.oscuro #btnDevNuevo,
-body.oscuro #btnPanelImgNuevo{
+body.oscuro #btnDevNuevo{
   background: #1a73e8;
   color: #fff;
 }
-
 /* índice horizontal */
 #devIndexRow{
   display:flex;
@@ -607,7 +602,7 @@ body.oscuro #btnPanelImgNuevo{
 }
 
 /* barras SOLO DEVOCIONALES */
-#devHome .devIndexBar{
+.devIndexBar{
   padding: 4px 6px;
   line-height: 1.05;
   text-align:center;
@@ -615,7 +610,18 @@ body.oscuro #btnPanelImgNuevo{
   font-weight: 700;
   text-decoration: underline;
   font-size: 10px;
-  color: #000;
+  color: #000 !important;
+}
+
+.devIndexBarTop,
+.devIndexBarBottom{
+  color:#000 !important;
+}
+
+body.oscuro .devIndexBar,
+body.oscuro .devIndexBarTop,
+body.oscuro .devIndexBarBottom{
+  color:#000 !important;
 }
 
 /* imagen SOLO DEVOCIONALES */
@@ -631,21 +637,6 @@ body.oscuro #btnPanelImgNuevo{
 
 #devHome .devIndexBarBottom{
   opacity:.85;
-}
-
-#devHome .devIndexBarTop,
-#devHome .devIndexBarBottom{
-  color:#000;
-}
-
-body.oscuro #devHome .devIndexBar,
-body.oscuro #devHome .devIndexBarTop,
-body.oscuro #devHome .devIndexBarBottom{
-  color:#000 !important;
-}
-
-body.oscuro #devHome .devIndexCard{
-  background:#fff;
 }
 
 /* feed vertical */
