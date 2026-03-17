@@ -181,12 +181,21 @@ function iconoSegunTipo(tipo = "") {
   return "fa-file";
 }
 
+function normalizarEtiquetaSubidos(txt = "") {
+  return String(txt)
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ");
+}
+
 const ETIQUETAS_COLOR = {
   "predica": "#ffcb00",
   "anuncio": "#ff0000",
   "plan": "#d2ff00",
   "racimo": "#00faff",
-  "oración": "#ff8000",
+  "oracion": "#ff8000",
   "culto": "#fff600",
   "santa cena": "#a800ff",
   "reunion jovenes": "#00ff79",
@@ -197,13 +206,12 @@ const ETIQUETAS_COLOR = {
 };
 
 function colorEtiquetaSubidos(etiqueta = "") {
-  const t = String(etiqueta).trim().toLowerCase();
-
+  const t = normalizarEtiquetaSubidos(etiqueta);
   const color = ETIQUETAS_COLOR[t] || "#e8f0fe";
 
   return {
     bg: color,
-    fg: "#000"
+    fg: "#111111"
   };
 }
 
@@ -308,15 +316,23 @@ function renderFeed() {
 
 window.abrirSubidoDesdeCalendario = function abrirSubidoDesdeCalendario(id) {
   const el = document.getElementById("subido-" + id);
-  const feed = document.getElementById("subidosFeed");
-  if (!el || !feed) return;
+  if (!el) return;
 
-  const left = el.offsetLeft - (feed.clientWidth / 2) + (el.clientWidth / 2);
-
-  feed.scrollTo({
-    left,
-    behavior: "smooth"
+  el.scrollIntoView({
+    behavior: "smooth",
+    inline: "center",
+    block: "nearest"
   });
+
+  document.querySelectorAll(".subidos-feed-card.subidos-focus").forEach(x => {
+    x.classList.remove("subidos-focus");
+  });
+
+  el.classList.add("subidos-focus");
+
+  setTimeout(() => {
+    el.classList.remove("subidos-focus");
+  }, 1800);
 };
 
 window.compartirSubido = async function compartirSubido(id) {
