@@ -535,9 +535,7 @@ body.modal-open{
 /* ================= DEVOCIONALES: TOP ROW + BOTON ADD ================= */
 
 #devTopRow{
-  position: sticky;
-  top: 0;
-  z-index: 8;
+  position: static;
   display:flex;
   justify-content:flex-end;
   align-items:center;
@@ -936,7 +934,7 @@ body.oscuro .subidos-day-num{
   padding:5px 10px;
   font-size:12px;
   font-weight:800;
-  color:#111 !important;
+  color:#fff !important;
   max-width:100%;
   border:1px solid rgba(0,0,0,.08);
 }
@@ -948,7 +946,7 @@ body.oscuro .subidos-day-num{
 
 body.oscuro .subidos-chip[style],
 body.oscuro .subidos-badge[style]{
-  color:#111 !important;
+  color:#fff !important;
 }
 
 .subidos-feed-date{
