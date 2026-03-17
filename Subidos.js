@@ -340,8 +340,14 @@ function renderFeed() {
 
 window.abrirSubidoDesdeCalendario = function abrirSubidoDesdeCalendario(id) {
   const el = document.getElementById("subido-" + id);
-  if (!el) return;
-  el.scrollIntoView({ behavior: "smooth", block: "center" });
+  const feed = document.getElementById("subidosFeed");
+  if (!el || !feed) return;
+
+  const left = el.offsetLeft - 8;
+  feed.scrollTo({
+    left,
+    behavior: "smooth"
+  });
 };
 
 window.compartirSubido = async function compartirSubido(id) {
