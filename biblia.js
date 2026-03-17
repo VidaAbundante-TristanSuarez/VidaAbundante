@@ -735,7 +735,6 @@ function cerrarModalEditarPaletaResaltador() {
   modal.style.display = "none";
 }
 
-let pickrInstances = [];
 
 function destruirPickrsActivos() {
   try {
