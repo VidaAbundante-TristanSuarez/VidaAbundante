@@ -205,25 +205,6 @@ window.subidosMostrarPreview = function subidosMostrarPreview() {};
 window.subidosMoverPreview = function subidosMoverPreview() {};
 window.subidosOcultarPreview = function subidosOcultarPreview() {};
 
-window.subidosMoverPreview = function subidosMoverPreview(ev) {
-  const tt = document.getElementById("subidosPreviewTooltip");
-  if (!tt) return;
-
-  const x = (ev.touches?.[0]?.clientX ?? ev.clientX ?? 0) + 14;
-  const y = (ev.touches?.[0]?.clientY ?? ev.clientY ?? 0) + 14;
-
-  const maxX = window.innerWidth - tt.offsetWidth - 10;
-  const maxY = window.innerHeight - tt.offsetHeight - 10;
-
-  tt.style.left = Math.max(10, Math.min(x, maxX)) + "px";
-  tt.style.top = Math.max(10, Math.min(y, maxY)) + "px";
-};
-
-window.subidosOcultarPreview = function subidosOcultarPreview() {
-  const tt = document.getElementById("subidosPreviewTooltip");
-  if (tt) tt.style.display = "none";
-};
-
 function renderFeed() {
   const feed = document.getElementById("subidosFeed");
   if (!feed) return;
@@ -289,23 +270,25 @@ function renderFeed() {
               `
               : `
                 <div class="subidos-media-frame is-file">
-                  <a href="${it.url}" target="_blank" rel="noopener">Descargar archivo</a>
+                  <a href="${it.url}" download="${escaparHtml(it.fileName || "archivo")}">Descargar archivo</a>
                 </div>
               `
           }
         </div>
 
         <div class="subidos-feed-actions">
-          <a href="${it.url}" download="${escaparHtml(it.fileName || "archivo")}">
+          <a href="${it.url}" download="${escaparHtml(it.fileName || "archivo")}" title="Descargar">
             <i class="fa-solid fa-download"></i>
           </a>
-          <button type="button" onclick="compartirSubido('${it.id}')">
+
+          <button type="button" onclick="compartirSubido('${it.id}')" title="Compartir">
             <i class="fa-solid fa-share-nodes"></i>
           </button>
+
           ${
             subidosEsAdmin
               ? `
-                <button type="button" class="subidosDanger" onclick="borrarSubido('${it.id}')">
+                <button type="button" class="subidosDanger" onclick="borrarSubido('${it.id}')" title="Borrar">
                   <i class="fa-solid fa-trash"></i>
                 </button>
               `
@@ -319,13 +302,12 @@ function renderFeed() {
 
 window.abrirSubidoDesdeCalendario = function abrirSubidoDesdeCalendario(id) {
   const el = document.getElementById("subido-" + id);
-  const feed = document.getElementById("subidosFeed");
-  if (!el || !feed) return;
+  if (!el) return;
 
-  const left = el.offsetLeft - 8;
-  feed.scrollTo({
-    left,
-    behavior: "smooth"
+  el.scrollIntoView({
+    behavior: "smooth",
+    inline: "center",
+    block: "nearest"
   });
 };
 
@@ -364,10 +346,16 @@ window.compartirSubido = async function compartirSubido(id) {
 
 window.borrarSubido = async function borrarSubido(id) {
   try {
-    if (!subidosEsAdmin) return;
+    if (!subidosEsAdmin) {
+      alert("Solo admin puede borrar archivos.");
+      return;
+    }
 
     const it = subidosItems.find(x => x.id === id);
-    if (!it) return;
+    if (!it) {
+      alert("No se encontró el archivo.");
+      return;
+    }
 
     const ok = confirm("¿Querés borrar este archivo?");
     if (!ok) return;
