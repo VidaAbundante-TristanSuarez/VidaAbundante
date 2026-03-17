@@ -736,60 +736,72 @@ body.oscuro #paletaResaltadores{
   box-shadow:0 1px 3px rgba(0,0,0,.14);
 }
 
-/* ================= CORAZÓN ================= */
+/* ================= CORAZÓN SUAVE PRO ================= */
 .marker-shape.heart{
   position: relative;
-  width:21px;   /* antes 18px → +3px */
-  height:19px;  /* antes 16px → +3px */
+  width:24px;   /* más grande */
+  height:22px;
 }
 
-/* borde del corazón (igual lógica que el círculo) */
+/* base del corazón (rotado) */
 .marker-shape.heart::before{
   content:"";
   position:absolute;
-  inset:0;
+  left:50%;
+  bottom:0;
+  width:14px;
+  height:14px;
+  transform: translateX(-50%) rotate(45deg);
 
   background: rgba(0,0,0,.30);
-
-  clip-path: polygon(
-    50% 98%,
-    12% 55%,
-    12% 28%,
-    26% 12%,
-    42% 12%,
-    50% 26%,
-    58% 12%,
-    74% 12%,
-    88% 28%,
-    88% 55%
-  );
 }
 
-/* corazón interior */
+/* círculos superiores */
 .marker-shape.heart::after{
   content:"";
   position:absolute;
-  inset:2px;
+  top:0;
+  left:50%;
+  width:24px;
+  height:16px;
+  transform: translateX(-50%);
 
-  background:var(--marker-color);
-
-  clip-path: polygon(
-    50% 98%,
-    12% 55%,
-    12% 28%,
-    26% 12%,
-    42% 12%,
-    50% 26%,
-    58% 12%,
-    74% 12%,
-    88% 28%,
-    88% 55%
-  );
+  background: transparent;
 }
 
-/* borde claro en modo oscuro */
-body.oscuro .marker-shape.heart::before{
-  background: rgba(255,255,255,.35);
+/* usamos sombras internas para formar el corazón */
+.marker-shape.heart{
+  --borde: rgba(0,0,0,.30);
+  --color: var(--marker-color);
+
+  background:
+    radial-gradient(circle at 30% 30%, var(--color) 70%, transparent 71%),
+    radial-gradient(circle at 70% 30%, var(--color) 70%, transparent 71%),
+    linear-gradient(var(--color), var(--color));
+
+  background-size:
+    50% 60%,
+    50% 60%,
+    100% 60%;
+
+  background-position:
+    left top,
+    right top,
+    center bottom;
+
+  background-repeat: no-repeat;
+
+  border-radius: 4px;
+}
+
+/* borde tipo círculo */
+.marker-shape.heart{
+  box-shadow: 0 0 0 2px rgba(0,0,0,.30);
+}
+
+/* modo oscuro */
+body.oscuro .marker-shape.heart{
+  box-shadow: 0 0 0 2px rgba(255,255,255,.35);
 }
 
 #btnEditarPaleta,
