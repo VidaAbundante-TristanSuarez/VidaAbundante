@@ -199,15 +199,20 @@ const ETIQUETAS_COLOR = {
   "culto": "#fff600",
   "santa cena": "#a800ff",
   "reunion jovenes": "#00ff79",
+  "reunion de jovenes": "#00ff79",
   "reunion varones": "#008fff",
+  "reunion de varones": "#008fff",
   "reunion mujeres": "#ff00a0",
+  "reunion de mujeres": "#ff00a0",
   "taller": "#7200ff",
-  "retiro varones": "#0004ff"
+  "retiro varones": "#0004ff",
+  "retiro de varones": "#0004ff",
+  "ayuno": "#ff4da6"
 };
 
 function colorEtiquetaSubidos(etiqueta = "") {
   const t = normalizarEtiquetaSubidos(etiqueta);
-  const color = ETIQUETAS_COLOR[t] || "#e8f0fe";
+  const color = ETIQUETAS_COLOR[t] || "#dbeafe";
 
   return {
     bg: color,
