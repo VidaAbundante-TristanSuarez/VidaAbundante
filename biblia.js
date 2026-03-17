@@ -765,14 +765,16 @@ function initPickrEnHosts(selector = ".pickr-host") {
     if (!input) return;
 
     const setColorVisual = (hex) => {
-      host.style.setProperty("--pickr-color", hex || "#ffffff");
+      const color = hex || "#ffffff";
+      host.style.setProperty("--pickr-color", color);
+      host.style.background = color;
     };
 
     const pickr = Pickr.create({
       el: host,
       theme: "classic",
       default: input.value || "#ffffff",
-      comparison: false,
+      comparison: true,
       useAsButton: true,
 
       components: {
@@ -803,7 +805,12 @@ function initPickrEnHosts(selector = ".pickr-host") {
       }
     });
 
+    // color inicial visible en el botón
     setColorVisual(input.value || "#ffffff");
+
+    pickr.on("show", () => {
+      setColorVisual(input.value || "#ffffff");
+    });
 
     pickr.on("save", (color) => {
       const hex = color ? color.toHEXA().toString() : "#ffffff";
@@ -813,6 +820,12 @@ function initPickrEnHosts(selector = ".pickr-host") {
       input.dispatchEvent(new Event("input", { bubbles: true }));
       input.dispatchEvent(new Event("change", { bubbles: true }));
 
+      pickr.hide();
+    });
+
+    pickr.on("cancel", () => {
+      // vuelve al último valor guardado y cierra
+      setColorVisual(input.value || "#ffffff");
       pickr.hide();
     });
 
