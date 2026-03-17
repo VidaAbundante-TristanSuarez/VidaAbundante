@@ -741,59 +741,58 @@ body.oscuro #paletaResaltadores{
   position: relative;
   width: 20px;
   height: 20px;
-  transform: rotate(-45deg);
-  box-sizing: border-box;
   flex: 0 0 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transform: none;
+  margin: 0;
 }
 
-/* corazón de atrás = borde */
+/* usamos un corazón real, no formas inventadas */
 .marker-shape.heart::before{
-  content:"";
-  position:absolute;
-  top: 0;
-  left: 0;
-  width: 20px;
-  height: 20px;
-  background: rgba(0,0,0,.30);
-  border-radius: 4px;
+  content: "❤";
+  font-size: 20px;
+  line-height: 1;
+  color: var(--marker-color);
+  font-family: Arial, "Segoe UI Symbol", sans-serif;
+  display: block;
+
+  /* contorno parecido al de los círculos */
+  text-shadow:
+    1px 0 0 rgba(0,0,0,.30),
+   -1px 0 0 rgba(0,0,0,.30),
+    0 1px 0 rgba(0,0,0,.30),
+    0 -1px 0 rgba(0,0,0,.30),
+    1px 1px 0 rgba(0,0,0,.22),
+   -1px 1px 0 rgba(0,0,0,.22),
+    1px -1px 0 rgba(0,0,0,.22),
+   -1px -1px 0 rgba(0,0,0,.22);
 }
 
-/* lóbulos del borde */
-.marker-shape.heart::before{
-  box-shadow:
-    0 -10px 0 0 rgba(0,0,0,.30),
-    10px 0 0 0 rgba(0,0,0,.30);
-}
-
-/* corazón de adelante = relleno */
+/* anulamos el invento viejo */
 .marker-shape.heart::after{
-  content:"";
-  position:absolute;
-  top: 2px;
-  left: 2px;
-  width: 16px;
-  height: 16px;
-  background: var(--marker-color);
-  border-radius: 4px;
-  box-shadow:
-    0 -8px 0 0 var(--marker-color),
-    8px 0 0 0 var(--marker-color);
+  content: none;
 }
 
-/* borde claro en oscuro */
 body.oscuro .marker-shape.heart::before{
-  background: rgba(255,255,255,.35);
-  box-shadow:
-    0 -10px 0 0 rgba(255,255,255,.35),
-    10px 0 0 0 rgba(255,255,255,.35);
+  text-shadow:
+    1px 0 0 rgba(255,255,255,.28),
+   -1px 0 0 rgba(255,255,255,.28),
+    0 1px 0 rgba(255,255,255,.28),
+    0 -1px 0 rgba(255,255,255,.28),
+    1px 1px 0 rgba(255,255,255,.18),
+   -1px 1px 0 rgba(255,255,255,.18),
+    1px -1px 0 rgba(255,255,255,.18),
+   -1px -1px 0 rgba(255,255,255,.18);
 }
 
 .btn-color-marker .marker-shape.heart{
-  margin-top: 2px;
+  margin-top: 0;
 }
 
 #btnResaltadorActivo .marker-shape.heart{
-  margin-top: 2px;
+  margin-top: 0;
 }
 
 #btnEditarPaleta,
