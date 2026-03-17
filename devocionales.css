@@ -894,7 +894,14 @@ body.oscuro .subidos-day-num{
   background:var(--sub-card);
   padding:12px;
   box-shadow:var(--sub-shadow);
-  scroll-snap-align:start;
+  scroll-snap-align:center;
+  transition: box-shadow .22s ease, transform .22s ease, border-color .22s ease;
+}
+
+.subidos-feed-card.subidos-focus{
+  border-color:#1a73e8;
+  box-shadow:0 0 0 3px rgba(26,115,232,.18), 0 14px 30px rgba(0,0,0,.16);
+  transform:translateY(-2px);
 }
 
 .subidos-feed-head{
