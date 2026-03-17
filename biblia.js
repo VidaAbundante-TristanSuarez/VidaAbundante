@@ -761,17 +761,32 @@ function initPickrEnInputs(selector = ".color-picker") {
       default: input.value || "#ffffff",
       comparison: false,
       useAsButton: true,
+
       components: {
         preview: true,
         opacity: false,
         hue: true,
         interaction: {
-          hex: true,
-          input: true,
           save: true,
           cancel: true,
           clear: false
         }
+      },
+
+      i18n: {
+        'ui:dialog': 'Selector de color',
+        'btn:toggle': 'Abrir selector',
+        'btn:swatch': 'Muestras',
+        'btn:last-color': 'Color anterior',
+        'btn:save': 'Guardar',
+        'btn:cancel': 'Cancelar',
+        'btn:clear': 'Limpiar',
+        'aria:btn:save': 'Guardar color',
+        'aria:btn:cancel': 'Cancelar',
+        'aria:input': 'Campo de color',
+        'aria:palette': 'Paleta de color',
+        'aria:hue': 'Tono',
+        'aria:opacity': 'Opacidad'
       }
     });
 
