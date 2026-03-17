@@ -741,23 +741,23 @@ body.oscuro #paletaResaltadores{
   height:16px;
   background:var(--marker-color);
   clip-path: polygon(
-    50% 96%,
-    8% 50%,
-    8% 24%,
-    22% 8%,
+    50% 98%,
+    10% 54%,
+    10% 24%,
+    24% 8%,
     40% 8%,
     50% 24%,
     60% 8%,
-    78% 8%,
-    92% 24%,
-    92% 50%
+    76% 8%,
+    90% 24%,
+    90% 54%
   );
   box-shadow:0 1px 3px rgba(0,0,0,.14);
   filter:
-    drop-shadow(0 1px 0 rgba(0,0,0,.30))
-    drop-shadow(0 -1px 0 rgba(0,0,0,.30))
-    drop-shadow(1px 0 0 rgba(0,0,0,.30))
-    drop-shadow(-1px 0 0 rgba(0,0,0,.30));
+    drop-shadow(0 1px 0 rgba(0,0,0,.42))
+    drop-shadow(0 -1px 0 rgba(0,0,0,.42))
+    drop-shadow(1px 0 0 rgba(0,0,0,.42))
+    drop-shadow(-1px 0 0 rgba(0,0,0,.42));
 }
 
 #btnEditarPaleta,
@@ -2558,43 +2558,46 @@ body.oscuro #wrapFiltrosBiblia.abierto .filtros{
 }
 
 /* ================= PICKR SELECTOR DE COLOR ================= */
-.pickr-host{
+.pickr-host,
+.pickr-host.pickr,
+.pickr-host.pcr-button{
   width:48px;
   height:40px;
   min-width:48px;
   min-height:40px;
-  border:none;
+  border-radius:10px;
+  border:1px solid rgba(0,0,0,.18);
+  background:var(--pickr-color, #ffffff);
+  box-shadow:none;
   padding:0;
-  background:transparent;
   cursor:pointer;
-  position:relative;
   display:inline-flex;
   align-items:center;
   justify-content:center;
+  position:relative;
 }
 
-.pickr-host--full{
+.pickr-host--full,
+.pickr-host--full.pickr,
+.pickr-host--full.pcr-button{
   width:100%;
   min-width:100%;
 }
 
-.pickr-host .pcr-button{
-  width:100% !important;
-  height:100% !important;
-  min-width:100% !important;
-  border-radius:10px !important;
-  border:1px solid rgba(0,0,0,.18) !important;
-  box-shadow:none !important;
-  background:var(--pickr-color, #ffffff) !important;
+body.oscuro .pickr-host,
+body.oscuro .pickr-host.pickr,
+body.oscuro .pickr-host.pcr-button{
+  border-color:rgba(255,255,255,.20);
 }
 
-.pickr-host .pcr-button::before,
-.pickr-host .pcr-button::after{
-  border-radius:8px !important;
-}
-
-body.oscuro .pickr-host .pcr-button{
-  border-color:rgba(255,255,255,.2) !important;
+/* ocultar pseudo-preview interno para que no tape el color real */
+.pickr-host::before,
+.pickr-host::after,
+.pickr-host.pickr::before,
+.pickr-host.pickr::after,
+.pickr-host.pcr-button::before,
+.pickr-host.pcr-button::after{
+  display:none !important;
 }
 
 /* inputs hidden reales */
@@ -2607,4 +2610,5 @@ input[type="hidden"]#dev2Fondo,
 .input-color-paleta{
   display:none !important;
 }
+
   </style> 
