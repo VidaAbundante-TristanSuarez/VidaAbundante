@@ -854,6 +854,9 @@ body.oscuro .subidos-day-num{
   text-overflow:ellipsis;
   font-weight:700;
   transition:transform .15s ease, opacity .15s ease;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.08);
+  -webkit-appearance:none;
+  appearance:none;
 }
 
 .subidos-chip:hover{
@@ -933,8 +936,19 @@ body.oscuro .subidos-day-num{
   padding:5px 10px;
   font-size:12px;
   font-weight:800;
-  color:#111;
+  color:#111 !important;
   max-width:100%;
+  border:1px solid rgba(0,0,0,.08);
+}
+
+.subidos-chip[style],
+.subidos-badge[style]{
+  background-clip: padding-box;
+}
+
+body.oscuro .subidos-chip[style],
+body.oscuro .subidos-badge[style]{
+  color:#111 !important;
 }
 
 .subidos-feed-date{
