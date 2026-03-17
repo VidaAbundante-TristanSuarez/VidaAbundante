@@ -163,6 +163,39 @@ function crearNodoFormaResaltador(color, forma = "circle") {
   return span;
 }
 
+async function cargarResaltadoresUsuario() {
+  if (!uid) return;
+
+  try {
+    const snap = await get(ref(db, `usuariosConfig/${uid}/resaltadores`));
+
+    const data = snap.val();
+
+    if (Array.isArray(data) && data.length === 8) {
+      resaltadoresConfig = data.map(x => ({
+        color: x?.color || "#fff3b0",
+        forma: x?.forma === "heart" ? "heart" : "circle"
+      }));
+
+      guardarResaltadoresConfigLocal();
+      initResaltadorCompacto();
+    }
+
+  } catch(e) {
+    console.warn("No pude cargar resaltadores del usuario:", e);
+  }
+}
+
+async function guardarResaltadoresUsuario() {
+  if (!uid) return;
+
+  try {
+    await set(ref(db, `usuariosConfig/${uid}/resaltadores`), resaltadoresConfig);
+  } catch (e) {
+    console.warn("No pude guardar resaltadores del usuario:", e);
+  }
+}
+
 // ================= MARCADORES (NUEVO LIMPIO) =================
 let modoMarcador = false;
 let seleccionMarcador = {};         // {idVersiculo:true}
@@ -3993,13 +4026,19 @@ document.addEventListener("DOMContentLoaded", () => {
     };
   }
 
-  // 4) arrancar en biblia
-  window.irA?.("biblia");
+ // 4) arrancar en biblia
+window.irA?.("biblia");
 
-  // ✅ asegurar filtros cerrados al iniciar
-  const secBiblia = document.getElementById("seccion-biblia");
-  if (secBiblia) secBiblia.classList.remove("filtros-abiertos");
+// cuando Firebase confirma el usuario
+onAuthStateChanged(auth, (user) => {
+  if (!user) return;
+  cargarResaltadoresUsuario();
+});
 
+// asegurar filtros cerrados al iniciar
+const secBiblia = document.getElementById("seccion-biblia");
+if (secBiblia) secBiblia.classList.remove("filtros-abiertos");
+  
 // ================= 🔺 IGLESIA: SUB-SECCIONES =================
 window.mostrarIglesiaSub = (sub) => {
   // ✅ detecto si estaba en ABC antes
