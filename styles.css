@@ -719,7 +719,9 @@ body.oscuro #paletaResaltadores{
 }
 
 .marker-shape{
-  display:block;
+  display:flex;
+  align-items:center;
+  justify-content:center;
   box-sizing:border-box;
   flex:0 0 auto;
 }
@@ -737,11 +739,33 @@ body.oscuro #paletaResaltadores{
 /* ================= CORAZÓN ================= */
 .marker-shape.heart{
   position: relative;
-  width:18px;
-  height:16px;
+  width:21px;   /* antes 18px → +3px */
+  height:19px;  /* antes 16px → +3px */
 }
 
-/* corazón interior (color real) */
+/* borde del corazón (igual lógica que el círculo) */
+.marker-shape.heart::before{
+  content:"";
+  position:absolute;
+  inset:0;
+
+  background: rgba(0,0,0,.30);
+
+  clip-path: polygon(
+    50% 98%,
+    12% 55%,
+    12% 28%,
+    26% 12%,
+    42% 12%,
+    50% 26%,
+    58% 12%,
+    74% 12%,
+    88% 28%,
+    88% 55%
+  );
+}
+
+/* corazón interior */
 .marker-shape.heart::after{
   content:"";
   position:absolute;
@@ -751,38 +775,21 @@ body.oscuro #paletaResaltadores{
 
   clip-path: polygon(
     50% 98%,
-    10% 54%,
-    10% 24%,
-    24% 8%,
-    40% 8%,
-    50% 24%,
-    60% 8%,
-    76% 8%,
-    90% 24%,
-    90% 54%
+    12% 55%,
+    12% 28%,
+    26% 12%,
+    42% 12%,
+    50% 26%,
+    58% 12%,
+    74% 12%,
+    88% 28%,
+    88% 55%
   );
 }
 
-/* borde del corazón */
-.marker-shape.heart::before{
-  content:"";
-  position:absolute;
-  inset:0;
-
-  background:#000;
-
-  clip-path: polygon(
-    50% 98%,
-    10% 54%,
-    10% 24%,
-    24% 8%,
-    40% 8%,
-    50% 24%,
-    60% 8%,
-    76% 8%,
-    90% 24%,
-    90% 54%
-  );
+/* borde claro en modo oscuro */
+body.oscuro .marker-shape.heart::before{
+  background: rgba(255,255,255,.35);
 }
 
 #btnEditarPaleta,
