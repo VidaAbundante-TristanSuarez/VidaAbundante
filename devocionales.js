@@ -893,18 +893,23 @@ function cargarAdornosF2(){
   cont.innerHTML = "";
 
   adornosF2.forEach(item=>{
-    const b = document.createElement("button");
+        const b = document.createElement("button");
     b.type = "button";
     b.className = "dev-adorno-btn";
-    b.textContent = item.nombre;
 
        if (item.url) {
+      b.textContent = "";
       const img = document.createElement("img");
       img.src = item.url;
       img.alt = item.nombre;
       img.className = "dev-adorno-thumb";
+      img.onerror = () => {
+        b.classList.add("dev-adorno-btn-none");
+        b.innerHTML = `<i class="fa-solid fa-genderless"></i>`;
+      };
       b.appendChild(img);
     } else {
+      b.classList.add("dev-adorno-btn-none");
       b.innerHTML = `<i class="fa-solid fa-genderless"></i>`;
     }
 
@@ -955,16 +960,18 @@ function cargarTexturasF2(){
     b.className = "dev-textura-btn";
     b.textContent = item.nombre;
 
-            if (item.url) {
+                if (item.url) {
       const img = document.createElement("img");
       img.src = item.url;
       img.alt = item.nombre;
       img.className = "dev-textura-thumb";
       img.onerror = () => {
+        b.classList.add("dev-textura-btn-none");
         b.innerHTML = `<i class="fa-solid fa-genderless"></i>`;
       };
       b.appendChild(img);
     } else {
+      b.classList.add("dev-textura-btn-none");
       b.innerHTML = `<i class="fa-solid fa-genderless"></i>`;
     }
 
@@ -1447,10 +1454,17 @@ function devRenderFase(fase){
 
     // fondo plano
     p.style.backgroundColor = st.fondoColor || "#ffffff";
-    p.style.backgroundImage = st.texturaUrl ? `url("${st.texturaUrl}")` : "none";
-    p.style.backgroundSize = "cover";
-    p.style.backgroundPosition = "center";
-    p.style.backgroundBlendMode = "soft-light";
+
+    if (st.texturaUrl) {
+      p.style.backgroundImage = `linear-gradient(rgba(255,255,255,${1 - (st.texturaOp || 0.22)}), rgba(255,255,255,${1 - (st.texturaOp || 0.22)})), url("${st.texturaUrl}")`;
+    } else {
+      p.style.backgroundImage = "none";
+    }
+
+    p.style.backgroundSize = "cover, cover";
+    p.style.backgroundPosition = "center, center";
+    p.style.backgroundRepeat = "no-repeat, no-repeat";
+    p.style.backgroundBlendMode = "normal";
 
     // fuente + tamaño + color
    t.style.fontFamily = st.fuente;
@@ -1611,11 +1625,17 @@ async function renderFinalCanvasCaptureReal(){
   node.style.overflow = "hidden";
   node.style.borderRadius = "0";
   node.style.backgroundColor = st.fondoColor || "#ffffff";
-  node.style.backgroundImage = st.texturaUrl ? `url("${st.texturaUrl}")` : "none";
-  node.style.backgroundSize = "cover";
-  node.style.backgroundPosition = "center";
-  node.style.backgroundBlendMode = "soft-light";
-  node.style.backgroundColor = st.fondoColor || "#ffffff";
+
+  if (st.texturaUrl) {
+    node.style.backgroundImage = `linear-gradient(rgba(255,255,255,${1 - (st.texturaOp || 0.22)}), rgba(255,255,255,${1 - (st.texturaOp || 0.22)})), url("${st.texturaUrl}")`;
+  } else {
+    node.style.backgroundImage = "none";
+  }
+
+  node.style.backgroundSize = "cover, cover";
+  node.style.backgroundPosition = "center, center";
+  node.style.backgroundRepeat = "no-repeat, no-repeat";
+  node.style.backgroundBlendMode = "normal";
 
   // ✅ WRAPPER limpio: margen uniforme y sin padding extra
   const wrap = document.createElement("div");
@@ -1934,15 +1954,17 @@ function bindInputs(){
 // =========================
 // FASE 2 (color plano) - tamaño / color (SIN opacidad)
 // =========================
-["Tamano","Color"].forEach(k=>{
+["Tamano","Color","TexturaOp"].forEach(k=>{
   const el = $(`dev2${k}`);
   if (!el) return;
 
   el.addEventListener("input", ()=>{
-    DEV.f2.userChanged = true; // ✅ el usuario modificó fase 2 (NO volver a sugerir)
+    DEV.f2.userChanged = true;
 
     DEV.f2.size = Number($("dev2Tamano")?.value || 26);
     DEV.f2.color = $("dev2Color")?.value || "#000000";
+    DEV.f2.texturaOp = Number($("dev2TexturaOp")?.value || 0.22);
+
     requestAnimationFrame(()=> devRenderFase(2));
   });
 });
