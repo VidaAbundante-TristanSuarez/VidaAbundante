@@ -1009,8 +1009,8 @@ function sugerirTamanoVersiculoAuto(versiculo){
     const gap = px * 0.14;
     const safety = px * 0.55;
 
-    if ((vH + gap + cH + safety) <= boxH) {
-      return Math.max(10, Math.min(90, roundToHalf(px)));
+       if ((vH + gap + cH + safety) <= boxH) {
+      return Math.max(10, Math.min(90, roundToHalf(px - 4)));
     }
   }
 
@@ -1021,9 +1021,10 @@ function sugerirTamanoFase2Auto(texto){
   const W = 1080;
   const H = 840;
 
-  // mismos márgenes lógicos que en la composición final
+  const tieneAdorno = !!DEV?.f2?.adornoUrl;
+
   const maxW = W - 120;
-  const altoDisponible = H - 150;
+  const altoDisponible = H - (tieneAdorno ? 180 : 120);
 
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
@@ -1038,15 +1039,15 @@ function sugerirTamanoFase2Auto(texto){
     const lineH = px * 1.24;
     const totalH = lines.length * lineH;
 
-    // margen de seguridad real
-    const safety = px * 2.2;
+    const safety = px * (tieneAdorno ? 2.2 : 1.6);
 
     if ((totalH + safety) <= altoDisponible) {
-      return Math.max(12, roundToHalf(px));
+      const bonus = tieneAdorno ? 3 : 8;
+      return Math.max(12, Math.min(90, roundToHalf(px + bonus)));
     }
   }
 
-  return 12;
+  return tieneAdorno ? 15 : 20;
 }
 
 function devSyncStyleButtons(fase){
