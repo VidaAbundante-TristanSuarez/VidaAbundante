@@ -182,8 +182,8 @@ input[type="number"]{
   background:#fff;
   padding:6px;
   cursor:pointer;
-  width:46px;
-  height:46px;
+  width:74px;
+  height:34px;
   display:flex;
   align-items:center;
   justify-content:center;
@@ -528,7 +528,12 @@ body.modal-open{
   }
 
   .dev-fondos img{ width:58px; height:58px; }
-  .dev-adorno-thumb{ width:58px; height:22px; }
+  .dev-adorno-thumb{
+  width:62px;
+  height:18px;
+  object-fit:contain;
+  display:block;
+}
 }
 
 /* ================= IGLESIA DEVOCIONALES (HOME) ================= */
@@ -1200,13 +1205,15 @@ body.oscuro #subidosFeed a{
   border:1px solid #ddd;
   border-radius:12px;
   background:#fff;
-  padding:6px;
+  padding:4px;
   cursor:pointer;
-  width:46px;
-  height:46px;
+  width:42px;
+  height:42px;
   display:flex;
   align-items:center;
   justify-content:center;
+  overflow:hidden;
+  font-size:0;
 }
 
 .dev-textura-btn.activo{
@@ -1214,10 +1221,10 @@ body.oscuro #subidosFeed a{
 }
 
 .dev-textura-thumb{
-  width:64px;
-  height:64px;
+  width:30px;
+  height:30px;
   object-fit:cover;
-  border-radius:10px;
+  border-radius:7px;
   display:block;
 }
 
