@@ -1412,7 +1412,7 @@ function ensureDev2TextureLayer(container){
     layer.style.backgroundRepeat = "no-repeat";
     layer.style.backgroundPosition = "center";
     layer.style.backgroundSize = "cover";
-    layer.style.mixBlendMode = "multiply";
+    layer.style.mixBlendMode = "normal";
 
     container.insertBefore(layer, container.firstChild);
   }
@@ -1488,21 +1488,19 @@ if (fase === 2) {
   if (layer) {
     const op = Math.max(0, Math.min(1, Number(st.texturaOp ?? 0.22)));
 
-    if (st.texturaUrl) {
-      layer.style.display = "block";
-      layer.style.backgroundImage = `url("${st.texturaUrl}")`;
-      layer.style.opacity = String(op);
-
-      // ✅ esto hace que se vea como textura sobre el color
-      layer.style.mixBlendMode = "multiply";
-      layer.style.filter = "none";
-    } else {
-      layer.style.display = "none";
-      layer.style.backgroundImage = "none";
-      layer.style.opacity = "0";
-      layer.style.mixBlendMode = "normal";
-      layer.style.filter = "none";
-    }
+if (st.texturaUrl) {
+  layer.style.display = "block";
+  layer.style.backgroundImage = `url("${st.texturaUrl}")`;
+  layer.style.opacity = String(op);
+  layer.style.mixBlendMode = "normal";
+  layer.style.filter = "none";
+} else {
+  layer.style.display = "none";
+  layer.style.backgroundImage = "none";
+  layer.style.opacity = "0";
+  layer.style.mixBlendMode = "normal";
+  layer.style.filter = "none";
+}
   }
 
   // =========================
@@ -1668,23 +1666,23 @@ const makeFase2Node = () => {
   node.style.backgroundColor = st.fondoColor || "#ffffff";
 
   // ✅ textura en capa separada mezclada con el color
-  if (st.texturaUrl) {
-    const textureLayer = document.createElement("div");
-    textureLayer.style.position = "absolute";
-    textureLayer.style.inset = "0";
-    textureLayer.style.backgroundImage = `url("${st.texturaUrl}")`;
-    textureLayer.style.backgroundSize = "cover";
-    textureLayer.style.backgroundPosition = "center";
-    textureLayer.style.backgroundRepeat = "no-repeat";
-    textureLayer.style.opacity = String(
-      Math.max(0, Math.min(1, Number(st.texturaOp ?? 0.22)))
-    );
-    textureLayer.style.mixBlendMode = "soft-light";
-    textureLayer.style.filter = "none";
-    textureLayer.style.pointerEvents = "none";
+if (st.texturaUrl) {
+  const textureLayer = document.createElement("div");
+  textureLayer.style.position = "absolute";
+  textureLayer.style.inset = "0";
+  textureLayer.style.backgroundImage = `url("${st.texturaUrl}")`;
+  textureLayer.style.backgroundSize = "cover";
+  textureLayer.style.backgroundPosition = "center";
+  textureLayer.style.backgroundRepeat = "no-repeat";
+  textureLayer.style.opacity = String(
+    Math.max(0, Math.min(1, Number(st.texturaOp ?? 0.22)))
+  );
+  textureLayer.style.mixBlendMode = "normal";
+  textureLayer.style.filter = "none";
+  textureLayer.style.pointerEvents = "none";
 
-    node.appendChild(textureLayer);
-  }
+  node.appendChild(textureLayer);
+}
 
   const wrap = document.createElement("div");
   wrap.style.position = "absolute";
