@@ -32,7 +32,7 @@ input[type="number"]{
   width: min(460px, 94vw);
   margin: 0 auto;
   height: auto;                 /* lo define aspect-ratio */
-  border-radius:16px;
+  border-radius:21px;
   overflow:hidden;
   background:#fff;
   position:relative;
@@ -49,7 +49,7 @@ input[type="number"]{
 .dev-textwrap{
   position:absolute;
   inset: 6%;
-  border-radius:14px;
+  border-radius:18px;
   overflow:hidden;
   padding:0;
   text-align:center;
@@ -75,7 +75,7 @@ input[type="number"]{
 #dev2TextoWrapper{
   position:absolute;
   inset: 16px;
-  border-radius:14px;
+  border-radius:18px;
   overflow:hidden;
 }
 
@@ -481,7 +481,7 @@ body.modal-open{
   height: auto;       /* ✅ mantiene proporción */
   max-height: 100%;
   object-fit: contain;
-  border-radius: 14px;
+  border-radius: 18px;
   display:block;
 }
 
