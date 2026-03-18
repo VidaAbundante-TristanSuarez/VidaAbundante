@@ -634,6 +634,46 @@ html, body {
   margin: 8px 0;
 }
 
+.dev-style-color{
+  width:42px;
+  min-width:42px;
+  height:42px;
+  border-radius:999px;
+  border:1px solid #cfcfcf;
+  padding:0;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+  vertical-align:middle;
+}
+
+.dev-style-color::before{
+  content:"";
+  width:20px;
+  height:20px;
+  border-radius:999px;
+  border:1px solid rgba(0,0,0,.15);
+  background:currentColor;
+  display:block;
+}
+
+#dev1ColorHost,
+#dev2ColorHost,
+#dev1OpColorHost{
+  position:relative;
+}
+
+#dev1ColorHost::before,
+#dev2ColorHost::before,
+#dev1OpColorHost::before{
+  content:"";
+  position:absolute;
+  inset:10px;
+  border-radius:999px;
+  border:1px solid rgba(0,0,0,.18);
+}
+
 /* ================= RESALTADOR PERSONALIZABLE ================= */
 #resaltadorCompacto{
   position: relative;
