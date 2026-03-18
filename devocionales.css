@@ -667,6 +667,14 @@ body.oscuro .devIndexBarBottom{
   margin-top:12px;
 }
 
+#iglesia-devocionales,
+#devHome,
+#devFeed{
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
 /* tarjeta grande SOLO DEVOCIONALES */
 #devHome .devBigCard{
   width: min(420px, 96vw);
