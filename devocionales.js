@@ -1494,7 +1494,7 @@ if (fase === 2) {
       layer.style.opacity = String(op);
 
       // ✅ esto hace que se vea como textura sobre el color
-      layer.style.mixBlendMode = "soft-light";
+      layer.style.mixBlendMode = "multiply";
       layer.style.filter = "none";
     } else {
       layer.style.display = "none";
