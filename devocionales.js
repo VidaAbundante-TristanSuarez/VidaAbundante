@@ -1259,7 +1259,7 @@ function devRenderFase(fase){
     const st = DEV.f1;
 
     // texto
-   const sc = scalePreviewF1();
+   const sc = 1;
    t.innerHTML = buildFase1HTML(st.size, sc);
     // ya no usamos la capa back para no romper tamaños diferentes
     if (b) b.style.display = "none";
