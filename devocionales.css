@@ -182,9 +182,6 @@ input[type="number"]{
   background:#fff;
   padding:8px;
   cursor:pointer;
-  display:flex;
-  align-items:center;
-  justify-content:center;
 }
 
 .dev-adorno-btn.activo{
@@ -526,12 +523,7 @@ body.modal-open{
   }
 
   .dev-fondos img{ width:58px; height:58px; }
-  .dev-adorno-thumb{
-  width:64px;
-  height:22px;
-  object-fit:contain;
-  display:block;
-}
+  .dev-adorno-thumb{ width:58px; height:22px; }
 }
 
 /* ================= IGLESIA DEVOCIONALES (HOME) ================= */
