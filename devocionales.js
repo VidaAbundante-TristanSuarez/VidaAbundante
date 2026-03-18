@@ -1410,38 +1410,87 @@ async function renderFinalCanvasCaptureReal(){
   }
   stage.innerHTML = "";
 
-  // ✅ FASE 1
-const makeFase1Node = () => {
-  const preview = document.getElementById("dev1Preview");
-  if (!preview) return null;
+  // ✅ Construir nodos “a tamaño real” (NO dependen del preview chico)
+  const makeFase1Node = () => {
+    const st = DEV.f1;
+    const node = document.createElement("div");
+    node.style.width = W + "px";
+    node.style.height = H1 + "px";
+    node.style.position = "relative";
+    node.style.overflow = "hidden";
+    node.style.borderRadius = "0";
 
-  const clone = preview.cloneNode(true);
+    const fondoUsable = st.fondoBlob || st.fondoUrl;
+    node.style.backgroundImage = fondoUsable ? `url("${fondoUsable}")` : "none";
+    node.style.backgroundSize = "cover";
+    node.style.backgroundPosition = "center";
+    node.style.backgroundColor = fondoUsable ? "transparent" : "#ffffff";
 
-  clone.style.width = W + "px";
-  clone.style.height = H1 + "px";
-  clone.style.position = "relative";
-  clone.style.left = "0";
-  clone.style.top = "0";
-  clone.style.transform = "none";
+    const wrap = document.createElement("div");
+    wrap.style.position = "absolute";
+    wrap.style.inset = "6%";           // ✅ igual que .dev-textwrap
+    wrap.style.borderRadius = "14px";  // ✅ igual que preview
+    wrap.style.overflow = "hidden";    // ✅ igual que preview
+    wrap.style.backgroundColor = wrapperBgFromOpacity(st.op);
 
-  return clone;
-};
+    const texto = document.createElement("div");
+    texto.style.position = "absolute";
+    texto.style.inset = "0";
+    texto.style.fontFamily = st.fuente;
+    texto.style.color = st.color;
+    applyTextStylesToOne(texto, st);
+     
+    // ✅ OUTLINE estable
+    texto.style.textShadow = textShadowLegibleFinal(st.color);
+    texto.style.webkitTextStroke = "0px";
+    texto.style.paintOrder = "normal";
 
-    // ✅ FASE 2
-const makeFase2Node = () => {
-  const preview = document.getElementById("dev2Preview");
-  if (!preview) return null;
+    // ✅ IMPORTANTE: tamaño real (sin scalePreviewF1)
+    texto.innerHTML = buildFase1HTML(st.size, 1);
 
-  const clone = preview.cloneNode(true);
+    wrap.appendChild(texto);
+    node.appendChild(wrap);
+    return node;
+  };
 
-  clone.style.width = W + "px";
-  clone.style.height = H2 + "px";
-  clone.style.position = "relative";
-  clone.style.left = "0";
-  clone.style.top = "0";
-  clone.style.transform = "none";
+  const makeFase2Node = () => {
+  const st = DEV.f2;
 
-  return clone;
+  const node = document.createElement("div");
+  node.style.width = W + "px";
+  node.style.height = H2 + "px";
+  node.style.position = "relative";
+  node.style.overflow = "hidden";
+  node.style.borderRadius = "0";
+  node.style.backgroundImage = "none";
+  node.style.backgroundColor = st.fondoColor || "#ffffff";
+
+  // ✅ WRAPPER limpio: margen uniforme y sin padding extra
+  const wrap = document.createElement("div");
+  wrap.style.position = "absolute";
+  wrap.style.inset = "16px";
+  wrap.style.overflow = "hidden";
+  wrap.style.textAlign = "center";
+
+  const texto = document.createElement("div");
+  texto.style.width = "100%";
+  texto.style.height = "100%"; // ✅ importante para el layout interno absoluto de buildFase2HTML()
+  texto.style.fontFamily = st.fuente;
+  texto.style.color = st.color;
+  applyTextStylesToOne(texto, st);
+
+  // ✅ OUTLINE estable
+  texto.style.textShadow = textShadowLegibleFinal(st.color);
+  texto.style.webkitTextStroke = "0px";
+  texto.style.paintOrder = "normal";
+
+  // ✅ HTML fase 2 ya maneja: texto centrado + adorno fijo abajo
+  texto.innerHTML = buildFase2HTML(st.size);
+
+  wrap.appendChild(texto);
+  node.appendChild(wrap);
+
+  return node;
 };
 
   // ✅ Agregar al stage y esperar fuentes/layout
