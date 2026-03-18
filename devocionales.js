@@ -1417,15 +1417,12 @@ const makeFase1Node = () => {
 
   const clone = preview.cloneNode(true);
 
-  const scale = W / preview.offsetWidth;
-
-  clone.style.width = preview.offsetWidth + "px";
-  clone.style.height = preview.offsetHeight + "px";
-  clone.style.transform = `scale(${scale})`;
-  clone.style.transformOrigin = "top left";
-  clone.style.position = "absolute";
+  clone.style.width = W + "px";
+  clone.style.height = H1 + "px";
+  clone.style.position = "relative";
   clone.style.left = "0";
   clone.style.top = "0";
+  clone.style.transform = "none";
 
   return clone;
 };
@@ -1437,15 +1434,12 @@ const makeFase2Node = () => {
 
   const clone = preview.cloneNode(true);
 
-  const scale = W / preview.offsetWidth;
-
-  clone.style.width = preview.offsetWidth + "px";
-  clone.style.height = preview.offsetHeight + "px";
-  clone.style.transform = `scale(${scale})`;
-  clone.style.transformOrigin = "top left";
-  clone.style.position = "absolute";
+  clone.style.width = W + "px";
+  clone.style.height = H2 + "px";
+  clone.style.position = "relative";
   clone.style.left = "0";
   clone.style.top = "0";
+  clone.style.transform = "none";
 
   return clone;
 };
