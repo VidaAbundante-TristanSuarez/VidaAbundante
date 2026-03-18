@@ -704,7 +704,15 @@
     <div id="dev1Fondos" class="dev-fondos"></div>
 
     <!-- CONTROLES (igual lógica que Biblia) -->
-        <div class="dev-row">
+            <div class="dev-row">
+      <input id="dev1OpColor" type="hidden" value="#000000">
+      <button type="button"
+              id="dev1OpColorHost"
+              class="pickr-host dev-style-color"
+              data-target="#dev1OpColor"
+              aria-label="Color opacidad fase 1"
+              title="Color de opacidad"></button>
+
       <input id="dev1Opacidad" class="opacidad-slider" type="range" min="0" max="1" step="0.05" value="0.35">
 
       <div class="dev-stepper">
@@ -714,10 +722,9 @@
       </div>
 
       <input id="dev1Color" type="hidden" value="#000000">
-      <input id="dev1OpColor" type="hidden" value="#000000">
     </div>
 
-        <div class="dev-row">
+            <div class="dev-row">
       <div style="position:relative;">
         <button id="dev1BtnFuentes" class="style-btn" type="button">🔤 Fuentes</button>
         <div id="dev1ListaFuentes" class="dev-lista-fuentes"></div>
@@ -735,13 +742,6 @@
                 data-target="#dev1Color"
                 aria-label="Color texto fase 1"
                 title="Color del texto"></button>
-
-        <button type="button"
-                id="dev1OpColorHost"
-                class="pickr-host dev-style-color"
-                data-target="#dev1OpColor"
-                aria-label="Color opacidad fase 1"
-                title="Color de opacidad"></button>
       </div>
     </div>
    
