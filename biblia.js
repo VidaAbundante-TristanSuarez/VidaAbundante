@@ -871,6 +871,9 @@ function initPickrEnHosts(selector = ".pickr-host") {
   });
 }
 
+window.initPickrEnHosts = initPickrEnHosts;
+window.destruirPickrsActivos = destruirPickrsActivos;
+
 async function guardarModalEditarPaletaResaltador() {
   const colors = document.querySelectorAll(".input-color-paleta");
   const formas = document.querySelectorAll(".select-forma-paleta");
@@ -4079,7 +4082,7 @@ window.mostrarIglesiaSub = (sub) => {
  // ================= SELECTOR DE COLORES REUTILIZABLE =====  
    setTimeout(() => {
   initPickrEnHosts(
-    "#personalizarColorHost, #marcadorColorHost, #dev1ColorHost, #dev2ColorHost, #colorFondoPlanoHost, #dev2FondoHost"
+    "#personalizarColorHost, #marcadorColorHost, #dev1ColorHost, #dev1OpColorHost, #dev2ColorHost, #colorFondoPlanoHost, #dev2FondoHost"
   );
 }, 0);
   
