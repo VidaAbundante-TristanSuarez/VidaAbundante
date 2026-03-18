@@ -930,12 +930,15 @@ function wrapperShadowFromOpacity(op, color){
   if (x <= 0) return "none";
 
   const { r, g, b } = hexToRgb(color || "#000000");
-  const a1 = Math.min(0.22, x * 0.55);
-  const a2 = Math.min(0.14, x * 0.35);
+
+  const a1 = Math.min(0.38, x * 0.95);
+  const a2 = Math.min(0.24, x * 0.62);
+  const a3 = Math.min(0.14, x * 0.34);
 
   return `
-    0 0 18px rgba(${r}, ${g}, ${b}, ${a1}),
-    0 0 42px rgba(${r}, ${g}, ${b}, ${a2})
+    0 0 16px rgba(${r}, ${g}, ${b}, ${a1}),
+    0 0 34px rgba(${r}, ${g}, ${b}, ${a2}),
+    0 0 60px rgba(${r}, ${g}, ${b}, ${a3})
   `;
 }
 
@@ -1011,32 +1014,33 @@ function sugerirTamanoVersiculoAuto(versiculo){
 }
 
 function sugerirTamanoFase2Auto(texto){
-  const W = 1080;
-  const H = 840;
+  const wWrap = $("dev2TextoWrapper");
+  if (!wWrap) return 16;
 
-  const maxW = W - 64;
-  const altoDisponible = H - 64;
+  const rect = wWrap.getBoundingClientRect();
+  const maxW = Math.max(100, rect.width * 0.88);
+  const altoDisponible = Math.max(80, rect.height * 0.74);
 
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
 
-  const maxPx = 36;
-  const minPx = 12;
+  const maxPx = 18;
+  const minPx = 8;
+
+  const limpio = oneLine(texto || "");
 
   for (let px = maxPx; px >= minPx; px -= 0.5) {
     ctx.font = `600 ${px}px ${DEV.f2.fuente}, Arial`;
-    const lines = wrapMeasureLines(ctx, oneLine(texto), maxW);
-    const totalH = lines.length * (px * 1.24);
-    const safety = px * 1.8;
+    const lines = wrapMeasureLines(ctx, limpio, maxW);
+    const lineH = px * 1.22;
+    const totalH = lines.length * lineH;
 
-    if ((totalH + safety) <= altoDisponible) {
-      const sc = scalePreviewF2() || 1;
-      return Math.max(8, roundToHalf(px / sc));
+    if (totalH <= altoDisponible) {
+      return Math.max(8, roundToHalf(px));
     }
   }
 
-  const sc = scalePreviewF2() || 1;
-  return Math.max(8, roundToHalf(minPx / sc));
+  return 8;
 }
 
 function devSyncStyleButtons(fase){
@@ -1309,7 +1313,7 @@ function devRenderFase(fase){
 
     const st = DEV.f2;
 
-    const pxPreview = Math.max(8, (st.size * scalePreviewF2()));
+    const pxPreview = Math.max(8, st.size);
     t.innerHTML = buildFase2HTML(pxPreview);
     if (b) b.style.display = "none";
 
@@ -1498,7 +1502,7 @@ async function renderFinalCanvasCaptureReal(){
   texto.style.paintOrder = "normal";
 
   // ✅ HTML fase 2 ya maneja: texto centrado + adorno fijo abajo
-  texto.innerHTML = buildFase2HTML(st.size);
+  texto.innerHTML = buildFase2HTML(Math.max(12, st.size * 1.9));
 
   wrap.appendChild(texto);
   node.appendChild(wrap);
@@ -1523,7 +1527,7 @@ async function renderFinalCanvasCaptureReal(){
   ctx.drawImage(cap2, 0, H1, W, H2);
 
   // ✅ redondear como preview (aprox)
-  const RADIO_FINAL = 40; // si querés más redondo probá 50
+  const RADIO_FINAL = 52; // si querés más redondo probá 50
   const rounded = makeRoundedCanvas(cFinal, RADIO_FINAL);
 
   DEV.finalDataUrl = rounded.toDataURL("image/png");
@@ -1639,8 +1643,12 @@ window.devIrFase1Desde0 = () => {
   DEV.audioOk = false;
   devSetFinalButtons(false);
 
-  cerrarModal("modalDevFase0");
+    cerrarModal("modalDevFase0");
   abrirModal("modalDevFase1");
+
+  if (typeof window.initPickrEnHosts === "function") {
+    window.initPickrEnHosts("#dev1OpColorHost, #dev1ColorHost");
+  }
 
   // render inicial
   devRenderFase(1);
@@ -1669,8 +1677,12 @@ window.devVolverFase0 = () => {
 window.devIrFase2 = () => {
   devRenderFase(1);
 
-  cerrarModal("modalDevFase1");
+    cerrarModal("modalDevFase1");
   abrirModal("modalDevFase2");
+
+  if (typeof window.initPickrEnHosts === "function") {
+    window.initPickrEnHosts("#dev2FondoHost, #dev2ColorHost");
+  }
 
   requestAnimationFrame(()=>{
 
@@ -2178,10 +2190,14 @@ function initDevocionales(){
   hookAudioCorrecto();
 
   // fuentes/listas y fondos y adornos
-  crearListaFuentes(1);
+    crearListaFuentes(1);
   crearListaFuentes(2);
   cargarFondosDev();
   cargarAdornosF2();
+
+  if (typeof window.initPickrEnHosts === "function") {
+    window.initPickrEnHosts("#dev1OpColorHost, #dev1ColorHost, #dev2FondoHost, #dev2ColorHost");
+  }
 
   // estado inicial
   btnRecortar.disabled = true;
