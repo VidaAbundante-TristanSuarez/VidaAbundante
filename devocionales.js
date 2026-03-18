@@ -936,11 +936,11 @@ function cargarAdornosF2(){
 
 const texturasF2 = [
   { nombre: "🔲", url: null },
-  { nombre: "Textura 1", url: "img/texturas/TEXTURA1.jfif" },
-  { nombre: "Textura 2", url: "img/texturas/TEXTURA2.jfif" },
-  { nombre: "Textura 3", url: "img/texturas/TEXTURA3.jfif" },
-  { nombre: "Textura 4", url: "img/texturas/TEXTURA4.jfif" },
-  { nombre: "Textura 5", url: "img/texturas/TEXTURA5.jfif" }
+  { nombre: "Textura 1", url: "./img/texturas/TEXTURA1.jfif" },
+  { nombre: "Textura 2", url: "./img/texturas/TEXTURA2.jfif" },
+  { nombre: "Textura 3", url: "./img/texturas/TEXTURA3.jfif" },
+  { nombre: "Textura 4", url: "./img/texturas/TEXTURA4.jfif" },
+  { nombre: "Textura 5", url: "./img/texturas/TEXTURA5.jfif" }
 ];
 
 function cargarTexturasF2(){
@@ -955,11 +955,14 @@ function cargarTexturasF2(){
     b.className = "dev-textura-btn";
     b.textContent = item.nombre;
 
-        if (item.url) {
+            if (item.url) {
       const img = document.createElement("img");
       img.src = item.url;
       img.alt = item.nombre;
       img.className = "dev-textura-thumb";
+      img.onerror = () => {
+        b.innerHTML = `<i class="fa-solid fa-genderless"></i>`;
+      };
       b.appendChild(img);
     } else {
       b.innerHTML = `<i class="fa-solid fa-genderless"></i>`;
