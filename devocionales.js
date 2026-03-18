@@ -42,14 +42,15 @@ const DEV = {
 
   // fase1 (9:9) settings
   f1: {
-    fondoUrl: null,
-    fondoBlob: null,
-    fuente: "Roboto",
-    color: "#000000",
-    op: 0.35,
-    size: 30,
-    style: { upper:false, bold:true, italic:false, underline:false }
-  },
+  fondoUrl: null,
+  fondoBlob: null,
+  fuente: "Roboto",
+  color: "#000000",
+  opColor: "#000000",
+  op: 0.35,
+  size: 30,
+  style: { upper:false, bold:true, italic:false, underline:false }
+},
 
   // fase2 (9:7) settings
   f2: {
@@ -905,17 +906,37 @@ function applyTextStylesToOne(el, st){
   el.style.textDecoration = st.style.underline ? "underline" : "none";
 }
 
-function wrapperBgFromOpacity(op){
-  const x = parseFloat(op);
-  if (isNaN(x)) return "rgba(0,0,0,0)";
-  if (x > 0.5) {
-    const a = Math.min(0.70, (x - 0.5) * 2);
-    return `rgba(0,0,0,${a})`;
-  } else if (x < 0.5) {
-    const a = Math.min(0.70, (0.5 - x) * 2);
-    return `rgba(255,255,255,${a})`;
-  }
-  return "rgba(0,0,0,0)";
+function hexToRgb(hex){
+  const h = String(hex || "#000000").replace("#", "").trim();
+  const full = h.length === 3
+    ? h.split("").map(x => x + x).join("")
+    : h.padEnd(6, "0").slice(0, 6);
+
+  return {
+    r: parseInt(full.slice(0,2), 16) || 0,
+    g: parseInt(full.slice(2,4), 16) || 0,
+    b: parseInt(full.slice(4,6), 16) || 0
+  };
+}
+
+function wrapperBgFromOpacity(op, color){
+  const x = Math.max(0, Math.min(1, Number(op) || 0));
+  const { r, g, b } = hexToRgb(color || "#000000");
+  return `rgba(${r}, ${g}, ${b}, ${x})`;
+}
+
+function wrapperShadowFromOpacity(op, color){
+  const x = Math.max(0, Math.min(1, Number(op) || 0));
+  if (x <= 0) return "none";
+
+  const { r, g, b } = hexToRgb(color || "#000000");
+  const a1 = Math.min(0.22, x * 0.55);
+  const a2 = Math.min(0.14, x * 0.35);
+
+  return `
+    0 0 18px rgba(${r}, ${g}, ${b}, ${a1}),
+    0 0 42px rgba(${r}, ${g}, ${b}, ${a2})
+  `;
 }
 
 function esc(s){
@@ -952,18 +973,11 @@ function fmtSize(x){
 }
 
 function sugerirTamanoVersiculoAuto(versiculo){
-  // ✅ Medimos contra el “canvas real” (1080x1080), no contra el DOM
-  // Así el sugerido VARÍA según la cantidad de texto.
-
   const W = 1080;
   const H = 1080;
 
-  // === Esto replica tu layout en buildFase1HTML ===
-  // Caja central: top 16% y height 66%
-  const boxH = H * 0.66;
-
-  // width 96% con padding horizontal (36px * 2)
-  // (en buildFase1HTML usás width:96% y padding: 36px*scale)
+  // Caja más parecida a la final real
+  const boxH = H * 0.715;
   const boxW = (W * 0.96) - (36 * 2);
 
   const cita = oneLine(DEV?.p1?.cita || "");
@@ -972,27 +986,24 @@ function sugerirTamanoVersiculoAuto(versiculo){
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
 
-  // rango de búsqueda (en “px de canvas”)
   const MAX_PX = 60;
   const MIN_PX = 12;
 
-  for (let px = MAX_PX; px >= MIN_PX; px--) {
-    // versículo
+  for (let px = MAX_PX; px >= MIN_PX; px -= 0.5) {
     ctx.font = `800 ${px}px ${DEV.f1.fuente}, Arial`;
     const vLines = wrapMeasureLines(ctx, vtxt, boxW);
-    const vH = vLines.length * (px * 1.12);
+    const vH = vLines.length * (px * 1.02);
 
-    // cita proporcional
     const citaPx = Math.max(12, Math.round(px * 0.75));
     ctx.font = `700 ${citaPx}px ${DEV.f1.fuente}, Arial`;
     const cLines = wrapMeasureLines(ctx, cita, boxW);
-    const cH = cLines.length * (citaPx * 1.12);
+    const cH = cLines.length * (citaPx * 1.02);
 
-    const gap = px * 0.22;
+    const gap = px * 0.14;
+    const safety = px * 0.55;
 
-    if ((vH + gap + cH) <= boxH) {
-      // ✅ clamp para respetar tu input (10..90)
-      return Math.max(10, Math.min(90, px));
+    if ((vH + gap + cH + safety) <= boxH) {
+      return Math.max(10, Math.min(90, roundToHalf(px)));
     }
   }
 
@@ -1000,34 +1011,32 @@ function sugerirTamanoVersiculoAuto(versiculo){
 }
 
 function sugerirTamanoFase2Auto(texto){
-  const wWrap = $("dev2TextoWrapper");
-  if (!wWrap) return 16;
+  const W = 1080;
+  const H = 840;
 
-  const rect = wWrap.getBoundingClientRect();
-  const maxW = Math.max(100, rect.width * 0.92);
-  const altoDisponible = Math.max(80, rect.height * 0.82);
+  const maxW = W - 64;
+  const altoDisponible = H - 64;
 
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
 
-  const maxPx = 18;
-  const minPx = 9;
+  const maxPx = 36;
+  const minPx = 12;
 
   for (let px = maxPx; px >= minPx; px -= 0.5) {
     ctx.font = `600 ${px}px ${DEV.f2.fuente}, Arial`;
     const lines = wrapMeasureLines(ctx, oneLine(texto), maxW);
-    const lineH = px * 1.20;
-    const totalH = lines.length * lineH;
-    if (totalH <= altoDisponible) {
-  const sc = scalePreviewF2() || 1;
-  let suger = roundToHalf(px / sc);
-suger = Math.max(8, roundToHalf(suger - 4));   // ✅ baja ~4 puntos
-return suger;
-}
+    const totalH = lines.length * (px * 1.24);
+    const safety = px * 1.8;
+
+    if ((totalH + safety) <= altoDisponible) {
+      const sc = scalePreviewF2() || 1;
+      return Math.max(8, roundToHalf(px / sc));
+    }
   }
-  let suger = roundToHalf(minPx / (scalePreviewF2() || 1));
-suger = Math.max(8, roundToHalf(suger - 4));
-return suger;
+
+  const sc = scalePreviewF2() || 1;
+  return Math.max(8, roundToHalf(minPx / sc));
 }
 
 function devSyncStyleButtons(fase){
@@ -1079,16 +1088,16 @@ function buildFase1HTML(versiculoCanvasPx, scale){
 
   // ===== Coordenadas fijas tipo Cloudinary (porcentaje del wrapper) =====
   // Arriba
-  const Y_DEV   = 2;     // DEVOCIONAL
-  const Y_FECHA = 7;   // ✅ más cerca (antes quedaba muy separado)
-
+  const Y_DEV   = 2.2;
+  const Y_FECHA = 6.2;
+   
   // Abajo (pie)
-  const Y_IGL   = 88;   // iglesia
-  const Y_DIR   = 94; // dirección casi pegada al borde
+  const Y_IGL   = 89.6;
+  const Y_DIR   = 93.1;
 
   // Caja central (versículo + cita) MÁS GRANDE
-  const Y_VBOX  = 16;    // empieza
-  const H_VBOX  = 66;    // ✅ más alto (antes era chico)
+  const Y_VBOX  = 14.2;
+  const H_VBOX  = 71.5;
 
   return `
     <div style="position:relative; width:100%; height:100%;">
@@ -1124,25 +1133,27 @@ function buildFase1HTML(versiculoCanvasPx, scale){
           flex-direction:column;
           align-items:center;
           justify-content:center;
-          gap:6px;                 /* ✅ espacio corto entre versículo y cita */
-          line-height:1.08;
+          gap:4px;                 /* ✅ espacio corto entre versículo y cita */
+          line-height:1.03;
         ">
-          <div style="
+                    <div style="
             font-size:${versiculoPx}px;
             font-weight:${DEV.f1.style.bold ? 800 : 400};
             width:100%;
             white-space:normal;
             word-break:break-word;
+            line-height:1.02;
           ">
             ${esc(p1.versiculo)}
           </div>
 
-          <div style="
+                    <div style="
             font-size:${citaPx}px;
             font-weight:${DEV.f1.style.bold ? 700 : 400};
             width:100%;
             white-space:normal;
             word-break:break-word;
+            line-height:1.02;
           ">
             ${esc(p1.cita)}
           </div>
@@ -1281,7 +1292,8 @@ function devRenderFase(fase){
    t.style.paintOrder = "normal";
 
     // wrapper bg
-    w.style.backgroundColor = wrapperBgFromOpacity(st.op);
+    w.style.backgroundColor = wrapperBgFromOpacity(st.op, st.opColor);
+    w.style.boxShadow = wrapperShadowFromOpacity(st.op, st.opColor);
 
     applyTextStylesToOne(t, st);
     devSyncStyleButtons(1);
@@ -1431,8 +1443,9 @@ async function renderFinalCanvasCaptureReal(){
     wrap.style.inset = "6%";           // ✅ igual que .dev-textwrap
     wrap.style.borderRadius = "14px";  // ✅ igual que preview
     wrap.style.overflow = "hidden";    // ✅ igual que preview
-    wrap.style.backgroundColor = wrapperBgFromOpacity(st.op);
-
+    wrap.style.backgroundColor = wrapperBgFromOpacity(st.op, st.opColor);
+    wrap.style.boxShadow = wrapperShadowFromOpacity(st.op, st.opColor);
+     
     const texto = document.createElement("div");
     texto.style.position = "absolute";
     texto.style.inset = "0";
@@ -1754,7 +1767,7 @@ function bindInputs(){
   // =========================
   // FASE 1 (imagen) - opacidad / tamaño / color
   // =========================
-  ["Opacidad","Tamano","Color"].forEach(k=>{
+  ["Opacidad","Tamano","Color","OpColor"].forEach(k=>{
     const el = $(`dev1${k}`);
     if (!el) return;
 
@@ -1762,8 +1775,8 @@ function bindInputs(){
       // opacidad y color siempre desde los inputs
       DEV.f1.op = Number($("dev1Opacidad")?.value || 0.35);
       DEV.f1.color = $("dev1Color")?.value || "#000000";
+      DEV.f1.opColor = $("dev1OpColor")?.value || "#000000";
 
-      // tamaño SIEMPRE desde el slider (el usuario lo mueve)
       DEV.f1.size = Number($("dev1Tamano")?.value || 30);
 
       devRenderFase(1);
@@ -2313,6 +2326,7 @@ if (btnCrear) {
     // ===== FASE 1: setear opacidad + color desde inputs
     DEV.f1.op = Number($("dev1Opacidad")?.value || 0.35);
     DEV.f1.color = $("dev1Color")?.value || "#000000";
+    DEV.f1.opColor = $("dev1OpColor")?.value || "#000000";
 
 // abrir fase 1 primero (para poder medir tamaño real)
 abrirModal("modalDevFase1");
