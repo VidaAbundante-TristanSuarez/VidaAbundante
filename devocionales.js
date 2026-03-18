@@ -1398,6 +1398,26 @@ function scalePreviewF2(){
   return h / 840; // fase 2 = 9:7 = 840 de alto en canvas
 }
 
+function ensureDev2TextureLayer(container){
+  if (!container) return null;
+
+  let layer = container.querySelector(".dev2-texture-layer");
+  if (!layer) {
+    layer = document.createElement("div");
+    layer.className = "dev2-texture-layer";
+    layer.style.position = "absolute";
+    layer.style.inset = "0";
+    layer.style.pointerEvents = "none";
+    layer.style.zIndex = "0";
+    layer.style.backgroundRepeat = "no-repeat";
+    layer.style.backgroundPosition = "center";
+    layer.style.backgroundSize = "cover";
+    container.insertBefore(layer, container.firstChild);
+  }
+
+  return layer;
+}
+
 function devRenderFase(fase){
   if (fase === 1) {
     const p = $("dev1Preview");
@@ -1408,29 +1428,23 @@ function devRenderFase(fase){
 
     const st = DEV.f1;
 
-    // texto
-   const sc = scalePreviewF1();
-   t.innerHTML = buildFase1HTML(st.size, sc);
-    // ya no usamos la capa back para no romper tamaños diferentes
+    const sc = scalePreviewF1();
+    t.innerHTML = buildFase1HTML(st.size, sc);
+
     if (b) b.style.display = "none";
 
-    // fondo
     const fondoUsable = st.fondoBlob || st.fondoUrl;
     p.style.backgroundImage = fondoUsable ? `url("${fondoUsable}")` : "none";
     p.style.backgroundSize = "cover";
     p.style.backgroundPosition = "center";
     p.style.backgroundColor = fondoUsable ? "transparent" : "#ffffff";
 
-   // fuente + tamaño + color
-   t.style.fontFamily = st.fuente;
-   t.style.color = st.color;
+    t.style.fontFamily = st.fuente;
+    t.style.color = st.color;
+    t.style.textShadow = textShadowLegible(st.color);
+    t.style.webkitTextStroke = "0px";
+    t.style.paintOrder = "normal";
 
-   // ✅ OUTLINE estable (para preview + captura)
-   t.style.textShadow = textShadowLegible(st.color);
-   t.style.webkitTextStroke = "0px";
-   t.style.paintOrder = "normal";
-
-    // wrapper bg
     w.style.backgroundColor = wrapperBgFromOpacity(st.op, st.opColor);
     w.style.boxShadow = wrapperShadowFromOpacity(st.op, st.opColor);
 
@@ -1450,37 +1464,51 @@ function devRenderFase(fase){
 
     const pxPreview = Math.max(8, (st.size * scalePreviewF2()));
     t.innerHTML = buildFase2HTML(pxPreview);
+
     if (b) b.style.display = "none";
 
-    // fondo plano
+    // =========================
+    // Fondo color plano SIEMPRE
+    // =========================
     p.style.backgroundColor = st.fondoColor || "#ffffff";
+    p.style.backgroundImage = "none";
+    p.style.backgroundBlendMode = "normal";
+    p.style.backgroundSize = "";
+    p.style.backgroundPosition = "";
+    p.style.backgroundRepeat = "";
 
-    if (st.texturaUrl) {
-      const a = Number(st.texturaOp || 0.22);
-      p.style.backgroundImage = `
-        linear-gradient(rgba(255,255,255,${1 - a}), rgba(255,255,255,${1 - a})),
-        url("${st.texturaUrl}")
-      `;
-      p.style.backgroundBlendMode = "multiply";
-    } else {
-      p.style.backgroundImage = "none";
-      p.style.backgroundBlendMode = "normal";
+    // =========================
+    // Capa textura aparte
+    // =========================
+    const layer = ensureDev2TextureLayer(p);
+
+    if (layer) {
+      if (st.texturaUrl) {
+        layer.style.display = "block";
+        layer.style.backgroundImage = `url("${st.texturaUrl}")`;
+        layer.style.opacity = String(
+          Math.max(0, Math.min(0.95, Number(st.texturaOp || 0)))
+        );
+      } else {
+        layer.style.display = "none";
+        layer.style.backgroundImage = "none";
+        layer.style.opacity = "0";
+      }
     }
 
-    p.style.backgroundSize = "cover, cover";
-    p.style.backgroundPosition = "center, center";
-    p.style.backgroundRepeat = "no-repeat, no-repeat";
+    // =========================
+    // texto por encima
+    // =========================
+    p.style.position = "relative";
+    w.style.position = "absolute";
+    w.style.zIndex = "1";
+    w.style.backgroundColor = "transparent";
 
-    // fuente + tamaño + color
-   t.style.fontFamily = st.fuente;
-   t.style.color = st.color;
-
-   // ✅ OUTLINE estable (para preview + captura)
-   t.style.textShadow = textShadowLegible(st.color);
-   t.style.webkitTextStroke = "0px";
-   t.style.paintOrder = "normal";
-
-   w.style.backgroundColor = "transparent"; // ✅ sin opacidad en Fase 2
+    t.style.fontFamily = st.fuente;
+    t.style.color = st.color;
+    t.style.textShadow = textShadowLegible(st.color);
+    t.style.webkitTextStroke = "0px";
+    t.style.paintOrder = "normal";
 
     applyTextStylesToOne(t, st);
     devSyncStyleButtons(2);
@@ -1620,7 +1648,7 @@ async function renderFinalCanvasCaptureReal(){
     return node;
   };
 
-  const makeFase2Node = () => {
+const makeFase2Node = () => {
   const st = DEV.f2;
 
   const node = document.createElement("div");
@@ -1631,42 +1659,40 @@ async function renderFinalCanvasCaptureReal(){
   node.style.borderRadius = "0";
   node.style.backgroundColor = st.fondoColor || "#ffffff";
 
+  // textura en capa separada
   if (st.texturaUrl) {
-    const a = Number(st.texturaOp || 0.22);
-    node.style.backgroundImage = `
-      linear-gradient(rgba(255,255,255,${1 - a}), rgba(255,255,255,${1 - a})),
-      url("${st.texturaUrl}")
-    `;
-    node.style.backgroundBlendMode = "multiply";
-  } else {
-    node.style.backgroundImage = "none";
-    node.style.backgroundBlendMode = "normal";
+    const textureLayer = document.createElement("div");
+    textureLayer.style.position = "absolute";
+    textureLayer.style.inset = "0";
+    textureLayer.style.backgroundImage = `url("${st.texturaUrl}")`;
+    textureLayer.style.backgroundSize = "cover";
+    textureLayer.style.backgroundPosition = "center";
+    textureLayer.style.backgroundRepeat = "no-repeat";
+    textureLayer.style.opacity = String(
+      Math.max(0, Math.min(0.95, Number(st.texturaOp || 0)))
+    );
+    textureLayer.style.pointerEvents = "none";
+    node.appendChild(textureLayer);
   }
 
-  node.style.backgroundSize = "cover, cover";
-  node.style.backgroundPosition = "center, center";
-  node.style.backgroundRepeat = "no-repeat, no-repeat";
-
-  // ✅ WRAPPER limpio: margen uniforme y sin padding extra
   const wrap = document.createElement("div");
   wrap.style.position = "absolute";
   wrap.style.inset = "16px";
   wrap.style.overflow = "hidden";
   wrap.style.textAlign = "center";
+  wrap.style.zIndex = "1";
 
   const texto = document.createElement("div");
   texto.style.width = "100%";
-  texto.style.height = "100%"; // ✅ importante para el layout interno absoluto de buildFase2HTML()
+  texto.style.height = "100%";
   texto.style.fontFamily = st.fuente;
   texto.style.color = st.color;
   applyTextStylesToOne(texto, st);
 
-  // ✅ OUTLINE estable
-    texto.style.textShadow = textShadowLegibleFinal(st.color);
-    texto.style.webkitTextStroke = "0.5px " + outlineColor(st.color);
-    texto.style.paintOrder = "stroke fill";
+  texto.style.textShadow = textShadowLegibleFinal(st.color);
+  texto.style.webkitTextStroke = "0.5px " + outlineColor(st.color);
+  texto.style.paintOrder = "stroke fill";
 
-  // ✅ HTML fase 2 ya maneja: texto centrado + adorno fijo abajo
   texto.innerHTML = buildFase2HTML(Math.max(12, roundToHalf(st.size * 1.12)));
 
   wrap.appendChild(texto);
