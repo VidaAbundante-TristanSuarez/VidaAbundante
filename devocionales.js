@@ -128,7 +128,7 @@ function devMostrarCrear(){
 /* =========================================================
    2) RECORTE (canvas)
    ========================================================= */
-function fitCanvasToImage(image, maxW = 336) {
+function fitCanvasToImage(image, maxW = 300) {
   const c = DEV.canvas;
   const scale = Math.min(1, maxW / image.width);
   c.width = Math.round(image.width * scale);
@@ -2372,7 +2372,7 @@ btnOCR.style.display = "none";
       btnRecortar.style.opacity = "1";
       btnRecortar.textContent = "✅ Listo";
 
-      fitCanvasToImage(DEV.img, 336);
+      fitCanvasToImage(DEV.img, 300);
       draw();
 
       if (boxCanvas) boxCanvas.classList.remove("hidden");
