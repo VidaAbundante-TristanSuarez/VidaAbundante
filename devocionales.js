@@ -1399,24 +1399,6 @@ function scalePreviewF2(){
 }
 
 function ensureDev2TextureLayer(container){
-  if (!container) return null;
-
-  let layer = container.querySelector(".dev2-texture-layer");
-  if (!layer) {
-    layer = document.createElement("div");
-    layer.className = "dev2-texture-layer";
-    layer.style.position = "absolute";
-    layer.style.inset = "0";
-    layer.style.pointerEvents = "none";
-    layer.style.zIndex = "0";
-    layer.style.backgroundRepeat = "no-repeat";
-    layer.style.backgroundPosition = "center";
-    layer.style.backgroundSize = "cover";
-    container.insertBefore(layer, container.firstChild);
-  }
-
-  return layer;
-}
 
 function devRenderFase(fase){
   if (fase === 1) {
@@ -1453,67 +1435,72 @@ function devRenderFase(fase){
     return;
   }
 
-  if (fase === 2) {
-    const p = $("dev2Preview");
-    const w = $("dev2TextoWrapper");
-    const t = $("dev2Texto");
-    const b = $("dev2TextoBack");
-    if (!p || !w || !t || !b) return;
+if (fase === 2) {
+  const p = $("dev2Preview");
+  const w = $("dev2TextoWrapper");
+  const t = $("dev2Texto");
+  const b = $("dev2TextoBack");
+  if (!p || !w || !t || !b) return;
 
-    const st = DEV.f2;
+  const st = DEV.f2;
 
-    const pxPreview = Math.max(8, (st.size * scalePreviewF2()));
-    t.innerHTML = buildFase2HTML(pxPreview);
+  const pxPreview = Math.max(8, (st.size * scalePreviewF2()));
+  t.innerHTML = buildFase2HTML(pxPreview);
 
-    if (b) b.style.display = "none";
+  if (b) b.style.display = "none";
 
-    // =========================
-    // Fondo color plano SIEMPRE
-    // =========================
-    p.style.backgroundColor = st.fondoColor || "#ffffff";
-    p.style.backgroundImage = "none";
-    p.style.backgroundBlendMode = "normal";
-    p.style.backgroundSize = "";
-    p.style.backgroundPosition = "";
-    p.style.backgroundRepeat = "";
+  // =========================
+  // base del preview
+  // =========================
+  p.style.position = "relative";
+  p.style.backgroundColor = st.fondoColor || "#ffffff";
+  p.style.backgroundImage = "none";
+  p.style.backgroundBlendMode = "normal";
+  p.style.backgroundSize = "";
+  p.style.backgroundPosition = "";
+  p.style.backgroundRepeat = "";
 
-    // =========================
-    // Capa textura aparte
-    // =========================
-    const layer = ensureDev2TextureLayer(p);
+  // =========================
+  // textura en capa separada
+  // =========================
+  const layer = ensureDev2TextureLayer(p);
 
-    if (layer) {
-      if (st.texturaUrl) {
-        layer.style.display = "block";
-        layer.style.backgroundImage = `url("${st.texturaUrl}")`;
-        layer.style.opacity = String(
-          Math.max(0, Math.min(0.95, Number(st.texturaOp || 0)))
-        );
-      } else {
-        layer.style.display = "none";
-        layer.style.backgroundImage = "none";
-        layer.style.opacity = "0";
-      }
+  if (layer) {
+    const op = Math.max(0, Math.min(1, Number(st.texturaOp ?? 0.22)));
+
+    if (st.texturaUrl) {
+      layer.style.display = "block";
+      layer.style.backgroundImage = `url("${st.texturaUrl}")`;
+      layer.style.opacity = String(op);
+
+      // ✅ esto hace que se vea como textura sobre el color
+      layer.style.mixBlendMode = "multiply";
+      layer.style.filter = "contrast(1.05)";
+    } else {
+      layer.style.display = "none";
+      layer.style.backgroundImage = "none";
+      layer.style.opacity = "0";
+      layer.style.filter = "none";
     }
-
-    // =========================
-    // texto por encima
-    // =========================
-    p.style.position = "relative";
-    w.style.position = "absolute";
-    w.style.zIndex = "1";
-    w.style.backgroundColor = "transparent";
-
-    t.style.fontFamily = st.fuente;
-    t.style.color = st.color;
-    t.style.textShadow = textShadowLegible(st.color);
-    t.style.webkitTextStroke = "0px";
-    t.style.paintOrder = "normal";
-
-    applyTextStylesToOne(t, st);
-    devSyncStyleButtons(2);
-    return;
   }
+
+  // =========================
+  // texto arriba de todo
+  // =========================
+  w.style.position = "absolute";
+  w.style.zIndex = "1";
+  w.style.backgroundColor = "transparent";
+
+  t.style.fontFamily = st.fuente;
+  t.style.color = st.color;
+  t.style.textShadow = textShadowLegible(st.color);
+  t.style.webkitTextStroke = "0px";
+  t.style.paintOrder = "normal";
+
+  applyTextStylesToOne(t, st);
+  devSyncStyleButtons(2);
+  return;
+}
 }
 
 function devSetLoadingFase3(on, msg){
@@ -1659,7 +1646,7 @@ const makeFase2Node = () => {
   node.style.borderRadius = "0";
   node.style.backgroundColor = st.fondoColor || "#ffffff";
 
-  // textura en capa separada
+  // ✅ textura en capa separada mezclada con el color
   if (st.texturaUrl) {
     const textureLayer = document.createElement("div");
     textureLayer.style.position = "absolute";
@@ -1669,9 +1656,12 @@ const makeFase2Node = () => {
     textureLayer.style.backgroundPosition = "center";
     textureLayer.style.backgroundRepeat = "no-repeat";
     textureLayer.style.opacity = String(
-      Math.max(0, Math.min(0.95, Number(st.texturaOp || 0)))
+      Math.max(0, Math.min(1, Number(st.texturaOp ?? 0.22)))
     );
+    textureLayer.style.mixBlendMode = "multiply";
+    textureLayer.style.filter = "contrast(1.05)";
     textureLayer.style.pointerEvents = "none";
+
     node.appendChild(textureLayer);
   }
 
