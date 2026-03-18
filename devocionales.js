@@ -958,9 +958,9 @@ function cargarTexturasF2(){
     const b = document.createElement("button");
     b.type = "button";
     b.className = "dev-textura-btn";
-    b.textContent = item.nombre;
+    b.textContent = "";
 
-                if (item.url) {
+    if (item.url) {
       const img = document.createElement("img");
       img.src = item.url;
       img.alt = item.nombre;
@@ -1456,15 +1456,20 @@ function devRenderFase(fase){
     p.style.backgroundColor = st.fondoColor || "#ffffff";
 
     if (st.texturaUrl) {
-      p.style.backgroundImage = `linear-gradient(rgba(255,255,255,${1 - (st.texturaOp || 0.22)}), rgba(255,255,255,${1 - (st.texturaOp || 0.22)})), url("${st.texturaUrl}")`;
+      const a = Number(st.texturaOp || 0.22);
+      p.style.backgroundImage = `
+        linear-gradient(rgba(255,255,255,${1 - a}), rgba(255,255,255,${1 - a})),
+        url("${st.texturaUrl}")
+      `;
+      p.style.backgroundBlendMode = "multiply";
     } else {
       p.style.backgroundImage = "none";
+      p.style.backgroundBlendMode = "normal";
     }
 
     p.style.backgroundSize = "cover, cover";
     p.style.backgroundPosition = "center, center";
     p.style.backgroundRepeat = "no-repeat, no-repeat";
-    p.style.backgroundBlendMode = "normal";
 
     // fuente + tamaño + color
    t.style.fontFamily = st.fuente;
@@ -1627,15 +1632,20 @@ async function renderFinalCanvasCaptureReal(){
   node.style.backgroundColor = st.fondoColor || "#ffffff";
 
   if (st.texturaUrl) {
-    node.style.backgroundImage = `linear-gradient(rgba(255,255,255,${1 - (st.texturaOp || 0.22)}), rgba(255,255,255,${1 - (st.texturaOp || 0.22)})), url("${st.texturaUrl}")`;
+    const a = Number(st.texturaOp || 0.22);
+    node.style.backgroundImage = `
+      linear-gradient(rgba(255,255,255,${1 - a}), rgba(255,255,255,${1 - a})),
+      url("${st.texturaUrl}")
+    `;
+    node.style.backgroundBlendMode = "multiply";
   } else {
     node.style.backgroundImage = "none";
+    node.style.backgroundBlendMode = "normal";
   }
 
   node.style.backgroundSize = "cover, cover";
   node.style.backgroundPosition = "center, center";
   node.style.backgroundRepeat = "no-repeat, no-repeat";
-  node.style.backgroundBlendMode = "normal";
 
   // ✅ WRAPPER limpio: margen uniforme y sin padding extra
   const wrap = document.createElement("div");
