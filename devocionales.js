@@ -128,7 +128,7 @@ function devMostrarCrear(){
 /* =========================================================
    2) RECORTE (canvas)
    ========================================================= */
-function fitCanvasToImage(image, maxW = 420) {
+function fitCanvasToImage(image, maxW = 336) {
   const c = DEV.canvas;
   const scale = Math.min(1, maxW / image.width);
   c.width = Math.round(image.width * scale);
@@ -873,7 +873,7 @@ function cargarFondosDev(){
 // ADORNOS FASE 2
 // =========================
 const adornosF2 = [
-  { nombre: "Ninguno", url: null },
+  { nombre: "🔲", url: null },
   { nombre: "Adorno 1", url: "./img/ornamentos/adorno1.png" },
   { nombre: "Adorno 2", url: "./img/ornamentos/adorno2.png" },
   { nombre: "Adorno 3", url: "./img/ornamentos/adorno3.png" },
@@ -898,14 +898,14 @@ function cargarAdornosF2(){
     b.className = "dev-adorno-btn";
     b.textContent = item.nombre;
 
-    if (item.url) {
-      // mini imagen adentro del botón
+       if (item.url) {
       const img = document.createElement("img");
       img.src = item.url;
       img.alt = item.nombre;
       img.className = "dev-adorno-thumb";
-      b.textContent = ""; // vaciar texto y poner la imagen
       b.appendChild(img);
+    } else {
+      b.innerHTML = `<i class="fa-solid fa-genderless"></i>`;
     }
 
     // marcar activo
@@ -935,7 +935,7 @@ function cargarAdornosF2(){
 }
 
 const texturasF2 = [
-  { nombre: "Ninguna", url: null },
+  { nombre: "🔲", url: null },
   { nombre: "Textura 1", url: "img/texturas/TEXTURA1.jfif" },
   { nombre: "Textura 2", url: "img/texturas/TEXTURA2.jfif" },
   { nombre: "Textura 3", url: "img/texturas/TEXTURA3.jfif" },
@@ -955,13 +955,14 @@ function cargarTexturasF2(){
     b.className = "dev-textura-btn";
     b.textContent = item.nombre;
 
-    if (item.url) {
+        if (item.url) {
       const img = document.createElement("img");
       img.src = item.url;
       img.alt = item.nombre;
       img.className = "dev-textura-thumb";
-      b.textContent = "";
       b.appendChild(img);
+    } else {
+      b.innerHTML = `<i class="fa-solid fa-genderless"></i>`;
     }
 
     b.classList.toggle("activo", DEV.f2.texturaUrl === item.url);
@@ -1672,6 +1673,7 @@ window.devToggleSubirPanel = () => {
   DEV.subirPanel = !DEV.subirPanel;
   const tick = $("devPanelTick");
   if (tick) tick.style.display = DEV.subirPanel ? "inline" : "none";
+  console.log("DEV.subirPanel =", DEV.subirPanel);
 };
 
 // ✅ descarga PNG
@@ -2269,9 +2271,14 @@ window.devFinalizar = async () => {
     await window.devCompartirIglesia(ts);
 
     // ✅ opcional: también a Mi Panel
-    if (DEV.subirPanel) {
-      await devSubirMiPanel(ts);
-      alert("✅ Subido a Iglesia y a Mi Panel");
+       if (DEV.subirPanel) {
+      try {
+        await devSubirMiPanel(ts);
+        alert("✅ Subido a Iglesia y a Mi Panel");
+      } catch (e) {
+        console.error("Error subiendo a Mi Panel:", e);
+        alert("⚠️ Se subió a Iglesia, pero falló Mi Panel.\n\nDetalle: " + (e?.message || e));
+      }
     } else {
       alert("✅ Subido a Iglesia");
     }
@@ -2362,7 +2369,7 @@ btnOCR.style.display = "none";
       btnRecortar.style.opacity = "1";
       btnRecortar.textContent = "✅ Listo";
 
-      fitCanvasToImage(DEV.img, 420);
+      fitCanvasToImage(DEV.img, 336);
       draw();
 
       if (boxCanvas) boxCanvas.classList.remove("hidden");
