@@ -180,19 +180,23 @@ input[type="number"]{
   border:1px solid #ddd;
   border-radius:12px;
   background:#fff;
-  padding:4px;
+  padding:8px;
   cursor:pointer;
-  width:74px;
-  height:34px;
   display:flex;
   align-items:center;
   justify-content:center;
-  overflow:hidden;
-  font-size:0;
 }
 
 .dev-adorno-btn.activo{
   outline:3px solid var(--ui-azul-hover);
+}
+
+.dev-adorno-btn-none{
+  width:42px;
+  min-width:42px;
+  height:36px;
+  padding:0;
+  font-size:16px;
 }
 
 /* Evitar estiramiento */
@@ -1199,15 +1203,11 @@ body.oscuro #subidosFeed a{
   border:1px solid #ddd;
   border-radius:12px;
   background:#fff;
-  padding:4px;
+  padding:8px;
   cursor:pointer;
-  width:42px;
-  height:42px;
   display:flex;
   align-items:center;
   justify-content:center;
-  overflow:hidden;
-  font-size:0;
 }
 
 .dev-textura-btn.activo{
@@ -1215,11 +1215,31 @@ body.oscuro #subidosFeed a{
 }
 
 .dev-textura-thumb{
-  width:30px;
-  height:30px;
+  width:64px;
+  height:24px;
   object-fit:cover;
-  border-radius:7px;
+  border-radius:6px;
   display:block;
+}
+
+.dev-textura-btn-none{
+  width:42px;
+  min-width:42px;
+  height:36px;
+  padding:0;
+  font-size:16px;
+}
+
+.dev-adorno-btn-none i,
+.dev-textura-btn-none i{
+  font-size:16px;
+  line-height:1;
+  color:#444;
+}
+
+.dev-adorno-btn-none.activo i,
+.dev-textura-btn-none.activo i{
+  color:#fff;
 }
 
 </style>
