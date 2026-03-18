@@ -4245,14 +4245,50 @@ window.eliminarImagenPanel = async (id) => {
   const btn = document.getElementById("btnScrollTopGlobal");
   if (!btn) return;
 
-  function actualizarBotonScrollTop() {
-    const visible =
-      document.getElementById("iglesia-devocionales")?.style.display !== "none" ||
-      document.getElementById("iglesia-subidos")?.style.display !== "none" ||
-      document.getElementById("panel-imagenes")?.style.display !== "none" ||
-      document.getElementById("panel-marcadores")?.style.display !== "none";
+  function seccionVisible(id) {
+    const el = document.getElementById(id);
+    return !!el && getComputedStyle(el).display !== "none";
+  }
 
-    if (visible && window.scrollY > 260) {
+  function obtenerContenedorScrollActivo() {
+    const candidatos = [
+      document.getElementById("iglesia-devocionales"),
+      document.getElementById("iglesia-subidos"),
+      document.getElementById("panel-imagenes"),
+      document.getElementById("panel-marcadores"),
+      document.getElementById("seccion-iglesia"),
+      document.getElementById("seccion-panel")
+    ].filter(Boolean);
+
+    for (const el of candidatos) {
+      const st = getComputedStyle(el);
+      const tieneScrollInterno =
+        (st.overflowY === "auto" || st.overflowY === "scroll") &&
+        el.scrollHeight > el.clientHeight + 10 &&
+        st.display !== "none";
+
+      if (tieneScrollInterno) return el;
+    }
+
+    return window;
+  }
+
+  function hayZonaActiva() {
+    return (
+      seccionVisible("iglesia-devocionales") ||
+      seccionVisible("iglesia-subidos") ||
+      seccionVisible("panel-imagenes") ||
+      seccionVisible("panel-marcadores")
+    );
+  }
+
+  function obtenerScrollActual() {
+    const cont = obtenerContenedorScrollActivo();
+    return cont === window ? window.scrollY : cont.scrollTop;
+  }
+
+  function actualizarBotonScrollTop() {
+    if (hayZonaActiva() && obtenerScrollActual() > 260) {
       btn.classList.add("mostrar");
     } else {
       btn.classList.remove("mostrar");
@@ -4262,11 +4298,27 @@ window.eliminarImagenPanel = async (id) => {
   window.addEventListener("scroll", actualizarBotonScrollTop, { passive: true });
   window.addEventListener("resize", actualizarBotonScrollTop);
 
-  btn.addEventListener("click", () => {
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth"
+  ["iglesia-devocionales", "iglesia-subidos", "panel-imagenes", "panel-marcadores", "seccion-iglesia", "seccion-panel"]
+    .map(id => document.getElementById(id))
+    .filter(Boolean)
+    .forEach(el => {
+      el.addEventListener("scroll", actualizarBotonScrollTop, { passive: true });
     });
+
+  btn.addEventListener("click", () => {
+    const cont = obtenerContenedorScrollActivo();
+
+    if (cont === window) {
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+      });
+    } else {
+      cont.scrollTo({
+        top: 0,
+        behavior: "smooth"
+      });
+    }
   });
 
   setInterval(actualizarBotonScrollTop, 500);
