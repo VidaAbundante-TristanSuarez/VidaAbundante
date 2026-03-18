@@ -1494,12 +1494,13 @@ if (fase === 2) {
       layer.style.opacity = String(op);
 
       // ✅ esto hace que se vea como textura sobre el color
-      layer.style.mixBlendMode = "multiply";
-      layer.style.filter = "contrast(1.05)";
+      layer.style.mixBlendMode = "soft-light";
+      layer.style.filter = "none";
     } else {
       layer.style.display = "none";
       layer.style.backgroundImage = "none";
       layer.style.opacity = "0";
+      layer.style.mixBlendMode = "normal";
       layer.style.filter = "none";
     }
   }
@@ -1678,8 +1679,8 @@ const makeFase2Node = () => {
     textureLayer.style.opacity = String(
       Math.max(0, Math.min(1, Number(st.texturaOp ?? 0.22)))
     );
-    textureLayer.style.mixBlendMode = "multiply";
-    textureLayer.style.filter = "contrast(1.05)";
+    textureLayer.style.mixBlendMode = "soft-light";
+    textureLayer.style.filter = "none";
     textureLayer.style.pointerEvents = "none";
 
     node.appendChild(textureLayer);
