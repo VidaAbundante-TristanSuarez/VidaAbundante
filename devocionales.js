@@ -942,7 +942,7 @@ function cargarAdornosF2(){
 const texturasF2 = [
   { nombre: "🔲", url: null },
   { nombre: "Textura 1", url: "./img/texturas/TEXTURA1.jfif" },
-  { nombre: "Textura 2", url: "./img/texturas/TEXTURA2.jfif" },
+  { nombre: "Textura 2", url: "./img/texturas/TEXTURA2.png" },
   { nombre: "Textura 3", url: "./img/texturas/TEXTURA3.jfif" },
   { nombre: "Textura 4", url: "./img/texturas/TEXTURA4.jfif" },
   { nombre: "Textura 5", url: "./img/texturas/TEXTURA5.jfif" }
