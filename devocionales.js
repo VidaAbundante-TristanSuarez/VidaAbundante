@@ -1399,6 +1399,26 @@ function scalePreviewF2(){
 }
 
 function ensureDev2TextureLayer(container){
+  if (!container) return null;
+
+  let layer = container.querySelector(".dev2-texture-layer");
+  if (!layer) {
+    layer = document.createElement("div");
+    layer.className = "dev2-texture-layer";
+    layer.style.position = "absolute";
+    layer.style.inset = "0";
+    layer.style.pointerEvents = "none";
+    layer.style.zIndex = "0";
+    layer.style.backgroundRepeat = "no-repeat";
+    layer.style.backgroundPosition = "center";
+    layer.style.backgroundSize = "cover";
+    layer.style.mixBlendMode = "multiply";
+
+    container.insertBefore(layer, container.firstChild);
+  }
+
+  return layer;
+}
 
 function devRenderFase(fase){
   if (fase === 1) {
