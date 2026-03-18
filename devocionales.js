@@ -853,11 +853,21 @@ function cargarAdornosF2(){
     const activo = (DEV.f2.adornoUrl === item.url);
     b.classList.toggle("activo", activo);
 
-    b.onclick = ()=>{
+        b.onclick = ()=>{
       DEV.f2.adornoUrl = item.url;
-      // refrescar activo
+
       cont.querySelectorAll("button").forEach(x=>x.classList.remove("activo"));
       b.classList.add("activo");
+
+      if (!DEV.f2.userChanged) {
+        const texto = `Reflexión: ${DEV.p2?.reflexion || ""}\nOración: ${DEV.p2?.oracion || ""}`;
+        const sugerido = sugerirTamanoFase2Auto(texto);
+        DEV.f2.size = sugerido;
+
+        const s2 = $("dev2Tamano");
+        if (s2) s2.value = fmtSize(sugerido);
+      }
+
       devRenderFase(2);
     };
 
