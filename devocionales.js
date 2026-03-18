@@ -1017,15 +1017,15 @@ function sugerirTamanoFase2Auto(texto){
   const W = 1080;
   const H = 840;
 
+  // mismos márgenes lógicos que en la composición final
   const maxW = W - 120;
   const altoDisponible = H - 150;
 
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
 
-  const maxPx = 28;
+  const maxPx = 32;
   const minPx = 12;
-
   const limpio = oneLine(texto || "");
 
   for (let px = maxPx; px >= minPx; px -= 0.5) {
@@ -1034,7 +1034,10 @@ function sugerirTamanoFase2Auto(texto){
     const lineH = px * 1.24;
     const totalH = lines.length * lineH;
 
-    if (totalH <= altoDisponible) {
+    // margen de seguridad real
+    const safety = px * 2.2;
+
+    if ((totalH + safety) <= altoDisponible) {
       return Math.max(12, roundToHalf(px));
     }
   }
@@ -1196,13 +1199,13 @@ function buildFase2HTML(basePx){
     ">
 
       <!-- ✅ TEXTO: ocupa el espacio disponible y queda centrado -->
-      <div style="
+            <div style="
         flex:1 1 auto;
         min-height:0;
         display:flex;
         align-items:center;
         justify-content:center;
-        padding: 0 12px;
+        padding: 8px 18px 0;
         box-sizing:border-box;
         text-align:center;
         overflow:hidden;
@@ -1211,11 +1214,11 @@ function buildFase2HTML(basePx){
           width:100%;
           font-size:${basePx}px;
           font-weight:${fw};
-          line-height:1.24;
+          line-height:1.22;
           word-break:break-word;
         ">
           <div>Reflexión: ${esc(ref)}</div>
-          ${ora ? `<div style="margin-top:10px;">Oración: ${esc(ora)}</div>` : ``}
+          ${ora ? `<div style="margin-top:8px;">Oración: ${esc(ora)}</div>` : ``}
         </div>
       </div>
 
@@ -1312,7 +1315,7 @@ function devRenderFase(fase){
 
     const st = DEV.f2;
 
-    const pxPreview = Math.max(8, st.size);
+    const pxPreview = Math.max(8, (st.size * scalePreviewF2()));
     t.innerHTML = buildFase2HTML(pxPreview);
     if (b) b.style.display = "none";
 
@@ -1501,7 +1504,7 @@ async function renderFinalCanvasCaptureReal(){
   texto.style.paintOrder = "normal";
 
   // ✅ HTML fase 2 ya maneja: texto centrado + adorno fijo abajo
-  texto.innerHTML = buildFase2HTML(st.size);
+texto.innerHTML = buildFase2HTML(st.size);
 
   wrap.appendChild(texto);
   node.appendChild(wrap);
