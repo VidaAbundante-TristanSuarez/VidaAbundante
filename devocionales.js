@@ -891,11 +891,15 @@ function textShadowLegible(textHex){
 function textShadowLegibleFinal(textHex){
   const oc = outlineColor(textHex || "#000000");
   return `
-    -2px 0 ${oc},
-     2px 0 ${oc},
-     0 -2px ${oc},
-     0  2px ${oc},
-     0 0 3px ${oc}
+    -3px 0 ${oc},
+     3px 0 ${oc},
+     0 -3px ${oc},
+     0  3px ${oc},
+    -2px -2px ${oc},
+     2px -2px ${oc},
+    -2px  2px ${oc},
+     2px  2px ${oc},
+     0 0 4px ${oc}
   `;
 }
 
@@ -1199,37 +1203,42 @@ function buildFase2HTML(basePx){
     ">
 
       <!-- ✅ TEXTO: ocupa el espacio disponible y queda centrado -->
-            <div style="
+                  <div style="
         flex:1 1 auto;
         min-height:0;
         display:flex;
         align-items:center;
         justify-content:center;
-        padding: 8px 18px 0;
+        padding: 4px 18px 0;
         box-sizing:border-box;
         text-align:center;
         overflow:hidden;
       ">
         <div style="
           width:100%;
+          max-width:100%;
           font-size:${basePx}px;
           font-weight:${fw};
-          line-height:1.22;
+          line-height:1.18;
           word-break:break-word;
+          display:flex;
+          flex-direction:column;
+          align-items:center;
+          justify-content:center;
         ">
-          <div>Reflexión: ${esc(ref)}</div>
-          ${ora ? `<div style="margin-top:8px;">Oración: ${esc(ora)}</div>` : ``}
+          <div style="width:100%;">Reflexión: ${esc(ref)}</div>
+          ${ora ? `<div style="width:100%; margin-top:6px;">Oración: ${esc(ora)}</div>` : ``}
         </div>
       </div>
 
       <!-- ✅ ADORNO: fijo abajo, no empuja ni corta el texto -->
-      ${adorno ? `
+            ${adorno ? `
         <div style="
           flex:0 0 auto;
           display:flex;
           align-items:flex-end;
           justify-content:center;
-          padding: 0 0 8px;
+          padding: 0 0 4px;
           box-sizing:border-box;
           pointer-events:none;
         ">
@@ -1238,7 +1247,7 @@ function buildFase2HTML(basePx){
             alt="adorno"
             style="
               width:${adornoW}%;
-              max-height:110px;
+              max-height:86px;
               height:auto;
               object-fit:contain;
               display:block;
@@ -1461,8 +1470,8 @@ async function renderFinalCanvasCaptureReal(){
      
     // ✅ OUTLINE estable
     texto.style.textShadow = textShadowLegibleFinal(st.color);
-    texto.style.webkitTextStroke = "0px";
-    texto.style.paintOrder = "normal";
+    texto.style.webkitTextStroke = "0.6px " + outlineColor(st.color);
+    texto.style.paintOrder = "stroke fill";
 
     // ✅ IMPORTANTE: tamaño real (sin scalePreviewF1)
     texto.innerHTML = buildFase1HTML(st.size, 1);
@@ -1499,12 +1508,12 @@ async function renderFinalCanvasCaptureReal(){
   applyTextStylesToOne(texto, st);
 
   // ✅ OUTLINE estable
-  texto.style.textShadow = textShadowLegibleFinal(st.color);
-  texto.style.webkitTextStroke = "0px";
-  texto.style.paintOrder = "normal";
+    texto.style.textShadow = textShadowLegibleFinal(st.color);
+    texto.style.webkitTextStroke = "0.5px " + outlineColor(st.color);
+    texto.style.paintOrder = "stroke fill";
 
   // ✅ HTML fase 2 ya maneja: texto centrado + adorno fijo abajo
-texto.innerHTML = buildFase2HTML(st.size);
+  texto.innerHTML = buildFase2HTML(Math.max(12, roundToHalf(st.size * 1.12)));
 
   wrap.appendChild(texto);
   node.appendChild(wrap);
