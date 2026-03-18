@@ -931,14 +931,14 @@ function wrapperShadowFromOpacity(op, color){
 
   const { r, g, b } = hexToRgb(color || "#000000");
 
-  const a1 = Math.min(0.38, x * 0.95);
-  const a2 = Math.min(0.24, x * 0.62);
-  const a3 = Math.min(0.14, x * 0.34);
+  const a1 = Math.min(0.48, x * 1.05);
+  const a2 = Math.min(0.28, x * 0.72);
+  const a3 = Math.min(0.18, x * 0.42);
 
   return `
-    0 0 16px rgba(${r}, ${g}, ${b}, ${a1}),
-    0 0 34px rgba(${r}, ${g}, ${b}, ${a2}),
-    0 0 60px rgba(${r}, ${g}, ${b}, ${a3})
+    0 0 22px rgba(${r}, ${g}, ${b}, ${a1}),
+    0 0 48px rgba(${r}, ${g}, ${b}, ${a2}),
+    0 0 80px rgba(${r}, ${g}, ${b}, ${a3})
   `;
 }
 
@@ -1014,33 +1014,32 @@ function sugerirTamanoVersiculoAuto(versiculo){
 }
 
 function sugerirTamanoFase2Auto(texto){
-  const wWrap = $("dev2TextoWrapper");
-  if (!wWrap) return 16;
+  const W = 1080;
+  const H = 840;
 
-  const rect = wWrap.getBoundingClientRect();
-  const maxW = Math.max(100, rect.width * 0.88);
-  const altoDisponible = Math.max(80, rect.height * 0.74);
+  const maxW = W - 120;
+  const altoDisponible = H - 150;
 
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
 
-  const maxPx = 18;
-  const minPx = 8;
+  const maxPx = 28;
+  const minPx = 12;
 
   const limpio = oneLine(texto || "");
 
   for (let px = maxPx; px >= minPx; px -= 0.5) {
     ctx.font = `600 ${px}px ${DEV.f2.fuente}, Arial`;
     const lines = wrapMeasureLines(ctx, limpio, maxW);
-    const lineH = px * 1.22;
+    const lineH = px * 1.24;
     const totalH = lines.length * lineH;
 
     if (totalH <= altoDisponible) {
-      return Math.max(8, roundToHalf(px));
+      return Math.max(12, roundToHalf(px));
     }
   }
 
-  return 8;
+  return 12;
 }
 
 function devSyncStyleButtons(fase){
@@ -1502,7 +1501,7 @@ async function renderFinalCanvasCaptureReal(){
   texto.style.paintOrder = "normal";
 
   // ✅ HTML fase 2 ya maneja: texto centrado + adorno fijo abajo
-  texto.innerHTML = buildFase2HTML(Math.max(12, st.size * 1.9));
+  texto.innerHTML = buildFase2HTML(st.size);
 
   wrap.appendChild(texto);
   node.appendChild(wrap);
