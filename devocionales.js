@@ -55,6 +55,8 @@ const DEV = {
   // fase2 (9:7) settings
   f2: {
     fondoColor: "#ffffff",
+    texturaUrl: null,
+    texturaOp: 0.22,
     fuente: "Roboto",
     color: "#000000",
     op: 0.15,
@@ -706,7 +708,8 @@ function crearListaFuentes(fase){
 /* =========================================================
    6) FONDOS (fase 1)
    ========================================================= */
-const fondos = [
+const fondosCategorias = {
+  paisajes: [
 "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/puente_gox2gz.jpg",
 "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_1_qttkkt",
 "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_l02emm",
@@ -759,7 +762,18 @@ const fondos = [
 "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_13_dzxm4k",
 "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_11_z3nudj",
 "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_10_scjlfu"
-];
+],
+  acuarelas: [],
+  tarjetas: []
+};
+
+const fondosEtiquetas = {
+  paisajes: "Paisajes",
+  acuarelas: "Acuarelas",
+  tarjetas: "Tarjetas"
+};
+
+let devF1CategoriaActual = "paisajes";
 
 async function urlToBlobURL(url){
   const res = await fetch(url, { mode:"cors", cache:"no-store" });
@@ -773,6 +787,52 @@ function cargarFondosDev(){
   if (!cont) return;
   cont.innerHTML = "";
 
+  const menuWrap = document.createElement("div");
+  menuWrap.className = "dev-f1-menu-wrap";
+
+  const menuBtn = document.createElement("button");
+  menuBtn.type = "button";
+  menuBtn.className = "dev-f1-menu-btn";
+  menuBtn.innerHTML = `<i class="fa-solid fa-ellipsis-vertical"></i>`;
+  menuBtn.title = "Elegir galería";
+
+  const menu = document.createElement("div");
+  menu.className = "dev-f1-menu";
+
+  Object.keys(fondosCategorias).forEach(cat => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.textContent = fondosEtiquetas[cat] || cat;
+    b.classList.toggle("activo", cat === devF1CategoriaActual);
+
+    b.onclick = (e)=>{
+      e.preventDefault();
+      e.stopPropagation();
+      devF1CategoriaActual = cat;
+      cargarFondosDev();
+    };
+
+    menu.appendChild(b);
+  });
+
+  menuBtn.onclick = (e)=>{
+    e.preventDefault();
+    e.stopPropagation();
+    menu.classList.toggle("abierto");
+  };
+
+  document.addEventListener("click", (e)=>{
+    if (!menuWrap.contains(e.target)) {
+      menu.classList.remove("abierto");
+    }
+  });
+
+  menuWrap.appendChild(menuBtn);
+  menuWrap.appendChild(menu);
+  cont.appendChild(menuWrap);
+
+  const fondos = fondosCategorias[devF1CategoriaActual] || [];
+
   fondos.forEach(base=>{
     const finalUrl = base.includes("?")
       ? base + "&auto=format&fit=crop&w=900&q=80"
@@ -785,25 +845,24 @@ function cargarFondosDev(){
 
     im.onclick = async ()=>{
       try{
-        // limpiar blob anterior
         if (DEV.f1.fondoBlob) URL.revokeObjectURL(DEV.f1.fondoBlob);
-        DEV.f1.fondoUrl = null;              // ✅ no guardes la url si ya tenés blob
+        DEV.f1.fondoUrl = null;
         DEV.f1.fondoBlob = await urlToBlobURL(finalUrl);
 
         cont.querySelectorAll("img").forEach(x=>x.classList.remove("activo"));
         im.classList.add("activo");
 
         devRenderFase(1);
-        } catch (e) {
+      } catch (e) {
         console.error("Fondo error real:", e);
 
         DEV.f1.fondoUrl = null;
         if (DEV.f1.fondoBlob) URL.revokeObjectURL(DEV.f1.fondoBlob);
         DEV.f1.fondoBlob = null;
 
-       alert("No se pudo usar este fondo.\n\nDetalle: " + (e?.message || e));
-       devRenderFase(1);
-}
+        alert("No se pudo usar este fondo.\n\nDetalle: " + (e?.message || e));
+        devRenderFase(1);
+      }
     };
 
     cont.appendChild(im);
@@ -868,6 +927,46 @@ function cargarAdornosF2(){
         if (s2) s2.value = fmtSize(sugerido);
       }
 
+      devRenderFase(2);
+    };
+
+    cont.appendChild(b);
+  });
+}
+
+const texturasF2 = [
+  { nombre: "Ninguna", url: null },
+  { nombre: "Textura 1", url: "/mnt/data/descarga (4).jfif" },
+  { nombre: "Textura 2", url: "/mnt/data/descarga (5).jfif" }
+];
+
+function cargarTexturasF2(){
+  const cont = $("dev2Texturas");
+  if (!cont) return;
+
+  cont.innerHTML = "";
+
+  texturasF2.forEach(item=>{
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "dev-textura-btn";
+    b.textContent = item.nombre;
+
+    if (item.url) {
+      const img = document.createElement("img");
+      img.src = item.url;
+      img.alt = item.nombre;
+      img.className = "dev-textura-thumb";
+      b.textContent = "";
+      b.appendChild(img);
+    }
+
+    b.classList.toggle("activo", DEV.f2.texturaUrl === item.url);
+
+    b.onclick = ()=>{
+      DEV.f2.texturaUrl = item.url;
+      cont.querySelectorAll("button").forEach(x=>x.classList.remove("activo"));
+      b.classList.add("activo");
       devRenderFase(2);
     };
 
@@ -1340,8 +1439,11 @@ function devRenderFase(fase){
     if (b) b.style.display = "none";
 
     // fondo plano
-    p.style.backgroundImage = "none";
     p.style.backgroundColor = st.fondoColor || "#ffffff";
+    p.style.backgroundImage = st.texturaUrl ? `url("${st.texturaUrl}")` : "none";
+    p.style.backgroundSize = "cover";
+    p.style.backgroundPosition = "center";
+    p.style.backgroundBlendMode = "soft-light";
 
     // fuente + tamaño + color
    t.style.fontFamily = st.fuente;
@@ -1501,7 +1603,11 @@ async function renderFinalCanvasCaptureReal(){
   node.style.position = "relative";
   node.style.overflow = "hidden";
   node.style.borderRadius = "0";
-  node.style.backgroundImage = "none";
+  node.style.backgroundColor = st.fondoColor || "#ffffff";
+  node.style.backgroundImage = st.texturaUrl ? `url("${st.texturaUrl}")` : "none";
+  node.style.backgroundSize = "cover";
+  node.style.backgroundPosition = "center";
+  node.style.backgroundBlendMode = "soft-light";
   node.style.backgroundColor = st.fondoColor || "#ffffff";
 
   // ✅ WRAPPER limpio: margen uniforme y sin padding extra
@@ -2212,10 +2318,11 @@ function initDevocionales(){
   hookAudioCorrecto();
 
   // fuentes/listas y fondos y adornos
-    crearListaFuentes(1);
+  crearListaFuentes(1);
   crearListaFuentes(2);
   cargarFondosDev();
   cargarAdornosF2();
+  cargarTexturasF2();
 
   if (typeof window.initPickrEnHosts === "function") {
     window.initPickrEnHosts("#dev1OpColorHost, #dev1ColorHost, #dev2FondoHost, #dev2ColorHost");
