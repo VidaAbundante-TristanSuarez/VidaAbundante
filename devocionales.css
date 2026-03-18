@@ -98,6 +98,7 @@ input[type="number"]{
   width: min(460px, 94vw);
   justify-content:flex-start;
   max-height: 92px;
+  position:relative;
 }
 
 .dev-fondos img{
@@ -179,18 +180,24 @@ input[type="number"]{
   border:1px solid #ddd;
   border-radius:12px;
   background:#fff;
-  padding:8px;
+  padding:6px;
   cursor:pointer;
+  width:46px;
+  height:46px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
 }
 
 .dev-adorno-btn.activo{
   outline:3px solid var(--ui-azul-hover);
 }
 
-.dev-adorno-thumb{
-  width:64px;
-  height:24px;
-  object-fit:contain;
+.dev-textura-thumb{
+  width:34px;
+  height:34px;
+  object-fit:cover;
+  border-radius:8px;
   display:block;
 }
 
@@ -1142,22 +1149,30 @@ body.oscuro #subidosFeed a{
 .dev-f1-menu-wrap{
   position:relative;
   flex:0 0 auto;
-}
-
-.dev-f1-menu-btn{
-  width:42px;
-  height:42px;
-  min-width:42px;
-  border-radius:12px !important;
   display:flex;
   align-items:center;
   justify-content:center;
+  height:64px;
+}
+
+.dev-f1-menu-btn{
+  width:24px;
+  min-width:24px;
+  height:64px;
+  padding:0 !important;
+  border-radius:10px !important;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  align-self:center;
+  font-size:14px;
+  line-height:1;
 }
 
 .dev-f1-menu{
   position:absolute;
-  top:46px;
-  left:0;
+  top:0;
+  left:32px;
   display:none;
   flex-direction:column;
   gap:6px;
@@ -1166,7 +1181,8 @@ body.oscuro #subidosFeed a{
   border-radius:14px;
   padding:8px;
   box-shadow:0 10px 24px rgba(0,0,0,.14);
-  z-index:20;
+  z-index:9999;
+  min-width:140px;
 }
 
 .dev-f1-menu.abierto{
@@ -1184,8 +1200,13 @@ body.oscuro #subidosFeed a{
   border:1px solid #ddd;
   border-radius:12px;
   background:#fff;
-  padding:8px;
+  padding:6px;
   cursor:pointer;
+  width:46px;
+  height:46px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
 }
 
 .dev-textura-btn.activo{
