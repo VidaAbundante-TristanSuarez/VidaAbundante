@@ -1049,6 +1049,7 @@ color: #000; /* 🔥 Modal SIEMPRE legible (no gris) */
 }
 
 #personalizarFondos img {
+  display:block;
   height: 60px;
   width: 100px;
   object-fit: cover;
@@ -1901,7 +1902,7 @@ body.oscuro .dev-preview{
 #modalPersonalizar .modal-contenido{
   display:flex;
   flex-direction:column;
-  gap:10px;
+  gap:8px;
 }
 
 /* Fondos: galería horizontal con scroll */
