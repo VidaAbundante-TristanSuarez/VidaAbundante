@@ -3751,9 +3751,14 @@ window.setFormatoImagen = tipo => {
   preview.classList.add(formatoImagenActual === "story" ? "preview-story" : "preview-post");
 
   const bToggle = document.getElementById("btnFormatoToggle");
-  if (bToggle) {
-    bToggle.title = formatoImagenActual === "story" ? "Cambiar a post" : "Cambiar a story";
-  }
+ if (bToggle) {
+  bToggle.title = formatoImagenActual === "story" ? "Cambiar a post" : "Cambiar a story";
+
+  // ✅ Cambiar icono dinámicamente
+  bToggle.innerHTML = formatoImagenActual === "story"
+    ? '<i class="fa-solid fa-mobile"></i>'   // story
+    : '<i class="fa-solid fa-tablet"></i>';  // post
+}
 
   actualizarPreview();
 
