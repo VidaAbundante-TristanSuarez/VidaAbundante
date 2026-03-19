@@ -2788,17 +2788,16 @@ input[type="hidden"]#dev2Fondo,
 }
 
 #personalizarFondos .dev-f1-menu button{
-  width: 132px !important;
-  min-width: 132px !important;
-  height: 22px !important;
-  padding: 0 10px !important;
+  height: auto !important;
+  min-width: 0 !important;
+  width: auto !important;
+  padding: 0 !important;
   border-radius: 999px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: flex-start !important;
   white-space: nowrap;
   text-align: left;
-  line-height: 1 !important;
   box-shadow: none !important;
 }
 
