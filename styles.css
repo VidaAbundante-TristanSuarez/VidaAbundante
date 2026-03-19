@@ -2779,7 +2779,8 @@ input[type="hidden"]#dev2Fondo,
   padding: 8px;
   box-shadow: 0 10px 24px rgba(0,0,0,.14);
   z-index: 9999;
-  min-width: 140px;
+  min-width: auto;
+  width: max-content;
 }
 
 #personalizarFondos .dev-f1-menu.abierto{
