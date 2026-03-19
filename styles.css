@@ -2775,8 +2775,8 @@ input[type="hidden"]#dev2Fondo,
   gap: 6px;
   background: #fff;
   border: 1px solid #ddd;
-  border-radius: 24px;
-  padding: 18px;
+  border-radius: 14px;
+  padding: 8px;
   box-shadow: 0 10px 24px rgba(0,0,0,.14);
   z-index: 9999;
   min-width: auto;
@@ -2791,7 +2791,7 @@ input[type="hidden"]#dev2Fondo,
   height: auto !important;
   min-width: 0 !important;
   width: auto !important;
-  padding: 0 !important;
+  padding: 5 !important;
   border-radius: 999px !important;
   display: flex !important;
   align-items: center !important;
