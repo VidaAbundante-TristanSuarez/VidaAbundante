@@ -1793,8 +1793,9 @@ previewTextoBack.style.textShadow = `
    0  ${px}px ${outlineColor}
 `;
 
-  // ================= Opacidad Oscuro/Claro =================
-  const op = parseFloat(opacidad);
+
+// ================= Opacidad Oscuro/Claro =================
+const op = parseFloat(opacidad);
 let bgColor = "rgba(0,0,0,0)";
 
 const opColorEl = document.getElementById("colorOpacidadBiblia");
@@ -1812,9 +1813,8 @@ if (!isNaN(op)) {
 
   bgColor = `rgba(${r}, ${g}, ${b}, ${Math.max(0, Math.min(1, op))})`;
 }
-}
 
-  wrapper.style.backgroundColor = bgColor;
+wrapper.style.backgroundColor = bgColor;
 
   // ================= Estilos Texto =================
   const transform = textStyle?.upper ? "uppercase" : "none";
