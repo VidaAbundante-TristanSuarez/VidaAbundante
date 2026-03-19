@@ -2768,7 +2768,7 @@ input[type="hidden"]#dev2Fondo,
 
 #personalizarFondos .dev-f1-menu{
   position: absolute;
-  top: 5px;
+  top: -1px;
   left: 32px;
   display: none;
   flex-direction: column;
