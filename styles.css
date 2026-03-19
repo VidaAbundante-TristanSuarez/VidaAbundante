@@ -563,7 +563,7 @@ html, body {
 
 #previewImagen.preview-story {
   aspect-ratio: 9 / 16;
-  max-height: 62vh;
+  max-height: 60vh;
 }
    
 /* ================= TEXTO DOBLE (PREVIEW) ================= */
@@ -1049,13 +1049,12 @@ color: #000; /* 🔥 Modal SIEMPRE legible (no gris) */
 }
 
 #personalizarFondos img {
-  display:block;
   height: 52px;
   width: 86px;
   object-fit: cover;
   border-radius: 6px;
   cursor: pointer;
-  border: 0px solid transparent;
+  border: 2px solid transparent;
   transition: all 0.2s ease;
 }
 
@@ -1908,7 +1907,7 @@ body.oscuro .dev-preview{
 /* Fondos: galería horizontal con scroll */
 #personalizarFondos{
   display:flex;
-  gap:5px;
+  gap:10px;
   overflow-x:auto;
   padding:0px 6px;
   scrollbar-width:thin;
