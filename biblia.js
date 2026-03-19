@@ -242,6 +242,7 @@ let creandoNotaLibre = false; // ✅ estado: nota sin versículo
 let origenModalImagen = "biblia";   // "biblia" | "panel"
 let modoImagenLibre = false;        // true cuando el texto viene de un textarea libre
 let textoLibreImagen = "";          // texto escrito manualmente en Mi Panel
+let formatoImagenActual = "post"; // "post" | "story"
 
 // ================= AUTO TAMAÑO PREVIEW =================
 let userSetFontSize = false; // si el usuario tocó tamaño (slider o + -), queda manual hasta que cambie el texto
@@ -1489,7 +1490,8 @@ if (btnFuentes && listaFuentes) {
 }
 
 // ================= 🌄 FONDOS ⛺================================
-const fondos = [
+const fondosCategorias = {
+  paisajes: [
 "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/puente_gox2gz.jpg",
 "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_1_qttkkt",
 "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/Untitled_Project_l02emm",
@@ -1587,7 +1589,18 @@ const fondos = [
 "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/cielovioleta_us3ilw",
 "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/amanecerpiedras_zb18j1",
 "https://res.cloudinary.com/dlkpityif/image/upload/v1757268584/amanecer1600x1600_igddhh"
-];
+  ],
+  acuarelas: [],
+  tarjetas: []
+};
+
+const fondosEtiquetas = {
+  paisajes: "Paisajes",
+  acuarelas: "Acuarelas",
+  tarjetas: "Tarjetas"
+};
+
+let fondoCategoriaActual = "paisajes";
 
 // ================= ⭐ CARGAR FONDOS (CORS + URL FINAL) =======================
 function cargarFondos() {
@@ -1596,17 +1609,60 @@ function cargarFondos() {
 
   cont.innerHTML = "";
 
+  const menuWrap = document.createElement("div");
+  menuWrap.className = "dev-f1-menu-wrap";
+
+  const menuBtn = document.createElement("button");
+  menuBtn.type = "button";
+  menuBtn.className = "dev-f1-menu-btn";
+  menuBtn.innerHTML = `<i class="fa-solid fa-ellipsis-vertical"></i>`;
+  menuBtn.title = "Elegir galería";
+
+  const menu = document.createElement("div");
+  menu.className = "dev-f1-menu";
+
+  Object.keys(fondosCategorias).forEach(cat => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.textContent = fondosEtiquetas[cat] || cat;
+    b.classList.toggle("activo", cat === fondoCategoriaActual);
+
+    b.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      fondoCategoriaActual = cat;
+      cargarFondos();
+    };
+
+    menu.appendChild(b);
+  });
+
+  menuBtn.onclick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    menu.classList.toggle("abierto");
+  };
+
+  document.addEventListener("click", (e) => {
+    if (!menuWrap.contains(e.target)) {
+      menu.classList.remove("abierto");
+    }
+  });
+
+  menuWrap.appendChild(menuBtn);
+  menuWrap.appendChild(menu);
+  cont.appendChild(menuWrap);
+
+  const fondos = fondosCategorias[fondoCategoriaActual] || [];
+
   fondos.forEach(baseUrl => {
     const finalUrl = baseUrl.includes("?")
       ? baseUrl + "&auto=format&fit=crop&w=900&q=80"
       : baseUrl + "?auto=format&fit=crop&w=900&q=80";
 
     const img = document.createElement("img");
-
-    // ✅ crossOrigin ANTES del src
     img.crossOrigin = "anonymous";
     img.referrerPolicy = "no-referrer";
-
     img.src = finalUrl;
 
     img.style.width = "70px";
@@ -1615,23 +1671,22 @@ function cargarFondos() {
     img.style.borderRadius = "10px";
     img.style.cursor = "pointer";
 
-   img.onclick = async () => {
-  try {
-    // liberar blob anterior
-    if (fondoFinalBlobUrl) URL.revokeObjectURL(fondoFinalBlobUrl);
+    img.onclick = async () => {
+      try {
+        if (fondoFinalBlobUrl) URL.revokeObjectURL(fondoFinalBlobUrl);
 
-    fondoFinal = finalUrl; // guardo la url original (por si querés)
-    fondoFinalBlobUrl = await urlToBlobURL(finalUrl); // ✅ la clave
+        fondoFinal = finalUrl;
+        fondoFinalBlobUrl = await urlToBlobURL(finalUrl);
 
-    actualizarPreview();
-  } catch (e) {
-    console.error(e);
-    fondoFinal = null;
-    fondoFinalBlobUrl = null;
-    alert("Ese fondo no se puede usar (CORS). Probá otro o sin fondo.");
-    actualizarPreview();
-  }
-};
+        actualizarPreview();
+      } catch (e) {
+        console.error(e);
+        fondoFinal = null;
+        fondoFinalBlobUrl = null;
+        alert("Ese fondo no se puede usar (CORS). Probá otro o sin fondo.");
+        actualizarPreview();
+      }
+    };
 
     cont.appendChild(img);
   });
@@ -1740,16 +1795,23 @@ previewTextoBack.style.textShadow = `
 
   // ================= Opacidad Oscuro/Claro =================
   const op = parseFloat(opacidad);
-  let bgColor = "rgba(0,0,0,0)";
+let bgColor = "rgba(0,0,0,0)";
 
- if (!isNaN(op)) {
-  if (op > 0.5) {
-    const a = Math.min(0.70, (op - 0.5) * 2);     // ✅ cap
-    bgColor = `rgba(0,0,0,${a})`;
-  } else if (op < 0.5) {
-    const a = Math.min(0.70, (0.5 - op) * 2);     // ✅ cap
-    bgColor = `rgba(255,255,255,${a})`;
-  }
+const opColorEl = document.getElementById("colorOpacidadBiblia");
+const opColor = opColorEl ? opColorEl.value : "#000000";
+
+if (!isNaN(op)) {
+  const hex = String(opColor || "#000000").replace("#", "");
+  const full = hex.length === 3
+    ? hex.split("").map(x => x + x).join("")
+    : hex.padEnd(6, "0").slice(0, 6);
+
+  const r = parseInt(full.slice(0, 2), 16) || 0;
+  const g = parseInt(full.slice(2, 4), 16) || 0;
+  const b = parseInt(full.slice(4, 6), 16) || 0;
+
+  bgColor = `rgba(${r}, ${g}, ${b}, ${Math.max(0, Math.min(1, op))})`;
+}
 }
 
   wrapper.style.backgroundColor = bgColor;
@@ -3699,6 +3761,11 @@ window.setFormatoImagen = tipo => {
 
 };
 
+window.toggleFormatoImagen = function() {
+  const siguiente = formatoImagenActual === "post" ? "story" : "post";
+  setFormatoImagen(siguiente);
+};
+
 // ================= 🔺 CAMBIAR TAMAÑO (+/-) LIBRE ===========================
 window.cambiarTamanoPreview = (delta) => {
   userSetFontSize = true; // ✅ al tocar +/-, ya es manual
@@ -4082,7 +4149,7 @@ window.mostrarIglesiaSub = (sub) => {
  // ================= SELECTOR DE COLORES REUTILIZABLE =====  
    setTimeout(() => {
   initPickrEnHosts(
-    "#personalizarColorHost, #marcadorColorHost, #dev1ColorHost, #dev1OpColorHost, #dev2ColorHost, #colorFondoPlanoHost, #dev2FondoHost"
+    "#personalizarColorHost, #marcadorColorHost, #dev1ColorHost, #dev1OpColorHost, #dev2ColorHost, #colorFondoPlanoHost, #dev2FondoHost",#colorOpacidadBibliaHost
   );
 }, 0);
   
