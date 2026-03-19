@@ -1049,13 +1049,12 @@ color: #000; /* 🔥 Modal SIEMPRE legible (no gris) */
 }
 
 #personalizarFondos img {
-  display:block;
-  height: 52px;
-  width: 86px;
+  height: 60px;
+  width: 100px;
   object-fit: cover;
   border-radius: 6px;
   cursor: pointer;
-  border: 0px solid transparent;
+  border: 2px solid transparent;
   transition: all 0.2s ease;
 }
 
@@ -1902,15 +1901,15 @@ body.oscuro .dev-preview{
 #modalPersonalizar .modal-contenido{
   display:flex;
   flex-direction:column;
-  gap:5px;
+  gap:10px;
 }
 
 /* Fondos: galería horizontal con scroll */
 #personalizarFondos{
   display:flex;
-  gap:5px;
+  gap:10px;
   overflow-x:auto;
-  padding:0px 6px;
+  padding:8px 6px;
   scrollbar-width:thin;
 }
 #personalizarFondos::-webkit-scrollbar{ height:8px; }
