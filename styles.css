@@ -622,7 +622,7 @@ html, body {
 
 @media (max-width: 480px) {
   #previewImagen {
-    margin-bottom: 24px;
+    margin-bottom: 10px;
   }
 }
 
