@@ -1909,7 +1909,7 @@ body.oscuro .dev-preview{
   display:flex;
   gap:10px;
   overflow-x:auto;
-  padding:8px 6px;
+  padding:0px 6px;
   scrollbar-width:thin;
 }
 #personalizarFondos::-webkit-scrollbar{ height:8px; }
