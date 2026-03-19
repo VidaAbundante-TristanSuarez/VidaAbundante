@@ -558,12 +558,15 @@ html, body {
 /* 📐 FORMATOS (FIX REAL) */
 #previewImagen.preview-post {
   aspect-ratio: 1 / 1;
-  max-height: 60vh;
+  max-height: 52vh;
 }
 
 #previewImagen.preview-story {
   aspect-ratio: 9 / 16;
-  max-height: 70vh;
+  max-height: 52vh;
+  width: min(250px, 62vw);
+  margin-left: auto;
+  margin-right: auto;
 }
    
 /* ================= TEXTO DOBLE (PREVIEW) ================= */
@@ -1008,11 +1011,11 @@ color: #000; /* 🔥 Modal SIEMPRE legible (no gris) */
   max-width: 420px;
   margin: auto;
 
-  max-height: 92vh;
+  max-height: calc(100dvh - 24px);
   border-radius: 16px;
   display: flex;
   flex-direction: column;
-  overflow-y: hidden;
+  overflow-y: auto;
   padding-bottom: 16px;
 }
 
