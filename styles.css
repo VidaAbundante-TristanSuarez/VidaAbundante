@@ -2739,39 +2739,4 @@ input[type="hidden"]#dev2Fondo,
   }
 }
 
-/* ===== AJUSTE FINO MODAL CREAR IMAGEN: ganar espacio para galería ===== */
-
-/* menos aire abajo del modal */
-#modalPersonalizar .modal-contenido{
-  padding-bottom: 4px;
-}
-
-/* menos aire entre preview y galería */
-#previewImagen{
-  margin: 0 auto 6px;
-}
-
-/* la galería queda más pegada al preview y con altura estable */
-#personalizarFondos{
-  margin: 2px auto 0;
-  padding: 2px 0 0;
-  min-height: 68px;
-  flex: 0 0 auto;
-}
-
-/* que las filas queden un poco más abajo, pero sin exagerar */
-#rowA{
-  margin-top: 8px;
-}
-
-#rowB{
-  margin-top: 8px;
-}
-
-#rowFinal{
-  margin-top: 8px;
-  margin-bottom: 0;
-  padding-bottom: 0;
-}
-
   </style> 
