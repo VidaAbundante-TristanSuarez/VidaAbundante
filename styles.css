@@ -2739,4 +2739,77 @@ input[type="hidden"]#dev2Fondo,
   }
 }
 
+/* ===== BIBLIA: selector de galerías igual estructura de devocionales ===== */
+
+/* contenedor del botón ... */
+#personalizarFondos .dev-f1-menu-wrap{
+  position: relative;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 52px;
+}
+
+/* botón de tres puntitos */
+#personalizarFondos .dev-f1-menu-btn{
+  width: 24px !important;
+  min-width: 24px !important;
+  height: 52px !important;
+  padding: 0 !important;
+  border-radius: 10px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  align-self: center;
+  font-size: 14px;
+  line-height: 1;
+}
+
+/* menú flotante */
+#personalizarFondos .dev-f1-menu{
+  position: absolute;
+  top: -15px;
+  left: 32px;
+  display: none;
+  flex-direction: column;
+  gap: 6px;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 14px;
+  padding: 8px;
+  box-shadow: 0 10px 24px rgba(0,0,0,.14);
+  z-index: 9999;
+  min-width: 140px;
+}
+
+#personalizarFondos .dev-f1-menu.abierto{
+  display: flex;
+}
+
+/* botones internos del selector: Paisajes / Acuarelas / Tarjetas */
+#personalizarFondos .dev-f1-menu button{
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 28px !important;
+  padding: 0 10px !important;
+  border-radius: 999px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  white-space: nowrap;
+  text-align: left;
+  font-size: 13px;
+  line-height: 1;
+}
+
+/* miniaturas */
+#personalizarFondos img{
+  width: 52px !important;
+  height: 52px !important;
+  object-fit: cover !important;
+  border-radius: 10px !important;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
   </style> 
