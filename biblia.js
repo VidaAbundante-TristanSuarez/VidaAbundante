@@ -1354,7 +1354,7 @@ function colorOutlineDesdeBase(color) {
 // ================= 🎀 FUENTES  =======================
 // 🔗 Listeners de personalización (✅ se enganchan cuando el DOM ya existe)
 function initPersonalizarListeners() {
-  ["personalizarOpacidad", "personalizarTamaño", "personalizarColor"].forEach(id => {
+  ["personalizarOpacidad", "personalizarTamaño", "personalizarColor", "colorOpacidadBiblia"].forEach(id => {
     const el = document.getElementById(id);
     if (!el) {
       console.warn("⚠️ No existe:", id);
