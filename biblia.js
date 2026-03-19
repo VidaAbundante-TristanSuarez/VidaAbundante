@@ -1665,11 +1665,11 @@ function cargarFondos() {
     img.referrerPolicy = "no-referrer";
     img.src = finalUrl;
 
-img.style.width = "40px";
-img.style.height = "40px";
-img.style.objectFit = "cover";
-img.style.borderRadius = "3px";
-img.style.cursor = "pointer";
+    img.style.width = "70px";
+    img.style.height = "70px";
+    img.style.objectFit = "cover";
+    img.style.borderRadius = "10px";
+    img.style.cursor = "pointer";
 
     img.onclick = async () => {
       try {
