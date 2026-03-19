@@ -1765,7 +1765,7 @@ previewTextoBack.style.fontSize = finalSize + "px";
   const color = colorEl ? colorEl.value : "#000000";
   const opacidad = opEl ? opEl.value : "0.3";
   const outlineColor = colorOutlineDesdeBase(color);
-  const px = 0.50; // 👈 grosor del borde
+  const px = 0.80; // 👈 grosor del borde
 
   // ✅ NO tocar position acá. La define el CSS para que queden idénticos.
 previewTexto.style.zIndex = "2";
@@ -3742,23 +3742,25 @@ window.toggleUnderline = () => {
 
 // ================= 🔺 SET FORMATO IMAGEN ===========================
 window.setFormatoImagen = tipo => {
+  formatoImagenActual = (tipo === "story") ? "story" : "post";
+
   const preview = document.getElementById("previewImagen");
+  if (!preview) return;
+
   preview.classList.remove("preview-post", "preview-story");
-  preview.classList.add(tipo === "story" ? "preview-story" : "preview-post");
+  preview.classList.add(formatoImagenActual === "story" ? "preview-story" : "preview-post");
 
-  const bPost = document.getElementById("btnFormatoPost");
-  const bStory = document.getElementById("btnFormatoStory");
-  if (bPost) bPost.classList.toggle("activo", tipo !== "story");
-  if (bStory) bStory.classList.toggle("activo", tipo === "story");
+  const bToggle = document.getElementById("btnFormatoToggle");
+  if (bToggle) {
+    bToggle.title = formatoImagenActual === "story" ? "Cambiar a post" : "Cambiar a story";
+  }
 
-  actualizarPreview(); // ✅ para recalcular tamaño automático
-    
-  // ✅ si la lista de fuentes está abierta, la reubicamos
+  actualizarPreview();
+
   if (typeof posicionarListaFuentes === "function") {
     const lf = document.getElementById("listaFuentes");
     if (lf && lf.classList.contains("abierto")) posicionarListaFuentes();
   }
-
 };
 
 window.toggleFormatoImagen = function() {
