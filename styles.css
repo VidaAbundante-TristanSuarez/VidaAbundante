@@ -558,12 +558,12 @@ html, body {
 /* 📐 FORMATOS (FIX REAL) */
 #previewImagen.preview-post {
   aspect-ratio: 1 / 1;
-  max-height: 60vh;
+  max-height: 50vh;
 }
 
 #previewImagen.preview-story {
   aspect-ratio: 9 / 16;
-  max-height: 70vh;
+  max-height: 62vh;
 }
    
 /* ================= TEXTO DOBLE (PREVIEW) ================= */
