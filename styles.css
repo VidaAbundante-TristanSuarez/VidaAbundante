@@ -622,7 +622,7 @@ html, body {
 
 @media (max-width: 480px) {
   #previewImagen {
-    margin-bottom: 24px;
+    margin-bottom: 6px;
   }
 }
 
@@ -1902,6 +1902,7 @@ body.oscuro .dev-preview{
   display:flex;
   flex-direction:column;
   gap:10px;
+  padding-bottom: 4px;
 }
 
 /* Fondos: galería horizontal con scroll */
@@ -1909,9 +1910,12 @@ body.oscuro .dev-preview{
   display:flex;
   gap:10px;
   overflow-x:auto;
-  padding:8px 6px;
   scrollbar-width:thin;
+  margin: 2px auto 0;
+  padding: 2px 0 0;
+  min-height: 68px;
 }
+
 #personalizarFondos::-webkit-scrollbar{ height:8px; }
 #personalizarFondos::-webkit-scrollbar-thumb{ border-radius:999px; }
 
