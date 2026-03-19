@@ -2741,17 +2741,17 @@ input[type="hidden"]#dev2Fondo,
 
 /* ===== BIBLIA: selector de galerías igual estructura de devocionales ===== */
 
-/* contenedor del botón ... */
+/* ===== BIBLIA: selector de galerías EXACTO como devocionales ===== */
+
 #personalizarFondos .dev-f1-menu-wrap{
   position: relative;
   flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 52px;
+  height: 64px;
 }
 
-/* botón de tres puntitos */
 #personalizarFondos .dev-f1-menu-btn{
   width: 24px !important;
   min-width: 24px !important;
@@ -2766,7 +2766,6 @@ input[type="hidden"]#dev2Fondo,
   line-height: 1;
 }
 
-/* menú flotante */
 #personalizarFondos .dev-f1-menu{
   position: absolute;
   top: -15px;
@@ -2787,29 +2786,18 @@ input[type="hidden"]#dev2Fondo,
   display: flex;
 }
 
-/* botones internos del selector: Paisajes / Acuarelas / Tarjetas */
 #personalizarFondos .dev-f1-menu button{
-  width: 100% !important;
+  height: auto !important;
   min-width: 0 !important;
-  height: 28px !important;
-  padding: 0 10px !important;
+  width: auto !important;
+  padding: 0 !important;
   border-radius: 999px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: flex-start !important;
   white-space: nowrap;
   text-align: left;
-  font-size: 13px;
-  line-height: 1;
+  box-shadow: none !important;
 }
 
-/* miniaturas */
-#personalizarFondos img{
-  width: 52px !important;
-  height: 52px !important;
-  object-fit: cover !important;
-  border-radius: 10px !important;
-  cursor: pointer;
-  flex: 0 0 auto;
-}
   </style> 
