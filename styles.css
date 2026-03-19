@@ -2739,4 +2739,14 @@ input[type="hidden"]#dev2Fondo,
   }
 }
 
+#personalizarFondos{
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  line-height: 0;
+  overflow-y: hidden;
+}
+
+#personalizarFondos img{
+  display: block;
+}
   </style> 
