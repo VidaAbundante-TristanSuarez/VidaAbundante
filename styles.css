@@ -336,14 +336,14 @@ body.oscuro .versiculo { color:#fff; }
 .panel-tabs button{
   border:none;
   border-radius: 999px;
-  padding: 8px 12px;
+  padding: 6px 10px;
   cursor:pointer;
   font-weight: 800;
   background: var(--ui-azul-claro);
   color:#000;
   display:flex;
   align-items:center;
-  gap:8px;
+  gap:6px;
 }
 
 .panel-tabs button:hover{
@@ -375,13 +375,13 @@ body.oscuro .panel-tabs button.activo{
 /* ================= SUBSECCIONES (panel-tabs): PROLIJO + BARRA ================= */
 .panel-tabs{
   display:flex;
-  gap:10px;
+  gap:8px;
   flex-wrap:wrap;
 
   margin: 4px 0 6px;        /* 👈 menos aire */
   background: #eafaff;       /* 👈 barra */
-  padding: 8px 10px;
-  border-radius: 14px;
+  padding: 6px 8px;
+  border-radius: 12px;
   border: 1px solid rgba(0,0,0,.08);
   box-shadow: 0 6px 14px rgba(0,0,0,.06);
 }
