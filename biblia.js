@@ -2287,7 +2287,7 @@ if (subir) {
 // ================= 🔺 WINDOW / UI ⭕ ===============================
 window.irA = (seccion) => {
   // 1) mostrar/ocultar secciones principales
-  ["biblia", "iglesia", "panel"].forEach(s => {
+  ["biblia", "iglesia", "panel", "compartidos"].forEach(s => {
     const el = document.getElementById("seccion-" + s);
     if (el) el.style.display = (s === seccion) ? "block" : "none";
   });
@@ -2312,6 +2312,10 @@ window.irA = (seccion) => {
     window.mostrarSeccion?.("imagenes");
     return;
   }
+
+  if (seccion === "compartidos") {
+  return;
+}
 
   // 4) biblia
   if (seccion === "biblia") {
@@ -4130,7 +4134,7 @@ window.mostrarIglesiaSub = (sub) => {
     window.__abcOnExit?.();
   }
 
-  ["devocionales", "abc", "subidos", "xyz"].forEach(k => {
+["devocionales", "abc", "subidos", "recursos"].forEach(k => {
     const el = document.getElementById("iglesia-" + k);
     if (el) el.style.display = (k === sub) ? "block" : "none";
   });
@@ -4151,6 +4155,14 @@ window.mostrarIglesiaSub = (sub) => {
     window.mostrarABC?.();
     window.__abcOnEnter?.();
   }
+};
+// ================= ⭐RECURSOS =====  
+  window.mostrarRecursosSub = (sub) => {
+  const rh = document.getElementById("recursos-rh");
+  const talleres = document.getElementById("recursos-talleres");
+
+  if (rh) rh.style.display = (sub === "rh") ? "block" : "none";
+  if (talleres) talleres.style.display = (sub === "talleres") ? "block" : "none";
 };
 
  // ================= SELECTOR DE COLORES REUTILIZABLE =====  
