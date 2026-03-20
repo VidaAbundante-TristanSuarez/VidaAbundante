@@ -49,6 +49,10 @@
     <span class="text">Mi Panel</span>
   </button>
 
+<button class="nav-btn" onclick="irA('compartidos')">
+  <i class="fa-solid fa-icons"></i>
+  <span class="text">Compartidos</span>
+</button>
 </div>
 
  <!-- Botón para alternar modo oscuro -->
@@ -213,15 +217,20 @@
     <span>Devocionales</span>
   </button>
 
-  <button type="button" onclick="mostrarIglesiaSub('abc')">
-    <i class="fa-solid fa-font"></i>
-    <span>ABC</span>
-  </button>
-
   <button type="button" onclick="mostrarIglesiaSub('subidos')">
     <i class="fa-solid fa-calendar-check"></i>
     <span>Agenda</span>
   </button>
+
+   <button type="button" onclick="mostrarIglesiaSub('abc')">
+    <i class="fa-solid fa-font"></i>
+    <span>ABC</span>
+  </button>
+
+ <button type="button" onclick="mostrarIglesiaSub('recursos')">
+  <i class="fa-solid fa-shield-heart"></i>
+  <span>Recursos</span>
+</button>
 </div>
 
   <!-- ✅ SUB-SECCIÓN: DEVOCIONALES (VISIBLE por default) -->
@@ -310,13 +319,34 @@
     <div id="subidosPreviewTooltip" aria-hidden="true"></div>
   </div>
 </div>
+
+ <!-- ✅ SUB-SECCIÓN: RECURSOS -->
+<div id="iglesia-recursos" style="display:none">
+
+  <div class="panel-tabs" style="margin-bottom:12px;">
+    <button type="button" onclick="mostrarRecursosSub('rh')">
+      <span>RH</span>
+    </button>
+
+    <button type="button" onclick="mostrarRecursosSub('talleres')">
+      <span>Talleres</span>
+    </button>
+  </div>
+
+  <div id="recursos-rh">
+    <div id="rhApp"></div>
+  </div>
+
+  <div id="recursos-talleres" style="display:none">
+    <div style="padding:20px;">Próximamente talleres</div>
+  </div>
+</div> <!-- =CIERRA RECURSOS= -->
  
-</div>
+</div> <!-- ==== CIERRA IGLESIA ==== -->
 
 <!-- ================= PANEL ================= -->
 <div id="seccion-panel" class="seccion" style="display:none">
   
-
   <!-- Tabs -->
   <div class="panel-tabs">
     <button type="button" onclick="mostrarSeccion('imagenes')">
@@ -363,6 +393,38 @@
  
 </div>
 
+ <!-- ================= COMPARTIDOS ================= -->
+<div id="seccion-compartidos" class="seccion" style="display:none">
+
+  <div class="panel-tabs">
+    <button type="button">
+      <i class="fa-solid fa-image"></i>
+      <span class="text">Imágenes</span>
+    </button>
+
+    <button type="button">
+      <i class="fa-solid fa-video"></i>
+      <span class="text">Videos</span>
+    </button>
+
+    <button type="button">
+      <i class="fa-solid fa-file-lines"></i>
+      <span class="text">Textos</span>
+    </button>
+
+    <button type="button">
+      <i class="fa-solid fa-link"></i>
+      <span class="text">Links</span>
+    </button>
+  </div>
+
+  <div style="padding:20px; text-align:center;">
+    <h3>Compartidos</h3>
+    <p>Acá vamos a agregar imágenes, videos, textos y links.</p>
+  </div>
+
+</div>
+ 
 <!-- ================= MODAL LOGIN ================= -->
 <!-- Se muestra cuando el usuario no está logueado -->
 <div id="loginModal" class="modal-overlay" aria-hidden="true">
