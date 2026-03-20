@@ -2640,14 +2640,15 @@ window.editarMarcadorDesdeLista = (idMarcador) => {
   abrirFormNuevoMarcador();
 
   // ✅ precargar campos
-  document.getElementById("marcadorTitulo").value = m.titulo || "";
-  document.getElementById("marcadorNota").value   = m.nota || "";
-  document.getElementById("marcadorColor").value  = m.color || "#fff3b0";
-  document.getElementById("marcadorKeep").checked = !!(m.destacada || m.keep);
+document.getElementById("marcadorTitulo").value = m.titulo || "";
+document.getElementById("marcadorNota").value   = m.nota || "";
+document.getElementById("marcadorColor").value  = m.color || "#fff3b0";
 
 const chkKeep = document.getElementById("marcadorKeep");
 const lblKeep = document.querySelector('label[for="marcadorKeep"]') || chkKeep?.closest("label");
 const esNotaLibre = !m.libro && !(m.versiculos || []).length;
+
+if (chkKeep) chkKeep.checked = !!(m.destacada || m.keep);
 
 if (lblKeep) {
   lblKeep.innerHTML = esNotaLibre ? `⭐ Destacar nota` : `📌 Mantener resaltado`;
@@ -2841,10 +2842,11 @@ info.textContent = `📌 ${refTxt} · ${hoy}`;
 document.getElementById("marcadorTitulo").value = "";
 document.getElementById("marcadorNota").value = "";
 document.getElementById("marcadorColor").value = colorActual || "#fff3b0";
-document.getElementById("marcadorKeep").checked = true;
 
 const chkKeep = document.getElementById("marcadorKeep");
 const lblKeep = document.querySelector('label[for="marcadorKeep"]') || chkKeep?.closest("label");
+
+if (chkKeep) chkKeep.checked = true;
 if (lblKeep) lblKeep.innerHTML = `📌 Mantener resaltado`;
 
   lista.style.display = "none";
@@ -3315,14 +3317,15 @@ window.editarMarcadorEnPanel = (idMarcador) => {
   setTimeout(() => {
     abrirFormNuevoMarcador();
 
-    document.getElementById("marcadorTitulo").value = m.titulo || "";
-    document.getElementById("marcadorNota").value = m.nota || "";
-    document.getElementById("marcadorColor").value = m.color || "#fff3b0";
-    document.getElementById("marcadorKeep").checked = !!(m.destacada || m.keep);
+document.getElementById("marcadorTitulo").value = m.titulo || "";
+document.getElementById("marcadorNota").value = m.nota || "";
+document.getElementById("marcadorColor").value = m.color || "#fff3b0";
 
 const chkKeep = document.getElementById("marcadorKeep");
 const lblKeep = document.querySelector('label[for="marcadorKeep"]') || chkKeep?.closest("label");
 const esNotaLibre = !m.libro && !(m.versiculos || []).length;
+
+if (chkKeep) chkKeep.checked = !!(m.destacada || m.keep);
 
 if (lblKeep) {
   lblKeep.innerHTML = esNotaLibre ? `⭐ Destacar nota` : `📌 Mantener resaltado`;
@@ -3555,7 +3558,6 @@ info.textContent = `🗒 Nota (sin versículo) · ${new Date().toLocaleDateStrin
 document.getElementById("marcadorTitulo").value = "";
 document.getElementById("marcadorNota").value = "";
 document.getElementById("marcadorColor").value = "#fff3b0";
-document.getElementById("marcadorKeep").checked = false;
 
 const chkKeep = document.getElementById("marcadorKeep");
 const lblKeep = document.querySelector('label[for="marcadorKeep"]') || chkKeep?.closest("label");
