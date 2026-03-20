@@ -1908,10 +1908,10 @@ async function generarImagenFinal(opts = {}) {
     // Siempre a Mi Panel
     await subirImagen("personal");
 
-    // Si está tildado "Iglesia", también sube a Iglesia
+    // Si está tildado "Iglesia", también sube a Compartidos
     const chk = document.getElementById("checkIglesia");
     if (chk && chk.checked) {
-      await subirImagen("iglesia");
+      await subirImagen("compartidos");
     }
   }
 
@@ -1937,47 +1937,41 @@ async function subirImagen(destino = "personal") {
   const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
   if (!blob) return;
 
-  // nombre único
   const ts = Date.now();
   const fileName = `versiculo_${ts}.png`;
 
-  // rutas (podés cambiarlas si tu panel lee otra cosa)
-  const storagePath =
-    destino === "iglesia"
-      ? `imagenes_iglesia/${uid}/${fileName}`
-      : `imagenes_personal/${uid}/${fileName}`;
+  let storagePath = `imagenes_personal/${uid}/${fileName}`;
+  let dbPath = `panelImagenesPersonal/${uid}/${ts}`;
 
-  const dbPath =
-    destino === "iglesia"
-      ? `panelImagenesIglesia/${uid}/${ts}`
-      : `panelImagenesPersonal/${uid}/${ts}`;
+  if (destino === "compartidos") {
+    storagePath = `imagenes_compartidos/${uid}/${fileName}`;
+    dbPath = `compartidos/imagenes/${ts}`;
+  }
 
   try {
-    // 1) subir a Storage
     const storageRef = sRef(storage, storagePath);
     await uploadBytes(storageRef, blob, { contentType: "image/png" });
 
-    // 2) obtener URL
     const url = await getDownloadURL(storageRef);
 
-    // 3) guardar referencia en Realtime DB
-await set(ref(db, dbPath), {
-  url,
-  storagePath,
-  fecha: ts,
-  libro: modoImagenLibre ? "" : (libroSel?.value || ""),
-  capitulo: modoImagenLibre ? 0 : Number(capSel?.value || 0),
-  origen: origenModalImagen,
-  tipoTexto: modoImagenLibre ? "libre" : "biblia",
-  textoLibre: modoImagenLibre ? (textoLibreImagen || "") : ""
-});
+    await set(ref(db, dbPath), {
+      url,
+      storagePath,
+      fecha: ts,
+      uid,
+      tipo: "imagen",
+      libro: modoImagenLibre ? "" : (libroSel?.value || ""),
+      capitulo: modoImagenLibre ? 0 : Number(capSel?.value || 0),
+      origen: origenModalImagen,
+      tipoTexto: modoImagenLibre ? "libre" : "biblia",
+      textoLibre: modoImagenLibre ? (textoLibreImagen || "") : ""
+    });
 
     console.log("✅ Imagen subida:", destino, url);
   } catch (e) {
     console.error("❌ Error subiendo imagen:", e);
     mostrarToast("❌ No se pudo subir la imagen");
   }
-  
 }
 
 // ======================== ⭐ OPCION DESCARGAR (FIX) ====================================
@@ -2252,7 +2246,7 @@ async function asegurarCanvasFinal({ subir = false } = {}) {
 if (subir) {
   await subirImagen("personal");
   const chk = document.getElementById("checkIglesia");
-  if (chk && chk.checked) await subirImagen("iglesia");
+  if (chk && chk.checked) await subirImagen("compartidos");
 }
 
     return true;
@@ -2273,7 +2267,7 @@ if (subir) {
       if (subir) {
   await subirImagen("personal");
   const chk = document.getElementById("checkIglesia");
-  if (chk && chk.checked) await subirImagen("iglesia");
+  if (chk && chk.checked) await subirImagen("compartidos");
 }
 
     }
@@ -3924,13 +3918,19 @@ window.compartirMarcador = async (destino) => {
   }
 
   // destino = iglesia: guardar copia en DB
+  // destino = compartidos: guardar copia en DB
   try {
-    await set(ref(db, `marcadoresIglesia/${uid}/${Date.now()}`), {
+    const ts = Date.now();
+
+    await set(ref(db, `compartidos/notas/${ts}`), {
       ...m,
+      uid,
+      tipo: "nota",
       publicadoPor: uid,
-      publicadoEn: Date.now()
+      publicadoEn: ts
     });
-    mostrarToast("✅ Compartido en Iglesia");
+
+    mostrarToast("✅ Compartido en Compartidos");
   } catch (e) {
     console.error(e);
     mostrarToast("❌ No se pudo compartir");
