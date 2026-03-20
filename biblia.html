@@ -534,6 +534,11 @@
   <i class="fa-solid fa-share-nodes"></i>
 </button>
 
+<label>
+  <input id="checkIglesia" type="checkbox" checked>
+  <i class="fa-solid fa-icons"></i> Compartidos
+</label>
+
 <button type="button" onclick="finalizarEdicion()">
   <i class="fa-solid fa-circle-check"></i>
 </button>
@@ -611,7 +616,7 @@
     <p class="modal-sub">¿Dónde querés compartir este marcador?</p>
 
     <div class="modal-actions">
-      <button class="btn-primary" onclick="compartirMarcador('iglesia')">⛪ Iglesia</button>
+      <button class="btn-primary" onclick="compartirMarcador('compartidos')"><i class="fa-solid fa-icons"></i> Compartidos</button>
       <button class="btn-primary" onclick="compartirMarcador('redes')">📱 Redes</button>
       <button class="btn-ghost" onclick="cerrarCompartirMarcador()">Cancelar</button>
     </div>
