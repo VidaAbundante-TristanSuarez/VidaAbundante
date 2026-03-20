@@ -4,7 +4,7 @@ const RH_TEMAS = [
   {
     titulo: "El Paralítico de Betesda",
     html: "materiales/RH/El Paralítico de Betesda.html",
-    audio: "materiales/RH/El paralítico de Betesda.mp3"
+    audio: "materiales/RH/El Paralítico de Betesda.mp3"
   }
 ];
 
