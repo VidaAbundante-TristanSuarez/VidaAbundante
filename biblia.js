@@ -2635,7 +2635,7 @@ window.editarMarcadorDesdeLista = (idMarcador) => {
   // ✅ marcamos “modo edición”
   window.__editMarcadorId = idMarcador;
   window.__editMarcadorBase = { ...m };
-
+creandoNotaLibre = !((m.versiculos || []).length > 0);
   // ✅ abrimos el formulario (sin depender de selección)
   abrirFormNuevoMarcador();
 
@@ -2778,6 +2778,11 @@ function renderPreviewVersiculosMarcador() {
     return;
   }
 
+  if (creandoNotaLibre) {
+  box.innerHTML = "";
+  return;
+}
+
   // ✅ si estoy en contexto ABC, no renderices preview bíblica
   const ctx = window.getMarcadorCtx ? window.getMarcadorCtx() : { origen: "biblia" };
   if (ctx.origen === "abc") {
@@ -2821,33 +2826,49 @@ function renderPreviewVersiculosMarcador() {
 
 // ================= ✨ Abrir Form Nuevo Marcador 📌=================
 window.abrirFormNuevoMarcador = () => {
-    window.setMarcadorCtx("biblia");
+  window.setMarcadorCtx("biblia");
+
   const lista = document.getElementById("listaMarcadores");
   const form = document.getElementById("formNuevoMarcador");
   const info = document.getElementById("infoMarcadorNuevo");
+  const chkKeep = document.getElementById("marcadorKeep");
+
   if (!lista || !form || !info) return;
 
-  const ids = Object.keys(seleccionMarcador);
-  const nums = ids.map(id => Number(id.split("_")[2])).sort((a,b)=>a-b);
-  const rango = formatearVersiculosComoRango(nums);
-  const refTxt = `${libroSel.value} ${capSel.value}:${rango}`;
+  const base = window.__editMarcadorBase || null;
+  const versBase = Array.isArray(base?.versiculos) ? base.versiculos.map(Number).filter(n => !isNaN(n)) : [];
+  const esLibre = creandoNotaLibre || (!!base && versBase.length === 0);
 
-  const hoy = new Date().toLocaleDateString("es-AR", {
-  day: "2-digit",
-  month: "2-digit",
-  year: "numeric"
-});
-info.textContent = `📌 ${refTxt} · ${hoy}`;
+  if (esLibre) {
+    info.textContent = `🗒 Nota (sin versículo) · ${new Date().toLocaleDateString("es-AR")}`;
+    if (chkKeep) chkKeep.checked = !!(base?.destacada || base?.keep);
+  } else {
+    const ids = Object.keys(seleccionMarcador || {});
+    const nums = versBase.length
+      ? versBase.slice().sort((a,b)=>a-b)
+      : ids.map(id => Number(id.split("_")[2])).filter(n => !isNaN(n)).sort((a,b)=>a-b);
 
-document.getElementById("marcadorTitulo").value = "";
-document.getElementById("marcadorNota").value = "";
-document.getElementById("marcadorColor").value = colorActual || "#fff3b0";
+    const libro = base?.libro || libroSel.value;
+    const capitulo = Number(base?.capitulo || capSel.value || 0);
+    const rango = formatearVersiculosComoRango(nums);
+    const refTxt = `${libro} ${capitulo}:${rango}`;
 
-const chkKeep = document.getElementById("marcadorKeep");
-const lblKeep = document.querySelector('label[for="marcadorKeep"]') || chkKeep?.closest("label");
+    const hoy = new Date().toLocaleDateString("es-AR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric"
+    });
 
-if (chkKeep) chkKeep.checked = true;
-if (lblKeep) lblKeep.innerHTML = `📌 Mantener resaltado`;
+    info.textContent = `📌 ${refTxt} · ${hoy}`;
+    if (chkKeep) chkKeep.checked = !!base?.keep;
+  }
+
+  if (!window.__editMarcadorId) {
+    document.getElementById("marcadorTitulo").value = "";
+    document.getElementById("marcadorNota").value = "";
+    document.getElementById("marcadorColor").value = colorActual || "#fff3b0";
+    if (chkKeep) chkKeep.checked = esLibre ? false : true;
+  }
 
   lista.style.display = "none";
   form.style.display = "block";
@@ -3215,8 +3236,11 @@ function renderPanelMarcadores() {
         if (partes.length) textoVers = partes.join(" ");
       }
 
-      return `
-        <div class="card-marcador" style="${m.destacada ? 'background:#fff3b0; border:2px solid #e7c95a;' : ''}">
+      const bgDestacada = m.destacada ? (m.color || "#fff3b0") : "";
+const colorTextoDestacada = bgDestacada ? colorContraste(bgDestacada) : "";
+
+return `
+        <div class="card-marcador" style="${bgDestacada ? `background:${bgDestacada}; color:${colorTextoDestacada};` : ""}">
           <div style="display:flex; justify-content:space-between; gap:10px; align-items:center;">
             <div style="font-size:13px;">
              <b>${m.destacada ? "⭐ " : ""}${m.titulo || "Marcador"}</b><br>
@@ -3322,6 +3346,7 @@ document.getElementById("marcadorNota").value = m.nota || "";
 document.getElementById("marcadorColor").value = m.color || "#fff3b0";
 
 const chkKeep = document.getElementById("marcadorKeep");
+if (chkKeep) chkKeep.checked = !!(m.destacada || m.keep);
 const lblKeep = document.querySelector('label[for="marcadorKeep"]') || chkKeep?.closest("label");
 const esNotaLibre = !m.libro && !(m.versiculos || []).length;
 
@@ -3341,7 +3366,7 @@ if (lblKeep) {
       versiculos: (m.versiculos || []).map(Number),
       ref: m.ref || ""
     };
-
+creandoNotaLibre = !((m.versiculos || []).length > 0);
   }, 0);
 };
 
