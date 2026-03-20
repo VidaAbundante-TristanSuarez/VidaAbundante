@@ -2287,7 +2287,7 @@ async function devSubirMiPanel(tsParam){
   const fileName = `devocional_${ts}.png`;
 
   const storagePath = `devocionales_panel/${uid}/${fileName}`;
-  const dbPath = `miPanelDevocionales/${uid}/${ts}`;
+  const dbPath = `panelImagenesPersonal/${uid}/${ts}`;
 
   const blob = await new Promise(res => c.toBlob(res, "image/png"));
   if (!blob) throw new Error("No se pudo convertir a PNG");
@@ -2299,14 +2299,16 @@ async function devSubirMiPanel(tsParam){
   await uploadBytes(storageRef, blob, { contentType:"image/png" });
   const url = await getDownloadURL(storageRef);
 
-  await set(ref(db, dbPath), {
-    url,
-    storagePath,
-    fecha: ts,
-    texto: DEV.audioText || "",
-    audioOk: !!DEV.audioOk,
-    audioGithubUrl: DEV.audioGithubUrl || ""
-  });
+await set(ref(db, dbPath), {
+  url,
+  storagePath,
+  fecha: ts,
+  origen: "devocional",
+  tipoTexto: "devocional",
+  textoLibre: DEV.audioText || "",
+  audioOk: !!DEV.audioOk,
+  audioGithubUrl: DEV.audioGithubUrl || ""
+});
 
   return { ok:true, ts, url, storagePath, dbPath };
 }
