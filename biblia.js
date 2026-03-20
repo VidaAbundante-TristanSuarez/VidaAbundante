@@ -4155,17 +4155,13 @@ window.mostrarIglesiaSub = (sub) => {
     window.mostrarABC?.();
     window.__abcOnEnter?.();
   }
-};
-// ================= ⭐RECURSOS =====  
-  window.mostrarRecursosSub = (sub) => {
-  const rh = document.getElementById("recursos-rh");
-  const talleres = document.getElementById("recursos-talleres");
 
-  if (rh) rh.style.display = (sub === "rh") ? "block" : "none";
-  if (talleres) talleres.style.display = (sub === "talleres") ? "block" : "none";
+  if (sub === "recursos") {
+  window.mostrarRecursosSub?.("rh");
+}
 };
 
- // ================= SELECTOR DE COLORES REUTILIZABLE =====  
+// ================= SELECTOR DE COLORES REUTILIZABLE =====  
    setTimeout(() => {
   initPickrEnHosts(
     "#personalizarColorHost, #marcadorColorHost, #dev1ColorHost, #dev1OpColorHost, #dev2ColorHost, #colorFondoPlanoHost, #dev2FondoHost,#colorOpacidadBibliaHost"
