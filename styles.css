@@ -2801,14 +2801,21 @@ input[type="hidden"]#dev2Fondo,
   box-shadow: none !important;
 }
 
-#iglesia-recursos .panel-tabs span,
-#seccion-compartidos .panel-tabs span{
-  display:none;
-}
+/* ===== SOLO ICONO EN CELU: Compartidos + Recursos ===== */
+@media (max-width: 640px){
+  .solo-icono-movil .text,
+  .solo-icono-movil span{
+    display: none;
+  }
 
-#iglesia-recursos .panel-tabs button,
-#seccion-compartidos .panel-tabs button{
-  justify-content:center;
+  .solo-icono-movil{
+    min-width: 44px;
+    width: 44px;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    justify-content: center;
+    gap: 0;
+  }
 }
 
   </style> 
