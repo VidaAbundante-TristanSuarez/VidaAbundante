@@ -2801,14 +2801,14 @@ input[type="hidden"]#dev2Fondo,
   box-shadow: none !important;
 }
 
-/* 🔹 SOLO ICONO en Recursos (Iglesia) */
-#iglesia-recursos .panel-tabs span {
-  display: none;
+#iglesia-recursos .panel-tabs span,
+#seccion-compartidos .panel-tabs span{
+  display:none;
 }
 
-/* 🔹 SOLO ICONO en Compartidos */
-#seccion-compartidos .panel-tabs span {
-  display: none;
+#iglesia-recursos .panel-tabs button,
+#seccion-compartidos .panel-tabs button{
+  justify-content:center;
 }
 
   </style> 
