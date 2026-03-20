@@ -227,9 +227,10 @@ async function cargarRHTema() {
   refrescarUIIndiceRH();
 
   const audio = document.getElementById("rhAudio");
-  if (audio) {
-    audio.src = encodeURI(tema.audio);
-  }
+if (audio) {
+  audio.src = encodeURI(tema.audio);
+  audio.load();
+}
 
   const cont = document.getElementById("rhContenido");
   if (!cont) return;
