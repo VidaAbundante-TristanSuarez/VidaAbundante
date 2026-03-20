@@ -54,6 +54,7 @@
   display: flex;
   gap: 6px;
   flex-wrap: nowrap;
+  overflow-x: auto;
   }
 
 /* ICONOS SECCIONES */
@@ -61,8 +62,8 @@
  .nav-btn {
  display: flex;
  align-items: center;
- gap: 4px;
- padding: 8px 14px;
+ gap: 2px;
+ padding: 8px 10px;
  border-radius: 999px;
  border: none;
  font-weight: bold;
