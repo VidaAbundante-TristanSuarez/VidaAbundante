@@ -2220,97 +2220,94 @@ if (!pack?.base64 || !pack?.blob) {
   }
 };
 
-// ✅ Devocional a Iglesia (usa un ts fijo si se lo pasás)
-window.devCompartirIglesia = async (tsParam) => {
+// ✅ SUBE LA IMAGEN SOLO UNA VEZ A STORAGE
+async function devSubirImagenBaseUnaVez(tsParam){
   const fb = window.__FB;
   const api = window.__FB_API;
+
   if (!fb || !api || !window.__UID) {
-    alert("No encuentro Firebase listo. Asegurate que biblia.js cargó y que estás logueado.");
-    throw new Error("Firebase no listo");
-  }
-
-  // ✅ NO renderizar dos veces: si ya tenés finalDataUrl, reutilizá
-  const c = await renderFinalCanvasCaptureReal();
-  if (!c) throw new Error("No se pudo renderizar el canvas final");
-
-  const uid = window.__UID;
-  const ts = Number(tsParam) || Date.now();     // ✅ MISMO TS si viene
-  const fileName = `devocional_${ts}.png`;
-
-  const storagePath = `devocionales_iglesia/${uid}/${fileName}`;
-  const dbPath = `devocionalesIglesia/${uid}/${ts}`;
-
-  const blob = await new Promise(res => c.toBlob(res, "image/png"));
-  if (!blob) throw new Error("No se pudo convertir a PNG");
-
-  try {
-    const { db, storage } = fb;
-    const { ref, set, sRef, uploadBytes, getDownloadURL } = api;
-
-    const storageRef = sRef(storage, storagePath);
-    await uploadBytes(storageRef, blob, { contentType:"image/png" });
-    const url = await getDownloadURL(storageRef);
-
-    await set(ref(db, dbPath), {
-      url,
-      storagePath,
-      fecha: ts,
-      texto: DEV.audioText || "",
-      audioOk: !!DEV.audioOk,
-      audioGithubUrl: DEV.audioGithubUrl || ""
-    });
-
-    return { ok:true, ts, url, storagePath, dbPath };
-
-  } catch (e) {
-    console.error(e);
-    alert("❌ No se pudo compartir en Iglesia\n\nDetalle: " + (e?.message || e));
-    throw e;
-  }
-};
-
-
-// ✅ Devocional a Mi Panel (usa el MISMO ts)
-async function devSubirMiPanel(tsParam){
-  const fb = window.__FB;
-  const api = window.__FB_API;
-  if (!fb || !api || !window.__UID) {
-    alert("No encuentro Firebase listo o no estás logueado.");
-    throw new Error("Firebase no listo");
+    throw new Error("Firebase no listo o usuario no logueado");
   }
 
   const c = await renderFinalCanvasCaptureReal();
   if (!c) throw new Error("No se pudo renderizar el canvas final");
 
   const uid = window.__UID;
-  const ts = Number(tsParam) || Date.now();     // ✅ MISMO TS si viene
+  const ts = Number(tsParam) || Date.now();
   const fileName = `devocional_${ts}.png`;
 
-  const storagePath = `devocionales_panel/${uid}/${fileName}`;
-  const dbPath = `panelImagenesPersonal/${uid}/${ts}`;
+  // ✅ UNA sola ruta de storage para todos los destinos
+  const storagePath = `devocionales_publicados/${uid}/${fileName}`;
 
   const blob = await new Promise(res => c.toBlob(res, "image/png"));
   if (!blob) throw new Error("No se pudo convertir a PNG");
 
-  const { db, storage } = fb;
-  const { ref, set, sRef, uploadBytes, getDownloadURL } = api;
+  const { storage } = fb;
+  const { sRef, uploadBytes, getDownloadURL } = api;
 
   const storageRef = sRef(storage, storagePath);
-  await uploadBytes(storageRef, blob, { contentType:"image/png" });
+  await uploadBytes(storageRef, blob, { contentType: "image/png" });
   const url = await getDownloadURL(storageRef);
 
-await set(ref(db, dbPath), {
-  url,
-  storagePath,
-  fecha: ts,
-  origen: "devocional",
-  tipoTexto: "devocional",
-  textoLibre: DEV.audioText || "",
-  audioOk: !!DEV.audioOk,
-  audioGithubUrl: DEV.audioGithubUrl || ""
-});
+  return { ts, url, storagePath };
+}
 
-  return { ok:true, ts, url, storagePath, dbPath };
+// ✅ SOLO GUARDA REFERENCIA EN IGLESIA
+async function devGuardarEnIglesia(asset){
+  const fb = window.__FB;
+  const api = window.__FB_API;
+
+  if (!fb || !api || !window.__UID) {
+    throw new Error("Firebase no listo");
+  }
+
+  const uid = window.__UID;
+  const { db } = fb;
+  const { ref, set } = api;
+
+  const dbPath = `devocionalesIglesia/${uid}/${asset.ts}`;
+
+  await set(ref(db, dbPath), {
+    url: asset.url,
+    storagePath: asset.storagePath,
+    fecha: asset.ts,
+    texto: DEV.audioText || "",
+    audioOk: !!DEV.audioOk,
+    audioGithubUrl: DEV.audioGithubUrl || "",
+    origen: "devocional"
+  });
+
+  return { ok:true, dbPath };
+}
+
+// ✅ SOLO GUARDA REFERENCIA EN MI PANEL
+async function devGuardarEnMiPanel(asset){
+  const fb = window.__FB;
+  const api = window.__FB_API;
+
+  if (!fb || !api || !window.__UID) {
+    throw new Error("Firebase no listo");
+  }
+
+  const uid = window.__UID;
+  const { db } = fb;
+  const { ref, set } = api;
+
+  // ✅ esta es la ruta que Mi Panel SÍ escucha
+  const dbPath = `panelImagenesPersonal/${uid}/${asset.ts}`;
+
+  await set(ref(db, dbPath), {
+    url: asset.url,
+    storagePath: asset.storagePath,
+    fecha: asset.ts,
+    origen: "devocional",
+    tipoTexto: "devocional",
+    textoLibre: DEV.audioText || "",
+    audioOk: !!DEV.audioOk,
+    audioGithubUrl: DEV.audioGithubUrl || ""
+  });
+
+  return { ok:true, dbPath };
 }
 
 // ✅ candado anti doble submit
@@ -2339,16 +2336,19 @@ window.devFinalizar = async () => {
       try { await window.devDescargarFinal(); } catch (e) { console.warn(e); }
     }
 
-    // ✅ siempre a Iglesia
-    await window.devCompartirIglesia(ts);
+    // ✅ subir UNA sola vez la imagen
+    const asset = await devSubirImagenBaseUnaVez(ts);
 
-    // ✅ opcional: también a Mi Panel
-       if (DEV.subirPanel) {
+    // ✅ guardar referencia en Iglesia
+    await devGuardarEnIglesia(asset);
+
+    // ✅ opcional: guardar referencia en Mi Panel
+    if (DEV.subirPanel) {
       try {
-        await devSubirMiPanel(ts);
+        await devGuardarEnMiPanel(asset);
         alert("✅ Subido a Iglesia y a Mi Panel");
       } catch (e) {
-        console.error("Error subiendo a Mi Panel:", e);
+        console.error("Error guardando en Mi Panel:", e);
         alert("⚠️ Se subió a Iglesia, pero falló Mi Panel.\n\nDetalle: " + (e?.message || e));
       }
     } else {
