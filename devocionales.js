@@ -3241,52 +3241,184 @@ window.devAbrirListaOraciones = async function(uidOwner, tsKey){
   abrirModal("modalDevListaOraciones");
 
   const box = document.getElementById("devListaOracionesContenido");
-  if (box) box.innerHTML = "Cargando...";
+  if (box) {
+    box.innerHTML = `
+      <div style="text-align:center; font-size:13px; opacity:.6;">
+        Cargando...
+      </div>
+    `;
+  }
 
   const fb = window.__FB;
   const api = window.__FB_API;
   const uid = window.__UID;
 
-  if (!fb || !api) return;
+  if (!fb || !api) {
+    if (box) box.innerHTML = `<div style="text-align:center; opacity:.6;">Firebase no listo</div>`;
+    return;
+  }
 
   const { db } = fb;
   const { ref, get } = api;
 
   try{
-    const snap = await get(ref(db, `devocionalesOraciones/${uidOwner}/${tsKey}`));
-    const val = snap.val() || {};
+    const basePath = `devocionalesOraciones/${uidOwner}/${tsKey}`;
+    const baseSnap = await get(ref(db, basePath));
+    const raw = baseSnap.val() || {};
 
-    const items = Object.values(val);
-
-    const visibles = items.filter(it =>
-      it.publica === true ||
-      (uid && it.autorUid === uid)
-    );
-
-    if (!visibles.length){
+    const entries = Object.entries(raw);
+    if (!entries.length) {
       box.innerHTML = `<div style="text-align:center; opacity:.6;">Sin oraciones todavía</div>`;
       return;
     }
 
-    box.innerHTML = visibles.map(it=>`
-      <div style="
-        background:#f5f5f5;
-        padding:10px;
-        border-radius:12px;
-        font-size:14px;
-      ">
-        ${it.texto || ""}
-      </div>
-    `).join("");
+    const visibles = entries
+      .map(([id, it]) => ({ id, ...(it || {}) }))
+      .filter(it => it.publica === true || (uid && it.autorUid === uid))
+      .sort((a,b)=>(b.fecha||0)-(a.fecha||0));
+
+    if (!visibles.length){
+      box.innerHTML = `<div style="text-align:center; opacity:.6;">No hay oraciones visibles para vos</div>`;
+      return;
+    }
+
+    box.innerHTML = visibles.map(it=>{
+      const soyYo = uid && it.autorUid === uid;
+      const autorTxt = soyYo ? "Tú" : (it.publica ? "Anónimo" : "Privada");
+      const fondo = it.color || "#f5f5f5";
+      const fechaTxt = it.fecha ? fmtFecha(it.fecha) : "";
+
+      return `
+        <div style="
+          background:${fondo};
+          padding:12px;
+          border-radius:14px;
+          font-size:14px;
+          box-sizing:border-box;
+          display:flex;
+          flex-direction:column;
+          gap:8px;
+        ">
+          <div style="
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:10px;
+            font-size:12px;
+            opacity:.75;
+          ">
+            <span>${autorTxt}</span>
+            <span>${fechaTxt}</span>
+          </div>
+
+          <div style="
+            white-space:pre-wrap;
+            line-height:1.45;
+            word-break:break-word;
+          ">${(it.texto || "")
+            .replace(/&/g,"&amp;")
+            .replace(/</g,"&lt;")
+            .replace(/>/g,"&gt;")
+          }</div>
+
+          ${soyYo ? `
+            <div style="
+              display:flex;
+              justify-content:flex-end;
+              gap:8px;
+            ">
+              <button class="btn-primary" type="button"
+                onclick="devEditarOracionPropia('${uidOwner}','${tsKey}','${it.id}')">
+                Editar
+              </button>
+
+              <button class="btn-primary devDanger" type="button"
+                onclick="devBorrarOracionPropia('${uidOwner}','${tsKey}','${it.id}')">
+                Borrar
+              </button>
+            </div>
+          ` : ``}
+        </div>
+      `;
+    }).join("");
 
   } catch(e){
     console.error(e);
-    box.innerHTML = "Error al cargar";
+    if (box) {
+      box.innerHTML = `<div style="text-align:center; opacity:.6;">Error al cargar</div>`;
+    }
   }
 };
 
 window.devCerrarListaOraciones = function(){
   cerrarModal("modalDevListaOraciones");
+};
+
+window.devBorrarOracionPropia = async function(uidOwner, tsKey, comentId){
+  const fb = window.__FB;
+  const api = window.__FB_API;
+
+  if (!fb || !api) {
+    alert("Firebase no listo.");
+    return;
+  }
+
+  const ok = confirm("¿Borrar esta oración?");
+  if (!ok) return;
+
+  const { db } = fb;
+  const { ref, remove } = api;
+
+  try{
+    await remove(ref(db, `devocionalesOraciones/${uidOwner}/${tsKey}/${comentId}`));
+    if (typeof devToast === "function") devToast("🗑 Oración borrada");
+    await window.devAbrirListaOraciones(uidOwner, tsKey);
+  } catch(e){
+    console.error(e);
+    alert("❌ No se pudo borrar.\n\nDetalle: " + (e?.message || e));
+  }
+};
+
+window.devEditarOracionPropia = async function(uidOwner, tsKey, comentId){
+  const fb = window.__FB;
+  const api = window.__FB_API;
+
+  if (!fb || !api) {
+    alert("Firebase no listo.");
+    return;
+  }
+
+  const { db } = fb;
+  const { ref, get, update } = api;
+
+  try{
+    const snap = await get(ref(db, `devocionalesOraciones/${uidOwner}/${tsKey}/${comentId}`));
+    const data = snap.val();
+
+    if (!data) {
+      alert("No encontré la oración.");
+      return;
+    }
+
+    const nuevoTexto = prompt("Editar oración:", data.texto || "");
+    if (nuevoTexto == null) return;
+
+    const limpio = String(nuevoTexto || "").trim();
+    if (!limpio) {
+      alert("La oración no puede quedar vacía.");
+      return;
+    }
+
+    await update(ref(db, `devocionalesOraciones/${uidOwner}/${tsKey}/${comentId}`), {
+      texto: limpio
+    });
+
+    if (typeof devToast === "function") devToast("✏️ Oración actualizada");
+    await window.devAbrirListaOraciones(uidOwner, tsKey);
+  } catch(e){
+    console.error(e);
+    alert("❌ No se pudo editar.\n\nDetalle: " + (e?.message || e));
+  }
 };
 
 window.devBorrarDevocional = async (uidOwner, tsKey, storagePath) => {
