@@ -1926,7 +1926,6 @@ function clickLink(link) {
   link.remove();
 }
 
-
 // ================= ⭐ SUBIR IMAGEN (personal / iglesia) ☁️ =================
 async function subirImagen(destino = "personal") {
   if (!uid) return;
@@ -3245,15 +3244,7 @@ let refTxt = "Nota libre";
 
 // ✅ ABC
 if (m?.origen === "abc") {
-  const temaABC = String(
-    m.tema ||
-    m.temaABC ||
-    m.nombreTema ||
-    m.tituloABC ||
-    m.ref ||
-    ""
-  ).trim();
-
+  const temaABC = String(m?.abc?.temaTitulo || "").trim();
   refTxt = temaABC ? `ABC - ${temaABC}` : "ABC";
 }
 
@@ -3273,26 +3264,13 @@ else if ((m.versiculos || []).length > 0) {
     }
   }
 }
-
-// ✅ si es ABC
-if (m?.origen === "abc") {
-  refTxt = "ABC";
-}
-      const checked = !!(seleccionEliminarMarcadores && seleccionEliminarMarcadores[m.id]);
+     const checked = !!(seleccionEliminarMarcadores && seleccionEliminarMarcadores[m.id]);
 
 let textoVers = "";
 let textoABC = "";
 
 if (m?.origen === "abc") {
-  textoABC = String(
-    m.textoABC ||
-    m.previewABC ||
-    m.bloqueTexto ||
-    m.bloquesTexto ||
-    m.textoSeleccionado ||
-    m.seleccionTexto ||
-    ""
-  ).trim();
+  textoABC = String(m?.abc?.html || "").trim();
 }
 
 if (m.libro && m.capitulo && (m.versiculos || []).length) {
@@ -3302,7 +3280,7 @@ if (m.libro && m.capitulo && (m.versiculos || []).length) {
   }).filter(Boolean);
   if (partes.length) textoVers = partes.join(" ");
 }
-      const bgDestacada = m.destacada ? (m.color || "#fff3b0") : "";
+     const bgDestacada = (m.destacada || m.keep) ? (m.color || "#fff3b0") : "";
 const colorTextoDestacada = bgDestacada ? colorContraste(bgDestacada) : "";
 
 return `
@@ -3335,7 +3313,7 @@ return `
 </div>
           </div>
 
-        ${textoVers ? `<div class="nota" style="margin-top:8px;">${textoVers}</div>` : ""}
+      ${textoVers ? `<div class="nota" style="margin-top:8px;">${textoVers}</div>` : ""}
 ${(!textoVers && textoABC) ? `<div class="nota" style="margin-top:8px;">${textoABC}</div>` : ""}
           ${m.nota ? `<div class="nota">${m.nota}</div>` : ""}
         </div>
@@ -3677,8 +3655,14 @@ window.abrirNotaLibre = () => {
 
   if (inputTitulo) inputTitulo.value = "";
   if (inputNota) inputNota.value = "";
- if (inputColor) {
+if (inputColor) {
   inputColor.value = "#fff3b0";
+
+  const host = document.getElementById("marcadorColorHost");
+  if (host && host._pickr) {
+    host._pickr.setColor("#fff3b0");
+  }
+
   inputColor.dispatchEvent(new Event("input", { bubbles: true }));
   inputColor.dispatchEvent(new Event("change", { bubbles: true }));
 }
