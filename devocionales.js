@@ -82,6 +82,9 @@ const DEV = {
 
    publicando: false,
    publishTs: 0
+
+  panelGuardados: new Set(),
+  panelGuardadosLoaded: false,
 };
 
 /* =========================================================
@@ -2636,6 +2639,108 @@ function isAdmin(){
   return !!window.__ES_ADMIN;
 }
 
+async function cargarGuardadosEnMiPanel(){
+  const fb = window.__FB;
+  const api = window.__FB_API;
+  const uid = window.__UID;
+
+  DEV.panelGuardados = new Set();
+  DEV.panelGuardadosLoaded = false;
+
+  if (!fb || !api || !uid) return;
+
+  const { db } = fb;
+  const { ref, get } = api;
+
+  try{
+    const snap = await get(ref(db, `panelImagenesPersonal/${uid}`));
+    const val = snap.val() || {};
+
+    Object.values(val).forEach(it => {
+      if (!it || typeof it !== "object") return;
+
+      const key =
+        String(it.devocionalKey || "") ||
+        String(it.storagePath || "");
+
+      if (key) DEV.panelGuardados.add(key);
+    });
+
+    DEV.panelGuardadosLoaded = true;
+  } catch(e){
+    console.warn("No pude cargar guardados de Mi Panel:", e);
+  }
+}
+
+function devKeyPublicado(it){
+  return String(it?.id || "") || String(it?.storagePath || "");
+}
+
+function devYaGuardadoEnPanel(it){
+  const key = devKeyPublicado(it);
+  return DEV.panelGuardados.has(key) || DEV.panelGuardados.has(String(it?.storagePath || ""));
+}
+
+window.devGuardarPublicadoEnMiPanel = async function(itId){
+  const fb = window.__FB;
+  const api = window.__FB_API;
+  const uid = window.__UID;
+
+  if (!fb || !api || !uid) {
+    alert("Tenés que estar logueado.");
+    return;
+  }
+
+  const item = (window.__DEV_ITEMS_PUBLICADOS || []).find(x => x.id === itId);
+  if (!item) {
+    alert("No encontré ese devocional.");
+    return;
+  }
+
+  const key = devKeyPublicado(item);
+  if (devYaGuardadoEnPanel(item)) return;
+
+  const { db } = fb;
+  const { ref, set } = api;
+
+  const ts = Date.now();
+  const dbPath = `panelImagenesPersonal/${uid}/${ts}`;
+
+  try{
+    await set(ref(db, dbPath), {
+      url: item.url || "",
+      storagePath: item.storagePath || "",
+      fecha: ts,
+      origen: "devocional_publicado",
+      tipoTexto: "devocional",
+      textoLibre: item.texto || "",
+      audioOk: !!item.audioOk,
+      audioGithubUrl: item.audioGithubUrl || "",
+      cita: item.cita || "",
+      versiculo: item.versiculo || "",
+      devocionalKey: key,
+      sourceUid: item.uidOwner || "",
+      sourceTs: item.tsKey || 0
+    });
+
+    DEV.panelGuardados.add(key);
+    if (item.storagePath) DEV.panelGuardados.add(String(item.storagePath));
+
+    const btn = document.querySelector(`[data-dev-save="${itId}"]`);
+    if (btn) {
+      btn.innerHTML = `<i class="fa-solid fa-heart-circle-check"></i>`;
+      btn.disabled = true;
+      btn.classList.add("guardado");
+      btn.setAttribute("aria-label", "Guardado en Mi Panel");
+      btn.title = "Ya guardado en Mi Panel";
+    }
+
+  } catch(e){
+    console.error(e);
+    alert("❌ No se pudo guardar en Mi Panel.\n\nDetalle: " + (e?.message || e));
+  }
+};
+
 async function cargarDevocionales(){
   const fb  = window.__FB;
   const api = window.__FB_API;
@@ -2667,6 +2772,7 @@ if (btnNuevo) {
     return;
   }
 
+  await cargarGuardadosEnMiPanel();
   const { db } = fb;
   const { ref, onValue } = api;
 
@@ -2692,7 +2798,7 @@ if (btnNuevo) {
     }
 
     items.sort((a,b)=>(b.fecha||b.tsKey||0)-(a.fecha||a.tsKey||0));
-
+    window.__DEV_ITEMS_PUBLICADOS = items;
     if (!items.length) {
       if (feed) feed.innerHTML = `<div style="opacity:.8; padding:10px;">
         No hay devocionales todavía.<br>
@@ -2793,13 +2899,25 @@ function renderDevFeed(items){
   feed.innerHTML = "";
 
   const esAdmin = isAdmin();
-     // ✅ precargar archivos para que compartir abra directo más seguido
   devPrecacheFeedImages(items);
 
   items.forEach((it)=>{
     const card = document.createElement("div");
     card.className = "devBigCard";
     card.id = "devBig_" + it.id;
+
+    const yaGuardado = devYaGuardadoEnPanel(it);
+
+    const saveBtnHtml = `
+      <button class="btn-primary ${yaGuardado ? "guardado" : ""}" type="button"
+        data-dev-save="${it.id}"
+        onclick="devGuardarPublicadoEnMiPanel('${it.id}')"
+        aria-label="${yaGuardado ? "Guardado en Mi Panel" : "Guardar en Mi Panel"}"
+        title="${yaGuardado ? "Ya guardado en Mi Panel" : "Guardar en Mi Panel"}"
+        ${yaGuardado ? "disabled" : ""}>
+        <i class="fa-solid ${yaGuardado ? "fa-heart-circle-check" : "fa-heart-circle-plus"}"></i>
+      </button>
+    `;
 
     const audioHtml = it.audioGithubUrl
       ? `
@@ -2815,19 +2933,21 @@ function renderDevFeed(items){
       ${audioHtml}
 
       <div class="devBigActions">
-<button class="btn-primary" type="button"
-  onpointerdown="devWarmShareImage('${it.storagePath || ""}', 'devocional.png')"
-  ontouchstart="devWarmShareImage('${it.storagePath || ""}', 'devocional.png')"
-  onclick="devCompartirImagenItem('${it.storagePath || ""}', 'devocional.png')"
-  aria-label="Compartir">
-  <i class="fa-solid fa-share-nodes"></i>
-</button>
+        ${saveBtnHtml}
 
-<button class="btn-primary" type="button"
-  onclick="devDescargarImagenItem('${it.storagePath || ""}', 'devocional.png')"
-  aria-label="Descargar PNG">
-  <i class="fa-solid fa-download"></i>
-</button>
+        <button class="btn-primary" type="button"
+          onpointerdown="devWarmShareImage('${it.storagePath || ""}', 'devocional.png')"
+          ontouchstart="devWarmShareImage('${it.storagePath || ""}', 'devocional.png')"
+          onclick="devCompartirImagenItem('${it.storagePath || ""}', 'devocional.png')"
+          aria-label="Compartir">
+          <i class="fa-solid fa-share-nodes"></i>
+        </button>
+
+        <button class="btn-primary" type="button"
+          onclick="devDescargarImagenItem('${it.storagePath || ""}', 'devocional.png')"
+          aria-label="Descargar PNG">
+          <i class="fa-solid fa-download"></i>
+        </button>
 
         ${esAdmin ? `
           <button class="btn-primary devDanger" type="button"
