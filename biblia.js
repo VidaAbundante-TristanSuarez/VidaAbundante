@@ -3265,23 +3265,25 @@ return `
             </div>
 
             <div style="display:flex; gap:8px; align-items:center;">
-              ${modoEliminarMarcadores ? `
-                <input type="checkbox" ${checked ? "checked":""}
-                  onchange="toggleSeleccionEliminarMarcador('${m.id}', this.checked)">
-              ` : `
-                <button type="button" class="pm-btn" onclick="abrirMarcadorDesdePanel('${m.id}')" title="Volver">
-                  <i class="fa-solid fa-reply"></i>
-                </button>
+  ${modoEliminarMarcadores ? `
+    <input type="checkbox" ${checked ? "checked":""}
+      onchange="toggleSeleccionEliminarMarcador('${m.id}', this.checked)">
+  ` : `
+    ${((m.versiculos || []).length > 0) ? `
+      <button type="button" class="pm-btn" onclick="abrirMarcadorDesdePanel('${m.id}')" title="Volver">
+        <i class="fa-solid fa-reply"></i>
+      </button>
+    ` : ""}
 
-                <button type="button" class="pm-btn" onclick="editarMarcadorEnPanel('${m.id}')" title="Editar">
-                  <i class="fa-solid fa-pen-to-square"></i>
-                </button>
+    <button type="button" class="pm-btn" onclick="editarMarcadorEnPanel('${m.id}')" title="Editar">
+      <i class="fa-solid fa-pen-to-square"></i>
+    </button>
 
-                <button type="button" class="pm-btn" onclick="abrirCompartirMarcador('${m.id}')" title="Compartir">
-                  <i class="fa-solid fa-share-nodes"></i>
-                </button>
-              `}
-            </div>
+    <button type="button" class="pm-btn" onclick="abrirCompartirMarcador('${m.id}')" title="Compartir">
+      <i class="fa-solid fa-share-nodes"></i>
+    </button>
+  `}
+</div>
           </div>
 
           ${textoVers ? `<div class="nota" style="margin-top:8px;">${textoVers}</div>` : ""}
