@@ -2639,6 +2639,36 @@ function isAdmin(){
   return !!window.__ES_ADMIN;
 }
 
+function devToast(msg){
+  let t = document.getElementById("devToast");
+
+  if (!t){
+    t = document.createElement("div");
+    t.id = "devToast";
+    t.style.position = "fixed";
+    t.style.bottom = "80px";
+    t.style.left = "50%";
+    t.style.transform = "translateX(-50%)";
+    t.style.background = "#111";
+    t.style.color = "#fff";
+    t.style.padding = "10px 16px";
+    t.style.borderRadius = "12px";
+    t.style.fontSize = "14px";
+    t.style.zIndex = "99999";
+    t.style.opacity = "0";
+    t.style.transition = "opacity .25s ease";
+    document.body.appendChild(t);
+  }
+
+  t.textContent = msg;
+  t.style.opacity = "1";
+
+  clearTimeout(t._hide);
+  t._hide = setTimeout(()=>{
+    t.style.opacity = "0";
+  }, 1600);
+}
+
 async function cargarGuardadosEnMiPanel(){
   const fb = window.__FB;
   const api = window.__FB_API;
@@ -2698,7 +2728,10 @@ window.devGuardarPublicadoEnMiPanel = async function(itId){
   }
 
   const key = devKeyPublicado(item);
-  if (devYaGuardadoEnPanel(item)) return;
+  if (devYaGuardadoEnPanel(item)) {
+  devToast("💙 Ya lo tenías guardado");
+  return;
+}
 
   const { db } = fb;
   const { ref, set } = api;
@@ -2731,6 +2764,7 @@ window.devGuardarPublicadoEnMiPanel = async function(itId){
       btn.innerHTML = `<i class="fa-solid fa-heart-circle-check"></i>`;
       btn.disabled = true;
       btn.classList.add("guardado");
+       devToast("💙 Guardado en Mi Panel");
       btn.setAttribute("aria-label", "Guardado en Mi Panel");
       btn.title = "Ya guardado en Mi Panel";
     }
