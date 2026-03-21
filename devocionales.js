@@ -2644,12 +2644,12 @@ function isAdmin(){
   return !!window.__ES_ADMIN;
 }
 
-function devPrivacidadLabel(){
+window.devPrivacidadLabel = function(){
   const chk = document.getElementById("devOracionPublica");
   const txt = document.getElementById("devOracionPrivacidadTxt");
   if (!txt) return;
   txt.textContent = chk?.checked ? "Público" : "Solo yo";
-}
+};
 
 function devAsegurarModalOracion(){
   if (document.getElementById("modalDevOracion")) return;
