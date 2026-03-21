@@ -3243,16 +3243,25 @@ function renderPanelMarcadores() {
      const esNotaLibreCard = !(m.versiculos || []).length;
 let refTxt = "Nota libre";
 
-if ((m.versiculos || []).length > 0) {
-  if (m.ref) {
-    refTxt = m.ref; // ya viene bien armado (ej: "Génesis 1:3-5")
+// ✅ ABC
+if (m?.origen === "abc") {
+  const temaABC = (m.tema || m.tituloABC || m.ref || "").trim();
+  refTxt = temaABC ? `ABC - ${temaABC}` : "ABC";
+}
+
+// ✅ Biblia
+else if ((m.versiculos || []).length > 0) {
+  if (m.ref && String(m.ref).trim()) {
+    refTxt = m.ref.trim(); // ej: "Génesis 1:3-5"
   } else if (m.libro && m.capitulo) {
-    const vers = (m.versiculos || []).sort((a,b)=>a-b);
+    const vers = (m.versiculos || []).map(Number).sort((a, b) => a - b);
 
     if (vers.length === 1) {
       refTxt = `${m.libro} ${m.capitulo}:${vers[0]}`;
-    } else {
+    } else if (vers.length > 1) {
       refTxt = `${m.libro} ${m.capitulo}:${vers[0]}-${vers[vers.length - 1]}`;
+    } else {
+      refTxt = `${m.libro} ${m.capitulo}`;
     }
   }
 }
