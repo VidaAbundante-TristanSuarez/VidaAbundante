@@ -3174,90 +3174,68 @@ let modoEliminarMarcadores = false;
 let seleccionEliminarMarcadores = {}; // {id:true}
 
 // (agregá esta si no existe en otro lado)
-let filtroNotasPanel = "con"; // "con" | "sin" | "abc"
+let filtroNotasPanel = "todas"; // "todas" | "con" | "sin" | "abc"
+let menuFiltroNotasPanelAbierto = false;
 
 function renderPanelMarcadores() {
   const panel = document.getElementById("panel-marcadores");
   if (!panel) return;
 
-  // ✅ si no estoy en "con", el orden siempre vuelve a fecha
-  if (filtroNotasPanel !== "con") {
-    ordenMarcadores = "fecha";
-  }
-
   const items = Object.entries(marcadores || {}).map(([id, m]) => ({ ...m, id }));
 
-  const ordenados = items.sort((a, b) => {
-    if (filtroNotasPanel === "con" && ordenMarcadores === "biblia") {
-      const la = (a.libro || "").localeCompare(b.libro || "");
-      if (la !== 0) return la;
-      const ca = (a.capitulo || 0) - (b.capitulo || 0);
-      if (ca !== 0) return ca;
-      return ((a.versiculos?.[0] || 0) - (b.versiculos?.[0] || 0));
-    }
-    return (b.fecha || 0) - (a.fecha || 0);
-  });
+  const ordenados = items.sort((a, b) => (b.fecha || 0) - (a.fecha || 0));
 
   const filtrados = ordenados.filter(m => {
     const tieneNota = !!(m.nota && String(m.nota).trim());
     if (!tieneNota) return false;
 
-    if (filtroNotasPanel === "abc") return m?.origen === "abc";
-
     const esABC = (m?.origen === "abc");
-    if (esABC) return false;
-
     const cantVers = (m.versiculos || []).length;
-    if (filtroNotasPanel === "con") return cantVers > 0;
-    return cantVers === 0;
+
+    if (filtroNotasPanel === "todas") return true;
+    if (filtroNotasPanel === "abc") return esABC;
+    if (filtroNotasPanel === "con") return !esABC && cantVers > 0;
+    if (filtroNotasPanel === "sin") return !esABC && cantVers === 0;
+
+    return true;
   });
 
   const cantSel = Object.keys(seleccionEliminarMarcadores || {}).length;
 
-  const iconOrden = (ordenMarcadores === "fecha")
-    ? `<i class="fa-regular fa-calendar"></i>`
-    : `<i class="fa-solid fa-book-bible"></i>`;
-
-  const iconFiltroNotas = (filtroNotasPanel === "con")
-    ? `<i class="fa-solid fa-thumbtack"></i>`
-    : (filtroNotasPanel === "sin")
-      ? `<i class="fa-solid fa-sheet-plastic"></i>`
-      : `<i class="fa-solid fa-graduation-cap"></i>`;
-
   const tituloPanel =
-    filtroNotasPanel === "con"
-      ? "📌 Notas con versículo"
-      : filtroNotasPanel === "sin"
-        ? "🗒 Notas libres"
-        : "🎓 Notas ABC";
+    filtroNotasPanel === "todas"
+      ? "📝 Todas las notas"
+      : filtroNotasPanel === "con"
+        ? "📌 Notas de Biblia"
+        : filtroNotasPanel === "sin"
+          ? "🗒 Notas libres"
+          : "🎓 Notas ABC";
 
-  const subtituloOrden =
-    filtroNotasPanel === "con"
-      ? `<div class="pm-sub muted" style="font-size:12px; margin-top:2px;">
-           orden: ${ordenMarcadores === "fecha" ? "fecha" : "bíblico"}
-         </div>`
-      : "";
+  const filtroActualIcono =
+    filtroNotasPanel === "todas"
+      ? `<i class="fa-solid fa-list-check"></i>`
+      : filtroNotasPanel === "con"
+        ? `<i class="fa-solid fa-thumbtack"></i>`
+        : filtroNotasPanel === "sin"
+          ? `<i class="fa-solid fa-sheet-plastic"></i>`
+          : `<i class="fa-solid fa-graduation-cap"></i>`;
 
   panel.innerHTML = `
     <div class="panel-marcadores-bar">
       <div class="pm-left">
         <b>${tituloPanel}</b>
-        ${subtituloOrden}
+        <div class="pm-sub muted" style="font-size:12px; margin-top:2px;">
+          orden: más recientes primero
+        </div>
       </div>
 
-      <div class="pm-right">
+      <div class="pm-right" style="position:relative;">
         <button type="button" class="pm-btn" onclick="abrirNotaLibre()" title="Agregar nota">
           <i class="fa-solid fa-square-plus"></i>
         </button>
 
-        ${filtroNotasPanel === "con" ? `
-          <button type="button" class="pm-btn" onclick="toggleOrdenMarcadoresPanel()" title="Ordenar">
-            ${iconOrden}
-          </button>
-        ` : ``}
-
-        <button type="button" class="pm-btn" onclick="toggleFiltroNotasPanel()" title="Filtrar notas">
-          ${iconFiltroNotas}
+        <button type="button" class="pm-btn" onclick="toggleMenuFiltroNotasPanel()" title="Filtrar notas">
+          ${filtroActualIcono}
         </button>
 
         <button type="button" class="pm-btn" onclick="toggleModoEliminarMarcadores()" title="Eliminar">
@@ -3265,6 +3243,38 @@ function renderPanelMarcadores() {
         </button>
       </div>
     </div>
+
+    ${menuFiltroNotasPanelAbierto ? `
+      <div style="display:flex; gap:16px; justify-content:flex-end; align-items:flex-start; margin:-4px 0 12px 0; flex-wrap:wrap;">
+        <button type="button" class="pm-filter-chip" onclick="setFiltroNotasPanel('todas')" title="Todas">
+          <span class="pm-filter-icon ${filtroNotasPanel === "todas" ? "activo" : ""}">
+            <i class="fa-solid fa-list-check"></i>
+          </span>
+          <span class="pm-filter-label">Todas</span>
+        </button>
+
+        <button type="button" class="pm-filter-chip" onclick="setFiltroNotasPanel('con')" title="Biblia">
+          <span class="pm-filter-icon ${filtroNotasPanel === "con" ? "activo" : ""}">
+            <i class="fa-solid fa-thumbtack"></i>
+          </span>
+          <span class="pm-filter-label">Biblia</span>
+        </button>
+
+        <button type="button" class="pm-filter-chip" onclick="setFiltroNotasPanel('sin')" title="Libres">
+          <span class="pm-filter-icon ${filtroNotasPanel === "sin" ? "activo" : ""}">
+            <i class="fa-solid fa-sheet-plastic"></i>
+          </span>
+          <span class="pm-filter-label">Libres</span>
+        </button>
+
+        <button type="button" class="pm-filter-chip" onclick="setFiltroNotasPanel('abc')" title="ABC">
+          <span class="pm-filter-icon ${filtroNotasPanel === "abc" ? "activo" : ""}">
+            <i class="fa-solid fa-graduation-cap"></i>
+          </span>
+          <span class="pm-filter-label">ABC</span>
+        </button>
+      </div>
+    ` : ``}
 
     ${modoEliminarMarcadores && cantSel > 0 ? `
       <div style="display:flex; justify-content:flex-end; margin-bottom:10px;">
@@ -3277,107 +3287,106 @@ function renderPanelMarcadores() {
 
     ${filtrados.length ? filtrados.map(m => {
       const fechaTxt = m.fecha ? new Date(m.fecha).toLocaleString("es-AR") : "";
-     const esNotaLibreCard = !(m.versiculos || []).length;
-let refTxt = "Nota libre";
 
-// ✅ ABC
-if (m?.origen === "abc") {
-  const temaABC = String(m?.abc?.temaTitulo || "").trim();
-  refTxt = temaABC ? `ABC - ${temaABC}` : "ABC";
-}
+      let refTxt = "Nota libre";
 
-// ✅ Biblia
-else if ((m.versiculos || []).length > 0) {
-  if (m.ref && String(m.ref).trim()) {
-    refTxt = m.ref.trim();
-  } else if (m.libro && m.capitulo) {
-    const vers = (m.versiculos || []).map(Number).sort((a, b) => a - b);
+      // ✅ ABC
+      if (m?.origen === "abc") {
+        const temaABC = String(m?.abc?.temaTitulo || "").trim();
+        refTxt = temaABC ? `ABC - ${temaABC}` : "ABC";
+      }
 
-    if (vers.length === 1) {
-      refTxt = `${m.libro} ${m.capitulo}:${vers[0]}`;
-    } else if (vers.length > 1) {
-      refTxt = `${m.libro} ${m.capitulo}:${vers[0]}-${vers[vers.length - 1]}`;
-    } else {
-      refTxt = `${m.libro} ${m.capitulo}`;
-    }
-  }
-}
-     const checked = !!(seleccionEliminarMarcadores && seleccionEliminarMarcadores[m.id]);
+      // ✅ Biblia
+      else if ((m.versiculos || []).length > 0) {
+        if (m.ref && String(m.ref).trim()) {
+          refTxt = m.ref.trim();
+        } else if (m.libro && m.capitulo) {
+          const vers = (m.versiculos || []).map(Number).sort((a, b) => a - b);
 
-let textoVers = "";
-let textoABC = "";
+          if (vers.length === 1) {
+            refTxt = `${m.libro} ${m.capitulo}:${vers[0]}`;
+          } else if (vers.length > 1) {
+            refTxt = `${m.libro} ${m.capitulo}:${vers[0]}-${vers[vers.length - 1]}`;
+          } else {
+            refTxt = `${m.libro} ${m.capitulo}`;
+          }
+        }
+      }
 
-if (m?.origen === "abc") {
-  textoABC = String(m?.abcTexto || "").trim();
-}
+      const checked = !!(seleccionEliminarMarcadores && seleccionEliminarMarcadores[m.id]);
 
-if (m.libro && m.capitulo && (m.versiculos || []).length) {
-  const partes = (m.versiculos || []).map(n => {
-    const vv = bibliaData.find(x => x.Libro === m.libro && x.Capitulo == m.capitulo && x.Versiculo == n);
-    return vv ? getTextoVersiculo(vv) : "";
-  }).filter(Boolean);
+      let textoVers = "";
+      let textoABC = "";
 
-  if (partes.length) textoVers = partes.join(" ");
-}
-      
-     const bgDestacada = (m.destacada || m.keep) ? (m.color || "#fff3b0") : "";
-const colorTextoDestacada = bgDestacada ? colorContraste(bgDestacada) : "";
+      if (m?.origen === "abc") {
+        textoABC = String(m?.abcTexto || "").trim();
+      }
 
-return `
-   <div class="card-marcador" style="${bgDestacada ? `background:${bgDestacada} !important; color:${colorTextoDestacada} !important; border:1px solid rgba(0,0,0,.10);` : ""}">
+      if (m.libro && m.capitulo && (m.versiculos || []).length) {
+        const partes = (m.versiculos || []).map(n => {
+          const vv = bibliaData.find(x => x.Libro === m.libro && x.Capitulo == m.capitulo && x.Versiculo == n);
+          return vv ? getTextoVersiculo(vv) : "";
+        }).filter(Boolean);
+
+        if (partes.length) textoVers = partes.join(" ");
+      }
+
+      const bgDestacada = (m.destacada || m.keep) ? (m.color || "#fff3b0") : "";
+      const colorTextoDestacada = bgDestacada ? colorContraste(bgDestacada) : "";
+
+      return `
+        <div class="card-marcador" style="${bgDestacada ? `background:${bgDestacada} !important; color:${colorTextoDestacada} !important; border:1px solid rgba(0,0,0,.10);` : ""}">
           <div style="display:flex; justify-content:space-between; gap:10px; align-items:center;">
             <div style="font-size:13px;">
-             <b>${m.destacada ? "⭐ " : ""}${m.titulo || "Marcador"}</b><br>
-        <span class="${bgDestacada ? "" : "muted"}">${refTxt} · ${fechaTxt}</span>
+              <b>${m.destacada ? "⭐ " : ""}${m.titulo || "Marcador"}</b><br>
+              <span class="${bgDestacada ? "" : "muted"}">${refTxt} · ${fechaTxt}</span>
             </div>
 
             <div style="display:flex; gap:8px; align-items:center;">
-  ${modoEliminarMarcadores ? `
-    <input type="checkbox" ${checked ? "checked":""}
-      onchange="toggleSeleccionEliminarMarcador('${m.id}', this.checked)">
-  ` : `
-   ${(((m.versiculos || []).length > 0) || m?.origen === "abc") ? `
-      <button type="button" class="pm-btn" onclick="abrirMarcadorDesdePanel('${m.id}')" title="Volver">
-        <i class="fa-solid fa-reply"></i>
-      </button>
-    ` : ""}
+              ${modoEliminarMarcadores ? `
+                <input type="checkbox" ${checked ? "checked":""}
+                  onchange="toggleSeleccionEliminarMarcador('${m.id}', this.checked)">
+              ` : `
+                ${(((m.versiculos || []).length > 0) || m?.origen === "abc") ? `
+                  <button type="button" class="pm-btn" onclick="abrirMarcadorDesdePanel('${m.id}')" title="Volver">
+                    <i class="fa-solid fa-reply"></i>
+                  </button>
+                ` : ""}
 
-    <button type="button" class="pm-btn" onclick="editarMarcadorEnPanel('${m.id}')" title="Editar">
-      <i class="fa-solid fa-pen-to-square"></i>
-    </button>
+                <button type="button" class="pm-btn" onclick="editarMarcadorEnPanel('${m.id}')" title="Editar">
+                  <i class="fa-solid fa-pen-to-square"></i>
+                </button>
 
-    <button type="button" class="pm-btn" onclick="abrirCompartirMarcador('${m.id}')" title="Compartir">
-      <i class="fa-solid fa-share-nodes"></i>
-    </button>
-  `}
-</div>
+                <button type="button" class="pm-btn" onclick="abrirCompartirMarcador('${m.id}')" title="Compartir">
+                  <i class="fa-solid fa-share-nodes"></i>
+                </button>
+              `}
+            </div>
           </div>
 
-     ${textoVers ? `<div class="nota preview-versiculos-marcador" style="margin-top:8px;">${textoVers}</div>` : ""}
-${(!textoVers && textoABC) ? `<div class="nota preview-versiculos-marcador" style="margin-top:8px;">${textoABC}</div>` : ""}
-${m.nota ? `<div class="nota">${m.nota}</div>` : ""}
+          ${textoVers ? `<div class="nota preview-versiculos-marcador" style="margin-top:8px;">${textoVers}</div>` : ""}
+          ${(!textoVers && textoABC) ? `<div class="nota preview-versiculos-marcador" style="margin-top:8px;">${textoABC}</div>` : ""}
+          ${m.nota ? `<div class="nota">${m.nota}</div>` : ""}
         </div>
       `;
     }).join("") : `<p style="opacity:.75">Todavía no tenés notas para este filtro.</p>`}
   `;
 }
 
-// ================= TOGGLES PANEL (iconos tipo sol/luna) =================
-window.toggleOrdenMarcadoresPanel = () => {
-  ordenMarcadores = (ordenMarcadores === "fecha") ? "biblia" : "fecha";
+window.toggleMenuFiltroNotasPanel = () => {
+  menuFiltroNotasPanelAbierto = !menuFiltroNotasPanelAbierto;
   renderPanelMarcadores();
 };
 
-window.toggleFiltroNotasPanel = () => {
-  if (filtroNotasPanel === "con") filtroNotasPanel = "sin";
-  else if (filtroNotasPanel === "sin") filtroNotasPanel = "abc";
-  else filtroNotasPanel = "con";
+window.setFiltroNotasPanel = (filtro) => {
+  filtroNotasPanel = filtro || "todas";
+  menuFiltroNotasPanelAbierto = false;
+  renderPanelMarcadores();
+};
 
-  // ✅ fuera de "con", siempre orden por fecha
-  if (filtroNotasPanel !== "con") {
-    ordenMarcadores = "fecha";
-  }
-
+// ================= TOGGLES PANEL (iconos tipo sol/luna) =================
+window.toggleOrdenMarcadoresPanel = () => {
+  ordenMarcadores = (ordenMarcadores === "fecha") ? "biblia" : "fecha";
   renderPanelMarcadores();
 };
 
