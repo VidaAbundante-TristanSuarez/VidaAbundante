@@ -1905,14 +1905,7 @@ async function generarImagenFinal(opts = {}) {
 
     // ================= ✅ SI pidieron "subir", subimos a Firebase =================
   if (subir) {
-    // Siempre a Mi Panel
-    await subirImagen("personal");
-
-    // Si está tildado "Iglesia", también sube a Compartidos
-    const chk = document.getElementById("checkIglesia");
-    if (chk && chk.checked) {
-      await subirImagen("compartidos");
-    }
+    await subirImagenBibliaUnaVezYGuardarDestinos();
   }
 
   
@@ -1926,51 +1919,95 @@ function clickLink(link) {
   link.remove();
 }
 
-// ================= ⭐ SUBIR IMAGEN (personal / iglesia) ☁️ =================
-async function subirImagen(destino = "personal") {
-  if (!uid) return;
+// ================= 🔥 SUBIR IMAGEN BIBLIA UNA SOLA VEZ =================
+async function subirImagenBibliaBaseUnaVez() {
+  if (!uid) return null;
 
   const canvas = document.getElementById("canvasFinal");
-  if (!canvas || canvas.width < 10 || canvas.height < 10) return;
+  if (!canvas || canvas.width < 10 || canvas.height < 10) return null;
 
   const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
-  if (!blob) return;
+  if (!blob) return null;
 
   const ts = Date.now();
   const fileName = `versiculo_${ts}.png`;
 
-  let storagePath = `imagenes_personal/${uid}/${fileName}`;
-  let dbPath = `panelImagenesPersonal/${uid}/${ts}`;
+  // ✅ UNA sola ruta real en Storage
+  const storagePath = `imagenes_generadas/${uid}/${fileName}`;
 
-  if (destino === "compartidos") {
-    storagePath = `imagenes_compartidos/${uid}/${fileName}`;
-    dbPath = `compartidos/imagenes/${ts}`;
+  const storageRef = sRef(storage, storagePath);
+  await uploadBytes(storageRef, blob, { contentType: "image/png" });
+
+  const url = await getDownloadURL(storageRef);
+
+  return { ts, url, storagePath };
+}
+
+// ================= 📌 GUARDAR REFERENCIA EN MI PANEL =================
+async function guardarReferenciaImagenEnPanel(asset) {
+  if (!uid || !asset) return;
+
+  const dbPath = `panelImagenesPersonal/${uid}/${asset.ts}`;
+
+  await set(ref(db, dbPath), {
+    url: asset.url,
+    storagePath: asset.storagePath,
+    fecha: asset.ts,
+    uid,
+    tipo: "imagen",
+    libro: modoImagenLibre ? "" : (libroSel?.value || ""),
+    capitulo: modoImagenLibre ? 0 : Number(capSel?.value || 0),
+    origen: origenModalImagen,
+    tipoTexto: modoImagenLibre ? "libre" : "biblia",
+    textoLibre: modoImagenLibre ? (textoLibreImagen || "") : ""
+  });
+}
+
+// ================= 🌍 GUARDAR REFERENCIA EN COMPARTIDOS =================
+async function guardarReferenciaImagenEnCompartidos(asset) {
+  if (!uid || !asset) return;
+
+  const dbPath = `compartidos/imagenes/${asset.ts}`;
+
+  await set(ref(db, dbPath), {
+    url: asset.url,
+    storagePath: asset.storagePath,
+    fecha: asset.ts,
+    uid,
+    publicadoPor: uid,
+    tipo: "imagen",
+    libro: modoImagenLibre ? "" : (libroSel?.value || ""),
+    capitulo: modoImagenLibre ? 0 : Number(capSel?.value || 0),
+    origen: origenModalImagen,
+    tipoTexto: modoImagenLibre ? "libre" : "biblia",
+    textoLibre: modoImagenLibre ? (textoLibreImagen || "") : ""
+  });
+}
+
+// ================= ✅ SUBIR UNA VEZ Y REPARTIR REFERENCIAS =================
+async function subirImagenBibliaUnaVezYGuardarDestinos() {
+  const asset = await subirImagenBibliaBaseUnaVez();
+  if (!asset) return false;
+
+  // ✅ siempre a Mi Panel
+  await guardarReferenciaImagenEnPanel(asset);
+
+  // ✅ opcional a Compartidos
+  const chk = document.getElementById("checkIglesia");
+  if (chk && chk.checked) {
+    await guardarReferenciaImagenEnCompartidos(asset);
   }
 
-  try {
-    const storageRef = sRef(storage, storagePath);
-    await uploadBytes(storageRef, blob, { contentType: "image/png" });
+  console.log("✅ Imagen subida una sola vez y referenciada en destinos");
+  return true;
+}
 
-    const url = await getDownloadURL(storageRef);
-
-    await set(ref(db, dbPath), {
-      url,
-      storagePath,
-      fecha: ts,
-      uid,
-      tipo: "imagen",
-      libro: modoImagenLibre ? "" : (libroSel?.value || ""),
-      capitulo: modoImagenLibre ? 0 : Number(capSel?.value || 0),
-      origen: origenModalImagen,
-      tipoTexto: modoImagenLibre ? "libre" : "biblia",
-      textoLibre: modoImagenLibre ? (textoLibreImagen || "") : ""
-    });
-
-    console.log("✅ Imagen subida:", destino, url);
-  } catch (e) {
-    console.error("❌ Error subiendo imagen:", e);
-    mostrarToast("❌ No se pudo subir la imagen");
-  }
+// ================= ⭐ SUBIR IMAGEN (personal / iglesia) ☁️ =================
+async function subirImagen(destino = "personal") {
+  // ⚠️ Compatibilidad:
+  // esta función ya no sube distinto por destino.
+  // ahora sube UNA sola vez y guarda referencias.
+  return await subirImagenBibliaUnaVezYGuardarDestinos();
 }
 
 // ======================== ⭐ OPCION DESCARGAR (FIX) ====================================
@@ -2243,9 +2280,7 @@ async function asegurarCanvasFinal({ subir = false } = {}) {
   ) {
     // Si alguien pidió "subir", subimos sin re-render
 if (subir) {
-  await subirImagen("personal");
-  const chk = document.getElementById("checkIglesia");
-  if (chk && chk.checked) await subirImagen("compartidos");
+  await subirImagenBibliaUnaVezYGuardarDestinos();
 }
 
     return true;
@@ -2263,10 +2298,8 @@ if (subir) {
       window.__canvasFinalCache.key = nuevaKey;
       window.__canvasFinalCache.lastOk = true;
 
-      if (subir) {
-  await subirImagen("personal");
-  const chk = document.getElementById("checkIglesia");
-  if (chk && chk.checked) await subirImagen("compartidos");
+if (subir) {
+  await subirImagenBibliaUnaVezYGuardarDestinos();
 }
 
     }
@@ -4444,19 +4477,16 @@ window.compartirImagenPanel = async (url) => {
 };
 
 window.eliminarImagenPanel = async (id) => {
-  if (!confirm("¿Eliminar esta imagen?")) return;
+  if (!confirm("¿Eliminar esta imagen de Mi Panel?")) return;
 
   try {
     const uid = window.__UID;
 
-    const snap = await get(ref(db, `panelImagenesPersonal/${uid}/${id}`));
-    const data = snap.val();
-
-    if (data?.storagePath) {
-      await deleteObject(sRef(storage, data.storagePath));
-    }
-
+    // ✅ solo borra la referencia del panel
+    // ❌ NO borra el archivo de Storage
+    // porque puede estar compartido también en "Compartidos"
     await remove(ref(db, `panelImagenesPersonal/${uid}/${id}`));
+
   } catch (e) {
     console.error(e);
     alert("No se pudo eliminar la imagen");
