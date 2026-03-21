@@ -1313,25 +1313,30 @@ body.oscuro #subidosFeed a{
   transform:scale(.95);
 }
 
+/* ✅ FONDO MODAL ORACIÓN */
 #modalDevOracion{
-  background: rgba(0,0,0,.35);
+  background: rgba(0,0,0,.34);
   backdrop-filter: blur(4px);
 }
 
+/* (este lo podés dejar, no molesta) */
 #modalDevOracion .modal-contenido{
   background:#fff;
   border-radius:18px;
   box-shadow:0 10px 30px rgba(0,0,0,.25);
 }
 
+/* textarea */
 #devOracionTexto{
   font-size:14px;
-  line-height:1.4;
+  line-height:1.45;
 }
 
+/* ✅ FONDO MODAL LISTA */
 #modalDevListaOraciones{
-  background: rgba(0,0,0,.35);
+  background: rgba(0,0,0,.34);
   backdrop-filter: blur(4px);
 }
+
 
 </style>
