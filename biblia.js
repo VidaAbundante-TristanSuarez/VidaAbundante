@@ -2652,7 +2652,9 @@ document.getElementById("marcadorNota").value   = m.nota || "";
 document.getElementById("marcadorColor").value  = m.color || "#fff3b0";
 
 const chkKeep = document.getElementById("marcadorKeep");
-const lblKeep = document.querySelector('label[for="marcadorKeep"]') || chkKeep?.closest("label");
+if (txtKeep) {
+  txtKeep.textContent = esNotaLibre ? "⭐ Destacar nota" : "📌 Mantener resaltado";
+}
 const esNotaLibre = !m.libro && !(m.versiculos || []).length;
 
 if (chkKeep) chkKeep.checked = !!(m.destacada || m.keep);
@@ -2839,6 +2841,7 @@ window.abrirFormNuevoMarcador = () => {
   const form = document.getElementById("formNuevoMarcador");
   const info = document.getElementById("infoMarcadorNuevo");
   const chkKeep = document.getElementById("marcadorKeep");
+  const txtKeep = document.getElementById("txtMarcadorKeep");
 
   if (!lista || !form || !info) return;
 
@@ -2849,6 +2852,7 @@ window.abrirFormNuevoMarcador = () => {
   if (esLibre) {
     info.textContent = `🗒 Nota (sin versículo) · ${new Date().toLocaleDateString("es-AR")}`;
     if (chkKeep) chkKeep.checked = !!(base?.destacada || base?.keep);
+    if (txtKeep) txtKeep.textContent = "⭐ Destacar nota";
   } else {
     const ids = Object.keys(seleccionMarcador || {});
     const nums = versBase.length
@@ -2868,6 +2872,7 @@ window.abrirFormNuevoMarcador = () => {
 
     info.textContent = `📌 ${refTxt} · ${hoy}`;
     if (chkKeep) chkKeep.checked = !!base?.keep;
+    if (txtKeep) txtKeep.textContent = "📌 Mantener resaltado";
   }
 
   if (!window.__editMarcadorId) {
@@ -3252,7 +3257,7 @@ const refTxt = esNotaLibreCard ? "Nota libre" : (m.ref || (m.libro && m.capitulo
 const colorTextoDestacada = bgDestacada ? colorContraste(bgDestacada) : "";
 
 return `
-     <div class="card-marcador" style="${bgDestacada ? `background:${bgDestacada} !important; color:${colorTextoDestacada}; border:1px solid rgba(0,0,0,.08);` : ""}">
+   <div class="card-marcador" style="${bgDestacada ? `background:${bgDestacada} !important; color:${colorTextoDestacada} !important; border:1px solid rgba(0,0,0,.10);` : ""}">
           <div style="display:flex; justify-content:space-between; gap:10px; align-items:center;">
             <div style="font-size:13px;">
              <b>${m.destacada ? "⭐ " : ""}${m.titulo || "Marcador"}</b><br>
@@ -3366,7 +3371,9 @@ document.getElementById("marcadorColor").value = m.color || "#fff3b0";
 
 const chkKeep = document.getElementById("marcadorKeep");
 if (chkKeep) chkKeep.checked = !!(m.destacada || m.keep);
-const lblKeep = document.querySelector('label[for="marcadorKeep"]') || chkKeep?.closest("label");
+if (txtKeep) {
+  txtKeep.textContent = esNotaLibre ? "⭐ Destacar nota" : "📌 Mantener resaltado";
+}
 const esNotaLibre = !m.libro && !(m.versiculos || []).length;
 
 if (chkKeep) chkKeep.checked = !!(m.destacada || m.keep);
@@ -3609,7 +3616,9 @@ document.getElementById("marcadorNota").value = "";
 document.getElementById("marcadorColor").value = "#fff3b0";
 
 const chkKeep = document.getElementById("marcadorKeep");
-const lblKeep = document.querySelector('label[for="marcadorKeep"]') || chkKeep?.closest("label");
+if (txtKeep) {
+  txtKeep.textContent = esNotaLibre ? "⭐ Destacar nota" : "📌 Mantener resaltado";
+}
 
 if (chkKeep) chkKeep.checked = false;
 if (lblKeep) lblKeep.innerHTML = `⭐ Destacar nota`;
