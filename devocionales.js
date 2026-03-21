@@ -2762,7 +2762,7 @@ function renderDevIndex(items){
   row.innerHTML = "";
 
   items.forEach((it)=>{
-    const cita  = it.cita || getCitaDeTexto(it.texto) || "Devocional";
+    const cita  = capitalizarCitaBonita(it.cita || getCitaDeTexto(it.texto) || "") || "Devocional";
     const fecha = fmtFecha(it.fecha || it.tsKey || 0);
 
     const card = document.createElement("div");
