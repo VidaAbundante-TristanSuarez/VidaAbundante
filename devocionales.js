@@ -81,10 +81,10 @@ const DEV = {
   cropPreviewUrl: null,
 
    publicando: false,
-   publishTs: 0
+   publishTs: 0,
 
   panelGuardados: new Set(),
-  panelGuardadosLoaded: false,
+  panelGuardadosLoaded: false
 };
 
 /* =========================================================
