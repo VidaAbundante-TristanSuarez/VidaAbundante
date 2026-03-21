@@ -473,77 +473,22 @@ document.fonts.ready.then(() => {
 
 // ================= ⭐ INICIAR BIBLIA ==============================
 function iniciar() {
-  const libroEl = document.getElementById("libro");
-  const capEl = document.getElementById("capitulo");
-  const buscarInput = document.getElementById("buscarLibroInput");
-
-  if (!libroEl || !capEl) {
-    console.warn("No encontré #libro o #capitulo");
-    return;
-  }
-
   const libros = [...new Set(bibliaData.map(v => v.Libro))];
-  libroEl.innerHTML = "";
-
-  libros.forEach(l => {
-    libroEl.innerHTML += `<option value="${l}">${l}</option>`;
-  });
-
-  libroEl.onchange = () => {
-    cargarCapitulos();
-  };
-
-  capEl.onchange = () => {
-    mostrarTexto();
-
-    const wrap = document.getElementById("wrapFiltrosBiblia");
-    if (wrap) wrap.classList.remove("abierto");
-  };
-
-  if (buscarInput && !buscarInput.dataset.ready) {
-    buscarInput.addEventListener("input", filtrarLibrosBiblia);
-    buscarInput.dataset.ready = "1";
-  }
-
+  libroSel.innerHTML = "";
+  libros.forEach(l => (libroSel.innerHTML += `<option>${l}</option>`));
+  libroSel.onchange = cargarCapitulos;
+  capSel.onchange = mostrarTexto;
   cargarCapitulos();
 }
 
 // ================= ⭐ CARGA CAPITULOS ==============================
 function cargarCapitulos() {
-  const libroEl = document.getElementById("libro");
-  const capEl = document.getElementById("capitulo");
-
-  if (!libroEl || !capEl) return;
-
-  capEl.innerHTML = "";
-
+  capSel.innerHTML = "";
   const caps = [...new Set(
-    bibliaData.filter(v => v.Libro === libroEl.value).map(v => v.Capitulo)
+    bibliaData.filter(v => v.Libro === libroSel.value).map(v => v.Capitulo)
   )];
-
-  caps.forEach(c => {
-    capEl.innerHTML += `<option value="${c}">${c}</option>`;
-  });
-
+  caps.forEach(c => (capSel.innerHTML += `<option>${c}</option>`));
   mostrarTexto();
-}
-
-function filtrarLibrosBiblia() {
-  const input = document.getElementById("buscarLibroInput");
-  const select = document.getElementById("libro");
-  if (!input || !select) return;
-
-  const texto = (input.value || "").trim().toLowerCase();
-
-  Array.from(select.options).forEach(opt => {
-    const visible = !texto || opt.text.toLowerCase().includes(texto);
-    opt.hidden = !visible;
-  });
-
-  const primeraVisible = Array.from(select.options).find(opt => !opt.hidden);
-  if (primeraVisible) {
-    select.value = primeraVisible.value;
-  }
 }
 
 // ================= ⭐ MOSTRAR TOAST ==============================
@@ -577,23 +522,13 @@ function getTextoVersiculo(v) {
 }
 
 function actualizarTituloBiblia() {
-  const tituloEl = document.getElementById("titulo");
-  const libroEl = document.getElementById("libro");
-  const capEl = document.getElementById("capitulo");
+  if (!titulo) return;
 
-  if (!tituloEl) return;
-
-  const libroTxt = libroEl?.value || "Libro";
-  const capTxt = capEl?.value || "Capítulo";
-
-  tituloEl.innerHTML = `
-    <span id="tituloLibroCapitulo" style="cursor:pointer; font-family:Georgia, serif;">
-      ${libroTxt} ${capTxt}
-    </span>
-
+  titulo.innerHTML = `
+    <span>${libroSel.value} ${capSel.value}</span>
     <span style="margin-left:10px; font-size:12px; opacity:.9;">
       <button type="button"
-        onclick="event.stopPropagation(); cambiarVersionBiblia('RV1960')"
+        onclick="cambiarVersionBiblia('RV1960')"
         style="
           border:none;
           border-radius:999px;
@@ -609,7 +544,7 @@ function actualizarTituloBiblia() {
       </button>
 
       <button type="button"
-        onclick="event.stopPropagation(); cambiarVersionBiblia('NTV')"
+        onclick="cambiarVersionBiblia('NTV')"
         style="
           border:none;
           border-radius:999px;
@@ -624,11 +559,6 @@ function actualizarTituloBiblia() {
       </button>
     </span>
   `;
-
-  const t = document.getElementById("tituloLibroCapitulo");
-  if (t) {
-    t.onclick = () => toggleFiltrosBiblia();
-  }
 }
 
 window.cambiarVersionBiblia = function(version) {
@@ -1002,7 +932,6 @@ window.forceSyncResaltadorUI = function forceSyncResaltadorUI(intentos = 20) {
 function mostrarTexto() {
   texto.innerHTML = ""; 
  actualizarTituloBiblia();
- actualizarTextoBotonFiltrosBiblia();
 
   const versos = bibliaData.filter(v =>
     v.Libro === libroSel.value &&
@@ -3444,7 +3373,6 @@ function renderPanelMarcadores() {
   `;
 }
 
-// ================================
 window.toggleMenuFiltroNotasPanel = () => {
   menuFiltroNotasPanelAbierto = !menuFiltroNotasPanelAbierto;
   renderPanelMarcadores();
@@ -3936,17 +3864,27 @@ window.capituloSiguiente = () => {
 // ================= 🔍 TOGGLE FILTROS BIBLIA =================
 window.toggleFiltrosBiblia = () => {
   const wrap = document.getElementById("wrapFiltrosBiblia");
-  const buscarInput = document.getElementById("buscarLibroInput");
+  const btn  = document.getElementById("btnToggleFiltros");
+  const libroSel = document.getElementById("libro");
   if (!wrap) return;
 
   const abierto = wrap.classList.toggle("abierto");
 
-  if (abierto && buscarInput) {
-    setTimeout(() => buscarInput.focus(), 0);
-  } else {
-    if (document.activeElement && typeof document.activeElement.blur === "function") {
-      document.activeElement.blur();
+  if (btn) {
+    btn.classList.toggle("activo", abierto);
+
+    // ✅ CLAVE: en celular saca el "focus pegado"
+    if (!abierto) {
+      btn.blur();
+      if (document.activeElement && document.activeElement.blur) {
+        document.activeElement.blur();
+      }
     }
+  }
+
+  // ✅ cuando se abre → foco en Libro
+  if (abierto && libroSel) {
+    setTimeout(() => libroSel.focus(), 0);
   }
 };
 
