@@ -80,16 +80,19 @@
 
   <div class="nav-capitulo">
 
-<div id="wrapFiltrosBiblia">
-   
-   <button type="button" id="btnCapAnt" onclick="capituloAnterior()" aria-label="Capítulo anterior">
-      <i class="fa-solid fa-chevron-left"></i>
-    </button>
+   <!-- ✅ NUEVO: mostrar/ocultar filtros -->
+  <div id="wrapFiltrosBiblia">
+  <button type="button" id="btnToggleFiltros" onclick="toggleFiltrosBiblia()" aria-label="Buscar (mostrar filtros)">
+    🔍
+  </button>
 
-    <button type="button" id="btnCapSig" onclick="capituloSiguiente()" aria-label="Capítulo siguiente">
-      <i class="fa-solid fa-chevron-right"></i>
-    </button>
+  <!-- ✅ movemos la tarjeta acá -->
+  <div class="filtros" id="filtrosBiblia">
+    <select id="libro"></select>
+    <select id="capitulo"></select>
   </div>
+</div>
+
 </div>
 
 <!-- CONTENEDOR DEL TEXTO BÍBLICO -->
