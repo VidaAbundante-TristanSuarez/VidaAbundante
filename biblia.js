@@ -2908,12 +2908,16 @@ window.abrirFormNuevoMarcador = () => {
     if (txtKeep) txtKeep.textContent = "📌 Mantener resaltado";
   }
 
-  if (!window.__editMarcadorId) {
-    document.getElementById("marcadorTitulo").value = "";
-    document.getElementById("marcadorNota").value = "";
-    document.getElementById("marcadorColor").value = colorActual || "#fff3b0";
-    if (chkKeep) chkKeep.checked = esLibre ? false : true;
-  }
+if (!window.__editMarcadorId) {
+  document.getElementById("marcadorTitulo").value = "";
+  document.getElementById("marcadorNota").value = "";
+
+  // ✅ color visible + real
+  syncMarcadorColorUI(colorActual || "#fff3b0");
+
+  // ✅ por default tildado también en nota libre
+  if (chkKeep) chkKeep.checked = true;
+}
 
   lista.style.display = "none";
   form.style.display = "block";
@@ -3662,6 +3666,33 @@ async function limpiarPintadoDeMarcadorEliminado(idMarcador, marcador) {
   }
 }
 
+function syncMarcadorColorUI(hex = "#fff3b0") {
+  const inputColor = document.getElementById("marcadorColor");
+  const host = document.getElementById("marcadorColorHost");
+
+  if (inputColor) {
+    inputColor.value = hex;
+    inputColor.setAttribute("value", hex);
+    inputColor.dispatchEvent(new Event("input", { bubbles: true }));
+    inputColor.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+
+  if (host) {
+    host.style.setProperty("--pickr-color", hex);
+    host.style.background = hex;
+    host.dataset.color = hex;
+    host.setAttribute("data-color", hex);
+  }
+
+  try {
+    if (host && host._pickr) {
+      host._pickr.setColor(hex);
+    }
+  } catch (e) {
+    console.warn("No pude sincronizar Pickr de marcador:", e);
+  }
+}
+
 // ================= ✅ NUEVA NOTA SIN VERSÍCULO =================
 window.abrirNotaLibre = () => {
   creandoNotaLibre = true;
@@ -3673,6 +3704,10 @@ window.abrirNotaLibre = () => {
   const lista = document.getElementById("listaMarcadores");
   const form = document.getElementById("formNuevoMarcador");
   const info = document.getElementById("infoMarcadorNuevo");
+  const inputTitulo = document.getElementById("marcadorTitulo");
+  const inputNota = document.getElementById("marcadorNota");
+  const chkKeep = document.getElementById("marcadorKeep");
+  const txtKeep = document.getElementById("txtMarcadorKeep");
 
   if (!modal || !lista || !form || !info) return;
 
@@ -3682,38 +3717,25 @@ window.abrirNotaLibre = () => {
 
   info.textContent = `🗒 Nota libre · ${new Date().toLocaleDateString("es-AR")}`;
 
-  const inputTitulo = document.getElementById("marcadorTitulo");
-  const inputNota = document.getElementById("marcadorNota");
-  const inputColor = document.getElementById("marcadorColor");
-  const host = document.getElementById("marcadorColorHost");
-  const chkKeep = document.getElementById("marcadorKeep");
-  const txtKeep = document.getElementById("txtMarcadorKeep");
-
   if (inputTitulo) inputTitulo.value = "";
   if (inputNota) inputNota.value = "";
 
-  if (inputColor) {
-    inputColor.value = "#fff3b0";
-    inputColor.dispatchEvent(new Event("input", { bubbles: true }));
-    inputColor.dispatchEvent(new Event("change", { bubbles: true }));
-  }
+  // ✅ color default REAL + visual
+  syncMarcadorColorUI("#fff3b0");
 
-  if (host) {
-    host.style.setProperty("--pickr-color", "#fff3b0");
-    host.style.background = "#fff3b0";
-
-    if (host._pickr) {
-      try { host._pickr.setColor("#fff3b0"); } catch(e){}
-    }
-  }
-
-  if (chkKeep) chkKeep.checked = false;
+  // ✅ destacar nota por default
+  if (chkKeep) chkKeep.checked = true;
   if (txtKeep) txtKeep.textContent = "⭐ Destacar nota";
 
   lista.style.display = "none";
   form.style.display = "block";
 
   renderPreviewVersiculosMarcador();
+
+  // ✅ pequeño refuerzo visual por si Pickr repinta tarde
+  requestAnimationFrame(() => {
+    syncMarcadorColorUI("#fff3b0");
+  });
 };
 
 // ================= 🔺 RENDERPANELIMAGENES ===================
