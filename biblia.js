@@ -522,14 +522,6 @@ function cargarCapitulos() {
   actualizarTextoBotonFiltrosBiblia();
 }
 
-function actualizarTextoBotonFiltrosBiblia() {
-  const btnLibro = document.getElementById("btnLibroActual");
-  const btnCapitulo = document.getElementById("btnCapituloActual");
-
-  if (btnLibro) btnLibro.textContent = libroSel?.value || "Libro";
-  if (btnCapitulo) btnCapitulo.textContent = capSel?.value ? `Cap. ${capSel.value}` : "Capítulo";
-}
-
 function filtrarLibrosBiblia() {
   const input = document.getElementById("buscarLibroInput");
   const select = document.getElementById("libro");
@@ -582,10 +574,13 @@ function actualizarTituloBiblia() {
   if (!titulo) return;
 
   titulo.innerHTML = `
-    <span>${libroSel.value} ${capSel.value}</span>
+    <span id="tituloLibroCapitulo" style="cursor:pointer; font-family:Georgia, serif;">
+      ${libroSel.value} ${capSel.value}
+    </span>
+
     <span style="margin-left:10px; font-size:12px; opacity:.9;">
       <button type="button"
-        onclick="cambiarVersionBiblia('RV1960')"
+        onclick="event.stopPropagation(); cambiarVersionBiblia('RV1960')"
         style="
           border:none;
           border-radius:999px;
@@ -601,7 +596,7 @@ function actualizarTituloBiblia() {
       </button>
 
       <button type="button"
-        onclick="cambiarVersionBiblia('NTV')"
+        onclick="event.stopPropagation(); cambiarVersionBiblia('NTV')"
         style="
           border:none;
           border-radius:999px;
@@ -616,6 +611,11 @@ function actualizarTituloBiblia() {
       </button>
     </span>
   `;
+
+  const t = document.getElementById("tituloLibroCapitulo");
+  if (t) {
+    t.onclick = () => toggleFiltrosBiblia();
+  }
 }
 
 window.cambiarVersionBiblia = function(version) {
@@ -3923,26 +3923,17 @@ window.capituloSiguiente = () => {
 // ================= 🔍 TOGGLE FILTROS BIBLIA =================
 window.toggleFiltrosBiblia = () => {
   const wrap = document.getElementById("wrapFiltrosBiblia");
-  const btn = document.getElementById("btnToggleFiltros");
   const buscarInput = document.getElementById("buscarLibroInput");
-
   if (!wrap) return;
 
   const abierto = wrap.classList.toggle("abierto");
 
-  if (btn) {
-    btn.classList.toggle("activo", abierto);
-
-    if (!abierto) {
-      btn.blur();
-      if (document.activeElement && typeof document.activeElement.blur === "function") {
-        document.activeElement.blur();
-      }
-    }
-  }
-
   if (abierto && buscarInput) {
     setTimeout(() => buscarInput.focus(), 0);
+  } else {
+    if (document.activeElement && typeof document.activeElement.blur === "function") {
+      document.activeElement.blur();
+    }
   }
 };
 
