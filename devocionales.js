@@ -2237,7 +2237,7 @@ async function devSubirImagenBaseUnaVez(tsParam){
   const fileName = `devocional_${ts}.png`;
 
   // ✅ UNA sola ruta de storage para todos los destinos
-  const storagePath = `devocionales_publicados/${uid}/${fileName}`;
+ const storagePath = `devocionales_iglesia/${uid}/${fileName}`;
 
   const blob = await new Promise(res => c.toBlob(res, "image/png"));
   if (!blob) throw new Error("No se pudo convertir a PNG");
