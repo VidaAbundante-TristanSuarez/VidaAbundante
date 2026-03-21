@@ -3241,7 +3241,26 @@ function renderPanelMarcadores() {
     ${filtrados.length ? filtrados.map(m => {
       const fechaTxt = m.fecha ? new Date(m.fecha).toLocaleString("es-AR") : "";
      const esNotaLibreCard = !(m.versiculos || []).length;
-const refTxt = esNotaLibreCard ? "Nota libre" : (m.ref || (m.libro && m.capitulo ? `${m.libro} ${m.capitulo}` : "Nota"));
+let refTxt = "Nota libre";
+
+if ((m.versiculos || []).length > 0) {
+  if (m.ref) {
+    refTxt = m.ref; // ya viene bien armado (ej: "Génesis 1:3-5")
+  } else if (m.libro && m.capitulo) {
+    const vers = (m.versiculos || []).sort((a,b)=>a-b);
+
+    if (vers.length === 1) {
+      refTxt = `${m.libro} ${m.capitulo}:${vers[0]}`;
+    } else {
+      refTxt = `${m.libro} ${m.capitulo}:${vers[0]}-${vers[vers.length - 1]}`;
+    }
+  }
+}
+
+// ✅ si es ABC
+if (m?.origen === "abc") {
+  refTxt = "ABC";
+}
       const checked = !!(seleccionEliminarMarcadores && seleccionEliminarMarcadores[m.id]);
 
       let textoVers = "";
