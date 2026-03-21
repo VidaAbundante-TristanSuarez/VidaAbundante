@@ -473,53 +473,59 @@ document.fonts.ready.then(() => {
 
 // ================= ⭐ INICIAR BIBLIA ==============================
 function iniciar() {
+  const libroEl = document.getElementById("libro");
+  const capEl = document.getElementById("capitulo");
+  const buscarInput = document.getElementById("buscarLibroInput");
+
+  if (!libroEl || !capEl) {
+    console.warn("No encontré #libro o #capitulo");
+    return;
+  }
+
   const libros = [...new Set(bibliaData.map(v => v.Libro))];
-  libroSel.innerHTML = "";
+  libroEl.innerHTML = "";
 
   libros.forEach(l => {
-    libroSel.innerHTML += `<option value="${l}">${l}</option>`;
+    libroEl.innerHTML += `<option value="${l}">${l}</option>`;
   });
 
-  libroSel.onchange = () => {
+  libroEl.onchange = () => {
     cargarCapitulos();
-    actualizarTextoBotonFiltrosBiblia();
   };
 
-  capSel.onchange = () => {
+  capEl.onchange = () => {
     mostrarTexto();
-    actualizarTextoBotonFiltrosBiblia();
 
     const wrap = document.getElementById("wrapFiltrosBiblia");
-    const btn = document.getElementById("btnToggleFiltros");
     if (wrap) wrap.classList.remove("abierto");
-    if (btn) btn.classList.remove("activo");
   };
 
-  cargarCapitulos();
-
-  const buscarInput = document.getElementById("buscarLibroInput");
   if (buscarInput && !buscarInput.dataset.ready) {
     buscarInput.addEventListener("input", filtrarLibrosBiblia);
     buscarInput.dataset.ready = "1";
   }
 
-  actualizarTextoBotonFiltrosBiblia();
+  cargarCapitulos();
 }
 
 // ================= ⭐ CARGA CAPITULOS ==============================
 function cargarCapitulos() {
-  capSel.innerHTML = "";
+  const libroEl = document.getElementById("libro");
+  const capEl = document.getElementById("capitulo");
+
+  if (!libroEl || !capEl) return;
+
+  capEl.innerHTML = "";
 
   const caps = [...new Set(
-    bibliaData.filter(v => v.Libro === libroSel.value).map(v => v.Capitulo)
+    bibliaData.filter(v => v.Libro === libroEl.value).map(v => v.Capitulo)
   )];
 
   caps.forEach(c => {
-    capSel.innerHTML += `<option value="${c}">${c}</option>`;
+    capEl.innerHTML += `<option value="${c}">${c}</option>`;
   });
 
   mostrarTexto();
-  actualizarTextoBotonFiltrosBiblia();
 }
 
 function filtrarLibrosBiblia() {
@@ -571,11 +577,18 @@ function getTextoVersiculo(v) {
 }
 
 function actualizarTituloBiblia() {
-  if (!titulo) return;
+  const tituloEl = document.getElementById("titulo");
+  const libroEl = document.getElementById("libro");
+  const capEl = document.getElementById("capitulo");
 
-  titulo.innerHTML = `
+  if (!tituloEl) return;
+
+  const libroTxt = libroEl?.value || "Libro";
+  const capTxt = capEl?.value || "Capítulo";
+
+  tituloEl.innerHTML = `
     <span id="tituloLibroCapitulo" style="cursor:pointer; font-family:Georgia, serif;">
-      ${libroSel.value} ${capSel.value}
+      ${libroTxt} ${capTxt}
     </span>
 
     <span style="margin-left:10px; font-size:12px; opacity:.9;">
