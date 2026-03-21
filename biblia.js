@@ -3245,14 +3245,22 @@ let refTxt = "Nota libre";
 
 // ✅ ABC
 if (m?.origen === "abc") {
-  const temaABC = (m.tema || m.tituloABC || m.ref || "").trim();
+  const temaABC = String(
+    m.tema ||
+    m.temaABC ||
+    m.nombreTema ||
+    m.tituloABC ||
+    m.ref ||
+    ""
+  ).trim();
+
   refTxt = temaABC ? `ABC - ${temaABC}` : "ABC";
 }
 
 // ✅ Biblia
 else if ((m.versiculos || []).length > 0) {
   if (m.ref && String(m.ref).trim()) {
-    refTxt = m.ref.trim(); // ej: "Génesis 1:3-5"
+    refTxt = m.ref.trim();
   } else if (m.libro && m.capitulo) {
     const vers = (m.versiculos || []).map(Number).sort((a, b) => a - b);
 
@@ -3272,15 +3280,28 @@ if (m?.origen === "abc") {
 }
       const checked = !!(seleccionEliminarMarcadores && seleccionEliminarMarcadores[m.id]);
 
-      let textoVers = "";
-      if (m.libro && m.capitulo && (m.versiculos || []).length) {
-        const partes = (m.versiculos || []).map(n => {
-          const vv = bibliaData.find(x => x.Libro === m.libro && x.Capitulo == m.capitulo && x.Versiculo == n);
-         return vv ? getTextoVersiculo(vv) : "";
-        }).filter(Boolean);
-        if (partes.length) textoVers = partes.join(" ");
-      }
+let textoVers = "";
+let textoABC = "";
 
+if (m?.origen === "abc") {
+  textoABC = String(
+    m.textoABC ||
+    m.previewABC ||
+    m.bloqueTexto ||
+    m.bloquesTexto ||
+    m.textoSeleccionado ||
+    m.seleccionTexto ||
+    ""
+  ).trim();
+}
+
+if (m.libro && m.capitulo && (m.versiculos || []).length) {
+  const partes = (m.versiculos || []).map(n => {
+    const vv = bibliaData.find(x => x.Libro === m.libro && x.Capitulo == m.capitulo && x.Versiculo == n);
+    return vv ? getTextoVersiculo(vv) : "";
+  }).filter(Boolean);
+  if (partes.length) textoVers = partes.join(" ");
+}
       const bgDestacada = m.destacada ? (m.color || "#fff3b0") : "";
 const colorTextoDestacada = bgDestacada ? colorContraste(bgDestacada) : "";
 
@@ -3297,7 +3318,7 @@ return `
     <input type="checkbox" ${checked ? "checked":""}
       onchange="toggleSeleccionEliminarMarcador('${m.id}', this.checked)">
   ` : `
-    ${((m.versiculos || []).length > 0) ? `
+   ${(((m.versiculos || []).length > 0) || m?.origen === "abc") ? `
       <button type="button" class="pm-btn" onclick="abrirMarcadorDesdePanel('${m.id}')" title="Volver">
         <i class="fa-solid fa-reply"></i>
       </button>
@@ -3314,7 +3335,8 @@ return `
 </div>
           </div>
 
-          ${textoVers ? `<div class="nota" style="margin-top:8px;">${textoVers}</div>` : ""}
+        ${textoVers ? `<div class="nota" style="margin-top:8px;">${textoVers}</div>` : ""}
+${(!textoVers && textoABC) ? `<div class="nota" style="margin-top:8px;">${textoABC}</div>` : ""}
           ${m.nota ? `<div class="nota">${m.nota}</div>` : ""}
         </div>
       `;
@@ -3655,7 +3677,11 @@ window.abrirNotaLibre = () => {
 
   if (inputTitulo) inputTitulo.value = "";
   if (inputNota) inputNota.value = "";
-  if (inputColor) inputColor.value = "#fff3b0";
+ if (inputColor) {
+  inputColor.value = "#fff3b0";
+  inputColor.dispatchEvent(new Event("input", { bubbles: true }));
+  inputColor.dispatchEvent(new Event("change", { bubbles: true }));
+}
   if (chkKeep) chkKeep.checked = false;
   if (txtKeep) txtKeep.textContent = "⭐ Destacar nota";
 
