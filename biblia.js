@@ -842,7 +842,8 @@ function initPickrEnHosts(selector = ".pickr-host") {
         "aria:opacity": "Opacidad"
       }
     });
-
+host._pickr = pickr;
+    
     // color inicial visible en el botón
     setColorVisual(input.value || "#ffffff");
 
@@ -3303,7 +3304,7 @@ let textoVers = "";
 let textoABC = "";
 
 if (m?.origen === "abc") {
-  textoABC = String(m?.abc?.html || "").trim();
+  textoABC = String(m?.abcTexto || "").trim();
 }
 
 if (m.libro && m.capitulo && (m.versiculos || []).length) {
@@ -3311,8 +3312,10 @@ if (m.libro && m.capitulo && (m.versiculos || []).length) {
     const vv = bibliaData.find(x => x.Libro === m.libro && x.Capitulo == m.capitulo && x.Versiculo == n);
     return vv ? getTextoVersiculo(vv) : "";
   }).filter(Boolean);
+
   if (partes.length) textoVers = partes.join(" ");
 }
+      
      const bgDestacada = (m.destacada || m.keep) ? (m.color || "#fff3b0") : "";
 const colorTextoDestacada = bgDestacada ? colorContraste(bgDestacada) : "";
 
@@ -3346,9 +3349,9 @@ return `
 </div>
           </div>
 
-      ${textoVers ? `<div class="nota" style="margin-top:8px;">${textoVers}</div>` : ""}
-${(!textoVers && textoABC) ? `<div class="nota" style="margin-top:8px;">${textoABC}</div>` : ""}
-          ${m.nota ? `<div class="nota">${m.nota}</div>` : ""}
+     ${textoVers ? `<div class="nota preview-versiculos-marcador" style="margin-top:8px;">${textoVers}</div>` : ""}
+${(!textoVers && textoABC) ? `<div class="nota preview-versiculos-marcador" style="margin-top:8px;">${textoABC}</div>` : ""}
+${m.nota ? `<div class="nota">${m.nota}</div>` : ""}
         </div>
       `;
     }).join("") : `<p style="opacity:.75">Todavía no tenés notas para este filtro.</p>`}
@@ -3673,7 +3676,6 @@ window.abrirNotaLibre = () => {
 
   if (!modal || !lista || !form || !info) return;
 
-  // ✅ abrir modal directo, sin pasar por la lista
   modal.style.display = "flex";
   modal.classList.add("abierto");
   modal.setAttribute("aria-hidden", "false");
@@ -3683,22 +3685,28 @@ window.abrirNotaLibre = () => {
   const inputTitulo = document.getElementById("marcadorTitulo");
   const inputNota = document.getElementById("marcadorNota");
   const inputColor = document.getElementById("marcadorColor");
+  const host = document.getElementById("marcadorColorHost");
   const chkKeep = document.getElementById("marcadorKeep");
   const txtKeep = document.getElementById("txtMarcadorKeep");
 
   if (inputTitulo) inputTitulo.value = "";
   if (inputNota) inputNota.value = "";
-if (inputColor) {
-  inputColor.value = "#fff3b0";
 
-  const host = document.getElementById("marcadorColorHost");
-  if (host && host._pickr) {
-    host._pickr.setColor("#fff3b0");
+  if (inputColor) {
+    inputColor.value = "#fff3b0";
+    inputColor.dispatchEvent(new Event("input", { bubbles: true }));
+    inputColor.dispatchEvent(new Event("change", { bubbles: true }));
   }
 
-  inputColor.dispatchEvent(new Event("input", { bubbles: true }));
-  inputColor.dispatchEvent(new Event("change", { bubbles: true }));
-}
+  if (host) {
+    host.style.setProperty("--pickr-color", "#fff3b0");
+    host.style.background = "#fff3b0";
+
+    if (host._pickr) {
+      try { host._pickr.setColor("#fff3b0"); } catch(e){}
+    }
+  }
+
   if (chkKeep) chkKeep.checked = false;
   if (txtKeep) txtKeep.textContent = "⭐ Destacar nota";
 
