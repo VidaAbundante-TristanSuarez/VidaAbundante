@@ -3599,33 +3599,38 @@ window.abrirNotaLibre = () => {
   creandoNotaLibre = true;
   window.__editMarcadorId = null;
   window.__editMarcadorBase = null;
-  seleccionMarcador = {};
-  
-  // no depende de selección
-  abrirMarcadores();
-  setTimeout(() => {
-    // forzamos formulario
-    const lista = document.getElementById("listaMarcadores");
-    const form = document.getElementById("formNuevoMarcador");
-    const info = document.getElementById("infoMarcadorNuevo");
-    if (!lista || !form || !info) return;
+  window.setMarcadorCtx("biblia");
 
-info.textContent = `🗒 Nota (sin versículo) · ${new Date().toLocaleDateString("es-AR")}`;
-document.getElementById("marcadorTitulo").value = "";
-document.getElementById("marcadorNota").value = "";
-document.getElementById("marcadorColor").value = "#fff3b0";
+  const modal = document.getElementById("modalMarcadores");
+  const lista = document.getElementById("listaMarcadores");
+  const form = document.getElementById("formNuevoMarcador");
+  const info = document.getElementById("infoMarcadorNuevo");
 
-const chkKeep = document.getElementById("marcadorKeep");
-if (txtKeep) {
-  txtKeep.textContent = esNotaLibre ? "⭐ Destacar nota" : "📌 Mantener resaltado";
-}
+  if (!modal || !lista || !form || !info) return;
 
-if (chkKeep) chkKeep.checked = false;
-if (lblKeep) lblKeep.innerHTML = `⭐ Destacar nota`;
+  // ✅ abrir modal directo, sin pasar por la lista
+  modal.style.display = "flex";
+  modal.classList.add("abierto");
+  modal.setAttribute("aria-hidden", "false");
 
-    lista.style.display = "none";
-    form.style.display = "block";
-  }, 0);
+  info.textContent = `🗒 Nota libre · ${new Date().toLocaleDateString("es-AR")}`;
+
+  const inputTitulo = document.getElementById("marcadorTitulo");
+  const inputNota = document.getElementById("marcadorNota");
+  const inputColor = document.getElementById("marcadorColor");
+  const chkKeep = document.getElementById("marcadorKeep");
+  const txtKeep = document.getElementById("txtMarcadorKeep");
+
+  if (inputTitulo) inputTitulo.value = "";
+  if (inputNota) inputNota.value = "";
+  if (inputColor) inputColor.value = "#fff3b0";
+  if (chkKeep) chkKeep.checked = false;
+  if (txtKeep) txtKeep.textContent = "⭐ Destacar nota";
+
+  lista.style.display = "none";
+  form.style.display = "block";
+
+  renderPreviewVersiculosMarcador();
 };
 
 // ================= 🔺 RENDERPANELIMAGENES ===================
