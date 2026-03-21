@@ -475,20 +475,77 @@ document.fonts.ready.then(() => {
 function iniciar() {
   const libros = [...new Set(bibliaData.map(v => v.Libro))];
   libroSel.innerHTML = "";
-  libros.forEach(l => (libroSel.innerHTML += `<option>${l}</option>`));
-  libroSel.onchange = cargarCapitulos;
-  capSel.onchange = mostrarTexto;
+
+  libros.forEach(l => {
+    libroSel.innerHTML += `<option value="${l}">${l}</option>`;
+  });
+
+  libroSel.onchange = () => {
+    cargarCapitulos();
+    actualizarTextoBotonFiltrosBiblia();
+  };
+
+  capSel.onchange = () => {
+    mostrarTexto();
+    actualizarTextoBotonFiltrosBiblia();
+
+    const wrap = document.getElementById("wrapFiltrosBiblia");
+    const btn = document.getElementById("btnToggleFiltros");
+    if (wrap) wrap.classList.remove("abierto");
+    if (btn) btn.classList.remove("activo");
+  };
+
   cargarCapitulos();
+
+  const buscarInput = document.getElementById("buscarLibroInput");
+  if (buscarInput && !buscarInput.dataset.ready) {
+    buscarInput.addEventListener("input", filtrarLibrosBiblia);
+    buscarInput.dataset.ready = "1";
+  }
+
+  actualizarTextoBotonFiltrosBiblia();
 }
 
 // ================= ⭐ CARGA CAPITULOS ==============================
 function cargarCapitulos() {
   capSel.innerHTML = "";
+
   const caps = [...new Set(
     bibliaData.filter(v => v.Libro === libroSel.value).map(v => v.Capitulo)
   )];
-  caps.forEach(c => (capSel.innerHTML += `<option>${c}</option>`));
+
+  caps.forEach(c => {
+    capSel.innerHTML += `<option value="${c}">${c}</option>`;
+  });
+
   mostrarTexto();
+  actualizarTextoBotonFiltrosBiblia();
+}
+
+function actualizarTextoBotonFiltrosBiblia() {
+  const btnLibro = document.getElementById("btnLibroActual");
+  const btnCapitulo = document.getElementById("btnCapituloActual");
+
+  if (btnLibro) btnLibro.textContent = libroSel?.value || "Libro";
+  if (btnCapitulo) btnCapitulo.textContent = capSel?.value ? `Cap. ${capSel.value}` : "Capítulo";
+}
+
+function filtrarLibrosBiblia() {
+  const input = document.getElementById("buscarLibroInput");
+  const select = document.getElementById("libro");
+  if (!input || !select) return;
+
+  const texto = (input.value || "").trim().toLowerCase();
+
+  Array.from(select.options).forEach(opt => {
+    const visible = !texto || opt.text.toLowerCase().includes(texto);
+    opt.hidden = !visible;
+  });
+
+  const primeraVisible = Array.from(select.options).find(opt => !opt.hidden);
+  if (primeraVisible) {
+    select.value = primeraVisible.value;
+  }
 }
 
 // ================= ⭐ MOSTRAR TOAST ==============================
@@ -932,6 +989,7 @@ window.forceSyncResaltadorUI = function forceSyncResaltadorUI(intentos = 20) {
 function mostrarTexto() {
   texto.innerHTML = ""; 
  actualizarTituloBiblia();
+ actualizarTextoBotonFiltrosBiblia();
 
   const versos = bibliaData.filter(v =>
     v.Libro === libroSel.value &&
@@ -3865,8 +3923,9 @@ window.capituloSiguiente = () => {
 // ================= 🔍 TOGGLE FILTROS BIBLIA =================
 window.toggleFiltrosBiblia = () => {
   const wrap = document.getElementById("wrapFiltrosBiblia");
-  const btn  = document.getElementById("btnToggleFiltros");
-  const libroSel = document.getElementById("libro");
+  const btn = document.getElementById("btnToggleFiltros");
+  const buscarInput = document.getElementById("buscarLibroInput");
+
   if (!wrap) return;
 
   const abierto = wrap.classList.toggle("abierto");
@@ -3874,18 +3933,16 @@ window.toggleFiltrosBiblia = () => {
   if (btn) {
     btn.classList.toggle("activo", abierto);
 
-    // ✅ CLAVE: en celular saca el "focus pegado"
     if (!abierto) {
       btn.blur();
-      if (document.activeElement && document.activeElement.blur) {
+      if (document.activeElement && typeof document.activeElement.blur === "function") {
         document.activeElement.blur();
       }
     }
   }
 
-  // ✅ cuando se abre → foco en Libro
-  if (abierto && libroSel) {
-    setTimeout(() => libroSel.focus(), 0);
+  if (abierto && buscarInput) {
+    setTimeout(() => buscarInput.focus(), 0);
   }
 };
 
