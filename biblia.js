@@ -3361,41 +3361,43 @@ window.editarMarcadorEnPanel = (idMarcador) => {
   const m = (marcadores || {})[idMarcador];
   if (!m) return;
 
+  const esNotaLibre = !((m.versiculos || []).length > 0);
+
+  // ✅ primero marcar que estoy editando
+  window.__editMarcadorId = idMarcador;
+  creandoNotaLibre = esNotaLibre;
+
+  // ✅ guardar base correcta ANTES de abrir el form
+  window.__editMarcadorBase = {
+    libro: esNotaLibre ? "" : (m.libro || ""),
+    capitulo: esNotaLibre ? 0 : Number(m.capitulo || 0),
+    versiculos: esNotaLibre ? [] : (m.versiculos || []).map(Number),
+    ref: esNotaLibre ? "" : (m.ref || ""),
+    destacada: !!m.destacada,
+    keep: !!m.keep
+  };
+
   abrirMarcadores(); // abre modal
+
   setTimeout(() => {
     abrirFormNuevoMarcador();
 
-document.getElementById("marcadorTitulo").value = m.titulo || "";
-document.getElementById("marcadorNota").value = m.nota || "";
-document.getElementById("marcadorColor").value = m.color || "#fff3b0";
+    const inputTitulo = document.getElementById("marcadorTitulo");
+    const inputNota = document.getElementById("marcadorNota");
+    const inputColor = document.getElementById("marcadorColor");
+    const chkKeep = document.getElementById("marcadorKeep");
+    const txtKeep = document.getElementById("txtMarcadorKeep");
 
-const chkKeep = document.getElementById("marcadorKeep");
-if (chkKeep) chkKeep.checked = !!(m.destacada || m.keep);
-if (txtKeep) {
-  txtKeep.textContent = esNotaLibre ? "⭐ Destacar nota" : "📌 Mantener resaltado";
-}
-const esNotaLibre = !m.libro && !(m.versiculos || []).length;
+    if (inputTitulo) inputTitulo.value = m.titulo || "";
+    if (inputNota) inputNota.value = m.nota || "";
+    if (inputColor) inputColor.value = m.color || "#fff3b0";
+    if (chkKeep) chkKeep.checked = !!(m.destacada || m.keep);
 
-if (chkKeep) chkKeep.checked = !!(m.destacada || m.keep);
+    if (txtKeep) {
+      txtKeep.textContent = esNotaLibre ? "⭐ Destacar nota" : "📌 Mantener resaltado";
+    }
 
-if (lblKeep) {
-  lblKeep.innerHTML = esNotaLibre ? `⭐ Destacar nota` : `📌 Mantener resaltado`;
-}
-
-    // guardamos “id en edición”
-    window.__editMarcadorId = idMarcador;
-
-    // ✅ guardo la base para que NO pida selección al guardar
-window.__editMarcadorBase = {
-  libro: creandoNotaLibre ? "" : (m.libro || ""),
-  capitulo: creandoNotaLibre ? 0 : Number(m.capitulo || 0),
-  versiculos: creandoNotaLibre ? [] : (m.versiculos || []).map(Number),
-  ref: creandoNotaLibre ? "" : (m.ref || ""),
-  destacada: !!m.destacada,
-  keep: !!m.keep
-};
-    
-creandoNotaLibre = !((m.versiculos || []).length > 0);
+    renderPreviewVersiculosMarcador();
   }, 0);
 };
 
