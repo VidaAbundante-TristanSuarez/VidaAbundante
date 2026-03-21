@@ -892,15 +892,15 @@ window.guardarNuevoMarcadorABC = async function() {
     const color  = document.getElementById("marcadorColor");
     const keep   = document.getElementById("marcadorKeep");
 
-    const t = (titulo?.value || "").trim();   // ✅ sin título por default
+    const t = (titulo?.value || "").trim();
     const n = (nota?.value || "").trim();
     const c = (color?.value || "#fff3b0");
     const k = !!keep?.checked;
 
-if (!n) {
-  abcToast("Escribí una nota 🙏");
-  return;
-}
+    if (!n) {
+      abcToast("Escribí una nota 🙏");
+      return;
+    }
 
     const { db } = FB();
     const { ref, set } = API();
@@ -921,8 +921,14 @@ if (!n) {
     const editId = ctx?.abcEditId || null;
     const id = editId || `abc_${abcIndex}_${ahora}`;
 
-    // ✅ guardar copia ANTES de pisar window.marcadores
     const previoEdit = editId ? ((window.marcadores || {})[editId] || null) : null;
+
+    // ✅ texto real de los bloques seleccionados
+    const doc = document.getElementById("abcDoc");
+    const abcTexto = bids.map(bid => {
+      const el = doc ? doc.querySelector(`.abc-block[data-bid="${bid}"]`) : null;
+      return (el?.innerText || "").replace(/\s+/g, " ").trim();
+    }).filter(Boolean).join(" ");
 
     const data = {
       origen: "abc",
@@ -944,16 +950,15 @@ if (!n) {
       },
 
       abcBids: bids,
-      abcBidLast: lastBid
+      abcBidLast: lastBid,
+      abcTexto
     };
 
     await set(ref(db, `marcadores/${uid}/${id}`), data);
 
-    // ✅ actualizar cache local al instante
     window.marcadores = window.marcadores || {};
     window.marcadores[id] = data;
 
-    // ✅ si estaba editando, limpiar resaltados viejos que ya no correspondan
     if (previoEdit) {
       const prevBids = Array.isArray(previoEdit?.abcBids)
         ? previoEdit.abcBids
@@ -966,7 +971,6 @@ if (!n) {
       }
     }
 
-    // ✅ aplicar o quitar resaltados actuales
     if (k) {
       for (const bid of bids) {
         await abcSetResaltado(bid, c);
@@ -977,18 +981,14 @@ if (!n) {
       }
     }
 
-    // ✅ refresco local inmediato para que aparezca la pluma sin esperar Firebase
     abcRebuildBloqueadosKeep();
     abcMarcarSeleccionUI();
 
-    // ✅ limpiar edición/contexto
     window.__abcEditMarcadorId = null;
     window.setMarcadorCtx("abc", { abcEditId: null });
 
-    // ✅ salir del modo marcador ANTES de cerrar
     abcResetModoMarcador();
 
-    // ✅ cerrar modal de forma real
     if (typeof cerrarMarcadores === "function") {
       cerrarMarcadores();
     } else {
@@ -1000,7 +1000,6 @@ if (!n) {
       }
     }
 
-    // ✅ reenganchar UI de ABC
     abcUIEnABC();
     abcAplicarUIAccionesPorModo();
     abcMarcarSeleccionUI();
