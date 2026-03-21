@@ -2854,55 +2854,24 @@ input[type="hidden"]#dev2Fondo,
   font-weight:700;
 }
 
+/* ===== busqueda ===== */
 #wrapFiltrosBiblia{
   position:relative;
   display:flex;
   align-items:center;
 }
 
-#btnToggleFiltros{
-  border:none;
-  border-radius:999px;
-  padding:8px 14px;
-  background:var(--ui-azul-claro);
-  color:#000;
-  display:flex;
-  align-items:center;
-  gap:10px;
-  cursor:pointer;
-  font-weight:700;
-  min-height:40px;
-}
-
-#btnToggleFiltros.activo{
-  background:var(--ui-azul-hover);
-  color:#fff;
-}
-
-#btnToggleFiltrosTexto{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  flex-wrap:wrap;
-}
-
-#btnLibroActual,
-#btnCapituloActual{
-  white-space:nowrap;
-  font-size:13px;
-}
-
 #filtrosBiblia{
   display:none;
   position:absolute;
-  top:48px;
+  top:42px;
   left:0;
   z-index:1000;
   min-width:240px;
   max-width:280px;
   padding:10px;
   border:1px solid #ddd;
-  border-radius:16px;
+  border-radius:14px;
   background:#fff;
   box-shadow:0 10px 24px rgba(0,0,0,.14);
   flex-direction:column;
@@ -2916,29 +2885,31 @@ input[type="hidden"]#dev2Fondo,
 #buscarLibroInput{
   width:100%;
   border:1px solid #ccc;
-  border-radius:12px;
-  padding:10px 12px;
+  border-radius:10px;
+  padding:8px 10px;
   font-size:14px;
   box-sizing:border-box;
 }
 
 #libro{
   width:100%;
-  min-height:220px;
+  height:220px;
   border:1px solid #ccc;
-  border-radius:12px;
-  padding:6px;
+  border-radius:10px;
+  padding:4px;
   font-size:14px;
   box-sizing:border-box;
+  font-family:Arial, sans-serif;
 }
 
 #capitulo{
   width:100%;
   border:1px solid #ccc;
-  border-radius:12px;
-  padding:10px 12px;
+  border-radius:10px;
+  padding:8px 10px;
   font-size:14px;
   box-sizing:border-box;
+  font-family:Arial, sans-serif;
 }
 
 body.oscuro #filtrosBiblia{
@@ -2953,4 +2924,5 @@ body.oscuro #capitulo{
   color:#fff;
   border-color:#444;
 }
+
   </style> 
