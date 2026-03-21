@@ -1304,6 +1304,34 @@ body.oscuro #subidosFeed a{
   right:10px;
   z-index:3;
   transform:scale(.9);
+  opacity:.55;
+  transition:opacity .2s ease, transform .2s ease;
+}
+
+.devDeleteTopBtn:hover{
+  opacity:1;
+  transform:scale(.95);
+}
+
+#modalDevOracion{
+  background: rgba(0,0,0,.35);
+  backdrop-filter: blur(4px);
+}
+
+#modalDevOracion .modal-contenido{
+  background:#fff;
+  border-radius:18px;
+  box-shadow:0 10px 30px rgba(0,0,0,.25);
+}
+
+#devOracionTexto{
+  font-size:14px;
+  line-height:1.4;
+}
+
+#modalDevListaOraciones{
+  background: rgba(0,0,0,.35);
+  backdrop-filter: blur(4px);
 }
 
 </style>
