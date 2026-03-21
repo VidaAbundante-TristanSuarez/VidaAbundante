@@ -2634,7 +2634,14 @@ window.editarMarcadorDesdeLista = (idMarcador) => {
 
   // ✅ marcamos “modo edición”
   window.__editMarcadorId = idMarcador;
-  window.__editMarcadorBase = { ...m };
+  window.__editMarcadorBase = {
+  ...m,
+  libro: !((m.versiculos || []).length) ? "" : (m.libro || ""),
+  capitulo: !((m.versiculos || []).length) ? 0 : Number(m.capitulo || 0),
+  versiculos: !((m.versiculos || []).length) ? [] : (m.versiculos || []).map(Number),
+  ref: !((m.versiculos || []).length) ? "" : (m.ref || "")
+};
+  
 creandoNotaLibre = !((m.versiculos || []).length > 0);
   // ✅ abrimos el formulario (sin depender de selección)
   abrirFormNuevoMarcador();
@@ -2962,17 +2969,21 @@ const destacada = creandoNotaLibre ? keep : false;
       return;
     }
 
-    const editId = window.__editMarcadorId || null;
-    const base = window.__editMarcadorBase || null;
+const editId = window.__editMarcadorId || null;
+const base = window.__editMarcadorBase || null;
 
-    const libro = base?.libro || libroSel?.value || "";
-    const capitulo = Number(base?.capitulo ?? capSel?.value ?? 0);
+const esNotaLibre = !!creandoNotaLibre;
 
-    const versiculos = (base?.versiculos && Array.isArray(base.versiculos))
+const libro = esNotaLibre ? "" : (base?.libro || libroSel?.value || "");
+const capitulo = esNotaLibre ? 0 : Number(base?.capitulo ?? capSel?.value ?? 0);
+
+const versiculos = esNotaLibre
+  ? []
+  : ((base?.versiculos && Array.isArray(base.versiculos))
       ? base.versiculos.map(Number).filter(n => !isNaN(n))
       : Object.keys(seleccionMarcador || {})
           .map(x => Number(x.split("_").pop()))
-          .filter(n => !isNaN(n));
+          .filter(n => !isNaN(n)));
 
     if (!creandoNotaLibre && versiculos.length === 0) {
       mostrarToast("Seleccioná al menos 1 versículo 📌");
@@ -3224,7 +3235,8 @@ function renderPanelMarcadores() {
 
     ${filtrados.length ? filtrados.map(m => {
       const fechaTxt = m.fecha ? new Date(m.fecha).toLocaleString("es-AR") : "";
-      const refTxt = m.ref || (m.libro && m.capitulo ? `${m.libro} ${m.capitulo}` : "Nota");
+     const esNotaLibreCard = !(m.versiculos || []).length;
+const refTxt = esNotaLibreCard ? "Nota libre" : (m.ref || (m.libro && m.capitulo ? `${m.libro} ${m.capitulo}` : "Nota"));
       const checked = !!(seleccionEliminarMarcadores && seleccionEliminarMarcadores[m.id]);
 
       let textoVers = "";
@@ -3240,11 +3252,11 @@ function renderPanelMarcadores() {
 const colorTextoDestacada = bgDestacada ? colorContraste(bgDestacada) : "";
 
 return `
-        <div class="card-marcador" style="${bgDestacada ? `background:${bgDestacada}; color:${colorTextoDestacada};` : ""}">
+     <div class="card-marcador" style="${bgDestacada ? `background:${bgDestacada} !important; color:${colorTextoDestacada}; border:1px solid rgba(0,0,0,.08);` : ""}">
           <div style="display:flex; justify-content:space-between; gap:10px; align-items:center;">
             <div style="font-size:13px;">
              <b>${m.destacada ? "⭐ " : ""}${m.titulo || "Marcador"}</b><br>
-              <span class="muted">${refTxt} · ${fechaTxt}</span>
+        <span class="${bgDestacada ? "" : "muted"}">${refTxt} · ${fechaTxt}</span>
             </div>
 
             <div style="display:flex; gap:8px; align-items:center;">
@@ -3297,6 +3309,13 @@ window.toggleFiltroNotasPanel = () => {
 window.abrirMarcadorDesdePanel = (idMarcador) => {
   const m = (marcadores || {})[idMarcador];
   if (!m) return;
+
+  const esNotaLibre = !(m.versiculos || []).length;
+
+if (esNotaLibre) {
+  mostrarToast("Esta nota es libre y no tiene versículo para volver");
+  return;
+}
 
   // ✅ si es ABC, ir a Iglesia > ABC
   if (m.origen === "abc" && m.abc) {
@@ -3360,12 +3379,15 @@ if (lblKeep) {
     window.__editMarcadorId = idMarcador;
 
     // ✅ guardo la base para que NO pida selección al guardar
-    window.__editMarcadorBase = {
-      libro: m.libro,
-      capitulo: Number(m.capitulo),
-      versiculos: (m.versiculos || []).map(Number),
-      ref: m.ref || ""
-    };
+window.__editMarcadorBase = {
+  libro: creandoNotaLibre ? "" : (m.libro || ""),
+  capitulo: creandoNotaLibre ? 0 : Number(m.capitulo || 0),
+  versiculos: creandoNotaLibre ? [] : (m.versiculos || []).map(Number),
+  ref: creandoNotaLibre ? "" : (m.ref || ""),
+  destacada: !!m.destacada,
+  keep: !!m.keep
+};
+    
 creandoNotaLibre = !((m.versiculos || []).length > 0);
   }, 0);
 };
@@ -3570,6 +3592,8 @@ window.abrirNotaLibre = () => {
   creandoNotaLibre = true;
   window.__editMarcadorId = null;
   window.__editMarcadorBase = null;
+  seleccionMarcador = {};
+  
   // no depende de selección
   abrirMarcadores();
   setTimeout(() => {
