@@ -1313,13 +1313,12 @@ body.oscuro #subidosFeed a{
   transform:scale(.95);
 }
 
-/* ✅ FONDO MODAL ORACIÓN */
+/* fondo modal oración */
 #modalDevOracion{
   background: rgba(0,0,0,.34);
   backdrop-filter: blur(4px);
 }
 
-/* (este lo podés dejar, no molesta) */
 #modalDevOracion .modal-contenido{
   background:#fff;
   border-radius:18px;
@@ -1332,11 +1331,10 @@ body.oscuro #subidosFeed a{
   line-height:1.45;
 }
 
-/* ✅ FONDO MODAL LISTA */
+/* fondo modal lista */
 #modalDevListaOraciones{
   background: rgba(0,0,0,.34);
   backdrop-filter: blur(4px);
 }
-
 
 </style>
