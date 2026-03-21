@@ -2644,6 +2644,13 @@ function isAdmin(){
   return !!window.__ES_ADMIN;
 }
 
+function devPrivacidadLabel(){
+  const chk = document.getElementById("devOracionPublica");
+  const txt = document.getElementById("devOracionPrivacidadTxt");
+  if (!txt) return;
+  txt.textContent = chk?.checked ? "Público" : "Solo yo";
+}
+
 function devAsegurarModalOracion(){
   if (document.getElementById("modalDevOracion")) return;
 
@@ -2653,36 +2660,64 @@ function devAsegurarModalOracion(){
   div.setAttribute("aria-hidden", "true");
 
   div.innerHTML = `
-    <div class="modal-contenido" style="max-width:520px;">
+    <div class="modal-contenido" style="
+      max-width: 540px;
+      background: #fff;
+      border-radius: 20px;
+      box-shadow: 0 14px 34px rgba(0,0,0,.24);
+      padding: 16px 14px 14px;
+      box-sizing: border-box;
+    ">
       <button type="button" class="cerrar-modal" onclick="devCerrarModalOracion()">✕</button>
 
-      <h3 style="margin-top:0; text-align:center;">🙏 Adjuntar oración</h3>
+      <h3 style="margin:0 0 12px; text-align:center;">🙏</h3>
+
+      <div style="
+        display:flex;
+        align-items:center;
+        gap:10px;
+        margin-bottom:10px;
+      ">
+        <label style="font-size:13px; font-weight:700;">Color</label>
+        <input type="color" id="devOracionColor" value="#fff4b8"
+          style="width:42px; height:32px; padding:0; border:none; background:none;">
+      </div>
 
       <textarea
         id="devOracionTexto"
         placeholder="Escribí tu oración o comentario..."
         style="
           width:100%;
-          min-height:140px;
-          border:1px solid #ccc;
-          border-radius:14px;
-          padding:12px;
+          min-height:150px;
+          border:1px solid #d3d3d3;
+          border-radius:16px;
+          padding:14px 12px;
           font:inherit;
+          font-size:14px;
+          line-height:1.45;
           resize:vertical;
           box-sizing:border-box;
         "
       ></textarea>
 
-      <label style="
-        display:flex;
-        align-items:center;
-        gap:8px;
+      <div style="
         margin-top:12px;
-        font-size:14px;
+        padding:10px 12px;
+        border:1px solid #e5e5e5;
+        border-radius:14px;
+        background:#fafafa;
       ">
-        <input type="checkbox" id="devOracionPublica">
-        Verán todos
-      </label>
+        <label style="
+          display:flex;
+          align-items:center;
+          gap:8px;
+          font-size:14px;
+          cursor:pointer;
+        ">
+          <input type="checkbox" id="devOracionPublica" onchange="devPrivacidadLabel()">
+          <span id="devOracionPrivacidadTxt">Público</span>
+        </label>
+      </div>
 
       <div style="
         display:flex;
@@ -2717,11 +2752,18 @@ window.devAbrirModalOracion = function(uidOwner, tsKey){
 
   const ta = document.getElementById("devOracionTexto");
   const chk = document.getElementById("devOracionPublica");
+  const color = document.getElementById("devOracionColor");
 
   if (ta) ta.value = "";
   if (chk) chk.checked = true;
+  if (color) color.value = "#fff4b8";
 
+  devPrivacidadLabel();
   abrirModal("modalDevOracion");
+
+  setTimeout(()=>{
+    document.getElementById("devOracionTexto")?.focus();
+  }, 80);
 };
 
 window.devCerrarModalOracion = function(){
@@ -2740,6 +2782,7 @@ window.devGuardarOracionDevocional = async function(){
 
   const texto = (document.getElementById("devOracionTexto")?.value || "").trim();
   const publica = !!document.getElementById("devOracionPublica")?.checked;
+  const color = document.getElementById("devOracionColor")?.value || "#fff4b8";
 
   if (!texto) {
     alert("Escribí algo primero.");
@@ -2762,12 +2805,12 @@ window.devGuardarOracionDevocional = async function(){
 
     const newRef = push(baseRef);
 
-    await set(newRef, {
+      await set(newRef, {
       autorUid: uid,
       texto,
       publica,
       destacado: false,
-      color: "",
+      color,
       fecha: Date.now()
     });
 
