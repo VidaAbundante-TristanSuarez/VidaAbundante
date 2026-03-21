@@ -84,7 +84,12 @@ const DEV = {
    publishTs: 0,
 
   panelGuardados: new Set(),
-  panelGuardadosLoaded: false
+  panelGuardadosLoaded: false,
+
+  oracionDevActual: null,
+  oracionDevOwner: "",
+  oracionDevTs: 0,
+
 };
 
 /* =========================================================
@@ -2639,6 +2644,144 @@ function isAdmin(){
   return !!window.__ES_ADMIN;
 }
 
+function devAsegurarModalOracion(){
+  if (document.getElementById("modalDevOracion")) return;
+
+  const div = document.createElement("div");
+  div.id = "modalDevOracion";
+  div.className = "modal-overlay";
+  div.setAttribute("aria-hidden", "true");
+
+  div.innerHTML = `
+    <div class="modal-contenido" style="max-width:520px;">
+      <button type="button" class="cerrar-modal" onclick="devCerrarModalOracion()">✕</button>
+
+      <h3 style="margin-top:0; text-align:center;">🙏 Adjuntar oración</h3>
+
+      <textarea
+        id="devOracionTexto"
+        placeholder="Escribí tu oración o comentario..."
+        style="
+          width:100%;
+          min-height:140px;
+          border:1px solid #ccc;
+          border-radius:14px;
+          padding:12px;
+          font:inherit;
+          resize:vertical;
+          box-sizing:border-box;
+        "
+      ></textarea>
+
+      <label style="
+        display:flex;
+        align-items:center;
+        gap:8px;
+        margin-top:12px;
+        font-size:14px;
+      ">
+        <input type="checkbox" id="devOracionPublica">
+        Verán todos
+      </label>
+
+      <div style="
+        display:flex;
+        justify-content:center;
+        gap:10px;
+        margin-top:16px;
+      ">
+        <button type="button" class="btn-primary" onclick="devGuardarOracionDevocional()">
+          Guardar
+        </button>
+
+        <button type="button" class="btn-primary" onclick="devCerrarModalOracion()">
+          Cancelar
+        </button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(div);
+
+  div.addEventListener("click", (e)=>{
+    if (e.target === div) devCerrarModalOracion();
+  });
+}
+
+window.devAbrirModalOracion = function(uidOwner, tsKey){
+  devAsegurarModalOracion();
+
+  DEV.oracionDevOwner = String(uidOwner || "");
+  DEV.oracionDevTs = Number(tsKey || 0);
+  DEV.oracionDevActual = `${DEV.oracionDevOwner}_${DEV.oracionDevTs}`;
+
+  const ta = document.getElementById("devOracionTexto");
+  const chk = document.getElementById("devOracionPublica");
+
+  if (ta) ta.value = "";
+  if (chk) chk.checked = true;
+
+  abrirModal("modalDevOracion");
+};
+
+window.devCerrarModalOracion = function(){
+  cerrarModal("modalDevOracion");
+};
+
+window.devGuardarOracionDevocional = async function(){
+  const fb = window.__FB;
+  const api = window.__FB_API;
+  const uid = window.__UID;
+
+  if (!fb || !api || !uid) {
+    alert("Tenés que estar logueado.");
+    return;
+  }
+
+  const texto = (document.getElementById("devOracionTexto")?.value || "").trim();
+  const publica = !!document.getElementById("devOracionPublica")?.checked;
+
+  if (!texto) {
+    alert("Escribí algo primero.");
+    return;
+  }
+
+  if (!DEV.oracionDevOwner || !DEV.oracionDevTs) {
+    alert("No encontré el devocional.");
+    return;
+  }
+
+  const { db } = fb;
+  const { ref, push, set } = api;
+
+  try {
+    const baseRef = ref(
+      db,
+      `devocionalesOraciones/${DEV.oracionDevOwner}/${DEV.oracionDevTs}`
+    );
+
+    const newRef = push(baseRef);
+
+    await set(newRef, {
+      autorUid: uid,
+      texto,
+      publica,
+      destacado: false,
+      color: "",
+      fecha: Date.now()
+    });
+
+    if (typeof devToast === "function") {
+      devToast("🙏 Guardado");
+    }
+
+    devCerrarModalOracion();
+  } catch (e) {
+    console.error(e);
+    alert("❌ No se pudo guardar.\n\nDetalle: " + (e?.message || e));
+  }
+};
+
 function devToast(msg){
   let t = document.getElementById("devToast");
 
@@ -2939,6 +3082,7 @@ function renderDevFeed(items){
     const card = document.createElement("div");
     card.className = "devBigCard";
     card.id = "devBig_" + it.id;
+    card.style.position = "relative";
 
     const yaGuardado = devYaGuardadoEnPanel(it);
 
@@ -2961,12 +3105,30 @@ function renderDevFeed(items){
       `
       : ``;
 
+    const deleteTopBtnHtml = esAdmin ? `
+      <button class="btn-primary devDanger devDeleteTopBtn" type="button"
+        onclick="devBorrarDevocional('${it.uidOwner || ""}','${it.tsKey || 0}','${it.storagePath || ""}')"
+        aria-label="Borrar"
+        title="Borrar">
+        <i class="fa-solid fa-trash"></i>
+      </button>
+    ` : ``;
+
     card.innerHTML = `
+      ${deleteTopBtnHtml}
+
       <img src="${it.url || ""}" alt="dev grande">
 
       ${audioHtml}
 
       <div class="devBigActions">
+        <button class="btn-primary" type="button"
+          onclick="devAbrirModalOracion('${it.uidOwner || ""}', '${it.tsKey || 0}')"
+          aria-label="Adjuntar oración"
+          title="Adjuntar oración">
+          🙏
+        </button>
+
         ${saveBtnHtml}
 
         <button class="btn-primary" type="button"
@@ -2982,14 +3144,6 @@ function renderDevFeed(items){
           aria-label="Descargar PNG">
           <i class="fa-solid fa-download"></i>
         </button>
-
-        ${esAdmin ? `
-          <button class="btn-primary devDanger" type="button"
-            onclick="devBorrarDevocional('${it.uidOwner || ""}','${it.tsKey || 0}','${it.storagePath || ""}')"
-            aria-label="Borrar">
-            <i class="fa-solid fa-trash"></i>
-          </button>
-        ` : ``}
       </div>
     `;
 
