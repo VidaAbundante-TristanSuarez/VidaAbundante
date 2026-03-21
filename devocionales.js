@@ -3129,6 +3129,13 @@ function renderDevFeed(items){
           🙏
         </button>
 
+        <button class="btn-primary" type="button"
+  onclick="devAbrirListaOraciones('${it.uidOwner || ""}', '${it.tsKey || 0}')"
+  aria-label="Ver oraciones"
+  title="Ver oraciones">
+  <i class="fa-solid fa-receipt"></i>
+</button>
+
         ${saveBtnHtml}
 
         <button class="btn-primary" type="button"
@@ -3150,6 +3157,94 @@ function renderDevFeed(items){
     feed.appendChild(card);
   });
 }
+
+function devAsegurarModalListaOraciones(){
+  if (document.getElementById("modalDevListaOraciones")) return;
+
+  const div = document.createElement("div");
+  div.id = "modalDevListaOraciones";
+  div.className = "modal-overlay";
+
+  div.innerHTML = `
+    <div class="modal-contenido" style="max-width:520px;">
+      <button type="button" class="cerrar-modal" onclick="devCerrarListaOraciones()">✕</button>
+
+      <h3 style="margin-top:0; text-align:center;">🙏 Oraciones</h3>
+
+      <div id="devListaOracionesContenido" style="
+        max-height:320px;
+        overflow:auto;
+        display:flex;
+        flex-direction:column;
+        gap:10px;
+      ">
+        <div style="text-align:center; font-size:13px; opacity:.6;">
+          Cargando...
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(div);
+
+  div.addEventListener("click", (e)=>{
+    if (e.target === div) devCerrarListaOraciones();
+  });
+}
+
+window.devAbrirListaOraciones = async function(uidOwner, tsKey){
+  devAsegurarModalListaOraciones();
+
+  abrirModal("modalDevListaOraciones");
+
+  const box = document.getElementById("devListaOracionesContenido");
+  if (box) box.innerHTML = "Cargando...";
+
+  const fb = window.__FB;
+  const api = window.__FB_API;
+  const uid = window.__UID;
+
+  if (!fb || !api) return;
+
+  const { db } = fb;
+  const { ref, get } = api;
+
+  try{
+    const snap = await get(ref(db, `devocionalesOraciones/${uidOwner}/${tsKey}`));
+    const val = snap.val() || {};
+
+    const items = Object.values(val);
+
+    const visibles = items.filter(it =>
+      it.publica === true ||
+      (uid && it.autorUid === uid)
+    );
+
+    if (!visibles.length){
+      box.innerHTML = `<div style="text-align:center; opacity:.6;">Sin oraciones todavía</div>`;
+      return;
+    }
+
+    box.innerHTML = visibles.map(it=>`
+      <div style="
+        background:#f5f5f5;
+        padding:10px;
+        border-radius:12px;
+        font-size:14px;
+      ">
+        ${it.texto || ""}
+      </div>
+    `).join("");
+
+  } catch(e){
+    console.error(e);
+    box.innerHTML = "Error al cargar";
+  }
+};
+
+window.devCerrarListaOraciones = function(){
+  cerrarModal("modalDevListaOraciones");
+};
 
 window.devBorrarDevocional = async (uidOwner, tsKey, storagePath) => {
   if (!isAdmin()) { alert("Solo admin."); return; }
