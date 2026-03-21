@@ -2267,15 +2267,17 @@ async function devGuardarEnIglesia(asset){
 
   const dbPath = `devocionalesIglesia/${uid}/${asset.ts}`;
 
-  await set(ref(db, dbPath), {
-    url: asset.url,
-    storagePath: asset.storagePath,
-    fecha: asset.ts,
-    texto: DEV.audioText || "",
-    audioOk: !!DEV.audioOk,
-    audioGithubUrl: DEV.audioGithubUrl || "",
-    origen: "devocional"
-  });
+await set(ref(db, dbPath), {
+  url: asset.url,
+  storagePath: asset.storagePath,
+  fecha: asset.ts,
+  texto: DEV.audioText || "",
+  cita: DEV.p1?.cita || "",
+  versiculo: DEV.p1?.versiculo || "",
+  audioOk: !!DEV.audioOk,
+  audioGithubUrl: DEV.audioGithubUrl || "",
+  origen: "devocional"
+});
 
   return { ok:true, dbPath };
 }
@@ -2760,7 +2762,7 @@ function renderDevIndex(items){
   row.innerHTML = "";
 
   items.forEach((it)=>{
-    const cita  = getCitaDeTexto(it.texto) || "Devocional";
+   const cita  = it.cita || getCitaDeTexto(it.texto) || "Devocional";
     const fecha = fmtFecha(it.fecha || it.tsKey || 0);
 
     const card = document.createElement("div");
