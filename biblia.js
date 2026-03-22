@@ -1920,6 +1920,27 @@ function clickLink(link) {
   link.remove();
 }
 
+(function(){
+  const chk = document.getElementById("checkIglesia");
+  const icon = document.getElementById("iconCompartidos");
+  const wrap = document.getElementById("btnCompartidosWrap");
+
+  if (!chk || !icon || !wrap) return;
+
+  function update(){
+    if (chk.checked){
+      icon.className = "fa-solid fa-check";
+      wrap.classList.add("guardado");
+    } else {
+      icon.className = "fa-solid fa-share-nodes";
+      wrap.classList.remove("guardado");
+    }
+  }
+
+  chk.addEventListener("change", update);
+  update();
+})();
+
 // ================= 🔥 SUBIR IMAGEN BIBLIA UNA SOLA VEZ =================
 async function subirImagenBibliaBaseUnaVez() {
   if (!uid) return null;
