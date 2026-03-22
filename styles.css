@@ -1315,22 +1315,6 @@ body.oscuro .fila-final button:hover{
   color:#fff;
 }
 
-.subir-iglesia-btn input:checked ~ i::after{
-  content:"✓";
-  position:absolute;
-  bottom:-4px;
-  right:-4px;
-  background:#4f6fa8;
-  color:#fff;
-  font-size:10px;
-  border-radius:50%;
-  width:14px;
-  height:14px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
-
 /* ✅ fondo activo según checked */
 .subir-iglesia-btn input:checked{
   /* no pinta nada, pero obliga repintado */
