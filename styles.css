@@ -2882,4 +2882,13 @@ body.oscuro .subir-iglesia-btn:has(input:checked){
   opacity: 1;
 }
 
+.preview-text-inner{
+  width:100%;
+  max-width:100%;
+  text-align:center;
+  line-height:1.3;
+  white-space:pre-wrap;
+  word-break:break-word;
+  margin:0;
+}
   </style> 
