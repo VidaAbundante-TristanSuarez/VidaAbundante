@@ -2883,4 +2883,8 @@ body.oscuro .subir-iglesia-btn:has(input:checked){
   word-break:break-word;
   margin:0;
 }
+
+body.en-biblia #btnScrollTopGlobal{
+  display: none !important;
+}
   </style> 
