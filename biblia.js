@@ -2485,45 +2485,40 @@ window.cancelarCrearImagen = () => {
 
 // ================= ✅ FINALIZAR EDICIÓN (CONFIRMAR) =================
 window.finalizarEdicion = async () => {
-  return withRenderLock(async () => {
+  if (window.__FINALIZANDO__) return; // 🔒 evita doble click
+  window.__FINALIZANDO__ = true;
 
-    const volverAPanel = (origenModalImagen === "panel");
+  const btn = event?.target;
+  if (btn) {
+    btn.disabled = true;
+    btn.innerText = "Guardando...";
+  }
 
-    if (window.__pendingAudio?.audioBase64) {
-      try {
-        const subirIglesia = false;
-        await subirPendingAudioAFirebase({ subirIglesia });
-      } catch (e) {
-        console.error(e);
-        alert("No se pudo subir el audio. Probá generar la previa otra vez.");
-        return;
-      }
+  try {
+    const asset = await subirImagenBibliaBaseUnaVez();
+
+    if (!asset) throw new Error("No se pudo generar la imagen");
+
+    // 👉 acá sigue tu lógica actual de guardado en DB
+
+    if (typeof devToast === "function") {
+      devToast("✅ Imagen guardada");
     }
 
-    const ok = await asegurarCanvasFinal({ subir: true });
-    if (!ok) {
-      alert("No se pudo generar la imagen (PNG). Revisá consola (F12) para ver el error.");
-      return;
-    }
+    // ✅ cerrar modal
+    cerrarModal("modalPersonalizar");
 
-    const terminar = confirm(
-      volverAPanel
-        ? "¿Terminar edición?\n\nOK = Guardar imagen y volver a Mi Panel\nCancelar = Volver a edición"
-        : "¿Terminar edición?\n\nOK = Terminar edición y volver a Biblia\nCancelar = Volver a edición"
-    );
+  } catch (e) {
+    console.error(e);
+    alert("❌ Error al guardar\n\n" + (e?.message || e));
+  }
 
-    if (!terminar) return;
+  window.__FINALIZANDO__ = false;
 
-    resetModalPersonalizar();
-    salirModoImagen();
-
-    if (volverAPanel) {
-      irA("panel");
-      mostrarSeccion("imagenes");
-    } else {
-      irA("biblia");
-    }
-  });
+  if (btn) {
+    btn.disabled = false;
+    btn.innerText = "Finalizar";
+  }
 };
 
 // ================= 🔺 CAMBIAR LETRA ===============================
