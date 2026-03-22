@@ -1723,6 +1723,13 @@ function actualizarPreview() {
 previewTexto.innerHTML = `<div class="preview-text-inner">${textoSeguro}</div>`;
 previewTextoBack.innerHTML = `<div class="preview-text-inner">${textoSeguro}</div>`;
 
+previewTexto.style.display = "grid";
+previewTextoBack.style.display = "grid";
+previewTexto.style.placeItems = "center";
+previewTextoBack.style.placeItems = "center";
+previewTexto.style.textAlign = "center";
+previewTextoBack.style.textAlign = "center";
+  
   // ================= Fondo =================
 const fondoUsable = fondoFinalBlobUrl || fondoFinal;
 
@@ -1760,6 +1767,17 @@ const finalSize = sizeSlider ? Number(sizeSlider.value || 32) : 32;
 previewTexto.style.fontSize = finalSize + "px";
 previewTextoBack.style.fontSize = finalSize + "px";
 
+const innerFront = previewTexto.querySelector(".preview-text-inner");
+const innerBack  = previewTextoBack.querySelector(".preview-text-inner");
+
+if (innerFront) {
+  innerFront.style.width = "100%";
+  innerFront.style.margin = "0";
+}
+if (innerBack) {
+  innerBack.style.width = "100%";
+  innerBack.style.margin = "0";
+}
   // ================= Color / Outline =================
   const colorEl = document.getElementById("personalizarColor");
   const opEl = document.getElementById("personalizarOpacidad");
@@ -1824,7 +1842,7 @@ wrapper.style.backgroundColor = bgColor;
   previewTexto.style.textTransform = transform;
   previewTextoBack.style.textTransform = transform;
 
-  previewTexto.style.fontWeight = textStyle?.bold ? "700" : "400";
+  previewTexto.style.fontWeight = textStyle?.bold ? "800" : "500";
   previewTexto.style.fontStyle = textStyle?.italic ? "italic" : "normal";
   previewTexto.style.textDecoration = textStyle?.underline ? "underline" : "none";
 
