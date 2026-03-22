@@ -1290,6 +1290,9 @@ body.oscuro .fila-final button:hover{
 
   /* 🔥 ESTA LÍNEA MATA EL CHECK NATIVO */
   accent-color: transparent;
+  
+  outline: none;
+  border: none;
 }
 
 .subir-iglesia-btn i {
