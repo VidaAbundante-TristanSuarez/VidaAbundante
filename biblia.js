@@ -1715,8 +1715,13 @@ function actualizarPreview() {
 
   const textoFinal = obtenerTextoParaPreview();
 
-  previewTexto.innerText = textoFinal || "";
-  previewTextoBack.innerText = textoFinal || "";
+  const textoSeguro = String(textoFinal || "")
+  .replace(/&/g, "&amp;")
+  .replace(/</g, "&lt;")
+  .replace(/>/g, "&gt;");
+
+previewTexto.innerHTML = `<div class="preview-text-inner">${textoSeguro}</div>`;
+previewTextoBack.innerHTML = `<div class="preview-text-inner">${textoSeguro}</div>`;
 
   // ================= Fondo =================
 const fondoUsable = fondoFinalBlobUrl || fondoFinal;
@@ -1738,10 +1743,6 @@ previewImagen.style.backgroundColor = fondoUsable ? "transparent" : "#ffffff";
 
 // ================= Tamaño (AUTO sugerido por MEDICION / MANUAL libre) =================
 const sizeSlider = document.getElementById("personalizarTamaño");
-
-// line-height estable ayuda a medir bien
-previewTexto.style.lineHeight = "1.3";
-previewTextoBack.style.lineHeight = "1.3";
 
 // 1) AUTO: sugerimos midiendo si entra (NO es obligación, solo sugerencia)
 if (!userSetFontSize && sizeSlider) {
