@@ -3884,6 +3884,7 @@ window.capituloSiguiente = () => {
 window.toggleFiltrosBiblia = () => {
   const wrap = document.getElementById("wrapFiltrosBiblia");
   const btn  = document.getElementById("btnToggleFiltros");
+  const libroCustom = document.getElementById("libroCustom");
   if (!wrap) return;
 
   const abierto = wrap.classList.toggle("abierto");
@@ -3899,11 +3900,16 @@ window.toggleFiltrosBiblia = () => {
     }
   }
 
-  // ✅ cuando se abre → foco en el input de búsqueda
+  if (!abierto && libroCustom) {
+    libroCustom.classList.remove("abierto");
+  }
+
   setTimeout(() => {
+    const sigueAbierto = wrap.classList.contains("abierto");
+    if (!sigueAbierto) return;
+
     const inputBuscar = document.getElementById("buscarLibroBiblia");
-    const sigueAbierto = document.getElementById("wrapFiltrosBiblia")?.classList.contains("abierto");
-    if (sigueAbierto && inputBuscar) inputBuscar.focus();
+    if (inputBuscar) inputBuscar.focus();
   }, 0);
 };
 
@@ -4368,6 +4374,73 @@ if (inputBuscarLibro && selectLibro) {
     if (primeraCoincidencia) {
       selectLibro.value = primeraCoincidencia.value;
       selectLibro.dispatchEvent(new Event("change"));
+    }
+  });
+}
+
+  const selectLibro = document.getElementById("libro");
+const libroCustom = document.getElementById("libroCustom");
+const libroCustomBtn = document.getElementById("libroCustomBtn");
+const libroCustomTexto = document.getElementById("libroCustomTexto");
+const libroCustomLista = document.getElementById("libroCustomLista");
+const inputBuscarLibro = document.getElementById("buscarLibroBiblia");
+
+function renderLibrosCustom(filtro = "") {
+  if (!selectLibro || !libroCustomLista) return;
+
+  const q = String(filtro || "").trim().toLowerCase();
+  const opciones = Array.from(selectLibro.options);
+
+  libroCustomLista.innerHTML = "";
+
+  opciones
+    .filter(opt => opt.text.toLowerCase().includes(q))
+    .forEach(opt => {
+      const item = document.createElement("button");
+      item.type = "button";
+      item.className = "libro-custom-item";
+      if (opt.value === selectLibro.value) item.classList.add("activo");
+      item.textContent = opt.text;
+
+      item.onclick = () => {
+        selectLibro.value = opt.value;
+        libroCustomTexto.textContent = opt.text;
+        selectLibro.dispatchEvent(new Event("change"));
+        libroCustom.classList.remove("abierto");
+      };
+
+      libroCustomLista.appendChild(item);
+    });
+}
+
+if (selectLibro && libroCustom && libroCustomBtn && libroCustomTexto) {
+  libroCustomTexto.textContent = selectLibro.options[selectLibro.selectedIndex]?.text || "Libro";
+
+  libroCustomBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    libroCustom.classList.toggle("abierto");
+
+    if (libroCustom.classList.contains("abierto")) {
+      renderLibrosCustom(inputBuscarLibro?.value || "");
+      setTimeout(() => inputBuscarLibro?.focus(), 0);
+    }
+  });
+
+  selectLibro.addEventListener("change", () => {
+    libroCustomTexto.textContent = selectLibro.options[selectLibro.selectedIndex]?.text || "Libro";
+    renderLibrosCustom(inputBuscarLibro?.value || "");
+  });
+
+  if (inputBuscarLibro) {
+    inputBuscarLibro.addEventListener("input", () => {
+      renderLibrosCustom(inputBuscarLibro.value);
+    });
+  }
+
+  document.addEventListener("click", (e) => {
+    if (!libroCustom.contains(e.target)) {
+      libroCustom.classList.remove("abierto");
     }
   });
 }
