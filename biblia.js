@@ -523,42 +523,7 @@ function getTextoVersiculo(v) {
 
 function actualizarTituloBiblia() {
   if (!titulo) return;
-
-  titulo.innerHTML = `
-    <span>${libroSel.value} ${capSel.value}</span>
-    <span style="margin-left:10px; font-size:12px; opacity:.9;">
-      <button type="button"
-        onclick="cambiarVersionBiblia('RV1960')"
-        style="
-          border:none;
-          border-radius:999px;
-          padding:3px 8px;
-          margin-right:4px;
-          cursor:pointer;
-          background:${versionActual === "RV1960" ? "var(--ui-azul-claro)" : "rgba(0,0,0,.08)"};
-          color:inherit;
-          font-size:11px;
-          font-weight:700;
-        ">
-        RV1960
-      </button>
-
-      <button type="button"
-        onclick="cambiarVersionBiblia('NTV')"
-        style="
-          border:none;
-          border-radius:999px;
-          padding:3px 8px;
-          cursor:pointer;
-          background:${versionActual === "NTV" ? "var(--ui-azul-claro)" : "rgba(0,0,0,.08)"};
-          color:inherit;
-          font-size:11px;
-          font-weight:700;
-        ">
-        NTV
-      </button>
-    </span>
-  `;
+  titulo.textContent = `${libroSel.value} ${capSel.value}`;
 }
 
 window.cambiarVersionBiblia = function(version) {
@@ -4357,6 +4322,17 @@ document.addEventListener("DOMContentLoaded", () => {
     };
   }
 
+  const tituloBiblia = document.getElementById("titulo");
+
+if (tituloBiblia) {
+  tituloBiblia.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      toggleFiltrosBiblia();
+    }
+  });
+}
+
  // 4) arrancar en biblia
 window.irA?.("biblia");
 
@@ -4652,15 +4628,4 @@ window.eliminarImagenPanel = async (id) => {
 
   setInterval(actualizarBotonScrollTop, 500);
 })();
-
-const tituloBiblia = document.getElementById("titulo");
-
-if (tituloBiblia) {
-  tituloBiblia.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      toggleFiltrosBiblia();
-    }
-  });
-}
 
