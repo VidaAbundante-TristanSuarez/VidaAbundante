@@ -87,21 +87,12 @@
   </button>
 
   <!-- ✅ movemos la tarjeta acá -->
-  <div class="filtros" id="filtrosBiblia">
+<div class="filtros" id="filtrosBiblia">
   <input type="text" id="buscarLibroBiblia" placeholder="Buscar libro...">
- <div id="libroCustom" class="libro-custom">
-  <button type="button" id="libroCustomBtn" class="libro-custom-btn" aria-label="Elegir libro">
-    <span id="libroCustomTexto">Libro</span>
-    <i class="fa-solid fa-chevron-down"></i>
-  </button>
-
-  <div id="libroCustomMenu" class="libro-custom-menu">
-    <input type="text" id="buscarLibroBiblia" placeholder="Buscar libro...">
-    <div id="libroCustomLista" class="libro-custom-lista"></div>
-  </div>
-</div>
+  <select id="libro"></select>
   <select id="capitulo"></select>
 </div>
+   
 </div>
    
    <button type="button" id="btnCapAnt" onclick="capituloAnterior()" aria-label="Capítulo anterior">
