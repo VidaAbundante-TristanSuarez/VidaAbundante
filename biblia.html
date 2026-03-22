@@ -89,7 +89,17 @@
   <!-- ✅ movemos la tarjeta acá -->
   <div class="filtros" id="filtrosBiblia">
   <input type="text" id="buscarLibroBiblia" placeholder="Buscar libro...">
-  <select id="libro"></select>
+ <div id="libroCustom" class="libro-custom">
+  <button type="button" id="libroCustomBtn" class="libro-custom-btn" aria-label="Elegir libro">
+    <span id="libroCustomTexto">Libro</span>
+    <i class="fa-solid fa-chevron-down"></i>
+  </button>
+
+  <div id="libroCustomMenu" class="libro-custom-menu">
+    <input type="text" id="buscarLibroBiblia" placeholder="Buscar libro...">
+    <div id="libroCustomLista" class="libro-custom-lista"></div>
+  </div>
+</div>
   <select id="capitulo"></select>
 </div>
 </div>
