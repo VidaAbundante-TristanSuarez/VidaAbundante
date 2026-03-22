@@ -4652,3 +4652,15 @@ window.eliminarImagenPanel = async (id) => {
 
   setInterval(actualizarBotonScrollTop, 500);
 })();
+
+const tituloBiblia = document.getElementById("titulo");
+
+if (tituloBiblia) {
+  tituloBiblia.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      toggleFiltrosBiblia();
+    }
+  });
+}
+
