@@ -177,11 +177,39 @@ body.oscuro #barraTituloBiblia{
   border-bottom: 1px solid rgba(255,255,255,.12);
  }
 
-/* ✅ Título con Lora */
 #titulo{
   font-family: "Lora", serif;
   font-weight: 700;
   letter-spacing: .2px;
+
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height: 34px;
+  padding: 6px 14px;
+  border-radius: 999px;
+
+  background: var(--ui-azul-claro);
+  color:#000;
+  cursor:pointer;
+  user-select:none;
+  transition: background .2s ease, color .2s ease, transform .08s ease;
+}
+
+#titulo:active{
+  transform: scale(.98);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  #titulo:hover{
+    background: var(--ui-azul-hover);
+    color:#fff;
+  }
+}
+
+body.oscuro #titulo{
+  background:#d1eeff;
+  color:#000;
 }
 
 #btnCapAnt, #btnCapSig{
@@ -2230,108 +2258,67 @@ body.oscuro #barraTituloBiblia .nav-capitulo{
   font-size: 13px;
 }
 
-/* ================= FILTROS: 1 RENGLÓN, SOBRE LA BARRA, SIN TAPAR LUPA ================= */
-
-/* oculto por defecto */
-#wrapFiltrosBiblia .filtros{ display:none; }
-
-/* ✅ la barra es el "ancla" del popup */
-#barraTituloBiblia{
-  position: sticky;   /* ya lo tenés, lo dejo explícito */
-  top: 0;
-}
-
-/* ✅ IMPORTANTE: el ancla real tiene que ser la barra, NO el wrap */
-#wrapFiltrosBiblia{
-  position: static;   /* 🔥 clave */
-  display: inline-flex;
-  align-items: center;
-}
-
-/* botón clickeable */
-#btnToggleFiltros{
-  position: relative;
-  z-index: 30;
-}
-
-/* ✅ cuando se abre: aparece SOBRE la barra, alineado a la izquierda */
 #wrapFiltrosBiblia.abierto .filtros{
-  display: grid;
-  grid-template-columns: 1fr 64px; /* libro | capítulo (cap angosto) */
-  align-items: center;
+  display:grid;
+  grid-template-columns: 1fr 74px;
+  align-items:center;
   gap: 8px;
 
-  position: absolute;            /* 🔥 ya NO fixed */
-  left: 12px;                    /* mismo margen de la barra */
+  position:absolute;
+  left: 12px;
   top: 50%;
   transform: translateY(-50%);
 
-  /* ✅ NO enorme en PC */
-  width: min(380px, calc(100% - 160px));
-  /* deja ~160px a la derecha para lupa + flechas */
+  width: min(320px, calc(100% - 150px));
+  padding: 8px 10px;
 
-  padding: 6px 8px;
   background: #fff;
   border: 1px solid rgba(0,0,0,.10);
   border-radius: 14px;
   box-shadow: 0 10px 24px rgba(0,0,0,.22);
-
-  z-index: 20; /* debajo del botón (30) */
+  z-index: 20;
   box-sizing: border-box;
 }
 
-/* oscuro */
 body.oscuro #wrapFiltrosBiblia.abierto .filtros{
   background:#1e1e1e;
   border-color: rgba(255,255,255,.12);
   box-shadow: 0 10px 24px rgba(0,0,0,.45);
 }
 
-/* selects */
 #wrapFiltrosBiblia .filtros select{
-  height: 32px;
+  height: 34px;
   padding: 0 10px;
   font-size: 14px;
   border-radius: 999px;
   min-width: 0;
 }
 
-/* libro ocupa lo que queda */
 #wrapFiltrosBiblia .filtros #libro{
   width: 100%;
 }
 
-/* capítulo angosto (≈ 50%) y centrado */
 #wrapFiltrosBiblia .filtros #capitulo{
-  width: 64px;
+  width: 74px;
   text-align: center;
 }
 
-/* 🔧 Evita que la lupa quede visualmente activa al cerrar */
-#btnToggleFiltros:focus,
-#btnToggleFiltros:active{
-  outline: none;
-  box-shadow: none;
-}
+@media (max-width: 640px){
+  #wrapFiltrosBiblia.abierto .filtros{
+    width: min(270px, calc(100% - 130px));
+    grid-template-columns: 1fr 64px;
+    gap: 6px;
+    padding: 6px 8px;
+  }
 
-/* ✅ Botón activo SOLO cuando el panel está abierto */
-#wrapFiltrosBiblia.abierto #btnToggleFiltros{
-  background: var(--ui-azul-hover);
-  color:#fff;
-  transform: scale(1.05);
-}
+  #wrapFiltrosBiblia .filtros select{
+    height: 32px;
+    font-size: 13px;
+  }
 
-/* ✅ Evitar “focus pegado” visual en celu */
-#btnToggleFiltros{
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-}
-
-#btnToggleFiltros:focus,
-#btnToggleFiltros:focus-visible,
-#btnToggleFiltros:active{
-  outline: none;
-  box-shadow: none;
+  #wrapFiltrosBiblia .filtros #capitulo{
+    width: 64px;
+  }
 }
 
 /* ================= MODAL MARCADORES: RESPONSIVE ================= */
@@ -2886,5 +2873,9 @@ body.oscuro .subir-iglesia-btn:has(input:checked){
 
 body.en-biblia #btnScrollTopGlobal{
   display: none !important;
+}
+
+#btnToggleFiltros{
+  display:none !important;
 }
   </style> 
