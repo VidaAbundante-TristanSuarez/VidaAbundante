@@ -4378,7 +4378,6 @@ if (inputBuscarLibro && selectLibro) {
   });
 }
 
-  const selectLibro = document.getElementById("libro");
 const libroCustom = document.getElementById("libroCustom");
 const libroCustomBtn = document.getElementById("libroCustomBtn");
 const libroCustomTexto = document.getElementById("libroCustomTexto");
@@ -4386,10 +4385,10 @@ const libroCustomLista = document.getElementById("libroCustomLista");
 const inputBuscarLibro = document.getElementById("buscarLibroBiblia");
 
 function renderLibrosCustom(filtro = "") {
-  if (!selectLibro || !libroCustomLista) return;
+  if (!libroSel || !libroCustomLista) return;
 
   const q = String(filtro || "").trim().toLowerCase();
-  const opciones = Array.from(selectLibro.options);
+  const opciones = Array.from(libroSel.options);
 
   libroCustomLista.innerHTML = "";
 
@@ -4399,13 +4398,13 @@ function renderLibrosCustom(filtro = "") {
       const item = document.createElement("button");
       item.type = "button";
       item.className = "libro-custom-item";
-      if (opt.value === selectLibro.value) item.classList.add("activo");
+      if (opt.value === libroSel.value) item.classList.add("activo");
       item.textContent = opt.text;
 
       item.onclick = () => {
-        selectLibro.value = opt.value;
+        libroSel.value = opt.value;
         libroCustomTexto.textContent = opt.text;
-        selectLibro.dispatchEvent(new Event("change"));
+        libroSel.dispatchEvent(new Event("change"));
         libroCustom.classList.remove("abierto");
       };
 
@@ -4413,8 +4412,8 @@ function renderLibrosCustom(filtro = "") {
     });
 }
 
-if (selectLibro && libroCustom && libroCustomBtn && libroCustomTexto) {
-  libroCustomTexto.textContent = selectLibro.options[selectLibro.selectedIndex]?.text || "Libro";
+if (libroSel && libroCustom && libroCustomBtn && libroCustomTexto) {
+  libroCustomTexto.textContent = libroSel.options[libroSel.selectedIndex]?.text || "Libro";
 
   libroCustomBtn.addEventListener("click", (e) => {
     e.preventDefault();
@@ -4427,8 +4426,8 @@ if (selectLibro && libroCustom && libroCustomBtn && libroCustomTexto) {
     }
   });
 
-  selectLibro.addEventListener("change", () => {
-    libroCustomTexto.textContent = selectLibro.options[selectLibro.selectedIndex]?.text || "Libro";
+  libroSel.addEventListener("change", () => {
+    libroCustomTexto.textContent = libroSel.options[libroSel.selectedIndex]?.text || "Libro";
     renderLibrosCustom(inputBuscarLibro?.value || "");
   });
 
