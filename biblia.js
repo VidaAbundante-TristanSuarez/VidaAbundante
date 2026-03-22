@@ -1842,7 +1842,7 @@ wrapper.style.backgroundColor = bgColor;
   previewTexto.style.textTransform = transform;
   previewTextoBack.style.textTransform = transform;
 
-  previewTexto.style.fontWeight = textStyle?.bold ? "800" : "500";
+  previewTexto.style.fontWeight = textStyle?.bold ? "800" : "600";
   previewTexto.style.fontStyle = textStyle?.italic ? "italic" : "normal";
   previewTexto.style.textDecoration = textStyle?.underline ? "underline" : "none";
 
