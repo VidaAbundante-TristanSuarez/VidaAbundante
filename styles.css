@@ -2864,14 +2864,6 @@ body.oscuro .subir-iglesia-btn:has(input:checked){
   box-sizing: border-box;
 }
 
-#previewTexto > *,
-#previewTextoBack > *{
-  margin: auto;
-  width: 100%;
-  max-width: 100%;
-  text-align: center;
-}
-
 #previewTexto{
   font-weight: 900;
   text-rendering: geometricPrecision;
