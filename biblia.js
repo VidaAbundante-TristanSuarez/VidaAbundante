@@ -523,7 +523,23 @@ function getTextoVersiculo(v) {
 
 function actualizarTituloBiblia() {
   if (!titulo) return;
-  titulo.textContent = `${libroSel.value} ${capSel.value}`;
+
+  titulo.innerHTML = `
+    <span class="titulo-libro-cap">${libroSel.value} ${capSel.value}</span>
+    <span class="versiones-inline">
+      <button type="button"
+        onclick="event.stopPropagation(); cambiarVersionBiblia('RV1960')"
+        class="btn-version-inline ${versionActual === "RV1960" ? "activo" : ""}">
+        RV1960
+      </button>
+
+      <button type="button"
+        onclick="event.stopPropagation(); cambiarVersionBiblia('NTV')"
+        class="btn-version-inline ${versionActual === "NTV" ? "activo" : ""}">
+        NTV
+      </button>
+    </span>
+  `;
 }
 
 window.cambiarVersionBiblia = function(version) {
@@ -3868,7 +3884,6 @@ window.capituloSiguiente = () => {
 window.toggleFiltrosBiblia = () => {
   const wrap = document.getElementById("wrapFiltrosBiblia");
   const btn  = document.getElementById("btnToggleFiltros");
-  const libroSel = document.getElementById("libro");
   if (!wrap) return;
 
   const abierto = wrap.classList.toggle("abierto");
@@ -3876,7 +3891,6 @@ window.toggleFiltrosBiblia = () => {
   if (btn) {
     btn.classList.toggle("activo", abierto);
 
-    // ✅ CLAVE: en celular saca el "focus pegado"
     if (!abierto) {
       btn.blur();
       if (document.activeElement && document.activeElement.blur) {
@@ -3885,10 +3899,12 @@ window.toggleFiltrosBiblia = () => {
     }
   }
 
-  // ✅ cuando se abre → foco en Libro
-  if (abierto && libroSel) {
-    setTimeout(() => libroSel.focus(), 0);
-  }
+  // ✅ cuando se abre → foco en el input de búsqueda
+  setTimeout(() => {
+    const inputBuscar = document.getElementById("buscarLibroBiblia");
+    const sigueAbierto = document.getElementById("wrapFiltrosBiblia")?.classList.contains("abierto");
+    if (sigueAbierto && inputBuscar) inputBuscar.focus();
+  }, 0);
 };
 
 // ================= 🔺 PANEL ===================
@@ -4329,6 +4345,29 @@ if (tituloBiblia) {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       toggleFiltrosBiblia();
+    }
+  });
+}
+
+const inputBuscarLibro = document.getElementById("buscarLibroBiblia");
+const selectLibro = document.getElementById("libro");
+
+if (inputBuscarLibro && selectLibro) {
+  inputBuscarLibro.addEventListener("input", () => {
+    const q = inputBuscarLibro.value.trim().toLowerCase();
+    const opciones = Array.from(selectLibro.options);
+
+    let primeraCoincidencia = null;
+
+    opciones.forEach(opt => {
+      const ok = opt.text.toLowerCase().includes(q);
+      opt.hidden = !ok;
+      if (ok && !primeraCoincidencia) primeraCoincidencia = opt;
+    });
+
+    if (primeraCoincidencia) {
+      selectLibro.value = primeraCoincidencia.value;
+      selectLibro.dispatchEvent(new Event("change"));
     }
   });
 }
