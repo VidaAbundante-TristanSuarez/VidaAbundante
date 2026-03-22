@@ -3884,7 +3884,6 @@ window.capituloSiguiente = () => {
 window.toggleFiltrosBiblia = () => {
   const wrap = document.getElementById("wrapFiltrosBiblia");
   const btn  = document.getElementById("btnToggleFiltros");
-  const libroCustom = document.getElementById("libroCustom");
   if (!wrap) return;
 
   const abierto = wrap.classList.toggle("abierto");
@@ -3900,16 +3899,11 @@ window.toggleFiltrosBiblia = () => {
     }
   }
 
-  if (!abierto && libroCustom) {
-    libroCustom.classList.remove("abierto");
-  }
-
+  // ✅ cuando se abre → foco en el input de búsqueda
   setTimeout(() => {
-    const sigueAbierto = wrap.classList.contains("abierto");
-    if (!sigueAbierto) return;
-
     const inputBuscar = document.getElementById("buscarLibroBiblia");
-    if (inputBuscar) inputBuscar.focus();
+    const sigueAbierto = document.getElementById("wrapFiltrosBiblia")?.classList.contains("abierto");
+    if (sigueAbierto && inputBuscar) inputBuscar.focus();
   }, 0);
 };
 
@@ -4345,17 +4339,17 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   const tituloBiblia = document.getElementById("titulo");
-
 if (tituloBiblia) {
   tituloBiblia.addEventListener("keydown", (e) => {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
+      e.stopPropagation();
       toggleFiltrosBiblia();
     }
   });
 }
 
-const inputBuscarLibro = document.getElementById("buscarLibroBiblia");
+  const inputBuscarLibro = document.getElementById("buscarLibroBiblia");
 const selectLibro = document.getElementById("libro");
 
 if (inputBuscarLibro && selectLibro) {
@@ -4373,11 +4367,10 @@ if (inputBuscarLibro && selectLibro) {
 
     if (primeraCoincidencia) {
       selectLibro.value = primeraCoincidencia.value;
-      selectLibro.dispatchEvent(new Event("change"));
     }
   });
 }
-
+  
  // 4) arrancar en biblia
 window.irA?.("biblia");
 
