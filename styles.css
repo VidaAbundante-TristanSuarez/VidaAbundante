@@ -2856,18 +2856,33 @@ input[type="hidden"]#dev2Fondo,
 }
 
 /* ===== compartidos nuevo checkbox ===== */
-.btn-toggle{
+.subir-iglesia-btn{
+  position: relative;
+  width: 42px;
+  height: 42px;
   display:flex;
   align-items:center;
   justify-content:center;
-  width:42px;
-  height:42px;
-  cursor:pointer;
+  border-radius:12px;
 }
 
-.btn-toggle.guardado{
-  background:#1c6fcb;
-  color:#fff;
+/* icono principal */
+.subir-iglesia-btn i{
+  font-size:18px;
+}
+
+/* check mini */
+.subir-iglesia-btn .check-mini{
+  position:absolute;
+  bottom:2px;
+  font-size:10px;
+  opacity:0;
+  transition:opacity .2s ease;
+}
+
+/* cuando está activo */
+.subir-iglesia-btn input:checked + i + .check-mini{
+  opacity:1;
 }
 
   </style> 
