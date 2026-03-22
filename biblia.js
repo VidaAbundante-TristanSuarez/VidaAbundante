@@ -1933,8 +1933,11 @@ async function subirImagenBibliaBaseUnaVez() {
   const ts = Date.now();
   const fileName = `versiculo_${ts}.png`;
 
-  // ✅ UNA sola ruta real en Storage
-  const storagePath = `imagenes_generadas/${uid}/${fileName}`;
+  // ✅ usar ruta permitida según el check de Compartidos/Iglesia
+  const compartir = !!document.getElementById("checkIglesia")?.checked;
+  const storagePath = compartir
+    ? `imagenes_iglesia/${uid}/${fileName}`
+    : `imagenes_personal/${uid}/${fileName}`;
 
   const storageRef = sRef(storage, storagePath);
   await uploadBytes(storageRef, blob, { contentType: "image/png" });
