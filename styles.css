@@ -2773,9 +2773,9 @@ input[type="hidden"]#dev2Fondo,
 /* ===== compartidos nuevo checkbox ===== */
 .subir-iglesia-btn{
   position: relative;
-  width: 40px;
-  height: 40px;
-  border-radius: 999px;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
   border: none;
   display: inline-flex;
   align-items: center;
@@ -2793,7 +2793,6 @@ body.oscuro .subir-iglesia-btn{
   color: #000;
 }
 
-/* ocultar el checkbox REAL de verdad */
 .subir-iglesia-btn input{
   position: absolute;
   width: 1px;
@@ -2810,20 +2809,18 @@ body.oscuro .subir-iglesia-btn{
   pointer-events: none;
 }
 
-/* solo el icono principal */
 .subir-iglesia-btn > i{
   font-size: 16px;
   line-height: 1;
   margin: 0;
   pointer-events: none;
+  color:#000;
 }
 
-/* check mini */
 .subir-iglesia-btn .check-mini{
   position: absolute;
-  bottom: -2px;
-  left: 50%;
-  transform: translateX(-50%);
+  bottom: -3px;
+  right: -3px;
   opacity: 0;
   pointer-events: none;
   line-height: 1;
@@ -2843,7 +2840,6 @@ body.oscuro .subir-iglesia-btn{
   justify-content: center;
 }
 
-/* estado activo */
 .subir-iglesia-btn:has(input:checked){
   background: var(--ui-azul-hover);
   color: #fff;
@@ -2854,7 +2850,12 @@ body.oscuro .subir-iglesia-btn:has(input:checked){
   color: #fff;
 }
 
+.subir-iglesia-btn:has(input:checked) > i{
+  color:#fff;
+}
+
 .subir-iglesia-btn input:checked + i + .check-mini{
   opacity: 1;
 }
+
   </style> 
