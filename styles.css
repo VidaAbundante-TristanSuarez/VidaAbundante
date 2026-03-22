@@ -2858,4 +2858,28 @@ body.oscuro .subir-iglesia-btn:has(input:checked){
   opacity: 1;
 }
 
+/* ===== centrar versiculo y bold ===== */
+#previewTexto,
+#previewTextoBack{
+  box-sizing: border-box;
+}
+
+#previewTexto > *,
+#previewTextoBack > *{
+  margin: auto;
+  width: 100%;
+  max-width: 100%;
+  text-align: center;
+}
+
+#previewTexto{
+  font-weight: 900;
+  text-rendering: geometricPrecision;
+}
+
+#previewTextoBack{
+  font-weight: 900;
+  opacity: 1;
+}
+
   </style> 
