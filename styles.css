@@ -2855,4 +2855,19 @@ input[type="hidden"]#dev2Fondo,
   font-weight:700;
 }
 
+/* ===== compartidos nuevo checkbox ===== */
+.btn-toggle{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:42px;
+  height:42px;
+  cursor:pointer;
+}
+
+.btn-toggle.guardado{
+  background:#1c6fcb;
+  color:#fff;
+}
+
   </style> 
