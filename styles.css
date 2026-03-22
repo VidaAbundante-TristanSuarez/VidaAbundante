@@ -178,38 +178,28 @@ body.oscuro #barraTituloBiblia{
  }
 
 #titulo{
+  margin: 0;
+  padding: 2px 0 0 20px;
   font-family: "Lora", serif;
   font-weight: 700;
-  letter-spacing: .2px;
-
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  min-height: 34px;
-  padding: 6px 14px;
-  border-radius: 999px;
-
-  background: var(--ui-azul-claro);
-  color:#000;
-  cursor:pointer;
-  user-select:none;
-  transition: background .2s ease, color .2s ease, transform .08s ease;
+  font-size: 17px;
+  color: #000;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  min-height: auto;
+  display: inline-block;
+  cursor: pointer;
+  user-select: none;
+  transition: opacity .15s ease;
 }
 
-#titulo:active{
-  transform: scale(.98);
-}
-
-@media (hover: hover) and (pointer: fine) {
-  #titulo:hover{
-    background: var(--ui-azul-hover);
-    color:#fff;
-  }
+#titulo:hover{
+  opacity: .75;
 }
 
 body.oscuro #titulo{
-  background:#d1eeff;
-  color:#000;
+  color:#fff;
 }
 
 #btnCapAnt, #btnCapSig{
@@ -2877,5 +2867,77 @@ body.en-biblia #btnScrollTopGlobal{
 
 #btnToggleFiltros{
   display:none !important;
+}
+
+#wrapFiltrosBiblia .filtros{
+  display:none;
+}
+
+#wrapFiltrosBiblia.abierto .filtros{
+  display:grid;
+  grid-template-columns: 1fr 64px;
+  grid-template-areas:
+    "buscar buscar"
+    "libro  cap";
+  align-items:center;
+  gap: 6px;
+
+  position:absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+
+  width: min(280px, calc(100vw - 140px));
+  padding: 8px;
+
+  background: #fff;
+  border: 1px solid rgba(0,0,0,.10);
+  border-radius: 14px;
+  box-shadow: 0 10px 24px rgba(0,0,0,.22);
+  z-index: 30;
+  box-sizing: border-box;
+}
+
+body.oscuro #wrapFiltrosBiblia.abierto .filtros{
+  background:#1e1e1e;
+  border-color: rgba(255,255,255,.12);
+  box-shadow: 0 10px 24px rgba(0,0,0,.45);
+}
+
+#buscarLibroBiblia{
+  grid-area: buscar;
+  height: 32px;
+  padding: 0 12px;
+  font-size: 13px;
+  border-radius: 999px;
+  border: 1px solid rgba(0,0,0,.14);
+  outline: none;
+  width: 100%;
+}
+
+#libro{ grid-area: libro; }
+#capitulo{ grid-area: cap; }
+
+#wrapFiltrosBiblia .filtros select{
+  height: 32px;
+  padding: 0 10px;
+  font-size: 13px;
+  border-radius: 999px;
+  min-width: 0;
+}
+
+#wrapFiltrosBiblia .filtros #libro{
+  width: 100%;
+}
+
+#wrapFiltrosBiblia .filtros #capitulo{
+  width: 64px;
+  text-align: center;
+}
+
+body.oscuro #buscarLibroBiblia{
+  background:#2a2a2a;
+  color:#fff;
+  border-color: rgba(255,255,255,.18);
 }
   </style> 
