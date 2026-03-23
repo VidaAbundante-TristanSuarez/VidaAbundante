@@ -3907,6 +3907,26 @@ window.toggleFiltrosBiblia = () => {
   }, 0);
 };
 
+// ================= CERRAR FILTROS AL TOCAR AFUERA =================
+document.addEventListener("click", (e) => {
+  const wrap = document.getElementById("wrapFiltrosBiblia");
+  const btn  = document.getElementById("btnToggleFiltros");
+
+  if (!wrap || !btn) return;
+
+  const abierto = wrap.classList.contains("abierto");
+
+  // si no está abierto → no hacer nada
+  if (!abierto) return;
+
+  // si el click fue dentro del filtro o botón → no cerrar
+  if (wrap.contains(e.target) || btn.contains(e.target)) return;
+
+  // cerrar
+  wrap.classList.remove("abierto");
+  btn.classList.remove("activo");
+});
+
 // ================= 🔺 PANEL ===================
 window.mostrarSeccion = (tipo) => {
   ["imagenes", "marcadores"].forEach(s => {
