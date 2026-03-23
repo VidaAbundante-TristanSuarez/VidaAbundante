@@ -3908,23 +3908,28 @@ window.toggleFiltrosBiblia = () => {
 };
 
 // ================= CERRAR FILTROS AL TOCAR AFUERA =================
+// ================= CERRAR FILTROS AL TOCAR AFUERA =================
 document.addEventListener("click", (e) => {
   const wrap = document.getElementById("wrapFiltrosBiblia");
-  const btn  = document.getElementById("btnToggleFiltros");
+  const btn = document.getElementById("btnToggleFiltros");
+  const titulo = document.getElementById("titulo");
 
-  if (!wrap || !btn) return;
+  if (!wrap) return;
 
   const abierto = wrap.classList.contains("abierto");
-
-  // si no está abierto → no hacer nada
   if (!abierto) return;
 
-  // si el click fue dentro del filtro o botón → no cerrar
-  if (wrap.contains(e.target) || btn.contains(e.target)) return;
+  // ✅ si el click fue dentro del panel, en el botón o en el título, no cerrar
+  if (
+    wrap.contains(e.target) ||
+    (btn && btn.contains(e.target)) ||
+    (titulo && titulo.contains(e.target))
+  ) {
+    return;
+  }
 
-  // cerrar
   wrap.classList.remove("abierto");
-  btn.classList.remove("activo");
+  if (btn) btn.classList.remove("activo");
 });
 
 // ================= 🔺 PANEL ===================
