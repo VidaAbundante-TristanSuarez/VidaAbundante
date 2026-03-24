@@ -4448,9 +4448,9 @@ window.mostrarIglesiaSub = (sub) => {
 };
 
 // ================= SELECTOR DE COLORES REUTILIZABLE =====  
-   setTimeout(() => {
+setTimeout(() => {
   initPickrEnHosts(
-    "#personalizarColorHost, #marcadorColorHost, #dev1ColorHost, #dev1OpColorHost, #dev2ColorHost, #colorFondoPlanoHost, #dev2FondoHost,#colorOpacidadBibliaHost"
+    "#personalizarColorHost, #marcadorColorHost, #dev1ColorHost, #dev1OpColorHost, #dev2ColorHost, #colorFondoPlanoHost, #dev2FondoHost, #colorOpacidadBibliaHost, #colorFondoAppHost"
   );
 }, 0);
   
