@@ -273,16 +273,38 @@ onAuthStateChanged(auth, user => {
   
     // ================= ✅ ADMIN FLAG GLOBAL =================
   // Lee /admins/{uid} = true|false y lo guarda en window.__ES_ADMIN
-  onValue(ref(db, "admins/" + uid), (s) => {
-    window.__ES_ADMIN = !!s.val();
+onValue(ref(db, "admins/" + uid), (s) => {
+  window.__ES_ADMIN = !!s.val();
+  actualizarPermisosUI();
+});
 
-    // actualice el botón de Subidos directo
-    const btn = document.getElementById("btnDevNuevo");
-    if (btn) btn.style.display = window.__ES_ADMIN ? "inline-flex" : "none";
-  // opcional: si existe un botón de "nuevo devocional", lo muestra/oculta
+onValue(ref(db, "colaboradores/" + uid), (s) => {
+  window.__ES_COLABORADOR = !!s.val();
+  actualizarPermisosUI();
+});
+
+window.actualizarPermisosUI = function () {
+  const esAdmin = !!window.__ES_ADMIN;
+  const esColab = !!window.__ES_COLABORADOR;
+  const puedeVerRecursos = esAdmin || esColab;
+
+  // botones que ya dependían de admin
+  const btn = document.getElementById("btnDevNuevo");
+  if (btn) btn.style.display = esAdmin ? "inline-flex" : "none";
+
   const btnSubidos = document.getElementById("btnSubidoNuevo");
-  if (btnSubidos) btnSubidos.style.display = window.__ES_ADMIN ? "inline-flex" : "none";
-  });
+  if (btnSubidos) btnSubidos.style.display = esAdmin ? "inline-flex" : "none";
+
+  // pestaña / botón Recursos
+  const btnRecursos = document.getElementById("btnTabRecursos");
+  if (btnRecursos) btnRecursos.style.display = puedeVerRecursos ? "inline-flex" : "none";
+
+  // sección Recursos si ya está abierta
+  const seccionRecursos = document.getElementById("iglesia-recursos");
+  if (seccionRecursos) {
+    seccionRecursos.style.display = puedeVerRecursos ? seccionRecursos.style.display : "none";
+  }
+};
 
   onValue(ref(db, "marcados/" + uid), s => {
     marcados = s.val() || {};
