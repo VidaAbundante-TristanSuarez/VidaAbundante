@@ -275,16 +275,6 @@ body.oscuro .btn-version-inline.activo{
   }
 }
 
-#barraTituloBiblia{
-  position: relative;
-}
-
-#titulo{
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-}
-
   /* ================= BOTONES FILTROS (marcadores) ================= */
  .filtros button {
   border: none;
