@@ -33,13 +33,24 @@ let rhIniciado = false;
 
 // ✅ abrir RH por defecto
 window.mostrarRecursosSub = async (sub) => {
+  const esAdmin = !!window.__ES_ADMIN;
+  const esColab = !!window.__ES_COLABORADOR;
+  const puedeVerRecursos = esAdmin || esColab;
+
+  if (!puedeVerRecursos) {
+    alert("No tenés permiso para entrar a Recursos.");
+    return;
+  }
+
   const rh = document.getElementById("recursos-rh");
   const talleres = document.getElementById("recursos-talleres");
   const hermanos = document.getElementById("recursos-hermanos");
+  const permisos = document.getElementById("recursos-permisos");
 
   if (rh) rh.style.display = (sub === "rh") ? "block" : "none";
   if (talleres) talleres.style.display = (sub === "talleres") ? "block" : "none";
   if (hermanos) hermanos.style.display = (sub === "hermanos") ? "block" : "none";
+  if (permisos) permisos.style.display = (sub === "permisos") ? "block" : "none";
 
   const wrap = document.getElementById("iglesia-recursos");
   if (wrap) {
@@ -55,7 +66,15 @@ window.mostrarRecursosSub = async (sub) => {
   if (sub === "hermanos") {
     await mostrarHermanos();
   }
-};;
+
+  if (sub === "permisos") {
+    if (!window.__ES_ADMIN) {
+      alert("Solo los administradores pueden ver Permisos.");
+      return;
+    }
+    await mostrarPermisos();
+  }
+};
 
 window.mostrarRH = async () => {
   const cont = document.getElementById("rhApp");
@@ -660,9 +679,11 @@ window.mostrarHermanos = async () => {
               placeholder="Buscar por nombre, apellido, teléfono o mail"
               oninput="renderHermanosLista()"
             />
-            <button id="hermanosBtnNuevo" type="button" onclick="abrirNuevoHermano()">
-              ➕ Nuevo registro
-            </button>
+${window.__ES_ADMIN ? `
+  <button id="hermanosBtnNuevo" type="button" onclick="abrirNuevoHermano()">
+    ➕ Nuevo registro
+  </button>
+` : ``}
           </div>
         </div>
 
@@ -833,17 +854,33 @@ window.renderHermanosLista = () => {
           </div>
         </div>
 
-        <div class="hermano-acciones">
-          <button type="button" onclick="editarHermano('${h.id}')">Editar</button>
-          <button type="button" onclick="enviarHermanoPorWhatsApp('${h.id}')">WhatsApp</button>
-          <button type="button" onclick="borrarHermano('${h.id}')">Borrar</button>
-        </div>
+<div class="hermano-acciones">
+  ${window.__ES_ADMIN ? `<button type="button" onclick="editarHermano('${h.id}')">Editar</button>` : ``}
+  <button type="button" onclick="enviarHermanoPorWhatsApp('${h.id}')">WhatsApp</button>
+  ${window.__ES_ADMIN ? `<button type="button" onclick="borrarHermano('${h.id}')">Borrar</button>` : ``}
+</div>
       </div>
     `;
   }).join("");
 };
 
 window.abrirNuevoHermano = () => {
+  if (!window.__ES_ADMIN) {
+    alert("Solo los administradores pueden crear registros.");
+    return;
+  }
+
+  hermanoEditId = null;
+
+  const titulo = document.getElementById("tituloModalHermano");
+  const modal = document.getElementById("modalHermano");
+  const form = document.getElementById("formHermano");
+
+  if (titulo) titulo.textContent = "Nuevo hermano";
+  if (form) form.reset();
+  if (modal) modal.style.display = "flex";
+};
+
   hermanoEditId = null;
 
   const titulo = document.getElementById("tituloModalHermano");
@@ -856,6 +893,11 @@ window.abrirNuevoHermano = () => {
 };
 
 window.editarHermano = (id) => {
+  if (!window.__ES_ADMIN) {
+    alert("Solo los administradores pueden editar registros.");
+    return;
+  }
+
   const item = hermanosCache.find(x => x.id === id);
   if (!item) return;
 
@@ -899,8 +941,12 @@ window.cerrarModalHermanoFondo = (e) => {
 window.guardarHermano = async (e) => {
   e.preventDefault();
 
-  const db = window.__FB?.db; // ✅ CLAVE
+  if (!window.__ES_ADMIN) {
+    alert("Solo los administradores pueden guardar registros.");
+    return;
+  }
 
+  const db = window.__FB?.db;
   if (!db) {
     alert("Firebase no está listo");
     return;
@@ -933,19 +979,16 @@ window.guardarHermano = async (e) => {
 
     if (hermanoEditId) {
       const actual = hermanosCache.find(x => x.id === hermanoEditId);
-
       await set(ref(db, `hermanos/${hermanoEditId}`), {
         ...data,
         ts: actual?.ts || Date.now()
       });
-
     } else {
       const nuevoRef = push(ref(db, "hermanos"));
       await set(nuevoRef, data);
     }
 
     cerrarModalHermano();
-
   } catch (err) {
     console.error(err);
     alert("No pude guardar el registro.");
@@ -958,6 +1001,17 @@ window.guardarHermano = async (e) => {
 };
 
 window.borrarHermano = async (id) => {
+  if (!window.__ES_ADMIN) {
+    alert("Solo los administradores pueden borrar registros.");
+    return;
+  }
+
+  const db = window.__FB?.db;
+  if (!db) {
+    alert("Firebase no está listo");
+    return;
+  }
+
   const item = hermanosCache.find(x => x.id === id);
   if (!item) return;
 
@@ -991,4 +1045,278 @@ window.enviarHermanoPorWhatsApp = (id) => {
 
   const url = `https://wa.me/?text=${encodeURIComponent(texto)}`;
   window.open(url, "_blank");
+};
+
+// ================= PERMISOS - MÓDULO =================
+
+let permisosIniciado = false;
+let permisosUsuarios = [];
+let permisosAdmins = {};
+let permisosColaboradores = {};
+
+window.mostrarPermisos = async () => {
+  const cont = document.getElementById("permisosApp");
+  if (!cont) return;
+
+  if (!window.__ES_ADMIN) {
+    cont.innerHTML = `<div style="padding:20px; text-align:center;">Solo administradores.</div>`;
+    return;
+  }
+
+  if (!permisosIniciado) {
+    cont.innerHTML = `
+      <style>
+        #permisosWrap{
+          max-width:980px;
+          margin:0 auto;
+          padding:10px 12px 18px;
+        }
+
+        #permisosTop{
+          display:flex;
+          justify-content:space-between;
+          align-items:center;
+          gap:10px;
+          flex-wrap:wrap;
+          margin-bottom:12px;
+        }
+
+        #permisosTop h3{
+          margin:0;
+          font-size:22px;
+          line-height:1.1;
+        }
+
+        #permisosBuscar{
+          min-width:240px;
+          max-width:320px;
+          width:100%;
+          border:1px solid rgba(0,0,0,.14);
+          border-radius:999px;
+          padding:10px 14px;
+          outline:none;
+          font-size:14px;
+        }
+
+        #permisosLista{
+          display:grid;
+          gap:12px;
+        }
+
+        .permiso-card{
+          background:#fff;
+          border:1px solid rgba(0,0,0,.10);
+          border-radius:16px;
+          padding:14px;
+          box-shadow:0 2px 10px rgba(0,0,0,.04);
+        }
+
+        body.oscuro .permiso-card{
+          background:#fff;
+          color:#000;
+        }
+
+        .permiso-top{
+          display:flex;
+          justify-content:space-between;
+          gap:12px;
+          flex-wrap:wrap;
+          align-items:flex-start;
+          margin-bottom:10px;
+        }
+
+        .permiso-nombre{
+          font-size:18px;
+          font-weight:700;
+          line-height:1.2;
+        }
+
+        .permiso-mail{
+          font-size:13px;
+          opacity:.8;
+          margin-top:4px;
+          word-break:break-word;
+        }
+
+        .permiso-estado{
+          font-size:13px;
+          font-weight:700;
+          border-radius:999px;
+          padding:6px 10px;
+          background:rgba(0,0,0,.06);
+        }
+
+        .permiso-acciones{
+          display:flex;
+          gap:8px;
+          flex-wrap:wrap;
+        }
+
+        .permiso-acciones button{
+          border:none;
+          cursor:pointer;
+          border-radius:999px;
+          padding:8px 12px;
+          background:var(--ui-azul-claro, #bcdcff);
+          color:#000;
+          font-weight:700;
+        }
+
+        #permisosVacio{
+          padding:18px;
+          text-align:center;
+          border:1px dashed rgba(0,0,0,.18);
+          border-radius:16px;
+          background:#fff;
+        }
+
+        @media (max-width: 640px){
+          #permisosWrap{
+            padding:8px 10px 16px;
+          }
+
+          #permisosBuscar{
+            min-width:0;
+            max-width:none;
+          }
+        }
+      </style>
+
+      <div id="permisosWrap">
+        <div id="permisosTop">
+          <h3>Permisos</h3>
+          <input
+            id="permisosBuscar"
+            type="text"
+            placeholder="Buscar por nombre o mail"
+            oninput="renderPermisosLista()"
+          />
+        </div>
+
+        <div id="permisosLista"></div>
+      </div>
+    `;
+
+    permisosIniciado = true;
+  }
+
+  iniciarEscuchaPermisos();
+};
+
+function iniciarEscuchaPermisos() {
+  const db = window.__FB?.db;
+  if (!db) return;
+
+  onValue(ref(db, "usuarios"), (snap) => {
+    const val = snap.val() || {};
+    permisosUsuarios = Object.values(val || {}).sort((a, b) => {
+      const na = String(a?.nombre || "").toLowerCase();
+      const nb = String(b?.nombre || "").toLowerCase();
+      return na.localeCompare(nb, "es");
+    });
+    renderPermisosLista();
+  });
+
+  onValue(ref(db, "admins"), (snap) => {
+    permisosAdmins = snap.val() || {};
+    renderPermisosLista();
+  });
+
+  onValue(ref(db, "colaboradores"), (snap) => {
+    permisosColaboradores = snap.val() || {};
+    renderPermisosLista();
+  });
+}
+
+function rolUsuario(uid) {
+  if (permisosAdmins?.[uid] === true) return "Admin";
+  if (permisosColaboradores?.[uid] === true) return "Colaborador";
+  return "Usuario";
+}
+
+window.renderPermisosLista = () => {
+  const lista = document.getElementById("permisosLista");
+  const buscador = document.getElementById("permisosBuscar");
+  if (!lista) return;
+
+  const q = String(buscador?.value || "").trim().toLowerCase();
+
+  const items = !q
+    ? permisosUsuarios
+    : permisosUsuarios.filter(u => {
+        const bag = [
+          u?.nombre || "",
+          u?.email || "",
+          u?.uid || ""
+        ].join(" ").toLowerCase();
+        return bag.includes(q);
+      });
+
+  if (!items.length) {
+    lista.innerHTML = `<div id="permisosVacio">No encontré usuarios.</div>`;
+    return;
+  }
+
+  lista.innerHTML = items.map(u => {
+    const uid = u.uid || "";
+    const estado = rolUsuario(uid);
+
+    return `
+      <div class="permiso-card">
+        <div class="permiso-top">
+          <div>
+            <div class="permiso-nombre">${hEscape(u.nombre || "Sin nombre")}</div>
+            <div class="permiso-mail">${hEscape(u.email || "Sin mail")}</div>
+          </div>
+
+          <div class="permiso-estado">${estado}</div>
+        </div>
+
+        <div class="permiso-acciones">
+          <button type="button" onclick="hacerUsuarioNormal('${uid}')">Usuario</button>
+          <button type="button" onclick="hacerColaborador('${uid}')">Colaborador</button>
+          <button type="button" onclick="hacerAdmin('${uid}')">Admin</button>
+        </div>
+      </div>
+    `;
+  }).join("");
+};
+
+window.hacerUsuarioNormal = async (uidTarget) => {
+  const db = window.__FB?.db;
+  if (!db || !uidTarget) return;
+
+  try {
+    await remove(ref(db, `admins/${uidTarget}`));
+    await remove(ref(db, `colaboradores/${uidTarget}`));
+  } catch (e) {
+    console.error(e);
+    alert("No pude cambiar el rol a usuario.");
+  }
+};
+
+window.hacerColaborador = async (uidTarget) => {
+  const db = window.__FB?.db;
+  if (!db || !uidTarget) return;
+
+  try {
+    await remove(ref(db, `admins/${uidTarget}`));
+    await set(ref(db, `colaboradores/${uidTarget}`), true);
+  } catch (e) {
+    console.error(e);
+    alert("No pude cambiar el rol a colaborador.");
+  }
+};
+
+window.hacerAdmin = async (uidTarget) => {
+  const db = window.__FB?.db;
+  if (!db || !uidTarget) return;
+
+  try {
+    await remove(ref(db, `colaboradores/${uidTarget}`));
+    await set(ref(db, `admins/${uidTarget}`), true);
+  } catch (e) {
+    console.error(e);
+    alert("No pude cambiar el rol a admin.");
+  }
 };
