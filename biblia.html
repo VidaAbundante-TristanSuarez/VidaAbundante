@@ -1037,7 +1037,13 @@
 
       <!-- COLOR FONDO -->
       <label style="font-size:13px;">Color de fondo</label>
-      <input type="color" id="colorFondoApp">
+<input id="colorFondoApp" type="hidden" value="#ffffff">
+<button
+  type="button"
+  id="colorFondoAppHost"
+  class="pickr-host"
+  data-target="#colorFondoApp"
+  aria-label="Color de fondo app"></button>
 
       <button class="btn-primary" onclick="aplicarColorFondo()">
         Aplicar color
