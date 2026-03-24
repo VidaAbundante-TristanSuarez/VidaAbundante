@@ -7,7 +7,7 @@ const RH_TEMAS = [
     audio: "materiales/RH/El Paralítico de Betesda.mp3"
   },
   {
-    titulo: "El Paralítico de Betesda",
+    titulo: "¿Estamos preparados para el milagro?",
     html: "materiales/RH/Estamos preparados para el milagro.html",
     audio: "materiales/RH/Estamos preparados para el milagro.mp3"
   }
