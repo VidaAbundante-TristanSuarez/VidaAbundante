@@ -225,7 +225,7 @@ body.oscuro #titulo{
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  margin-left: 2px;
+  margin-left: 4px;
 }
 
 .btn-version-inline{
