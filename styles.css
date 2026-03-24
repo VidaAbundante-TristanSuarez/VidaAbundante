@@ -159,7 +159,7 @@ body.oscuro .nav-btn.activo i{
 
 #barraTituloBiblia h3{
   margin: 0;                   /* 👈 elimina espacio extra */
-  padding: 2px 0 0 20px;          /* 👈 pequeño respiro arriba */
+  padding: 2px 0 0 0px;          /* 👈 pequeño respiro arriba */
     font-weight: 800;
   font-size: 17px;             /* 👈 podés bajar si querés */
   color: #000;
@@ -178,7 +178,7 @@ body.oscuro #barraTituloBiblia{
  }
 
 #titulo{
-  margin: 0;
+  margin: 0 auto;
   padding: 6px 12px;
   min-height: 38px;
   display: inline-flex;
@@ -273,6 +273,16 @@ body.oscuro .btn-version-inline.activo{
     background: var(--ui-azul-hover);
     color:#fff;
   }
+}
+
+#barraTituloBiblia{
+  position: relative;
+}
+
+#titulo{
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
   /* ================= BOTONES FILTROS (marcadores) ================= */
