@@ -184,7 +184,8 @@ body.oscuro #barraTituloBiblia{
   display: inline-flex;
   align-items: center;
   gap: 10px;
-
+  justify-content: center;   /* 🔥 clave */
+  
   font-family: "Lora", serif;
   font-weight: 700;
   font-size: 17px;
