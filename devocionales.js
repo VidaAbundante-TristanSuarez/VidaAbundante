@@ -2672,16 +2672,21 @@ function devAsegurarModalOracion(){
 
       <h3 style="margin:0 0 12px; text-align:center;">🙏</h3>
 
-      <div style="
-        display:flex;
-        align-items:center;
-        gap:10px;
-        margin-bottom:10px;
-      ">
-        <label style="font-size:13px; font-weight:700;">Color</label>
-        <input type="color" id="devOracionColor" value="#fff4b8"
-          style="width:42px; height:32px; padding:0; border:none; background:none;">
-      </div>
+<div style="
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-bottom:10px;
+">
+  <label style="font-size:13px; font-weight:700;">Color</label>
+  <input id="devOracionColor" type="hidden" value="#fff4b8">
+  <button
+    type="button"
+    id="devOracionColorHost"
+    class="pickr-host"
+    data-target="#devOracionColor"
+    aria-label="Color oración"></button>
+</div>
 
       <textarea
         id="devOracionTexto"
@@ -2762,6 +2767,9 @@ window.devAbrirModalOracion = function(uidOwner, tsKey){
   abrirModal("modalDevOracion");
 
   setTimeout(()=>{
+    if (typeof window.initPickrEnHosts === "function") {
+      window.initPickrEnHosts("#devOracionColorHost");
+    }
     document.getElementById("devOracionTexto")?.focus();
   }, 80);
 };
