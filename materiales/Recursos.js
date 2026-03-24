@@ -20,9 +20,11 @@ let rhIniciado = false;
 window.mostrarRecursosSub = async (sub) => {
   const rh = document.getElementById("recursos-rh");
   const talleres = document.getElementById("recursos-talleres");
+  const hermanos = document.getElementById("recursos-hermanos");
 
   if (rh) rh.style.display = (sub === "rh") ? "block" : "none";
   if (talleres) talleres.style.display = (sub === "talleres") ? "block" : "none";
+  if (hermanos) hermanos.style.display = (sub === "hermanos") ? "block" : "none";
 
   const wrap = document.getElementById("iglesia-recursos");
   if (wrap) {
@@ -33,6 +35,10 @@ window.mostrarRecursosSub = async (sub) => {
 
   if (sub === "rh") {
     await mostrarRH();
+  }
+
+  if (sub === "hermanos") {
+    await mostrarHermanos();
   }
 };
 
@@ -270,3 +276,169 @@ if (audio) {
     console.error(e);
   }
 }
+
+let hermanosIniciado = false;
+
+window.mostrarHermanos = async () => {
+  const cont = document.getElementById("hermanosApp");
+  if (!cont) return;
+
+  if (!hermanosIniciado) {
+    cont.innerHTML = `
+      <style>
+        #hermanosWrap{
+          max-width: 980px;
+          margin: 0 auto;
+          padding: 10px 12px 18px;
+        }
+
+        #hermanosTop{
+          display:flex;
+          align-items:center;
+          justify-content:space-between;
+          gap:10px;
+          padding: 8px 0 12px;
+          flex-wrap:wrap;
+        }
+
+        #hermanosTop h3{
+          margin:0;
+          font-size:22px;
+          line-height:1.1;
+        }
+
+        #hermanosBtnNuevo{
+          border:none;
+          cursor:pointer;
+          border-radius:999px;
+          padding:10px 14px;
+          background: var(--ui-azul-claro, #bcdcff);
+          color:#000;
+          font-weight:700;
+        }
+
+        #hermanosLista{
+          display:grid;
+          gap:12px;
+        }
+
+        .hermano-card{
+          background:#fff;
+          border:1px solid rgba(0,0,0,.10);
+          border-radius:14px;
+          padding:14px;
+          overflow:hidden;
+        }
+
+        body.oscuro .hermano-card{
+          background:#fff;
+          color:#000;
+          border-color: rgba(0,0,0,.12);
+        }
+
+        .hermano-nombre{
+          font-size:18px;
+          font-weight:700;
+          line-height:1.2;
+          margin-bottom:8px;
+        }
+
+        .hermano-datos{
+          display:grid;
+          gap:6px;
+          font-size:14px;
+          line-height:1.45;
+        }
+
+        .hermano-acciones{
+          display:flex;
+          gap:8px;
+          flex-wrap:wrap;
+          margin-top:12px;
+        }
+
+        .hermano-acciones button{
+          border:none;
+          cursor:pointer;
+          border-radius:999px;
+          padding:8px 12px;
+          background: var(--ui-azul-claro, #bcdcff);
+          color:#000;
+          font-weight:700;
+        }
+
+        @media (max-width: 640px){
+          #hermanosWrap{
+            max-width:100%;
+            margin:0;
+            padding:8px 10px 16px;
+          }
+
+          #hermanosTop{
+            align-items:stretch;
+          }
+
+          #hermanosBtnNuevo{
+            width:100%;
+          }
+        }
+      </style>
+
+      <div id="hermanosWrap">
+
+        <div id="hermanosTop">
+          <h3>Hermanos</h3>
+          <button id="hermanosBtnNuevo" type="button" onclick="abrirNuevoHermano()">
+            ➕ Nuevo registro
+          </button>
+        </div>
+
+        <div id="hermanosLista"></div>
+
+      </div>
+    `;
+
+    renderHermanosDemo();
+    hermanosIniciado = true;
+  }
+};
+
+function renderHermanosDemo() {
+  const lista = document.getElementById("hermanosLista");
+  if (!lista) return;
+
+  const hermanosDemo = [
+    {
+      nombre: "Nombre",
+      apellido: "Apellido",
+      direccion: "—",
+      telefono: "—",
+      pedidos: "—",
+      notas: "—",
+      mail: "—"
+    }
+  ];
+
+  lista.innerHTML = hermanosDemo.map(h => `
+    <div class="hermano-card">
+      <div class="hermano-nombre">${h.nombre} ${h.apellido}</div>
+
+      <div class="hermano-datos">
+        <div><strong>Dirección:</strong> ${h.direccion || "—"}</div>
+        <div><strong>Teléfono:</strong> ${h.telefono || "—"}</div>
+        <div><strong>Mail:</strong> ${h.mail || "—"}</div>
+        <div><strong>Pedidos de oración:</strong> ${h.pedidos || "—"}</div>
+        <div><strong>Notas:</strong> ${h.notas || "—"}</div>
+      </div>
+
+      <div class="hermano-acciones">
+        <button type="button" onclick="alert('Luego armamos editar');">Editar</button>
+        <button type="button" onclick="alert('Luego armamos WhatsApp');">WhatsApp</button>
+      </div>
+    </div>
+  `).join("");
+}
+
+window.abrirNuevoHermano = () => {
+  alert("Ahora el próximo paso es armar el formulario real de Hermanos.");
+};
