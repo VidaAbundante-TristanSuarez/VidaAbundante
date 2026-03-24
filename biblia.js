@@ -4709,24 +4709,33 @@ function obtenerSeccionesFondoApp() {
   return [
     document.getElementById("seccion-biblia"),
     document.getElementById("seccion-iglesia"),
+    document.getElementById("iglesia-devocionales"),
+    document.getElementById("iglesia-abc"),
+    document.getElementById("iglesia-subidos"),
+    document.getElementById("subidosApp"),
+    document.getElementById("iglesia-recursos"),
     document.getElementById("seccion-panel"),
+    document.getElementById("panel-imagenes"),
+    document.getElementById("panel-marcadores"),
     document.getElementById("seccion-compartidos")
   ].filter(Boolean);
 }
 
 function aplicarFondoColorEnSecciones(color) {
   obtenerSeccionesFondoApp().forEach(el => {
+    el.style.background = "none";
     el.style.backgroundImage = "none";
     el.style.backgroundColor = color;
-    el.style.backgroundRepeat = "";
-    el.style.backgroundPosition = "";
-    el.style.backgroundSize = "";
-    el.style.backgroundAttachment = "";
+    el.style.backgroundRepeat = "no-repeat";
+    el.style.backgroundPosition = "center center";
+    el.style.backgroundSize = "cover";
+    el.style.backgroundAttachment = "scroll";
   });
 }
 
 function aplicarFondoImagenEnSecciones(url) {
   obtenerSeccionesFondoApp().forEach(el => {
+    el.style.background = "none";
     el.style.backgroundImage = `url("${url}")`;
     el.style.backgroundColor = "transparent";
     el.style.backgroundRepeat = "no-repeat";
