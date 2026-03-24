@@ -4695,32 +4695,74 @@ window.eliminarImagenPanel = async (id) => {
 
 // ================= MODAL TEMA =================
 window.abrirModalTema = () => {
-  document.getElementById("modalTema").style.display = "flex";
+  const modal = document.getElementById("modalTema");
+  if (modal) modal.style.display = "flex";
 };
 
 window.cerrarModalTema = () => {
-  document.getElementById("modalTema").style.display = "none";
+  const modal = document.getElementById("modalTema");
+  if (modal) modal.style.display = "none";
 };
+
+// ================= HELPERS FONDO APP =================
+function obtenerSeccionesFondoApp() {
+  return [
+    document.getElementById("seccion-biblia"),
+    document.getElementById("seccion-iglesia"),
+    document.getElementById("seccion-panel"),
+    document.getElementById("seccion-compartidos")
+  ].filter(Boolean);
+}
+
+function aplicarFondoColorEnSecciones(color) {
+  obtenerSeccionesFondoApp().forEach(el => {
+    el.style.backgroundImage = "none";
+    el.style.backgroundColor = color;
+    el.style.backgroundRepeat = "";
+    el.style.backgroundPosition = "";
+    el.style.backgroundSize = "";
+    el.style.backgroundAttachment = "";
+  });
+}
+
+function aplicarFondoImagenEnSecciones(url) {
+  obtenerSeccionesFondoApp().forEach(el => {
+    el.style.backgroundImage = `url("${url}")`;
+    el.style.backgroundColor = "transparent";
+    el.style.backgroundRepeat = "no-repeat";
+    el.style.backgroundPosition = "center center";
+    el.style.backgroundSize = "cover";
+    el.style.backgroundAttachment = "scroll";
+  });
+}
 
 // ================= COLOR FONDO =================
 window.aplicarColorFondo = () => {
-  const color = document.getElementById("colorFondoApp").value;
-  document.body.style.background = color;
+  const input = document.getElementById("colorFondoApp");
+  if (!input) return;
+
+  const color = input.value || "#ffffff";
+
+  aplicarFondoColorEnSecciones(color);
 
   localStorage.setItem("fondoApp", color);
+  localStorage.setItem("fondoTipo", "color");
 };
 
 // ================= IMAGEN FONDO =================
 window.aplicarImagenFondo = () => {
   const input = document.getElementById("imgFondoApp");
+  if (!input || !input.files || !input.files[0]) return;
+
   const file = input.files[0];
-  if (!file) return;
-
   const reader = new FileReader();
-  reader.onload = function(e) {
-    const url = e.target.result;
 
-    document.body.style.background = `url(${url}) center/cover no-repeat fixed`;
+  reader.onload = function(e) {
+    const url = e?.target?.result;
+    if (!url) return;
+
+    aplicarFondoImagenEnSecciones(url);
+
     localStorage.setItem("fondoApp", url);
     localStorage.setItem("fondoTipo", "imagen");
   };
@@ -4736,8 +4778,8 @@ window.addEventListener("load", () => {
   if (!fondo) return;
 
   if (tipo === "imagen") {
-    document.body.style.background = `url(${fondo}) center/cover no-repeat fixed`;
+    aplicarFondoImagenEnSecciones(fondo);
   } else {
-    document.body.style.background = fondo;
+    aplicarFondoColorEnSecciones(fondo);
   }
 });
