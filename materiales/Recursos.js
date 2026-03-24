@@ -881,17 +881,6 @@ window.abrirNuevoHermano = () => {
   if (modal) modal.style.display = "flex";
 };
 
-  hermanoEditId = null;
-
-  const titulo = document.getElementById("tituloModalHermano");
-  const modal = document.getElementById("modalHermano");
-  const form = document.getElementById("formHermano");
-
-  if (titulo) titulo.textContent = "Nuevo hermano";
-  if (form) form.reset();
-  if (modal) modal.style.display = "flex";
-};
-
 window.editarHermano = (id) => {
   if (!window.__ES_ADMIN) {
     alert("Solo los administradores pueden editar registros.");
