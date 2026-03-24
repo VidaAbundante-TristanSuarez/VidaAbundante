@@ -1,3 +1,13 @@
+import {
+  getDatabase,
+  ref,
+  set,
+  remove,
+  onValue,
+  get,
+  push
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
 // ================= RECURSOS - MÓDULO =================
 
 const RH_TEMAS = [
