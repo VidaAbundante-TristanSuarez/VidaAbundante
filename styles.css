@@ -1344,8 +1344,9 @@ body.oscuro .fila-final button:hover{
   color: #fff;
 }
 
-/* ================= BOTÓN MODO OSCURO (REDONDO + ANIMADO) /* 🌙 Modo oscuro ================= */
-#header button[onclick="toggleTema()"] {
+/* ================= FONDO ELEGIBLE NUEVO ================= */
+#header button[onclick="toggleTema()"],
+#header button[onclick="abrirModalTema()"] {
   width: 28px;
   height: 28px;
 
@@ -1370,20 +1371,23 @@ body.oscuro .fila-final button:hover{
 }
 
 /* Hover */
-#header button[onclick="toggleTema()"]:hover {
+#header button[onclick="toggleTema()"]:hover,
+#header button[onclick="abrirModalTema()"]:hover {
   background: var(--ui-azul-hover);
   color: #fff;
   transform: scale(1.05);
 }
 
 /* 🌙 Modo oscuro */
-body.oscuro #header button[onclick="toggleTema()"] {
+body.oscuro #header button[onclick="toggleTema()"],
+body.oscuro #header button[onclick="abrirModalTema()"] {
   background: #d1eeff;
   color: #000;
 }
 
 /* ✨ Animación al cambiar de modo */
-#header button[onclick="toggleTema()"].animar {
+#header button[onclick="toggleTema()"].animar,
+#header button[onclick="abrirModalTema()"].animar {
   transform: rotate(360deg);
 }
 
