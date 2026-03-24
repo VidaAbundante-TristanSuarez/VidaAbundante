@@ -894,6 +894,13 @@ window.cerrarModalHermanoFondo = (e) => {
 window.guardarHermano = async (e) => {
   e.preventDefault();
 
+  const db = window.__FB?.db; // ✅ CLAVE
+
+  if (!db) {
+    alert("Firebase no está listo");
+    return;
+  }
+
   const btn = document.getElementById("btnGuardarHermano");
 
   const data = hNormalizarRegistro({
@@ -921,16 +928,19 @@ window.guardarHermano = async (e) => {
 
     if (hermanoEditId) {
       const actual = hermanosCache.find(x => x.id === hermanoEditId);
+
       await set(ref(db, `hermanos/${hermanoEditId}`), {
         ...data,
         ts: actual?.ts || Date.now()
       });
+
     } else {
       const nuevoRef = push(ref(db, "hermanos"));
       await set(nuevoRef, data);
     }
 
     cerrarModalHermano();
+
   } catch (err) {
     console.error(err);
     alert("No pude guardar el registro.");
