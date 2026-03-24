@@ -509,20 +509,26 @@ body.oscuro .panel-tabs{
     }
 
 /* ================= BARRA DE ACCIONES ================= */
-   .barra-acciones {
-   position: sticky;
-   bottom: 0;
-   z-index: 20;
+.barra-acciones {
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
 
-   display: flex;
-   align-items: center;
-   gap: 6px;
-   flex-wrap: wrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
 
-   padding: 8px;
-   background: #eafaff;
-   border-top: 1px solid #ddd;
-   }
+  padding: 8px 12px;
+  background: #eafaff;
+  border-top: 1px solid #ddd;
+
+  margin-left: -12px;
+  margin-right: -12px;
+  width: calc(100% + 24px);
+
+  box-sizing: border-box;
+}
 
    body.oscuro .barra-acciones {
    background: #1e1e1e;
@@ -535,6 +541,31 @@ body.oscuro .panel-tabs{
   border: none;
   cursor: pointer;
   }
+
+.barra-acciones .spacer{
+  flex: 1 1 auto;
+}
+
+.barra-acciones > button:last-of-type{
+  margin-left: auto;
+}
+
+@media (max-width: 640px){
+  .barra-acciones{
+    gap: 5px;
+    padding: 8px 10px;
+    margin-left: -12px;
+    margin-right: -12px;
+    width: calc(100% + 24px);
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+  }
+
+  .barra-acciones::-webkit-scrollbar{
+    display: none;
+  }
+}
 
 /* ================= MODO IMAGEN ================= */
     /* Cuando está activo el modo imagen */
