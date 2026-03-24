@@ -20,6 +20,11 @@ const RH_TEMAS = [
     titulo: "¿Estamos preparados para el milagro?",
     html: "materiales/RH/Estamos preparados para el milagro.html",
     audio: "materiales/RH/Estamos preparados para el milagro.mp3"
+  },
+   {
+    titulo: "El momento del milagro",
+    html: "materiales/RH/El momento del milagro.html",
+    audio: "materiales/RH/El momento del milagro.mp3"
   }
 ];
 
