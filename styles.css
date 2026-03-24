@@ -199,6 +199,7 @@ body.oscuro #barraTituloBiblia{
   cursor: pointer;
   user-select: none;
   transition: transform .08s ease, box-shadow .15s ease, background .15s ease;
+  text-align: center; /* 👈 por las dudas */
 }
 
 #titulo:active{
