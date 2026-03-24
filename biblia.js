@@ -4692,3 +4692,52 @@ window.eliminarImagenPanel = async (id) => {
   setInterval(actualizarBotonScrollTop, 500);
 })();
 
+
+// ================= MODAL TEMA =================
+window.abrirModalTema = () => {
+  document.getElementById("modalTema").style.display = "flex";
+};
+
+window.cerrarModalTema = () => {
+  document.getElementById("modalTema").style.display = "none";
+};
+
+// ================= COLOR FONDO =================
+window.aplicarColorFondo = () => {
+  const color = document.getElementById("colorFondoApp").value;
+  document.body.style.background = color;
+
+  localStorage.setItem("fondoApp", color);
+};
+
+// ================= IMAGEN FONDO =================
+window.aplicarImagenFondo = () => {
+  const input = document.getElementById("imgFondoApp");
+  const file = input.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const url = e.target.result;
+
+    document.body.style.background = `url(${url}) center/cover no-repeat fixed`;
+    localStorage.setItem("fondoApp", url);
+    localStorage.setItem("fondoTipo", "imagen");
+  };
+
+  reader.readAsDataURL(file);
+};
+
+// ================= CARGAR FONDO AL INICIAR =================
+window.addEventListener("load", () => {
+  const fondo = localStorage.getItem("fondoApp");
+  const tipo = localStorage.getItem("fondoTipo");
+
+  if (!fondo) return;
+
+  if (tipo === "imagen") {
+    document.body.style.background = `url(${fondo}) center/cover no-repeat fixed`;
+  } else {
+    document.body.style.background = fondo;
+  }
+});
