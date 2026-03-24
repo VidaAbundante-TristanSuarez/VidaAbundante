@@ -755,8 +755,16 @@ ${window.__ES_ADMIN ? `
 
 function iniciarEscuchaHermanos() {
   if (hermanosEscuchaActiva) return;
-  if (typeof db === "undefined") {
+
+  const db = window.__FB?.db;
+  if (!db) {
     console.warn("db no está disponible todavía");
+    return;
+  }
+
+  const { ref, onValue } = window.__FB_API || {};
+  if (!ref || !onValue) {
+    console.warn("Firebase API no está disponible todavía");
     return;
   }
 
@@ -764,6 +772,7 @@ function iniciarEscuchaHermanos() {
 
   onValue(hermanosRef, (snap) => {
     const val = snap.val() || {};
+
     hermanosCache = Object.entries(val).map(([id, item]) => ({
       id,
       ...hNormalizarRegistro(item)
@@ -773,12 +782,15 @@ function iniciarEscuchaHermanos() {
       const apA = (a.apellido || "").toLowerCase();
       const apB = (b.apellido || "").toLowerCase();
       if (apA !== apB) return apA.localeCompare(apB, "es");
+
       const noA = (a.nombre || "").toLowerCase();
       const noB = (b.nombre || "").toLowerCase();
       return noA.localeCompare(noB, "es");
     });
 
     renderHermanosLista();
+  }, (err) => {
+    console.error("Error leyendo hermanos:", err);
   });
 
   hermanosEscuchaActiva = true;
@@ -1194,7 +1206,16 @@ window.mostrarPermisos = async () => {
 
 function iniciarEscuchaPermisos() {
   const db = window.__FB?.db;
-  if (!db) return;
+  if (!db) {
+    console.warn("db no está disponible todavía");
+    return;
+  }
+
+  const { ref, onValue } = window.__FB_API || {};
+  if (!ref || !onValue) {
+    console.warn("Firebase API no está disponible todavía");
+    return;
+  }
 
   onValue(ref(db, "usuarios"), (snap) => {
     const val = snap.val() || {};
@@ -1204,6 +1225,8 @@ function iniciarEscuchaPermisos() {
       return na.localeCompare(nb, "es");
     });
     renderPermisosLista();
+  }, (err) => {
+    console.error("Error leyendo usuarios:", err);
   });
 
   onValue(ref(db, "admins"), (snap) => {
