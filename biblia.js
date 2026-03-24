@@ -254,8 +254,65 @@ let textStyle = {
   underline: false
 };
 
+// ================= REGISTRAR USUARIO ===================================
+async function registrarUsuarioActual(user) {
+  try {
+    if (!user?.uid) return;
+
+    const nombre =
+      user.displayName ||
+      user.email?.split("@")[0] ||
+      "Sin nombre";
+
+    const data = {
+      uid: user.uid,
+      nombre: nombre,
+      email: user.email || "",
+      ultimoAcceso: Date.now()
+    };
+
+    const snap = await get(ref(db, `usuarios/${user.uid}`));
+    const actual = snap.val() || {};
+
+    await set(ref(db, `usuarios/${user.uid}`), {
+      uid: user.uid,
+      nombre: actual.nombre || data.nombre,
+      email: actual.email || data.email,
+      ultimoAcceso: Date.now()
+    });
+  } catch (e) {
+    console.warn("No pude registrar usuario actual:", e);
+  }
+}
+
+window.actualizarPermisosUI = function () {
+  const esAdmin = !!window.__ES_ADMIN;
+  const esColaborador = !!window.__ES_COLABORADOR;
+  const puedeVerRecursos = esAdmin || esColaborador;
+
+  // si tenés botón/tab principal de Recursos, agregale este id en HTML:
+  // id="btnTabRecursos"
+  const btnTabRecursos = document.getElementById("btnTabRecursos");
+  if (btnTabRecursos) {
+    btnTabRecursos.style.display = puedeVerRecursos ? "inline-flex" : "none";
+  }
+
+  // si existe la sección ya abierta, la escondemos si no tiene permiso
+  const wrapRecursos = document.getElementById("iglesia-recursos");
+  if (wrapRecursos && !puedeVerRecursos) {
+    wrapRecursos.style.display = "none";
+  }
+
+  // botones ya existentes que dependían de admin
+  const btnDevNuevo = document.getElementById("btnDevNuevo");
+  if (btnDevNuevo) btnDevNuevo.style.display = esAdmin ? "inline-flex" : "none";
+
+  const btnSubidoNuevo = document.getElementById("btnSubidoNuevo");
+  if (btnSubidoNuevo) btnSubidoNuevo.style.display = esAdmin ? "inline-flex" : "none";
+};
+
 // ================= AUTH =====================================
-onAuthStateChanged(auth, user => {
+onAuthStateChanged(auth, async user => {
   uid = user ? user.uid : null;
 
   window.__UID = uid;
@@ -265,46 +322,94 @@ onAuthStateChanged(auth, user => {
     return;
   }
 
-    // ✅ cargar paleta de resaltadores del usuario
+  // ✅ registrar automáticamente al usuario que entró
+  await registrarUsuarioActual(user);
+
+  // ✅ roles globales
+  window.__ES_ADMIN = false;
+  window.__ES_COLABORADOR = false;
+
+  // ✅ cargar paleta de resaltadores del usuario
   sincronizarResaltadoresUsuario().then(() => {
     try { initResaltadorCompacto?.(); } catch(e){}
     try { actualizarUICandadoResaltador?.(); } catch(e){}
   });
-  
-    // ================= ✅ ADMIN FLAG GLOBAL =================
-  // Lee /admins/{uid} = true|false y lo guarda en window.__ES_ADMIN
-onValue(ref(db, "admins/" + uid), (s) => {
-  window.__ES_ADMIN = !!s.val();
-  actualizarPermisosUI();
+
+  // ✅ admin
+  onValue(ref(db, "admins/" + uid), (s) => {
+    window.__ES_ADMIN = !!s.val();
+    actualizarPermisosUI();
+  });
+
+  // ✅ colaborador
+  onValue(ref(db, "colaboradores/" + uid), (s) => {
+    window.__ES_COLABORADOR = !!s.val();
+    actualizarPermisosUI();
+  });
+
+  onValue(ref(db, "marcados/" + uid), s => {
+    marcados = s.val() || {};
+    mostrarTexto();
+  });
+
+  // ✅ Cargar imágenes del panel (personal)
+  onValue(ref(db, "panelImagenesPersonal/" + uid), s => {
+    const data = s.val() || {};
+    renderPanelImagenes(data);
+  });
+
+  // ✅ Cargar marcadores
+  onValue(ref(db, "marcadores/" + uid), s => {
+    marcadores = s.val() || {};
+
+    window.notasBibliaIndex = {};
+    window.notasBibliaPluma = {};
+    window.notasABCIndex = {};
+
+    notasBibliaIndex = window.notasBibliaIndex;
+    notasBibliaPluma = window.notasBibliaPluma;
+    notasABCIndex = window.notasABCIndex;
+
+    Object.entries(marcadores || {}).forEach(([idMarcador, m]) => {
+      const tieneNota = !!(m?.nota && String(m.nota).trim());
+      if (!tieneNota) return;
+
+      if (m?.origen === "abc") {
+        const bid = m?.abcBidLast || m?.abcBid || null;
+        if (bid) notasABCIndex[bid] = true;
+        return;
+      }
+
+      const libro = m?.libro;
+      const cap = Number(m?.capitulo);
+      const vers = Array.isArray(m?.versiculos) ? m.versiculos : [];
+
+      if (!libro || !cap || !vers.length) return;
+
+      const nums = vers.map(vn => Number(vn)).filter(n => !isNaN(n));
+      nums.forEach(n => {
+        notasBibliaIndex[`${libro}_${cap}_${n}`] = true;
+      });
+
+      const last = Math.max(...nums);
+      if (isFinite(last)) {
+        const idVersiculo = `${libro}_${cap}_${last}`;
+        notasBibliaPluma[idVersiculo] = idMarcador;
+      }
+    });
+
+    const panelMarcadores = document.getElementById("panel-marcadores");
+    if (panelMarcadores && panelMarcadores.offsetParent !== null) {
+      renderPanelMarcadores();
+    }
+
+    mostrarTexto();
+
+    if (typeof abcMarcarSeleccionUI === "function") {
+      abcMarcarSeleccionUI();
+    }
+  });
 });
-
-onValue(ref(db, "colaboradores/" + uid), (s) => {
-  window.__ES_COLABORADOR = !!s.val();
-  actualizarPermisosUI();
-});
-
-window.actualizarPermisosUI = function () {
-  const esAdmin = !!window.__ES_ADMIN;
-  const esColab = !!window.__ES_COLABORADOR;
-  const puedeVerRecursos = esAdmin || esColab;
-
-  // botones que ya dependían de admin
-  const btn = document.getElementById("btnDevNuevo");
-  if (btn) btn.style.display = esAdmin ? "inline-flex" : "none";
-
-  const btnSubidos = document.getElementById("btnSubidoNuevo");
-  if (btnSubidos) btnSubidos.style.display = esAdmin ? "inline-flex" : "none";
-
-  // pestaña / botón Recursos
-  const btnRecursos = document.getElementById("btnTabRecursos");
-  if (btnRecursos) btnRecursos.style.display = puedeVerRecursos ? "inline-flex" : "none";
-
-  // sección Recursos si ya está abierta
-  const seccionRecursos = document.getElementById("iglesia-recursos");
-  if (seccionRecursos) {
-    seccionRecursos.style.display = puedeVerRecursos ? seccionRecursos.style.display : "none";
-  }
-};
 
   onValue(ref(db, "marcados/" + uid), s => {
     marcados = s.val() || {};
