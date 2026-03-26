@@ -1596,7 +1596,7 @@ const fondosCategorias = {
 "https://res.cloudinary.com/dtjix485w/image/upload/v1774484858/Untitled_Project_15_lip2pz.jpg",
 "https://res.cloudinary.com/dtjix485w/image/upload/v1774484857/Untitled_Project_14_mfyw9o.jpg",
 "https://res.cloudinary.com/dtjix485w/image/upload/v1774484857/Untitled_Project_13_z1ibhs.jpg",
-"https://res.cloudinary.com/dtjix485w/image/upload/v1774484856/Untitled_Project_11_psvcts.jpg",
+"https://res.cloudinary.com/dtjix485w/image/upload/v1774484856/Untitled_Project_11_psvcts.jpg"
   ],
   acuarelas: [
 "https://res.cloudinary.com/dtjix485w/image/upload/v1757268584/Untitled_Project_yxah7e_cyvyi9",
