@@ -1621,7 +1621,6 @@ const fondosCategorias = {
   ],
 
   tarjetas: [
-    "./img/fondos/Tarjetas/Untitled_Project_10_dzbofe_bbmoxe.jpg",
     "./img/fondos/Tarjetas/Untitled_Project_12_oal95a.jpg",
     "./img/fondos/Tarjetas/Untitled_Project_1_arstzx_inkdoy.jpg",
     "./img/fondos/Tarjetas/Untitled_Project_2_wza5pr_rgvyrz.jpg",
