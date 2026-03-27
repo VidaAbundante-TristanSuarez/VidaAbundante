@@ -1,16 +1,89 @@
 // ================= ABC - MÓDULO =================
 
 const ABC_TEMAS = [
-  { titulo: "🤍", html: "ABC/INTRO.html", audio: "https://firebasestorage.googleapis.com/v0/b/vidaabundante-f118a.firebasestorage.app/o/ABC%2Fintro_abc.mp3?alt=media&token=c51321da-2f7f-4092-b90d-a61df6da671a" },
-  { titulo: "Salvación", html: "ABC/1 Salvación.html", audio: "https://firebasestorage.googleapis.com/v0/b/vidaabundante-f118a.firebasestorage.app/o/ABC%2F1%20Salvaci%C3%B3n.mp3?alt=media&token=7da0ae0f-da01-4a58-8ae0-5e0a037c8076" },
-  { titulo: "Pecado", html: "ABC/2 Pecado.html", audio: "https://firebasestorage.googleapis.com/v0/b/vidaabundante-f118a.firebasestorage.app/o/ABC%2F2%20Pecado.mp3?alt=media&token=54fe4210-37e9-4cf0-b0bf-c7f0564e881f" },
-  { titulo: "La Palabra", html: "ABC/3 La Palabra.html", audio: "https://firebasestorage.googleapis.com/v0/b/vidaabundante-f118a.firebasestorage.app/o/ABC%2F3%20La%20Palabra.mp3?alt=media&token=73fbd70f-e008-47de-b557-28fcd6a5ac36" },
-  { titulo: "La Oración", html: "ABC/4 La Oración.html", audio: "https://firebasestorage.googleapis.com/v0/b/vidaabundante-f118a.firebasestorage.app/o/ABC%2F4%20La%20Oraci%C3%B3n.mp3?alt=media&token=096b3b09-6179-4c80-8718-a800954907b3" },
-  { titulo: "Espíritu Santo", html: "ABC/5 Espíritu Santo.html", audio: "https://firebasestorage.googleapis.com/v0/b/vidaabundante-f118a.firebasestorage.app/o/ABC%2F5%20Esp%C3%ADritu%20Santo.mp3?alt=media&token=68ad750b-4449-433f-b7dc-be457879c61f" },
-  { titulo: "Bautismo", html: "ABC/6 Bautismo.html", audio: "https://firebasestorage.googleapis.com/v0/b/vidaabundante-f118a.firebasestorage.app/o/ABC%2F6%20Bautismo.mp3?alt=media&token=e85836f1-9f5d-42be-83de-93797cdf3c22" },
-  { titulo: "La Mayordomía", html: "ABC/7 La Mayordomía.html", audio: "https://firebasestorage.googleapis.com/v0/b/vidaabundante-f118a.firebasestorage.app/o/ABC%2F7%20La%20Mayordom%C3%ADa.mp3?alt=media&token=4994a81a-be99-4f39-8bd3-9888df880fcf" },
-  { titulo: "Evangelismo", html: "ABC/8 Evangelismo.html", audio: "https://firebasestorage.googleapis.com/v0/b/vidaabundante-f118a.firebasestorage.app/o/ABC%2F8%20Evangelismo.mp3?alt=media&token=4d197527-1f36-4378-9389-5e248e44533b" },
-  { titulo: "Visión de la iglesia", html: "ABC/9 La visión de la iglesia.html", audio: "https://firebasestorage.googleapis.com/v0/b/vidaabundante-f118a.firebasestorage.app/o/ABC%2F9%20La%20vision%20de%20la%20iglesia.mp3?alt=media&token=c81cd672-6fd8-46df-b086-e564fed73974" }
+  {
+    titulo: "🤍",
+    html: "ABC/INTRO.html",
+    audios: [
+      "https://github.com/VidaAbundante-TristanSuarez/vida-abundante-audios/releases/download/v1/INTRO.mp3"
+    ]
+  },
+  {
+    titulo: "Salvación",
+    html: "ABC/1 Salvación.html",
+    audios: [
+      "https://github.com/VidaAbundante-TristanSuarez/vida-abundante-audios/releases/download/v1/Salvacion.mp3"
+    ]
+  },
+  {
+    titulo: "Pecado",
+    html: "ABC/2 Pecado.html",
+    audios: [
+      "https://github.com/VidaAbundante-TristanSuarez/vida-abundante-audios/releases/download/v1/Pecado.mp3"
+    ]
+  },
+  {
+    titulo: "La Palabra",
+    html: "ABC/3 La Palabra.html",
+    audios: [
+      "https://github.com/VidaAbundante-TristanSuarez/vida-abundante-audios/releases/download/v1/La.palabra.1.mp3",
+      "https://github.com/VidaAbundante-TristanSuarez/vida-abundante-audios/releases/download/v1/La.palabra.2.mp3",
+      "https://github.com/VidaAbundante-TristanSuarez/vida-abundante-audios/releases/download/v1/La.palabra.3.mp3",
+      "https://github.com/VidaAbundante-TristanSuarez/vida-abundante-audios/releases/download/v1/La.palabra.Cuadro.mp3"
+    ]
+  },
+  {
+    titulo: "La Oración",
+    html: "ABC/4 La Oración.html",
+    audios: [
+      "https://github.com/VidaAbundante-TristanSuarez/vida-abundante-audios/releases/download/v1/La.oracion.1.mp3",
+      "https://github.com/VidaAbundante-TristanSuarez/vida-abundante-audios/releases/download/v1/La.oracion.2.mp3",
+      "https://github.com/VidaAbundante-TristanSuarez/vida-abundante-audios/releases/download/v1/La.oracion.3.mp3",
+      "https://github.com/VidaAbundante-TristanSuarez/vida-abundante-audios/releases/download/v1/La.oracion.4.mp3",
+      "https://github.com/VidaAbundante-TristanSuarez/vida-abundante-audios/releases/download/v1/La.oracion.5.mp3"
+    ]
+  },
+  {
+    titulo: "Espíritu Santo",
+    html: "ABC/5 Espíritu Santo.html",
+    audios: [
+      "https://github.com/VidaAbundante-TristanSuarez/vida-abundante-audios/releases/download/v1/Espiritu.Santo.1.mp3",
+      "https://github.com/VidaAbundante-TristanSuarez/vida-abundante-audios/releases/download/v1/Espiritu.Santo.2.mp3",
+      "https://github.com/VidaAbundante-TristanSuarez/vida-abundante-audios/releases/download/v1/Espiritu.Santo.3.mp3",
+      "https://github.com/VidaAbundante-TristanSuarez/vida-abundante-audios/releases/download/v1/Espiritu.Santo.4.mp3"
+    ]
+  },
+  {
+    titulo: "Bautismo",
+    html: "ABC/6 Bautismo.html",
+    audios: [
+      "https://github.com/VidaAbundante-TristanSuarez/vida-abundante-audios/releases/download/v1/Bautismo.1.mp3",
+      "https://github.com/VidaAbundante-TristanSuarez/vida-abundante-audios/releases/download/v1/Bautismo.2.mp3"
+    ]
+  },
+  {
+    titulo: "La Mayordomía",
+    html: "ABC/7 La Mayordomía.html",
+    audios: [
+      "https://github.com/VidaAbundante-TristanSuarez/vida-abundante-audios/releases/download/v1/Mayordomia.1.mp3",
+      "https://github.com/VidaAbundante-TristanSuarez/vida-abundante-audios/releases/download/v1/Mayordomia.2.mp3"
+    ]
+  },
+  {
+    titulo: "Evangelismo",
+    html: "ABC/8 Evangelismo.html",
+    audios: [
+      "https://github.com/VidaAbundante-TristanSuarez/vida-abundante-audios/releases/download/v1/Evangelismo.1.mp3",
+      "https://github.com/VidaAbundante-TristanSuarez/vida-abundante-audios/releases/download/v1/Evangelismo.2.mp3"
+    ]
+  },
+  {
+    titulo: "Visión de la iglesia",
+    html: "ABC/9 La visión de la iglesia.html",
+    audios: [
+      "https://github.com/VidaAbundante-TristanSuarez/vida-abundante-audios/releases/download/v1/La.vision.de.la.iglesia.mp3"
+    ]
+  }
 ];
 
 let abcIndex = 0;
@@ -19,6 +92,59 @@ let abcResaltadosCache = {}; // { bid: {color} }
 window.abcResaltadosCache = abcResaltadosCache;
 
 let abcBloqueadosKeep = new Set();
+
+let abcAudioParteIndex = 0;
+
+function abcAudioListaActual() {
+  const tema = ABC_TEMAS[abcIndex];
+  if (!tema) return [];
+  if (Array.isArray(tema.audios) && tema.audios.length) return tema.audios;
+  if (tema.audio) return [tema.audio];
+  return [];
+}
+
+function abcCargarParteAudio(idx, autoplay = false) {
+  const audio = document.getElementById("abcAudio");
+  if (!audio) return;
+
+  const lista = abcAudioListaActual();
+  if (!lista.length) {
+    audio.removeAttribute("src");
+    audio.load();
+    return;
+  }
+
+  const seguro = Math.max(0, Math.min(idx, lista.length - 1));
+  abcAudioParteIndex = seguro;
+
+  audio.src = lista[seguro];
+  audio.dataset.abcParte = String(seguro);
+  audio.dataset.abcTotalPartes = String(lista.length);
+
+  if (autoplay) {
+    const p = audio.play();
+    if (p && typeof p.catch === "function") p.catch(() => {});
+  }
+}
+
+function abcInstalarAutoplayPartes() {
+  const audio = document.getElementById("abcAudio");
+  if (!audio || audio.dataset.abcChainReady === "1") return;
+
+  audio.dataset.abcChainReady = "1";
+
+  audio.addEventListener("ended", () => {
+    const lista = abcAudioListaActual();
+    if (!lista.length) return;
+
+    const actual = Number(audio.dataset.abcParte || abcAudioParteIndex || 0);
+    const siguiente = actual + 1;
+
+    if (siguiente < lista.length) {
+      abcCargarParteAudio(siguiente, true);
+    }
+  });
+}
 
 // ✅ Esta es la que debe llamar mostrarIglesiaSub('abc')
 window.mostrarABC = async () => {
@@ -223,6 +349,7 @@ body.oscuro .abc-block .icono-nota{
     `;
 
     construirIndiceABC();
+    abcInstalarAutoplayPartes();
     abcIniciado = true;
 
     // ✅ IMPORTANTE: acá cargamos progreso y CORTAMOS para no cargar 2 veces
@@ -276,12 +403,12 @@ async function cargarABCTema(desdeIndice = false) {
 
   refrescarUIIndice();
 
-  const audio = document.getElementById("abcAudio");
-  if (audio) {
-    audio.src = tema.audio;
-    // si tocó un botón del índice, generalmente quiere escuchar/leer ya.
-    // no auto-play por respeto a navegador; pero dejamos listo.
-  }
+const audio = document.getElementById("abcAudio");
+if (audio) {
+  abcInstalarAutoplayPartes();
+  abcCargarParteAudio(0, false);
+  // queda lista la parte 1 del tema actual
+}
 
   const cont = document.getElementById("abcContenido");
   if (!cont) return;
