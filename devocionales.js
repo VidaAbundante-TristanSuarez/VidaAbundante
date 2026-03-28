@@ -306,7 +306,6 @@ async function blobToBase64(blob){
 async function subirImagenAR2DesdeWeb(fileBase64, fileName, contentType = "image/png"){
   const r = await fetch(R2_UPLOAD_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       fileBase64,
       fileName,
@@ -1029,7 +1028,10 @@ const texturasF2 = [
   { nombre: "Textura 2", url: "./img/texturas/TEXTURA2.png" },
   { nombre: "Textura 3", url: "./img/texturas/TEXTURA3.jfif" },
   { nombre: "Textura 4", url: "./img/texturas/TEXTURA4.jfif" },
-  { nombre: "Textura 5", url: "./img/texturas/TEXTURA5.jfif" }
+  { nombre: "Textura 5", url: "./img/texturas/TEXTURA5.jfif" },
+  { nombre: "Textura 6", url: "./img/texturas/TEXTURA6.png" },
+  { nombre: "Textura 7", url: "./img/texturas/TEXTURA7.png" },
+  { nombre: "Textura 8", url: "./img/texturas/TEXTURA8.png" }
 ];
 
 function cargarTexturasF2(){
