@@ -6,6 +6,8 @@
 const OCR_URL = "https://us-central1-vidaabundante-f118a.cloudfunctions.net/ocrDevocional";
 const GH_UPLOAD_URL = "https://us-central1-vidaabundante-f118a.cloudfunctions.net/subirAudioDevocionalGithub";
 const TTS_URL = "https://us-central1-vidaabundante-f118a.cloudfunctions.net/ttsAudio";
+const R2_UPLOAD_URL = "https://subirimagenr2-unrjggu7oq-uc.a.run.app";
+
 console.log("✅ devocionales.js cargó (module)", "VERSION 1");
 window.__DEV_DEVOCIONALES_LOADED__ = true;
 
@@ -299,6 +301,25 @@ async function blobToBase64(blob){
     };
     rd.readAsDataURL(blob);
   });
+}
+
+async function subirImagenAR2DesdeWeb(fileBase64, fileName, contentType = "image/png"){
+  const r = await fetch(R2_UPLOAD_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      fileBase64,
+      fileName,
+      contentType
+    })
+  });
+
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok || !data?.ok || !data?.url) {
+    throw new Error(data?.error || data?.detail || "No se pudo subir imagen a R2");
+  }
+
+  return data;
 }
 
 /* =========================================================
@@ -2285,34 +2306,31 @@ if (!pack?.base64 || !pack?.blob) {
 
 // ✅ SUBE LA IMAGEN SOLO UNA VEZ A STORAGE
 async function devSubirImagenBaseUnaVez(tsParam){
-  const fb = window.__FB;
-  const api = window.__FB_API;
-
-  if (!fb || !api || !window.__UID) {
-    throw new Error("Firebase no listo o usuario no logueado");
+  if (!window.__UID) {
+    alert("Debes iniciar sesión.");
+    throw new Error("Usuario no logueado");
   }
 
   const c = await renderFinalCanvasCaptureReal();
   if (!c) throw new Error("No se pudo renderizar el canvas final");
 
-  const uid = window.__UID;
   const ts = Number(tsParam) || Date.now();
   const fileName = `devocional_${ts}.png`;
-
-  // ✅ UNA sola ruta de storage para todos los destinos
- const storagePath = `devocionales_iglesia/${uid}/${fileName}`;
 
   const blob = await new Promise(res => c.toBlob(res, "image/png"));
   if (!blob) throw new Error("No se pudo convertir a PNG");
 
-  const { storage } = fb;
-  const { sRef, uploadBytes, getDownloadURL } = api;
+  const fileBase64 = await blobToBase64(blob);
 
-  const storageRef = sRef(storage, storagePath);
-  await uploadBytes(storageRef, blob, { contentType: "image/png" });
-  const url = await getDownloadURL(storageRef);
+  const subida = await subirImagenAR2DesdeWeb(fileBase64, fileName, "image/png");
 
-  return { ts, url, storagePath };
+  return {
+    ok: true,
+    ts,
+    url: subida.url,
+    storagePath: "",
+    dbPath: ""
+  };
 }
 
 // ✅ SOLO GUARDA REFERENCIA EN IGLESIA
