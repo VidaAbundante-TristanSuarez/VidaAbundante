@@ -659,6 +659,8 @@ window.devCerrarTodo = () => {
   ["modalDevFase0","modalDevFase1","modalDevFase2","modalDevFase3"].forEach(cerrarModal);
 
   DEV.audioOk = false;
+  DEV.requiereAudio = true;
+  DEV.subirAudioGithub = true;
   devSetFinalButtons(false);
 
   // ✅ volver al Home (NO recorte)
@@ -2005,8 +2007,9 @@ window.devIrFase3 = async () => {
   cerrarModal("modalDevFase2");
   abrirModal("modalDevFase3");
 
-  DEV.audioOk = false;
-  devSetFinalButtons(false);
+    DEV.audioOk = false;
+  devEnsureFase3Opciones();
+  devSetFinalButtons(DEV.requiereAudio ? false : true);
 
   devSetLoadingFase3(true, "⏳ Generando…");
 
@@ -2031,6 +2034,64 @@ window.devAudioDesdeFase3 = () => {
   // abre audio pero NO te saca de fase 3
   devAbrirAudio();
 };
+
+function devEnsureFase3Opciones(){
+  const box = $("devF3PreviewBox");
+  if (!box) return;
+
+  let panel = $("devF3Opciones");
+  if (!panel) {
+    panel = document.createElement("div");
+    panel.id = "devF3Opciones";
+    panel.style.display = "flex";
+    panel.style.flexDirection = "column";
+    panel.style.gap = "8px";
+    panel.style.padding = "10px 12px 4px";
+    panel.style.alignItems = "flex-start";
+
+    panel.innerHTML = `
+      <label style="display:flex; align-items:center; gap:8px; font-weight:700; cursor:pointer;">
+        <input type="checkbox" id="devChkRequiereAudio">
+        Requiere audio
+      </label>
+
+      <label style="display:flex; align-items:center; gap:8px; font-weight:700; cursor:pointer;">
+        <input type="checkbox" id="devChkSubirGithub">
+        Subir audio a GitHub
+      </label>
+    `;
+
+    box.parentNode.insertBefore(panel, box);
+
+    const chkReq = $("devChkRequiereAudio");
+    const chkGh  = $("devChkSubirGithub");
+
+    if (chkReq) {
+      chkReq.addEventListener("change", ()=>{
+        DEV.requiereAudio = !!chkReq.checked;
+        devSetFinalButtons(DEV.requiereAudio ? !!DEV.audioOk : true);
+
+        if (!DEV.requiereAudio) {
+          DEV.audioOk = false;
+        }
+      });
+    }
+
+    if (chkGh) {
+      chkGh.addEventListener("change", ()=>{
+        DEV.subirAudioGithub = !!chkGh.checked;
+      });
+    }
+  }
+
+  const chkReq = $("devChkRequiereAudio");
+  const chkGh  = $("devChkSubirGithub");
+
+  if (chkReq) chkReq.checked = !!DEV.requiereAudio;
+  if (chkGh)  chkGh.checked  = !!DEV.subirAudioGithub;
+
+  devSetFinalButtons(DEV.requiereAudio ? !!DEV.audioOk : true);
+}
 
 /* =========================================================
    10) CONTROLES UI (sliders, size, color, fondo)
