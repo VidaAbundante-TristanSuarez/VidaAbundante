@@ -2061,18 +2061,11 @@ function devEnsureFase3Opciones(){
         <input type="checkbox" id="devChkRequiereAudio">
         Requiere audio
       </label>
-
-      <label style="display:flex; align-items:center; gap:8px; font-weight:700; cursor:pointer;">
-        <input type="checkbox" id="devChkSubirGithub">
-        Subir audio a GitHub
-      </label>
     `;
 
     box.parentNode.insertBefore(panel, box);
 
     const chkReq = $("devChkRequiereAudio");
-    const chkGh  = $("devChkSubirGithub");
-
     if (chkReq) {
       chkReq.addEventListener("change", ()=>{
         DEV.requiereAudio = !!chkReq.checked;
@@ -2083,19 +2076,10 @@ function devEnsureFase3Opciones(){
         }
       });
     }
-
-    if (chkGh) {
-      chkGh.addEventListener("change", ()=>{
-        DEV.subirAudioGithub = !!chkGh.checked;
-      });
-    }
   }
 
   const chkReq = $("devChkRequiereAudio");
-  const chkGh  = $("devChkSubirGithub");
-
   if (chkReq) chkReq.checked = !!DEV.requiereAudio;
-  if (chkGh)  chkGh.checked  = !!DEV.subirAudioGithub;
 
   devSetFinalButtons(DEV.requiereAudio ? !!DEV.audioOk : true);
 }
@@ -2188,28 +2172,74 @@ function bindInputs(){
    11) AUDIO (bloquea botones hasta "Correcto")
    ========================================================= */
 window.devAbrirAudio = () => {
-  window.__AUDIO_VOICE_NAME = "es-US-Studio-B"; // ✅ DEVOCIONALES = STUDIO
-  window.__AUDIO_ORIGEN = "devocional";         // ✅ etiqueta opcional
+  window.__AUDIO_VOICE_NAME = "es-US-Studio-B";
+  window.__AUDIO_ORIGEN = "devocional";
 
-  // ✅ Texto completo y limpio para audio (ya armado al crear devocional)
   DEV.audioText = buildAudioFromParts(DEV.p1, DEV.p2);
 
   const ta = $("textoAudio");
   if (ta) ta.value = DEV.audioText;
-   
-   // abrir modal audio existente
+
   if (typeof window.abrirModalAudio === "function") {
     window.abrirModalAudio();
+
+    setTimeout(() => {
+      let box = $("devAudioGithubBox");
+      const host =
+        document.querySelector("#modalAudio .modal-contenido") ||
+        document.querySelector("#modalAudio .modal-box") ||
+        document.querySelector("#modalAudio .modal-body") ||
+        $("modalAudio");
+
+      if (!host) return;
+
+      if (!box) {
+        box = document.createElement("div");
+        box.id = "devAudioGithubBox";
+        box.style.display = "flex";
+        box.style.alignItems = "center";
+        box.style.gap = "8px";
+        box.style.padding = "10px 12px 4px";
+
+        box.innerHTML = `
+          <label style="display:flex; align-items:center; gap:8px; font-weight:700; cursor:pointer;">
+            <input type="checkbox" id="devChkSubirGithubAudio">
+            Subir audio a GitHub
+          </label>
+        `;
+
+        const audioEl =
+          document.querySelector("#modalAudio audio") ||
+          $("audioPreview");
+
+        if (audioEl && audioEl.parentNode) {
+          audioEl.parentNode.insertBefore(box, audioEl);
+        } else {
+          host.appendChild(box);
+        }
+
+        const chk = $("devChkSubirGithubAudio");
+        if (chk) {
+          chk.addEventListener("change", ()=>{
+            DEV.subirAudioGithub = !!chk.checked;
+          });
+        }
+      }
+
+      const chk = $("devChkSubirGithubAudio");
+      if (chk) chk.checked = !!DEV.subirAudioGithub;
+    }, 50);
+
     return;
   }
 
   // fallback (si no existe abrirModalAudio)
   const m = $("modalAudio");
-if (m) {
-  m.classList.add("abierto");
-  m.setAttribute("aria-hidden","false");
-  document.body.classList.add("modal-open");
-}
+  if (m) {
+    m.classList.add("abierto");
+    m.setAttribute("aria-hidden","false");
+    document.body.classList.add("modal-open");
+  }
 };
 
 // Hook: cuando se confirme audio (Correcto), habilitamos finales
