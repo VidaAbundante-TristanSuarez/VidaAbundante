@@ -71,6 +71,8 @@ const DEV = {
 
   // audio gate
   audioOk: false,
+  requiereAudio: true,
+  subirAudioGithub: true,
 
   // final image
   finalDataUrl: "",
@@ -1654,11 +1656,15 @@ function makeRoundedCanvas(srcCanvas, radius){
    8) FINAL 9:16 — CAPTURA REAL (COMO BIBLIA)
    ========================================================= */
 function setFinalCanvasDisabled(disabled){
-  ["devBtnDescargar","devBtnCompartir","devBtnPanelToggle","devBtnIglesia","devBtnFinalizar"].forEach(id=>{
+  ["devBtnDescargar","devBtnCompartir","devBtnPanelToggle","devBtnIglesia"].forEach(id=>{
     const b = $(id);
     if (b) b.disabled = disabled;
   });
+
+  const fin = $("devBtnFinalizar");
+  if (fin) fin.disabled = (!!DEV.requiereAudio && disabled);
 }
+
 function devSetFinalButtons(enabled){
   setFinalCanvasDisabled(!enabled);
 }
@@ -2271,16 +2277,18 @@ if (!pack?.base64 || !pack?.blob) {
   pack = { base64: data.audioBase64, blob };
 }
 
-    // 2) subir a GitHub
+    // 2) subir a GitHub (opcional)
     let gh = null;
-    try {
-      gh = await subirAudioAGithubDesdeWeb(pack.base64);
-      // si querés guardar la URL en DEV:
-      DEV.audioGithubUrl = gh.url || "";
-    } catch (e) {
-      console.warn("GitHub upload falló:", e);
-      // seguimos igual descargando local
-      alert("⚠️ No pude subir a GitHub, pero igual te lo descargo.\n\nDetalle: " + (e?.message || e));
+    if (DEV.subirAudioGithub) {
+      try {
+        gh = await subirAudioAGithubDesdeWeb(pack.base64);
+        DEV.audioGithubUrl = gh.url || "";
+      } catch (e) {
+        console.warn("GitHub upload falló:", e);
+        alert("⚠️ No pude subir a GitHub, pero igual te lo descargo.\n\nDetalle: " + (e?.message || e));
+      }
+    } else {
+      DEV.audioGithubUrl = "";
     }
 
     // 3) descargar local (siempre)
@@ -2416,8 +2424,13 @@ window.devFinalizar = async () => {
   try {
     const ts = Date.now(); // ✅ 1 solo TS para todo
 
-    // ✅ asegurar audio en GitHub antes de publicar
-    if (!DEV.audioGithubUrl) {
+    // ✅ si requiere audio, primero debe estar confirmado
+    if (DEV.requiereAudio && !DEV.audioOk) {
+      throw new Error("Primero confirmá el audio, o desactivá 'requiere audio'.");
+    }
+
+    // ✅ subir audio a GitHub solo si está activado
+    if (DEV.requiereAudio && DEV.subirAudioGithub && !DEV.audioGithubUrl) {
       try { await window.devDescargarFinal(); } catch (e) { console.warn(e); }
     }
 
