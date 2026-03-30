@@ -970,7 +970,10 @@ const adornosF2 = [
   { nombre: "Adorno 7", url: "./img/ornamentos/adorno7.png" },
   { nombre: "Adorno 8", url: "./img/ornamentos/adorno8.png" },
   { nombre: "Adorno 9", url: "./img/ornamentos/adorno9.png" },
-  { nombre: "Adorno 10", url: "./img/ornamentos/adorno10.png" }
+  { nombre: "Adorno 10", url: "./img/ornamentos/adorno10.png" },
+  { nombre: "Adorno 11", url: "./img/ornamentos/adorno11.png" },
+  { nombre: "Adorno 12", url: "./img/ornamentos/adorno12.png" }
+  { nombre: "Adorno 13", url: "./img/ornamentos/adorno13.png" }
 ];
 
 function cargarAdornosF2(){
@@ -1028,14 +1031,18 @@ function cargarAdornosF2(){
 
 const texturasF2 = [
   { nombre: "🔲", url: null },
-  { nombre: "Textura 1", url: "./img/texturas/TEXTURA1.jfif" },
+  { nombre: "Textura 1", url: "./img/texturas/TEXTURA1.png" },
   { nombre: "Textura 2", url: "./img/texturas/TEXTURA2.png" },
-  { nombre: "Textura 3", url: "./img/texturas/TEXTURA3.jfif" },
-  { nombre: "Textura 4", url: "./img/texturas/TEXTURA4.jfif" },
-  { nombre: "Textura 5", url: "./img/texturas/TEXTURA5.jfif" },
+  { nombre: "Textura 3", url: "./img/texturas/TEXTURA3.png" },
+  { nombre: "Textura 4", url: "./img/texturas/TEXTURA4.png" },
+  { nombre: "Textura 5", url: "./img/texturas/TEXTURA5.png" },
   { nombre: "Textura 6", url: "./img/texturas/TEXTURA6.png" },
   { nombre: "Textura 7", url: "./img/texturas/TEXTURA7.png" },
-  { nombre: "Textura 8", url: "./img/texturas/TEXTURA8.png" }
+  { nombre: "Textura 8", url: "./img/texturas/TEXTURA8.png" },
+  { nombre: "Textura 9", url: "./img/texturas/TEXTURA9.png" },
+  { nombre: "Textura 10", url: "./img/texturas/TEXTURA10.png" },
+  { nombre: "Textura 11", url: "./img/texturas/TEXTURA11.png" },
+  { nombre: "Textura 12", url: "./img/texturas/TEXTURA12.png" }
 ];
 
 function cargarTexturasF2(){
