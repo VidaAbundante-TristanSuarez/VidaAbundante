@@ -2400,6 +2400,13 @@ if (subir) {
 
 // ================= 🔺 WINDOW / UI ⭕ ===============================
 window.irA = (seccion) => {
+
+  // ✅ ocultar botón subir en Biblia
+  document.body.classList.remove("en-biblia");
+  if (seccion === "biblia") {
+    document.body.classList.add("en-biblia");
+  }
+
   // 1) mostrar/ocultar secciones principales
   ["biblia", "iglesia", "panel", "compartidos"].forEach(s => {
     const el = document.getElementById("seccion-" + s);
@@ -2428,25 +2435,19 @@ window.irA = (seccion) => {
   }
 
   if (seccion === "compartidos") {
-  return;
-}
+    return;
+  }
 
   // 4) biblia
   if (seccion === "biblia") {
-       window.setMarcadorCtx("biblia");
-    // ✅ al volver a Biblia: restaurar estado previo (modo imagen / modo marcador)
-    // (si no existe, no pasa nada)
+    window.setMarcadorCtx("biblia");
     try { bibliaRestaurarUIAlVolver?.(); } catch(e){}
-
-    // ✅ barra visible según estado guardado de Biblia
     aplicarEstadoBarra?.("biblia");
 
-    // ✅ Biblia: refrescar UI normal
     resaltadorBloqueado = true;
     actualizarUICandadoResaltador?.();
     mostrarTexto?.();
 
-    // ✅ aplica botones según modo actual (normal / marcador / imagen)
     if (typeof aplicarUIAccionesPorModo === "function") {
       aplicarUIAccionesPorModo();
     }
