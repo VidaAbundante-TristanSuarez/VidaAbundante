@@ -972,7 +972,7 @@ const adornosF2 = [
   { nombre: "Adorno 9", url: "./img/ornamentos/adorno9.png" },
   { nombre: "Adorno 10", url: "./img/ornamentos/adorno10.png" },
   { nombre: "Adorno 11", url: "./img/ornamentos/adorno11.png" },
-  { nombre: "Adorno 12", url: "./img/ornamentos/adorno12.png" }
+  { nombre: "Adorno 12", url: "./img/ornamentos/adorno12.png" },
   { nombre: "Adorno 13", url: "./img/ornamentos/adorno13.png" }
 ];
 
