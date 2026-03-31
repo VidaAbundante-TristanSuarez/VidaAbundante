@@ -270,6 +270,12 @@
   <button id="btnDevImg" type="button" class="btn-primary">📷 Cargar imagen</button>
   <input id="devImg" type="file" accept="image/*" hidden>
 
+ <button id="btnDevCargarFinal" type="button" class="btn-primary" onclick="devPickFinalizado(); return false;">
+  <i class="fa-solid fa-upload"></i>
+  Cargar finalizado
+</button>
+ <input id="devInputFinalizado" type="file" accept="image/*" style="display:none;">
+ 
   <button id="btnDevRecortar" type="button" class="btn-ghost">✂️ Recortar</button>
   <button id="btnDevOCR" type="button" class="btn-primary" style="display:none;">🧠 OCR</button>
 
