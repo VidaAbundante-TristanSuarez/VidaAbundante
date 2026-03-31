@@ -1042,7 +1042,15 @@ const texturasF2 = [
   { nombre: "Textura 9", url: "./img/texturas/TEXTURA9.png" },
   { nombre: "Textura 10", url: "./img/texturas/TEXTURA10.png" },
   { nombre: "Textura 11", url: "./img/texturas/TEXTURA11.png" },
-  { nombre: "Textura 12", url: "./img/texturas/TEXTURA12.png" }
+  { nombre: "Textura 12", url: "./img/texturas/TEXTURA12.png" },
+  { nombre: "Textura 13", url: "./img/texturas/TEXTURA13.png" },
+  { nombre: "Textura 14", url: "./img/texturas/TEXTURA14.png" },
+  { nombre: "Textura 15", url: "./img/texturas/TEXTURA15.png" },
+  { nombre: "Textura 16", url: "./img/texturas/TEXTURA16.png" },
+  { nombre: "Textura 17", url: "./img/texturas/TEXTURA17.png" },
+  { nombre: "Textura 18", url: "./img/texturas/TEXTURA18.png" },
+  { nombre: "Textura 19", url: "./img/texturas/TEXTURA19.png" },
+  { nombre: "Textura 20", url: "./img/texturas/TEXTURA20.png" }
 ];
 
 function cargarTexturasF2(){
