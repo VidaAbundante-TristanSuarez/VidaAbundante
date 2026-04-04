@@ -76,6 +76,12 @@ const DEV = {
 
   // final image
   finalDataUrl: "",
+  modoFinalizado: false,
+  finalFile: null,
+  finalImageBlob: null,
+  finalImageUrl: "",
+  audioFinalBlob: null,
+  audioFinalName: "",
 
   // ✅ ESTAS DOS TENÍAN QUE ESTAR ADENTRO
   subirPanel: false,
@@ -246,6 +252,13 @@ async function getCroppedBlob(){
 }
 
 async function audioElementToBase64(){
+  // ✅ prioridad 1: audio finalizado cargado manualmente
+  if (DEV.audioFinalBlob) {
+    const b64 = await blobToBase64(DEV.audioFinalBlob);
+    return { base64: b64, blob: DEV.audioFinalBlob };
+  }
+
+  // ✅ prioridad 2: audio del modalAudio
   const audioEl =
     document.querySelector("#modalAudio audio") ||
     document.querySelector("audio#audioPreview") ||
@@ -258,7 +271,7 @@ async function audioElementToBase64(){
   if (!r.ok) throw new Error("No pude leer el audio para subirlo");
 
   const blob = await r.blob();
-  const b64 = await blobToBase64(blob); // reutiliza tu helper
+  const b64 = await blobToBase64(blob);
   return { base64: b64, blob };
 }
 
@@ -661,9 +674,22 @@ window.devCerrarTodo = () => {
   DEV.audioOk = false;
   DEV.requiereAudio = true;
   DEV.subirAudioGithub = true;
+  DEV.modoFinalizado = false;
+  DEV.finalFile = null;
+  DEV.finalImageBlob = null;
+  DEV.audioFinalBlob = null;
+  DEV.audioFinalName = "";
+  DEV.finalDataUrl = "";
+  DEV.audioGithubUrl = "";
+
+  if (DEV.finalImageUrl) {
+    try { URL.revokeObjectURL(DEV.finalImageUrl); } catch(e){}
+    DEV.finalImageUrl = "";
+  }
+
   devSetFinalButtons(false);
 
-  // ✅ volver al Home (NO recorte)
+  // ✅ volver al Home
   devMostrarHome();
 };
 
@@ -1690,36 +1716,77 @@ async function renderFinalCanvasCaptureReal(){
   const cFinal = $("devCanvasFinal");
   if (!cFinal) return null;
 
+  const W = 1080;
+  const H = 1920;
+
+  cFinal.width = W;
+  cFinal.height = H;
+
+  const ctx = cFinal.getContext("2d");
+  ctx.clearRect(0,0,W,H);
+
+  // ======================================================
+  // ✅ MODO FINALIZADO: usar imagen subida directamente
+  // ======================================================
+  if (DEV.modoFinalizado && DEV.finalImageBlob) {
+    const img = await new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(DEV.finalImageBlob);
+      const im = new Image();
+      im.onload = () => {
+        URL.revokeObjectURL(url);
+        resolve(im);
+      };
+      im.onerror = reject;
+      im.src = url;
+    });
+
+    const srcW = img.width || 1;
+    const srcH = img.height || 1;
+
+    const scale = Math.max(W / srcW, H / srcH);
+    const drawW = srcW * scale;
+    const drawH = srcH * scale;
+    const dx = (W - drawW) / 2;
+    const dy = (H - drawH) / 2;
+
+    ctx.drawImage(img, dx, dy, drawW, drawH);
+
+    const RADIO_FINAL = 52;
+    const rounded = makeRoundedCanvas(cFinal, RADIO_FINAL);
+
+    DEV.finalDataUrl = rounded.toDataURL("image/png");
+    const imgEl = $("devFinalImg");
+    if (imgEl) imgEl.src = DEV.finalDataUrl;
+
+    return rounded;
+  }
+
+  // ======================================================
+  // ✅ MODO NORMAL: composición real fase1 + fase2
+  // ======================================================
   if (typeof html2canvas !== "function") {
     alert("❌ Falta html2canvas. Agregalo en el HTML como en Biblia.");
     return null;
   }
 
-  const W = 1080, H1 = 1080, H2 = 840, H = 1920;
+  const H1 = 1080, H2 = 840;
 
-  cFinal.width = W;
-  cFinal.height = H;
-  const ctx = cFinal.getContext("2d");
-  ctx.clearRect(0,0,W,H);
-
-  // ✅ Escenario offscreen
   let stage = document.getElementById("devCaptureStage");
   if (!stage) {
     stage = document.createElement("div");
     stage.id = "devCaptureStage";
     stage.style.position = "fixed";
-    stage.style.left = "-10000px";     // ✅ lejos sin transform
+    stage.style.left = "-10000px";
     stage.style.top  = "-10000px";
-    stage.style.opacity = "1";      
+    stage.style.opacity = "1";
     stage.style.visibility = "visible";
     stage.style.pointerEvents = "none";
-    stage.style.transform = "none";    // ✅ importantísimo
+    stage.style.transform = "none";
     stage.style.zIndex = "-1";
     document.body.appendChild(stage);
   }
   stage.innerHTML = "";
 
-  // ✅ Construir nodos “a tamaño real” (NO dependen del preview chico)
   const makeFase1Node = () => {
     const st = DEV.f1;
     const node = document.createElement("div");
@@ -1737,25 +1804,22 @@ async function renderFinalCanvasCaptureReal(){
 
     const wrap = document.createElement("div");
     wrap.style.position = "absolute";
-    wrap.style.inset = "6%";           // ✅ igual que .dev-textwrap
-    wrap.style.borderRadius = "14px";  // ✅ igual que preview
-    wrap.style.overflow = "hidden";    // ✅ igual que preview
+    wrap.style.inset = "6%";
+    wrap.style.borderRadius = "14px";
+    wrap.style.overflow = "hidden";
     wrap.style.backgroundColor = wrapperBgFromOpacity(st.op, st.opColor);
     wrap.style.boxShadow = wrapperShadowFromOpacity(st.op, st.opColor);
-     
+
     const texto = document.createElement("div");
     texto.style.position = "absolute";
     texto.style.inset = "0";
     texto.style.fontFamily = st.fuente;
     texto.style.color = st.color;
     applyTextStylesToOne(texto, st);
-     
-    // ✅ OUTLINE estable
+
     texto.style.textShadow = textShadowLegibleFinal(st.color);
     texto.style.webkitTextStroke = "0.6px " + outlineColor(st.color);
     texto.style.paintOrder = "stroke fill";
-
-    // ✅ IMPORTANTE: tamaño real (sin scalePreviewF1)
     texto.innerHTML = buildFase1HTML(st.size, 1);
 
     wrap.appendChild(texto);
@@ -1763,63 +1827,61 @@ async function renderFinalCanvasCaptureReal(){
     return node;
   };
 
-const makeFase2Node = () => {
-  const st = DEV.f2;
+  const makeFase2Node = () => {
+    const st = DEV.f2;
 
-  const node = document.createElement("div");
-  node.style.width = W + "px";
-  node.style.height = H2 + "px";
-  node.style.position = "relative";
-  node.style.overflow = "hidden";
-  node.style.borderRadius = "0";
-  node.style.backgroundColor = st.fondoColor || "#ffffff";
+    const node = document.createElement("div");
+    node.style.width = W + "px";
+    node.style.height = H2 + "px";
+    node.style.position = "relative";
+    node.style.overflow = "hidden";
+    node.style.borderRadius = "0";
+    node.style.backgroundColor = st.fondoColor || "#ffffff";
 
-  // ✅ textura en capa separada mezclada con el color
-if (st.texturaUrl) {
-  const textureLayer = document.createElement("div");
-  textureLayer.style.position = "absolute";
-  textureLayer.style.inset = "0";
-  textureLayer.style.backgroundImage = `url("${st.texturaUrl}")`;
-  textureLayer.style.backgroundSize = "cover";
-  textureLayer.style.backgroundPosition = "center";
-  textureLayer.style.backgroundRepeat = "no-repeat";
-  textureLayer.style.opacity = String(
-    Math.max(0, Math.min(1, Number(st.texturaOp ?? 0.22)))
-  );
-  textureLayer.style.mixBlendMode = "normal";
-  textureLayer.style.filter = "none";
-  textureLayer.style.pointerEvents = "none";
+    if (st.texturaUrl) {
+      const textureLayer = document.createElement("div");
+      textureLayer.style.position = "absolute";
+      textureLayer.style.inset = "0";
+      textureLayer.style.backgroundImage = `url("${st.texturaUrl}")`;
+      textureLayer.style.backgroundSize = "cover";
+      textureLayer.style.backgroundPosition = "center";
+      textureLayer.style.backgroundRepeat = "no-repeat";
+      textureLayer.style.opacity = String(
+        Math.max(0, Math.min(1, Number(st.texturaOp ?? 0.22)))
+      );
+      textureLayer.style.mixBlendMode = "normal";
+      textureLayer.style.filter = "none";
+      textureLayer.style.pointerEvents = "none";
 
-  node.appendChild(textureLayer);
-}
+      node.appendChild(textureLayer);
+    }
 
-  const wrap = document.createElement("div");
-  wrap.style.position = "absolute";
-  wrap.style.inset = "16px";
-  wrap.style.overflow = "hidden";
-  wrap.style.textAlign = "center";
-  wrap.style.zIndex = "1";
+    const wrap = document.createElement("div");
+    wrap.style.position = "absolute";
+    wrap.style.inset = "16px";
+    wrap.style.overflow = "hidden";
+    wrap.style.textAlign = "center";
+    wrap.style.zIndex = "1";
 
-  const texto = document.createElement("div");
-  texto.style.width = "100%";
-  texto.style.height = "100%";
-  texto.style.fontFamily = st.fuente;
-  texto.style.color = st.color;
-  applyTextStylesToOne(texto, st);
+    const texto = document.createElement("div");
+    texto.style.width = "100%";
+    texto.style.height = "100%";
+    texto.style.fontFamily = st.fuente;
+    texto.style.color = st.color;
+    applyTextStylesToOne(texto, st);
 
-  texto.style.textShadow = textShadowLegibleFinal(st.color);
-  texto.style.webkitTextStroke = "0.5px " + outlineColor(st.color);
-  texto.style.paintOrder = "stroke fill";
+    texto.style.textShadow = textShadowLegibleFinal(st.color);
+    texto.style.webkitTextStroke = "0.5px " + outlineColor(st.color);
+    texto.style.paintOrder = "stroke fill";
 
-  texto.innerHTML = buildFase2HTML(Math.max(12, roundToHalf(st.size * 1.12)));
+    texto.innerHTML = buildFase2HTML(Math.max(12, roundToHalf(st.size * 1.12)));
 
-  wrap.appendChild(texto);
-  node.appendChild(wrap);
+    wrap.appendChild(texto);
+    node.appendChild(wrap);
 
-  return node;
-};
+    return node;
+  };
 
-  // ✅ Agregar al stage y esperar fuentes/layout
   const n1 = makeFase1Node();
   const n2 = makeFase2Node();
   stage.appendChild(n1);
@@ -1828,23 +1890,172 @@ if (st.texturaUrl) {
   await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
   if (document.fonts?.ready) await document.fonts.ready;
 
-  // ✅ Capturar
   const cap1 = await html2canvas(n1, { backgroundColor: null, scale: 2, useCORS: true });
   const cap2 = await html2canvas(n2, { backgroundColor: null, scale: 2, useCORS: true });
 
   ctx.drawImage(cap1, 0, 0, W, H1);
   ctx.drawImage(cap2, 0, H1, W, H2);
 
-  // ✅ redondear como preview (aprox)
-  const RADIO_FINAL = 52; // si querés más redondo probá 50
+  const RADIO_FINAL = 52;
   const rounded = makeRoundedCanvas(cFinal, RADIO_FINAL);
 
   DEV.finalDataUrl = rounded.toDataURL("image/png");
-  const img = $("devFinalImg");
-  if (img) img.src = DEV.finalDataUrl;
+  const imgEl = $("devFinalImg");
+  if (imgEl) imgEl.src = DEV.finalDataUrl;
 
-  return rounded; // 👈 devolvemos el canvas redondeado
+  return rounded;
 }
+
+window.devPickFinalizado = () => {
+  const inp = $("devInputFinalizado");
+  if (!inp) {
+    alert("No encontré el input de imagen finalizada.");
+    return;
+  }
+  inp.value = "";
+  inp.click();
+};
+
+window.devPickAudioFinalizado = () => {
+  let inp = $("devInputAudioFinalizado");
+
+  if (!inp) {
+    inp = document.createElement("input");
+    inp.type = "file";
+    inp.accept = "audio/*";
+    inp.id = "devInputAudioFinalizado";
+    inp.style.display = "none";
+    document.body.appendChild(inp);
+
+    inp.addEventListener("change", async (e)=>{
+      const file = e.target.files?.[0];
+      if (!file) return;
+      await window.devCargarAudioFinalizado(file);
+    });
+  }
+
+  inp.value = "";
+  inp.click();
+};
+
+window.devCargarAudioFinalizado = async (file) => {
+  try {
+    if (!file) return;
+
+    DEV.audioFinalBlob = file;
+    DEV.audioFinalName = file.name || "audio_finalizado.mp3";
+    DEV.audioOk = true;
+
+    const url = URL.createObjectURL(file);
+
+    let audio = $("devAudioFinalPreview");
+    if (!audio) {
+      const box = $("devF3Opciones");
+      if (box) {
+        const wrap = document.createElement("div");
+        wrap.id = "devAudioFinalWrap";
+        wrap.style.display = "flex";
+        wrap.style.flexDirection = "column";
+        wrap.style.gap = "6px";
+        wrap.style.width = "100%";
+        wrap.style.marginTop = "6px";
+
+        wrap.innerHTML = `
+          <div style="font-weight:700; font-size:13px;">🎵 Audio finalizado cargado</div>
+          <audio id="devAudioFinalPreview" controls style="width:100%;"></audio>
+        `;
+
+        box.appendChild(wrap);
+        audio = $("devAudioFinalPreview");
+      }
+    }
+
+    if (audio) {
+      audio.src = url;
+      audio.load();
+    }
+
+    devSetFinalButtons(DEV.requiereAudio ? true : true);
+    devToast("🎵 Audio cargado");
+  } catch (e) {
+    console.error(e);
+    alert("❌ No se pudo cargar el audio.\n\nDetalle: " + (e?.message || e));
+  }
+};
+
+window.devCargarFinalizado = async (file) => {
+  if (!file) return;
+
+  devBusyShow("⏳ Cargando devocional finalizado…");
+
+  try {
+    // reset modo finalizado previo
+    DEV.modoFinalizado = true;
+    DEV.finalFile = file;
+    DEV.finalImageBlob = file;
+    DEV.audioFinalBlob = null;
+    DEV.audioFinalName = "";
+    DEV.audioOk = false;
+    DEV.finalDataUrl = "";
+
+    if (DEV.finalImageUrl) {
+      try { URL.revokeObjectURL(DEV.finalImageUrl); } catch(e){}
+    }
+    DEV.finalImageUrl = URL.createObjectURL(file);
+
+    // mostrar crear
+    devMostrarCrear();
+
+    // ocultar canvas/recorte/textarea normal
+    show("devCanvasBox", false);
+    show("devTextoBox", false);
+
+    // OCR directo sobre la imagen finalizada
+    const imageBase64 = await blobToBase64(file);
+
+    const r = await fetch(OCR_URL, {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ imageBase64 })
+    });
+
+    const data = await r.json().catch(()=> ({}));
+    if (!r.ok) {
+      throw new Error(data?.error || ("OCR devolvió " + r.status));
+    }
+
+    const text = String(data?.text || "").trim();
+    if (!text) {
+      throw new Error("No se detectó texto en la imagen finalizada.");
+    }
+
+    DEV.rawText = text;
+
+    const { p1, p2, audioText } = buildBloquesFromOCR(text);
+
+    DEV.p1 = p1;
+    DEV.p2 = p2;
+    DEV.audioText = audioText;
+
+    DEV.fields.fecha     = p1?.fecha || "";
+    DEV.fields.versiculo = p1?.versiculo || "";
+    DEV.fields.cita      = p1?.cita || "";
+    DEV.fields.reflexion = p2?.reflexion || "";
+    DEV.fields.oracion   = p2?.oracion || "";
+
+    const ta = $("devTexto");
+    if (ta) ta.value = text;
+
+    await devAbrirFase0();
+    ocrSetStatus("✅ Imagen finalizada cargada. Revisá texto y continuá.");
+  } catch (e) {
+    console.error(e);
+    DEV.modoFinalizado = false;
+    alert("❌ No se pudo cargar el finalizado.\n\nDetalle: " + (e?.message || e));
+  } finally {
+    devBusyHide();
+  }
+};
 
 window.devToggleSubirPanel = () => {
   DEV.subirPanel = !DEV.subirPanel;
@@ -1918,13 +2129,16 @@ async function devAbrirFase0(){
 }
 
 // Fase 0 -> Fase 1  ✅ usa CAMPOS MANUALES si los tocaste
-window.devIrFase1Desde0 = () => {
+window.devIrFase1Desde0 = async () => {
   const t0 = ($("dev0Texto")?.value || "").trim();
-  if (!t0) { alert("Pegá o generá el texto primero."); return; }
+  if (!t0) {
+    alert("Pegá o generá el texto primero.");
+    return;
+  }
 
   DEV.rawText = t0;
 
-  // 1) Si hay campos manuales, mandan
+  // 1) si hay campos manuales, mandan
   devReadFieldsFromUI();
   const hayCampos =
     (DEV.fields.fecha || DEV.fields.versiculo || DEV.fields.cita || DEV.fields.reflexion || DEV.fields.oracion);
@@ -1951,19 +2165,37 @@ window.devIrFase1Desde0 = () => {
 
   // reset gate audio
   DEV.audioOk = false;
-  devSetFinalButtons(false);
+  if (DEV.audioFinalBlob) {
+    DEV.audioOk = true;
+  }
 
+  // ✅ si viene de "cargar finalizado", saltamos directo a fase 3
+  if (DEV.modoFinalizado) {
     cerrarModal("modalDevFase0");
+    abrirModal("modalDevFase3");
+
+    devEnsureFase3Opciones();
+    devSetFinalButtons(DEV.requiereAudio ? !!DEV.audioOk : true);
+
+    devSetLoadingFase3(true, "⏳ Preparando imagen final…");
+    try {
+      await renderFinalCanvasCaptureReal();
+    } finally {
+      devSetLoadingFase3(false);
+    }
+    return;
+  }
+
+  // ✅ flujo normal
+  cerrarModal("modalDevFase0");
   abrirModal("modalDevFase1");
 
   if (typeof window.initPickrEnHosts === "function") {
     window.initPickrEnHosts("#dev1OpColorHost, #dev1ColorHost");
   }
 
-  // render inicial
   devRenderFase(1);
 
-  // ✅ AUTO-SUGERIDO FASE 1 (igual que en btnCrear)
   (async ()=>{
     await new Promise(r => requestAnimationFrame(()=>requestAnimationFrame(r)));
     if (document.fonts?.ready) await document.fonts.ready;
@@ -2069,6 +2301,15 @@ function devEnsureFase3Opciones(){
         <input type="checkbox" id="devChkRequiereAudio">
         Requiere audio
       </label>
+
+      <label style="display:flex; align-items:center; gap:8px; font-weight:700; cursor:pointer;">
+        <input type="checkbox" id="devChkSubirGithubAudioF3">
+        Subir audio a GitHub
+      </label>
+
+      <button type="button" class="btn-primary" id="devBtnCargarAudioFinalizado">
+        🎵 Cargar audio finalizado
+      </button>
     `;
 
     box.parentNode.insertBefore(panel, box);
@@ -2077,17 +2318,36 @@ function devEnsureFase3Opciones(){
     if (chkReq) {
       chkReq.addEventListener("change", ()=>{
         DEV.requiereAudio = !!chkReq.checked;
-        devSetFinalButtons(DEV.requiereAudio ? !!DEV.audioOk : true);
 
         if (!DEV.requiereAudio) {
-          DEV.audioOk = false;
+          devSetFinalButtons(true);
+          return;
         }
+
+        devSetFinalButtons(!!DEV.audioOk);
+      });
+    }
+
+    const chkGh = $("devChkSubirGithubAudioF3");
+    if (chkGh) {
+      chkGh.addEventListener("change", ()=>{
+        DEV.subirAudioGithub = !!chkGh.checked;
+      });
+    }
+
+    const btnAudioFinal = $("devBtnCargarAudioFinalizado");
+    if (btnAudioFinal) {
+      btnAudioFinal.addEventListener("click", ()=>{
+        window.devPickAudioFinalizado();
       });
     }
   }
 
   const chkReq = $("devChkRequiereAudio");
   if (chkReq) chkReq.checked = !!DEV.requiereAudio;
+
+  const chkGh = $("devChkSubirGithubAudioF3");
+  if (chkGh) chkGh.checked = !!DEV.subirAudioGithub;
 
   devSetFinalButtons(DEV.requiereAudio ? !!DEV.audioOk : true);
 }
@@ -2588,6 +2848,7 @@ function initDevocionales(){
   DEV.ctx = DEV.canvas.getContext("2d");
 
   const input = $("devImg");
+  const inputFinal = $("devInputFinalizado");
   const btnImg = $("btnDevImg");
   const btnRecortar = $("btnDevRecortar");
   const btnOCR = $("btnDevOCR");
@@ -2597,13 +2858,21 @@ function initDevocionales(){
 
   if (btnImg && input) btnImg.addEventListener("click", ()=> input.click());
 
+  if (inputFinal && !inputFinal.__hookFinalizado) {
+    inputFinal.__hookFinalizado = true;
+    inputFinal.addEventListener("change", async (e)=>{
+      const file = e.target.files?.[0];
+      if (!file) return;
+      await window.devCargarFinalizado(file);
+    });
+  }
+
   if (!input || !btnRecortar || !btnOCR || !ta) return;
 
   bindPointerCropEvents();
   bindInputs();
   hookAudioCorrecto();
 
-  // fuentes/listas y fondos y adornos
   crearListaFuentes(1);
   crearListaFuentes(2);
   cargarFondosDev();
@@ -2614,28 +2883,33 @@ function initDevocionales(){
     window.initPickrEnHosts("#dev1OpColorHost, #dev1ColorHost, #dev2FondoHost, #dev2ColorHost");
   }
 
-  // estado inicial
   btnRecortar.disabled = true;
   btnRecortar.style.opacity = "0.6";
   syncBtnCrear();
   ta.addEventListener("input", syncBtnCrear);
   ocrSetStatus("✅ Cargá una imagen, recortá si querés y tocá Crear devocional.");
 
- btnOCR.style.display = "none";
- btnOCR.textContent = "🧠 Crear devocional";
-   
-  // cargar imagen
+  btnOCR.style.display = "none";
+  btnOCR.textContent = "🧠 Crear devocional";
+
+  // cargar imagen normal
   input.addEventListener("change", ()=>{
     const file = input.files?.[0];
     if (!file) return;
+
+    DEV.modoFinalizado = false;
+    DEV.finalFile = null;
+    DEV.finalImageBlob = null;
+    DEV.audioFinalBlob = null;
+    DEV.audioFinalName = "";
 
     const url = URL.createObjectURL(file);
     const image = new Image();
 
     image.onload = ()=>{
       DEV.img = image;
-btnOCR.style.display = "none";
-      // reset crop
+      btnOCR.style.display = "none";
+
       DEV.crop = null;
       DEV.start = null;
       DEV.drawing = false;
@@ -2650,7 +2924,6 @@ btnOCR.style.display = "none";
 
       if (boxCanvas) boxCanvas.classList.remove("hidden");
 
-      // ocultar textarea hasta OCR
       const boxText = $("devTextoBox");
       if (boxText) boxText.classList.add("hidden");
       ta.value = "";
@@ -2664,27 +2937,26 @@ btnOCR.style.display = "none";
   });
 
   // toggle recorte
-btnRecortar.addEventListener("click", ()=>{
-  if (!DEV.img) { alert("Primero cargá una imagen"); return; }
+  btnRecortar.addEventListener("click", ()=>{
+    if (!DEV.img) { alert("Primero cargá una imagen"); return; }
 
-  DEV.recortando = !DEV.recortando;
-  btnRecortar.textContent = DEV.recortando ? "✅ Listo" : "✂️ Recortar";
+    DEV.recortando = !DEV.recortando;
+    btnRecortar.textContent = DEV.recortando ? "✅ Listo" : "✂️ Recortar";
 
-  if (!DEV.recortando) {
-    DEV.start = null;
-    DEV.drawing = false;
+    if (!DEV.recortando) {
+      DEV.start = null;
+      DEV.drawing = false;
 
-    // mostrar botón crear devocional
-    if (btnOCR) {
-      btnOCR.style.display = "inline-flex";
-      btnOCR.textContent = "🧠 Crear devocional";
+      if (btnOCR) {
+        btnOCR.style.display = "inline-flex";
+        btnOCR.textContent = "🧠 Crear devocional";
+      }
+    } else {
+      if (btnOCR) btnOCR.style.display = "none";
     }
-  } else {
-    if (btnOCR) btnOCR.style.display = "none";
-  }
-});
+  });
 
-  // OCR
+  // OCR normal
   btnOCR.addEventListener("click", async ()=>{
     if (!DEV.img) { alert("Primero cargá una imagen"); return; }
 
@@ -2719,14 +2991,13 @@ btnRecortar.addEventListener("click", ()=>{
       DEV.rawText = text;
       ta.value = text;
 
-      // mostrar textarea
       const boxText = $("devTextoBox");
       if (boxText) boxText.classList.remove("hidden");
 
       syncBtnCrear();
       ocrSetStatus("✅ OCR listo.");
-      await devAbrirFase0();  // ✅ abre el modal 0 al terminar OCR
-       btnOCR.style.display = "none";
+      await devAbrirFase0();
+      btnOCR.style.display = "none";
 
     }catch(e){
       console.error(e);
@@ -2737,56 +3008,44 @@ btnRecortar.addEventListener("click", ()=>{
     }
   });
 
- // CREAR DEVOCIONAL => construir bloques y abrir fase 1
-if (btnCrear) {
-  btnCrear.addEventListener("click", ()=>{
-    const texto = (ta.value || "").trim();
-    if (!texto) { alert("Primero necesitás texto (OCR o pegado)."); return; }
+  // crear devocional normal
+  if (btnCrear) {
+    btnCrear.addEventListener("click", ()=>{
+      const texto = (ta.value || "").trim();
+      if (!texto) { alert("Primero necesitás texto (OCR o pegado)."); return; }
 
-    const { p1, p2, audioText } = buildBloquesFromOCR(texto);
+      const { p1, p2, audioText } = buildBloquesFromOCR(texto);
 
-    DEV.p1 = p1;
-    DEV.p2 = p2;
-    DEV.audioText = audioText;
-    DEV.f2.userChanged = false; // ✅ nuevo devocional => permitir sugerencia inicial
-     
-    // reset gate audio
-    DEV.audioOk = false;
-    devSetFinalButtons(false);
+      DEV.p1 = p1;
+      DEV.p2 = p2;
+      DEV.audioText = audioText;
+      DEV.f2.userChanged = false;
 
-    // ===== FASE 1: setear opacidad + color desde inputs
-    DEV.f1.op = Number($("dev1Opacidad")?.value || 0.35);
-    DEV.f1.color = $("dev1Color")?.value || "#000000";
-    DEV.f1.opColor = $("dev1OpColor")?.value || "#000000";
+      DEV.audioOk = false;
+      devSetFinalButtons(false);
 
-// abrir fase 1 primero (para poder medir tamaño real)
-abrirModal("modalDevFase1");
+      DEV.f1.op = Number($("dev1Opacidad")?.value || 0.35);
+      DEV.f1.color = $("dev1Color")?.value || "#000000";
+      DEV.f1.opColor = $("dev1OpColor")?.value || "#000000";
 
-// render inicial rápido
-devRenderFase(1);
+      abrirModal("modalDevFase1");
+      devRenderFase(1);
 
-// ✅ esperar 1 frame para que el layout tenga tamaño real
-(async ()=>{
-  // ✅ esperar layout real
-  await new Promise(r => requestAnimationFrame(()=>requestAnimationFrame(r)));
+      (async ()=>{
+        await new Promise(r => requestAnimationFrame(()=>requestAnimationFrame(r)));
+        if (document.fonts?.ready) await document.fonts.ready;
 
-  // ✅ esperar que la fuente esté lista (clave para medir bien)
-  if (document.fonts?.ready) await document.fonts.ready;
+        const sugerido = sugerirTamanoVersiculoAuto(p1.versiculo);
 
-  // ✅ ahora sí medir
-  const sugerido = sugerirTamanoVersiculoAuto(p1.versiculo);
+        DEV.f1.size = sugerido;
 
-  DEV.f1.size = sugerido;
+        const s1 = $("dev1Tamano");
+        if (s1) s1.value = fmtSize(sugerido);
 
-  const s1 = $("dev1Tamano");
-  if (s1) s1.value = fmtSize(sugerido);
-
-  devRenderFase(1);
-})();
-     
-  });
-}
-
+        devRenderFase(1);
+      })();
+    });
+  }
 } // ✅ CIERRA initDevocionales()   
 /* =========================================================
    INIT
