@@ -4460,8 +4460,8 @@ if (inputBuscarLibro && selectLibro) {
   });
 }
   
- // 4) arrancar en biblia
-window.irA?.("biblia");
+// 4) arrancar en iglesia
+window.irA?.("iglesia");
 
 // cuando Firebase confirma el usuario
 onAuthStateChanged(auth, (user) => {
