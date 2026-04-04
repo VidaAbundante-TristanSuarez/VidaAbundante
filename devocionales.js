@@ -74,8 +74,17 @@ const DEV = {
   requiereAudio: true,
   subirAudioGithub: true,
 
-  // final image
+    // final image
   finalDataUrl: "",
+  finalizadaMode: false,
+  finalOriginalBlob: null,
+  finalOriginalName: "",
+  finalOriginalUrl: "",
+
+  // audio manual / finalizado
+  audioManualBlob: null,
+  audioManualBase64: "",
+  audioManualName: "",
 
   // ✅ ESTAS DOS TENÍAN QUE ESTAR ADENTRO
   subirPanel: false,
@@ -555,6 +564,271 @@ function buildBloquesFromOCR(raw){
   return { p1, p2, audioText };
 }
 
+function cleanReflexionHeader(line){
+  return (line || "")
+    .replace(/^[^\w]*reflexi[oó]n\s*:?\s*/i, "")
+    .trim();
+}
+
+function buildBloquesFromOCRFinalizado(raw){
+  const t = normText(raw);
+  let lines = t.split("\n").map(x => x.trim()).filter(Boolean);
+
+  // sacar "DEVOCIONAL" si viene arriba
+  if (lines.length && /^devocional$/i.test(lines[0])) {
+    lines.shift();
+  }
+
+  // sacar posibles líneas de iglesia/dirección del medio
+  const iglesiaIdx = lines.findIndex(l =>
+    /iglesia\s+cristiana\s+de\s+la\s+vida\s+abundante/i.test(l)
+  );
+
+  const direccionIdx = lines.findIndex(l =>
+    /roca\s*123/i.test(l) || /tristan\s*suarez/i.test(l)
+  );
+
+  const fecha = lines[0] || "";
+
+  // buscar cita bíblica
+  let citaIdx = -1;
+  for (let i = 1; i < lines.length; i++) {
+    if (detectCita(lines[i])) {
+      citaIdx = i;
+      break;
+    }
+  }
+
+  if (citaIdx === -1) {
+    // fallback suave: una línea corta tipo referencia
+    citaIdx = lines.findIndex((l, i) =>
+      i > 0 &&
+      i < Math.max(1, iglesiaIdx >= 0 ? iglesiaIdx : lines.length) &&
+      /[0-9]/.test(l) &&
+      l.length <= 40
+    );
+  }
+
+  let versiculo = "";
+  if (citaIdx > 1) {
+    versiculo = lines.slice(1, citaIdx).join(" ").trim();
+  } else if (lines.length > 1) {
+    versiculo = lines[1] || "";
+  }
+
+  const cita = citaIdx >= 0 ? (lines[citaIdx] || "") : "";
+
+  // desde dónde empieza reflexión/oración
+  let bodyStart = citaIdx >= 0 ? (citaIdx + 1) : 2;
+
+  if (iglesiaIdx >= 0) bodyStart = Math.max(bodyStart, iglesiaIdx + 1);
+  if (direccionIdx >= 0) bodyStart = Math.max(bodyStart, direccionIdx + 1);
+
+  let bodyLines = lines.slice(bodyStart).filter(Boolean);
+
+  // quitar iglesia/dirección si quedaron mezcladas
+  bodyLines = bodyLines.filter(l =>
+    !/iglesia\s+cristiana\s+de\s+la\s+vida\s+abundante/i.test(l) &&
+    !/roca\s*123/i.test(l) &&
+    !/tristan\s*suarez/i.test(l)
+  );
+
+  const idxRef = bodyLines.findIndex(l => /^[^\w]*reflexi[oó]n\b/i.test(l));
+  const idxOra = bodyLines.findIndex(l => /^[^\w]*oraci[oó]n\b/i.test(l));
+
+  let reflexion = "";
+  let oracion = "";
+
+  if (idxRef >= 0 && idxOra >= 0 && idxOra > idxRef) {
+    const refLines = bodyLines.slice(idxRef, idxOra);
+    if (refLines.length) refLines[0] = cleanReflexionHeader(refLines[0]);
+    reflexion = refLines.join(" ").trim();
+
+    const oraLines = bodyLines.slice(idxOra);
+    if (oraLines.length) oraLines[0] = cleanOracionHeader(oraLines[0]);
+    oracion = oraLines.join(" ").trim();
+  } else if (idxOra >= 0) {
+    reflexion = bodyLines.slice(0, idxOra).join(" ").trim();
+    const oraLines = bodyLines.slice(idxOra);
+    if (oraLines.length) oraLines[0] = cleanOracionHeader(oraLines[0]);
+    oracion = oraLines.join(" ").trim();
+  } else {
+    reflexion = bodyLines.join(" ").trim();
+    oracion = "";
+  }
+
+  reflexion = oneLine(reflexion);
+  oracion = oneLine(oracion);
+
+  const p1 = {
+    fecha: oneLine(fecha),
+    versiculo: oneLine(versiculo),
+    cita: oneLine(cita),
+    iglesia: "Iglesia Cristiana de la Vida Abundante",
+    direccion: "Roca 123, Tristan Suarez."
+  };
+
+  const p2 = {
+    reflexion,
+    oracion
+  };
+
+  const audioText = buildAudioFromParts(p1, p2);
+  return { p1, p2, audioText };
+}
+
+window.devPickFinalizado = function(){
+  const inp = $("devInputFinalizado");
+  if (inp) inp.click();
+};
+
+function devResetAudioManual(){
+  DEV.audioManualBlob = null;
+  DEV.audioManualBase64 = "";
+  DEV.audioManualName = "";
+}
+
+function devUpdateAudioManualUI(){
+  const info = $("devAudioManualInfo");
+  if (!info) return;
+
+  if (DEV.audioManualBlob) {
+    info.textContent = `✅ Audio cargado: ${DEV.audioManualName || "audio finalizado"}`;
+  } else if (DEV.audioOk && DEV.requiereAudio) {
+    info.textContent = "✅ Audio confirmado";
+  } else {
+    info.textContent = "Sin audio cargado";
+  }
+}
+
+window.devAudioPickManual = function(){
+  const inp = $("devAudioManualInput");
+  if (inp) inp.click();
+};
+
+window.devAudioQuitarManual = function(){
+  devResetAudioManual();
+  DEV.audioOk = false;
+  devUpdateAudioManualUI();
+  devSetFinalButtons(DEV.requiereAudio ? false : true);
+};
+
+window.devAudioCargarManual = async function(file){
+  try{
+    if (!file) return;
+
+    DEV.audioManualBlob = file;
+    DEV.audioManualName = file.name || "audio_finalizado.mp3";
+    DEV.audioManualBase64 = await blobToBase64(file);
+
+    DEV.audioOk = true;
+    devUpdateAudioManualUI();
+    devSetFinalButtons(true);
+
+    // opcional: cargarlo en el preview de audio si existe
+    const audioEl =
+      document.querySelector("#modalAudio audio") ||
+      document.querySelector("audio#audioPreview") ||
+      document.querySelector("audio");
+
+    if (audioEl) {
+      audioEl.src = URL.createObjectURL(file);
+      audioEl.load();
+    }
+
+    devToast("🎵 Audio finalizado cargado");
+  } catch(e){
+    console.error(e);
+    alert("❌ No pude cargar el audio.\n\nDetalle: " + (e?.message || e));
+  }
+};
+
+window.devCargarFinalizado = async function(file){
+  if (!file) return;
+
+  devBusyShow("⏳ Leyendo devocional finalizado…");
+
+  try{
+    DEV.finalizadaMode = true;
+    DEV.finalOriginalBlob = file;
+    DEV.finalOriginalName = file.name || "devocional_final.png";
+
+    if (DEV.finalOriginalUrl) {
+      try { URL.revokeObjectURL(DEV.finalOriginalUrl); } catch {}
+    }
+    DEV.finalOriginalUrl = URL.createObjectURL(file);
+
+    // reset audio del flujo
+    DEV.audioOk = false;
+    DEV.audioGithubUrl = "";
+    devResetAudioManual();
+
+    const imageBase64 = await blobToBase64(file);
+
+    const r = await fetch(OCR_URL, {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ imageBase64 })
+    });
+
+    const data = await r.json().catch(()=> ({}));
+    if (!r.ok) {
+      throw new Error(data?.error || data?.detail || ("OCR " + r.status));
+    }
+
+    const text = (data?.text || "").trim();
+    if (!text) throw new Error("No se detectó texto en la imagen finalizada.");
+
+    DEV.rawText = text;
+
+    const { p1, p2, audioText } = buildBloquesFromOCRFinalizado(text);
+
+    DEV.p1 = p1;
+    DEV.p2 = p2;
+    DEV.audioText = audioText;
+
+    DEV.fields.fecha     = keepManualBreaks(p1?.fecha || "");
+    DEV.fields.versiculo = keepManualBreaks(p1?.versiculo || "");
+    DEV.fields.cita      = keepManualBreaks(p1?.cita || "");
+    DEV.fields.reflexion = keepManualBreaks(p2?.reflexion || "");
+    DEV.fields.oracion   = keepManualBreaks(p2?.oracion || "");
+
+    const ta = $("devTexto");
+    if (ta) ta.value = text;
+
+    const boxText = $("devTextoBox");
+    if (boxText) boxText.classList.remove("hidden");
+
+    const img = $("devFinalImg");
+    if (img && DEV.finalOriginalUrl) {
+      img.src = DEV.finalOriginalUrl;
+    }
+
+    // ir a fase 0 para corregir campos
+    await devAbrirFase0();
+
+    devToast("✅ Finalizado cargado");
+  } catch(e){
+    console.error(e);
+    alert("❌ No pude procesar el devocional finalizado.\n\nDetalle: " + (e?.message || e));
+  } finally {
+    devBusyHide();
+  }
+};
+
+function devInitFinalizadoHook(){
+  const inp = $("devInputFinalizado");
+  if (!inp || inp.__hookFinalizado) return;
+
+  inp.__hookFinalizado = true;
+  inp.addEventListener("change", async (e)=>{
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await window.devCargarFinalizado(file);
+    e.target.value = "";
+  });
+}
+
 /* =========================================================
    FASE 0 — CAMPOS EDITABLES (sync texto <-> campos)
    ========================================================= */
@@ -663,7 +937,18 @@ window.devCerrarTodo = () => {
   DEV.subirAudioGithub = true;
   devSetFinalButtons(false);
 
-  // ✅ volver al Home (NO recorte)
+  DEV.finalizadaMode = false;
+  DEV.finalOriginalBlob = null;
+  DEV.finalOriginalName = "";
+
+  if (DEV.finalOriginalUrl) {
+    try { URL.revokeObjectURL(DEV.finalOriginalUrl); } catch {}
+  }
+  DEV.finalOriginalUrl = "";
+
+  devResetAudioManual();
+
+  // ✅ volver al Home
   devMostrarHome();
 };
 
@@ -1690,36 +1975,71 @@ async function renderFinalCanvasCaptureReal(){
   const cFinal = $("devCanvasFinal");
   if (!cFinal) return null;
 
-  if (typeof html2canvas !== "function") {
-    alert("❌ Falta html2canvas. Agregalo en el HTML como en Biblia.");
-    return null;
-  }
-
-  const W = 1080, H1 = 1080, H2 = 840, H = 1920;
-
+  const W = 1080, H = 1920;
   cFinal.width = W;
   cFinal.height = H;
   const ctx = cFinal.getContext("2d");
   ctx.clearRect(0,0,W,H);
 
-  // ✅ Escenario offscreen
+  // =====================================================
+  // MODO FINALIZADO: usar la imagen subida tal cual
+  // =====================================================
+  if (DEV.finalizadaMode && DEV.finalOriginalBlob) {
+    const url = DEV.finalOriginalUrl || URL.createObjectURL(DEV.finalOriginalBlob);
+
+    const img = await new Promise((resolve, reject)=>{
+      const im = new Image();
+      im.onload = ()=> resolve(im);
+      im.onerror = ()=> reject(new Error("No pude leer la imagen finalizada"));
+      im.src = url;
+    });
+
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, W, H);
+
+    const scale = Math.min(W / img.width, H / img.height);
+    const drawW = Math.round(img.width * scale);
+    const drawH = Math.round(img.height * scale);
+    const dx = Math.round((W - drawW) / 2);
+    const dy = Math.round((H - drawH) / 2);
+
+    ctx.drawImage(img, dx, dy, drawW, drawH);
+
+    const rounded = makeRoundedCanvas(cFinal, 52);
+    DEV.finalDataUrl = rounded.toDataURL("image/png");
+
+    const outImg = $("devFinalImg");
+    if (outImg) outImg.src = DEV.finalDataUrl;
+
+    return rounded;
+  }
+
+  // =====================================================
+  // MODO NORMAL: composición fases 1 + 2
+  // =====================================================
+  if (typeof html2canvas !== "function") {
+    alert("❌ Falta html2canvas. Agregalo en el HTML como en Biblia.");
+    return null;
+  }
+
+  const H1 = 1080, H2 = 840;
+
   let stage = document.getElementById("devCaptureStage");
   if (!stage) {
     stage = document.createElement("div");
     stage.id = "devCaptureStage";
     stage.style.position = "fixed";
-    stage.style.left = "-10000px";     // ✅ lejos sin transform
+    stage.style.left = "-10000px";
     stage.style.top  = "-10000px";
-    stage.style.opacity = "1";      
+    stage.style.opacity = "1";
     stage.style.visibility = "visible";
     stage.style.pointerEvents = "none";
-    stage.style.transform = "none";    // ✅ importantísimo
+    stage.style.transform = "none";
     stage.style.zIndex = "-1";
     document.body.appendChild(stage);
   }
   stage.innerHTML = "";
 
-  // ✅ Construir nodos “a tamaño real” (NO dependen del preview chico)
   const makeFase1Node = () => {
     const st = DEV.f1;
     const node = document.createElement("div");
@@ -1737,25 +2057,22 @@ async function renderFinalCanvasCaptureReal(){
 
     const wrap = document.createElement("div");
     wrap.style.position = "absolute";
-    wrap.style.inset = "6%";           // ✅ igual que .dev-textwrap
-    wrap.style.borderRadius = "14px";  // ✅ igual que preview
-    wrap.style.overflow = "hidden";    // ✅ igual que preview
+    wrap.style.inset = "6%";
+    wrap.style.borderRadius = "14px";
+    wrap.style.overflow = "hidden";
     wrap.style.backgroundColor = wrapperBgFromOpacity(st.op, st.opColor);
     wrap.style.boxShadow = wrapperShadowFromOpacity(st.op, st.opColor);
-     
+
     const texto = document.createElement("div");
     texto.style.position = "absolute";
     texto.style.inset = "0";
     texto.style.fontFamily = st.fuente;
     texto.style.color = st.color;
     applyTextStylesToOne(texto, st);
-     
-    // ✅ OUTLINE estable
+
     texto.style.textShadow = textShadowLegibleFinal(st.color);
     texto.style.webkitTextStroke = "0.6px " + outlineColor(st.color);
     texto.style.paintOrder = "stroke fill";
-
-    // ✅ IMPORTANTE: tamaño real (sin scalePreviewF1)
     texto.innerHTML = buildFase1HTML(st.size, 1);
 
     wrap.appendChild(texto);
@@ -1763,63 +2080,60 @@ async function renderFinalCanvasCaptureReal(){
     return node;
   };
 
-const makeFase2Node = () => {
-  const st = DEV.f2;
+  const makeFase2Node = () => {
+    const st = DEV.f2;
 
-  const node = document.createElement("div");
-  node.style.width = W + "px";
-  node.style.height = H2 + "px";
-  node.style.position = "relative";
-  node.style.overflow = "hidden";
-  node.style.borderRadius = "0";
-  node.style.backgroundColor = st.fondoColor || "#ffffff";
+    const node = document.createElement("div");
+    node.style.width = W + "px";
+    node.style.height = H2 + "px";
+    node.style.position = "relative";
+    node.style.overflow = "hidden";
+    node.style.borderRadius = "0";
+    node.style.backgroundColor = st.fondoColor || "#ffffff";
 
-  // ✅ textura en capa separada mezclada con el color
-if (st.texturaUrl) {
-  const textureLayer = document.createElement("div");
-  textureLayer.style.position = "absolute";
-  textureLayer.style.inset = "0";
-  textureLayer.style.backgroundImage = `url("${st.texturaUrl}")`;
-  textureLayer.style.backgroundSize = "cover";
-  textureLayer.style.backgroundPosition = "center";
-  textureLayer.style.backgroundRepeat = "no-repeat";
-  textureLayer.style.opacity = String(
-    Math.max(0, Math.min(1, Number(st.texturaOp ?? 0.22)))
-  );
-  textureLayer.style.mixBlendMode = "normal";
-  textureLayer.style.filter = "none";
-  textureLayer.style.pointerEvents = "none";
+    if (st.texturaUrl) {
+      const textureLayer = document.createElement("div");
+      textureLayer.style.position = "absolute";
+      textureLayer.style.inset = "0";
+      textureLayer.style.backgroundImage = `url("${st.texturaUrl}")`;
+      textureLayer.style.backgroundSize = "cover";
+      textureLayer.style.backgroundPosition = "center";
+      textureLayer.style.backgroundRepeat = "no-repeat";
+      textureLayer.style.opacity = String(
+        Math.max(0, Math.min(1, Number(st.texturaOp ?? 0.22)))
+      );
+      textureLayer.style.mixBlendMode = "normal";
+      textureLayer.style.filter = "none";
+      textureLayer.style.pointerEvents = "none";
 
-  node.appendChild(textureLayer);
-}
+      node.appendChild(textureLayer);
+    }
 
-  const wrap = document.createElement("div");
-  wrap.style.position = "absolute";
-  wrap.style.inset = "16px";
-  wrap.style.overflow = "hidden";
-  wrap.style.textAlign = "center";
-  wrap.style.zIndex = "1";
+    const wrap = document.createElement("div");
+    wrap.style.position = "absolute";
+    wrap.style.inset = "16px";
+    wrap.style.overflow = "hidden";
+    wrap.style.textAlign = "center";
+    wrap.style.zIndex = "1";
 
-  const texto = document.createElement("div");
-  texto.style.width = "100%";
-  texto.style.height = "100%";
-  texto.style.fontFamily = st.fuente;
-  texto.style.color = st.color;
-  applyTextStylesToOne(texto, st);
+    const texto = document.createElement("div");
+    texto.style.width = "100%";
+    texto.style.height = "100%";
+    texto.style.fontFamily = st.fuente;
+    texto.style.color = st.color;
+    applyTextStylesToOne(texto, st);
 
-  texto.style.textShadow = textShadowLegibleFinal(st.color);
-  texto.style.webkitTextStroke = "0.5px " + outlineColor(st.color);
-  texto.style.paintOrder = "stroke fill";
+    texto.style.textShadow = textShadowLegibleFinal(st.color);
+    texto.style.webkitTextStroke = "0.5px " + outlineColor(st.color);
+    texto.style.paintOrder = "stroke fill";
+    texto.innerHTML = buildFase2HTML(Math.max(12, roundToHalf(st.size * 1.12)));
 
-  texto.innerHTML = buildFase2HTML(Math.max(12, roundToHalf(st.size * 1.12)));
+    wrap.appendChild(texto);
+    node.appendChild(wrap);
 
-  wrap.appendChild(texto);
-  node.appendChild(wrap);
+    return node;
+  };
 
-  return node;
-};
-
-  // ✅ Agregar al stage y esperar fuentes/layout
   const n1 = makeFase1Node();
   const n2 = makeFase2Node();
   stage.appendChild(n1);
@@ -1828,22 +2142,19 @@ if (st.texturaUrl) {
   await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
   if (document.fonts?.ready) await document.fonts.ready;
 
-  // ✅ Capturar
   const cap1 = await html2canvas(n1, { backgroundColor: null, scale: 2, useCORS: true });
   const cap2 = await html2canvas(n2, { backgroundColor: null, scale: 2, useCORS: true });
 
   ctx.drawImage(cap1, 0, 0, W, H1);
   ctx.drawImage(cap2, 0, H1, W, H2);
 
-  // ✅ redondear como preview (aprox)
-  const RADIO_FINAL = 52; // si querés más redondo probá 50
-  const rounded = makeRoundedCanvas(cFinal, RADIO_FINAL);
+  const rounded = makeRoundedCanvas(cFinal, 52);
 
   DEV.finalDataUrl = rounded.toDataURL("image/png");
   const img = $("devFinalImg");
   if (img) img.src = DEV.finalDataUrl;
 
-  return rounded; // 👈 devolvemos el canvas redondeado
+  return rounded;
 }
 
 window.devToggleSubirPanel = () => {
@@ -1918,13 +2229,16 @@ async function devAbrirFase0(){
 }
 
 // Fase 0 -> Fase 1  ✅ usa CAMPOS MANUALES si los tocaste
-window.devIrFase1Desde0 = () => {
+window.devIrFase1Desde0 = async () => {
   const t0 = ($("dev0Texto")?.value || "").trim();
-  if (!t0) { alert("Pegá o generá el texto primero."); return; }
+  if (!t0) {
+    alert("Pegá o generá el texto primero.");
+    return;
+  }
 
   DEV.rawText = t0;
 
-  // 1) Si hay campos manuales, mandan
+  // 1) los campos manuales mandan
   devReadFieldsFromUI();
   const hayCampos =
     (DEV.fields.fecha || DEV.fields.versiculo || DEV.fields.cita || DEV.fields.reflexion || DEV.fields.oracion);
@@ -1932,38 +2246,66 @@ window.devIrFase1Desde0 = () => {
   if (hayCampos) {
     devApplyFieldsToParts();
   } else {
-    const { p1, p2, audioText } = buildBloquesFromOCR(t0);
-    DEV.p1 = p1;
-    DEV.p2 = p2;
-    DEV.audioText = audioText;
+    const parsed = DEV.finalizadaMode
+      ? buildBloquesFromOCRFinalizado(t0)
+      : buildBloquesFromOCR(t0);
 
-    DEV.fields.fecha     = oneLine(p1?.fecha || "");
-    DEV.fields.versiculo = oneLine(p1?.versiculo || "");
-    DEV.fields.cita      = oneLine(p1?.cita || "");
-    DEV.fields.reflexion = oneLine(p2?.reflexion || "");
-    DEV.fields.oracion   = oneLine(p2?.oracion || "");
+    DEV.p1 = parsed.p1;
+    DEV.p2 = parsed.p2;
+    DEV.audioText = parsed.audioText;
+
+    DEV.fields.fecha     = oneLine(parsed.p1?.fecha || "");
+    DEV.fields.versiculo = oneLine(parsed.p1?.versiculo || "");
+    DEV.fields.cita      = oneLine(parsed.p1?.cita || "");
+    DEV.fields.reflexion = oneLine(parsed.p2?.reflexion || "");
+    DEV.fields.oracion   = oneLine(parsed.p2?.oracion || "");
   }
 
   // reset final
   DEV.finalDataUrl = "";
   const imgF = $("devFinalImg");
-  if (imgF) imgF.src = "";
+  if (imgF && DEV.finalOriginalUrl && DEV.finalizadaMode) {
+    imgF.src = DEV.finalOriginalUrl;
+  } else if (imgF) {
+    imgF.src = "";
+  }
 
-  // reset gate audio
-  DEV.audioOk = false;
-  devSetFinalButtons(false);
+  // reset audio solo si NO venimos con audio manual cargado
+  if (!DEV.audioManualBlob) {
+    DEV.audioOk = false;
+  }
 
-    cerrarModal("modalDevFase0");
+  devSetFinalButtons(DEV.requiereAudio ? !!DEV.audioOk : true);
+
+  cerrarModal("modalDevFase0");
+
+  // ✅ si es finalizado, salta directo a fase 3
+  if (DEV.finalizadaMode) {
+    abrirModal("modalDevFase3");
+
+    DEV.audioOk = !!DEV.audioManualBlob;
+    devEnsureFase3Opciones();
+    devUpdateAudioManualUI();
+    devSetFinalButtons(DEV.requiereAudio ? !!DEV.audioOk : true);
+
+    devSetLoadingFase3(true, "⏳ Preparando imagen finalizada…");
+    try {
+      await renderFinalCanvasCaptureReal();
+    } finally {
+      devSetLoadingFase3(false);
+    }
+    return;
+  }
+
+  // flujo normal
   abrirModal("modalDevFase1");
 
   if (typeof window.initPickrEnHosts === "function") {
     window.initPickrEnHosts("#dev1OpColorHost, #dev1ColorHost");
   }
 
-  // render inicial
   devRenderFase(1);
 
-  // ✅ AUTO-SUGERIDO FASE 1 (igual que en btnCrear)
   (async ()=>{
     await new Promise(r => requestAnimationFrame(()=>requestAnimationFrame(r)));
     if (document.fonts?.ready) await document.fonts.ready;
@@ -2060,35 +2402,106 @@ function devEnsureFase3Opciones(){
     panel.id = "devF3Opciones";
     panel.style.display = "flex";
     panel.style.flexDirection = "column";
-    panel.style.gap = "8px";
+    panel.style.gap = "10px";
     panel.style.padding = "10px 12px 4px";
-    panel.style.alignItems = "flex-start";
+    panel.style.alignItems = "stretch";
 
     panel.innerHTML = `
       <label style="display:flex; align-items:center; gap:8px; font-weight:700; cursor:pointer;">
         <input type="checkbox" id="devChkRequiereAudio">
         Requiere audio
       </label>
+
+      <label style="display:flex; align-items:center; gap:8px; font-weight:700; cursor:pointer;">
+        <input type="checkbox" id="devChkSubirGithubFase3">
+        Subir audio a GitHub
+      </label>
+
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <button type="button" class="btn-primary" id="devBtnGenerarAudio">
+          🎙 Generar / editar audio
+        </button>
+
+        <button type="button" class="btn-primary" id="devBtnCargarAudioManual">
+          🎵 Cargar audio finalizado
+        </button>
+
+        <button type="button" class="btn-ghost" id="devBtnQuitarAudioManual">
+          🗑 Quitar audio
+        </button>
+      </div>
+
+      <input id="devAudioManualInput" type="file" accept="audio/*" hidden>
+
+      <div id="devAudioManualInfo" style="font-size:13px; opacity:.8;">
+        Sin audio cargado
+      </div>
     `;
 
     box.parentNode.insertBefore(panel, box);
 
     const chkReq = $("devChkRequiereAudio");
+    const chkGh  = $("devChkSubirGithubFase3");
+    const btnGen = $("devBtnGenerarAudio");
+    const btnUp  = $("devBtnCargarAudioManual");
+    const btnDel = $("devBtnQuitarAudioManual");
+    const inpAud = $("devAudioManualInput");
+
     if (chkReq) {
       chkReq.addEventListener("change", ()=>{
         DEV.requiereAudio = !!chkReq.checked;
-        devSetFinalButtons(DEV.requiereAudio ? !!DEV.audioOk : true);
 
         if (!DEV.requiereAudio) {
-          DEV.audioOk = false;
+          devSetFinalButtons(true);
+        } else {
+          devSetFinalButtons(!!DEV.audioOk);
         }
+
+        devUpdateAudioManualUI();
+      });
+    }
+
+    if (chkGh) {
+      chkGh.addEventListener("change", ()=>{
+        DEV.subirAudioGithub = !!chkGh.checked;
+      });
+    }
+
+    if (btnGen) {
+      btnGen.addEventListener("click", ()=>{
+        window.devAbrirAudio();
+      });
+    }
+
+    if (btnUp) {
+      btnUp.addEventListener("click", ()=>{
+        window.devAudioPickManual();
+      });
+    }
+
+    if (btnDel) {
+      btnDel.addEventListener("click", ()=>{
+        window.devAudioQuitarManual();
+      });
+    }
+
+    if (inpAud) {
+      inpAud.addEventListener("change", async (e)=>{
+        const file = e.target.files?.[0];
+        if (!file) return;
+        await window.devAudioCargarManual(file);
+        e.target.value = "";
       });
     }
   }
 
   const chkReq = $("devChkRequiereAudio");
-  if (chkReq) chkReq.checked = !!DEV.requiereAudio;
+  const chkGh  = $("devChkSubirGithubFase3");
 
+  if (chkReq) chkReq.checked = !!DEV.requiereAudio;
+  if (chkGh) chkGh.checked = !!DEV.subirAudioGithub;
+
+  devUpdateAudioManualUI();
   devSetFinalButtons(DEV.requiereAudio ? !!DEV.audioOk : true);
 }
 
@@ -2353,37 +2766,55 @@ function safeFilePart(s){
 }
 
 window.devDescargarFinal = async () => {
-     devBusyShow("⏳ Preparando audio…");
+  devBusyShow("⏳ Preparando audio…");
+
   try {
-    // 1) obtener base64 desde el <audio>
-   let pack = await audioElementToBase64();
+    let pack = null;
 
-if (!pack?.base64 || !pack?.blob) {
-  // ✅ si no existe audio, lo generamos automáticamente
-  window.__AUDIO_VOICE_NAME = "es-US-Studio-B"; // devocional
-  const texto = (DEV.audioText || "").trim();
-  if (!texto) { alert("No hay texto para audio."); return; }
+    // 1) si cargaste audio finalizado manual, ese manda
+    if (DEV.audioManualBlob && DEV.audioManualBase64) {
+      pack = {
+        base64: DEV.audioManualBase64,
+        blob: DEV.audioManualBlob
+      };
+    }
 
-  const r = await fetch(TTS_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ texto, voiceName: "es-US-Studio-B" })
-  });
+    // 2) si no, intentar tomarlo del modal/audio existente
+    if (!pack) {
+      pack = await audioElementToBase64();
+    }
 
-  const data = await r.json().catch(() => ({}));
-  if (!r.ok || !data?.audioBase64) {
-    alert("No pude generar el audio automáticamente.");
-    return;
-  }
+    // 3) si no existe, generarlo automáticamente
+    if (!pack?.base64 || !pack?.blob) {
+      window.__AUDIO_VOICE_NAME = "es-US-Studio-B";
+      const texto = (DEV.audioText || "").trim();
+      if (!texto) {
+        alert("No hay texto para audio.");
+        return;
+      }
 
-  // convertir base64 a blob
-  const bytes = Uint8Array.from(atob(data.audioBase64), c => c.charCodeAt(0));
-  const blob = new Blob([bytes], { type: "audio/mpeg" });
+      const r = await fetch(TTS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          texto,
+          voiceName: "es-US-Studio-B"
+        })
+      });
 
-  pack = { base64: data.audioBase64, blob };
-}
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok || !data?.audioBase64) {
+        alert("No pude generar el audio automáticamente.");
+        return;
+      }
 
-    // 2) subir a GitHub (opcional)
+      const bytes = Uint8Array.from(atob(data.audioBase64), c => c.charCodeAt(0));
+      const blob = new Blob([bytes], { type: "audio/mpeg" });
+
+      pack = { base64: data.audioBase64, blob };
+    }
+
+    // 4) subir a GitHub opcional
     let gh = null;
     if (DEV.subirAudioGithub) {
       try {
@@ -2397,22 +2828,35 @@ if (!pack?.base64 || !pack?.blob) {
       DEV.audioGithubUrl = "";
     }
 
-    // 3) descargar local (siempre)
+    // 5) descargar local siempre
     const fecha = DEV?.p1?.fecha || "sin_fecha";
     const baseName = "Audio_" + safeFilePart(fecha);
+
+    const ext =
+      pack.blob.type.includes("wav")  ? "wav" :
+      pack.blob.type.includes("ogg")  ? "ogg" :
+      pack.blob.type.includes("mpeg") ? "mp3" :
+      "mp3";
+
     const a = document.createElement("a");
     a.href = URL.createObjectURL(pack.blob);
-    a.download = `${baseName}.mp3`;
+    a.download = `${baseName}.${ext}`;
     document.body.appendChild(a);
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 
-    // 4) mensaje final
+    DEV.audioOk = true;
+    devSetFinalButtons(true);
+    devUpdateAudioManualUI();
+
     if (gh?.url) {
       alert("✅ Audio subido a GitHub y descargado.\n\nURL:\n" + gh.url);
+    } else {
+      alert("✅ Audio descargado.");
     }
-    } catch (e) {
+
+  } catch (e) {
     console.error(e);
     alert("❌ No se pudo descargar/subir el audio.\n\nDetalle: " + (e?.message || e));
   } finally {
@@ -2829,6 +3273,7 @@ async function resolverAdminYArrancar(){
 
 document.addEventListener("DOMContentLoaded", ()=>{
   initDevocionales();
+  devInitFinalizadoHook();
   devMostrarHome();
   resolverAdminYArrancar();
 });
