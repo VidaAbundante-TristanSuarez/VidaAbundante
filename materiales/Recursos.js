@@ -25,6 +25,16 @@ const RH_TEMAS = [
     titulo: "El momento del milagro",
     html: "materiales/RH/El momento del milagro.html",
     audio: "materiales/RH/El momento del milagro.mp3"
+  },
+   {
+    titulo: "El milagro del paralítico traído por 4 amigos",
+    html: "materiales/RH/El milagro del paralítico traído por 4 amigos.html",
+    audio: "materiales/RH/El milagro del paralítico traído por 4 amigos.mp3"
+  },
+   {
+    titulo: "Reconciliación",
+    html: "materiales/RH/Reconciliación.html",
+    audio: "materiales/RH/Reconciliación.mp3"
   }
 ];
 
