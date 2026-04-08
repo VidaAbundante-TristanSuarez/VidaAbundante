@@ -304,16 +304,85 @@ if (audio) {
     const raw = await r.text();
     const parsed = new DOMParser().parseFromString(raw, "text/html");
 
-    const estilos = Array.from(parsed.querySelectorAll("style"))
-      .map(s => s.outerHTML)
-      .join("");
+const estilos = Array.from(parsed.querySelectorAll("style"))
+  .map(s => s.outerHTML)
+  .join("");
 
-    const bodyHTML = parsed.body ? parsed.body.innerHTML : raw;
+const bodyHTML = parsed.body ? parsed.body.innerHTML : raw;
 
-    cont.innerHTML = `
-      ${estilos}
-      <div id="rhDoc">${bodyHTML}</div>
-    `;
+const htmlFrame = `
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  ${estilos}
+  <style>
+    html, body{
+      margin:0;
+      padding:0;
+      background:#fff;
+      color:#000;
+    }
+
+    *{
+      box-sizing:border-box;
+    }
+
+    img, table{
+      max-width:100% !important;
+      height:auto !important;
+    }
+
+    table{
+      display:block;
+      overflow-x:auto;
+      -webkit-overflow-scrolling:touch;
+    }
+  </style>
+</head>
+<body>
+  <div id="rhDoc">${bodyHTML}</div>
+</body>
+</html>
+`;
+
+cont.innerHTML = `
+  <iframe
+    id="rhFrame"
+    style="width:100%; border:0; display:block; background:#fff; border-radius:14px;"
+    loading="lazy"
+  ></iframe>
+`;
+
+const frame = document.getElementById("rhFrame");
+if (frame) {
+  frame.onload = () => {
+    try {
+      const doc = frame.contentDocument || frame.contentWindow.document;
+      const h = Math.max(
+        doc.body ? doc.body.scrollHeight : 0,
+        doc.documentElement ? doc.documentElement.scrollHeight : 0
+      );
+      frame.style.height = (h + 8) + "px";
+    } catch(e) {
+      console.warn("No pude ajustar alto de RH:", e);
+    }
+  };
+
+  frame.srcdoc = htmlFrame;
+
+  setTimeout(() => {
+    try {
+      const doc = frame.contentDocument || frame.contentWindow.document;
+      const h = Math.max(
+        doc.body ? doc.body.scrollHeight : 0,
+        doc.documentElement ? doc.documentElement.scrollHeight : 0
+      );
+      frame.style.height = (h + 8) + "px";
+    } catch(e) {}
+  }, 300);
+}
   } catch (e) {
     cont.innerHTML = `
       <div style="padding:12px; border-radius:12px; background:rgba(217,83,79,.12); color:inherit;">
