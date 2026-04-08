@@ -12,6 +12,11 @@ import {
 
 const RH_TEMAS = [
   {
+    titulo: "El comportamiento de Jesús ante el pecado",
+    html: "materiales/RH/El comportamiento de Jesús ante el pecado.html",
+    audio: "materiales/RH/El comportamiento de Jesús ante el pecado.mp3"
+  },
+  {
     titulo: "El Paralítico de Betesda",
     html: "materiales/RH/El Paralítico de Betesda.html",
     audio: "materiales/RH/El Paralítico de Betesda.mp3"
