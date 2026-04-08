@@ -348,7 +348,7 @@ cont.innerHTML = `
 `;
 
 abcPrepararBloques();
-// abcAplicarFontSize();
+abcAplicarFontSize();
 // ✅ 1) cargá marcadores ANTES de armar bloqueados/plumas
 await abcAsegurarMarcadoresCargados();
 // ✅ 2) armá bloqueados inmediatamente (sin esperar Firebase)
