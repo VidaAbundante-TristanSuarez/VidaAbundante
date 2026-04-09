@@ -1332,7 +1332,7 @@ function abcPortalBarraOn() {
   document.body.appendChild(bar);
   if (btn) document.body.appendChild(btn);
 
-  bar.style.display = "";
+bar.style.display = "";
 bar.style.visibility = "visible";
 bar.style.opacity = "1";
 bar.style.position = "fixed";
@@ -1341,7 +1341,12 @@ bar.style.right = "0";
 bar.style.bottom = "0";
 bar.style.zIndex = "9999";
 
-/* ✅ aire lateral/inferior solo en ABC */
+/* ✅ reset de la geometría que en Biblia rompe el padding del contenedor */
+bar.style.marginLeft = "0";
+bar.style.marginRight = "0";
+bar.style.width = "100%";
+
+/* ✅ aire visual solo para ABC */
 bar.style.paddingLeft = "10px";
 bar.style.paddingRight = "10px";
 bar.style.paddingBottom = "max(8px, env(safe-area-inset-bottom))";
@@ -1367,10 +1372,16 @@ bar.style.zIndex = "";
 bar.style.opacity = "";
 bar.style.visibility = "";
 bar.style.display = "";
+
+bar.style.marginLeft = "";
+bar.style.marginRight = "";
+bar.style.width = "";
+
 bar.style.paddingLeft = "";
 bar.style.paddingRight = "";
 bar.style.paddingBottom = "";
 bar.style.boxSizing = "";
+    
   }
 
   if (btn && __abcBtnParent) {
