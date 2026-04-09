@@ -560,7 +560,7 @@ body.oscuro .panel-tabs{
     margin-right: -12px;
     width: calc(100% + 24px);
     overflow-x: auto;
-    overflow-y: hidden;
+   overflow-y: visible;
     scrollbar-width: none;
   }
 
@@ -780,6 +780,7 @@ html, body {
 #resaltadorCompacto{
   position: relative;
   z-index: 9999;
+  overflow: visible;
 }
 
 #btnResaltadorActivo{
