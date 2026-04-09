@@ -1459,9 +1459,7 @@ function crearListaVisualFuentes() {
 
       actualizarPreview();
 
-      // cerrar al elegir
-      cont.classList.remove("abierto");
-      document.getElementById("btnFuentes")?.classList.remove("activo");
+      // ✅ ya NO cerramos al elegir
     };
 
     cont.appendChild(btn);
