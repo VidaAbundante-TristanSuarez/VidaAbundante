@@ -991,16 +991,21 @@ function crearListaFuentes(fase){
     const b = document.createElement("button");
     b.textContent = f.nombre;
     b.style.fontFamily = f.css;
+
     if (st.fuente === f.css) b.classList.add("activo");
 
     b.onclick = (e)=>{
-      e.preventDefault(); e.stopPropagation();
+      e.preventDefault();
+      e.stopPropagation();
+
       st.fuente = f.css;
+
       lista.querySelectorAll("button").forEach(x=>x.classList.remove("activo"));
       b.classList.add("activo");
-      lista.classList.remove("abierto");
-      btn.classList.remove("activo");
+
       devRenderFase(fase);
+
+      // ✅ ya NO cerramos al elegir
     };
 
     lista.appendChild(b);
@@ -1010,20 +1015,29 @@ function crearListaFuentes(fase){
     const rModal = modalBox.getBoundingClientRect();
     const rBtn = btn.getBoundingClientRect();
     const pad = 12;
+
     lista.style.left = (rModal.left + pad) + "px";
-    lista.style.width = (rModal.width - pad*2) + "px";
+    lista.style.width = (rModal.width - pad * 2) + "px";
     lista.style.top = (rBtn.bottom + 8) + "px";
   };
 
   btn.onclick = (e)=>{
-    e.preventDefault(); e.stopPropagation();
+    e.preventDefault();
+    e.stopPropagation();
+
     const open = lista.classList.toggle("abierto");
     btn.classList.toggle("activo", open);
+
     if (open) posicionar();
   };
 
-  window.addEventListener("resize", ()=>{ if (lista.classList.contains("abierto")) posicionar(); });
-  window.addEventListener("scroll", ()=>{ if (lista.classList.contains("abierto")) posicionar(); }, true);
+  window.addEventListener("resize", ()=>{
+    if (lista.classList.contains("abierto")) posicionar();
+  });
+
+  window.addEventListener("scroll", ()=>{
+    if (lista.classList.contains("abierto")) posicionar();
+  }, true);
 
   document.addEventListener("click", (e)=>{
     if (!lista.contains(e.target) && e.target !== btn) {
