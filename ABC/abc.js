@@ -1333,13 +1333,19 @@ function abcPortalBarraOn() {
   if (btn) document.body.appendChild(btn);
 
   bar.style.display = "";
-  bar.style.visibility = "visible";
-  bar.style.opacity = "1";
-  bar.style.position = "fixed";
-  bar.style.left = "0";
-  bar.style.right = "0";
-  bar.style.bottom = "0";
-  bar.style.zIndex = "9999";
+bar.style.visibility = "visible";
+bar.style.opacity = "1";
+bar.style.position = "fixed";
+bar.style.left = "0";
+bar.style.right = "0";
+bar.style.bottom = "0";
+bar.style.zIndex = "9999";
+
+/* ✅ aire lateral/inferior solo en ABC */
+bar.style.paddingLeft = "10px";
+bar.style.paddingRight = "10px";
+bar.style.paddingBottom = "max(8px, env(safe-area-inset-bottom))";
+bar.style.boxSizing = "border-box";
 
    // ✅ en ABC: si la barra está visible, el botón flotante NO se muestra
   if (btn) btn.style.display = "none";
@@ -1353,14 +1359,18 @@ function abcPortalBarraOff() {
     if (__abcBarNext) __abcBarParent.insertBefore(bar, __abcBarNext);
     else __abcBarParent.appendChild(bar);
 
-    bar.style.position = "";
-    bar.style.left = "";
-    bar.style.right = "";
-    bar.style.bottom = "";
-    bar.style.zIndex = "";
-    bar.style.opacity = "";
-    bar.style.visibility = "";
-    bar.style.display = "";
+bar.style.position = "";
+bar.style.left = "";
+bar.style.right = "";
+bar.style.bottom = "";
+bar.style.zIndex = "";
+bar.style.opacity = "";
+bar.style.visibility = "";
+bar.style.display = "";
+bar.style.paddingLeft = "";
+bar.style.paddingRight = "";
+bar.style.paddingBottom = "";
+bar.style.boxSizing = "";
   }
 
   if (btn && __abcBtnParent) {
