@@ -956,15 +956,26 @@ window.devCerrarTodo = () => {
    5) FUENTES (igual que Biblia pero separado)
    ========================================================= */
 const fuentesGoogle = [
-  { nombre: "Roboto", css: "Roboto" },
-  { nombre: "Lobster", css: "Lobster" },
-  { nombre: "Playfair Display", css: "'Playfair Display'" },
-  { nombre: "Montserrat", css: "Montserrat" },
-  { nombre: "Poppins", css: "Poppins" },
-  { nombre: "Abril Fatface", css: "'Abril Fatface'" },
-  { nombre: "Cormorant", css: "Cormorant" },
-  { nombre: "Josefin Sans", css: "'Josefin Sans'" },
-  { nombre: "Great Vibes", css: "'Great Vibes'" }
+  { nombre: "Roboto", css: "Roboto, sans-serif" },
+  { nombre: "Lobster", css: "Lobster, cursive" },
+  { nombre: "Playfair Display", css: "'Playfair Display', serif" },
+  { nombre: "Montserrat", css: "Montserrat, sans-serif" },
+  { nombre: "Poppins", css: "Poppins, sans-serif" },
+  { nombre: "Abril Fatface", css: "'Abril Fatface', serif" },
+  { nombre: "Cormorant", css: "Cormorant, serif" },
+  { nombre: "Josefin Sans", css: "'Josefin Sans', sans-serif" },
+  { nombre: "Great Vibes", css: "'Great Vibes', cursive" },
+
+  { nombre: "Lexend", css: "Lexend, sans-serif" },
+  { nombre: "Lora", css: "Lora, serif" },
+  { nombre: "Caveat", css: "Caveat, cursive" },
+  { nombre: "Merriweather", css: "Merriweather, serif" },
+
+  { nombre: "Arial", css: "Arial, sans-serif" },
+  { nombre: "Arial Black", css: "'Arial Black', Arial, sans-serif" },
+  { nombre: "Verdana", css: "Verdana, sans-serif" },
+  { nombre: "Trebuchet MS", css: "'Trebuchet MS', sans-serif" },
+  { nombre: "Comic Sans MS", css: "'Comic Sans MS', cursive" }
 ];
 
 function crearListaFuentes(fase){
