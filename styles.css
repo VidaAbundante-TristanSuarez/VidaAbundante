@@ -3032,4 +3032,24 @@ body.oscuro #buscarLibroBiblia{
   color:#fff;
   border-color: rgba(255,255,255,.18);
 }
+
+/* ✅ FIX MOBILE: la paleta del resaltador no depende de la barra scrolleable */
+@media (max-width: 640px){
+  #paletaResaltadores{
+    position: fixed !important;
+    left: 12px !important;
+    bottom: 64px !important;
+    top: auto !important;
+    right: auto !important;
+
+    z-index: 100000 !important;
+    max-width: calc(100vw - 24px);
+  }
+
+  /* si alguna vez tenía la clase mover-derecha, en mobile no la usamos */
+  #resaltadorCompacto.mover-derecha #paletaResaltadores{
+    left: 12px !important;
+    bottom: 64px !important;
+  }
+}
   </style> 
