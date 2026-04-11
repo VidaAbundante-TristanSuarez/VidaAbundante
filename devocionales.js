@@ -315,14 +315,15 @@ async function blobToBase64(blob){
 }
 
 async function subirImagenAR2DesdeWeb(fileBase64, fileName, contentType = "image/png"){
-  const r = await fetch(R2_UPLOAD_URL, {
-    method: "POST",
-    body: JSON.stringify({
-      fileBase64,
-      fileName,
-      contentType
-    })
-  });
+const r = await fetch(R2_UPLOAD_URL, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    fileBase64,
+    fileName,
+    contentType
+  })
+});
 
   const data = await r.json().catch(() => ({}));
   if (!r.ok || !data?.ok || !data?.url) {
@@ -2634,7 +2635,7 @@ function bindInputs(){
    11) AUDIO (bloquea botones hasta "Correcto")
    ========================================================= */
 window.devAbrirAudio = () => {
-  window.__AUDIO_VOICE_NAME = "es-US-Studio-B";
+  window.__AUDIO_VOICE_NAME = "es-US-Neural2-B";
   window.__AUDIO_ORIGEN = "devocional";
 
   DEV.audioText = buildAudioFromParts(DEV.p1, DEV.p2);
@@ -2827,7 +2828,7 @@ window.devDescargarFinal = async () => {
 
     // 3) si no existe, generarlo automáticamente
     if (!pack?.base64 || !pack?.blob) {
-      window.__AUDIO_VOICE_NAME = "es-US-Studio-B";
+      window.__AUDIO_VOICE_NAME = "es-US-Neural2-B";
       const texto = (DEV.audioText || "").trim();
       if (!texto) {
         alert("No hay texto para audio.");
@@ -2839,7 +2840,7 @@ window.devDescargarFinal = async () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           texto,
-          voiceName: "es-US-Studio-B"
+          voiceName: "es-US-Neural2-B"
         })
       });
 
@@ -2905,7 +2906,7 @@ window.devDescargarFinal = async () => {
   }
 };
 
-// ✅ SUBE LA IMAGEN SOLO UNA VEZ A STORAGE
+// ✅ SUBE LA IMAGEN SOLO UNA VEZ A R2
 async function devSubirImagenBaseUnaVez(tsParam){
   if (!window.__UID) {
     alert("Debes iniciar sesión.");
@@ -2925,13 +2926,12 @@ async function devSubirImagenBaseUnaVez(tsParam){
 
   const subida = await subirImagenAR2DesdeWeb(fileBase64, fileName, "image/png");
 
-  return {
-    ok: true,
-    ts,
-    url: subida.url,
-    storagePath: "",
-    dbPath: ""
-  };
+return {
+  ok: true,
+  ts,
+  url: subida.url,
+  dbPath: ""
+};
 }
 
 // ✅ SOLO GUARDA REFERENCIA EN IGLESIA
@@ -2949,17 +2949,16 @@ async function devGuardarEnIglesia(asset){
 
   const dbPath = `devocionalesIglesia/${uid}/${asset.ts}`;
 
-  await set(ref(db, dbPath), {
-    url: asset.url,
-    storagePath: asset.storagePath,
-    fecha: asset.ts,
-    texto: DEV.audioText || "",
-    cita: DEV.p1?.cita || "",
-    versiculo: DEV.p1?.versiculo || "",
-    audioOk: !!DEV.audioOk,
-    audioGithubUrl: DEV.audioGithubUrl || "",
-    origen: "devocional"
-  });
+await set(ref(db, dbPath), {
+  url: asset.url,
+  fecha: asset.ts,
+  texto: DEV.audioText || "",
+  cita: DEV.p1?.cita || "",
+  versiculo: DEV.p1?.versiculo || "",
+  audioOk: !!DEV.audioOk,
+  audioGithubUrl: DEV.audioGithubUrl || "",
+  origen: "devocional"
+});
 
   return { ok:true, dbPath };
 }
@@ -2981,15 +2980,15 @@ async function devGuardarEnMiPanel(asset){
   const dbPath = `panelImagenesPersonal/${uid}/${asset.ts}`;
 
   await set(ref(db, dbPath), {
-    url: asset.url,
-    storagePath: asset.storagePath,
-    fecha: asset.ts,
-    origen: "devocional",
-    tipoTexto: "devocional",
-    textoLibre: DEV.audioText || "",
-    audioOk: !!DEV.audioOk,
-    audioGithubUrl: DEV.audioGithubUrl || ""
-  });
+  url: asset.url,
+  fecha: asset.ts,
+  origen: "devocional",
+  tipoTexto: "devocional",
+  textoLibre: DEV.audioText || "",
+  audioOk: !!DEV.audioOk,
+  audioGithubUrl: DEV.audioGithubUrl || "",
+  devocionalKey: `${window.__UID}_${asset.ts}`
+});
 
   return { ok:true, dbPath };
 }
@@ -3563,9 +3562,7 @@ async function cargarGuardadosEnMiPanel(){
     Object.values(val).forEach(it => {
       if (!it || typeof it !== "object") return;
 
-      const key =
-        String(it.devocionalKey || "") ||
-        String(it.storagePath || "");
+      const key = String(it.devocionalKey || "");
 
       if (key) DEV.panelGuardados.add(key);
     });
@@ -3577,12 +3574,12 @@ async function cargarGuardadosEnMiPanel(){
 }
 
 function devKeyPublicado(it){
-  return String(it?.id || "") || String(it?.storagePath || "");
+  return String(it?.id || "");
 }
 
 function devYaGuardadoEnPanel(it){
   const key = devKeyPublicado(it);
-  return DEV.panelGuardados.has(key) || DEV.panelGuardados.has(String(it?.storagePath || ""));
+  return DEV.panelGuardados.has(key);
 }
 
 window.devGuardarPublicadoEnMiPanel = async function(itId){
@@ -3615,24 +3612,22 @@ window.devGuardarPublicadoEnMiPanel = async function(itId){
 
   try{
     await set(ref(db, dbPath), {
-      url: item.url || "",
-      storagePath: item.storagePath || "",
-      fecha: ts,
-      origen: "devocional_publicado",
-      tipoTexto: "devocional",
-      textoLibre: item.texto || "",
-      audioOk: !!item.audioOk,
-      audioGithubUrl: item.audioGithubUrl || "",
-      cita: item.cita || "",
-      versiculo: item.versiculo || "",
-      devocionalKey: key,
-      sourceUid: item.uidOwner || "",
-      sourceTs: item.tsKey || 0
-    });
+  url: item.url || "",
+  fecha: ts,
+  origen: "devocional_publicado",
+  tipoTexto: "devocional",
+  textoLibre: item.texto || "",
+  audioOk: !!item.audioOk,
+  audioGithubUrl: item.audioGithubUrl || "",
+  cita: item.cita || "",
+  versiculo: item.versiculo || "",
+  devocionalKey: key,
+  sourceUid: item.uidOwner || "",
+  sourceTs: item.tsKey || 0
+});
 
     DEV.panelGuardados.add(key);
-    if (item.storagePath) DEV.panelGuardados.add(String(item.storagePath));
-
+   
     const btn = document.querySelector(`[data-dev-save="${itId}"]`);
     if (btn) {
       btn.innerHTML = `<i class="fa-solid fa-heart-circle-check"></i>`;
@@ -3838,7 +3833,7 @@ function renderDevFeed(items){
 
     const deleteTopBtnHtml = esAdmin ? `
       <button class="btn-primary devDanger devDeleteTopBtn" type="button"
-        onclick="devBorrarDevocional('${it.uidOwner || ""}','${it.tsKey || 0}','${it.storagePath || ""}')"
+       onclick="devBorrarDevocional('${it.uidOwner || ""}','${it.tsKey || 0}')"
         aria-label="Borrar"
         title="Borrar">
         <i class="fa-solid fa-trash"></i>
@@ -3869,16 +3864,17 @@ function renderDevFeed(items){
 
         ${saveBtnHtml}
 
-        <button class="btn-primary" type="button"
-          onpointerdown="devWarmShareImage('${it.storagePath || ""}', 'devocional.png')"
-          ontouchstart="devWarmShareImage('${it.storagePath || ""}', 'devocional.png')"
-          onclick="devCompartirImagenItem('${it.storagePath || ""}', 'devocional.png')"
-          aria-label="Compartir">
-          <i class="fa-solid fa-share-nodes"></i>
-        </button>
+       <button class="btn-primary" type="button"
+  onpointerdown="devWarmShareImage('${it.url || ""}', 'devocional.png')"
+  ontouchstart="devWarmShareImage('${it.url || ""}', 'devocional.png')"
+  onclick="devCompartirImagenItem('${it.url || ""}', 'devocional.png')"
+  aria-label="Compartir"
+  title="Compartir">
+  <i class="fa-solid fa-share-nodes"></i>
+</button>
 
         <button class="btn-primary" type="button"
-          onclick="devDescargarImagenItem('${it.storagePath || ""}', 'devocional.png')"
+         onclick="devDescargarImagenItem('${it.url || ""}', 'devocional.png')"
           aria-label="Descargar PNG">
           <i class="fa-solid fa-download"></i>
         </button>
@@ -4109,26 +4105,26 @@ window.devEditarOracionPropia = async function(uidOwner, tsKey, comentId){
   }
 };
 
-window.devBorrarDevocional = async (uidOwner, tsKey, storagePath) => {
-  if (!isAdmin()) { alert("Solo admin."); return; }
+window.devBorrarDevocional = async (uidOwner, tsKey) => {
+  if (!isAdmin()) { 
+    alert("Solo admin."); 
+    return; 
+  }
 
-  const ok = confirm("¿Borrar este devocional?\n\nEsto elimina la imagen de Storage y el registro de la Iglesia.");
+  const ok = confirm("¿Borrar este devocional?\n\nEsto elimina el registro de la Iglesia.\n\nLa imagen en R2 no se borra desde este paso.");
   if (!ok) return;
 
   const fb  = window.__FB;
   const api = window.__FB_API;
-  if (!fb || !api) { alert("Firebase no listo."); return; }
+  if (!fb || !api) { 
+    alert("Firebase no listo."); 
+    return; 
+  }
 
-  const { db, storage } = fb;
-  const { ref, remove, sRef, deleteObject } = api;
+  const { db } = fb;
+  const { ref, remove } = api;
 
   try {
-    // 1) borrar Storage (si existe)
-    if (storagePath) {
-      await deleteObject(sRef(storage, storagePath));
-    }
-
-    // 2) borrar DB
     const dbPath = `devocionalesIglesia/${uidOwner}/${tsKey}`;
     await remove(ref(db, dbPath));
 
@@ -4217,21 +4213,22 @@ function devBusyHide(){
 // =========================
 window.__devShareCache = window.__devShareCache || new Map();
 
-function devShareKey(storagePath, fileName){
-  return `${storagePath}__${fileName}`;
+function devShareKey(url, fileName){
+  return `${url}__${fileName}`;
 }
 
-window.devWarmShareImage = async function(storagePath, fileName="devocional.png"){
+window.devWarmShareImage = async function(url, fileName="devocional.png"){
   try{
-    if (!storagePath) return null;
+    if (!url) return null;
 
-    const key = devShareKey(storagePath, fileName);
+    const key = devShareKey(url, fileName);
     const cached = window.__devShareCache.get(key);
+
     if (cached?.file) return cached.file;
     if (cached?.promise) return await cached.promise;
 
     const promise = (async ()=>{
-      const blob = await fetchDevocionalBlob(storagePath, fileName);
+      const blob = await fetchDevocionalBlob(url);
       const file = new File([blob], fileName, { type:"image/png" });
       window.__devShareCache.set(key, { file });
       return file;
@@ -4248,11 +4245,8 @@ window.devWarmShareImage = async function(storagePath, fileName="devocional.png"
 // =========================
 // ✅ CON FUNCTIONS COMPARTIR Y DESCARGAR
 // =========================
-const DEV_PNG_PROXY =
-  "https://us-central1-vidaabundante-f118a.cloudfunctions.net/devocionalPng";
-
-async function fetchDevocionalBlob(storagePath, fileName="devocional.png"){
-  const url = `${DEV_PNG_PROXY}?path=${encodeURIComponent(storagePath)}&name=${encodeURIComponent(fileName)}`;
+async function fetchDevocionalBlob(url){
+  if (!url) throw new Error("No hay URL de imagen");
   const r = await fetch(url);
   if (!r.ok) throw new Error("No pude bajar PNG (" + r.status + ")");
   return await r.blob();
@@ -4260,21 +4254,20 @@ async function fetchDevocionalBlob(storagePath, fileName="devocional.png"){
 
 function devPrecacheFeedImages(items){
   (items || []).forEach(it => {
-    const storagePath = it?.storagePath || "";
-    if (!storagePath) return;
+    const url = it?.url || "";
+    if (!url) return;
 
-    // ✅ calienta cache en segundo plano
-    devWarmShareImage(storagePath, "devocional.png").catch(()=>{});
+    fetch(url).catch(()=>{});
   });
 }
 
-window.devDescargarImagenItem = async function(storagePath, fileName="devocional.png"){
+window.devDescargarImagenItem = async function(url, fileName="devocional.png"){
   try{
-    if (!storagePath) throw new Error("No hay storagePath");
+    if (!url) throw new Error("No hay URL");
 
     devBusyShow("⏳ Preparando descarga…");
 
-    const blob = await fetchDevocionalBlob(storagePath, fileName);
+    const blob = await fetchDevocionalBlob(url);
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = fileName;
@@ -4290,23 +4283,14 @@ window.devDescargarImagenItem = async function(storagePath, fileName="devocional
   }
 };
 
-window.devCompartirImagenItem = async function(storagePath, fileName="devocional.png"){
+window.devCompartirImagenItem = async function(url, fileName="devocional.png"){
   try{
-    if (!storagePath) throw new Error("No hay storagePath");
+    if (!url) throw new Error("No hay URL");
 
-    const key = devShareKey(storagePath, fileName);
-    const cached = window.__devShareCache.get(key);
+    devBusyShow("⏳ Preparando imagen para compartir…");
 
-    // ✅ si todavía no está listo, avisamos y seguimos calentando
-    if (!cached?.file) {
-      devBusyShow("⏳ Preparando imagen para compartir…");
-      devWarmShareImage(storagePath, fileName).catch(()=>{});
-      setTimeout(() => devBusyHide(), 900);
-      alert("Todavía estoy preparando la imagen. Tocá compartir otra vez en un instante.");
-      return;
-    }
-
-    const file = cached.file;
+    const blob = await fetchDevocionalBlob(url);
+    const file = new File([blob], fileName, { type:"image/png" });
 
     if (navigator.share && navigator.canShare?.({ files:[file] })) {
       await navigator.share({
@@ -4316,7 +4300,7 @@ window.devCompartirImagenItem = async function(storagePath, fileName="devocional
       return;
     }
 
-    await window.devDescargarImagenItem(storagePath, fileName);
+    await window.devDescargarImagenItem(url, fileName);
     alert("Tu dispositivo o navegador no permite compartir como archivo. Se descargó el PNG.");
 
   } catch(e){
@@ -4326,4 +4310,3 @@ window.devCompartirImagenItem = async function(storagePath, fileName="devocional
     devBusyHide();
   }
 };
-
