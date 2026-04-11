@@ -701,7 +701,7 @@ function devUpdateAudioManualUI(){
     }
   }
 
-  const btnAudio = $("devBtnAudioFase3");
+  const btnAudio = $("devBtnAudio");
   const btnUp    = $("devBtnCargarAudioManual");
   const btnDel   = $("devBtnQuitarAudioManual");
 
@@ -2462,10 +2462,7 @@ function devEnsureFase3Opciones(){
       </label>
 
       <div style="display:flex; gap:8px; flex-wrap:wrap;">
-        <button type="button" class="btn-primary" id="devBtnAudioFase3">
-          <i class="fa-solid fa-headphones"></i> Audio
-        </button>
-
+        
         <button type="button" class="btn-primary" id="devBtnCargarAudioManual">
           🎵 Cargar audio finalizado
         </button>
@@ -2486,7 +2483,7 @@ function devEnsureFase3Opciones(){
 
     const chkReq   = $("devChkRequiereAudio");
     const chkGh    = $("devChkSubirGithubFase3");
-    const btnAudio = $("devBtnAudioFase3");
+    const btnAudio = $("devBtnAudio");
     const btnUp    = $("devBtnCargarAudioManual");
     const btnDel   = $("devBtnQuitarAudioManual");
     const inpAud   = $("devAudioManualInput");
