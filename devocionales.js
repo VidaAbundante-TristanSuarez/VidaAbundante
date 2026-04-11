@@ -690,14 +690,34 @@ function devResetAudioManual(){
 
 function devUpdateAudioManualUI(){
   const info = $("devAudioManualInfo");
-  if (!info) return;
 
-  if (DEV.audioManualBlob) {
-    info.textContent = `✅ Audio cargado: ${DEV.audioManualName || "audio finalizado"}`;
-  } else if (DEV.audioOk && DEV.requiereAudio) {
-    info.textContent = "✅ Audio confirmado";
-  } else {
-    info.textContent = "Sin audio cargado";
+  if (info) {
+    if (DEV.audioManualBlob) {
+      info.textContent = `✅ Audio cargado: ${DEV.audioManualName || "audio finalizado"}`;
+    } else if (DEV.audioOk && DEV.requiereAudio) {
+      info.textContent = "✅ Audio confirmado";
+    } else {
+      info.textContent = "Sin audio cargado";
+    }
+  }
+
+  const btnAudio = $("devBtnAudioFase3");
+  const btnUp    = $("devBtnCargarAudioManual");
+  const btnDel   = $("devBtnQuitarAudioManual");
+
+  // ✅ Audio siempre visible en fase 3
+  if (btnAudio) {
+    btnAudio.style.display = "inline-flex";
+  }
+
+  // ✅ solo visible si vino de "Cargar finalizado"
+  if (btnUp) {
+    btnUp.style.display = DEV.finalizadaMode ? "inline-flex" : "none";
+  }
+
+  // ✅ solo visible si hay audio manual cargado
+  if (btnDel) {
+    btnDel.style.display = DEV.audioManualBlob ? "inline-flex" : "none";
   }
 }
 
@@ -725,7 +745,6 @@ window.devAudioCargarManual = async function(file){
     devUpdateAudioManualUI();
     devSetFinalButtons(true);
 
-    // opcional: cargarlo en el preview de audio si existe
     const audioEl =
       document.querySelector("#modalAudio audio") ||
       document.querySelector("audio#audioPreview") ||
@@ -2443,8 +2462,8 @@ function devEnsureFase3Opciones(){
       </label>
 
       <div style="display:flex; gap:8px; flex-wrap:wrap;">
-        <button type="button" class="btn-primary" id="devBtnGenerarAudio">
-          🎙 Generar / editar audio
+        <button type="button" class="btn-primary" id="devBtnAudioFase3">
+          <i class="fa-solid fa-headphones"></i> Audio
         </button>
 
         <button type="button" class="btn-primary" id="devBtnCargarAudioManual">
@@ -2465,12 +2484,12 @@ function devEnsureFase3Opciones(){
 
     box.parentNode.insertBefore(panel, box);
 
-    const chkReq = $("devChkRequiereAudio");
-    const chkGh  = $("devChkSubirGithubFase3");
-    const btnGen = $("devBtnGenerarAudio");
-    const btnUp  = $("devBtnCargarAudioManual");
-    const btnDel = $("devBtnQuitarAudioManual");
-    const inpAud = $("devAudioManualInput");
+    const chkReq   = $("devChkRequiereAudio");
+    const chkGh    = $("devChkSubirGithubFase3");
+    const btnAudio = $("devBtnAudioFase3");
+    const btnUp    = $("devBtnCargarAudioManual");
+    const btnDel   = $("devBtnQuitarAudioManual");
+    const inpAud   = $("devAudioManualInput");
 
     if (chkReq) {
       chkReq.addEventListener("change", ()=>{
@@ -2492,8 +2511,8 @@ function devEnsureFase3Opciones(){
       });
     }
 
-    if (btnGen) {
-      btnGen.addEventListener("click", ()=>{
+    if (btnAudio) {
+      btnAudio.addEventListener("click", ()=>{
         window.devAbrirAudio();
       });
     }
