@@ -4208,6 +4208,16 @@ function devBusyHide(){
   if (box) box.style.display = "none";
 }
 
+function devPrecacheFeedImages(items){
+  (items || []).forEach(it => {
+    const storagePath = it?.storagePath || "";
+    if (!storagePath) return;
+
+    // ✅ calienta cache en segundo plano
+    devWarmShareImage(storagePath, "devocional.png").catch(()=>{});
+  });
+}
+
 window.devWarmShareFinal = async function(){
   try{
     const c = await renderFinalCanvasCaptureReal();
