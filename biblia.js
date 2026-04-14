@@ -302,17 +302,34 @@ function leerEstadoBiblia() {
 
 function irArribaBiblia() {
   const textoBiblia = document.getElementById("texto");
-  if (textoBiblia) {
-    const y = textoBiblia.getBoundingClientRect().top + window.scrollY - 6;
-    window.scrollTo({
-      top: Math.max(0, y),
-      behavior: "auto"
-    });
+  if (!textoBiblia) {
+    window.scrollTo({ top: 0, behavior: "auto" });
     return;
   }
 
+  // Medimos barras/headers visibles que puedan tapar el inicio real
+  const candidatos = [
+    document.querySelector("header"),
+    document.getElementById("barraTituloBiblia"),
+    document.getElementById("accionesBiblia")
+  ].filter(Boolean);
+
+  let offsetSuperior = 0;
+
+  candidatos.forEach(el => {
+    const st = getComputedStyle(el);
+    const esFijo = st.position === "fixed" || st.position === "sticky";
+    const visible = st.display !== "none" && st.visibility !== "hidden" && el.offsetHeight > 0;
+
+    if (esFijo && visible) {
+      offsetSuperior += el.offsetHeight;
+    }
+  });
+
+  const yDestino = textoBiblia.getBoundingClientRect().top + window.scrollY - offsetSuperior;
+
   window.scrollTo({
-    top: 0,
+    top: Math.max(0, yDestino),
     behavior: "auto"
   });
 }
@@ -4186,12 +4203,12 @@ window.capituloAnterior = () => {
 
     mostrarTexto({ irArriba: false, guardar: true });
 
-    setTimeout(() => {
+    requestAnimationFrame(() => {
       window.scrollTo({
         top: scrollCapituloAnterior || 0,
         behavior: "auto"
       });
-    }, 30);
+    });
   }
 };
 
@@ -4204,9 +4221,9 @@ window.capituloSiguiente = () => {
 
     mostrarTexto({ irArriba: false, guardar: true });
 
-    setTimeout(() => {
+    requestAnimationFrame(() => {
       irArribaBiblia();
-    }, 30);
+    });
   }
 };
 
