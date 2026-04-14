@@ -4247,39 +4247,37 @@ window.devWarmShareImage = async function(url, fileName="devocional.png"){
 // =========================
 async function fetchDevocionalBlob(url){
   if (!url) throw new Error("No hay URL de imagen");
-  const r = await fetch(url);
+
+  const proxyUrl =
+    "https://us-central1-vidaabundante-f118a.cloudfunctions.net/devocionalR2Proxy" +
+    "?url=" + encodeURIComponent(url) +
+    "&name=" + encodeURIComponent("devocional.png");
+
+  const r = await fetch(proxyUrl);
   if (!r.ok) throw new Error("No pude bajar PNG (" + r.status + ")");
   return await r.blob();
 }
 
 function devPrecacheFeedImages(items){
-  (items || []).forEach(it => {
-    const url = it?.url || "";
-    if (!url) return;
-
-    fetch(url).catch(()=>{});
-  });
+  // ✅ desactivado: el fetch a R2 da error CORS y ensucia consola
 }
 
 window.devDescargarImagenItem = async function(url, fileName="devocional.png"){
   try{
     if (!url) throw new Error("No hay URL");
 
-    devBusyShow("⏳ Preparando descarga…");
-
-    const blob = await fetchDevocionalBlob(url);
     const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
+    a.href = url;
+    a.target = "_blank";
+    a.rel = "noopener";
     a.download = fileName;
+
     document.body.appendChild(a);
     a.click();
     a.remove();
-    setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
   }catch(e){
     console.error(e);
     alert("❌ No se pudo descargar.\n\nDetalle: " + (e?.message || e));
-  }finally{
-    devBusyHide();
   }
 };
 
@@ -4287,26 +4285,37 @@ window.devCompartirImagenItem = async function(url, fileName="devocional.png"){
   try{
     if (!url) throw new Error("No hay URL");
 
-    devBusyShow("⏳ Preparando imagen para compartir…");
+    // ✅ usar tu proxy (IMPORTANTE)
+    const proxyUrl =
+      "https://us-central1-vidaabundante-f118a.cloudfunctions.net/devocionalR2Proxy" +
+      "?url=" + encodeURIComponent(url) +
+      "&name=" + encodeURIComponent(fileName);
 
-    const blob = await fetchDevocionalBlob(url);
-    const file = new File([blob], fileName, { type:"image/png" });
+    const r = await fetch(proxyUrl);
+    if (!r.ok) throw new Error("No pude bajar la imagen (" + r.status + ")");
 
-    if (navigator.share && navigator.canShare?.({ files:[file] })) {
+    const blob = await r.blob();
+    const file = new File([blob], fileName, { type: blob.type || "image/png" });
+
+    // ✅ intento compartir archivo REAL
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
       await navigator.share({
-        files: [file],
-        title: "Devocional"
+        title: "Devocional",
+        files: [file]
       });
       return;
     }
 
-    await window.devDescargarImagenItem(url, fileName);
-    alert("Tu dispositivo o navegador no permite compartir como archivo. Se descargó el PNG.");
+    // ❌ fallback si el navegador no soporta compartir archivos
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(file);
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
 
   } catch(e){
     console.error(e);
     alert("❌ No se pudo compartir.\n\nDetalle: " + (e?.message || e));
-  } finally {
-    devBusyHide();
   }
 };
