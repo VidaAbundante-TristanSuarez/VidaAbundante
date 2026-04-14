@@ -4197,7 +4197,14 @@ window.capituloSiguiente = () => {
 
     capSel.selectedIndex++;
 
-    mostrarTexto({ irArriba: true, guardar: true });
+    mostrarTexto({ irArriba: false, guardar: true });
+
+    // ✅ forzar ir arriba DESPUÉS del render
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        irArribaBiblia();
+      });
+    });
   }
 };
 
