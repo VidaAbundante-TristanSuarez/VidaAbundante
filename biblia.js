@@ -257,6 +257,9 @@ let textStyle = {
   underline: false
 };
 
+// ================= 🧠 MEMORIA SCROLL CAPÍTULOS =================
+let scrollCapituloAnterior = 0;
+
 // ================= 💾 ESTADO DE NAVEGACIÓN BIBLIA =================
 const LS_BIBLIA_ESTADO = "va_biblia_estado_v1";
 
@@ -4172,14 +4175,28 @@ indexRow.innerHTML = `
 window.capituloAnterior = () => {
   if (capSel.selectedIndex > 0) {
     capSel.selectedIndex--;
-    mostrarTexto();
+
+    mostrarTexto({ irArriba: false, guardar: true });
+
+    // 🔁 volver al scroll donde estabas
+    setTimeout(() => {
+      window.scrollTo({
+        top: scrollCapituloAnterior || 0,
+        behavior: "auto"
+      });
+    }, 0);
   }
 };
 
 // ================= 🔺 CAPITULO SIGUIENTE ===================
 window.capituloSiguiente = () => {
   if (capSel.selectedIndex < capSel.options.length - 1) {
+
+    // 📌 guardo dónde estaba antes de ir
+    scrollCapituloAnterior = window.scrollY || document.documentElement.scrollTop || 0;
+
     capSel.selectedIndex++;
+
     mostrarTexto({ irArriba: true, guardar: true });
   }
 };
