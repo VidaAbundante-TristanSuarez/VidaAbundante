@@ -968,6 +968,9 @@ window.devCerrarTodo = () => {
 
   devResetAudioManual();
 
+  window.__devFinalCanvas = null;
+  window.__devFinalFile = null;
+   
   // ✅ volver al Home
   devMostrarHome();
 };
@@ -2325,7 +2328,7 @@ window.devIrFase1Desde0 = async () => {
   cerrarModal("modalDevFase0");
 
   // ✅ si es finalizado, salta directo a fase 3
-  if (DEV.finalizadaMode) {
+   if (DEV.finalizadaMode) {
     abrirModal("modalDevFase3");
 
     DEV.audioOk = !!DEV.audioManualBlob;
@@ -2335,7 +2338,8 @@ window.devIrFase1Desde0 = async () => {
 
     devSetLoadingFase3(true, "⏳ Preparando imagen finalizada…");
     try {
-      await renderFinalCanvasCaptureReal();
+      const c = await renderFinalCanvasCaptureReal();
+      await devPrepararShareFinalDesdeCanvas(c);
     } finally {
       devSetLoadingFase3(false);
     }
@@ -2417,7 +2421,8 @@ window.devIrFase3 = async () => {
 
   try {
     if (typeof html2canvas === "function") {
-      await renderFinalCanvasCaptureReal();
+      const c = await renderFinalCanvasCaptureReal();
+      await devPrepararShareFinalDesdeCanvas(c);
     } else {
       alert("❌ Falta html2canvas. Cargalo como en biblia.js");
     }
@@ -2429,6 +2434,8 @@ window.devIrFase3 = async () => {
 window.devVolverFase2 = () => {
   cerrarModal("modalDevFase3");
   abrirModal("modalDevFase2");
+  window.__devFinalCanvas = null;
+  window.__devFinalFile = null;
   devRenderFase(2);
 };
 
@@ -2763,39 +2770,71 @@ async function devDescargarAudioSiExiste(){
 /* =========================================================
    12) BOTONES FINALES (descargar / compartir / iglesia / finalizar)
    ========================================================= */
+window.__devFinalCanvas = null;
+window.__devFinalFile = null;
+
+async function devPrepararShareFinalDesdeCanvas(canvas){
+  if (!canvas) return null;
+
+  window.__devFinalCanvas = canvas;
+
+  const blob = await new Promise(res => canvas.toBlob(res, "image/png"));
+  if (!blob) {
+    window.__devFinalFile = null;
+    return null;
+  }
+
+  window.__devFinalFile = new File([blob], "devocional.png", { type: "image/png" });
+  return window.__devFinalFile;
+}
+
 async function devDescargarImagenSolo(canvas){
+  const blob = await new Promise(res => canvas.toBlob(res, "image/png"));
+  if (!blob) {
+    alert("❌ No se pudo preparar la imagen.");
+    return;
+  }
+
+  const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
-  link.href = canvas.toDataURL("image/png");
+  link.href = url;
   link.download = "devocional.png";
   document.body.appendChild(link);
   link.click();
   link.remove();
+
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
 
 window.devCompartirFinal = async () => {
-  const c = await renderFinalCanvasCaptureReal();
-  if (!c) return;
+  try {
+    const file = window.__devFinalFile;
+    const canvas = window.__devFinalCanvas;
 
-  c.toBlob(async (blob) => {
-    if (!blob) {
-      await devDescargarImagenSolo(c);
+    // ✅ NO renderizar acá: ya debía quedar preparado al entrar a fase 3
+    if (!file || !canvas) {
+      alert("Todavía se está preparando la imagen. Esperá un instante y tocá compartir otra vez.");
       return;
     }
 
-    const file = new File([blob], "devocional.png", { type: "image/png" });
-
-    try {
-      if (navigator.share && navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], title: "Devocional" });
-      } else {
-        await devDescargarImagenSolo(c);
-        alert("Tu dispositivo/navegador no permite compartir directo. Se descargó la imagen para compartirla manualmente.");
-      }
-    } catch (e) {
-      console.warn("Share cancelado o falló:", e);
-      await devDescargarImagenSolo(c);
+    if (navigator.share && navigator.canShare?.({ files: [file] })) {
+      await navigator.share({
+        files: [file],
+        title: "Devocional"
+      });
+    } else {
+      await devDescargarImagenSolo(canvas);
+      alert("Tu dispositivo o navegador no permite compartir directo. Se descargó la imagen para compartirla manualmente.");
     }
-  }, "image/png");
+  } catch (e) {
+    console.warn("Share cancelado o falló:", e);
+
+    if (window.__devFinalCanvas) {
+      await devDescargarImagenSolo(window.__devFinalCanvas);
+    } else {
+      alert("❌ No se pudo compartir.\n\nDetalle: " + (e?.message || e));
+    }
+  }
 };
 
 function safeFilePart(s){
@@ -4208,37 +4247,13 @@ function devBusyHide(){
   if (box) box.style.display = "none";
 }
 
-function devPrecacheFeedImages(items){
-  (items || []).forEach(it => {
-    const storagePath = it?.storagePath || "";
-    if (!storagePath) return;
-
-    // ✅ calienta cache en segundo plano
-    devWarmShareImage(storagePath, "devocional.png").catch(()=>{});
-  });
-}
-
 // =========================
 // CACHE DEL PNG PARA SHARE
 // =========================
 window.__devShareCache = window.__devShareCache || new Map();
-window.__devPhase3ShareFile = null;
 
 function devShareKey(url, fileName){
   return `${url}__${fileName}`;
-}
-
-async function fetchDevocionalBlob(url){
-  if (!url) throw new Error("No hay URL de imagen");
-
-  const proxyUrl =
-    "https://us-central1-vidaabundante-f118a.cloudfunctions.net/devocionalR2Proxy" +
-    "?url=" + encodeURIComponent(url) +
-    "&name=" + encodeURIComponent("devocional.png");
-
-  const r = await fetch(proxyUrl);
-  if (!r.ok) throw new Error("No pude bajar PNG (" + r.status + ")");
-  return await r.blob();
 }
 
 window.devWarmShareImage = async function(url, fileName="devocional.png"){
@@ -4253,7 +4268,7 @@ window.devWarmShareImage = async function(url, fileName="devocional.png"){
 
     const promise = (async ()=>{
       const blob = await fetchDevocionalBlob(url);
-      const file = new File([blob], fileName, { type: "image/png" });
+      const file = new File([blob], fileName, { type:"image/png" });
       window.__devShareCache.set(key, { file });
       return file;
     })();
@@ -4265,6 +4280,22 @@ window.devWarmShareImage = async function(url, fileName="devocional.png"){
     return null;
   }
 };
+
+// =========================
+// ✅ CON FUNCTIONS COMPARTIR Y DESCARGAR
+// =========================
+async function fetchDevocionalBlob(url){
+  if (!url) throw new Error("No hay URL de imagen");
+
+  const proxyUrl =
+    "https://us-central1-vidaabundante-f118a.cloudfunctions.net/devocionalR2Proxy" +
+    "?url=" + encodeURIComponent(url) +
+    "&name=" + encodeURIComponent("devocional.png");
+
+  const r = await fetch(proxyUrl);
+  if (!r.ok) throw new Error("No pude bajar PNG (" + r.status + ")");
+  return await r.blob();
+}
 
 function devPrecacheFeedImages(items){
   // ✅ desactivado: el fetch a R2 da error CORS y ensucia consola
@@ -4324,61 +4355,6 @@ window.devCompartirImagenItem = async function(url, fileName="devocional.png"){
 
   } catch(e){
     console.error(e);
-    alert("❌ No se pudo compartir.\n\nDetalle: " + (e?.message || e));
-  }
-};
-
-window.devWarmShareFinal = async function(){
-  try{
-    const c = await renderFinalCanvasCaptureReal();
-    if (!c) return null;
-
-    const blob = await new Promise(res => c.toBlob(res, "image/png"));
-    if (!blob) return null;
-
-    window.__devPhase3ShareFile = new File([blob], "devocional.png", { type: "image/png" });
-    return window.__devPhase3ShareFile;
-  } catch(e){
-    console.warn("No pude precalentar fase 3:", e);
-    return null;
-  }
-};
-
-window.devCompartirFinal = async () => {
-  try{
-    let file = window.__devPhase3ShareFile;
-
-    if (!file) {
-      const c = await renderFinalCanvasCaptureReal();
-      if (!c) return;
-
-      const blob = await new Promise(res => c.toBlob(res, "image/png"));
-      if (!blob) {
-        await devDescargarImagenSolo(c);
-        return;
-      }
-
-      file = new File([blob], "devocional.png", { type: "image/png" });
-    }
-
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share({
-        title: "Devocional",
-        files: [file]
-      });
-      return;
-    }
-
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(file);
-    a.download = "devocional.png";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(()=> URL.revokeObjectURL(a.href), 2000);
-
-  } catch (e) {
-    console.warn("Share final falló:", e);
     alert("❌ No se pudo compartir.\n\nDetalle: " + (e?.message || e));
   }
 };
