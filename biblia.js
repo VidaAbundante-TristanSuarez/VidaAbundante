@@ -302,11 +302,21 @@ function leerEstadoBiblia() {
 
 function irArribaBiblia() {
   const barra = document.getElementById("barraTituloBiblia");
-  if (barra?.scrollIntoView) {
-    barra.scrollIntoView({ behavior: "auto", block: "start" });
-  } else {
-    window.scrollTo({ top: 0, behavior: "auto" });
+  const texto = document.getElementById("texto");
+
+  if (barra) {
+    const y = barra.getBoundingClientRect().top + window.scrollY - 8;
+    window.scrollTo({ top: Math.max(0, y), behavior: "auto" });
+    return;
   }
+
+  if (texto) {
+    const y = texto.getBoundingClientRect().top + window.scrollY - 8;
+    window.scrollTo({ top: Math.max(0, y), behavior: "auto" });
+    return;
+  }
+
+  window.scrollTo({ top: 0, behavior: "auto" });
 }
 
 function restaurarEstadoBibliaInicial() {
