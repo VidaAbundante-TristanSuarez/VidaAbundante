@@ -979,9 +979,14 @@
     <i class="fa-solid fa-download"></i>
   </button>
 
-  <button type="button" id="devBtnCompartir" onclick="devCompartirFinal()" disabled title="Compartir imagen">
-    <i class="fa-solid fa-share-nodes"></i>
-  </button>
+  <button id="devBtnCompartir"
+  type="button"
+  class="btn-primary"
+  onpointerdown="devWarmShareFinal()"
+  ontouchstart="devWarmShareFinal()"
+  onclick="devCompartirFinal()">
+  Compartir
+</button>
 
   <!-- ✅ Toggle “subir a Mi Panel” -->
   <button type="button" id="devBtnPanelToggle" onclick="devToggleSubirPanel()" disabled title="Subir también a Mi Panel">
