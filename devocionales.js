@@ -4319,3 +4319,158 @@ window.devCompartirImagenItem = async function(url, fileName="devocional.png"){
     alert("❌ No se pudo compartir.\n\nDetalle: " + (e?.message || e));
   }
 };
+
+ // 
+window.__devShareCache = window.__devShareCache || new Map();
+window.__devPhase3ShareFile = null;
+
+function devShareKey(url, fileName){
+  return `${url}__${fileName}`;
+}
+
+async function fetchDevocionalBlob(url){
+  if (!url) throw new Error("No hay URL de imagen");
+
+  const proxyUrl =
+    "https://us-central1-vidaabundante-f118a.cloudfunctions.net/devocionalR2Proxy" +
+    "?url=" + encodeURIComponent(url) +
+    "&name=" + encodeURIComponent("devocional.png");
+
+  const r = await fetch(proxyUrl);
+  if (!r.ok) throw new Error("No pude bajar PNG (" + r.status + ")");
+  return await r.blob();
+}
+
+window.devWarmShareImage = async function(url, fileName="devocional.png"){
+  try{
+    if (!url) return null;
+
+    const key = devShareKey(url, fileName);
+    const cached = window.__devShareCache.get(key);
+
+    if (cached?.file) return cached.file;
+    if (cached?.promise) return await cached.promise;
+
+    const promise = (async ()=>{
+      const blob = await fetchDevocionalBlob(url);
+      const file = new File([blob], fileName, { type: "image/png" });
+      window.__devShareCache.set(key, { file });
+      return file;
+    })();
+
+    window.__devShareCache.set(key, { promise });
+    return await promise;
+  } catch(e){
+    console.warn("No pude precalentar share:", e);
+    return null;
+  }
+};
+
+window.devCompartirImagenItem = async function(url, fileName="devocional.png"){
+  try{
+    if (!url) throw new Error("No hay URL");
+
+    const key = devShareKey(url, fileName);
+    let file = window.__devShareCache.get(key)?.file || null;
+
+    if (!file) {
+      // fallback por si no llegó a precalentar
+      const blob = await fetchDevocionalBlob(url);
+      file = new File([blob], fileName, { type: "image/png" });
+    }
+
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({
+        title: "Devocional",
+        files: [file]
+      });
+      return;
+    }
+
+    // fallback: descargar archivo real
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(file);
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=> URL.revokeObjectURL(a.href), 2000);
+
+  } catch(e){
+    console.error(e);
+    alert("❌ No se pudo compartir.\n\nDetalle: " + (e?.message || e));
+  }
+};
+
+window.devDescargarImagenItem = async function(url, fileName="devocional.png"){
+  try{
+    if (!url) throw new Error("No hay URL");
+
+    const blob = await fetchDevocionalBlob(url);
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=> URL.revokeObjectURL(a.href), 2000);
+  }catch(e){
+    console.error(e);
+    alert("❌ No se pudo descargar.\n\nDetalle: " + (e?.message || e));
+  }
+};
+
+window.devWarmShareFinal = async function(){
+  try{
+    const c = await renderFinalCanvasCaptureReal();
+    if (!c) return null;
+
+    const blob = await new Promise(res => c.toBlob(res, "image/png"));
+    if (!blob) return null;
+
+    window.__devPhase3ShareFile = new File([blob], "devocional.png", { type: "image/png" });
+    return window.__devPhase3ShareFile;
+  } catch(e){
+    console.warn("No pude precalentar fase 3:", e);
+    return null;
+  }
+};
+
+window.devCompartirFinal = async () => {
+  try{
+    let file = window.__devPhase3ShareFile;
+
+    if (!file) {
+      const c = await renderFinalCanvasCaptureReal();
+      if (!c) return;
+
+      const blob = await new Promise(res => c.toBlob(res, "image/png"));
+      if (!blob) {
+        await devDescargarImagenSolo(c);
+        return;
+      }
+
+      file = new File([blob], "devocional.png", { type: "image/png" });
+    }
+
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({
+        title: "Devocional",
+        files: [file]
+      });
+      return;
+    }
+
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(file);
+    a.download = "devocional.png";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=> URL.revokeObjectURL(a.href), 2000);
+
+  } catch (e) {
+    console.warn("Share final falló:", e);
+    alert("❌ No se pudo compartir.\n\nDetalle: " + (e?.message || e));
+  }
+};
