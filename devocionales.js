@@ -4218,6 +4218,116 @@ function devPrecacheFeedImages(items){
   });
 }
 
+// =========================
+// CACHE DEL PNG PARA SHARE
+// =========================
+window.__devShareCache = window.__devShareCache || new Map();
+window.__devPhase3ShareFile = null;
+
+function devShareKey(url, fileName){
+  return `${url}__${fileName}`;
+}
+
+async function fetchDevocionalBlob(url){
+  if (!url) throw new Error("No hay URL de imagen");
+
+  const proxyUrl =
+    "https://us-central1-vidaabundante-f118a.cloudfunctions.net/devocionalR2Proxy" +
+    "?url=" + encodeURIComponent(url) +
+    "&name=" + encodeURIComponent("devocional.png");
+
+  const r = await fetch(proxyUrl);
+  if (!r.ok) throw new Error("No pude bajar PNG (" + r.status + ")");
+  return await r.blob();
+}
+
+window.devWarmShareImage = async function(url, fileName="devocional.png"){
+  try{
+    if (!url) return null;
+
+    const key = devShareKey(url, fileName);
+    const cached = window.__devShareCache.get(key);
+
+    if (cached?.file) return cached.file;
+    if (cached?.promise) return await cached.promise;
+
+    const promise = (async ()=>{
+      const blob = await fetchDevocionalBlob(url);
+      const file = new File([blob], fileName, { type: "image/png" });
+      window.__devShareCache.set(key, { file });
+      return file;
+    })();
+
+    window.__devShareCache.set(key, { promise });
+    return await promise;
+  } catch(e){
+    console.warn("No pude precalentar share:", e);
+    return null;
+  }
+};
+
+function devPrecacheFeedImages(items){
+  // ✅ desactivado: el fetch a R2 da error CORS y ensucia consola
+}
+
+window.devDescargarImagenItem = async function(url, fileName="devocional.png"){
+  try{
+    if (!url) throw new Error("No hay URL");
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.target = "_blank";
+    a.rel = "noopener";
+    a.download = fileName;
+
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }catch(e){
+    console.error(e);
+    alert("❌ No se pudo descargar.\n\nDetalle: " + (e?.message || e));
+  }
+};
+
+window.devCompartirImagenItem = async function(url, fileName="devocional.png"){
+  try{
+    if (!url) throw new Error("No hay URL");
+
+    // ✅ usar tu proxy (IMPORTANTE)
+    const proxyUrl =
+      "https://us-central1-vidaabundante-f118a.cloudfunctions.net/devocionalR2Proxy" +
+      "?url=" + encodeURIComponent(url) +
+      "&name=" + encodeURIComponent(fileName);
+
+    const r = await fetch(proxyUrl);
+    if (!r.ok) throw new Error("No pude bajar la imagen (" + r.status + ")");
+
+    const blob = await r.blob();
+    const file = new File([blob], fileName, { type: blob.type || "image/png" });
+
+    // ✅ intento compartir archivo REAL
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({
+        title: "Devocional",
+        files: [file]
+      });
+      return;
+    }
+
+    // ❌ fallback si el navegador no soporta compartir archivos
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(file);
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+  } catch(e){
+    console.error(e);
+    alert("❌ No se pudo compartir.\n\nDetalle: " + (e?.message || e));
+  }
+};
+
 window.devWarmShareFinal = async function(){
   try{
     const c = await renderFinalCanvasCaptureReal();
