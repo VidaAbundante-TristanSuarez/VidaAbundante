@@ -301,35 +301,19 @@ function leerEstadoBiblia() {
 }
 
 function irArribaBiblia() {
-  const textoBiblia = document.getElementById("texto");
-  if (!textoBiblia) {
-    window.scrollTo({ top: 0, behavior: "auto" });
+  const primerVersiculo = document.querySelector("#texto .versiculo");
+
+  if (primerVersiculo) {
+    primerVersiculo.scrollIntoView({
+      behavior: "auto",
+      block: "start"
+    });
     return;
   }
 
-  // Medimos barras/headers visibles que puedan tapar el inicio real
-  const candidatos = [
-    document.querySelector("header"),
-    document.getElementById("barraTituloBiblia"),
-    document.getElementById("accionesBiblia")
-  ].filter(Boolean);
-
-  let offsetSuperior = 0;
-
-  candidatos.forEach(el => {
-    const st = getComputedStyle(el);
-    const esFijo = st.position === "fixed" || st.position === "sticky";
-    const visible = st.display !== "none" && st.visibility !== "hidden" && el.offsetHeight > 0;
-
-    if (esFijo && visible) {
-      offsetSuperior += el.offsetHeight;
-    }
-  });
-
-  const yDestino = textoBiblia.getBoundingClientRect().top + window.scrollY - offsetSuperior;
-
+  // fallback
   window.scrollTo({
-    top: Math.max(0, yDestino),
+    top: 0,
     behavior: "auto"
   });
 }
@@ -4215,6 +4199,7 @@ window.capituloAnterior = () => {
 // ================= 🔺 CAPITULO SIGUIENTE ===================
 window.capituloSiguiente = () => {
   if (capSel.selectedIndex < capSel.options.length - 1) {
+
     scrollCapituloAnterior = window.scrollY || document.documentElement.scrollTop || 0;
 
     capSel.selectedIndex++;
