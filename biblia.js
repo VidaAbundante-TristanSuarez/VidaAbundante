@@ -34,6 +34,9 @@ const firebaseConfig = {
   storageBucket: "vidaabundante-f118a.firebasestorage.app",
 };
 
+// ================= ☁️ R2 =================
+const R2_UPLOAD_URL = "https://us-central1-vidaabundante-f118a.cloudfunctions.net/subirImagenR2";
+
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getDatabase(app);
@@ -253,6 +256,95 @@ let textStyle = {
   italic: false,
   underline: false
 };
+
+// ================= 💾 ESTADO DE NAVEGACIÓN BIBLIA =================
+const LS_BIBLIA_ESTADO = "va_biblia_estado_v1";
+
+function obtenerSeccionActual() {
+  const ids = ["biblia", "iglesia", "panel", "compartidos"];
+  for (const id of ids) {
+    const el = document.getElementById("seccion-" + id);
+    if (el && el.style.display !== "none") return id;
+  }
+  return "biblia";
+}
+
+function guardarEstadoBiblia(extra = {}) {
+  try {
+    const estado = {
+      seccion: obtenerSeccionActual(),
+      version: versionActual || "RV1960",
+      libro: libroSel?.value || "",
+      capitulo: Number(capSel?.value || 1),
+      scrollBiblia: window.scrollY || document.documentElement.scrollTop || 0,
+      modoImagen: !!modoImagen,
+      ts: Date.now(),
+      ...extra
+    };
+    localStorage.setItem(LS_BIBLIA_ESTADO, JSON.stringify(estado));
+  } catch (e) {
+    console.warn("No pude guardar estado Biblia:", e);
+  }
+}
+
+function leerEstadoBiblia() {
+  try {
+    const raw = localStorage.getItem(LS_BIBLIA_ESTADO);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    console.warn("No pude leer estado Biblia:", e);
+    return null;
+  }
+}
+
+function irArribaBiblia() {
+  const barra = document.getElementById("barraTituloBiblia");
+  if (barra?.scrollIntoView) {
+    barra.scrollIntoView({ behavior: "auto", block: "start" });
+  } else {
+    window.scrollTo({ top: 0, behavior: "auto" });
+  }
+}
+
+function restaurarEstadoBibliaInicial() {
+  const estado = leerEstadoBiblia();
+  if (!estado) return;
+
+  // versión
+  if (estado.version === "NTV") {
+    versionActual = "NTV";
+    bibliaData = bibliaDataNTV;
+  } else {
+    versionActual = "RV1960";
+    bibliaData = bibliaDataRV;
+  }
+
+  // libro
+  const libros = [...new Set(bibliaData.map(v => v.Libro))];
+  libroSel.innerHTML = "";
+  libros.forEach(l => (libroSel.innerHTML += `<option>${l}</option>`));
+
+  if (estado.libro && libros.includes(estado.libro)) {
+    libroSel.value = estado.libro;
+  }
+
+  // capítulos
+  cargarCapitulos({ capituloPreferido: estado.capitulo, irArriba: false, guardar: false });
+
+  // restaurar sección después de que esté todo armado
+  setTimeout(() => {
+    if (estado.seccion && typeof window.irA === "function") {
+      try { window.irA(estado.seccion); } catch(e) {}
+    }
+
+    // restaurar scroll solo si estaba en biblia
+    if (estado.seccion === "biblia") {
+      setTimeout(() => {
+        window.scrollTo({ top: Number(estado.scrollBiblia || 0), behavior: "auto" });
+      }, 60);
+    }
+  }, 0);
+}
 
 // ================= REGISTRAR USUARIO ===================================
 async function registrarUsuarioActual(user) {
@@ -495,8 +587,8 @@ function bibliaRestaurarUIAlVolver() {
 
 // ================= ⭐ CARGA BIBLIA ==============================
 Promise.all([
-  fetch("VidaAbundante - RV1960.json").then(r => r.json()),
-  fetch("biblia_ntv.json").then(r => r.json())
+  fetch("VidaAbundante - RV1960.json", { cache: "force-cache" }).then(r => r.json()),
+  fetch("biblia_ntv.json", { cache: "force-cache" }).then(r => r.json())
 ])
 .then(([rvData, ntvData]) => {
   bibliaDataRV = Array.isArray(rvData) ? rvData : [];
@@ -529,19 +621,51 @@ function iniciar() {
   const libros = [...new Set(bibliaData.map(v => v.Libro))];
   libroSel.innerHTML = "";
   libros.forEach(l => (libroSel.innerHTML += `<option>${l}</option>`));
-  libroSel.onchange = cargarCapitulos;
-  capSel.onchange = mostrarTexto;
-  cargarCapitulos();
+
+  libroSel.onchange = () => {
+    cargarCapitulos({ capituloPreferido: 1, irArriba: true, guardar: true });
+  };
+
+  capSel.onchange = () => {
+    mostrarTexto({ irArriba: true, guardar: true });
+  };
+
+  restaurarEstadoBibliaInicial();
 }
 
 // ================= ⭐ CARGA CAPITULOS ==============================
-function cargarCapitulos() {
+function cargarCapitulos(opts = {}) {
+  const {
+    capituloPreferido = null,
+    irArriba = false,
+    guardar = true
+  } = opts;
+
+  const valorAnterior = Number(capSel?.value || 1);
+
   capSel.innerHTML = "";
+
   const caps = [...new Set(
-    bibliaData.filter(v => v.Libro === libroSel.value).map(v => v.Capitulo)
-  )];
-  caps.forEach(c => (capSel.innerHTML += `<option>${c}</option>`));
-  mostrarTexto();
+    bibliaData
+      .filter(v => v.Libro === libroSel.value)
+      .map(v => Number(v.Capitulo))
+  )].sort((a, b) => a - b);
+
+  caps.forEach(c => {
+    capSel.innerHTML += `<option value="${c}">${c}</option>`;
+  });
+
+  let destino = Number(capituloPreferido);
+
+  if (!Number.isFinite(destino) || !caps.includes(destino)) {
+    destino = caps.includes(valorAnterior) ? valorAnterior : caps[0];
+  }
+
+  if (Number.isFinite(destino)) {
+    capSel.value = String(destino);
+  }
+
+  mostrarTexto({ irArriba, guardar });
 }
 
 // ================= ⭐ MOSTRAR TOAST ==============================
@@ -598,11 +722,33 @@ function actualizarTituloBiblia() {
 window.cambiarVersionBiblia = function(version) {
   if (version !== "RV1960" && version !== "NTV") return;
 
+  const libroActual = libroSel?.value || "";
+  const capituloActual = Number(capSel?.value || 1);
+
   versionActual = version;
   bibliaData = (version === "NTV") ? bibliaDataNTV : bibliaDataRV;
 
-  cargarCapitulos();
-  mostrarTexto();
+  // reconstruir lista de libros
+  const libros = [...new Set(bibliaData.map(v => v.Libro))];
+  libroSel.innerHTML = "";
+  libros.forEach(l => (libroSel.innerHTML += `<option>${l}</option>`));
+
+  if (libroActual && libros.includes(libroActual)) {
+    libroSel.value = libroActual;
+  }
+
+  // conservar mismo capítulo
+  cargarCapitulos({
+    capituloPreferido: capituloActual,
+    irArriba: false,
+    guardar: true
+  });
+
+  // si está en modo imagen, mantener preview y selección
+  if (modoImagen) {
+    userSetFontSize = false;
+    actualizarPreview();
+  }
 };
 
 // ================= ⭐ SUGERIR TAMAÑO QUE ENTRE (solo sugerencia) =================
@@ -963,16 +1109,31 @@ window.forceSyncResaltadorUI = function forceSyncResaltadorUI(intentos = 20) {
 };
 
 // ================= ⭐ MOSTRAR TEXTO =======================
-function mostrarTexto() {
-  texto.innerHTML = ""; 
- actualizarTituloBiblia();
+function mostrarTexto(opts = {}) {
+  const {
+    irArriba = false,
+    guardar = true
+  } = opts;
+
+  texto.innerHTML = "";
+  actualizarTituloBiblia();
 
   const versos = bibliaData.filter(v =>
     v.Libro === libroSel.value &&
-    v.Capitulo == capSel.value
+    Number(v.Capitulo) === Number(capSel.value)
   );
 
   versos.forEach(v => pintarVersiculo(v));
+
+  if (irArriba) {
+    requestAnimationFrame(() => {
+      irArribaBiblia();
+    });
+  }
+
+  if (guardar) {
+    guardarEstadoBiblia();
+  }
 }
 
 // ================= ⭐ TOGGLE VERSICULO =======================
@@ -1407,6 +1568,15 @@ function initPersonalizarListeners() {
 }
 
 document.addEventListener("DOMContentLoaded", initPersonalizarListeners);
+window.addEventListener("beforeunload", () => {
+  guardarEstadoBiblia();
+});
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") {
+    guardarEstadoBiblia();
+  }
+});
 
 // ================= 🎀 LISTA VISUAL DE FUENTES =================
 const fuentesGoogle = [
@@ -1531,6 +1701,38 @@ if (btnFuentes && listaFuentes) {
       btnFuentes.classList.remove("activo");
     }
   });
+}
+
+// ================= ☁️ R2 HELPERS (COPIADO DE DEVOCIONALES) =================
+async function blobToBase64(blob){
+  return await new Promise((resolve,reject)=>{
+    const rd = new FileReader();
+    rd.onerror = reject;
+    rd.onload = ()=>{
+      const s = String(rd.result || "");
+      resolve(s.split(",")[1] || "");
+    };
+    rd.readAsDataURL(blob);
+  });
+}
+
+async function subirImagenAR2DesdeWeb(fileBase64, fileName, contentType = "image/png"){
+  const r = await fetch(R2_UPLOAD_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      fileBase64,
+      fileName,
+      contentType
+    })
+  });
+
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok || !data?.ok || !data?.url) {
+    throw new Error(data?.error || data?.detail || "No se pudo subir imagen a R2");
+  }
+
+  return data;
 }
 
 // ================= 🌄 FONDOS ⛺================================
@@ -2026,18 +2228,22 @@ async function subirImagenBibliaBaseUnaVez() {
   const ts = Date.now();
   const fileName = `versiculo_${ts}.png`;
 
-  // ✅ usar ruta permitida según el check de Compartidos/Iglesia
-  const compartir = !!document.getElementById("checkIglesia")?.checked;
-  const storagePath = compartir
-    ? `imagenes_iglesia/${uid}/${fileName}`
-    : `imagenes_personal/${uid}/${fileName}`;
+  try {
+    const fileBase64 = await blobToBase64(blob);
+    const subida = await subirImagenAR2DesdeWeb(fileBase64, fileName, "image/png");
 
-  const storageRef = sRef(storage, storagePath);
-  await uploadBytes(storageRef, blob, { contentType: "image/png" });
+    return {
+      ts,
+      url: subida.url,
+      storagePath: "", // ya no usamos storage
+      dbPath: ""
+    };
 
-  const url = await getDownloadURL(storageRef);
-
-  return { ts, url, storagePath };
+  } catch (e) {
+    console.error("❌ Error subiendo a R2:", e);
+    alert("No se pudo subir la imagen. Probá de nuevo.");
+    return null;
+  }
 }
 
 // ================= 📌 GUARDAR REFERENCIA EN MI PANEL =================
@@ -3949,7 +4155,7 @@ window.capituloAnterior = () => {
 window.capituloSiguiente = () => {
   if (capSel.selectedIndex < capSel.options.length - 1) {
     capSel.selectedIndex++;
-    mostrarTexto();
+    mostrarTexto({ irArriba: true, guardar: true });
   }
 };
 
