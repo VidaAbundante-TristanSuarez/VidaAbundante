@@ -439,10 +439,13 @@ onAuthStateChanged(auth, async user => {
     actualizarPermisosUI();
   });
 
-  onValue(ref(db, "marcados/" + uid), s => {
-    marcados = s.val() || {};
-    mostrarTexto();
-  });
+onValue(ref(db, "marcados/" + uid), s => {
+  marcados = s.val() || {};
+
+  if (obtenerSeccionActual() === "biblia") {
+    mostrarTexto({ guardar: false });
+  }
+});
 
   // ✅ Cargar imágenes del panel (personal)
   onValue(ref(db, "panelImagenesPersonal/" + uid), s => {
@@ -495,7 +498,9 @@ onAuthStateChanged(auth, async user => {
       renderPanelMarcadores();
     }
 
-    mostrarTexto();
+    if (obtenerSeccionActual() === "biblia") {
+  mostrarTexto({ guardar: false });
+}
 
     if (typeof abcMarcarSeleccionUI === "function") {
       abcMarcarSeleccionUI();
@@ -595,10 +600,12 @@ Promise.all([
   bibliaDataNTV = Array.isArray(ntvData) ? ntvData : [];
 
   // arranca por defecto en RV1960
-  bibliaData = bibliaDataRV;
+   bibliaData = bibliaDataRV;
   versionActual = "RV1960";
 
-  iniciar();
+  requestAnimationFrame(() => {
+    iniciar();
+  });
 })
 .catch(err => {
   console.error("❌ Error cargando Biblias:", err);
@@ -701,7 +708,7 @@ function getTextoVersiculo(v) {
 function actualizarTituloBiblia() {
   if (!titulo) return;
 
-  titulo.innerHTML = `
+  const htmlNuevo = `
     <span class="titulo-libro-cap">${libroSel.value} ${capSel.value}</span>
     <span class="versiones-inline">
       <button type="button"
@@ -717,6 +724,10 @@ function actualizarTituloBiblia() {
       </button>
     </span>
   `;
+
+  if (titulo.innerHTML !== htmlNuevo) {
+    titulo.innerHTML = htmlNuevo;
+  }
 }
 
 window.cambiarVersionBiblia = function(version) {
@@ -1118,10 +1129,13 @@ function mostrarTexto(opts = {}) {
   texto.innerHTML = "";
   actualizarTituloBiblia();
 
-  const versos = bibliaData.filter(v =>
-    v.Libro === libroSel.value &&
-    Number(v.Capitulo) === Number(capSel.value)
-  );
+ const libroActual = libroSel.value;
+const capituloActual = Number(capSel.value);
+
+const versos = bibliaData.filter(v =>
+  v.Libro === libroActual &&
+  Number(v.Capitulo) === capituloActual
+);
 
   versos.forEach(v => pintarVersiculo(v));
 
@@ -1168,9 +1182,13 @@ function toggleVersiculo(id, num) {
       seleccionImagen[id] = true;
     }
 
-    mostrarTexto();
+        mostrarTexto({ guardar: false });
     userSetFontSize = false; // ✅ cambió el texto => volver a AUTO
-    actualizarPreview();
+
+    requestAnimationFrame(() => {
+      actualizarPreview();
+    });
+
     return;
   }
 
@@ -1901,11 +1919,18 @@ function cargarFondos() {
     menu.classList.toggle("abierto");
   };
 
+ if (!window.__fondosMenuOutsideClickBound) {
+  window.__fondosMenuOutsideClickBound = true;
+
   document.addEventListener("click", (e) => {
-    if (!menuWrap.contains(e.target)) {
-      menu.classList.remove("abierto");
-    }
+    document.querySelectorAll(".dev-f1-menu-wrap").forEach(wrap => {
+      const menu = wrap.querySelector(".dev-f1-menu");
+      if (menu && !wrap.contains(e.target)) {
+        menu.classList.remove("abierto");
+      }
+    });
   });
+}
 
   menuWrap.appendChild(menuBtn);
   menuWrap.appendChild(menu);
