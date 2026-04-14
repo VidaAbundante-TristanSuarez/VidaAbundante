@@ -301,22 +301,20 @@ function leerEstadoBiblia() {
 }
 
 function irArribaBiblia() {
-  const barra = document.getElementById("barraTituloBiblia");
-  const texto = document.getElementById("texto");
-
-  if (barra) {
-    const y = barra.getBoundingClientRect().top + window.scrollY - 8;
-    window.scrollTo({ top: Math.max(0, y), behavior: "auto" });
+  const textoBiblia = document.getElementById("texto");
+  if (textoBiblia) {
+    const y = textoBiblia.getBoundingClientRect().top + window.scrollY - 6;
+    window.scrollTo({
+      top: Math.max(0, y),
+      behavior: "auto"
+    });
     return;
   }
 
-  if (texto) {
-    const y = texto.getBoundingClientRect().top + window.scrollY - 8;
-    window.scrollTo({ top: Math.max(0, y), behavior: "auto" });
-    return;
-  }
-
-  window.scrollTo({ top: 0, behavior: "auto" });
+  window.scrollTo({
+    top: 0,
+    behavior: "auto"
+  });
 }
 
 function restaurarEstadoBibliaInicial() {
@@ -4188,33 +4186,27 @@ window.capituloAnterior = () => {
 
     mostrarTexto({ irArriba: false, guardar: true });
 
-    // 🔁 volver al scroll donde estabas
     setTimeout(() => {
       window.scrollTo({
         top: scrollCapituloAnterior || 0,
         behavior: "auto"
       });
-    }, 0);
+    }, 30);
   }
 };
 
 // ================= 🔺 CAPITULO SIGUIENTE ===================
 window.capituloSiguiente = () => {
   if (capSel.selectedIndex < capSel.options.length - 1) {
-
-    // 📌 guardo dónde estaba antes de ir
     scrollCapituloAnterior = window.scrollY || document.documentElement.scrollTop || 0;
 
     capSel.selectedIndex++;
 
     mostrarTexto({ irArriba: false, guardar: true });
 
-    // ✅ forzar ir arriba DESPUÉS del render
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        irArribaBiblia();
-      });
-    });
+    setTimeout(() => {
+      irArribaBiblia();
+    }, 30);
   }
 };
 
