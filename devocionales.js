@@ -3913,7 +3913,7 @@ function renderDevFeed(items){
 </button>
 
         <button class="btn-primary" type="button"
-         onclick="devDescargarImagenItem('${it.url || ""}', 'devocional.png')"
+        onclick="devDescargarDevocionalItem('${it.url || ""}', 'devocional.png', '${it.audioGithubUrl || ""}', 'Audio_devocional')"
           aria-label="Descargar PNG">
           <i class="fa-solid fa-download"></i>
         </button>
@@ -4305,18 +4305,67 @@ window.devDescargarImagenItem = async function(url, fileName="devocional.png"){
   try{
     if (!url) throw new Error("No hay URL");
 
-    const a = document.createElement("a");
-    a.href = url;
-    a.target = "_blank";
-    a.rel = "noopener";
-    a.download = fileName;
+    devBusyShow("⏳ Preparando descarga…");
 
+    const blob = await fetchDevocionalBlob(url);
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = fileName;
     document.body.appendChild(a);
     a.click();
     a.remove();
+
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
   }catch(e){
     console.error(e);
     alert("❌ No se pudo descargar.\n\nDetalle: " + (e?.message || e));
+  }finally{
+    devBusyHide();
+  }
+};
+
+window.devDescargarAudioItem = async function(audioUrl, baseName = "Audio_devocional"){
+  try{
+    if (!audioUrl) return false;
+
+    const r = await fetch(audioUrl);
+    if (!r.ok) throw new Error("No pude bajar el audio (" + r.status + ")");
+
+    const blob = await r.blob();
+
+    const ext =
+      blob.type.includes("mpeg") ? "mp3" :
+      blob.type.includes("wav")  ? "wav" :
+      blob.type.includes("ogg")  ? "ogg" :
+      "mp3";
+
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `${baseName}.${ext}`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    return true;
+  }catch(e){
+    console.warn("No se pudo descargar audio:", e);
+    return false;
+  }
+};
+
+window.devDescargarDevocionalItem = async function(url, fileName="devocional.png", audioUrl="", audioBaseName="Audio_devocional"){
+  try{
+    await window.devDescargarImagenItem(url, fileName);
+
+    if (audioUrl) {
+      setTimeout(() => {
+        window.devDescargarAudioItem(audioUrl, audioBaseName);
+      }, 400);
+    }
+  }catch(e){
+    console.error(e);
+    alert("❌ No se pudo descargar el devocional.\n\nDetalle: " + (e?.message || e));
   }
 };
 
