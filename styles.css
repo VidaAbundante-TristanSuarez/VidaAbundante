@@ -2979,7 +2979,7 @@ body.en-biblia #btnScrollTopGlobal{
   width: min(285px, calc(100vw - 150px));
   padding: 8px 18px 8px 8px;
 
-  background: #fff;
+  background: #e9f6ff;
   border: 1px solid rgba(0,0,0,.10);
   border-radius: 14px;
   box-shadow: 0 10px 24px rgba(0,0,0,.22);
