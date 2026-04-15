@@ -260,21 +260,25 @@
 <!-- ================= DEVOCIONALES CREAR (solo admin) ================= -->
 <div id="devCrear" style="display:none;">
 
-  <!-- TOP BAR -->
-  <div class="dev-crear-topbar">
-    
-    <!-- IZQUIERDA: cargar finalizado -->
+<!-- TOP BAR -->
+<div class="dev-crear-topbar">
+
+  <div class="dev-top-left">
     <button id="btnDevCargarFinal" type="button" class="dev-icon-btn" onclick="devPickFinalizado(); return false;" title="Cargar finalizado">
       <i class="fa-solid fa-image"></i>
     </button>
     <input id="devInputFinalizado" type="file" accept="image/*" style="display:none;">
+  </div>
 
-    <!-- DERECHA: cerrar -->
+  <div></div>
+
+  <div class="dev-top-right">
     <button type="button" class="dev-crear-close" onclick="devCerrarTodo()" title="Cerrar">
       <i class="fa-solid fa-circle-xmark"></i>
     </button>
-
   </div>
+
+</div>
 
   <!-- Canvas -->
   <div id="devCanvasBox" class="hidden" style="margin-top:12px; border-radius:12px; overflow:hidden; border:1px solid #ddd;">
