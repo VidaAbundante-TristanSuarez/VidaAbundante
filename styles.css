@@ -3016,6 +3016,9 @@ body.oscuro #wrapFiltrosBiblia.abierto .filtros{
   font-family: "Lora", serif;
   border-radius: 999px;
   min-width: 0;
+  width: 100%;
+max-width: 100%;
+box-sizing: border-box;
 }
 
 #wrapFiltrosBiblia .filtros #libro{
@@ -3025,6 +3028,7 @@ body.oscuro #wrapFiltrosBiblia.abierto .filtros{
 #wrapFiltrosBiblia .filtros #capitulo{
   width: 64px;
   text-align: center;
+   width: 100%;
 }
 
 body.oscuro #buscarLibroBiblia{
