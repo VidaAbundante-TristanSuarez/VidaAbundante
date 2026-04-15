@@ -1388,13 +1388,23 @@ body.oscuro #subidosFeed a{
 
 /* botones icono */
 .dev-icon-btn{
-  width:44px;
-  height:44px;
-  border-radius:999px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding:0 !important;
+  width: 44px !important;
+  height: 44px !important;
+  min-width: 44px !important;
+  min-height: 44px !important;
+  padding: 0 !important;
+  border-radius: 999px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-sizing: border-box;
+  flex: 0 0 44px;
+}
+
+.dev-icon-btn i{
+  font-size: 18px;
+  line-height: 1;
+  margin: 0;
 }
 
 .dev-icon-btn i{
@@ -1433,4 +1443,17 @@ body.oscuro #subidosFeed a{
     font-size:17px;
   }
 }
+
+#btnDevImg,
+#btnDevRecortar,
+#btnDevListo,
+#btnDevOCR{
+  width: 44px !important;
+  height: 44px !important;
+  min-width: 44px !important;
+  min-height: 44px !important;
+  border-radius: 999px !important;
+  padding: 0 !important;
+}
+
 </style>
