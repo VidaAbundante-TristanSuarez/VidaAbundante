@@ -1164,14 +1164,14 @@ body.oscuro #subidosFeed a{
 
 /* ===== TEXTURAS DEVOCIONALES FASE 2 ===== */
 .dev-f1-menu-wrap{
-  flex:0 0 auto;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  height:64px;
-  position: absolute;
-  top: 0;
-  left: 46px;
+  position: sticky;   /* 👈 cambio */
+  left: 0;            /* 👈 clave */
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 64px;
+  z-index: 5;         /* 👈 para que quede arriba */
 }
 
 .dev-f1-menu-btn{
