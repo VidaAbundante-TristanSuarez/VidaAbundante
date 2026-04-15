@@ -1164,12 +1164,14 @@ body.oscuro #subidosFeed a{
 
 /* ===== TEXTURAS DEVOCIONALES FASE 2 ===== */
 .dev-f1-menu-wrap{
-  position:relative;
   flex:0 0 auto;
   display:flex;
   align-items:center;
   justify-content:center;
   height:64px;
+  position: absolute;
+  top: 0;
+  left: 46px;
 }
 
 .dev-f1-menu-btn{
@@ -1335,51 +1337,6 @@ body.oscuro #subidosFeed a{
 #modalDevListaOraciones{
   background: rgba(0,0,0,.34);
   backdrop-filter: blur(4px);
-}
-
-
-/* ================= FASE 1: BOTON ... FIJO ================= */
-
-.dev-f1-menu-wrap{
-  position: sticky;
-  left: 0;
-  top: 0;
-  z-index: 4;
-  flex: 0 0 auto;
-  align-self: flex-start;
-  background: #fff;
-  padding-right: 6px;
-  margin-right: 2px;
-}
-
-.dev-f1-menu-btn{
-  width: 40px;
-  height: 64px;
-  min-width: 40px;
-  padding: 0 !important;
-  border-radius: 14px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.dev-f1-menu{
-  position: absolute;
-  top: 0;
-  left: 46px;
-  display: none;
-  flex-direction: column;
-  gap: 6px;
-  background: #fff;
-  border: 1px solid #ddd;
-  border-radius: 14px;
-  padding: 8px;
-  box-shadow: 0 10px 24px rgba(0,0,0,.14);
-  z-index: 9999;
-}
-
-.dev-f1-menu.abierto{
-  display: flex;
 }
 
 /* ================= DEV CREAR CENTRADO + BOTONES ICONO ================= */
