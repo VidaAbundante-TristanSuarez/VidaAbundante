@@ -138,7 +138,29 @@ function devMostrarHome(){
   DEV.crop = null;
 
   show("devCanvasBox", false);
+     if (DEV.ctx && DEV.canvas) {
+    DEV.ctx.clearRect(0, 0, DEV.canvas.width, DEV.canvas.height);
+  }
   show("devTextoBox", false);
+
+  const btnFinal = $("btnDevCargarFinal");
+  const btnListo = $("btnDevListo");
+  const btnOCR = $("btnDevOCR");
+  const btnRecortar = $("btnDevRecortar");
+  const estado = $("estadoOCRDev");
+  const ta = $("devTexto");
+
+  if (btnFinal) btnFinal.style.display = "inline-flex";
+  if (btnListo) btnListo.style.display = "none";
+  if (btnOCR) btnOCR.style.display = "none";
+
+  if (btnRecortar) {
+    btnRecortar.disabled = true;
+    btnRecortar.style.opacity = "0.6";
+  }
+
+  if (ta) ta.value = "";
+  if (estado) estado.textContent = "";
 
   // opcional: limpiar input file
   const inp = $("devImg");
@@ -150,6 +172,27 @@ function devMostrarCrear(){
   const crear = $("devCrear");
   if (home) home.style.display = "none";
   if (crear) crear.style.display = "block";
+
+  const btnFinal = $("btnDevCargarFinal");
+  const btnListo = $("btnDevListo");
+  const btnOCR = $("btnDevOCR");
+  const btnRecortar = $("btnDevRecortar");
+  const estado = $("estadoOCRDev");
+  const ta = $("devTexto");
+
+  if (btnFinal) btnFinal.style.display = "inline-flex";
+  if (btnListo) btnListo.style.display = "none";
+  if (btnOCR) btnOCR.style.display = "none";
+
+  if (btnRecortar) {
+    btnRecortar.disabled = true;
+    btnRecortar.style.opacity = "0.6";
+  }
+
+  if (ta) ta.value = "";
+  if (estado) {
+    estado.textContent = "✅ Cargá una imagen, recortá si querés y tocá Crear devocional.";
+  }
 }
 
 /* =========================================================
@@ -1105,6 +1148,37 @@ window.devCerrarTodo = () => {
 
   window.__devFinalCanvas = null;
   window.__devFinalFile = null;
+
+  // ✅ reset visual de la pantalla crear
+  DEV.img = null;
+  DEV.crop = null;
+
+  const btnFinal = $("btnDevCargarFinal");
+  const btnRecortar = $("btnDevRecortar");
+  const btnListo = $("btnDevListo");
+  const btnOCR = $("btnDevOCR");
+  const ta = $("devTexto");
+  const estado = $("estadoOCRDev");
+
+  if (btnFinal) btnFinal.style.display = "inline-flex";
+
+  if (btnRecortar) {
+    btnRecortar.disabled = true;
+    btnRecortar.style.opacity = "0.6";
+  }
+
+  if (btnListo) btnListo.style.display = "none";
+  if (btnOCR) {
+    btnOCR.style.display = "none";
+    btnOCR.disabled = false;
+    btnOCR.style.opacity = "1";
+  }
+
+  if (ta) ta.value = "";
+
+  if (estado) {
+    estado.textContent = "✅ Cargá una imagen, recortá si querés y tocá Crear devocional.";
+  }
    
   // ✅ volver al Home
   devMostrarHome();
