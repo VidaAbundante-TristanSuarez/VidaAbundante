@@ -527,6 +527,111 @@ const texto = document.getElementById("texto");
 const titulo = document.getElementById("titulo");
 const loginModal = document.getElementById("loginModal");
 
+// ================= 🔎 HELPERS FILTROS BIBLIA =================
+let filtroBibliaBackup = null;
+
+function normalizarTextoFiltro(s) {
+  return String(s || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+function getLibrosUnicosActuales() {
+  return [...new Set(bibliaData.map(v => v.Libro))];
+}
+
+function reconstruirCapitulosParaLibro(libro, capituloPreferido = 1) {
+  if (!capSel) return;
+
+  const caps = [...new Set(
+    bibliaData
+      .filter(v => v.Libro === libro)
+      .map(v => Number(v.Capitulo))
+  )].sort((a, b) => a - b);
+
+  capSel.innerHTML = "";
+
+  caps.forEach(c => {
+    capSel.innerHTML += `<option value="${c}">${c}</option>`;
+  });
+
+  const destino = caps.includes(Number(capituloPreferido))
+    ? Number(capituloPreferido)
+    : (caps[0] || 1);
+
+  capSel.value = String(destino);
+}
+
+function abrirFiltrosBiblia() {
+  const wrap = document.getElementById("wrapFiltrosBiblia");
+  const btn  = document.getElementById("btnToggleFiltros");
+  if (!wrap) return;
+
+  filtroBibliaBackup = {
+    libro: libroSel?.value || "",
+    capitulo: Number(capSel?.value || 1),
+    input: document.getElementById("buscarLibroBiblia")?.value || ""
+  };
+
+  wrap.classList.add("abierto");
+  if (btn) btn.classList.add("activo");
+
+   if (libroSel) {
+    Array.from(libroSel.options).forEach(opt => {
+      opt.hidden = false;
+    });
+  }
+  
+  setTimeout(() => {
+    const inputBuscar = document.getElementById("buscarLibroBiblia");
+    if (inputBuscar) inputBuscar.focus();
+  }, 0);
+}
+
+function cerrarFiltrosBiblia(cancelar = false) {
+  const wrap = document.getElementById("wrapFiltrosBiblia");
+  const btn  = document.getElementById("btnToggleFiltros");
+  const inputBuscar = document.getElementById("buscarLibroBiblia");
+
+  if (!wrap) return;
+
+  if (cancelar && filtroBibliaBackup) {
+    if (libroSel && filtroBibliaBackup.libro) {
+      libroSel.value = filtroBibliaBackup.libro;
+      reconstruirCapitulosParaLibro(filtroBibliaBackup.libro, filtroBibliaBackup.capitulo);
+    }
+    if (inputBuscar) {
+      inputBuscar.value = filtroBibliaBackup.input || "";
+    }
+  }
+
+  wrap.classList.remove("abierto");
+  if (btn) {
+    btn.classList.remove("activo");
+    btn.blur();
+  }
+
+  if (document.activeElement?.blur) {
+    document.activeElement.blur();
+  }
+}
+
+function aplicarFiltrosBiblia() {
+  const libro = libroSel?.value || "";
+  const capitulo = Number(capSel?.value || 1);
+
+  if (!libro) {
+    cerrarFiltrosBiblia(true);
+    return;
+  }
+
+  reconstruirCapitulosParaLibro(libro, capitulo);
+  mostrarTexto({ irArriba: true, guardar: true });
+  cerrarFiltrosBiblia(false);
+}
+
 // ================= CONTEXTO: AISLAR MODOS BIBLIA vs ABC =================
 // Guarda el estado de Biblia y lo apaga visualmente al entrar en ABC.
 // Luego lo restaura al volver a Biblia.
@@ -642,11 +747,12 @@ function iniciar() {
   libros.forEach(l => (libroSel.innerHTML += `<option>${l}</option>`));
 
   libroSel.onchange = () => {
-    cargarCapitulos({ capituloPreferido: 1, irArriba: true, guardar: true });
+    // ✅ en filtros, solo preparar capítulos y dejar 1 por default
+    reconstruirCapitulosParaLibro(libroSel.value, 1);
   };
 
   capSel.onchange = () => {
-    mostrarTexto({ irArriba: true, guardar: true });
+    // ✅ no navegar automáticamente desde el filtro
   };
 
   restaurarEstadoBibliaInicial();
@@ -4215,31 +4321,17 @@ window.capituloSiguiente = () => {
 // ================= 🔍 TOGGLE FILTROS BIBLIA =================
 window.toggleFiltrosBiblia = () => {
   const wrap = document.getElementById("wrapFiltrosBiblia");
-  const btn  = document.getElementById("btnToggleFiltros");
   if (!wrap) return;
 
-  const abierto = wrap.classList.toggle("abierto");
+  const abierto = wrap.classList.contains("abierto");
 
-  if (btn) {
-    btn.classList.toggle("activo", abierto);
-
-    if (!abierto) {
-      btn.blur();
-      if (document.activeElement && document.activeElement.blur) {
-        document.activeElement.blur();
-      }
-    }
+  if (abierto) {
+    cerrarFiltrosBiblia(true); // tocar botón otra vez = cancelar
+  } else {
+    abrirFiltrosBiblia();
   }
-
-  // ✅ cuando se abre → foco en el input de búsqueda
-  setTimeout(() => {
-    const inputBuscar = document.getElementById("buscarLibroBiblia");
-    const sigueAbierto = document.getElementById("wrapFiltrosBiblia")?.classList.contains("abierto");
-    if (sigueAbierto && inputBuscar) inputBuscar.focus();
-  }, 0);
 };
 
-// ================= CERRAR FILTROS AL TOCAR AFUERA =================
 // ================= CERRAR FILTROS AL TOCAR AFUERA =================
 document.addEventListener("click", (e) => {
   const wrap = document.getElementById("wrapFiltrosBiblia");
@@ -4247,11 +4339,8 @@ document.addEventListener("click", (e) => {
   const titulo = document.getElementById("titulo");
 
   if (!wrap) return;
+  if (!wrap.classList.contains("abierto")) return;
 
-  const abierto = wrap.classList.contains("abierto");
-  if (!abierto) return;
-
-  // ✅ si el click fue dentro del panel, en el botón o en el título, no cerrar
   if (
     wrap.contains(e.target) ||
     (btn && btn.contains(e.target)) ||
@@ -4260,8 +4349,7 @@ document.addEventListener("click", (e) => {
     return;
   }
 
-  wrap.classList.remove("abierto");
-  if (btn) btn.classList.remove("activo");
+  cerrarFiltrosBiblia(true); // afuera = cancelar
 });
 
 // ================= 🔺 PANEL ===================
@@ -4706,27 +4794,61 @@ if (tituloBiblia) {
   });
 }
 
-  const inputBuscarLibro = document.getElementById("buscarLibroBiblia");
+const inputBuscarLibro = document.getElementById("buscarLibroBiblia");
 const selectLibro = document.getElementById("libro");
 
 if (inputBuscarLibro && selectLibro) {
   inputBuscarLibro.addEventListener("input", () => {
-    const q = inputBuscarLibro.value.trim().toLowerCase();
+    const q = normalizarTextoFiltro(inputBuscarLibro.value);
     const opciones = Array.from(selectLibro.options);
 
     let primeraCoincidencia = null;
 
     opciones.forEach(opt => {
-      const ok = opt.text.toLowerCase().includes(q);
+      const textoNormalizado = normalizarTextoFiltro(opt.text);
+      const ok = !q || textoNormalizado.includes(q);
+
       opt.hidden = !ok;
       if (ok && !primeraCoincidencia) primeraCoincidencia = opt;
     });
 
     if (primeraCoincidencia) {
       selectLibro.value = primeraCoincidencia.value;
+
+      // ✅ al cambiar de libro desde el buscador, mostrar capítulo 1 en el filtro
+      reconstruirCapitulosParaLibro(primeraCoincidencia.value, 1);
+    }
+  });
+
+  inputBuscarLibro.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      aplicarFiltrosBiblia();
     }
   });
 }
+  
+// ✅ botón confirmar filtros (se crea por JS para no tocar mucho HTML)
+(function initBotonAplicarFiltrosBiblia() {
+  const wrap = document.getElementById("wrapFiltrosBiblia");
+  if (!wrap) return;
+  if (document.getElementById("btnAplicarFiltrosBiblia")) return;
+
+  const btn = document.createElement("button");
+  btn.id = "btnAplicarFiltrosBiblia";
+  btn.type = "button";
+  btn.className = "btn-primary";
+  btn.setAttribute("aria-label", "Aplicar filtros");
+  btn.innerHTML = `<i class="fa-solid fa-caret-right"></i>`;
+
+  btn.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    aplicarFiltrosBiblia();
+  });
+
+  wrap.appendChild(btn);
+})();
   
 // 4) arrancar en iglesia
 window.irA?.("iglesia");
