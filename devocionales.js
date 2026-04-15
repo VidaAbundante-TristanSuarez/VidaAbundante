@@ -3425,8 +3425,7 @@ btnListo.addEventListener("click", ()=>{
   DEV.drawing = false;
 
   btnListo.style.display = "none";
-
-  if (btnOCR) btnOCR.style.display = "inline-flex";
+  btnOCR.style.display = "inline-flex";
 
   draw();
 });
