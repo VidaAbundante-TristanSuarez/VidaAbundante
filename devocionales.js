@@ -25,6 +25,12 @@ const DEV = {
   start: null,
   crop: null,
 
+  cropDragMode: "",
+  cropHandle: "",
+  cropEdgePad: 18,
+  cropMinSize: 40,
+  cropStartRect: null,
+
   // texto y bloques
   rawText: "",
   // ====== CAMPOS EDITABLES (FASE 0) ======
@@ -169,6 +175,23 @@ function draw() {
     ctx.lineWidth = 2;
     ctx.strokeRect(crop.x, crop.y, crop.w, crop.h);
 
+    const hs = 10;
+    const pts = [
+      [crop.x, crop.y],
+      [crop.x + crop.w / 2, crop.y],
+      [crop.x + crop.w, crop.y],
+      [crop.x, crop.y + crop.h / 2],
+      [crop.x + crop.w, crop.y + crop.h / 2],
+      [crop.x, crop.y + crop.h],
+      [crop.x + crop.w / 2, crop.y + crop.h],
+      [crop.x + crop.w, crop.y + crop.h]
+    ];
+
+    ctx.fillStyle = "#4f6fa8";
+    pts.forEach(([px, py]) => {
+      ctx.fillRect(px - hs / 2, py - hs / 2, hs, hs);
+    });
+
     ctx.fillStyle = "rgba(0,0,0,0.25)";
     ctx.beginPath();
     ctx.rect(0,0,canvas.width,canvas.height);
@@ -193,6 +216,97 @@ function canvasPointFromClient(clientX, clientY){
   return {x,y};
 }
 
+function clamp(n, min, max){
+  return Math.max(min, Math.min(max, n));
+}
+
+function devCrearCropCuadradoInicial(){
+  const c = DEV.canvas;
+  if (!c) return null;
+
+  const side = Math.round(Math.min(c.width, c.height) * 0.72);
+  const x = Math.round((c.width - side) / 2);
+  const y = Math.round((c.height - side) / 2);
+
+  return { x, y, w: side, h: side };
+}
+
+function pointNear(a, b, pad){
+  return Math.abs(a - b) <= pad;
+}
+
+function detectCropHandle(p, r){
+  if (!r) return "";
+
+  const pad = DEV.cropEdgePad || 18;
+  const left   = r.x;
+  const right  = r.x + r.w;
+  const top    = r.y;
+  const bottom = r.y + r.h;
+
+  const inside =
+    p.x >= left && p.x <= right &&
+    p.y >= top  && p.y <= bottom;
+
+  if (pointNear(p.x, left, pad) && pointNear(p.y, top, pad)) return "nw";
+  if (pointNear(p.x, right, pad) && pointNear(p.y, top, pad)) return "ne";
+  if (pointNear(p.x, left, pad) && pointNear(p.y, bottom, pad)) return "sw";
+  if (pointNear(p.x, right, pad) && pointNear(p.y, bottom, pad)) return "se";
+
+  if (pointNear(p.x, left, pad) && p.y >= top && p.y <= bottom) return "w";
+  if (pointNear(p.x, right, pad) && p.y >= top && p.y <= bottom) return "e";
+  if (pointNear(p.y, top, pad) && p.x >= left && p.x <= right) return "n";
+  if (pointNear(p.y, bottom, pad) && p.x >= left && p.x <= right) return "s";
+
+  if (inside) return "move";
+  return "";
+}
+
+function devUpdateCropFromHandle(handle, p){
+  const c = DEV.canvas;
+  const r0 = DEV.cropStartRect;
+  if (!c || !r0) return;
+
+  const min = DEV.cropMinSize || 40;
+
+  let x = r0.x;
+  let y = r0.y;
+  let w = r0.w;
+  let h = r0.h;
+
+  const left0   = r0.x;
+  const right0  = r0.x + r0.w;
+  const top0    = r0.y;
+  const bottom0 = r0.y + r0.h;
+
+  if (handle === "move") {
+    const dx = p.x - DEV.start.x;
+    const dy = p.y - DEV.start.y;
+
+    x = clamp(r0.x + dx, 0, c.width - r0.w);
+    y = clamp(r0.y + dy, 0, c.height - r0.h);
+    DEV.crop = { x, y, w: r0.w, h: r0.h };
+    return;
+  }
+
+  let left = left0;
+  let right = right0;
+  let top = top0;
+  let bottom = bottom0;
+
+  if (handle.includes("w")) left = clamp(p.x, 0, right0 - min);
+  if (handle.includes("e")) right = clamp(p.x, left0 + min, c.width);
+  if (handle.includes("n")) top = clamp(p.y, 0, bottom0 - min);
+  if (handle.includes("s")) bottom = clamp(p.y, top0 + min, c.height);
+
+  x = left;
+  y = top;
+  w = right - left;
+  h = bottom - top;
+
+  DEV.crop = { x, y, w, h };
+}
+
 function bindPointerCropEvents(){
   const canvas = DEV.canvas;
   if (!canvas) return;
@@ -200,34 +314,52 @@ function bindPointerCropEvents(){
 
   canvas.addEventListener("pointerdown", (e)=>{
     if (!DEV.recortando || !DEV.img) return;
+
+    const p = canvasPointFromClient(e.clientX, e.clientY);
+
+    if (!DEV.crop || DEV.crop.w < 10 || DEV.crop.h < 10) {
+      DEV.crop = devCrearCropCuadradoInicial();
+      draw();
+      e.preventDefault();
+      return;
+    }
+
+    const handle = detectCropHandle(p, DEV.crop);
+    if (!handle) return;
+
     canvas.setPointerCapture?.(e.pointerId);
     DEV.drawing = true;
-    DEV.start = canvasPointFromClient(e.clientX, e.clientY);
-    DEV.crop = { x: DEV.start.x, y: DEV.start.y, w: 1, h: 1 };
-    draw();
+    DEV.start = p;
+    DEV.cropHandle = handle;
+    DEV.cropDragMode = handle === "move" ? "move" : "resize";
+    DEV.cropStartRect = { ...DEV.crop };
+
     e.preventDefault();
   }, {passive:false});
 
   canvas.addEventListener("pointermove", (e)=>{
     if (!DEV.recortando || !DEV.img || !DEV.drawing || !DEV.start) return;
+
     const p = canvasPointFromClient(e.clientX, e.clientY);
-    DEV.crop = normalizeRect(DEV.start, p);
+    devUpdateCropFromHandle(DEV.cropHandle, p);
     draw();
-   if (DEV.crop && DEV.crop.w > 10 && DEV.crop.h > 10) {
-  $("btnDevListo").style.display = "inline-flex";
-}
     e.preventDefault();
   }, {passive:false});
 
   const end = (e)=>{
     if (!DEV.recortando || !DEV.drawing) return;
+
     DEV.drawing = false;
     DEV.start = null;
+    DEV.cropHandle = "";
+    DEV.cropDragMode = "";
+    DEV.cropStartRect = null;
 
     if (DEV.crop && (DEV.crop.w < 10 || DEV.crop.h < 10)) {
       DEV.crop = null;
       draw();
     }
+
     e.preventDefault?.();
   };
 
@@ -3177,8 +3309,9 @@ DEV.recortando = true;
 btnRecortar.disabled = false;
 btnRecortar.style.opacity = "1";
 
-      fitCanvasToImage(DEV.img, 300);
-      draw();
+fitCanvasToImage(DEV.img, 300);
+DEV.crop = devCrearCropCuadradoInicial();
+draw();
 
       if (boxCanvas) boxCanvas.classList.remove("hidden");
 
