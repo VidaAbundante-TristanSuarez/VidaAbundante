@@ -3053,5 +3053,36 @@ body.oscuro #buscarLibroBiblia{
   }
 }
 
+/* botón confirmar dentro de la tarjeta de filtros */
+#filtrosBiblia{
+  position: relative;
+  padding-right: 48px; /* espacio para la flecha */
+}
+
+#filtrosBiblia .btn-aplicar-filtros{
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+
+  width: 34px;
+  height: calc(100% - 12px);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 12px;
+  background: #4f6fa8;
+  color: #fff;
+  cursor: pointer;
+  z-index: 3;
+  user-select: none;
+}
+
+#filtrosBiblia .btn-aplicar-filtros i{
+  font-size: 18px;
+  pointer-events: none;
+}
 
   </style> 
