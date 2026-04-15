@@ -2964,7 +2964,7 @@ body.en-biblia #btnScrollTopGlobal{
 
 #wrapFiltrosBiblia.abierto .filtros{
   display:grid;
-  grid-template-columns: 1fr 64px;
+  grid-template-columns: 1fr 54px;
   grid-template-areas:
     "buscar buscar"
     "libro  cap";
@@ -2977,7 +2977,7 @@ body.en-biblia #btnScrollTopGlobal{
   transform: translateY(-50%);
 
   width: min(285px, calc(100vw - 150px));
-  padding: 8px;
+  padding: 8px 18px 8px 8px;
 
   background: #fff;
   border: 1px solid rgba(0,0,0,.10);
@@ -3056,32 +3056,33 @@ body.oscuro #buscarLibroBiblia{
 /* botón confirmar dentro de la tarjeta de filtros */
 #filtrosBiblia{
   position: relative;
-  padding-right: 24px; /* espacio para la flecha */
+  padding-right: 18px; /* reserva justa para la pastilla azul */
 }
 
 #filtrosBiblia .btn-aplicar-filtros{
   position: absolute;
   top: 50%;
-  right: 4px;
+  right: 3px;
   transform: translateY(-50%);
 
-  width: 18px;
-  height: 34px;
+  width: 12px;          /* ✅ achica SOLO la parte azul */
+  height: 30px;
 
   display: flex;
   align-items: center;
   justify-content: center;
 
-  border-radius: 9px;
+  border-radius: 8px;
   background: #4f6fa8;
   color: #fff;
   cursor: pointer;
   z-index: 3;
   user-select: none;
+  overflow: visible;    /* ✅ deja que la flecha no se recorte */
 }
 
 #filtrosBiblia .btn-aplicar-filtros i{
-  font-size: 11px;
+  font-size: 11px;      /* ✅ la flecha blanca NO se achica más */
   pointer-events: none;
 }
   </style> 
