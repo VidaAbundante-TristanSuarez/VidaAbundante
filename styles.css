@@ -2729,7 +2729,7 @@ input[type="hidden"]#dev2Fondo,
 /* ===== BIBLIA: selector de galerías EXACTO como devocionales ===== */
 
 #personalizarFondos .dev-f1-menu-wrap{
-  position: relative;
+  position: sticky;
   flex: 0 0 auto;
   display: flex;
   align-items: center;
