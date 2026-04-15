@@ -3056,23 +3056,23 @@ body.oscuro #buscarLibroBiblia{
 /* botón confirmar dentro de la tarjeta de filtros */
 #filtrosBiblia{
   position: relative;
-  padding-right: 48px; /* espacio para la flecha */
+  padding-right: 24px; /* espacio para la flecha */
 }
 
 #filtrosBiblia .btn-aplicar-filtros{
   position: absolute;
   top: 50%;
-  right: 8px;
+  right: 4px;
   transform: translateY(-50%);
 
-  width: 34px;
-  height: calc(100% - 12px);
+  width: 18px;
+  height: 34px;
 
   display: flex;
   align-items: center;
   justify-content: center;
 
-  border-radius: 12px;
+  border-radius: 9px;
   background: #4f6fa8;
   color: #fff;
   cursor: pointer;
@@ -3081,8 +3081,7 @@ body.oscuro #buscarLibroBiblia{
 }
 
 #filtrosBiblia .btn-aplicar-filtros i{
-  font-size: 18px;
+  font-size: 11px;
   pointer-events: none;
 }
-
   </style> 
