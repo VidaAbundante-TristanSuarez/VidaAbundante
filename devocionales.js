@@ -3110,17 +3110,18 @@ function initDevocionales(){
   if (!DEV.canvas) return;
   DEV.ctx = DEV.canvas.getContext("2d");
 
-  const input = $("devImg");
-  const btnImg = $("btnDevImg");
-  const btnRecortar = $("btnDevRecortar");
-  const btnOCR = $("btnDevOCR");
-  const ta = $("devTexto");
-  const boxCanvas = $("devCanvasBox");
-  const btnCrear = $("btnAbrirDevModal");
+const input = $("devImg");
+const btnImg = $("btnDevImg");
+const btnRecortar = $("btnDevRecortar");
+const btnListo = $("btnDevListo");
+const btnOCR = $("btnDevOCR");
+const ta = $("devTexto");
+const boxCanvas = $("devCanvasBox");
+const btnCrear = $("btnAbrirDevModal");
 
   if (btnImg && input) btnImg.addEventListener("click", ()=> input.click());
 
-  if (!input || !btnRecortar || !btnOCR || !ta) return;
+ if (!input || !btnRecortar || !btnListo || !btnOCR || !ta) return;
 
   bindPointerCropEvents();
   bindInputs();
@@ -3138,14 +3139,14 @@ function initDevocionales(){
   }
 
   // estado inicial
-  btnRecortar.disabled = true;
-  btnRecortar.style.opacity = "0.6";
-  syncBtnCrear();
-  ta.addEventListener("input", syncBtnCrear);
-  ocrSetStatus("✅ Cargá una imagen, recortá si querés y tocá Crear devocional.");
+btnRecortar.disabled = true;
+btnRecortar.style.opacity = "0.6";
+btnListo.style.display = "none";
+btnOCR.style.display = "none";
 
- btnOCR.style.display = "none";
- btnOCR.textContent = "🧠 Crear devocional";
+syncBtnCrear();
+ta.addEventListener("input", syncBtnCrear);
+ocrSetStatus("✅ Cargá una imagen, recortá si querés y tocá Crear devocional.");
    
   // cargar imagen
   input.addEventListener("change", ()=>{
@@ -3156,17 +3157,18 @@ function initDevocionales(){
     const image = new Image();
 
     image.onload = ()=>{
-      DEV.img = image;
+DEV.img = image;
 btnOCR.style.display = "none";
-      // reset crop
-      DEV.crop = null;
-      DEV.start = null;
-      DEV.drawing = false;
+btnListo.style.display = "inline-flex";
 
-      DEV.recortando = true;
-      btnRecortar.disabled = false;
-      btnRecortar.style.opacity = "1";
-      btnRecortar.textContent = "✅ Listo";
+// reset crop
+DEV.crop = null;
+DEV.start = null;
+DEV.drawing = false;
+
+DEV.recortando = true;
+btnRecortar.disabled = false;
+btnRecortar.style.opacity = "1";
 
       fitCanvasToImage(DEV.img, 300);
       draw();
@@ -3186,25 +3188,30 @@ btnOCR.style.display = "none";
     image.src = url;
   });
 
-  // toggle recorte
+// entrar en modo recorte
 btnRecortar.addEventListener("click", ()=>{
   if (!DEV.img) { alert("Primero cargá una imagen"); return; }
 
-  DEV.recortando = !DEV.recortando;
-  btnRecortar.textContent = DEV.recortando ? "✅ Listo" : "✂️ Recortar";
+  DEV.recortando = true;
+  DEV.start = null;
+  DEV.drawing = false;
 
-  if (!DEV.recortando) {
-    DEV.start = null;
-    DEV.drawing = false;
+  btnListo.style.display = "inline-flex";
+  btnOCR.style.display = "none";
+  draw();
+});
 
-    // mostrar botón crear devocional
-    if (btnOCR) {
-      btnOCR.style.display = "inline-flex";
-      btnOCR.textContent = "🧠 Crear devocional";
-    }
-  } else {
-    if (btnOCR) btnOCR.style.display = "none";
-  }
+// confirmar recorte
+btnListo.addEventListener("click", ()=>{
+  if (!DEV.img) { alert("Primero cargá una imagen"); return; }
+
+  DEV.recortando = false;
+  DEV.start = null;
+  DEV.drawing = false;
+
+  btnListo.style.display = "none";
+  btnOCR.style.display = "inline-flex";
+  draw();
 });
 
   // OCR
