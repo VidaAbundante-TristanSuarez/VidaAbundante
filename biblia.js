@@ -4827,29 +4827,7 @@ if (inputBuscarLibro && selectLibro) {
     }
   });
 }
-  
-// ✅ botón confirmar filtros (se crea por JS para no tocar mucho HTML)
-(function initBotonAplicarFiltrosBiblia() {
-  const wrap = document.getElementById("wrapFiltrosBiblia");
-  if (!wrap) return;
-  if (document.getElementById("btnAplicarFiltrosBiblia")) return;
-
-  const btn = document.createElement("button");
-  btn.id = "btnAplicarFiltrosBiblia";
-  btn.type = "button";
-  btn.className = "btn-primary";
-  btn.setAttribute("aria-label", "Aplicar filtros");
-  btn.innerHTML = `<i class="fa-solid fa-caret-right"></i>`;
-
-  btn.addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    aplicarFiltrosBiblia();
-  });
-
-  wrap.appendChild(btn);
-})();
-  
+    
 // 4) arrancar en iglesia
 window.irA?.("iglesia");
 
@@ -4907,6 +4885,17 @@ setTimeout(() => {
     "#personalizarColorHost, #marcadorColorHost, #dev1ColorHost, #dev1OpColorHost, #dev2ColorHost, #colorFondoPlanoHost, #dev2FondoHost, #colorOpacidadBibliaHost, #colorFondoAppHost"
   );
 }, 0);
+
+const btn = document.getElementById("btnAplicarFiltrosBiblia");
+if (btn && !btn.__ready) {
+  btn.__ready = true;
+
+  btn.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    aplicarFiltrosBiblia();
+  });
+}
   
 }); // ================= ✅ CIERRA INIT ÚNICO =====
 
