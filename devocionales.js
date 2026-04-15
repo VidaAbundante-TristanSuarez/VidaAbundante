@@ -181,13 +181,15 @@ function devMostrarCrear(){
   const ta = $("devTexto");
 
   if (btnFinal) btnFinal.style.display = "inline-flex";
-  if (btnListo) btnListo.style.display = "none";
-  if (btnOCR) btnOCR.style.display = "none";
 
   if (btnRecortar) {
+    btnRecortar.style.display = "none";
     btnRecortar.disabled = true;
     btnRecortar.style.opacity = "0.6";
   }
+
+  if (btnListo) btnListo.style.display = "none";
+  if (btnOCR) btnOCR.style.display = "none";
 
   if (ta) ta.value = "";
   if (estado) {
@@ -1153,32 +1155,34 @@ window.devCerrarTodo = () => {
   DEV.img = null;
   DEV.crop = null;
 
-  const btnFinal = $("btnDevCargarFinal");
-  const btnRecortar = $("btnDevRecortar");
-  const btnListo = $("btnDevListo");
-  const btnOCR = $("btnDevOCR");
-  const ta = $("devTexto");
-  const estado = $("estadoOCRDev");
+const btnFinal = $("btnDevCargarFinal");
+const btnRecortar = $("btnDevRecortar");
+const btnListo = $("btnDevListo");
+const btnOCR = $("btnDevOCR");
+const ta = $("devTexto");
+const estado = $("estadoOCRDev");
 
-  if (btnFinal) btnFinal.style.display = "inline-flex";
+if (btnFinal) btnFinal.style.display = "inline-flex";
 
-  if (btnRecortar) {
-    btnRecortar.disabled = true;
-    btnRecortar.style.opacity = "0.6";
-  }
+if (btnRecortar) {
+  btnRecortar.style.display = "none";
+  btnRecortar.disabled = true;
+  btnRecortar.style.opacity = "0.6";
+}
 
-  if (btnListo) btnListo.style.display = "none";
-  if (btnOCR) {
-    btnOCR.style.display = "none";
-    btnOCR.disabled = false;
-    btnOCR.style.opacity = "1";
-  }
+if (btnListo) btnListo.style.display = "none";
 
-  if (ta) ta.value = "";
+if (btnOCR) {
+  btnOCR.style.display = "none";
+  btnOCR.disabled = false;
+  btnOCR.style.opacity = "1";
+}
 
-  if (estado) {
-    estado.textContent = "✅ Cargá una imagen, recortá si querés y tocá Crear devocional.";
-  }
+if (ta) ta.value = "";
+
+if (estado) {
+  estado.textContent = "✅ Cargá una imagen, recortá si querés y tocá Crear devocional.";
+}
    
   // ✅ volver al Home
   devMostrarHome();
@@ -3349,12 +3353,13 @@ const btnCrear = $("btnAbrirDevModal");
   }
 
   // estado inicial
+// estado inicial
+btnRecortar.style.display = "none";
+btnListo.style.display = "none";
+btnOCR.style.display = "none";
+
 btnRecortar.disabled = true;
-btnListo.style.display = "none";
-btnOCR.style.display = "none";
 btnRecortar.style.opacity = "0.6";
-btnListo.style.display = "none";
-btnOCR.style.display = "none";
 
 syncBtnCrear();
 ta.addEventListener("input", syncBtnCrear);
@@ -3370,8 +3375,10 @@ ocrSetStatus("✅ Cargá una imagen, recortá si querés y tocá Crear devociona
 
     image.onload = ()=>{
 DEV.img = image;
+
 if (btnFinal) btnFinal.style.display = "none";
 btnOCR.style.display = "none";
+btnRecortar.style.display = "inline-flex";
 btnListo.style.display = "inline-flex";
 
 // reset crop
@@ -3410,8 +3417,9 @@ btnRecortar.addEventListener("click", ()=>{
   DEV.start = null;
   DEV.drawing = false;
 
-  btnListo.style.display = "none";
-  if (btnOCR) btnOCR.style.display = "none";
+  btnRecortar.style.display = "inline-flex";
+  btnListo.style.display = "inline-flex";
+  btnOCR.style.display = "none";
 
   draw();
 });
@@ -3424,6 +3432,7 @@ btnListo.addEventListener("click", ()=>{
   DEV.start = null;
   DEV.drawing = false;
 
+  btnRecortar.style.display = "none";
   btnListo.style.display = "none";
   btnOCR.style.display = "inline-flex";
 
