@@ -1395,10 +1395,20 @@ body.oscuro #subidosFeed a{
 /* TOP BAR */
 .dev-crear-topbar{
   width: 100%;
-  display: flex;
-  justify-content: space-between; /* 👈 clave */
+  display: grid;
+  grid-template-columns: 42px 1fr 42px;
   align-items: center;
   margin-bottom: 8px;
+}
+
+.dev-crear-topbar .dev-top-left{
+  display:flex;
+  justify-content:flex-start;
+}
+
+.dev-crear-topbar .dev-top-right{
+  display:flex;
+  justify-content:flex-end;
 }
 
 /* X cerrar */
