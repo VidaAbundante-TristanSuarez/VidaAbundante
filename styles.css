@@ -2350,7 +2350,7 @@ body.oscuro #barraTituloBiblia .nav-capitulo{
   width: min(320px, calc(100% - 150px));
   padding: 8px 10px;
 
-  background: #fff;
+  background: #e9f6ff;
   border: 1px solid rgba(0,0,0,.10);
   border-radius: 14px;
   box-shadow: 0 10px 24px rgba(0,0,0,.22);
