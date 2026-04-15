@@ -260,38 +260,54 @@
 <!-- ================= DEVOCIONALES CREAR (solo admin) ================= -->
 <div id="devCrear" style="display:none;">
 
+  <!-- TOP BAR -->
   <div class="dev-crear-topbar">
+    
+    <!-- IZQUIERDA: cargar finalizado -->
+    <button id="btnDevCargarFinal" type="button" class="dev-icon-btn" onclick="devPickFinalizado(); return false;" title="Cargar finalizado">
+      <i class="fa-solid fa-image"></i>
+    </button>
+    <input id="devInputFinalizado" type="file" accept="image/*" style="display:none;">
+
+    <!-- DERECHA: cerrar -->
     <button type="button" class="dev-crear-close" onclick="devCerrarTodo()" title="Cerrar">
       <i class="fa-solid fa-circle-xmark"></i>
     </button>
+
   </div>
 
-  <!-- Canvas primero -->
+  <!-- Canvas -->
   <div id="devCanvasBox" class="hidden" style="margin-top:12px; border-radius:12px; overflow:hidden; border:1px solid #ddd;">
     <canvas id="devCanvas" style="display:block; width:100%; max-width:420px;"></canvas>
   </div>
 
-  <!-- Botones debajo -->
+  <!-- BOTONES -->
   <div class="dev-crear-botones">
+
+    <!-- cargar imagen -->
     <button id="btnDevImg" type="button" class="btn-primary dev-icon-btn" title="Cargar imagen">
       <i class="fa-solid fa-camera"></i>
     </button>
     <input id="devImg" type="file" accept="image/*" hidden>
 
-    <button id="btnDevCargarFinal" type="button" class="btn-primary dev-icon-btn" onclick="devPickFinalizado(); return false;" title="Cargar finalizado">
-      <i class="fa-solid fa-image"></i>
-    </button>
-    <input id="devInputFinalizado" type="file" accept="image/*" style="display:none;">
-
-    <button id="btnDevRecortar" type="button" class="btn-ghost dev-icon-btn" title="Recortar">
+    <!-- recortar -->
+    <button id="btnDevRecortar" type="button" class="dev-icon-btn dev-btn-black" title="Recortar">
       <i class="fa-solid fa-crop-simple"></i>
     </button>
 
+    <!-- ✅ LISTO (nuevo) -->
+    <button id="btnDevListo" type="button" class="btn-primary dev-icon-btn" title="Confirmar recorte">
+      <i class="fa-solid fa-circle-check"></i>
+    </button>
+
+    <!-- OCR -->
     <button id="btnDevOCR" type="button" class="btn-primary dev-icon-btn" style="display:none;" title="Usar OCR">
       <i class="fa-solid fa-bullseye"></i>
     </button>
+
   </div>
 
+  <!-- TEXTO -->
   <div id="devTextoBox" class="hidden" style="margin-top:12px;">
     <label style="display:block; font-weight:700; margin-bottom:6px;">Texto detectado (editable)</label>
     <textarea id="devTexto" style="width:100%; height:220px; border-radius:12px; padding:12px;"></textarea>
