@@ -158,10 +158,10 @@ body.oscuro .nav-btn.activo i{
 
 
 #barraTituloBiblia h3{
-  margin: 0;                   /* 👈 elimina espacio extra */
-  padding: 2px 0 0 0px;          /* 👈 pequeño respiro arriba */
+  margin: 1;                   /* 👈 elimina espacio extra */
+ padding: 2px 6px 0 6px;         
     font-weight: 800;
-  font-size: 17px;             /* 👈 podés bajar si querés */
+  font-size: 16px;             /* 👈 podés bajar si querés */
   color: #000;
 }
 
