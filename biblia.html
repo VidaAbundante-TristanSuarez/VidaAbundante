@@ -260,23 +260,37 @@
 <!-- ================= DEVOCIONALES CREAR (solo admin) ================= -->
 <div id="devCrear" style="display:none;">
 
+  <div class="dev-crear-topbar">
+    <button type="button" class="dev-crear-close" onclick="devCerrarTodo()" title="Cerrar">
+      <i class="fa-solid fa-circle-xmark"></i>
+    </button>
+  </div>
+
   <!-- Canvas primero -->
   <div id="devCanvasBox" class="hidden" style="margin-top:12px; border-radius:12px; overflow:hidden; border:1px solid #ddd;">
     <canvas id="devCanvas" style="display:block; width:100%; max-width:420px;"></canvas>
   </div>
 
   <!-- Botones debajo -->
-  <button id="btnDevImg" type="button" class="btn-primary">📷 Cargar imagen</button>
-  <input id="devImg" type="file" accept="image/*" hidden>
+  <div class="dev-crear-botones">
+    <button id="btnDevImg" type="button" class="btn-primary dev-icon-btn" title="Cargar imagen">
+      <i class="fa-solid fa-camera"></i>
+    </button>
+    <input id="devImg" type="file" accept="image/*" hidden>
 
- <button id="btnDevCargarFinal" type="button" class="btn-primary" onclick="devPickFinalizado(); return false;">
-  <i class="fa-solid fa-upload"></i>
-  Cargar finalizado
-</button>
- <input id="devInputFinalizado" type="file" accept="image/*" style="display:none;">
- 
-  <button id="btnDevRecortar" type="button" class="btn-ghost">✂️ Recortar</button>
-  <button id="btnDevOCR" type="button" class="btn-primary" style="display:none;">🧠 OCR</button>
+    <button id="btnDevCargarFinal" type="button" class="btn-primary dev-icon-btn" onclick="devPickFinalizado(); return false;" title="Cargar finalizado">
+      <i class="fa-solid fa-image"></i>
+    </button>
+    <input id="devInputFinalizado" type="file" accept="image/*" style="display:none;">
+
+    <button id="btnDevRecortar" type="button" class="btn-ghost dev-icon-btn" title="Recortar">
+      <i class="fa-solid fa-crop-simple"></i>
+    </button>
+
+    <button id="btnDevOCR" type="button" class="btn-primary dev-icon-btn" style="display:none;" title="Usar OCR">
+      <i class="fa-solid fa-bullseye"></i>
+    </button>
+  </div>
 
   <div id="devTextoBox" class="hidden" style="margin-top:12px;">
     <label style="display:block; font-weight:700; margin-bottom:6px;">Texto detectado (editable)</label>
