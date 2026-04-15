@@ -1381,4 +1381,101 @@ body.oscuro #subidosFeed a{
 .dev-f1-menu.abierto{
   display: flex;
 }
+
+/* ================= DEV CREAR CENTRADO + BOTONES ICONO ================= */
+
+#devCrear{
+  width: min(560px, 96vw);
+  margin: 0 auto;
+  padding: 10px 0 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.dev-crear-topbar{
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin: 0 0 8px;
+}
+
+.dev-crear-close{
+  width: 42px;
+  height: 42px;
+  min-width: 42px;
+  min-height: 42px;
+  padding: 0 !important;
+  border: none;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  color: #444;
+  box-shadow: 0 8px 18px rgba(0,0,0,.16);
+  cursor: pointer;
+}
+
+.dev-crear-close i{
+  font-size: 20px;
+  line-height: 1;
+  margin: 0;
+}
+
+.dev-crear-botones{
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+#devCrear .dev-icon-btn{
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0;
+  border-radius: 999px;
+}
+
+#devCrear .dev-icon-btn i{
+  font-size: 18px;
+  line-height: 1;
+  margin: 0;
+}
+
+#devTextoBox{
+  width: 100%;
+}
+
+#estadoOCRDev{
+  width: 100%;
+  text-align: center;
+}
+
+@media (max-width: 520px){
+  .dev-crear-botones{
+    gap: 8px;
+  }
+
+  #devCrear .dev-icon-btn{
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    min-height: 42px;
+  }
+
+  #devCrear .dev-icon-btn i{
+    font-size: 17px;
+  }
+}
 </style>
