@@ -302,16 +302,19 @@ function leerEstadoBiblia() {
 
 function irArribaBiblia() {
   const primerVersiculo = document.querySelector("#texto .versiculo");
+  const barra = document.getElementById("barraTituloBiblia");
 
   if (primerVersiculo) {
-    primerVersiculo.scrollIntoView({
-      behavior: "auto",
-      block: "start"
+    const rect = primerVersiculo.getBoundingClientRect();
+    const barraH = barra ? barra.offsetHeight : 0;
+
+    window.scrollTo({
+      top: Math.max(0, window.scrollY + rect.top - barraH - 6),
+      behavior: "auto"
     });
     return;
   }
 
-  // fallback
   window.scrollTo({
     top: 0,
     behavior: "auto"
