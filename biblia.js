@@ -4291,6 +4291,11 @@ indexRow.innerHTML = `
 
 // ================= 🔺 CAPITULO ANTERIOR ===================
 window.capituloAnterior = () => {
+  const libros = [...new Set(bibliaData.map(v => v.Libro))];
+  const libroActual = libroSel.value;
+  const idxLibroActual = libros.indexOf(libroActual);
+
+  // 1) si todavía hay capítulo anterior dentro del mismo libro
   if (capSel.selectedIndex > 0) {
     capSel.selectedIndex--;
 
@@ -4302,15 +4307,48 @@ window.capituloAnterior = () => {
         behavior: "auto"
       });
     });
+    return;
   }
+
+  // 2) si está en capítulo 1, ir al libro anterior en su último capítulo
+  if (idxLibroActual > 0) {
+    const libroAnterior = libros[idxLibroActual - 1];
+
+    libroSel.value = libroAnterior;
+
+    const capsLibroAnterior = [...new Set(
+      bibliaData
+        .filter(v => v.Libro === libroAnterior)
+        .map(v => Number(v.Capitulo))
+    )].sort((a, b) => a - b);
+
+    const ultimoCapitulo = capsLibroAnterior[capsLibroAnterior.length - 1] || 1;
+
+    cargarCapitulos({
+      capituloPreferido: ultimoCapitulo,
+      irArriba: false,
+      guardar: true
+    });
+
+    requestAnimationFrame(() => {
+      irArribaBiblia();
+    });
+  }
+
+  // 3) si ya está en Génesis 1, no hace nada
 };
 
 // ================= 🔺 CAPITULO SIGUIENTE ===================
 window.capituloSiguiente = () => {
+  const libros = [...new Set(bibliaData.map(v => v.Libro))];
+  const libroActual = libroSel.value;
+  const idxLibroActual = libros.indexOf(libroActual);
+
+  // 📌 guardo dónde estaba antes de avanzar
+  scrollCapituloAnterior = window.scrollY || document.documentElement.scrollTop || 0;
+
+  // 1) si todavía hay capítulo siguiente dentro del mismo libro
   if (capSel.selectedIndex < capSel.options.length - 1) {
-
-    scrollCapituloAnterior = window.scrollY || document.documentElement.scrollTop || 0;
-
     capSel.selectedIndex++;
 
     mostrarTexto({ irArriba: false, guardar: true });
@@ -4318,7 +4356,27 @@ window.capituloSiguiente = () => {
     requestAnimationFrame(() => {
       irArribaBiblia();
     });
+    return;
   }
+
+  // 2) si ya estaba en el último capítulo, pasar al siguiente libro capítulo 1
+  if (idxLibroActual >= 0 && idxLibroActual < libros.length - 1) {
+    const siguienteLibro = libros[idxLibroActual + 1];
+
+    libroSel.value = siguienteLibro;
+
+    cargarCapitulos({
+      capituloPreferido: 1,
+      irArriba: false,
+      guardar: true
+    });
+
+    requestAnimationFrame(() => {
+      irArribaBiblia();
+    });
+  }
+
+  // 3) si ya está en Apocalipsis 22, no hace nada
 };
 
 // ================= 🔍 TOGGLE FILTROS BIBLIA =================
