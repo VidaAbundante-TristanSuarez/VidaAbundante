@@ -4330,8 +4330,12 @@ window.capituloAnterior = () => {
       guardar: true
     });
 
+    // ✅ al cambiar al libro anterior, quedar abajo del todo
     requestAnimationFrame(() => {
-      irArribaBiblia();
+      window.scrollTo({
+        top: document.documentElement.scrollHeight,
+        behavior: "auto"
+      });
     });
   }
 
