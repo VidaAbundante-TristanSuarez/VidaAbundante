@@ -115,9 +115,11 @@ body.oscuro .nav-btn.activo i{
 }
 
   /* ================= SECCIONES GENERALES ================= */
- .seccion {
- padding: 12px;
- }
+.seccion {
+  position: relative;
+  isolation: isolate;
+  padding: 12px;
+}
 
   /* ================= SECCIÓN BIBLIA ================= */
   /* Filtros para seleccionar libro y capítulo */
@@ -619,7 +621,8 @@ body.modo-imagen #accionesBiblia .accion-normal {
 
 #seccion-biblia{
   position: relative;
-  overflow: hidden;
+  overflow: visible;
+  isolation: isolate;
 }
 
 #fondoBiblia,
@@ -628,7 +631,7 @@ body.modo-imagen #accionesBiblia .accion-normal {
 #fondoCompartidos{
   position: fixed;
   inset: 0;
-  z-index: 0;
+  z-index: -1;
 
   background-repeat: no-repeat;
   background-position: center top;
