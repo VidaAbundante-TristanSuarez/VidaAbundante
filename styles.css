@@ -92,7 +92,7 @@ body.oscuro .nav-btn i {
 }
 
 body.oscuro .nav-btn:hover i {
-  color: #ffbf69;
+  color: #a5e6ff;
 }
 
 /* ✅ Botón activo del menú (sección actual) */
@@ -431,7 +431,7 @@ body.oscuro .panel-tabs button{
 }
 
 body.oscuro .panel-tabs button:hover{
-  background: #ffbf69;
+  background: #a5e6ff;
   color:#000;
 }
 
@@ -442,7 +442,7 @@ body.oscuro .panel-tabs button:hover{
 }
 
 body.oscuro .panel-tabs button.activo{
-  background: #ffbf69;
+  background: #a5e6ff;
   color:#000;
 }
 
@@ -1383,7 +1383,7 @@ body.oscuro .fila-final button {
 }
 
 body.oscuro .fila-final button:hover{
-  background: #ffbf69;
+  background: #a5e6ff;
   color: #000;
 }
 
