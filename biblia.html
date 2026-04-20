@@ -62,7 +62,8 @@
 
 <!-- ================= SECCIÓN BIBLIA ================= -->
 <div id="seccion-biblia" class="seccion">
-
+ <div id="fondoBiblia"></div>
+ 
  <!-- ================= BANNER MODO IMAGEN 🌄 ================= -->
  <!-- Solo se muestra cuando body tiene la clase modo-imagen -->
     <div id="bannerModoImagen">
@@ -1116,7 +1117,9 @@
       <!-- IMAGEN -->
       <label style="font-size:13px;">Imagen de fondo</label>
       <input type="file" id="imgFondoApp" accept="image/*">
-
+<label style="font-size:13px;">Opacidad imagen Biblia</label>
+<input type="range" id="opacidadFondoBiblia" min="0" max="1" step="0.05" value="0.35">
+     
       <button class="btn-primary" onclick="aplicarImagenFondo()">
         Aplicar imagen
       </button>
