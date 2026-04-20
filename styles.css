@@ -3117,4 +3117,28 @@ body.oscuro #buscarLibroBiblia{
   font-size: 11px;      /* ✅ la flecha blanca NO se achica más */
   pointer-events: none;
 }
+
+#modalTema input[type="range"]{
+  width: 100%;
+}
+
+#fondoSeccionActualLabel{
+  font-weight: 700;
+}
+
+#iglesia-devocionales,
+#iglesia-abc,
+#iglesia-subidos,
+#subidosApp,
+#iglesia-recursos,
+#recursos-rh,
+#recursos-talleres,
+#recursos-hermanos,
+#recursos-permisos,
+#panel-imagenes,
+#panel-marcadores {
+  background: transparent !important;
+  background-image: none !important;
+}
+
   </style> 
