@@ -1095,38 +1095,51 @@
 
     <div style="display:flex; flex-direction:column; gap:10px;">
 
-      <!-- MODO -->
       <button class="btn-primary" onclick="toggleTema()">
         🌙 / ☀️ Cambiar modo
       </button>
 
-      <!-- COLOR FONDO -->
-      <label style="font-size:13px;">Color de fondo</label>
-<input id="colorFondoApp" type="hidden" value="#ffffff">
-<button
-  type="button"
-  id="colorFondoAppHost"
-  class="pickr-host"
-  data-target="#colorFondoApp"
-  aria-label="Color de fondo app"></button>
+      <label style="font-size:13px;">Sección actual</label>
+      <div id="fondoSeccionActualLabel" class="btn-ghost" style="text-align:center;">
+        Biblia
+      </div>
 
-      <button class="btn-primary" onclick="aplicarColorFondo()">
+      <label style="font-size:13px;">Color de fondo</label>
+      <input id="colorFondoApp" type="hidden" value="#ffffff">
+      <button
+        type="button"
+        id="colorFondoAppHost"
+        class="pickr-host"
+        data-target="#colorFondoApp"
+        aria-label="Color de fondo app"></button>
+
+      <button class="btn-primary" type="button" onclick="aplicarColorFondo()">
         Aplicar color
       </button>
 
-      <!-- IMAGEN -->
       <label style="font-size:13px;">Imagen de fondo</label>
       <input type="file" id="imgFondoApp" accept="image/*">
-<label style="font-size:13px;">Opacidad imagen Biblia</label>
-<input type="range" id="opacidadFondoBiblia" min="0" max="1" step="0.05" value="0.35">
-     
-      <button class="btn-primary" onclick="aplicarImagenFondo()">
+
+      <button class="btn-primary" type="button" onclick="aplicarImagenFondo()">
         Aplicar imagen
       </button>
 
-      <button class="btn-ghost" onclick="cerrarModalTema()">
-        Cerrar
-      </button>
+      <label style="font-size:13px;">Opacidad del fondo</label>
+      <input type="range" id="opacidadFondoApp" min="0" max="1" step="0.05" value="0.35">
+
+      <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+        <button class="btn-primary" type="button" onclick="confirmarFondoTema()">
+          Confirmar
+        </button>
+
+        <button class="btn-ghost" type="button" onclick="cancelarFondoTema()">
+          Cancelar
+        </button>
+
+        <button class="btn-ghost" type="button" onclick="cerrarModalTema()">
+          Cerrar
+        </button>
+      </div>
 
     </div>
 
