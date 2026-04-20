@@ -5203,10 +5203,22 @@ window.eliminarImagenPanel = async (id) => {
 
 // ================= MODAL TEMA + FONDOS POR SECCIÓN =================
 const FONDO_SECCIONES = {
-  biblia: "seccion-biblia",
-  iglesia: "seccion-iglesia",
-  panel: "seccion-panel",
-  compartidos: "seccion-compartidos"
+  biblia: {
+    seccionId: "seccion-biblia",
+    fondoId: "fondoBiblia"
+  },
+  iglesia: {
+    seccionId: "seccion-iglesia",
+    fondoId: "fondoIglesia"
+  },
+  panel: {
+    seccionId: "seccion-panel",
+    fondoId: "fondoPanel"
+  },
+  compartidos: {
+    seccionId: "seccion-compartidos",
+    fondoId: "fondoCompartidos"
+  }
 };
 
 let fondoTemaDraft = null;
@@ -5229,22 +5241,17 @@ function getFondoOpacidadStorageKey(seccion) {
 }
 
 function getElementoSeccionFondo(seccion) {
-  const id = FONDO_SECCIONES[seccion];
-  return id ? document.getElementById(id) : null;
+  const cfg = FONDO_SECCIONES[seccion];
+  return cfg ? document.getElementById(cfg.seccionId) : null;
+}
+
+function getElementoCapaFondo(seccion) {
+  const cfg = FONDO_SECCIONES[seccion];
+  return cfg ? document.getElementById(cfg.fondoId) : null;
 }
 
 function asegurarFondoBiblia() {
-  const seccion = document.getElementById("seccion-biblia");
-  if (!seccion) return null;
-
-  let fondo = document.getElementById("fondoBiblia");
-  if (!fondo) {
-    fondo = document.createElement("div");
-    fondo.id = "fondoBiblia";
-    seccion.prepend(fondo);
-  }
-
-  return fondo;
+  return document.getElementById("fondoBiblia");
 }
 
 function getEstadoGuardadoSeccion(seccion) {
@@ -5288,39 +5295,27 @@ function limpiarFondosInternosApp() {
 
 function aplicarEstadoVisualSeccion(seccion, estado) {
   const el = getElementoSeccionFondo(seccion);
-  if (!el) return;
+  const capa = getElementoCapaFondo(seccion);
+  if (!el || !capa) return;
 
   const tipo = estado?.tipo || "color";
   const valor = estado?.valor || "#ffffff";
   const opacidad = String(estado?.opacidad || "0.35");
 
-  if (seccion === "biblia") {
-    const fondoBiblia = asegurarFondoBiblia();
-    if (!fondoBiblia) return;
+  // el contenedor principal nunca maneja opacidad visual
+  el.style.background = "none";
+  el.style.backgroundImage = "none";
+  el.style.backgroundColor = "transparent";
 
-    if (tipo === "imagen") {
-      fondoBiblia.style.backgroundImage = `url("${valor}")`;
-      fondoBiblia.style.backgroundColor = "transparent";
-    } else {
-      fondoBiblia.style.backgroundImage = "none";
-      fondoBiblia.style.backgroundColor = valor;
-    }
-
-    fondoBiblia.style.opacity = opacidad;
-
-    el.style.background = "none";
-    el.style.backgroundColor = "transparent";
-    return;
+  if (tipo === "imagen") {
+    capa.style.backgroundImage = `url("${valor}")`;
+    capa.style.backgroundColor = "transparent";
+  } else {
+    capa.style.backgroundImage = "none";
+    capa.style.backgroundColor = valor;
   }
 
-  el.style.background = "none";
-  el.style.backgroundImage = tipo === "imagen" ? `url("${valor}")` : "none";
-  el.style.backgroundColor = tipo === "color" ? valor : "transparent";
-  el.style.backgroundRepeat = "no-repeat";
-  el.style.backgroundPosition = "center top";
-  el.style.backgroundSize = "100% auto";
-  el.style.backgroundAttachment = "scroll";
-  el.style.opacity = opacidad;
+  capa.style.opacity = opacidad;
 }
 
 function aplicarFondosGuardados() {
