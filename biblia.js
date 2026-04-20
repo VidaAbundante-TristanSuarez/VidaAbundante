@@ -5201,75 +5201,36 @@ window.eliminarImagenPanel = async (id) => {
 })();
 
 
-// ================= MODAL TEMA =================
-window.abrirModalTema = () => {
-  const modal = document.getElementById("modalTema");
-  if (modal) modal.style.display = "flex";
+// ================= MODAL TEMA + FONDOS POR SECCIÓN =================
+const FONDO_SECCIONES = {
+  biblia: "seccion-biblia",
+  iglesia: "seccion-iglesia",
+  panel: "seccion-panel",
+  compartidos: "seccion-compartidos"
 };
 
-window.cerrarModalTema = () => {
-  const modal = document.getElementById("modalTema");
-  if (modal) modal.style.display = "none";
-};
+let fondoTemaDraft = null;
 
-// ================= HELPERS FONDO APP =================
-function obtenerSeccionesFondoApp() {
-  return [
-    document.getElementById("seccion-biblia"),
-    document.getElementById("seccion-iglesia"),
-    document.getElementById("iglesia-devocionales"),
-    document.getElementById("iglesia-abc"),
-    document.getElementById("iglesia-subidos"),
-    document.getElementById("subidosApp"),
-    document.getElementById("iglesia-recursos"),
-    document.getElementById("seccion-panel"),
-    document.getElementById("panel-imagenes"),
-    document.getElementById("panel-marcadores"),
-    document.getElementById("seccion-compartidos")
-  ].filter(Boolean);
+function getSeccionActualFondoKey() {
+  const actual = obtenerSeccionActual();
+  return FONDO_SECCIONES[actual] ? actual : "biblia";
 }
 
-function aplicarFondoColorEnSecciones(color) {
-  obtenerSeccionesFondoApp().forEach(el => {
-    el.style.background = "none";
-    el.style.backgroundImage = "none";
-    el.style.backgroundColor = color;
-    el.style.backgroundRepeat = "no-repeat";
-    el.style.backgroundPosition = "center center";
-    el.style.backgroundSize = "cover";
-    el.style.backgroundAttachment = "scroll";
-  });
+function getFondoStorageKey(seccion) {
+  return `fondoApp_${seccion}`;
 }
 
-function aplicarFondoImagenEnSecciones(url) {
-  const ids = ["seccion-biblia", "seccion-iglesia", "seccion-panel", "seccion-compartidos"];
+function getFondoTipoStorageKey(seccion) {
+  return `fondoTipo_${seccion}`;
+}
 
-  ids.forEach(id => {
-    const el = document.getElementById(id);
-    if (!el) return;
+function getFondoOpacidadStorageKey(seccion) {
+  return `fondoOpacidad_${seccion}`;
+}
 
-    // Biblia: la imagen va en capa separada
-    if (id === "seccion-biblia") {
-      const fondo = asegurarFondoBiblia();
-      if (!fondo) return;
-
-      fondo.style.backgroundImage = `url("${url}")`;
-
-      // limpiar fondo directo del contenedor principal
-      el.style.background = "none";
-      el.style.backgroundColor = "transparent";
-      return;
-    }
-
-    // resto de secciones: se mantiene como estaba
-    el.style.background = "none";
-    el.style.backgroundImage = `url("${url}")`;
-    el.style.backgroundColor = "transparent";
-    el.style.backgroundRepeat = "no-repeat";
-    el.style.backgroundPosition = "center center";
-    el.style.backgroundSize = "cover";
-    el.style.backgroundAttachment = "scroll";
-  });
+function getElementoSeccionFondo(seccion) {
+  const id = FONDO_SECCIONES[seccion];
+  return id ? document.getElementById(id) : null;
 }
 
 function asegurarFondoBiblia() {
@@ -5286,36 +5247,166 @@ function asegurarFondoBiblia() {
   return fondo;
 }
 
-function aplicarOpacidadFondoBiblia(valor) {
-  const fondo = asegurarFondoBiblia();
-  if (!fondo) return;
-
-  const op = Math.max(0, Math.min(1, Number(valor || 0.35)));
-  fondo.style.opacity = String(op);
-  localStorage.setItem("opacidadFondoBiblia", String(op));
+function getEstadoGuardadoSeccion(seccion) {
+  return {
+    tipo: localStorage.getItem(getFondoTipoStorageKey(seccion)) || "color",
+    valor: localStorage.getItem(getFondoStorageKey(seccion)) || "#ffffff",
+    opacidad: localStorage.getItem(getFondoOpacidadStorageKey(seccion)) || "0.35"
+  };
 }
 
-function limpiarImagenFondoBiblia() {
-  const fondo = asegurarFondoBiblia();
-  if (!fondo) return;
-  fondo.style.backgroundImage = "none";
+function guardarEstadoSeccion(seccion, estado) {
+  localStorage.setItem(getFondoTipoStorageKey(seccion), estado.tipo);
+  localStorage.setItem(getFondoStorageKey(seccion), estado.valor);
+  localStorage.setItem(getFondoOpacidadStorageKey(seccion), String(estado.opacidad));
 }
-// ================= COLOR FONDO =================
+
+function limpiarFondosInternosApp() {
+  [
+    document.getElementById("iglesia-devocionales"),
+    document.getElementById("iglesia-abc"),
+    document.getElementById("iglesia-subidos"),
+    document.getElementById("subidosApp"),
+    document.getElementById("iglesia-recursos"),
+    document.getElementById("recursos-rh"),
+    document.getElementById("recursos-talleres"),
+    document.getElementById("recursos-hermanos"),
+    document.getElementById("recursos-permisos"),
+    document.getElementById("panel-imagenes"),
+    document.getElementById("panel-marcadores")
+  ].filter(Boolean).forEach(el => {
+    el.style.background = "none";
+    el.style.backgroundImage = "none";
+    el.style.backgroundColor = "transparent";
+    el.style.backgroundRepeat = "";
+    el.style.backgroundPosition = "";
+    el.style.backgroundSize = "";
+    el.style.backgroundAttachment = "";
+    el.style.opacity = "";
+  });
+}
+
+function aplicarEstadoVisualSeccion(seccion, estado) {
+  const el = getElementoSeccionFondo(seccion);
+  if (!el) return;
+
+  const tipo = estado?.tipo || "color";
+  const valor = estado?.valor || "#ffffff";
+  const opacidad = String(estado?.opacidad || "0.35");
+
+  if (seccion === "biblia") {
+    const fondoBiblia = asegurarFondoBiblia();
+    if (!fondoBiblia) return;
+
+    if (tipo === "imagen") {
+      fondoBiblia.style.backgroundImage = `url("${valor}")`;
+      fondoBiblia.style.backgroundColor = "transparent";
+    } else {
+      fondoBiblia.style.backgroundImage = "none";
+      fondoBiblia.style.backgroundColor = valor;
+    }
+
+    fondoBiblia.style.opacity = opacidad;
+
+    el.style.background = "none";
+    el.style.backgroundColor = "transparent";
+    return;
+  }
+
+  el.style.background = "none";
+  el.style.backgroundImage = tipo === "imagen" ? `url("${valor}")` : "none";
+  el.style.backgroundColor = tipo === "color" ? valor : "transparent";
+  el.style.backgroundRepeat = "no-repeat";
+  el.style.backgroundPosition = "center top";
+  el.style.backgroundSize = "100% auto";
+  el.style.backgroundAttachment = "scroll";
+  el.style.opacity = opacidad;
+}
+
+function aplicarFondosGuardados() {
+  Object.keys(FONDO_SECCIONES).forEach(seccion => {
+    aplicarEstadoVisualSeccion(seccion, getEstadoGuardadoSeccion(seccion));
+  });
+
+  limpiarFondosInternosApp();
+}
+
+function cargarDraftDesdeGuardado(seccion) {
+  const guardado = getEstadoGuardadoSeccion(seccion);
+  fondoTemaDraft = {
+    seccion,
+    tipo: guardado.tipo,
+    valor: guardado.valor,
+    opacidad: guardado.opacidad
+  };
+}
+
+function reflejarDraftEnModal() {
+  if (!fondoTemaDraft) return;
+
+  const label = document.getElementById("fondoSeccionActualLabel");
+  const slider = document.getElementById("opacidadFondoApp");
+  const inputColor = document.getElementById("colorFondoApp");
+
+  if (label) {
+    const nombres = {
+      biblia: "Biblia",
+      iglesia: "Iglesia",
+      panel: "Mi Panel",
+      compartidos: "Compartidos"
+    };
+    label.textContent = nombres[fondoTemaDraft.seccion] || "Biblia";
+  }
+
+  if (slider) {
+    slider.value = String(fondoTemaDraft.opacidad || "0.35");
+  }
+
+  if (inputColor && fondoTemaDraft.tipo === "color") {
+    inputColor.value = fondoTemaDraft.valor || "#ffffff";
+    inputColor.dispatchEvent(new Event("input", { bubbles: true }));
+    inputColor.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+}
+
+window.abrirModalTema = () => {
+  const modal = document.getElementById("modalTema");
+  if (!modal) return;
+
+  const seccion = getSeccionActualFondoKey();
+  cargarDraftDesdeGuardado(seccion);
+  reflejarDraftEnModal();
+
+  modal.style.display = "flex";
+
+  setTimeout(() => {
+    if (typeof initPickrEnHosts === "function") {
+      initPickrEnHosts("#colorFondoAppHost");
+    }
+  }, 0);
+};
+
+window.cerrarModalTema = () => {
+  const modal = document.getElementById("modalTema");
+  if (modal) modal.style.display = "none";
+};
+
 window.aplicarColorFondo = () => {
+  if (!fondoTemaDraft) return;
+
   const input = document.getElementById("colorFondoApp");
   if (!input) return;
 
-  const color = input.value || "#ffffff";
+  fondoTemaDraft.tipo = "color";
+  fondoTemaDraft.valor = input.value || "#ffffff";
 
-  aplicarFondoColorEnSecciones(color);
-  limpiarImagenFondoBiblia();
-
-  localStorage.setItem("fondoApp", color);
-  localStorage.setItem("fondoTipo", "color");
+  aplicarEstadoVisualSeccion(fondoTemaDraft.seccion, fondoTemaDraft);
+  limpiarFondosInternosApp();
 };
 
-// ================= IMAGEN FONDO =================
 window.aplicarImagenFondo = () => {
+  if (!fondoTemaDraft) return;
+
   const input = document.getElementById("imgFondoApp");
   if (!input || !input.files || !input.files[0]) return;
 
@@ -5326,38 +5417,51 @@ window.aplicarImagenFondo = () => {
     const url = e?.target?.result;
     if (!url) return;
 
-    aplicarFondoImagenEnSecciones(url);
+    fondoTemaDraft.tipo = "imagen";
+    fondoTemaDraft.valor = url;
 
-    localStorage.setItem("fondoApp", url);
-    localStorage.setItem("fondoTipo", "imagen");
+    aplicarEstadoVisualSeccion(fondoTemaDraft.seccion, fondoTemaDraft);
+    limpiarFondosInternosApp();
   };
 
   reader.readAsDataURL(file);
 };
 
-// ================= CARGAR FONDO AL INICIAR =================
-window.addEventListener("load", () => {
-  const fondo = localStorage.getItem("fondoApp");
-  const tipo = localStorage.getItem("fondoTipo");
+window.confirmarFondoTema = () => {
+  if (!fondoTemaDraft) return;
 
-  if (fondo) {
-    if (tipo === "imagen") {
-      aplicarFondoImagenEnSecciones(fondo);
-    } else {
-      aplicarFondoColorEnSecciones(fondo);
-    }
+  guardarEstadoSeccion(fondoTemaDraft.seccion, fondoTemaDraft);
+  aplicarFondosGuardados();
+  cerrarModalTema();
+};
+
+window.cancelarFondoTema = () => {
+  if (!fondoTemaDraft) {
+    cerrarModalTema();
+    return;
   }
 
-  const opGuardada = localStorage.getItem("opacidadFondoBiblia");
-  const sliderOp = document.getElementById("opacidadFondoBiblia");
+  const guardado = getEstadoGuardadoSeccion(fondoTemaDraft.seccion);
+  aplicarEstadoVisualSeccion(fondoTemaDraft.seccion, guardado);
+  limpiarFondosInternosApp();
 
-  if (sliderOp) {
-    sliderOp.value = opGuardada || "0.35";
+  fondoTemaDraft = null;
+  cerrarModalTema();
+};
 
-    sliderOp.addEventListener("input", () => {
-      aplicarOpacidadFondoBiblia(sliderOp.value);
+// ================= CARGAR FONDOS AL INICIAR =================
+window.addEventListener("load", () => {
+  aplicarFondosGuardados();
+
+  const slider = document.getElementById("opacidadFondoApp");
+  if (slider && !slider.dataset.ready) {
+    slider.dataset.ready = "1";
+
+    slider.addEventListener("input", () => {
+      if (!fondoTemaDraft) return;
+      fondoTemaDraft.opacidad = slider.value || "0.35";
+      aplicarEstadoVisualSeccion(fondoTemaDraft.seccion, fondoTemaDraft);
+      limpiarFondosInternosApp();
     });
   }
-
-  aplicarOpacidadFondoBiblia(opGuardada || "0.35");
 });
