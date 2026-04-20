@@ -5242,7 +5242,26 @@ function aplicarFondoColorEnSecciones(color) {
 }
 
 function aplicarFondoImagenEnSecciones(url) {
-  obtenerSeccionesFondoApp().forEach(el => {
+  const ids = ["seccion-biblia", "seccion-iglesia", "seccion-panel", "seccion-compartidos"];
+
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    // Biblia: la imagen va en capa separada
+    if (id === "seccion-biblia") {
+      const fondo = asegurarFondoBiblia();
+      if (!fondo) return;
+
+      fondo.style.backgroundImage = `url("${url}")`;
+
+      // limpiar fondo directo del contenedor principal
+      el.style.background = "none";
+      el.style.backgroundColor = "transparent";
+      return;
+    }
+
+    // resto de secciones: se mantiene como estaba
     el.style.background = "none";
     el.style.backgroundImage = `url("${url}")`;
     el.style.backgroundColor = "transparent";
@@ -5253,6 +5272,34 @@ function aplicarFondoImagenEnSecciones(url) {
   });
 }
 
+function asegurarFondoBiblia() {
+  const seccion = document.getElementById("seccion-biblia");
+  if (!seccion) return null;
+
+  let fondo = document.getElementById("fondoBiblia");
+  if (!fondo) {
+    fondo = document.createElement("div");
+    fondo.id = "fondoBiblia";
+    seccion.prepend(fondo);
+  }
+
+  return fondo;
+}
+
+function aplicarOpacidadFondoBiblia(valor) {
+  const fondo = asegurarFondoBiblia();
+  if (!fondo) return;
+
+  const op = Math.max(0, Math.min(1, Number(valor || 0.35)));
+  fondo.style.opacity = String(op);
+  localStorage.setItem("opacidadFondoBiblia", String(op));
+}
+
+function limpiarImagenFondoBiblia() {
+  const fondo = asegurarFondoBiblia();
+  if (!fondo) return;
+  fondo.style.backgroundImage = "none";
+}
 // ================= COLOR FONDO =================
 window.aplicarColorFondo = () => {
   const input = document.getElementById("colorFondoApp");
@@ -5261,6 +5308,7 @@ window.aplicarColorFondo = () => {
   const color = input.value || "#ffffff";
 
   aplicarFondoColorEnSecciones(color);
+  limpiarImagenFondoBiblia();
 
   localStorage.setItem("fondoApp", color);
   localStorage.setItem("fondoTipo", "color");
@@ -5292,11 +5340,24 @@ window.addEventListener("load", () => {
   const fondo = localStorage.getItem("fondoApp");
   const tipo = localStorage.getItem("fondoTipo");
 
-  if (!fondo) return;
-
-  if (tipo === "imagen") {
-    aplicarFondoImagenEnSecciones(fondo);
-  } else {
-    aplicarFondoColorEnSecciones(fondo);
+  if (fondo) {
+    if (tipo === "imagen") {
+      aplicarFondoImagenEnSecciones(fondo);
+    } else {
+      aplicarFondoColorEnSecciones(fondo);
+    }
   }
+
+  const opGuardada = localStorage.getItem("opacidadFondoBiblia");
+  const sliderOp = document.getElementById("opacidadFondoBiblia");
+
+  if (sliderOp) {
+    sliderOp.value = opGuardada || "0.35";
+
+    sliderOp.addEventListener("input", () => {
+      aplicarOpacidadFondoBiblia(sliderOp.value);
+    });
+  }
+
+  aplicarOpacidadFondoBiblia(opGuardada || "0.35");
 });
