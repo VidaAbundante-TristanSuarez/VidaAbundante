@@ -5217,16 +5217,29 @@ function obtenerSeccionesFondoApp() {
   return [
     document.getElementById("seccion-biblia"),
     document.getElementById("seccion-iglesia"),
+    document.getElementById("seccion-panel"),
+    document.getElementById("seccion-compartidos")
+  ].filter(Boolean);
+}
+
+function limpiarFondosInternosApp() {
+  [
     document.getElementById("iglesia-devocionales"),
     document.getElementById("iglesia-abc"),
     document.getElementById("iglesia-subidos"),
     document.getElementById("subidosApp"),
     document.getElementById("iglesia-recursos"),
-    document.getElementById("seccion-panel"),
     document.getElementById("panel-imagenes"),
-    document.getElementById("panel-marcadores"),
-    document.getElementById("seccion-compartidos")
-  ].filter(Boolean);
+    document.getElementById("panel-marcadores")
+  ].filter(Boolean).forEach(el => {
+    el.style.background = "none";
+    el.style.backgroundImage = "none";
+    el.style.backgroundColor = "transparent";
+    el.style.backgroundRepeat = "";
+    el.style.backgroundPosition = "";
+    el.style.backgroundSize = "";
+    el.style.backgroundAttachment = "";
+  });
 }
 
 function aplicarFondoColorEnSecciones(color) {
@@ -5308,7 +5321,7 @@ window.aplicarColorFondo = () => {
   const color = input.value || "#ffffff";
 
   aplicarFondoColorEnSecciones(color);
-  limpiarImagenFondoBiblia();
+  limpiarFondosInternosApp();
 
   localStorage.setItem("fondoApp", color);
   localStorage.setItem("fondoTipo", "color");
@@ -5327,6 +5340,7 @@ window.aplicarImagenFondo = () => {
     if (!url) return;
 
     aplicarFondoImagenEnSecciones(url);
+    limpiarFondosInternosApp();
 
     localStorage.setItem("fondoApp", url);
     localStorage.setItem("fondoTipo", "imagen");
@@ -5340,24 +5354,16 @@ window.addEventListener("load", () => {
   const fondo = localStorage.getItem("fondoApp");
   const tipo = localStorage.getItem("fondoTipo");
 
-  if (fondo) {
-    if (tipo === "imagen") {
-      aplicarFondoImagenEnSecciones(fondo);
-    } else {
-      aplicarFondoColorEnSecciones(fondo);
-    }
+  if (!fondo) {
+    limpiarFondosInternosApp();
+    return;
   }
 
-  const opGuardada = localStorage.getItem("opacidadFondoBiblia");
-  const sliderOp = document.getElementById("opacidadFondoBiblia");
-
-  if (sliderOp) {
-    sliderOp.value = opGuardada || "0.35";
-
-    sliderOp.addEventListener("input", () => {
-      aplicarOpacidadFondoBiblia(sliderOp.value);
-    });
+  if (tipo === "imagen") {
+    aplicarFondoImagenEnSecciones(fondo);
+  } else {
+    aplicarFondoColorEnSecciones(fondo);
   }
 
-  aplicarOpacidadFondoBiblia(opGuardada || "0.35");
+  limpiarFondosInternosApp();
 });
