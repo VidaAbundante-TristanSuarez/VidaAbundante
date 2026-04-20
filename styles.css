@@ -609,12 +609,36 @@ body.modo-imagen #accionesBiblia .accion-normal {
  }
 
     
- #seccion-biblia {
+ #seccion-biblia{
  padding-bottom: 0px;
  }
 
 #seccion-biblia{
   padding-top: 10px;  /* ✅ “reserva” el lugar del header */
+}
+
+#seccion-biblia{
+  position: relative;
+  overflow: hidden;
+}
+
+#fondoBiblia{
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: cover;
+  background-attachment: scroll;
+
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+#seccion-biblia > *:not(#fondoBiblia){
+  position: relative;
+  z-index: 1;
 }
 
 /* ✅ Espacio solo cuando la barra de acciones está visible */
