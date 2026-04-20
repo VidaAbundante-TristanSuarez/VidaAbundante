@@ -622,13 +622,16 @@ body.modo-imagen #accionesBiblia .accion-normal {
   overflow: hidden;
 }
 
-#fondoBiblia{
-  position: absolute;
+#fondoBiblia,
+#fondoIglesia,
+#fondoPanel,
+#fondoCompartidos{
+  position: fixed;
   inset: 0;
   z-index: 0;
 
   background-repeat: no-repeat;
-  background-position: center center;
+  background-position: center top;
   background-size: cover;
   background-attachment: scroll;
 
@@ -637,6 +640,21 @@ body.modo-imagen #accionesBiblia .accion-normal {
 }
 
 #seccion-biblia > *:not(#fondoBiblia){
+  position: relative;
+  z-index: 1;
+}
+
+#seccion-iglesia > *:not(#fondoIglesia){
+  position: relative;
+  z-index: 1;
+}
+
+#seccion-panel > *:not(#fondoPanel){
+  position: relative;
+  z-index: 1;
+}
+
+#seccion-compartidos > *:not(#fondoCompartidos){
   position: relative;
   z-index: 1;
 }
