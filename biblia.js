@@ -264,11 +264,9 @@ let scrollCapituloAnterior = 0;
 const LS_BIBLIA_ESTADO = "va_biblia_estado_v1";
 
 function obtenerSeccionActual() {
-  const ids = ["biblia", "iglesia", "panel", "compartidos"];
-  for (const id of ids) {
-    const el = document.getElementById("seccion-" + id);
-    if (el && el.style.display !== "none") return id;
-  }
+  if (document.body.classList.contains("en-iglesia")) return "iglesia";
+  if (document.body.classList.contains("en-panel")) return "panel";
+  if (document.body.classList.contains("en-compartidos")) return "compartidos";
   return "biblia";
 }
 
@@ -2761,38 +2759,26 @@ if (subir) {
 
 // ================= 🔺 WINDOW / UI ⭕ ===============================
 window.irA = (seccion) => {
-
-  // ✅ limpiar clases de sección del body
-  document.body.classList.remove("en-biblia", "en-iglesia", "en-panel", "en-compartidos");
-
-  // ✅ poner la clase correcta según la sección activa
-  if (seccion === "biblia") {
-    document.body.classList.add("en-biblia");
-  } else if (seccion === "iglesia") {
-    document.body.classList.add("en-iglesia");
-  } else if (seccion === "panel") {
-    document.body.classList.add("en-panel");
-  } else if (seccion === "compartidos") {
-    document.body.classList.add("en-compartidos");
-  }
+  const todas = ["biblia", "iglesia", "panel", "compartidos"];
 
   // 1) mostrar/ocultar secciones principales
-  ["biblia", "iglesia", "panel", "compartidos"].forEach(s => {
+  todas.forEach(s => {
     const el = document.getElementById("seccion-" + s);
-    if (el) el.style.display = (s === seccion) ? "block" : "none";
+    if (el) {
+      el.style.display = (s === seccion) ? "block" : "none";
+    }
   });
 
-  // 2) marcar botón activo del menú
+  // 2) clases correctas en body
+  document.body.classList.remove("en-biblia", "en-iglesia", "en-panel", "en-compartidos");
+  document.body.classList.add("en-" + seccion);
+
+  // 3) marcar botón activo del menú
   document.querySelectorAll("#menu .nav-btn").forEach(b => b.classList.remove("activo"));
   const btnActivo = document.querySelector(`#menu .nav-btn[onclick="irA('${seccion}')"]`);
   if (btnActivo) btnActivo.classList.add("activo");
 
-  // ✅ si me fui de IGLESIA (donde vive ABC) a otra sección, apago ABC
-  if (seccion !== "iglesia") {
-    window.__abcOnExit?.();
-  }
-
-  // 3) defaults internos
+  // 4) defaults internos
   if (seccion === "iglesia") {
     window.mostrarIglesiaSub?.("devocionales");
     return;
@@ -2807,19 +2793,12 @@ window.irA = (seccion) => {
     return;
   }
 
-  // 4) biblia
+  // 5) biblia
   if (seccion === "biblia") {
-    window.setMarcadorCtx("biblia");
     try { bibliaRestaurarUIAlVolver?.(); } catch(e){}
-    aplicarEstadoBarra?.("biblia");
-
-    resaltadorBloqueado = true;
-    actualizarUICandadoResaltador?.();
-    mostrarTexto?.();
-
-    if (typeof aplicarUIAccionesPorModo === "function") {
-      aplicarUIAccionesPorModo();
-    }
+    try { aplicarEstadoBarra?.("biblia"); } catch(e){}
+    try { mostrarTexto?.(); } catch(e){}
+    try { aplicarUIAccionesPorModo?.(); } catch(e){}
   }
 };
 
@@ -4904,6 +4883,9 @@ if (inputBuscarLibro && selectLibro) {
 // 4) arrancar en iglesia
 window.irA?.("iglesia");
 
+document.body.classList.remove("en-biblia", "en-iglesia", "en-panel", "en-compartidos");
+document.body.classList.add("en-iglesia");
+
 // cuando Firebase confirma el usuario
 onAuthStateChanged(auth, (user) => {
   if (!user) return;
@@ -5232,8 +5214,10 @@ const FONDO_SECCIONES = {
 let fondoTemaDraft = null;
 
 function getSeccionActualFondoKey() {
-  const actual = obtenerSeccionActual();
-  return FONDO_SECCIONES[actual] ? actual : "biblia";
+  if (document.body.classList.contains("en-iglesia")) return "iglesia";
+  if (document.body.classList.contains("en-panel")) return "panel";
+  if (document.body.classList.contains("en-compartidos")) return "compartidos";
+  return "biblia";
 }
 
 function getFondoStorageKey(seccion) {
