@@ -142,12 +142,12 @@ body.oscuro .nav-btn.activo i{
   }
 
      /* ✅ Título + flechas en la misma línea */
+
+     /* ✅ Título + flechas en la misma línea */
 #barraTituloBiblia{
-  position: fixed;
+  position: sticky;
   top: 0;
-  left: 12px;
-  right: 12px;
-  z-index: 20;
+  z-index: 50;
 
   display:flex;
   align-items:center;
@@ -155,15 +155,15 @@ body.oscuro .nav-btn.activo i{
   gap:10px;
 
   background: #eafaff;
-  padding: 6px 15px;
+  padding: 6px 15px;   /* 👈 padding interno propio */
+  
   border-bottom: 1px solid rgba(0,0,0,.08);
   box-shadow: 0 6px 14px rgba(0,0,0,.06);
-  margin: 0;
-  border-radius: 0 0 14px 14px;
-}
 
-body.en-biblia #texto{
-  padding-top: 72px;
+  /* 👇 rompe el padding lateral del contenedor */
+  margin-left: -15px;
+  margin-right: -15px;
+  margin-bottom: 12px;
 }
 
 #barraTituloBiblia h3{
