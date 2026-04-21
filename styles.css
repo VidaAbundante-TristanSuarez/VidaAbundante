@@ -186,6 +186,19 @@ body.oscuro #barraTituloBiblia{
   border-bottom: 1px solid rgba(255,255,255,.12);
  }
 
+#barraTituloBiblia.barra-biblia-fija{
+  position: fixed;
+  top: 0;
+  left: 12px;
+  right: 12px;
+  margin: 0;
+  z-index: 60;
+}
+
+body.en-biblia #texto.con-barra-biblia-fija{
+  padding-top: 58px;
+}
+
 #titulo{
   margin: 0;
   padding: 6px 18px;
