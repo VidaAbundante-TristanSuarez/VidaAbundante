@@ -635,7 +635,7 @@ body.modo-imagen #accionesBiblia .accion-normal {
 #fondoCompartidos{
   position: fixed;
   inset: 0;
-  z-index: 0;
+  z-index: -1;
 
   background-repeat: no-repeat;
   background-position: center top;
@@ -645,7 +645,7 @@ body.modo-imagen #accionesBiblia .accion-normal {
   opacity: 0.35;
   pointer-events: none;
 
-  display: none; /* ✅ por defecto ocultos */
+  display: none;
 }
 
 body.en-biblia #fondoBiblia{ display:block; }
