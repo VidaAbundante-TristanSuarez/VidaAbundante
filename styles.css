@@ -649,7 +649,7 @@ body.en-iglesia #fondoIglesia{ display:block; }
 body.en-panel #fondoPanel{ display:block; }
 body.en-compartidos #fondoCompartidos{ display:block; }
 
-#seccion-biblia > *:not(#fondoBiblia){
+#seccion-biblia > *{
   position: relative;
   z-index: 1;
 }
