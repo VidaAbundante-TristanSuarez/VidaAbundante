@@ -2762,10 +2762,18 @@ if (subir) {
 // ================= 🔺 WINDOW / UI ⭕ ===============================
 window.irA = (seccion) => {
 
-  // ✅ ocultar botón subir en Biblia
-  document.body.classList.remove("en-biblia");
+  // ✅ limpiar clases de sección del body
+  document.body.classList.remove("en-biblia", "en-iglesia", "en-panel", "en-compartidos");
+
+  // ✅ poner la clase correcta según la sección activa
   if (seccion === "biblia") {
     document.body.classList.add("en-biblia");
+  } else if (seccion === "iglesia") {
+    document.body.classList.add("en-iglesia");
+  } else if (seccion === "panel") {
+    document.body.classList.add("en-panel");
+  } else if (seccion === "compartidos") {
+    document.body.classList.add("en-compartidos");
   }
 
   // 1) mostrar/ocultar secciones principales
