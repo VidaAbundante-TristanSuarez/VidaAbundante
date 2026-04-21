@@ -33,8 +33,6 @@
  /* ================= HEADER SUPERIOR ================= */
  /* Barra superior con botones de navegación */
 #header {
-  position: relative; /* ✅ se va con el scroll, pero ya admite z-index */
-  z-index: 3000;      /* ✅ queda por encima del fondo fijo */
   background: transparent;
   border-bottom: 1px solid #ddd;
   padding: 10px;
@@ -116,14 +114,7 @@ body.oscuro .nav-btn.activo i{
 
   /* ================= SECCIONES GENERALES ================= */
 .seccion {
-  position: relative;
   padding: 12px;
-  z-index: 1;
-}
-
-.seccion > *{
-  position: relative;
-  z-index: 2;
 }
 
   /* ================= SECCIÓN BIBLIA ================= */
@@ -646,26 +637,6 @@ body.en-biblia #fondoBiblia{ display:block; }
 body.en-iglesia #fondoIglesia{ display:block; }
 body.en-panel #fondoPanel{ display:block; }
 body.en-compartidos #fondoCompartidos{ display:block; }
-
-#seccion-biblia > *{
-  position: relative;
-  z-index: 1;
-}
-
-#seccion-iglesia > *:not(#fondoIglesia){
-  position: relative;
-  z-index: 1;
-}
-
-#seccion-panel > *:not(#fondoPanel){
-  position: relative;
-  z-index: 1;
-}
-
-#seccion-compartidos > *:not(#fondoCompartidos){
-  position: relative;
-  z-index: 1;
-}
 
 body:not(.barra-oculta) #seccion-biblia {
   padding-bottom: 76px;
