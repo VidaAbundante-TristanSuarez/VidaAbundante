@@ -119,6 +119,12 @@ body.oscuro .nav-btn.activo i{
   position: relative;
   isolation: isolate;
   padding: 12px;
+  z-index: 1;
+}
+
+.seccion > *{
+  position: relative;
+  z-index: 2;
 }
 
   /* ================= SECCIÓN BIBLIA ================= */
@@ -3181,6 +3187,14 @@ body.en-biblia #accionesBiblia{
   width: 100%;
   margin-left: 0 !important;
   margin-right: 0 !important;
+}
+
+#seccion-biblia,
+#seccion-iglesia,
+#seccion-panel,
+#seccion-compartidos{
+  position: relative;
+  z-index: 1;
 }
 
   </style> 
