@@ -146,7 +146,7 @@ body.oscuro .nav-btn.activo i{
      /* ✅ Título + flechas en la misma línea */
 #barraTituloBiblia{
   position: sticky;
-  top: 0;
+  top: 10px;
   z-index: 50;
 
   display:flex;
@@ -185,19 +185,6 @@ body.oscuro #barraTituloBiblia{
   box-shadow: 0 6px 14px rgba(0,0,0,.35);
   border-bottom: 1px solid rgba(255,255,255,.12);
  }
-
-#barraTituloBiblia.barra-biblia-fija{
-  position: fixed;
-  top: 0;
-  left: 12px;
-  right: 12px;
-  margin: 0;
-  z-index: 60;
-}
-
-body.en-biblia #texto.con-barra-biblia-fija{
-  padding-top: 58px;
-}
 
 #titulo{
   margin: 0;
