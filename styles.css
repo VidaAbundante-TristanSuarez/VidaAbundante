@@ -142,7 +142,7 @@ body.oscuro .nav-btn.activo i{
   display:flex;
   align-items:center;
   justify-content:space-between;
-  gap:10px;
+  gap:6px;
 
   background: #eafaff;
   padding: 6px 15px;   /* 👈 padding interno propio */
