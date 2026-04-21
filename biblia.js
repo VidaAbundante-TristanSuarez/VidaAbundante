@@ -5485,39 +5485,4 @@ window.addEventListener("load", () => {
   }
 });
 
-function actualizarBarraBibliaFija() {
-  const barra = document.getElementById("barraTituloBiblia");
-  const texto = document.getElementById("texto");
-  const seccion = document.getElementById("seccion-biblia");
 
-  if (!barra || !texto || !seccion) return;
-
-  const estoyEnBiblia =
-    document.body.classList.contains("en-biblia") &&
-    getComputedStyle(seccion).display !== "none";
-
-  if (!estoyEnBiblia) {
-    barra.classList.remove("barra-biblia-fija");
-    texto.classList.remove("con-barra-biblia-fija");
-    texto.style.paddingTop = "";
-    return;
-  }
-
-  const topSeccion = seccion.getBoundingClientRect().top;
-
-  if (topSeccion <= 0) {
-    barra.classList.add("barra-biblia-fija");
-    texto.classList.add("con-barra-biblia-fija");
-    texto.style.paddingTop = (barra.offsetHeight + 8) + "px";
-  } else {
-    barra.classList.remove("barra-biblia-fija");
-    texto.classList.remove("con-barra-biblia-fija");
-    texto.style.paddingTop = "";
-  }
-}
-
-window.addEventListener("scroll", actualizarBarraBibliaFija, { passive: true });
-window.addEventListener("resize", actualizarBarraBibliaFija);
-window.addEventListener("load", () => {
-  setTimeout(actualizarBarraBibliaFija, 0);
-});
