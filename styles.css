@@ -631,7 +631,7 @@ body.modo-imagen #accionesBiblia .accion-normal {
 #fondoCompartidos{
   position: fixed;
   inset: 0;
-  z-index: -1;
+  z-index: 0;
 
   background-repeat: no-repeat;
   background-position: center top;
@@ -640,7 +640,14 @@ body.modo-imagen #accionesBiblia .accion-normal {
 
   opacity: 0.35;
   pointer-events: none;
+
+  display: none; /* ✅ por defecto ocultos */
 }
+
+body.en-biblia #fondoBiblia{ display:block; }
+body.en-iglesia #fondoIglesia{ display:block; }
+body.en-panel #fondoPanel{ display:block; }
+body.en-compartidos #fondoCompartidos{ display:block; }
 
 #seccion-biblia > *:not(#fondoBiblia){
   position: relative;
@@ -662,9 +669,12 @@ body.modo-imagen #accionesBiblia .accion-normal {
   z-index: 1;
 }
 
-/* ✅ Espacio solo cuando la barra de acciones está visible */
 body:not(.barra-oculta) #seccion-biblia {
-  padding-bottom: 5px; /* altura real de la barra es 64 */
+  padding-bottom: 76px;
+}
+
+body.barra-oculta #seccion-biblia {
+  padding-bottom: 12px;
 }
 
 html, body {
@@ -3160,6 +3170,17 @@ body.oscuro #buscarLibroBiblia{
 #panel-marcadores {
   background: transparent !important;
   background-image: none !important;
+}
+
+body.en-biblia #accionesBiblia{
+  position: fixed !important;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 200;
+  width: 100%;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
 }
 
   </style> 
