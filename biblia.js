@@ -5310,7 +5310,6 @@ function aplicarEstadoVisualSeccion(seccion, estado) {
   const valor = estado?.valor || "#ffffff";
   const opacidad = String(estado?.opacidad || "0.35");
 
-  // el contenedor principal nunca maneja opacidad visual
   el.style.background = "none";
   el.style.backgroundImage = "none";
   el.style.backgroundColor = "transparent";
