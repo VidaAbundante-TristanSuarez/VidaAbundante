@@ -145,9 +145,9 @@ body.oscuro .nav-btn.activo i{
 #barraTituloBiblia{
   position: fixed;
   top: 0;
-  left: 0;
-  right: 0;
-  z-index: 4000;
+  left: 12px;
+  right: 12px;
+  z-index: 20;
 
   display:flex;
   align-items:center;
@@ -155,13 +155,16 @@ body.oscuro .nav-btn.activo i{
   gap:10px;
 
   background: #eafaff;
-  padding: 6px 12px;
+  padding: 6px 15px;
   border-bottom: 1px solid rgba(0,0,0,.08);
   box-shadow: 0 6px 14px rgba(0,0,0,.06);
-
   margin: 0;
+  border-radius: 0 0 14px 14px;
 }
 
+body.en-biblia #texto{
+  padding-top: 72px;
+}
 
 #barraTituloBiblia h3{
   margin: 1;                   /* 👈 elimina espacio extra */
@@ -3154,21 +3157,6 @@ body.oscuro #buscarLibroBiblia{
   font-weight: 700;
 }
 
-#iglesia-devocionales,
-#iglesia-abc,
-#iglesia-subidos,
-#subidosApp,
-#iglesia-recursos,
-#recursos-rh,
-#recursos-talleres,
-#recursos-hermanos,
-#recursos-permisos,
-#panel-imagenes,
-#panel-marcadores {
-  background: transparent !important;
-  background-image: none !important;
-}
-
 body.en-biblia #accionesBiblia{
   position: fixed !important;
   left: 0;
@@ -3188,7 +3176,7 @@ body.en-biblia #accionesBiblia{
   z-index: 1;
 }
 
-.modal-tema-card{
+.modal-card.modal-card-sm{
   position: relative;
 }
 
@@ -3196,7 +3184,6 @@ body.en-biblia #accionesBiblia{
   position: absolute;
   top: 8px;
   right: 8px;
-  z-index: 10;
   width: 28px;
   height: 28px;
   border: none;
@@ -3209,4 +3196,5 @@ body.en-biblia #accionesBiblia{
   cursor: pointer;
   box-shadow: 0 2px 8px rgba(0,0,0,.15);
 }
+
   </style> 
