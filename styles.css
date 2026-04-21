@@ -35,7 +35,7 @@
 #header {
   position: relative; /* ✅ se va con el scroll, pero ya admite z-index */
   z-index: 3000;      /* ✅ queda por encima del fondo fijo */
-  background: #ffffff;
+  background: transparent;
   border-bottom: 1px solid #ddd;
   padding: 10px;
   display: flex;
