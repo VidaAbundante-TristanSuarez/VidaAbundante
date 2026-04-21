@@ -5400,14 +5400,42 @@ window.aplicarImagenFondo = () => {
   const reader = new FileReader();
 
   reader.onload = function(e) {
-    const url = e?.target?.result;
-    if (!url) return;
+    const src = e?.target?.result;
+    if (!src) return;
 
-    fondoTemaDraft.tipo = "imagen";
-    fondoTemaDraft.valor = url;
+    const img = new Image();
+    img.onload = () => {
+      const maxLado = 1600; // suficiente para fondo, mucho más liviano
+      let { width, height } = img;
 
-    aplicarEstadoVisualSeccion(fondoTemaDraft.seccion, fondoTemaDraft);
-    limpiarFondosInternosApp();
+      if (width > height && width > maxLado) {
+        height = Math.round(height * (maxLado / width));
+        width = maxLado;
+      } else if (height >= width && height > maxLado) {
+        width = Math.round(width * (maxLado / height));
+        height = maxLado;
+      }
+
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+
+      ctx.drawImage(img, 0, 0, width, height);
+
+      // ✅ guardamos versión comprimida, no el archivo bruto
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.78);
+
+      fondoTemaDraft.tipo = "imagen";
+      fondoTemaDraft.valor = dataUrl;
+
+      aplicarEstadoVisualSeccion(fondoTemaDraft.seccion, fondoTemaDraft);
+      limpiarFondosInternosApp();
+    };
+
+    img.src = src;
   };
 
   reader.readAsDataURL(file);
@@ -5416,9 +5444,14 @@ window.aplicarImagenFondo = () => {
 window.confirmarFondoTema = () => {
   if (!fondoTemaDraft) return;
 
-  guardarEstadoSeccion(fondoTemaDraft.seccion, fondoTemaDraft);
-  aplicarFondosGuardados();
-  cerrarModalTema();
+  try {
+    guardarEstadoSeccion(fondoTemaDraft.seccion, fondoTemaDraft);
+    aplicarFondosGuardados();
+    cerrarModalTema();
+  } catch (e) {
+    console.error("Error al confirmar fondo:", e);
+    alert("No se pudo guardar esa imagen de fondo. Probá con una imagen más liviana.");
+  }
 };
 
 window.cancelarFondoTema = () => {
@@ -5450,4 +5483,41 @@ window.addEventListener("load", () => {
       limpiarFondosInternosApp();
     });
   }
+});
+
+function actualizarBarraBibliaFija() {
+  const barra = document.getElementById("barraTituloBiblia");
+  const texto = document.getElementById("texto");
+  const seccion = document.getElementById("seccion-biblia");
+
+  if (!barra || !texto || !seccion) return;
+
+  const estoyEnBiblia =
+    document.body.classList.contains("en-biblia") &&
+    getComputedStyle(seccion).display !== "none";
+
+  if (!estoyEnBiblia) {
+    barra.classList.remove("barra-biblia-fija");
+    texto.classList.remove("con-barra-biblia-fija");
+    texto.style.paddingTop = "";
+    return;
+  }
+
+  const topSeccion = seccion.getBoundingClientRect().top;
+
+  if (topSeccion <= 0) {
+    barra.classList.add("barra-biblia-fija");
+    texto.classList.add("con-barra-biblia-fija");
+    texto.style.paddingTop = (barra.offsetHeight + 8) + "px";
+  } else {
+    barra.classList.remove("barra-biblia-fija");
+    texto.classList.remove("con-barra-biblia-fija");
+    texto.style.paddingTop = "";
+  }
+}
+
+window.addEventListener("scroll", actualizarBarraBibliaFija, { passive: true });
+window.addEventListener("resize", actualizarBarraBibliaFija);
+window.addEventListener("load", () => {
+  setTimeout(actualizarBarraBibliaFija, 0);
 });
