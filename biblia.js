@@ -2909,11 +2909,11 @@ window.cancelarCrearImagen = () => {
 };
 
 // ================= ✅ FINALIZAR EDICIÓN (CONFIRMAR) =================
-window.finalizarEdicion = async () => {
+window.finalizarEdicion = async (ev) => {
   if (window.__FINALIZANDO__) return;
   window.__FINALIZANDO__ = true;
 
-  const btn = event?.target;
+  const btn = ev?.currentTarget;
   if (btn) {
     btn.disabled = true;
     btn.innerHTML = `<i class="fa-solid fa-circle-check"></i>`;
