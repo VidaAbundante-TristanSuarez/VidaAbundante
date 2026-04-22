@@ -1,16 +1,15 @@
 // ================= SUBIDOS.JS =================
-const { db, storage } = window.__FB || {};
+const { db } = window.__FB || {};
 const FB = window.__FB_API || {};
 
 const {
   ref,
   set,
   onValue,
-  push,
-  sRef,
-  uploadBytes,
-  getDownloadURL
+  push
 } = FB;
+
+const R2_UPLOAD_URL = "https://us-central1-vidaabundante-f118a.cloudfunctions.net/subirImagenR2";
 
 let subidosUID = null;
 let subidosEsAdmin = false;
@@ -43,6 +42,40 @@ function fechaYMD(d) {
 
 function escaparHtml(txt = "") {
   return String(txt).replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+async function blobToBase64(blob){
+  return await new Promise((resolve, reject) => {
+    const rd = new FileReader();
+    rd.onerror = reject;
+    rd.onload = () => {
+      const s = String(rd.result || "");
+      resolve(s.split(",")[1] || "");
+    };
+    rd.readAsDataURL(blob);
+  });
+}
+
+async function subirArchivoAR2DesdeWeb(file, folder = "subidos"){
+  const fileBase64 = await blobToBase64(file);
+
+  const r = await fetch(R2_UPLOAD_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      fileBase64,
+      fileName: file.name || `archivo_${Date.now()}`,
+      contentType: file.type || "application/octet-stream",
+      folder
+    })
+  });
+
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok || !data?.ok || !data?.url) {
+    throw new Error(data?.error || data?.detail || "No se pudo subir archivo a R2");
+  }
+
+  return data;
 }
 
 function nombreMes(d) {
@@ -453,12 +486,8 @@ async function guardarSubido() {
     if (estado) estado.textContent = "Subiendo archivo...";
 
     const ts = Date.now();
-    const limpio = file.name.replace(/[^\w.\-]+/g, "_");
-    const path = `subidos_iglesia/${subidosUID}/${ts}_${limpio}`;
-    const storageRef = sRef(storage, path);
 
-    await uploadBytes(storageRef, file, { contentType: file.type || "application/octet-stream" });
-    const url = await getDownloadURL(storageRef);
+    const subida = await subirArchivoAR2DesdeWeb(file, "subidos");
 
     const nuevoRef = push(ref(db, "subidosIglesia"));
     await set(nuevoRef, {
@@ -466,10 +495,10 @@ async function guardarSubido() {
       fechaEvento,
       etiqueta,
       descripcion,
-      url,
+      url: subida.url,
+      r2Key: subida.key || "",
       mimeType: file.type || "",
       fileName: file.name || "",
-      storagePath: path,
       uidCreador: subidosUID
     });
 
@@ -485,7 +514,7 @@ async function guardarSubido() {
     console.error("Error guardando subido:", e);
     const estado = document.getElementById("subidosEstado");
     if (estado) estado.textContent = "❌ No se pudo guardar";
-    alert("No se pudo guardar el archivo.");
+    alert("No se pudo guardar el archivo.\n\n" + (e?.message || e));
   } finally {
     subidosGuardando = false;
     const btnGuardar = document.getElementById("btnGuardarSubido");
