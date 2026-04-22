@@ -3228,19 +3228,26 @@ async function devGuardarEnMiPanel(asset){
   const { db } = fb;
   const { ref, set } = api;
 
-  // ✅ esta es la ruta que Mi Panel SÍ escucha
   const dbPath = `panelImagenesPersonal/${uid}/${asset.ts}`;
 
   await set(ref(db, dbPath), {
-  url: asset.url,
-  fecha: asset.ts,
-  origen: "devocional",
-  tipoTexto: "devocional",
-  textoLibre: DEV.audioText || "",
-  audioOk: !!DEV.audioOk,
-  audioGithubUrl: DEV.audioGithubUrl || "",
-  devocionalKey: `${window.__UID}_${asset.ts}`
-});
+    url: asset.url,
+    fecha: asset.ts,
+    origen: "devocional",
+    tipoTexto: "devocional",
+
+    // ✅ para mostrar bonito en Mi Panel
+    cita: DEV.p1?.cita || "",
+    versiculo: DEV.p1?.versiculo || "",
+
+    // ✅ texto y audio
+    textoLibre: DEV.audioText || "",
+    audioOk: !!DEV.audioOk,
+    audioGithubUrl: DEV.audioGithubUrl || "",
+
+    // ✅ útil para relacionarlo si después querés
+    devocionalKey: `${uid}_${asset.ts}`
+  });
 
   return { ok:true, dbPath };
 }
