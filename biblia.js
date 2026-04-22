@@ -16,23 +16,13 @@ import {
   push
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-import {
-  getStorage,
-  ref as sRef,
-  uploadBytes,
-  getDownloadURL,
-  getBytes,
-  deleteObject          // ✅ AGREGAR
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
-
 // ================= FIREBASE CONFIG =================
 const firebaseConfig = {
   apiKey: "AIzaSyBtDcQ2DhgMpLsn4FCdF82QNstfvAjguQ4",
   authDomain: "vidaabundante-f118a.firebaseapp.com",
   databaseURL: "https://vidaabundante-f118a-default-rtdb.firebaseio.com",
   projectId: "vidaabundante-f118a",
-  storageBucket: "vidaabundante-f118a.firebasestorage.app",
-};
+ };
 
 // ================= ☁️ R2 =================
 const R2_UPLOAD_URL = "https://us-central1-vidaabundante-f118a.cloudfunctions.net/subirImagenR2";
@@ -41,11 +31,8 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getDatabase(app);
 
-// ✅ Opción blindada (recomendada):
-const storage = getStorage(app, "gs://vidaabundante-f118a.firebasestorage.app");
-
-window.__FB = { db, storage };
-window.__FB_API = { ref, set, remove, onValue, get, push, sRef, uploadBytes, getDownloadURL, getBytes, deleteObject };
+window.__FB = { db };
+window.__FB_API = { ref, set, remove, onValue, get, push };
 
 // ================= ESTADO GLOBAL =================
 let uid = null;
@@ -2398,7 +2385,7 @@ async function guardarReferenciaImagenEnPanel(asset) {
 
   await set(ref(db, dbPath), {
     url: asset.url,
-    storagePath: asset.storagePath,
+
     fecha: asset.ts,
     uid,
     tipo: "imagen",
@@ -2418,7 +2405,7 @@ async function guardarReferenciaImagenEnCompartidos(asset) {
 
   await set(ref(db, dbPath), {
     url: asset.url,
-    storagePath: asset.storagePath,
+
     fecha: asset.ts,
     uid,
     publicadoPor: uid,
