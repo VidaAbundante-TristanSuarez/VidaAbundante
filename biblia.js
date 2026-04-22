@@ -2904,30 +2904,27 @@ window.cancelarCrearImagen = () => {
 };
 
 // ================= ✅ FINALIZAR EDICIÓN (CONFIRMAR) =================
-window.finalizarEdicion = async (ev) => {
+window.finalizarEdicion = async () => {
   if (window.__FINALIZANDO__) return;
   window.__FINALIZANDO__ = true;
 
-  const btn = ev?.currentTarget || event?.currentTarget || event?.target;
+  const btn = event?.target;
   if (btn) {
     btn.disabled = true;
+    btn.innerHTML = `<i class="fa-solid fa-circle-check"></i>`;
     btn.style.opacity = "0.65";
-    btn.style.cursor = "wait";
   }
 
   try {
-    const asset = await subirImagenBibliaBaseUnaVez();
-
-    if (!asset) throw new Error("No se pudo generar la imagen");
+    const ok = await subirImagenBibliaUnaVezYGuardarDestinos();
+    if (!ok) throw new Error("No se pudo guardar la imagen");
 
     if (typeof devToast === "function") {
       devToast("✅ Imagen guardada");
     }
 
-    // ✅ NO usar cerrarModal()
     resetModalPersonalizar();
     salirModoImagen();
-
   } catch (e) {
     console.error(e);
     alert("❌ Error al guardar\n\n" + (e?.message || e));
@@ -2936,8 +2933,8 @@ window.finalizarEdicion = async (ev) => {
 
     if (btn) {
       btn.disabled = false;
+      btn.innerHTML = `<i class="fa-solid fa-circle-check"></i>`;
       btn.style.opacity = "";
-      btn.style.cursor = "";
     }
   }
 };
@@ -4170,6 +4167,7 @@ window.abrirNotaLibre = () => {
 function renderPanelImagenes(data) {
   const grid = document.getElementById("grid-imagenes"); // compatibilidad
   const vacio = document.getElementById("imagenes-vacio");
+  const topRow = document.getElementById("panelImgTopRow");
   const indexRow = document.getElementById("panelImgIndexRow");
   const feed = document.getElementById("panelImgFeed");
 
@@ -4180,37 +4178,42 @@ function renderPanelImagenes(data) {
     .map(([id, obj]) => ({ id, ...(obj || {}) }))
     .sort((a, b) => (b.fecha || 0) - (a.fecha || 0));
 
-// AGREGAR EL BOTÓN + EN MI PANEL
-if (!items.length) {
-  vacio.style.display = "block";
-  indexRow.innerHTML = `
-    <button
-      type="button"
-      class="btn-primary"
-      style="margin:0 0 8px 0;"
-      onclick="event.preventDefault(); event.stopPropagation(); abrirCrearImagenLibrePanel(); return false;">
-      <i class="fa-solid fa-circle-plus"></i>
-    </button>
-  `;
-  feed.innerHTML = "";
-  return;
-}
+  const tituloCard = (it) => {
+    const cita = String(it.cita || "").trim();
+    const versiculo = String(it.versiculo || "").trim();
+    const refBiblia = (it.libro && it.capitulo) ? `${it.libro} ${it.capitulo}` : "";
 
-vacio.style.display = "none";
+    if (cita) return cita;
+    if (refBiblia) return refBiblia;
+    if (versiculo) return versiculo.length > 60 ? versiculo.slice(0, 60) + "…" : versiculo;
+    return "Imagen";
+  };
 
-indexRow.innerHTML = `
-  <button
-    type="button"
-    class="btn-primary"
-    style="flex:0 0 auto; align-self:flex-start;"
-    onclick="event.preventDefault(); event.stopPropagation(); abrirCrearImagenLibrePanel(); return false;">
-    <i class="fa-solid fa-circle-plus"></i>
-  </button>
-`;
+  // ✅ botón + separado del índice
+  if (topRow) {
+    topRow.innerHTML = `
+      <button
+        type="button"
+        class="btn-primary"
+        style="flex:0 0 auto; align-self:flex-start;"
+        onclick="event.preventDefault(); event.stopPropagation(); abrirCrearImagenLibrePanel(); return false;">
+        <i class="fa-solid fa-circle-plus"></i>
+      </button>
+    `;
+  }
+
+  if (!items.length) {
+    vacio.style.display = "block";
+    indexRow.innerHTML = "";
+    feed.innerHTML = "";
+    return;
+  }
+
+  vacio.style.display = "none";
 
   // índice horizontal arriba
-   indexRow.innerHTML += items.map(it => {
-    const refTxt = (it.libro && it.capitulo) ? `${it.libro} ${it.capitulo}` : "Imagen";
+  indexRow.innerHTML = items.map(it => {
+    const refTxt = tituloCard(it);
     const fechaTxt = it.fecha ? new Date(it.fecha).toLocaleDateString("es-AR") : "";
     const url = (it.url || "").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 
@@ -4218,9 +4221,9 @@ indexRow.innerHTML = `
       <div class="devIndexCard" onclick="document.getElementById('panelImgBig_${it.id}')?.scrollIntoView({behavior:'smooth', block:'start'})">
         <div class="devIndexBar devIndexBarTop">${refTxt}</div>
 
-<div class="devIndexImgWrap">
-  <img src="${url}" loading="lazy">
-</div>
+        <div class="devIndexImgWrap">
+          <img src="${url}" loading="lazy">
+        </div>
 
         <div class="devIndexBar devIndexBarBottom">${fechaTxt}</div>
       </div>
@@ -4229,37 +4232,36 @@ indexRow.innerHTML = `
 
   // feed grande abajo
   feed.innerHTML = items.map(it => {
-    const refTxt = (it.libro && it.capitulo) ? `${it.libro} ${it.capitulo}` : "Imagen";
+    const refTxt = tituloCard(it);
     const fechaTxt = it.fecha ? new Date(it.fecha).toLocaleDateString("es-AR") : "";
     const url = (it.url || "").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 
     return `
       <div class="devBigCard" id="panelImgBig_${it.id}">
+        <div class="devIndexBar devIndexBarTop">${refTxt}</div>
+
         <img src="${url}" alt="Imagen generada" loading="lazy">
 
         <div class="devBigActions">
+          <button class="btn-primary" type="button"
+            onclick="descargarImagenPanel('${url}')"
+            aria-label="Descargar PNG">
+            <i class="fa-solid fa-download"></i>
+          </button>
 
-  <button class="btn-primary" type="button"
-    onclick="descargarImagenPanel('${url}')"
-    aria-label="Descargar PNG">
-    <i class="fa-solid fa-download"></i>
-  </button>
+          <button class="btn-primary" type="button"
+            onclick="compartirImagenPanel('${url}')"
+            aria-label="Compartir">
+            <i class="fa-solid fa-share-nodes"></i>
+          </button>
 
-  <button class="btn-primary" type="button"
-    onclick="compartirImagenPanel('${url}')"
-    aria-label="Compartir">
-    <i class="fa-solid fa-share-nodes"></i>
-  </button>
-
-  <button class="btn-danger" type="button"
-    onclick="eliminarImagenPanel('${it.id}')"
-    aria-label="Eliminar">
-    <i class="fa-solid fa-trash"></i>
-  </button>
-
-</div>
-
-          </div>
+          <button class="btn-danger" type="button"
+            onclick="eliminarImagenPanel('${it.id}')"
+            aria-label="Eliminar">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </div>
+      </div>
     `;
   }).join("");
 }
