@@ -4209,31 +4209,35 @@ function renderPanelImagenes(data) {
     let s = String(url || "").trim();
     if (!s) return "";
 
-    // ✅ arregla URLs viejas tipo /pub-... o ./pub-...
     if (/^(?:\.\/|\/)?pub-[a-z0-9-]+\.r2\.dev\//i.test(s)) {
       s = "https://" + s.replace(/^(?:\.\/|\/)+/, "");
     }
 
-    // ✅ arregla https:/algo -> https://algo
     s = s.replace(/^https:\//i, "https://");
     s = s.replace(/^http:\//i, "http://");
 
     return esc(s);
   }
 
+  function esDevocional(it){
+    return it?.origen === "devocional" || it?.tipoTexto === "devocional";
+  }
+
+  function esLibrePanel(it){
+    return !esDevocional(it) && it?.tipoTexto === "libre";
+  }
+
   function refBonitaPanel(it){
     const cita = capitalizarCitaBonitaPanel(it.cita || "");
     const refBiblia = (it.libro && it.capitulo) ? `${it.libro} ${it.capitulo}` : "";
     const versiculo = capitalizarCitaBonitaPanel(it.versiculo || "");
+    const libre = String(it.textoLibre || "").trim();
 
     if (cita) return cita;
     if (refBiblia) return refBiblia;
     if (versiculo) return versiculo.length > 60 ? versiculo.slice(0, 60) + "…" : versiculo;
+    if (esLibrePanel(it) && libre) return libre.length > 60 ? libre.slice(0, 60) + "…" : libre;
     return "Imagen";
-  }
-
-  function esDevocional(it){
-    return it?.origen === "devocional" || it?.tipoTexto === "devocional";
   }
 
   if (topRow) {
@@ -4279,10 +4283,9 @@ function renderPanelImagenes(data) {
   // feed grande abajo
   feed.innerHTML = items.map(it => {
     const refTxt = esc(refBonitaPanel(it));
-    const fechaTxt = it.fecha ? new Date(it.fecha).toLocaleDateString("es-AR") : "";
     const url = normalizarUrlPanel(it.url || "");
     const audioUrl = normalizarUrlPanel(it.audioGithubUrl || "");
-    const textoDev = esc(it.textoLibre || "");
+    const textoLibre = esc(it.textoLibre || "");
 
     return `
       <div class="devBigCard" id="panelImgBig_${it.id}">
@@ -4302,13 +4305,11 @@ function renderPanelImagenes(data) {
           </div>
         ` : ``}
 
-        ${esDevocional(it) && textoDev ? `
+        ${esLibrePanel(it) && textoLibre ? `
           <div style="margin-top:10px; white-space:pre-wrap; line-height:1.4;">
-            ${textoDev}
+            ${textoLibre}
           </div>
         ` : ``}
-
-        <div style="margin-top:8px; opacity:.7; font-size:12px;">${fechaTxt}</div>
 
         <div class="devBigActions">
           <button class="btn-primary" type="button"
