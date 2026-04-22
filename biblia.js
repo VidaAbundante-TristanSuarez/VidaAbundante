@@ -2426,10 +2426,15 @@ async function subirImagenBibliaUnaVezYGuardarDestinos() {
   // ✅ siempre a Mi Panel
   await guardarReferenciaImagenEnPanel(asset);
 
-  // ✅ opcional a Compartidos
+  // ✅ opcional a Compartidos, pero si falla NO rompe todo
   const chk = document.getElementById("checkIglesia");
   if (chk && chk.checked) {
-    await guardarReferenciaImagenEnCompartidos(asset);
+    try {
+      await guardarReferenciaImagenEnCompartidos(asset);
+    } catch (e) {
+      console.warn("No pude publicar en Compartidos:", e);
+      alert("✅ Se guardó en Mi Panel, pero no se pudo publicar en Compartidos.");
+    }
   }
 
   console.log("✅ Imagen subida una sola vez y referenciada en destinos");
@@ -4178,6 +4183,32 @@ function renderPanelImagenes(data) {
     .map(([id, obj]) => ({ id, ...(obj || {}) }))
     .sort((a, b) => (b.fecha || 0) - (a.fecha || 0));
 
+  function capitalizarCitaBonitaPanel(s){
+  s = String(s || "").trim();
+  if (!s) return "";
+
+  return s
+    .toLocaleLowerCase("es")
+    .split(/\s+/)
+    .map(palabra => {
+      if (!palabra) return palabra;
+      if (/^\d+$/.test(palabra)) return palabra;
+      return palabra.charAt(0).toLocaleUpperCase("es") + palabra.slice(1);
+    })
+    .join(" ");
+}
+
+function refBonitaPanel(it){
+  const cita = capitalizarCitaBonitaPanel(it.cita || "");
+  const refBiblia = (it.libro && it.capitulo) ? `${it.libro} ${it.capitulo}` : "";
+  const versiculo = capitalizarCitaBonitaPanel(it.versiculo || "");
+
+  if (cita) return cita;
+  if (refBiblia) return refBiblia;
+  if (versiculo) return versiculo.length > 60 ? versiculo.slice(0, 60) + "…" : versiculo;
+  return "Imagen";
+}
+
   const tituloCard = (it) => {
     const cita = String(it.cita || "").trim();
     const versiculo = String(it.versiculo || "").trim();
@@ -4213,7 +4244,7 @@ function renderPanelImagenes(data) {
 
   // índice horizontal arriba
   indexRow.innerHTML = items.map(it => {
-    const refTxt = tituloCard(it);
+    const refTxt = refBonitaPanel(it);
     const fechaTxt = it.fecha ? new Date(it.fecha).toLocaleDateString("es-AR") : "";
     const url = (it.url || "").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 
@@ -4232,7 +4263,7 @@ function renderPanelImagenes(data) {
 
   // feed grande abajo
   feed.innerHTML = items.map(it => {
-    const refTxt = tituloCard(it);
+    const refTxt = refBonitaPanel(it);
     const fechaTxt = it.fecha ? new Date(it.fecha).toLocaleDateString("es-AR") : "";
     const url = (it.url || "").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 
