@@ -2904,14 +2904,15 @@ window.cancelarCrearImagen = () => {
 };
 
 // ================= ✅ FINALIZAR EDICIÓN (CONFIRMAR) =================
-window.finalizarEdicion = async () => {
-  if (window.__FINALIZANDO__) return; // 🔒 evita doble click
+window.finalizarEdicion = async (ev) => {
+  if (window.__FINALIZANDO__) return;
   window.__FINALIZANDO__ = true;
 
-  const btn = event?.target;
+  const btn = ev?.currentTarget || event?.currentTarget || event?.target;
   if (btn) {
     btn.disabled = true;
-    btn.innerText = "Guardando...";
+    btn.style.opacity = "0.65";
+    btn.style.cursor = "wait";
   }
 
   try {
@@ -2919,25 +2920,25 @@ window.finalizarEdicion = async () => {
 
     if (!asset) throw new Error("No se pudo generar la imagen");
 
-    // 👉 acá sigue tu lógica actual de guardado en DB
-
     if (typeof devToast === "function") {
       devToast("✅ Imagen guardada");
     }
 
-    // ✅ cerrar modal
-    cerrarModal("modalPersonalizar");
+    // ✅ NO usar cerrarModal()
+    resetModalPersonalizar();
+    salirModoImagen();
 
   } catch (e) {
     console.error(e);
     alert("❌ Error al guardar\n\n" + (e?.message || e));
-  }
+  } finally {
+    window.__FINALIZANDO__ = false;
 
-  window.__FINALIZANDO__ = false;
-
-  if (btn) {
-    btn.disabled = false;
-    btn.innerText = "Finalizar";
+    if (btn) {
+      btn.disabled = false;
+      btn.style.opacity = "";
+      btn.style.cursor = "";
+    }
   }
 };
 
