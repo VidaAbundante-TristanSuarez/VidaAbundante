@@ -4183,44 +4183,59 @@ function renderPanelImagenes(data) {
     .map(([id, obj]) => ({ id, ...(obj || {}) }))
     .sort((a, b) => (b.fecha || 0) - (a.fecha || 0));
 
+  function esc(txt = "") {
+    return String(txt)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  }
+
   function capitalizarCitaBonitaPanel(s){
-  s = String(s || "").trim();
-  if (!s) return "";
+    s = String(s || "").trim();
+    if (!s) return "";
 
-  return s
-    .toLocaleLowerCase("es")
-    .split(/\s+/)
-    .map(palabra => {
-      if (!palabra) return palabra;
-      if (/^\d+$/.test(palabra)) return palabra;
-      return palabra.charAt(0).toLocaleUpperCase("es") + palabra.slice(1);
-    })
-    .join(" ");
-}
+    return s
+      .toLocaleLowerCase("es")
+      .split(/\s+/)
+      .map(palabra => {
+        if (!palabra) return palabra;
+        if (/^\d+$/.test(palabra)) return palabra;
+        return palabra.charAt(0).toLocaleUpperCase("es") + palabra.slice(1);
+      })
+      .join(" ");
+  }
 
-function refBonitaPanel(it){
-  const cita = capitalizarCitaBonitaPanel(it.cita || "");
-  const refBiblia = (it.libro && it.capitulo) ? `${it.libro} ${it.capitulo}` : "";
-  const versiculo = capitalizarCitaBonitaPanel(it.versiculo || "");
+  function normalizarUrlPanel(url){
+    let s = String(url || "").trim();
+    if (!s) return "";
 
-  if (cita) return cita;
-  if (refBiblia) return refBiblia;
-  if (versiculo) return versiculo.length > 60 ? versiculo.slice(0, 60) + "…" : versiculo;
-  return "Imagen";
-}
+    // ✅ arregla URLs viejas tipo /pub-... o ./pub-...
+    if (/^(?:\.\/|\/)?pub-[a-z0-9-]+\.r2\.dev\//i.test(s)) {
+      s = "https://" + s.replace(/^(?:\.\/|\/)+/, "");
+    }
 
-  const tituloCard = (it) => {
-    const cita = String(it.cita || "").trim();
-    const versiculo = String(it.versiculo || "").trim();
+    // ✅ arregla https:/algo -> https://algo
+    s = s.replace(/^https:\//i, "https://");
+    s = s.replace(/^http:\//i, "http://");
+
+    return esc(s);
+  }
+
+  function refBonitaPanel(it){
+    const cita = capitalizarCitaBonitaPanel(it.cita || "");
     const refBiblia = (it.libro && it.capitulo) ? `${it.libro} ${it.capitulo}` : "";
+    const versiculo = capitalizarCitaBonitaPanel(it.versiculo || "");
 
     if (cita) return cita;
     if (refBiblia) return refBiblia;
     if (versiculo) return versiculo.length > 60 ? versiculo.slice(0, 60) + "…" : versiculo;
     return "Imagen";
-  };
+  }
 
-  // ✅ botón + separado del índice
+  function esDevocional(it){
+    return it?.origen === "devocional" || it?.tipoTexto === "devocional";
+  }
+
   if (topRow) {
     topRow.innerHTML = `
       <button
@@ -4244,16 +4259,16 @@ function refBonitaPanel(it){
 
   // índice horizontal arriba
   indexRow.innerHTML = items.map(it => {
-    const refTxt = refBonitaPanel(it);
+    const refTxt = esc(refBonitaPanel(it));
     const fechaTxt = it.fecha ? new Date(it.fecha).toLocaleDateString("es-AR") : "";
-    const url = (it.url || "").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    const url = normalizarUrlPanel(it.url || "");
 
     return `
       <div class="devIndexCard" onclick="document.getElementById('panelImgBig_${it.id}')?.scrollIntoView({behavior:'smooth', block:'start'})">
         <div class="devIndexBar devIndexBarTop">${refTxt}</div>
 
         <div class="devIndexImgWrap">
-          <img src="${url}" loading="lazy">
+          ${url ? `<img src="${url}" loading="lazy">` : `<div class="devIndexImgFallback">Sin imagen</div>`}
         </div>
 
         <div class="devIndexBar devIndexBarBottom">${fechaTxt}</div>
@@ -4263,15 +4278,37 @@ function refBonitaPanel(it){
 
   // feed grande abajo
   feed.innerHTML = items.map(it => {
-    const refTxt = refBonitaPanel(it);
+    const refTxt = esc(refBonitaPanel(it));
     const fechaTxt = it.fecha ? new Date(it.fecha).toLocaleDateString("es-AR") : "";
-    const url = (it.url || "").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    const url = normalizarUrlPanel(it.url || "");
+    const audioUrl = normalizarUrlPanel(it.audioGithubUrl || "");
+    const textoDev = esc(it.textoLibre || "");
 
     return `
       <div class="devBigCard" id="panelImgBig_${it.id}">
         <div class="devIndexBar devIndexBarTop">${refTxt}</div>
 
-        <img src="${url}" alt="Imagen generada" loading="lazy">
+        ${
+          url
+            ? `<img src="${url}" alt="Imagen generada" loading="lazy">`
+            : `<div class="devBigImgFallback">Sin imagen</div>`
+        }
+
+        ${esDevocional(it) && audioUrl ? `
+          <div style="margin-top:10px;">
+            <audio controls preload="metadata" style="width:100%;">
+              <source src="${audioUrl}" type="audio/mpeg">
+            </audio>
+          </div>
+        ` : ``}
+
+        ${esDevocional(it) && textoDev ? `
+          <div style="margin-top:10px; white-space:pre-wrap; line-height:1.4;">
+            ${textoDev}
+          </div>
+        ` : ``}
+
+        <div style="margin-top:8px; opacity:.7; font-size:12px;">${fechaTxt}</div>
 
         <div class="devBigActions">
           <button class="btn-primary" type="button"
