@@ -468,10 +468,11 @@ exports.subirImagenR2 = onRequest(
         return res.status(400).json({ error: "Body JSON inválido" });
       }
 
-      const {
+const {
         fileBase64 = "",
         fileName = "",
-        contentType = "image/png"
+        contentType = "application/octet-stream",
+        folder = "devocionales"
       } = payload;
 
       if (!fileBase64) {
@@ -495,8 +496,9 @@ exports.subirImagenR2 = onRequest(
           .replace(/\s+/g, "_")
           .slice(0, 120);
 
-      const finalName = safe(fileName) || `devocional_${Date.now()}.png`;
-      const key = `devocionales/${finalName}`;
+const finalName = safe(fileName) || `archivo_${Date.now()}`;
+const safeFolder = safe(folder || "devocionales").replace(/^_+|_+$/g, "") || "devocionales";
+const key = `${safeFolder}/${finalName}`;
 
       let buffer;
       try {
