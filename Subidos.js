@@ -58,34 +58,6 @@ function limpiarPreviewCitaPredica(card) {
   }
 }
 
-function limpiarCitaPredica(card) {
-  if (!card) return;
-
-  const libro = card.querySelector(".subidosCitaLibro");
-  const cap = card.querySelector(".subidosCitaCapitulo");
-  const versWrap = card.querySelector(".subidosCitaVersiculos");
-  const versEmpty = card.querySelector(".subidosCitaVersiculosEmpty");
-  const nota = card.querySelector(".subidosCitaNota");
-
-  if (libro) libro.value = "";
-  if (cap) {
-    cap.innerHTML = `<option value="">Seleccionar capítulo…</option>`;
-    cap.disabled = true;
-  }
-  if (versWrap) versWrap.innerHTML = "";
-  if (versEmpty) versEmpty.style.display = "";
-  if (nota) nota.value = "";
-
-  delete card.dataset.libro;
-  delete card.dataset.capitulo;
-  delete card.dataset.desde;
-  delete card.dataset.hasta;
-  delete card.dataset.referencia;
-  delete card.dataset.texto;
-
-  limpiarPreviewCitaPredica(card);
-}
-
 function renumerarCitasPredica() {
   const wrap = document.getElementById("subidosPredicaCitasWrap");
   if (!wrap) return;
@@ -822,65 +794,6 @@ window.subidosToggleBibliaPredica = function subidosToggleBibliaPredica(id) {
     btn.innerHTML = `<i class="fa-solid fa-caret-up"></i>`;
   }
 };
-
-function htmlPreviewArchivoSubido(it) {
-  const url = String(it.url || "").trim();
-  const nombre = escaparHtml(it.fileName || "archivo");
-  const esImg = (it.mimeType || "").startsWith("image/");
-  const esVideo = (it.mimeType || "").startsWith("video/");
-  const esAudio = (it.mimeType || "").startsWith("audio/");
-  const hayContenidoPredica = obtenerCitasPredicaSubido(it).length || String(it.predicaNotaFinal || "").trim();
-
-  if (!url) {
-    return `
-      <div class="subidos-media-frame is-file">
-        <div class="subidos-file-open">
-          <i class="fa-solid ${hayContenidoPredica ? "fa-book-bible" : "fa-file-lines"}"></i>
-          <span>${hayContenidoPredica ? "Prédica sin archivo adjunto" : "Sin archivo adjunto"}</span>
-          <small>${hayContenidoPredica ? "La tarjeta contiene citas y notas" : ""}</small>
-        </div>
-      </div>
-    `;
-  }
-
-  if (esImg) {
-    return `
-      <a href="${url}" target="_blank" rel="noopener" class="subidos-media-link subidos-media-frame is-image" title="Abrir archivo">
-        <img src="${url}" alt="${nombre}" loading="lazy">
-      </a>
-    `;
-  }
-
-  if (esVideo) {
-    return `
-      <a href="${url}" target="_blank" rel="noopener" class="subidos-media-link subidos-media-frame is-video" title="Abrir video">
-        <video src="${url}" muted playsinline preload="metadata"></video>
-      </a>
-    `;
-  }
-
-  if (esAudio) {
-    return `
-      <a href="${url}" target="_blank" rel="noopener" class="subidos-media-link subidos-media-frame is-audio" title="Abrir audio">
-        <div class="subidos-file-open">
-          <i class="fa-solid fa-headphones"></i>
-          <span>${nombre}</span>
-          <small>Tocar para abrir</small>
-        </div>
-      </a>
-    `;
-  }
-
-  return `
-    <a href="${url}" target="_blank" rel="noopener" class="subidos-media-link subidos-media-frame is-file" title="Abrir archivo">
-      <div class="subidos-file-open">
-        <i class="fa-solid fa-file-lines"></i>
-        <span>${nombre}</span>
-        <small>Tocar para abrir</small>
-      </div>
-    </a>
-  `;
-}
 
 function pad(n) {
   return String(n).padStart(2, "0");
