@@ -178,6 +178,710 @@ function actualizarPredicaSubidosUI() {
   }
 }
 
+/* ================= PREDICA + BIBLIA REAL ================= */
+
+const SUBIDOS_BIBLIA_CACHE = {
+  RV1960: null,
+  NTV: null
+};
+
+const SUBIDOS_BIBLIA_CANDIDATAS = {
+  RV1960: [
+    "./VidaAbundante - RV1960.json",
+    "VidaAbundante - RV1960.json",
+    "./json/VidaAbundante - RV1960.json",
+    "json/VidaAbundante - RV1960.json"
+  ],
+  NTV: [
+    "./biblia_ntv.json",
+    "biblia_ntv.json",
+    "./json/biblia_ntv.json",
+    "json/biblia_ntv.json"
+  ]
+};
+
+function subidosNormalizarBiblia(txt = "") {
+  return String(txt)
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ");
+}
+
+function subidosEsObjeto(v) {
+  return !!v && typeof v === "object" && !Array.isArray(v);
+}
+
+function subidosVersionPredicaActual() {
+  return document.getElementById("subidosPredicaVersion")?.value || "RV1960";
+}
+
+function subidosPrimerValido(lista = []) {
+  for (const x of lista) {
+    if (x) return x;
+  }
+  return null;
+}
+
+function subidosTextoVersiculo(v) {
+  if (typeof v === "string") return v.trim();
+  if (typeof v === "number") return String(v);
+  if (!v) return "";
+
+  return String(
+    v.texto ??
+    v.text ??
+    v.contenido ??
+    v.content ??
+    v.versiculo ??
+    v.verse ??
+    ""
+  ).trim();
+}
+
+function subidosTextoHtml(txt = "") {
+  return escaparHtml(String(txt || "")).replace(/\n/g, "<br>");
+}
+
+async function obtenerBibliaPredica(version = subidosVersionPredicaActual()) {
+  if (SUBIDOS_BIBLIA_CACHE[version]) return SUBIDOS_BIBLIA_CACHE[version];
+
+  const globalDirecto = version === "RV1960"
+    ? subidosPrimerValido([
+        window.BIBLIA_RV1960,
+        window.bibliaRV1960,
+        window.__BIBLIA_RV1960__,
+        window.BIBLIA?.RV1960,
+        window.bibliaData?.RV1960
+      ])
+    : subidosPrimerValido([
+        window.BIBLIA_NTV,
+        window.bibliaNTV,
+        window.__BIBLIA_NTV__,
+        window.BIBLIA?.NTV,
+        window.bibliaData?.NTV
+      ]);
+
+  if (globalDirecto) {
+    SUBIDOS_BIBLIA_CACHE[version] = globalDirecto;
+    return globalDirecto;
+  }
+
+  for (const ruta of SUBIDOS_BIBLIA_CANDIDATAS[version] || []) {
+    try {
+      const r = await fetch(ruta);
+      if (!r.ok) continue;
+      const data = await r.json();
+      SUBIDOS_BIBLIA_CACHE[version] = data;
+      return data;
+    } catch (e) {
+      console.warn("No pude cargar", ruta, e);
+    }
+  }
+
+  throw new Error(`No pude cargar la Biblia ${version}. Revisá las rutas en SUBIDOS_BIBLIA_CANDIDATAS.`);
+}
+
+function subidosColeccionLibros(raw) {
+  if (Array.isArray(raw)) return raw;
+  if (Array.isArray(raw?.libros)) return raw.libros;
+  if (Array.isArray(raw?.books)) return raw.books;
+  if (Array.isArray(raw?.biblia)) return raw.biblia;
+  if (Array.isArray(raw?.data)) return raw.data;
+  if (subidosEsObjeto(raw)) return raw;
+  return null;
+}
+
+function subidosListaLibros(raw) {
+  const coleccion = subidosColeccionLibros(raw);
+  if (!coleccion) return [];
+
+  if (Array.isArray(coleccion)) {
+    return coleccion.map((libro, i) => ({
+      nombre: String(
+        libro?.nombre ??
+        libro?.name ??
+        libro?.book ??
+        libro?.libro ??
+        libro?.title ??
+        `Libro ${i + 1}`
+      ),
+      raw: libro
+    }));
+  }
+
+  if (subidosEsObjeto(coleccion)) {
+    const omitidos = new Set([
+      "version", "nombre", "name", "abreviatura", "abreviaturas",
+      "metadata", "meta", "titulo", "title"
+    ]);
+
+    return Object.keys(coleccion)
+      .filter(k => !omitidos.has(subidosNormalizarBiblia(k)))
+      .map(k => ({
+        nombre: k,
+        raw: coleccion[k]
+      }));
+  }
+
+  return [];
+}
+
+function subidosCapitulosLibro(rawLibro) {
+  const base =
+    rawLibro?.capitulos ??
+    rawLibro?.chapters ??
+    rawLibro?.chapter ??
+    rawLibro?.capitulo ??
+    rawLibro;
+
+  if (Array.isArray(base)) return base;
+
+  if (subidosEsObjeto(base)) {
+    const keys = Object.keys(base)
+      .filter(k => /^\d+$/.test(k))
+      .sort((a, b) => Number(a) - Number(b));
+
+    if (keys.length) return keys.map(k => base[k]);
+  }
+
+  return [];
+}
+
+function subidosVersiculosCapitulo(rawCapitulo) {
+  const base =
+    rawCapitulo?.versiculos ??
+    rawCapitulo?.verses ??
+    rawCapitulo?.verse ??
+    rawCapitulo?.versiculo ??
+    rawCapitulo;
+
+  if (Array.isArray(base)) {
+    return base
+      .map((v, i) => ({
+        n: i + 1,
+        texto: subidosTextoVersiculo(v)
+      }))
+      .filter(v => v.texto);
+  }
+
+  if (subidosEsObjeto(base)) {
+    const keys = Object.keys(base)
+      .filter(k => /^\d+$/.test(k))
+      .sort((a, b) => Number(a) - Number(b));
+
+    return keys
+      .map(k => ({
+        n: Number(k),
+        texto: subidosTextoVersiculo(base[k])
+      }))
+      .filter(v => v.texto);
+  }
+
+  return [];
+}
+
+async function subidosBuscarLibroPorNombre(nombre, version = subidosVersionPredicaActual()) {
+  const data = await obtenerBibliaPredica(version);
+  const libros = subidosListaLibros(data);
+  const buscado = subidosNormalizarBiblia(nombre);
+
+  return libros.find(x => subidosNormalizarBiblia(x.nombre) === buscado) || null;
+}
+
+async function poblarLibrosPredicaEnCard(card, seleccionado = "") {
+  const sel = card.querySelector(".subidosCitaLibro");
+  if (!sel) return;
+
+  const data = await obtenerBibliaPredica();
+  const libros = subidosListaLibros(data);
+
+  sel.innerHTML =
+    `<option value="">Seleccionar libro…</option>` +
+    libros.map(libro => `
+      <option value="${escaparHtml(libro.nombre)}">${escaparHtml(libro.nombre)}</option>
+    `).join("");
+
+  if (seleccionado) sel.value = seleccionado;
+}
+
+async function poblarCapitulosPredicaEnCard(card, libroNombre, seleccionado = "") {
+  const sel = card.querySelector(".subidosCitaCapitulo");
+  if (!sel) return;
+
+  if (!libroNombre) {
+    sel.innerHTML = `<option value="">Seleccionar capítulo…</option>`;
+    sel.disabled = true;
+    return;
+  }
+
+  const libro = await subidosBuscarLibroPorNombre(libroNombre);
+  const capitulos = subidosCapitulosLibro(libro?.raw);
+
+  sel.innerHTML =
+    `<option value="">Seleccionar capítulo…</option>` +
+    capitulos.map((_, i) => `<option value="${i + 1}">${i + 1}</option>`).join("");
+
+  sel.disabled = false;
+
+  if (seleccionado) sel.value = String(seleccionado);
+}
+
+function renderVersiculosPredicaEnCard(card) {
+  const wrap = card.querySelector(".subidosCitaVersiculos");
+  const empty = card.querySelector(".subidosCitaVersiculosEmpty");
+  if (!wrap || !empty) return;
+
+  const versos = Array.isArray(card.__versiculosData) ? card.__versiculosData : [];
+  const desde = Number(card.dataset.desde || 0);
+  const hasta = Number(card.dataset.hasta || 0) || desde;
+
+  if (!versos.length) {
+    wrap.innerHTML = "";
+    empty.style.display = "";
+    return;
+  }
+
+  empty.style.display = "none";
+
+  wrap.innerHTML = versos.map(v => {
+    const activo = !!desde && v.n >= Math.min(desde, hasta) && v.n <= Math.max(desde, hasta);
+
+    return `
+      <button
+        type="button"
+        data-num="${v.n}"
+        style="
+          width:100%;
+          text-align:left;
+          border-radius:12px;
+          padding:8px 10px;
+          border:1px solid ${activo ? "#97d8f7" : "#e5e7eb"};
+          background:${activo ? "#eafaff" : "#ffffff"};
+          cursor:pointer;
+          line-height:1.35;
+        "
+      >
+        <span style="font-weight:800;">${v.n}</span>
+        <span>${escaparHtml(v.texto)}</span>
+      </button>
+    `;
+  }).join("");
+
+  wrap.querySelectorAll("[data-num]").forEach(btn => {
+    btn.onclick = () => {
+      seleccionarVersiculoPredicaEnCard(card, Number(btn.dataset.num));
+    };
+  });
+}
+
+async function poblarVersiculosPredicaEnCard(card, libroNombre, capituloNumero) {
+  const wrap = card.querySelector(".subidosCitaVersiculos");
+  const empty = card.querySelector(".subidosCitaVersiculosEmpty");
+  if (!wrap || !empty) return;
+
+  card.__versiculosData = [];
+  wrap.innerHTML = "";
+  empty.style.display = "";
+
+  if (!libroNombre || !capituloNumero) return;
+
+  const libro = await subidosBuscarLibroPorNombre(libroNombre);
+  const capitulos = subidosCapitulosLibro(libro?.raw);
+  const rawCapitulo = capitulos[Number(capituloNumero) - 1];
+
+  card.__versiculosData = subidosVersiculosCapitulo(rawCapitulo);
+  renderVersiculosPredicaEnCard(card);
+}
+
+function actualizarPreviewPredicaEnCard(card) {
+  const info = card.querySelector(".subidosCitaSeleccionInfo");
+  const ref = card.querySelector(".subidosCitaReferencia");
+  const txt = card.querySelector(".subidosCitaTexto");
+  const btnExpandir = card.querySelector(".subidosCitaExpandir");
+
+  const libro = card.querySelector(".subidosCitaLibro")?.value || "";
+  const capitulo = Number(card.querySelector(".subidosCitaCapitulo")?.value || 0);
+  const desde = Number(card.dataset.desde || 0);
+  const hasta = Number(card.dataset.hasta || 0) || desde;
+  const versos = Array.isArray(card.__versiculosData) ? card.__versiculosData : [];
+
+  if (!libro || !capitulo || !desde || !versos.length) {
+    limpiarPreviewCitaPredica(card);
+    return;
+  }
+
+  const seleccion = versos.filter(v => v.n >= Math.min(desde, hasta) && v.n <= Math.max(desde, hasta));
+  const referencia = `${libro} ${capitulo}:${desde}${hasta !== desde ? `-${hasta}` : ""}`;
+  const texto = seleccion.map(v => `${v.n}. ${v.texto}`).join("\n");
+
+  card.dataset.libro = libro;
+  card.dataset.capitulo = String(capitulo);
+  card.dataset.desde = String(desde);
+  if (hasta !== desde) card.dataset.hasta = String(hasta);
+  else delete card.dataset.hasta;
+  card.dataset.referencia = referencia;
+  card.dataset.texto = texto;
+
+  if (info) info.style.display = "block";
+  if (ref) ref.textContent = referencia;
+  if (txt) {
+    txt.textContent = texto;
+    txt.style.maxHeight = "240px";
+    txt.style.overflow = "auto";
+  }
+
+  if (btnExpandir) {
+    btnExpandir.dataset.expandido = "0";
+    btnExpandir.innerHTML = `<i class="fa-solid fa-caret-down"></i>`;
+    btnExpandir.style.display = texto.length > 420 ? "block" : "none";
+  }
+}
+
+function seleccionarVersiculoPredicaEnCard(card, num) {
+  const desde = Number(card.dataset.desde || 0);
+  const hasta = Number(card.dataset.hasta || 0);
+
+  if (!desde || (desde && hasta)) {
+    card.dataset.desde = String(num);
+    delete card.dataset.hasta;
+  } else {
+    const a = Math.min(desde, num);
+    const b = Math.max(desde, num);
+    card.dataset.desde = String(a);
+    card.dataset.hasta = String(b);
+  }
+
+  renderVersiculosPredicaEnCard(card);
+  actualizarPreviewPredicaEnCard(card);
+}
+
+async function limpiarCitaPredica(card) {
+  if (!card) return;
+
+  const libro = card.querySelector(".subidosCitaLibro");
+  const cap = card.querySelector(".subidosCitaCapitulo");
+  const wrap = card.querySelector(".subidosCitaVersiculos");
+  const empty = card.querySelector(".subidosCitaVersiculosEmpty");
+  const nota = card.querySelector(".subidosCitaNota");
+
+  if (libro) libro.value = "";
+  if (cap) {
+    cap.innerHTML = `<option value="">Seleccionar capítulo…</option>`;
+    cap.disabled = true;
+  }
+  if (wrap) wrap.innerHTML = "";
+  if (empty) empty.style.display = "";
+  if (nota) nota.value = "";
+
+  card.__versiculosData = [];
+  delete card.dataset.libro;
+  delete card.dataset.capitulo;
+  delete card.dataset.desde;
+  delete card.dataset.hasta;
+  delete card.dataset.referencia;
+  delete card.dataset.texto;
+
+  limpiarPreviewCitaPredica(card);
+  await poblarLibrosPredicaEnCard(card);
+}
+
+async function inicializarCardCitaPredica(card) {
+  const selLibro = card.querySelector(".subidosCitaLibro");
+  const selCap = card.querySelector(".subidosCitaCapitulo");
+
+  await poblarLibrosPredicaEnCard(card);
+
+  if (selLibro && !selLibro.__hookPredicaLibro) {
+    selLibro.__hookPredicaLibro = true;
+    selLibro.addEventListener("change", async () => {
+      delete card.dataset.desde;
+      delete card.dataset.hasta;
+      delete card.dataset.referencia;
+      delete card.dataset.texto;
+      limpiarPreviewCitaPredica(card);
+      await poblarCapitulosPredicaEnCard(card, selLibro.value);
+      await poblarVersiculosPredicaEnCard(card, "", "");
+    });
+  }
+
+  if (selCap && !selCap.__hookPredicaCap) {
+    selCap.__hookPredicaCap = true;
+    selCap.addEventListener("change", async () => {
+      delete card.dataset.desde;
+      delete card.dataset.hasta;
+      delete card.dataset.referencia;
+      delete card.dataset.texto;
+      limpiarPreviewCitaPredica(card);
+      await poblarVersiculosPredicaEnCard(
+        card,
+        selLibro?.value || "",
+        selCap.value || ""
+      );
+    });
+  }
+}
+
+window.subidosAgregarCitaPredica = async function subidosAgregarCitaPredica() {
+  const tpl = document.getElementById("tplSubidosCitaPredica");
+  const wrap = document.getElementById("subidosPredicaCitasWrap");
+  if (!tpl || !wrap) return;
+
+  const node = tpl.content.firstElementChild.cloneNode(true);
+
+  const btnEliminar = node.querySelector(".subidosCitaEliminar");
+  const btnLimpiar = node.querySelector(".subidosCitaLimpiar");
+  const btnExpandir = node.querySelector(".subidosCitaExpandir");
+
+  if (btnEliminar) {
+    btnEliminar.onclick = () => {
+      node.remove();
+      renumerarCitasPredica();
+    };
+  }
+
+  if (btnLimpiar) {
+    btnLimpiar.onclick = () => {
+      limpiarCitaPredica(node);
+    };
+  }
+
+  if (btnExpandir) {
+    btnExpandir.onclick = () => {
+      const txt = node.querySelector(".subidosCitaTexto");
+      if (!txt) return;
+
+      const expandido = btnExpandir.dataset.expandido === "1";
+
+      if (expandido) {
+        txt.style.maxHeight = "240px";
+        txt.style.overflow = "auto";
+        btnExpandir.dataset.expandido = "0";
+        btnExpandir.innerHTML = `<i class="fa-solid fa-caret-down"></i>`;
+      } else {
+        txt.style.maxHeight = "420px";
+        txt.style.overflow = "auto";
+        btnExpandir.dataset.expandido = "1";
+        btnExpandir.innerHTML = `<i class="fa-solid fa-caret-up"></i>`;
+      }
+    };
+  }
+
+  wrap.appendChild(node);
+  renumerarCitasPredica();
+  await inicializarCardCitaPredica(node);
+};
+
+async function recargarVersionPredicaCards() {
+  const wrap = document.getElementById("subidosPredicaCitasWrap");
+  if (!wrap) return;
+
+  const cards = [...wrap.querySelectorAll(".subidos-cita-card")];
+
+  for (const card of cards) {
+    const libroPrev = card.querySelector(".subidosCitaLibro")?.value || "";
+    const capPrev = card.querySelector(".subidosCitaCapitulo")?.value || "";
+    const desdePrev = card.dataset.desde || "";
+    const hastaPrev = card.dataset.hasta || "";
+
+    await poblarLibrosPredicaEnCard(card, libroPrev);
+    await poblarCapitulosPredicaEnCard(card, libroPrev, capPrev);
+    await poblarVersiculosPredicaEnCard(card, libroPrev, capPrev);
+
+    if (desdePrev) {
+      card.dataset.desde = desdePrev;
+      if (hastaPrev) card.dataset.hasta = hastaPrev;
+      renderVersiculosPredicaEnCard(card);
+      actualizarPreviewPredicaEnCard(card);
+    }
+  }
+}
+
+function recogerDatosPredicaSubidos() {
+  const wrap = document.getElementById("subidosPredicaCitasWrap");
+  const notaFinal = document.getElementById("subidosPredicaNotaFinal")?.value?.trim() || "";
+  const version = subidosVersionPredicaActual();
+
+  const citas = [];
+
+  [...(wrap?.querySelectorAll(".subidos-cita-card") || [])].forEach(card => {
+    const libro = card.dataset.libro || "";
+    const capitulo = Number(card.dataset.capitulo || 0);
+    const desde = Number(card.dataset.desde || 0);
+    const hasta = Number(card.dataset.hasta || 0) || desde;
+    const referencia = card.dataset.referencia || "";
+    const texto = card.dataset.texto || "";
+    const nota = card.querySelector(".subidosCitaNota")?.value?.trim() || "";
+
+    const vacia = !libro && !capitulo && !desde && !nota;
+    if (vacia) return;
+
+    if (!libro || !capitulo || !desde || !referencia || !texto) {
+      throw new Error("Hay una cita de prédica incompleta. Elegí libro, capítulo y versículo/s.");
+    }
+
+    citas.push({
+      libro,
+      capitulo,
+      versiculoInicio: desde,
+      versiculoFin: hasta,
+      referencia,
+      texto,
+      nota,
+      version
+    });
+  });
+
+  return {
+    version,
+    citas,
+    notaFinalGeneral: notaFinal
+  };
+}
+
+function obtenerCitasPredicaSubido(it) {
+  if (Array.isArray(it.predicaCitas)) return it.predicaCitas;
+  if (Array.isArray(it.citasPredica)) return it.citasPredica;
+  return [];
+}
+
+function htmlPredicaBibliaSubido(it) {
+  const citas = obtenerCitasPredicaSubido(it);
+  const notaFinal = String(it.predicaNotaFinal || it.notaFinalGeneral || "").trim();
+
+  if (!citas.length && !notaFinal) return "";
+
+  const boxId = `subidosPredicaTexto-${it.id}`;
+  const btnId = `subidosPredicaBtn-${it.id}`;
+
+  const hayMuchoTexto =
+    citas.length > 1 ||
+    notaFinal.length > 140 ||
+    citas.some(c =>
+      String(c.texto || "").length > 260 ||
+      String(c.nota || "").length > 120
+    );
+
+  return `
+    <div style="margin:6px 0 8px; border:1px solid #d8eef9; background:#f6fcff; border-radius:14px; padding:8px;">
+      <div style="font-weight:800; margin-bottom:6px;">Citas y notas</div>
+
+      <div id="${boxId}" style="max-height:${hayMuchoTexto ? "118px" : "none"}; overflow:auto; padding-right:${hayMuchoTexto ? "4px" : "0"};">
+        ${citas.map(c => `
+          <div style="margin-bottom:8px; border:1px solid #e3f2fa; background:#ffffff; border-radius:12px; padding:8px;">
+            <div style="font-weight:800; margin-bottom:4px;">${escaparHtml(c.referencia || "")}</div>
+            <div style="white-space:pre-wrap; line-height:1.32; font-size:13px;">${subidosTextoHtml(c.texto || "")}</div>
+            ${String(c.nota || "").trim() ? `
+              <div style="margin-top:6px; padding-top:6px; border-top:1px solid #eef6fb;">
+                <div style="font-weight:800; margin-bottom:4px;">Nota</div>
+                <div style="white-space:pre-wrap; line-height:1.32; font-size:13px;">${subidosTextoHtml(c.nota || "")}</div>
+              </div>
+            ` : ``}
+          </div>
+        `).join("")}
+
+        ${notaFinal ? `
+          <div style="margin-top:8px; border-top:1px solid #d8eef9; padding-top:8px;">
+            <div style="font-weight:800; margin-bottom:4px;">Nota final</div>
+            <div style="white-space:pre-wrap; line-height:1.35; font-size:13px;">${subidosTextoHtml(notaFinal)}</div>
+          </div>
+        ` : ``}
+      </div>
+
+      ${hayMuchoTexto ? `
+        <button
+          id="${btnId}"
+          type="button"
+          onclick="subidosToggleBibliaPredica('${it.id}')"
+          style="width:100%; margin-top:6px; border:none; border-top:1px solid #d8edf8; background:#eef9ff; padding:8px 10px; border-radius:10px; cursor:pointer;"
+        >
+          <i class="fa-solid fa-caret-down"></i>
+        </button>
+      ` : ``}
+    </div>
+  `;
+}
+
+window.subidosToggleBibliaPredica = function subidosToggleBibliaPredica(id) {
+  const box = document.getElementById(`subidosPredicaTexto-${id}`);
+  const btn = document.getElementById(`subidosPredicaBtn-${id}`);
+  if (!box || !btn) return;
+
+  const expandido = box.dataset.expandido === "1";
+
+  if (expandido) {
+    box.dataset.expandido = "0";
+    box.style.maxHeight = "118px";
+    box.style.overflow = "auto";
+    btn.innerHTML = `<i class="fa-solid fa-caret-down"></i>`;
+  } else {
+    box.dataset.expandido = "1";
+    box.style.maxHeight = "250px";
+    box.style.overflow = "auto";
+    btn.innerHTML = `<i class="fa-solid fa-caret-up"></i>`;
+  }
+};
+
+function htmlPreviewArchivoSubido(it) {
+  const url = String(it.url || "").trim();
+  const nombre = escaparHtml(it.fileName || "archivo");
+  const esImg = (it.mimeType || "").startsWith("image/");
+  const esVideo = (it.mimeType || "").startsWith("video/");
+  const esAudio = (it.mimeType || "").startsWith("audio/");
+  const hayContenidoPredica = obtenerCitasPredicaSubido(it).length || String(it.predicaNotaFinal || "").trim();
+
+  if (!url) {
+    return `
+      <div class="subidos-media-frame is-file">
+        <div class="subidos-file-open">
+          <i class="fa-solid ${hayContenidoPredica ? "fa-book-bible" : "fa-file-lines"}"></i>
+          <span>${hayContenidoPredica ? "Prédica sin archivo adjunto" : "Sin archivo adjunto"}</span>
+          <small>${hayContenidoPredica ? "La tarjeta contiene citas y notas" : ""}</small>
+        </div>
+      </div>
+    `;
+  }
+
+  if (esImg) {
+    return `
+      <a href="${url}" target="_blank" rel="noopener" class="subidos-media-link subidos-media-frame is-image" title="Abrir archivo">
+        <img src="${url}" alt="${nombre}" loading="lazy">
+      </a>
+    `;
+  }
+
+  if (esVideo) {
+    return `
+      <a href="${url}" target="_blank" rel="noopener" class="subidos-media-link subidos-media-frame is-video" title="Abrir video">
+        <video src="${url}" muted playsinline preload="metadata"></video>
+      </a>
+    `;
+  }
+
+  if (esAudio) {
+    return `
+      <a href="${url}" target="_blank" rel="noopener" class="subidos-media-link subidos-media-frame is-audio" title="Abrir audio">
+        <div class="subidos-file-open">
+          <i class="fa-solid fa-headphones"></i>
+          <span>${nombre}</span>
+          <small>Tocar para abrir</small>
+        </div>
+      </a>
+    `;
+  }
+
+  return `
+    <a href="${url}" target="_blank" rel="noopener" class="subidos-media-link subidos-media-frame is-file" title="Abrir archivo">
+      <div class="subidos-file-open">
+        <i class="fa-solid fa-file-lines"></i>
+        <span>${nombre}</span>
+        <small>Tocar para abrir</small>
+      </div>
+    </a>
+  `;
+}
+
 function pad(n) {
   return String(n).padStart(2, "0");
 }
@@ -472,10 +1176,8 @@ function renderFeed() {
       ? new Date(it.fechaEvento + "T00:00:00").toLocaleDateString("es-AR")
       : "";
 
-    const esImg = (it.mimeType || "").startsWith("image/");
-    const esVideo = (it.mimeType || "").startsWith("video/");
-    const esAudio = (it.mimeType || "").startsWith("audio/");
     const color = colorEtiquetaSubidos(it.etiqueta || "");
+    const bloquePredica = htmlPredicaBibliaSubido(it);
 
     return `
       <div id="subido-${it.id}" class="subidos-feed-card">
@@ -497,18 +1199,26 @@ function renderFeed() {
           </div>
         </div>
 
+        ${bloquePredica}
+
         <div class="subidos-media">
           ${htmlPreviewArchivoSubido(it)}
         </div>
 
         <div class="subidos-feed-actions">
-          <a href="${it.url}" download="${escaparHtml(it.fileName || "archivo")}" title="Descargar">
-            <i class="fa-solid fa-download"></i>
-          </a>
+          ${
+            it.url
+              ? `
+                <a href="${it.url}" download="${escaparHtml(it.fileName || "archivo")}" title="Descargar">
+                  <i class="fa-solid fa-download"></i>
+                </a>
 
-          <button type="button" onclick="compartirSubido('${it.id}')" title="Compartir">
-            <i class="fa-solid fa-share-nodes"></i>
-          </button>
+                <button type="button" onclick="compartirSubido('${it.id}')" title="Compartir">
+                  <i class="fa-solid fa-share-nodes"></i>
+                </button>
+              `
+              : ``
+          }
 
           ${
             subidosEsAdmin
@@ -634,15 +1344,11 @@ async function guardarSubido() {
     const estado = document.getElementById("subidosEstado");
     const btnGuardar = document.getElementById("btnGuardarSubido");
 
-    const file = inpFile?.files?.[0];
+    const file = inpFile?.files?.[0] || null;
     const fechaEvento = (inpFecha?.value || "").trim();
     const etiqueta = (inpEtiqueta?.value || "").trim();
     const descripcion = (inpDesc?.value || "").trim();
-
-    if (!file) {
-      alert("Elegí un archivo.");
-      return;
-    }
+    const esPredica = esPredicaSubidos(etiqueta);
 
     if (!fechaEvento) {
       alert("Completá la fecha.");
@@ -654,13 +1360,31 @@ async function guardarSubido() {
       return;
     }
 
+    if (!file && !esPredica) {
+      alert("Elegí un archivo.");
+      return;
+    }
+
+    let datosPredica = {
+      version: "",
+      citas: [],
+      notaFinalGeneral: ""
+    };
+
+    if (esPredica) {
+      datosPredica = recogerDatosPredicaSubidos();
+    }
+
     subidosGuardando = true;
     if (btnGuardar) btnGuardar.disabled = true;
-    if (estado) estado.textContent = "Subiendo archivo...";
+    if (estado) estado.textContent = file ? "Subiendo archivo..." : "Guardando...";
 
     const ts = Date.now();
 
-    const subida = await subirArchivoAR2DesdeWeb(file, "subidos");
+    let subida = null;
+    if (file) {
+      subida = await subirArchivoAR2DesdeWeb(file, "subidos");
+    }
 
     const nuevoRef = push(ref(db, "subidosIglesia"));
     await set(nuevoRef, {
@@ -668,11 +1392,15 @@ async function guardarSubido() {
       fechaEvento,
       etiqueta,
       descripcion,
-      url: subida.url,
-      r2Key: subida.key || "",
-      mimeType: file.type || "",
-      fileName: file.name || "",
-      uidCreador: subidosUID
+      url: subida?.url || "",
+      r2Key: subida?.key || "",
+      mimeType: file?.type || "",
+      fileName: file?.name || "",
+      uidCreador: subidosUID,
+      esPredica,
+      predicaVersion: esPredica ? datosPredica.version : "",
+      predicaCitas: esPredica ? datosPredica.citas : [],
+      predicaNotaFinal: esPredica ? datosPredica.notaFinalGeneral : ""
     });
 
     const etiquetaNormalizada = etiqueta.trim();
@@ -687,7 +1415,7 @@ async function guardarSubido() {
     console.error("Error guardando subido:", e);
     const estado = document.getElementById("subidosEstado");
     if (estado) estado.textContent = "❌ No se pudo guardar";
-    alert("No se pudo guardar el archivo.\n\n" + (e?.message || e));
+    alert("No se pudo guardar el subido.\n\n" + (e?.message || e));
   } finally {
     subidosGuardando = false;
     const btnGuardar = document.getElementById("btnGuardarSubido");
@@ -703,6 +1431,7 @@ function initSubidosBotones() {
   const btnAgregarEtiqueta = document.getElementById("btnAgregarEtiquetaSubidos");
   const selEtiqueta = document.getElementById("subidosEtiqueta");
   const btnAgregarCita = document.getElementById("btnSubidosAgregarCita");
+  const selVersionPredica = document.getElementById("subidosPredicaVersion");
 
   if (btnNuevo) btnNuevo.onclick = abrirModalSubidos;
 
@@ -722,6 +1451,25 @@ function initSubidosBotones() {
 
   if (btnGuardar) btnGuardar.onclick = guardarSubido;
 
+  if (selEtiqueta && !selEtiqueta.__predicaHook) {
+    selEtiqueta.__predicaHook = true;
+    selEtiqueta.addEventListener("change", actualizarPredicaSubidosUI);
+  }
+
+  if (btnAgregarCita && !btnAgregarCita.__citaHook) {
+    btnAgregarCita.__citaHook = true;
+    btnAgregarCita.addEventListener("click", () => {
+      window.subidosAgregarCitaPredica();
+    });
+  }
+
+  if (selVersionPredica && !selVersionPredica.__versionHook) {
+    selVersionPredica.__versionHook = true;
+    selVersionPredica.addEventListener("change", () => {
+      recargarVersionPredicaCards();
+    });
+  }
+
   if (btnAgregarEtiqueta) {
     btnAgregarEtiqueta.onclick = async () => {
       if (!subidosEsAdmin) return;
@@ -739,17 +1487,6 @@ function initSubidosBotones() {
         alert("No se pudo guardar la etiqueta.");
       }
     };
-  }
-    if (selEtiqueta && !selEtiqueta.__predicaHook) {
-    selEtiqueta.__predicaHook = true;
-    selEtiqueta.addEventListener("change", actualizarPredicaSubidosUI);
-  }
-
-  if (btnAgregarCita && !btnAgregarCita.__citaHook) {
-    btnAgregarCita.__citaHook = true;
-    btnAgregarCita.addEventListener("click", () => {
-      window.subidosAgregarCitaPredica();
-    });
   }
 }
 
