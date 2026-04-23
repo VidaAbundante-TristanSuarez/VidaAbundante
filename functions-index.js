@@ -543,3 +543,56 @@ const key = `${safeFolder}/${finalName}`;
     }
   }
 );
+
+exports.descargarImagenR2 = onRequest(async (req, res) => {
+  res.set("Access-Control-Allow-Origin", "*");
+  res.set("Access-Control-Allow-Methods", "GET, OPTIONS");
+  res.set("Access-Control-Allow-Headers", "Content-Type");
+
+  if (req.method === "OPTIONS") {
+    res.status(204).send("");
+    return;
+  }
+
+  try {
+    const rawUrl = String(req.query.url || "").trim();
+    if (!rawUrl) {
+      res.status(400).json({ ok: false, error: "Falta url" });
+      return;
+    }
+
+    const u = new URL(rawUrl);
+
+    // ✅ solo permitir tu bucket público R2
+    if (!/\.r2\.dev$/i.test(u.hostname)) {
+      res.status(400).json({ ok: false, error: "URL no permitida" });
+      return;
+    }
+
+    const r = await fetch(rawUrl);
+    if (!r.ok) {
+      res.status(502).json({ ok: false, error: "No pude leer la imagen desde R2" });
+      return;
+    }
+
+    const arr = await r.arrayBuffer();
+    const buf = Buffer.from(arr);
+
+    const contentType = r.headers.get("content-type") || "application/octet-stream";
+    const fileName = decodeURIComponent(
+      u.pathname.split("/").pop() || `imagen_${Date.now()}.png`
+    );
+
+    res.set("Content-Type", contentType);
+    res.set("Content-Disposition", `attachment; filename="${fileName}"`);
+    res.set("Cache-Control", "no-store");
+
+    res.status(200).send(buf);
+  } catch (e) {
+    console.error("descargarImagenR2 error:", e);
+    res.status(500).json({
+      ok: false,
+      error: e?.message || "Error descargando imagen"
+    });
+  }
+});
