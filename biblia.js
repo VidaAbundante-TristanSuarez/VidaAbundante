@@ -26,6 +26,7 @@ const firebaseConfig = {
 
 // ================= ☁️ R2 =================
 const R2_UPLOAD_URL = "https://us-central1-vidaabundante-f118a.cloudfunctions.net/subirImagenR2";
+const R2_DOWNLOAD_URL = "https://us-central1-vidaabundante-f118a.cloudfunctions.net/descargarImagenR2";
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -5190,21 +5191,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
 window.descargarImagenPanel = (url) => {
   try {
+    if (!url) {
+      alert("No hay imagen para descargar.");
+      return;
+    }
+
     const a = document.createElement("a");
-    a.href = url;
-    a.target = "_blank";
-    a.rel = "noopener noreferrer";
-    a.download = "imagen_panel.png";
+    a.href = `${R2_DOWNLOAD_URL}?url=${encodeURIComponent(url)}`;
+    a.download = "";
     document.body.appendChild(a);
     a.click();
     a.remove();
 
     if (typeof mostrarToast === "function") {
-      mostrarToast("📥 Abriendo imagen...");
+      mostrarToast("📥 Descargando imagen...");
     }
   } catch (e) {
     console.error(e);
-    alert("No se pudo abrir la imagen.");
+    alert("No se pudo descargar la imagen.");
   }
 };
 
