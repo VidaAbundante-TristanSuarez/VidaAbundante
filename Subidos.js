@@ -32,6 +32,152 @@ const ETIQUETAS_DEFAULT = [
 ];
 
 // ================= HELPERS =================
+function esPredicaSubidos(etiqueta = "") {
+  return normalizarEtiquetaSubidos(etiqueta) === "predica";
+}
+
+function limpiarPreviewCitaPredica(card) {
+  if (!card) return;
+
+  const info = card.querySelector(".subidosCitaSeleccionInfo");
+  const ref = card.querySelector(".subidosCitaReferencia");
+  const txt = card.querySelector(".subidosCitaTexto");
+  const btnExpandir = card.querySelector(".subidosCitaExpandir");
+
+  if (info) info.style.display = "none";
+  if (ref) ref.textContent = "";
+  if (txt) {
+    txt.textContent = "";
+    txt.style.maxHeight = "240px";
+    txt.style.overflow = "auto";
+  }
+  if (btnExpandir) {
+    btnExpandir.style.display = "none";
+    btnExpandir.dataset.expandido = "0";
+    btnExpandir.innerHTML = `<i class="fa-solid fa-caret-down"></i>`;
+  }
+}
+
+function limpiarCitaPredica(card) {
+  if (!card) return;
+
+  const libro = card.querySelector(".subidosCitaLibro");
+  const cap = card.querySelector(".subidosCitaCapitulo");
+  const versWrap = card.querySelector(".subidosCitaVersiculos");
+  const versEmpty = card.querySelector(".subidosCitaVersiculosEmpty");
+  const nota = card.querySelector(".subidosCitaNota");
+
+  if (libro) libro.value = "";
+  if (cap) {
+    cap.innerHTML = `<option value="">Seleccionar capítulo…</option>`;
+    cap.disabled = true;
+  }
+  if (versWrap) versWrap.innerHTML = "";
+  if (versEmpty) versEmpty.style.display = "";
+  if (nota) nota.value = "";
+
+  delete card.dataset.libro;
+  delete card.dataset.capitulo;
+  delete card.dataset.desde;
+  delete card.dataset.hasta;
+  delete card.dataset.referencia;
+  delete card.dataset.texto;
+
+  limpiarPreviewCitaPredica(card);
+}
+
+function renumerarCitasPredica() {
+  const wrap = document.getElementById("subidosPredicaCitasWrap");
+  if (!wrap) return;
+
+  [...wrap.children].forEach((card, i) => {
+    const ttl = card.querySelector(".subidosCitaTitulo");
+    if (ttl) ttl.textContent = `Cita ${i + 1}`;
+  });
+}
+
+window.subidosAgregarCitaPredica = function subidosAgregarCitaPredica() {
+  const tpl = document.getElementById("tplSubidosCitaPredica");
+  const wrap = document.getElementById("subidosPredicaCitasWrap");
+  if (!tpl || !wrap) return;
+
+  const node = tpl.content.firstElementChild.cloneNode(true);
+
+  const btnEliminar = node.querySelector(".subidosCitaEliminar");
+  const btnLimpiar = node.querySelector(".subidosCitaLimpiar");
+  const btnExpandir = node.querySelector(".subidosCitaExpandir");
+
+  if (btnEliminar) {
+    btnEliminar.onclick = () => {
+      node.remove();
+      renumerarCitasPredica();
+    };
+  }
+
+  if (btnLimpiar) {
+    btnLimpiar.onclick = () => limpiarCitaPredica(node);
+  }
+
+  if (btnExpandir) {
+    btnExpandir.onclick = () => {
+      const txt = node.querySelector(".subidosCitaTexto");
+      if (!txt) return;
+
+      const expandido = btnExpandir.dataset.expandido === "1";
+
+      if (expandido) {
+        txt.style.maxHeight = "240px";
+        txt.style.overflow = "auto";
+        btnExpandir.dataset.expandido = "0";
+        btnExpandir.innerHTML = `<i class="fa-solid fa-caret-down"></i>`;
+      } else {
+        txt.style.maxHeight = "420px";
+        txt.style.overflow = "auto";
+        btnExpandir.dataset.expandido = "1";
+        btnExpandir.innerHTML = `<i class="fa-solid fa-caret-up"></i>`;
+      }
+    };
+  }
+
+  wrap.appendChild(node);
+  renumerarCitasPredica();
+};
+
+function resetPredicaSubidosUI() {
+  const box = document.getElementById("subidosPredicaBox");
+  const wrap = document.getElementById("subidosPredicaCitasWrap");
+  const notaFinal = document.getElementById("subidosPredicaNotaFinal");
+  const version = document.getElementById("subidosPredicaVersion");
+
+  if (box) box.style.display = "none";
+  if (wrap) wrap.innerHTML = "";
+  if (notaFinal) notaFinal.value = "";
+  if (version) version.value = "RV1960";
+}
+
+function actualizarPredicaSubidosUI() {
+  const sel = document.getElementById("subidosEtiqueta");
+  const box = document.getElementById("subidosPredicaBox");
+  const wrap = document.getElementById("subidosPredicaCitasWrap");
+
+  if (!sel || !box || !wrap) return;
+
+  const mostrar = esPredicaSubidos(sel.value);
+
+  box.style.display = mostrar ? "block" : "none";
+
+  if (!mostrar) {
+    if (wrap) wrap.innerHTML = "";
+    const notaFinal = document.getElementById("subidosPredicaNotaFinal");
+    if (notaFinal) notaFinal.value = "";
+    return;
+  }
+
+  if (!wrap.children.length) {
+    window.subidosAgregarCitaPredica();
+  }
+}
+
 function pad(n) {
   return String(n).padStart(2, "0");
 }
@@ -90,11 +236,16 @@ function abrirModalSubidos() {
   const archivo = document.getElementById("subidosArchivo");
   const descripcion = document.getElementById("subidosDescripcion");
   const estado = document.getElementById("subidosEstado");
+  const etiqueta = document.getElementById("subidosEtiqueta");
 
   if (archivo) archivo.value = "";
   if (descripcion) descripcion.value = "";
   if (estado) estado.textContent = "";
   if (fecha) fecha.value = fechaYMD(new Date());
+  if (etiqueta) etiqueta.value = "";
+
+  resetPredicaSubidosUI();
+  actualizarPredicaSubidosUI();
 
   m.style.display = "flex";
   m.setAttribute("aria-hidden", "false");
@@ -528,6 +679,8 @@ function initSubidosBotones() {
   const btnSig = document.getElementById("btnSubidosMesSig");
   const btnGuardar = document.getElementById("btnGuardarSubido");
   const btnAgregarEtiqueta = document.getElementById("btnAgregarEtiquetaSubidos");
+  const selEtiqueta = document.getElementById("subidosEtiqueta");
+  const btnAgregarCita = document.getElementById("btnSubidosAgregarCita");
 
   if (btnNuevo) btnNuevo.onclick = abrirModalSubidos;
 
@@ -564,6 +717,17 @@ function initSubidosBotones() {
         alert("No se pudo guardar la etiqueta.");
       }
     };
+  }
+    if (selEtiqueta && !selEtiqueta.__predicaHook) {
+    selEtiqueta.__predicaHook = true;
+    selEtiqueta.addEventListener("change", actualizarPredicaSubidosUI);
+  }
+
+  if (btnAgregarCita && !btnAgregarCita.__citaHook) {
+    btnAgregarCita.__citaHook = true;
+    btnAgregarCita.addEventListener("click", () => {
+      window.subidosAgregarCitaPredica();
+    });
   }
 }
 
