@@ -1162,7 +1162,7 @@ body.oscuro #subidosFeed a{
   
 }
 
-/* ===== AJUSTE FINAL SUBIDOS: MODAL SUAVE + TARJETAS 9:16 ===== */
+/* ===== AJUSTE FINAL SUBIDOS: BLANCO + PREDICA CELESTE + GALERIA 9:16 ===== */
 
 #modalSubidos{
   backdrop-filter: blur(2px);
@@ -1170,132 +1170,174 @@ body.oscuro #subidosFeed a{
 }
 
 #modalSubidos .modal-card{
-  background: rgba(255,255,255,.82);
-  border: 1px solid rgba(255,255,255,.55);
-  box-shadow: 0 18px 42px rgba(0,0,0,.22);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-}
-
-body.oscuro #modalSubidos .modal-card{
-  background: rgba(27,27,27,.86);
-  border: 1px solid rgba(255,255,255,.10);
+  background:#ffffff !important;
+  border:1px solid rgba(255,255,255,.95) !important;
+  box-shadow:0 18px 42px rgba(0,0,0,.16) !important;
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
 }
 
 #subidosPredicaBox{
-  background: rgba(255,255,255,.42) !important;
-  border: 1px solid rgba(255,255,255,.48) !important;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.28);
-}
-
-body.oscuro #subidosPredicaBox{
-  background: rgba(255,255,255,.05) !important;
-  border: 1px solid rgba(255,255,255,.10) !important;
+  background:#eafaff !important;
+  border:1px solid #cfeefe !important;
+  box-shadow:none !important;
 }
 
 #subidosPredicaCitasWrap .subidos-cita-card{
-  background: rgba(255,255,255,.68) !important;
-  border: 1px solid rgba(255,255,255,.52) !important;
+  background:#ffffff !important;
+  border:1px solid #d8eef9 !important;
+  box-shadow:none !important;
 }
 
-body.oscuro #subidosPredicaCitasWrap .subidos-cita-card{
-  background: rgba(255,255,255,.04) !important;
-  border: 1px solid rgba(255,255,255,.10) !important;
+.subidosCitaSeleccionInfo{
+  background:#f4fbff !important;
+  border:1px solid #d9eef9 !important;
 }
 
-/* feed sigue horizontal, pero más prolijo */
+.subidosCitaTextoWrap{
+  background:#ffffff !important;
+  border:1px solid #dbeaf2 !important;
+}
+
+.subidosCitaExpandir{
+  background:#eef9ff !important;
+  border-top:1px solid #d8edf8 !important;
+}
+
+/* feed horizontal tipo galeria */
 #subidosFeed{
-  gap: 16px;
-  padding: 6px 2px 14px;
-  scroll-snap-type: x proximity;
+  gap:12px;
+  padding:6px 2px 14px;
+  overflow-x:auto;
+  overflow-y:hidden;
+  align-items:flex-start;
+  scroll-snap-type:x proximity;
 }
 
+/* cards bastante mas chicas */
 .subidos-feed-card{
-  width: min(340px, 86vw);
-  min-width: min(340px, 86vw);
-  background: rgba(255,255,255,.74);
-  border: 1px solid rgba(255,255,255,.55);
-  box-shadow: 0 12px 28px rgba(0,0,0,.14);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  width:min(220px, 44vw) !important;
+  min-width:min(220px, 44vw) !important;
+  padding:10px !important;
+  border-radius:16px !important;
+  background:rgba(255,255,255,.92) !important;
+  border:1px solid rgba(255,255,255,.95) !important;
+  box-shadow:0 8px 22px rgba(0,0,0,.10) !important;
 }
 
-body.oscuro .subidos-feed-card{
-  background: rgba(27,27,27,.82);
-  border: 1px solid rgba(255,255,255,.10);
-}
-
-/* marco uniforme 9:16 para todos */
+/* marco fijo 9:16 */
 .subidos-media-frame{
-  width: 100%;
-  aspect-ratio: 9 / 16;
-  min-height: 0;
-  border-radius: 16px;
-  overflow: hidden;
-  background: rgba(255,255,255,.34);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  width:100%;
+  aspect-ratio:9 / 16;
+  min-height:0;
+  border-radius:14px;
+  overflow:hidden;
+  background:rgba(255,255,255,.70) !important;
+  display:flex;
+  align-items:center;
+  justify-content:center;
 }
 
+/* imagen/video completos, sin cortar */
 .subidos-media-frame.is-image,
 .subidos-media-frame.is-video{
-  padding: 0;
-  background: rgba(255,255,255,.20);
+  padding:0;
+  background:rgba(255,255,255,.60) !important;
 }
 
-.subidos-media-frame.is-audio,
-.subidos-media-frame.is-file{
-  padding: 14px;
-  background: rgba(255,255,255,.28);
-}
-
-body.oscuro .subidos-media-frame{
-  background: rgba(255,255,255,.05);
-}
-
-/* imagen/video llenan el mismo formato */
 .subidos-media img,
 .subidos-media video{
-  width: 100%;
-  height: 100%;
-  max-width: none;
-  max-height: none;
-  object-fit: cover;
-  border-radius: 0;
-  background: transparent;
+  width:100% !important;
+  height:100% !important;
+  max-width:100% !important;
+  max-height:100% !important;
+  object-fit:contain !important;
+  background:transparent !important;
+  border-radius:0 !important;
+  display:block;
 }
 
-/* audio y archivo quedan centrados dentro del 9:16 */
+/* audio / archivo centrados dentro del 9:16 */
+.subidos-media-frame.is-audio,
+.subidos-media-frame.is-file{
+  padding:12px;
+  background:rgba(255,255,255,.65) !important;
+}
+
 .subidos-media-frame.is-audio audio{
-  width: 100%;
-  max-width: 100%;
+  width:100%;
+  max-width:100%;
 }
 
 .subidos-media-frame.is-file a{
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 16px;
-  border-radius: 12px;
-  text-decoration: none;
-  font-weight: 800;
-  color: var(--sub-txt);
-  background: rgba(255,255,255,.45);
+  width:100%;
+  height:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  padding:12px;
+  border-radius:12px;
+  text-decoration:none;
+  font-weight:800;
+  color:var(--sub-txt);
+  background:rgba(255,255,255,.82);
 }
 
-body.oscuro .subidos-media-frame.is-file a{
-  background: rgba(255,255,255,.07);
-  color: var(--sub-txt);
+/* texto y botones un poquito mas compactos */
+.subidos-feed-head{
+  margin-bottom:8px;
+}
+
+.subidos-feed-badges{
+  gap:6px;
+  margin-bottom:5px;
+}
+
+.subidos-badge{
+  padding:5px 9px;
+  font-size:11px;
+}
+
+.subidos-feed-date{
+  font-size:11px;
+}
+
+.subidos-feed-desc{
+  font-size:13px;
+  line-height:1.35;
+}
+
+.subidos-feed-actions{
+  gap:8px;
+  padding-top:8px;
+}
+
+.subidos-feed-actions button,
+.subidos-feed-actions a{
+  width:36px;
+  height:36px;
+  min-width:36px;
+  min-height:36px;
 }
 
 @media (max-width: 800px){
   .subidos-feed-card{
-    width: min(290px, 84vw);
-    min-width: min(290px, 84vw);
+    width:min(180px, 46vw) !important;
+    min-width:min(180px, 46vw) !important;
+    padding:9px !important;
+  }
+
+  .subidos-feed-actions button,
+  .subidos-feed-actions a{
+    width:34px;
+    height:34px;
+    min-width:34px;
+    min-height:34px;
+  }
+
+  .subidos-feed-desc{
+    font-size:12px;
   }
 }
 
