@@ -408,6 +408,52 @@ window.subidosMostrarPreview = function subidosMostrarPreview() {};
 window.subidosMoverPreview = function subidosMoverPreview() {};
 window.subidosOcultarPreview = function subidosOcultarPreview() {};
 
+function htmlPreviewArchivoSubido(it) {
+  const url = it.url || "#";
+  const nombre = escaparHtml(it.fileName || "archivo");
+  const esImg = (it.mimeType || "").startsWith("image/");
+  const esVideo = (it.mimeType || "").startsWith("video/");
+  const esAudio = (it.mimeType || "").startsWith("audio/");
+
+  if (esImg) {
+    return `
+      <a href="${url}" target="_blank" rel="noopener" class="subidos-media-link subidos-media-frame is-image" title="Abrir archivo">
+        <img src="${url}" alt="${nombre}" loading="lazy">
+      </a>
+    `;
+  }
+
+  if (esVideo) {
+    return `
+      <a href="${url}" target="_blank" rel="noopener" class="subidos-media-link subidos-media-frame is-video" title="Abrir video">
+        <video src="${url}" muted playsinline preload="metadata"></video>
+      </a>
+    `;
+  }
+
+  if (esAudio) {
+    return `
+      <a href="${url}" target="_blank" rel="noopener" class="subidos-media-link subidos-media-frame is-audio" title="Abrir audio">
+        <div class="subidos-file-open">
+          <i class="fa-solid fa-headphones"></i>
+          <span>${nombre}</span>
+          <small>Tocar para abrir</small>
+        </div>
+      </a>
+    `;
+  }
+
+  return `
+    <a href="${url}" target="_blank" rel="noopener" class="subidos-media-link subidos-media-frame is-file" title="Abrir archivo">
+      <div class="subidos-file-open">
+        <i class="fa-solid fa-file-lines"></i>
+        <span>${nombre}</span>
+        <small>Tocar para abrir</small>
+      </div>
+    </a>
+  `;
+}
+
 function renderFeed() {
   const feed = document.getElementById("subidosFeed");
   if (!feed) return;
@@ -452,31 +498,7 @@ function renderFeed() {
         </div>
 
         <div class="subidos-media">
-          ${
-            esImg
-              ? `
-                <div class="subidos-media-frame is-image">
-                  <img src="${it.url}" alt="${escaparHtml(it.fileName || "Imagen subida")}" loading="lazy">
-                </div>
-              `
-              : esVideo
-              ? `
-                <div class="subidos-media-frame is-video">
-                  <video src="${it.url}" controls preload="metadata"></video>
-                </div>
-              `
-              : esAudio
-              ? `
-                <div class="subidos-media-frame is-audio">
-                  <audio src="${it.url}" controls preload="metadata"></audio>
-                </div>
-              `
-              : `
-                <div class="subidos-media-frame is-file">
-                  <a href="${it.url}" download="${escaparHtml(it.fileName || "archivo")}">Descargar archivo</a>
-                </div>
-              `
-          }
+          ${htmlPreviewArchivoSubido(it)}
         </div>
 
         <div class="subidos-feed-actions">
