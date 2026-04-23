@@ -2954,8 +2954,11 @@ window.finalizarEdicion = async (ev) => {
       devToast("⏳ Guardando imagen...");
     }
 
-    const ok = await subirImagenBibliaUnaVezYGuardarDestinos();
-    if (!ok) throw new Error("No se pudo guardar la imagen");
+    const ok = await withRenderLock(async () => {
+      return await asegurarCanvasFinal({ subir: true });
+    });
+
+    if (!ok) throw new Error("No se pudo generar o guardar la imagen");
 
     if (typeof devToast === "function") {
       devToast("✅ Imagen guardada");
@@ -4761,7 +4764,7 @@ window.compartirMarcador = async (destino) => {
 function forceDefaultCheckIglesia() {
   const chk = document.getElementById("checkIglesia");
   if (!chk) return;
-  chk.checked = true; // ✅ siempre por defecto
+  chk.checked = false;
 }
 
 // ================= UI: ocultar acciones al entrar en modo marcador =================
