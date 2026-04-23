@@ -1162,6 +1162,143 @@ body.oscuro #subidosFeed a{
   
 }
 
+/* ===== AJUSTE FINAL SUBIDOS: MODAL SUAVE + TARJETAS 9:16 ===== */
+
+#modalSubidos{
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+#modalSubidos .modal-card{
+  background: rgba(255,255,255,.82);
+  border: 1px solid rgba(255,255,255,.55);
+  box-shadow: 0 18px 42px rgba(0,0,0,.22);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+body.oscuro #modalSubidos .modal-card{
+  background: rgba(27,27,27,.86);
+  border: 1px solid rgba(255,255,255,.10);
+}
+
+#subidosPredicaBox{
+  background: rgba(255,255,255,.42) !important;
+  border: 1px solid rgba(255,255,255,.48) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.28);
+}
+
+body.oscuro #subidosPredicaBox{
+  background: rgba(255,255,255,.05) !important;
+  border: 1px solid rgba(255,255,255,.10) !important;
+}
+
+#subidosPredicaCitasWrap .subidos-cita-card{
+  background: rgba(255,255,255,.68) !important;
+  border: 1px solid rgba(255,255,255,.52) !important;
+}
+
+body.oscuro #subidosPredicaCitasWrap .subidos-cita-card{
+  background: rgba(255,255,255,.04) !important;
+  border: 1px solid rgba(255,255,255,.10) !important;
+}
+
+/* feed sigue horizontal, pero más prolijo */
+#subidosFeed{
+  gap: 16px;
+  padding: 6px 2px 14px;
+  scroll-snap-type: x proximity;
+}
+
+.subidos-feed-card{
+  width: min(340px, 86vw);
+  min-width: min(340px, 86vw);
+  background: rgba(255,255,255,.74);
+  border: 1px solid rgba(255,255,255,.55);
+  box-shadow: 0 12px 28px rgba(0,0,0,.14);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+body.oscuro .subidos-feed-card{
+  background: rgba(27,27,27,.82);
+  border: 1px solid rgba(255,255,255,.10);
+}
+
+/* marco uniforme 9:16 para todos */
+.subidos-media-frame{
+  width: 100%;
+  aspect-ratio: 9 / 16;
+  min-height: 0;
+  border-radius: 16px;
+  overflow: hidden;
+  background: rgba(255,255,255,.34);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.subidos-media-frame.is-image,
+.subidos-media-frame.is-video{
+  padding: 0;
+  background: rgba(255,255,255,.20);
+}
+
+.subidos-media-frame.is-audio,
+.subidos-media-frame.is-file{
+  padding: 14px;
+  background: rgba(255,255,255,.28);
+}
+
+body.oscuro .subidos-media-frame{
+  background: rgba(255,255,255,.05);
+}
+
+/* imagen/video llenan el mismo formato */
+.subidos-media img,
+.subidos-media video{
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  object-fit: cover;
+  border-radius: 0;
+  background: transparent;
+}
+
+/* audio y archivo quedan centrados dentro del 9:16 */
+.subidos-media-frame.is-audio audio{
+  width: 100%;
+  max-width: 100%;
+}
+
+.subidos-media-frame.is-file a{
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 16px;
+  border-radius: 12px;
+  text-decoration: none;
+  font-weight: 800;
+  color: var(--sub-txt);
+  background: rgba(255,255,255,.45);
+}
+
+body.oscuro .subidos-media-frame.is-file a{
+  background: rgba(255,255,255,.07);
+  color: var(--sub-txt);
+}
+
+@media (max-width: 800px){
+  .subidos-feed-card{
+    width: min(290px, 84vw);
+    min-width: min(290px, 84vw);
+  }
+}
+
 /* ===== TEXTURAS DEVOCIONALES FASE 2 ===== */
 .dev-f1-menu-wrap{
   position: sticky;   /* 👈 cambio */
