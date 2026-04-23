@@ -215,6 +215,75 @@ function subidosTextoVersiculo(v) {
   ).trim();
 }
 
+function subidosCampoLibro(v) {
+  return String(
+    v?.book_name ??
+    v?.bookName ??
+    v?.book ??
+    v?.libro ??
+    v?.nombre ??
+    v?.name ??
+    ""
+  ).trim();
+}
+
+function subidosCampoCapitulo(v) {
+  return Number(
+    v?.chapter ??
+    v?.capitulo ??
+    v?.chapterNumber ??
+    v?.cap ??
+    0
+  );
+}
+
+function subidosCampoVersiculo(v) {
+  return Number(
+    v?.verse ??
+    v?.versiculo ??
+    v?.verseNumber ??
+    v?.num ??
+    0
+  );
+}
+
+function subidosBibliaEsPlana(raw) {
+  const coleccion = subidosColeccionLibros(raw);
+  if (!Array.isArray(coleccion) || !coleccion.length) return false;
+
+  const muestra = coleccion[0];
+  return !!(
+    subidosCampoLibro(muestra) ||
+    subidosCampoCapitulo(muestra) ||
+    subidosCampoVersiculo(muestra)
+  );
+}
+
+function subidosLibrosDesdeSelectorPrincipal() {
+  const sel = document.getElementById("libro");
+  if (!sel) return [];
+
+  const libros = [...sel.options]
+    .map(o => String(o.value || "").trim())
+    .filter(v =>
+      v &&
+      v !== "Seleccionar…" &&
+      v !== "Seleccionar..." &&
+      !/^\d+$/.test(v)
+    );
+
+  const vistos = new Set();
+
+  return libros
+    .filter(nombre => {
+      const k = subidosNormalizarBiblia(nombre);
+      if (!k || vistos.has(k)) return false;
+      vistos.add(k);
+      return true;
+    })
+    .map(nombre => ({ nombre, raw: null }));
+}
+
 function subidosTextoHtml(txt = "") {
   return escaparHtml(String(txt || "")).replace(/\n/g, "<br>");
 }
@@ -269,21 +338,44 @@ function subidosColeccionLibros(raw) {
 }
 
 function subidosListaLibros(raw) {
+  const desdeUI = subidosLibrosDesdeSelectorPrincipal();
+  if (desdeUI.length) return desdeUI;
+
   const coleccion = subidosColeccionLibros(raw);
   if (!coleccion) return [];
 
+  if (Array.isArray(coleccion) && subidosBibliaEsPlana(raw)) {
+    const vistos = new Set();
+
+    return coleccion
+      .map(row => subidosCampoLibro(row))
+      .filter(Boolean)
+      .filter(nombre => {
+        const k = subidosNormalizarBiblia(nombre);
+        if (!k || vistos.has(k)) return false;
+        vistos.add(k);
+        return true;
+      })
+      .map(nombre => ({
+        nombre,
+        raw: nombre
+      }));
+  }
+
   if (Array.isArray(coleccion)) {
-    return coleccion.map((libro, i) => ({
-      nombre: String(
-        libro?.nombre ??
-        libro?.name ??
-        libro?.book ??
-        libro?.libro ??
-        libro?.title ??
-        `Libro ${i + 1}`
-      ),
-      raw: libro
-    }));
+    return coleccion
+      .map((libro) => ({
+        nombre: String(
+          libro?.nombre ??
+          libro?.name ??
+          libro?.book ??
+          libro?.libro ??
+          libro?.title ??
+          ""
+        ).trim(),
+        raw: libro
+      }))
+      .filter(x => x.nombre);
   }
 
   if (subidosEsObjeto(coleccion)) {
@@ -391,6 +483,28 @@ async function poblarCapitulosPredicaEnCard(card, libroNombre, seleccionado = ""
     return;
   }
 
+  const data = await obtenerBibliaPredica();
+
+  if (subidosBibliaEsPlana(data)) {
+    const coleccion = subidosColeccionLibros(data) || [];
+    const caps = [...new Set(
+      coleccion
+        .filter(row =>
+          subidosNormalizarBiblia(subidosCampoLibro(row)) === subidosNormalizarBiblia(libroNombre)
+        )
+        .map(row => subidosCampoCapitulo(row))
+        .filter(n => n > 0)
+    )].sort((a, b) => a - b);
+
+    sel.innerHTML =
+      `<option value="">Seleccionar capítulo…</option>` +
+      caps.map(n => `<option value="${n}">${n}</option>`).join("");
+
+    sel.disabled = false;
+    if (seleccionado) sel.value = String(seleccionado);
+    return;
+  }
+
   const libro = await subidosBuscarLibroPorNombre(libroNombre);
   const capitulos = subidosCapitulosLibro(libro?.raw);
 
@@ -461,6 +575,27 @@ async function poblarVersiculosPredicaEnCard(card, libroNombre, capituloNumero) 
   empty.style.display = "";
 
   if (!libroNombre || !capituloNumero) return;
+
+  const data = await obtenerBibliaPredica();
+
+  if (subidosBibliaEsPlana(data)) {
+    const coleccion = subidosColeccionLibros(data) || [];
+
+    card.__versiculosData = coleccion
+      .filter(row =>
+        subidosNormalizarBiblia(subidosCampoLibro(row)) === subidosNormalizarBiblia(libroNombre) &&
+        subidosCampoCapitulo(row) === Number(capituloNumero)
+      )
+      .map(row => ({
+        n: subidosCampoVersiculo(row),
+        texto: subidosTextoVersiculo(row)
+      }))
+      .filter(v => v.n > 0 && v.texto)
+      .sort((a, b) => a.n - b.n);
+
+    renderVersiculosPredicaEnCard(card);
+    return;
+  }
 
   const libro = await subidosBuscarLibroPorNombre(libroNombre);
   const capitulos = subidosCapitulosLibro(libro?.raw);
