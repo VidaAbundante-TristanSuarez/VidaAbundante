@@ -68,7 +68,7 @@ function renumerarCitasPredica() {
   });
 }
 
-window.subidosAgregarCitaPredica = function subidosAgregarCitaPredica() {
+window.subidosAgregarCitaPredica = async function subidosAgregarCitaPredica() {
   const tpl = document.getElementById("tplSubidosCitaPredica");
   const wrap = document.getElementById("subidosPredicaCitasWrap");
   if (!tpl || !wrap) return;
@@ -87,7 +87,9 @@ window.subidosAgregarCitaPredica = function subidosAgregarCitaPredica() {
   }
 
   if (btnLimpiar) {
-    btnLimpiar.onclick = () => limpiarCitaPredica(node);
+    btnLimpiar.onclick = () => {
+      limpiarCitaPredica(node);
+    };
   }
 
   if (btnExpandir) {
@@ -113,6 +115,7 @@ window.subidosAgregarCitaPredica = function subidosAgregarCitaPredica() {
 
   wrap.appendChild(node);
   renumerarCitasPredica();
+  await inicializarCardCitaPredica(node);
 };
 
 function resetPredicaSubidosUI() {
