@@ -2397,6 +2397,17 @@ async function guardarReferenciaImagenEnPanel(asset) {
     return s;
   }
 
+  const versiculosSel = modoImagenLibre
+    ? []
+    : Object.keys(seleccionImagen || {})
+        .map(id => Number(id.split("_")[2]))
+        .filter(n => !isNaN(n))
+        .sort((a, b) => a - b);
+
+  const refCompleta = (!modoImagenLibre && libroSel?.value && capSel?.value && versiculosSel.length)
+    ? `${libroSel.value} ${capSel.value}:${formatearVersiculosComoRango(versiculosSel)}`
+    : "";
+
   const dbPath = `panelImagenesPersonal/${uid}/${asset.ts}`;
 
   await set(ref(db, dbPath), {
@@ -2406,6 +2417,8 @@ async function guardarReferenciaImagenEnPanel(asset) {
     tipo: "imagen",
     libro: modoImagenLibre ? "" : (libroSel?.value || ""),
     capitulo: modoImagenLibre ? 0 : Number(capSel?.value || 0),
+    versiculos: versiculosSel,
+    ref: refCompleta,
     origen: origenModalImagen,
     tipoTexto: modoImagenLibre ? "libre" : "biblia",
     textoLibre: modoImagenLibre ? (textoLibreImagen || "") : ""
@@ -2432,6 +2445,17 @@ async function guardarReferenciaImagenEnCompartidos(asset) {
     return s;
   }
 
+  const versiculosSel = modoImagenLibre
+    ? []
+    : Object.keys(seleccionImagen || {})
+        .map(id => Number(id.split("_")[2]))
+        .filter(n => !isNaN(n))
+        .sort((a, b) => a - b);
+
+  const refCompleta = (!modoImagenLibre && libroSel?.value && capSel?.value && versiculosSel.length)
+    ? `${libroSel.value} ${capSel.value}:${formatearVersiculosComoRango(versiculosSel)}`
+    : "";
+
   const dbPath = `compartidos/imagenes/${asset.ts}`;
 
   await set(ref(db, dbPath), {
@@ -2442,6 +2466,8 @@ async function guardarReferenciaImagenEnCompartidos(asset) {
     tipo: "imagen",
     libro: modoImagenLibre ? "" : (libroSel?.value || ""),
     capitulo: modoImagenLibre ? 0 : Number(capSel?.value || 0),
+    versiculos: versiculosSel,
+    ref: refCompleta,
     origen: origenModalImagen,
     tipoTexto: modoImagenLibre ? "libre" : "biblia",
     textoLibre: modoImagenLibre ? (textoLibreImagen || "") : ""
@@ -4266,18 +4292,32 @@ function renderPanelImagenes(data) {
     return !esDevocional(it) && it?.tipoTexto === "libre";
   }
 
-  function refBonitaPanel(it){
-    const cita = capitalizarCitaBonitaPanel(it.cita || "");
-    const refBiblia = (it.libro && it.capitulo) ? `${it.libro} ${it.capitulo}` : "";
-    const versiculo = capitalizarCitaBonitaPanel(it.versiculo || "");
-    const libre = String(it.textoLibre || "").trim();
+function refBonitaPanel(it){
+  const cita = capitalizarCitaBonitaPanel(it.cita || "");
+  const refDirecta = String(it.ref || "").trim();
 
-    if (cita) return cita;
-    if (refBiblia) return refBiblia;
-    if (versiculo) return versiculo.length > 60 ? versiculo.slice(0, 60) + "…" : versiculo;
-    if (esLibrePanel(it) && libre) return libre.length > 60 ? libre.slice(0, 60) + "…" : libre;
-    return "Imagen";
+  let refBiblia = "";
+  if (refDirecta) {
+    refBiblia = refDirecta;
+  } else if (it.libro && it.capitulo) {
+    const vers = Array.isArray(it.versiculos)
+      ? it.versiculos.map(Number).filter(n => !isNaN(n)).sort((a,b)=>a-b)
+      : [];
+
+    refBiblia = vers.length
+      ? `${it.libro} ${it.capitulo}:${formatearVersiculosComoRango(vers)}`
+      : `${it.libro} ${it.capitulo}`;
   }
+
+  const versiculo = capitalizarCitaBonitaPanel(it.versiculo || "");
+  const libre = String(it.textoLibre || "").trim();
+
+  if (cita) return cita;
+  if (refBiblia) return refBiblia;
+  if (versiculo) return versiculo.length > 60 ? versiculo.slice(0, 60) + "…" : versiculo;
+  if (esLibrePanel(it) && libre) return libre.length > 60 ? libre.slice(0, 60) + "…" : libre;
+  return "Imagen";
+}
 
   if (topRow) {
     topRow.innerHTML = `
@@ -5148,22 +5188,23 @@ document.addEventListener("DOMContentLoaded", () => {
   initDevocionalesIglesiaFeed();
 });
 
-window.descargarImagenPanel = async (url) => {
+window.descargarImagenPanel = (url) => {
   try {
-    const r = await fetch(url);
-    const blob = await r.blob();
-
     const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
+    a.href = url;
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
     a.download = "imagen_panel.png";
     document.body.appendChild(a);
     a.click();
     a.remove();
 
-    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    if (typeof mostrarToast === "function") {
+      mostrarToast("📥 Abriendo imagen...");
+    }
   } catch (e) {
     console.error(e);
-    alert("No se pudo descargar la imagen.");
+    alert("No se pudo abrir la imagen.");
   }
 };
 
