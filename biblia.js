@@ -2385,13 +2385,14 @@ async function guardarReferenciaImagenEnPanel(asset) {
     let s = String(url || "").trim();
     if (!s) return "";
 
-    // si ya viene bien, la dejamos
     if (/^https?:\/\//i.test(s)) return s;
 
-    // arregla URLs rotas tipo /pub-... o ./pub-...
     if (/^(?:\.\/|\/)?pub-[a-z0-9-]+\.r2\.dev\//i.test(s)) {
       return "https://" + s.replace(/^(?:\.\/|\/)+/, "");
     }
+
+    s = s.replace(/^https:\//i, "https://");
+    s = s.replace(/^http:\//i, "http://");
 
     return s;
   }
@@ -2425,6 +2426,9 @@ async function guardarReferenciaImagenEnCompartidos(asset) {
       return "https://" + s.replace(/^(?:\.\/|\/)+/, "");
     }
 
+    s = s.replace(/^https:\//i, "https://");
+    s = s.replace(/^http:\//i, "http://");
+
     return s;
   }
 
@@ -2449,10 +2453,8 @@ async function subirImagenBibliaUnaVezYGuardarDestinos() {
   const asset = await subirImagenBibliaBaseUnaVez();
   if (!asset) return false;
 
-  // ✅ siempre a Mi Panel
   await guardarReferenciaImagenEnPanel(asset);
 
-  // ✅ opcional a Compartidos, pero si falla NO rompe todo
   const chk = document.getElementById("checkIglesia");
   if (chk && chk.checked) {
     try {
@@ -2944,9 +2946,14 @@ window.finalizarEdicion = async (ev) => {
     btn.disabled = true;
     btn.innerHTML = `<i class="fa-solid fa-circle-check"></i>`;
     btn.style.opacity = "0.65";
+    btn.style.cursor = "wait";
   }
 
   try {
+    if (typeof devToast === "function") {
+      devToast("⏳ Guardando imagen...");
+    }
+
     const ok = await subirImagenBibliaUnaVezYGuardarDestinos();
     if (!ok) throw new Error("No se pudo guardar la imagen");
 
@@ -2966,6 +2973,7 @@ window.finalizarEdicion = async (ev) => {
       btn.disabled = false;
       btn.innerHTML = `<i class="fa-solid fa-circle-check"></i>`;
       btn.style.opacity = "";
+      btn.style.cursor = "";
     }
   }
 };
