@@ -635,10 +635,12 @@ body.oscuro #btnSubidoNuevo{
 #devHome .devIndexCard{
   flex:0 0 auto;
   width:124px;
-  border:1px solid #e5e5e5;
+  border:1px solid rgba(255,255,255,.45);
   border-radius:14px;
   overflow:hidden;
-  background:#fff;
+  background:rgba(255,255,255,.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   box-shadow: 0 8px 20px rgba(0,0,0,.06);
   cursor:pointer;
   display:flex;
@@ -671,7 +673,9 @@ body.oscuro .devIndexBarBottom{
 /* imagen SOLO DEVOCIONALES */
 #devHome .devIndexImgWrap{
   width:100%;
+  background:rgba(255,255,255,.20);
 }
+
 #devHome .devIndexImgWrap img{
   width:100%;
   aspect-ratio: 9 / 16;
@@ -703,10 +707,12 @@ body.oscuro .devIndexBarBottom{
 #devHome .devBigCard{
   width: min(420px, 96vw);
   margin: 0 auto;
-  border:1px solid #e8e8e8;
+  border:1px solid rgba(255,255,255,.45);
   border-radius:16px;
   overflow:hidden;
-  background:#fff;
+  background:rgba(255,255,255,.58);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   box-shadow: 0 12px 28px rgba(0,0,0,.08);
 }
 
@@ -1162,7 +1168,7 @@ body.oscuro #subidosFeed a{
   
 }
 
-/* ===== AJUSTE FINAL SUBIDOS: BLANCO + PREDICA CELESTE + GALERIA 9:16 ===== */
+/* ===== AJUSTE FINAL SUBIDOS: GALERIA PAREJA + CLICK ABRE + LORA ===== */
 
 #modalSubidos{
   backdrop-filter: blur(2px);
@@ -1173,8 +1179,6 @@ body.oscuro #subidosFeed a{
   background:#ffffff !important;
   border:1px solid rgba(255,255,255,.95) !important;
   box-shadow:0 18px 42px rgba(0,0,0,.16) !important;
-  backdrop-filter:none !important;
-  -webkit-backdrop-filter:none !important;
 }
 
 #subidosPredicaBox{
@@ -1204,140 +1208,198 @@ body.oscuro #subidosFeed a{
   border-top:1px solid #d8edf8 !important;
 }
 
-/* feed horizontal tipo galeria */
+/* galeria */
 #subidosFeed{
-  gap:12px;
-  padding:6px 2px 14px;
+  gap:10px !important;
+  padding:4px 0 12px !important;
   overflow-x:auto;
   overflow-y:hidden;
   align-items:flex-start;
   scroll-snap-type:x proximity;
 }
 
-/* cards bastante mas chicas */
+#subidosFeed > div,
 .subidos-feed-card{
-  width:min(220px, 44vw) !important;
-  min-width:min(220px, 44vw) !important;
-  padding:10px !important;
-  border-radius:16px !important;
-  background:rgba(255,255,255,.92) !important;
-  border:1px solid rgba(255,255,255,.95) !important;
-  box-shadow:0 8px 22px rgba(0,0,0,.10) !important;
+  box-sizing:border-box;
 }
 
-/* marco fijo 9:16 */
+.subidos-feed-card{
+  width:190px !important;
+  min-width:190px !important;
+  height:468px !important;
+  padding:8px !important;
+  border-radius:16px !important;
+  background:rgba(255,255,255,.94) !important;
+  border:1px solid rgba(255,255,255,.98) !important;
+  box-shadow:0 8px 22px rgba(0,0,0,.10) !important;
+  display:flex;
+  flex-direction:column;
+  scroll-snap-align:start;
+}
+
+.subidos-feed-head{
+  margin-bottom:6px !important;
+  min-height:82px;
+}
+
+.subidos-feed-left{
+  min-width:0;
+  width:100%;
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+}
+
+.subidos-feed-badges{
+  gap:6px !important;
+  margin-bottom:0 !important;
+  min-height:24px;
+}
+
+.subidos-badge{
+  padding:5px 8px !important;
+  font-size:11px !important;
+}
+
+.subidos-feed-date{
+  font-size:11px !important;
+}
+
+.subidos-feed-desc{
+  font-family:"Lora", serif !important;
+  font-weight:700 !important;
+  font-size:14px !important;
+  line-height:1.22 !important;
+  white-space:pre-wrap;
+  word-break:break-word;
+  min-height:52px;
+  max-height:52px;
+  overflow:auto;
+}
+
+/* media */
+.subidos-media{
+  margin-top:4px !important;
+  flex:1 1 auto;
+  min-height:0;
+  display:flex;
+}
+
+.subidos-media-link,
 .subidos-media-frame{
   width:100%;
+  flex:1 1 auto;
   aspect-ratio:9 / 16;
   min-height:0;
   border-radius:14px;
   overflow:hidden;
-  background:rgba(255,255,255,.70) !important;
   display:flex;
   align-items:center;
   justify-content:center;
+  text-decoration:none;
+  background:rgba(255,255,255,.72) !important;
 }
 
-/* imagen/video completos, sin cortar */
+.subidos-media-link.is-image,
+.subidos-media-link.is-video,
 .subidos-media-frame.is-image,
 .subidos-media-frame.is-video{
-  padding:0;
-  background:rgba(255,255,255,.60) !important;
+  padding:2px !important;
 }
 
-.subidos-media img,
-.subidos-media video{
+.subidos-media-link.is-audio,
+.subidos-media-link.is-file,
+.subidos-media-frame.is-audio,
+.subidos-media-frame.is-file{
+  padding:8px !important;
+}
+
+.subidos-media-link img,
+.subidos-media-link video,
+.subidos-media-frame img,
+.subidos-media-frame video{
   width:100% !important;
   height:100% !important;
   max-width:100% !important;
   max-height:100% !important;
   object-fit:contain !important;
-  background:transparent !important;
-  border-radius:0 !important;
   display:block;
+  background:transparent !important;
+  border-radius:10px !important;
 }
 
-/* audio / archivo centrados dentro del 9:16 */
-.subidos-media-frame.is-audio,
-.subidos-media-frame.is-file{
-  padding:12px;
-  background:rgba(255,255,255,.65) !important;
-}
-
-.subidos-media-frame.is-audio audio{
-  width:100%;
-  max-width:100%;
-}
-
-.subidos-media-frame.is-file a{
+.subidos-file-open{
   width:100%;
   height:100%;
+  border-radius:12px;
   display:flex;
+  flex-direction:column;
   align-items:center;
   justify-content:center;
+  gap:8px;
   text-align:center;
-  padding:12px;
-  border-radius:12px;
-  text-decoration:none;
-  font-weight:800;
+  padding:10px;
+  background:rgba(255,255,255,.72);
   color:var(--sub-txt);
-  background:rgba(255,255,255,.82);
 }
 
-/* texto y botones un poquito mas compactos */
-.subidos-feed-head{
-  margin-bottom:8px;
+.subidos-file-open i{
+  font-size:26px;
 }
 
-.subidos-feed-badges{
-  gap:6px;
-  margin-bottom:5px;
+.subidos-file-open span{
+  font-weight:800;
+  line-height:1.2;
+  word-break:break-word;
 }
 
-.subidos-badge{
-  padding:5px 9px;
-  font-size:11px;
+.subidos-file-open small{
+  font-size:12px;
+  opacity:.78;
 }
 
-.subidos-feed-date{
-  font-size:11px;
-}
-
-.subidos-feed-desc{
-  font-size:13px;
-  line-height:1.35;
+.subidos-media-link:hover{
+  transform:scale(1.01);
 }
 
 .subidos-feed-actions{
-  gap:8px;
-  padding-top:8px;
+  gap:8px !important;
+  padding-top:8px !important;
+  margin-top:6px;
 }
 
 .subidos-feed-actions button,
 .subidos-feed-actions a{
-  width:36px;
-  height:36px;
-  min-width:36px;
-  min-height:36px;
+  width:36px !important;
+  height:36px !important;
+  min-width:36px !important;
+  min-height:36px !important;
 }
 
 @media (max-width: 800px){
   .subidos-feed-card{
-    width:min(180px, 46vw) !important;
-    min-width:min(180px, 46vw) !important;
-    padding:9px !important;
+    width:176px !important;
+    min-width:176px !important;
+    height:438px !important;
+    padding:8px !important;
+  }
+
+  .subidos-feed-head{
+    min-height:78px;
+  }
+
+  .subidos-feed-desc{
+    font-size:13px !important;
+    min-height:48px;
+    max-height:48px;
   }
 
   .subidos-feed-actions button,
   .subidos-feed-actions a{
-    width:34px;
-    height:34px;
-    min-width:34px;
-    min-height:34px;
-  }
-
-  .subidos-feed-desc{
-    font-size:12px;
+    width:34px !important;
+    height:34px !important;
+    min-width:34px !important;
+    min-height:34px !important;
   }
 }
 
