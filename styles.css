@@ -2528,10 +2528,12 @@ body.oscuro #wrapFiltrosBiblia.abierto .filtros{
   width:120px;
   min-width:120px;
   max-width:120px;
-  border:1px solid #e5e5e5;
+  border:1px solid rgba(255,255,255,.45);
   border-radius:14px;
   overflow:hidden;
-  background:#fff;
+  background:rgba(255,255,255,.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   box-shadow:0 8px 20px rgba(0,0,0,.06);
   cursor:pointer;
   display:flex;
@@ -2563,7 +2565,7 @@ body.oscuro #wrapFiltrosBiblia.abierto .filtros{
   display:flex;
   align-items:center;
   justify-content:center;
-  background:#fff; /* blanco, no gris */
+  background:rgba(255,255,255,.22);
 }
 
 /* la imagen se ve completa dentro de la caja */
@@ -2591,10 +2593,12 @@ body.oscuro #wrapFiltrosBiblia.abierto .filtros{
   width:fit-content;
   max-width:min(420px, 96vw);
   margin:0 auto;
-  border:1px solid #e8e8e8;
+  border:1px solid rgba(255,255,255,.45);
   border-radius:16px;
   overflow:hidden;
-  background:#fff;
+  background:rgba(255,255,255,.58);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   box-shadow:0 12px 28px rgba(0,0,0,.08);
 }
 
