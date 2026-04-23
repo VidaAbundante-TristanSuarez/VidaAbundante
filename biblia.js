@@ -2381,11 +2381,25 @@ async function subirImagenBibliaBaseUnaVez() {
 async function guardarReferenciaImagenEnPanel(asset) {
   if (!uid || !asset) return;
 
+  function normalizarUrlGuardada(url){
+    let s = String(url || "").trim();
+    if (!s) return "";
+
+    // si ya viene bien, la dejamos
+    if (/^https?:\/\//i.test(s)) return s;
+
+    // arregla URLs rotas tipo /pub-... o ./pub-...
+    if (/^(?:\.\/|\/)?pub-[a-z0-9-]+\.r2\.dev\//i.test(s)) {
+      return "https://" + s.replace(/^(?:\.\/|\/)+/, "");
+    }
+
+    return s;
+  }
+
   const dbPath = `panelImagenesPersonal/${uid}/${asset.ts}`;
 
   await set(ref(db, dbPath), {
-    url: asset.url,
-
+    url: normalizarUrlGuardada(asset.url),
     fecha: asset.ts,
     uid,
     tipo: "imagen",
@@ -2401,11 +2415,23 @@ async function guardarReferenciaImagenEnPanel(asset) {
 async function guardarReferenciaImagenEnCompartidos(asset) {
   if (!uid || !asset) return;
 
+  function normalizarUrlGuardada(url){
+    let s = String(url || "").trim();
+    if (!s) return "";
+
+    if (/^https?:\/\//i.test(s)) return s;
+
+    if (/^(?:\.\/|\/)?pub-[a-z0-9-]+\.r2\.dev\//i.test(s)) {
+      return "https://" + s.replace(/^(?:\.\/|\/)+/, "");
+    }
+
+    return s;
+  }
+
   const dbPath = `compartidos/imagenes/${asset.ts}`;
 
   await set(ref(db, dbPath), {
-    url: asset.url,
-
+    url: normalizarUrlGuardada(asset.url),
     fecha: asset.ts,
     uid,
     publicadoPor: uid,
@@ -4209,6 +4235,8 @@ function renderPanelImagenes(data) {
     let s = String(url || "").trim();
     if (!s) return "";
 
+    if (/^https?:\/\//i.test(s)) return esc(s);
+
     if (/^(?:\.\/|\/)?pub-[a-z0-9-]+\.r2\.dev\//i.test(s)) {
       s = "https://" + s.replace(/^(?:\.\/|\/)+/, "");
     }
@@ -4261,7 +4289,6 @@ function renderPanelImagenes(data) {
 
   vacio.style.display = "none";
 
-  // índice horizontal arriba
   indexRow.innerHTML = items.map(it => {
     const refTxt = esc(refBonitaPanel(it));
     const fechaTxt = it.fecha ? new Date(it.fecha).toLocaleDateString("es-AR") : "";
@@ -4280,7 +4307,6 @@ function renderPanelImagenes(data) {
     `;
   }).join("");
 
-  // feed grande abajo
   feed.innerHTML = items.map(it => {
     const refTxt = esc(refBonitaPanel(it));
     const url = normalizarUrlPanel(it.url || "");
@@ -4293,7 +4319,7 @@ function renderPanelImagenes(data) {
 
         ${
           url
-            ? `<img src="${url}" alt="Imagen generada" loading="lazy">`
+            ? `<img src="${url}" alt="Imagen generada" loading="lazy" onerror="this.style.display='none'; this.insertAdjacentHTML('afterend','<div class=&quot;devBigImgFallback&quot;>Sin imagen</div>');">`
             : `<div class="devBigImgFallback">Sin imagen</div>`
         }
 
