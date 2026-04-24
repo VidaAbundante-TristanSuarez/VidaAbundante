@@ -1328,7 +1328,7 @@ function subidosEsperarImagenes(node) {
           resolve();
         };
 
-        const timer = setTimeout(fin, 4000);
+        const timer = setTimeout(fin, 12000);
 
         img.addEventListener("load", fin, { once: true });
         img.addEventListener("error", fin, { once: true });
@@ -1363,23 +1363,32 @@ function subidosPrepararCloneParaExport(clone) {
   });
 
 clone.querySelectorAll("img").forEach(img => {
-  const src = img.currentSrc || img.getAttribute("src") || "";
+  const src = img.currentSrc || img.getAttribute("src") || img.src || "";
 
   img.removeAttribute("loading");
+  img.removeAttribute("srcset");
+  img.removeAttribute("sizes");
+
   img.loading = "eager";
   img.decoding = "sync";
 
-  if (src) img.src = src;
-
+  // ✅ CLAVE: esto tiene que ir ANTES de volver a poner el src
   img.crossOrigin = "anonymous";
   img.referrerPolicy = "no-referrer";
+
+  // ✅ fuerza al celular a pedir la imagen de nuevo con CORS
+  if (src) {
+    const separador = src.includes("?") ? "&" : "?";
+    img.removeAttribute("src");
+    img.src = `${src}${separador}vaCors=${Date.now()}`;
+  }
 
   img.style.display = "block";
   img.style.width = "100%";
   img.style.height = "100%";
   img.style.objectFit = "contain";
 });
-
+  
   // por si la card tiene resumen de prédica
   clone.querySelectorAll(".subidos-predica-resumen").forEach(el => {
     el.style.cursor = "default";
@@ -1867,7 +1876,13 @@ function htmlPreviewArchivoSubido(it) {
   if (esImg) {
     return `
       <button type="button" onclick="abrirSubidosVisorArchivo('${it.id}')" class="subidos-media-link subidos-media-frame is-image" title="Abrir archivo">
-        <img src="${it.url}" alt="${nombre}" loading="lazy">
+        <img
+  src="${it.url}"
+  alt="${nombre}"
+  loading="lazy"
+  crossorigin="anonymous"
+  referrerpolicy="no-referrer"
+>
       </button>
     `;
   }
