@@ -16,6 +16,7 @@ let subidosEsAdmin = false;
 let subidosMesActual = new Date();
 let subidosItems = [];
 let subidosEtiquetas = [];
+let subidosEditandoId = null;
 
 const ETIQUETAS_DEFAULT = [
   "Predica",
@@ -116,8 +117,9 @@ window.subidosAgregarCitaPredica = async function subidosAgregarCitaPredica() {
   }
 
   wrap.appendChild(node);
-  renumerarCitasPredica();
-  await inicializarCardCitaPredica(node);
+renumerarCitasPredica();
+await inicializarCardCitaPredica(node);
+return node;
 };
 
 function resetPredicaSubidosUI() {
@@ -955,56 +957,24 @@ function htmlPredicaBibliaSubido(it) {
 
   if (!citas.length && !notaFinal) return "";
 
-  const filas = [];
-
-  citas.forEach((c, i) => {
-    const bodyId = `subidosPredicaDet-${it.id}-${i}`;
-    filas.push(`
-      <div style="border:1px solid #d8eef9; background:#ffffff; border-radius:12px; overflow:hidden;">
-        <button
-          type="button"
-          onclick="subidosToggleDetallePredica('${bodyId}')"
-          style="width:100%; border:none; background:#f6fcff; padding:10px; text-align:left; display:flex; align-items:center; justify-content:space-between; gap:10px; cursor:pointer;"
-        >
-          <span style="font-weight:800;">${escaparHtml(c.referencia || "")}</span>
-          <i class="fa-solid fa-caret-down" data-toggle-icon="${bodyId}"></i>
-        </button>
-
-        <div id="${bodyId}" style="display:none; max-height:170px; overflow:auto; padding:10px; border-top:1px solid #e7f2f8;">
-          <div style="white-space:pre-wrap; line-height:1.32; font-size:13px;">${subidosTextoHtml(c.texto || "")}</div>
-          ${String(c.comentario || c.nota || "").trim() ? `
-            <div style="margin-top:8px; padding-top:8px; border-top:1px solid #eef6fb;">
-              <div style="font-weight:800; margin-bottom:4px;">Comentario</div>
-              <div style="white-space:pre-wrap; line-height:1.32; font-size:13px;">${subidosTextoHtml(c.comentario || c.nota || "")}</div>
-            </div>
-          ` : ``}
-        </div>
-      </div>
-    `);
-  });
+  const filas = citas.map(c => `
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 10px; border:1px solid #d8eef9; background:#ffffff; border-radius:12px;">
+      <span style="font-weight:800;">${escaparHtml(c.referencia || "")}</span>
+      <i class="fa-solid fa-caret-down"></i>
+    </div>
+  `);
 
   if (notaFinal) {
-    const bodyId = `subidosPredicaNota-${it.id}`;
     filas.push(`
-      <div style="border:1px solid #d8eef9; background:#ffffff; border-radius:12px; overflow:hidden;">
-        <button
-          type="button"
-          onclick="subidosToggleDetallePredica('${bodyId}')"
-          style="width:100%; border:none; background:#f6fcff; padding:10px; text-align:left; display:flex; align-items:center; justify-content:space-between; gap:10px; cursor:pointer;"
-        >
-          <span style="font-weight:800;">Nota</span>
-          <i class="fa-solid fa-caret-down" data-toggle-icon="${bodyId}"></i>
-        </button>
-
-        <div id="${bodyId}" style="display:none; max-height:170px; overflow:auto; padding:10px; border-top:1px solid #e7f2f8;">
-          <div style="white-space:pre-wrap; line-height:1.35; font-size:13px;">${subidosTextoHtml(notaFinal)}</div>
-        </div>
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 10px; border:1px solid #d8eef9; background:#ffffff; border-radius:12px;">
+        <span style="font-weight:800;">Nota</span>
+        <i class="fa-solid fa-caret-down"></i>
       </div>
     `);
   }
 
   return `
-    <div style="margin:6px 0 8px; display:flex; flex-direction:column; gap:8px;">
+    <div class="subidos-predica-resumen" onclick="abrirSubidosVisorPredica('${it.id}')" style="display:flex; flex-direction:column; gap:8px;">
       ${filas.join("")}
     </div>
   `;
@@ -1105,7 +1075,11 @@ function abrirModalSubidos() {
   const descripcion = document.getElementById("subidosDescripcion");
   const estado = document.getElementById("subidosEstado");
   const etiqueta = document.getElementById("subidosEtiqueta");
+  const ttl = document.getElementById("subidosModalTitulo");
 
+  subidosEditandoId = null;
+
+  if (ttl) ttl.textContent = "📤 Nuevo subido";
   if (archivo) archivo.value = "";
   if (descripcion) descripcion.value = "";
   if (estado) estado.textContent = "";
@@ -1122,6 +1096,11 @@ function abrirModalSubidos() {
 window.cerrarModalSubidos = function cerrarModalSubidos() {
   const m = document.getElementById("modalSubidos");
   if (!m) return;
+
+  const ttl = document.getElementById("subidosModalTitulo");
+  if (ttl) ttl.textContent = "📤 Nuevo subido";
+
+  subidosEditandoId = null;
   m.style.display = "none";
   m.setAttribute("aria-hidden", "true");
 };
@@ -1276,49 +1255,321 @@ window.subidosMostrarPreview = function subidosMostrarPreview() {};
 window.subidosMoverPreview = function subidosMoverPreview() {};
 window.subidosOcultarPreview = function subidosOcultarPreview() {};
 
+function obtenerSubidoPorId(id) {
+  return subidosItems.find(x => x.id === id) || null;
+}
+
+function subidosTieneContenidoPredica(it) {
+  return !!(obtenerCitasPredicaSubido(it).length || String(it.predicaNotaFinal || it.notaFinalGeneral || "").trim());
+}
+
+function subidosTextoPlanoPredica(it) {
+  const citas = obtenerCitasPredicaSubido(it);
+  const notaFinal = String(it.predicaNotaFinal || it.notaFinalGeneral || "").trim();
+
+  const partes = [];
+  if (it.etiqueta) partes.push(it.etiqueta);
+  if (it.fechaEvento) partes.push(it.fechaEvento);
+  if (it.descripcion) partes.push(it.descripcion);
+
+  citas.forEach(c => {
+    partes.push(c.referencia || "");
+    if (c.texto) partes.push(c.texto);
+    if (c.comentario || c.nota) partes.push(`Comentario: ${c.comentario || c.nota}`);
+  });
+
+  if (notaFinal) partes.push(`Nota: ${notaFinal}`);
+
+  return partes.filter(Boolean).join("\n\n").trim();
+}
+
+window.cerrarModalSubidosVisor = function cerrarModalSubidosVisor() {
+  const m = document.getElementById("modalSubidosVisor");
+  const body = document.getElementById("subidosVisorBody");
+  const ttl = document.getElementById("subidosVisorTitulo");
+  if (!m) return;
+
+  if (body) body.innerHTML = "";
+  if (ttl) ttl.textContent = "Vista previa";
+
+  m.style.display = "none";
+  m.setAttribute("aria-hidden", "true");
+};
+
+function abrirModalSubidosVisor(titulo, html) {
+  const m = document.getElementById("modalSubidosVisor");
+  const body = document.getElementById("subidosVisorBody");
+  const ttl = document.getElementById("subidosVisorTitulo");
+  if (!m || !body || !ttl) return;
+
+  ttl.textContent = titulo || "Vista previa";
+  body.innerHTML = html || "";
+  m.style.display = "flex";
+  m.setAttribute("aria-hidden", "false");
+}
+
+window.subidosToggleDetallePredica = function subidosToggleDetallePredica(id) {
+  const body = document.getElementById(id);
+  const ico = document.querySelector(`[data-toggle-icon="${id}"]`);
+  if (!body) return;
+
+  const abierto = body.style.display !== "none";
+
+  if (abierto) {
+    body.style.display = "none";
+    if (ico) ico.className = "fa-solid fa-caret-down";
+  } else {
+    body.style.display = "block";
+    if (ico) ico.className = "fa-solid fa-caret-up";
+  }
+};
+
+function htmlPredicaBibliaSubidoGrande(it) {
+  const citas = obtenerCitasPredicaSubido(it);
+  const notaFinal = String(it.predicaNotaFinal || it.notaFinalGeneral || "").trim();
+
+  const bloques = [];
+
+  citas.forEach((c, i) => {
+    const bodyId = `subidosPredicaGrande-${it.id}-${i}`;
+    bloques.push(`
+      <div style="border:1px solid #d8eef9; background:#ffffff; border-radius:14px; overflow:hidden; margin-bottom:10px;">
+        <button
+          type="button"
+          onclick="subidosToggleDetallePredica('${bodyId}')"
+          style="width:100%; border:none; background:#f6fcff; padding:12px; text-align:left; display:flex; align-items:center; justify-content:space-between; gap:10px; cursor:pointer;"
+        >
+          <span style="font-weight:800;">${escaparHtml(c.referencia || "")}</span>
+          <i class="fa-solid fa-caret-down" data-toggle-icon="${bodyId}"></i>
+        </button>
+
+        <div id="${bodyId}" style="display:none; max-height:320px; overflow:auto; padding:12px; border-top:1px solid #e7f2f8;">
+          <div style="white-space:pre-wrap; line-height:1.38; font-size:15px;">${subidosTextoHtml(c.texto || "")}</div>
+          ${String(c.comentario || c.nota || "").trim() ? `
+            <div style="margin-top:10px; padding-top:10px; border-top:1px solid #eef6fb;">
+              <div style="font-weight:800; margin-bottom:6px;">Comentario</div>
+              <div style="white-space:pre-wrap; line-height:1.38; font-size:15px;">${subidosTextoHtml(c.comentario || c.nota || "")}</div>
+            </div>
+          ` : ``}
+        </div>
+      </div>
+    `);
+  });
+
+  if (notaFinal) {
+    const bodyId = `subidosPredicaGrandeNota-${it.id}`;
+    bloques.push(`
+      <div style="border:1px solid #d8eef9; background:#ffffff; border-radius:14px; overflow:hidden;">
+        <button
+          type="button"
+          onclick="subidosToggleDetallePredica('${bodyId}')"
+          style="width:100%; border:none; background:#f6fcff; padding:12px; text-align:left; display:flex; align-items:center; justify-content:space-between; gap:10px; cursor:pointer;"
+        >
+          <span style="font-weight:800;">Nota</span>
+          <i class="fa-solid fa-caret-down" data-toggle-icon="${bodyId}"></i>
+        </button>
+
+        <div id="${bodyId}" style="display:none; max-height:320px; overflow:auto; padding:12px; border-top:1px solid #e7f2f8;">
+          <div style="white-space:pre-wrap; line-height:1.38; font-size:15px;">${subidosTextoHtml(notaFinal)}</div>
+        </div>
+      </div>
+    `);
+  }
+
+  return `
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      ${it.descripcion ? `<div style="font-family:'Lora',serif; font-weight:700; font-size:18px;">${escaparHtml(it.descripcion)}</div>` : ``}
+      ${bloques.join("")}
+    </div>
+  `;
+}
+
+window.abrirSubidosVisorPredica = function abrirSubidosVisorPredica(id) {
+  const it = obtenerSubidoPorId(id);
+  if (!it) return;
+  abrirModalSubidosVisor(it.etiqueta || "Prédica", htmlPredicaBibliaSubidoGrande(it));
+};
+
+window.abrirSubidosVisorArchivo = function abrirSubidosVisorArchivo(id) {
+  const it = obtenerSubidoPorId(id);
+  if (!it?.url) return;
+
+  const mime = String(it.mimeType || "");
+  const url = it.url;
+  const nombre = escaparHtml(it.fileName || "archivo");
+
+  if (mime.startsWith("image/")) {
+    abrirModalSubidosVisor(nombre, `<img src="${url}" alt="${nombre}">`);
+    return;
+  }
+
+  if (mime.startsWith("video/")) {
+    abrirModalSubidosVisor(nombre, `<video src="${url}" controls playsinline style="width:100%; max-height:78vh; border-radius:14px; background:#000;"></video>`);
+    return;
+  }
+
+  if (mime.startsWith("audio/")) {
+    abrirModalSubidosVisor(nombre, `
+      <div style="padding:18px; border-radius:14px; background:#f8fafc;">
+        <div style="font-weight:800; margin-bottom:10px;">${nombre}</div>
+        <audio src="${url}" controls preload="metadata"></audio>
+      </div>
+    `);
+    return;
+  }
+
+  abrirModalSubidosVisor(nombre, `<iframe src="${url}" style="width:100%; height:78vh; border:none; border-radius:14px; background:#fff;"></iframe>`);
+};
+
+window.descargarSubido = function descargarSubido(id) {
+  const it = obtenerSubidoPorId(id);
+  if (!it) return;
+
+  if (it.url) {
+    const a = document.createElement("a");
+    a.href = it.url;
+    a.download = it.fileName || "archivo";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    return;
+  }
+
+  const texto = subidosTextoPlanoPredica(it);
+  const blob = new Blob([texto], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${(it.etiqueta || "predica").toLowerCase()}-${it.fechaEvento || Date.now()}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+};
+
+function subidosNumsDesdeCitaGuardada(cita) {
+  const nums = [];
+
+  if (Array.isArray(cita.segmentos) && cita.segmentos.length) {
+    cita.segmentos.forEach(seg => {
+      const d = Number(seg.desde || 0);
+      const h = Number(seg.hasta || 0) || d;
+      for (let n = d; n <= h; n++) nums.push(n);
+    });
+    return [...new Set(nums)].sort((a, b) => a - b);
+  }
+
+  const d = Number(cita.versiculoInicio || 0);
+  const h = Number(cita.versiculoFin || 0) || d;
+  for (let n = d; n <= h; n++) nums.push(n);
+
+  return [...new Set(nums)].sort((a, b) => a - b);
+}
+
+async function poblarCardPredicaDesdeDato(card, cita) {
+  const libro = cita.libro || "";
+  const capitulo = String(cita.capitulo || "");
+  const comentario = cita.comentario || cita.nota || "";
+
+  await poblarLibrosPredicaEnCard(card, libro);
+  await poblarCapitulosPredicaEnCard(card, libro, capitulo);
+  await poblarVersiculosPredicaEnCard(card, libro, capitulo);
+
+  subidosSetSeleccionados(card, subidosNumsDesdeCitaGuardada(cita));
+  renderVersiculosPredicaEnCard(card);
+  actualizarPreviewPredicaEnCard(card);
+
+  const ta = card.querySelector(".subidosCitaNota");
+  if (ta) ta.value = comentario;
+}
+
+window.abrirEditarSubido = async function abrirEditarSubido(id) {
+  const it = obtenerSubidoPorId(id);
+  if (!it) return;
+
+  abrirModalSubidos();
+  subidosEditandoId = id;
+
+  const ttl = document.getElementById("subidosModalTitulo");
+  if (ttl) ttl.textContent = "✏️ Editar subido";
+
+  const fecha = document.getElementById("subidosFecha");
+  const etiqueta = document.getElementById("subidosEtiqueta");
+  const descripcion = document.getElementById("subidosDescripcion");
+  const archivo = document.getElementById("subidosArchivo");
+  const version = document.getElementById("subidosPredicaVersion");
+  const notaFinal = document.getElementById("subidosPredicaNotaFinal");
+  const wrap = document.getElementById("subidosPredicaCitasWrap");
+
+  if (fecha) fecha.value = it.fechaEvento || "";
+  if (etiqueta) etiqueta.value = it.etiqueta || "";
+  if (descripcion) descripcion.value = it.descripcion || "";
+  if (archivo) archivo.value = "";
+
+  actualizarPredicaSubidosUI();
+
+  if (esPredicaSubidos(it.etiqueta || "")) {
+    if (version) version.value = it.predicaVersion || (obtenerCitasPredicaSubido(it)[0]?.version || "RV1960");
+    if (notaFinal) notaFinal.value = it.predicaNotaFinal || it.notaFinalGeneral || "";
+    if (wrap) wrap.innerHTML = "";
+
+    const citas = obtenerCitasPredicaSubido(it);
+    if (citas.length) {
+      for (const cita of citas) {
+        const card = await window.subidosAgregarCitaPredica();
+        await poblarCardPredicaDesdeDato(card, cita);
+      }
+    } else {
+      await window.subidosAgregarCitaPredica();
+    }
+  }
+};
+
 function htmlPreviewArchivoSubido(it) {
-  const url = it.url || "#";
   const nombre = escaparHtml(it.fileName || "archivo");
   const esImg = (it.mimeType || "").startsWith("image/");
   const esVideo = (it.mimeType || "").startsWith("video/");
   const esAudio = (it.mimeType || "").startsWith("audio/");
 
+  if (!it.url) return "";
+
   if (esImg) {
     return `
-      <a href="${url}" target="_blank" rel="noopener" class="subidos-media-link subidos-media-frame is-image" title="Abrir archivo">
-        <img src="${url}" alt="${nombre}" loading="lazy">
-      </a>
+      <button type="button" onclick="abrirSubidosVisorArchivo('${it.id}')" class="subidos-media-link subidos-media-frame is-image" title="Abrir archivo">
+        <img src="${it.url}" alt="${nombre}" loading="lazy">
+      </button>
     `;
   }
 
   if (esVideo) {
     return `
-      <a href="${url}" target="_blank" rel="noopener" class="subidos-media-link subidos-media-frame is-video" title="Abrir video">
-        <video src="${url}" muted playsinline preload="metadata"></video>
-      </a>
+      <button type="button" onclick="abrirSubidosVisorArchivo('${it.id}')" class="subidos-media-link subidos-media-frame is-video" title="Abrir video">
+        <video src="${it.url}" muted playsinline preload="metadata"></video>
+      </button>
     `;
   }
 
   if (esAudio) {
     return `
-      <a href="${url}" target="_blank" rel="noopener" class="subidos-media-link subidos-media-frame is-audio" title="Abrir audio">
+      <button type="button" onclick="abrirSubidosVisorArchivo('${it.id}')" class="subidos-media-link subidos-media-frame is-audio" title="Abrir audio">
         <div class="subidos-file-open">
           <i class="fa-solid fa-headphones"></i>
           <span>${nombre}</span>
           <small>Tocar para abrir</small>
         </div>
-      </a>
+      </button>
     `;
   }
 
   return `
-    <a href="${url}" target="_blank" rel="noopener" class="subidos-media-link subidos-media-frame is-file" title="Abrir archivo">
+    <button type="button" onclick="abrirSubidosVisorArchivo('${it.id}')" class="subidos-media-link subidos-media-frame is-file" title="Abrir archivo">
       <div class="subidos-file-open">
         <i class="fa-solid fa-file-lines"></i>
         <span>${nombre}</span>
         <small>Tocar para abrir</small>
       </div>
-    </a>
+    </button>
   `;
 }
 
@@ -1343,6 +1594,8 @@ function renderFeed() {
     const color = colorEtiquetaSubidos(it.etiqueta || "");
     const bloquePredica = htmlPredicaBibliaSubido(it);
     const tieneArchivo = !!String(it.url || "").trim();
+    const tienePredica = subidosTieneContenidoPredica(it);
+    const mostrarAcciones = !!(tieneArchivo || tienePredica);
 
     return `
       <div id="subido-${it.id}" class="subidos-feed-card">
@@ -1371,15 +1624,15 @@ function renderFeed() {
           </div>
         ` : ``}
 
-        ${bloquePredica}
+        ${tienePredica ? bloquePredica : ``}
 
         <div class="subidos-feed-actions">
           ${
-            it.url
+            mostrarAcciones
               ? `
-                <a href="${it.url}" download="${escaparHtml(it.fileName || "archivo")}" title="Descargar">
+                <button type="button" onclick="descargarSubido('${it.id}')" title="Descargar">
                   <i class="fa-solid fa-download"></i>
-                </a>
+                </button>
 
                 <button type="button" onclick="compartirSubido('${it.id}')" title="Compartir">
                   <i class="fa-solid fa-share-nodes"></i>
@@ -1391,13 +1644,23 @@ function renderFeed() {
           ${
             subidosEsAdmin
               ? `
-                <button type="button" class="subidosDanger" onclick="borrarSubido('${it.id}')" title="Borrar">
-                  <i class="fa-solid fa-trash"></i>
+                <button type="button" onclick="abrirEditarSubido('${it.id}')" title="Editar">
+                  <i class="fa-solid fa-pen"></i>
                 </button>
               `
               : ``
           }
         </div>
+
+        ${
+          subidosEsAdmin
+            ? `
+              <button type="button" class="subidosDangerMini" onclick="borrarSubido('${it.id}')" title="Borrar">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            `
+            : ``
+        }
       </div>
     `;
   }).join("");
@@ -1426,32 +1689,34 @@ window.abrirSubidoDesdeCalendario = function abrirSubidoDesdeCalendario(id) {
 
 window.compartirSubido = async function compartirSubido(id) {
   try {
-    const it = subidosItems.find(x => x.id === id);
-    if (!it?.url) {
-      alert("No se encontró el archivo.");
-      return;
-    }
+    const it = obtenerSubidoPorId(id);
+    if (!it) return;
 
-    const texto = [it.etiqueta || "Subido", it.descripcion || ""]
+    const textoPredica = subidosTieneContenidoPredica(it) ? subidosTextoPlanoPredica(it) : "";
+    const texto = [it.etiqueta || "Subido", it.descripcion || "", textoPredica]
       .filter(Boolean)
-      .join(" — ");
+      .join("\n\n")
+      .trim();
 
     if (navigator.share) {
-      await navigator.share({
+      const payload = {
         title: it.etiqueta || "Subido",
-        text: texto,
-        url: it.url
-      });
+        text: texto || (it.fileName || "Subido")
+      };
+      if (it.url) payload.url = it.url;
+      await navigator.share(payload);
       return;
     }
+
+    const copiable = [texto, it.url || ""].filter(Boolean).join("\n\n").trim();
 
     if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(it.url);
-      alert("Link copiado.");
+      await navigator.clipboard.writeText(copiable);
+      alert("Contenido copiado.");
       return;
     }
 
-    prompt("Copiá este link:", it.url);
+    prompt("Copiá este contenido:", copiable);
   } catch (e) {
     console.error("Error compartiendo:", e);
   }
@@ -1512,6 +1777,7 @@ async function guardarSubido() {
     const estado = document.getElementById("subidosEstado");
     const btnGuardar = document.getElementById("btnGuardarSubido");
 
+    const actual = subidosEditandoId ? (obtenerSubidoPorId(subidosEditandoId) || {}) : {};
     const file = inpFile?.files?.[0] || null;
     const fechaEvento = (inpFecha?.value || "").trim();
     const etiqueta = (inpEtiqueta?.value || "").trim();
@@ -1528,7 +1794,7 @@ async function guardarSubido() {
       return;
     }
 
-    if (!file && !esPredica) {
+    if (!file && !esPredica && !actual.url) {
       alert("Elegí un archivo.");
       return;
     }
@@ -1549,22 +1815,34 @@ async function guardarSubido() {
 
     const ts = Date.now();
 
-    let subida = null;
+    let url = actual.url || "";
+    let r2Key = actual.r2Key || "";
+    let mimeType = actual.mimeType || "";
+    let fileName = actual.fileName || "";
+
     if (file) {
-      subida = await subirArchivoAR2DesdeWeb(file, "subidos");
+      const subida = await subirArchivoAR2DesdeWeb(file, "subidos");
+      url = subida?.url || "";
+      r2Key = subida?.key || "";
+      mimeType = file?.type || "";
+      fileName = file?.name || "";
     }
 
-    const nuevoRef = push(ref(db, "subidosIglesia"));
-    await set(nuevoRef, {
-      fecha: ts,
+    const destinoRef = subidosEditandoId
+      ? ref(db, `subidosIglesia/${subidosEditandoId}`)
+      : push(ref(db, "subidosIglesia"));
+
+    await set(destinoRef, {
+      fecha: actual.fecha || ts,
+      fechaEdicion: subidosEditandoId ? ts : "",
       fechaEvento,
       etiqueta,
       descripcion,
-      url: subida?.url || "",
-      r2Key: subida?.key || "",
-      mimeType: file?.type || "",
-      fileName: file?.name || "",
-      uidCreador: subidosUID,
+      url,
+      r2Key,
+      mimeType,
+      fileName,
+      uidCreador: actual.uidCreador || subidosUID,
       esPredica,
       predicaVersion: esPredica ? datosPredica.version : "",
       predicaCitas: esPredica ? datosPredica.citas : [],
