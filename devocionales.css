@@ -754,6 +754,299 @@ body.oscuro .devIndexBarBottom{
   color:#000 !important;
 }
 
+/* ===== TEXTURAS DEVOCIONALES FASE 2 ===== */
+.dev-f1-menu-wrap{
+  position: sticky;   /* 👈 cambio */
+  left: 0;            /* 👈 clave */
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 64px;
+  z-index: 5;         /* 👈 para que quede arriba */
+}
+
+.dev-f1-menu-btn{
+  width:24px;
+  min-width:24px;
+  height:52px;
+  padding:0 !important;
+  border-radius:10px !important;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  align-self:center;
+  font-size:14px;
+  line-height:1;
+}
+
+.dev-f1-menu{
+  position:absolute;
+  top:-15px;
+  left:32px;
+  display:none;
+  flex-direction:column;
+  gap:6px;
+  background:#fff;
+  border:1px solid #ddd;
+  border-radius:14px;
+  padding:8px;
+  box-shadow:0 10px 24px rgba(0,0,0,.14);
+  z-index:9999;
+  min-width: auto;
+  width: max-content;
+}
+
+.dev-f1-menu.abierto{
+  display:flex;
+}
+
+.dev-f1-menu button{
+  white-space:nowrap;
+  text-align:left;
+  justify-content:flex-start;
+}
+
+.dev-textura-btn{
+  flex:0 0 auto;
+  border:1px solid #ddd;
+  border-radius:12px;
+  background:#fff;
+  padding:8px;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-width:auto;
+  width:auto;
+  height:auto;
+  overflow:hidden;
+}
+
+.dev-textura-btn.activo{
+  outline:3px solid var(--ui-azul-hover);
+}
+
+.dev-textura-thumb{
+  width:64px;
+  height:24px;
+  object-fit:cover;
+  border-radius:6px;
+  display:block;
+  flex:0 0 auto;
+}
+
+#dev2Adornos .dev-adorno-btn:not(.dev-adorno-btn-none){
+  width:auto;
+  min-width:unset;
+  max-width:unset;
+}
+
+#dev2Texturas .dev-textura-btn:not(.dev-textura-btn-none){
+  width:auto;
+  min-width:unset;
+  max-width:unset;
+}
+
+.dev-textura-btn-none{
+  width:42px;
+  min-width:42px;
+  height:36px;
+  padding:0;
+  font-size:16px;
+}
+
+.dev-adorno-btn-none i,
+.dev-textura-btn-none i{
+  font-size:16px;
+  line-height:1;
+  color:#444;
+}
+
+.dev-adorno-btn-none.activo i,
+.dev-textura-btn-none.activo i{
+  color:#fff;
+}
+
+.dev-adorno-btn-none,
+.dev-textura-btn-none{
+  width:42px;
+  min-width:42px;
+  height:36px;
+  padding:0;
+  font-size:16px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.dev-adorno-btn-none i,
+.dev-textura-btn-none i{
+  font-size:16px;
+  line-height:1;
+  color:#444;
+}
+
+.dev-adorno-btn-none.activo i,
+.dev-textura-btn-none.activo i{
+  color:#fff;
+}
+
+.devDeleteTopBtn{
+  position:absolute;
+  top:10px;
+  right:10px;
+  z-index:3;
+  transform:scale(.9);
+  opacity:.55;
+  transition:opacity .2s ease, transform .2s ease;
+}
+
+.devDeleteTopBtn:hover{
+  opacity:1;
+  transform:scale(.95);
+}
+
+/* fondo modal oración */
+#modalDevOracion{
+  background: rgba(0,0,0,.34);
+  backdrop-filter: blur(4px);
+}
+
+#modalDevOracion .modal-contenido{
+  background:#fff;
+  border-radius:18px;
+  box-shadow:0 10px 30px rgba(0,0,0,.25);
+}
+
+/* textarea */
+#devOracionTexto{
+  font-size:14px;
+  line-height:1.45;
+}
+
+/* fondo modal lista */
+#modalDevListaOraciones{
+  background: rgba(0,0,0,.34);
+  backdrop-filter: blur(4px);
+}
+
+/* ================= DEV CREAR CENTRADO + BOTONES ICONO ================= */
+#devCrear{
+  width: min(560px, 96vw);
+  margin: 0 auto;
+  padding: 10px 0 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* TOP BAR */
+.dev-crear-topbar{
+  width: 100%;
+  display: grid;
+  grid-template-columns: 42px 1fr 42px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.dev-crear-topbar .dev-top-left{
+  display:flex;
+  justify-content:flex-start;
+}
+
+.dev-crear-topbar .dev-top-right{
+  display:flex;
+  justify-content:flex-end;
+}
+
+/* X cerrar */
+.dev-crear-close{
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  border: none;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:#fff;
+  box-shadow: 0 8px 18px rgba(0,0,0,.16);
+  cursor:pointer;
+}
+
+.dev-crear-close i{
+  font-size:20px;
+}
+
+/* botones icono */
+.dev-icon-btn{
+  width: 44px !important;
+  height: 44px !important;
+  min-width: 44px !important;
+  min-height: 44px !important;
+  padding: 0 !important;
+  border-radius: 999px !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-sizing: border-box;
+  flex: 0 0 44px;
+}
+
+.dev-icon-btn i{
+  font-size: 18px;
+  line-height: 1;
+  margin: 0;
+}
+
+.dev-icon-btn i{
+  font-size:18px;
+}
+
+/* botón negro (recortar) */
+.dev-btn-black{
+  background:#000 !important;
+  color:#fff !important;
+  border:none !important;
+}
+
+/* fila botones */
+.dev-crear-botones{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  justify-content:center;
+  margin-top:10px;
+}
+
+/* texto */
+#devTextoBox{
+  width:100%;
+}
+
+/* responsive */
+@media (max-width:520px){
+  .dev-icon-btn{
+    width:42px;
+    height:42px;
+  }
+
+  .dev-icon-btn i{
+    font-size:17px;
+  }
+}
+
+#btnDevImg,
+#btnDevRecortar,
+#btnDevListo,
+#btnDevOCR{
+  width: 44px !important;
+  height: 44px !important;
+  min-width: 44px !important;
+  min-height: 44px !important;
+  border-radius: 999px !important;
+  padding: 0 !important;
+}
+
 /* ================= SUBIDOS COMPLETO ⭐================= */
 
 #subidosApp{
@@ -1405,297 +1698,98 @@ body.oscuro #subidosFeed a{
   }
 }
 
-/* ===== TEXTURAS DEVOCIONALES FASE 2 ===== */
-.dev-f1-menu-wrap{
-  position: sticky;   /* 👈 cambio */
-  left: 0;            /* 👈 clave */
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 64px;
-  z-index: 5;         /* 👈 para que quede arriba */
+/* ===== VISOR INTERNO + ACCIONES SUBIDOS ===== */
+
+#modalSubidosVisor .modal-card{
+  background:#ffffff;
+  box-shadow:0 18px 42px rgba(0,0,0,.18);
 }
 
-.dev-f1-menu-btn{
-  width:24px;
-  min-width:24px;
-  height:52px;
-  padding:0 !important;
-  border-radius:10px !important;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  align-self:center;
-  font-size:14px;
-  line-height:1;
-}
-
-.dev-f1-menu{
-  position:absolute;
-  top:-15px;
-  left:32px;
-  display:none;
-  flex-direction:column;
-  gap:6px;
-  background:#fff;
-  border:1px solid #ddd;
-  border-radius:14px;
-  padding:8px;
-  box-shadow:0 10px 24px rgba(0,0,0,.14);
-  z-index:9999;
-  min-width: auto;
-  width: max-content;
-}
-
-.dev-f1-menu.abierto{
-  display:flex;
-}
-
-.dev-f1-menu button{
-  white-space:nowrap;
-  text-align:left;
-  justify-content:flex-start;
-}
-
-.dev-textura-btn{
-  flex:0 0 auto;
-  border:1px solid #ddd;
-  border-radius:12px;
-  background:#fff;
-  padding:8px;
-  cursor:pointer;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  min-width:auto;
-  width:auto;
-  height:auto;
-  overflow:hidden;
-}
-
-.dev-textura-btn.activo{
-  outline:3px solid var(--ui-azul-hover);
-}
-
-.dev-textura-thumb{
-  width:64px;
-  height:24px;
-  object-fit:cover;
-  border-radius:6px;
+#subidosVisorBody img,
+#subidosVisorBody video,
+#subidosVisorBody iframe{
   display:block;
-  flex:0 0 auto;
-}
-
-#dev2Adornos .dev-adorno-btn:not(.dev-adorno-btn-none){
-  width:auto;
-  min-width:unset;
-  max-width:unset;
-}
-
-#dev2Texturas .dev-textura-btn:not(.dev-textura-btn-none){
-  width:auto;
-  min-width:unset;
-  max-width:unset;
-}
-
-.dev-textura-btn-none{
-  width:42px;
-  min-width:42px;
-  height:36px;
-  padding:0;
-  font-size:16px;
-}
-
-.dev-adorno-btn-none i,
-.dev-textura-btn-none i{
-  font-size:16px;
-  line-height:1;
-  color:#444;
-}
-
-.dev-adorno-btn-none.activo i,
-.dev-textura-btn-none.activo i{
-  color:#fff;
-}
-
-.dev-adorno-btn-none,
-.dev-textura-btn-none{
-  width:42px;
-  min-width:42px;
-  height:36px;
-  padding:0;
-  font-size:16px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
-
-.dev-adorno-btn-none i,
-.dev-textura-btn-none i{
-  font-size:16px;
-  line-height:1;
-  color:#444;
-}
-
-.dev-adorno-btn-none.activo i,
-.dev-textura-btn-none.activo i{
-  color:#fff;
-}
-
-.devDeleteTopBtn{
-  position:absolute;
-  top:10px;
-  right:10px;
-  z-index:3;
-  transform:scale(.9);
-  opacity:.55;
-  transition:opacity .2s ease, transform .2s ease;
-}
-
-.devDeleteTopBtn:hover{
-  opacity:1;
-  transform:scale(.95);
-}
-
-/* fondo modal oración */
-#modalDevOracion{
-  background: rgba(0,0,0,.34);
-  backdrop-filter: blur(4px);
-}
-
-#modalDevOracion .modal-contenido{
+  width:100%;
+  max-width:100%;
+  max-height:78vh;
+  margin:0 auto;
+  border:none;
+  border-radius:14px;
   background:#fff;
-  border-radius:18px;
-  box-shadow:0 10px 30px rgba(0,0,0,.25);
+  object-fit:contain;
 }
 
-/* textarea */
-#devOracionTexto{
-  font-size:14px;
-  line-height:1.45;
+#subidosVisorBody audio{
+  display:block;
+  width:100%;
+  max-width:100%;
 }
 
-/* fondo modal lista */
-#modalDevListaOraciones{
-  background: rgba(0,0,0,.34);
-  backdrop-filter: blur(4px);
-}
-
-/* ================= DEV CREAR CENTRADO + BOTONES ICONO ================= */
-#devCrear{
-  width: min(560px, 96vw);
-  margin: 0 auto;
-  padding: 10px 0 18px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-/* TOP BAR */
-.dev-crear-topbar{
-  width: 100%;
-  display: grid;
-  grid-template-columns: 42px 1fr 42px;
-  align-items: center;
-  margin-bottom: 8px;
-}
-
-.dev-crear-topbar .dev-top-left{
-  display:flex;
-  justify-content:flex-start;
-}
-
-.dev-crear-topbar .dev-top-right{
-  display:flex;
-  justify-content:flex-end;
-}
-
-/* X cerrar */
-.dev-crear-close{
-  width: 42px;
-  height: 42px;
-  border-radius: 999px;
-  border: none;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  background:#fff;
-  box-shadow: 0 8px 18px rgba(0,0,0,.16);
+.subidos-media-link{
+  border:none !important;
   cursor:pointer;
 }
 
-.dev-crear-close i{
-  font-size:20px;
+button.subidos-media-link{
+  padding:0;
+  background:transparent;
 }
 
-/* botones icono */
-.dev-icon-btn{
-  width: 44px !important;
-  height: 44px !important;
-  min-width: 44px !important;
-  min-height: 44px !important;
-  padding: 0 !important;
-  border-radius: 999px !important;
-  align-items: center !important;
-  justify-content: center !important;
-  box-sizing: border-box;
-  flex: 0 0 44px;
+.subidos-feed-card{
+  position:relative;
 }
 
-.dev-icon-btn i{
-  font-size: 18px;
-  line-height: 1;
-  margin: 0;
+.subidos-predica-resumen{
+  margin-top:8px;
+  cursor:pointer;
 }
 
-.dev-icon-btn i{
-  font-size:18px;
+.subidos-feed-actions{
+  padding-right:38px;
 }
 
-/* botón negro (recortar) */
-.dev-btn-black{
-  background:#000 !important;
+.subidosDangerMini{
+  position:absolute;
+  right:8px;
+  bottom:8px;
+  width:28px !important;
+  height:28px !important;
+  min-width:28px !important;
+  min-height:28px !important;
+  border:none;
+  border-radius:999px;
+  background:#dc2626 !important;
   color:#fff !important;
-  border:none !important;
-}
-
-/* fila botones */
-.dev-crear-botones{
-  display:flex;
-  gap:10px;
-  flex-wrap:wrap;
+  opacity:.72;
+  display:inline-flex;
+  align-items:center;
   justify-content:center;
-  margin-top:10px;
+  cursor:pointer;
+  box-shadow:0 6px 14px rgba(0,0,0,.18);
 }
 
-/* texto */
-#devTextoBox{
-  width:100%;
+.subidosDangerMini i{
+  font-size:12px !important;
 }
 
-/* responsive */
-@media (max-width:520px){
-  .dev-icon-btn{
-    width:42px;
-    height:42px;
+.subidosDangerMini:hover{
+  opacity:1;
+  background:#b91c1c !important;
+}
+
+@media (max-width: 800px){
+  .subidos-feed-actions{
+    padding-right:34px;
   }
 
-  .dev-icon-btn i{
-    font-size:17px;
+  .subidosDangerMini{
+    right:7px;
+    bottom:7px;
+    width:26px !important;
+    height:26px !important;
+    min-width:26px !important;
+    min-height:26px !important;
   }
-}
-
-#btnDevImg,
-#btnDevRecortar,
-#btnDevListo,
-#btnDevOCR{
-  width: 44px !important;
-  height: 44px !important;
-  min-width: 44px !important;
-  min-height: 44px !important;
-  border-radius: 999px !important;
-  padding: 0 !important;
 }
 
 </style>
