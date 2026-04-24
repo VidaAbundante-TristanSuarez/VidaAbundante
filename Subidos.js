@@ -1363,6 +1363,11 @@ function subidosPrepararCloneParaExport(clone) {
     img.style.objectFit = "contain";
   });
 
+  clone.querySelectorAll("img").forEach(img => {
+  img.crossOrigin = "anonymous";
+  img.referrerPolicy = "no-referrer";
+});
+
   // por si la card tiene resumen de prédica
   clone.querySelectorAll(".subidos-predica-resumen").forEach(el => {
     el.style.cursor = "default";
@@ -1394,11 +1399,17 @@ async function subidosGenerarBlobCardPredica(id) {
   await subidosEsperarImagenes(clone);
   await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 
-  const canvas = await html2canvas(clone, {
+let canvas;
+try {
+  canvas = await html2canvas(clone, {
     backgroundColor: null,
     scale: 2,
     useCORS: true
   });
+} catch (e) {
+  stage.innerHTML = "";
+  throw new Error("No pude generar la imagen de la card. Lo más probable es un bloqueo CORS del archivo adjunto.");
+}
 
   const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
 
