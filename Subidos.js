@@ -1315,12 +1315,6 @@ function subidosLinkDetalle(id) {
   return url.toString();
 }
 
-function subidosLinkDetalle(id) {
-  const url = new URL(window.location.href);
-  url.hash = `subido=${encodeURIComponent(id)}`;
-  return url.toString();
-}
-
 function subidosEsperarImagenes(node) {
   const imgs = [...node.querySelectorAll("img")];
 
