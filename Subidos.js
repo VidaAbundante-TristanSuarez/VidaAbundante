@@ -1323,7 +1323,13 @@ function subidosEsperarImagenes(node) {
       if (img.complete && img.naturalWidth > 0) return Promise.resolve();
 
       return new Promise(resolve => {
-        const fin = () => resolve();
+        const fin = () => {
+          clearTimeout(timer);
+          resolve();
+        };
+
+        const timer = setTimeout(fin, 4000);
+
         img.addEventListener("load", fin, { once: true });
         img.addEventListener("error", fin, { once: true });
       });
@@ -1356,16 +1362,22 @@ function subidosPrepararCloneParaExport(clone) {
     el.style.cursor = "default";
   });
 
-  clone.querySelectorAll(".subidos-media-frame img").forEach(img => {
-    img.style.display = "block";
-    img.style.width = "100%";
-    img.style.height = "100%";
-    img.style.objectFit = "contain";
-  });
+clone.querySelectorAll("img").forEach(img => {
+  const src = img.currentSrc || img.getAttribute("src") || "";
 
-  clone.querySelectorAll("img").forEach(img => {
+  img.removeAttribute("loading");
+  img.loading = "eager";
+  img.decoding = "sync";
+
+  if (src) img.src = src;
+
   img.crossOrigin = "anonymous";
   img.referrerPolicy = "no-referrer";
+
+  img.style.display = "block";
+  img.style.width = "100%";
+  img.style.height = "100%";
+  img.style.objectFit = "contain";
 });
 
   // por si la card tiene resumen de prédica
@@ -1697,11 +1709,31 @@ window.abrirSubidosVisorArchivo = function abrirSubidosVisorArchivo(id) {
   abrirModalSubidosVisor(nombre, `<iframe src="${url}" style="width:100%; height:78vh; border:none; border-radius:14px; background:#fff;"></iframe>`);
 };
 
+async function descargarArchivoRemoto(url, nombre = "archivo") {
+  const r = await fetch(url, { mode: "cors" });
+  if (!r.ok) {
+    throw new Error("No pude descargar el archivo remoto.");
+  }
+
+  const blob = await r.blob();
+  const obj = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = obj;
+  a.download = nombre || "archivo";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+
+  setTimeout(() => URL.revokeObjectURL(obj), 1200);
+}
+
 window.descargarSubido = async function descargarSubido(id) {
   try {
     const it = obtenerSubidoPorId(id);
     if (!it) return;
 
+    // prédica con contenido => descargar card como PNG
     if (subidosEsPredicaConContenido(it)) {
       const blob = await subidosGenerarBlobCardPredica(id);
       const url = URL.createObjectURL(blob);
@@ -1712,17 +1744,14 @@ window.descargarSubido = async function descargarSubido(id) {
       document.body.appendChild(a);
       a.click();
       a.remove();
-      URL.revokeObjectURL(url);
+
+      setTimeout(() => URL.revokeObjectURL(url), 1200);
       return;
     }
 
+    // resto de archivos => descargar blob real, no abrir link
     if (it.url) {
-      const a = document.createElement("a");
-      a.href = it.url;
-      a.download = it.fileName || "archivo";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
+      await descargarArchivoRemoto(it.url, it.fileName || "archivo");
     }
   } catch (e) {
     console.error("Error descargando:", e);
