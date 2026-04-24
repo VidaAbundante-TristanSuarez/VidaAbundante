@@ -1320,15 +1320,18 @@ function subidosEsperarImagenes(node) {
 
   return Promise.all(
     imgs.map(img => {
-      if (img.complete && img.naturalWidth > 0) return Promise.resolve();
-
       return new Promise(resolve => {
         const fin = () => {
           clearTimeout(timer);
           resolve();
         };
 
-        const timer = setTimeout(fin, 4000);
+        const timer = setTimeout(fin, 9000);
+
+        if (img.complete && img.naturalWidth > 0) {
+          fin();
+          return;
+        }
 
         img.addEventListener("load", fin, { once: true });
         img.addEventListener("error", fin, { once: true });
@@ -1337,13 +1340,77 @@ function subidosEsperarImagenes(node) {
   );
 }
 
+function subidosBlobADataURL(blob) {
+  return new Promise((resolve, reject) => {
+    const rd = new FileReader();
+    rd.onerror = reject;
+    rd.onload = () => resolve(String(rd.result || ""));
+    rd.readAsDataURL(blob);
+  });
+}
+
+/* ✅ Convierte imágenes a dataURL antes del html2canvas.
+   Esto ayuda mucho en celular para que la imagen interna no desaparezca. */
+async function subidosConvertirImagenesParaExport(node) {
+  const imgs = [...node.querySelectorAll("img")];
+
+  for (const img of imgs) {
+    const src = img.currentSrc || img.getAttribute("src") || img.src || "";
+    if (!src) continue;
+
+    img.removeAttribute("srcset");
+    img.removeAttribute("sizes");
+    img.removeAttribute("loading");
+
+    img.loading = "eager";
+    img.decoding = "sync";
+    img.referrerPolicy = "no-referrer";
+
+    if (src.startsWith("data:") || src.startsWith("blob:")) {
+      img.src = src;
+      continue;
+    }
+
+    try {
+      const r = await fetch(src, {
+        mode: "cors",
+        cache: "force-cache"
+      });
+
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+
+      const blob = await r.blob();
+      const dataUrl = await subidosBlobADataURL(blob);
+
+      img.removeAttribute("crossorigin");
+      img.src = dataUrl;
+    } catch (e) {
+      console.warn("No pude convertir la imagen para exportar. Revisá CORS:", src, e);
+
+      // fallback: al menos intentamos cargarla con crossOrigin ANTES del src
+      img.crossOrigin = "anonymous";
+      img.src = src;
+    }
+  }
+
+  await subidosEsperarImagenes(node);
+}
+
+const SUBIDOS_EXPORT_CARD_W = 360;
+
 function subidosPrepararCloneParaExport(clone) {
   clone.id = "subidosExportCardReal";
-  clone.style.width = "420px";
-  clone.style.maxWidth = "420px";
+
+  clone.style.width = `${SUBIDOS_EXPORT_CARD_W}px`;
+  clone.style.maxWidth = `${SUBIDOS_EXPORT_CARD_W}px`;
   clone.style.margin = "0";
   clone.style.transform = "none";
   clone.style.boxSizing = "border-box";
+  clone.style.padding = "16px";
+  clone.style.borderRadius = "22px";
+  clone.style.overflow = "visible";
+  clone.style.fontSize = "13px";
+  clone.style.lineHeight = "1.25";
 
   // sacar acciones de abajo
   clone.querySelectorAll(".subidos-feed-actions").forEach(el => el.remove());
@@ -1352,37 +1419,80 @@ function subidosPrepararCloneParaExport(clone) {
   // si hubiera cosas de focus/animaciones
   clone.classList.remove("subidos-focus");
 
-  // convertir botones clickeables visuales en elementos neutros
-  clone.querySelectorAll("button").forEach(btn => {
-    btn.blur();
+  // ajustar encabezado
+  clone.querySelectorAll(".subidos-feed-head").forEach(el => {
+    el.style.marginBottom = "8px";
+  });
+
+  clone.querySelectorAll(".subidos-badge").forEach(el => {
+    el.style.fontSize = "16px";
+    el.style.padding = "8px 13px";
+    el.style.borderRadius = "999px";
+  });
+
+  clone.querySelectorAll(".subidos-feed-date").forEach(el => {
+    el.style.fontSize = "13px";
+    el.style.marginTop = "10px";
+    el.style.marginBottom = "6px";
+  });
+
+  clone.querySelectorAll(".subidos-feed-desc").forEach(el => {
+    el.style.fontSize = "22px";
+    el.style.lineHeight = "1.1";
+    el.style.marginBottom = "10px";
   });
 
   // asegurar que el preview del archivo se vea bien
-  clone.querySelectorAll(".subidos-media-frame").forEach(el => {
-    el.style.cursor = "default";
+  clone.querySelectorAll(".subidos-media").forEach(el => {
+    el.style.margin = "10px 0 14px";
   });
 
-clone.querySelectorAll("img").forEach(img => {
-  const src = img.currentSrc || img.getAttribute("src") || "";
+  clone.querySelectorAll(".subidos-media-frame").forEach(el => {
+    el.style.cursor = "default";
+    el.style.borderRadius = "16px";
+    el.style.overflow = "hidden";
+    el.style.maxHeight = "370px";
+    el.style.background = "#fff";
+  });
 
-  img.removeAttribute("loading");
-  img.loading = "eager";
-  img.decoding = "sync";
+  clone.querySelectorAll("img").forEach(img => {
+    const src = img.currentSrc || img.getAttribute("src") || "";
 
-  if (src) img.src = src;
+    img.removeAttribute("srcset");
+    img.removeAttribute("sizes");
+    img.removeAttribute("loading");
 
-  img.crossOrigin = "anonymous";
-  img.referrerPolicy = "no-referrer";
+    img.loading = "eager";
+    img.decoding = "sync";
 
-  img.style.display = "block";
-  img.style.width = "100%";
-  img.style.height = "100%";
-  img.style.objectFit = "contain";
-});
+    // ✅ IMPORTANTE: crossOrigin antes de volver a poner src
+    img.crossOrigin = "anonymous";
+    img.referrerPolicy = "no-referrer";
+
+    if (src) img.src = src;
+
+    img.style.display = "block";
+    img.style.width = "100%";
+    img.style.height = "auto";
+    img.style.maxHeight = "370px";
+    img.style.objectFit = "contain";
+    img.style.borderRadius = "16px";
+    img.style.background = "#fff";
+  });
 
   // por si la card tiene resumen de prédica
   clone.querySelectorAll(".subidos-predica-resumen").forEach(el => {
     el.style.cursor = "default";
+    el.style.gap = "8px";
+  });
+
+  clone.querySelectorAll(".subidos-predica-resumen button").forEach(btn => {
+    btn.blur();
+    btn.style.minHeight = "58px";
+    btn.style.padding = "10px 14px";
+    btn.style.fontSize = "20px";
+    btn.style.lineHeight = "1.1";
+    btn.style.borderRadius = "14px";
   });
 
   return clone;
@@ -1397,10 +1507,26 @@ async function subidosGenerarBlobCardPredica(id) {
 
   stage.innerHTML = "";
 
+  Object.assign(stage.style, {
+    position: "fixed",
+    left: "-10000px",
+    top: "0",
+    display: "block",
+    opacity: "1",
+    pointerEvents: "none",
+    zIndex: "-1",
+    width: `${SUBIDOS_EXPORT_CARD_W}px`,
+    maxWidth: `${SUBIDOS_EXPORT_CARD_W}px`,
+    overflow: "visible"
+  });
+
   const wrap = document.createElement("div");
-  wrap.style.padding = "24px";
-  wrap.style.display = "inline-block";
+  wrap.style.padding = "0";
+  wrap.style.margin = "0";
+  wrap.style.display = "block";
   wrap.style.background = "transparent";
+  wrap.style.width = `${SUBIDOS_EXPORT_CARD_W}px`;
+  wrap.style.maxWidth = `${SUBIDOS_EXPORT_CARD_W}px`;
 
   const clone = original.cloneNode(true);
   subidosPrepararCloneParaExport(clone);
@@ -1408,26 +1534,45 @@ async function subidosGenerarBlobCardPredica(id) {
   wrap.appendChild(clone);
   stage.appendChild(wrap);
 
-  await subidosEsperarImagenes(clone);
+  await subidosConvertirImagenesParaExport(clone);
+
+  if (document.fonts?.ready) {
+    await document.fonts.ready.catch(() => {});
+  }
+
   await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 
-let canvas;
-try {
-  canvas = await html2canvas(clone, {
-    backgroundColor: null,
-    scale: 2,
-    useCORS: true
+  const alto = Math.ceil(clone.getBoundingClientRect().height || clone.scrollHeight || 900);
+  const ancho = SUBIDOS_EXPORT_CARD_W;
+
+  let canvas;
+  try {
+    canvas = await html2canvas(clone, {
+      backgroundColor: null,
+      scale: 2,
+      useCORS: true,
+      allowTaint: false,
+      imageTimeout: 15000,
+      width: ancho,
+      height: alto,
+      windowWidth: ancho,
+      windowHeight: alto + 20,
+      scrollX: 0,
+      scrollY: 0
+    });
+  } catch (e) {
+    stage.innerHTML = "";
+    throw new Error("No pude generar la imagen de la card. Puede ser bloqueo CORS del archivo adjunto.");
+  }
+
+  const blob = await new Promise((resolve, reject) => {
+    canvas.toBlob(b => {
+      if (b) resolve(b);
+      else reject(new Error("No se pudo generar la imagen."));
+    }, "image/png");
   });
-} catch (e) {
-  stage.innerHTML = "";
-  throw new Error("No pude generar la imagen de la card. Lo más probable es un bloqueo CORS del archivo adjunto.");
-}
-
-  const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
 
   stage.innerHTML = "";
-
-  if (!blob) throw new Error("No se pudo generar la imagen.");
   return blob;
 }
 
@@ -1728,8 +1873,98 @@ async function descargarArchivoRemoto(url, nombre = "archivo") {
   setTimeout(() => URL.revokeObjectURL(obj), 1200);
 }
 
-window.descargarSubido = async function descargarSubido(id) {
+const subidosAccionesEnCurso = new Set();
+
+function subidosAvisoProceso(texto, permanente = false) {
+  let el = document.getElementById("subidosAvisoProceso");
+
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "subidosAvisoProceso";
+
+    Object.assign(el.style, {
+      position: "fixed",
+      left: "50%",
+      bottom: "22px",
+      transform: "translateX(-50%)",
+      background: "rgba(17, 24, 39, .94)",
+      color: "#fff",
+      padding: "10px 15px",
+      borderRadius: "999px",
+      fontWeight: "800",
+      fontSize: "14px",
+      zIndex: "999999",
+      boxShadow: "0 8px 24px rgba(0,0,0,.25)",
+      pointerEvents: "none",
+      maxWidth: "88vw",
+      textAlign: "center",
+      display: "none"
+    });
+
+    document.body.appendChild(el);
+  }
+
+  clearTimeout(el.__timer);
+  el.textContent = texto;
+  el.style.display = "block";
+
+  if (!permanente) {
+    el.__timer = setTimeout(() => {
+      el.style.display = "none";
+    }, 1800);
+  }
+}
+
+function subidosBloquearBotonesCard(id, bloquear) {
+  const card = document.getElementById(`subido-${id}`);
+  if (!card) return;
+
+  card.querySelectorAll(".subidos-feed-actions button").forEach(btn => {
+    btn.disabled = bloquear;
+    btn.style.opacity = bloquear ? ".55" : "";
+    btn.style.pointerEvents = bloquear ? "none" : "";
+  });
+}
+
+async function subidosAccionProtegida(id, tipo, textoProceso, accion) {
+  const key = `${tipo}-${id}`;
+
+  if (subidosAccionesEnCurso.has(key)) {
+    subidosAvisoProceso(textoProceso, true);
+    return;
+  }
+
+  subidosAccionesEnCurso.add(key);
+  subidosBloquearBotonesCard(id, true);
+  subidosAvisoProceso(textoProceso, true);
+
   try {
+    await accion();
+
+    if (tipo === "descargar") {
+      subidosAvisoProceso("Descarga lista ✅");
+    } else {
+      subidosAvisoProceso("Listo ✅");
+    }
+  } catch (e) {
+    if (e?.name === "AbortError") {
+      subidosAvisoProceso("Acción cancelada");
+    } else {
+      console.error(`Error en ${tipo}:`, e);
+      subidosAvisoProceso("No se pudo completar");
+      alert(tipo === "descargar" ? "No se pudo descargar." : "No se pudo compartir.");
+    }
+  } finally {
+    subidosBloquearBotonesCard(id, false);
+
+    setTimeout(() => {
+      subidosAccionesEnCurso.delete(key);
+    }, 600);
+  }
+}
+
+window.descargarSubido = function descargarSubido(id) {
+  return subidosAccionProtegida(id, "descargar", "Descargando...", async () => {
     const it = obtenerSubidoPorId(id);
     if (!it) return;
 
@@ -1753,10 +1988,7 @@ window.descargarSubido = async function descargarSubido(id) {
     if (it.url) {
       await descargarArchivoRemoto(it.url, it.fileName || "archivo");
     }
-  } catch (e) {
-    console.error("Error descargando:", e);
-    alert("No se pudo descargar.");
-  }
+  });
 };
 
 function subidosNumsDesdeCitaGuardada(cita) {
@@ -2017,8 +2249,8 @@ window.abrirSubidoDesdeCalendario = function abrirSubidoDesdeCalendario(id) {
   }, 1800);
 };
 
-window.compartirSubido = async function compartirSubido(id) {
-  try {
+window.compartirSubido = function compartirSubido(id) {
+  return subidosAccionProtegida(id, "compartir", "Compartiendo...", async () => {
     const it = obtenerSubidoPorId(id);
     if (!it) return;
 
@@ -2034,7 +2266,6 @@ window.compartirSubido = async function compartirSubido(id) {
         { type: "image/png" }
       );
 
-      // ✅ SOLO EL LINK
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
           files: [file],
@@ -2060,7 +2291,9 @@ window.compartirSubido = async function compartirSubido(id) {
         title: it.etiqueta || "Subido",
         text: it.url ? link : (it.descripcion || link)
       };
+
       if (it.url) payload.url = it.url;
+
       await navigator.share(payload);
       return;
     }
@@ -2072,10 +2305,7 @@ window.compartirSubido = async function compartirSubido(id) {
     }
 
     prompt("Copiá este link:", link);
-  } catch (e) {
-    console.error("Error compartiendo:", e);
-    alert("No se pudo compartir.");
-  }
+  });
 };
 
 window.borrarSubido = async function borrarSubido(id) {
