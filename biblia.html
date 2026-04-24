@@ -1052,7 +1052,7 @@
   <div class="modal-card" style="max-width:560px; width:100%;">
 
     <div style="padding:12px 14px; border-bottom:1px solid #ddd; display:flex; align-items:center; justify-content:space-between;">
-      <b>📤 Nuevo subido</b>
+      <b id="subidosModalTitulo">💛 Nuevo subido</b>
       <button type="button" onclick="cerrarModalSubidos()"
         style="border:none; background:#eee; border-radius:999px; width:34px; height:34px; cursor:pointer;">✖</button>
     </div>
@@ -1117,6 +1117,19 @@
       </div>
 
     </div>
+  </div>
+</div>
+
+ <!-- ================= VISOR INTERNO SUBIDOS ================= -->
+<div id="modalSubidosVisor" class="modal-overlay" aria-hidden="true" style="display:none;">
+  <div class="modal-card" style="max-width:980px; width:100%;">
+    <div style="padding:12px 14px; border-bottom:1px solid #ddd; display:flex; align-items:center; justify-content:space-between;">
+      <b id="subidosVisorTitulo">Vista previa</b>
+      <button type="button" onclick="cerrarModalSubidosVisor()"
+        style="border:none; background:#eee; border-radius:999px; width:34px; height:34px; cursor:pointer;">✖</button>
+    </div>
+
+    <div id="subidosVisorBody" style="padding:12px 14px; max-height:85vh; overflow:auto;"></div>
   </div>
 </div>
 
