@@ -1320,18 +1320,15 @@ function subidosEsperarImagenes(node) {
 
   return Promise.all(
     imgs.map(img => {
+      if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+
       return new Promise(resolve => {
         const fin = () => {
           clearTimeout(timer);
           resolve();
         };
 
-        const timer = setTimeout(fin, 9000);
-
-        if (img.complete && img.naturalWidth > 0) {
-          fin();
-          return;
-        }
+        const timer = setTimeout(fin, 4000);
 
         img.addEventListener("load", fin, { once: true });
         img.addEventListener("error", fin, { once: true });
@@ -1340,82 +1337,52 @@ function subidosEsperarImagenes(node) {
   );
 }
 
-function subidosBlobADataURL(blob) {
-  return new Promise((resolve, reject) => {
-    const rd = new FileReader();
-    rd.onerror = reject;
-    rd.onload = () => resolve(String(rd.result || ""));
-    rd.readAsDataURL(blob);
-  });
-}
-
-const SUBIDOS_EXPORT_CARD_W = 390;
-
 function subidosPrepararCloneParaExport(clone) {
   clone.id = "subidosExportCardReal";
-
-  clone.style.width = `${SUBIDOS_EXPORT_CARD_W}px`;
-  clone.style.maxWidth = `${SUBIDOS_EXPORT_CARD_W}px`;
+  clone.style.width = "420px";
+  clone.style.maxWidth = "420px";
   clone.style.margin = "0";
   clone.style.transform = "none";
   clone.style.boxSizing = "border-box";
-  clone.style.overflow = "hidden";
 
   // sacar acciones de abajo
   clone.querySelectorAll(".subidos-feed-actions").forEach(el => el.remove());
   clone.querySelectorAll(".subidosDangerMini").forEach(el => el.remove());
 
-  // sacar focus/animaciones
+  // si hubiera cosas de focus/animaciones
   clone.classList.remove("subidos-focus");
 
-  // botones visuales neutros
+  // convertir botones clickeables visuales en elementos neutros
   clone.querySelectorAll("button").forEach(btn => {
     btn.blur();
   });
 
-  // marco de imagen
+  // asegurar que el preview del archivo se vea bien
   clone.querySelectorAll(".subidos-media-frame").forEach(el => {
     el.style.cursor = "default";
-    el.style.width = "100%";
-    el.style.maxWidth = "100%";
-    el.style.borderRadius = "16px";
-    el.style.overflow = "hidden";
-    el.style.background = "#fff";
   });
 
-  // ✅ IMPORTANTE:
-  // No convertimos a base64 y no forzamos crossOrigin acá,
-  // porque eso fue lo que en celular dejó la imagen en blanco.
-  clone.querySelectorAll(".subidos-media-frame img").forEach(img => {
-    img.removeAttribute("loading");
-    img.loading = "eager";
-    img.decoding = "sync";
+clone.querySelectorAll("img").forEach(img => {
+  const src = img.currentSrc || img.getAttribute("src") || "";
 
-    img.style.display = "block";
-    img.style.width = "100%";
-    img.style.maxWidth = "100%";
-    img.style.height = "auto";
-    img.style.maxHeight = "430px";
-    img.style.objectFit = "contain";
-    img.style.borderRadius = "16px";
-    img.style.background = "#fff";
-  });
+  img.removeAttribute("loading");
+  img.loading = "eager";
+  img.decoding = "sync";
 
-  clone.querySelectorAll(".subidos-media").forEach(el => {
-    el.style.marginTop = "10px";
-    el.style.marginBottom = "12px";
-  });
+  if (src) img.src = src;
 
+  img.crossOrigin = "anonymous";
+  img.referrerPolicy = "no-referrer";
+
+  img.style.display = "block";
+  img.style.width = "100%";
+  img.style.height = "100%";
+  img.style.objectFit = "contain";
+});
+
+  // por si la card tiene resumen de prédica
   clone.querySelectorAll(".subidos-predica-resumen").forEach(el => {
     el.style.cursor = "default";
-    el.style.gap = "8px";
-  });
-
-  clone.querySelectorAll(".subidos-predica-resumen button").forEach(btn => {
-    btn.style.fontSize = "20px";
-    btn.style.lineHeight = "1.15";
-    btn.style.padding = "10px 14px";
-    btn.style.minHeight = "64px";
   });
 
   return clone;
@@ -1430,22 +1397,9 @@ async function subidosGenerarBlobCardPredica(id) {
 
   stage.innerHTML = "";
 
-  // ✅ stage simple, sin ancho raro ni fondo gris
-  stage.style.position = "fixed";
-  stage.style.left = "-9999px";
-  stage.style.top = "0";
-  stage.style.width = `${SUBIDOS_EXPORT_CARD_W}px`;
-  stage.style.maxWidth = `${SUBIDOS_EXPORT_CARD_W}px`;
-  stage.style.background = "transparent";
-  stage.style.opacity = "1";
-  stage.style.pointerEvents = "none";
-  stage.style.overflow = "visible";
-
   const wrap = document.createElement("div");
-  wrap.style.padding = "0";
-  wrap.style.margin = "0";
-  wrap.style.width = `${SUBIDOS_EXPORT_CARD_W}px`;
-  wrap.style.maxWidth = `${SUBIDOS_EXPORT_CARD_W}px`;
+  wrap.style.padding = "24px";
+  wrap.style.display = "inline-block";
   wrap.style.background = "transparent";
 
   const clone = original.cloneNode(true);
@@ -1455,41 +1409,25 @@ async function subidosGenerarBlobCardPredica(id) {
   stage.appendChild(wrap);
 
   await subidosEsperarImagenes(clone);
-
-  if (document.fonts?.ready) {
-    await document.fonts.ready.catch(() => {});
-  }
-
   await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 
-  let canvas;
-
-  try {
-    canvas = await html2canvas(clone, {
-      backgroundColor: null,
-
-      // ✅ CLAVE: en celular scale 2 estaba generando ancho doble raro.
-      scale: 1,
-
-      useCORS: true,
-      allowTaint: false,
-      imageTimeout: 15000,
-      scrollX: 0,
-      scrollY: 0
-    });
-  } catch (e) {
-    stage.innerHTML = "";
-    throw new Error("No pude generar la imagen de la card.");
-  }
-
-  const blob = await new Promise((resolve, reject) => {
-    canvas.toBlob(b => {
-      if (b) resolve(b);
-      else reject(new Error("No se pudo generar la imagen."));
-    }, "image/png");
+let canvas;
+try {
+  canvas = await html2canvas(clone, {
+    backgroundColor: null,
+    scale: 2,
+    useCORS: true
   });
+} catch (e) {
+  stage.innerHTML = "";
+  throw new Error("No pude generar la imagen de la card. Lo más probable es un bloqueo CORS del archivo adjunto.");
+}
+
+  const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
 
   stage.innerHTML = "";
+
+  if (!blob) throw new Error("No se pudo generar la imagen.");
   return blob;
 }
 
@@ -1790,98 +1728,8 @@ async function descargarArchivoRemoto(url, nombre = "archivo") {
   setTimeout(() => URL.revokeObjectURL(obj), 1200);
 }
 
-const subidosAccionesEnCurso = new Set();
-
-function subidosAvisoProceso(texto, permanente = false) {
-  let el = document.getElementById("subidosAvisoProceso");
-
-  if (!el) {
-    el = document.createElement("div");
-    el.id = "subidosAvisoProceso";
-
-    Object.assign(el.style, {
-      position: "fixed",
-      left: "50%",
-      bottom: "22px",
-      transform: "translateX(-50%)",
-      background: "rgba(17, 24, 39, .94)",
-      color: "#fff",
-      padding: "10px 15px",
-      borderRadius: "999px",
-      fontWeight: "800",
-      fontSize: "14px",
-      zIndex: "999999",
-      boxShadow: "0 8px 24px rgba(0,0,0,.25)",
-      pointerEvents: "none",
-      maxWidth: "88vw",
-      textAlign: "center",
-      display: "none"
-    });
-
-    document.body.appendChild(el);
-  }
-
-  clearTimeout(el.__timer);
-  el.textContent = texto;
-  el.style.display = "block";
-
-  if (!permanente) {
-    el.__timer = setTimeout(() => {
-      el.style.display = "none";
-    }, 1800);
-  }
-}
-
-function subidosBloquearBotonesCard(id, bloquear) {
-  const card = document.getElementById(`subido-${id}`);
-  if (!card) return;
-
-  card.querySelectorAll(".subidos-feed-actions button").forEach(btn => {
-    btn.disabled = bloquear;
-    btn.style.opacity = bloquear ? ".55" : "";
-    btn.style.pointerEvents = bloquear ? "none" : "";
-  });
-}
-
-async function subidosAccionProtegida(id, tipo, textoProceso, accion) {
-  const key = `${tipo}-${id}`;
-
-  if (subidosAccionesEnCurso.has(key)) {
-    subidosAvisoProceso(textoProceso, true);
-    return;
-  }
-
-  subidosAccionesEnCurso.add(key);
-  subidosBloquearBotonesCard(id, true);
-  subidosAvisoProceso(textoProceso, true);
-
+window.descargarSubido = async function descargarSubido(id) {
   try {
-    await accion();
-
-    if (tipo === "descargar") {
-      subidosAvisoProceso("Descarga lista ✅");
-    } else {
-      subidosAvisoProceso("Listo ✅");
-    }
-  } catch (e) {
-    if (e?.name === "AbortError") {
-      subidosAvisoProceso("Acción cancelada");
-    } else {
-      console.error(`Error en ${tipo}:`, e);
-      subidosAvisoProceso("No se pudo completar");
-      alert(tipo === "descargar" ? "No se pudo descargar." : "No se pudo compartir.");
-    }
-  } finally {
-    subidosBloquearBotonesCard(id, false);
-
-    setTimeout(() => {
-      subidosAccionesEnCurso.delete(key);
-    }, 600);
-  }
-}
-
-window.descargarSubido = function descargarSubido(id) {
-  return subidosAccionProtegida(id, "descargar", "Descargando...", async () => {
     const it = obtenerSubidoPorId(id);
     if (!it) return;
 
@@ -1905,7 +1753,10 @@ window.descargarSubido = function descargarSubido(id) {
     if (it.url) {
       await descargarArchivoRemoto(it.url, it.fileName || "archivo");
     }
-  });
+  } catch (e) {
+    console.error("Error descargando:", e);
+    alert("No se pudo descargar.");
+  }
 };
 
 function subidosNumsDesdeCitaGuardada(cita) {
@@ -2166,8 +2017,8 @@ window.abrirSubidoDesdeCalendario = function abrirSubidoDesdeCalendario(id) {
   }, 1800);
 };
 
-window.compartirSubido = function compartirSubido(id) {
-  return subidosAccionProtegida(id, "compartir", "Compartiendo...", async () => {
+window.compartirSubido = async function compartirSubido(id) {
+  try {
     const it = obtenerSubidoPorId(id);
     if (!it) return;
 
@@ -2183,6 +2034,7 @@ window.compartirSubido = function compartirSubido(id) {
         { type: "image/png" }
       );
 
+      // ✅ SOLO EL LINK
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
           files: [file],
@@ -2208,9 +2060,7 @@ window.compartirSubido = function compartirSubido(id) {
         title: it.etiqueta || "Subido",
         text: it.url ? link : (it.descripcion || link)
       };
-
       if (it.url) payload.url = it.url;
-
       await navigator.share(payload);
       return;
     }
@@ -2222,7 +2072,10 @@ window.compartirSubido = function compartirSubido(id) {
     }
 
     prompt("Copiá este link:", link);
-  });
+  } catch (e) {
+    console.error("Error compartiendo:", e);
+    alert("No se pudo compartir.");
+  }
 };
 
 window.borrarSubido = async function borrarSubido(id) {
