@@ -907,24 +907,69 @@ function htmlPredicaBibliaSubido(it) {
 
   if (!citas.length && !notaFinal) return "";
 
-  const filas = citas.map(c => `
-    <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 10px; border:1px solid #d8eef9; background:#ffffff; border-radius:12px;">
-      <span style="font-weight:800;">${escaparHtml(c.referencia || "")}</span>
+  const filas = citas.map((c, i) => `
+    <button
+      type="button"
+      onclick="event.stopPropagation(); abrirSubidosVisorPredica('${it.id}', '${i}')"
+      style="
+        width:100%;
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:10px;
+        padding:8px 10px;
+        border:1px solid #d8eef9;
+        background:#ffffff;
+        border-radius:12px;
+        cursor:pointer;
+        font-family:'Lora',serif;
+        font-size:15px;
+        font-weight:700;
+        text-align:left;
+      "
+      title="Abrir esta cita"
+    >
+      <span>${escaparHtml(c.referencia || "")}</span>
       <i class="fa-solid fa-caret-down"></i>
-    </div>
+    </button>
   `);
 
   if (notaFinal) {
     filas.push(`
-      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 10px; border:1px solid #d8eef9; background:#ffffff; border-radius:12px;">
-        <span style="font-weight:800;">Nota</span>
+      <button
+        type="button"
+        onclick="event.stopPropagation(); abrirSubidosVisorPredica('${it.id}', 'nota')"
+        style="
+          width:100%;
+          display:flex;
+          align-items:center;
+          justify-content:space-between;
+          gap:10px;
+          padding:8px 10px;
+          border:1px solid #d8eef9;
+          background:#ffffff;
+          border-radius:12px;
+          cursor:pointer;
+          font-family:'Lora',serif;
+          font-size:15px;
+          font-weight:700;
+          text-align:left;
+        "
+        title="Abrir nota"
+      >
+        <span>Nota</span>
         <i class="fa-solid fa-caret-down"></i>
-      </div>
+      </button>
     `);
   }
 
   return `
-    <div class="subidos-predica-resumen" onclick="abrirSubidosVisorPredica('${it.id}')" style="display:flex; flex-direction:column; gap:8px;">
+    <div
+      class="subidos-predica-resumen"
+      onclick="abrirSubidosVisorPredica('${it.id}')"
+      style="display:flex; flex-direction:column; gap:8px; cursor:pointer;"
+      title="Abrir detalle completo"
+    >
       ${filas.join("")}
     </div>
   `;
@@ -1264,23 +1309,82 @@ function abrirModalSubidosVisor(titulo, html) {
   m.setAttribute("aria-hidden", "false");
 }
 
-window.subidosToggleDetallePredica = function subidosToggleDetallePredica(id) {
-  const body = document.getElementById(id);
-  const ico = document.querySelector(`[data-toggle-icon="${id}"]`);
-  if (!body) return;
+function htmlArchivoGrandePredica(it) {
+  if (!it?.url) return "";
 
-  const abierto = body.style.display !== "none";
+  const nombre = escaparHtml(it.fileName || "archivo");
+  const mime = String(it.mimeType || "");
 
-  if (abierto) {
-    body.style.display = "none";
-    if (ico) ico.className = "fa-solid fa-caret-down";
-  } else {
-    body.style.display = "block";
-    if (ico) ico.className = "fa-solid fa-caret-up";
+  if (mime.startsWith("image/")) {
+    return `
+      <button
+        type="button"
+        onclick="abrirSubidosVisorArchivo('${it.id}')"
+        style="width:100%; border:none; background:#fff; border-radius:16px; padding:0; overflow:hidden; cursor:pointer;"
+        title="Abrir archivo"
+      >
+        <img
+          src="${it.url}"
+          alt="${nombre}"
+          style="display:block; width:100%; max-height:46vh; object-fit:contain; background:#fff;"
+        >
+      </button>
+    `;
   }
-};
 
-function htmlPredicaBibliaSubidoGrande(it) {
+  if (mime.startsWith("video/")) {
+    return `
+      <button
+        type="button"
+        onclick="abrirSubidosVisorArchivo('${it.id}')"
+        style="width:100%; border:none; background:#fff; border-radius:16px; padding:0; overflow:hidden; cursor:pointer;"
+        title="Abrir video"
+      >
+        <video
+          src="${it.url}"
+          muted
+          playsinline
+          preload="metadata"
+          style="display:block; width:100%; max-height:46vh; object-fit:contain; background:#000;"
+        ></video>
+      </button>
+    `;
+  }
+
+  if (mime.startsWith("audio/")) {
+    return `
+      <button
+        type="button"
+        onclick="abrirSubidosVisorArchivo('${it.id}')"
+        style="width:100%; border:1px solid #d8eef9; background:#fff; border-radius:16px; padding:18px; cursor:pointer;"
+        title="Abrir audio"
+      >
+        <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;">
+          <i class="fa-solid fa-headphones" style="font-size:28px;"></i>
+          <div style="font-family:'Lora',serif; font-weight:700;">${nombre}</div>
+          <small>Tocar para abrir</small>
+        </div>
+      </button>
+    `;
+  }
+
+  return `
+    <button
+      type="button"
+      onclick="abrirSubidosVisorArchivo('${it.id}')"
+      style="width:100%; border:1px solid #d8eef9; background:#fff; border-radius:16px; padding:18px; cursor:pointer;"
+      title="Abrir archivo"
+    >
+      <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;">
+        <i class="fa-solid fa-file-lines" style="font-size:28px;"></i>
+        <div style="font-family:'Lora',serif; font-weight:700;">${nombre}</div>
+        <small>Tocar para abrir</small>
+      </div>
+    </button>
+  `;
+}
+
+function htmlPredicaBibliaSubidoGrande(it, abrirClave = "") {
   const citas = obtenerCitasPredicaSubido(it);
   const notaFinal = String(it.predicaNotaFinal || it.notaFinalGeneral || "").trim();
 
@@ -1288,23 +1392,56 @@ function htmlPredicaBibliaSubidoGrande(it) {
 
   citas.forEach((c, i) => {
     const bodyId = `subidosPredicaGrande-${it.id}-${i}`;
+    const abierto = String(abrirClave) === String(i);
+
     bloques.push(`
       <div style="border:1px solid #d8eef9; background:#ffffff; border-radius:14px; overflow:hidden; margin-bottom:10px;">
         <button
           type="button"
           onclick="subidosToggleDetallePredica('${bodyId}')"
-          style="width:100%; border:none; background:#f6fcff; padding:12px; text-align:left; display:flex; align-items:center; justify-content:space-between; gap:10px; cursor:pointer;"
+          style="
+            width:100%;
+            border:none;
+            background:#f6fcff;
+            padding:12px;
+            text-align:left;
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:10px;
+            cursor:pointer;
+            font-family:'Lora',serif;
+            font-size:15px;
+            font-weight:700;
+          "
         >
-          <span style="font-weight:800;">${escaparHtml(c.referencia || "")}</span>
-          <i class="fa-solid fa-caret-down" data-toggle-icon="${bodyId}"></i>
+          <span>${escaparHtml(c.referencia || "")}</span>
+          <i class="fa-solid ${abierto ? "fa-caret-up" : "fa-caret-down"}" data-toggle-icon="${bodyId}"></i>
         </button>
 
-        <div id="${bodyId}" style="display:none; max-height:320px; overflow:auto; padding:12px; border-top:1px solid #e7f2f8;">
-          <div style="white-space:pre-wrap; line-height:1.38; font-size:15px;">${subidosTextoHtml(c.texto || "")}</div>
+        <div
+          id="${bodyId}"
+          style="
+            display:${abierto ? "block" : "none"};
+            max-height:320px;
+            overflow:auto;
+            padding:12px;
+            border-top:1px solid #e7f2f8;
+            background:#fff;
+          "
+        >
+          <div style="white-space:pre-wrap; line-height:1.38; font-size:15px; font-family:'Lora',serif;">
+            ${subidosTextoHtml(c.texto || "")}
+          </div>
+
           ${String(c.comentario || c.nota || "").trim() ? `
             <div style="margin-top:10px; padding-top:10px; border-top:1px solid #eef6fb;">
-              <div style="font-weight:800; margin-bottom:6px;">Comentario</div>
-              <div style="white-space:pre-wrap; line-height:1.38; font-size:15px;">${subidosTextoHtml(c.comentario || c.nota || "")}</div>
+              <div style="font-family:'Lora',serif; font-weight:700; font-size:15px; margin-bottom:6px;">
+                Comentario
+              </div>
+              <div style="white-space:pre-wrap; line-height:1.38; font-size:15px; font-family:'Lora',serif;">
+                ${subidosTextoHtml(c.comentario || c.nota || "")}
+              </div>
             </div>
           ` : ``}
         </div>
@@ -1314,36 +1451,79 @@ function htmlPredicaBibliaSubidoGrande(it) {
 
   if (notaFinal) {
     const bodyId = `subidosPredicaGrandeNota-${it.id}`;
+    const abierto = String(abrirClave) === "nota";
+
     bloques.push(`
       <div style="border:1px solid #d8eef9; background:#ffffff; border-radius:14px; overflow:hidden;">
         <button
           type="button"
           onclick="subidosToggleDetallePredica('${bodyId}')"
-          style="width:100%; border:none; background:#f6fcff; padding:12px; text-align:left; display:flex; align-items:center; justify-content:space-between; gap:10px; cursor:pointer;"
+          style="
+            width:100%;
+            border:none;
+            background:#f6fcff;
+            padding:12px;
+            text-align:left;
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:10px;
+            cursor:pointer;
+            font-family:'Lora',serif;
+            font-size:15px;
+            font-weight:700;
+          "
         >
-          <span style="font-weight:800;">Nota</span>
-          <i class="fa-solid fa-caret-down" data-toggle-icon="${bodyId}"></i>
+          <span>Nota</span>
+          <i class="fa-solid ${abierto ? "fa-caret-up" : "fa-caret-down"}" data-toggle-icon="${bodyId}"></i>
         </button>
 
-        <div id="${bodyId}" style="display:none; max-height:320px; overflow:auto; padding:12px; border-top:1px solid #e7f2f8;">
-          <div style="white-space:pre-wrap; line-height:1.38; font-size:15px;">${subidosTextoHtml(notaFinal)}</div>
+        <div
+          id="${bodyId}"
+          style="
+            display:${abierto ? "block" : "none"};
+            max-height:320px;
+            overflow:auto;
+            padding:12px;
+            border-top:1px solid #e7f2f8;
+            background:#fff;
+          "
+        >
+          <div style="white-space:pre-wrap; line-height:1.38; font-size:15px; font-family:'Lora',serif;">
+            ${subidosTextoHtml(notaFinal)}
+          </div>
         </div>
       </div>
     `);
   }
 
   return `
-    <div style="display:flex; flex-direction:column; gap:10px;">
-      ${it.descripcion ? `<div style="font-family:'Lora',serif; font-weight:700; font-size:18px;">${escaparHtml(it.descripcion)}</div>` : ``}
+    <div style="display:flex; flex-direction:column; gap:12px;">
+      ${it.url ? `
+        <div>
+          ${htmlArchivoGrandePredica(it)}
+        </div>
+      ` : ``}
+
+      ${it.descripcion ? `
+        <div style="font-family:'Lora',serif; font-weight:700; font-size:20px;">
+          ${escaparHtml(it.descripcion)}
+        </div>
+      ` : ``}
+
       ${bloques.join("")}
     </div>
   `;
 }
 
-window.abrirSubidosVisorPredica = function abrirSubidosVisorPredica(id) {
+window.abrirSubidosVisorPredica = function abrirSubidosVisorPredica(id, abrirClave = "") {
   const it = obtenerSubidoPorId(id);
   if (!it) return;
-  abrirModalSubidosVisor(it.etiqueta || "Prédica", htmlPredicaBibliaSubidoGrande(it));
+
+  abrirModalSubidosVisor(
+    it.etiqueta || "Prédica",
+    htmlPredicaBibliaSubidoGrande(it, abrirClave)
+  );
 };
 
 window.abrirSubidosVisorArchivo = function abrirSubidosVisorArchivo(id) {
