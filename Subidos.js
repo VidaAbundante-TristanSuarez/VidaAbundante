@@ -1349,54 +1349,7 @@ function subidosBlobADataURL(blob) {
   });
 }
 
-/* ✅ Convierte imágenes a dataURL antes del html2canvas.
-   Esto ayuda mucho en celular para que la imagen interna no desaparezca. */
-async function subidosConvertirImagenesParaExport(node) {
-  const imgs = [...node.querySelectorAll("img")];
-
-  for (const img of imgs) {
-    const src = img.currentSrc || img.getAttribute("src") || img.src || "";
-    if (!src) continue;
-
-    img.removeAttribute("srcset");
-    img.removeAttribute("sizes");
-    img.removeAttribute("loading");
-
-    img.loading = "eager";
-    img.decoding = "sync";
-    img.referrerPolicy = "no-referrer";
-
-    if (src.startsWith("data:") || src.startsWith("blob:")) {
-      img.src = src;
-      continue;
-    }
-
-    try {
-      const r = await fetch(src, {
-        mode: "cors",
-        cache: "force-cache"
-      });
-
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-
-      const blob = await r.blob();
-      const dataUrl = await subidosBlobADataURL(blob);
-
-      img.removeAttribute("crossorigin");
-      img.src = dataUrl;
-    } catch (e) {
-      console.warn("No pude convertir la imagen para exportar. Revisá CORS:", src, e);
-
-      // fallback: al menos intentamos cargarla con crossOrigin ANTES del src
-      img.crossOrigin = "anonymous";
-      img.src = src;
-    }
-  }
-
-  await subidosEsperarImagenes(node);
-}
-
-const SUBIDOS_EXPORT_CARD_W = 360;
+const SUBIDOS_EXPORT_CARD_W = 390;
 
 function subidosPrepararCloneParaExport(clone) {
   clone.id = "subidosExportCardReal";
@@ -1406,93 +1359,63 @@ function subidosPrepararCloneParaExport(clone) {
   clone.style.margin = "0";
   clone.style.transform = "none";
   clone.style.boxSizing = "border-box";
-  clone.style.padding = "16px";
-  clone.style.borderRadius = "22px";
-  clone.style.overflow = "visible";
-  clone.style.fontSize = "13px";
-  clone.style.lineHeight = "1.25";
+  clone.style.overflow = "hidden";
 
   // sacar acciones de abajo
   clone.querySelectorAll(".subidos-feed-actions").forEach(el => el.remove());
   clone.querySelectorAll(".subidosDangerMini").forEach(el => el.remove());
 
-  // si hubiera cosas de focus/animaciones
+  // sacar focus/animaciones
   clone.classList.remove("subidos-focus");
 
-  // ajustar encabezado
-  clone.querySelectorAll(".subidos-feed-head").forEach(el => {
-    el.style.marginBottom = "8px";
+  // botones visuales neutros
+  clone.querySelectorAll("button").forEach(btn => {
+    btn.blur();
   });
 
-  clone.querySelectorAll(".subidos-badge").forEach(el => {
-    el.style.fontSize = "16px";
-    el.style.padding = "8px 13px";
-    el.style.borderRadius = "999px";
-  });
-
-  clone.querySelectorAll(".subidos-feed-date").forEach(el => {
-    el.style.fontSize = "13px";
-    el.style.marginTop = "10px";
-    el.style.marginBottom = "6px";
-  });
-
-  clone.querySelectorAll(".subidos-feed-desc").forEach(el => {
-    el.style.fontSize = "22px";
-    el.style.lineHeight = "1.1";
-    el.style.marginBottom = "10px";
-  });
-
-  // asegurar que el preview del archivo se vea bien
-  clone.querySelectorAll(".subidos-media").forEach(el => {
-    el.style.margin = "10px 0 14px";
-  });
-
+  // marco de imagen
   clone.querySelectorAll(".subidos-media-frame").forEach(el => {
     el.style.cursor = "default";
+    el.style.width = "100%";
+    el.style.maxWidth = "100%";
     el.style.borderRadius = "16px";
     el.style.overflow = "hidden";
-    el.style.maxHeight = "370px";
     el.style.background = "#fff";
   });
 
-  clone.querySelectorAll("img").forEach(img => {
-    const src = img.currentSrc || img.getAttribute("src") || "";
-
-    img.removeAttribute("srcset");
-    img.removeAttribute("sizes");
+  // ✅ IMPORTANTE:
+  // No convertimos a base64 y no forzamos crossOrigin acá,
+  // porque eso fue lo que en celular dejó la imagen en blanco.
+  clone.querySelectorAll(".subidos-media-frame img").forEach(img => {
     img.removeAttribute("loading");
-
     img.loading = "eager";
     img.decoding = "sync";
 
-    // ✅ IMPORTANTE: crossOrigin antes de volver a poner src
-    img.crossOrigin = "anonymous";
-    img.referrerPolicy = "no-referrer";
-
-    if (src) img.src = src;
-
     img.style.display = "block";
     img.style.width = "100%";
+    img.style.maxWidth = "100%";
     img.style.height = "auto";
-    img.style.maxHeight = "370px";
+    img.style.maxHeight = "430px";
     img.style.objectFit = "contain";
     img.style.borderRadius = "16px";
     img.style.background = "#fff";
   });
 
-  // por si la card tiene resumen de prédica
+  clone.querySelectorAll(".subidos-media").forEach(el => {
+    el.style.marginTop = "10px";
+    el.style.marginBottom = "12px";
+  });
+
   clone.querySelectorAll(".subidos-predica-resumen").forEach(el => {
     el.style.cursor = "default";
     el.style.gap = "8px";
   });
 
   clone.querySelectorAll(".subidos-predica-resumen button").forEach(btn => {
-    btn.blur();
-    btn.style.minHeight = "58px";
-    btn.style.padding = "10px 14px";
     btn.style.fontSize = "20px";
-    btn.style.lineHeight = "1.1";
-    btn.style.borderRadius = "14px";
+    btn.style.lineHeight = "1.15";
+    btn.style.padding = "10px 14px";
+    btn.style.minHeight = "64px";
   });
 
   return clone;
@@ -1507,26 +1430,23 @@ async function subidosGenerarBlobCardPredica(id) {
 
   stage.innerHTML = "";
 
-  Object.assign(stage.style, {
-    position: "fixed",
-    left: "-10000px",
-    top: "0",
-    display: "block",
-    opacity: "1",
-    pointerEvents: "none",
-    zIndex: "-1",
-    width: `${SUBIDOS_EXPORT_CARD_W}px`,
-    maxWidth: `${SUBIDOS_EXPORT_CARD_W}px`,
-    overflow: "visible"
-  });
+  // ✅ stage simple, sin ancho raro ni fondo gris
+  stage.style.position = "fixed";
+  stage.style.left = "-9999px";
+  stage.style.top = "0";
+  stage.style.width = `${SUBIDOS_EXPORT_CARD_W}px`;
+  stage.style.maxWidth = `${SUBIDOS_EXPORT_CARD_W}px`;
+  stage.style.background = "transparent";
+  stage.style.opacity = "1";
+  stage.style.pointerEvents = "none";
+  stage.style.overflow = "visible";
 
   const wrap = document.createElement("div");
   wrap.style.padding = "0";
   wrap.style.margin = "0";
-  wrap.style.display = "block";
-  wrap.style.background = "transparent";
   wrap.style.width = `${SUBIDOS_EXPORT_CARD_W}px`;
   wrap.style.maxWidth = `${SUBIDOS_EXPORT_CARD_W}px`;
+  wrap.style.background = "transparent";
 
   const clone = original.cloneNode(true);
   subidosPrepararCloneParaExport(clone);
@@ -1534,7 +1454,7 @@ async function subidosGenerarBlobCardPredica(id) {
   wrap.appendChild(clone);
   stage.appendChild(wrap);
 
-  await subidosConvertirImagenesParaExport(clone);
+  await subidosEsperarImagenes(clone);
 
   if (document.fonts?.ready) {
     await document.fonts.ready.catch(() => {});
@@ -1542,27 +1462,24 @@ async function subidosGenerarBlobCardPredica(id) {
 
   await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 
-  const alto = Math.ceil(clone.getBoundingClientRect().height || clone.scrollHeight || 900);
-  const ancho = SUBIDOS_EXPORT_CARD_W;
-
   let canvas;
+
   try {
     canvas = await html2canvas(clone, {
       backgroundColor: null,
-      scale: 2,
+
+      // ✅ CLAVE: en celular scale 2 estaba generando ancho doble raro.
+      scale: 1,
+
       useCORS: true,
       allowTaint: false,
       imageTimeout: 15000,
-      width: ancho,
-      height: alto,
-      windowWidth: ancho,
-      windowHeight: alto + 20,
       scrollX: 0,
       scrollY: 0
     });
   } catch (e) {
     stage.innerHTML = "";
-    throw new Error("No pude generar la imagen de la card. Puede ser bloqueo CORS del archivo adjunto.");
+    throw new Error("No pude generar la imagen de la card.");
   }
 
   const blob = await new Promise((resolve, reject) => {
