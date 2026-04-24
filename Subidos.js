@@ -1315,252 +1315,102 @@ function subidosLinkDetalle(id) {
   return url.toString();
 }
 
-function subidosTextoListaPredicaExport(it) {
-  const citas = obtenerCitasPredicaSubido(it);
-  const notaFinal = String(it.predicaNotaFinal || it.notaFinalGeneral || "").trim();
-
-  const filas = citas.map(c => `
-    <div style="
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      padding:12px 14px;
-      border:1px solid #d8eef9;
-      background:#ffffff;
-      border-radius:16px;
-      font-family:'Lora',serif;
-      font-size:30px;
-      font-weight:700;
-      margin-bottom:10px;
-    ">
-      <span>${escaparHtml(c.referencia || "")}</span>
-      <i class="fa-solid fa-caret-down"></i>
-    </div>
-  `).join("");
-
-  const nota = notaFinal ? `
-    <div style="
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      padding:12px 14px;
-      border:1px solid #d8eef9;
-      background:#ffffff;
-      border-radius:16px;
-      font-family:'Lora',serif;
-      font-size:30px;
-      font-weight:700;
-      margin-bottom:10px;
-    ">
-      <span>Nota</span>
-      <i class="fa-solid fa-caret-down"></i>
-    </div>
-  ` : "";
-
-  return filas + nota;
+function subidosLinkDetalle(id) {
+  const url = new URL(window.location.href);
+  url.hash = `subido=${encodeURIComponent(id)}`;
+  return url.toString();
 }
 
-function htmlArchivoExportPredica(it) {
-  if (!it?.url) return "";
+function subidosEsperarImagenes(node) {
+  const imgs = [...node.querySelectorAll("img")];
 
-  const mime = String(it.mimeType || "");
-  const nombre = escaparHtml(it.fileName || "archivo");
+  return Promise.all(
+    imgs.map(img => {
+      if (img.complete && img.naturalWidth > 0) return Promise.resolve();
 
-  if (mime.startsWith("image/")) {
-    return `
-      <div style="
-        width:100%;
-        aspect-ratio:9 / 16;
-        border-radius:24px;
-        overflow:hidden;
-        background:#fff;
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        margin-bottom:18px;
-      ">
-        <img src="${it.url}" alt="${nombre}"
-             style="width:100%; height:100%; object-fit:contain; display:block;">
-      </div>
-    `;
-  }
-
-  if (mime.startsWith("video/")) {
-    return `
-      <div style="
-        width:100%;
-        aspect-ratio:9 / 16;
-        border-radius:24px;
-        overflow:hidden;
-        background:#000;
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        margin-bottom:18px;
-        color:#fff;
-        font-family:'Lora',serif;
-        font-size:34px;
-        font-weight:700;
-      ">
-        <div style="text-align:center; padding:24px;">
-          <i class="fa-solid fa-video" style="font-size:64px; margin-bottom:14px;"></i>
-          <div>${nombre}</div>
-        </div>
-      </div>
-    `;
-  }
-
-  if (mime.startsWith("audio/")) {
-    return `
-      <div style="
-        width:100%;
-        aspect-ratio:9 / 16;
-        border-radius:24px;
-        overflow:hidden;
-        background:#f8fbff;
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        margin-bottom:18px;
-        color:#234;
-        font-family:'Lora',serif;
-        font-size:34px;
-        font-weight:700;
-        border:1px solid #d8eef9;
-      ">
-        <div style="text-align:center; padding:24px;">
-          <i class="fa-solid fa-headphones" style="font-size:64px; margin-bottom:14px;"></i>
-          <div>${nombre}</div>
-        </div>
-      </div>
-    `;
-  }
-
-  return `
-    <div style="
-      width:100%;
-      aspect-ratio:9 / 16;
-      border-radius:24px;
-      overflow:hidden;
-      background:#f8fbff;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      margin-bottom:18px;
-      color:#234;
-      font-family:'Lora',serif;
-      font-size:34px;
-      font-weight:700;
-      border:1px solid #d8eef9;
-    ">
-      <div style="text-align:center; padding:24px;">
-        <i class="fa-solid fa-file-lines" style="font-size:64px; margin-bottom:14px;"></i>
-        <div>${nombre}</div>
-      </div>
-    </div>
-  `;
+      return new Promise(resolve => {
+        const fin = () => resolve();
+        img.addEventListener("load", fin, { once: true });
+        img.addEventListener("error", fin, { once: true });
+      });
+    })
+  );
 }
 
-function htmlCardExportPredica(it) {
-  const color = colorEtiquetaSubidos(it.etiqueta || "");
-  const fechaTxt = it.fechaEvento
-    ? new Date(it.fechaEvento + "T00:00:00").toLocaleDateString("es-AR")
-    : "";
-  const link = subidosLinkDetalle(it.id);
+function subidosPrepararCloneParaExport(clone) {
+  clone.id = "subidosExportCardReal";
+  clone.style.width = "420px";
+  clone.style.maxWidth = "420px";
+  clone.style.margin = "0";
+  clone.style.transform = "none";
+  clone.style.boxSizing = "border-box";
 
-  return `
-    <div id="subidosExportCard"
-         style="
-           width:760px;
-           background:#ffffff;
-           border-radius:28px;
-           padding:26px;
-           box-sizing:border-box;
-           box-shadow:0 18px 48px rgba(0,0,0,.14);
-           font-family:Arial, sans-serif;
-           color:#111;
-         ">
-      <div style="display:flex; align-items:center; gap:12px; margin-bottom:10px;">
-        <span style="
-          display:inline-flex;
-          align-items:center;
-          gap:8px;
-          padding:10px 16px;
-          border-radius:999px;
-          background:${color.bg};
-          color:${color.fg};
-          font-weight:800;
-          font-size:24px;
-        ">
-          ${escaparHtml(it.etiqueta || "Subido")}
-        </span>
-      </div>
+  // sacar acciones de abajo
+  clone.querySelectorAll(".subidos-feed-actions").forEach(el => el.remove());
+  clone.querySelectorAll(".subidosDangerMini").forEach(el => el.remove());
 
-      <div style="font-size:22px; color:#555; margin-bottom:8px;">${escaparHtml(fechaTxt)}</div>
+  // si hubiera cosas de focus/animaciones
+  clone.classList.remove("subidos-focus");
 
-      ${it.descripcion ? `
-        <div style="
-          font-family:'Lora',serif;
-          font-weight:700;
-          font-size:34px;
-          line-height:1.2;
-          margin-bottom:16px;
-        ">
-          ${escaparHtml(it.descripcion)}
-        </div>
-      ` : ``}
+  // convertir botones clickeables visuales en elementos neutros
+  clone.querySelectorAll("button").forEach(btn => {
+    btn.blur();
+  });
 
-      ${htmlArchivoExportPredica(it)}
+  // asegurar que el preview del archivo se vea bien
+  clone.querySelectorAll(".subidos-media-frame").forEach(el => {
+    el.style.cursor = "default";
+  });
 
-      <div style="display:flex; flex-direction:column; gap:10px;">
-        ${htmlCardExportPredicaLista(it)}
-      </div>
+  clone.querySelectorAll(".subidos-media-frame img").forEach(img => {
+    img.style.display = "block";
+    img.style.width = "100%";
+    img.style.height = "100%";
+    img.style.objectFit = "contain";
+  });
 
-      <div style="
-        margin-top:18px;
-        padding-top:14px;
-        border-top:1px solid #e5eef5;
-        font-size:17px;
-        line-height:1.35;
-        color:#4b5563;
-        word-break:break-word;
-      ">
-        Abrir detalle: ${escaparHtml(link)}
-      </div>
-    </div>
-  `;
-}
+  // por si la card tiene resumen de prédica
+  clone.querySelectorAll(".subidos-predica-resumen").forEach(el => {
+    el.style.cursor = "default";
+  });
 
-function htmlCardExportPredicaLista(it) {
-  return subidosTextoListaPredicaExport(it);
+  return clone;
 }
 
 async function subidosGenerarBlobCardPredica(id) {
-  const it = obtenerSubidoPorId(id);
-  if (!it) throw new Error("No encontré la prédica.");
+  const original = document.getElementById(`subido-${id}`);
+  if (!original) throw new Error("No encontré la card a exportar.");
 
   const stage = document.getElementById("subidosExportStage");
   if (!stage) throw new Error("Falta #subidosExportStage en el HTML.");
 
-  stage.innerHTML = htmlCardExportPredica(it);
+  stage.innerHTML = "";
 
+  const wrap = document.createElement("div");
+  wrap.style.padding = "24px";
+  wrap.style.display = "inline-block";
+  wrap.style.background = "transparent";
+
+  const clone = original.cloneNode(true);
+  subidosPrepararCloneParaExport(clone);
+
+  wrap.appendChild(clone);
+  stage.appendChild(wrap);
+
+  await subidosEsperarImagenes(clone);
   await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 
-  const card = document.getElementById("subidosExportCard");
-  if (!card) throw new Error("No pude armar la card de exportación.");
-
-  const canvas = await html2canvas(card, {
-    backgroundColor: "#ffffff",
+  const canvas = await html2canvas(clone, {
+    backgroundColor: null,
     scale: 2,
     useCORS: true
   });
 
   const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
+
   stage.innerHTML = "";
 
-  if (!blob) throw new Error("No pude generar la imagen PNG.");
+  if (!blob) throw new Error("No se pudo generar la imagen.");
   return blob;
 }
 
@@ -1578,14 +1428,20 @@ function subidosAbrirDesdeHash() {
   const it = obtenerSubidoPorId(id);
   if (!it) return;
 
-  if (subidosEsPredicaConContenido(it)) {
-    abrirSubidosVisorPredica(id);
-    return;
-  }
+  // llevar a Iglesia > Subidos
+  if (typeof window.irA === "function") window.irA("iglesia");
+  if (typeof window.mostrarIglesiaSub === "function") window.mostrarIglesiaSub("subidos");
 
-  if (it.url) {
-    abrirSubidosVisorArchivo(id);
-  }
+  setTimeout(() => {
+    if (subidosEsPredicaConContenido(it)) {
+      abrirSubidosVisorPredica(id);
+      return;
+    }
+
+    if (it.url) {
+      abrirSubidosVisorArchivo(id);
+    }
+  }, 120);
 }
 
 function htmlArchivoGrandePredica(it) {
@@ -2130,62 +1986,54 @@ window.compartirSubido = async function compartirSubido(id) {
 
     const link = subidosLinkDetalle(id);
 
+    // si es prédica con contenido, compartimos la CARD COMO IMAGEN
     if (subidosEsPredicaConContenido(it)) {
       const blob = await subidosGenerarBlobCardPredica(id);
+
       const file = new File(
         [blob],
         `${(it.etiqueta || "predica").toLowerCase()}-${it.fechaEvento || Date.now()}.png`,
         { type: "image/png" }
       );
 
-      const texto = [it.etiqueta || "Predica", it.descripcion || "", link]
-        .filter(Boolean)
-        .join("\n\n");
-
+      // ✅ SOLO EL LINK
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
-          title: it.etiqueta || "Predica",
-          text: texto,
-          files: [file]
+          files: [file],
+          text: link
         });
         return;
       }
 
+      // fallback
       if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(texto);
-        alert("No pude compartir la imagen directamente en este navegador, pero copié el link.");
+        await navigator.clipboard.writeText(link);
+        alert("Tu navegador no pudo compartir la imagen directamente. Copié el link de detalle.");
         return;
       }
 
-      prompt("Copiá este link:", texto);
+      prompt("Copiá este link:", link);
       return;
     }
 
-    const textoPredica = subidosTieneContenidoPredica(it) ? subidosTextoPlanoPredica(it) : "";
-    const texto = [it.etiqueta || "Subido", it.descripcion || "", textoPredica]
-      .filter(Boolean)
-      .join("\n\n")
-      .trim();
-
+    // resto de subidos normales
     if (navigator.share) {
       const payload = {
         title: it.etiqueta || "Subido",
-        text: texto || (it.fileName || "Subido")
+        text: it.url ? link : (it.descripcion || link)
       };
       if (it.url) payload.url = it.url;
       await navigator.share(payload);
       return;
     }
 
-    const copiable = [texto, it.url || ""].filter(Boolean).join("\n\n").trim();
-
     if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(copiable);
-      alert("Contenido copiado.");
+      await navigator.clipboard.writeText(link);
+      alert("Link copiado.");
       return;
     }
 
-    prompt("Copiá este contenido:", copiable);
+    prompt("Copiá este link:", link);
   } catch (e) {
     console.error("Error compartiendo:", e);
     alert("No se pudo compartir.");
@@ -2407,19 +2255,22 @@ function initSubidosBotones() {
 }
 
 function initLecturas() {
-  onValue(ref(db, "subidosIglesia"), (s) => {
-    const data = s.val() || {};
-    subidosItems = Object.entries(data)
-      .map(([id, obj]) => ({ id, ...(obj || {}) }))
-      .sort((a, b) => {
-        const fa = a.fechaEvento || "";
-        const fb = b.fechaEvento || "";
-        if (fa !== fb) return fb.localeCompare(fa);
-        return (b.fecha || 0) - (a.fecha || 0);
-      });
+onValue(ref(db, "subidosIglesia"), (s) => {
+  const data = s.val() || {};
+  subidosItems = Object.entries(data)
+    .map(([id, obj]) => ({ id, ...(obj || {}) }))
+    .sort((a, b) => {
+      const fa = a.fechaEvento || "";
+      const fb = b.fechaEvento || "";
+      if (fa !== fb) return fb.localeCompare(fa);
+      return (b.fecha || 0) - (a.fecha || 0);
+    });
 
-    refrescarSubidos();
-  });
+  refrescarSubidos();
+
+  // ✅ intentar abrir desde hash una vez que ya existen los datos
+  setTimeout(subidosAbrirDesdeHash, 0);
+});
 
   onValue(ref(db, "subidosEtiquetas"), (s) => {
     const data = s.val();
