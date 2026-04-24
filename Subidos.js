@@ -74,7 +74,7 @@ function renumerarCitasPredica() {
 window.subidosAgregarCitaPredica = async function subidosAgregarCitaPredica() {
   const tpl = document.getElementById("tplSubidosCitaPredica");
   const wrap = document.getElementById("subidosPredicaCitasWrap");
-  if (!tpl || !wrap) return;
+  if (!tpl || !wrap) return null;
 
   const node = tpl.content.firstElementChild.cloneNode(true);
 
@@ -117,9 +117,9 @@ window.subidosAgregarCitaPredica = async function subidosAgregarCitaPredica() {
   }
 
   wrap.appendChild(node);
-renumerarCitasPredica();
-await inicializarCardCitaPredica(node);
-return node;
+  renumerarCitasPredica();
+  await inicializarCardCitaPredica(node);
+  return node;
 };
 
 function resetPredicaSubidosUI() {
@@ -830,56 +830,6 @@ async function inicializarCardCitaPredica(card) {
   }
 }
 
-window.subidosAgregarCitaPredica = async function subidosAgregarCitaPredica() {
-  const tpl = document.getElementById("tplSubidosCitaPredica");
-  const wrap = document.getElementById("subidosPredicaCitasWrap");
-  if (!tpl || !wrap) return;
-
-  const node = tpl.content.firstElementChild.cloneNode(true);
-
-  const btnEliminar = node.querySelector(".subidosCitaEliminar");
-  const btnLimpiar = node.querySelector(".subidosCitaLimpiar");
-  const btnExpandir = node.querySelector(".subidosCitaExpandir");
-
-  if (btnEliminar) {
-    btnEliminar.onclick = () => {
-      node.remove();
-      renumerarCitasPredica();
-    };
-  }
-
-  if (btnLimpiar) {
-    btnLimpiar.onclick = () => {
-      limpiarCitaPredica(node);
-    };
-  }
-
-  if (btnExpandir) {
-    btnExpandir.onclick = () => {
-      const txt = node.querySelector(".subidosCitaTexto");
-      if (!txt) return;
-
-      const expandido = btnExpandir.dataset.expandido === "1";
-
-      if (expandido) {
-        txt.style.maxHeight = "240px";
-        txt.style.overflow = "auto";
-        btnExpandir.dataset.expandido = "0";
-        btnExpandir.innerHTML = `<i class="fa-solid fa-caret-down"></i>`;
-      } else {
-        txt.style.maxHeight = "420px";
-        txt.style.overflow = "auto";
-        btnExpandir.dataset.expandido = "1";
-        btnExpandir.innerHTML = `<i class="fa-solid fa-caret-up"></i>`;
-      }
-    };
-  }
-
-  wrap.appendChild(node);
-  renumerarCitasPredica();
-  await inicializarCardCitaPredica(node);
-};
-
 async function recargarVersionPredicaCards() {
   const wrap = document.getElementById("subidosPredicaCitasWrap");
   if (!wrap) return;
@@ -1076,6 +1026,9 @@ function abrirModalSubidos() {
   const estado = document.getElementById("subidosEstado");
   const etiqueta = document.getElementById("subidosEtiqueta");
   const ttl = document.getElementById("subidosModalTitulo");
+  const archivoBox = document.getElementById("subidosArchivoActualBox");
+  const archivoNombre = document.getElementById("subidosArchivoActualNombre");
+  const btnVerArchivo = document.getElementById("btnVerArchivoActualSubido");
 
   subidosEditandoId = null;
 
@@ -1085,6 +1038,9 @@ function abrirModalSubidos() {
   if (estado) estado.textContent = "";
   if (fecha) fecha.value = fechaYMD(new Date());
   if (etiqueta) etiqueta.value = "";
+  if (archivoBox) archivoBox.style.display = "none";
+  if (archivoNombre) archivoNombre.textContent = "";
+  if (btnVerArchivo) btnVerArchivo.onclick = null;
 
   resetPredicaSubidosUI();
   actualizarPredicaSubidosUI();
@@ -1507,6 +1463,18 @@ window.abrirEditarSubido = async function abrirEditarSubido(id) {
   if (descripcion) descripcion.value = it.descripcion || "";
   if (archivo) archivo.value = "";
 
+  const archivoBox = document.getElementById("subidosArchivoActualBox");
+  const archivoNombre = document.getElementById("subidosArchivoActualNombre");
+  const btnVerArchivo = document.getElementById("btnVerArchivoActualSubido");
+
+  if (archivoBox) archivoBox.style.display = it.url ? "block" : "none";
+  if (archivoNombre) archivoNombre.textContent = it.fileName || "Archivo actual guardado";
+  if (btnVerArchivo) {
+    btnVerArchivo.onclick = () => {
+      abrirSubidosVisorArchivo(it.id);
+    };
+  }
+
   actualizarPredicaSubidosUI();
 
   if (esPredicaSubidos(it.etiqueta || "")) {
@@ -1515,10 +1483,13 @@ window.abrirEditarSubido = async function abrirEditarSubido(id) {
     if (wrap) wrap.innerHTML = "";
 
     const citas = obtenerCitasPredicaSubido(it);
+
     if (citas.length) {
       for (const cita of citas) {
         const card = await window.subidosAgregarCitaPredica();
-        await poblarCardPredicaDesdeDato(card, cita);
+        if (card) {
+          await poblarCardPredicaDesdeDato(card, cita);
+        }
       }
     } else {
       await window.subidosAgregarCitaPredica();
