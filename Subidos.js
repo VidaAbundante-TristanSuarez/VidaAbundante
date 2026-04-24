@@ -66,6 +66,8 @@ function renumerarCitasPredica() {
     const ttl = card.querySelector(".subidosCitaTitulo");
     if (ttl) ttl.textContent = `Cita ${i + 1}`;
   });
+
+  actualizarBotonesAgregarOtraCita();
 }
 
 window.subidosAgregarCitaPredica = async function subidosAgregarCitaPredica() {
@@ -295,6 +297,96 @@ function subidosLibrosDesdeSelectorPrincipal() {
 
 function subidosTextoHtml(txt = "") {
   return escaparHtml(String(txt || "")).replace(/\n/g, "<br>");
+}
+
+function subidosNumsSeleccionados(card) {
+  const nums = Array.isArray(card.__seleccionNums) ? [...card.__seleccionNums] : [];
+  return nums
+    .map(n => Number(n))
+    .filter(n => n > 0)
+    .sort((a, b) => a - b);
+}
+
+function subidosSetSeleccionados(card, nums) {
+  card.__seleccionNums = [...new Set(
+    (nums || [])
+      .map(n => Number(n))
+      .filter(n => n > 0)
+  )].sort((a, b) => a - b);
+}
+
+function subidosCompactarNumeros(nums = []) {
+  const ordenados = [...new Set(nums.map(Number).filter(n => n > 0))].sort((a, b) => a - b);
+  if (!ordenados.length) return [];
+
+  const tramos = [];
+  let desde = ordenados[0];
+  let hasta = ordenados[0];
+
+  for (let i = 1; i < ordenados.length; i++) {
+    const n = ordenados[i];
+    if (n === hasta + 1) {
+      hasta = n;
+      continue;
+    }
+    tramos.push({ desde, hasta });
+    desde = n;
+    hasta = n;
+  }
+
+  tramos.push({ desde, hasta });
+  return tramos;
+}
+
+function subidosTextoTramosReferencia(tramos = []) {
+  return tramos.map(t => t.desde === t.hasta ? `${t.desde}` : `${t.desde}-${t.hasta}`).join(" y ");
+}
+
+function subidosTextoCompletoDeSeleccion(versos = [], nums = []) {
+  const set = new Set(nums);
+  return versos
+    .filter(v => set.has(v.n))
+    .map(v => `${v.n}. ${v.texto}`)
+    .join("\n");
+}
+
+function subidosTextoResumenSeleccion(versos = [], nums = []) {
+  const set = new Set(nums);
+  return versos
+    .filter(v => set.has(v.n))
+    .map(v => `${v.n}. ${v.texto}`)
+    .join(" ");
+}
+
+function actualizarBotonesAgregarOtraCita() {
+  const wrap = document.getElementById("subidosPredicaCitasWrap");
+  if (!wrap) return;
+
+  const cards = [...wrap.querySelectorAll(".subidos-cita-card")];
+  cards.forEach((card, i) => {
+    let box = card.querySelector(".subidosAgregarOtraCitaBox");
+    if (!box) {
+      box = document.createElement("div");
+      box.className = "subidosAgregarOtraCitaBox";
+      box.style.marginTop = "10px";
+      box.style.display = "none";
+      box.innerHTML = `
+        <button type="button" class="btn-primary subidosAgregarOtraCitaBtn">
+          <i class="fa-solid fa-circle-plus"></i> Agregar otra cita
+        </button>
+      `;
+      card.appendChild(box);
+
+      const btn = box.querySelector(".subidosAgregarOtraCitaBtn");
+      if (btn) {
+        btn.onclick = () => {
+          window.subidosAgregarCitaPredica();
+        };
+      }
+    }
+
+    box.style.display = (i === cards.length - 1) ? "flex" : "none";
+  });
 }
 
 async function obtenerBibliaPredica(version = subidosVersionPredicaActual()) {
@@ -532,8 +624,7 @@ function renderVersiculosPredicaEnCard(card) {
   if (!wrap || !empty) return;
 
   const versos = Array.isArray(card.__versiculosData) ? card.__versiculosData : [];
-  const desde = Number(card.dataset.desde || 0);
-  const hasta = Number(card.dataset.hasta || 0) || desde;
+  const seleccionados = new Set(subidosNumsSeleccionados(card));
 
   if (!versos.length) {
     wrap.innerHTML = "";
@@ -544,7 +635,7 @@ function renderVersiculosPredicaEnCard(card) {
   empty.style.display = "none";
 
   wrap.innerHTML = versos.map(v => {
-    const activo = !!desde && v.n >= Math.min(desde, hasta) && v.n <= Math.max(desde, hasta);
+    const activo = seleccionados.has(v.n);
 
     return `
       <button
@@ -622,26 +713,26 @@ function actualizarPreviewPredicaEnCard(card) {
 
   const libro = card.querySelector(".subidosCitaLibro")?.value || "";
   const capitulo = Number(card.querySelector(".subidosCitaCapitulo")?.value || 0);
-  const desde = Number(card.dataset.desde || 0);
-  const hasta = Number(card.dataset.hasta || 0) || desde;
   const versos = Array.isArray(card.__versiculosData) ? card.__versiculosData : [];
+  const nums = subidosNumsSeleccionados(card);
 
-  if (!libro || !capitulo || !desde || !versos.length) {
+  if (!libro || !capitulo || !nums.length || !versos.length) {
+    delete card.dataset.referencia;
+    delete card.dataset.texto;
+    delete card.dataset.segmentos;
     limpiarPreviewCitaPredica(card);
     return;
   }
 
-  const seleccion = versos.filter(v => v.n >= Math.min(desde, hasta) && v.n <= Math.max(desde, hasta));
-  const referencia = `${libro} ${capitulo}:${desde}${hasta !== desde ? `-${hasta}` : ""}`;
-  const texto = seleccion.map(v => `${v.n}. ${v.texto}`).join("\n");
+  const tramos = subidosCompactarNumeros(nums);
+  const referencia = `${libro} ${capitulo}:${subidosTextoTramosReferencia(tramos)}`;
+  const texto = subidosTextoCompletoDeSeleccion(versos, nums);
 
   card.dataset.libro = libro;
   card.dataset.capitulo = String(capitulo);
-  card.dataset.desde = String(desde);
-  if (hasta !== desde) card.dataset.hasta = String(hasta);
-  else delete card.dataset.hasta;
   card.dataset.referencia = referencia;
   card.dataset.texto = texto;
+  card.dataset.segmentos = JSON.stringify(tramos);
 
   if (info) info.style.display = "block";
   if (ref) ref.textContent = referencia;
@@ -659,17 +750,12 @@ function actualizarPreviewPredicaEnCard(card) {
 }
 
 function seleccionarVersiculoPredicaEnCard(card, num) {
-  const desde = Number(card.dataset.desde || 0);
-  const hasta = Number(card.dataset.hasta || 0);
+  const nums = subidosNumsSeleccionados(card);
 
-  if (!desde || (desde && hasta)) {
-    card.dataset.desde = String(num);
-    delete card.dataset.hasta;
+  if (nums.includes(num)) {
+    subidosSetSeleccionados(card, nums.filter(n => n !== num));
   } else {
-    const a = Math.min(desde, num);
-    const b = Math.max(desde, num);
-    card.dataset.desde = String(a);
-    card.dataset.hasta = String(b);
+    subidosSetSeleccionados(card, [...nums, num]);
   }
 
   renderVersiculosPredicaEnCard(card);
@@ -695,12 +781,12 @@ async function limpiarCitaPredica(card) {
   if (nota) nota.value = "";
 
   card.__versiculosData = [];
+  card.__seleccionNums = [];
   delete card.dataset.libro;
   delete card.dataset.capitulo;
-  delete card.dataset.desde;
-  delete card.dataset.hasta;
   delete card.dataset.referencia;
   delete card.dataset.texto;
+  delete card.dataset.segmentos;
 
   limpiarPreviewCitaPredica(card);
   await poblarLibrosPredicaEnCard(card);
@@ -827,27 +913,25 @@ function recogerDatosPredicaSubidos() {
   [...(wrap?.querySelectorAll(".subidos-cita-card") || [])].forEach(card => {
     const libro = card.dataset.libro || "";
     const capitulo = Number(card.dataset.capitulo || 0);
-    const desde = Number(card.dataset.desde || 0);
-    const hasta = Number(card.dataset.hasta || 0) || desde;
     const referencia = card.dataset.referencia || "";
     const texto = card.dataset.texto || "";
-    const nota = card.querySelector(".subidosCitaNota")?.value?.trim() || "";
+    const comentario = card.querySelector(".subidosCitaNota")?.value?.trim() || "";
+    const segmentos = JSON.parse(card.dataset.segmentos || "[]");
 
-    const vacia = !libro && !capitulo && !desde && !nota;
+    const vacia = !libro && !capitulo && !referencia && !comentario;
     if (vacia) return;
 
-    if (!libro || !capitulo || !desde || !referencia || !texto) {
+    if (!libro || !capitulo || !referencia || !texto || !segmentos.length) {
       throw new Error("Hay una cita de prédica incompleta. Elegí libro, capítulo y versículo/s.");
     }
 
     citas.push({
       libro,
       capitulo,
-      versiculoInicio: desde,
-      versiculoFin: hasta,
       referencia,
       texto,
-      nota,
+      comentario,
+      segmentos,
       version
     });
   });
@@ -871,53 +955,57 @@ function htmlPredicaBibliaSubido(it) {
 
   if (!citas.length && !notaFinal) return "";
 
-  const boxId = `subidosPredicaTexto-${it.id}`;
-  const btnId = `subidosPredicaBtn-${it.id}`;
+  const filas = [];
 
-  const hayMuchoTexto =
-    citas.length > 1 ||
-    notaFinal.length > 140 ||
-    citas.some(c =>
-      String(c.texto || "").length > 260 ||
-      String(c.nota || "").length > 120
-    );
+  citas.forEach((c, i) => {
+    const bodyId = `subidosPredicaDet-${it.id}-${i}`;
+    filas.push(`
+      <div style="border:1px solid #d8eef9; background:#ffffff; border-radius:12px; overflow:hidden;">
+        <button
+          type="button"
+          onclick="subidosToggleDetallePredica('${bodyId}')"
+          style="width:100%; border:none; background:#f6fcff; padding:10px; text-align:left; display:flex; align-items:center; justify-content:space-between; gap:10px; cursor:pointer;"
+        >
+          <span style="font-weight:800;">${escaparHtml(c.referencia || "")}</span>
+          <i class="fa-solid fa-caret-down" data-toggle-icon="${bodyId}"></i>
+        </button>
+
+        <div id="${bodyId}" style="display:none; max-height:170px; overflow:auto; padding:10px; border-top:1px solid #e7f2f8;">
+          <div style="white-space:pre-wrap; line-height:1.32; font-size:13px;">${subidosTextoHtml(c.texto || "")}</div>
+          ${String(c.comentario || c.nota || "").trim() ? `
+            <div style="margin-top:8px; padding-top:8px; border-top:1px solid #eef6fb;">
+              <div style="font-weight:800; margin-bottom:4px;">Comentario</div>
+              <div style="white-space:pre-wrap; line-height:1.32; font-size:13px;">${subidosTextoHtml(c.comentario || c.nota || "")}</div>
+            </div>
+          ` : ``}
+        </div>
+      </div>
+    `);
+  });
+
+  if (notaFinal) {
+    const bodyId = `subidosPredicaNota-${it.id}`;
+    filas.push(`
+      <div style="border:1px solid #d8eef9; background:#ffffff; border-radius:12px; overflow:hidden;">
+        <button
+          type="button"
+          onclick="subidosToggleDetallePredica('${bodyId}')"
+          style="width:100%; border:none; background:#f6fcff; padding:10px; text-align:left; display:flex; align-items:center; justify-content:space-between; gap:10px; cursor:pointer;"
+        >
+          <span style="font-weight:800;">Nota</span>
+          <i class="fa-solid fa-caret-down" data-toggle-icon="${bodyId}"></i>
+        </button>
+
+        <div id="${bodyId}" style="display:none; max-height:170px; overflow:auto; padding:10px; border-top:1px solid #e7f2f8;">
+          <div style="white-space:pre-wrap; line-height:1.35; font-size:13px;">${subidosTextoHtml(notaFinal)}</div>
+        </div>
+      </div>
+    `);
+  }
 
   return `
-    <div style="margin:6px 0 8px; border:1px solid #d8eef9; background:#f6fcff; border-radius:14px; padding:8px;">
-      <div style="font-weight:800; margin-bottom:6px;">Citas y notas</div>
-
-      <div id="${boxId}" style="max-height:${hayMuchoTexto ? "118px" : "none"}; overflow:auto; padding-right:${hayMuchoTexto ? "4px" : "0"};">
-        ${citas.map(c => `
-          <div style="margin-bottom:8px; border:1px solid #e3f2fa; background:#ffffff; border-radius:12px; padding:8px;">
-            <div style="font-weight:800; margin-bottom:4px;">${escaparHtml(c.referencia || "")}</div>
-            <div style="white-space:pre-wrap; line-height:1.32; font-size:13px;">${subidosTextoHtml(c.texto || "")}</div>
-            ${String(c.nota || "").trim() ? `
-              <div style="margin-top:6px; padding-top:6px; border-top:1px solid #eef6fb;">
-                <div style="font-weight:800; margin-bottom:4px;">Nota</div>
-                <div style="white-space:pre-wrap; line-height:1.32; font-size:13px;">${subidosTextoHtml(c.nota || "")}</div>
-              </div>
-            ` : ``}
-          </div>
-        `).join("")}
-
-        ${notaFinal ? `
-          <div style="margin-top:8px; border-top:1px solid #d8eef9; padding-top:8px;">
-            <div style="font-weight:800; margin-bottom:4px;">Nota final</div>
-            <div style="white-space:pre-wrap; line-height:1.35; font-size:13px;">${subidosTextoHtml(notaFinal)}</div>
-          </div>
-        ` : ``}
-      </div>
-
-      ${hayMuchoTexto ? `
-        <button
-          id="${btnId}"
-          type="button"
-          onclick="subidosToggleBibliaPredica('${it.id}')"
-          style="width:100%; margin-top:6px; border:none; border-top:1px solid #d8edf8; background:#eef9ff; padding:8px 10px; border-radius:10px; cursor:pointer;"
-        >
-          <i class="fa-solid fa-caret-down"></i>
-        </button>
-      ` : ``}
+    <div style="margin:6px 0 8px; display:flex; flex-direction:column; gap:8px;">
+      ${filas.join("")}
     </div>
   `;
 }
@@ -939,6 +1027,22 @@ window.subidosToggleBibliaPredica = function subidosToggleBibliaPredica(id) {
     box.style.maxHeight = "250px";
     box.style.overflow = "auto";
     btn.innerHTML = `<i class="fa-solid fa-caret-up"></i>`;
+  }
+};
+
+window.subidosToggleDetallePredica = function subidosToggleDetallePredica(id) {
+  const body = document.getElementById(id);
+  const ico = document.querySelector(`[data-toggle-icon="${id}"]`);
+  if (!body) return;
+
+  const abierto = body.style.display !== "none";
+
+  if (abierto) {
+    body.style.display = "none";
+    if (ico) ico.className = "fa-solid fa-caret-down";
+  } else {
+    body.style.display = "block";
+    if (ico) ico.className = "fa-solid fa-caret-up";
   }
 };
 
@@ -1238,6 +1342,7 @@ function renderFeed() {
 
     const color = colorEtiquetaSubidos(it.etiqueta || "");
     const bloquePredica = htmlPredicaBibliaSubido(it);
+    const tieneArchivo = !!String(it.url || "").trim();
 
     return `
       <div id="subido-${it.id}" class="subidos-feed-card">
@@ -1248,8 +1353,9 @@ function renderFeed() {
                 <i class="fa-solid ${iconoSegunTipo(it.mimeType || "")}"></i>
                 ${escaparHtml(it.etiqueta || "Subido")}
               </span>
-              <span class="subidos-feed-date">${fechaTxt}</span>
             </div>
+
+            <div class="subidos-feed-date">${fechaTxt}</div>
 
             ${
               it.descripcion
@@ -1259,11 +1365,13 @@ function renderFeed() {
           </div>
         </div>
 
-        ${bloquePredica}
+        ${tieneArchivo ? `
+          <div class="subidos-media">
+            ${htmlPreviewArchivoSubido(it)}
+          </div>
+        ` : ``}
 
-        <div class="subidos-media">
-          ${htmlPreviewArchivoSubido(it)}
-        </div>
+        ${bloquePredica}
 
         <div class="subidos-feed-actions">
           ${
