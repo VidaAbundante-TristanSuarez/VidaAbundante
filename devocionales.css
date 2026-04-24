@@ -1807,4 +1807,86 @@ button.subidos-media-link{
   -webkit-backdrop-filter: blur(4px);
 }
 
+/* ================= SUBIDOS / PREDICA CARD COMPACTA ================= */
+
+.subidos-predica-resumen {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.subidos-predica-chip {
+  width: 100%;
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+
+  padding: 7px 10px;
+  border: 1px solid #d8eef9;
+  background: rgba(255,255,255,.94);
+  border-radius: 12px;
+
+  cursor: pointer;
+  font-family: 'Lora', serif;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.05;
+  text-align: left;
+}
+
+.subidos-predica-chip-text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.subidos-predica-chip i {
+  flex: 0 0 auto;
+  font-size: 16px;
+}
+
+/* ✅ En celular: prédica más ancha y más prolija */
+@media (max-width: 640px) {
+  #subidosFeed {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  #subidosFeed .subidos-card-predica {
+    width: calc(100vw - 28px) !important;
+    max-width: calc(100vw - 28px) !important;
+    max-height: 90vh;
+    overflow: auto;
+    box-sizing: border-box;
+  }
+
+  #subidosFeed .subidos-card-predica .subidos-media {
+    margin-top: 8px !important;
+    margin-bottom: 10px !important;
+  }
+
+  #subidosFeed .subidos-card-predica .subidos-media-frame {
+    max-height: 34vh;
+  }
+
+  #subidosFeed .subidos-card-predica .subidos-media-frame img {
+    max-height: 34vh;
+    object-fit: contain;
+  }
+
+  #subidosFeed .subidos-card-predica .subidos-predica-resumen {
+    gap: 6px !important;
+  }
+
+  #subidosFeed .subidos-card-predica .subidos-predica-chip {
+    min-height: 38px;
+    padding: 6px 9px;
+    font-size: 13.5px;
+    border-radius: 11px;
+  }
+}
+
 </style>
