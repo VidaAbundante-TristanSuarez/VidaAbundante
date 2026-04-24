@@ -910,26 +910,11 @@ function htmlPredicaBibliaSubido(it) {
   const filas = citas.map((c, i) => `
     <button
       type="button"
+      class="subidos-predica-chip"
       onclick="event.stopPropagation(); abrirSubidosVisorPredica('${it.id}', '${i}')"
-      style="
-        width:100%;
-        display:flex;
-        align-items:center;
-        justify-content:space-between;
-        gap:10px;
-        padding:8px 10px;
-        border:1px solid #d8eef9;
-        background:#ffffff;
-        border-radius:12px;
-        cursor:pointer;
-        font-family:'Lora',serif;
-        font-size:15px;
-        font-weight:700;
-        text-align:left;
-      "
       title="Abrir esta cita"
     >
-      <span>${escaparHtml(c.referencia || "")}</span>
+      <span class="subidos-predica-chip-text">${escaparHtml(c.referencia || "")}</span>
       <i class="fa-solid fa-caret-down"></i>
     </button>
   `);
@@ -938,26 +923,11 @@ function htmlPredicaBibliaSubido(it) {
     filas.push(`
       <button
         type="button"
+        class="subidos-predica-chip"
         onclick="event.stopPropagation(); abrirSubidosVisorPredica('${it.id}', 'nota')"
-        style="
-          width:100%;
-          display:flex;
-          align-items:center;
-          justify-content:space-between;
-          gap:10px;
-          padding:8px 10px;
-          border:1px solid #d8eef9;
-          background:#ffffff;
-          border-radius:12px;
-          cursor:pointer;
-          font-family:'Lora',serif;
-          font-size:15px;
-          font-weight:700;
-          text-align:left;
-        "
         title="Abrir nota"
       >
-        <span>Nota</span>
+        <span class="subidos-predica-chip-text">Nota</span>
         <i class="fa-solid fa-caret-down"></i>
       </button>
     `);
@@ -967,7 +937,6 @@ function htmlPredicaBibliaSubido(it) {
     <div
       class="subidos-predica-resumen"
       onclick="abrirSubidosVisorPredica('${it.id}')"
-      style="display:flex; flex-direction:column; gap:8px; cursor:pointer;"
       title="Abrir detalle completo"
     >
       ${filas.join("")}
@@ -1337,10 +1306,25 @@ function subidosEsperarImagenes(node) {
   );
 }
 
+function subidosAnchoExportPredica() {
+  const vw = window.innerWidth || document.documentElement.clientWidth || 420;
+
+  // En celular: casi todo el ancho de pantalla.
+  if (vw <= 640) {
+    return Math.max(330, Math.min(420, vw - 18));
+  }
+
+  // En PC queda como antes.
+  return 420;
+}
+
 function subidosPrepararCloneParaExport(clone) {
+  const exportW = subidosAnchoExportPredica();
+  const esCelular = (window.innerWidth || 999) <= 640;
+
   clone.id = "subidosExportCardReal";
-  clone.style.width = "420px";
-  clone.style.maxWidth = "420px";
+  clone.style.width = `${exportW}px`;
+  clone.style.maxWidth = `${exportW}px`;
   clone.style.margin = "0";
   clone.style.transform = "none";
   clone.style.boxSizing = "border-box";
@@ -1360,38 +1344,56 @@ function subidosPrepararCloneParaExport(clone) {
   // asegurar que el preview del archivo se vea bien
   clone.querySelectorAll(".subidos-media-frame").forEach(el => {
     el.style.cursor = "default";
+
+    if (esCelular) {
+      el.style.maxHeight = Math.round(window.innerHeight * 0.34) + "px";
+      el.style.overflow = "hidden";
+    }
   });
 
-clone.querySelectorAll("img").forEach(img => {
-  const src = img.currentSrc || img.getAttribute("src") || img.src || "";
+  clone.querySelectorAll("img").forEach(img => {
+    const src = img.currentSrc || img.getAttribute("src") || img.src || "";
 
-  img.removeAttribute("loading");
-  img.removeAttribute("srcset");
-  img.removeAttribute("sizes");
+    img.removeAttribute("loading");
+    img.removeAttribute("srcset");
+    img.removeAttribute("sizes");
 
-  img.loading = "eager";
-  img.decoding = "sync";
+    img.loading = "eager";
+    img.decoding = "sync";
 
-  // ✅ CLAVE: esto tiene que ir ANTES de volver a poner el src
-  img.crossOrigin = "anonymous";
-  img.referrerPolicy = "no-referrer";
+    // ✅ Esto queda SOLO para el clon de descarga.
+    // No lo ponemos en la imagen visible de la página.
+    img.crossOrigin = "anonymous";
+    img.referrerPolicy = "no-referrer";
 
-  // ✅ fuerza al celular a pedir la imagen de nuevo con CORS
-  if (src) {
-    const separador = src.includes("?") ? "&" : "?";
-    img.removeAttribute("src");
-    img.src = `${src}${separador}vaCors=${Date.now()}`;
-  }
+    if (src) {
+      const separador = src.includes("?") ? "&" : "?";
+      img.removeAttribute("src");
+      img.src = `${src}${separador}vaCors=${Date.now()}`;
+    }
 
-  img.style.display = "block";
-  img.style.width = "100%";
-  img.style.height = "100%";
-  img.style.objectFit = "contain";
-});
-  
-  // por si la card tiene resumen de prédica
+    img.style.display = "block";
+    img.style.width = "100%";
+    img.style.height = esCelular ? "auto" : "100%";
+    img.style.objectFit = "contain";
+
+    if (esCelular) {
+      img.style.maxHeight = Math.round(window.innerHeight * 0.34) + "px";
+    }
+  });
+
+  // compactar citas dentro del PNG exportado
   clone.querySelectorAll(".subidos-predica-resumen").forEach(el => {
     el.style.cursor = "default";
+    el.style.gap = "6px";
+  });
+
+  clone.querySelectorAll(".subidos-predica-chip").forEach(btn => {
+    btn.style.minHeight = esCelular ? "36px" : "40px";
+    btn.style.padding = esCelular ? "6px 9px" : "7px 10px";
+    btn.style.fontSize = esCelular ? "13px" : "14px";
+    btn.style.lineHeight = "1.05";
+    btn.style.borderRadius = "11px";
   });
 
   return clone;
@@ -1737,8 +1739,93 @@ async function descargarArchivoRemoto(url, nombre = "archivo") {
   setTimeout(() => URL.revokeObjectURL(obj), 1200);
 }
 
-window.descargarSubido = async function descargarSubido(id) {
+const subidosAccionesEnCurso = new Set();
+
+function subidosAvisoProceso(texto, permanente = false) {
+  let el = document.getElementById("subidosAvisoProceso");
+
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "subidosAvisoProceso";
+
+    Object.assign(el.style, {
+      position: "fixed",
+      left: "50%",
+      bottom: "22px",
+      transform: "translateX(-50%)",
+      background: "rgba(17, 24, 39, .94)",
+      color: "#fff",
+      padding: "10px 15px",
+      borderRadius: "999px",
+      fontWeight: "800",
+      fontSize: "14px",
+      zIndex: "999999",
+      boxShadow: "0 8px 24px rgba(0,0,0,.25)",
+      pointerEvents: "none",
+      maxWidth: "88vw",
+      textAlign: "center",
+      display: "none"
+    });
+
+    document.body.appendChild(el);
+  }
+
+  clearTimeout(el.__timer);
+  el.textContent = texto;
+  el.style.display = "block";
+
+  if (!permanente) {
+    el.__timer = setTimeout(() => {
+      el.style.display = "none";
+    }, 1800);
+  }
+}
+
+function subidosBloquearBotonesCard(id, bloquear) {
+  const card = document.getElementById(`subido-${id}`);
+  if (!card) return;
+
+  card.querySelectorAll(".subidos-feed-actions button").forEach(btn => {
+    btn.disabled = bloquear;
+    btn.style.opacity = bloquear ? ".55" : "";
+    btn.style.pointerEvents = bloquear ? "none" : "";
+  });
+}
+
+async function subidosAccionProtegida(id, tipo, textoProceso, accion) {
+  const key = `subido-${id}`;
+
+  if (subidosAccionesEnCurso.has(key)) {
+    subidosAvisoProceso(textoProceso, true);
+    return;
+  }
+
+  subidosAccionesEnCurso.add(key);
+  subidosBloquearBotonesCard(id, true);
+  subidosAvisoProceso(textoProceso, true);
+
   try {
+    await accion();
+    subidosAvisoProceso(tipo === "descargar" ? "Descarga lista ✅" : "Listo ✅");
+  } catch (e) {
+    if (e?.name === "AbortError") {
+      subidosAvisoProceso("Acción cancelada");
+    } else {
+      console.error(`Error en ${tipo}:`, e);
+      subidosAvisoProceso("No se pudo completar");
+      alert(tipo === "descargar" ? "No se pudo descargar." : "No se pudo compartir.");
+    }
+  } finally {
+    subidosBloquearBotonesCard(id, false);
+
+    setTimeout(() => {
+      subidosAccionesEnCurso.delete(key);
+    }, 700);
+  }
+}
+
+window.descargarSubido = function descargarSubido(id) {
+  return subidosAccionProtegida(id, "descargar", "Descargando...", async () => {
     const it = obtenerSubidoPorId(id);
     if (!it) return;
 
@@ -1762,10 +1849,7 @@ window.descargarSubido = async function descargarSubido(id) {
     if (it.url) {
       await descargarArchivoRemoto(it.url, it.fileName || "archivo");
     }
-  } catch (e) {
-    console.error("Error descargando:", e);
-    alert("No se pudo descargar.");
-  }
+  });
 };
 
 function subidosNumsDesdeCitaGuardada(cita) {
@@ -1880,8 +1964,7 @@ function htmlPreviewArchivoSubido(it) {
   src="${it.url}"
   alt="${nombre}"
   loading="lazy"
-  crossorigin="anonymous"
-  referrerpolicy="no-referrer"
+  decoding="async"
 >
       </button>
     `;
@@ -1943,7 +2026,7 @@ function renderFeed() {
     const mostrarAcciones = !!(tieneArchivo || tienePredica);
 
     return `
-      <div id="subido-${it.id}" class="subidos-feed-card">
+      <div id="subido-${it.id}" class="subidos-feed-card ${subidosEsPredicaConContenido(it) ? "subidos-card-predica" : ""}">
         <div class="subidos-feed-head">
           <div class="subidos-feed-left">
             <div class="subidos-feed-badges">
@@ -2032,8 +2115,8 @@ window.abrirSubidoDesdeCalendario = function abrirSubidoDesdeCalendario(id) {
   }, 1800);
 };
 
-window.compartirSubido = async function compartirSubido(id) {
-  try {
+window.compartirSubido = function compartirSubido(id) {
+  return subidosAccionProtegida(id, "compartir", "Compartiendo...", async () => {
     const it = obtenerSubidoPorId(id);
     if (!it) return;
 
@@ -2049,7 +2132,6 @@ window.compartirSubido = async function compartirSubido(id) {
         { type: "image/png" }
       );
 
-      // ✅ SOLO EL LINK
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
           files: [file],
@@ -2058,7 +2140,6 @@ window.compartirSubido = async function compartirSubido(id) {
         return;
       }
 
-      // fallback
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(link);
         alert("Tu navegador no pudo compartir la imagen directamente. Copié el link de detalle.");
@@ -2075,7 +2156,9 @@ window.compartirSubido = async function compartirSubido(id) {
         title: it.etiqueta || "Subido",
         text: it.url ? link : (it.descripcion || link)
       };
+
       if (it.url) payload.url = it.url;
+
       await navigator.share(payload);
       return;
     }
@@ -2087,10 +2170,7 @@ window.compartirSubido = async function compartirSubido(id) {
     }
 
     prompt("Copiá este link:", link);
-  } catch (e) {
-    console.error("Error compartiendo:", e);
-    alert("No se pudo compartir.");
-  }
+  });
 };
 
 window.borrarSubido = async function borrarSubido(id) {
