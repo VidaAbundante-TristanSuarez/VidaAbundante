@@ -1796,6 +1796,10 @@ async function poblarCardPredicaDesdeDato(card, cita) {
 }
 
 window.abrirEditarSubido = async function abrirEditarSubido(id) {
+    if (!subidosEsAdmin) {
+    alert("Solo admin puede editar.");
+    return;
+  }
   const it = obtenerSubidoPorId(id);
   if (!it) return;
 
