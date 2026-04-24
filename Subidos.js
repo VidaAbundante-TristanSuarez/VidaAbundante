@@ -204,7 +204,12 @@ function subidosTextoVersiculo(v) {
   if (typeof v === "number") return String(v);
   if (!v) return "";
 
+  const version = subidosVersionPredicaActual();
+
   return String(
+    v[version] ??
+    v.RV1960 ??
+    v.NTV ??
     v.texto ??
     v.text ??
     v.contenido ??
@@ -217,6 +222,7 @@ function subidosTextoVersiculo(v) {
 
 function subidosCampoLibro(v) {
   return String(
+    v?.Libro ??
     v?.book_name ??
     v?.bookName ??
     v?.book ??
@@ -229,6 +235,7 @@ function subidosCampoLibro(v) {
 
 function subidosCampoCapitulo(v) {
   return Number(
+    v?.Capitulo ??
     v?.chapter ??
     v?.capitulo ??
     v?.chapterNumber ??
@@ -239,6 +246,8 @@ function subidosCampoCapitulo(v) {
 
 function subidosCampoVersiculo(v) {
   return Number(
+    v?.Versiculo ??
+    v?.Versículo ??
     v?.verse ??
     v?.versiculo ??
     v?.verseNumber ??
