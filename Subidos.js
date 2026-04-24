@@ -1315,6 +1315,45 @@ function subidosLinkDetalle(id) {
   return url.toString();
 }
 
+function subidosEsFirebaseStorageUrl(url = "") {
+  return /firebasestorage\.googleapis\.com/i.test(String(url || ""));
+}
+
+function subidosEsMobileExport() {
+  return !!(
+    window.matchMedia?.("(max-width: 800px)").matches ||
+    /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || "")
+  );
+}
+
+function subidosAviso(msg) {
+  if (!msg) return;
+
+  if (typeof window.mostrarToast === "function") {
+    window.mostrarToast(msg);
+    return;
+  }
+
+  console.log(msg);
+}
+
+const SUBIDOS_ACCIONES_PENDIENTES = new Set();
+
+function subidosTomarAccion(clave, msg = "") {
+  if (SUBIDOS_ACCIONES_PENDIENTES.has(clave)) {
+    subidosAviso("Ya está en proceso...");
+    return false;
+  }
+
+  SUBIDOS_ACCIONES_PENDIENTES.add(clave);
+  if (msg) subidosAviso(msg);
+  return true;
+}
+
+function subidosLiberarAccion(clave) {
+  SUBIDOS_ACCIONES_PENDIENTES.delete(clave);
+}
+
 function subidosEsperarImagenes(node) {
   const imgs = [...node.querySelectorAll("img")];
 
@@ -1338,49 +1377,87 @@ function subidosEsperarImagenes(node) {
 }
 
 function subidosPrepararCloneParaExport(clone) {
+  const esMobile = subidosEsMobileExport();
+
   clone.id = "subidosExportCardReal";
-  clone.style.width = "420px";
-  clone.style.maxWidth = "420px";
+  clone.style.width = esMobile ? "280px" : "320px";
+  clone.style.minWidth = esMobile ? "280px" : "320px";
+  clone.style.maxWidth = esMobile ? "280px" : "320px";
   clone.style.margin = "0";
+  clone.style.padding = "8px";
   clone.style.transform = "none";
   clone.style.boxSizing = "border-box";
+  clone.style.overflow = "visible";
 
-  // sacar acciones de abajo
   clone.querySelectorAll(".subidos-feed-actions").forEach(el => el.remove());
   clone.querySelectorAll(".subidosDangerMini").forEach(el => el.remove());
-
-  // si hubiera cosas de focus/animaciones
   clone.classList.remove("subidos-focus");
 
-  // convertir botones clickeables visuales en elementos neutros
   clone.querySelectorAll("button").forEach(btn => {
     btn.blur();
   });
 
-  // asegurar que el preview del archivo se vea bien
-  clone.querySelectorAll(".subidos-media-frame").forEach(el => {
+  clone.querySelectorAll(".subidos-feed-head").forEach(el => {
+    el.style.minHeight = "unset";
+    el.style.marginBottom = "6px";
+  });
+
+  clone.querySelectorAll(".subidos-feed-date").forEach(el => {
+    el.style.fontSize = esMobile ? "11px" : "12px";
+  });
+
+  clone.querySelectorAll(".subidos-badge").forEach(el => {
+    el.style.fontSize = esMobile ? "10px" : "11px";
+    el.style.padding = esMobile ? "4px 7px" : "5px 8px";
+  });
+
+  clone.querySelectorAll(".subidos-feed-desc").forEach(el => {
+    el.style.fontFamily = "'Lora', serif";
+    el.style.fontWeight = "700";
+    el.style.fontSize = esMobile ? "13px" : "14px";
+    el.style.lineHeight = "1.2";
+    el.style.minHeight = "unset";
+    el.style.maxHeight = "unset";
+    el.style.overflow = "visible";
+  });
+
+  clone.querySelectorAll(".subidos-predica-resumen button").forEach(el => {
+    el.style.fontFamily = "'Lora', serif";
+    el.style.fontSize = esMobile ? "13px" : "14px";
+    el.style.fontWeight = "700";
+    el.style.padding = esMobile ? "7px 9px" : "8px 10px";
+  });
+
+  clone.querySelectorAll(".subidos-media").forEach(el => {
+    el.style.flex = "0 0 auto";
+    el.style.minHeight = "0";
+    el.style.marginTop = "4px";
+  });
+
+  clone.querySelectorAll(".subidos-media-frame, .subidos-media-link").forEach(el => {
+    el.style.aspectRatio = "9 / 16";
+    el.style.minHeight = "0";
     el.style.cursor = "default";
   });
 
-clone.querySelectorAll("img").forEach(img => {
-  const src = img.currentSrc || img.getAttribute("src") || "";
+  clone.querySelectorAll("img").forEach(img => {
+    const src = img.currentSrc || img.getAttribute("src") || "";
 
-  img.removeAttribute("loading");
-  img.loading = "eager";
-  img.decoding = "sync";
+    img.removeAttribute("loading");
+    img.loading = "eager";
+    img.decoding = "sync";
 
-  if (src) img.src = src;
+    if (src) img.src = src;
 
-  img.crossOrigin = "anonymous";
-  img.referrerPolicy = "no-referrer";
+    img.crossOrigin = "anonymous";
+    img.referrerPolicy = "no-referrer";
 
-  img.style.display = "block";
-  img.style.width = "100%";
-  img.style.height = "100%";
-  img.style.objectFit = "contain";
-});
+    img.style.display = "block";
+    img.style.width = "100%";
+    img.style.height = "100%";
+    img.style.objectFit = "contain";
+  });
 
-  // por si la card tiene resumen de prédica
   clone.querySelectorAll(".subidos-predica-resumen").forEach(el => {
     el.style.cursor = "default";
   });
@@ -1395,10 +1472,12 @@ async function subidosGenerarBlobCardPredica(id) {
   const stage = document.getElementById("subidosExportStage");
   if (!stage) throw new Error("Falta #subidosExportStage en el HTML.");
 
+  const esMobile = subidosEsMobileExport();
+
   stage.innerHTML = "";
 
   const wrap = document.createElement("div");
-  wrap.style.padding = "24px";
+  wrap.style.padding = esMobile ? "8px" : "20px";
   wrap.style.display = "inline-block";
   wrap.style.background = "transparent";
 
@@ -1411,20 +1490,22 @@ async function subidosGenerarBlobCardPredica(id) {
   await subidosEsperarImagenes(clone);
   await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 
-let canvas;
-try {
-  canvas = await html2canvas(clone, {
-    backgroundColor: null,
-    scale: 2,
-    useCORS: true
-  });
-} catch (e) {
-  stage.innerHTML = "";
-  throw new Error("No pude generar la imagen de la card. Lo más probable es un bloqueo CORS del archivo adjunto.");
-}
+  let canvas;
+  try {
+    canvas = await html2canvas(clone, {
+      backgroundColor: "#ffffff",
+      scale: esMobile ? 1.2 : 2,
+      useCORS: true,
+      imageTimeout: 12000,
+      scrollX: 0,
+      scrollY: 0
+    });
+  } catch (e) {
+    stage.innerHTML = "";
+    throw new Error("No pude generar la imagen de la card. Lo más probable es que el adjunto no haya llegado a renderizarse a tiempo.");
+  }
 
   const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
-
   stage.innerHTML = "";
 
   if (!blob) throw new Error("No se pudo generar la imagen.");
@@ -1729,6 +1810,9 @@ async function descargarArchivoRemoto(url, nombre = "archivo") {
 }
 
 window.descargarSubido = async function descargarSubido(id) {
+  const clave = `descargar:${id}`;
+  if (!subidosTomarAccion(clave, "Descargando...")) return;
+
   try {
     const it = obtenerSubidoPorId(id);
     if (!it) return;
@@ -1749,13 +1833,22 @@ window.descargarSubido = async function descargarSubido(id) {
       return;
     }
 
-    // resto de archivos => descargar blob real, no abrir link
+    // archivos viejos en Firebase Storage => no intentar fetch porque da CORS
+    if (it.url && subidosEsFirebaseStorageUrl(it.url)) {
+      subidosAviso("Este archivo viejo sigue en Firebase Storage. Lo abro dentro de la app.");
+      abrirSubidosVisorArchivo(id);
+      return;
+    }
+
+    // resto => descargar blob real
     if (it.url) {
       await descargarArchivoRemoto(it.url, it.fileName || "archivo");
     }
   } catch (e) {
     console.error("Error descargando:", e);
     alert("No se pudo descargar.");
+  } finally {
+    subidosLiberarAccion(clave);
   }
 };
 
@@ -2018,13 +2111,15 @@ window.abrirSubidoDesdeCalendario = function abrirSubidoDesdeCalendario(id) {
 };
 
 window.compartirSubido = async function compartirSubido(id) {
+  const clave = `compartir:${id}`;
+  if (!subidosTomarAccion(clave, "Compartiendo...")) return;
+
   try {
     const it = obtenerSubidoPorId(id);
     if (!it) return;
 
     const link = subidosLinkDetalle(id);
 
-    // si es prédica con contenido, compartimos la CARD COMO IMAGEN
     if (subidosEsPredicaConContenido(it)) {
       const blob = await subidosGenerarBlobCardPredica(id);
 
@@ -2034,7 +2129,6 @@ window.compartirSubido = async function compartirSubido(id) {
         { type: "image/png" }
       );
 
-      // ✅ SOLO EL LINK
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
           files: [file],
@@ -2043,7 +2137,6 @@ window.compartirSubido = async function compartirSubido(id) {
         return;
       }
 
-      // fallback
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(link);
         alert("Tu navegador no pudo compartir la imagen directamente. Copié el link de detalle.");
@@ -2054,7 +2147,6 @@ window.compartirSubido = async function compartirSubido(id) {
       return;
     }
 
-    // resto de subidos normales
     if (navigator.share) {
       const payload = {
         title: it.etiqueta || "Subido",
@@ -2075,6 +2167,8 @@ window.compartirSubido = async function compartirSubido(id) {
   } catch (e) {
     console.error("Error compartiendo:", e);
     alert("No se pudo compartir.");
+  } finally {
+    subidosLiberarAccion(clave);
   }
 };
 
