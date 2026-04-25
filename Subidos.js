@@ -10,6 +10,7 @@ const {
 } = FB;
 
 const R2_UPLOAD_URL = "https://us-central1-vidaabundante-f118a.cloudfunctions.net/subirImagenR2";
+const SUBIDOS_PROXY_URL = "https://us-central1-vidaabundante-f118a.cloudfunctions.net/descargarImagenR2";
 
 let subidosUID = null;
 let subidosEsAdmin = false;
@@ -1384,37 +1385,25 @@ if (esCelular) {
 }
   });
 
-  clone.querySelectorAll("img").forEach(img => {
-    const src = img.currentSrc || img.getAttribute("src") || img.src || "";
+clone.querySelectorAll("img").forEach(img => {
+  img.removeAttribute("loading");
+  img.removeAttribute("srcset");
+  img.removeAttribute("sizes");
+  img.removeAttribute("crossorigin");
 
-    img.removeAttribute("loading");
-    img.removeAttribute("srcset");
-    img.removeAttribute("sizes");
+  img.loading = "eager";
+  img.decoding = "sync";
 
-    img.loading = "eager";
-    img.decoding = "sync";
+  img.style.display = "block";
+  img.style.width = "100%";
+  img.style.height = esCelular ? "auto" : "100%";
+  img.style.objectFit = "contain";
 
-    // ✅ Esto queda SOLO para el clon de descarga.
-    // No lo ponemos en la imagen visible de la página.
-    img.crossOrigin = "anonymous";
-    img.referrerPolicy = "no-referrer";
-
-    if (src) {
-      const separador = src.includes("?") ? "&" : "?";
-      img.removeAttribute("src");
-      img.src = `${src}${separador}vaCors=${Date.now()}`;
-    }
-
-    img.style.display = "block";
-    img.style.width = "100%";
-    img.style.height = esCelular ? "auto" : "100%";
-    img.style.objectFit = "contain";
-
-if (esCelular) {
-  img.style.height = "100%";
-  img.style.maxHeight = maxMediaH + "px";
-}
-  });
+  if (esCelular) {
+    img.style.height = "100%";
+    img.style.maxHeight = maxMediaH + "px";
+  }
+});
 
   // compactar citas dentro del PNG exportado
 clone.querySelectorAll(".subidos-predica-resumen").forEach(el => {
@@ -1481,6 +1470,41 @@ clone.querySelectorAll(".subidos-predica-chip i").forEach(ico => {
   return clone;
 }
 
+function subidosBlobToDataURL(blob) {
+  return new Promise((resolve, reject) => {
+    const rd = new FileReader();
+    rd.onerror = reject;
+    rd.onload = () => resolve(String(rd.result || ""));
+    rd.readAsDataURL(blob);
+  });
+}
+
+async function subidosConvertirImagenesExportConProxy(node) {
+  const imgs = [...node.querySelectorAll("img")];
+
+  for (const img of imgs) {
+    const src = img.currentSrc || img.getAttribute("src") || img.src || "";
+    if (!src || src.startsWith("data:") || src.startsWith("blob:")) continue;
+
+    try {
+      const proxy = subidosProxyArchivoUrl(src, "imagen-export.png", false);
+      const r = await fetch(proxy);
+
+      if (!r.ok) throw new Error("No pude leer imagen desde descargarImagenR2.");
+
+      const blob = await r.blob();
+      const dataUrl = await subidosBlobToDataURL(blob);
+
+      img.removeAttribute("crossorigin");
+      img.removeAttribute("srcset");
+      img.removeAttribute("sizes");
+      img.src = dataUrl;
+    } catch (e) {
+      console.warn("No pude convertir imagen para exportación:", src, e);
+    }
+  }
+}
+
 async function subidosGenerarBlobCardPredica(id) {
   const original = document.getElementById(`subido-${id}`);
   if (!original) throw new Error("No encontré la card a exportar.");
@@ -1495,13 +1519,14 @@ async function subidosGenerarBlobCardPredica(id) {
   wrap.style.display = "inline-block";
   wrap.style.background = "transparent";
 
-  const clone = original.cloneNode(true);
-  subidosPrepararCloneParaExport(clone);
+const clone = original.cloneNode(true);
+subidosPrepararCloneParaExport(clone);
 
-  wrap.appendChild(clone);
-  stage.appendChild(wrap);
+wrap.appendChild(clone);
+stage.appendChild(wrap);
 
-  await subidosEsperarImagenes(clone);
+await subidosConvertirImagenesExportConProxy(clone);
+await subidosEsperarImagenes(clone);
   await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 
 let canvas;
@@ -1802,90 +1827,62 @@ window.abrirSubidosVisorArchivo = function abrirSubidosVisorArchivo(id) {
   abrirModalSubidosVisor(nombre, `<iframe src="${url}" style="width:100%; height:78vh; border:none; border-radius:14px; background:#fff;"></iframe>`);
 };
 
-async function descargarArchivoRemoto(url, nombre = "archivo") {
-  const r = await fetch(url, { mode: "cors" });
-  if (!r.ok) {
-    throw new Error("No pude descargar el archivo remoto.");
-  }
+function subidosProxyArchivoUrl(url, nombre = "archivo", descargar = false) {
+  const u = new URL(SUBIDOS_PROXY_URL);
+  u.searchParams.set("url", url);
+  u.searchParams.set("nombre", nombre || "archivo");
+  if (descargar) u.searchParams.set("descargar", "1");
+  return u.toString();
+}
 
-  const blob = await r.blob();
-  const obj = URL.createObjectURL(blob);
+async function descargarArchivoRemoto(url, nombre = "archivo") {
+  if (!url) throw new Error("No hay URL para descargar.");
 
   const a = document.createElement("a");
-  a.href = obj;
+  a.href = subidosProxyArchivoUrl(url, nombre, true);
   a.download = nombre || "archivo";
+  a.rel = "noopener";
   document.body.appendChild(a);
   a.click();
   a.remove();
-
-  setTimeout(() => URL.revokeObjectURL(obj), 1200);
 }
 
 function subidosNombreArchivoParaCompartir(it) {
-  const nombre = String(it.fileName || it.etiqueta || "archivo").trim();
+  const nombre = String(it?.fileName || it?.etiqueta || "archivo").trim();
   return nombre || "archivo";
 }
 
 async function subidosFileDesdeUrl(it) {
-  if (!it?.url) return null;
+  if (!it?.url) throw new Error("No hay archivo para compartir.");
 
-  try {
-    const r = await fetch(it.url, { mode: "cors" });
-    if (!r.ok) throw new Error("No pude leer el archivo remoto para compartir.");
+  const nombre = subidosNombreArchivoParaCompartir(it);
+  const proxy = subidosProxyArchivoUrl(it.url, nombre, false);
 
-    const blob = await r.blob();
+  const r = await fetch(proxy);
+  if (!r.ok) throw new Error("No pude leer el archivo desde descargarImagenR2.");
 
-    return new File(
-      [blob],
-      subidosNombreArchivoParaCompartir(it),
-      { type: it.mimeType || blob.type || "application/octet-stream" }
-    );
-  } catch (e) {
-    console.warn("No pude convertir el archivo remoto a File para compartir. Probable CORS:", e);
-    return null;
-  }
+  const blob = await r.blob();
+
+  return new File(
+    [blob],
+    nombre,
+    { type: it.mimeType || blob.type || "application/octet-stream" }
+  );
 }
 
-async function subidosCompartirFile(file, titulo = "Archivo") {
-  if (!file) return false;
-
-  try {
-    if (navigator.canShare && navigator.canShare({ files: [file] }) && navigator.share) {
-      await navigator.share({
-        files: [file],
-        title: titulo
-      });
-      return true;
-    }
-  } catch (e) {
-    if (e?.name === "AbortError") throw e;
-    console.warn("El navegador no pudo compartir el archivo:", e);
+async function subidosCompartirFileObligatorio(file, titulo = "Archivo") {
+  if (!navigator.share) {
+    throw new Error("Este navegador no permite compartir archivos desde la web.");
   }
 
-  return false;
-}
-
-async function subidosCompartirLinkSeguro(link, titulo = "Archivo") {
-  try {
-    if (navigator.share) {
-      await navigator.share({
-        title: titulo,
-        url: link
-      });
-      return;
-    }
-  } catch (e) {
-    if (e?.name === "AbortError") throw e;
-    console.warn("No pude compartir link con navigator.share:", e);
+  if (!navigator.canShare || !navigator.canShare({ files: [file] })) {
+    throw new Error("Este navegador no acepta compartir este tipo de archivo.");
   }
 
-  if (navigator.clipboard?.writeText) {
-    await navigator.clipboard.writeText(link);
-    alert("No se pudo compartir el archivo directo. Copié el link.");
-    return;
-  }
-
-  prompt("Copiá este link:", link);
+  await navigator.share({
+    files: [file],
+    title: titulo
+  });
 }
 
 const subidosAccionesEnCurso = new Set();
@@ -2124,13 +2121,23 @@ function htmlPreviewArchivoSubido(it) {
     `;
   }
 
-  if (esVideo) {
-    return `
-      <button type="button" onclick="${accionAbrir}" class="subidos-media-link subidos-media-frame is-video" title="Abrir">
-        <video src="${it.url}" muted playsinline preload="metadata"></video>
-      </button>
-    `;
-  }
+if (esVideo) {
+  return `
+    <button type="button" onclick="${accionAbrir}" class="subidos-media-link subidos-media-frame is-video subidos-video-frame" title="Abrir video">
+      <video
+        src="${it.url}"
+        muted
+        playsinline
+        preload="metadata"
+        style="display:block; width:100%; height:100%; object-fit:cover; background:#000;"
+      ></video>
+
+      <span class="subidos-video-play">
+        <i class="fa-solid fa-circle-play"></i>
+      </span>
+    </button>
+  `;
+}
 
   if (esAudio) {
     return `
@@ -2274,43 +2281,28 @@ window.compartirSubido = function compartirSubido(id) {
     const it = obtenerSubidoPorId(id);
     if (!it) return;
 
-    const link = subidosLinkDetalle(id);
-
-    // ✅ Prédica: intentamos compartir la card PNG
+    // ✅ Prédica: comparte la card PNG como archivo real
     if (subidosEsPredicaConContenido(it)) {
-      let file = null;
+      const blob = await subidosGenerarBlobCardPredica(id);
 
-      try {
-        const blob = await subidosGenerarBlobCardPredica(id);
+      const file = new File(
+        [blob],
+        `${(it.etiqueta || "predica").toLowerCase()}-${it.fechaEvento || Date.now()}.png`,
+        { type: "image/png" }
+      );
 
-        file = new File(
-          [blob],
-          `${(it.etiqueta || "predica").toLowerCase()}-${it.fechaEvento || Date.now()}.png`,
-          { type: "image/png" }
-        );
-      } catch (e) {
-        console.warn("No pude generar PNG de prédica para compartir:", e);
-      }
-
-      const ok = await subidosCompartirFile(file, it.etiqueta || "Prédica");
-      if (ok) return;
-
-      await subidosCompartirLinkSeguro(link, it.etiqueta || "Prédica");
+      await subidosCompartirFileObligatorio(file, it.etiqueta || "Prédica");
       return;
     }
 
-    // ✅ Otras etiquetas: intentamos compartir archivo real
+    // ✅ Otras etiquetas: comparte el archivo real, no link
     if (it.url) {
       const file = await subidosFileDesdeUrl(it);
-      const ok = await subidosCompartirFile(file, it.etiqueta || "Archivo");
-      if (ok) return;
-
-      // respaldo: link del archivo
-      await subidosCompartirLinkSeguro(it.url, it.etiqueta || "Archivo");
+      await subidosCompartirFileObligatorio(file, it.etiqueta || "Archivo");
       return;
     }
 
-    await subidosCompartirLinkSeguro(link, it.etiqueta || "Archivo");
+    throw new Error("No hay archivo para compartir.");
   });
 };
 
