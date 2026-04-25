@@ -1348,6 +1348,7 @@ function subidosAnchoExportPredica() {
 function subidosPrepararCloneParaExport(clone) {
   const exportW = subidosAnchoExportPredica();
   const esCelular = (window.innerWidth || 999) <= 640;
+  const maxMediaH = esCelular ? Math.round(exportW * 0.54) : 430;
 
   clone.id = "subidosExportCardReal";
   clone.style.width = `${exportW}px`;
@@ -1355,6 +1356,9 @@ function subidosPrepararCloneParaExport(clone) {
   clone.style.margin = "0";
   clone.style.transform = "none";
   clone.style.boxSizing = "border-box";
+  clone.style.minHeight = "0";
+  clone.style.height = "auto";
+  if (esCelular) clone.style.padding = "12px";
 
   // sacar acciones de abajo
   clone.querySelectorAll(".subidos-feed-actions").forEach(el => el.remove());
@@ -1372,10 +1376,12 @@ function subidosPrepararCloneParaExport(clone) {
   clone.querySelectorAll(".subidos-media-frame").forEach(el => {
     el.style.cursor = "default";
 
-    if (esCelular) {
-      el.style.maxHeight = Math.round(window.innerHeight * 0.30) + "px";
-      el.style.overflow = "hidden";
-    }
+if (esCelular) {
+  el.style.height = maxMediaH + "px";
+  el.style.maxHeight = maxMediaH + "px";
+  el.style.minHeight = "0";
+  el.style.overflow = "hidden";
+}
   });
 
   clone.querySelectorAll("img").forEach(img => {
@@ -1404,9 +1410,10 @@ function subidosPrepararCloneParaExport(clone) {
     img.style.height = esCelular ? "auto" : "100%";
     img.style.objectFit = "contain";
 
-    if (esCelular) {
-      img.style.maxHeight = Math.round(window.innerHeight * 0.30) + "px";
-    }
+if (esCelular) {
+  img.style.height = "100%";
+  img.style.maxHeight = maxMediaH + "px";
+}
   });
 
   // compactar citas dentro del PNG exportado
@@ -1428,38 +1435,49 @@ clone.querySelectorAll(".subidos-predica-chip i").forEach(ico => {
   ico.style.fontSize = "12px";
 });
 
-    // ✅ compactar espacios entre Predica / fecha / título / archivo / citas / nota SOLO en exportación
+  // ✅ compactar espacios entre Predica / fecha / título / archivo / citas / nota SOLO en exportación
   clone.querySelectorAll(".subidos-feed-head").forEach(el => {
-    el.style.marginBottom = "5px";
-    el.style.paddingBottom = "0";
+    el.style.margin = "0 0 5px 0";
+    el.style.padding = "0";
+  });
+
+  clone.querySelectorAll(".subidos-feed-left").forEach(el => {
+    el.style.margin = "0";
+    el.style.padding = "0";
   });
 
   clone.querySelectorAll(".subidos-feed-badges").forEach(el => {
-    el.style.marginBottom = "5px";
+    el.style.margin = "0 0 5px 0";
+    el.style.padding = "0";
+  });
+
+  clone.querySelectorAll(".subidos-badge").forEach(el => {
+    el.style.margin = "0";
   });
 
   clone.querySelectorAll(".subidos-feed-date").forEach(el => {
-    el.style.marginTop = "5px";
-    el.style.marginBottom = "5px";
+    el.style.margin = "5px 0";
+    el.style.padding = "0";
     el.style.lineHeight = "1.05";
   });
 
   clone.querySelectorAll(".subidos-feed-desc").forEach(el => {
-    el.style.marginTop = "5px";
-    el.style.marginBottom = "5px";
+    el.style.margin = "5px 0";
+    el.style.padding = "0";
     el.style.lineHeight = "1.05";
   });
 
   clone.querySelectorAll(".subidos-media").forEach(el => {
-    el.style.marginTop = "5px";
-    el.style.marginBottom = "5px";
+    el.style.margin = "5px 0";
+    el.style.padding = "0";
   });
 
   clone.querySelectorAll(".subidos-predica-resumen").forEach(el => {
-    el.style.marginTop = "5px";
+    el.style.margin = "5px 0 0 0";
+    el.style.padding = "0";
     el.style.gap = "5px";
   });
-  
+
   return clone;
 }
 
@@ -1809,30 +1827,65 @@ function subidosNombreArchivoParaCompartir(it) {
 }
 
 async function subidosFileDesdeUrl(it) {
-  if (!it?.url) throw new Error("No hay archivo para compartir.");
+  if (!it?.url) return null;
 
-  const r = await fetch(it.url, { mode: "cors" });
-  if (!r.ok) throw new Error("No pude leer el archivo remoto para compartir.");
+  try {
+    const r = await fetch(it.url, { mode: "cors" });
+    if (!r.ok) throw new Error("No pude leer el archivo remoto para compartir.");
 
-  const blob = await r.blob();
+    const blob = await r.blob();
 
-  return new File(
-    [blob],
-    subidosNombreArchivoParaCompartir(it),
-    { type: it.mimeType || blob.type || "application/octet-stream" }
-  );
+    return new File(
+      [blob],
+      subidosNombreArchivoParaCompartir(it),
+      { type: it.mimeType || blob.type || "application/octet-stream" }
+    );
+  } catch (e) {
+    console.warn("No pude convertir el archivo remoto a File para compartir. Probable CORS:", e);
+    return null;
+  }
 }
 
 async function subidosCompartirFile(file, titulo = "Archivo") {
-  if (navigator.canShare && navigator.canShare({ files: [file] }) && navigator.share) {
-    await navigator.share({
-      files: [file],
-      title: titulo
-    });
-    return true;
+  if (!file) return false;
+
+  try {
+    if (navigator.canShare && navigator.canShare({ files: [file] }) && navigator.share) {
+      await navigator.share({
+        files: [file],
+        title: titulo
+      });
+      return true;
+    }
+  } catch (e) {
+    if (e?.name === "AbortError") throw e;
+    console.warn("El navegador no pudo compartir el archivo:", e);
   }
 
   return false;
+}
+
+async function subidosCompartirLinkSeguro(link, titulo = "Archivo") {
+  try {
+    if (navigator.share) {
+      await navigator.share({
+        title: titulo,
+        url: link
+      });
+      return;
+    }
+  } catch (e) {
+    if (e?.name === "AbortError") throw e;
+    console.warn("No pude compartir link con navigator.share:", e);
+  }
+
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(link);
+    alert("No se pudo compartir el archivo directo. Copié el link.");
+    return;
+  }
+
+  prompt("Copiá este link:", link);
 }
 
 const subidosAccionesEnCurso = new Set();
@@ -2223,45 +2276,41 @@ window.compartirSubido = function compartirSubido(id) {
 
     const link = subidosLinkDetalle(id);
 
-    // ✅ Predica: compartir la card como imagen PNG
+    // ✅ Prédica: intentamos compartir la card PNG
     if (subidosEsPredicaConContenido(it)) {
-      const blob = await subidosGenerarBlobCardPredica(id);
+      let file = null;
 
-      const file = new File(
-        [blob],
-        `${(it.etiqueta || "predica").toLowerCase()}-${it.fechaEvento || Date.now()}.png`,
-        { type: "image/png" }
-      );
+      try {
+        const blob = await subidosGenerarBlobCardPredica(id);
+
+        file = new File(
+          [blob],
+          `${(it.etiqueta || "predica").toLowerCase()}-${it.fechaEvento || Date.now()}.png`,
+          { type: "image/png" }
+        );
+      } catch (e) {
+        console.warn("No pude generar PNG de prédica para compartir:", e);
+      }
 
       const ok = await subidosCompartirFile(file, it.etiqueta || "Prédica");
       if (ok) return;
 
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(link);
-        alert("Tu navegador no pudo compartir la imagen directamente. Copié el link de detalle.");
-        return;
-      }
-
-      prompt("Copiá este link:", link);
+      await subidosCompartirLinkSeguro(link, it.etiqueta || "Prédica");
       return;
     }
 
-    // ✅ Otras etiquetas: compartir el archivo real, no el link
+    // ✅ Otras etiquetas: intentamos compartir archivo real
     if (it.url) {
       const file = await subidosFileDesdeUrl(it);
-
       const ok = await subidosCompartirFile(file, it.etiqueta || "Archivo");
       if (ok) return;
-    }
 
-    // fallback si el navegador no permite compartir archivos
-    if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(it.url || link);
-      alert("Tu navegador no pudo compartir el archivo directamente. Copié el link.");
+      // respaldo: link del archivo
+      await subidosCompartirLinkSeguro(it.url, it.etiqueta || "Archivo");
       return;
     }
 
-    prompt("Copiá este link:", it.url || link);
+    await subidosCompartirLinkSeguro(link, it.etiqueta || "Archivo");
   });
 };
 
