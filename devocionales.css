@@ -1818,22 +1818,21 @@ button.subidos-media-link{
 
 .subidos-predica-chip {
   width: 100%;
-  min-height: 42px;
+  min-height: 0;
+  height: auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-
-  padding: 7px 10px;
+  gap: 5px;
+  padding: 3px 6px;
   border: 1px solid #d8eef9;
   background: rgba(255,255,255,.94);
-  border-radius: 12px;
-
+  border-radius: 6px;
   cursor: pointer;
   font-family: 'Lora', serif;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 700;
-  line-height: 1.05;
+  line-height: 1;
   text-align: left;
 }
 
@@ -1887,6 +1886,64 @@ button.subidos-media-link{
 .subidos-predica-chip i {
   flex: 0 0 auto;
   font-size: 12px;
+}
+
+/* ✅ mismo inicio visual del archivo en prédica y en otras etiquetas */
+.subidos-feed-card .subidos-media {
+  margin-top: 5px !important;
+  margin-bottom: 5px !important;
+}
+
+.subidos-feed-card .subidos-feed-head {
+  margin-bottom: 5px !important;
+}
+
+.subidos-feed-card .subidos-feed-date {
+  margin-top: 5px !important;
+  margin-bottom: 5px !important;
+}
+
+.subidos-feed-card .subidos-feed-desc {
+  margin-top: 5px !important;
+  margin-bottom: 5px !important;
+}
+
+/* ✅ quitar scroll horizontal del modal Subidos en celular */
+#modalSubidos {
+  overflow-x: hidden !important;
+}
+
+#modalSubidos .modal-card {
+  width: calc(100vw - 22px) !important;
+  max-width: 560px !important;
+  box-sizing: border-box !important;
+  overflow-x: hidden !important;
+}
+
+#modalSubidos .modal-card * {
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+#subidosEtiqueta {
+  min-width: 0 !important;
+}
+
+@media (max-width: 640px) {
+  #modalSubidos .modal-card {
+    max-width: calc(100vw - 22px) !important;
+  }
+
+  #modalSubidos select,
+  #modalSubidos input,
+  #modalSubidos textarea {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  #btnAgregarEtiquetaSubidos {
+    width: 100%;
+  }
 }
 
 </style>
