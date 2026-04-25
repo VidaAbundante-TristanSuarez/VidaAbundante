@@ -544,55 +544,90 @@ const key = `${safeFolder}/${finalName}`;
   }
 );
 
-exports.descargarImagenR2 = onRequest(async (req, res) => {
-  res.set("Access-Control-Allow-Origin", "*");
-  res.set("Access-Control-Allow-Methods", "GET, OPTIONS");
-  res.set("Access-Control-Allow-Headers", "Content-Type");
+exports.descargarImagenR2 = onRequest(
+  {
+    cors: true,
+    timeoutSeconds: 120,
+    memory: "1GiB"
+  },
+  async (req, res) => {
+    try {
+      if (req.method === "OPTIONS") {
+        res.status(204).send("");
+        return;
+      }
 
-  if (req.method === "OPTIONS") {
-    res.status(204).send("");
-    return;
+      if (req.method !== "GET") {
+        res.status(405).json({ ok: false, error: "Use GET" });
+        return;
+      }
+
+      const rawUrl = String(req.query.url || "").trim();
+      const nombreParam = String(req.query.nombre || req.query.name || "").trim();
+      const descargar = String(req.query.descargar || req.query.download || "") === "1";
+
+      if (!rawUrl) {
+        res.status(400).json({ ok: false, error: "Falta url" });
+        return;
+      }
+
+      const u = new URL(rawUrl);
+
+      // ✅ Solo permitir TU bucket público R2
+      const permitido = u.href.startsWith("https://pub-f0843badb1194dc79fd37b3a5526e273.r2.dev/");
+      if (!permitido) {
+        res.status(400).json({ ok: false, error: "URL no permitida" });
+        return;
+      }
+
+      const r = await fetch(rawUrl);
+
+      if (!r.ok) {
+        res.status(502).json({
+          ok: false,
+          error: "No pude leer el archivo desde R2",
+          status: r.status
+        });
+        return;
+      }
+
+      const arr = await r.arrayBuffer();
+      const buf = Buffer.from(arr);
+
+      const contentType = r.headers.get("content-type") || "application/octet-stream";
+
+      const nombreDesdeUrl = decodeURIComponent(
+        u.pathname.split("/").pop() || `archivo_${Date.now()}`
+      );
+
+      const fileName = (nombreParam || nombreDesdeUrl || `archivo_${Date.now()}`)
+        .replace(/[\r\n"]/g, "_")
+        .slice(0, 160);
+
+      res.set("Access-Control-Allow-Origin", "*");
+      res.set("Access-Control-Allow-Methods", "GET, OPTIONS");
+      res.set("Access-Control-Allow-Headers", "Content-Type");
+      res.set("Access-Control-Expose-Headers", "Content-Type, Content-Length, Content-Disposition");
+
+      res.set("Content-Type", contentType);
+      res.set("Content-Length", String(buf.length));
+      res.set("Cache-Control", "public, max-age=3600");
+
+      if (descargar) {
+        const encoded = encodeURIComponent(fileName);
+        res.set("Content-Disposition", `attachment; filename*=UTF-8''${encoded}`);
+      } else {
+        const encoded = encodeURIComponent(fileName);
+        res.set("Content-Disposition", `inline; filename*=UTF-8''${encoded}`);
+      }
+
+      res.status(200).send(buf);
+    } catch (e) {
+      console.error("descargarImagenR2 error:", e);
+      res.status(500).json({
+        ok: false,
+        error: e?.message || "Error descargando archivo"
+      });
+    }
   }
-
-  try {
-    const rawUrl = String(req.query.url || "").trim();
-    if (!rawUrl) {
-      res.status(400).json({ ok: false, error: "Falta url" });
-      return;
-    }
-
-    const u = new URL(rawUrl);
-
-    // ✅ solo permitir tu bucket público R2
-    if (!/\.r2\.dev$/i.test(u.hostname)) {
-      res.status(400).json({ ok: false, error: "URL no permitida" });
-      return;
-    }
-
-    const r = await fetch(rawUrl);
-    if (!r.ok) {
-      res.status(502).json({ ok: false, error: "No pude leer la imagen desde R2" });
-      return;
-    }
-
-    const arr = await r.arrayBuffer();
-    const buf = Buffer.from(arr);
-
-    const contentType = r.headers.get("content-type") || "application/octet-stream";
-    const fileName = decodeURIComponent(
-      u.pathname.split("/").pop() || `imagen_${Date.now()}.png`
-    );
-
-    res.set("Content-Type", contentType);
-    res.set("Content-Disposition", `attachment; filename="${fileName}"`);
-    res.set("Cache-Control", "no-store");
-
-    res.status(200).send(buf);
-  } catch (e) {
-    console.error("descargarImagenR2 error:", e);
-    res.status(500).json({
-      ok: false,
-      error: e?.message || "Error descargando imagen"
-    });
-  }
-});
+);
