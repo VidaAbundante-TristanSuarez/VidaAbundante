@@ -1946,4 +1946,36 @@ button.subidos-media-link{
   }
 }
 
+/* ✅ alinear inicio de archivo en todas las cards */
+.subidos-feed-card .subidos-feed-head {
+  margin-bottom: 5px !important;
+}
+
+.subidos-feed-card .subidos-feed-left {
+  margin-bottom: 0 !important;
+}
+
+.subidos-feed-card .subidos-feed-badges {
+  margin-bottom: 5px !important;
+}
+
+.subidos-feed-card .subidos-feed-date {
+  margin-top: 5px !important;
+  margin-bottom: 5px !important;
+}
+
+.subidos-feed-card .subidos-feed-desc {
+  margin-top: 5px !important;
+  margin-bottom: 5px !important;
+}
+
+.subidos-feed-card .subidos-media {
+  margin-top: 5px !important;
+  margin-bottom: 5px !important;
+}
+
+.subidos-feed-card .subidos-media-link {
+  margin-top: 0 !important;
+}
+
 </style>
