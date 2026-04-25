@@ -1373,7 +1373,7 @@ function subidosPrepararCloneParaExport(clone) {
     el.style.cursor = "default";
 
     if (esCelular) {
-      el.style.maxHeight = Math.round(window.innerHeight * 0.34) + "px";
+      el.style.maxHeight = Math.round(window.innerHeight * 0.30) + "px";
       el.style.overflow = "hidden";
     }
   });
@@ -1405,7 +1405,7 @@ function subidosPrepararCloneParaExport(clone) {
     img.style.objectFit = "contain";
 
     if (esCelular) {
-      img.style.maxHeight = Math.round(window.innerHeight * 0.34) + "px";
+      img.style.maxHeight = Math.round(window.innerHeight * 0.30) + "px";
     }
   });
 
@@ -1418,16 +1418,48 @@ clone.querySelectorAll(".subidos-predica-resumen").forEach(el => {
 clone.querySelectorAll(".subidos-predica-chip").forEach(btn => {
   btn.style.minHeight = "0";
   btn.style.height = "auto";
-  btn.style.padding = "3px 9px";
+  btn.style.padding = "3px 8px";
   btn.style.fontSize = "12px";
-  btn.style.lineHeight = "1.08";
-  btn.style.borderRadius = "9px";
+  btn.style.lineHeight = "1";
+  btn.style.borderRadius = "8px";
 });
 
 clone.querySelectorAll(".subidos-predica-chip i").forEach(ico => {
   ico.style.fontSize = "12px";
 });
 
+    // ✅ compactar espacios entre Predica / fecha / título / archivo / citas / nota SOLO en exportación
+  clone.querySelectorAll(".subidos-feed-head").forEach(el => {
+    el.style.marginBottom = "5px";
+    el.style.paddingBottom = "0";
+  });
+
+  clone.querySelectorAll(".subidos-feed-badges").forEach(el => {
+    el.style.marginBottom = "5px";
+  });
+
+  clone.querySelectorAll(".subidos-feed-date").forEach(el => {
+    el.style.marginTop = "5px";
+    el.style.marginBottom = "5px";
+    el.style.lineHeight = "1.05";
+  });
+
+  clone.querySelectorAll(".subidos-feed-desc").forEach(el => {
+    el.style.marginTop = "5px";
+    el.style.marginBottom = "5px";
+    el.style.lineHeight = "1.05";
+  });
+
+  clone.querySelectorAll(".subidos-media").forEach(el => {
+    el.style.marginTop = "5px";
+    el.style.marginBottom = "5px";
+  });
+
+  clone.querySelectorAll(".subidos-predica-resumen").forEach(el => {
+    el.style.marginTop = "5px";
+    el.style.gap = "5px";
+  });
+  
   return clone;
 }
 
@@ -1771,6 +1803,38 @@ async function descargarArchivoRemoto(url, nombre = "archivo") {
   setTimeout(() => URL.revokeObjectURL(obj), 1200);
 }
 
+function subidosNombreArchivoParaCompartir(it) {
+  const nombre = String(it.fileName || it.etiqueta || "archivo").trim();
+  return nombre || "archivo";
+}
+
+async function subidosFileDesdeUrl(it) {
+  if (!it?.url) throw new Error("No hay archivo para compartir.");
+
+  const r = await fetch(it.url, { mode: "cors" });
+  if (!r.ok) throw new Error("No pude leer el archivo remoto para compartir.");
+
+  const blob = await r.blob();
+
+  return new File(
+    [blob],
+    subidosNombreArchivoParaCompartir(it),
+    { type: it.mimeType || blob.type || "application/octet-stream" }
+  );
+}
+
+async function subidosCompartirFile(file, titulo = "Archivo") {
+  if (navigator.canShare && navigator.canShare({ files: [file] }) && navigator.share) {
+    await navigator.share({
+      files: [file],
+      title: titulo
+    });
+    return true;
+  }
+
+  return false;
+}
+
 const subidosAccionesEnCurso = new Set();
 
 function subidosAvisoProceso(texto, permanente = false) {
@@ -1989,22 +2053,27 @@ function htmlPreviewArchivoSubido(it) {
 
   if (!it.url) return "";
 
+  // ✅ Si es prédica, tocar el archivo abre la prédica completa, no el archivo solo.
+  const accionAbrir = subidosEsPredicaConContenido(it)
+    ? `abrirSubidosVisorPredica('${it.id}')`
+    : `abrirSubidosVisorArchivo('${it.id}')`;
+
   if (esImg) {
     return `
-      <button type="button" onclick="abrirSubidosVisorArchivo('${it.id}')" class="subidos-media-link subidos-media-frame is-image" title="Abrir archivo">
+      <button type="button" onclick="${accionAbrir}" class="subidos-media-link subidos-media-frame is-image" title="Abrir">
         <img
-  src="${it.url}"
-  alt="${nombre}"
-  loading="lazy"
-  decoding="async"
->
+          src="${it.url}"
+          alt="${nombre}"
+          loading="lazy"
+          decoding="async"
+        >
       </button>
     `;
   }
 
   if (esVideo) {
     return `
-      <button type="button" onclick="abrirSubidosVisorArchivo('${it.id}')" class="subidos-media-link subidos-media-frame is-video" title="Abrir video">
+      <button type="button" onclick="${accionAbrir}" class="subidos-media-link subidos-media-frame is-video" title="Abrir">
         <video src="${it.url}" muted playsinline preload="metadata"></video>
       </button>
     `;
@@ -2012,7 +2081,7 @@ function htmlPreviewArchivoSubido(it) {
 
   if (esAudio) {
     return `
-      <button type="button" onclick="abrirSubidosVisorArchivo('${it.id}')" class="subidos-media-link subidos-media-frame is-audio" title="Abrir audio">
+      <button type="button" onclick="${accionAbrir}" class="subidos-media-link subidos-media-frame is-audio" title="Abrir">
         <div class="subidos-file-open">
           <i class="fa-solid fa-headphones"></i>
           <span>${nombre}</span>
@@ -2023,7 +2092,7 @@ function htmlPreviewArchivoSubido(it) {
   }
 
   return `
-    <button type="button" onclick="abrirSubidosVisorArchivo('${it.id}')" class="subidos-media-link subidos-media-frame is-file" title="Abrir archivo">
+    <button type="button" onclick="${accionAbrir}" class="subidos-media-link subidos-media-frame is-file" title="Abrir">
       <div class="subidos-file-open">
         <i class="fa-solid fa-file-lines"></i>
         <span>${nombre}</span>
@@ -2154,7 +2223,7 @@ window.compartirSubido = function compartirSubido(id) {
 
     const link = subidosLinkDetalle(id);
 
-    // si es prédica con contenido, compartimos la CARD COMO IMAGEN
+    // ✅ Predica: compartir la card como imagen PNG
     if (subidosEsPredicaConContenido(it)) {
       const blob = await subidosGenerarBlobCardPredica(id);
 
@@ -2164,13 +2233,8 @@ window.compartirSubido = function compartirSubido(id) {
         { type: "image/png" }
       );
 
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({
-          files: [file],
-          text: link
-        });
-        return;
-      }
+      const ok = await subidosCompartirFile(file, it.etiqueta || "Prédica");
+      if (ok) return;
 
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(link);
@@ -2182,26 +2246,22 @@ window.compartirSubido = function compartirSubido(id) {
       return;
     }
 
-    // resto de subidos normales
-    if (navigator.share) {
-      const payload = {
-        title: it.etiqueta || "Subido",
-        text: it.url ? link : (it.descripcion || link)
-      };
+    // ✅ Otras etiquetas: compartir el archivo real, no el link
+    if (it.url) {
+      const file = await subidosFileDesdeUrl(it);
 
-      if (it.url) payload.url = it.url;
-
-      await navigator.share(payload);
-      return;
+      const ok = await subidosCompartirFile(file, it.etiqueta || "Archivo");
+      if (ok) return;
     }
 
+    // fallback si el navegador no permite compartir archivos
     if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(link);
-      alert("Link copiado.");
+      await navigator.clipboard.writeText(it.url || link);
+      alert("Tu navegador no pudo compartir el archivo directamente. Copié el link.");
       return;
     }
 
-    prompt("Copiá este link:", link);
+    prompt("Copiá este link:", it.url || link);
   });
 };
 
@@ -2262,6 +2322,12 @@ async function guardarSubido() {
 
     const actual = subidosEditandoId ? (obtenerSubidoPorId(subidosEditandoId) || {}) : {};
     const file = inpFile?.files?.[0] || null;
+        // ⚠️ Por ahora los videos grandes pueden fallar porque se envían en base64.
+    // Ajustá este límite si tu función soporta más.
+    if (file && file.type.startsWith("video/") && file.size > 18 * 1024 * 1024) {
+      alert("El video es demasiado pesado para esta forma de subida. Probá con un video de menos de 18 MB o después cambiamos la función para subir videos grandes directo a R2.");
+      return;
+    }
     const fechaEvento = (inpFecha?.value || "").trim();
     const etiqueta = (inpEtiqueta?.value || "").trim();
     const descripcion = (inpDesc?.value || "").trim();
