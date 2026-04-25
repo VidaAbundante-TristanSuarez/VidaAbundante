@@ -907,15 +907,38 @@ function htmlPredicaBibliaSubido(it) {
 
   if (!citas.length && !notaFinal) return "";
 
+  const estiloChip = `
+    width:100%;
+    min-height:0;
+    height:auto;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:7px;
+    padding:3px 9px;
+    border:1px solid #d8eef9;
+    background:rgba(255,255,255,.94);
+    border-radius:9px;
+    cursor:pointer;
+    font-family:'Lora',serif;
+    font-size:12px;
+    font-weight:700;
+    line-height:1.08;
+    text-align:left;
+  `;
+
   const filas = citas.map((c, i) => `
     <button
       type="button"
       class="subidos-predica-chip"
+      style="${estiloChip}"
       onclick="event.stopPropagation(); abrirSubidosVisorPredica('${it.id}', '${i}')"
       title="Abrir esta cita"
     >
-      <span class="subidos-predica-chip-text">${escaparHtml(c.referencia || "")}</span>
-      <i class="fa-solid fa-caret-down"></i>
+      <span class="subidos-predica-chip-text" style="min-width:0; overflow-wrap:anywhere;">
+        ${escaparHtml(c.referencia || "")}
+      </span>
+      <i class="fa-solid fa-caret-down" style="flex:0 0 auto; font-size:12px;"></i>
     </button>
   `);
 
@@ -924,11 +947,14 @@ function htmlPredicaBibliaSubido(it) {
       <button
         type="button"
         class="subidos-predica-chip"
+        style="${estiloChip}"
         onclick="event.stopPropagation(); abrirSubidosVisorPredica('${it.id}', 'nota')"
         title="Abrir nota"
       >
-        <span class="subidos-predica-chip-text">Nota</span>
-        <i class="fa-solid fa-caret-down"></i>
+        <span class="subidos-predica-chip-text" style="min-width:0; overflow-wrap:anywhere;">
+          Nota
+        </span>
+        <i class="fa-solid fa-caret-down" style="flex:0 0 auto; font-size:12px;"></i>
       </button>
     `);
   }
@@ -938,6 +964,7 @@ function htmlPredicaBibliaSubido(it) {
       class="subidos-predica-resumen"
       onclick="abrirSubidosVisorPredica('${it.id}')"
       title="Abrir detalle completo"
+      style="display:flex; flex-direction:column; gap:5px; cursor:pointer;"
     >
       ${filas.join("")}
     </div>
@@ -1383,18 +1410,23 @@ function subidosPrepararCloneParaExport(clone) {
   });
 
   // compactar citas dentro del PNG exportado
-  clone.querySelectorAll(".subidos-predica-resumen").forEach(el => {
-    el.style.cursor = "default";
-    el.style.gap = "6px";
-  });
+clone.querySelectorAll(".subidos-predica-resumen").forEach(el => {
+  el.style.cursor = "default";
+  el.style.gap = "5px";
+});
 
-  clone.querySelectorAll(".subidos-predica-chip").forEach(btn => {
-    btn.style.minHeight = esCelular ? "36px" : "40px";
-    btn.style.padding = esCelular ? "6px 9px" : "7px 10px";
-    btn.style.fontSize = esCelular ? "13px" : "14px";
-    btn.style.lineHeight = "1.05";
-    btn.style.borderRadius = "11px";
-  });
+clone.querySelectorAll(".subidos-predica-chip").forEach(btn => {
+  btn.style.minHeight = "0";
+  btn.style.height = "auto";
+  btn.style.padding = "3px 9px";
+  btn.style.fontSize = "12px";
+  btn.style.lineHeight = "1.08";
+  btn.style.borderRadius = "9px";
+});
+
+clone.querySelectorAll(".subidos-predica-chip i").forEach(ico => {
+  ico.style.fontSize = "12px";
+});
 
   return clone;
 }
