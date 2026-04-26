@@ -1452,7 +1452,10 @@ function abrirModalSubidosVisor(titulo, html) {
 
 function subidosLinkDetalle(id) {
   const url = new URL(window.location.href);
-  url.hash = `subido=${encodeURIComponent(id)}`;
+
+  // ✅ open=all indica que debe abrir la prédica completa extendida
+  url.hash = `subido=${encodeURIComponent(id)}&open=all`;
+
   return url.toString();
 }
 
@@ -1481,134 +1484,179 @@ function subidosEsperarImagenes(node) {
 function subidosAnchoExportPredica() {
   const vw = window.innerWidth || document.documentElement.clientWidth || 420;
 
-  // En celular: casi todo el ancho de pantalla.
+  // ✅ En celular: casi todo el ancho real disponible
   if (vw <= 640) {
-    return Math.max(330, Math.min(420, vw - 18));
+    return Math.max(350, Math.min(460, vw - 4));
   }
 
-  // En PC queda como antes.
-  return 420;
+  // En PC
+  return 440;
 }
 
 function subidosPrepararCloneParaExport(clone) {
   const exportW = subidosAnchoExportPredica();
   const esCelular = (window.innerWidth || 999) <= 640;
-  const maxMediaH = esCelular ? Math.round(exportW * 0.54) : 430;
+
+  // ✅ controla el alto de la imagen/archivo dentro del PNG
+  // Antes quedaba demasiado torre. Esto la hace más ancha y menos larga.
+  const mediaH = esCelular ? Math.round(exportW * 1.18) : 430;
+
+  const important = (el, prop, val) => {
+    if (!el) return;
+    el.style.setProperty(prop, val, "important");
+  };
 
   clone.id = "subidosExportCardReal";
-  clone.style.width = `${exportW}px`;
-  clone.style.maxWidth = `${exportW}px`;
-  clone.style.margin = "0";
-  clone.style.transform = "none";
-  clone.style.boxSizing = "border-box";
-  clone.style.minHeight = "0";
-  clone.style.height = "auto";
-  if (esCelular) clone.style.padding = "12px";
+  clone.classList.add("subidos-exportando-card");
+
+  // ✅ ESTO ES CLAVE:
+  // pisa de verdad el width/height !important de la galería normal
+  important(clone, "width", `${exportW}px`);
+  important(clone, "min-width", `${exportW}px`);
+  important(clone, "max-width", `${exportW}px`);
+  important(clone, "height", "auto");
+  important(clone, "min-height", "0");
+  important(clone, "max-height", "none");
+
+  important(clone, "margin", "0");
+  important(clone, "padding", esCelular ? "10px" : "12px");
+  important(clone, "box-sizing", "border-box");
+  important(clone, "transform", "none");
+  important(clone, "display", "flex");
+  important(clone, "flex-direction", "column");
+  important(clone, "overflow", "hidden");
 
   // sacar acciones de abajo
   clone.querySelectorAll(".subidos-feed-actions").forEach(el => el.remove());
   clone.querySelectorAll(".subidosDangerMini").forEach(el => el.remove());
 
-  // si hubiera cosas de focus/animaciones
   clone.classList.remove("subidos-focus");
 
-  // convertir botones clickeables visuales en elementos neutros
   clone.querySelectorAll("button").forEach(btn => {
     btn.blur();
   });
 
-  // asegurar que el preview del archivo se vea bien
-  clone.querySelectorAll(".subidos-media-frame").forEach(el => {
-    el.style.cursor = "default";
+  // ================= COMPACTAR CABECERA =================
 
-if (esCelular) {
-  el.style.height = maxMediaH + "px";
-  el.style.maxHeight = maxMediaH + "px";
-  el.style.minHeight = "0";
-  el.style.overflow = "hidden";
-}
-  });
-
-clone.querySelectorAll("img").forEach(img => {
-  img.removeAttribute("loading");
-  img.removeAttribute("srcset");
-  img.removeAttribute("sizes");
-  img.removeAttribute("crossorigin");
-
-  img.loading = "eager";
-  img.decoding = "sync";
-
-  img.style.display = "block";
-  img.style.width = "100%";
-  img.style.height = esCelular ? "auto" : "100%";
-  img.style.objectFit = "contain";
-
-  if (esCelular) {
-    img.style.height = "100%";
-    img.style.maxHeight = maxMediaH + "px";
-  }
-});
-
-  // compactar citas dentro del PNG exportado
-clone.querySelectorAll(".subidos-predica-resumen").forEach(el => {
-  el.style.cursor = "default";
-  el.style.gap = "5px";
-});
-
-clone.querySelectorAll(".subidos-predica-chip").forEach(btn => {
-  btn.style.minHeight = "0";
-  btn.style.height = "auto";
-  btn.style.padding = "3px 8px";
-  btn.style.fontSize = "12px";
-  btn.style.lineHeight = "1";
-  btn.style.borderRadius = "8px";
-});
-
-clone.querySelectorAll(".subidos-predica-chip i").forEach(ico => {
-  ico.style.fontSize = "12px";
-});
-
-  // ✅ compactar espacios entre Predica / fecha / título / archivo / citas / nota SOLO en exportación
   clone.querySelectorAll(".subidos-feed-head").forEach(el => {
-    el.style.margin = "0 0 5px 0";
-    el.style.padding = "0";
+    important(el, "margin", "0 0 2px 0");
+    important(el, "padding", "0");
+    important(el, "min-height", "0");
+    important(el, "height", "auto");
+    important(el, "gap", "0");
   });
 
   clone.querySelectorAll(".subidos-feed-left").forEach(el => {
-    el.style.margin = "0";
-    el.style.padding = "0";
+    important(el, "margin", "0");
+    important(el, "padding", "0");
+    important(el, "min-height", "0");
+    important(el, "gap", "1px");
   });
 
   clone.querySelectorAll(".subidos-feed-badges").forEach(el => {
-    el.style.margin = "0 0 5px 0";
-    el.style.padding = "0";
+    important(el, "margin", "0 0 2px 0");
+    important(el, "padding", "0");
+    important(el, "min-height", "0");
+    important(el, "gap", "4px");
   });
 
   clone.querySelectorAll(".subidos-badge").forEach(el => {
-    el.style.margin = "0";
+    important(el, "margin", "0");
+    important(el, "padding", "4px 9px");
+    important(el, "font-size", "12px");
+    important(el, "line-height", "1");
   });
 
   clone.querySelectorAll(".subidos-feed-date").forEach(el => {
-    el.style.margin = "5px 0";
-    el.style.padding = "0";
-    el.style.lineHeight = "1.05";
+    important(el, "margin", "1px 0");
+    important(el, "padding", "0");
+    important(el, "line-height", "1");
+    important(el, "font-size", "13px");
   });
 
   clone.querySelectorAll(".subidos-feed-desc").forEach(el => {
-    el.style.margin = "5px 0";
-    el.style.padding = "0";
-    el.style.lineHeight = "1.05";
+    important(el, "margin", "2px 0 3px 0");
+    important(el, "padding", "0");
+    important(el, "line-height", "1.08");
+    important(el, "min-height", "0");
+    important(el, "height", "auto");
+    important(el, "max-height", "none");
+    important(el, "overflow", "visible");
   });
+
+  // ================= ARCHIVO / IMAGEN =================
 
   clone.querySelectorAll(".subidos-media").forEach(el => {
-    el.style.margin = "5px 0";
-    el.style.padding = "0";
+    important(el, "margin", "2px 0 4px 0");
+    important(el, "padding", "0");
+    important(el, "flex", "0 0 auto");
+    important(el, "min-height", "0");
+    important(el, "height", "auto");
   });
 
+  clone.querySelectorAll(".subidos-media-link, .subidos-media-frame").forEach(el => {
+    important(el, "width", "100%");
+    important(el, "height", `${mediaH}px`);
+    important(el, "max-height", `${mediaH}px`);
+    important(el, "min-height", "0");
+    important(el, "aspect-ratio", "auto");
+    important(el, "flex", "0 0 auto");
+    important(el, "padding", "2px");
+    important(el, "overflow", "hidden");
+    important(el, "border-radius", "14px");
+    important(el, "box-sizing", "border-box");
+    important(el, "cursor", "default");
+  });
+
+  clone.querySelectorAll("img").forEach(img => {
+    img.removeAttribute("loading");
+    img.removeAttribute("srcset");
+    img.removeAttribute("sizes");
+    img.removeAttribute("crossorigin");
+
+    img.loading = "eager";
+    img.decoding = "sync";
+
+    important(img, "display", "block");
+    important(img, "width", "100%");
+    important(img, "height", "100%");
+    important(img, "max-width", "100%");
+    important(img, "max-height", "100%");
+    important(img, "object-fit", "contain");
+    important(img, "border-radius", "10px");
+    important(img, "background", "transparent");
+  });
+
+  clone.querySelectorAll("video").forEach(video => {
+    important(video, "display", "block");
+    important(video, "width", "100%");
+    important(video, "height", "100%");
+    important(video, "max-width", "100%");
+    important(video, "max-height", "100%");
+    important(video, "object-fit", "contain");
+    important(video, "border-radius", "10px");
+  });
+
+  // ================= CITAS DE PRÉDICA =================
+
   clone.querySelectorAll(".subidos-predica-resumen").forEach(el => {
-    el.style.margin = "5px 0 0 0";
-    el.style.padding = "0";
-    el.style.gap = "5px";
+    important(el, "margin", "4px 0 0 0");
+    important(el, "padding", "0");
+    important(el, "gap", "4px");
+    important(el, "cursor", "default");
+  });
+
+  clone.querySelectorAll(".subidos-predica-chip").forEach(btn => {
+    important(btn, "min-height", "0");
+    important(btn, "height", "auto");
+    important(btn, "padding", "3px 8px");
+    important(btn, "font-size", "12px");
+    important(btn, "line-height", "1");
+    important(btn, "border-radius", "8px");
+  });
+
+  clone.querySelectorAll(".subidos-predica-chip i").forEach(ico => {
+    important(ico, "font-size", "12px");
   });
 
   return clone;
@@ -1698,10 +1746,13 @@ function subidosEsPredicaConContenido(it) {
 }
 
 function subidosAbrirDesdeHash() {
-  const hash = String(window.location.hash || "");
-  if (!hash.startsWith("#subido=")) return;
+  const rawHash = String(window.location.hash || "").replace(/^#/, "");
+  if (!rawHash.startsWith("subido=")) return;
 
-  const id = decodeURIComponent(hash.replace("#subido=", "").trim());
+  const params = new URLSearchParams(rawHash);
+  const id = String(params.get("subido") || "").trim();
+  const open = String(params.get("open") || "").trim();
+
   if (!id) return;
 
   const it = obtenerSubidoPorId(id);
@@ -1712,15 +1763,17 @@ function subidosAbrirDesdeHash() {
   if (typeof window.mostrarIglesiaSub === "function") window.mostrarIglesiaSub("subidos");
 
   setTimeout(() => {
+    const abrirClave = open === "all" ? "all" : "";
+
     if (subidosEsPredicaConContenido(it)) {
-      abrirSubidosVisorPredica(id);
+      abrirSubidosVisorPredica(id, abrirClave);
       return;
     }
 
     if (it.url) {
       abrirSubidosVisorArchivo(id);
     }
-  }, 120);
+  }, 180);
 }
 
 function htmlArchivoGrandePredica(it) {
@@ -1802,11 +1855,12 @@ function htmlPredicaBibliaSubidoGrande(it, abrirClave = "") {
   const citas = obtenerCitasPredicaSubido(it);
   const notaFinal = String(it.predicaNotaFinal || it.notaFinalGeneral || "").trim();
 
-  const bloques = [];
+ const bloques = [];
+ const abrirTodo = String(abrirClave) === "all";
 
   citas.forEach((c, i) => {
     const bodyId = `subidosPredicaGrande-${it.id}-${i}`;
-    const abierto = String(abrirClave) === String(i);
+    const abierto = abrirTodo || String(abrirClave) === String(i);
 
     bloques.push(`
       <div style="border:1px solid #d8eef9; background:#ffffff; border-radius:14px; overflow:hidden; margin-bottom:10px;">
@@ -1837,8 +1891,8 @@ function htmlPredicaBibliaSubidoGrande(it, abrirClave = "") {
           id="${bodyId}"
           style="
             display:${abierto ? "block" : "none"};
-            max-height:320px;
-            overflow:auto;
+            max-height:${abrirTodo ? "none" : "320px"};
+            overflow:${abrirTodo ? "visible" : "auto"};
             padding:12px;
             border-top:1px solid #e7f2f8;
             background:#fff;
@@ -1865,7 +1919,7 @@ function htmlPredicaBibliaSubidoGrande(it, abrirClave = "") {
 
   if (notaFinal) {
     const bodyId = `subidosPredicaGrandeNota-${it.id}`;
-    const abierto = String(abrirClave) === "nota";
+    const abierto = abrirTodo || String(abrirClave) === "nota";
 
     bloques.push(`
       <div style="border:1px solid #d8eef9; background:#ffffff; border-radius:14px; overflow:hidden;">
@@ -1896,8 +1950,8 @@ function htmlPredicaBibliaSubidoGrande(it, abrirClave = "") {
           id="${bodyId}"
           style="
             display:${abierto ? "block" : "none"};
-            max-height:320px;
-            overflow:auto;
+            max-height:${abrirTodo ? "none" : "320px"};
+            overflow:${abrirTodo ? "visible" : "auto"};
             padding:12px;
             border-top:1px solid #e7f2f8;
             background:#fff;
@@ -2014,7 +2068,7 @@ async function subidosFileDesdeUrl(it) {
   );
 }
 
-async function subidosCompartirFileObligatorio(file, titulo = "Archivo") {
+async function subidosCompartirFileObligatorio(file, titulo = "Archivo", texto = "") {
   if (!navigator.share) {
     throw new Error("Este navegador no permite compartir archivos desde la web.");
   }
@@ -2023,10 +2077,16 @@ async function subidosCompartirFileObligatorio(file, titulo = "Archivo") {
     throw new Error("Este navegador no acepta compartir este tipo de archivo.");
   }
 
-  await navigator.share({
+  const data = {
     files: [file],
     title: titulo
-  });
+  };
+
+  if (texto) {
+    data.text = texto;
+  }
+
+  await navigator.share(data);
 }
 
 const subidosAccionesEnCurso = new Set();
@@ -2441,7 +2501,7 @@ window.compartirSubido = async function compartirSubido(id) {
     const titulo = it?.etiqueta || "Archivo";
 
     // ✅ compartir archivo real, no link
-    await subidosCompartirFileObligatorio(file, titulo);
+    await subidosCompartirFileObligatorio(file, titulo, subidosLinkDetalle(id));
 
     subidosAvisoProceso("Listo ✅");
   } catch (e) {
