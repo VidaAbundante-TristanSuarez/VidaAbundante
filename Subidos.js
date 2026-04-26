@@ -33,7 +33,11 @@ function subidosNombreLimpio(nombre = "archivo") {
 }
 
 function subidosNombreSharePredica(it) {
-  return subidosNombreLimpio(`predica-${it?.fechaEvento || Date.now()}.png`);
+  const fecha = it?.fechaEvento || "sin-fecha";
+  const id = it?.id || "predica";
+  const version = Date.now();
+
+  return subidosNombreLimpio(`predica-${fecha}-${id}-${version}.png`);
 }
 
 function subidosInfoArchivoAccion(it) {
@@ -1733,6 +1737,11 @@ try {
   throw new Error("No pude generar la imagen de la card. Lo más probable es un bloqueo CORS del archivo adjunto.");
 }
 
+ console.log("✅ EXPORT PREDICA NUEVO:", {
+  anchoCanvas: canvas.width,
+  altoCanvas: canvas.height,
+  proporcion: (canvas.height / canvas.width).toFixed(2)
+});
   const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
 
   stage.innerHTML = "";
@@ -2579,7 +2588,7 @@ async function subidosCrearSharePredicaAlGuardar(id, datosBase) {
 
     const blob = await subidosGenerarBlobCardPredica(id);
 
-    const nombre = subidosNombreSharePredica(datosBase);
+    const nombre = subidosNombreSharePredica({ ...datosBase, id });
 
     const file = new File(
       [blob],
@@ -2686,7 +2695,10 @@ async function guardarSubido() {
       : push(ref(db, "subidosIglesia"));
 
 const idFinal = destinoRef.key;
-
+// ✅ cuando guardo/edito, borro cache viejo para no compartir imagen anterior
+subidosFileCache.delete(idFinal);
+subidosFilePreparando.delete(idFinal);
+    
 const datosBase = {
   fecha: actual.fecha || ts,
   fechaEdicion: subidosEditandoId ? ts : "",
@@ -2717,10 +2729,14 @@ if (esPredica) {
   const share = await subidosCrearSharePredicaAlGuardar(idFinal, datosBase);
 
   if (share?.shareUrl) {
-    await set(destinoRef, {
-      ...datosBase,
-      ...share
-    });
+await set(destinoRef, {
+  ...datosBase,
+  ...share
+});
+
+// ✅ fuerza a preparar el archivo nuevo, no el anterior
+subidosFileCache.delete(idFinal);
+subidosFilePreparando.delete(idFinal);
   }
 }
     const etiquetaNormalizada = etiqueta.trim();
