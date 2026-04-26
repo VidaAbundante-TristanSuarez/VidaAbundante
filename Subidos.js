@@ -19,6 +19,150 @@ let subidosItems = [];
 let subidosEtiquetas = [];
 let subidosEditandoId = null;
 
+/* ================= ARCHIVOS REALES PARA COMPARTIR/DESCARGAR ================= */
+
+const subidosFileCache = new Map();
+const subidosFilePreparando = new Set();
+
+function subidosNombreLimpio(nombre = "archivo") {
+  return String(nombre || "archivo")
+    .trim()
+    .replace(/[\/\\:*?"<>|]/g, "_")
+    .replace(/\s+/g, "_")
+    .slice(0, 120) || "archivo";
+}
+
+function subidosNombreSharePredica(it) {
+  return subidosNombreLimpio(`predica-${it?.fechaEvento || Date.now()}.png`);
+}
+
+function subidosInfoArchivoAccion(it) {
+  if (!it) return null;
+
+  // ✅ Prédica: usa la imagen PNG ya preparada y subida a R2
+  if (subidosEsPredicaConContenido(it)) {
+    if (!it.shareUrl) return null;
+
+    return {
+      url: it.shareUrl,
+      fileName: it.shareFileName || subidosNombreSharePredica(it),
+      mimeType: it.shareMimeType || "image/png"
+    };
+  }
+
+  // ✅ Otras etiquetas: usa el archivo original real
+  if (it.url) {
+    return {
+      url: it.shareUrl || it.url,
+      fileName: it.shareFileName || it.fileName || `archivo_${Date.now()}`,
+      mimeType: it.shareMimeType || it.mimeType || "application/octet-stream"
+    };
+  }
+
+  return null;
+}
+
+async function subidosCrearFileDesdeInfo(info) {
+  if (!info?.url) throw new Error("Falta URL del archivo.");
+
+  const nombre = subidosNombreLimpio(info.fileName || `archivo_${Date.now()}`);
+
+  // ✅ Usa tu proxy para traer bytes reales, no abrir link
+  const proxy = subidosProxyArchivoUrl(info.url, nombre, false);
+
+  const r = await fetch(proxy);
+  if (!r.ok) throw new Error("No pude preparar el archivo real.");
+
+  const blob = await r.blob();
+  const tipo = info.mimeType || blob.type || "application/octet-stream";
+
+  return new File([blob], nombre, { type: tipo });
+}
+
+function subidosMarcarArchivoAccionListo(id, listo) {
+  const btnD = document.querySelector(`[data-subidos-download="${id}"]`);
+  const btnS = document.querySelector(`[data-subidos-share="${id}"]`);
+
+  [btnD, btnS].forEach(btn => {
+    if (!btn) return;
+
+    btn.disabled = !listo;
+    btn.style.opacity = listo ? "1" : ".45";
+    btn.style.cursor = listo ? "pointer" : "wait";
+    btn.title = listo
+      ? (btn.dataset.subidosShare ? "Compartir" : "Descargar")
+      : "Preparando archivo...";
+  });
+}
+
+async function subidosPrepararArchivoAccion(id) {
+  const it = obtenerSubidoPorId(id);
+  if (!it) return null;
+
+  const info = subidosInfoArchivoAccion(it);
+  if (!info?.url) {
+    subidosMarcarArchivoAccionListo(id, false);
+    return null;
+  }
+
+  const cacheActual = subidosFileCache.get(id);
+  if (cacheActual?.url === info.url && cacheActual?.file) {
+    subidosMarcarArchivoAccionListo(id, true);
+    return cacheActual.file;
+  }
+
+  if (subidosFilePreparando.has(id)) return null;
+
+  subidosFilePreparando.add(id);
+  subidosMarcarArchivoAccionListo(id, false);
+
+  try {
+    const file = await subidosCrearFileDesdeInfo(info);
+
+    subidosFileCache.set(id, {
+      url: info.url,
+      file
+    });
+
+    subidosMarcarArchivoAccionListo(id, true);
+    return file;
+  } catch (e) {
+    console.warn("No pude preparar archivo para acción:", id, e);
+    subidosMarcarArchivoAccionListo(id, false);
+    return null;
+  } finally {
+    subidosFilePreparando.delete(id);
+  }
+}
+
+function subidosPrepararArchivosDelFeed() {
+  setTimeout(() => {
+    const cards = [...document.querySelectorAll(".subidos-feed-card[id^='subido-']")];
+
+    cards.forEach((card, i) => {
+      const id = card.id.replace("subido-", "");
+
+      // ✅ escalonado para no trabar todo de golpe
+      setTimeout(() => {
+        subidosPrepararArchivoAccion(id);
+      }, i * 300);
+    });
+  }, 500);
+}
+
+function subidosDescargarFileReal(file) {
+  const url = URL.createObjectURL(file);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = file.name || `archivo_${Date.now()}`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+
+  setTimeout(() => URL.revokeObjectURL(url), 1500);
+}
+
 const ETIQUETAS_DEFAULT = [
   "Predica",
   "Anuncio",
@@ -1971,30 +2115,19 @@ async function subidosAccionProtegida(id, tipo, textoProceso, accion) {
 }
 
 window.descargarSubido = function descargarSubido(id) {
-  return subidosAccionProtegida(id, "descargar", "Descargando...", async () => {
-    const it = obtenerSubidoPorId(id);
-    if (!it) return;
+  return subidosAccionProtegida(id, "descargar", "Descargando.", async () => {
+    let file = subidosFileCache.get(id)?.file;
 
-    // prédica con contenido => descargar card como PNG
-    if (subidosEsPredicaConContenido(it)) {
-      const blob = await subidosGenerarBlobCardPredica(id);
-      const url = URL.createObjectURL(blob);
-
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${(it.etiqueta || "predica").toLowerCase()}-${it.fechaEvento || Date.now()}.png`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-
-      setTimeout(() => URL.revokeObjectURL(url), 1200);
-      return;
+    if (!file) {
+      file = await subidosPrepararArchivoAccion(id);
     }
 
-    // resto de archivos => descargar blob real, no abrir link
-    if (it.url) {
-      await descargarArchivoRemoto(it.url, it.fileName || "archivo");
+    if (!file) {
+      throw new Error("El archivo todavía no está listo para descargar.");
     }
+
+    // ✅ descarga real desde Blob/File, no abre link
+    subidosDescargarFileReal(file);
   });
 };
 
@@ -2219,13 +2352,27 @@ function renderFeed() {
           ${
             mostrarAcciones
               ? `
-                <button type="button" onclick="descargarSubido('${it.id}')" title="Descargar">
-                  <i class="fa-solid fa-download"></i>
-                </button>
+<button
+  type="button"
+  data-subidos-download="${it.id}"
+  onclick="descargarSubido('${it.id}')"
+  title="Preparando archivo..."
+  disabled
+  style="opacity:.45; cursor:wait;"
+>
+  <i class="fa-solid fa-download"></i>
+</button>
 
-                <button type="button" onclick="compartirSubido('${it.id}')" title="Compartir">
-                  <i class="fa-solid fa-share-nodes"></i>
-                </button>
+<button
+  type="button"
+  data-subidos-share="${it.id}"
+  onclick="compartirSubido('${it.id}')"
+  title="Preparando archivo..."
+  disabled
+  style="opacity:.45; cursor:wait;"
+>
+  <i class="fa-solid fa-share-nodes"></i>
+</button>
               `
               : ``
           }
@@ -2276,34 +2423,38 @@ window.abrirSubidoDesdeCalendario = function abrirSubidoDesdeCalendario(id) {
   }, 1800);
 };
 
-window.compartirSubido = function compartirSubido(id) {
-  return subidosAccionProtegida(id, "compartir", "Compartiendo...", async () => {
+window.compartirSubido = async function compartirSubido(id) {
+  try {
+    let file = subidosFileCache.get(id)?.file;
+
+    if (!file) {
+      subidosAvisoProceso("El archivo todavía se está preparando...", true);
+      file = await subidosPrepararArchivoAccion(id);
+    }
+
+    if (!file) {
+      alert("El archivo todavía no está listo para compartir. Probá de nuevo en unos segundos.");
+      return;
+    }
+
     const it = obtenerSubidoPorId(id);
-    if (!it) return;
+    const titulo = it?.etiqueta || "Archivo";
 
-    // ✅ Prédica: comparte la card PNG como archivo real
-    if (subidosEsPredicaConContenido(it)) {
-      const blob = await subidosGenerarBlobCardPredica(id);
+    // ✅ compartir archivo real, no link
+    await subidosCompartirFileObligatorio(file, titulo);
 
-      const file = new File(
-        [blob],
-        `${(it.etiqueta || "predica").toLowerCase()}-${it.fechaEvento || Date.now()}.png`,
-        { type: "image/png" }
-      );
+    subidosAvisoProceso("Listo ✅");
+  } catch (e) {
+    console.error("Error en compartir:", e);
 
-      await subidosCompartirFileObligatorio(file, it.etiqueta || "Prédica");
+    if (e?.name === "AbortError") {
+      subidosAvisoProceso("Acción cancelada");
       return;
     }
 
-    // ✅ Otras etiquetas: comparte el archivo real, no link
-    if (it.url) {
-      const file = await subidosFileDesdeUrl(it);
-      await subidosCompartirFileObligatorio(file, it.etiqueta || "Archivo");
-      return;
-    }
-
-    throw new Error("No hay archivo para compartir.");
-  });
+    subidosAvisoProceso("No se pudo compartir");
+    alert("No se pudo compartir.");
+  }
 };
 
 window.borrarSubido = async function borrarSubido(id) {
@@ -2336,9 +2487,61 @@ function refrescarSubidos() {
 
   const btnNuevo = document.getElementById("btnSubidoNuevo");
   if (btnNuevo) btnNuevo.style.display = subidosEsAdmin ? "inline-flex" : "none";
+
+  // ✅ prepara archivos reales en memoria para descargar/compartir
+  subidosPrepararArchivosDelFeed();
 }
 
 let subidosGuardando = false;
+
+async function subidosCrearSharePredicaAlGuardar(id, datosBase) {
+  if (!id || !datosBase) return null;
+
+  try {
+    const estado = document.getElementById("subidosEstado");
+    if (estado) estado.textContent = "Preparando imagen para compartir...";
+
+    // ✅ insertamos temporalmente la prédica en memoria
+    // para que exista la card y html2canvas pueda capturarla
+    const tempItem = {
+      id,
+      ...datosBase
+    };
+
+    subidosItems = [
+      tempItem,
+      ...subidosItems.filter(x => x.id !== id)
+    ];
+
+    renderFeed();
+
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+    const blob = await subidosGenerarBlobCardPredica(id);
+
+    const nombre = subidosNombreSharePredica(datosBase);
+
+    const file = new File(
+      [blob],
+      nombre,
+      { type: "image/png" }
+    );
+
+    const subida = await subirArchivoAR2DesdeWeb(file, "subidos-share");
+
+    if (!subida?.url) return null;
+
+    return {
+      shareUrl: subida.url,
+      shareR2Key: subida.key || "",
+      shareMimeType: "image/png",
+      shareFileName: nombre
+    };
+  } catch (e) {
+    console.warn("No pude crear PNG preparado de prédica:", e);
+    return null;
+  }
+}
 
 async function guardarSubido() {
   if (subidosGuardando) return;
@@ -2422,23 +2625,44 @@ async function guardarSubido() {
       ? ref(db, `subidosIglesia/${subidosEditandoId}`)
       : push(ref(db, "subidosIglesia"));
 
-    await set(destinoRef, {
-      fecha: actual.fecha || ts,
-      fechaEdicion: subidosEditandoId ? ts : "",
-      fechaEvento,
-      etiqueta,
-      descripcion,
-      url,
-      r2Key,
-      mimeType,
-      fileName,
-      uidCreador: actual.uidCreador || subidosUID,
-      esPredica,
-      predicaVersion: esPredica ? datosPredica.version : "",
-      predicaCitas: esPredica ? datosPredica.citas : [],
-      predicaNotaFinal: esPredica ? datosPredica.notaFinalGeneral : ""
-    });
+const idFinal = destinoRef.key;
 
+const datosBase = {
+  fecha: actual.fecha || ts,
+  fechaEdicion: subidosEditandoId ? ts : "",
+  fechaEvento,
+  etiqueta,
+  descripcion,
+  url,
+  r2Key,
+  mimeType,
+  fileName,
+  uidCreador: actual.uidCreador || subidosUID,
+  esPredica,
+  predicaVersion: esPredica ? datosPredica.version : "",
+  predicaCitas: esPredica ? datosPredica.citas : [],
+  predicaNotaFinal: esPredica ? datosPredica.notaFinalGeneral : "",
+
+  // ✅ para acciones reales de archivo
+  shareUrl: !esPredica ? url : "",
+  shareR2Key: !esPredica ? r2Key : "",
+  shareMimeType: !esPredica ? mimeType : "",
+  shareFileName: !esPredica ? fileName : ""
+};
+
+await set(destinoRef, datosBase);
+
+// ✅ si es prédica, genero PNG final una sola vez y lo guardo en R2
+if (esPredica) {
+  const share = await subidosCrearSharePredicaAlGuardar(idFinal, datosBase);
+
+  if (share?.shareUrl) {
+    await set(destinoRef, {
+      ...datosBase,
+      ...share
+    });
+  }
+}
     const etiquetaNormalizada = etiqueta.trim();
     if (etiquetaNormalizada) {
       const lista = Array.from(new Set([...(subidosEtiquetas || []), etiquetaNormalizada]));
