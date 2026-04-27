@@ -500,27 +500,30 @@ button.subidos-media-link{
 }
 
 .subidos-predica-mini-body{
-  margin:3px 0 4px;
-  padding:7px 8px;
+  margin:2px 0 4px;
+  padding:6px 7px;
   border:1px solid rgba(216,238,249,.9);
   border-radius:10px;
   background:rgba(255,255,255,.82);
   font-family:"Lora", serif;
   font-size:11px;
-  line-height:1.25;
+  line-height:1.22;
   max-height:120px;
   overflow:auto;
 }
 
-.subidos-predica-mini-texto{
+.subidos-predica-mini-texto,
+.subidos-predica-mini-comentario{
   white-space:pre-wrap;
+  text-indent:0 !important;
+  margin-left:0 !important;
+  padding-left:0 !important;
 }
 
 .subidos-predica-mini-comentario{
-  margin-top:6px;
-  padding-top:6px;
+  margin-top:3px;
+  padding-top:3px;
   border-top:1px solid rgba(216,238,249,.9);
-  white-space:pre-wrap;
 }
 
 /* ===== ACCIONES ===== */
@@ -724,23 +727,27 @@ button.subidos-media-link{
 }
 
 .subidos-visor-texto{
-  padding:10px 12px;
+  padding:10px 12px 6px;
   white-space:pre-wrap;
-  line-height:1.38;
+  line-height:1.34;
   font-size:15px;
   font-family:"Lora", serif;
+  text-indent:0 !important;
+  margin-left:0 !important;
 }
 
 .subidos-visor-comentario{
-  margin:0 12px 12px;
-  padding:9px 10px;
+  margin:4px 12px 10px;
+  padding:7px 10px;
   border-radius:12px;
   background:#f8fcff;
   border:1px solid #e4f2f8;
   white-space:pre-wrap;
-  line-height:1.35;
+  line-height:1.32;
   font-size:15px;
   font-family:"Lora", serif;
+  text-indent:0 !important;
+  margin-left:12px;
 }
 
 .subidos-visor-nota .subidos-visor-ref{
