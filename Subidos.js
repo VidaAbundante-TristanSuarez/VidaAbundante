@@ -11,6 +11,7 @@ const {
 
 const R2_UPLOAD_URL = "https://us-central1-vidaabundante-f118a.cloudfunctions.net/subirImagenR2";
 const SUBIDOS_PROXY_URL = "https://us-central1-vidaabundante-f118a.cloudfunctions.net/descargarImagenR2";
+const SUBIDOS_EXPORT_BG_URL = "./img/subidos/fondo-predica-cielo.jpg";
 
 let subidosUID = null;
 let subidosEsAdmin = false;
@@ -276,17 +277,21 @@ function resetPredicaSubidosUI() {
   const wrap = document.getElementById("subidosPredicaCitasWrap");
   const notaFinal = document.getElementById("subidosPredicaNotaFinal");
   const version = document.getElementById("subidosPredicaVersion");
+  const intro = document.getElementById("subidosPredicaIntro");
 
   if (box) box.style.display = "none";
   if (wrap) wrap.innerHTML = "";
   if (notaFinal) notaFinal.value = "";
   if (version) version.value = "RV1960";
+  if (intro) intro.value = "";
 }
 
 function actualizarPredicaSubidosUI() {
   const sel = document.getElementById("subidosEtiqueta");
   const box = document.getElementById("subidosPredicaBox");
   const wrap = document.getElementById("subidosPredicaCitasWrap");
+  const intro = document.getElementById("subidosPredicaIntro");
+  const notaFinal = document.getElementById("subidosPredicaNotaFinal");
 
   if (!sel || !box || !wrap) return;
 
@@ -295,8 +300,8 @@ function actualizarPredicaSubidosUI() {
   box.style.display = mostrar ? "block" : "none";
 
   if (!mostrar) {
-    if (wrap) wrap.innerHTML = "";
-    const notaFinal = document.getElementById("subidosPredicaNotaFinal");
+    wrap.innerHTML = "";
+    if (intro) intro.value = "";
     if (notaFinal) notaFinal.value = "";
     return;
   }
@@ -1014,6 +1019,7 @@ async function recargarVersionPredicaCards() {
 function recogerDatosPredicaSubidos() {
   const wrap = document.getElementById("subidosPredicaCitasWrap");
   const notaFinal = document.getElementById("subidosPredicaNotaFinal")?.value?.trim() || "";
+  const introduccion = document.getElementById("subidosPredicaIntro")?.value?.trim() || "";
   const version = subidosVersionPredicaActual();
 
   const citas = [];
@@ -1046,6 +1052,7 @@ function recogerDatosPredicaSubidos() {
 
   return {
     version,
+    introduccion,
     citas,
     notaFinalGeneral: notaFinal
   };
@@ -1561,9 +1568,20 @@ function subidosAnchoExportPredica() {
 }
 
 function subidosPrepararCloneParaExport(clone) {
+  const originalId = String(clone.id || "").replace(/^subido-/, "");
+  const it = typeof obtenerSubidoPorId === "function" ? (obtenerSubidoPorId(originalId) || {}) : {};
+  const introduccion = String(it.predicaIntroduccion || it.introduccionPredica || "").trim();
+
   const exportW = subidosAnchoExportPredica();
   const exportH = Math.round((exportW * 16) / 9); // historia 9:16
-  const chipWidth = "52%"; // contenedores mucho más angostos
+  const chipWidth = "50%";
+
+  const cantItems = clone.querySelectorAll(".subidos-predica-item").length;
+  const mediaRatioMax =
+    cantItems >= 8 ? 0.22 :
+    cantItems >= 6 ? 0.26 :
+    cantItems >= 4 ? 0.30 :
+    0.34;
 
   const important = (el, prop, val) => {
     if (!el) return;
@@ -1591,9 +1609,19 @@ function subidosPrepararCloneParaExport(clone) {
   important(clone, "overflow", "hidden");
   important(clone, "position", "relative");
   important(clone, "border-radius", "28px");
-  important(clone, "background", "#e9f6ff");
   important(clone, "box-shadow", "none");
   important(clone, "border", "none");
+
+  // ✅ fondo con la imagen + velo claro para dejarla aprox al 35%
+  important(
+    clone,
+    "background-image",
+    `linear-gradient(rgba(233,246,255,.65), rgba(233,246,255,.65)), url("${SUBIDOS_EXPORT_BG_URL}")`
+  );
+  important(clone, "background-size", "cover");
+  important(clone, "background-position", "center center");
+  important(clone, "background-repeat", "no-repeat");
+  important(clone, "background-color", "#e9f6ff");
 
   clone.querySelectorAll(".subidos-feed-actions").forEach(el => el.remove());
   clone.querySelectorAll(".subidosDangerMini").forEach(el => el.remove());
@@ -1672,14 +1700,12 @@ function subidosPrepararCloneParaExport(clone) {
   });
 
   // ===== ZONA ARCHIVO / IMAGEN =====
-  // La idea acá es: la imagen usa el espacio sobrante.
-  // Si hay muchas citas, la imagen se achica y jamás se monta encima.
   clone.querySelectorAll(".subidos-media").forEach(el => {
     important(el, "margin", "0 0 10px 0");
     important(el, "padding", "0");
-    important(el, "flex", "1 1 auto");
+    important(el, "flex", "1 1 140px");
     important(el, "min-height", "100px");
-    important(el, "max-height", `${Math.round(exportH * 0.38)}px`);
+    important(el, "max-height", `${Math.round(exportH * mediaRatioMax)}px`);
     important(el, "height", "auto");
     important(el, "position", "relative");
     important(el, "overflow", "hidden");
@@ -1736,7 +1762,7 @@ function subidosPrepararCloneParaExport(clone) {
     important(video, "background", "transparent");
   });
 
-  // ===== CITAS =====
+  // ===== BLOQUE PREDICA =====
   clone.querySelectorAll(".subidos-predica-resumen").forEach(el => {
     important(el, "display", "flex");
     important(el, "flex-direction", "column");
@@ -1764,7 +1790,7 @@ function subidosPrepararCloneParaExport(clone) {
     important(btn, "margin", "0 auto");
     important(btn, "min-height", "0");
     important(btn, "height", "auto");
-    important(btn, "padding", "8px 10px");
+    important(btn, "padding", "8px 16px"); // ✅ más padding lateral
     important(btn, "font-size", "13px");
     important(btn, "line-height", "1.08");
     important(btn, "border-radius", "14px");
@@ -1777,9 +1803,72 @@ function subidosPrepararCloneParaExport(clone) {
   });
 
   clone.querySelectorAll(".subidos-predica-chip-text").forEach(el => {
+    const limpio = String(el.textContent || "").trim();
+
+    if (limpio && !/^nota$/i.test(limpio)) {
+      el.textContent = `∼ ${limpio} ∽`;
+    }
+
     important(el, "width", "100%");
     important(el, "text-align", "center");
   });
+
+  // ===== CONTEXTO ENTRE IMAGEN Y CITAS =====
+  const resumen = clone.querySelector(".subidos-predica-resumen");
+
+  if (resumen && resumen.parentNode) {
+    const contexto = document.createElement("div");
+    contexto.className = "subidos-export-contexto";
+    contexto.innerHTML = `
+      <div class="subidos-export-iglesia">Iglesia Cristiana de la Vida Abundante</div>
+      ${introduccion ? `<div class="subidos-export-intro">• ${subidosTextoHtml(introduccion)}</div>` : ``}
+    `;
+
+    resumen.parentNode.insertBefore(contexto, resumen);
+
+    important(contexto, "margin", "0 0 10px 0");
+    important(contexto, "padding", "0 10px");
+    important(contexto, "display", "flex");
+    important(contexto, "flex-direction", "column");
+    important(contexto, "gap", "5px");
+    important(contexto, "flex", "0 0 auto");
+
+    const iglesia = contexto.querySelector(".subidos-export-iglesia");
+    if (iglesia) {
+      important(iglesia, "font-family", '"Lora", serif');
+      important(iglesia, "font-size", "15px");
+      important(iglesia, "font-weight", "800");
+      important(iglesia, "line-height", "1.12");
+      important(iglesia, "text-align", "center");
+      important(iglesia, "color", "#111");
+    }
+
+    const intro = contexto.querySelector(".subidos-export-intro");
+    if (intro) {
+      important(intro, "font-family", '"Lora", serif');
+      important(intro, "font-size", "12px");
+      important(intro, "line-height", "1.22");
+      important(intro, "text-align", "left");
+      important(intro, "color", "#23313a");
+      important(intro, "white-space", "normal");
+    }
+
+    const cierre = document.createElement("div");
+    cierre.className = "subidos-export-cierre";
+    cierre.textContent = "Domingos 10 hs Roca 123, Tristan Suarez.";
+
+    resumen.parentNode.insertBefore(cierre, resumen.nextSibling);
+
+    important(cierre, "margin", "10px 0 0 0");
+    important(cierre, "padding", "0 10px");
+    important(cierre, "font-family", '"Lora", serif');
+    important(cierre, "font-size", "12px");
+    important(cierre, "font-weight", "700");
+    important(cierre, "line-height", "1.15");
+    important(cierre, "text-align", "center");
+    important(cierre, "color", "#2b3942");
+    important(cierre, "flex", "0 0 auto");
+  }
 
   return clone;
 }
@@ -1983,6 +2072,7 @@ function htmlArchivoGrandePredica(it) {
 function htmlPredicaBibliaSubidoGrande(it, abrirClave = "") {
   const citas = obtenerCitasPredicaSubido(it);
   const notaFinal = String(it.predicaNotaFinal || it.notaFinalGeneral || "").trim();
+  const introduccion = String(it.predicaIntroduccion || it.introduccionPredica || "").trim();
 
   const bloques = [];
 
@@ -2039,8 +2129,24 @@ function htmlPredicaBibliaSubidoGrande(it, abrirClave = "") {
           </h2>
         ` : ``}
 
+        <div class="subidos-visor-contexto">
+          <div class="subidos-visor-iglesia">
+            Iglesia Cristiana de la Vida Abundante
+          </div>
+
+          ${introduccion ? `
+            <div class="subidos-visor-intro">
+              • ${subidosTextoHtml(introduccion)}
+            </div>
+          ` : ``}
+        </div>
+
         <div class="subidos-visor-bloques">
           ${bloques.join("")}
+        </div>
+
+        <div class="subidos-visor-cierre">
+          Domingos 10 hs Roca 123, Tristan Suarez.
         </div>
       </div>
     </div>
@@ -2291,10 +2397,11 @@ async function poblarCardPredicaDesdeDato(card, cita) {
 }
 
 window.abrirEditarSubido = async function abrirEditarSubido(id) {
-    if (!subidosEsAdmin) {
+  if (!subidosEsAdmin) {
     alert("Solo admin puede editar.");
     return;
   }
+
   const it = obtenerSubidoPorId(id);
   if (!it) return;
 
@@ -2310,6 +2417,7 @@ window.abrirEditarSubido = async function abrirEditarSubido(id) {
   const archivo = document.getElementById("subidosArchivo");
   const version = document.getElementById("subidosPredicaVersion");
   const notaFinal = document.getElementById("subidosPredicaNotaFinal");
+  const intro = document.getElementById("subidosPredicaIntro");
   const wrap = document.getElementById("subidosPredicaCitasWrap");
 
   if (fecha) fecha.value = it.fechaEvento || "";
@@ -2334,6 +2442,7 @@ window.abrirEditarSubido = async function abrirEditarSubido(id) {
   if (esPredicaSubidos(it.etiqueta || "")) {
     if (version) version.value = it.predicaVersion || (obtenerCitasPredicaSubido(it)[0]?.version || "RV1960");
     if (notaFinal) notaFinal.value = it.predicaNotaFinal || it.notaFinalGeneral || "";
+    if (intro) intro.value = it.predicaIntroduccion || it.introduccionPredica || "";
     if (wrap) wrap.innerHTML = "";
 
     const citas = obtenerCitasPredicaSubido(it);
@@ -2689,12 +2798,13 @@ async function guardarSubido() {
 
     const actual = subidosEditandoId ? (obtenerSubidoPorId(subidosEditandoId) || {}) : {};
     const file = inpFile?.files?.[0] || null;
-        // ⚠️ Por ahora los videos grandes pueden fallar porque se envían en base64.
-    // Ajustá este límite si tu función soporta más.
+
+    // ⚠️ Por ahora los videos grandes pueden fallar porque se envían en base64.
     if (file && file.type.startsWith("video/") && file.size > 18 * 1024 * 1024) {
       alert("El video es demasiado pesado para esta forma de subida. Probá con un video de menos de 18 MB o después cambiamos la función para subir videos grandes directo a R2.");
       return;
     }
+
     const fechaEvento = (inpFecha?.value || "").trim();
     const etiqueta = (inpEtiqueta?.value || "").trim();
     const descripcion = (inpDesc?.value || "").trim();
@@ -2717,6 +2827,7 @@ async function guardarSubido() {
 
     let datosPredica = {
       version: "",
+      introduccion: "",
       citas: [],
       notaFinalGeneral: ""
     };
@@ -2748,51 +2859,54 @@ async function guardarSubido() {
       ? ref(db, `subidosIglesia/${subidosEditandoId}`)
       : push(ref(db, "subidosIglesia"));
 
-const idFinal = destinoRef.key;
-// ✅ cuando guardo/edito, borro cache viejo para no compartir imagen anterior
-subidosFileCache.delete(idFinal);
-subidosFilePreparando.delete(idFinal);
-    
-const datosBase = {
-  fecha: actual.fecha || ts,
-  fechaEdicion: subidosEditandoId ? ts : "",
-  fechaEvento,
-  etiqueta,
-  descripcion,
-  url,
-  r2Key,
-  mimeType,
-  fileName,
-  uidCreador: actual.uidCreador || subidosUID,
-  esPredica,
-  predicaVersion: esPredica ? datosPredica.version : "",
-  predicaCitas: esPredica ? datosPredica.citas : [],
-  predicaNotaFinal: esPredica ? datosPredica.notaFinalGeneral : "",
+    const idFinal = destinoRef.key;
 
-  // ✅ para acciones reales de archivo
-  shareUrl: !esPredica ? url : "",
-  shareR2Key: !esPredica ? r2Key : "",
-  shareMimeType: !esPredica ? mimeType : "",
-  shareFileName: !esPredica ? fileName : ""
-};
+    // ✅ cuando guardo/edito, borro cache viejo para no compartir imagen anterior
+    subidosFileCache.delete(idFinal);
+    subidosFilePreparando.delete(idFinal);
 
-await set(destinoRef, datosBase);
+    const datosBase = {
+      fecha: actual.fecha || ts,
+      fechaEdicion: subidosEditandoId ? ts : "",
+      fechaEvento,
+      etiqueta,
+      descripcion,
+      url,
+      r2Key,
+      mimeType,
+      fileName,
+      uidCreador: actual.uidCreador || subidosUID,
+      esPredica,
+      predicaVersion: esPredica ? datosPredica.version : "",
+      predicaIntroduccion: esPredica ? datosPredica.introduccion : "",
+      predicaCitas: esPredica ? datosPredica.citas : [],
+      predicaNotaFinal: esPredica ? datosPredica.notaFinalGeneral : "",
 
-// ✅ si es prédica, genero PNG final una sola vez y lo guardo en R2
-if (esPredica) {
-  const share = await subidosCrearSharePredicaAlGuardar(idFinal, datosBase);
+      // ✅ para acciones reales de archivo
+      shareUrl: !esPredica ? url : "",
+      shareR2Key: !esPredica ? r2Key : "",
+      shareMimeType: !esPredica ? mimeType : "",
+      shareFileName: !esPredica ? fileName : ""
+    };
 
-  if (share?.shareUrl) {
-await set(destinoRef, {
-  ...datosBase,
-  ...share
-});
+    await set(destinoRef, datosBase);
 
-// ✅ fuerza a preparar el archivo nuevo, no el anterior
-subidosFileCache.delete(idFinal);
-subidosFilePreparando.delete(idFinal);
-  }
-}
+    // ✅ si es prédica, genero PNG final una sola vez y lo guardo en R2
+    if (esPredica) {
+      const share = await subidosCrearSharePredicaAlGuardar(idFinal, datosBase);
+
+      if (share?.shareUrl) {
+        await set(destinoRef, {
+          ...datosBase,
+          ...share
+        });
+
+        // ✅ fuerza a preparar el archivo nuevo, no el anterior
+        subidosFileCache.delete(idFinal);
+        subidosFilePreparando.delete(idFinal);
+      }
+    }
+
     const etiquetaNormalizada = etiqueta.trim();
     if (etiquetaNormalizada) {
       const lista = Array.from(new Set([...(subidosEtiquetas || []), etiquetaNormalizada]));
