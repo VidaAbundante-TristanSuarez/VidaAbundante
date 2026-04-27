@@ -1590,9 +1590,13 @@ body.oscuro #subidosFeed a{
   transform:translateY(-2px);
 }
 
+/* ===== CABECERA CARD: ETIQUETA / FECHA / DESCRIPCIÓN ===== */
+
 .subidos-feed-head{
-  margin:0 0 5px 0 !important;
-  min-height:78px;
+  margin:0 0 3px 0 !important;
+  padding:0 !important;
+  min-height:66px;
+  flex:0 0 auto;
 }
 
 .subidos-feed-left{
@@ -1600,51 +1604,61 @@ body.oscuro #subidosFeed a{
   width:100%;
   display:flex;
   flex-direction:column;
-  gap:4px;
-  margin-bottom:0 !important;
+  gap:2px;
+  margin:0 !important;
+  padding:0 !important;
 }
 
 .subidos-feed-badges{
-  gap:6px !important;
-  margin:0 0 5px 0 !important;
-  min-height:24px;
+  gap:5px !important;
+  margin:0 0 2px 0 !important;
+  padding:0 !important;
+  min-height:22px;
 }
 
 .subidos-badge{
   padding:5px 8px !important;
   font-size:11px !important;
+  line-height:1 !important;
 }
 
 .subidos-feed-date{
   font-size:11px !important;
-  margin:5px 0 !important;
+  line-height:1.05 !important;
+  margin:2px 0 !important;
+  padding:0 !important;
+  color:var(--sub-mut);
 }
 
 .subidos-feed-desc{
   font-family:"Lora", serif !important;
   font-weight:700 !important;
   font-size:14px !important;
-  line-height:1.22 !important;
+  line-height:1.12 !important;
   white-space:pre-wrap;
   word-break:break-word;
-  min-height:52px;
-  max-height:52px;
+  min-height:42px;
+  max-height:42px;
   overflow:auto;
-  margin:5px 0 !important;
+  margin:2px 0 3px 0 !important;
+  padding:0 !important;
 }
 
+/* ===== ARCHIVO / IMAGEN EN CARD ===== */
+
 .subidos-media{
-  margin:5px 0 !important;
-  flex:1 1 auto;
+  margin:4px 0 4px 0 !important;
+  flex:0 1 205px;
+  max-height:205px;
   min-height:0;
   display:flex;
+  justify-content:center;
 }
 
 .subidos-media-link,
 .subidos-media-frame{
   width:100%;
-  flex:1 1 auto;
-  aspect-ratio:9 / 16;
+  height:100%;
   min-height:0;
   border-radius:14px;
   overflow:hidden;
@@ -1655,6 +1669,7 @@ body.oscuro #subidosFeed a{
   background:rgba(255,255,255,.72) !important;
   border:none !important;
   cursor:pointer;
+  box-sizing:border-box;
 }
 
 button.subidos-media-link{
@@ -1706,7 +1721,7 @@ button.subidos-media-link{
 }
 
 .subidos-file-open i{
-  font-size:26px;
+  font-size:24px;
 }
 
 .subidos-file-open span{
@@ -1724,15 +1739,20 @@ button.subidos-media-link{
   transform:scale(1.01);
 }
 
-
-/* ===== SUBIDOS: CITAS DE PRÉDICA EN CARD ===== */
+/* ===== CITAS DE PRÉDICA EN CARD CHICA ===== */
 
 .subidos-predica-resumen{
   display:flex;
   flex-direction:column;
-  gap:5px;
-  margin-top:8px;
+  gap:4px;
+  margin-top:4px;
   cursor:pointer;
+  flex:0 0 auto;
+}
+
+.subidos-predica-item{
+  width:100%;
+  min-width:0;
 }
 
 .subidos-predica-chip{
@@ -1741,9 +1761,9 @@ button.subidos-media-link{
   height:auto;
   display:flex;
   align-items:center;
-  justify-content:space-between;
-  gap:7px;
-  padding:3px 9px;
+  justify-content:center;
+  gap:5px;
+  padding:5px 5px;
   border:1px solid #d8eef9;
   background:rgba(255,255,255,.94);
   border-radius:9px;
@@ -1751,41 +1771,86 @@ button.subidos-media-link{
   font-family:"Lora", serif;
   font-size:12px;
   font-weight:700;
-  line-height:1.08;
-  text-align:left;
+  line-height:1.05;
+  text-align:center;
+  box-sizing:border-box;
 }
 
 .subidos-predica-chip-text{
+  flex:1 1 auto;
   min-width:0;
   overflow-wrap:anywhere;
+  text-align:center;
 }
 
-.subidos-predica-chip i{
-  flex:0 0 auto;
+.subidos-predica-caret{
+  flex:0 0 20px;
+  width:20px !important;
+  height:20px !important;
+  min-width:20px !important;
+  min-height:20px !important;
+  padding:0 !important;
+  border:none;
+  border-radius:999px;
+  background:transparent;
+  color:#000;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  box-shadow:none !important;
+}
+
+.subidos-predica-caret i{
   font-size:12px;
+  line-height:1;
 }
 
+.subidos-predica-mini-body{
+  margin:3px 0 4px;
+  padding:7px 8px;
+  border:1px solid rgba(216,238,249,.9);
+  border-radius:10px;
+  background:rgba(255,255,255,.82);
+  font-family:"Lora", serif;
+  font-size:11px;
+  line-height:1.25;
+  max-height:120px;
+  overflow:auto;
+}
 
-/* ===== SUBIDOS: BOTONES DE ACCIÓN ===== */
+.subidos-predica-mini-texto{
+  white-space:pre-wrap;
+}
+
+.subidos-predica-mini-comentario{
+  margin-top:6px;
+  padding-top:6px;
+  border-top:1px solid rgba(216,238,249,.9);
+  white-space:pre-wrap;
+}
+
+/* ===== BOTONES DE ACCIÓN ===== */
 
 .subidos-feed-actions{
   display:flex;
   justify-content:center;
   flex-wrap:wrap;
-  gap:8px !important;
-  padding:8px 38px 0 0 !important;
-  margin-top:6px;
+  gap:7px !important;
+  padding:7px 30px 0 0 !important;
+  margin-top:auto;
+  flex:0 0 auto;
 }
 
 .subidos-feed-actions button,
 .subidos-feed-actions a{
   border:none;
   border-radius:999px;
-  width:36px !important;
-  height:36px !important;
-  min-width:36px !important;
-  min-height:36px !important;
-  padding:0;
+  width:29px !important;
+  height:29px !important;
+  min-width:29px !important;
+  min-height:29px !important;
+  padding:0 !important;
   cursor:pointer;
   text-decoration:none;
   background:var(--ui-azul-hover);
@@ -1796,7 +1861,7 @@ button.subidos-media-link{
   justify-content:center;
   line-height:1;
   transition:background .16s ease, color .16s ease, transform .16s ease;
-  box-shadow:0 8px 18px rgba(0,0,0,.22);
+  box-shadow:0 6px 14px rgba(0,0,0,.20);
 }
 
 .subidos-feed-actions button:hover,
@@ -1804,11 +1869,11 @@ button.subidos-media-link{
   background:#155fc7;
   color:#fff;
   transform:translateY(-1px);
-  box-shadow:0 10px 22px rgba(0,0,0,.28);
+  box-shadow:0 8px 18px rgba(0,0,0,.24);
 }
 
 .subidos-feed-actions i{
-  font-size:15px;
+  font-size:12px;
   line-height:1;
   margin:0;
 }
@@ -1827,33 +1892,32 @@ button.subidos-media-link{
   position:absolute;
   right:8px;
   bottom:8px;
-  width:28px !important;
-  height:28px !important;
-  min-width:28px !important;
-  min-height:28px !important;
+  width:22px !important;
+  height:22px !important;
+  min-width:22px !important;
+  min-height:22px !important;
   border:none;
   border-radius:999px;
   background:#dc2626 !important;
   color:#fff !important;
-  opacity:.72;
+  opacity:.58;
   display:inline-flex;
   align-items:center;
   justify-content:center;
   cursor:pointer;
-  box-shadow:0 6px 14px rgba(0,0,0,.18);
+  box-shadow:0 5px 12px rgba(0,0,0,.16);
 }
 
 .subidosDangerMini i{
-  font-size:12px !important;
+  font-size:10px !important;
 }
 
 .subidosDangerMini:hover{
-  opacity:1;
+  opacity:.82;
   background:#b91c1c !important;
 }
 
-
-/* ===== SUBIDOS: VIDEO PLAY ===== */
+/* ===== VIDEO PLAY ===== */
 
 .subidos-video-frame{
   position:relative;
@@ -1871,13 +1935,12 @@ button.subidos-media-link{
 }
 
 .subidos-video-play i{
-  font-size:46px;
+  font-size:42px;
   color:rgba(255,255,255,.92);
   filter:drop-shadow(0 4px 10px rgba(0,0,0,.45));
 }
 
-
-/* ===== SUBIDOS: VISOR INTERNO ===== */
+/* ===== VISOR INTERNO ===== */
 
 #modalSubidosVisor .modal-card{
   background:#ffffff;
@@ -1890,7 +1953,7 @@ button.subidos-media-link{
   display:block;
   width:100%;
   max-width:100%;
-  max-height:78vh;
+  max-height:72vh;
   margin:0 auto;
   border:none;
   border-radius:14px;
@@ -1904,8 +1967,95 @@ button.subidos-media-link{
   max-width:100%;
 }
 
+/* ===== VISOR PRÉDICA COMPLETA ===== */
 
-/* ===== SUBIDOS: RESPONSIVE GALERÍA ===== */
+.subidos-visor-predica-full{
+  width:100%;
+  max-width:760px;
+  margin:0 auto;
+}
+
+.subidos-visor-marco{
+  border:1px solid rgba(120,155,170,.32);
+  border-radius:20px;
+  padding:14px;
+  background:linear-gradient(180deg, rgba(255,255,255,.96), rgba(248,252,255,.92));
+  box-shadow:0 12px 30px rgba(0,0,0,.08);
+}
+
+.subidos-visor-archivo{
+  margin:0 0 12px;
+}
+
+.subidos-visor-archivo button{
+  max-height:52vh;
+}
+
+.subidos-visor-archivo img,
+.subidos-visor-archivo video{
+  max-height:52vh !important;
+}
+
+.subidos-visor-titulo{
+  margin:4px 0 12px;
+  padding:0 2px;
+  font-family:"Lora", serif;
+  font-size:22px;
+  font-weight:800;
+  line-height:1.15;
+  color:#111;
+}
+
+.subidos-visor-bloques{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.subidos-visor-bloque{
+  border:1px solid rgba(216,238,249,.95);
+  border-radius:16px;
+  background:#ffffff;
+  overflow:hidden;
+}
+
+.subidos-visor-ref{
+  padding:9px 12px;
+  background:#f5fbff;
+  border-bottom:1px solid #e6f3f9;
+  font-family:"Lora", serif;
+  font-size:16px;
+  font-weight:800;
+  line-height:1.15;
+  text-align:center;
+}
+
+.subidos-visor-texto{
+  padding:10px 12px;
+  white-space:pre-wrap;
+  line-height:1.38;
+  font-size:15px;
+  font-family:"Lora", serif;
+}
+
+.subidos-visor-comentario{
+  margin:0 12px 12px;
+  padding:9px 10px;
+  border-radius:12px;
+  background:#f8fcff;
+  border:1px solid #e4f2f8;
+  white-space:pre-wrap;
+  line-height:1.35;
+  font-size:15px;
+  font-family:"Lora", serif;
+}
+
+.subidos-visor-nota .subidos-visor-ref{
+  background:#fffaf0;
+  border-bottom-color:#f6e7bd;
+}
+
+/* ===== RESPONSIVE ===== */
 
 @media (max-width:800px){
   .subidos-feed-card{
@@ -1916,34 +2066,64 @@ button.subidos-media-link{
   }
 
   .subidos-feed-head{
-    min-height:78px;
+    min-height:62px;
   }
 
   .subidos-feed-desc{
     font-size:13px !important;
-    min-height:48px;
-    max-height:48px;
+    min-height:38px;
+    max-height:38px;
+  }
+
+  .subidos-media{
+    flex-basis:185px;
+    max-height:185px;
   }
 
   .subidos-feed-actions{
-    padding-right:34px !important;
+    gap:6px !important;
+    padding-right:28px !important;
   }
 
   .subidos-feed-actions button,
   .subidos-feed-actions a{
-    width:34px !important;
-    height:34px !important;
-    min-width:34px !important;
-    min-height:34px !important;
+    width:27px !important;
+    height:27px !important;
+    min-width:27px !important;
+    min-height:27px !important;
+  }
+
+  .subidos-feed-actions i{
+    font-size:11px;
   }
 
   .subidosDangerMini{
     right:7px;
     bottom:7px;
-    width:26px !important;
-    height:26px !important;
-    min-width:26px !important;
-    min-height:26px !important;
+    width:21px !important;
+    height:21px !important;
+    min-width:21px !important;
+    min-height:21px !important;
+    opacity:.58;
+  }
+
+  .subidos-visor-marco{
+    padding:10px;
+    border-radius:18px;
+  }
+
+  .subidos-visor-titulo{
+    font-size:20px;
+  }
+
+  .subidos-visor-ref{
+    font-size:15px;
+    padding:8px 10px;
+  }
+
+  .subidos-visor-texto,
+  .subidos-visor-comentario{
+    font-size:14px;
   }
 }
 
