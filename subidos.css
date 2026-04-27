@@ -455,11 +455,11 @@ button.subidos-media-link{
   display:flex;
   align-items:center;
   justify-content:center;
-  gap:5px;
-  padding:5px 5px;
+  gap:3px;
+  padding:3px 3px;
   border:1px solid #d8eef9;
   background:rgba(255,255,255,.94);
-  border-radius:9px;
+  border-radius:7px;
   cursor:pointer;
   font-family:"Lora", serif;
   font-size:12px;
