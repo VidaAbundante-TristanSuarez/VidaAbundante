@@ -1142,7 +1142,7 @@ function htmlPredicaBibliaSubido(it) {
           <button
             type="button"
             class="subidos-predica-caret"
-            onclick="event.stopPropagation(); subidosToggleMiniPredica('${bodyId}', this)"
+            onclick="event.stopPropagation(); window.subidosToggleMiniPredica('${bodyId}', this)"
             title="Desplegar nota"
           >
             <i class="fa-solid fa-caret-down"></i>
@@ -1484,6 +1484,15 @@ function subidosTextoPlanoPredica(it) {
   return partes.filter(Boolean).join("\n\n").trim();
 }
 
+function subidosLimpiarHashDetalle() {
+  const rawHash = String(window.location.hash || "").replace(/^#/, "");
+  if (!rawHash.startsWith("subido=")) return;
+
+  const url = new URL(window.location.href);
+  url.hash = "";
+  history.replaceState(null, "", url.pathname + url.search);
+}
+
 window.cerrarModalSubidosVisor = function cerrarModalSubidosVisor() {
   const m = document.getElementById("modalSubidosVisor");
   const body = document.getElementById("subidosVisorBody");
@@ -1495,6 +1504,8 @@ window.cerrarModalSubidosVisor = function cerrarModalSubidosVisor() {
 
   m.style.display = "none";
   m.setAttribute("aria-hidden", "true");
+
+  subidosLimpiarHashDetalle();
 };
 
 function abrirModalSubidosVisor(titulo, html) {
@@ -1511,10 +1522,7 @@ function abrirModalSubidosVisor(titulo, html) {
 
 function subidosLinkDetalle(id) {
   const url = new URL(window.location.href);
-
-  // ✅ open=all indica que debe abrir la prédica completa extendida
   url.hash = `subido=${encodeURIComponent(id)}&open=all`;
-
   return url.toString();
 }
 
@@ -1556,9 +1564,9 @@ function subidosPrepararCloneParaExport(clone) {
   const exportW = subidosAnchoExportPredica();
   const esCelular = (window.innerWidth || 999) <= 640;
 
-  // ✅ controla el alto de la imagen/archivo dentro del PNG
-  // Antes quedaba demasiado torre. Esto la hace más ancha y menos larga.
- const mediaH = esCelular ? Math.round(exportW * 0.78) : 350;
+  // ✅ 40% aprox. para archivo / 60% para citas, sin contar cabecera.
+  const mediaH = esCelular ? Math.round(exportW * 0.56) : Math.round(exportW * 0.54);
+  const chipWidth = esCelular ? "76%" : "74%";
 
   const important = (el, prop, val) => {
     if (!el) return;
@@ -1568,15 +1576,12 @@ function subidosPrepararCloneParaExport(clone) {
   clone.id = "subidosExportCardReal";
   clone.classList.add("subidos-exportando-card");
 
-  // ✅ ESTO ES CLAVE:
-  // pisa de verdad el width/height !important de la galería normal
   important(clone, "width", `${exportW}px`);
   important(clone, "min-width", `${exportW}px`);
   important(clone, "max-width", `${exportW}px`);
   important(clone, "height", "auto");
   important(clone, "min-height", "0");
   important(clone, "max-height", "none");
-
   important(clone, "margin", "0");
   important(clone, "padding", esCelular ? "10px" : "12px");
   important(clone, "box-sizing", "border-box");
@@ -1584,39 +1589,49 @@ function subidosPrepararCloneParaExport(clone) {
   important(clone, "display", "flex");
   important(clone, "flex-direction", "column");
   important(clone, "overflow", "hidden");
+  important(clone, "position", "relative");
 
-  // sacar acciones de abajo
   clone.querySelectorAll(".subidos-feed-actions").forEach(el => el.remove());
   clone.querySelectorAll(".subidosDangerMini").forEach(el => el.remove());
+  clone.querySelectorAll(".subidos-predica-caret").forEach(el => el.remove());
+  clone.querySelectorAll(".subidos-predica-mini-body").forEach(el => el.remove());
 
   clone.classList.remove("subidos-focus");
 
   clone.querySelectorAll("button").forEach(btn => {
     btn.blur();
+    important(btn, "cursor", "default");
   });
 
-  // ================= COMPACTAR CABECERA =================
+  // ===== CABECERA EN UNA SOLA LÍNEA =====
 
   clone.querySelectorAll(".subidos-feed-head").forEach(el => {
-    important(el, "margin", "0 0 2px 0");
+    important(el, "margin", "0 0 6px 0");
     important(el, "padding", "0");
     important(el, "min-height", "0");
     important(el, "height", "auto");
-    important(el, "gap", "0");
+    important(el, "display", "block");
   });
 
   clone.querySelectorAll(".subidos-feed-left").forEach(el => {
     important(el, "margin", "0");
     important(el, "padding", "0");
     important(el, "min-height", "0");
-    important(el, "gap", "1px");
+    important(el, "display", "flex");
+    important(el, "flex-direction", "row");
+    important(el, "align-items", "center");
+    important(el, "gap", "7px");
+    important(el, "width", "100%");
+    important(el, "min-width", "0");
+    important(el, "overflow", "hidden");
   });
 
   clone.querySelectorAll(".subidos-feed-badges").forEach(el => {
-    important(el, "margin", "0 0 2px 0");
+    important(el, "margin", "0");
     important(el, "padding", "0");
     important(el, "min-height", "0");
     important(el, "gap", "4px");
+    important(el, "flex", "0 0 auto");
   });
 
   clone.querySelectorAll(".subidos-badge").forEach(el => {
@@ -1624,33 +1639,43 @@ function subidosPrepararCloneParaExport(clone) {
     important(el, "padding", "4px 9px");
     important(el, "font-size", "12px");
     important(el, "line-height", "1");
+    important(el, "white-space", "nowrap");
   });
 
   clone.querySelectorAll(".subidos-feed-date").forEach(el => {
-    important(el, "margin", "1px 0");
+    important(el, "margin", "0");
     important(el, "padding", "0");
     important(el, "line-height", "1");
-    important(el, "font-size", "13px");
+    important(el, "font-size", "12px");
+    important(el, "white-space", "nowrap");
+    important(el, "flex", "0 0 auto");
   });
 
   clone.querySelectorAll(".subidos-feed-desc").forEach(el => {
-    important(el, "margin", "2px 0 3px 0");
+    important(el, "margin", "0");
     important(el, "padding", "0");
-    important(el, "line-height", "1.08");
+    important(el, "line-height", "1");
+    important(el, "font-size", "13px");
     important(el, "min-height", "0");
     important(el, "height", "auto");
     important(el, "max-height", "none");
-    important(el, "overflow", "visible");
+    important(el, "flex", "1 1 auto");
+    important(el, "min-width", "0");
+    important(el, "white-space", "nowrap");
+    important(el, "overflow", "hidden");
+    important(el, "text-overflow", "ellipsis");
   });
 
-  // ================= ARCHIVO / IMAGEN =================
+  // ===== ARCHIVO / IMAGEN =====
 
   clone.querySelectorAll(".subidos-media").forEach(el => {
-    important(el, "margin", "2px 0 4px 0");
+    important(el, "margin", "0 0 7px 0");
     important(el, "padding", "0");
     important(el, "flex", "0 0 auto");
     important(el, "min-height", "0");
     important(el, "height", "auto");
+    important(el, "position", "static");
+    important(el, "z-index", "auto");
   });
 
   clone.querySelectorAll(".subidos-media-link, .subidos-media-frame").forEach(el => {
@@ -1665,6 +1690,8 @@ function subidosPrepararCloneParaExport(clone) {
     important(el, "border-radius", "14px");
     important(el, "box-sizing", "border-box");
     important(el, "cursor", "default");
+    important(el, "position", "static");
+    important(el, "z-index", "auto");
   });
 
   clone.querySelectorAll("img").forEach(img => {
@@ -1696,44 +1723,45 @@ function subidosPrepararCloneParaExport(clone) {
     important(video, "border-radius", "10px");
   });
 
-  // ================= CITAS DE PRÉDICA =================
+  // ===== CITAS =====
 
   clone.querySelectorAll(".subidos-predica-resumen").forEach(el => {
-    important(el, "margin", "4px 0 0 0");
+    important(el, "display", "flex");
+    important(el, "flex-direction", "column");
+    important(el, "margin", "0");
     important(el, "padding", "0");
-    important(el, "gap", "4px");
+    important(el, "gap", "6px");
     important(el, "cursor", "default");
+    important(el, "position", "static");
+    important(el, "z-index", "auto");
+    important(el, "overflow", "visible");
+    important(el, "max-height", "none");
   });
 
-clone.querySelectorAll(".subidos-predica-chip").forEach(btn => {
-  important(btn, "width", "78%");
-  important(btn, "margin", "0 auto");
-  important(btn, "min-height", "0");
-  important(btn, "height", "auto");
-  important(btn, "padding", "5px 5px");
-  important(btn, "font-size", "12px");
-  important(btn, "line-height", "1.05");
-  important(btn, "border-radius", "8px");
-  important(btn, "justify-content", "center");
-  important(btn, "text-align", "center");
-  important(btn, "gap", "5px");
-});
+  clone.querySelectorAll(".subidos-predica-item").forEach(el => {
+    important(el, "width", "100%");
+    important(el, "margin", "0");
+    important(el, "padding", "0");
+  });
 
-clone.querySelectorAll(".subidos-predica-chip-text").forEach(el => {
-  important(el, "text-align", "center");
-  important(el, "width", "100%");
-});
+  clone.querySelectorAll(".subidos-predica-chip").forEach(btn => {
+    important(btn, "width", chipWidth);
+    important(btn, "margin", "0 auto");
+    important(btn, "min-height", "0");
+    important(btn, "height", "auto");
+    important(btn, "padding", "6px 6px");
+    important(btn, "font-size", "12px");
+    important(btn, "line-height", "1.04");
+    important(btn, "border-radius", "9px");
+    important(btn, "justify-content", "center");
+    important(btn, "text-align", "center");
+    important(btn, "gap", "0");
+    important(btn, "box-sizing", "border-box");
+  });
 
-clone.querySelectorAll(".subidos-predica-caret").forEach(btn => {
-  btn.remove();
-});
-
-clone.querySelectorAll(".subidos-predica-mini-body").forEach(el => {
-  el.remove();
-});
-
-  clone.querySelectorAll(".subidos-predica-chip i").forEach(ico => {
-    important(ico, "font-size", "12px");
+  clone.querySelectorAll(".subidos-predica-chip-text").forEach(el => {
+    important(el, "width", "100%");
+    important(el, "text-align", "center");
   });
 
   return clone;
@@ -1840,7 +1868,9 @@ function subidosAbrirDesdeHash() {
   const it = obtenerSubidoPorId(id);
   if (!it) return;
 
-  // llevar a Iglesia > Subidos
+  // ✅ Consumimos el hash una sola vez para que al refrescar no se abra sola otra vez.
+  subidosLimpiarHashDetalle();
+
   if (typeof window.irA === "function") window.irA("iglesia");
   if (typeof window.mostrarIglesiaSub === "function") window.mostrarIglesiaSub("subidos");
 
