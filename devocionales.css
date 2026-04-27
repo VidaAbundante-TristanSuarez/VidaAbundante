@@ -1593,9 +1593,9 @@ body.oscuro #subidosFeed a{
 /* ===== CABECERA CARD: ETIQUETA / FECHA / DESCRIPCIÓN ===== */
 
 .subidos-feed-head{
-  margin:0 0 3px 0 !important;
+  margin:0 0 2px 0 !important;
   padding:0 !important;
-  min-height:66px;
+  min-height:56px;
   flex:0 0 auto;
 }
 
@@ -1637,20 +1637,21 @@ body.oscuro #subidosFeed a{
   line-height:1.12 !important;
   white-space:pre-wrap;
   word-break:break-word;
-  min-height:42px;
-  max-height:42px;
+  min-height:24px;
+  max-height:34px;
   overflow:auto;
-  margin:2px 0 3px 0 !important;
+  margin:1px 0 2px 0 !important;
   padding:0 !important;
 }
 
 /* ===== ARCHIVO / IMAGEN EN CARD ===== */
 
 .subidos-media{
-  margin:4px 0 4px 0 !important;
-  flex:0 1 205px;
-  max-height:205px;
-  min-height:0;
+  margin:2px 0 4px 0 !important;
+  flex:0 0 auto;
+  height:238px;
+  max-height:238px;
+  min-height:150px;
   display:flex;
   justify-content:center;
 }
@@ -1747,7 +1748,9 @@ button.subidos-media-link{
   gap:4px;
   margin-top:4px;
   cursor:pointer;
-  flex:0 0 auto;
+  flex:1 1 auto;
+  min-height:0;
+  overflow:auto;
 }
 
 .subidos-predica-item{
@@ -2065,20 +2068,21 @@ button.subidos-media-link{
     padding:8px !important;
   }
 
-  .subidos-feed-head{
-    min-height:62px;
-  }
+.subidos-feed-head{
+  min-height:54px;
+}
 
-  .subidos-feed-desc{
-    font-size:13px !important;
-    min-height:38px;
-    max-height:38px;
-  }
+.subidos-feed-desc{
+  font-size:13px !important;
+  min-height:22px;
+  max-height:32px;
+}
 
-  .subidos-media{
-    flex-basis:185px;
-    max-height:185px;
-  }
+.subidos-media{
+  height:220px;
+  max-height:220px;
+  min-height:145px;
+}
 
   .subidos-feed-actions{
     gap:6px !important;
