@@ -447,7 +447,14 @@ function subidosLibrosDesdeSelectorPrincipal() {
 }
 
 function subidosTextoHtml(txt = "") {
-  return escaparHtml(String(txt || "")).replace(/\n/g, "<br>");
+  const limpio = String(txt || "")
+    .replace(/\r/g, "")
+    .split("\n")
+    .map(linea => linea.trim())
+    .join("\n")
+    .trim();
+
+  return escaparHtml(limpio).replace(/\n/g, "<br>");
 }
 
 function subidosNumsSeleccionados(card) {
@@ -1549,24 +1556,14 @@ function subidosEsperarImagenes(node) {
 }
 
 function subidosAnchoExportPredica() {
-  const vw = window.innerWidth || document.documentElement.clientWidth || 420;
-
-  // ✅ En celular: casi todo el ancho real disponible
-  if (vw <= 640) {
-    return Math.max(350, Math.min(460, vw - 4));
-  }
-
-  // En PC
-  return 440;
+  // 420 x 747 aprox = historia 9:16
+  return 420;
 }
 
 function subidosPrepararCloneParaExport(clone) {
   const exportW = subidosAnchoExportPredica();
-  const esCelular = (window.innerWidth || 999) <= 640;
-
-  // ✅ 40% aprox. para archivo / 60% para citas, sin contar cabecera.
-  const mediaH = esCelular ? Math.round(exportW * 0.56) : Math.round(exportW * 0.54);
-  const chipWidth = esCelular ? "76%" : "74%";
+  const exportH = Math.round((exportW * 16) / 9); // historia 9:16
+  const chipWidth = "52%"; // contenedores mucho más angostos
 
   const important = (el, prop, val) => {
     if (!el) return;
@@ -1576,20 +1573,27 @@ function subidosPrepararCloneParaExport(clone) {
   clone.id = "subidosExportCardReal";
   clone.classList.add("subidos-exportando-card");
 
+  // ===== CARD GENERAL =====
   important(clone, "width", `${exportW}px`);
   important(clone, "min-width", `${exportW}px`);
   important(clone, "max-width", `${exportW}px`);
-  important(clone, "height", "auto");
-  important(clone, "min-height", "0");
-  important(clone, "max-height", "none");
+  important(clone, "height", `${exportH}px`);
+  important(clone, "min-height", `${exportH}px`);
+  important(clone, "max-height", `${exportH}px`);
   important(clone, "margin", "0");
-  important(clone, "padding", esCelular ? "10px" : "12px");
+  important(clone, "padding", "12px 14px 14px");
   important(clone, "box-sizing", "border-box");
   important(clone, "transform", "none");
   important(clone, "display", "flex");
   important(clone, "flex-direction", "column");
+  important(clone, "align-items", "stretch");
+  important(clone, "justify-content", "flex-start");
   important(clone, "overflow", "hidden");
   important(clone, "position", "relative");
+  important(clone, "border-radius", "28px");
+  important(clone, "background", "#e9f6ff");
+  important(clone, "box-shadow", "none");
+  important(clone, "border", "none");
 
   clone.querySelectorAll(".subidos-feed-actions").forEach(el => el.remove());
   clone.querySelectorAll(".subidosDangerMini").forEach(el => el.remove());
@@ -1604,26 +1608,26 @@ function subidosPrepararCloneParaExport(clone) {
   });
 
   // ===== CABECERA EN UNA SOLA LÍNEA =====
-
   clone.querySelectorAll(".subidos-feed-head").forEach(el => {
-    important(el, "margin", "0 0 6px 0");
+    important(el, "margin", "0 0 10px 0");
     important(el, "padding", "0");
     important(el, "min-height", "0");
     important(el, "height", "auto");
     important(el, "display", "block");
+    important(el, "flex", "0 0 auto");
   });
 
   clone.querySelectorAll(".subidos-feed-left").forEach(el => {
     important(el, "margin", "0");
     important(el, "padding", "0");
-    important(el, "min-height", "0");
     important(el, "display", "flex");
     important(el, "flex-direction", "row");
     important(el, "align-items", "center");
-    important(el, "gap", "7px");
+    important(el, "gap", "8px");
     important(el, "width", "100%");
     important(el, "min-width", "0");
     important(el, "overflow", "hidden");
+    important(el, "white-space", "nowrap");
   });
 
   clone.querySelectorAll(".subidos-feed-badges").forEach(el => {
@@ -1636,7 +1640,7 @@ function subidosPrepararCloneParaExport(clone) {
 
   clone.querySelectorAll(".subidos-badge").forEach(el => {
     important(el, "margin", "0");
-    important(el, "padding", "4px 9px");
+    important(el, "padding", "5px 10px");
     important(el, "font-size", "12px");
     important(el, "line-height", "1");
     important(el, "white-space", "nowrap");
@@ -1649,6 +1653,7 @@ function subidosPrepararCloneParaExport(clone) {
     important(el, "font-size", "12px");
     important(el, "white-space", "nowrap");
     important(el, "flex", "0 0 auto");
+    important(el, "color", "#2f3a44");
   });
 
   clone.querySelectorAll(".subidos-feed-desc").forEach(el => {
@@ -1666,32 +1671,39 @@ function subidosPrepararCloneParaExport(clone) {
     important(el, "text-overflow", "ellipsis");
   });
 
-  // ===== ARCHIVO / IMAGEN =====
-
+  // ===== ZONA ARCHIVO / IMAGEN =====
+  // La idea acá es: la imagen usa el espacio sobrante.
+  // Si hay muchas citas, la imagen se achica y jamás se monta encima.
   clone.querySelectorAll(".subidos-media").forEach(el => {
-    important(el, "margin", "0 0 7px 0");
+    important(el, "margin", "0 0 10px 0");
     important(el, "padding", "0");
-    important(el, "flex", "0 0 auto");
-    important(el, "min-height", "0");
+    important(el, "flex", "1 1 auto");
+    important(el, "min-height", "100px");
+    important(el, "max-height", `${Math.round(exportH * 0.38)}px`);
     important(el, "height", "auto");
-    important(el, "position", "static");
-    important(el, "z-index", "auto");
+    important(el, "position", "relative");
+    important(el, "overflow", "hidden");
+    important(el, "display", "flex");
+    important(el, "align-items", "center");
+    important(el, "justify-content", "center");
+    important(el, "z-index", "1");
   });
 
   clone.querySelectorAll(".subidos-media-link, .subidos-media-frame").forEach(el => {
     important(el, "width", "100%");
-    important(el, "height", `${mediaH}px`);
-    important(el, "max-height", `${mediaH}px`);
+    important(el, "height", "100%");
     important(el, "min-height", "0");
     important(el, "aspect-ratio", "auto");
-    important(el, "flex", "0 0 auto");
-    important(el, "padding", "2px");
+    important(el, "flex", "1 1 auto");
+    important(el, "padding", "0");
     important(el, "overflow", "hidden");
-    important(el, "border-radius", "14px");
+    important(el, "border-radius", "22px");
     important(el, "box-sizing", "border-box");
     important(el, "cursor", "default");
-    important(el, "position", "static");
-    important(el, "z-index", "auto");
+    important(el, "position", "relative");
+    important(el, "z-index", "1");
+    important(el, "background", "transparent");
+    important(el, "border", "none");
   });
 
   clone.querySelectorAll("img").forEach(img => {
@@ -1709,7 +1721,7 @@ function subidosPrepararCloneParaExport(clone) {
     important(img, "max-width", "100%");
     important(img, "max-height", "100%");
     important(img, "object-fit", "contain");
-    important(img, "border-radius", "10px");
+    important(img, "border-radius", "22px");
     important(img, "background", "transparent");
   });
 
@@ -1720,28 +1732,31 @@ function subidosPrepararCloneParaExport(clone) {
     important(video, "max-width", "100%");
     important(video, "max-height", "100%");
     important(video, "object-fit", "contain");
-    important(video, "border-radius", "10px");
+    important(video, "border-radius", "22px");
+    important(video, "background", "transparent");
   });
 
   // ===== CITAS =====
-
   clone.querySelectorAll(".subidos-predica-resumen").forEach(el => {
     important(el, "display", "flex");
     important(el, "flex-direction", "column");
     important(el, "margin", "0");
     important(el, "padding", "0");
-    important(el, "gap", "6px");
+    important(el, "gap", "8px");
     important(el, "cursor", "default");
-    important(el, "position", "static");
-    important(el, "z-index", "auto");
+    important(el, "position", "relative");
+    important(el, "z-index", "2");
     important(el, "overflow", "visible");
     important(el, "max-height", "none");
+    important(el, "flex", "0 0 auto");
   });
 
   clone.querySelectorAll(".subidos-predica-item").forEach(el => {
     important(el, "width", "100%");
     important(el, "margin", "0");
     important(el, "padding", "0");
+    important(el, "position", "relative");
+    important(el, "z-index", "2");
   });
 
   clone.querySelectorAll(".subidos-predica-chip").forEach(btn => {
@@ -1749,14 +1764,16 @@ function subidosPrepararCloneParaExport(clone) {
     important(btn, "margin", "0 auto");
     important(btn, "min-height", "0");
     important(btn, "height", "auto");
-    important(btn, "padding", "6px 6px");
-    important(btn, "font-size", "12px");
-    important(btn, "line-height", "1.04");
-    important(btn, "border-radius", "9px");
+    important(btn, "padding", "8px 10px");
+    important(btn, "font-size", "13px");
+    important(btn, "line-height", "1.08");
+    important(btn, "border-radius", "14px");
     important(btn, "justify-content", "center");
     important(btn, "text-align", "center");
     important(btn, "gap", "0");
     important(btn, "box-sizing", "border-box");
+    important(btn, "background", "rgba(255,255,255,.96)");
+    important(btn, "border", "1px solid #cfe7f6");
   });
 
   clone.querySelectorAll(".subidos-predica-chip-text").forEach(el => {
