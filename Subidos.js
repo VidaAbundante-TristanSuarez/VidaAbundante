@@ -1050,7 +1050,7 @@ function obtenerCitasPredicaSubido(it) {
   return [];
 }
 
-function subidosToggleMiniPredica(bodyId, btn) {
+window.subidosToggleMiniPredica = function subidosToggleMiniPredica(bodyId, btn) {
   const body = document.getElementById(bodyId);
   if (!body) return;
 
@@ -1065,7 +1065,7 @@ function subidosToggleMiniPredica(bodyId, btn) {
     body.style.display = "block";
     if (btn) btn.innerHTML = `<i class="fa-solid fa-caret-up"></i>`;
   }
-}
+};
 
 function htmlPredicaBibliaSubido(it) {
   const citas = obtenerCitasPredicaSubido(it);
@@ -1093,7 +1093,7 @@ function htmlPredicaBibliaSubido(it) {
           <button
             type="button"
             class="subidos-predica-caret"
-            onclick="event.stopPropagation(); subidosToggleMiniPredica('${bodyId}', this)"
+            onclick="event.stopPropagation(); window.subidosToggleMiniPredica('${bodyId}', this)"
             title="Desplegar cita"
           >
             <i class="fa-solid fa-caret-down"></i>
@@ -1115,7 +1115,7 @@ function htmlPredicaBibliaSubido(it) {
 
           ${comentario ? `
             <div class="subidos-predica-mini-comentario">
-              ⨌ ${subidosTextoHtml(comentario)}
+              ⪦ ${subidosTextoHtml(comentario)}
             </div>
           ` : ``}
         </div>
@@ -1558,7 +1558,7 @@ function subidosPrepararCloneParaExport(clone) {
 
   // ✅ controla el alto de la imagen/archivo dentro del PNG
   // Antes quedaba demasiado torre. Esto la hace más ancha y menos larga.
-  const mediaH = esCelular ? Math.round(exportW * 0.94) : 344;
+ const mediaH = esCelular ? Math.round(exportW * 0.78) : 350;
 
   const important = (el, prop, val) => {
     if (!el) return;
@@ -1706,6 +1706,8 @@ function subidosPrepararCloneParaExport(clone) {
   });
 
 clone.querySelectorAll(".subidos-predica-chip").forEach(btn => {
+  important(btn, "width", "78%");
+  important(btn, "margin", "0 auto");
   important(btn, "min-height", "0");
   important(btn, "height", "auto");
   important(btn, "padding", "5px 5px");
@@ -1717,10 +1719,9 @@ clone.querySelectorAll(".subidos-predica-chip").forEach(btn => {
   important(btn, "gap", "5px");
 });
 
-  clone.querySelectorAll(".subidos-predica-chip-text").forEach(el => {
+clone.querySelectorAll(".subidos-predica-chip-text").forEach(el => {
   important(el, "text-align", "center");
   important(el, "width", "100%");
-  important(el, "justify-content", "center");
 });
 
 clone.querySelectorAll(".subidos-predica-caret").forEach(btn => {
@@ -1955,7 +1956,7 @@ function htmlPredicaBibliaSubidoGrande(it, abrirClave = "") {
 
         ${comentario ? `
           <div class="subidos-visor-comentario">
-            ⨌ ${subidosTextoHtml(comentario)}
+            ⪦ ${subidosTextoHtml(comentario)}
           </div>
         ` : ``}
       </section>
