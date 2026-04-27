@@ -702,6 +702,46 @@ button.subidos-media-link{
   color:#111;
 }
 
+.subidos-visor-contexto{
+  margin:0 0 12px;
+  padding:12px 14px;
+  border:1px solid #e4f2f8;
+  border-radius:16px;
+  background:rgba(255,255,255,.88);
+}
+
+.subidos-visor-iglesia{
+  font-family:"Lora", serif;
+  font-size:18px;
+  font-weight:800;
+  line-height:1.18;
+  text-align:center;
+  color:#111;
+}
+
+.subidos-visor-intro{
+  margin-top:8px;
+  font-family:"Lora", serif;
+  font-size:15px;
+  line-height:1.32;
+  color:#22313a;
+  white-space:pre-wrap;
+}
+
+.subidos-visor-cierre{
+  margin-top:12px;
+  padding:10px 12px;
+  border-radius:14px;
+  border:1px solid #e4f2f8;
+  background:#f8fcff;
+  text-align:center;
+  font-family:"Lora", serif;
+  font-size:14px;
+  font-weight:700;
+  line-height:1.2;
+  color:#22313a;
+}
+
 .subidos-visor-bloques{
   display:flex;
   flex-direction:column;
