@@ -453,10 +453,17 @@ function subidosLibrosDesdeSelectorPrincipal() {
 
 function subidosTextoHtml(txt = "") {
   const limpio = String(txt || "")
+    .replace(/\u00A0/g, " ")      // nbsp
+    .replace(/\t/g, " ")
     .replace(/\r/g, "")
     .split("\n")
-    .map(linea => linea.trim())
+    .map(linea =>
+      String(linea || "")
+        .replace(/^\s+/, "")      // ✅ sin sangría al inicio
+        .replace(/\s+$/, "")
+    )
     .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
     .trim();
 
   return escaparHtml(limpio).replace(/\n/g, "<br>");
@@ -1083,9 +1090,9 @@ window.subidosToggleMiniPredica = function subidosToggleMiniPredica(bodyId, btn)
 
 function htmlPredicaBibliaSubido(it) {
   const citas = obtenerCitasPredicaSubido(it);
-  const notaFinal = String(it.predicaNotaFinal || it.notaFinalGeneral || "").trim();
 
-  if (!citas.length && !notaFinal) return "";
+  // ✅ en galería solo mostramos citas, NO la nota final
+  if (!citas.length) return "";
 
   const filas = citas.map((c, i) => {
     const bodyId = `subidosMiniPredica-${it.id}-${i}`;
@@ -1136,47 +1143,6 @@ function htmlPredicaBibliaSubido(it) {
       </div>
     `;
   });
-
-  if (notaFinal) {
-    const bodyId = `subidosMiniPredicaNota-${it.id}`;
-
-    filas.push(`
-      <div class="subidos-predica-item">
-        <div
-          class="subidos-predica-chip"
-          onclick="event.stopPropagation(); abrirSubidosVisorPredica('${it.id}', 'all')"
-          title="Abrir prédica completa"
-          role="button"
-          tabindex="0"
-        >
-          <span class="subidos-predica-chip-text">
-            Nota
-          </span>
-
-          <button
-            type="button"
-            class="subidos-predica-caret"
-            onclick="event.stopPropagation(); window.subidosToggleMiniPredica('${bodyId}', this)"
-            title="Desplegar nota"
-          >
-            <i class="fa-solid fa-caret-down"></i>
-          </button>
-        </div>
-
-        <div
-          id="${bodyId}"
-          class="subidos-predica-mini-body"
-          data-abierto="0"
-          onclick="event.stopPropagation();"
-          style="display:none;"
-        >
-          <div class="subidos-predica-mini-texto">
-            ${subidosTextoHtml(notaFinal)}
-          </div>
-        </div>
-      </div>
-    `);
-  }
 
   return `
     <div
@@ -1571,17 +1537,22 @@ function subidosPrepararCloneParaExport(clone) {
   const originalId = String(clone.id || "").replace(/^subido-/, "");
   const it = typeof obtenerSubidoPorId === "function" ? (obtenerSubidoPorId(originalId) || {}) : {};
   const introduccion = String(it.predicaIntroduccion || it.introduccionPredica || "").trim();
+  const notaFinal = String(it.predicaNotaFinal || it.notaFinalGeneral || "").trim();
 
   const exportW = subidosAnchoExportPredica();
   const exportH = Math.round((exportW * 16) / 9); // historia 9:16
-  const chipWidth = "50%";
+  const chipWidth = "56%";
 
-  const cantItems = clone.querySelectorAll(".subidos-predica-item").length;
-  const mediaRatioMax =
-    cantItems >= 8 ? 0.22 :
-    cantItems >= 6 ? 0.26 :
-    cantItems >= 4 ? 0.30 :
-    0.34;
+  const cantCitas = (obtenerCitasPredicaSubido(it) || []).length;
+
+  // ✅ altura más generosa para que no se achique de más el archivo
+  const mediaRatio =
+    cantCitas >= 8 ? 0.37 :
+    cantCitas >= 6 ? 0.40 :
+    cantCitas >= 4 ? 0.44 :
+    0.48;
+
+  const mediaH = Math.round(exportH * mediaRatio);
 
   const important = (el, prop, val) => {
     if (!el) return;
@@ -1599,7 +1570,7 @@ function subidosPrepararCloneParaExport(clone) {
   important(clone, "min-height", `${exportH}px`);
   important(clone, "max-height", `${exportH}px`);
   important(clone, "margin", "0");
-  important(clone, "padding", "12px 14px 14px");
+  important(clone, "padding", "14px 16px 14px");
   important(clone, "box-sizing", "border-box");
   important(clone, "transform", "none");
   important(clone, "display", "flex");
@@ -1612,7 +1583,6 @@ function subidosPrepararCloneParaExport(clone) {
   important(clone, "box-shadow", "none");
   important(clone, "border", "none");
 
-  // ✅ fondo con la imagen + velo claro para dejarla aprox al 35%
   important(
     clone,
     "background-image",
@@ -1635,12 +1605,10 @@ function subidosPrepararCloneParaExport(clone) {
     important(btn, "cursor", "default");
   });
 
-  // ===== CABECERA EN UNA SOLA LÍNEA =====
+  // ===== CABECERA =====
   clone.querySelectorAll(".subidos-feed-head").forEach(el => {
     important(el, "margin", "0 0 10px 0");
     important(el, "padding", "0");
-    important(el, "min-height", "0");
-    important(el, "height", "auto");
     important(el, "display", "block");
     important(el, "flex", "0 0 auto");
   });
@@ -1661,7 +1629,6 @@ function subidosPrepararCloneParaExport(clone) {
   clone.querySelectorAll(".subidos-feed-badges").forEach(el => {
     important(el, "margin", "0");
     important(el, "padding", "0");
-    important(el, "min-height", "0");
     important(el, "gap", "4px");
     important(el, "flex", "0 0 auto");
   });
@@ -1689,9 +1656,6 @@ function subidosPrepararCloneParaExport(clone) {
     important(el, "padding", "0");
     important(el, "line-height", "1");
     important(el, "font-size", "13px");
-    important(el, "min-height", "0");
-    important(el, "height", "auto");
-    important(el, "max-height", "none");
     important(el, "flex", "1 1 auto");
     important(el, "min-width", "0");
     important(el, "white-space", "nowrap");
@@ -1699,14 +1663,14 @@ function subidosPrepararCloneParaExport(clone) {
     important(el, "text-overflow", "ellipsis");
   });
 
-  // ===== ZONA ARCHIVO / IMAGEN =====
+  // ===== ARCHIVO / IMAGEN =====
   clone.querySelectorAll(".subidos-media").forEach(el => {
-    important(el, "margin", "0 0 10px 0");
+    important(el, "margin", "0 0 12px 0");
     important(el, "padding", "0");
-    important(el, "flex", "1 1 140px");
-    important(el, "min-height", "100px");
-    important(el, "max-height", `${Math.round(exportH * mediaRatioMax)}px`);
-    important(el, "height", "auto");
+    important(el, "flex", "0 0 auto");
+    important(el, "height", `${mediaH}px`);
+    important(el, "min-height", `${mediaH}px`);
+    important(el, "max-height", `${mediaH}px`);
     important(el, "position", "relative");
     important(el, "overflow", "hidden");
     important(el, "display", "flex");
@@ -1718,9 +1682,6 @@ function subidosPrepararCloneParaExport(clone) {
   clone.querySelectorAll(".subidos-media-link, .subidos-media-frame").forEach(el => {
     important(el, "width", "100%");
     important(el, "height", "100%");
-    important(el, "min-height", "0");
-    important(el, "aspect-ratio", "auto");
-    important(el, "flex", "1 1 auto");
     important(el, "padding", "0");
     important(el, "overflow", "hidden");
     important(el, "border-radius", "22px");
@@ -1746,7 +1707,8 @@ function subidosPrepararCloneParaExport(clone) {
     important(img, "height", "100%");
     important(img, "max-width", "100%");
     important(img, "max-height", "100%");
-    important(img, "object-fit", "contain");
+    important(img, "object-fit", "cover");   // ✅ sin deformación
+    important(img, "object-position", "center center");
     important(img, "border-radius", "22px");
     important(img, "background", "transparent");
   });
@@ -1757,12 +1719,13 @@ function subidosPrepararCloneParaExport(clone) {
     important(video, "height", "100%");
     important(video, "max-width", "100%");
     important(video, "max-height", "100%");
-    important(video, "object-fit", "contain");
+    important(video, "object-fit", "cover");
+    important(video, "object-position", "center center");
     important(video, "border-radius", "22px");
     important(video, "background", "transparent");
   });
 
-  // ===== BLOQUE PREDICA =====
+  // ===== BLOQUE DE CITAS =====
   clone.querySelectorAll(".subidos-predica-resumen").forEach(el => {
     important(el, "display", "flex");
     important(el, "flex-direction", "column");
@@ -1777,23 +1740,31 @@ function subidosPrepararCloneParaExport(clone) {
     important(el, "flex", "0 0 auto");
   });
 
-  clone.querySelectorAll(".subidos-predica-item").forEach(el => {
-    important(el, "width", "100%");
-    important(el, "margin", "0");
-    important(el, "padding", "0");
-    important(el, "position", "relative");
-    important(el, "z-index", "2");
+  clone.querySelectorAll(".subidos-predica-item").forEach(item => {
+    const txt = item.querySelector(".subidos-predica-chip-text");
+    const valor = String(txt?.textContent || "").trim();
+
+    // ✅ NO mostrar "Nota" en la lista
+    if (/^nota$/i.test(valor)) {
+      item.remove();
+      return;
+    }
+
+    important(item, "width", "100%");
+    important(item, "margin", "0");
+    important(item, "padding", "0");
+    important(item, "position", "relative");
+    important(item, "z-index", "2");
   });
 
   clone.querySelectorAll(".subidos-predica-chip").forEach(btn => {
     important(btn, "width", chipWidth);
     important(btn, "margin", "0 auto");
-    important(btn, "min-height", "0");
     important(btn, "height", "auto");
-    important(btn, "padding", "8px 16px"); // ✅ más padding lateral
+    important(btn, "padding", "9px 18px");
     important(btn, "font-size", "13px");
     important(btn, "line-height", "1.08");
-    important(btn, "border-radius", "14px");
+    important(btn, "border-radius", "16px");
     important(btn, "justify-content", "center");
     important(btn, "text-align", "center");
     important(btn, "gap", "0");
@@ -1813,7 +1784,6 @@ function subidosPrepararCloneParaExport(clone) {
     important(el, "text-align", "center");
   });
 
-  // ===== CONTEXTO ENTRE IMAGEN Y CITAS =====
   const resumen = clone.querySelector(".subidos-predica-resumen");
 
   if (resumen && resumen.parentNode) {
@@ -1826,11 +1796,11 @@ function subidosPrepararCloneParaExport(clone) {
 
     resumen.parentNode.insertBefore(contexto, resumen);
 
-    important(contexto, "margin", "0 0 10px 0");
+    important(contexto, "margin", "0 0 12px 0");
     important(contexto, "padding", "0 10px");
     important(contexto, "display", "flex");
     important(contexto, "flex-direction", "column");
-    important(contexto, "gap", "5px");
+    important(contexto, "gap", "4px");
     important(contexto, "flex", "0 0 auto");
 
     const iglesia = contexto.querySelector(".subidos-export-iglesia");
@@ -1838,7 +1808,7 @@ function subidosPrepararCloneParaExport(clone) {
       important(iglesia, "font-family", '"Lora", serif');
       important(iglesia, "font-size", "15px");
       important(iglesia, "font-weight", "800");
-      important(iglesia, "line-height", "1.12");
+      important(iglesia, "line-height", "1.14");
       important(iglesia, "text-align", "center");
       important(iglesia, "color", "#111");
     }
@@ -1851,22 +1821,46 @@ function subidosPrepararCloneParaExport(clone) {
       important(intro, "text-align", "left");
       important(intro, "color", "#23313a");
       important(intro, "white-space", "normal");
+      important(intro, "text-indent", "0");
+      important(intro, "margin-left", "0");
+      important(intro, "padding-left", "0");
+    }
+
+    if (notaFinal) {
+      const nota = document.createElement("div");
+      nota.className = "subidos-export-nota";
+      nota.innerHTML = subidosTextoHtml(notaFinal);
+
+      resumen.parentNode.insertBefore(nota, resumen.nextSibling);
+
+      important(nota, "margin", "10px 10px 0");
+      important(nota, "padding", "10px 12px");
+      important(nota, "border-radius", "16px");
+      important(nota, "background", "rgba(255,255,255,.82)");
+      important(nota, "border", "1px solid #d7edf8");
+      important(nota, "font-family", '"Lora", serif');
+      important(nota, "font-size", "12px");
+      important(nota, "line-height", "1.24");
+      important(nota, "text-align", "left");
+      important(nota, "color", "#24313a");
+      important(nota, "text-indent", "0");
     }
 
     const cierre = document.createElement("div");
     cierre.className = "subidos-export-cierre";
-    cierre.textContent = "Domingos 10 hs Roca 123, Tristan Suarez.";
+    cierre.textContent = "Domingos 10 hs - Roca 123, Tristan Suarez.";
 
-    resumen.parentNode.insertBefore(cierre, resumen.nextSibling);
+    resumen.parentNode.appendChild(cierre);
 
+    // ✅ misma fuente y tamaño que Iglesia...
     important(cierre, "margin", "10px 0 0 0");
     important(cierre, "padding", "0 10px");
     important(cierre, "font-family", '"Lora", serif');
-    important(cierre, "font-size", "12px");
-    important(cierre, "font-weight", "700");
-    important(cierre, "line-height", "1.15");
+    important(cierre, "font-size", "15px");
+    important(cierre, "font-weight", "800");
+    important(cierre, "line-height", "1.14");
     important(cierre, "text-align", "center");
-    important(cierre, "color", "#2b3942");
+    important(cierre, "color", "#111");
     important(cierre, "flex", "0 0 auto");
   }
 
@@ -2100,20 +2094,6 @@ function htmlPredicaBibliaSubidoGrande(it, abrirClave = "") {
     `);
   });
 
-  if (notaFinal) {
-    bloques.push(`
-      <section class="subidos-visor-bloque subidos-visor-nota">
-        <div class="subidos-visor-ref">
-          Nota
-        </div>
-
-        <div class="subidos-visor-texto">
-          ${subidosTextoHtml(notaFinal)}
-        </div>
-      </section>
-    `);
-  }
-
   return `
     <div class="subidos-visor-predica-full">
       <div class="subidos-visor-marco">
@@ -2145,8 +2125,14 @@ function htmlPredicaBibliaSubidoGrande(it, abrirClave = "") {
           ${bloques.join("")}
         </div>
 
+        ${notaFinal ? `
+          <div class="subidos-visor-nota-cierre">
+            ${subidosTextoHtml(notaFinal)}
+          </div>
+        ` : ``}
+
         <div class="subidos-visor-cierre">
-          Domingos 10 hs Roca 123, Tristan Suarez.
+          Domingos 10 hs - Roca 123, Tristan Suarez.
         </div>
       </div>
     </div>
