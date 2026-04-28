@@ -453,14 +453,14 @@ function subidosLibrosDesdeSelectorPrincipal() {
 
 function subidosTextoHtml(txt = "") {
   const limpio = String(txt || "")
-    .replace(/\u00A0/g, " ")      // nbsp
+    .replace(/\u00A0/g, " ")
     .replace(/\t/g, " ")
     .replace(/\r/g, "")
     .split("\n")
     .map(linea =>
       String(linea || "")
-        .replace(/^\s+/, "")      // ✅ sin sangría al inicio
-        .replace(/\s+$/, "")
+        .replace(/^[\s\u00A0]+/g, "")
+        .replace(/[\s\u00A0]+$/g, "")
     )
     .join("\n")
     .replace(/\n{3,}/g, "\n\n")
@@ -1091,7 +1091,7 @@ window.subidosToggleMiniPredica = function subidosToggleMiniPredica(bodyId, btn)
 function htmlPredicaBibliaSubido(it) {
   const citas = obtenerCitasPredicaSubido(it);
 
-  // ✅ en galería solo mostramos citas, NO la nota final
+  // ✅ En la galería mostramos solo citas, no la nota final.
   if (!citas.length) return "";
 
   const filas = citas.map((c, i) => {
@@ -1107,9 +1107,7 @@ function htmlPredicaBibliaSubido(it) {
           role="button"
           tabindex="0"
         >
-          <span class="subidos-predica-chip-text">
-            ${escaparHtml(c.referencia || "")}
-          </span>
+          <span class="subidos-predica-chip-text">${escaparHtml(c.referencia || "")}</span>
 
           <button
             type="button"
@@ -1128,17 +1126,8 @@ function htmlPredicaBibliaSubido(it) {
           onclick="event.stopPropagation();"
           style="display:none;"
         >
-          ${c.texto ? `
-            <div class="subidos-predica-mini-texto">
-              ${subidosTextoHtml(c.texto)}
-            </div>
-          ` : ``}
-
-          ${comentario ? `
-            <div class="subidos-predica-mini-comentario">
-              ⪦ ${subidosTextoHtml(comentario)}
-            </div>
-          ` : ``}
+          ${c.texto ? `<div class="subidos-predica-mini-texto">${subidosTextoHtml(c.texto)}</div>` : ``}
+          ${comentario ? `<div class="subidos-predica-mini-comentario">⪦ ${subidosTextoHtml(comentario)}</div>` : ``}
         </div>
       </div>
     `;
@@ -1540,17 +1529,17 @@ function subidosPrepararCloneParaExport(clone) {
   const notaFinal = String(it.predicaNotaFinal || it.notaFinalGeneral || "").trim();
 
   const exportW = subidosAnchoExportPredica();
-  const exportH = Math.round((exportW * 16) / 9); // historia 9:16
+  const exportH = Math.round((exportW * 16) / 9);
   const chipWidth = "56%";
 
   const cantCitas = (obtenerCitasPredicaSubido(it) || []).length;
 
-  // ✅ altura más generosa para que no se achique de más el archivo
+  // ✅ Reducido aprox. 30% respecto al tamaño anterior.
   const mediaRatio =
-    cantCitas >= 8 ? 0.37 :
-    cantCitas >= 6 ? 0.40 :
-    cantCitas >= 4 ? 0.44 :
-    0.48;
+    cantCitas >= 8 ? 0.26 :
+    cantCitas >= 6 ? 0.28 :
+    cantCitas >= 4 ? 0.31 :
+    0.34;
 
   const mediaH = Math.round(exportH * mediaRatio);
 
@@ -1607,7 +1596,7 @@ function subidosPrepararCloneParaExport(clone) {
 
   // ===== CABECERA =====
   clone.querySelectorAll(".subidos-feed-head").forEach(el => {
-    important(el, "margin", "0 0 10px 0");
+    important(el, "margin", "0 0 8px 0");
     important(el, "padding", "0");
     important(el, "display", "block");
     important(el, "flex", "0 0 auto");
@@ -1631,6 +1620,8 @@ function subidosPrepararCloneParaExport(clone) {
     important(el, "padding", "0");
     important(el, "gap", "4px");
     important(el, "flex", "0 0 auto");
+    important(el, "display", "flex");
+    important(el, "align-items", "center");
   });
 
   clone.querySelectorAll(".subidos-badge").forEach(el => {
@@ -1639,6 +1630,8 @@ function subidosPrepararCloneParaExport(clone) {
     important(el, "font-size", "12px");
     important(el, "line-height", "1");
     important(el, "white-space", "nowrap");
+    important(el, "display", "inline-flex");
+    important(el, "align-items", "center");
   });
 
   clone.querySelectorAll(".subidos-feed-date").forEach(el => {
@@ -1649,6 +1642,8 @@ function subidosPrepararCloneParaExport(clone) {
     important(el, "white-space", "nowrap");
     important(el, "flex", "0 0 auto");
     important(el, "color", "#2f3a44");
+    important(el, "display", "inline-flex");
+    important(el, "align-items", "center");
   });
 
   clone.querySelectorAll(".subidos-feed-desc").forEach(el => {
@@ -1656,16 +1651,19 @@ function subidosPrepararCloneParaExport(clone) {
     important(el, "padding", "0");
     important(el, "line-height", "1");
     important(el, "font-size", "13px");
+    important(el, "font-weight", "800");
     important(el, "flex", "1 1 auto");
     important(el, "min-width", "0");
     important(el, "white-space", "nowrap");
     important(el, "overflow", "hidden");
     important(el, "text-overflow", "ellipsis");
+    important(el, "display", "inline-flex");
+    important(el, "align-items", "center");
   });
 
   // ===== ARCHIVO / IMAGEN =====
   clone.querySelectorAll(".subidos-media").forEach(el => {
-    important(el, "margin", "0 0 12px 0");
+    important(el, "margin", "0 0 8px 0");
     important(el, "padding", "0");
     important(el, "flex", "0 0 auto");
     important(el, "height", `${mediaH}px`);
@@ -1707,7 +1705,7 @@ function subidosPrepararCloneParaExport(clone) {
     important(img, "height", "100%");
     important(img, "max-width", "100%");
     important(img, "max-height", "100%");
-    important(img, "object-fit", "cover");   // ✅ sin deformación
+    important(img, "object-fit", "cover");
     important(img, "object-position", "center center");
     important(img, "border-radius", "22px");
     important(img, "background", "transparent");
@@ -1725,13 +1723,13 @@ function subidosPrepararCloneParaExport(clone) {
     important(video, "background", "transparent");
   });
 
-  // ===== BLOQUE DE CITAS =====
+  // ===== CITAS =====
   clone.querySelectorAll(".subidos-predica-resumen").forEach(el => {
     important(el, "display", "flex");
     important(el, "flex-direction", "column");
     important(el, "margin", "0");
     important(el, "padding", "0");
-    important(el, "gap", "8px");
+    important(el, "gap", "7px");
     important(el, "cursor", "default");
     important(el, "position", "relative");
     important(el, "z-index", "2");
@@ -1744,7 +1742,6 @@ function subidosPrepararCloneParaExport(clone) {
     const txt = item.querySelector(".subidos-predica-chip-text");
     const valor = String(txt?.textContent || "").trim();
 
-    // ✅ NO mostrar "Nota" en la lista
     if (/^nota$/i.test(valor)) {
       item.remove();
       return;
@@ -1761,7 +1758,7 @@ function subidosPrepararCloneParaExport(clone) {
     important(btn, "width", chipWidth);
     important(btn, "margin", "0 auto");
     important(btn, "height", "auto");
-    important(btn, "padding", "9px 18px");
+    important(btn, "padding", "7px 18px");
     important(btn, "font-size", "13px");
     important(btn, "line-height", "1.08");
     important(btn, "border-radius", "16px");
@@ -1796,7 +1793,7 @@ function subidosPrepararCloneParaExport(clone) {
 
     resumen.parentNode.insertBefore(contexto, resumen);
 
-    important(contexto, "margin", "0 0 12px 0");
+    important(contexto, "margin", "0 0 8px 0");
     important(contexto, "padding", "0 10px");
     important(contexto, "display", "flex");
     important(contexto, "flex-direction", "column");
@@ -1816,10 +1813,11 @@ function subidosPrepararCloneParaExport(clone) {
     const intro = contexto.querySelector(".subidos-export-intro");
     if (intro) {
       important(intro, "font-family", '"Lora", serif');
-      important(intro, "font-size", "12px");
-      important(intro, "line-height", "1.22");
-      important(intro, "text-align", "left");
-      important(intro, "color", "#23313a");
+      important(intro, "font-size", "13px");
+      important(intro, "font-weight", "800");
+      important(intro, "line-height", "1.18");
+      important(intro, "text-align", "center");
+      important(intro, "color", "#111");
       important(intro, "white-space", "normal");
       important(intro, "text-indent", "0");
       important(intro, "margin-left", "0");
@@ -1833,17 +1831,17 @@ function subidosPrepararCloneParaExport(clone) {
 
       resumen.parentNode.insertBefore(nota, resumen.nextSibling);
 
-      important(nota, "margin", "10px 10px 0");
-      important(nota, "padding", "10px 12px");
-      important(nota, "border-radius", "16px");
-      important(nota, "background", "rgba(255,255,255,.82)");
-      important(nota, "border", "1px solid #d7edf8");
+      important(nota, "margin", "8px 10px 0");
+      important(nota, "padding", "0");
       important(nota, "font-family", '"Lora", serif');
-      important(nota, "font-size", "12px");
-      important(nota, "line-height", "1.24");
-      important(nota, "text-align", "left");
-      important(nota, "color", "#24313a");
+      important(nota, "font-size", "13px");
+      important(nota, "font-weight", "800");
+      important(nota, "line-height", "1.18");
+      important(nota, "text-align", "center");
+      important(nota, "color", "#111");
       important(nota, "text-indent", "0");
+      important(nota, "background", "transparent");
+      important(nota, "border", "none");
     }
 
     const cierre = document.createElement("div");
@@ -1852,8 +1850,7 @@ function subidosPrepararCloneParaExport(clone) {
 
     resumen.parentNode.appendChild(cierre);
 
-    // ✅ misma fuente y tamaño que Iglesia...
-    important(cierre, "margin", "10px 0 0 0");
+    important(cierre, "margin", "8px 0 0 0");
     important(cierre, "padding", "0 10px");
     important(cierre, "font-family", '"Lora", serif');
     important(cierre, "font-size", "15px");
@@ -2075,21 +2072,11 @@ function htmlPredicaBibliaSubidoGrande(it, abrirClave = "") {
 
     bloques.push(`
       <section class="subidos-visor-bloque">
-        <div class="subidos-visor-ref">
-          ${escaparHtml(c.referencia || "")}
-        </div>
+        <div class="subidos-visor-ref">${escaparHtml(c.referencia || "")}</div>
 
-        ${c.texto ? `
-          <div class="subidos-visor-texto">
-            ${subidosTextoHtml(c.texto || "")}
-          </div>
-        ` : ``}
+        ${c.texto ? `<div class="subidos-visor-texto">${subidosTextoHtml(c.texto || "")}</div>` : ``}
 
-        ${comentario ? `
-          <div class="subidos-visor-comentario">
-            ⪦ ${subidosTextoHtml(comentario)}
-          </div>
-        ` : ``}
+        ${comentario ? `<div class="subidos-visor-comentario">⪦ ${subidosTextoHtml(comentario)}</div>` : ``}
       </section>
     `);
   });
@@ -2115,9 +2102,7 @@ function htmlPredicaBibliaSubidoGrande(it, abrirClave = "") {
           </div>
 
           ${introduccion ? `
-            <div class="subidos-visor-intro">
-              • ${subidosTextoHtml(introduccion)}
-            </div>
+            <div class="subidos-visor-intro">• ${subidosTextoHtml(introduccion)}</div>
           ` : ``}
         </div>
 
@@ -2126,9 +2111,7 @@ function htmlPredicaBibliaSubidoGrande(it, abrirClave = "") {
         </div>
 
         ${notaFinal ? `
-          <div class="subidos-visor-nota-cierre">
-            ${subidosTextoHtml(notaFinal)}
-          </div>
+          <div class="subidos-visor-nota-cierre">${subidosTextoHtml(notaFinal)}</div>
         ` : ``}
 
         <div class="subidos-visor-cierre">
