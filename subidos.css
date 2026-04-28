@@ -518,11 +518,12 @@ button.subidos-media-link{
   text-indent:0 !important;
   margin-left:0 !important;
   padding-left:0 !important;
+  padding-right:0 !important;
 }
 
 .subidos-predica-mini-comentario{
-  margin-top:3px;
-  padding-top:3px;
+  margin-top:2px;
+  padding-top:2px;
   border-top:1px solid rgba(216,238,249,.9);
 }
 
@@ -777,8 +778,8 @@ button.subidos-media-link{
 }
 
 .subidos-visor-comentario{
-  margin:4px 12px 10px;
-  padding:7px 10px;
+  margin:3px 12px 10px;
+  padding:6px 10px;
   border-radius:12px;
   background:#f8fcff;
   border:1px solid #e4f2f8;
@@ -787,7 +788,8 @@ button.subidos-media-link{
   font-size:15px;
   font-family:"Lora", serif;
   text-indent:0 !important;
-  margin-left:12px;
+  margin-left:12px !important;
+  padding-left:10px !important;
 }
 
 .subidos-visor-nota .subidos-visor-ref{
@@ -901,6 +903,62 @@ button.subidos-media-link{
   .subidos-visor-titulo{
     font-size:20px;
   }
+
+  .subidos-visor-contexto{
+  margin:0 0 12px;
+  padding:12px 14px;
+  border:1px solid #e4f2f8;
+  border-radius:16px;
+  background:rgba(255,255,255,.88);
+}
+
+.subidos-visor-iglesia{
+  font-family:"Lora", serif;
+  font-size:18px;
+  font-weight:800;
+  line-height:1.18;
+  text-align:center;
+  color:#111;
+}
+
+.subidos-visor-intro{
+  margin-top:8px;
+  font-family:"Lora", serif;
+  font-size:15px;
+  line-height:1.32;
+  color:#22313a;
+  white-space:pre-wrap;
+  text-indent:0 !important;
+  margin-left:0 !important;
+  padding-left:0 !important;
+}
+
+.subidos-visor-nota-cierre{
+  margin-top:12px;
+  padding:12px 14px;
+  border-radius:16px;
+  border:1px solid #e4f2f8;
+  background:rgba(255,255,255,.88);
+  font-family:"Lora", serif;
+  font-size:15px;
+  line-height:1.32;
+  color:#22313a;
+  white-space:pre-wrap;
+  text-indent:0 !important;
+  margin-left:0 !important;
+  padding-left:14px !important;
+}
+
+.subidos-visor-cierre{
+  margin-top:12px;
+  padding:0;
+  text-align:center;
+  font-family:"Lora", serif;
+  font-size:18px;
+  font-weight:800;
+  line-height:1.18;
+  color:#111;
+}
 
   .subidos-visor-ref{
     font-size:15px;
