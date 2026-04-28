@@ -971,4 +971,46 @@ button.subidos-media-link{
   }
 }
 
+/* ===== FIX FINAL: SIN SANGRÍAS EN TEXTOS DE PRÉDICA ===== */
+
+.subidos-predica-mini-body,
+.subidos-predica-mini-texto,
+.subidos-predica-mini-comentario,
+.subidos-visor-texto,
+.subidos-visor-comentario,
+.subidos-visor-intro,
+.subidos-visor-nota-cierre{
+  text-indent:0 !important;
+  margin-left:0 !important;
+}
+
+.subidos-predica-mini-texto,
+.subidos-predica-mini-comentario{
+  display:block;
+  white-space:normal !important;
+  text-align:left !important;
+  padding-left:0 !important;
+  padding-right:0 !important;
+}
+
+.subidos-visor-texto,
+.subidos-visor-comentario,
+.subidos-visor-intro,
+.subidos-visor-nota-cierre{
+  display:block;
+  white-space:normal !important;
+  text-align:left;
+}
+
+.subidos-visor-intro,
+.subidos-visor-nota-cierre{
+  text-align:center !important;
+  font-weight:800;
+}
+
+.subidos-predica-mini-comentario{
+  margin-top:2px !important;
+  padding-top:2px !important;
+}
+
 </style>
