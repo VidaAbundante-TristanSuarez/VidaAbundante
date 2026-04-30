@@ -5076,9 +5076,9 @@ window.mostrarIglesiaSub = (sub) => {
 
 // ================= SELECTOR DE COLORES REUTILIZABLE =====  
 setTimeout(() => {
-  initPickrEnHosts(
-    "#personalizarColorHost, #marcadorColorHost, #dev1ColorHost, #dev1OpColorHost, #dev2ColorHost, #colorFondoPlanoHost, #dev2FondoHost, #colorOpacidadBibliaHost, #colorFondoAppHost"
-  );
+ initPickrEnHosts(
+  "#personalizarColorHost, #marcadorColorHost, #dev1ColorHost, #dev1OpColorHost, #dev2ColorHost, #colorFondoPlanoHost, #dev2FondoHost, #colorOpacidadBibliaHost, #colorFondoAppHost, #colorTextoAppHost"
+);
 }, 0);
 
 const btn = document.getElementById("btnAplicarFiltrosBiblia");
@@ -5503,6 +5503,20 @@ async function prepararEstadoTemaParaGuardar(estado) {
   return limpio;
 }
 
+function getElementoSeccionFondo(seccion) {
+  const cfg = FONDO_SECCIONES[seccion];
+  if (!cfg) return null;
+
+  return document.getElementById(cfg.seccionId);
+}
+
+function getElementoCapaFondo(seccion) {
+  const cfg = FONDO_SECCIONES[seccion];
+  if (!cfg) return null;
+
+  return document.getElementById(cfg.fondoId);
+}
+
 function limpiarFondosInternosApp() {
   [
     document.getElementById("iglesia-devocionales"),
@@ -5600,23 +5614,20 @@ function asegurarControlColorTextoTema() {
   box.innerHTML = `
     <label style="font-weight:800; font-size:13px;">Color de fuente</label>
 
-    <div style="display:flex; align-items:center; gap:10px;">
-      <input
-        id="colorTextoApp"
-        type="color"
-        value="#111111"
-        style="width:58px; height:42px; border-radius:12px; padding:0;"
-      >
+    <input
+      id="colorTextoApp"
+      type="hidden"
+      value="#111111"
+    >
 
-      <button
-        type="button"
-        class="btn-primary"
-        onclick="aplicarColorTextoTema()"
-        style="flex:1;"
-      >
-        Aplicar fuente
-      </button>
-    </div>
+    <button
+      type="button"
+      id="colorTextoAppHost"
+      class="pickr-host pickr-host--full"
+      data-target="#colorTextoApp"
+      aria-label="Color de fuente"
+      style="height:42px;"
+    ></button>
   `;
 
   const colorFondo = document.getElementById("colorFondoApp");
@@ -5646,7 +5657,22 @@ function asegurarControlColorTextoTema() {
       aplicarEstadoVisualSeccion(fondoTemaDraft.seccion, fondoTemaDraft);
       limpiarFondosInternosApp();
     });
+
+    input.addEventListener("change", () => {
+      if (!fondoTemaDraft) return;
+
+      fondoTemaDraft.colorTexto = input.value || "";
+
+      aplicarEstadoVisualSeccion(fondoTemaDraft.seccion, fondoTemaDraft);
+      limpiarFondosInternosApp();
+    });
   }
+
+  setTimeout(() => {
+    if (typeof initPickrEnHosts === "function") {
+      initPickrEnHosts("#colorTextoAppHost");
+    }
+  }, 0);
 }
 
 window.aplicarColorTextoTema = () => {
@@ -5692,7 +5718,20 @@ function reflejarDraftEnModal() {
   }
 
   if (inputTexto) {
-    inputTexto.value = fondoTemaDraft.colorTexto || "#111111";
+    const colorTexto = fondoTemaDraft.colorTexto || "#111111";
+    inputTexto.value = colorTexto;
+
+    const hostTexto = document.getElementById("colorTextoAppHost");
+    if (hostTexto) {
+      hostTexto.style.setProperty("--pickr-color", colorTexto);
+      hostTexto.style.background = colorTexto;
+
+      try {
+        if (hostTexto._pickr) {
+          hostTexto._pickr.setColor(colorTexto);
+        }
+      } catch(e) {}
+    }
   }
 }
 
@@ -5708,7 +5747,7 @@ window.abrirModalTema = () => {
 
   setTimeout(() => {
     if (typeof initPickrEnHosts === "function") {
-      initPickrEnHosts("#colorFondoAppHost");
+      initPickrEnHosts("#colorFondoAppHost, #colorTextoAppHost");
     }
   }, 0);
 };
