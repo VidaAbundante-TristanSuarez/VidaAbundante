@@ -3118,7 +3118,7 @@ body.oscuro #buscarLibroBiblia{
 
   border-radius: 8px;
   background: #a5e6ff;
-  color: #fff;
+  color: #000;
   cursor: pointer;
   z-index: 3;
   user-select: none;
