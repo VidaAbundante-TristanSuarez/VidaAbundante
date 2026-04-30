@@ -1603,23 +1603,20 @@ function subidosCrearNodoExportPredica(it) {
   const descripcion = subidosTextoPlanoExport(it.descripcion || "");
   const color = colorEtiquetaSubidos(it.etiqueta || "");
 
-  const tieneNotaLarga = notaFinal.length > 180;
-  const muchasCitas = citas.length >= 7;
-
-  const mediaH = muchasCitas || tieneNotaLarga ? 205 : 230;
-  const notaFont = notaFinal.length > 260 ? 12 : 13;
-  const introFont = introduccion.length > 160 ? 12 : 13;
-
   const citasHtml = citas.map(c => {
     const ref = subidosTextoPlanoExport(c.referencia || "");
     if (!ref) return "";
 
     return `
       <div class="subidos-export-chip">
-        ∼ ${escaparHtml(ref)} ∽
+        ~ ${escaparHtml(ref)} ~
       </div>
     `;
-  }).join("");
+  }).join("") || `
+    <div class="subidos-export-empty">
+      Sin citas cargadas
+    </div>
+  `;
 
   const node = document.createElement("article");
   node.id = "subidosExportPredicaFinal";
@@ -1633,13 +1630,13 @@ function subidosCrearNodoExportPredica(it) {
         box-sizing:border-box;
         overflow:hidden;
         border-radius:30px;
-        padding:14px 16px;
+        padding:14px 16px 16px;
         display:flex;
         flex-direction:column;
-        gap:9px;
+        gap:10px;
         background-color:#e9f6ff;
         background-image:
-          linear-gradient(rgba(233,246,255,.64), rgba(233,246,255,.64)),
+          linear-gradient(rgba(233,246,255,.60), rgba(233,246,255,.60)),
           url("${SUBIDOS_EXPORT_BG_URL}");
         background-size:cover;
         background-position:center center;
@@ -1653,8 +1650,7 @@ function subidosCrearNodoExportPredica(it) {
       }
 
       #subidosExportPredicaFinal .subidos-export-head{
-        height:34px;
-        flex:0 0 34px;
+        flex:0 0 auto;
         display:flex;
         align-items:center;
         gap:9px;
@@ -1699,10 +1695,23 @@ function subidosCrearNodoExportPredica(it) {
         line-height:1;
       }
 
+      #subidosExportPredicaFinal .subidos-export-divider{
+        flex:0 0 1px;
+        height:1px;
+        background:rgba(71,126,154,.18);
+      }
+
+      #subidosExportPredicaFinal .subidos-export-hero{
+        flex:0 0 auto;
+        display:grid;
+        grid-template-columns:1.18fr .82fr;
+        gap:12px;
+        align-items:stretch;
+      }
+
       #subidosExportPredicaFinal .subidos-export-media{
         width:100%;
-        height:${mediaH}px;
-        flex:0 0 ${mediaH}px;
+        aspect-ratio:1 / 1;
         border-radius:24px;
         overflow:hidden;
         background:rgba(255,255,255,.55);
@@ -1725,74 +1734,140 @@ function subidosCrearNodoExportPredica(it) {
         color:#24313a;
         font-weight:800;
         font-size:16px;
+        text-align:center;
+        padding:12px;
       }
 
       #subidosExportPredicaFinal .subidos-export-media-placeholder i{
         font-size:34px;
       }
 
-      #subidosExportPredicaFinal .subidos-export-contexto{
-        flex:0 0 auto;
+      #subidosExportPredicaFinal .subidos-export-brand{
+        min-height:0;
         display:flex;
         flex-direction:column;
-        gap:4px;
+        align-items:center;
+        justify-content:center;
         text-align:center;
-        padding:0 12px;
+        padding:6px 2px;
       }
 
       #subidosExportPredicaFinal .subidos-export-iglesia{
         font-weight:900;
-        font-size:17px;
-        line-height:1.08;
+        font-size:22px;
+        line-height:1.03;
+      }
+
+      #subidosExportPredicaFinal .subidos-export-address{
+        margin-top:12px;
+        font-size:14px;
+        line-height:1.12;
+        font-weight:800;
+      }
+
+      #subidosExportPredicaFinal .subidos-export-body{
+        flex:1 1 auto;
+        min-height:0;
+        display:grid;
+        grid-template-columns:1.04fr .96fr;
+        gap:12px;
+        align-items:stretch;
+      }
+
+      #subidosExportPredicaFinal .subidos-export-left{
+        min-height:0;
+        display:flex;
+        flex-direction:column;
+        gap:10px;
+      }
+
+      #subidosExportPredicaFinal .subidos-export-right{
+        min-height:0;
+        display:flex;
+        flex-direction:column;
+      }
+
+      #subidosExportPredicaFinal .subidos-export-box{
+        border:1px solid #d9ecf8;
+        background:rgba(255,255,255,.84);
+        border-radius:18px;
+        padding:10px 12px;
+      }
+
+      #subidosExportPredicaFinal .subidos-export-box-title{
+        margin-bottom:6px;
+        font-family:Arial, sans-serif;
+        font-size:11px;
+        font-weight:800;
+        letter-spacing:.4px;
+        text-transform:uppercase;
+        color:#355062;
       }
 
       #subidosExportPredicaFinal .subidos-export-intro{
+        font-size:14px;
+        line-height:1.18;
         font-weight:800;
-        font-size:${introFont}px;
-        line-height:1.14;
+        text-align:left;
       }
 
-      #subidosExportPredicaFinal .subidos-export-citas{
-        flex:0 0 auto;
-        display:grid;
-        grid-template-columns:repeat(2, minmax(0, 1fr));
-        gap:6px 8px;
-        padding:0 12px;
+      #subidosExportPredicaFinal .subidos-export-note-box{
+        flex:1 1 auto;
+        display:flex;
+        flex-direction:column;
+      }
+
+      #subidosExportPredicaFinal .subidos-export-note{
+        font-size:13px;
+        line-height:1.18;
+        font-weight:800;
+        text-align:left;
+      }
+
+      #subidosExportPredicaFinal .subidos-export-citas-box{
+        flex:1 1 auto;
+        min-height:0;
+        display:flex;
+        flex-direction:column;
+      }
+
+      #subidosExportPredicaFinal .subidos-export-citas-list{
+        display:flex;
+        flex-direction:column;
+        gap:7px;
       }
 
       #subidosExportPredicaFinal .subidos-export-chip{
-        min-width:0;
         border-radius:999px;
-        padding:6px 8px;
-        background:rgba(255,255,255,.94);
+        padding:7px 10px;
+        background:rgba(255,255,255,.95);
         border:1px solid #cfe7f6;
         box-shadow:0 2px 8px rgba(0,0,0,.04);
         text-align:center;
         font-size:12px;
         font-weight:900;
-        line-height:1.08;
-        white-space:nowrap;
-        overflow:hidden;
-        text-overflow:ellipsis;
+        line-height:1.12;
+        white-space:normal;
       }
 
-      #subidosExportPredicaFinal .subidos-export-nota{
-        flex:0 0 auto;
-        padding:0 18px;
+      #subidosExportPredicaFinal .subidos-export-empty{
+        flex:1 1 auto;
+        display:flex;
+        align-items:center;
+        justify-content:center;
         text-align:center;
+        font-size:12px;
         font-weight:800;
-        font-size:${notaFont}px;
-        line-height:1.13;
+        color:#355062;
       }
 
       #subidosExportPredicaFinal .subidos-export-footer{
-        margin-top:auto;
         flex:0 0 auto;
-        padding:0 10px;
         text-align:center;
         font-weight:900;
-        font-size:15px;
+        font-size:17px;
         line-height:1.08;
+        padding-top:2px;
       }
     </style>
 
@@ -1807,27 +1882,58 @@ function subidosCrearNodoExportPredica(it) {
       ${descripcion ? `<div class="subidos-export-titulo">${escaparHtml(descripcion)}</div>` : ``}
     </div>
 
-    ${subidosArchivoExportHtml(it)}
+    <div class="subidos-export-divider"></div>
 
-    <div class="subidos-export-contexto">
-      <div class="subidos-export-iglesia">Iglesia Cristiana de la Vida Abundante</div>
-      ${introduccion ? `<div class="subidos-export-intro">• ${subidosHtmlExport(introduccion)}</div>` : ``}
+    <div class="subidos-export-hero">
+      ${subidosArchivoExportHtml(it)}
+
+      <div class="subidos-export-brand">
+        <div class="subidos-export-iglesia">
+          Iglesia<br>
+          Cristiana<br>
+          de la<br>
+          Vida Abundante
+        </div>
+
+        <div class="subidos-export-address">
+          Roca 123, Tristan Suarez
+        </div>
+      </div>
     </div>
 
-    ${citas.length ? `
-      <div class="subidos-export-citas">
-        ${citasHtml}
-      </div>
-    ` : ``}
+    <div class="subidos-export-divider"></div>
 
-    ${notaFinal ? `
-      <div class="subidos-export-nota">
-        ${subidosHtmlExport(notaFinal)}
+    <div class="subidos-export-body">
+      <div class="subidos-export-left">
+        ${introduccion ? `
+          <div class="subidos-export-box">
+            <div class="subidos-export-box-title">Introducción</div>
+            <div class="subidos-export-intro">${subidosHtmlExport(introduccion)}</div>
+          </div>
+        ` : ``}
+
+        ${notaFinal ? `
+          <div class="subidos-export-box subidos-export-note-box">
+            <div class="subidos-export-box-title">Nota</div>
+            <div class="subidos-export-note">${subidosHtmlExport(notaFinal)}</div>
+          </div>
+        ` : ``}
       </div>
-    ` : ``}
+
+      <div class="subidos-export-right">
+        <div class="subidos-export-box subidos-export-citas-box">
+          <div class="subidos-export-box-title">Listado de citas</div>
+          <div class="subidos-export-citas-list">
+            ${citasHtml}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="subidos-export-divider"></div>
 
     <div class="subidos-export-footer">
-      Domingos 10 hs - Roca 123, Tristan Suarez.
+      Reunión Domingo 10 Hs
     </div>
   `;
 
