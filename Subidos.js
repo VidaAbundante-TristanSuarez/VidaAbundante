@@ -1522,346 +1522,316 @@ function subidosAnchoExportPredica() {
   return 420;
 }
 
-function subidosPrepararCloneParaExport(clone) {
-  const originalId = String(clone.id || "").replace(/^subido-/, "");
-  const it = typeof obtenerSubidoPorId === "function" ? (obtenerSubidoPorId(originalId) || {}) : {};
-  const introduccion = String(it.predicaIntroduccion || it.introduccionPredica || "").trim();
-  const notaFinal = String(it.predicaNotaFinal || it.notaFinalGeneral || "").trim();
+function subidosTextoPlanoExport(txt = "") {
+  return String(txt || "")
+    .replace(/\u00A0/g, " ")
+    .replace(/\t/g, " ")
+    .replace(/\r/g, "")
+    .split("\n")
+    .map(linea =>
+      String(linea || "")
+        .replace(/^[\s\u00A0]+/g, "")
+        .replace(/[\s\u00A0]+$/g, "")
+    )
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
 
-  const exportW = subidosAnchoExportPredica();
-  const exportH = Math.round((exportW * 16) / 9);
-  const chipWidth = "56%";
+function subidosHtmlExport(txt = "") {
+  return escaparHtml(subidosTextoPlanoExport(txt)).replace(/\n/g, "<br>");
+}
 
-  const cantCitas = (obtenerCitasPredicaSubido(it) || []).length;
+function subidosFechaBonitaExport(ymd = "") {
+  if (!ymd) return "";
+  try {
+    return new Date(ymd + "T00:00:00").toLocaleDateString("es-AR");
+  } catch {
+    return ymd;
+  }
+}
 
-  // ✅ Reducido aprox. 30% respecto al tamaño anterior.
-  const mediaRatio =
-    cantCitas >= 8 ? 0.26 :
-    cantCitas >= 6 ? 0.28 :
-    cantCitas >= 4 ? 0.31 :
-    0.34;
+function subidosArchivoExportHtml(it) {
+  const url = String(it?.url || "").trim();
+  const mime = String(it?.mimeType || "");
+  const nombre = escaparHtml(it?.fileName || "archivo");
 
-  const mediaH = Math.round(exportH * mediaRatio);
+  if (!url) return "";
 
-  const important = (el, prop, val) => {
-    if (!el) return;
-    el.style.setProperty(prop, val, "important");
-  };
-
-  clone.id = "subidosExportCardReal";
-  clone.classList.add("subidos-exportando-card");
-
-  // ===== CARD GENERAL =====
-  important(clone, "width", `${exportW}px`);
-  important(clone, "min-width", `${exportW}px`);
-  important(clone, "max-width", `${exportW}px`);
-  important(clone, "height", `${exportH}px`);
-  important(clone, "min-height", `${exportH}px`);
-  important(clone, "max-height", `${exportH}px`);
-  important(clone, "margin", "0");
-  important(clone, "padding", "14px 16px 14px");
-  important(clone, "box-sizing", "border-box");
-  important(clone, "transform", "none");
-  important(clone, "display", "flex");
-  important(clone, "flex-direction", "column");
-  important(clone, "align-items", "stretch");
-  important(clone, "justify-content", "flex-start");
-  important(clone, "overflow", "hidden");
-  important(clone, "position", "relative");
-  important(clone, "border-radius", "28px");
-  important(clone, "box-shadow", "none");
-  important(clone, "border", "none");
-
-  important(
-    clone,
-    "background-image",
-    `linear-gradient(rgba(233,246,255,.65), rgba(233,246,255,.65)), url("${SUBIDOS_EXPORT_BG_URL}")`
-  );
-  important(clone, "background-size", "cover");
-  important(clone, "background-position", "center center");
-  important(clone, "background-repeat", "no-repeat");
-  important(clone, "background-color", "#e9f6ff");
-
-  clone.querySelectorAll(".subidos-feed-actions").forEach(el => el.remove());
-  clone.querySelectorAll(".subidosDangerMini").forEach(el => el.remove());
-  clone.querySelectorAll(".subidos-predica-caret").forEach(el => el.remove());
-  clone.querySelectorAll(".subidos-predica-mini-body").forEach(el => el.remove());
-
-  clone.classList.remove("subidos-focus");
-
-  clone.querySelectorAll("button").forEach(btn => {
-    btn.blur();
-    important(btn, "cursor", "default");
-  });
-
-  // ===== CABECERA =====
-  clone.querySelectorAll(".subidos-feed-head").forEach(el => {
-    important(el, "margin", "0 0 8px 0");
-    important(el, "padding", "0");
-    important(el, "display", "block");
-    important(el, "flex", "0 0 auto");
-  });
-
-  clone.querySelectorAll(".subidos-feed-left").forEach(el => {
-    important(el, "margin", "0");
-    important(el, "padding", "0");
-    important(el, "display", "flex");
-    important(el, "flex-direction", "row");
-    important(el, "align-items", "center");
-    important(el, "gap", "8px");
-    important(el, "width", "100%");
-    important(el, "min-width", "0");
-    important(el, "overflow", "hidden");
-    important(el, "white-space", "nowrap");
-  });
-
-  clone.querySelectorAll(".subidos-feed-badges").forEach(el => {
-    important(el, "margin", "0");
-    important(el, "padding", "0");
-    important(el, "gap", "4px");
-    important(el, "flex", "0 0 auto");
-    important(el, "display", "flex");
-    important(el, "align-items", "center");
-  });
-
-  clone.querySelectorAll(".subidos-badge").forEach(el => {
-    important(el, "margin", "0");
-    important(el, "padding", "5px 10px");
-    important(el, "font-size", "12px");
-    important(el, "line-height", "1");
-    important(el, "white-space", "nowrap");
-    important(el, "display", "inline-flex");
-    important(el, "align-items", "center");
-  });
-
-  clone.querySelectorAll(".subidos-feed-date").forEach(el => {
-    important(el, "margin", "0");
-    important(el, "padding", "0");
-    important(el, "line-height", "1");
-    important(el, "font-size", "12px");
-    important(el, "white-space", "nowrap");
-    important(el, "flex", "0 0 auto");
-    important(el, "color", "#2f3a44");
-    important(el, "display", "inline-flex");
-    important(el, "align-items", "center");
-  });
-
-  clone.querySelectorAll(".subidos-feed-desc").forEach(el => {
-    important(el, "margin", "0");
-    important(el, "padding", "0");
-    important(el, "line-height", "1");
-    important(el, "font-size", "13px");
-    important(el, "font-weight", "800");
-    important(el, "flex", "1 1 auto");
-    important(el, "min-width", "0");
-    important(el, "white-space", "nowrap");
-    important(el, "overflow", "hidden");
-    important(el, "text-overflow", "ellipsis");
-    important(el, "display", "inline-flex");
-    important(el, "align-items", "center");
-  });
-
-  // ===== ARCHIVO / IMAGEN =====
-  clone.querySelectorAll(".subidos-media").forEach(el => {
-    important(el, "margin", "0 0 8px 0");
-    important(el, "padding", "0");
-    important(el, "flex", "0 0 auto");
-    important(el, "height", `${mediaH}px`);
-    important(el, "min-height", `${mediaH}px`);
-    important(el, "max-height", `${mediaH}px`);
-    important(el, "position", "relative");
-    important(el, "overflow", "hidden");
-    important(el, "display", "flex");
-    important(el, "align-items", "center");
-    important(el, "justify-content", "center");
-    important(el, "z-index", "1");
-  });
-
-  clone.querySelectorAll(".subidos-media-link, .subidos-media-frame").forEach(el => {
-    important(el, "width", "100%");
-    important(el, "height", "100%");
-    important(el, "padding", "0");
-    important(el, "overflow", "hidden");
-    important(el, "border-radius", "22px");
-    important(el, "box-sizing", "border-box");
-    important(el, "cursor", "default");
-    important(el, "position", "relative");
-    important(el, "z-index", "1");
-    important(el, "background", "transparent");
-    important(el, "border", "none");
-  });
-
-  clone.querySelectorAll("img").forEach(img => {
-    img.removeAttribute("loading");
-    img.removeAttribute("srcset");
-    img.removeAttribute("sizes");
-    img.removeAttribute("crossorigin");
-
-    img.loading = "eager";
-    img.decoding = "sync";
-
-    important(img, "display", "block");
-    important(img, "width", "100%");
-    important(img, "height", "100%");
-    important(img, "max-width", "100%");
-    important(img, "max-height", "100%");
-    important(img, "object-fit", "cover");
-    important(img, "object-position", "center center");
-    important(img, "border-radius", "22px");
-    important(img, "background", "transparent");
-  });
-
-  clone.querySelectorAll("video").forEach(video => {
-    important(video, "display", "block");
-    important(video, "width", "100%");
-    important(video, "height", "100%");
-    important(video, "max-width", "100%");
-    important(video, "max-height", "100%");
-    important(video, "object-fit", "cover");
-    important(video, "object-position", "center center");
-    important(video, "border-radius", "22px");
-    important(video, "background", "transparent");
-  });
-
-  // ===== CITAS =====
-  clone.querySelectorAll(".subidos-predica-resumen").forEach(el => {
-    important(el, "display", "flex");
-    important(el, "flex-direction", "column");
-    important(el, "margin", "0");
-    important(el, "padding", "0");
-    important(el, "gap", "7px");
-    important(el, "cursor", "default");
-    important(el, "position", "relative");
-    important(el, "z-index", "2");
-    important(el, "overflow", "visible");
-    important(el, "max-height", "none");
-    important(el, "flex", "0 0 auto");
-  });
-
-  clone.querySelectorAll(".subidos-predica-item").forEach(item => {
-    const txt = item.querySelector(".subidos-predica-chip-text");
-    const valor = String(txt?.textContent || "").trim();
-
-    if (/^nota$/i.test(valor)) {
-      item.remove();
-      return;
-    }
-
-    important(item, "width", "100%");
-    important(item, "margin", "0");
-    important(item, "padding", "0");
-    important(item, "position", "relative");
-    important(item, "z-index", "2");
-  });
-
-  clone.querySelectorAll(".subidos-predica-chip").forEach(btn => {
-    important(btn, "width", chipWidth);
-    important(btn, "margin", "0 auto");
-    important(btn, "height", "auto");
-    important(btn, "padding", "7px 18px");
-    important(btn, "font-size", "13px");
-    important(btn, "line-height", "1.08");
-    important(btn, "border-radius", "16px");
-    important(btn, "justify-content", "center");
-    important(btn, "text-align", "center");
-    important(btn, "gap", "0");
-    important(btn, "box-sizing", "border-box");
-    important(btn, "background", "rgba(255,255,255,.96)");
-    important(btn, "border", "1px solid #cfe7f6");
-  });
-
-  clone.querySelectorAll(".subidos-predica-chip-text").forEach(el => {
-    const limpio = String(el.textContent || "").trim();
-
-    if (limpio && !/^nota$/i.test(limpio)) {
-      el.textContent = `∼ ${limpio} ∽`;
-    }
-
-    important(el, "width", "100%");
-    important(el, "text-align", "center");
-  });
-
-  const resumen = clone.querySelector(".subidos-predica-resumen");
-
-  if (resumen && resumen.parentNode) {
-    const contexto = document.createElement("div");
-    contexto.className = "subidos-export-contexto";
-    contexto.innerHTML = `
-      <div class="subidos-export-iglesia">Iglesia Cristiana de la Vida Abundante</div>
-      ${introduccion ? `<div class="subidos-export-intro">• ${subidosTextoHtml(introduccion)}</div>` : ``}
+  if (mime.startsWith("image/")) {
+    return `
+      <div class="subidos-export-media">
+        <img src="${url}" alt="${nombre}">
+      </div>
     `;
-
-    resumen.parentNode.insertBefore(contexto, resumen);
-
-    important(contexto, "margin", "0 0 8px 0");
-    important(contexto, "padding", "0 10px");
-    important(contexto, "display", "flex");
-    important(contexto, "flex-direction", "column");
-    important(contexto, "gap", "4px");
-    important(contexto, "flex", "0 0 auto");
-
-    const iglesia = contexto.querySelector(".subidos-export-iglesia");
-    if (iglesia) {
-      important(iglesia, "font-family", '"Lora", serif');
-      important(iglesia, "font-size", "15px");
-      important(iglesia, "font-weight", "800");
-      important(iglesia, "line-height", "1.14");
-      important(iglesia, "text-align", "center");
-      important(iglesia, "color", "#111");
-    }
-
-    const intro = contexto.querySelector(".subidos-export-intro");
-    if (intro) {
-      important(intro, "font-family", '"Lora", serif');
-      important(intro, "font-size", "13px");
-      important(intro, "font-weight", "800");
-      important(intro, "line-height", "1.18");
-      important(intro, "text-align", "center");
-      important(intro, "color", "#111");
-      important(intro, "white-space", "normal");
-      important(intro, "text-indent", "0");
-      important(intro, "margin-left", "0");
-      important(intro, "padding-left", "0");
-    }
-
-    if (notaFinal) {
-      const nota = document.createElement("div");
-      nota.className = "subidos-export-nota";
-      nota.innerHTML = subidosTextoHtml(notaFinal);
-
-      resumen.parentNode.insertBefore(nota, resumen.nextSibling);
-
-      important(nota, "margin", "8px 10px 0");
-      important(nota, "padding", "0");
-      important(nota, "font-family", '"Lora", serif');
-      important(nota, "font-size", "13px");
-      important(nota, "font-weight", "800");
-      important(nota, "line-height", "1.18");
-      important(nota, "text-align", "center");
-      important(nota, "color", "#111");
-      important(nota, "text-indent", "0");
-      important(nota, "background", "transparent");
-      important(nota, "border", "none");
-    }
-
-    const cierre = document.createElement("div");
-    cierre.className = "subidos-export-cierre";
-    cierre.textContent = "Domingos 10 hs - Roca 123, Tristan Suarez.";
-
-    resumen.parentNode.appendChild(cierre);
-
-    important(cierre, "margin", "8px 0 0 0");
-    important(cierre, "padding", "0 10px");
-    important(cierre, "font-family", '"Lora", serif');
-    important(cierre, "font-size", "15px");
-    important(cierre, "font-weight", "800");
-    important(cierre, "line-height", "1.14");
-    important(cierre, "text-align", "center");
-    important(cierre, "color", "#111");
-    important(cierre, "flex", "0 0 auto");
   }
 
-  return clone;
+  if (mime.startsWith("video/")) {
+    return `
+      <div class="subidos-export-media subidos-export-media-placeholder">
+        <i class="fa-solid fa-video"></i>
+        <span>Video adjunto</span>
+      </div>
+    `;
+  }
+
+  if (mime.startsWith("audio/")) {
+    return `
+      <div class="subidos-export-media subidos-export-media-placeholder">
+        <i class="fa-solid fa-headphones"></i>
+        <span>Audio adjunto</span>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="subidos-export-media subidos-export-media-placeholder">
+      <i class="fa-solid fa-file-lines"></i>
+      <span>Archivo adjunto</span>
+    </div>
+  `;
+}
+
+function subidosCrearNodoExportPredica(it) {
+  const exportW = subidosAnchoExportPredica();
+  const exportH = Math.round((exportW * 16) / 9);
+
+  const citas = obtenerCitasPredicaSubido(it);
+  const introduccion = subidosTextoPlanoExport(it.predicaIntroduccion || it.introduccionPredica || "");
+  const notaFinal = subidosTextoPlanoExport(it.predicaNotaFinal || it.notaFinalGeneral || "");
+  const fechaTxt = subidosFechaBonitaExport(it.fechaEvento || "");
+  const descripcion = subidosTextoPlanoExport(it.descripcion || "");
+  const color = colorEtiquetaSubidos(it.etiqueta || "");
+
+  const tieneNotaLarga = notaFinal.length > 180;
+  const muchasCitas = citas.length >= 7;
+
+  const mediaH = muchasCitas || tieneNotaLarga ? 205 : 230;
+  const notaFont = notaFinal.length > 260 ? 12 : 13;
+  const introFont = introduccion.length > 160 ? 12 : 13;
+
+  const citasHtml = citas.map(c => {
+    const ref = subidosTextoPlanoExport(c.referencia || "");
+    if (!ref) return "";
+
+    return `
+      <div class="subidos-export-chip">
+        ∼ ${escaparHtml(ref)} ∽
+      </div>
+    `;
+  }).join("");
+
+  const node = document.createElement("article");
+  node.id = "subidosExportPredicaFinal";
+  node.className = "subidos-export-template";
+
+  node.innerHTML = `
+    <style>
+      #subidosExportPredicaFinal{
+        width:${exportW}px;
+        height:${exportH}px;
+        box-sizing:border-box;
+        overflow:hidden;
+        border-radius:30px;
+        padding:14px 16px;
+        display:flex;
+        flex-direction:column;
+        gap:9px;
+        background-color:#e9f6ff;
+        background-image:
+          linear-gradient(rgba(233,246,255,.64), rgba(233,246,255,.64)),
+          url("${SUBIDOS_EXPORT_BG_URL}");
+        background-size:cover;
+        background-position:center center;
+        background-repeat:no-repeat;
+        font-family:"Lora", serif;
+        color:#111;
+      }
+
+      #subidosExportPredicaFinal *{
+        box-sizing:border-box;
+      }
+
+      #subidosExportPredicaFinal .subidos-export-head{
+        height:34px;
+        flex:0 0 34px;
+        display:flex;
+        align-items:center;
+        gap:9px;
+        min-width:0;
+        overflow:hidden;
+      }
+
+      #subidosExportPredicaFinal .subidos-export-badge{
+        flex:0 0 auto;
+        display:inline-flex;
+        align-items:center;
+        gap:6px;
+        height:28px;
+        padding:0 12px;
+        border-radius:999px;
+        background:${color.bg};
+        color:${color.fg};
+        font-family:Arial, sans-serif;
+        font-weight:800;
+        font-size:14px;
+        line-height:1;
+        white-space:nowrap;
+      }
+
+      #subidosExportPredicaFinal .subidos-export-fecha{
+        flex:0 0 auto;
+        font-family:Arial, sans-serif;
+        font-size:14px;
+        line-height:1;
+        color:#23313a;
+        white-space:nowrap;
+      }
+
+      #subidosExportPredicaFinal .subidos-export-titulo{
+        flex:1 1 auto;
+        min-width:0;
+        overflow:hidden;
+        text-overflow:ellipsis;
+        white-space:nowrap;
+        font-weight:800;
+        font-size:15px;
+        line-height:1;
+      }
+
+      #subidosExportPredicaFinal .subidos-export-media{
+        width:100%;
+        height:${mediaH}px;
+        flex:0 0 ${mediaH}px;
+        border-radius:24px;
+        overflow:hidden;
+        background:rgba(255,255,255,.55);
+        display:flex;
+        align-items:center;
+        justify-content:center;
+      }
+
+      #subidosExportPredicaFinal .subidos-export-media img{
+        width:100%;
+        height:100%;
+        display:block;
+        object-fit:cover;
+        object-position:center center;
+      }
+
+      #subidosExportPredicaFinal .subidos-export-media-placeholder{
+        flex-direction:column;
+        gap:8px;
+        color:#24313a;
+        font-weight:800;
+        font-size:16px;
+      }
+
+      #subidosExportPredicaFinal .subidos-export-media-placeholder i{
+        font-size:34px;
+      }
+
+      #subidosExportPredicaFinal .subidos-export-contexto{
+        flex:0 0 auto;
+        display:flex;
+        flex-direction:column;
+        gap:4px;
+        text-align:center;
+        padding:0 12px;
+      }
+
+      #subidosExportPredicaFinal .subidos-export-iglesia{
+        font-weight:900;
+        font-size:17px;
+        line-height:1.08;
+      }
+
+      #subidosExportPredicaFinal .subidos-export-intro{
+        font-weight:800;
+        font-size:${introFont}px;
+        line-height:1.14;
+      }
+
+      #subidosExportPredicaFinal .subidos-export-citas{
+        flex:0 0 auto;
+        display:grid;
+        grid-template-columns:repeat(2, minmax(0, 1fr));
+        gap:6px 8px;
+        padding:0 12px;
+      }
+
+      #subidosExportPredicaFinal .subidos-export-chip{
+        min-width:0;
+        border-radius:999px;
+        padding:6px 8px;
+        background:rgba(255,255,255,.94);
+        border:1px solid #cfe7f6;
+        box-shadow:0 2px 8px rgba(0,0,0,.04);
+        text-align:center;
+        font-size:12px;
+        font-weight:900;
+        line-height:1.08;
+        white-space:nowrap;
+        overflow:hidden;
+        text-overflow:ellipsis;
+      }
+
+      #subidosExportPredicaFinal .subidos-export-nota{
+        flex:0 0 auto;
+        padding:0 18px;
+        text-align:center;
+        font-weight:800;
+        font-size:${notaFont}px;
+        line-height:1.13;
+      }
+
+      #subidosExportPredicaFinal .subidos-export-footer{
+        margin-top:auto;
+        flex:0 0 auto;
+        padding:0 10px;
+        text-align:center;
+        font-weight:900;
+        font-size:15px;
+        line-height:1.08;
+      }
+    </style>
+
+    <div class="subidos-export-head">
+      <div class="subidos-export-badge">
+        <i class="fa-solid ${iconoSegunTipo(it.mimeType || "")}"></i>
+        ${escaparHtml(it.etiqueta || "Subido")}
+      </div>
+
+      ${fechaTxt ? `<div class="subidos-export-fecha">${escaparHtml(fechaTxt)}</div>` : ``}
+
+      ${descripcion ? `<div class="subidos-export-titulo">${escaparHtml(descripcion)}</div>` : ``}
+    </div>
+
+    ${subidosArchivoExportHtml(it)}
+
+    <div class="subidos-export-contexto">
+      <div class="subidos-export-iglesia">Iglesia Cristiana de la Vida Abundante</div>
+      ${introduccion ? `<div class="subidos-export-intro">• ${subidosHtmlExport(introduccion)}</div>` : ``}
+    </div>
+
+    ${citas.length ? `
+      <div class="subidos-export-citas">
+        ${citasHtml}
+      </div>
+    ` : ``}
+
+    ${notaFinal ? `
+      <div class="subidos-export-nota">
+        ${subidosHtmlExport(notaFinal)}
+      </div>
+    ` : ``}
+
+    <div class="subidos-export-footer">
+      Domingos 10 hs - Roca 123, Tristan Suarez.
+    </div>
+  `;
+
+  return node;
 }
 
 function subidosBlobToDataURL(blob) {
@@ -1899,47 +1869,45 @@ async function subidosConvertirImagenesExportConProxy(node) {
   }
 }
 
-async function subidosGenerarBlobCardPredica(id) {
-  const original = document.getElementById(`subido-${id}`);
-  if (!original) throw new Error("No encontré la card a exportar.");
+async function subidosGenerarBlobCardPredica(id, itemOverride = null) {
+  const it = itemOverride || obtenerSubidoPorId(id);
+  if (!it) throw new Error("No encontré la prédica a exportar.");
 
   const stage = document.getElementById("subidosExportStage");
   if (!stage) throw new Error("Falta #subidosExportStage en el HTML.");
 
   stage.innerHTML = "";
 
-  const wrap = document.createElement("div");
-  wrap.style.padding = "24px";
-  wrap.style.display = "inline-block";
-  wrap.style.background = "transparent";
+  const exportNode = subidosCrearNodoExportPredica({
+    id,
+    ...(it || {})
+  });
 
-const clone = original.cloneNode(true);
-subidosPrepararCloneParaExport(clone);
+  stage.appendChild(exportNode);
 
-wrap.appendChild(clone);
-stage.appendChild(wrap);
-
-await subidosConvertirImagenesExportConProxy(clone);
-await subidosEsperarImagenes(clone);
+  await subidosConvertirImagenesExportConProxy(exportNode);
+  await subidosEsperarImagenes(exportNode);
   await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 
-let canvas;
-try {
-  canvas = await html2canvas(clone, {
-    backgroundColor: null,
-    scale: 2,
-    useCORS: true
-  });
-} catch (e) {
-  stage.innerHTML = "";
-  throw new Error("No pude generar la imagen de la card. Lo más probable es un bloqueo CORS del archivo adjunto.");
-}
+  let canvas;
 
- console.log("✅ EXPORT PREDICA NUEVO:", {
-  anchoCanvas: canvas.width,
-  altoCanvas: canvas.height,
-  proporcion: (canvas.height / canvas.width).toFixed(2)
-});
+  try {
+    canvas = await html2canvas(exportNode, {
+      backgroundColor: null,
+      scale: 2,
+      useCORS: true
+    });
+  } catch (e) {
+    stage.innerHTML = "";
+    throw new Error("No pude generar la imagen de la prédica.");
+  }
+
+  console.log("✅ EXPORT PREDICA TEMPLATE:", {
+    anchoCanvas: canvas.width,
+    altoCanvas: canvas.height,
+    proporcion: (canvas.height / canvas.width).toFixed(2)
+  });
+
   const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
 
   stage.innerHTML = "";
@@ -2700,33 +2668,25 @@ async function subidosCrearSharePredicaAlGuardar(id, datosBase) {
 
   try {
     const estado = document.getElementById("subidosEstado");
-    if (estado) estado.textContent = "Guardando...";
+    if (estado) estado.textContent = "Generando imagen para compartir...";
 
-    // ✅ insertamos temporalmente la prédica en memoria
-    // para que exista la card y html2canvas pueda capturarla
-    const tempItem = {
+    const blob = await subidosGenerarBlobCardPredica(id, {
       id,
       ...datosBase
-    };
+    });
 
-    subidosItems = [
-      tempItem,
-      ...subidosItems.filter(x => x.id !== id)
-    ];
-
-    renderFeed();
-
-    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-
-    const blob = await subidosGenerarBlobCardPredica(id);
-
-    const nombre = subidosNombreSharePredica({ ...datosBase, id });
+    const nombre = subidosNombreSharePredica({
+      ...datosBase,
+      id
+    });
 
     const file = new File(
       [blob],
       nombre,
       { type: "image/png" }
     );
+
+    if (estado) estado.textContent = "Subiendo imagen preparada...";
 
     const subida = await subirArchivoAR2DesdeWeb(file, "subidos-share");
 
