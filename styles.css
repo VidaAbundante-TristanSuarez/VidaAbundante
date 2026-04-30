@@ -3178,4 +3178,57 @@ body.en-biblia #accionesBiblia{
   box-shadow: 0 2px 8px rgba(0,0,0,.15);
 }
 
+
+/* =========================================================
+   SOLO CAJITA: "TODAS LAS NOTAS" + "ORDEN"
+   ========================================================= */
+
+.panel-marcadores-bar .pm-left{
+  display:inline-flex !important;
+  flex-direction:column !important;
+  align-items:flex-start !important;
+  width:fit-content !important;
+  max-width:260px !important;
+
+  padding:7px 11px !important;
+  border-radius:12px !important;
+
+  background:rgba(255,255,255,.68) !important;
+  border:1px solid rgba(255,255,255,.45) !important;
+  box-shadow:0 2px 8px rgba(0,0,0,.08) !important;
+
+  backdrop-filter:blur(3px);
+  -webkit-backdrop-filter:blur(3px);
+}
+
+/* texto en modo claro */
+.panel-marcadores-bar .pm-left b{
+  color:#111 !important;
+  line-height:1.12 !important;
+}
+
+.panel-marcadores-bar .pm-left .pm-sub,
+.panel-marcadores-bar .pm-left .muted{
+  color:#333 !important;
+  font-size:12px !important;
+  line-height:1.12 !important;
+  margin-top:2px !important;
+}
+
+/* modo oscuro: solo esa cajita */
+body.oscuro .panel-marcadores-bar .pm-left{
+  background:rgba(0,0,0,.48) !important;
+  border:1px solid rgba(255,255,255,.14) !important;
+  box-shadow:0 2px 8px rgba(0,0,0,.25) !important;
+}
+
+body.oscuro .panel-marcadores-bar .pm-left b{
+  color:#fff !important;
+}
+
+body.oscuro .panel-marcadores-bar .pm-left .pm-sub,
+body.oscuro .panel-marcadores-bar .pm-left .muted{
+  color:rgba(255,255,255,.88) !important;
+}
+
   </style> 
