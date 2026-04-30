@@ -114,7 +114,7 @@ body.oscuro .nav-btn:hover i {
 /* oscuro */
 body.oscuro .nav-btn.activo{
   background: #a5e6ff;
-  color: #fff;
+  color: #000;
 }
 body.oscuro .nav-btn.activo i{
   color: #000;
