@@ -418,6 +418,9 @@ onAuthStateChanged(auth, async user => {
   // ✅ registrar automáticamente al usuario que entró
   await registrarUsuarioActual(user);
 
+  // ✅ cargar apariencia del usuario desde Firebase/R2
+await cargarFondosFirebaseUsuario();
+
   // ✅ roles globales
   window.__ES_ADMIN = false;
   window.__ES_COLABORADOR = false;
@@ -5373,32 +5376,131 @@ function getFondoOpacidadStorageKey(seccion) {
   return `fondoOpacidad_${seccion}`;
 }
 
-function getElementoSeccionFondo(seccion) {
-  const cfg = FONDO_SECCIONES[seccion];
-  return cfg ? document.getElementById(cfg.seccionId) : null;
+function getFondoTextoStorageKey(seccion) {
+  return `fondoTexto_${seccion}`;
 }
 
-function getElementoCapaFondo(seccion) {
-  const cfg = FONDO_SECCIONES[seccion];
-  return cfg ? document.getElementById(cfg.fondoId) : null;
-}
-
-function asegurarFondoBiblia() {
-  return document.getElementById("fondoBiblia");
-}
-
-function getEstadoGuardadoSeccion(seccion) {
+function normalizarEstadoApariencia(seccion, estado = {}) {
   return {
-    tipo: localStorage.getItem(getFondoTipoStorageKey(seccion)) || "color",
-    valor: localStorage.getItem(getFondoStorageKey(seccion)) || "#ffffff",
-    opacidad: localStorage.getItem(getFondoOpacidadStorageKey(seccion)) || "0.35"
+    seccion,
+    tipo: estado.tipo || "color",
+    valor: estado.valor || "#ffffff",
+    opacidad: String(estado.opacidad ?? "0.35"),
+    colorTexto: estado.colorTexto || ""
   };
 }
 
+function getAparienciaFirebasePath(seccion) {
+  if (!uid) return null;
+  return `usuariosConfig/${uid}/apariencia/${seccion}`;
+}
+
+function getEstadoGuardadoSeccion(seccion) {
+  return normalizarEstadoApariencia(seccion, {
+    tipo: localStorage.getItem(getFondoTipoStorageKey(seccion)) || "color",
+    valor: localStorage.getItem(getFondoStorageKey(seccion)) || "#ffffff",
+    opacidad: localStorage.getItem(getFondoOpacidadStorageKey(seccion)) || "0.35",
+    colorTexto: localStorage.getItem(getFondoTextoStorageKey(seccion)) || ""
+  });
+}
+
 function guardarEstadoSeccion(seccion, estado) {
-  localStorage.setItem(getFondoTipoStorageKey(seccion), estado.tipo);
-  localStorage.setItem(getFondoStorageKey(seccion), estado.valor);
-  localStorage.setItem(getFondoOpacidadStorageKey(seccion), String(estado.opacidad));
+  const limpio = normalizarEstadoApariencia(seccion, estado);
+
+  localStorage.setItem(getFondoTipoStorageKey(seccion), limpio.tipo);
+  localStorage.setItem(getFondoStorageKey(seccion), limpio.valor);
+  localStorage.setItem(getFondoOpacidadStorageKey(seccion), String(limpio.opacidad));
+  localStorage.setItem(getFondoTextoStorageKey(seccion), limpio.colorTexto || "");
+}
+
+async function guardarEstadoSeccionFirebase(seccion, estado) {
+  if (!uid) return;
+
+  const path = getAparienciaFirebasePath(seccion);
+  if (!path) return;
+
+  const limpio = normalizarEstadoApariencia(seccion, estado);
+
+  await set(ref(db, path), {
+    tipo: limpio.tipo,
+    valor: limpio.valor,
+    opacidad: limpio.opacidad,
+    colorTexto: limpio.colorTexto || "",
+    actualizado: Date.now()
+  });
+}
+
+async function cargarFondosFirebaseUsuario() {
+  if (!uid) {
+    aplicarFondosGuardados();
+    return;
+  }
+
+  try {
+    for (const seccion of Object.keys(FONDO_SECCIONES)) {
+      const path = getAparienciaFirebasePath(seccion);
+      if (!path) continue;
+
+      const snap = await get(ref(db, path));
+      const remoto = snap.val();
+
+      if (!remoto) continue;
+
+      const limpio = normalizarEstadoApariencia(seccion, remoto);
+
+      // ✅ guardo copia local rápida
+      guardarEstadoSeccion(seccion, limpio);
+
+      // ✅ aplico visualmente
+      aplicarEstadoVisualSeccion(seccion, limpio);
+    }
+
+    limpiarFondosInternosApp();
+  } catch (e) {
+    console.warn("No pude cargar apariencia desde Firebase:", e);
+    aplicarFondosGuardados();
+  }
+}
+
+async function subirFondoTemaAR2(dataUrl, seccion) {
+  const s = String(dataUrl || "");
+  if (!s.startsWith("data:")) return s;
+
+  const match = s.match(/^data:(.*?);base64,(.*)$/);
+  if (!match) throw new Error("Imagen inválida.");
+
+  const contentType = match[1] || "image/jpeg";
+  const fileBase64 = match[2] || "";
+
+  const r = await fetch(R2_UPLOAD_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      fileBase64,
+      fileName: `fondo-${seccion}-${Date.now()}.jpg`,
+      contentType,
+      folder: "fondos-app"
+    })
+  });
+
+  const data = await r.json().catch(() => ({}));
+
+  if (!r.ok || !data?.ok || !data?.url) {
+    throw new Error(data?.error || data?.detail || "No se pudo subir el fondo a R2.");
+  }
+
+  return data.url;
+}
+
+async function prepararEstadoTemaParaGuardar(estado) {
+  const limpio = normalizarEstadoApariencia(estado?.seccion || getSeccionActualFondoKey(), estado);
+
+  // ✅ si es imagen nueva en dataUrl, la subimos a R2 y guardamos URL
+  if (limpio.tipo === "imagen" && String(limpio.valor || "").startsWith("data:")) {
+    limpio.valor = await subirFondoTemaAR2(limpio.valor, limpio.seccion);
+  }
+
+  return limpio;
 }
 
 function limpiarFondosInternosApp() {
@@ -5431,9 +5533,12 @@ function aplicarEstadoVisualSeccion(seccion, estado) {
   const capa = getElementoCapaFondo(seccion);
   if (!el || !capa) return;
 
-  const tipo = estado?.tipo || "color";
-  const valor = estado?.valor || "#ffffff";
-  const opacidad = String(estado?.opacidad || "0.35");
+  const limpio = normalizarEstadoApariencia(seccion, estado);
+
+  const tipo = limpio.tipo;
+  const valor = limpio.valor || "#ffffff";
+  const opacidad = String(limpio.opacidad || "0.35");
+  const colorTexto = limpio.colorTexto || "";
 
   el.style.background = "none";
   el.style.backgroundImage = "none";
@@ -5448,6 +5553,15 @@ function aplicarEstadoVisualSeccion(seccion, estado) {
   }
 
   capa.style.opacity = opacidad;
+
+  // ✅ color de fuente general por sección
+  if (colorTexto) {
+    el.style.setProperty("--va-color-texto", colorTexto);
+    el.style.color = colorTexto;
+  } else {
+    el.style.removeProperty("--va-color-texto");
+    el.style.color = "";
+  }
 }
 
 function aplicarFondosGuardados() {
@@ -5460,20 +5574,102 @@ function aplicarFondosGuardados() {
 
 function cargarDraftDesdeGuardado(seccion) {
   const guardado = getEstadoGuardadoSeccion(seccion);
+
   fondoTemaDraft = {
     seccion,
     tipo: guardado.tipo,
     valor: guardado.valor,
-    opacidad: guardado.opacidad
+    opacidad: guardado.opacidad,
+    colorTexto: guardado.colorTexto || ""
   };
 }
+
+function asegurarControlColorTextoTema() {
+  const modal = document.getElementById("modalTema");
+  if (!modal) return;
+
+  if (document.getElementById("colorTextoApp")) return;
+
+  const box = document.createElement("div");
+  box.id = "colorTextoAppBox";
+  box.style.display = "flex";
+  box.style.flexDirection = "column";
+  box.style.gap = "6px";
+  box.style.marginTop = "8px";
+
+  box.innerHTML = `
+    <label style="font-weight:800; font-size:13px;">Color de fuente</label>
+
+    <div style="display:flex; align-items:center; gap:10px;">
+      <input
+        id="colorTextoApp"
+        type="color"
+        value="#111111"
+        style="width:58px; height:42px; border-radius:12px; padding:0;"
+      >
+
+      <button
+        type="button"
+        class="btn-primary"
+        onclick="aplicarColorTextoTema()"
+        style="flex:1;"
+      >
+        Aplicar fuente
+      </button>
+    </div>
+  `;
+
+  const colorFondo = document.getElementById("colorFondoApp");
+  const colorHost = document.getElementById("colorFondoAppHost");
+
+  const refEl =
+    colorHost?.parentElement ||
+    colorFondo?.parentElement ||
+    modal.querySelector(".modal-card div");
+
+  if (refEl) {
+    refEl.insertAdjacentElement("afterend", box);
+  } else {
+    modal.querySelector(".modal-card")?.appendChild(box);
+  }
+
+  const input = document.getElementById("colorTextoApp");
+
+  if (input && !input.dataset.ready) {
+    input.dataset.ready = "1";
+
+    input.addEventListener("input", () => {
+      if (!fondoTemaDraft) return;
+
+      fondoTemaDraft.colorTexto = input.value || "";
+
+      aplicarEstadoVisualSeccion(fondoTemaDraft.seccion, fondoTemaDraft);
+      limpiarFondosInternosApp();
+    });
+  }
+}
+
+window.aplicarColorTextoTema = () => {
+  if (!fondoTemaDraft) return;
+
+  const input = document.getElementById("colorTextoApp");
+  if (!input) return;
+
+  fondoTemaDraft.colorTexto = input.value || "";
+
+  aplicarEstadoVisualSeccion(fondoTemaDraft.seccion, fondoTemaDraft);
+  limpiarFondosInternosApp();
+};
 
 function reflejarDraftEnModal() {
   if (!fondoTemaDraft) return;
 
+  asegurarControlColorTextoTema();
+
   const label = document.getElementById("fondoSeccionActualLabel");
   const slider = document.getElementById("opacidadFondoApp");
   const inputColor = document.getElementById("colorFondoApp");
+  const inputTexto = document.getElementById("colorTextoApp");
 
   if (label) {
     const nombres = {
@@ -5493,6 +5689,10 @@ function reflejarDraftEnModal() {
     inputColor.value = fondoTemaDraft.valor || "#ffffff";
     inputColor.dispatchEvent(new Event("input", { bubbles: true }));
     inputColor.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+
+  if (inputTexto) {
+    inputTexto.value = fondoTemaDraft.colorTexto || "#111111";
   }
 }
 
@@ -5582,16 +5782,25 @@ window.aplicarImagenFondo = () => {
   reader.readAsDataURL(file);
 };
 
-window.confirmarFondoTema = () => {
+window.confirmarFondoTema = async () => {
   if (!fondoTemaDraft) return;
 
   try {
-    guardarEstadoSeccion(fondoTemaDraft.seccion, fondoTemaDraft);
+    const estadoFinal = await prepararEstadoTemaParaGuardar(fondoTemaDraft);
+
+    fondoTemaDraft = estadoFinal;
+
+    // ✅ respaldo local
+    guardarEstadoSeccion(estadoFinal.seccion, estadoFinal);
+
+    // ✅ guardado real por usuario en Firebase
+    await guardarEstadoSeccionFirebase(estadoFinal.seccion, estadoFinal);
+
     aplicarFondosGuardados();
     cerrarModalTema();
   } catch (e) {
-    console.error("Error al confirmar fondo:", e);
-    alert("No se pudo guardar esa imagen de fondo. Probá con una imagen más liviana.");
+    console.error("Error al confirmar apariencia:", e);
+    alert("No se pudo guardar la apariencia.\n\n" + (e?.message || e));
   }
 };
 
@@ -5612,6 +5821,11 @@ window.cancelarFondoTema = () => {
 // ================= CARGAR FONDOS AL INICIAR =================
 window.addEventListener("load", () => {
   aplicarFondosGuardados();
+
+  // ✅ si ya hay usuario, después pisa con Firebase
+  setTimeout(() => {
+    cargarFondosFirebaseUsuario();
+  }, 300);
 
   const slider = document.getElementById("opacidadFondoApp");
   if (slider && !slider.dataset.ready) {
