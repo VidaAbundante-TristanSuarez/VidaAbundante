@@ -1392,7 +1392,7 @@ function normalizarEtiquetaSubidos(txt = "") {
 }
 
 const ETIQUETAS_COLOR = {
-  "predica": "#4474be",
+  "predica": "#35c6b7",
   "anuncio": "#ff0000",
   "plan": "#d2ff00",
   "racimo": "#00faff",
