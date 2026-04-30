@@ -1603,22 +1603,11 @@ function subidosCrearNodoExportPredica(it) {
   const descripcion = subidosTextoPlanoExport(it.descripcion || "");
   const color = colorEtiquetaSubidos(it.etiqueta || "");
 
-  const introLen = introduccion.length;
-  const notaLen = notaFinal.length;
   const citasCount = citas.length;
 
-  // ✅ baja automática si hay más texto
-  const introFont =
-    introLen > 240 ? 12 :
-    introLen > 170 ? 12.5 :
-    13;
-
-  const notaFont =
-    notaLen > 520 ? 9.8 :
-    notaLen > 430 ? 10.3 :
-    notaLen > 340 ? 10.8 :
-    notaLen > 250 ? 11.3 :
-    11.8;
+  // ✅ tamaños base normales
+  const introFont = 13;
+  const notaFont = 11.8;
 
   const citaFont =
     citasCount >= 8 ? 11 :
@@ -1875,14 +1864,16 @@ function subidosCrearNodoExportPredica(it) {
         padding:12px 10px;
       }
 
-      #subidosExportPredicaFinal .subidos-export-intro,
-      #subidosExportPredicaFinal .subidos-export-note{
-        width:100%;
-        font-weight:800;
-        text-align:center;
-        line-height:1.16;
-        overflow-wrap:anywhere;
-      }
+#subidosExportPredicaFinal .subidos-export-intro,
+#subidosExportPredicaFinal .subidos-export-note{
+  width:100%;
+  max-width:100%;
+  font-weight:800;
+  text-align:center;
+  line-height:1.16;
+  overflow-wrap:anywhere;
+  display:block;
+}
 
       #subidosExportPredicaFinal .subidos-export-intro{
         font-size:${introFont}px;
@@ -2011,6 +2002,41 @@ function subidosBlobToDataURL(blob) {
   });
 }
 
+function subidosAjustarTextoSoloSiNoCabe(boxEl, textEl, minFontPx = 9.5, paso = 0.2) {
+  if (!boxEl || !textEl) return;
+
+  const estilo = window.getComputedStyle(textEl);
+  let fontSize = parseFloat(estilo.fontSize || "12");
+
+  // ✅ si ya entra, no tocar nada
+  if (textEl.scrollHeight <= boxEl.clientHeight) return;
+
+  // ✅ si no entra, bajar de a poco hasta que entre
+  while (fontSize > minFontPx && textEl.scrollHeight > boxEl.clientHeight) {
+    fontSize = Math.max(minFontPx, fontSize - paso);
+    textEl.style.fontSize = fontSize + "px";
+  }
+}
+
+function subidosAjustarTextosExportPredica(node) {
+  if (!node) return;
+
+  const introBox = node.querySelector(".subidos-export-box.intro-box");
+  const introText = node.querySelector(".subidos-export-intro");
+
+  const noteBox = node.querySelector(".subidos-export-box.note-box");
+  const noteText = node.querySelector(".subidos-export-note");
+
+  // ✅ un pequeño margen interno para que no quede al límite
+  if (introBox && introText) {
+    subidosAjustarTextoSoloSiNoCabe(introBox, introText, 10.8, 0.2);
+  }
+
+  if (noteBox && noteText) {
+    subidosAjustarTextoSoloSiNoCabe(noteBox, noteText, 9.2, 0.2);
+  }
+}
+
 async function subidosConvertirImagenesExportConProxy(node) {
   const imgs = [...node.querySelectorAll("img")];
 
@@ -2055,6 +2081,12 @@ async function subidosGenerarBlobCardPredica(id, itemOverride = null) {
 
   await subidosConvertirImagenesExportConProxy(exportNode);
   await subidosEsperarImagenes(exportNode);
+  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+  // ✅ solo achica fuente si realmente no entra
+  subidosAjustarTextosExportPredica(exportNode);
+
+  // ✅ esperamos otro frame para que el navegador aplique el nuevo tamaño si cambió
   await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 
   let canvas;
