@@ -1603,6 +1603,30 @@ function subidosCrearNodoExportPredica(it) {
   const descripcion = subidosTextoPlanoExport(it.descripcion || "");
   const color = colorEtiquetaSubidos(it.etiqueta || "");
 
+  const introLen = introduccion.length;
+  const notaLen = notaFinal.length;
+  const citasCount = citas.length;
+
+  // ✅ baja automática si hay más texto
+  const introFont =
+    introLen > 240 ? 12 :
+    introLen > 170 ? 12.5 :
+    13;
+
+  const notaFont =
+    notaLen > 520 ? 9.8 :
+    notaLen > 430 ? 10.3 :
+    notaLen > 340 ? 10.8 :
+    notaLen > 250 ? 11.3 :
+    11.8;
+
+  const citaFont =
+    citasCount >= 8 ? 11 :
+    citasCount >= 6 ? 11.3 :
+    11.5;
+
+  const iglesiaFont = 21.5;
+
   const citasHtml = citas.map(c => {
     const ref = subidosTextoPlanoExport(c.referencia || "");
     if (!ref) return "";
@@ -1625,15 +1649,18 @@ function subidosCrearNodoExportPredica(it) {
   node.innerHTML = `
     <style>
       #subidosExportPredicaFinal{
+        --left-col: 1.14fr;
+        --right-col: .86fr;
+
         width:${exportW}px;
         height:${exportH}px;
         box-sizing:border-box;
         overflow:hidden;
         border-radius:30px;
-        padding:14px 16px 16px;
+        padding:12px 14px 14px;
         display:flex;
         flex-direction:column;
-        gap:10px;
+        gap:6px;
         background-image:url("${SUBIDOS_EXPORT_BG_URL}");
         background-size:cover;
         background-position:center center;
@@ -1646,13 +1673,14 @@ function subidosCrearNodoExportPredica(it) {
         box-sizing:border-box;
       }
 
+      /* ===== TOP ===== */
+
       #subidosExportPredicaFinal .subidos-export-head{
         flex:0 0 auto;
         display:flex;
         align-items:center;
-        gap:9px;
+        gap:8px;
         min-width:0;
-        overflow:hidden;
       }
 
       #subidosExportPredicaFinal .subidos-export-badge{
@@ -1672,10 +1700,23 @@ function subidosCrearNodoExportPredica(it) {
         white-space:nowrap;
       }
 
+      #subidosExportPredicaFinal .subidos-export-meta-box{
+        flex:1 1 auto;
+        min-width:0;
+        border-radius:16px;
+        padding:6px 10px;
+        background:rgba(255,255,255,.52);
+        border:1px solid rgba(255,255,255,.42);
+        display:flex;
+        align-items:center;
+        gap:10px;
+        overflow:hidden;
+      }
+
       #subidosExportPredicaFinal .subidos-export-fecha{
         flex:0 0 auto;
         font-family:Arial, sans-serif;
-        font-size:14px;
+        font-size:13px;
         line-height:1;
         color:#23313a;
         white-space:nowrap;
@@ -1688,21 +1729,24 @@ function subidosCrearNodoExportPredica(it) {
         text-overflow:ellipsis;
         white-space:nowrap;
         font-weight:800;
-        font-size:15px;
-        line-height:1;
+        font-size:14px;
+        line-height:1.05;
       }
 
       #subidosExportPredicaFinal .subidos-export-divider{
         flex:0 0 1px;
         height:1px;
-        background:rgba(71,126,154,.18);
+        background:rgba(71,126,154,.16);
+        margin:1px 0 2px;
       }
+
+      /* ===== HERO ===== */
 
       #subidosExportPredicaFinal .subidos-export-hero{
         flex:0 0 auto;
         display:grid;
-        grid-template-columns:1.18fr .82fr;
-        gap:12px;
+        grid-template-columns:var(--left-col) var(--right-col);
+        gap:10px;
         align-items:stretch;
       }
 
@@ -1712,7 +1756,7 @@ function subidosCrearNodoExportPredica(it) {
         border-radius:24px;
         overflow:hidden;
         background:rgba(255,255,255,.20);
-        border:2px solid rgba(255,255,255,.58);
+        border:2px solid rgba(255,255,255,.50);
         display:flex;
         align-items:center;
         justify-content:center;
@@ -1731,63 +1775,62 @@ function subidosCrearNodoExportPredica(it) {
         gap:8px;
         color:#24313a;
         font-weight:800;
-        font-size:16px;
+        font-size:15px;
         text-align:center;
         padding:12px;
       }
 
       #subidosExportPredicaFinal .subidos-export-media-placeholder i{
-        font-size:34px;
+        font-size:32px;
       }
 
       #subidosExportPredicaFinal .subidos-export-brand-wrap{
         min-height:0;
         display:flex;
-        align-items:center;
-        justify-content:center;
       }
 
       #subidosExportPredicaFinal .subidos-export-brand-box{
         width:100%;
-        height:100%;
-        border:1px solid rgba(255,255,255,.55);
-        background:rgba(255,255,255,.72);
+        border:1px solid rgba(255,255,255,.52);
+        background:rgba(255,255,255,.70);
         border-radius:22px;
-        padding:16px 12px;
+        padding:14px 12px;
         display:flex;
         flex-direction:column;
         align-items:center;
         justify-content:center;
         text-align:center;
+        overflow:hidden;
       }
 
       #subidosExportPredicaFinal .subidos-export-iglesia{
         font-weight:900;
-        font-size:23px;
-        line-height:1.02;
-        text-transform:uppercase;
+        font-size:${iglesiaFont}px;
+        line-height:1.04;
       }
 
       #subidosExportPredicaFinal .subidos-export-address{
-        margin-top:14px;
-        font-size:14px;
+        margin-top:12px;
+        font-size:13.5px;
         line-height:1.12;
         font-weight:800;
       }
 
       #subidosExportPredicaFinal .subidos-export-meeting{
         margin-top:10px;
-        font-size:14px;
+        font-size:13.5px;
         line-height:1.12;
         font-weight:800;
       }
+
+      /* ===== BODY ===== */
 
       #subidosExportPredicaFinal .subidos-export-body{
         flex:1 1 auto;
         min-height:0;
         display:grid;
-        grid-template-columns:1.02fr .98fr;
-        gap:12px;
+        grid-template-columns:var(--left-col) var(--right-col);
+        gap:10px;
         align-items:stretch;
       }
 
@@ -1795,7 +1838,7 @@ function subidosCrearNodoExportPredica(it) {
         min-height:0;
         display:flex;
         flex-direction:column;
-        gap:10px;
+        gap:8px;
       }
 
       #subidosExportPredicaFinal .subidos-export-right{
@@ -1804,10 +1847,10 @@ function subidosCrearNodoExportPredica(it) {
       }
 
       #subidosExportPredicaFinal .subidos-export-box{
-        border:1px solid rgba(255,255,255,.55);
-        background:rgba(255,255,255,.72);
+        border:1px solid rgba(255,255,255,.52);
+        background:rgba(255,255,255,.70);
         border-radius:22px;
-        padding:14px 14px;
+        padding:12px 12px;
         display:flex;
         align-items:center;
         justify-content:center;
@@ -1816,8 +1859,8 @@ function subidosCrearNodoExportPredica(it) {
       }
 
       #subidosExportPredicaFinal .subidos-export-box.intro-box{
-        min-height:128px;
         flex:0 0 auto;
+        min-height:118px;
       }
 
       #subidosExportPredicaFinal .subidos-export-box.note-box{
@@ -1829,39 +1872,49 @@ function subidosCrearNodoExportPredica(it) {
         flex:1 1 auto;
         width:100%;
         min-height:0;
-        padding:14px 12px;
+        padding:12px 10px;
       }
 
       #subidosExportPredicaFinal .subidos-export-intro,
       #subidosExportPredicaFinal .subidos-export-note{
         width:100%;
-        font-size:14px;
-        line-height:1.18;
         font-weight:800;
         text-align:center;
+        line-height:1.16;
+        overflow-wrap:anywhere;
+      }
+
+      #subidosExportPredicaFinal .subidos-export-intro{
+        font-size:${introFont}px;
+      }
+
+      #subidosExportPredicaFinal .subidos-export-note{
+        font-size:${notaFont}px;
       }
 
       #subidosExportPredicaFinal .subidos-export-citas-list{
         width:100%;
+        height:100%;
         display:flex;
         flex-direction:column;
         align-items:center;
         justify-content:center;
-        gap:8px;
+        gap:7px;
       }
 
       #subidosExportPredicaFinal .subidos-export-chip{
         width:100%;
         border-radius:999px;
-        padding:7px 10px;
+        padding:7px 9px;
         background:rgba(255,255,255,.82);
         border:1px solid #cfe7f6;
         box-shadow:0 2px 8px rgba(0,0,0,.04);
         text-align:center;
-        font-size:12px;
+        font-size:${citaFont}px;
         font-weight:900;
-        line-height:1.12;
+        line-height:1.1;
         white-space:normal;
+        overflow-wrap:anywhere;
       }
 
       #subidosExportPredicaFinal .subidos-export-empty{
@@ -1870,7 +1923,7 @@ function subidosCrearNodoExportPredica(it) {
         align-items:center;
         justify-content:center;
         text-align:center;
-        font-size:12px;
+        font-size:11px;
         font-weight:800;
         color:#355062;
       }
@@ -1882,9 +1935,12 @@ function subidosCrearNodoExportPredica(it) {
         ${escaparHtml(it.etiqueta || "Subido")}
       </div>
 
-      ${fechaTxt ? `<div class="subidos-export-fecha">${escaparHtml(fechaTxt)}</div>` : ``}
-
-      ${descripcion ? `<div class="subidos-export-titulo">${escaparHtml(descripcion)}</div>` : ``}
+      ${(fechaTxt || descripcion) ? `
+        <div class="subidos-export-meta-box">
+          ${fechaTxt ? `<div class="subidos-export-fecha">${escaparHtml(fechaTxt)}</div>` : ``}
+          ${descripcion ? `<div class="subidos-export-titulo">${escaparHtml(descripcion)}</div>` : ``}
+        </div>
+      ` : ``}
     </div>
 
     <div class="subidos-export-divider"></div>
@@ -1895,19 +1951,18 @@ function subidosCrearNodoExportPredica(it) {
       <div class="subidos-export-brand-wrap">
         <div class="subidos-export-brand-box">
           <div class="subidos-export-iglesia">
-            IGLESIA<br>
-            CRISTIANA<br>
-            DE LA<br>
-            VIDA<br>
-            ABUNDANTE
+            Iglesia Cristiana de<br>
+            la Vida Abundante
           </div>
 
           <div class="subidos-export-address">
-            Roca 123, Tristán Suarez
+            Roca 123,<br>
+            Tristan Suarez
           </div>
 
           <div class="subidos-export-meeting">
-            Reunión Domingo 10 hs
+            Reunión<br>
+            Domingo 10hs
           </div>
         </div>
       </div>
