@@ -107,25 +107,27 @@ body.oscuro #subidosApp{
 }
 
 .subidos-cal-wrap{
-  background:var(--sub-card);
-  border:1px solid var(--sub-bd);
+  background:rgba(255,255,255,.42);
+  border:1px solid rgba(255,255,255,.55);
   border-radius:18px;
   overflow:hidden;
-  box-shadow:var(--sub-shadow);
+  box-shadow:0 8px 22px rgba(0,0,0,.08);
+  backdrop-filter:blur(4px);
+  -webkit-backdrop-filter:blur(4px);
 }
 
 .subidos-cal-head{
   display:grid;
   grid-template-columns:repeat(7, minmax(0, 1fr));
-  border-bottom:1px solid var(--sub-bd);
-  background:var(--sub-card);
+  border-bottom:1px solid rgba(255,255,255,.35);
+  background:rgba(255,255,255,.18);
 }
 
 .subidos-cal-head > div{
   padding:10px 6px;
   text-align:center;
   font-weight:800;
-  color:var(--sub-mut);
+  color:#1f2937;
   font-size:13px;
 }
 
@@ -137,11 +139,11 @@ body.oscuro #subidosApp{
 .subidos-day{
   min-width:0;
   height:126px;
-  border-right:1px solid var(--sub-bd);
-  border-bottom:1px solid var(--sub-bd);
+  border-right:1px solid rgba(255,255,255,.28);
+  border-bottom:1px solid rgba(255,255,255,.28);
   padding:8px;
   position:relative;
-  background:var(--sub-card);
+  background:rgba(255,255,255,.10);
   overflow:hidden;
 }
 
@@ -150,7 +152,7 @@ body.oscuro #subidosApp{
 }
 
 .subidos-day.empty{
-  background:var(--sub-card);
+  background:rgba(255,255,255,.08);
 }
 
 .subidos-day-num{
