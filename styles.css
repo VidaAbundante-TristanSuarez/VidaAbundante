@@ -113,7 +113,7 @@ body.oscuro .nav-btn:hover i {
 
 /* oscuro */
 body.oscuro .nav-btn.activo{
-  background: var(--ui-azul-hover);
+  background: #a5e6ff;
   color: #fff;
 }
 body.oscuro .nav-btn.activo i{
@@ -260,7 +260,7 @@ body.oscuro .btn-version-inline{
 }
 
 body.oscuro .btn-version-inline.activo{
-  background: #1c6fcb;
+  background: #a5e6ff;
   color: #fff;
   border-color: #1c6fcb;
 }
