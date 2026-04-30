@@ -955,4 +955,28 @@ button.subidos-media-link{
   padding-top:2px !important;
 }
 
+/* ================= FIX MODO OSCURO EN IGLESIA / AGENDA / SUBIDOS ================= */
+/* Si los contenedores son claros o translúcidos, el texto NO debe ponerse blanco */
+
+body.oscuro #iglesia,
+body.oscuro #iglesia *,
+body.oscuro #subidosApp,
+body.oscuro #subidosApp *{
+  color:#111;
+}
+
+/* Mantener blancos solo los textos que están sobre botones de color */
+body.oscuro #iglesia button.btn-primary,
+body.oscuro #iglesia button.btn-primary *,
+body.oscuro #iglesia .nav-btn.activo,
+body.oscuro #iglesia .nav-btn.activo *,
+body.oscuro #subidosApp .subidos-badge,
+body.oscuro #subidosApp .subidos-badge *,
+body.oscuro #subidosApp .subidos-feed-actions button,
+body.oscuro #subidosApp .subidos-feed-actions button *,
+body.oscuro #subidosApp .subidosDangerMini,
+body.oscuro #subidosApp .subidosDangerMini *{
+  color:#fff !important;
+}
+
 </style>
