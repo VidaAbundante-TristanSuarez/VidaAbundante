@@ -3231,4 +3231,63 @@ body.oscuro .panel-marcadores-bar .pm-left .muted{
   color:rgba(255,255,255,.88) !important;
 }
 
+/* ================= COLOR DE FUENTE POR SECCIÓN ================= */
+
+#seccion-biblia,
+#seccion-iglesia,
+#seccion-panel,
+#seccion-compartidos{
+  color:var(--va-color-texto, inherit);
+}
+
+/* Biblia */
+#seccion-biblia #texto,
+#seccion-biblia #texto .versiculo,
+#seccion-biblia #texto .versiculo span,
+#seccion-biblia #titulo{
+  color:var(--va-color-texto, inherit) !important;
+}
+
+/* Iglesia / Agenda / Subidos */
+#seccion-iglesia #subidosApp,
+#seccion-iglesia #subidosApp .subidos-feed-date,
+#seccion-iglesia #subidosApp .subidos-feed-desc,
+#seccion-iglesia #subidosApp .subidos-day-num,
+#seccion-iglesia #subidosApp .subidos-cal-head > div,
+#seccion-iglesia #subidosApp .subidos-predica-chip{
+  color:var(--va-color-texto, inherit) !important;
+}
+
+/* Mi Panel / Notas */
+#seccion-panel #panel-marcadores,
+#seccion-panel #panel-marcadores .pm-left b,
+#seccion-panel #panel-marcadores .pm-sub,
+#seccion-panel #panel-marcadores .muted,
+#seccion-panel #panel-marcadores .card-marcador{
+  color:var(--va-color-texto, inherit) !important;
+}
+
+/* No romper botones con fondo de color */
+#seccion-biblia button,
+#seccion-iglesia button,
+#seccion-panel button,
+#seccion-compartidos button,
+.subidos-badge,
+.subidos-badge *,
+.subidos-feed-actions button,
+.subidos-feed-actions button *,
+.nav-btn.activo,
+.nav-btn.activo *{
+  color:inherit;
+}
+
+.subidos-badge,
+.subidos-badge *,
+.subidos-feed-actions button,
+.subidos-feed-actions button *,
+.nav-btn.activo,
+.nav-btn.activo *{
+  color:#fff !important;
+}
+
   </style> 
