@@ -1590,6 +1590,13 @@ function cargarAdornosF2(){
 
 const texturasF2 = [
   { nombre: "🔲", url: null },
+   { nombre: "Textura 21", url: "./img/texturas/1.png" },
+   { nombre: "Textura 22", url: "./img/texturas/2.png" },
+   { nombre: "Textura 23", url: "./img/texturas/3.png" },
+   { nombre: "Textura 24", url: "./img/texturas/4.png" },
+   { nombre: "Textura 25", url: "./img/texturas/5.png" },
+   { nombre: "Textura 26", url: "./img/texturas/6.png" },
+   { nombre: "Textura 27", url: "./img/texturas/7.png" },
   { nombre: "Textura 1", url: "./img/texturas/TEXTURA1.png" },
   { nombre: "Textura 2", url: "./img/texturas/TEXTURA2.png" },
   { nombre: "Textura 3", url: "./img/texturas/TEXTURA3.png" },
