@@ -93,21 +93,30 @@ input[type="number"]{
   gap:10px;
   overflow-x:auto;
   overflow-y:hidden;
-  padding: 8px 4px;
-  margin: 10px auto 0;
-  width: min(460px, 94vw);
+  padding:8px 4px;
+  margin:10px auto 0;
+  width:min(460px, 94vw);
   justify-content:flex-start;
-  max-height: 92px;
+  align-items:center;
+  max-height:92px;
   position:relative;
 }
 
 .dev-fondos img{
-  width:64px;
-  height:64px;
+  flex:0 0 64px;
+  width:64px !important;
+  min-width:64px !important;
+  max-width:64px !important;
+  height:64px !important;
+  min-height:64px !important;
+  max-height:64px !important;
   border-radius:12px;
   object-fit:cover;
+  display:block;
   cursor:pointer;
   border:2px solid transparent;
+  box-sizing:border-box;
+  background:#fff;
 }
 
 .dev-fondos img.activo{
@@ -168,11 +177,17 @@ input[type="number"]{
   gap:10px;
   overflow-x:auto;
   overflow-y:hidden;
-  padding: 6px 2px;
-  margin: 0 auto;
-  width: 100%;
+  padding:8px 8px;
+  margin:0 auto;
+  width:100%;
   justify-content:flex-start;
-  max-height: 92px;
+  align-items:center;
+  max-height:92px;
+
+  /* ✅ solo fondo de la galería */
+  background:var(--ui-azul-claro);
+  border-radius:14px;
+  box-sizing:border-box;
 }
 
 .dev-adorno-btn{
@@ -189,6 +204,7 @@ input[type="number"]{
   width:auto;
   height:auto;
   overflow:hidden;
+  box-sizing:border-box;
 }
 
 .dev-adorno-btn.activo{
@@ -196,11 +212,15 @@ input[type="number"]{
 }
 
 .dev-adorno-thumb{
-  width:64px;
-  height:24px;
+  flex:0 0 64px;
+  width:64px !important;
+  min-width:64px !important;
+  max-width:64px !important;
+  height:24px !important;
+  min-height:24px !important;
+  max-height:24px !important;
   object-fit:contain;
   display:block;
-  flex:0 0 auto;
 }
 
 .dev-adorno-btn-none{
@@ -821,6 +841,7 @@ body.oscuro .devIndexBarBottom{
   width:auto;
   height:auto;
   overflow:hidden;
+  box-sizing:border-box;
 }
 
 .dev-textura-btn.activo{
@@ -828,12 +849,16 @@ body.oscuro .devIndexBarBottom{
 }
 
 .dev-textura-thumb{
-  width:64px;
-  height:24px;
+  flex:0 0 64px;
+  width:64px !important;
+  min-width:64px !important;
+  max-width:64px !important;
+  height:24px !important;
+  min-height:24px !important;
+  max-height:24px !important;
   object-fit:cover;
   border-radius:6px;
   display:block;
-  flex:0 0 auto;
 }
 
 #dev2Adornos .dev-adorno-btn:not(.dev-adorno-btn-none){
