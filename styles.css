@@ -2703,6 +2703,8 @@ input[type="hidden"]#dev1Color,
 input[type="hidden"]#dev2Color,
 input[type="hidden"]#colorFondoPlano,
 input[type="hidden"]#dev2Fondo,
+input[type="hidden"]#colorFondoApp,
+input[type="hidden"]#colorTextoApp,
 .input-color-paleta{
   display:none !important;
 }
