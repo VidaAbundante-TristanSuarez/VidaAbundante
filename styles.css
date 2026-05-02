@@ -433,7 +433,7 @@ body.oscuro .versiculo { color:#fff; }
 }
 
 body.oscuro .panel-tabs button{
-  background: #d1eeff;
+  background: #e3fffd;
   color:#000;
 }
 
@@ -1103,7 +1103,7 @@ display: none;
 text-align: center;
 font-size: 13px;
 padding: 6px;
-background: #d1eeff;
+background: #e3fffd;
 color: #000;
 }
 
@@ -1380,7 +1380,7 @@ body.oscuro #modalPersonalizar .cerrar-modal{
 }
 
 body.oscuro .fila-final button {
-  background: #d1eeff;   /* 👈 claro */
+  background: #e3fffd;   /* 👈 claro */
   color: #000;
 }
 
@@ -1451,7 +1451,7 @@ body.oscuro .fila-final button:hover{
 /* 🌙 Modo oscuro */
 body.oscuro #header button[onclick="toggleTema()"],
 body.oscuro #header button[onclick="abrirModalTema()"] {
-  background: #d1eeff;
+  background: #e3fffd;
   color: #000;
 }
 
@@ -1473,7 +1473,7 @@ body.modo-imagen #btnCrearImagen{
   text-align: center;
   font-size: 13px;
   padding: 8px;
-  background: #d1eeff;
+  background: #e3fffd;
   color: #000;
 }
 
@@ -1639,7 +1639,7 @@ body.oscuro .btn-ghost{
 }
 
 body.oscuro .card-marcador{
-  background:#d1eeff;         /* un poquito más brillante en oscuro */
+  background:#e3fffd;         /* un poquito más brillante en oscuro */
   color:#000;                 /* ✅ negro siempre */
 }
 
@@ -1677,7 +1677,7 @@ body.barra-oculta #accionesBiblia{
 }
 
 body.oscuro #btnMostrarBarra{
-  background: #d1eeff;
+  background: #e3fffd;
   color:#000;
 }
 
@@ -1698,7 +1698,7 @@ body.oscuro #btnMostrarBarra{
 }
 
 body.oscuro #btnMostrarBarra{
-  background: #d1eeff;
+  background: #e3fffd;
   color:#000;
 }
 
@@ -2221,7 +2221,7 @@ body.oscuro .dev-galeria-fondos{
 /* modo oscuro: mantener legible */
 body.oscuro #modalPersonalizar #personalizarTamaño,
 body.oscuro #modalPersonalizar #personalizarColor{
-  background: #d1eeff;
+  background: #e3fffd;
   color: #000;
 }
 
@@ -2896,7 +2896,7 @@ input[type="hidden"]#colorTextoApp,
 }
 
 body.oscuro .subir-iglesia-btn{
-  background: #d1eeff;
+  background: #e3fffd;
   color: #000;
 }
 
