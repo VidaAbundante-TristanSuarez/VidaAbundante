@@ -1050,13 +1050,3 @@ async function abrirEdicionDesdeURL() {
 }
 
 setTimeout(abrirEdicionDesdeURL, 100);
-
-/* Link público directo: evita mostrar pantallas intermedias */
-body.ed-link-directo #header,
-body.ed-link-directo .seccion {
-  display: none !important;
-}
-
-body.ed-link-directo #edViewer {
-  display: block;
-}
