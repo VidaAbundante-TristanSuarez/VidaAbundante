@@ -703,8 +703,8 @@ function bibliaRestaurarUIAlVolver() {
 const BIBLIA_VERSION_CACHE = "2026-05-01-salmo34";
 
 Promise.all([
-  fetch(`VidaAbundante - RV1960.json?v=${BIBLIA_VERSION_CACHE}`, { cache: "no-store" }).then(r => r.json()),
-  fetch(`biblia_ntv.json?v=${BIBLIA_VERSION_CACHE}`, { cache: "no-store" }).then(r => r.json())
+  fetch(`VidaAbundante - RV1960.json?v=${BIBLIA_VERSION_CACHE}`).then(r => r.json()),
+  fetch(`biblia_ntv.json?v=${BIBLIA_VERSION_CACHE}`).then(r => r.json())
 ])
 .then(([rvData, ntvData]) => {
   bibliaDataRV = Array.isArray(rvData) ? rvData : [];
