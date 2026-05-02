@@ -668,6 +668,9 @@ window.abrirPresentacionEdicion = async (id) => {
       <div class="ed-view-title">${edEscape(ed.titulo || "Edición")}</div>
 
       <div class="ed-view-actions">
+      <button type="button" onclick="guardarEdicionEnMiPanel('${ed.id}')" title="Guardar en Mi Panel">
+  <i class="fa-solid fa-heart-circle-plus"></i>
+</button>
         <button type="button" onclick="descargarEdicionPDF('${ed.id}')" title="Descargar PDF">
           <i class="fa-solid fa-file-pdf"></i>
         </button>
@@ -715,9 +718,28 @@ window.abrirPresentacionEdicion = async (id) => {
 
   viewer.classList.add("ed-open");
   document.body.style.overflow = "hidden";
+  edIntentarPantallaCompleta(viewer);
 };
 
+function edIntentarPantallaCompleta(el) {
+  try {
+    if (document.fullscreenElement) return;
+
+    const fn =
+      el.requestFullscreen ||
+      el.webkitRequestFullscreen ||
+      el.msRequestFullscreen;
+
+    if (fn) {
+      const p = fn.call(el);
+      if (p && typeof p.catch === "function") p.catch(() => {});
+    }
+  } catch (_) {}
+}
+
 window.cerrarPresentacionEdicion = () => {
+  const veniaDeLinkDirecto = document.body.classList.contains("ed-link-directo");
+
   const viewer = ed$("edViewer");
   if (viewer) {
     viewer.classList.remove("ed-open");
@@ -725,6 +747,27 @@ window.cerrarPresentacionEdicion = () => {
   }
 
   document.body.style.overflow = "";
+  document.body.classList.remove("ed-link-directo");
+
+  try {
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    }
+  } catch (_) {}
+
+  if (veniaDeLinkDirecto) {
+    try {
+      history.replaceState(null, "", location.pathname);
+    } catch (_) {}
+
+    if (typeof window.irA === "function") {
+      window.irA("compartidos");
+    }
+
+    if (typeof window.mostrarCompartidos === "function") {
+      window.mostrarCompartidos();
+    }
+  }
 };
 
 document.addEventListener("keydown", (e) => {
@@ -734,7 +777,6 @@ document.addEventListener("keydown", (e) => {
 });
 
 /* ================= PDF ================= */
-
 window.descargarEdicionPDF = async (id) => {
   const ed = await obtenerEdicion(id);
   if (!ed) {
@@ -752,10 +794,13 @@ window.descargarEdicionPDF = async (id) => {
     alert("El PDF descarga solo el documento visual. Los audios no se incluyen dentro del PDF.");
   }
 
-  const jsPDF = window.jspdf?.jsPDF;
+  let jsPDF;
 
-  if (!jsPDF) {
-    alert("No está cargada la librería PDF. Revisá que hayas agregado jsPDF en el HTML.");
+  try {
+    jsPDF = await edObtenerJsPDF();
+  } catch (err) {
+    console.error(err);
+    alert("No pude cargar la librería PDF. Revisá tu conexión e intentá de nuevo.");
     return;
   }
 
@@ -781,7 +826,6 @@ window.descargarEdicionPDF = async (id) => {
       const y = (pageH - fit.h) / 2;
 
       const tipo = dataUrl.includes("image/png") ? "PNG" : "JPEG";
-
       pdf.addImage(dataUrl, tipo, x, y, fit.w, fit.h);
     }
 
@@ -795,6 +839,36 @@ window.descargarEdicionPDF = async (id) => {
     );
   }
 };
+
+async function edObtenerJsPDF() {
+  if (window.jspdf?.jsPDF) {
+    return window.jspdf.jsPDF;
+  }
+
+  await edCargarScript("https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js");
+
+  if (window.jspdf?.jsPDF) {
+    return window.jspdf.jsPDF;
+  }
+
+  throw new Error("jsPDF no quedó disponible.");
+}
+
+function edCargarScript(src) {
+  return new Promise((resolve, reject) => {
+    const yaExiste = Array.from(document.scripts).some(s => s.src === src);
+    if (yaExiste) {
+      setTimeout(resolve, 250);
+      return;
+    }
+
+    const s = document.createElement("script");
+    s.src = src;
+    s.onload = resolve;
+    s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
 
 async function edUrlToDataUrl(url) {
   const r = await fetch(url, { mode: "cors" });
@@ -828,6 +902,72 @@ function edFit(w, h, maxW, maxH) {
 }
 
 /* ================= COMPARTIR ================= */
+/* ================= GUARDAR EN MI PANEL ================= */
+
+window.guardarEdicionEnMiPanel = async (id) => {
+  const uid = edUidActual();
+
+  if (!uid) {
+    edPedirLoginParaPanel();
+    return;
+  }
+
+  const db = edDB();
+  if (!db) {
+    alert("Firebase no está listo.");
+    return;
+  }
+
+  const ed = await obtenerEdicion(id);
+  if (!ed) {
+    alert("No encontré la edición.");
+    return;
+  }
+
+  const portadaUrl = ed.portadaUrl || edPaginasArray(ed)[0]?.imagenUrl || "";
+
+  try {
+    await set(ref(db, `panelEdiciones/${uid}/${id}`), {
+      tipo: "edicion",
+      edicionId: id,
+      titulo: ed.titulo || "Edición",
+      portadaUrl,
+      ts: Date.now()
+    });
+
+    alert("Guardado en Mi Panel.");
+  } catch (err) {
+    console.error(err);
+    alert("No pude guardar en Mi Panel.");
+  }
+};
+
+function edUidActual() {
+  return window.__UID || window.__FB?.auth?.currentUser?.uid || null;
+}
+
+function edPedirLoginParaPanel() {
+  const modal = document.getElementById("loginModal");
+
+  if (modal) {
+    const title = modal.querySelector(".modal-title");
+    const sub = modal.querySelector(".modal-sub");
+
+    if (title) title.textContent = "🔐 Iniciar sesión";
+    if (sub) sub.textContent = "Iniciá sesión para guardar esta edición en Mi Panel.";
+
+    modal.style.display = "flex";
+    modal.setAttribute("aria-hidden", "false");
+    return;
+  }
+
+  if (typeof window.irALogin === "function") {
+    window.irALogin();
+    return;
+  }
+
+  alert("Iniciá sesión para guardar esta edición en Mi Panel.");
+}
 
 window.compartirEdicion = async (id, destino = "redes") => {
   const ed = await obtenerEdicion(id);
@@ -899,17 +1039,24 @@ async function abrirEdicionDesdeURL() {
 
   if (ver !== "edicion" || !id) return;
 
-  await edEsperarDB();
+  window.__ED_LINK_DIRECTO = true;
+  document.body.classList.add("ed-link-directo");
 
-  if (typeof window.irA === "function") {
-    try {
-      window.irA("compartidos");
-    } catch (_) {}
-  }
+  await edEsperarDB();
 
   setTimeout(() => {
     abrirPresentacionEdicion(id);
-  }, 600);
+  }, 250);
 }
 
-setTimeout(abrirEdicionDesdeURL, 1000);
+setTimeout(abrirEdicionDesdeURL, 100);
+
+/* Link público directo: evita mostrar pantallas intermedias */
+body.ed-link-directo #header,
+body.ed-link-directo .seccion {
+  display: none !important;
+}
+
+body.ed-link-directo #edViewer {
+  display: block;
+}
