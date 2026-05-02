@@ -532,18 +532,21 @@ window.guardarEdicion = async (e) => {
 async function subirArchivoEdicionR2(file, carpeta) {
   const safe = `${Date.now()}_${edSafeName(file.name)}`;
 
-  const fd = new FormData();
-  fd.append("file", file, safe);
-  fd.append("carpeta", carpeta);
-  fd.append("folder", carpeta);
-  fd.append("path", `${carpeta}/${safe}`);
-  fd.append("nombre", safe);
-  fd.append("filename", safe);
-  fd.append("contentType", file.type || "application/octet-stream");
+  const fileBase64 = await edFileToBase64(file);
+
+  const payload = {
+    fileBase64,
+    fileName: safe,
+    contentType: file.type || "application/octet-stream",
+    folder: carpeta || "ediciones"
+  };
 
   const r = await fetch(R2_UPLOAD_URL_EDICIONES, {
     method: "POST",
-    body: fd
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(payload)
   });
 
   const text = await r.text();
@@ -556,6 +559,7 @@ async function subirArchivoEdicionR2(file, carpeta) {
   }
 
   if (!r.ok) {
+    console.error("R2 respondió error:", r.status, data || text);
     throw new Error(data.error || data.message || text || "Error subiendo archivo a R2");
   }
 
@@ -574,6 +578,21 @@ async function subirArchivoEdicionR2(file, carpeta) {
   }
 
   return url;
+}
+
+function edFileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      const result = String(reader.result || "");
+      const base64 = result.includes(",") ? result.split(",")[1] : result;
+      resolve(base64);
+    };
+
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 }
 
 /* ================= OBTENER / BORRAR ================= */
