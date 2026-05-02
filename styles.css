@@ -434,7 +434,7 @@ body.oscuro .versiculo { color:#fff; }
 
 body.oscuro .panel-tabs button{
   background: #d1eeff;
-  color:#fff;
+  color:#000;
 }
 
 body.oscuro .panel-tabs button:hover{
