@@ -1,0 +1,476 @@
+<style>
+/* ================= EDICIONES ================= */
+
+#edicionesApp {
+  padding: 8px 10px 18px;
+}
+
+#edWrap {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+#edTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+#edTop h3 {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.1;
+}
+
+#edBtnNueva {
+  border: none;
+  cursor: pointer;
+  border-radius: 999px;
+  width: 42px;
+  height: 42px;
+  background: var(--ui-azul-claro, #bcdcff);
+  color: #000;
+  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#edLista {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.ed-card {
+  background: rgba(255,255,255,.82);
+  border: 1px solid rgba(0,0,0,.10);
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0,0,0,.08);
+}
+
+body.oscuro .ed-card {
+  background: rgba(255,255,255,.88);
+  color: #000;
+}
+
+.ed-card-cover {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  background: rgba(0,0,0,.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.ed-card-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ed-card-body {
+  padding: 12px;
+}
+
+.ed-card-title {
+  font-weight: 900;
+  font-size: 16px;
+  line-height: 1.2;
+  margin-bottom: 10px;
+}
+
+.ed-card-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ed-card-actions button,
+.ed-pill-btn {
+  border: none;
+  cursor: pointer;
+  border-radius: 999px;
+  padding: 8px 11px;
+  background: var(--ui-azul-claro, #bcdcff);
+  color: #000;
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.ed-card-actions button.ed-danger {
+  background: rgba(220,53,69,.16);
+  color: #8a111d;
+}
+
+#edVacio {
+  padding: 22px;
+  text-align: center;
+  background: rgba(255,255,255,.82);
+  border: 1px dashed rgba(0,0,0,.18);
+  border-radius: 18px;
+}
+
+/* ================= MODAL EDITOR ================= */
+
+#edModal {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: rgba(0,0,0,.48);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 14px;
+}
+
+#edModalBox {
+  width: min(940px, 100%);
+  max-height: 92vh;
+  overflow: auto;
+  background: #fff;
+  color: #000;
+  border-radius: 20px;
+  box-shadow: 0 20px 70px rgba(0,0,0,.34);
+}
+
+#edModalHead {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: #fff;
+  border-bottom: 1px solid rgba(0,0,0,.10);
+  padding: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+#edModalHead h3 {
+  margin: 0;
+  font-size: 21px;
+}
+
+#edCerrarModal {
+  border: none;
+  cursor: pointer;
+  background: transparent;
+  font-size: 28px;
+  line-height: 1;
+  opacity: .65;
+}
+
+#edForm {
+  padding: 14px;
+  display: grid;
+  gap: 14px;
+}
+
+.ed-field {
+  display: grid;
+  gap: 6px;
+}
+
+.ed-field label {
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.ed-field input[type="text"],
+.ed-field input[type="file"] {
+  width: 100%;
+  border: 1px solid rgba(0,0,0,.16);
+  border-radius: 14px;
+  padding: 10px 12px;
+  font-family: inherit;
+}
+
+#edPortadaPreview,
+.ed-existing-preview {
+  max-width: 150px;
+  border-radius: 14px;
+  border: 1px solid rgba(0,0,0,.12);
+  margin-top: 6px;
+  display: block;
+}
+
+#edPaginasEditor {
+  display: grid;
+  gap: 12px;
+}
+
+.ed-page-editor {
+  border: 1px solid rgba(0,0,0,.12);
+  border-radius: 18px;
+  padding: 12px;
+  background: rgba(0,0,0,.025);
+}
+
+.ed-page-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.ed-page-head b {
+  font-size: 15px;
+}
+
+.ed-page-head button {
+  border: none;
+  background: rgba(220,53,69,.14);
+  color: #8a111d;
+  border-radius: 999px;
+  padding: 7px 10px;
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.ed-page-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0,1fr));
+  gap: 10px;
+}
+
+.ed-page-grid .ed-field {
+  min-width: 0;
+}
+
+.ed-form-actions {
+  position: sticky;
+  bottom: 0;
+  background: #fff;
+  border-top: 1px solid rgba(0,0,0,.10);
+  padding: 12px 14px;
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.ed-primary {
+  border: none;
+  cursor: pointer;
+  border-radius: 999px;
+  padding: 10px 15px;
+  background: var(--ui-azul-hover, #1c6fcb);
+  color: #fff;
+  font-weight: 900;
+}
+
+.ed-secondary {
+  border: none;
+  cursor: pointer;
+  border-radius: 999px;
+  padding: 10px 15px;
+  background: #e9ecef;
+  color: #000;
+  font-weight: 900;
+}
+
+#edEstado {
+  font-size: 13px;
+  opacity: .8;
+  text-align: center;
+}
+
+/* ================= VISOR FULLSCREEN ================= */
+
+#edViewer {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  background: rgba(10,14,22,.96);
+  color: #fff;
+  display: none;
+}
+
+#edViewer.ed-open {
+  display: block;
+}
+
+.ed-view-top {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  right: 8px;
+  z-index: 10;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  pointer-events: none;
+}
+
+.ed-view-title {
+  max-width: calc(100% - 120px);
+  font-size: 13px;
+  font-weight: 800;
+  opacity: .82;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.10);
+  backdrop-filter: blur(8px);
+  pointer-events: auto;
+}
+
+.ed-view-actions {
+  display: flex;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+.ed-view-actions button {
+  border: none;
+  cursor: pointer;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.14);
+  color: #fff;
+  backdrop-filter: blur(8px);
+}
+
+.ed-view-close {
+  font-size: 18px;
+}
+
+.ed-slides {
+  height: 100vh;
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  display: flex;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+
+.ed-slide {
+  flex: 0 0 100%;
+  height: 100vh;
+  scroll-snap-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 58px 14px 22px;
+  box-sizing: border-box;
+}
+
+.ed-slide-inner {
+  width: min(760px, 100%);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.ed-slide-img-wrap {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ed-slide-img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 14px;
+  box-shadow: 0 10px 40px rgba(0,0,0,.35);
+  background: #fff;
+}
+
+.ed-audios {
+  width: min(680px, 100%);
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+  flex: 0 0 auto;
+}
+
+.ed-audio-box {
+  background: rgba(255,255,255,.10);
+  border-radius: 14px;
+  padding: 8px;
+  backdrop-filter: blur(8px);
+}
+
+.ed-audio-box.es {
+  border: 2px solid #1976d2;
+}
+
+.ed-audio-box.en {
+  border: 2px solid #d32f2f;
+}
+
+.ed-audio-label {
+  font-size: 12px;
+  font-weight: 900;
+  margin-bottom: 4px;
+  opacity: .9;
+}
+
+.ed-audio-box audio {
+  width: 100%;
+  display: block;
+}
+
+@media (max-width: 700px) {
+  #edLista {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .ed-card-body {
+    padding: 10px;
+  }
+
+  .ed-card-title {
+    font-size: 14px;
+  }
+
+  .ed-page-grid {
+    grid-template-columns: 1fr;
+  }
+
+  #edModal {
+    padding: 8px;
+  }
+
+  #edModalBox {
+    max-height: 94vh;
+    border-radius: 16px;
+  }
+
+  .ed-slide {
+    padding: 54px 8px 16px;
+  }
+
+  .ed-view-title {
+    font-size: 12px;
+  }
+
+  .ed-view-actions button {
+    width: 34px;
+    height: 34px;
+  }
+
+  .ed-audios {
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .ed-audio-box {
+    padding: 6px;
+  }
+}
+
+</style> 
