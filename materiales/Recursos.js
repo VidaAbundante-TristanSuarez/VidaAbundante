@@ -47,6 +47,7 @@ let rhIndex = 0;
 let rhIniciado = false;
 
 // ✅ abrir RH por defecto
+// ✅ abrir RH por defecto
 window.mostrarRecursosSub = async (sub) => {
   const esAdmin = !!window.__ES_ADMIN;
   const esColab = !!window.__ES_COLABORADOR;
@@ -61,11 +62,13 @@ window.mostrarRecursosSub = async (sub) => {
   const talleres = document.getElementById("recursos-talleres");
   const hermanos = document.getElementById("recursos-hermanos");
   const permisos = document.getElementById("recursos-permisos");
+  const ediciones = document.getElementById("recursos-ediciones");
 
   if (rh) rh.style.display = (sub === "rh") ? "block" : "none";
   if (talleres) talleres.style.display = (sub === "talleres") ? "block" : "none";
   if (hermanos) hermanos.style.display = (sub === "hermanos") ? "block" : "none";
   if (permisos) permisos.style.display = (sub === "permisos") ? "block" : "none";
+  if (ediciones) ediciones.style.display = (sub === "ediciones") ? "block" : "none";
 
   const wrap = document.getElementById("iglesia-recursos");
   if (wrap) {
@@ -88,6 +91,21 @@ window.mostrarRecursosSub = async (sub) => {
       return;
     }
     await mostrarPermisos();
+  }
+
+  if (sub === "ediciones") {
+    if (typeof window.mostrarEdiciones === "function") {
+      await window.mostrarEdiciones();
+    } else {
+      const cont = document.getElementById("edicionesApp");
+      if (cont) {
+        cont.innerHTML = `
+          <div style="padding:20px; text-align:center;">
+            No se cargó el módulo Ediciones.js.
+          </div>
+        `;
+      }
+    }
   }
 };
 
