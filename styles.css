@@ -9,8 +9,8 @@
 
 /* ================= COLOR UNIFICADO UI 🌈================= */
 :root {
-  --ui-azul-claro: #bcdcff;
-  --ui-azul-hover: #1c6fcb;
+  --ui-azul-claro: #6fd9eb;
+  --ui-azul-hover: #5ab9c9;
 }
 
 /* ================= ESTILOS GENERALES ================= */
@@ -90,7 +90,7 @@ body.oscuro #header {
 
 /* 🌙 MODO OSCURO */
 body.oscuro .nav-btn i {
-  color: #a5e6ff;
+  color: #6fd9eb;
 }
     
 .nav-btn:hover i {
@@ -98,7 +98,7 @@ body.oscuro .nav-btn i {
 }
 
 body.oscuro .nav-btn:hover i {
-  color: #a5e6ff;
+  color: #6fd9eb;
 }
 
 /* ✅ Botón activo del menú (sección actual) */
@@ -113,7 +113,7 @@ body.oscuro .nav-btn:hover i {
 
 /* oscuro */
 body.oscuro .nav-btn.activo{
-  background: #a5e6ff;
+  background: #6fd9eb;
   color: #000;
 }
 body.oscuro .nav-btn.activo i{
@@ -260,7 +260,7 @@ body.oscuro .btn-version-inline{
 }
 
 body.oscuro .btn-version-inline.activo{
-  background: #a5e6ff;
+  background: #6fd9eb;
   color: #fff;
   border-color: #1c6fcb;
 }
@@ -433,12 +433,12 @@ body.oscuro .versiculo { color:#fff; }
 }
 
 body.oscuro .panel-tabs button{
-  background: #2a2a2a;
+  background: #5ab9c9;
   color:#fff;
 }
 
 body.oscuro .panel-tabs button:hover{
-  background: #a5e6ff;
+  background: #6fd9eb;
   color:#000;
 }
 
@@ -449,7 +449,7 @@ body.oscuro .panel-tabs button:hover{
 }
 
 body.oscuro .panel-tabs button.activo{
-  background: #a5e6ff;
+  background: #6fd9eb;
   color:#000;
 }
 
@@ -1391,7 +1391,7 @@ body.oscuro .fila-final button {
 }
 
 body.oscuro .fila-final button:hover{
-  background: #a5e6ff;
+  background: #6fd9eb;
   color: #000;
 }
 
@@ -3119,7 +3119,7 @@ body.oscuro #buscarLibroBiblia{
   justify-content: center;
 
   border-radius: 8px;
-  background: #a5e6ff;
+  background: #6fd9eb;
   color: #000;
   cursor: pointer;
   z-index: 3;
