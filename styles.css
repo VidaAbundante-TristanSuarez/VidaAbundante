@@ -438,7 +438,7 @@ body.oscuro .panel-tabs button{
 }
 
 body.oscuro .panel-tabs button:hover{
-  background: #298bc4;
+  background: #29c4bb;
   color:#fff;
 }
 
@@ -449,7 +449,7 @@ body.oscuro .panel-tabs button:hover{
 }
 
 body.oscuro .panel-tabs button.activo{
-  background: #298bc4;
+  background: #29c4bb;
   color:#fff;
 }
 
