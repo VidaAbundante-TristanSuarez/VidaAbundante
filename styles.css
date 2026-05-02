@@ -439,7 +439,7 @@ body.oscuro .panel-tabs button{
 
 body.oscuro .panel-tabs button:hover{
   background: #298bc4;
-  color:#000;
+  color:#fff;
 }
 
 /* ✅ Tabs internos activos */
@@ -450,7 +450,7 @@ body.oscuro .panel-tabs button:hover{
 
 body.oscuro .panel-tabs button.activo{
   background: #298bc4;
-  color:#000;
+  color:#fff;
 }
 
 /* ================= SUBSECCIONES (panel-tabs): PROLIJO + BARRA ================= */
