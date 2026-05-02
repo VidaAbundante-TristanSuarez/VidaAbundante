@@ -700,9 +700,11 @@ function bibliaRestaurarUIAlVolver() {
 }
 
 // ================= ⭐ CARGA BIBLIA ==============================
+const BIBLIA_VERSION_CACHE = "2026-05-01-salmo34";
+
 Promise.all([
-  fetch("VidaAbundante - RV1960.json", { cache: "force-cache" }).then(r => r.json()),
-  fetch("biblia_ntv.json", { cache: "force-cache" }).then(r => r.json())
+  fetch(`VidaAbundante - RV1960.json?v=${BIBLIA_VERSION_CACHE}`, { cache: "no-store" }).then(r => r.json()),
+  fetch(`biblia_ntv.json?v=${BIBLIA_VERSION_CACHE}`, { cache: "no-store" }).then(r => r.json())
 ])
 .then(([rvData, ntvData]) => {
   bibliaDataRV = Array.isArray(rvData) ? rvData : [];
