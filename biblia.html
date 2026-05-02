@@ -22,6 +22,8 @@
 <link rel="stylesheet" href="styles.css">
 <link rel="stylesheet" href="devocionales.css">
 <link rel="stylesheet" href="subidos.css">
+<link rel="stylesheet" href="materiales/ediciones.css">
+<link rel="stylesheet" href="compartidos.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/themes/classic.min.css"/>
 </head>
   
@@ -383,6 +385,10 @@
       <span>Talleres</span>
     </button>
 
+   <button type="button" onclick="mostrarRecursosSub('ediciones')">
+  <span>Ediciones</span>
+</button>
+
     <button type="button" onclick="mostrarRecursosSub('hermanos')">
       <span>Contactos</span>
     </button>
@@ -406,7 +412,11 @@
     <div id="hermanosApp"></div>
   </div>
 
-  <div id="recursos-permisos" style="display:none">
+<div id="recursos-ediciones" style="display:none">
+  <div id="edicionesApp"></div>
+</div>
+ 
+ <div id="recursos-permisos" style="display:none">
     <div id="permisosApp"></div>
   </div>
 
@@ -464,37 +474,18 @@
  
 </div>
 
- <!-- ================= COMPARTIDOS ================= -->
+<!-- ================= COMPARTIDOS ================= -->
 <div id="seccion-compartidos" class="seccion" style="display:none">
-<div id="fondoCompartidos"></div>
- 
+  <div id="fondoCompartidos"></div>
+
   <div class="panel-tabs">
-    <button type="button">
-      <i class="fa-solid fa-image"></i>
-      <span class="text">Imágenes</span>
-    </button>
-
-    <button type="button">
-      <i class="fa-solid fa-video"></i>
-      <span class="text">Videos</span>
-    </button>
-
-    <button type="button">
-      <i class="fa-solid fa-file-lines"></i>
-      <span class="text">Textos</span>
-    </button>
-
-    <button type="button">
-      <i class="fa-solid fa-link"></i>
-      <span class="text">Links</span>
+    <button type="button" class="activo">
+      <i class="fa-solid fa-icons"></i>
+      <span class="text">Compartidos</span>
     </button>
   </div>
 
-  <div style="padding:20px; text-align:center;">
-    <h3>Compartidos</h3>
-    <p>Acá vamos a agregar imágenes, videos, textos y links.</p>
-  </div>
-
+  <div id="compartidosApp"></div>
 </div>
  
 <!-- ================= MODAL LOGIN ================= -->
@@ -1304,6 +1295,8 @@
 <script type="module" src="Subidos.js"></script>
 <script type="module" src="ABC/abc.js"></script>
 <script type="module" src="materiales/Recursos.js"></script>
+ <script type="module" src="materiales/Ediciones.js"></script>
+<script type="module" src="Compartidos.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/pickr.min.js"></script> 
 </body>
 </html>
