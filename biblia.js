@@ -5570,14 +5570,15 @@ function aplicarEstadoVisualSeccion(seccion, estado) {
 
   capa.style.opacity = opacidad;
 
-  // ✅ color de fuente general por sección
-  if (colorTexto) {
-    el.style.setProperty("--va-color-texto", colorTexto);
-    el.style.color = colorTexto;
-  } else {
-    el.style.removeProperty("--va-color-texto");
-    el.style.color = "";
-  }
+// ✅ Color de fuente SOLO para el texto bíblico.
+// No aplicamos color al contenedor, porque eso lo heredan botones/tabs.
+el.style.color = "";
+el.style.removeProperty("--va-color-texto");
+el.style.removeProperty("--va-color-texto-biblia");
+
+if (seccion === "biblia" && colorTexto) {
+  el.style.setProperty("--va-color-texto-biblia", colorTexto);
+}
 }
 
 function aplicarFondosGuardados() {
