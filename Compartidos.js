@@ -183,7 +183,7 @@ window.renderCompartidos = function renderCompartidos() {
   const lista = comp$("compLista");
   if (!lista) return;
 
-  const items = compartidosCache.filter(x => x.tipo === "edicion");
+ const items = compartidosCache.filter(x => x.tipo === "edicion" || x.tipo === "rh");
 
   if (!items.length) {
     lista.innerHTML = `
@@ -195,11 +195,44 @@ window.renderCompartidos = function renderCompartidos() {
   }
 
   lista.innerHTML = items.map(item => {
-    const titulo = compEscape(item.titulo || "Edición");
-    const portada = item.portadaUrl || "";
-    const edicionId = item.edicionId;
-    const st = compStats(edicionId);
-    const guardada = compEstaGuardada(edicionId);
+const titulo = compEscape(item.titulo || "Compartido");
+
+if (item.tipo === "rh") {
+  return `
+    <article class="comp-post">
+      <div class="comp-post-head">
+        <div class="comp-avatar">
+          <i class="fa-solid fa-shield-heart"></i>
+        </div>
+
+        <div>
+          <div class="comp-post-title">${titulo}</div>
+          <div class="comp-post-meta">Recurso RH compartido</div>
+        </div>
+      </div>
+
+      <div class="comp-post-rh" onclick="abrirRHCompartido(${Number(item.temaIndex || 0)})" role="button">
+        <i class="fa-solid fa-file-lines"></i>
+        <span>Abrir recurso</span>
+      </div>
+
+      <div class="comp-post-actions">
+        <button type="button" onclick="guardarRHEnMiPanel(${Number(item.temaIndex || 0)})" title="Guardar en Mi Panel">
+          <i class="fa-solid fa-heart-circle-plus"></i>
+        </button>
+
+        <button type="button" onclick="descargarRHPDF(${Number(item.temaIndex || 0)})" title="Descargar PDF">
+          <i class="fa-solid fa-file-pdf"></i>
+        </button>
+      </div>
+    </article>
+  `;
+}
+
+const portada = item.portadaUrl || "";
+const edicionId = item.edicionId;
+const st = compStats(edicionId);
+const guardada = compEstaGuardada(edicionId);
 
     return `
       <article class="comp-post">
