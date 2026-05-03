@@ -10,33 +10,6 @@
   margin: 0 auto;
 }
 
-#compFeedTop {
-  background: rgba(255,255,255,.82);
-  border: 1px solid rgba(0,0,0,.10);
-  border-radius: 18px;
-  padding: 14px;
-  margin-bottom: 14px;
-  box-shadow: 0 4px 16px rgba(0,0,0,.06);
-}
-
-body.oscuro #compFeedTop {
-  background: rgba(255,255,255,.88);
-  color: #000;
-}
-
-#compFeedTop h3 {
-  margin: 0;
-  font-size: 22px;
-  line-height: 1.1;
-}
-
-.compFeedSub {
-  margin-top: 4px;
-  font-size: 13px;
-  opacity: .7;
-  font-weight: 700;
-}
-
 #compLista {
   display: grid;
   gap: 18px;
@@ -172,11 +145,6 @@ body.oscuro .comp-post {
 
   #compFeedWrap {
     width: 100%;
-  }
-
-  #compFeedTop {
-    border-radius: 16px;
-    padding: 12px;
   }
 
   .comp-post {
