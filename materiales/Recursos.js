@@ -182,6 +182,29 @@ window.mostrarRH = async () => {
           margin:0;
         }
 
+        #rhAcciones {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 10px 0 12px;
+}
+
+#rhAcciones button {
+  border: none;
+  cursor: pointer;
+  border-radius: 999px;
+  width: 40px;
+  height: 40px;
+  background: var(--ui-azul-claro, #bcdcff);
+  color: #000;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+}
+
         #rhContenido{
           background:#fff;
           border:1px solid rgba(0,0,0,.10);
@@ -249,6 +272,8 @@ window.mostrarRH = async () => {
           <audio id="rhAudio" controls preload="metadata"></audio>
         </div>
 
+        <div id="rhAcciones"></div>
+
         <div id="rhTop">
           <div id="rhIndice" aria-label="Índice RH"></div>
         </div>
@@ -309,6 +334,7 @@ if (audio) {
   audio.src = encodeURI(tema.audio);
   audio.load();
 }
+  renderRHAcciones();
 
   const cont = document.getElementById("rhContenido");
   if (!cont) return;
@@ -412,6 +438,332 @@ if (frame) {
     console.error(e);
   }
 }
+
+/* ================= RH - ACCIONES EXTRA ================= */
+
+function renderRHAcciones() {
+  const cont = document.getElementById("rhAcciones");
+  if (!cont) return;
+
+  const tema = RH_TEMAS[rhIndex];
+  if (!tema) return;
+
+  cont.innerHTML = `
+    <button type="button" onclick="guardarRHEnMiPanel(${rhIndex})" title="Guardar en Mi Panel">
+      <i class="fa-solid fa-heart-circle-plus"></i>
+    </button>
+
+    <button type="button" onclick="descargarRHPDF(${rhIndex})" title="Descargar PDF">
+      <i class="fa-solid fa-file-pdf"></i>
+    </button>
+
+    ${window.__ES_ADMIN ? `
+      <button type="button" onclick="publicarRHEnCompartidos(${rhIndex})" title="Publicar en Compartidos">
+        <i class="fa-solid fa-icons"></i>
+      </button>
+    ` : ``}
+  `;
+}
+
+window.guardarRHEnMiPanel = async (index) => {
+  const uid = window.__UID || window.__FB?.auth?.currentUser?.uid || null;
+
+  if (!uid) {
+    const modal = document.getElementById("loginModal");
+
+    if (modal) {
+      const title = modal.querySelector(".modal-title");
+      const sub = modal.querySelector(".modal-sub");
+
+      if (title) title.textContent = "🔐 Iniciar sesión";
+      if (sub) sub.textContent = "Iniciá sesión para guardar este recurso en Mi Panel.";
+
+      modal.style.display = "flex";
+      modal.setAttribute("aria-hidden", "false");
+      return;
+    }
+
+    alert("Iniciá sesión para guardar en Mi Panel.");
+    return;
+  }
+
+  const tema = RH_TEMAS[index];
+  if (!tema) return;
+
+  const db = window.__FB?.db;
+  if (!db) {
+    alert("Firebase no está listo.");
+    return;
+  }
+
+  try {
+    await set(ref(db, `panelRecursos/${uid}/rh_${index}`), {
+      tipo: "rh",
+      recursoTipo: "rh",
+      temaIndex: index,
+      titulo: tema.titulo,
+      html: tema.html,
+      audio: tema.audio,
+      ts: Date.now()
+    });
+
+    alert("Recurso guardado en Mi Panel.");
+  } catch (err) {
+    console.error(err);
+    alert("No pude guardar el recurso.");
+  }
+};
+
+window.publicarRHEnCompartidos = async (index) => {
+  if (!window.__ES_ADMIN) {
+    alert("Solo los administradores pueden publicar recursos.");
+    return;
+  }
+
+  const tema = RH_TEMAS[index];
+  if (!tema) return;
+
+  const db = window.__FB?.db;
+  if (!db) {
+    alert("Firebase no está listo.");
+    return;
+  }
+
+  try {
+    await set(ref(db, `compartidos/rh_${index}`), {
+      tipo: "rh",
+      recursoTipo: "rh",
+      temaIndex: index,
+      titulo: tema.titulo,
+      html: tema.html,
+      audio: tema.audio,
+      creadoPor: window.__UID || "",
+      ts: Date.now()
+    });
+
+    alert("Recurso publicado en Compartidos.");
+  } catch (err) {
+    console.error(err);
+    alert("No pude publicar el recurso.");
+  }
+};
+
+window.descargarRHPDF = async (index) => {
+  const tema = RH_TEMAS[index];
+  if (!tema) return;
+
+  try {
+    const jsPDF = await rhObtenerJsPDF();
+
+    const r = await fetch(encodeURI(tema.html), { cache: "no-store" });
+    if (!r.ok) throw new Error("No pude abrir el HTML de RH");
+
+    const raw = await r.text();
+    const parsed = new DOMParser().parseFromString(raw, "text/html");
+
+    const estilos = Array.from(parsed.querySelectorAll("style"))
+      .map(s => s.outerHTML)
+      .join("");
+
+    const bodyHTML = parsed.body ? parsed.body.innerHTML : raw;
+
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "fixed";
+    iframe.style.left = "-99999px";
+    iframe.style.top = "0";
+    iframe.style.width = "794px";
+    iframe.style.height = "1123px";
+    iframe.style.background = "#fff";
+    iframe.style.border = "0";
+
+    iframe.srcdoc = `
+      <!doctype html>
+      <html lang="es">
+      <head>
+        <meta charset="utf-8">
+        ${estilos}
+        <style>
+          html, body {
+            margin: 0;
+            padding: 18px;
+            background: #fff;
+            color: #000;
+            box-sizing: border-box;
+          }
+
+          * {
+            box-sizing: border-box;
+          }
+
+          img, table {
+            max-width: 100% !important;
+            height: auto !important;
+          }
+        </style>
+      </head>
+      <body>${bodyHTML}</body>
+      </html>
+    `;
+
+    document.body.appendChild(iframe);
+
+    await new Promise(resolve => {
+      iframe.onload = resolve;
+      setTimeout(resolve, 900);
+    });
+
+    const doc = iframe.contentDocument || iframe.contentWindow.document;
+    const body = doc.body;
+
+    const canvas = await html2canvas(body, {
+      scale: 2,
+      backgroundColor: "#ffffff",
+      useCORS: true
+    });
+
+    const imgData = canvas.toDataURL("image/jpeg", 0.92);
+
+    const pdf = new jsPDF({
+      orientation: "portrait",
+      unit: "pt",
+      format: "a4"
+    });
+
+    const pageW = pdf.internal.pageSize.getWidth();
+    const pageH = pdf.internal.pageSize.getHeight();
+
+    const imgW = pageW;
+    const imgH = canvas.height * imgW / canvas.width;
+
+    let y = 0;
+    let remaining = imgH;
+
+    pdf.addImage(imgData, "JPEG", 0, y, imgW, imgH);
+    remaining -= pageH;
+
+    while (remaining > 0) {
+      y -= pageH;
+      pdf.addPage();
+      pdf.addImage(imgData, "JPEG", 0, y, imgW, imgH);
+      remaining -= pageH;
+    }
+
+    const nombre = String(tema.titulo || "recurso-rh")
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^\w.\-]+/g, "_")
+      .replace(/_+/g, "_")
+      .slice(0, 90);
+
+    pdf.save(`${nombre}.pdf`);
+
+    iframe.remove();
+  } catch (err) {
+    console.error(err);
+    alert("No pude generar el PDF del recurso.");
+  }
+};
+
+async function rhObtenerJsPDF() {
+  if (window.jspdf?.jsPDF) return window.jspdf.jsPDF;
+
+  await new Promise((resolve, reject) => {
+    const yaExiste = Array.from(document.scripts).some(s =>
+      s.src.includes("jspdf.umd.min.js")
+    );
+
+    if (yaExiste) {
+      setTimeout(resolve, 300);
+      return;
+    }
+
+    const s = document.createElement("script");
+    s.src = "https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js";
+    s.onload = resolve;
+    s.onerror = reject;
+    document.head.appendChild(s);
+  });
+
+  if (window.jspdf?.jsPDF) return window.jspdf.jsPDF;
+
+  throw new Error("jsPDF no cargó.");
+};
+
+window.abrirRHCompartido = async (index) => {
+  const tema = RH_TEMAS[index];
+  if (!tema) return;
+
+  let visor = document.getElementById("rhViewer");
+
+  if (!visor) {
+    visor = document.createElement("div");
+    visor.id = "rhViewer";
+    document.body.appendChild(visor);
+  }
+
+  visor.style.cssText = `
+    position:fixed;
+    inset:0;
+    z-index:999999;
+    background:rgba(10,14,22,.96);
+    color:#fff;
+    display:block;
+    overflow:auto;
+    padding:54px 12px 18px;
+  `;
+
+  visor.innerHTML = `
+    <div style="position:fixed; top:8px; left:8px; right:8px; z-index:5; display:flex; justify-content:space-between; align-items:center;">
+      <div style="font-weight:900; font-size:14px; background:rgba(255,255,255,.12); padding:8px 12px; border-radius:999px;">
+        ${tema.titulo}
+      </div>
+
+      <button type="button" onclick="cerrarRHCompartido()"
+        style="border:none; width:36px; height:36px; border-radius:999px; background:rgba(255,255,255,.16); color:#fff; font-size:20px;">
+        ×
+      </button>
+    </div>
+
+    <div style="max-width:900px; margin:0 auto;">
+      <audio controls preload="metadata" src="${encodeURI(tema.audio)}" style="width:100%; margin-bottom:12px;"></audio>
+      <div id="rhViewerContenido" style="background:#fff; color:#000; border-radius:16px; padding:12px; overflow:hidden;">
+        Cargando…
+      </div>
+    </div>
+  `;
+
+  try {
+    const r = await fetch(encodeURI(tema.html), { cache: "no-store" });
+    const raw = await r.text();
+    const parsed = new DOMParser().parseFromString(raw, "text/html");
+
+    const bodyHTML = parsed.body ? parsed.body.innerHTML : raw;
+    const cont = document.getElementById("rhViewerContenido");
+
+    if (cont) {
+      cont.innerHTML = bodyHTML;
+      cont.querySelectorAll("img, table").forEach(el => {
+        el.style.maxWidth = "100%";
+        el.style.height = "auto";
+      });
+    }
+
+    document.body.style.overflow = "hidden";
+  } catch (err) {
+    console.error(err);
+    const cont = document.getElementById("rhViewerContenido");
+    if (cont) cont.innerHTML = "No pude abrir el recurso.";
+  }
+};
+
+window.cerrarRHCompartido = () => {
+  const visor = document.getElementById("rhViewer");
+  if (visor) {
+    visor.style.display = "none";
+    visor.innerHTML = "";
+  }
+
+  document.body.style.overflow = "";
+};
 
 // ================= HERMANOS - MÓDULO =================
 
