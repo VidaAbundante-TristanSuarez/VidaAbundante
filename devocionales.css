@@ -600,7 +600,7 @@ body.modal-open{
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: #1a73e8;
+  background: #e3fffd;
   color: #fff;
   box-shadow: 0 8px 18px rgba(0,0,0,.22);
   cursor: pointer;
@@ -628,7 +628,7 @@ body.modal-open{
 body.oscuro #btnDevNuevo,
 body.oscuro #btnPanelImgNuevo,
 body.oscuro #btnSubidoNuevo{
-  background: #1a73e8;
+  background: #e3fffd;
   color: #fff;
 }
 
