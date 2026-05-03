@@ -137,8 +137,8 @@ body.oscuro .comp-post {
 
 .comp-action-count {
   position: absolute;
-  right: -12px;
-  bottom: -11px;
+  right: -8px;
+  bottom: -18px;
   min-width: 16px;
   height: 16px;
   padding: 0 4px;
