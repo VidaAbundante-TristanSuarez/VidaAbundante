@@ -9,8 +9,8 @@
 
 /* ================= COLOR UNIFICADO UI 🌈================= */
 :root {
-  --ui-azul-claro: #e9f6ff; 
-  --ui-azul-hover: #255b80;
+  --ui-azul-claro: #6fd9eb;
+  --ui-azul-hover: #5ab9c9;
 }
 
 /* ================= ESTILOS GENERALES ================= */
@@ -85,12 +85,12 @@ body.oscuro #header {
 
 .nav-btn i {
   font-size: 16px;
-  color: #255b80;
+  color: #4f6fa8;
 }
 
 /* 🌙 MODO OSCURO */
 body.oscuro .nav-btn i {
-   background: var(--ui-azul-claro);
+  color: #6fd9eb;
 }
     
 .nav-btn:hover i {
@@ -98,7 +98,7 @@ body.oscuro .nav-btn i {
 }
 
 body.oscuro .nav-btn:hover i {
-   background: radial-gradient(circle, var(--ui-azul-hover) 0%, var(--ui-azul-claro) 100%);
+  color: #6fd9eb;
 }
 
 /* ✅ Botón activo del menú (sección actual) */
@@ -113,7 +113,7 @@ body.oscuro .nav-btn:hover i {
 
 /* oscuro */
 body.oscuro .nav-btn.activo{
-  background: #25aba3;
+  background: #6fd9eb;
   color: #000;
 }
 body.oscuro .nav-btn.activo i{
@@ -248,9 +248,9 @@ body.oscuro #titulo{
 }
 
 .btn-version-inline.activo{
-  background: #8bbaef;
+  background: #1c6fcb;
   color: #fff;
-  border-color: #8bbaef;
+  border-color: #1c6fcb;
 }
 
 body.oscuro .btn-version-inline{
@@ -260,9 +260,9 @@ body.oscuro .btn-version-inline{
 }
 
 body.oscuro .btn-version-inline.activo{
-  background: #25aba3;
+  background: #6fd9eb;
   color: #fff;
-  border-color: #8bbaef;
+  border-color: #1c6fcb;
 }
 
 #btnCapAnt, #btnCapSig{
@@ -364,7 +364,7 @@ body.oscuro .btn-version-inline.activo{
   font-size: 13px;
   line-height: 1;
   opacity: .35;
-  color: var(--ui-azul-hover, #8bbaef);
+  color: var(--ui-azul-hover, #1c6fcb);
 
   cursor: pointer;
   pointer-events: auto;
@@ -393,7 +393,7 @@ body.oscuro .versiculo .icono-nota{ opacity: .45; }
   font-size: 13px;
   line-height: 1;
   opacity: .35;
-  color: var(--ui-azul-hover, #8bbaef);
+  color: var(--ui-azul-hover, #1c6fcb);
   cursor: pointer;
   pointer-events: auto;
   transition: opacity .2s;
@@ -428,18 +428,18 @@ body.oscuro .versiculo { color:#fff; }
 }
 
 .panel-tabs button:hover{
-  background: radial-gradient(circle, #25aba3 0%, #4e4b9f 100%);
+  background: var(--ui-azul-hover);
   color:#fff;
 }
 
 body.oscuro .panel-tabs button{
-  background: radial-gradient(circle, #e3fffd 0%, #4e4b9f 100%);
-  color:#000;
+  background: #5ab9c9;
+  color:#fff;
 }
 
 body.oscuro .panel-tabs button:hover{
-  background: radial-gradient(circle, #25aba3 0%, #4e4b9f 100%);
-  color:#fff;
+  background: #6fd9eb;
+  color:#000;
 }
 
 /* ✅ Tabs internos activos */
@@ -449,8 +449,8 @@ body.oscuro .panel-tabs button:hover{
 }
 
 body.oscuro .panel-tabs button.activo{
-    background: radial-gradient(circle, var(--ui-azul-hover) 0%, var(--ui-azul-claro) 100%);
-  color:#fff;
+  background: #6fd9eb;
+  color:#000;
 }
 
 /* ================= SUBSECCIONES (panel-tabs): PROLIJO + BARRA ================= */
@@ -1103,7 +1103,7 @@ display: none;
 text-align: center;
 font-size: 13px;
 padding: 6px;
-background: radial-gradient(circle, #e3fffd 0%, #4e4b9f 100%);
+background: #d1eeff;
 color: #000;
 }
 
@@ -1380,7 +1380,7 @@ body.oscuro #modalPersonalizar .cerrar-modal{
 }
 
 body.oscuro .fila-final button {
-  background: radial-gradient(circle, #e3fffd 0%, #4e4b9f 100%);   /* 👈 claro */
+  background: #d1eeff;   /* 👈 claro */
   color: #000;
 }
 
@@ -1391,7 +1391,7 @@ body.oscuro .fila-final button {
 }
 
 body.oscuro .fila-final button:hover{
-    background: radial-gradient(circle, var(--ui-azul-hover) 0%, var(--ui-azul-claro) 100%);
+  background: #6fd9eb;
   color: #000;
 }
 
@@ -1451,7 +1451,7 @@ body.oscuro .fila-final button:hover{
 /* 🌙 Modo oscuro */
 body.oscuro #header button[onclick="toggleTema()"],
 body.oscuro #header button[onclick="abrirModalTema()"] {
-  background: radial-gradient(circle, #e3fffd 0%, #4e4b9f 100%);
+  background: #d1eeff;
   color: #000;
 }
 
@@ -1473,7 +1473,7 @@ body.modo-imagen #btnCrearImagen{
   text-align: center;
   font-size: 13px;
   padding: 8px;
-  background: radial-gradient(circle, #e3fffd 0%, #4e4b9f 100%);
+  background: #d1eeff;
   color: #000;
 }
 
@@ -1639,7 +1639,7 @@ body.oscuro .btn-ghost{
 }
 
 body.oscuro .card-marcador{
-  background:#e3fffd;         /* un poquito más brillante en oscuro */
+  background:#d1eeff;         /* un poquito más brillante en oscuro */
   color:#000;                 /* ✅ negro siempre */
 }
 
@@ -1677,7 +1677,7 @@ body.barra-oculta #accionesBiblia{
 }
 
 body.oscuro #btnMostrarBarra{
-  background: radial-gradient(circle, #e3fffd 0%, #4e4b9f 100%);
+  background: #d1eeff;
   color:#000;
 }
 
@@ -1698,7 +1698,7 @@ body.oscuro #btnMostrarBarra{
 }
 
 body.oscuro #btnMostrarBarra{
-  background: radial-gradient(circle, #e3fffd 0%, #4e4b9f 100%);
+  background: #d1eeff;
   color:#000;
 }
 
@@ -2221,7 +2221,7 @@ body.oscuro .dev-galeria-fondos{
 /* modo oscuro: mantener legible */
 body.oscuro #modalPersonalizar #personalizarTamaño,
 body.oscuro #modalPersonalizar #personalizarColor{
-  background: radial-gradient(circle, #e3fffd 0%, #4e4b9f 100%);
+  background: #d1eeff;
   color: #000;
 }
 
@@ -2744,7 +2744,7 @@ input[type="hidden"]#colorTextoApp,
 }
 
 #btnScrollTopGlobal:hover{
-  background: radial-gradient(circle, #e3fffd 0%, #4e4b9f 100%);
+  background: #1a73e8;
   box-shadow: 0 10px 22px rgba(0,0,0,.28);
 }
 
@@ -2896,7 +2896,7 @@ input[type="hidden"]#colorTextoApp,
 }
 
 body.oscuro .subir-iglesia-btn{
-  background: radial-gradient(circle, #e3fffd 0%, #4e4b9f 100%);
+  background: #d1eeff;
   color: #000;
 }
 
@@ -3119,7 +3119,7 @@ body.oscuro #buscarLibroBiblia{
   justify-content: center;
 
   border-radius: 8px;
-    background: radial-gradient(circle, var(--ui-azul-hover) 0%, var(--ui-azul-claro) 100%);
+  background: #6fd9eb;
   color: #000;
   cursor: pointer;
   z-index: 3;
