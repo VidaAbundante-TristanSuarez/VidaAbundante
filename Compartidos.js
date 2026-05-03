@@ -69,11 +69,6 @@ window.mostrarCompartidos = async () => {
   if (!compartidosIniciado) {
     cont.innerHTML = `
       <div id="compFeedWrap">
-        <div id="compFeedTop">
-          <h3>Compartidos</h3>
-          <div class="compFeedSub">Ediciones, devocionales, imágenes, notas y eventos</div>
-        </div>
-
         <div id="compLista"></div>
       </div>
     `;
