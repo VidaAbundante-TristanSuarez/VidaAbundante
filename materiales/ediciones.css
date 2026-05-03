@@ -92,6 +92,7 @@ body.oscuro .ed-card {
   flex-wrap: nowrap;
   align-items: center;
   overflow-x: auto;
+  padding-bottom: 2px;
 }
 
 .ed-card-actions button,
@@ -494,5 +495,37 @@ body.ed-link-directo #edViewer {
   display: block;
 }
 
+.ed-action-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
 
+.ed-action-count {
+  position: absolute;
+  right: -10px;
+  bottom: -10px;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: rgba(0,0,0,.76);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ed-action-saved {
+  background: rgba(46, 204, 113, .24) !important;
+  color: #157347 !important;
+}
+
+.ed-card-cover {
+  cursor: pointer;
+}
 </style> 
