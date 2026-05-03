@@ -209,17 +209,14 @@ function renderEdiciones() {
 
     return `
       <article class="ed-card">
-        <div class="ed-card-cover">
-          ${portada ? `<img src="${edEscape(portada)}" alt="${titulo}" loading="lazy">` : `<span>Sin portada</span>`}
-        </div>
+        <div class="ed-card-cover" onclick="abrirPresentacionEdicion('${ed.id}')" role="button" title="Abrir edición">
+  ${portada ? `<img src="${edEscape(portada)}" alt="${titulo}" loading="lazy">` : `<span>Sin portada</span>`}
+</div>
 
         <div class="ed-card-body">
           <div class="ed-card-title">${titulo}</div>
 
           <div class="ed-card-actions">
-            <button type="button" onclick="abrirPresentacionEdicion('${ed.id}')">
-              <i class="fa-solid fa-up-right-and-down-left-from-center"></i>
-            </button>
 
             <button type="button" onclick="descargarEdicionPDF('${ed.id}')">
               <i class="fa-solid fa-file-pdf"></i>
@@ -871,7 +868,9 @@ function edCargarScript(src) {
 }
 
 async function edUrlToDataUrl(url) {
-  const r = await fetch(url, { mode: "cors" });
+  const proxy = edBuildR2ProxyUrl(url);
+
+  const r = await fetch(proxy, { mode: "cors" });
   if (!r.ok) throw new Error("No pude leer imagen para PDF");
 
   const blob = await r.blob();
@@ -882,6 +881,11 @@ async function edUrlToDataUrl(url) {
     fr.onerror = reject;
     fr.readAsDataURL(blob);
   });
+}
+
+function edBuildR2ProxyUrl(url) {
+  const base = "https://us-central1-vidaabundante-f118a.cloudfunctions.net/descargarImagenR2";
+  return `${base}?url=${encodeURIComponent(url)}`;
 }
 
 function edImageDims(dataUrl) {
