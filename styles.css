@@ -3250,4 +3250,166 @@ body.oscuro .panel-marcadores-bar .pm-left .muted{
   color:inherit;
 }
 
+/* ================= MI PANEL FEED MIXTO ================= */
+
+#panel-mi-feed {
+  width: min(680px, 100%);
+  margin: 0 auto;
+  padding: 8px 10px 22px;
+}
+
+.panel-feed-wrap {
+  display: grid;
+  gap: 18px;
+}
+
+.panel-feed-post {
+  background: rgba(255,255,255,.88);
+  color: #000;
+  border: 1px solid rgba(0,0,0,.10);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 5px 20px rgba(0,0,0,.10);
+}
+
+body.oscuro .panel-feed-post {
+  background: rgba(255,255,255,.92);
+  color: #000;
+}
+
+.panel-feed-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 14px;
+}
+
+.panel-feed-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  background: var(--ui-azul-claro, #bcdcff);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.panel-feed-title {
+  font-weight: 900;
+  font-size: 16px;
+  line-height: 1.15;
+}
+
+.panel-feed-meta {
+  font-size: 12px;
+  opacity: .65;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+.panel-feed-media {
+  width: 100%;
+  background: rgba(0,0,0,.06);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.panel-feed-media img {
+  width: 100%;
+  max-height: 78vh;
+  object-fit: contain;
+  background: #fff;
+  display: block;
+}
+
+.panel-feed-rh {
+  margin: 0 14px 12px;
+  min-height: 180px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(188,220,255,.75), rgba(255,255,255,.9));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  cursor: pointer;
+  border: 1px solid rgba(0,0,0,.08);
+}
+
+.panel-feed-rh i {
+  font-size: 42px;
+  opacity: .85;
+}
+
+.panel-feed-rh span {
+  font-weight: 900;
+  font-size: 16px;
+}
+
+.panel-feed-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px 14px;
+  border-top: 1px solid rgba(0,0,0,.07);
+}
+
+.panel-feed-actions button {
+  border: none;
+  cursor: pointer;
+  border-radius: 999px;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  background: var(--ui-azul-claro, #bcdcff);
+  color: #000;
+  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.panel-feed-placeholder {
+  min-height: 150px;
+  padding: 18px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  gap: 8px;
+}
+
+.panel-feed-placeholder i {
+  font-size: 34px;
+  opacity: .8;
+}
+
+.panel-feed-placeholder b {
+  font-size: 18px;
+}
+
+.panel-feed-placeholder span {
+  font-size: 13px;
+  opacity: .72;
+  font-weight: 700;
+  max-width: 360px;
+}
+
+@media (max-width: 700px) {
+  #panel-mi-feed {
+    width: 100%;
+    padding: 8px 8px 18px;
+  }
+
+  .panel-feed-post {
+    border-radius: 18px;
+  }
+
+  .panel-feed-media img {
+    max-height: 72vh;
+  }
+}
+
   </style> 
