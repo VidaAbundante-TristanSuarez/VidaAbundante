@@ -90,7 +90,7 @@ body.oscuro #header {
 
 /* 🌙 MODO OSCURO */
 body.oscuro .nav-btn i {
-  color: #25aba3;
+  background: linear-gradient(135deg, #25aba3, #fff);
 }
     
 .nav-btn:hover i {
@@ -98,7 +98,7 @@ body.oscuro .nav-btn i {
 }
 
 body.oscuro .nav-btn:hover i {
-  color: #25aba3;
+  background: linear-gradient(135deg, #25aba3, #fff);
 }
 
 /* ✅ Botón activo del menú (sección actual) */
@@ -438,7 +438,7 @@ body.oscuro .panel-tabs button{
 }
 
 body.oscuro .panel-tabs button:hover{
-  background: #25aba3;
+   background: linear-gradient(135deg, #25aba3, #fff);
   color:#fff;
 }
 
@@ -449,7 +449,7 @@ body.oscuro .panel-tabs button:hover{
 }
 
 body.oscuro .panel-tabs button.activo{
-  background: #25aba3;
+   background: linear-gradient(135deg, #25aba3, #fff);
   color:#fff;
 }
 
@@ -1391,7 +1391,7 @@ body.oscuro .fila-final button {
 }
 
 body.oscuro .fila-final button:hover{
-  background: #25aba3;
+   background: linear-gradient(135deg, #25aba3, #fff);
   color: #000;
 }
 
@@ -3119,7 +3119,7 @@ body.oscuro #buscarLibroBiblia{
   justify-content: center;
 
   border-radius: 8px;
-  background: #25aba3;
+   background: linear-gradient(135deg, #25aba3, #fff);
   color: #000;
   cursor: pointer;
   z-index: 3;
