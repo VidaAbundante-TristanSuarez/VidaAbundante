@@ -126,9 +126,7 @@ function renderCompartidos() {
           <div class="comp-title">${titulo}</div>
 
           <div class="comp-actions">
-            <button type="button" onclick="abrirPresentacionEdicion('${item.edicionId}')">
-              <i class="fa-solid fa-up-right-and-down-left-from-center"></i>
-            </button>
+
 
             <button type="button" onclick="descargarEdicionPDF('${item.edicionId}')">
               <i class="fa-solid fa-file-pdf"></i>
