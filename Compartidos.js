@@ -15,6 +15,10 @@ let compartidosCache = [];
 let compartidosStatsCache = {};
 let compartidosGuardadosCache = {};
 
+let compartidosDescargadosCache = {};
+let compartidosDescargadosEscuchaActiva = false;
+let compartidosDescargadosUid = null;
+
 function comp$(id) {
   return document.getElementById(id);
 }
@@ -76,9 +80,10 @@ window.mostrarCompartidos = async () => {
     compartidosIniciado = true;
   }
 
-  iniciarEscuchaCompartidos();
-  iniciarEscuchaCompartidosStats();
-  iniciarEscuchaCompartidosGuardados();
+iniciarEscuchaCompartidos();
+iniciarEscuchaCompartidosStats();
+iniciarEscuchaCompartidosGuardados();
+iniciarEscuchaCompartidosDescargados();
 };
 
 function iniciarEscuchaCompartidos() {
@@ -154,6 +159,43 @@ function compStats(edicionId) {
     descargas: Number(s.descargas || 0),
     compartidos: Number(s.compartidos || 0)
   };
+}
+
+function iniciarEscuchaCompartidosDescargados() {
+  const uid = compUidActual();
+
+  if (!uid) {
+    compartidosDescargadosCache = {};
+    compartidosDescargadosUid = null;
+    compartidosDescargadosEscuchaActiva = false;
+    renderCompartidos();
+    return;
+  }
+
+  if (compartidosDescargadosEscuchaActiva && compartidosDescargadosUid === uid) return;
+
+  const db = compDB();
+  if (!db) return;
+
+  compartidosDescargadosUid = uid;
+
+  onValue(ref(db, `panelDescargasEdiciones/${uid}`), (snap) => {
+    compartidosDescargadosCache = snap.val() || {};
+    window.__EDICIONES_DESCARGADAS = compartidosDescargadosCache;
+    renderCompartidos();
+  });
+
+  compartidosDescargadosEscuchaActiva = true;
+}
+
+function compEstaDescargada(edicionId) {
+  const local = localStorage.getItem(`edicion_descargada_${edicionId}`) === "1";
+
+  return !!(
+    local ||
+    compartidosDescargadosCache?.[edicionId] ||
+    window.__EDICIONES_DESCARGADAS?.[edicionId]
+  );
 }
 
 function compEstaGuardada(edicionId) {
@@ -260,12 +302,13 @@ const guardada = compEstaGuardada(edicionId);
             saved: guardada
           })}
 
-          ${compActionButton({
-            title: "Descargar PDF",
-            onclick: `descargarEdicionPDF('${edicionId}')`,
-            icon: "fa-solid fa-file-pdf",
-            count: st.descargas
-          })}
+${compActionButton({
+  title: compEstaDescargada(edicionId) ? "PDF descargado" : "Descargar PDF",
+  onclick: `descargarEdicionPDF('${edicionId}')`,
+  icon: compEstaDescargada(edicionId) ? "fa-solid fa-file-circle-check" : "fa-solid fa-file-pdf",
+  count: st.descargas,
+  saved: compEstaDescargada(edicionId)
+})}
 
           ${compActionButton({
             title: "Compartir",
