@@ -629,7 +629,7 @@ body.oscuro #btnDevNuevo,
 body.oscuro #btnPanelImgNuevo,
 body.oscuro #btnSubidoNuevo{
   background: #e3fffd;
-  color: #fff;
+  color: #000;
 }
 
 #btnPanelImgNuevo.btn-primary,
