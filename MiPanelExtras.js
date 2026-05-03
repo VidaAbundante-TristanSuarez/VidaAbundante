@@ -3,18 +3,26 @@ import {
   onValue
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-/* ================= MI PANEL EXTRAS ================= */
+/* ================= MI PANEL EXTRAS =================
+   Regla:
+   - Solo imágenes/devocionales => galería con índice.
+   - Si además hay notas o compartidos => feed tipo Compartidos.
+===================================================== */
 
 let panelFiltros = {
   imagenes: true,
-  marcadores: false,
   devocionales: false,
+  marcadores: false,
   compartidos: false
 };
 
 let panelCompartidosEscuchaActiva = false;
 let panelCompartidosUid = null;
 let panelCompartidosCache = {};
+
+let panelRecursosEscuchaActiva = false;
+let panelRecursosUid = null;
+let panelRecursosCache = {};
 
 function mp$(id) {
   return document.getElementById(id);
@@ -41,32 +49,85 @@ window.panelToggleFiltro = (tipo) => {
 
   panelFiltros[tipo] = !panelFiltros[tipo];
 
-  // Evita que quede todo oculto
   const algunoActivo = Object.values(panelFiltros).some(Boolean);
   if (!algunoActivo) panelFiltros[tipo] = true;
 
-  // Si se activa notas o imágenes, dejamos que tu lógica vieja cargue contenido
-  if (panelFiltros[tipo] && typeof window.mostrarSeccion === "function") {
-    if (tipo === "imagenes") window.mostrarSeccion("imagenes");
-    if (tipo === "marcadores") window.mostrarSeccion("marcadores");
-  }
-
-  setTimeout(panelAplicarFiltros, 80);
+  panelAplicarFiltros();
 };
 
+function panelEsModoGaleria() {
+  const tieneGaleria = panelFiltros.imagenes || panelFiltros.devocionales;
+  const tieneFeed = panelFiltros.marcadores || panelFiltros.compartidos;
+
+  return tieneGaleria && !tieneFeed;
+}
+
+function panelAsegurarFeed() {
+  let feed = mp$("panel-mi-feed");
+
+  if (!feed) {
+    feed = document.createElement("div");
+    feed.id = "panel-mi-feed";
+
+    const panel = mp$("seccion-panel");
+    if (panel) panel.appendChild(feed);
+  }
+
+  return feed;
+}
+
 function panelAplicarFiltros() {
-  const mapa = {
-    imagenes: "panel-imagenes",
-    marcadores: "panel-marcadores",
-    devocionales: "panel-devocionales",
-    compartidos: "panel-compartidos"
-  };
+  const modoGaleria = panelEsModoGaleria();
 
-  Object.entries(mapa).forEach(([tipo, id]) => {
-    const sec = mp$(id);
-    if (sec) sec.style.display = panelFiltros[tipo] ? "block" : "none";
-  });
+  const secImagenes = mp$("panel-imagenes");
+  const secMarcadores = mp$("panel-marcadores");
+  const secDev = mp$("panel-devocionales");
+  const secComp = mp$("panel-compartidos");
+  const feed = panelAsegurarFeed();
 
+  if (modoGaleria) {
+    if (feed) feed.style.display = "none";
+
+    if (secImagenes) secImagenes.style.display = panelFiltros.imagenes ? "block" : "none";
+    if (secMarcadores) secMarcadores.style.display = "none";
+    if (secComp) secComp.style.display = "none";
+
+    if (secDev) {
+      secDev.style.display = panelFiltros.devocionales && !panelFiltros.imagenes ? "block" : "none";
+    }
+
+    if (panelFiltros.imagenes && typeof window.mostrarSeccion === "function") {
+      window.mostrarSeccion("imagenes");
+      setTimeout(() => {
+        if (secImagenes) secImagenes.style.display = "block";
+        if (secMarcadores) secMarcadores.style.display = "none";
+        if (feed) feed.style.display = "none";
+      }, 80);
+    }
+
+    if (panelFiltros.devocionales && !panelFiltros.imagenes) {
+      panelRenderDevocionalesPlaceholder();
+    }
+  } else {
+    if (secImagenes) secImagenes.style.display = "none";
+    if (secMarcadores) secMarcadores.style.display = "none";
+    if (secDev) secDev.style.display = "none";
+    if (secComp) secComp.style.display = "none";
+
+    if (feed) feed.style.display = "block";
+
+    panelCargarFeedMiPanel();
+  }
+
+  panelRefrescarBotones();
+
+  const btnNuevoImg = mp$("btnPanelImgNuevo");
+  if (btnNuevoImg) {
+    btnNuevoImg.style.display = window.__ES_ADMIN ? "inline-flex" : "none";
+  }
+}
+
+function panelRefrescarBotones() {
   const botones = {
     imagenes: "btnPanelFiltroImagenes",
     marcadores: "btnPanelFiltroMarcadores",
@@ -78,20 +139,6 @@ function panelAplicarFiltros() {
     const btn = mp$(id);
     if (btn) btn.classList.toggle("activo", !!panelFiltros[tipo]);
   });
-
-  // Solo admins ven el + de imágenes
-  const btnNuevoImg = mp$("btnPanelImgNuevo");
-  if (btnNuevoImg) {
-    btnNuevoImg.style.display = window.__ES_ADMIN ? "inline-flex" : "none";
-  }
-
-  if (panelFiltros.compartidos) {
-    panelCargarCompartidosGuardados();
-  }
-
-  if (panelFiltros.devocionales) {
-    panelRenderDevocionalesPlaceholder();
-  }
 }
 
 function panelRenderDevocionalesPlaceholder() {
@@ -100,21 +147,21 @@ function panelRenderDevocionalesPlaceholder() {
 
   cont.innerHTML = `
     <div class="panel-extra-box">
-      Todavía no conectamos devocionales guardados. Esta pestaña queda preparada.
+      La galería de devocionales queda preparada. La conectamos en el próximo paso.
     </div>
   `;
 }
 
-function panelCargarCompartidosGuardados() {
-  const cont = mp$("panelCompartidosApp");
-  if (!cont) return;
-
+function panelCargarFeedMiPanel() {
   const uid = mpUid();
+  const feed = panelAsegurarFeed();
+
+  if (!feed) return;
 
   if (!uid) {
-    cont.innerHTML = `
+    feed.innerHTML = `
       <div class="panel-extra-box">
-        Iniciá sesión para ver tus compartidos guardados.
+        Iniciá sesión para ver tu Mi Panel.
       </div>
     `;
     return;
@@ -122,7 +169,7 @@ function panelCargarCompartidosGuardados() {
 
   const db = mpDB();
   if (!db) {
-    cont.innerHTML = `
+    feed.innerHTML = `
       <div class="panel-extra-box">
         Firebase todavía no está listo.
       </div>
@@ -130,68 +177,220 @@ function panelCargarCompartidosGuardados() {
     return;
   }
 
-  if (panelCompartidosEscuchaActiva && panelCompartidosUid === uid) {
-    panelRenderCompartidosGuardados();
-    return;
-  }
+  panelEscucharCompartidosGuardados(uid);
+  panelEscucharRecursosGuardados(uid);
+  panelRenderFeedMiPanel();
+}
+
+function panelEscucharCompartidosGuardados(uid) {
+  if (panelCompartidosEscuchaActiva && panelCompartidosUid === uid) return;
+
+  const db = mpDB();
+  if (!db) return;
 
   panelCompartidosUid = uid;
 
   onValue(ref(db, `panelEdiciones/${uid}`), (snap) => {
     panelCompartidosCache = snap.val() || {};
-    panelRenderCompartidosGuardados();
+    panelRenderFeedMiPanel();
   });
 
   panelCompartidosEscuchaActiva = true;
 }
 
-function panelRenderCompartidosGuardados() {
-  const cont = mp$("panelCompartidosApp");
-  if (!cont) return;
+function panelEscucharRecursosGuardados(uid) {
+  if (panelRecursosEscuchaActiva && panelRecursosUid === uid) return;
 
-  const arr = Object.entries(panelCompartidosCache || {}).map(([id, item]) => ({
-    id,
-    ...(item || {})
-  })).sort((a, b) => Number(b.ts || 0) - Number(a.ts || 0));
+  const db = mpDB();
+  if (!db) return;
 
-  if (!arr.length) {
-    cont.innerHTML = `
+  panelRecursosUid = uid;
+
+  onValue(ref(db, `panelRecursos/${uid}`), (snap) => {
+    panelRecursosCache = snap.val() || {};
+    panelRenderFeedMiPanel();
+  });
+
+  panelRecursosEscuchaActiva = true;
+}
+
+function panelFeedItems() {
+  const items = [];
+
+  if (panelFiltros.compartidos) {
+    Object.entries(panelCompartidosCache || {}).forEach(([id, item]) => {
+      items.push({
+        id,
+        tipo: "edicion",
+        titulo: item.titulo || "Edición",
+        portadaUrl: item.portadaUrl || "",
+        edicionId: item.edicionId || id,
+        ts: Number(item.ts || 0)
+      });
+    });
+
+    Object.entries(panelRecursosCache || {}).forEach(([id, item]) => {
+      items.push({
+        id,
+        tipo: "rh",
+        titulo: item.titulo || "Recurso RH",
+        temaIndex: Number(item.temaIndex || 0),
+        ts: Number(item.ts || 0)
+      });
+    });
+  }
+
+  if (panelFiltros.marcadores) {
+    items.push({
+      id: "notas_pendiente",
+      tipo: "placeholder-notas",
+      titulo: "Notas",
+      ts: 0
+    });
+  }
+
+  if (panelFiltros.imagenes) {
+    items.push({
+      id: "imagenes_pendiente",
+      tipo: "placeholder-imagenes",
+      titulo: "Imágenes",
+      ts: 0
+    });
+  }
+
+  if (panelFiltros.devocionales) {
+    items.push({
+      id: "devocionales_pendiente",
+      tipo: "placeholder-devocionales",
+      titulo: "Devocionales",
+      ts: 0
+    });
+  }
+
+  return items.sort((a, b) => Number(b.ts || 0) - Number(a.ts || 0));
+}
+
+function panelRenderFeedMiPanel() {
+  const feed = panelAsegurarFeed();
+  if (!feed || feed.style.display === "none") return;
+
+  const items = panelFeedItems();
+
+  if (!items.length) {
+    feed.innerHTML = `
       <div class="panel-extra-box">
-        Todavía no guardaste ediciones en Mi Panel.
+        No hay elementos para mostrar con estos filtros.
       </div>
     `;
     return;
   }
 
-  cont.innerHTML = `
-    <div class="panel-guardados-grid">
-      ${arr.map(item => `
-        <article class="panel-guardado-card">
-          <div class="panel-guardado-cover" onclick="abrirPresentacionEdicion('${item.edicionId}')">
-            ${item.portadaUrl ? `<img src="${mpEscape(item.portadaUrl)}" alt="${mpEscape(item.titulo || "Edición")}" loading="lazy">` : ``}
-          </div>
-
-          <div class="panel-guardado-body">
-            <div class="panel-guardado-title">${mpEscape(item.titulo || "Edición")}</div>
-
-            <div class="panel-guardado-actions">
-              <button type="button" onclick="abrirPresentacionEdicion('${item.edicionId}')" title="Abrir">
-                <i class="fa-solid fa-up-right-and-down-left-from-center"></i>
-              </button>
-
-              <button type="button" onclick="descargarEdicionPDF('${item.edicionId}')" title="Descargar PDF">
-                <i class="fa-solid fa-file-pdf"></i>
-              </button>
-
-              <button type="button" onclick="compartirEdicion('${item.edicionId}', 'redes')" title="Compartir">
-                <i class="fa-solid fa-share-nodes"></i>
-              </button>
-            </div>
-          </div>
-        </article>
-      `).join("")}
+  feed.innerHTML = `
+    <div class="panel-feed-wrap">
+      ${items.map(panelRenderFeedItem).join("")}
     </div>
   `;
+}
+
+function panelRenderFeedItem(item) {
+  if (item.tipo === "edicion") {
+    return `
+      <article class="panel-feed-post">
+        <div class="panel-feed-head">
+          <div class="panel-feed-avatar">
+            <i class="fa-solid fa-icons"></i>
+          </div>
+
+          <div>
+            <div class="panel-feed-title">${mpEscape(item.titulo)}</div>
+            <div class="panel-feed-meta">Edición guardada</div>
+          </div>
+        </div>
+
+        <div class="panel-feed-media" onclick="abrirPresentacionEdicion('${item.edicionId}')">
+          ${item.portadaUrl ? `<img src="${mpEscape(item.portadaUrl)}" alt="${mpEscape(item.titulo)}" loading="lazy">` : ``}
+        </div>
+
+        <div class="panel-feed-actions">
+          <button type="button" onclick="abrirPresentacionEdicion('${item.edicionId}')" title="Abrir">
+            <i class="fa-solid fa-up-right-and-down-left-from-center"></i>
+          </button>
+
+          <button type="button" onclick="descargarEdicionPDF('${item.edicionId}')" title="Descargar PDF">
+            <i class="fa-solid fa-file-pdf"></i>
+          </button>
+
+          <button type="button" onclick="compartirEdicion('${item.edicionId}', 'redes')" title="Compartir">
+            <i class="fa-solid fa-share-nodes"></i>
+          </button>
+        </div>
+      </article>
+    `;
+  }
+
+  if (item.tipo === "rh") {
+    return `
+      <article class="panel-feed-post">
+        <div class="panel-feed-head">
+          <div class="panel-feed-avatar">
+            <i class="fa-solid fa-shield-heart"></i>
+          </div>
+
+          <div>
+            <div class="panel-feed-title">${mpEscape(item.titulo)}</div>
+            <div class="panel-feed-meta">Recurso RH guardado</div>
+          </div>
+        </div>
+
+        <div class="panel-feed-rh" onclick="abrirRHCompartido(${Number(item.temaIndex || 0)})">
+          <i class="fa-solid fa-file-lines"></i>
+          <span>Abrir recurso</span>
+        </div>
+
+        <div class="panel-feed-actions">
+          <button type="button" onclick="abrirRHCompartido(${Number(item.temaIndex || 0)})" title="Abrir">
+            <i class="fa-solid fa-up-right-and-down-left-from-center"></i>
+          </button>
+
+          <button type="button" onclick="descargarRHPDF(${Number(item.temaIndex || 0)})" title="Descargar PDF">
+            <i class="fa-solid fa-file-pdf"></i>
+          </button>
+        </div>
+      </article>
+    `;
+  }
+
+  if (item.tipo === "placeholder-notas") {
+    return `
+      <article class="panel-feed-post panel-feed-placeholder">
+        <i class="fa-solid fa-bookmark"></i>
+        <b>Notas</b>
+        <span>Las conectamos al feed cuando integremos las notas existentes.</span>
+      </article>
+    `;
+  }
+
+  if (item.tipo === "placeholder-imagenes") {
+    return `
+      <article class="panel-feed-post panel-feed-placeholder">
+        <i class="fa-solid fa-image"></i>
+        <b>Imágenes</b>
+        <span>Las imágenes ya mantienen su galería cuando están solas. Luego las sumamos al feed mixto.</span>
+      </article>
+    `;
+  }
+
+  if (item.tipo === "placeholder-devocionales") {
+    return `
+      <article class="panel-feed-post panel-feed-placeholder">
+        <i class="fa-solid fa-calendar-days"></i>
+        <b>Devocionales</b>
+        <span>En el próximo paso conectamos la imagen final del devocional a Mi Panel.</span>
+      </article>
+    `;
+  }
+
+  return "";
 }
 
 setTimeout(() => {
