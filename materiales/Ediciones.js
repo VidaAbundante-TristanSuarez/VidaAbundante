@@ -4,7 +4,8 @@ import {
   remove,
   onValue,
   get,
-  push
+  push,
+  runTransaction
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 /* ================= EDICIONES - MÓDULO =================
@@ -20,6 +21,13 @@ let edicionesIniciado = false;
 let edicionesEscuchaActiva = false;
 let edicionesCache = [];
 let edicionEditId = null;
+
+let edicionesStatsCache = {};
+let edicionesStatsEscuchaActiva = false;
+
+let edicionesGuardadasCache = {};
+let edicionesGuardadasUid = null;
+let edicionesGuardadasEscuchaActiva = false;
 
 function ed$(id) {
   return document.getElementById(id);
@@ -161,7 +169,9 @@ window.mostrarEdiciones = async () => {
     edicionesIniciado = true;
   }
 
-  iniciarEscuchaEdiciones();
+iniciarEscuchaEdiciones();
+iniciarEscuchaEdicionesStats();
+iniciarEscuchaMisEdicionesGuardadas();
 };
 
 function iniciarEscuchaEdiciones() {
@@ -190,6 +200,102 @@ function iniciarEscuchaEdiciones() {
   edicionesEscuchaActiva = true;
 }
 
+function iniciarEscuchaEdicionesStats() {
+  if (edicionesStatsEscuchaActiva) return;
+
+  const db = edDB();
+  if (!db) return;
+
+  onValue(ref(db, "edicionesStats"), (snap) => {
+    edicionesStatsCache = snap.val() || {};
+    window.__EDICIONES_STATS = edicionesStatsCache;
+
+    renderEdiciones();
+
+    if (typeof window.renderCompartidos === "function") {
+      window.renderCompartidos();
+    }
+  });
+
+  edicionesStatsEscuchaActiva = true;
+}
+
+function iniciarEscuchaMisEdicionesGuardadas() {
+  const uid = edUidActual();
+
+  if (!uid) {
+    edicionesGuardadasCache = {};
+    edicionesGuardadasUid = null;
+    edicionesGuardadasEscuchaActiva = false;
+    return;
+  }
+
+  if (edicionesGuardadasEscuchaActiva && edicionesGuardadasUid === uid) return;
+
+  const db = edDB();
+  if (!db) return;
+
+  edicionesGuardadasUid = uid;
+
+  onValue(ref(db, `panelEdiciones/${uid}`), (snap) => {
+    edicionesGuardadasCache = snap.val() || {};
+    window.__EDICIONES_GUARDADAS = edicionesGuardadasCache;
+
+    renderEdiciones();
+
+    if (typeof window.renderCompartidos === "function") {
+      window.renderCompartidos();
+    }
+  });
+
+  edicionesGuardadasEscuchaActiva = true;
+}
+
+function edStats(id) {
+  const s = edicionesStatsCache?.[id] || window.__EDICIONES_STATS?.[id] || {};
+  return {
+    guardados: Number(s.guardados || 0),
+    descargas: Number(s.descargas || 0),
+    compartidos: Number(s.compartidos || 0)
+  };
+}
+
+function edEstaGuardada(id) {
+  return !!(
+    edicionesGuardadasCache?.[id] ||
+    window.__EDICIONES_GUARDADAS?.[id]
+  );
+}
+
+async function edIncrementarStat(id, campo) {
+  const db = edDB();
+  if (!db || !id || !campo) return;
+
+  try {
+    await runTransaction(ref(db, `edicionesStats/${id}/${campo}`), (actual) => {
+      return Number(actual || 0) + 1;
+    });
+  } catch (err) {
+    console.warn("No pude incrementar estadística:", campo, err);
+  }
+}
+
+function edActionButton({ title, onclick, icon, count = 0, saved = false, danger = false }) {
+  return `
+    <button
+      type="button"
+      class="${danger ? "ed-danger" : ""} ${saved ? "ed-action-saved" : ""}"
+      onclick="${onclick}"
+      title="${edEscape(title)}"
+    >
+      <span class="ed-action-wrap">
+        <i class="${icon}"></i>
+        <span class="ed-action-count">${Number(count || 0)}</span>
+      </span>
+    </button>
+  `;
+}
+
 function renderEdiciones() {
   const lista = ed$("edLista");
   if (!lista) return;
@@ -206,36 +312,51 @@ function renderEdiciones() {
   lista.innerHTML = edicionesCache.map(ed => {
     const titulo = edEscape(ed.titulo || "Sin título");
     const portada = ed.portadaUrl || edPaginasArray(ed)[0]?.imagenUrl || "";
+    const st = edStats(ed.id);
+    const guardada = edEstaGuardada(ed.id);
 
     return `
       <article class="ed-card">
         <div class="ed-card-cover" onclick="abrirPresentacionEdicion('${ed.id}')" role="button" title="Abrir edición">
-  ${portada ? `<img src="${edEscape(portada)}" alt="${titulo}" loading="lazy">` : `<span>Sin portada</span>`}
-</div>
+          ${portada ? `<img src="${edEscape(portada)}" alt="${titulo}" loading="lazy">` : `<span>Sin portada</span>`}
+        </div>
 
         <div class="ed-card-body">
           <div class="ed-card-title">${titulo}</div>
 
           <div class="ed-card-actions">
+            ${edActionButton({
+              title: guardada ? "Guardado en Mi Panel" : "Guardar en Mi Panel",
+              onclick: `guardarEdicionEnMiPanel('${ed.id}')`,
+              icon: guardada ? "fa-solid fa-heart-circle-check" : "fa-solid fa-heart-circle-plus",
+              count: st.guardados,
+              saved: guardada
+            })}
 
-            <button type="button" onclick="descargarEdicionPDF('${ed.id}')">
-              <i class="fa-solid fa-file-pdf"></i>
-            </button>
+            ${edActionButton({
+              title: "Descargar PDF",
+              onclick: `descargarEdicionPDF('${ed.id}')`,
+              icon: "fa-solid fa-file-pdf",
+              count: st.descargas
+            })}
 
-            <button type="button" onclick="compartirEdicion('${ed.id}', 'redes')">
-              <i class="fa-solid fa-share-nodes"></i>
-            </button>
+            ${edActionButton({
+              title: "Compartir",
+              onclick: `compartirEdicion('${ed.id}', 'redes')`,
+              icon: "fa-solid fa-share-nodes",
+              count: st.compartidos
+            })}
 
             ${window.__ES_ADMIN ? `
               <button type="button" onclick="compartirEdicion('${ed.id}', 'compartidos')" title="Enviar a Compartidos">
                 <i class="fa-solid fa-icons"></i>
               </button>
 
-              <button type="button" onclick="editarEdicion('${ed.id}')">
+              <button type="button" onclick="editarEdicion('${ed.id}')" title="Editar">
                 <i class="fa-solid fa-pen"></i>
               </button>
 
-              <button type="button" class="ed-danger" onclick="borrarEdicion('${ed.id}')">
+              <button type="button" class="ed-danger" onclick="borrarEdicion('${ed.id}')" title="Borrar">
                 <i class="fa-solid fa-trash"></i>
               </button>
             ` : ``}
@@ -828,6 +949,7 @@ window.descargarEdicionPDF = async (id) => {
 
     const nombre = edSafeName(ed.titulo || "edicion").replace(/\.[^.]+$/, "");
     pdf.save(`${nombre}.pdf`);
+    await edIncrementarStat(id, "descargas");
   } catch (err) {
     console.error(err);
     alert(
@@ -928,16 +1050,26 @@ window.guardarEdicionEnMiPanel = async (id) => {
     return;
   }
 
+  const panelRef = ref(db, `panelEdiciones/${uid}/${id}`);
+  const ya = await get(panelRef);
+
+  if (ya.exists()) {
+    alert("Esta edición ya está guardada en Mi Panel.");
+    return;
+  }
+
   const portadaUrl = ed.portadaUrl || edPaginasArray(ed)[0]?.imagenUrl || "";
 
   try {
-    await set(ref(db, `panelEdiciones/${uid}/${id}`), {
+    await set(panelRef, {
       tipo: "edicion",
       edicionId: id,
       titulo: ed.titulo || "Edición",
       portadaUrl,
       ts: Date.now()
     });
+
+    await edIncrementarStat(id, "guardados");
 
     alert("Guardado en Mi Panel.");
   } catch (err) {
@@ -1012,18 +1144,22 @@ window.compartirEdicion = async (id, destino = "redes") => {
   const texto = `${titulo}\n${url}`;
 
   try {
-    if (navigator.share) {
-      await navigator.share({
-        title: titulo,
-        text: titulo,
-        url
-      });
-    } else if (navigator.clipboard) {
-      await navigator.clipboard.writeText(texto);
-      alert("Link copiado para compartir.");
-    } else {
-      prompt("Copiá este link:", url);
-    }
+if (navigator.share) {
+  await navigator.share({
+    title: titulo,
+    text: titulo,
+    url
+  });
+
+  await edIncrementarStat(id, "compartidos");
+} else if (navigator.clipboard) {
+  await navigator.clipboard.writeText(texto);
+  await edIncrementarStat(id, "compartidos");
+  alert("Link copiado para compartir.");
+} else {
+  prompt("Copiá este link:", url);
+  await edIncrementarStat(id, "compartidos");
+}
   } catch (err) {
     console.warn("Compartir cancelado o falló:", err);
   }
