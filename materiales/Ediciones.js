@@ -29,6 +29,10 @@ let edicionesGuardadasCache = {};
 let edicionesGuardadasUid = null;
 let edicionesGuardadasEscuchaActiva = false;
 
+let edicionesDescargadasCache = {};
+let edicionesDescargadasUid = null;
+let edicionesDescargadasEscuchaActiva = false;
+
 function ed$(id) {
   return document.getElementById(id);
 }
@@ -172,6 +176,7 @@ window.mostrarEdiciones = async () => {
 iniciarEscuchaEdiciones();
 iniciarEscuchaEdicionesStats();
 iniciarEscuchaMisEdicionesGuardadas();
+iniciarEscuchaMisEdicionesDescargadas();
 };
 
 function iniciarEscuchaEdiciones() {
@@ -260,6 +265,75 @@ function edStats(id) {
   };
 }
 
+function iniciarEscuchaMisEdicionesDescargadas() {
+  const uid = edUidActual();
+
+  if (!uid) {
+    edicionesDescargadasCache = {};
+    edicionesDescargadasUid = null;
+    edicionesDescargadasEscuchaActiva = false;
+    window.__EDICIONES_DESCARGADAS = {};
+    return;
+  }
+
+  if (edicionesDescargadasEscuchaActiva && edicionesDescargadasUid === uid) return;
+
+  const db = edDB();
+  if (!db) return;
+
+  edicionesDescargadasUid = uid;
+
+  onValue(ref(db, `panelDescargasEdiciones/${uid}`), (snap) => {
+    edicionesDescargadasCache = snap.val() || {};
+    window.__EDICIONES_DESCARGADAS = edicionesDescargadasCache;
+
+    renderEdiciones();
+
+    if (typeof window.renderCompartidos === "function") {
+      window.renderCompartidos();
+    }
+  });
+
+  edicionesDescargadasEscuchaActiva = true;
+}
+
+function edEstaDescargada(id) {
+  const local = localStorage.getItem(`edicion_descargada_${id}`) === "1";
+
+  return !!(
+    local ||
+    edicionesDescargadasCache?.[id] ||
+    window.__EDICIONES_DESCARGADAS?.[id]
+  );
+}
+
+async function edMarcarDescargada(id) {
+  try {
+    localStorage.setItem(`edicion_descargada_${id}`, "1");
+  } catch (_) {}
+
+  const uid = edUidActual();
+  if (!uid) {
+    if (typeof renderEdiciones === "function") renderEdiciones();
+    if (typeof window.renderCompartidos === "function") window.renderCompartidos();
+    return;
+  }
+
+  const db = edDB();
+  if (!db) return;
+
+  const ed = await obtenerEdicion(id);
+  const portadaUrl = ed?.portadaUrl || edPaginasArray(ed)[0]?.imagenUrl || "";
+
+  await set(ref(db, `panelDescargasEdiciones/${uid}/${id}`), {
+    tipo: "edicion",
+    edicionId: id,
+    titulo: ed?.titulo || "Edición",
+    portadaUrl,
+    ts: Date.now()
+  });
+}
+
 function edEstaGuardada(id) {
   return !!(
     edicionesGuardadasCache?.[id] ||
@@ -333,13 +407,13 @@ function renderEdiciones() {
               saved: guardada
             })}
 
-            ${edActionButton({
-              title: "Descargar PDF",
-              onclick: `descargarEdicionPDF('${ed.id}')`,
-              icon: "fa-solid fa-file-pdf",
-              count: st.descargas
-            })}
-
+           ${edActionButton({
+  title: edEstaDescargada(ed.id) ? "PDF descargado" : "Descargar PDF",
+  onclick: `descargarEdicionPDF('${ed.id}')`,
+  icon: edEstaDescargada(ed.id) ? "fa-solid fa-file-circle-check" : "fa-solid fa-file-pdf",
+  count: st.descargas,
+  saved: edEstaDescargada(ed.id)
+})}
             ${edActionButton({
               title: "Compartir",
               onclick: `compartirEdicion('${ed.id}', 'redes')`,
@@ -949,7 +1023,8 @@ window.descargarEdicionPDF = async (id) => {
 
     const nombre = edSafeName(ed.titulo || "edicion").replace(/\.[^.]+$/, "");
     pdf.save(`${nombre}.pdf`);
-    await edIncrementarStat(id, "descargas");
+await edMarcarDescargada(id);
+await edIncrementarStat(id, "descargas");
   } catch (err) {
     console.error(err);
     alert(
