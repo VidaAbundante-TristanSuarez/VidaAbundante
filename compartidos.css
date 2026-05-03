@@ -160,4 +160,28 @@ body.oscuro .comp-post {
   }
 }
 
+.comp-post-rh {
+  margin: 0 14px 12px;
+  min-height: 180px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(188,220,255,.75), rgba(255,255,255,.9));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  cursor: pointer;
+  border: 1px solid rgba(0,0,0,.08);
+}
+
+.comp-post-rh i {
+  font-size: 42px;
+  opacity: .85;
+}
+
+.comp-post-rh span {
+  font-weight: 900;
+  font-size: 16px;
+}
+
 </style> 
