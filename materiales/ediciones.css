@@ -505,8 +505,8 @@ body.ed-link-directo #edViewer {
 
 .ed-action-count {
   position: absolute;
-  right: -10px;
-  bottom: -10px;
+  right: -8px;
+  bottom: -18px;
   min-width: 15px;
   height: 15px;
   padding: 0 4px;
