@@ -3250,4 +3250,236 @@ body.oscuro .panel-marcadores-bar .pm-left .muted{
   color:inherit;
 }
 
+/* =========================================================
+   ✅ CAPA FINAL SEGURA - COLORES UI UNIFICADOS
+   Claro: botones verde claro / activo verde oscuro
+   Oscuro: al revés
+   ========================================================= */
+
+/* MODO CLARO */
+:root{
+  --ui-btn: #d2f9e8;
+  --ui-btn-text: #000000;
+
+  --ui-btn-active: #3e916c;
+  --ui-btn-active-text: #ffffff;
+
+  --ui-btn-border: rgba(0,0,0,.14);
+
+  /* ✅ compatibilidad con todo lo viejo que usa estos nombres */
+  --ui-azul-claro: var(--ui-btn);
+  --ui-azul-hover: var(--ui-btn-active);
+}
+
+/* MODO OSCURO: AL REVÉS */
+body.oscuro{
+  --ui-btn: #3e916c;
+  --ui-btn-text: #ffffff;
+
+  --ui-btn-active: #d2f9e8;
+  --ui-btn-active-text: #000000;
+
+  --ui-btn-border: rgba(255,255,255,.18);
+
+  --ui-azul-claro: var(--ui-btn);
+  --ui-azul-hover: var(--ui-btn-active);
+}
+
+/* =========================================================
+   ✅ BOTONES NORMALES
+   ========================================================= */
+
+:where(
+  .nav-btn,
+  .btn-primary,
+  .btn-ghost,
+  .btn-mini,
+  .pm-btn,
+  .panel-tabs button,
+  .barra-acciones button,
+  #btnCapAnt,
+  #btnCapSig,
+  #btnMostrarBarra,
+  #btnToggleFiltros,
+  #btnCrearImagen,
+  #btnFuentes,
+  .fila-final button,
+  .fila-opciones button,
+  #modalPersonalizar button:not(.cerrar-modal),
+  #listaFuentes button,
+  .dev-row button,
+  .dev-final button,
+  .dev-lista-fuentes button,
+  .dev-f1-menu button,
+  .dev-f1-menu-btn,
+  .dev-adorno-btn-none,
+  .dev-textura-btn-none,
+  #btnDevNuevo,
+  #btnPanelImgNuevo,
+  #btnSubidoNuevo,
+  .subir-iglesia-btn
+){
+  background: var(--ui-btn) !important;
+  background-image: none !important;
+  color: var(--ui-btn-text) !important;
+  border: 1px solid var(--ui-btn-border) !important;
+  box-shadow: 0 4px 10px rgba(0,0,0,.12);
+}
+
+/* =========================================================
+   ✅ ACTIVOS / SELECCIONADOS
+   ========================================================= */
+
+:where(
+  .nav-btn.activo,
+  .btn-primary.activo,
+  .btn-ghost.activo,
+  .btn-mini.activo,
+  .pm-btn.activo,
+  .panel-tabs button.activo,
+  .barra-acciones button.activo,
+  button.activo,
+  #modalPersonalizar button.activo,
+  #listaFuentes button.activo,
+  .dev-row button.activo,
+  .dev-final button.activo,
+  .dev-lista-fuentes button.activo,
+  #btnModoMarcadorBarra.activo,
+  .btn-version-inline.activo,
+  .subir-iglesia-btn:has(input:checked)
+){
+  background: var(--ui-btn-active) !important;
+  background-image: none !important;
+  color: var(--ui-btn-active-text) !important;
+  border-color: var(--ui-btn-active) !important;
+}
+
+/* =========================================================
+   ✅ HOVER SOLO EN PC
+   Evita que en celular quede el hover pegado.
+   ========================================================= */
+
+@media (hover:hover) and (pointer:fine){
+  :where(
+    .nav-btn,
+    .btn-primary,
+    .btn-ghost,
+    .btn-mini,
+    .pm-btn,
+    .panel-tabs button,
+    .barra-acciones button,
+    #btnCapAnt,
+    #btnCapSig,
+    #btnMostrarBarra,
+    #btnToggleFiltros,
+    #btnCrearImagen,
+    #btnFuentes,
+    .fila-final button,
+    .fila-opciones button,
+    #modalPersonalizar button:not(.cerrar-modal),
+    #listaFuentes button,
+    .dev-row button,
+    .dev-final button,
+    .dev-lista-fuentes button,
+    .dev-f1-menu button,
+    .dev-f1-menu-btn,
+    #btnDevNuevo,
+    #btnPanelImgNuevo,
+    #btnSubidoNuevo,
+    .subir-iglesia-btn
+  ):hover{
+    background: var(--ui-btn-active) !important;
+    background-image: none !important;
+    color: var(--ui-btn-active-text) !important;
+    border-color: var(--ui-btn-active) !important;
+  }
+}
+
+/* =========================================================
+   ✅ ICONOS: QUE NO HEREDEN GRADIENTES RAROS
+   ========================================================= */
+
+:where(
+  button i,
+  .nav-btn i,
+  .btn-primary i,
+  .btn-ghost i,
+  .pm-btn i,
+  .panel-tabs button i,
+  .barra-acciones button i,
+  #btnDevNuevo i,
+  #btnPanelImgNuevo i,
+  #btnSubidoNuevo i,
+  .subir-iglesia-btn i
+){
+  color: currentColor !important;
+  background: none !important;
+  background-image: none !important;
+}
+
+/* =========================================================
+   ✅ EXCEPCIONES: BORRAR / PELIGRO SIGUE ROJO
+   ========================================================= */
+
+:where(.btn-danger, .devDanger){
+  background: #ffe3e3 !important;
+  background-image: none !important;
+  color: #a40000 !important;
+  border: 1px solid #ffb5b5 !important;
+}
+
+@media (hover:hover) and (pointer:fine){
+  :where(.btn-danger, .devDanger):hover{
+    background: #ffb5b5 !important;
+    color: #000000 !important;
+  }
+}
+
+/* =========================================================
+   ✅ EXCEPCIONES: BOTONES DE CERRAR
+   ========================================================= */
+
+:where(.cerrar-modal, .cerrar-modal-tema){
+  background: rgba(255,255,255,.92) !important;
+  background-image: none !important;
+  color: #111 !important;
+  border: 1px solid rgba(0,0,0,.12) !important;
+}
+
+body.oscuro :where(.cerrar-modal, .cerrar-modal-tema){
+  background: rgba(0,0,0,.62) !important;
+  color: #fff !important;
+  border-color: rgba(255,255,255,.18) !important;
+}
+
+/* =========================================================
+   ✅ PICKR / SELECTORES DE COLOR: NO TOCARLOS COMO BOTONES
+   ========================================================= */
+
+:where(.pickr-host, .pickr-host.pickr, .pickr-host.pcr-button, .pcr-button){
+  background: var(--pickr-color, #ffffff) !important;
+  color: inherit !important;
+}
+
+/* =========================================================
+   ✅ FILTROS DE NOTAS: BOTÓN TRANSPARENTE, ICONO CON COLOR UI
+   ========================================================= */
+
+.pm-filter-chip{
+  background: transparent !important;
+  background-image: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.pm-filter-icon{
+  background: var(--ui-btn) !important;
+  color: var(--ui-btn-text) !important;
+}
+
+.pm-filter-icon.activo{
+  background: var(--ui-btn-active) !important;
+  color: var(--ui-btn-active-text) !important;
+}
+
   </style> 
