@@ -65,6 +65,8 @@ body.oscuro .ed-card {
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  cursor: pointer;
+  position: relative;
 }
 
 .ed-card-cover img {
