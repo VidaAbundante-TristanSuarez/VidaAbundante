@@ -51,6 +51,8 @@ body.oscuro .comp-card {
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  cursor: pointer;
+  position: relative;
 }
 
 .comp-cover img {
@@ -73,18 +75,26 @@ body.oscuro .comp-card {
 .comp-actions {
   display: flex;
   gap: 8px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  align-items: center;
+  overflow-x: auto;
 }
 
 .comp-actions button {
   border: none;
   cursor: pointer;
   border-radius: 999px;
-  padding: 8px 11px;
+  width: 38px;
+  height: 38px;
+  padding: 0;
   background: var(--ui-azul-claro, #bcdcff);
   color: #000;
   font-weight: 800;
   font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
 }
 
 #compVacio {
