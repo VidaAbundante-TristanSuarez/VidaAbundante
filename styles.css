@@ -90,7 +90,7 @@ body.oscuro #header {
 
 /* 🌙 MODO OSCURO */
 body.oscuro .nav-btn i {
-   background: radial-gradient(circle, var(--ui-azul-hover) 0%, var(--ui-azul-claro) 100%);
+   background: var(--ui-azul-claro);
 }
     
 .nav-btn:hover i {
