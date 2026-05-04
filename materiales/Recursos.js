@@ -164,23 +164,30 @@ window.mostrarRH = async () => {
           border-radius:999px;
         }
 
-        #rhAudioBar{
-          position: sticky;
-          top: 0;
-          z-index: 50;
-          background: #fff;
-          padding: 8px 0 10px;
-          border-bottom: 1px solid rgba(0,0,0,.08);
-        }
+ #rhAudioBar{
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: #fff;
+  padding: 8px 10px 10px;
+  border-bottom: 1px solid rgba(0,0,0,.08);
+
+  /* ✅ esquinas redondeadas */
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
 
         body.oscuro #rhAudioBar{
           background:#fff;
         }
 
-        #rhAudio{
-          width:100%;
-          margin:0;
-        }
+ #rhAudio{
+  width:100%;
+  margin:0;
+  display:block;
+  border-radius:16px;
+}
 
         #rhAcciones {
   display: flex;
