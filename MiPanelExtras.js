@@ -240,33 +240,6 @@ function panelFeedItems() {
     });
   }
 
-  if (panelFiltros.marcadores) {
-    items.push({
-      id: "notas_pendiente",
-      tipo: "placeholder-notas",
-      titulo: "Notas",
-      ts: 0
-    });
-  }
-
-  if (panelFiltros.imagenes) {
-    items.push({
-      id: "imagenes_pendiente",
-      tipo: "placeholder-imagenes",
-      titulo: "Imágenes",
-      ts: 0
-    });
-  }
-
-  if (panelFiltros.devocionales) {
-    items.push({
-      id: "devocionales_pendiente",
-      tipo: "placeholder-devocionales",
-      titulo: "Devocionales",
-      ts: 0
-    });
-  }
-
   return items.sort((a, b) => Number(b.ts || 0) - Number(a.ts || 0));
 }
 
@@ -278,10 +251,10 @@ function panelRenderFeedMiPanel() {
 
   if (!items.length) {
     feed.innerHTML = `
-      <div class="panel-extra-box">
-        No hay elementos para mostrar con estos filtros.
-      </div>
-    `;
+  <div class="panel-extra-box">
+    Todavía no hay elementos guardados para mostrar acá.
+  </div>
+`;
     return;
   }
 
