@@ -641,11 +641,48 @@ button.subidos-media-link{
 
 /* ===== VISOR INTERNO ===== */
 
-#modalSubidosVisor .modal-card{
-  background:#ffffff;
-  box-shadow:0 18px 42px rgba(0,0,0,.18);
+#modalSubidosVisor{
+  --visor-modal-bg: rgba(255,255,255,.88);
+  --visor-marco-bg: rgba(255,255,255,.92);
+  --visor-panel-bg: rgba(255,255,255,.88);
+  --visor-bloque-bg: #ffffff;
+  --visor-ref-bg: #f5fbff;
+  --visor-comentario-bg: #f8fcff;
+  --visor-borde: rgba(120,155,170,.32);
+  --visor-borde-suave: #e4f2f8;
+  --visor-texto: #111111;
+  --visor-texto-suave: #22313a;
+  --visor-nota-bg: #fffaf0;
+  --visor-nota-borde: #f6e7bd;
 }
 
+/* 🌙 MODO OSCURO DEL VISOR */
+body.oscuro #modalSubidosVisor{
+  --visor-modal-bg: rgba(0,0,0,.72);
+  --visor-marco-bg: rgba(0,0,0,.72);
+  --visor-panel-bg: rgba(0,0,0,.78);
+  --visor-bloque-bg: #050505;
+  --visor-ref-bg: #111111;
+  --visor-comentario-bg: #0d0d0d;
+  --visor-borde: rgba(255,255,255,.16);
+  --visor-borde-suave: rgba(255,255,255,.14);
+  --visor-texto: #ffffff;
+  --visor-texto-suave: rgba(255,255,255,.88);
+  --visor-nota-bg: #15120a;
+  --visor-nota-borde: rgba(255,214,130,.28);
+}
+
+/* Fondo del modal visor */
+#modalSubidosVisor .modal-card{
+  background:
+    linear-gradient(var(--visor-modal-bg), var(--visor-modal-bg)),
+    url("img/subidos/fondo-predica-cielo.jpg") center / cover no-repeat !important;
+
+  box-shadow: 0 18px 42px rgba(0,0,0,.18);
+  color: var(--visor-texto);
+}
+
+/* Archivos simples dentro del visor */
 #subidosVisorBody img,
 #subidosVisorBody video,
 #subidosVisorBody iframe{
@@ -656,7 +693,7 @@ button.subidos-media-link{
   margin:0 auto;
   border:none;
   border-radius:14px;
-  background:#fff;
+  background:var(--visor-bloque-bg);
   object-fit:contain;
 }
 
@@ -672,13 +709,14 @@ button.subidos-media-link{
   width:100%;
   max-width:760px;
   margin:0 auto;
+  color:var(--visor-texto);
 }
 
 .subidos-visor-marco{
-  border:1px solid rgba(120,155,170,.32);
+  border:1px solid var(--visor-borde);
   border-radius:20px;
   padding:14px;
-  background:linear-gradient(180deg, rgba(255,255,255,.96), rgba(248,252,255,.92));
+  background:var(--visor-marco-bg);
   box-shadow:0 12px 30px rgba(0,0,0,.08);
 }
 
@@ -702,15 +740,15 @@ button.subidos-media-link{
   font-size:22px;
   font-weight:800;
   line-height:1.15;
-  color:#111;
+  color:var(--visor-texto);
 }
 
 .subidos-visor-contexto{
   margin:0 0 12px;
   padding:12px 14px;
-  border:1px solid #e4f2f8;
+  border:1px solid var(--visor-borde-suave);
   border-radius:16px;
-  background:rgba(255,255,255,.88);
+  background:var(--visor-panel-bg);
 }
 
 .subidos-visor-iglesia{
@@ -719,7 +757,7 @@ button.subidos-media-link{
   font-weight:800;
   line-height:1.18;
   text-align:center;
-  color:#111;
+  color:var(--visor-texto);
 }
 
 .subidos-visor-intro{
@@ -727,7 +765,7 @@ button.subidos-media-link{
   font-family:"Lora", serif;
   font-size:15px;
   line-height:1.32;
-  color:#22313a;
+  color:var(--visor-texto-suave);
   white-space:pre-wrap;
 }
 
@@ -735,14 +773,14 @@ button.subidos-media-link{
   margin-top:12px;
   padding:10px 12px;
   border-radius:14px;
-  border:1px solid #e4f2f8;
-  background:#f8fcff;
+  border:1px solid var(--visor-borde-suave);
+  background:var(--visor-comentario-bg);
   text-align:center;
   font-family:"Lora", serif;
   font-size:14px;
   font-weight:700;
   line-height:1.2;
-  color:#22313a;
+  color:var(--visor-texto-suave);
 }
 
 .subidos-visor-bloques{
@@ -752,21 +790,23 @@ button.subidos-media-link{
 }
 
 .subidos-visor-bloque{
-  border:1px solid rgba(216,238,249,.95);
+  border:1px solid var(--visor-borde-suave);
   border-radius:16px;
-  background:#ffffff;
+  background:var(--visor-bloque-bg);
   overflow:hidden;
+  color:var(--visor-texto);
 }
 
 .subidos-visor-ref{
   padding:9px 12px;
-  background:#f5fbff;
-  border-bottom:1px solid #e6f3f9;
+  background:var(--visor-ref-bg);
+  border-bottom:1px solid var(--visor-borde-suave);
   font-family:"Lora", serif;
   font-size:16px;
   font-weight:800;
   line-height:1.15;
   text-align:center;
+  color:var(--visor-texto);
 }
 
 .subidos-visor-texto{
@@ -775,6 +815,7 @@ button.subidos-media-link{
   line-height:1.34;
   font-size:15px;
   font-family:"Lora", serif;
+  color:var(--visor-texto);
   text-indent:0 !important;
   margin-left:0 !important;
 }
@@ -783,20 +824,21 @@ button.subidos-media-link{
   margin:3px 12px 10px;
   padding:6px 10px;
   border-radius:12px;
-  background:#f8fcff;
-  border:1px solid #e4f2f8;
+  background:var(--visor-comentario-bg);
+  border:1px solid var(--visor-borde-suave);
   white-space:pre-wrap;
   line-height:1.32;
   font-size:15px;
   font-family:"Lora", serif;
+  color:var(--visor-texto-suave);
   text-indent:0 !important;
   margin-left:12px !important;
   padding-left:10px !important;
 }
 
 .subidos-visor-nota .subidos-visor-ref{
-  background:#fffaf0;
-  border-bottom-color:#f6e7bd;
+  background:var(--visor-nota-bg);
+  border-bottom-color:var(--visor-nota-borde);
 }
 
 /* ===== RESPONSIVE ===== */
