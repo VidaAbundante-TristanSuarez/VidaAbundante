@@ -119,6 +119,12 @@ body.oscuro #abcIndice::-webkit-scrollbar-thumb{ background: rgba(255,255,255,.2
   margin-bottom: 10px;
 }
 
+#abcAudioBar audio{
+  width: 100%;
+  display: block;
+  border-radius: 16px;
+}
+
 /* en oscuro igual lo dejamos blanco para legibilidad */
 body.oscuro #abcAudioBar{
   background:#fff;
