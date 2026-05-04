@@ -177,12 +177,16 @@ function panelAplicarFiltros() {
 
   const uid = mpUid();
 
-  panelOcultarSeccionesOriginales();
+  const secImagenes = mp$("panel-imagenes");
+  const secMarcadores = mp$("panel-marcadores");
+  const secDev = mp$("panel-devocionales");
+  const secComp = mp$("panel-compartidos");
 
   const galeria = panelAsegurarHost("panel-mi-galeria");
   const feed = panelAsegurarHost("panel-mi-feed");
 
   if (!uid) {
+    panelOcultarSeccionesOriginales();
     galeria.style.display = "none";
     feed.style.display = "block";
     feed.innerHTML = `
@@ -193,15 +197,80 @@ function panelAplicarFiltros() {
     return;
   }
 
-  if (panelEsModoGaleria()) {
+  const soloNotas =
+    panelFiltros.marcadores &&
+    !panelFiltros.imagenes &&
+    !panelFiltros.devocionales &&
+    !panelFiltros.compartidos;
+
+  const soloGaleria =
+    (panelFiltros.imagenes || panelFiltros.devocionales) &&
+    !panelFiltros.marcadores &&
+    !panelFiltros.compartidos;
+
+  // ✅ CASO 1: SOLO NOTAS
+  // Usamos tu sección original, con su estética original.
+  if (soloNotas) {
+    galeria.style.display = "none";
+    feed.style.display = "none";
+
+    if (secImagenes) secImagenes.style.display = "none";
+    if (secDev) secDev.style.display = "none";
+    if (secComp) secComp.style.display = "none";
+
+    if (typeof window.mostrarSeccion === "function") {
+      window.mostrarSeccion("marcadores");
+    }
+
+    setTimeout(() => {
+      if (secMarcadores) secMarcadores.style.display = "block";
+      if (galeria) galeria.style.display = "none";
+      if (feed) feed.style.display = "none";
+    }, 80);
+
+    return;
+  }
+
+  // ✅ CASO 2: SOLO IMÁGENES / DEVOCIONALES
+  // Usamos la galería.
+  if (soloGaleria) {
+    if (secImagenes) secImagenes.style.display = "none";
+    if (secMarcadores) secMarcadores.style.display = "none";
+    if (secDev) secDev.style.display = "none";
+    if (secComp) secComp.style.display = "none";
+
     feed.style.display = "none";
     galeria.style.display = "block";
+
     panelRenderGaleria();
-  } else {
-    galeria.style.display = "none";
-    feed.style.display = "block";
-    panelRenderFeedMiPanel();
+    return;
   }
+
+  // ✅ CASO 3: MIXTO
+  // Notas mantiene su vista original arriba.
+  // El feed muestra lo demás abajo.
+  if (panelFiltros.marcadores) {
+    if (typeof window.mostrarSeccion === "function") {
+      window.mostrarSeccion("marcadores");
+    }
+
+    setTimeout(() => {
+      if (secMarcadores) secMarcadores.style.display = "block";
+      if (secImagenes) secImagenes.style.display = "none";
+      if (secDev) secDev.style.display = "none";
+      if (secComp) secComp.style.display = "none";
+    }, 80);
+  } else {
+    if (secMarcadores) secMarcadores.style.display = "none";
+    if (secImagenes) secImagenes.style.display = "none";
+    if (secDev) secDev.style.display = "none";
+    if (secComp) secComp.style.display = "none";
+  }
+
+  galeria.style.display = "none";
+  feed.style.display = "block";
+
+  panelRenderFeedMiPanel();
 }
 
 function panelImagenesFiltradasParaGaleria() {
@@ -353,26 +422,6 @@ function panelFeedItems() {
     });
   }
 
-  if (panelFiltros.marcadores) {
-    Object.entries(panelMarcadoresCache || {}).forEach(([id, m]) => {
-      if (!m?.nota || !String(m.nota).trim()) return;
-
-      const refTxt = m.origen === "abc"
-        ? "Nota ABC"
-        : `${m.libro || ""} ${m.capitulo || ""}`.trim() || "Nota";
-
-      items.push({
-        id,
-        tipo: "nota",
-        titulo: m.titulo || refTxt,
-        nota: m.nota || "",
-        referencia: refTxt,
-        color: m.color || "",
-        ts: mpTs(m)
-      });
-    });
-  }
-
   return items.sort((a, b) => mpTs(b) - mpTs(a));
 }
 
@@ -501,27 +550,6 @@ function panelRenderFeedItem(item) {
           <button type="button" onclick="descargarRHPDF(${Number(item.temaIndex || 0)})" title="Descargar PDF">
             <i class="fa-solid fa-file-pdf"></i>
           </button>
-        </div>
-      </article>
-    `;
-  }
-
-  if (item.tipo === "nota") {
-    return `
-      <article class="panel-feed-post panel-feed-note">
-        <div class="panel-feed-head">
-          <div class="panel-feed-avatar">
-            <i class="fa-solid fa-bookmark"></i>
-          </div>
-
-          <div>
-            <div class="panel-feed-title">${mpEscape(item.titulo)}</div>
-            <div class="panel-feed-meta">${mpEscape(item.referencia || "Nota")}</div>
-          </div>
-        </div>
-
-        <div class="panel-feed-note-body">
-          ${mpEscape(item.nota)}
         </div>
       </article>
     `;
