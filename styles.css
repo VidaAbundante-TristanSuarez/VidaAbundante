@@ -1622,7 +1622,7 @@ body.oscuro .modal-card{
 }
 
 .btn-ghost{
-  background: rgba(0,0,0,.08);
+  background: var(--ui-azul-hover);
   color: #000;
   font-weight: 700;
 }
