@@ -114,6 +114,9 @@ body.oscuro #abcIndice::-webkit-scrollbar-thumb{ background: rgba(255,255,255,.2
   background: #fff;    /* ✅ para que no se mezcle con texto al scrollear */
   padding: 8px 0 10px;
   border-bottom: 1px solid rgba(0,0,0,.08);
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 10px;
 }
 
 /* en oscuro igual lo dejamos blanco para legibilidad */
