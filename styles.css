@@ -373,10 +373,10 @@ body.oscuro .btn-version-inline.activo{
   align-self: center;     /* ✅ centrado vertical */
   width: 24px;
 
-  font-size: 13px;
+  font-size: 16px;
   line-height: 1;
   opacity: .35;
-  color: var(--ui-azul-hover, #1c6fcb);
+  color: var(--ui-azul-hover);
 
   cursor: pointer;
   pointer-events: auto;
