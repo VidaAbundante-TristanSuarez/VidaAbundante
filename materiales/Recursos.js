@@ -155,7 +155,7 @@ window.mostrarRH = async () => {
 
         #rhIndice button.activo{
           background: var(--ui-azul-hover, #1c6fcb);
-          color:#fff;
+          color:#000;
         }
 
         #rhIndice::-webkit-scrollbar{ height: 10px; }
