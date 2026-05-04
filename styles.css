@@ -85,25 +85,25 @@ body.oscuro #header {
 
 .nav-btn i {
   font-size: 16px;
-  color: #4f6fa8;
+  color: var(--ui-azul-claro);
 }
 
 /* 🌙 MODO OSCURO */
 body.oscuro .nav-btn i {
-  color: #6fd9eb;
+  color: var(--ui-azul-hover);
 }
     
 .nav-btn:hover i {
-  color: #3b5f9c;
+  color: var(--ui-azul-claro);
 }
 
 body.oscuro .nav-btn:hover i {
-  color: #6fd9eb;
+  color: var(--ui-azul-hover);
 }
 
 /* ✅ Botón activo del menú (sección actual) */
 .nav-btn.activo{
-  background: var(--ui-azul-hover);
+  background: var(--ui-azul-claro);
   color: #000;
 }
 
@@ -113,7 +113,7 @@ body.oscuro .nav-btn:hover i {
 
 /* oscuro */
 body.oscuro .nav-btn.activo{
-  background: var(--ui-azul-claro);
+  background: var(--ui-azul-hover);
   color: #000;
 }
 body.oscuro .nav-btn.activo i{
