@@ -659,25 +659,6 @@ button.subidos-media-link{
   --visor-nota-borde: rgba(246,231,189,.72);
 }
 
-/* 🌙 oscuro: texto claro + bases oscuras */
-body.oscuro #modalSubidosVisor{
-  --visor-modal-overlay: rgba(0,0,0,.46);
-  --visor-marco-bg: rgba(0,0,0,.48);
-  --visor-panel-bg: rgba(0,0,0,.56);
-  --visor-bloque-bg: rgba(0,0,0,.68);
-  --visor-ref-bg: rgba(0,0,0,.78);
-  --visor-comentario-bg: rgba(0,0,0,.58);
-
-  --visor-borde: rgba(255,255,255,.16);
-  --visor-borde-suave: rgba(255,255,255,.13);
-
-  --visor-texto: #ffffff;
-  --visor-texto-suave: rgba(255,255,255,.90);
-
-  --visor-nota-bg: rgba(28,22,10,.78);
-  --visor-nota-borde: rgba(255,214,130,.22);
-}
-
 /* fondo del modal */
 #modalSubidosVisor .modal-card{
   background:
