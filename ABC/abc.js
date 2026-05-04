@@ -107,33 +107,31 @@ window.mostrarABC = async () => {
 body.oscuro #abcIndice::-webkit-scrollbar-thumb{ background: rgba(255,255,255,.22); }
 
 
-#abcAudioBar{
+#abcStickyBar{
   position: sticky;
-  top: 0;              /* ✅ arriba del todo */
-  z-index: 50;
-  background: #fff;    /* ✅ para que no se mezcle con texto al scrollear */
-  padding: 8px 0 10px;
+  top: 0;
+  z-index: 70;
+  background: rgba(255,255,255,.92);
+  backdrop-filter: blur(6px);
+  padding: 6px 0 10px;
   border-bottom: 1px solid rgba(0,0,0,.08);
-  border-radius: 16px;
-  overflow: hidden;
-  margin-bottom: 10px;
+  border-radius: 0 0 16px 16px;
 }
 
-#abcAudioBar audio{
-  width: 100%;
-  display: block;
-  border-radius: 16px;
+body.oscuro #abcStickyBar{
+  background: rgba(255,255,255,.92);
 }
 
-/* en oscuro igual lo dejamos blanco para legibilidad */
-body.oscuro #abcAudioBar{
-  background:#fff;
+#abcAudioBar{
+  background: transparent;
+  padding: 6px 0 0;
 }
 
-/* el audio como antes */
 #abcAudio{
   width:100%;
-  margin: 0;            /* ahora el margen lo maneja la barra */
+  margin:0;
+  display:block;
+  border-radius:16px;
 }
 
         #abcContenido{
@@ -178,8 +176,7 @@ body.oscuro #abcContenido a{ color:#1c6fcb; }
 /* ✅ CEL: full width, sin márgenes laterales */
 @media (max-width: 640px){
   #abcWrap{ max-width: 100%; margin: 0; padding: 8px 0 16px; }
-  #abcTop{ padding-left: 10px; padding-right: 10px; } /* para que el índice no pegue al borde */
-  #abcAudioBar{ padding-left: 10px; padding-right: 10px; }
+  #abcStickyBar{ padding-left:10px; padding-right:10px; }
 
   #abcContenido{
     border-radius: 0;
@@ -254,16 +251,18 @@ body.oscuro .abc-block .icono-nota{
 }
       </style>
 
-     <div id="abcWrap">
+<div id="abcWrap">
 
-  <!-- ✅ Audio arriba (sticky) -->
-  <div id="abcAudioBar">
-    <audio id="abcAudio" controls preload="metadata"></audio>
-  </div>
+  <div id="abcStickyBar">
+    <!-- ✅ Índice / galería arriba -->
+    <div id="abcTop">
+      <div id="abcIndice" aria-label="Índice ABC"></div>
+    </div>
 
-  <!-- ✅ Índice (solo scroll, sin flechas) -->
-  <div id="abcTop">
-    <div id="abcIndice" aria-label="Índice ABC"></div>
+    <!-- ✅ Audio debajo del índice -->
+    <div id="abcAudioBar">
+      <audio id="abcAudio" controls preload="metadata"></audio>
+    </div>
   </div>
 
   <div id="abcContenido"></div>
