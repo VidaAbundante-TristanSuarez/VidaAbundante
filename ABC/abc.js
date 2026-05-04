@@ -263,7 +263,7 @@ body.oscuro #abcContenido a{ color:#1c6fcb; }
   right: 8px;
   top: 50%;
   transform: translateY(-50%); /* ✅ centrada vertical */
-  font-size: 13px;
+  font-size: 16px;
   line-height: 1;              /* ✅ nunca altera renglones */
   margin: 0;
   opacity: .35;
@@ -276,7 +276,7 @@ body.oscuro #abcContenido a{ color:#1c6fcb; }
 
 body.oscuro .abc-block .icono-nota{
   opacity: .5;
-  color: var(--ui-azul-claro, #bcdcff);
+  color: var(--ui-azul-hover);
 }
 
 /* ✅ Forzar tamaño global dentro de ABC aunque Word traiga tamaños */
