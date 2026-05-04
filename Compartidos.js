@@ -322,6 +322,35 @@ ${compActionButton({
   }).join("");
 };
 
-setTimeout(() => {
-  mostrarCompartidos();
-}, 1200);
+(function abrirEdicionDirectaSiVienePorLink() {
+  const params = new URLSearchParams(window.location.search);
+  const esEdicionDirecta = params.get("ver") === "edicion";
+  const edicionId = params.get("id");
+
+  if (!esEdicionDirecta || !edicionId) {
+    setTimeout(() => {
+      mostrarCompartidos();
+    }, 1200);
+
+    return;
+  }
+
+  document.body.classList.add("edicion-directa");
+
+  const intentarAbrir = async () => {
+    await compEsperarDB();
+
+    for (let i = 0; i < 60; i++) {
+      if (typeof window.abrirPresentacionEdicion === "function") {
+        window.abrirPresentacionEdicion(edicionId);
+        return;
+      }
+
+      await new Promise(r => setTimeout(r, 200));
+    }
+
+    console.error("No se encontró abrirPresentacionEdicion para abrir el link directo.");
+  };
+
+  setTimeout(intentarAbrir, 300);
+})();
