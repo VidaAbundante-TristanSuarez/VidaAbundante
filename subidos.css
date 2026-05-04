@@ -553,7 +553,7 @@ button.subidos-media-link{
   cursor:pointer;
   text-decoration:none;
   background:var(--ui-azul-hover);
-  color:#fff;
+  color:#000;
   font-weight:700;
   display:inline-flex;
   align-items:center;
@@ -565,8 +565,8 @@ button.subidos-media-link{
 
 .subidos-feed-actions button:hover,
 .subidos-feed-actions a:hover{
-  background:#155fc7;
-  color:#fff;
+  background:var(--ui-azul-hover);
+  color:#000;
   transform:translateY(-1px);
   box-shadow:0 8px 18px rgba(0,0,0,.24);
 }
@@ -955,28 +955,5 @@ button.subidos-media-link{
   padding-top:2px !important;
 }
 
-/* ================= FIX MODO OSCURO EN IGLESIA / AGENDA / SUBIDOS ================= */
-/* Si los contenedores son claros o translúcidos, el texto NO debe ponerse blanco */
-
-body.oscuro #iglesia,
-body.oscuro #iglesia *,
-body.oscuro #subidosApp,
-body.oscuro #subidosApp *{
-  color:#111;
-}
-
-/* Mantener blancos solo los textos que están sobre botones de color */
-body.oscuro #iglesia button.btn-primary,
-body.oscuro #iglesia button.btn-primary *,
-body.oscuro #iglesia .nav-btn.activo,
-body.oscuro #iglesia .nav-btn.activo *,
-body.oscuro #subidosApp .subidos-badge,
-body.oscuro #subidosApp .subidos-badge *,
-body.oscuro #subidosApp .subidos-feed-actions button,
-body.oscuro #subidosApp .subidos-feed-actions button *,
-body.oscuro #subidosApp .subidosDangerMini,
-body.oscuro #subidosApp .subidosDangerMini *{
-  color:#fff !important;
-}
 
 </style>
