@@ -184,10 +184,47 @@ body.oscuro .comp-post {
   font-size: 16px;
 }
 
-/* ✅ CELULAR: achica apenas la imagen para que entren ambos audios */
+/* ✅ CELULAR: edición abierta compacta, sin cortar audios */
 @media (max-width: 700px) {
-  #edViewer .ed-slide-img {
-    max-height: 95% !important;
+
+  body.edicion-directa #header,
+  body.edicion-directa #menu {
+    display: none !important;
+  }
+
+  body.edicion-directa #edViewer {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    padding: 6px 8px 8px !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+    z-index: 999999 !important;
+  }
+
+  body.edicion-directa #edViewer * {
+    box-sizing: border-box !important;
+  }
+
+  body.edicion-directa #edViewer .ed-slide-img {
+    max-height: 54dvh !important;
+    width: auto !important;
+    max-width: 100% !important;
+    object-fit: contain !important;
+  }
+
+  body.edicion-directa #edViewer audio {
+    width: 100% !important;
+    height: 46px !important;
+  }
+
+  body.edicion-directa #edViewer div:has(> audio) {
+    margin-top: 6px !important;
+    padding: 7px 10px !important;
+    min-height: auto !important;
   }
 }
 
