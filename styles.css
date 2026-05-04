@@ -1598,7 +1598,7 @@ body.oscuro .modal-card{
 /* variantes */
 .btn-primary{
   background: var(--ui-azul-hover);
-  color: #fff;
+  color: #000;
 }
 
 .btn-ghost{
