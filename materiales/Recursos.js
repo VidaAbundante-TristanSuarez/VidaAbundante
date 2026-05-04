@@ -164,25 +164,27 @@ window.mostrarRH = async () => {
           border-radius:999px;
         }
 
- #rhAudioBar{
+#rhStickyBar{
   position: sticky;
   top: 0;
-  z-index: 50;
-  background: #fff;
-  padding: 8px 10px 10px;
+  z-index: 70;
+  background: rgba(255,255,255,.92);
+  backdrop-filter: blur(6px);
+  padding: 6px 0 10px;
   border-bottom: 1px solid rgba(0,0,0,.08);
-
-  /* ✅ esquinas redondeadas */
-  border-radius: 16px;
-  overflow: hidden;
-  margin-bottom: 10px;
+  border-radius: 0 0 16px 16px;
 }
 
-        body.oscuro #rhAudioBar{
-          background:#fff;
-        }
+body.oscuro #rhStickyBar{
+  background: rgba(255,255,255,.92);
+}
 
- #rhAudio{
+#rhAudioBar{
+  background: transparent;
+  padding: 6px 0 0;
+}
+
+#rhAudio{
   width:100%;
   margin:0;
   display:block;
@@ -254,15 +256,10 @@ window.mostrarRH = async () => {
             padding:8px 0 16px;
           }
 
-          #rhTop{
-            padding-left:10px;
-            padding-right:10px;
-          }
-
-          #rhAudioBar{
-            padding-left:10px;
-            padding-right:10px;
-          }
+  #rhStickyBar{
+  padding-left:10px;
+  padding-right:10px;
+}
 
           #rhContenido{
             border-radius:0;
@@ -275,18 +272,22 @@ window.mostrarRH = async () => {
 
       <div id="rhWrap">
 
-        <div id="rhAudioBar">
-          <audio id="rhAudio" controls preload="metadata"></audio>
-        </div>
+  <div id="rhStickyBar">
+    <!-- ✅ Índice / galería arriba -->
+    <div id="rhTop">
+      <div id="rhIndice" aria-label="Índice RH"></div>
+    </div>
 
-        <div id="rhAcciones"></div>
+    <!-- ✅ Audio debajo del índice -->
+    <div id="rhAudioBar">
+      <audio id="rhAudio" controls preload="metadata"></audio>
+    </div>
+  </div>
 
-        <div id="rhTop">
-          <div id="rhIndice" aria-label="Índice RH"></div>
-        </div>
+  <div id="rhAcciones"></div>
 
-        <div id="rhContenido"></div>
-      </div>
+  <div id="rhContenido"></div>
+</div>
     `;
 
     construirIndiceRH();
