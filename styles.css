@@ -93,13 +93,24 @@ body.oscuro .nav-btn i {
   color: var(--ui-azul-hover);
 }
     
-.nav-btn:hover i {
+.nav-btn:hover{
   background: var(--ui-azul-hover);
   color: #000;
 }
 
-body.oscuro .nav-btn:hover i {
-  color: var(--ui-azul-hover);
+.nav-btn:hover i{
+  background: none;
+  color: #000;
+}
+
+body.oscuro .nav-btn:hover{
+  background: var(--ui-azul-hover);
+  color: #000;
+}
+
+body.oscuro .nav-btn:hover i{
+  background: none;
+  color: #000;
 }
 
 /* ✅ Botón activo del menú (sección actual) */
@@ -3251,182 +3262,5 @@ body.oscuro .panel-marcadores-bar .pm-left .muted{
   color:inherit;
 }
 
-/* ================= MI PANEL GALERIA NUEVA ================= */
-
-#panel-mi-galeria {
-  width: min(560px, 96vw);
-  margin: 0 auto;
-  padding: 0 0 22px;
-}
-
-#panelMiIndexRow {
-  display: flex;
-  gap: 10px;
-  overflow-x: auto;
-  padding: 8px 2px;
-  margin: 0;
-  scroll-snap-type: x mandatory;
-  align-items: flex-start;
-}
-
-#panelMiIndexRow .panel-mi-add {
-  flex: 0 0 auto;
-  align-self: flex-start;
-  width: 42px;
-  height: 42px;
-  border-radius: 999px;
-  padding: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-#panelMiIndexRow .devIndexCard {
-  flex: 0 0 auto;
-  width: 120px;
-  min-width: 120px;
-  max-width: 120px;
-  border: 1px solid #e5e5e5;
-  border-radius: 14px;
-  overflow: hidden;
-  background: #fff;
-  box-shadow: 0 8px 20px rgba(0,0,0,.06);
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  scroll-snap-align: start;
-}
-
-#panelMiIndexRow .devIndexBar {
-  padding: 4px 6px;
-  line-height: 1.05;
-  text-align: center;
-  font-family: Georgia, "Times New Roman", serif;
-  font-weight: 700;
-  text-decoration: underline;
-  font-size: 10px;
-  flex: 0 0 auto;
-}
-
-#panelMiIndexRow .devIndexBarBottom {
-  opacity: .85;
-}
-
-#panelMiIndexRow .devIndexImgWrap {
-  width: 100%;
-  aspect-ratio: 9 / 16;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #fff;
-}
-
-#panelMiIndexRow .devIndexImgWrap img {
-  max-width: 100%;
-  max-height: 100%;
-  width: auto;
-  height: auto;
-  object-fit: contain;
-  object-position: center;
-  display: block;
-  background: transparent;
-}
-
-#panelMiFeed {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  margin-top: 12px;
-}
-
-#panelMiFeed .devBigCard {
-  width: fit-content;
-  max-width: min(420px, 96vw);
-  margin: 0 auto;
-  border: 1px solid #e8e8e8;
-  border-radius: 16px;
-  overflow: hidden;
-  background: #fff;
-  box-shadow: 0 12px 28px rgba(0,0,0,.08);
-  color: #000;
-}
-
-#panelMiFeed .devBigCard img {
-  display: block;
-  width: auto;
-  height: auto;
-  max-width: min(420px, 96vw);
-  max-height: 70vh;
-  aspect-ratio: auto;
-  object-fit: contain;
-  object-position: center;
-  background: transparent;
-}
-
-#panelMiFeed .devBigActions {
-  display: flex;
-  gap: 10px;
-  padding: 10px;
-  justify-content: center;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-#panelMiFeed .devBigActions button {
-  border: none;
-  cursor: pointer;
-  border-radius: 999px;
-  width: 38px;
-  height: 38px;
-  background: var(--ui-azul-claro, #bcdcff);
-  color: #000;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.panel-mi-caption {
-  display: grid;
-  gap: 3px;
-  padding: 0 10px 10px;
-  text-align: center;
-}
-
-.panel-mi-caption b {
-  font-size: 14px;
-}
-
-.panel-mi-caption span {
-  font-size: 12px;
-  opacity: .7;
-  font-weight: 700;
-}
-
-.panel-feed-audio {
-  padding: 10px 14px 0;
-}
-
-.panel-feed-audio audio {
-  width: 100%;
-}
-
-.panel-feed-note-body {
-  padding: 0 14px 16px;
-  white-space: pre-wrap;
-  line-height: 1.45;
-  font-weight: 600;
-}
-
-@media (max-width: 700px) {
-  #panel-mi-galeria {
-    width: 96vw;
-  }
-
-  #panelMiFeed .devBigCard img {
-    max-width: 96vw;
-    max-height: none;
-  }
-}
 
   </style> 
