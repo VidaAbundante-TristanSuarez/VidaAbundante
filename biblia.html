@@ -28,38 +28,7 @@
 </head>
   
 <!-- =================================================== 🏩 =================================================== -->
-  
-<body class="en-iglesia">
-
-
-<script>
-(function () {
-  const params = new URLSearchParams(window.location.search);
-  const esEdicionDirecta = params.get("ver") === "edicion" && params.get("id");
-
-  if (!esEdicionDirecta) return;
-
-  document.documentElement.classList.add("edicion-directa");
-
-  document.addEventListener("DOMContentLoaded", function () {
-    document.body.classList.add("edicion-directa");
-
-    const ocultarBarras = () => {
-      const header = document.getElementById("header");
-      const menu = document.getElementById("menu");
-
-      if (header) header.style.display = "none";
-      if (menu) menu.style.display = "none";
-    };
-
-    ocultarBarras();
-    setTimeout(ocultarBarras, 500);
-    setTimeout(ocultarBarras, 1500);
-    setTimeout(ocultarBarras, 3000);
-  });
-})();
-</script>
-
+  <body class="en-iglesia">
 <!-- ================= HEADER ================= -->
 <div id="header">
 
