@@ -3248,19 +3248,20 @@ body.oscuro .panel-marcadores-bar .pm-left .muted{
 
 /* ================= COLOR DE FUENTE SOLO EN TEXTO BÍBLICO ================= */
 
-/* ✅ Solo texto real de los versículos */
-#seccion-biblia #texto .versiculo .txt,
-#seccion-biblia #texto .versiculo .num{
-  color:var(--va-color-texto-biblia, inherit) !important;
+/* ✅ Solo número + texto real del versículo */
+#seccion-biblia #texto .versiculo .num,
+#seccion-biblia #texto .versiculo .txt{
+  color: var(--va-color-texto-biblia, inherit) !important;
 }
 
-/* ✅ No tocar botones, título, filtros ni plumas */
-#seccion-biblia button,
-#seccion-biblia #titulo,
-#seccion-biblia .versiones-inline,
-#seccion-biblia .btn-version-inline,
-#seccion-biblia .icono-nota{
-  color:inherit;
+/* ✅ La pluma NO usa el color bíblico */
+#seccion-biblia #texto .versiculo .icono-nota{
+  color: var(--ui-azul-hover, #1c6fcb) !important;
+}
+
+/* ✅ Bold solo para el texto bíblico */
+#seccion-biblia #texto .versiculo .txt{
+  font-weight: var(--va-peso-texto-biblia, inherit) !important;
 }
 
 /* =========================================================
@@ -3311,21 +3312,5 @@ body.oscuro .panel-marcadores-bar .pm-left .muted{
   background:var(--ui-azul-hover);
   color:#fff;
 }
-
-/* ✅ El color elegido solo se aplica al texto bíblico, no a botones */
-#seccion-biblia #texto .versiculo .num,
-#seccion-biblia #texto .versiculo .txt{
-  color:inherit !important;
-}
-
-#seccion-biblia #texto .versiculo .txt.va-texto-biblia-tema{
-  color:var(--va-color-texto-biblia, inherit) !important;
-}
-
-/* ✅ Bold bíblico */
-#seccion-biblia #texto .versiculo .txt{
-  font-weight:var(--va-peso-texto-biblia, inherit) !important;
-}
-
 
   </style> 
