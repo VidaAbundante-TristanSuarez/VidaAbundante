@@ -170,7 +170,27 @@ body.oscuro #abcStickyBar{
 
 /* ✅ aire para las acciones de ABC debajo del sticky */
 #abcAcciones{
+  display:flex;
+  gap:8px;
+  justify-content:center;
+  align-items:center;
+  flex-wrap:wrap;
   margin: 10px 0 16px;
+  padding: 10px 0 12px;
+}
+
+#abcAcciones button{
+  border:none;
+  cursor:pointer;
+  border-radius:999px;
+  width:40px;
+  height:40px;
+  background:var(--ui-azul-claro, #bcdcff);
+  color:#000;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:900;
 }
 
         #abcContenido{
@@ -304,6 +324,8 @@ body.oscuro .abc-block .icono-nota{
     </div>
   </div>
 
+  <div id="abcAcciones"></div>
+
   <div id="abcContenido"></div>
 
 </div>
@@ -405,6 +427,7 @@ abcMarcarSeleccionUI();
 // ✅ 4) recién después escuchá resaltados (Firebase)
 abcEscucharResaltados();
 abcGuardarProgreso();
+renderABCAcciones();
     
   } catch (e) {
     cont.innerHTML = `
@@ -416,6 +439,252 @@ abcGuardarProgreso();
     `;
     console.error(e);
   }
+}
+
+/* ================= ABC - ACCIONES EXTRA ================= */
+
+function renderABCAcciones() {
+  const cont = document.getElementById("abcAcciones");
+  if (!cont) return;
+
+  const tema = ABC_TEMAS[abcIndex];
+  if (!tema) return;
+
+  cont.innerHTML = `
+    <button type="button" onclick="guardarABCEnMiPanel(${abcIndex})" title="Guardar en Mi Panel">
+      <i class="fa-solid fa-heart-circle-plus"></i>
+    </button>
+
+    <button type="button" onclick="descargarABCPDF(${abcIndex})" title="Descargar PDF">
+      <i class="fa-solid fa-file-pdf"></i>
+    </button>
+
+    ${window.__ES_ADMIN ? `
+      <button type="button" onclick="publicarABCEnCompartidos(${abcIndex})" title="Publicar en Compartidos">
+        <i class="fa-solid fa-icons"></i>
+      </button>
+    ` : ``}
+  `;
+}
+
+window.guardarABCEnMiPanel = async (index) => {
+  const uid = window.__UID || null;
+
+  if (!uid) {
+    const modal = document.getElementById("loginModal");
+    if (modal) {
+      modal.style.display = "flex";
+      modal.setAttribute("aria-hidden", "false");
+      return;
+    }
+
+    alert("Iniciá sesión para guardar en Mi Panel.");
+    return;
+  }
+
+  const tema = ABC_TEMAS[index];
+  if (!tema) return;
+
+  const db = window.__FB?.db;
+  const api = window.__FB_API || {};
+
+  if (!db || !api.ref || !api.set) {
+    alert("Firebase no está listo.");
+    return;
+  }
+
+  try {
+    await api.set(api.ref(db, `panelRecursos/${uid}/abc_${index}`), {
+      tipo: "abc",
+      recursoTipo: "abc",
+      temaIndex: index,
+      titulo: tema.titulo,
+      html: tema.html,
+      audio: tema.audio,
+      ts: Date.now()
+    });
+
+    alert("ABC guardado en Mi Panel.");
+  } catch (err) {
+    console.error(err);
+    alert("No pude guardar el ABC.");
+  }
+};
+
+window.publicarABCEnCompartidos = async (index) => {
+  if (!window.__ES_ADMIN) {
+    alert("Solo los administradores pueden publicar recursos.");
+    return;
+  }
+
+  const tema = ABC_TEMAS[index];
+  if (!tema) return;
+
+  const db = window.__FB?.db;
+  const api = window.__FB_API || {};
+
+  if (!db || !api.ref || !api.set) {
+    alert("Firebase no está listo.");
+    return;
+  }
+
+  try {
+    await api.set(api.ref(db, `compartidos/abc_${index}`), {
+      tipo: "abc",
+      recursoTipo: "abc",
+      temaIndex: index,
+      titulo: tema.titulo,
+      html: tema.html,
+      audio: tema.audio,
+      creadoPor: window.__UID || "",
+      ts: Date.now()
+    });
+
+    alert("ABC publicado en Compartidos.");
+  } catch (err) {
+    console.error(err);
+    alert("No pude publicar el ABC.");
+  }
+};
+
+window.descargarABCPDF = async (index) => {
+  const tema = ABC_TEMAS[index];
+  if (!tema) return;
+
+  try {
+    const jsPDF = await abcObtenerJsPDF();
+
+    const r = await fetch(encodeURI(tema.html), { cache: "no-store" });
+    if (!r.ok) throw new Error("No pude abrir el HTML de ABC");
+
+    const raw = await r.text();
+    const parsed = new DOMParser().parseFromString(raw, "text/html");
+
+    const estilos = Array.from(parsed.querySelectorAll("style"))
+      .map(s => s.outerHTML)
+      .join("");
+
+    const bodyHTML = parsed.body ? parsed.body.innerHTML : raw;
+
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "fixed";
+    iframe.style.left = "-99999px";
+    iframe.style.top = "0";
+    iframe.style.width = "794px";
+    iframe.style.height = "1123px";
+    iframe.style.background = "#fff";
+    iframe.style.border = "0";
+
+    iframe.srcdoc = `
+      <!doctype html>
+      <html lang="es">
+      <head>
+        <meta charset="utf-8">
+        ${estilos}
+        <style>
+          html, body {
+            margin: 0;
+            padding: 18px;
+            background: #fff;
+            color: #000;
+            box-sizing: border-box;
+          }
+
+          * {
+            box-sizing: border-box;
+          }
+
+          img, table {
+            max-width: 100% !important;
+            height: auto !important;
+          }
+        </style>
+      </head>
+      <body>${bodyHTML}</body>
+      </html>
+    `;
+
+    document.body.appendChild(iframe);
+
+    await new Promise(resolve => {
+      iframe.onload = resolve;
+      setTimeout(resolve, 900);
+    });
+
+    const doc = iframe.contentDocument || iframe.contentWindow.document;
+    const body = doc.body;
+
+    const canvas = await html2canvas(body, {
+      scale: 2,
+      backgroundColor: "#ffffff",
+      useCORS: true
+    });
+
+    const imgData = canvas.toDataURL("image/jpeg", 0.92);
+
+    const pdf = new jsPDF({
+      orientation: "portrait",
+      unit: "pt",
+      format: "a4"
+    });
+
+    const pageW = pdf.internal.pageSize.getWidth();
+    const pageH = pdf.internal.pageSize.getHeight();
+
+    const imgW = pageW;
+    const imgH = canvas.height * imgW / canvas.width;
+
+    let y = 0;
+    let remaining = imgH;
+
+    pdf.addImage(imgData, "JPEG", 0, y, imgW, imgH);
+    remaining -= pageH;
+
+    while (remaining > 0) {
+      y -= pageH;
+      pdf.addPage();
+      pdf.addImage(imgData, "JPEG", 0, y, imgW, imgH);
+      remaining -= pageH;
+    }
+
+    const nombre = String(tema.titulo || "abc")
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^\w.\-]+/g, "_")
+      .replace(/_+/g, "_")
+      .slice(0, 90);
+
+    pdf.save(`${nombre}.pdf`);
+
+    iframe.remove();
+  } catch (err) {
+    console.error(err);
+    alert("No pude generar el PDF del ABC.");
+  }
+};
+
+async function abcObtenerJsPDF() {
+  if (window.jspdf?.jsPDF) return window.jspdf.jsPDF;
+
+  await new Promise((resolve, reject) => {
+    const yaExiste = Array.from(document.scripts).some(s =>
+      s.src.includes("jspdf.umd.min.js")
+    );
+
+    if (yaExiste) {
+      setTimeout(resolve, 300);
+      return;
+    }
+
+    const s = document.createElement("script");
+    s.src = "https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js";
+    s.onload = resolve;
+    s.onerror = reject;
+    document.head.appendChild(s);
+  });
+
+  if (window.jspdf?.jsPDF) return window.jspdf.jsPDF;
+
+  throw new Error("jsPDF no cargó.");
 }
 
 // ================= ABC: FIREBASE + BLOQUES =================
