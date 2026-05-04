@@ -3263,5 +3263,69 @@ body.oscuro .panel-marcadores-bar .pm-left .muted{
   color:inherit;
 }
 
+/* =========================================================
+   MODAL TEMA: COLOR DE TEXTO BÍBLICO + BOLD
+   ========================================================= */
+
+#colorTextoAppBox{
+  flex-direction:column;
+  gap:6px;
+  margin-top:8px;
+}
+
+#colorTextoAppBox .tema-biblia-label{
+  font-weight:800;
+  font-size:13px;
+}
+
+#colorTextoAppBox .tema-biblia-row{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+#colorTextoAppHost{
+  width:48px !important;
+  min-width:48px !important;
+  height:40px !important;
+  border-radius:10px !important;
+}
+
+#btnBoldTextoBiblia{
+  width:42px;
+  height:40px;
+  min-width:42px;
+  border:none;
+  border-radius:10px;
+  background:var(--ui-azul-claro);
+  color:#000;
+  font-weight:700;
+  font-size:17px;
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+}
+
+#btnBoldTextoBiblia.activo{
+  background:var(--ui-azul-hover);
+  color:#fff;
+}
+
+/* ✅ El color elegido solo se aplica al texto bíblico, no a botones */
+#seccion-biblia #texto .versiculo .num,
+#seccion-biblia #texto .versiculo .txt{
+  color:inherit !important;
+}
+
+#seccion-biblia #texto .versiculo .txt.va-texto-biblia-tema{
+  color:var(--va-color-texto-biblia, inherit) !important;
+}
+
+/* ✅ Bold bíblico */
+#seccion-biblia #texto .versiculo .txt{
+  font-weight:var(--va-peso-texto-biblia, inherit) !important;
+}
+
 
   </style> 
