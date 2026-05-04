@@ -5939,6 +5939,24 @@ window.cancelarFondoTema = () => {
   cerrarModalTema();
 };
 
+// ================= 📱 FIJAR ALTO DEL FONDO EN CELULAR =================
+(function fijarAltoFondoEnCelular(){
+  const esMovil = window.matchMedia("(max-width: 800px)").matches;
+  if (!esMovil) return;
+
+  function fijarAlto(){
+    const alto = window.innerHeight || document.documentElement.clientHeight;
+    document.documentElement.style.setProperty("--va-alto-fondo-fijo", alto + "px");
+  }
+
+  fijarAlto();
+
+  // Solo recalcula si girás el celular, NO mientras scrolleás
+  window.addEventListener("orientationchange", () => {
+    setTimeout(fijarAlto, 400);
+  });
+})();
+
 // ================= CARGAR FONDOS AL INICIAR =================
 window.addEventListener("load", () => {
   aplicarFondosGuardados();
