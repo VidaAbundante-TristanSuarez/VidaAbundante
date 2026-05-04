@@ -460,7 +460,7 @@ body.oscuro .panel-tabs button.activo{
   flex-wrap:wrap;
 
   margin: 4px 0 6px;        /* 👈 menos aire */
-  background: #eafaff;       /* 👈 barra */
+  background: #fffcd3;       /* 👈 barra */
   padding: 6px 8px;
   border-radius: 12px;
   border: 1px solid rgba(0,0,0,.08);
