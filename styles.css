@@ -103,7 +103,7 @@ body.oscuro .nav-btn:hover i {
 
 /* ✅ Botón activo del menú (sección actual) */
 .nav-btn.activo{
-  background: var(--ui-azul-claro);
+  background: var(--ui-azul-hover);
   color: #000;
 }
 
