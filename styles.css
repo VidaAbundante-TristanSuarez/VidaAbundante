@@ -85,7 +85,7 @@ body.oscuro #header {
 
 .nav-btn i {
   font-size: 16px;
-  color: var(--ui-azul-hover);
+  color: #000;
 }
 
 /* 🌙 MODO OSCURO */
