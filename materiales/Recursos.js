@@ -164,24 +164,56 @@ window.mostrarRH = async () => {
           border-radius:999px;
         }
 
+/* ================= RH: GALERÍA + AUDIO STICKY ================= */
+
 #rhStickyBar{
   position: sticky;
   top: 0;
   z-index: 70;
+
   background: rgba(255,255,255,.92);
   backdrop-filter: blur(6px);
-  padding: 6px 0 10px;
-  border-bottom: 1px solid rgba(0,0,0,.08);
-  border-radius: 0 0 16px 16px;
+  -webkit-backdrop-filter: blur(6px);
+
+  padding: 10px 10px 12px;
+  margin-bottom: 14px;
+
+  border: 1px solid rgba(0,0,0,.08);
+  border-radius: 16px;
+  overflow: hidden;
+
+  box-shadow: 0 6px 16px rgba(0,0,0,.08);
 }
 
 body.oscuro #rhStickyBar{
   background: rgba(255,255,255,.92);
 }
 
+#rhCapWrapper{
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 8px;
+  scrollbar-width: thin;
+}
+
+#rhCapWrapper::-webkit-scrollbar{
+  height: 8px;
+  display: block;
+}
+
+#rhCapWrapper::-webkit-scrollbar-track{
+  background: rgba(0,0,0,.08);
+  border-radius: 999px;
+}
+
+#rhCapWrapper::-webkit-scrollbar-thumb{
+  background: rgba(0,0,0,.28);
+  border-radius: 999px;
+}
+
 #rhAudioBar{
   background: transparent;
-  padding: 6px 0 0;
+  padding: 8px 0 0;
 }
 
 #rhAudio{
@@ -189,6 +221,11 @@ body.oscuro #rhStickyBar{
   margin:0;
   display:block;
   border-radius:16px;
+}
+
+/* ✅ aire para las acciones de RH */
+#rhAcciones{
+  margin: 10px 0 16px;
 }
 
         #rhAcciones {
