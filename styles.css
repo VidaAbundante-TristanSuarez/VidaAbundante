@@ -640,18 +640,25 @@ body.modo-imagen #accionesBiblia .accion-normal {
 #fondoPanel,
 #fondoCompartidos{
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+
+  width: 100vw;
+  height: var(--va-alto-fondo-fijo, 100lvh);
+
   z-index: -1;
 
   background-repeat: no-repeat;
-  background-position: center top;
+  background-position: center center;
   background-size: cover;
-  background-attachment: scroll;
+  background-attachment: initial;
 
   opacity: 0.35;
   pointer-events: none;
 
   display: none;
+
+  transform: translateZ(0);
 }
 
 body.en-biblia #fondoBiblia{ display:block; }
