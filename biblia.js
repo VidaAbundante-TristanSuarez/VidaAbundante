@@ -700,7 +700,7 @@ function bibliaRestaurarUIAlVolver() {
 }
 
 // ================= ⭐ CARGA BIBLIA ==============================
-const BIBLIA_VERSION_CACHE = "2026-05-01-salmo34";
+const BIBLIA_VERSION_CACHE = "2026-05-01-correcciones2";
 
 Promise.all([
   fetch(`VidaAbundante - RV1960.json?v=${BIBLIA_VERSION_CACHE}`).then(r => r.json()),
