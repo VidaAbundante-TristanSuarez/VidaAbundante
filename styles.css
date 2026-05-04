@@ -565,6 +565,7 @@ body.oscuro .panel-tabs{
   padding: 6px 10px;
   border: none;
   cursor: pointer;
+  background: var(--ui-azul-hover);
   }
 
 .barra-acciones .spacer{
