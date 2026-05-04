@@ -594,142 +594,212 @@ window.publicarRHEnCompartidos = async (index) => {
   }
 };
 
-window.descargarRHPDF = async (index) => {
-  const tema = RH_TEMAS[index];
-  if (!tema) return;
+window.descargarRHPDF = async (index = rhIndex) => {
+  console.log("✅ descargarRHPDF NUEVA VERSION margen-fuente-fix");
+
+  const src = document.getElementById("rhContenido");
+  if (!src) {
+    alert("No encontré el contenido RH para exportar.");
+    return;
+  }
+
+  if (typeof html2canvas !== "function") {
+    alert("No está cargado html2canvas.");
+    return;
+  }
+
+  const JSPDF = window.jspdf?.jsPDF || window.jsPDF;
+  if (!JSPDF) {
+    alert("No está cargado jsPDF.");
+    return;
+  }
+
+  const tema = RH_TEMAS?.[index] || {};
+  const nombreArchivo = (tema.titulo || "Recurso")
+    .replace(/[\\/:*?"<>|]/g, "")
+    .replace(/\s+/g, "_")
+    .trim() + ".pdf";
+
+  const host = document.createElement("div");
+  host.id = "rhPdfHost";
+  host.style.position = "fixed";
+  host.style.left = "-10000px";
+  host.style.top = "0";
+  host.style.width = "794px";
+  host.style.background = "#ffffff";
+  host.style.zIndex = "-1";
+  host.style.pointerEvents = "none";
+
+  const style = document.createElement("style");
+  style.textContent = `
+    #rhPdfExport,
+    #rhPdfExport *{
+      box-sizing:border-box !important;
+      font-family: Arial, sans-serif !important;
+      letter-spacing: normal !important;
+      word-spacing: normal !important;
+      text-rendering: auto !important;
+      transform: none !important;
+      text-shadow: none !important;
+    }
+
+    #rhPdfExport{
+      width:794px !important;
+      background:#ffffff !important;
+      color:#000000 !important;
+
+      /* ✅ margen interno del PDF */
+      padding:54px 56px 120px !important;
+
+      font-size:17px !important;
+      line-height:1.34 !important;
+    }
+
+    #rhPdfExport h1,
+    #rhPdfExport h2{
+      text-align:center !important;
+      line-height:1.15 !important;
+      margin:0 0 22px 0 !important;
+      padding:0 0 14px 0 !important;
+      font-family: Georgia, "Times New Roman", serif !important;
+      font-weight:800 !important;
+      letter-spacing:normal !important;
+      word-spacing:normal !important;
+    }
+
+    #rhPdfExport h3,
+    #rhPdfExport h4{
+      text-align:left !important;
+      line-height:1.25 !important;
+      margin:24px 0 12px 0 !important;
+      font-weight:800 !important;
+    }
+
+    #rhPdfExport p,
+    #rhPdfExport div,
+    #rhPdfExport li,
+    #rhPdfExport span{
+      max-width:100% !important;
+      white-space:normal !important;
+      text-align:left !important;
+      line-height:1.34 !important;
+      letter-spacing:normal !important;
+      word-spacing:normal !important;
+    }
+
+    /* ✅ versículos/citas azules sin deformarse */
+    #rhPdfExport b,
+    #rhPdfExport strong{
+      font-weight:800 !important;
+    }
+
+    #rhPdfExport [style*="blue"],
+    #rhPdfExport [style*="#0"],
+    #rhPdfExport .versiculo,
+    #rhPdfExport .cita{
+      white-space:normal !important;
+      text-align:left !important;
+      word-spacing:normal !important;
+      letter-spacing:normal !important;
+      line-height:1.28 !important;
+    }
+
+    /* ✅ evitar que el final quede pegado al borde */
+    #rhPdfExport::after{
+      content:"";
+      display:block;
+      height:80px;
+    }
+  `;
+
+  const clone = src.cloneNode(true);
+  clone.id = "rhPdfExport";
+
+  clone.querySelectorAll("audio, button, input, select, textarea").forEach(el => el.remove());
+
+  clone.querySelectorAll("*").forEach(el => {
+    el.style.letterSpacing = "normal";
+    el.style.wordSpacing = "normal";
+    el.style.whiteSpace = "normal";
+    el.style.textAlign = "left";
+    el.style.transform = "none";
+    el.style.maxWidth = "100%";
+  });
+
+  host.appendChild(style);
+  host.appendChild(clone);
+  document.body.appendChild(host);
 
   try {
-    const jsPDF = await rhObtenerJsPDF();
+    await document.fonts.ready;
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 
-    const r = await fetch(encodeURI(tema.html), { cache: "no-store" });
-    if (!r.ok) throw new Error("No pude abrir el HTML de RH");
-
-    const raw = await r.text();
-    const parsed = new DOMParser().parseFromString(raw, "text/html");
-
-    const estilos = Array.from(parsed.querySelectorAll("style"))
-      .map(s => s.outerHTML)
-      .join("");
-
-    const bodyHTML = parsed.body ? parsed.body.innerHTML : raw;
-
-    const iframe = document.createElement("iframe");
-    iframe.style.position = "fixed";
-    iframe.style.left = "-99999px";
-    iframe.style.top = "0";
-    iframe.style.width = "794px";
-    iframe.style.height = "1123px";
-    iframe.style.background = "#fff";
-    iframe.style.border = "0";
-
-    iframe.srcdoc = `
-      <!doctype html>
-      <html lang="es">
-      <head>
-        <meta charset="utf-8">
-        ${estilos}
-                <style>
-          html, body {
-            margin: 0;
-            padding: 0;
-            background: #fff;
-            color: #000;
-            box-sizing: border-box;
-          }
-
-          * {
-            box-sizing: border-box;
-          }
-
-          body {
-            padding: 34px 34px 42px;
-          }
-
-          img, table {
-            max-width: 100% !important;
-            height: auto !important;
-          }
-
-          h1, h2, h3 {
-            white-space: normal !important;
-            word-break: normal !important;
-            overflow-wrap: break-word !important;
-          }
-        </style>
-      </head>
-      <body>${bodyHTML}</body>
-      </html>
-    `;
-
-    document.body.appendChild(iframe);
-
-    await new Promise(resolve => {
-      iframe.onload = resolve;
-      setTimeout(resolve, 900);
-    });
-
-       const doc = iframe.contentDocument || iframe.contentWindow.document;
-
-    if (doc.fonts?.ready) {
-      try { await doc.fonts.ready; } catch (_) {}
-    }
-    await new Promise(resolve => setTimeout(resolve, 250));
-
-    const body = doc.body;
-
-    const canvas = await html2canvas(body, {
+    const canvas = await html2canvas(host, {
       scale: 2,
       backgroundColor: "#ffffff",
       useCORS: true,
-      width: body.scrollWidth,
-      height: body.scrollHeight,
-      windowWidth: body.scrollWidth,
-      windowHeight: body.scrollHeight,
-      scrollX: 0,
-      scrollY: 0
+      allowTaint: false,
+      logging: false,
+      width: 794,
+      windowWidth: 794
     });
 
-    const imgData = canvas.toDataURL("image/jpeg", 0.92);
-
-    const pdf = new jsPDF({
-      orientation: "portrait",
-      unit: "pt",
-      format: "a4"
-    });
+    const pdf = new JSPDF("p", "pt", "a4");
 
     const pageW = pdf.internal.pageSize.getWidth();
     const pageH = pdf.internal.pageSize.getHeight();
-    const margin = 24;
 
-    const imgW = pageW - margin * 2;
-    const imgH = canvas.height * imgW / canvas.width;
-    const pageContentH = pageH - margin * 2;
+    const margenX = 36;
+    const margenTop = 34;
 
-    let y = margin;
-    let remaining = imgH;
+    /* ✅ más margen abajo */
+    const margenBottom = 72;
 
-    pdf.addImage(imgData, "JPEG", margin, y, imgW, imgH);
-    remaining -= pageContentH;
+    const imgW = pageW - margenX * 2;
+    const altoUtilPDF = pageH - margenTop - margenBottom;
 
-    while (remaining > 0) {
-      y -= pageContentH;
-      pdf.addPage();
-      pdf.addImage(imgData, "JPEG", margin, y, imgW, imgH);
-      remaining -= pageContentH;
+    const sliceH = Math.floor(altoUtilPDF * canvas.width / imgW);
+
+    let y = 0;
+    let pagina = 0;
+
+    while (y < canvas.height) {
+      const altoCorte = Math.min(sliceH, canvas.height - y);
+
+      const pageCanvas = document.createElement("canvas");
+      pageCanvas.width = canvas.width;
+      pageCanvas.height = altoCorte;
+
+      const ctx = pageCanvas.getContext("2d");
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+
+      ctx.drawImage(
+        canvas,
+        0, y,
+        canvas.width, altoCorte,
+        0, 0,
+        canvas.width, altoCorte
+      );
+
+      const imgData = pageCanvas.toDataURL("image/jpeg", 0.96);
+      const imgH = altoCorte * imgW / canvas.width;
+
+      if (pagina > 0) pdf.addPage();
+
+      pdf.addImage(imgData, "JPEG", margenX, margenTop, imgW, imgH);
+
+      y += altoCorte;
+      pagina++;
     }
 
-    const nombre = String(tema.titulo || "recurso-rh")
-      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^\w.\-]+/g, "_")
-      .replace(/_+/g, "_")
-      .slice(0, 90);
+    pdf.save(nombreArchivo);
 
-    pdf.save(`${nombre}.pdf`);
-
-    iframe.remove();
-  } catch (err) {
-    console.error(err);
-    alert("No pude generar el PDF del recurso.");
+  } catch (e) {
+    console.error("Error generando PDF RH:", e);
+    alert("No se pudo generar el PDF.");
+  } finally {
+    host.remove();
   }
 };
 
