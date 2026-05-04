@@ -628,7 +628,7 @@ body.modal-open{
 body.oscuro #btnDevNuevo,
 body.oscuro #btnPanelImgNuevo,
 body.oscuro #btnSubidoNuevo{
-  background: #e3fffd;
+  background: var(--ui-azul-claro);
   color: #000;
 }
 
