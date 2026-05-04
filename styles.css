@@ -3132,7 +3132,7 @@ body.oscuro #buscarLibroBiblia{
   justify-content: center;
 
   border-radius: 8px;
-  background: #6fd9eb;
+  background: var(--ui-azul-hover);
   color: #000;
   cursor: pointer;
   z-index: 3;
