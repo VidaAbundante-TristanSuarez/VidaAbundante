@@ -393,9 +393,10 @@ if (audio) {
     const raw = await r.text();
     const parsed = new DOMParser().parseFromString(raw, "text/html");
 
-const estilos = Array.from(parsed.querySelectorAll("style"))
-  .map(s => s.outerHTML)
-  .join("");
+const headExtras = [
+  ...Array.from(parsed.querySelectorAll('link[rel="stylesheet"]')).map(l => l.outerHTML),
+  ...Array.from(parsed.querySelectorAll("style")).map(s => s.outerHTML)
+].join("\n");
 
 const bodyHTML = parsed.body ? parsed.body.innerHTML : raw;
 
@@ -405,7 +406,7 @@ const htmlFrame = `
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  ${estilos}
+ ${headExtras}
   <style>
     html, body{
       margin:0;
@@ -627,10 +628,10 @@ window.descargarRHPDF = async (index) => {
       <head>
         <meta charset="utf-8">
         ${estilos}
-        <style>
+                <style>
           html, body {
             margin: 0;
-            padding: 18px;
+            padding: 0;
             background: #fff;
             color: #000;
             box-sizing: border-box;
@@ -640,9 +641,19 @@ window.descargarRHPDF = async (index) => {
             box-sizing: border-box;
           }
 
+          body {
+            padding: 34px 34px 42px;
+          }
+
           img, table {
             max-width: 100% !important;
             height: auto !important;
+          }
+
+          h1, h2, h3 {
+            white-space: normal !important;
+            word-break: normal !important;
+            overflow-wrap: break-word !important;
           }
         </style>
       </head>
@@ -657,13 +668,25 @@ window.descargarRHPDF = async (index) => {
       setTimeout(resolve, 900);
     });
 
-    const doc = iframe.contentDocument || iframe.contentWindow.document;
+       const doc = iframe.contentDocument || iframe.contentWindow.document;
+
+    if (doc.fonts?.ready) {
+      try { await doc.fonts.ready; } catch (_) {}
+    }
+    await new Promise(resolve => setTimeout(resolve, 250));
+
     const body = doc.body;
 
     const canvas = await html2canvas(body, {
       scale: 2,
       backgroundColor: "#ffffff",
-      useCORS: true
+      useCORS: true,
+      width: body.scrollWidth,
+      height: body.scrollHeight,
+      windowWidth: body.scrollWidth,
+      windowHeight: body.scrollHeight,
+      scrollX: 0,
+      scrollY: 0
     });
 
     const imgData = canvas.toDataURL("image/jpeg", 0.92);
@@ -676,21 +699,23 @@ window.descargarRHPDF = async (index) => {
 
     const pageW = pdf.internal.pageSize.getWidth();
     const pageH = pdf.internal.pageSize.getHeight();
+    const margin = 24;
 
-    const imgW = pageW;
+    const imgW = pageW - margin * 2;
     const imgH = canvas.height * imgW / canvas.width;
+    const pageContentH = pageH - margin * 2;
 
-    let y = 0;
+    let y = margin;
     let remaining = imgH;
 
-    pdf.addImage(imgData, "JPEG", 0, y, imgW, imgH);
-    remaining -= pageH;
+    pdf.addImage(imgData, "JPEG", margin, y, imgW, imgH);
+    remaining -= pageContentH;
 
     while (remaining > 0) {
-      y -= pageH;
+      y -= pageContentH;
       pdf.addPage();
-      pdf.addImage(imgData, "JPEG", 0, y, imgW, imgH);
-      remaining -= pageH;
+      pdf.addImage(imgData, "JPEG", margin, y, imgW, imgH);
+      remaining -= pageContentH;
     }
 
     const nombre = String(tema.titulo || "recurso-rh")
