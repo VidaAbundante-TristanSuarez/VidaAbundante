@@ -1427,9 +1427,31 @@ function pintarVersiculo(v) {
 
   div.innerHTML = `
     <span class="num">${v.Versiculo}</span>
-   <span class="txt">${getTextoVersiculo(v)}</span>
+    <span class="txt">${getTextoVersiculo(v)}</span>
     ${idMarcadorPluma ? `<i class="fa-solid fa-comment-dots icono-nota" aria-hidden="true" data-mid="${idMarcadorPluma}"></i>` : ``}
   `;
+
+  // ✅ color/bold del texto bíblico, sin romper resaltadores
+  const txtBiblico = div.querySelector(".txt");
+  const secBiblia = document.getElementById("seccion-biblia");
+
+  const colorBiblico = secBiblia
+    ? getComputedStyle(secBiblia).getPropertyValue("--va-color-texto-biblia").trim()
+    : "";
+
+  const hayFondoResaltado =
+    !!imagen ||
+    !!selMarcador ||
+    !!(aplicado && colorAplicadoKeep) ||
+    !!(marcado?.color);
+
+  if (txtBiblico) {
+    if (!hayFondoResaltado && colorBiblico) {
+      txtBiblico.classList.add("va-texto-biblia-tema");
+    } else {
+      txtBiblico.classList.remove("va-texto-biblia-tema");
+    }
+  }
 
   // ================= Click =================
   div.onclick = () => toggleVersiculo(id, v.Versiculo);
@@ -5382,13 +5404,18 @@ function getFondoTextoStorageKey(seccion) {
   return `fondoTexto_${seccion}`;
 }
 
+function getFondoTextoBoldStorageKey(seccion) {
+  return `fondoTextoBold_${seccion}`;
+}
+
 function normalizarEstadoApariencia(seccion, estado = {}) {
   return {
     seccion,
     tipo: estado.tipo || "color",
     valor: estado.valor || "#ffffff",
     opacidad: String(estado.opacidad ?? "0.35"),
-    colorTexto: estado.colorTexto || ""
+    colorTexto: estado.colorTexto || "",
+    textoBold: estado.textoBold === true || estado.textoBold === "1" || estado.textoBold === "true"
   };
 }
 
@@ -5402,7 +5429,8 @@ function getEstadoGuardadoSeccion(seccion) {
     tipo: localStorage.getItem(getFondoTipoStorageKey(seccion)) || "color",
     valor: localStorage.getItem(getFondoStorageKey(seccion)) || "#ffffff",
     opacidad: localStorage.getItem(getFondoOpacidadStorageKey(seccion)) || "0.35",
-    colorTexto: localStorage.getItem(getFondoTextoStorageKey(seccion)) || ""
+    colorTexto: localStorage.getItem(getFondoTextoStorageKey(seccion)) || "",
+    textoBold: localStorage.getItem(getFondoTextoBoldStorageKey(seccion)) === "1"
   });
 }
 
@@ -5413,6 +5441,7 @@ function guardarEstadoSeccion(seccion, estado) {
   localStorage.setItem(getFondoStorageKey(seccion), limpio.valor);
   localStorage.setItem(getFondoOpacidadStorageKey(seccion), String(limpio.opacidad));
   localStorage.setItem(getFondoTextoStorageKey(seccion), limpio.colorTexto || "");
+  localStorage.setItem(getFondoTextoBoldStorageKey(seccion), limpio.textoBold ? "1" : "0");
 }
 
 async function guardarEstadoSeccionFirebase(seccion, estado) {
@@ -5428,6 +5457,7 @@ async function guardarEstadoSeccionFirebase(seccion, estado) {
     valor: limpio.valor,
     opacidad: limpio.opacidad,
     colorTexto: limpio.colorTexto || "",
+    textoBold: !!limpio.textoBold,
     actualizado: Date.now()
   });
 }
@@ -5570,15 +5600,22 @@ function aplicarEstadoVisualSeccion(seccion, estado) {
 
   capa.style.opacity = opacidad;
 
-// ✅ Color de fuente SOLO para el texto bíblico.
+  // ✅ Color y bold SOLO para el texto bíblico.
 // No aplicamos color al contenedor, porque eso lo heredan botones/tabs.
 el.style.color = "";
 el.style.removeProperty("--va-color-texto");
 el.style.removeProperty("--va-color-texto-biblia");
+el.style.removeProperty("--va-peso-texto-biblia");
 
-if (seccion === "biblia" && colorTexto) {
-  el.style.setProperty("--va-color-texto-biblia", colorTexto);
-}
+if (seccion === "biblia") {
+  if (colorTexto) {
+    el.style.setProperty("--va-color-texto-biblia", colorTexto);
+  }
+
+  if (limpio.textoBold) {
+    el.style.setProperty("--va-peso-texto-biblia", "700");
+  }
+ }
 }
 
 function aplicarFondosGuardados() {
@@ -5597,40 +5634,63 @@ function cargarDraftDesdeGuardado(seccion) {
     tipo: guardado.tipo,
     valor: guardado.valor,
     opacidad: guardado.opacidad,
-    colorTexto: guardado.colorTexto || ""
+    colorTexto: guardado.colorTexto || "",
+    textoBold: !!guardado.textoBold
   };
+}
+
+function repintarTextoBibliaTema() {
+  try {
+    if (
+      fondoTemaDraft?.seccion === "biblia" &&
+      obtenerSeccionActual() === "biblia" &&
+      typeof mostrarTexto === "function"
+    ) {
+      mostrarTexto({ guardar: false });
+    }
+  } catch(e) {}
 }
 
 function asegurarControlColorTextoTema() {
   const modal = document.getElementById("modalTema");
   if (!modal) return;
 
-  if (document.getElementById("colorTextoApp")) return;
+  const existente = document.getElementById("colorTextoAppBox");
+  if (existente) {
+    existente.style.display = fondoTemaDraft?.seccion === "biblia" ? "flex" : "none";
+    return;
+  }
 
   const box = document.createElement("div");
   box.id = "colorTextoAppBox";
-  box.style.display = "flex";
-  box.style.flexDirection = "column";
-  box.style.gap = "6px";
-  box.style.marginTop = "8px";
+  box.style.display = fondoTemaDraft?.seccion === "biblia" ? "flex" : "none";
 
   box.innerHTML = `
-    <label style="font-weight:800; font-size:13px;">Color de fuente</label>
+    <label class="tema-biblia-label">Color de texto bíblico</label>
 
-    <input
-      id="colorTextoApp"
-      type="hidden"
-      value="#111111"
-    >
+    <div class="tema-biblia-row">
+      <input
+        id="colorTextoApp"
+        type="hidden"
+        value="#111111"
+      >
 
-    <button
-      type="button"
-      id="colorTextoAppHost"
-      class="pickr-host pickr-host--full"
-      data-target="#colorTextoApp"
-      aria-label="Color de fuente"
-      style="height:42px;"
-    ></button>
+      <button
+        type="button"
+        id="colorTextoAppHost"
+        class="pickr-host"
+        data-target="#colorTextoApp"
+        aria-label="Color de texto bíblico"
+      ></button>
+
+      <button
+        type="button"
+        id="btnBoldTextoBiblia"
+        class="btn-bold-biblia"
+        onclick="toggleBoldTextoBiblia()"
+        title="Texto bíblico en negrita"
+      >B</button>
+    </div>
   `;
 
   const colorFondo = document.getElementById("colorFondoApp");
@@ -5652,23 +5712,18 @@ function asegurarControlColorTextoTema() {
   if (input && !input.dataset.ready) {
     input.dataset.ready = "1";
 
-    input.addEventListener("input", () => {
+    const handler = () => {
       if (!fondoTemaDraft) return;
 
       fondoTemaDraft.colorTexto = input.value || "";
 
       aplicarEstadoVisualSeccion(fondoTemaDraft.seccion, fondoTemaDraft);
       limpiarFondosInternosApp();
-    });
+      repintarTextoBibliaTema();
+    };
 
-    input.addEventListener("change", () => {
-      if (!fondoTemaDraft) return;
-
-      fondoTemaDraft.colorTexto = input.value || "";
-
-      aplicarEstadoVisualSeccion(fondoTemaDraft.seccion, fondoTemaDraft);
-      limpiarFondosInternosApp();
-    });
+    input.addEventListener("input", handler);
+    input.addEventListener("change", handler);
   }
 
   setTimeout(() => {
@@ -5688,6 +5743,20 @@ window.aplicarColorTextoTema = () => {
 
   aplicarEstadoVisualSeccion(fondoTemaDraft.seccion, fondoTemaDraft);
   limpiarFondosInternosApp();
+  repintarTextoBibliaTema();
+};
+
+window.toggleBoldTextoBiblia = () => {
+  if (!fondoTemaDraft) return;
+
+  fondoTemaDraft.textoBold = !fondoTemaDraft.textoBold;
+
+  const btn = document.getElementById("btnBoldTextoBiblia");
+  if (btn) btn.classList.toggle("activo", !!fondoTemaDraft.textoBold);
+
+  aplicarEstadoVisualSeccion(fondoTemaDraft.seccion, fondoTemaDraft);
+  limpiarFondosInternosApp();
+  repintarTextoBibliaTema();
 };
 
 function reflejarDraftEnModal() {
@@ -5720,6 +5789,11 @@ function reflejarDraftEnModal() {
     inputColor.dispatchEvent(new Event("change", { bubbles: true }));
   }
 
+  const boxTextoBiblico = document.getElementById("colorTextoAppBox");
+  if (boxTextoBiblico) {
+    boxTextoBiblico.style.display = fondoTemaDraft.seccion === "biblia" ? "flex" : "none";
+  }
+
   if (inputTexto) {
     const colorTexto = fondoTemaDraft.colorTexto || "#111111";
     inputTexto.value = colorTexto;
@@ -5735,6 +5809,11 @@ function reflejarDraftEnModal() {
         }
       } catch(e) {}
     }
+  }
+
+  const btnBoldTexto = document.getElementById("btnBoldTextoBiblia");
+  if (btnBoldTexto) {
+    btnBoldTexto.classList.toggle("activo", !!fondoTemaDraft.textoBold);
   }
 }
 
