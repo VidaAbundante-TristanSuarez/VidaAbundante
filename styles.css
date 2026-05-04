@@ -3250,165 +3250,181 @@ body.oscuro .panel-marcadores-bar .pm-left .muted{
   color:inherit;
 }
 
-/* ================= MI PANEL FEED MIXTO ================= */
+/* ================= MI PANEL GALERIA NUEVA ================= */
 
-#panel-mi-feed {
-  width: min(680px, 100%);
+#panel-mi-galeria {
+  width: min(560px, 96vw);
   margin: 0 auto;
-  padding: 8px 10px 22px;
+  padding: 0 0 22px;
 }
 
-.panel-feed-wrap {
-  display: grid;
-  gap: 18px;
-}
-
-.panel-feed-post {
-  background: rgba(255,255,255,.88);
-  color: #000;
-  border: 1px solid rgba(0,0,0,.10);
-  border-radius: 20px;
-  overflow: hidden;
-  box-shadow: 0 5px 20px rgba(0,0,0,.10);
-}
-
-body.oscuro .panel-feed-post {
-  background: rgba(255,255,255,.92);
-  color: #000;
-}
-
-.panel-feed-head {
+#panelMiIndexRow {
   display: flex;
-  align-items: center;
   gap: 10px;
-  padding: 13px 14px;
+  overflow-x: auto;
+  padding: 8px 2px;
+  margin: 0;
+  scroll-snap-type: x mandatory;
+  align-items: flex-start;
 }
 
-.panel-feed-avatar {
-  width: 38px;
-  height: 38px;
+#panelMiIndexRow .panel-mi-add {
+  flex: 0 0 auto;
+  align-self: flex-start;
+  width: 42px;
+  height: 42px;
   border-radius: 999px;
-  background: var(--ui-azul-claro, #bcdcff);
+  padding: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+
+#panelMiIndexRow .devIndexCard {
+  flex: 0 0 auto;
+  width: 120px;
+  min-width: 120px;
+  max-width: 120px;
+  border: 1px solid #e5e5e5;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 8px 20px rgba(0,0,0,.06);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  scroll-snap-align: start;
+}
+
+#panelMiIndexRow .devIndexBar {
+  padding: 4px 6px;
+  line-height: 1.05;
+  text-align: center;
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 700;
+  text-decoration: underline;
+  font-size: 10px;
   flex: 0 0 auto;
 }
 
-.panel-feed-title {
-  font-weight: 900;
-  font-size: 16px;
-  line-height: 1.15;
-}
-
-.panel-feed-meta {
-  font-size: 12px;
-  opacity: .65;
-  font-weight: 700;
-  margin-top: 2px;
-}
-
-.panel-feed-media {
-  width: 100%;
-  background: rgba(0,0,0,.06);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.panel-feed-media img {
-  width: 100%;
-  max-height: 78vh;
-  object-fit: contain;
-  background: #fff;
-  display: block;
-}
-
-.panel-feed-rh {
-  margin: 0 14px 12px;
-  min-height: 180px;
-  border-radius: 18px;
-  background: linear-gradient(135deg, rgba(188,220,255,.75), rgba(255,255,255,.9));
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  cursor: pointer;
-  border: 1px solid rgba(0,0,0,.08);
-}
-
-.panel-feed-rh i {
-  font-size: 42px;
+#panelMiIndexRow .devIndexBarBottom {
   opacity: .85;
 }
 
-.panel-feed-rh span {
-  font-weight: 900;
-  font-size: 16px;
-}
-
-.panel-feed-actions {
+#panelMiIndexRow .devIndexImgWrap {
+  width: 100%;
+  aspect-ratio: 9 / 16;
+  overflow: hidden;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 14px 14px;
-  border-top: 1px solid rgba(0,0,0,.07);
+  justify-content: center;
+  background: #fff;
 }
 
-.panel-feed-actions button {
+#panelMiIndexRow .devIndexImgWrap img {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  object-position: center;
+  display: block;
+  background: transparent;
+}
+
+#panelMiFeed {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 12px;
+}
+
+#panelMiFeed .devBigCard {
+  width: fit-content;
+  max-width: min(420px, 96vw);
+  margin: 0 auto;
+  border: 1px solid #e8e8e8;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 12px 28px rgba(0,0,0,.08);
+  color: #000;
+}
+
+#panelMiFeed .devBigCard img {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: min(420px, 96vw);
+  max-height: 70vh;
+  aspect-ratio: auto;
+  object-fit: contain;
+  object-position: center;
+  background: transparent;
+}
+
+#panelMiFeed .devBigActions {
+  display: flex;
+  gap: 10px;
+  padding: 10px;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+#panelMiFeed .devBigActions button {
   border: none;
   cursor: pointer;
   border-radius: 999px;
-  width: 42px;
-  height: 42px;
-  padding: 0;
+  width: 38px;
+  height: 38px;
   background: var(--ui-azul-claro, #bcdcff);
   color: #000;
-  font-weight: 900;
   display: inline-flex;
   align-items: center;
   justify-content: center;
 }
 
-.panel-feed-placeholder {
-  min-height: 150px;
-  padding: 18px;
+.panel-mi-caption {
   display: grid;
-  place-items: center;
+  gap: 3px;
+  padding: 0 10px 10px;
   text-align: center;
-  gap: 8px;
 }
 
-.panel-feed-placeholder i {
-  font-size: 34px;
-  opacity: .8;
+.panel-mi-caption b {
+  font-size: 14px;
 }
 
-.panel-feed-placeholder b {
-  font-size: 18px;
-}
-
-.panel-feed-placeholder span {
-  font-size: 13px;
-  opacity: .72;
+.panel-mi-caption span {
+  font-size: 12px;
+  opacity: .7;
   font-weight: 700;
-  max-width: 360px;
+}
+
+.panel-feed-audio {
+  padding: 10px 14px 0;
+}
+
+.panel-feed-audio audio {
+  width: 100%;
+}
+
+.panel-feed-note-body {
+  padding: 0 14px 16px;
+  white-space: pre-wrap;
+  line-height: 1.45;
+  font-weight: 600;
 }
 
 @media (max-width: 700px) {
-  #panel-mi-feed {
-    width: 100%;
-    padding: 8px 8px 18px;
+  #panel-mi-galeria {
+    width: 96vw;
   }
 
-  .panel-feed-post {
-    border-radius: 18px;
-  }
-
-  .panel-feed-media img {
-    max-height: 72vh;
+  #panelMiFeed .devBigCard img {
+    max-width: 96vw;
+    max-height: none;
   }
 }
 
