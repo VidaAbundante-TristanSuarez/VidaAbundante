@@ -600,8 +600,8 @@ body.modal-open{
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: #e3fffd;
-  color: #fff;
+  background: #fffcd3 
+  color: #000;
   box-shadow: 0 8px 18px rgba(0,0,0,.22);
   cursor: pointer;
   transition: transform .16s ease, box-shadow .16s ease, background .16s ease;
@@ -612,7 +612,7 @@ body.modal-open{
 #btnDevNuevo:hover,
 #btnPanelImgNuevo:hover,
 #btnSubidoNuevo:hover{
-  background: #155fc7;
+  background: var(--ui-azul-hover);
   transform: translateY(-1px);
   box-shadow: 0 10px 22px rgba(0,0,0,.28);
 }
