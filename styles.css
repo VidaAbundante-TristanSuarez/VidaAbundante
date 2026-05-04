@@ -272,8 +272,8 @@ body.oscuro .btn-version-inline{
 }
 
 body.oscuro .btn-version-inline.activo{
-  background: #6fd9eb;
-  color: #fff;
+  background: var(--ui-azul-hover);
+  color: #000;
   border-color: #1c6fcb;
 }
 
