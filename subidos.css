@@ -1017,6 +1017,11 @@ body.oscuro #modalSubidosVisor{
   padding-top:2px !important;
 }
 
+/* ✅ Subidos: toda la fuente de la card índice en negro */
+.subidos-feed-card,
+.subidos-feed-card *{
+  color:#000 !important;
+}
 
 </style>
 
