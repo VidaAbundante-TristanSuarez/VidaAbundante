@@ -1628,7 +1628,7 @@ body.oscuro .modal-card{
 }
 
 body.oscuro .btn-ghost{
-  background: rgba(255,255,255,.12);
+  background: var(--ui-azul-claro);
   color: #fff;
 }
 
