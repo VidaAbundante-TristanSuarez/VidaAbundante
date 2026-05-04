@@ -10,7 +10,7 @@
 /* ================= COLOR UNIFICADO UI 🌈================= */
 :root {
   --ui-azul-claro: #ffa79a;
-  --ui-azul-hover: #6fd9eb; 
+  --ui-azul-hover: #e9f6ff; 
 }
 
 /* ================= ESTILOS GENERALES ================= */
@@ -429,27 +429,27 @@ body.oscuro .versiculo { color:#fff; }
 
 .panel-tabs button:hover{
   background: var(--ui-azul-hover);
-  color:#fff;
+  color:#000;
 }
 
 body.oscuro .panel-tabs button{
-  background: #5ab9c9;
-  color:#fff;
+  background: var(--ui-azul-hover);
+  color:#000;
 }
 
 body.oscuro .panel-tabs button:hover{
-  background: #6fd9eb;
+  background: var(--ui-azul-claro);
   color:#000;
 }
 
 /* ✅ Tabs internos activos */
 .panel-tabs button.activo{
   background: var(--ui-azul-hover);
-  color:#fff;
+  color:#000;
 }
 
 body.oscuro .panel-tabs button.activo{
-  background: #6fd9eb;
+  background: var(--ui-azul-claro);
   color:#000;
 }
 
