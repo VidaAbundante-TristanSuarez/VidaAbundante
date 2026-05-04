@@ -296,7 +296,7 @@ body.oscuro .btn-version-inline.activo{
 @media (hover: hover) and (pointer: fine) {
   #btnCapAnt:hover, #btnCapSig:hover{
     background: var(--ui-azul-hover);
-    color:#fff;
+    color:#000;
   }
 }
 
