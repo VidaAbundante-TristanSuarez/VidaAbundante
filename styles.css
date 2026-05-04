@@ -10,7 +10,7 @@
 /* ================= COLOR UNIFICADO UI 🌈================= */
 :root {
   --ui-azul-claro: #e9f6ff;
-  --ui-azul-hover: #ffa79a; 
+  --ui-azul-hover: #a6d0ff; 
 }
 
 /* ================= ESTILOS GENERALES ================= */
@@ -248,7 +248,7 @@ body.oscuro #titulo{
 }
 
 .btn-version-inline.activo{
-  background: #1c6fcb;
+  background: #a6d0ff;
   color: #fff;
   border-color: #1c6fcb;
 }
@@ -460,7 +460,7 @@ body.oscuro .panel-tabs button.activo{
   flex-wrap:wrap;
 
   margin: 4px 0 6px;        /* 👈 menos aire */
-  background: #fffcd3;       /* 👈 barra */
+  background: #eafaff;       /* 👈 barra */
   padding: 6px 8px;
   border-radius: 12px;
   border: 1px solid rgba(0,0,0,.08);
