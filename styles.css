@@ -3320,4 +3320,21 @@ body.oscuro .panel-marcadores-bar .pm-left .muted{
   color:#fff;
 }
 
+/* ✅ Redondear contenedor del audio en Recursos/RH */
+#rhAudioBar{
+  border-radius: 16px !important;
+  overflow: hidden !important;
+  border-bottom: none !important;
+  margin: 8px 0 12px 0 !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,.10);
+}
+
+/* ✅ Que el reproductor no se salga de las esquinas */
+#rhAudioBar audio{
+  width: 100% !important;
+  display: block !important;
+  border-radius: 16px !important;
+  overflow: hidden !important;
+}
+
   </style> 
