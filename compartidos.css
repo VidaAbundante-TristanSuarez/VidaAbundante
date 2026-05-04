@@ -184,4 +184,11 @@ body.oscuro .comp-post {
   font-size: 16px;
 }
 
+/* ✅ CELULAR: achica apenas la imagen para que entren ambos audios */
+@media (max-width: 700px) {
+  #edViewer .ed-slide-img {
+    max-height: 95% !important;
+  }
+}
+
 </style> 
