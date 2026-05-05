@@ -3218,36 +3218,47 @@ window.editarMarcadorDesdeLista = (idMarcador) => {
   const m = (marcadores || {})[idMarcador];
   if (!m) return;
 
+  const versiculosM = Array.isArray(m.versiculos)
+    ? m.versiculos.map(Number).filter(n => !isNaN(n))
+    : [];
+
+  const esNotaLibre = versiculosM.length === 0;
+
   // ✅ marcamos “modo edición”
   window.__editMarcadorId = idMarcador;
   window.__editMarcadorBase = {
-  ...m,
-  libro: !((m.versiculos || []).length) ? "" : (m.libro || ""),
-  capitulo: !((m.versiculos || []).length) ? 0 : Number(m.capitulo || 0),
-  versiculos: !((m.versiculos || []).length) ? [] : (m.versiculos || []).map(Number),
-  ref: !((m.versiculos || []).length) ? "" : (m.ref || "")
-};
-  
-creandoNotaLibre = !((m.versiculos || []).length > 0);
-  // ✅ abrimos el formulario (sin depender de selección)
+    ...m,
+    libro: esNotaLibre ? "" : (m.libro || ""),
+    capitulo: esNotaLibre ? 0 : Number(m.capitulo || 0),
+    versiculos: esNotaLibre ? [] : versiculosM,
+    ref: esNotaLibre ? "" : (m.ref || "")
+  };
+
+  creandoNotaLibre = esNotaLibre;
+
+  // ✅ abrimos el formulario
   abrirFormNuevoMarcador();
 
+  // ✅ ahora sí buscamos los elementos del formulario
+  const inputTitulo = document.getElementById("marcadorTitulo");
+  const inputNota = document.getElementById("marcadorNota");
+  const inputColor = document.getElementById("marcadorColor");
+  const chkKeep = document.getElementById("marcadorKeep");
+  const txtKeep = document.getElementById("txtMarcadorKeep");
+
   // ✅ precargar campos
-document.getElementById("marcadorTitulo").value = m.titulo || "";
-document.getElementById("marcadorNota").value   = m.nota || "";
-document.getElementById("marcadorColor").value  = m.color || "#fff3b0";
+  if (inputTitulo) inputTitulo.value = m.titulo || "";
+  if (inputNota) inputNota.value = m.nota || "";
+  if (inputColor) inputColor.value = m.color || "#fff3b0";
 
-const chkKeep = document.getElementById("marcadorKeep");
-if (txtKeep) {
-  txtKeep.textContent = esNotaLibre ? "⭐ Destacar nota" : "📌 Mantener resaltado";
-}
-const esNotaLibre = !m.libro && !(m.versiculos || []).length;
+  if (chkKeep) chkKeep.checked = !!(m.destacada || m.keep);
 
-if (chkKeep) chkKeep.checked = !!(m.destacada || m.keep);
+  if (txtKeep) {
+    txtKeep.textContent = esNotaLibre ? "⭐ Destacar nota" : "📌 Mantener resaltado";
+  }
 
-if (lblKeep) {
-  lblKeep.innerHTML = esNotaLibre ? `⭐ Destacar nota` : `📌 Mantener resaltado`;
-}
+  // ✅ color visible + real
+  syncMarcadorColorUI(m.color || "#fff3b0");
 
   // ✅ refrescar preview para edición
   renderPreviewVersiculosMarcador();
