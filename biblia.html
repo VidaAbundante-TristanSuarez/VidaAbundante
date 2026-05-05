@@ -36,18 +36,10 @@
 <div id="menu">
 
   <!-- Menú sesión -->
-  <div id="menuSesionWrap">
-    <button type="button" id="btnMenuSesion" class="nav-btn menu-sesion-btn" onclick="toggleMenuSesion()">
-      <i class="fa-solid fa-ellipsis-vertical"></i>
-    </button>
-
-    <div id="menuSesionDropdown">
-      <button type="button" onclick="cerrarSesionDesdeMenu()">
-        <i class="fa-solid fa-right-from-bracket"></i>
-        <span>Cerrar sesión</span>
-      </button>
-    </div>
-  </div>
+<!-- Botón menú sesión -->
+<button type="button" id="btnMenuSesion" class="nav-btn menu-sesion-btn" onclick="toggleMenuSesion()">
+  <i class="fa-solid fa-ellipsis-vertical"></i>
+</button>
 
   <button class="nav-btn" onclick="irA('iglesia')">
     <i class="fa-solid fa-church"></i>
@@ -501,41 +493,39 @@
   <div id="compartidosApp"></div>
 </div>
 
-<!-- ================= MODAL LOGIN ================= -->
-<!-- Se muestra cuando el usuario no está logueado -->
-<div id="loginModal" class="modal-overlay login-modal" aria-hidden="true">
-  <div class="modal-card modal-card-sm login-card">
+<!-- ================= MODAL OPCIONES SESIÓN ================= -->
+<div id="loginModal" class="modal-overlay modal-opciones-sesion" aria-hidden="true">
+  <div class="modal-card modal-card-sm opciones-sesion-card">
 
-    <button type="button" class="login-cerrar" onclick="cerrarLogin()" aria-label="Cerrar">
+    <button type="button" class="opciones-sesion-x" onclick="cerrarLogin()" aria-label="Cerrar">
       <i class="fa-solid fa-xmark"></i>
     </button>
 
-    <div class="login-deco">
+    <div class="opciones-sesion-icono">
       <i class="fa-solid fa-dove"></i>
     </div>
 
-    <h3 class="login-title">
-      Bendecido hermano, bienvenido a Vida Abundante App
-    </h3>
+    <h3 id="opcionesSesionTitulo">Vida Abundante App</h3>
 
-    <p class="login-sub">
-      Puede acceder sin registros, y puede acceder a personalizaciones ingresando su cuenta de Google para guardar sus preferencias.
+    <p id="opcionesSesionTexto">
+      Puede ingresar con Google para guardar sus preferencias.
     </p>
 
-    <div class="login-actions">
-      <button type="button" class="login-google-btn" onclick="irALogin()">
+    <div class="opciones-sesion-actions">
+      <button type="button" id="btnOpcionLogin" onclick="window.location.href='login.html'">
         <i class="fa-brands fa-google"></i>
-        <span>Ingresar con Google</span>
+        <span>Ir a iniciar sesión</span>
       </button>
 
-      <button type="button" class="login-continuar-btn" onclick="cerrarLogin()">
-        Continuar sin iniciar sesión
+      <button type="button" id="btnOpcionLogout" onclick="cerrarSesionDesdeMenu()">
+        <i class="fa-solid fa-right-from-bracket"></i>
+        <span>Cerrar sesión</span>
       </button>
     </div>
 
   </div>
 </div>
-
+   
   <!-- ================= MODAL CREAR IMAGEN 🌅================= -->
 <div id="modalPersonalizar">
 
@@ -1319,7 +1309,8 @@
 
   </div>
 </div>
- 
+
+   
 <!-- ================= SCRIPT PRINCIPAL ================= -->
 <!-- ⚠️ biblia.js CONTROLA TODO -->
 
