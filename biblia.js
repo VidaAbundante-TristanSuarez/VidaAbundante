@@ -996,45 +996,62 @@ window.cambiarVersionBiblia = function(version) {
   if (version !== "RV1960" && version !== "NTV") return;
   if (versionActual === version) return;
 
-  // ✅ guardar el versículo visible ANTES de cambiar versión
+  // ✅ guardamos exactamente el versículo que se está viendo
   const ancla = obtenerAnclaScrollBiblia();
 
   const libroActual = libroSel?.value || "";
   const capituloActual = Number(capSel?.value || 1);
 
-  // ✅ evitar que el navegador intente acomodar el scroll solo
+  // ✅ evitamos que el navegador acomode el scroll solo
   const html = document.documentElement;
   const body = document.body;
 
   const oldHtmlOverflowAnchor = html.style.overflowAnchor;
   const oldBodyOverflowAnchor = body.style.overflowAnchor;
+  const oldHtmlScrollBehavior = html.style.scrollBehavior;
+  const oldBodyScrollBehavior = body.style.scrollBehavior;
 
   html.style.overflowAnchor = "none";
   body.style.overflowAnchor = "none";
+  html.style.scrollBehavior = "auto";
+  body.style.scrollBehavior = "auto";
 
+  // ✅ cambiamos versión
   versionActual = version;
   bibliaData = (version === "NTV") ? bibliaDataNTV : bibliaDataRV;
 
-  // reconstruir lista de libros
-  const libros = [...new Set(bibliaData.map(v => v.Libro))];
-  libroSel.innerHTML = "";
-  libros.forEach(l => (libroSel.innerHTML += `<option>${l}</option>`));
+  // ✅ actualizamos el título/botones RV1960 - NTV
+  actualizarTituloBiblia();
 
-  if (libroActual && libros.includes(libroActual)) {
-    libroSel.value = libroActual;
-  }
+  // ✅ NO usamos cargarCapitulos()
+  // ✅ NO usamos mostrarTexto()
+  // Solo cambiamos el texto de los versículos ya pintados.
+  const versosNuevoCapitulo = bibliaData.filter(v =>
+    v.Libro === libroActual &&
+    Number(v.Capitulo) === capituloActual
+  );
 
-  // ✅ conservar mismo capítulo, sin mandar arriba
-  cargarCapitulos({
-    capituloPreferido: capituloActual,
-    irArriba: false,
-    guardar: false
+  const porNumero = new Map(
+    versosNuevoCapitulo.map(v => [Number(v.Versiculo), v])
+  );
+
+  document.querySelectorAll("#texto .versiculo").forEach(div => {
+    const numEl = div.querySelector(".num");
+    const txtEl = div.querySelector(".txt");
+
+    if (!numEl || !txtEl) return;
+
+    const numero = Number(numEl.textContent.trim());
+    const versoNuevo = porNumero.get(numero);
+
+    if (!versoNuevo) return;
+
+    txtEl.textContent = getTextoVersiculo(versoNuevo);
   });
 
-  // ✅ restaurar ANTES de que se note visualmente el salto
+  // ✅ restauramos el mismo versículo en la misma posición
   restaurarAnclaScrollBiblia(ancla);
 
-  // ✅ segunda pasada por si cambió alto de textos/fuentes
   requestAnimationFrame(() => {
     restaurarAnclaScrollBiblia(ancla);
 
@@ -1044,6 +1061,8 @@ window.cambiarVersionBiblia = function(version) {
 
       html.style.overflowAnchor = oldHtmlOverflowAnchor;
       body.style.overflowAnchor = oldBodyOverflowAnchor;
+      html.style.scrollBehavior = oldHtmlScrollBehavior;
+      body.style.scrollBehavior = oldBodyScrollBehavior;
     }, 0);
   });
 
