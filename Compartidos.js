@@ -1,213 +1,115 @@
-import {
-  ref,
-  onValue
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import {ref,onValue} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 /* ================= COMPARTIDOS - FEED ================= */
 
-let compartidosIniciado = false;
-let compartidosEscuchaActiva = false;
-let compartidosStatsEscuchaActiva = false;
-let compartidosGuardadosEscuchaActiva = false;
-let compartidosGuardadosUid = null;
+let compartidosIniciado = false;let compartidosEscuchaActiva = false;let compartidosStatsEscuchaActiva = false;let compartidosGuardadosEscuchaActiva = false;let compartidosGuardadosUid = null;
 
-let compartidosCache = [];
-let compartidosStatsCache = {};
-let compartidosGuardadosCache = {};
+let compartidosCache = [];let compartidosStatsCache = {};let compartidosGuardadosCache = {};
 
-let compartidosDescargadosCache = {};
-let compartidosDescargadosEscuchaActiva = false;
-let compartidosDescargadosUid = null;
+let compartidosDescargadosCache = {};let compartidosDescargadosEscuchaActiva = false;let compartidosDescargadosUid = null;
 
-function comp$(id) {
-  return document.getElementById(id);
+function comp$(id) {return document.getElementById(id);}
+
+function compDB() {return window.__FB?.db || null;}
+
+function compUidActual() {return window.__UID || window.__FB?.auth?.currentUser?.uid || null;}
+
+function compEscape(v) {return String(v ?? "").replace(/&/g, "&").replace(/</g, "<").replace(/>/g, ">").replace(/"/g, """);}
+
+async function compEsperarDB(intentos = 30) {for (let i = 0; i < intentos; i++) {if (compDB()) return compDB();await new Promise(r => setTimeout(r, 250));}return null;}
+
+window.mostrarCompartidos = async () => {let cont = comp$("compartidosApp");
+
+if (!cont) {const sec = comp$("seccion-compartidos");if (!sec) return;
+
+cont = document.createElement("div");
+cont.id = "compartidosApp";
+sec.appendChild(cont);
+
 }
 
-function compDB() {
-  return window.__FB?.db || null;
-}
+const db = await compEsperarDB();
 
-function compUidActual() {
-  return window.__UID || window.__FB?.auth?.currentUser?.uid || null;
-}
-
-function compEscape(v) {
-  return String(v ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
-
-async function compEsperarDB(intentos = 30) {
-  for (let i = 0; i < intentos; i++) {
-    if (compDB()) return compDB();
-    await new Promise(r => setTimeout(r, 250));
-  }
-  return null;
-}
-
-window.mostrarCompartidos = async () => {
-  let cont = comp$("compartidosApp");
-
-  if (!cont) {
-    const sec = comp$("seccion-compartidos");
-    if (!sec) return;
-
-    cont = document.createElement("div");
-    cont.id = "compartidosApp";
-    sec.appendChild(cont);
-  }
-
-  const db = await compEsperarDB();
-
-  if (!db) {
-    cont.innerHTML = `
-      <div style="padding:20px; text-align:center;">
+if (!db) {cont.innerHTML =       <div style="padding:20px; text-align:center;">
         Firebase todavía no está listo.
       </div>
-    `;
-    return;
-  }
+   ;return;}
 
-  if (!compartidosIniciado) {
-    cont.innerHTML = `
-      <div id="compFeedWrap">
+if (!compartidosIniciado) {cont.innerHTML =       <div id="compFeedWrap">
         <div id="compLista"></div>
       </div>
-    `;
+   ;
 
-    compartidosIniciado = true;
-  }
+compartidosIniciado = true;
 
-iniciarEscuchaCompartidos();
-iniciarEscuchaCompartidosStats();
-iniciarEscuchaCompartidosGuardados();
-iniciarEscuchaCompartidosDescargados();
-};
-
-function iniciarEscuchaCompartidos() {
-  if (compartidosEscuchaActiva) return;
-
-  const db = compDB();
-  if (!db) return;
-
-  onValue(ref(db, "compartidos"), (snap) => {
-    const val = snap.val() || {};
-
-    compartidosCache = Object.entries(val).map(([id, item]) => ({
-      id,
-      ...(item || {})
-    }));
-
-    compartidosCache.sort((a, b) => Number(b.ts || 0) - Number(a.ts || 0));
-
-    renderCompartidos();
-  }, (err) => {
-    console.error("Error leyendo compartidos:", err);
-  });
-
-  compartidosEscuchaActiva = true;
 }
 
-function iniciarEscuchaCompartidosStats() {
-  if (compartidosStatsEscuchaActiva) return;
+iniciarEscuchaCompartidos();iniciarEscuchaCompartidosStats();iniciarEscuchaCompartidosGuardados();iniciarEscuchaCompartidosDescargados();};
 
-  const db = compDB();
-  if (!db) return;
+function iniciarEscuchaCompartidos() {if (compartidosEscuchaActiva) return;
 
-  onValue(ref(db, "edicionesStats"), (snap) => {
-    compartidosStatsCache = snap.val() || {};
-    window.__EDICIONES_STATS = compartidosStatsCache;
-    renderCompartidos();
-  });
+const db = compDB();if (!db) return;
 
-  compartidosStatsEscuchaActiva = true;
-}
+onValue(ref(db, "compartidos"), (snap) => {const val = snap.val() || {};
 
-function iniciarEscuchaCompartidosGuardados() {
-  const uid = compUidActual();
+compartidosCache = Object.entries(val).map(([id, item]) => ({
+  id,
+  ...(item || {})
+}));
 
-  if (!uid) {
-    compartidosGuardadosCache = {};
-    compartidosGuardadosUid = null;
-    compartidosGuardadosEscuchaActiva = false;
-    renderCompartidos();
-    return;
-  }
+compartidosCache.sort((a, b) => Number(b.ts || 0) - Number(a.ts || 0));
 
-  if (compartidosGuardadosEscuchaActiva && compartidosGuardadosUid === uid) return;
+renderCompartidos();
 
-  const db = compDB();
-  if (!db) return;
+}, (err) => {console.error("Error leyendo compartidos:", err);});
 
-  compartidosGuardadosUid = uid;
+compartidosEscuchaActiva = true;}
 
-  onValue(ref(db, `panelEdiciones/${uid}`), (snap) => {
-    compartidosGuardadosCache = snap.val() || {};
-    window.__EDICIONES_GUARDADAS = compartidosGuardadosCache;
-    renderCompartidos();
-  });
+function iniciarEscuchaCompartidosStats() {if (compartidosStatsEscuchaActiva) return;
 
-  compartidosGuardadosEscuchaActiva = true;
-}
+const db = compDB();if (!db) return;
 
-function compStats(edicionId) {
-  const s = compartidosStatsCache?.[edicionId] || window.__EDICIONES_STATS?.[edicionId] || {};
-  return {
-    guardados: Number(s.guardados || 0),
-    descargas: Number(s.descargas || 0),
-    compartidos: Number(s.compartidos || 0)
-  };
-}
+onValue(ref(db, "edicionesStats"), (snap) => {compartidosStatsCache = snap.val() || {};window.__EDICIONES_STATS = compartidosStatsCache;renderCompartidos();});
 
-function iniciarEscuchaCompartidosDescargados() {
-  const uid = compUidActual();
+compartidosStatsEscuchaActiva = true;}
 
-  if (!uid) {
-    compartidosDescargadosCache = {};
-    compartidosDescargadosUid = null;
-    compartidosDescargadosEscuchaActiva = false;
-    renderCompartidos();
-    return;
-  }
+function iniciarEscuchaCompartidosGuardados() {const uid = compUidActual();
 
-  if (compartidosDescargadosEscuchaActiva && compartidosDescargadosUid === uid) return;
+if (!uid) {compartidosGuardadosCache = {};compartidosGuardadosUid = null;compartidosGuardadosEscuchaActiva = false;renderCompartidos();return;}
 
-  const db = compDB();
-  if (!db) return;
+if (compartidosGuardadosEscuchaActiva && compartidosGuardadosUid === uid) return;
 
-  compartidosDescargadosUid = uid;
+const db = compDB();if (!db) return;
 
-  onValue(ref(db, `panelDescargasEdiciones/${uid}`), (snap) => {
-    compartidosDescargadosCache = snap.val() || {};
-    window.__EDICIONES_DESCARGADAS = compartidosDescargadosCache;
-    renderCompartidos();
-  });
+compartidosGuardadosUid = uid;
 
-  compartidosDescargadosEscuchaActiva = true;
-}
+onValue(ref(db, panelEdiciones/${uid}), (snap) => {compartidosGuardadosCache = snap.val() || {};window.__EDICIONES_GUARDADAS = compartidosGuardadosCache;renderCompartidos();});
 
-function compEstaDescargada(edicionId) {
-  const local = localStorage.getItem(`edicion_descargada_${edicionId}`) === "1";
+compartidosGuardadosEscuchaActiva = true;}
 
-  return !!(
-    local ||
-    compartidosDescargadosCache?.[edicionId] ||
-    window.__EDICIONES_DESCARGADAS?.[edicionId]
-  );
-}
+function compStats(edicionId) {const s = compartidosStatsCache?.[edicionId] || window.__EDICIONES_STATS?.[edicionId] || {};return {guardados: Number(s.guardados || 0),descargas: Number(s.descargas || 0),compartidos: Number(s.compartidos || 0)};}
 
-function compEstaGuardada(edicionId) {
-  return !!(
-    compartidosGuardadosCache?.[edicionId] ||
-    window.__EDICIONES_GUARDADAS?.[edicionId]
-  );
-}
+function iniciarEscuchaCompartidosDescargados() {const uid = compUidActual();
 
-function compActionButton({ title, onclick, icon, count = 0, saved = false }) {
-  return `
-    <button
+if (!uid) {compartidosDescargadosCache = {};compartidosDescargadosUid = null;compartidosDescargadosEscuchaActiva = false;renderCompartidos();return;}
+
+if (compartidosDescargadosEscuchaActiva && compartidosDescargadosUid === uid) return;
+
+const db = compDB();if (!db) return;
+
+compartidosDescargadosUid = uid;
+
+onValue(ref(db, panelDescargasEdiciones/${uid}), (snap) => {compartidosDescargadosCache = snap.val() || {};window.__EDICIONES_DESCARGADAS = compartidosDescargadosCache;renderCompartidos();});
+
+compartidosDescargadosEscuchaActiva = true;}
+
+function compEstaDescargada(edicionId) {const local = localStorage.getItem(edicion_descargada_${edicionId}) === "1";
+
+return !!(local ||compartidosDescargadosCache?.[edicionId] ||window.__EDICIONES_DESCARGADAS?.[edicionId]);}
+
+function compEstaGuardada(edicionId) {return !!(compartidosGuardadosCache?.[edicionId] ||window.__EDICIONES_GUARDADAS?.[edicionId]);}
+
+function compActionButton({ title, onclick, icon, count = 0, saved = false }) {return     <button
       type="button"
       class="${saved ? "comp-action-saved" : ""}"
       onclick="${onclick}"
@@ -218,139 +120,85 @@ function compActionButton({ title, onclick, icon, count = 0, saved = false }) {
         <span class="comp-action-count">${Number(count || 0)}</span>
       </span>
     </button>
-  `;
-}
+ ;}
 
-window.renderCompartidos = function renderCompartidos() {
-  const lista = comp$("compLista");
-  if (!lista) return;
+window.renderCompartidos = function renderCompartidos() {const lista = comp$("compLista");if (!lista) return;
 
- const items = compartidosCache.filter(x => x.tipo === "edicion" || x.tipo === "rh");
+const items = compartidosCache.filter(x => x.tipo === "edicion" || x.tipo === "rh");
 
-  if (!items.length) {
-    lista.innerHTML = `
-      <div id="compVacio">
+if (!items.length) {lista.innerHTML =       <div id="compVacio">
         Todavía no hay publicaciones compartidas.
       </div>
-    `;
-    return;
-  }
+   ;return;}
 
-  lista.innerHTML = items.map(item => {
-const titulo = compEscape(item.titulo || "Compartido");
+lista.innerHTML = items.map(item => {const titulo = compEscape(item.titulo || "Compartido");
 
-if (item.tipo === "rh") {
-  return `
-    <article class="comp-post">
-      <div class="comp-post-head">
-        <div class="comp-avatar">
-          <i class="fa-solid fa-shield-heart"></i>
-        </div>
+if (item.tipo === "rh") {return `
 
-        <div>
-          <div class="comp-post-title">${titulo}</div>
-          <div class="comp-post-meta">Recurso RH compartido</div>
-        </div>
+    <div>
+      <div class="comp-post-title">${titulo}</div>
+      <div class="comp-post-meta">Recurso RH compartido</div>
+    </div>
+  </div>
+
+  <div class="comp-post-rh" onclick="abrirRHCompartido(${Number(item.temaIndex || 0)})" role="button">
+    <i class="fa-solid fa-file-lines"></i>
+    <span>Abrir recurso</span>
+  </div>
+
+  <div class="comp-post-actions">
+    <button type="button" onclick="guardarRHEnMiPanel(${Number(item.temaIndex || 0)})" title="Guardar en Mi Panel">
+      <i class="fa-solid fa-heart-circle-plus"></i>
+    </button>
+
+    <button type="button" onclick="descargarRHPDF(${Number(item.temaIndex || 0)})" title="Descargar PDF">
+      <i class="fa-solid fa-file-pdf"></i>
+    </button>
+  </div>
+</article>
+
+`;}
+
+const portada = item.portadaUrl || "";const edicionId = item.edicionId;const st = compStats(edicionId);const guardada = compEstaGuardada(edicionId);
+
+return `
+  <article class="comp-post">
+    <div class="comp-post-head">
+      <div class="comp-avatar">
+        <i class="fa-solid fa-icons"></i>
       </div>
 
-      <div class="comp-post-rh" onclick="abrirRHCompartido(${Number(item.temaIndex || 0)})" role="button">
-        <i class="fa-solid fa-file-lines"></i>
-        <span>Abrir recurso</span>
+      <div>
+        <div class="comp-post-title">${titulo}</div>
+        <div class="comp-post-meta">Edición compartida</div>
       </div>
+    </div>
 
-      <div class="comp-post-actions">
-        <button type="button" onclick="guardarRHEnMiPanel(${Number(item.temaIndex || 0)})" title="Guardar en Mi Panel">
-          <i class="fa-solid fa-heart-circle-plus"></i>
-        </button>
+    <div class="comp-post-media" onclick="abrirPresentacionEdicion('${edicionId}')" role="button" title="Abrir edición">
+      ${portada ? `<img src="${compEscape(portada)}" alt="${titulo}" loading="lazy">` : `<span>Sin portada</span>`}
+    </div>
 
-        <button type="button" onclick="descargarRHPDF(${Number(item.temaIndex || 0)})" title="Descargar PDF">
-          <i class="fa-solid fa-file-pdf"></i>
-        </button>
-      </div>
-    </article>
-  `;
-}
+    <div class="comp-post-actions">
+      ${compActionButton({
+        title: guardada ? "Guardado en Mi Panel" : "Guardar en Mi Panel",
+        onclick: `guardarEdicionEnMiPanel('${edicionId}')`,
+        icon: guardada ? "fa-solid fa-heart-circle-check" : "fa-solid fa-heart-circle-plus",
+        count: st.guardados,
+        saved: guardada
+      })}
 
-const portada = item.portadaUrl || "";
-const edicionId = item.edicionId;
-const st = compStats(edicionId);
-const guardada = compEstaGuardada(edicionId);
+${compActionButton({title: compEstaDescargada(edicionId) ? "PDF descargado" : "Descargar PDF",onclick: descargarEdicionPDF('${edicionId}'),icon: compEstaDescargada(edicionId) ? "fa-solid fa-file-circle-check" : "fa-solid fa-file-pdf",count: st.descargas,saved: compEstaDescargada(edicionId)})}
 
-    return `
-      <article class="comp-post">
-        <div class="comp-post-head">
-          <div class="comp-avatar">
-            <i class="fa-solid fa-icons"></i>
-          </div>
+      ${compActionButton({
+        title: "Compartir",
+        onclick: `compartirEdicion('${edicionId}', 'redes')`,
+        icon: "fa-solid fa-share-nodes",
+        count: st.compartidos
+      })}
+    </div>
+  </article>
+`;
 
-          <div>
-            <div class="comp-post-title">${titulo}</div>
-            <div class="comp-post-meta">Edición compartida</div>
-          </div>
-        </div>
+}).join("");};
 
-        <div class="comp-post-media" onclick="abrirPresentacionEdicion('${edicionId}')" role="button" title="Abrir edición">
-          ${portada ? `<img src="${compEscape(portada)}" alt="${titulo}" loading="lazy">` : `<span>Sin portada</span>`}
-        </div>
-
-        <div class="comp-post-actions">
-          ${compActionButton({
-            title: guardada ? "Guardado en Mi Panel" : "Guardar en Mi Panel",
-            onclick: `guardarEdicionEnMiPanel('${edicionId}')`,
-            icon: guardada ? "fa-solid fa-heart-circle-check" : "fa-solid fa-heart-circle-plus",
-            count: st.guardados,
-            saved: guardada
-          })}
-
-${compActionButton({
-  title: compEstaDescargada(edicionId) ? "PDF descargado" : "Descargar PDF",
-  onclick: `descargarEdicionPDF('${edicionId}')`,
-  icon: compEstaDescargada(edicionId) ? "fa-solid fa-file-circle-check" : "fa-solid fa-file-pdf",
-  count: st.descargas,
-  saved: compEstaDescargada(edicionId)
-})}
-
-          ${compActionButton({
-            title: "Compartir",
-            onclick: `compartirEdicion('${edicionId}', 'redes')`,
-            icon: "fa-solid fa-share-nodes",
-            count: st.compartidos
-          })}
-        </div>
-      </article>
-    `;
-  }).join("");
-};
-
-(function abrirEdicionDirectaSiVienePorLink() {
-  const params = new URLSearchParams(window.location.search);
-  const esEdicionDirecta = params.get("ver") === "edicion";
-  const edicionId = params.get("id");
-
-  if (!esEdicionDirecta || !edicionId) {
-    setTimeout(() => {
-      mostrarCompartidos();
-    }, 1200);
-
-    return;
-  }
-
-  document.body.classList.add("edicion-directa");
-
-  const intentarAbrir = async () => {
-    await compEsperarDB();
-
-    for (let i = 0; i < 60; i++) {
-      if (typeof window.abrirPresentacionEdicion === "function") {
-        window.abrirPresentacionEdicion(edicionId);
-        return;
-      }
-
-      await new Promise(r => setTimeout(r, 200));
-    }
-
-    console.error("No se encontró abrirPresentacionEdicion para abrir el link directo.");
-  };
-
-  setTimeout(intentarAbrir, 300);
-})();
+setTimeout(() => {mostrarCompartidos();}, 1200);
