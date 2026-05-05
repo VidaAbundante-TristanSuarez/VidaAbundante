@@ -184,72 +184,77 @@ body.oscuro .comp-post {
   font-size: 16px;
 }
 
-/* ✅ CELULAR: visor de edición más compacto y con scroll */
+/* ✅ CELULAR: visor de edición abierto, menos aire y con scroll */
 @media (max-width: 700px) {
 
   #edViewer.ed-open {
     overflow-y: auto !important;
     overflow-x: hidden !important;
     -webkit-overflow-scrolling: touch;
-    padding: 6px 8px 14px !important;
+    padding: 4px 8px 10px !important;
   }
 
-  /* ✅ reduce espacio entre título e imagen */
+  /* ✅ acerca el título a la imagen */
   #edViewer .ed-view-top {
-    padding: 6px 8px !important;
-    margin: 0 0 4px !important;
-    gap: 6px !important;
+    padding: 4px 8px 2px !important;
+    margin: 0 !important;
+    gap: 4px !important;
   }
 
   #edViewer .ed-view-title {
     margin: 0 !important;
-    line-height: 1.1 !important;
+    padding: 0 !important;
+    line-height: 1.05 !important;
   }
 
   #edViewer .ed-slides {
-    gap: 8px !important;
+    gap: 0 !important;
+    margin-top: 0 !important;
   }
 
   #edViewer .ed-slide {
-    padding: 0 0 12px !important;
+    padding: 0 0 8px !important;
     min-height: auto !important;
   }
 
   #edViewer .ed-slide-inner {
-    gap: 6px !important;
+    gap: 2px !important;
     padding: 0 !important;
+    margin: 0 !important;
     min-height: auto !important;
     height: auto !important;
   }
 
   #edViewer .ed-slide-img-wrap {
     margin: 0 !important;
+    padding: 0 !important;
   }
 
+  /* ✅ NO achicar la imagen */
   #edViewer .ed-slide-img {
-    max-height: 48vh !important;
-    max-height: 48dvh !important;
+    max-height: 72vh !important;
+    max-height: 72dvh !important;
     width: auto !important;
     max-width: 100% !important;
     object-fit: contain !important;
   }
 
-  /* ✅ reduce espacio entre imagen y audio español */
+  /* ✅ acerca el audio a la imagen */
   #edViewer .ed-audios {
-    margin-top: 4px !important;
-    gap: 6px !important;
+    margin-top: 2px !important;
+    gap: 4px !important;
     padding-bottom: 12px !important;
   }
 
   #edViewer .ed-audio-box {
     margin: 0 !important;
-    padding: 6px 8px !important;
+    padding: 5px 8px !important;
   }
 
   #edViewer .ed-audio-label {
-    margin-bottom: 3px !important;
+    margin-bottom: 2px !important;
     font-size: 12px !important;
-    line-height: 1.1 !important;
+    line-height: 1.05 !important;
   }
 
   #edViewer audio {
