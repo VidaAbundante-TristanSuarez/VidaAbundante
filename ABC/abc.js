@@ -1213,21 +1213,30 @@ function abcAbrirModalBibliaParaNota() {
  titulo.value = "";
 titulo.placeholder = "Título (opcional)";
   nota.value = "";
+if (typeof window.syncMarcadorColorUI === "function") {
+  window.syncMarcadorColorUI("#fff3b0");
+} else {
   color.value = "#fff3b0";
+}
   keep.checked = true;
 
   window.setMarcadorCtx("abc", {
     abcEditId: window.__abcEditMarcadorId || null
   });
 
-  // ✅ CLAVE: abrir de verdad
   modal.style.display = "flex";
-  modal.classList.add("abierto");
-  modal.setAttribute("aria-hidden", "false");
+modal.classList.add("abierto");
+modal.setAttribute("aria-hidden", "false");
 
-  abcRenderPreviewBloquesMarcador();
-}
+// ✅ refuerzo visual: ABC nuevo SIEMPRE abre amarillo
+requestAnimationFrame(() => {
+  if (typeof window.syncMarcadorColorUI === "function") {
+    window.syncMarcadorColorUI("#fff3b0");
+  }
+});
 
+abcRenderPreviewBloquesMarcador();
+  
 function abcRenderPreviewBloquesMarcador() {
   const box = document.getElementById("previewVersiculosMarcador");
   if (!box) return;
@@ -1518,7 +1527,13 @@ window.abcEditarNota = async (id) => {
   const keep  = document.getElementById("marcadorKeep");
   if (titulo) titulo.value = m.titulo || "";
   if (nota)   nota.value = m.nota || "";
-  if (color)  color.value = m.color || "#fff3b0";
+  const colorEdit = m.color || "#fff3b0";
+
+if (typeof window.syncMarcadorColorUI === "function") {
+  window.syncMarcadorColorUI(colorEdit);
+} else if (color) {
+  color.value = colorEdit;
+}
   if (keep)   keep.checked = !!m.keep;
   abcRenderPreviewBloquesMarcador();
 };
