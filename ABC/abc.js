@@ -1200,6 +1200,7 @@ function abcAbrirModalBibliaParaNota() {
   const color = document.getElementById("marcadorColor");
   const keep  = document.getElementById("marcadorKeep");
   const btnGuardar = document.getElementById("btnGuardarNuevoMarcador");
+  const esEdicionABC = !!window.__abcEditMarcadorId;
 
   if (!modal || !lista || !form || !info || !titulo || !nota || !color || !keep || !btnGuardar) {
     alert("Falta el modal de Marcadores de Biblia (modalMarcadores) o algún id interno.");
@@ -1212,15 +1213,22 @@ function abcAbrirModalBibliaParaNota() {
   const temaTitulo = ABC_TEMAS?.[abcIndex]?.titulo || `ABC ${abcIndex}`;
   info.textContent = `ABC · Tema: ${temaTitulo} · Bloques: ${abcSeleccionados.size}`;
 
- titulo.value = "";
 titulo.placeholder = "Título (opcional)";
+
+// ✅ SOLO nota nueva abre amarillo.
+// ✅ Si estoy editando, NO piso el color viejo.
+if (!esEdicionABC) {
+  titulo.value = "";
   nota.value = "";
-if (typeof window.syncMarcadorColorUI === "function") {
-  window.syncMarcadorColorUI("#fff3b0");
-} else {
-  color.value = "#fff3b0";
-}
+
+  if (typeof window.syncMarcadorColorUI === "function") {
+    window.syncMarcadorColorUI("#fff3b0");
+  } else {
+    color.value = "#fff3b0";
+  }
+
   keep.checked = true;
+}
 
   window.setMarcadorCtx("abc", {
     abcEditId: window.__abcEditMarcadorId || null
@@ -1230,12 +1238,15 @@ if (typeof window.syncMarcadorColorUI === "function") {
 modal.classList.add("abierto");
 modal.setAttribute("aria-hidden", "false");
 
-// ✅ refuerzo visual: ABC nuevo SIEMPRE abre amarillo
-requestAnimationFrame(() => {
-  if (typeof window.syncMarcadorColorUI === "function") {
-    window.syncMarcadorColorUI("#fff3b0");
-  }
-});
+// ✅ refuerzo visual SOLO para nota nueva.
+// En edición NO tocar, porque pisa el color real de la nota vieja.
+if (!esEdicionABC) {
+  requestAnimationFrame(() => {
+    if (typeof window.syncMarcadorColorUI === "function") {
+      window.syncMarcadorColorUI("#fff3b0");
+    }
+  });
+}
 
 abcRenderPreviewBloquesMarcador();
   }
@@ -1537,6 +1548,15 @@ if (typeof window.syncMarcadorColorUI === "function") {
 } else if (color) {
   color.value = colorEdit;
 }
+
+  requestAnimationFrame(() => {
+  if (typeof window.syncMarcadorColorUI === "function") {
+    window.syncMarcadorColorUI(colorEdit);
+  } else if (color) {
+    color.value = colorEdit;
+  }
+});
+  
   if (keep)   keep.checked = !!m.keep;
   abcRenderPreviewBloquesMarcador();
 };
