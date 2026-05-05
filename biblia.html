@@ -35,11 +35,25 @@
   <!-- Menú principal -->
 <div id="menu">
 
+  <!-- Menú sesión -->
+  <div id="menuSesionWrap">
+    <button type="button" id="btnMenuSesion" class="nav-btn menu-sesion-btn" onclick="toggleMenuSesion()">
+      <i class="fa-solid fa-ellipsis-vertical"></i>
+    </button>
+
+    <div id="menuSesionDropdown">
+      <button type="button" onclick="cerrarSesionDesdeMenu()">
+        <i class="fa-solid fa-right-from-bracket"></i>
+        <span>Cerrar sesión</span>
+      </button>
+    </div>
+  </div>
+
   <button class="nav-btn" onclick="irA('iglesia')">
     <i class="fa-solid fa-church"></i>
     <span class="text">Iglesia</span>
   </button>
- 
+
  <button class="nav-btn" onclick="irA('biblia')">
     <i class="fa-solid fa-book-bible"></i>
     <span class="text">Biblia</span>
