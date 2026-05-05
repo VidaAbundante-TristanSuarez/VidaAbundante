@@ -30,6 +30,47 @@ const R2_DOWNLOAD_URL = "https://us-central1-vidaabundante-f118a.cloudfunctions.
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+
+// ================= MENÚ SESIÓN (...) =================
+
+window.toggleMenuSesion = function(){
+  const user = auth.currentUser;
+
+  // Si NO está logueado, va directo al login
+  if (!user) {
+    window.location.href = "login.html";
+    return;
+  }
+
+  // Si está logueado, abre/cierra el menú
+  const menu = document.getElementById("menuSesionDropdown");
+  if (!menu) return;
+
+  menu.classList.toggle("abierto");
+};
+
+window.cerrarSesionDesdeMenu = async function(){
+  try {
+    await signOut(auth);
+    window.location.href = "login.html";
+  } catch (error) {
+    console.error("Error cerrando sesión:", error);
+    alert("No se pudo cerrar sesión. Intentá nuevamente.");
+  }
+};
+
+// Cierra el menú si tocás afuera
+document.addEventListener("click", function(e){
+  const wrap = document.getElementById("menuSesionWrap");
+  const menu = document.getElementById("menuSesionDropdown");
+
+  if (!wrap || !menu) return;
+
+  if (!wrap.contains(e.target)) {
+    menu.classList.remove("abierto");
+  }
+});
+
 const db = getDatabase(app);
 
 window.__FB = { db };
