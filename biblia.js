@@ -883,8 +883,94 @@ function actualizarTituloBiblia() {
   }
 }
 
+// ================= ⭐ ANCLA EXACTA AL CAMBIAR VERSION =================
+function obtenerAnclaScrollBiblia() {
+  const barra = document.getElementById("barraTituloBiblia");
+  const barraH = barra ? barra.offsetHeight : 0;
+
+  // punto de referencia: apenas debajo de la barra sticky
+  const yReferencia = barraH + 8;
+
+  const versos = Array.from(document.querySelectorAll("#texto .versiculo"));
+
+  let elegido = null;
+
+  for (const el of versos) {
+    const rect = el.getBoundingClientRect();
+
+    // primer versículo que toca o pasa el punto visible
+    if (rect.bottom >= yReferencia) {
+      elegido = el;
+      break;
+    }
+  }
+
+  if (!elegido) {
+    elegido = versos[0] || null;
+  }
+
+  if (!elegido) {
+    return {
+      id: null,
+      offset: 0,
+      scroll: window.scrollY || document.documentElement.scrollTop || 0
+    };
+  }
+
+  const rect = elegido.getBoundingClientRect();
+
+  return {
+    id: elegido.dataset.id || null,
+    offset: rect.top - yReferencia,
+    scroll: window.scrollY || document.documentElement.scrollTop || 0
+  };
+}
+
+function restaurarAnclaScrollBiblia(ancla) {
+  if (!ancla) return;
+
+  const barra = document.getElementById("barraTituloBiblia");
+  const barraH = barra ? barra.offsetHeight : 0;
+  const yReferencia = barraH + 8;
+
+  if (!ancla.id) {
+    window.scrollTo({
+      top: ancla.scroll || 0,
+      behavior: "auto"
+    });
+    return;
+  }
+
+  const el = document.querySelector(`#texto .versiculo[data-id="${CSS.escape(ancla.id)}"]`);
+
+  if (!el) {
+    window.scrollTo({
+      top: ancla.scroll || 0,
+      behavior: "auto"
+    });
+    return;
+  }
+
+  const rect = el.getBoundingClientRect();
+
+  const destino =
+    (window.scrollY || document.documentElement.scrollTop || 0) +
+    rect.top -
+    yReferencia -
+    (ancla.offset || 0);
+
+  window.scrollTo({
+    top: Math.max(0, destino),
+    behavior: "auto"
+  });
+}
+
 window.cambiarVersionBiblia = function(version) {
   if (version !== "RV1960" && version !== "NTV") return;
+  if (versionActual === version) return;
+
+  // ✅ guardar el versículo exacto visible ANTES de repintar
+  const ancla = obtenerAnclaScrollBiblia();
 
   const libroActual = libroSel?.value || "";
   const capituloActual = Number(capSel?.value || 1);
@@ -901,17 +987,38 @@ window.cambiarVersionBiblia = function(version) {
     libroSel.value = libroActual;
   }
 
-  // conservar mismo capítulo
+  // conservar mismo capítulo, sin mandar arriba
   cargarCapitulos({
     capituloPreferido: capituloActual,
     irArriba: false,
-    guardar: true
+    guardar: false
   });
 
-  // si está en modo imagen, mantener preview y selección
+  // ✅ restaurar exactamente el mismo versículo visible
+  requestAnimationFrame(() => {
+    restaurarAnclaScrollBiblia(ancla);
+
+    // ✅ guardar estado después de restaurar el scroll real
+    setTimeout(() => {
+      guardarEstadoBiblia();
+    }, 0);
+  });
+
+  // ✅ si está en modo imagen, mantener preview y selección
   if (modoImagen) {
     userSetFontSize = false;
-    actualizarPreview();
+
+    requestAnimationFrame(() => {
+      actualizarPreview();
+    });
+  }
+
+  // ✅ si está en modo marcador, mantener selección y botón guardar
+  if (modoMarcador) {
+    requestAnimationFrame(() => {
+      refrescarBotonGuardarMarcador?.();
+      renderPreviewVersiculosMarcador?.();
+    });
   }
 };
 
@@ -1387,17 +1494,18 @@ function pintarVersiculo(v) {
 
   const marcadorKeepDelVersiculo = obtenerMarcadorKeepParaVersiculo(v.Libro, v.Capitulo, v.Versiculo);
 
-  const aplicado = (
-    !!ultimoMarcadorAplicado &&
-    ultimoMarcadorAplicado.libro === v.Libro &&
-    Number(ultimoMarcadorAplicado.capitulo) === Number(v.Capitulo) &&
-    (ultimoMarcadorAplicado.versiculos || []).includes(Number(v.Versiculo))
-  ) || !!marcadorKeepDelVersiculo;
+const coincideUltimoMarcador = (
+  !!ultimoMarcadorAplicado &&
+  ultimoMarcadorAplicado.libro === v.Libro &&
+  Number(ultimoMarcadorAplicado.capitulo) === Number(v.Capitulo) &&
+  (ultimoMarcadorAplicado.versiculos || []).map(Number).includes(Number(v.Versiculo))
+);
 
-  const colorAplicadoKeep =
-    ultimoMarcadorAplicado?.color ||
-    marcadorKeepDelVersiculo?.color ||
-    null;
+const aplicado = coincideUltimoMarcador || !!marcadorKeepDelVersiculo;
+
+const colorAplicadoKeep = coincideUltimoMarcador
+  ? (ultimoMarcadorAplicado?.color || null)
+  : (marcadorKeepDelVersiculo?.color || null);
 
   const div = document.createElement("div");
   div.className = "versiculo";
