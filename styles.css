@@ -3320,4 +3320,215 @@ body.oscuro .panel-marcadores-bar .pm-left .muted{
   color:#fff;
 }
 
+/* ================= MODAL LOGIN BELLO ================= */
+
+#loginModal.login-modal{
+  background: rgba(0,0,0,.42);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+#loginModal .login-card{
+  position: relative;
+  width: min(92vw, 390px);
+  max-width: 390px;
+  padding: 26px 22px 22px;
+  border-radius: 28px;
+
+  background:
+    radial-gradient(circle at top left, rgba(166,208,255,.55), transparent 42%),
+    radial-gradient(circle at bottom right, rgba(233,246,255,.95), transparent 48%),
+    rgba(255,255,255,.92);
+
+  border: 1px solid rgba(255,255,255,.85);
+  box-shadow:
+    0 20px 55px rgba(0,0,0,.22),
+    inset 0 1px 0 rgba(255,255,255,.85);
+
+  color: #111;
+  text-align: center;
+  overflow: hidden;
+}
+
+/* detalle sutil cute */
+#loginModal .login-card::before{
+  content: "";
+  position: absolute;
+  width: 150px;
+  height: 150px;
+  right: -70px;
+  top: -70px;
+  border-radius: 999px;
+  background: rgba(166,208,255,.38);
+}
+
+#loginModal .login-card::after{
+  content: "";
+  position: absolute;
+  width: 115px;
+  height: 115px;
+  left: -58px;
+  bottom: -58px;
+  border-radius: 999px;
+  background: rgba(233,246,255,.9);
+}
+
+#loginModal .login-cerrar{
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 3;
+
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 999px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  background: rgba(255,255,255,.78);
+  color: #111;
+  box-shadow: 0 4px 12px rgba(0,0,0,.12);
+  cursor: pointer;
+}
+
+#loginModal .login-cerrar i{
+  font-size: 14px;
+  line-height: 1;
+}
+
+#loginModal .login-deco{
+  position: relative;
+  z-index: 2;
+
+  width: 58px;
+  height: 58px;
+  margin: 0 auto 12px;
+  border-radius: 999px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: linear-gradient(180deg, var(--ui-azul-claro), var(--ui-azul-hover));
+  color: #111;
+  box-shadow: 0 10px 24px rgba(0,0,0,.14);
+}
+
+#loginModal .login-deco i{
+  font-size: 24px;
+  line-height: 1;
+}
+
+#loginModal .login-title{
+  position: relative;
+  z-index: 2;
+
+  margin: 0;
+  font-family: "Lora", serif;
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 1.18;
+  color: #111;
+}
+
+#loginModal .login-sub{
+  position: relative;
+  z-index: 2;
+
+  margin: 12px auto 18px;
+  max-width: 330px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: #263238;
+}
+
+#loginModal .login-actions{
+  position: relative;
+  z-index: 2;
+
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+#loginModal .login-google-btn{
+  width: 100%;
+  min-height: 44px;
+  border: none;
+  border-radius: 999px;
+  padding: 0 16px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+
+  background: var(--ui-azul-hover);
+  color: #000;
+  font-weight: 900;
+  font-size: 14px;
+
+  box-shadow: 0 8px 18px rgba(0,0,0,.16);
+  cursor: pointer;
+}
+
+#loginModal .login-google-btn i{
+  font-size: 16px;
+}
+
+#loginModal .login-google-btn:hover{
+  background: #8fc3fb;
+  transform: translateY(-1px);
+}
+
+#loginModal .login-continuar-btn{
+  border: none;
+  background: transparent;
+  color: #263238;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 999px;
+}
+
+#loginModal .login-continuar-btn:hover{
+  background: rgba(255,255,255,.55);
+}
+
+/* 🌙 modo oscuro: mantiene los mismos tonos celestes, pero más elegante */
+body.oscuro #loginModal .login-card{
+  background:
+    radial-gradient(circle at top left, rgba(166,208,255,.34), transparent 42%),
+    radial-gradient(circle at bottom right, rgba(233,246,255,.20), transparent 48%),
+    rgba(18,18,18,.92);
+
+  border-color: rgba(255,255,255,.14);
+  color: #fff;
+}
+
+body.oscuro #loginModal .login-title{
+  color: #fff;
+}
+
+body.oscuro #loginModal .login-sub{
+  color: rgba(255,255,255,.86);
+}
+
+body.oscuro #loginModal .login-cerrar{
+  background: rgba(255,255,255,.12);
+  color: #fff;
+}
+
+body.oscuro #loginModal .login-continuar-btn{
+  color: rgba(255,255,255,.86);
+}
+
+body.oscuro #loginModal .login-continuar-btn:hover{
+  background: rgba(255,255,255,.10);
+}
+
   </style> 
