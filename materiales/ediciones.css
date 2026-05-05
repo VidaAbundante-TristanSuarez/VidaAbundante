@@ -45,6 +45,7 @@
 }
 
 .ed-card {
+  position: relative;
   background: rgba(255,255,255,.82);
   border: 1px solid rgba(0,0,0,.10);
   border-radius: 18px;
@@ -58,7 +59,8 @@ body.oscuro .ed-card {
 }
 
 .ed-card-cover {
-  width: 100%;
+  width: calc(100% - 20px);
+  margin: 10px auto 0;
   aspect-ratio: 3 / 4;
   background: rgba(0,0,0,.06);
   display: flex;
@@ -67,6 +69,7 @@ body.oscuro .ed-card {
   overflow: hidden;
   cursor: pointer;
   position: relative;
+  border-radius: 14px;
 }
 
 .ed-card-cover img {
@@ -90,12 +93,13 @@ body.oscuro .ed-card {
 
 .ed-card-actions {
   display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+  gap: 10px;
+  flex-wrap: nowrap;
   align-items: center;
   justify-content: center;
   overflow: visible;
   padding-bottom: 0;
+  margin-top: 4px;
 }
 
 .ed-card-actions button,
@@ -122,10 +126,14 @@ body.oscuro .ed-card {
 }
 
 .ed-card-actions button.ed-danger-mini {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
   width: 20px;
   height: 20px;
   font-size: 9px;
-  opacity: .48;
+  opacity: .45;
+  z-index: 2;
 }
 
 #edVacio {
@@ -450,9 +458,9 @@ body.oscuro .ed-card {
     gap: 10px;
   }
 
-  .ed-card-body {
-    padding: 10px;
-  }
+.ed-card-body {
+  padding: 10px 12px 28px;
+}
 
   .ed-card-title {
     font-size: 14px;
