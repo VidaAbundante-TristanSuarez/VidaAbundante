@@ -486,18 +486,39 @@
 
   <div id="compartidosApp"></div>
 </div>
- 
+
 <!-- ================= MODAL LOGIN ================= -->
 <!-- Se muestra cuando el usuario no está logueado -->
-<div id="loginModal" class="modal-overlay" aria-hidden="true">
-  <div class="modal-card modal-card-sm">
-    <h3 class="modal-title">🔐 Iniciar sesión</h3>
-    <p class="modal-sub">Necesitás iniciar sesión para generar imágenes.</p>
+<div id="loginModal" class="modal-overlay login-modal" aria-hidden="true">
+  <div class="modal-card modal-card-sm login-card">
 
-    <div class="modal-actions">
-      <button class="btn-primary" onclick="irALogin()">Iniciar sesión</button>
-      <button class="btn-ghost" onclick="cerrarLogin()">Cancelar</button>
+    <button type="button" class="login-cerrar" onclick="cerrarLogin()" aria-label="Cerrar">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+
+    <div class="login-deco">
+      <i class="fa-solid fa-dove"></i>
     </div>
+
+    <h3 class="login-title">
+      Bendecido hermano, bienvenido a Vida Abundante App
+    </h3>
+
+    <p class="login-sub">
+      Puede acceder sin registros, y puede acceder a personalizaciones ingresando su cuenta de Google para guardar sus preferencias.
+    </p>
+
+    <div class="login-actions">
+      <button type="button" class="login-google-btn" onclick="irALogin()">
+        <i class="fa-brands fa-google"></i>
+        <span>Ingresar con Google</span>
+      </button>
+
+      <button type="button" class="login-continuar-btn" onclick="cerrarLogin()">
+        Continuar sin iniciar sesión
+      </button>
+    </div>
+
   </div>
 </div>
 
