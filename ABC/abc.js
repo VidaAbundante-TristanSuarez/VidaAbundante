@@ -1236,7 +1236,8 @@ requestAnimationFrame(() => {
 });
 
 abcRenderPreviewBloquesMarcador();
-  
+  }
+
 function abcRenderPreviewBloquesMarcador() {
   const box = document.getElementById("previewVersiculosMarcador");
   if (!box) return;
