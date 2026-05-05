@@ -266,8 +266,9 @@ body.oscuro #abcContenido a{ color:#1c6fcb; }
   font-size: 16px;
   line-height: 1;              /* ✅ nunca altera renglones */
   margin: 0;
-  opacity: .35;
+  opacity: .70;
   color: var(--ui-azul-hover, #1c6fcb);
+  -webkit-text-stroke: 0.6px #466966;
   cursor: pointer;
   pointer-events: auto;
 }
@@ -275,8 +276,9 @@ body.oscuro #abcContenido a{ color:#1c6fcb; }
 .abc-block .icono-nota:hover{ opacity: .8; }
 
 body.oscuro .abc-block .icono-nota{
-  opacity: .5;
+  opacity: .75;
   color: var(--ui-azul-hover);
+  -webkit-text-stroke: 0.6px #466966;
 }
 
 /* ✅ Forzar tamaño global dentro de ABC aunque Word traiga tamaños */
