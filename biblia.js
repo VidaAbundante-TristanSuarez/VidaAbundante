@@ -4396,6 +4396,8 @@ function syncMarcadorColorUI(hex = "#fff3b0") {
   }
 }
 
+window.syncMarcadorColorUI = syncMarcadorColorUI;
+
 // ================= ✅ NUEVA NOTA SIN VERSÍCULO =================
 window.abrirNotaLibre = () => {
   creandoNotaLibre = true;
