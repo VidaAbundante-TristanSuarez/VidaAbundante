@@ -32,21 +32,41 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
 // ================= MENÚ SESIÓN (...) =================
+// ================= OPCIONES SESIÓN DESDE BOTÓN (...) =================
 
 window.toggleMenuSesion = function(){
+  const modal = document.getElementById("loginModal");
+  const btnLogin = document.getElementById("btnOpcionLogin");
+  const btnLogout = document.getElementById("btnOpcionLogout");
+  const titulo = document.getElementById("opcionesSesionTitulo");
+  const texto = document.getElementById("opcionesSesionTexto");
+
+  if (!modal || !btnLogin || !btnLogout) return;
+
   const user = auth.currentUser;
 
-  // Si NO está logueado, va directo al login
-  if (!user) {
-    window.location.href = "login.html";
-    return;
+  if (user) {
+    titulo.textContent = "Sesión iniciada";
+    texto.textContent = "Puede cerrar sesión y volver a ingresar cuando lo necesite.";
+    btnLogin.style.display = "none";
+    btnLogout.style.display = "inline-flex";
+  } else {
+    titulo.textContent = "Vida Abundante App";
+    texto.textContent = "Puede ingresar con Google para guardar sus preferencias.";
+    btnLogin.style.display = "inline-flex";
+    btnLogout.style.display = "none";
   }
 
-  // Si está logueado, abre/cierra el menú
-  const menu = document.getElementById("menuSesionDropdown");
-  if (!menu) return;
+  modal.classList.add("abierto");
+  modal.setAttribute("aria-hidden", "false");
+};
 
-  menu.classList.toggle("abierto");
+window.cerrarLogin = function(){
+  const modal = document.getElementById("loginModal");
+  if (!modal) return;
+
+  modal.classList.remove("abierto");
+  modal.setAttribute("aria-hidden", "true");
 };
 
 window.cerrarSesionDesdeMenu = async function(){
@@ -59,18 +79,20 @@ window.cerrarSesionDesdeMenu = async function(){
   }
 };
 
-// Cierra el menú si tocás afuera
+// cerrar tocando afuera
 document.addEventListener("click", function(e){
-  const wrap = document.getElementById("menuSesionWrap");
-  const menu = document.getElementById("menuSesionDropdown");
+  const modal = document.getElementById("loginModal");
+  const card = document.querySelector("#loginModal .opciones-sesion-card");
 
-  if (!wrap || !menu) return;
+  if (!modal || !modal.classList.contains("abierto")) return;
+  if (!card) return;
 
-  if (!wrap.contains(e.target)) {
-    menu.classList.remove("abierto");
+  if (modal.contains(e.target) && !card.contains(e.target)) {
+    cerrarLogin();
   }
 });
 
+// FIN MODAL LOGIN 
 const db = getDatabase(app);
 
 window.__FB = { db };
