@@ -173,8 +173,8 @@ body.oscuro .subidos-day-num{
   width:26px;
   height:26px;
   border-radius:999px;
-  background:#1a73e8;
-  color:#fff;
+  background:var(--ui-azul-hover);
+  color:#000;
 }
 
 .subidos-day-events{
@@ -563,9 +563,11 @@ button.subidos-media-link{
   box-shadow:0 6px 14px rgba(0,0,0,.20);
 }
 
-.subidos-feed-actions button:hover,
-.subidos-feed-actions a:hover{
-  background:var(--ui-azul-hover);
+.subidos-feed-actions button:not(.subidosDanger):not(.subidosDangerMini):hover,
+.subidos-feed-actions a:not(.subidosDanger):not(.subidosDangerMini):hover,
+.subidos-feed-actions button:not(.subidosDanger):not(.subidosDangerMini):active,
+.subidos-feed-actions a:not(.subidosDanger):not(.subidosDangerMini):active{
+  background:var(--ui-azul-claro);
   color:#000;
   transform:translateY(-1px);
   box-shadow:0 8px 18px rgba(0,0,0,.24);
