@@ -375,7 +375,7 @@ body.oscuro .btn-version-inline.activo{
 
   font-size: 16px;
   line-height: 1;
-  opacity: .50;
+  opacity: .70;
   color: var(--ui-azul-hover, #1c6fcb);
   -webkit-text-stroke: 0.6px #466966;
 
@@ -385,7 +385,7 @@ body.oscuro .btn-version-inline.activo{
 }
 
 .versiculo .icono-nota:hover{ opacity: .85; }
-body.oscuro .versiculo .icono-nota{ opacity: .60; }
+body.oscuro .versiculo .icono-nota{ opacity: .75; }
 
 /* ✅ Asegura que cualquier otro hijo quede en la columna del texto
    (por si metés spans extra dentro del versículo) */
