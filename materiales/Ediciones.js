@@ -398,30 +398,8 @@ function renderEdiciones() {
         <div class="ed-card-body">
           <div class="ed-card-title">${titulo}</div>
 
-          <div class="ed-card-actions">
-            ${edActionButton({
-              title: guardada ? "Guardado en Mi Panel" : "Guardar en Mi Panel",
-              onclick: `guardarEdicionEnMiPanel('${ed.id}')`,
-              icon: guardada ? "fa-solid fa-heart-circle-check" : "fa-solid fa-heart-circle-plus",
-              count: st.guardados,
-              saved: guardada
-            })}
-
-           ${edActionButton({
-  title: edEstaDescargada(ed.id) ? "PDF descargado" : "Descargar PDF",
-  onclick: `descargarEdicionPDF('${ed.id}')`,
-  icon: edEstaDescargada(ed.id) ? "fa-solid fa-file-circle-check" : "fa-solid fa-file-pdf",
-  count: st.descargas,
-  saved: edEstaDescargada(ed.id)
-})}
-            ${edActionButton({
-              title: "Compartir",
-              onclick: `compartirEdicion('${ed.id}', 'redes')`,
-              icon: "fa-solid fa-share-nodes",
-              count: st.compartidos
-            })}
-
-            ${window.__ES_ADMIN ? `
+                   ${window.__ES_ADMIN ? `
+            <div class="ed-card-actions">
               <button type="button" onclick="compartirEdicion('${ed.id}', 'compartidos')" title="Enviar a Compartidos">
                 <i class="fa-solid fa-icons"></i>
               </button>
@@ -430,11 +408,11 @@ function renderEdiciones() {
                 <i class="fa-solid fa-pen"></i>
               </button>
 
-              <button type="button" class="ed-danger" onclick="borrarEdicion('${ed.id}')" title="Borrar">
+              <button type="button" class="ed-danger ed-danger-mini" onclick="borrarEdicion('${ed.id}')" title="Borrar">
                 <i class="fa-solid fa-trash"></i>
               </button>
-            ` : ``}
-          </div>
+            </div>
+          ` : ``}
         </div>
       </article>
     `;
