@@ -41,7 +41,7 @@ window.toggleMenuSesion = function(){
   const titulo = document.getElementById("opcionesSesionTitulo");
   const texto = document.getElementById("opcionesSesionTexto");
 
-  if (!modal || !btnLogin || !btnLogout) return;
+  if (!modal || !btnLogin || !btnLogout || !titulo || !texto) return;
 
   const user = auth.currentUser;
 
@@ -57,6 +57,8 @@ window.toggleMenuSesion = function(){
     btnLogout.style.display = "none";
   }
 
+  // ✅ abre siempre, aunque alguna función vieja haya dejado display:none
+  modal.style.display = "flex";
   modal.classList.add("abierto");
   modal.setAttribute("aria-hidden", "false");
 };
@@ -67,6 +69,9 @@ window.cerrarLogin = function(){
 
   modal.classList.remove("abierto");
   modal.setAttribute("aria-hidden", "true");
+
+  // ✅ cerramos limpio, pero toggleMenuSesion lo vuelve a flex cuando haga falta
+  modal.style.display = "none";
 };
 
 window.cerrarSesionDesdeMenu = async function(){
@@ -84,8 +89,8 @@ document.addEventListener("click", function(e){
   const modal = document.getElementById("loginModal");
   const card = document.querySelector("#loginModal .opciones-sesion-card");
 
-  if (!modal || !modal.classList.contains("abierto")) return;
-  if (!card) return;
+  if (!modal || !card) return;
+  if (!modal.classList.contains("abierto")) return;
 
   if (modal.contains(e.target) && !card.contains(e.target)) {
     cerrarLogin();
@@ -991,11 +996,21 @@ window.cambiarVersionBiblia = function(version) {
   if (version !== "RV1960" && version !== "NTV") return;
   if (versionActual === version) return;
 
-  // ✅ guardar el versículo exacto visible ANTES de repintar
+  // ✅ guardar el versículo visible ANTES de cambiar versión
   const ancla = obtenerAnclaScrollBiblia();
 
   const libroActual = libroSel?.value || "";
   const capituloActual = Number(capSel?.value || 1);
+
+  // ✅ evitar que el navegador intente acomodar el scroll solo
+  const html = document.documentElement;
+  const body = document.body;
+
+  const oldHtmlOverflowAnchor = html.style.overflowAnchor;
+  const oldBodyOverflowAnchor = body.style.overflowAnchor;
+
+  html.style.overflowAnchor = "none";
+  body.style.overflowAnchor = "none";
 
   versionActual = version;
   bibliaData = (version === "NTV") ? bibliaDataNTV : bibliaDataRV;
@@ -1009,20 +1024,26 @@ window.cambiarVersionBiblia = function(version) {
     libroSel.value = libroActual;
   }
 
-  // conservar mismo capítulo, sin mandar arriba
+  // ✅ conservar mismo capítulo, sin mandar arriba
   cargarCapitulos({
     capituloPreferido: capituloActual,
     irArriba: false,
     guardar: false
   });
 
-  // ✅ restaurar exactamente el mismo versículo visible
+  // ✅ restaurar ANTES de que se note visualmente el salto
+  restaurarAnclaScrollBiblia(ancla);
+
+  // ✅ segunda pasada por si cambió alto de textos/fuentes
   requestAnimationFrame(() => {
     restaurarAnclaScrollBiblia(ancla);
 
-    // ✅ guardar estado después de restaurar el scroll real
     setTimeout(() => {
+      restaurarAnclaScrollBiblia(ancla);
       guardarEstadoBiblia();
+
+      html.style.overflowAnchor = oldHtmlOverflowAnchor;
+      body.style.overflowAnchor = oldBodyOverflowAnchor;
     }, 0);
   });
 
@@ -4772,11 +4793,6 @@ window.mostrarSeccion = (tipo) => {
 // ================= 🔺 IR A LOGIN ===================
 window.irALogin = () => {
   window.location.href = "login.html";
-};
-
-// ================= 🔺 CERRAR LOGIN ===================
-window.cerrarLogin = () => {
-  loginModal.style.display = "none";
 };
 
 // ================= 🔺 TEXTO MAYUSCULAR ===================
