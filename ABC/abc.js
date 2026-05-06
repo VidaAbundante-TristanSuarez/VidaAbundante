@@ -63,7 +63,7 @@ const ABC_TEMAS = [
   }
 ];
 
-const ABC_PDF_COMPLETO = "ABC/pdf/ABC COMPLETO.pdf";
+const ABC_PDF_COMPLETO = "ABC/pdf/ABC COMPLETO CON PORTADA.pdf";
 
 let abcIndex = 0;
 let abcIniciado = false;
