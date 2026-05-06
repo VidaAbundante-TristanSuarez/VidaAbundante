@@ -49,7 +49,7 @@ const RH_TEMAS = [
   }
 ];
 
-const RH_PDF_COMPLETO = "materiales/RH/pdf/RH COMPLETO.pdf";
+const RH_PDF_COMPLETO = "materiales/RH/pdf/RH COMPLETO CON PORTADA.pdf";
 
 let rhIndex = 0;
 let rhIniciado = false;
