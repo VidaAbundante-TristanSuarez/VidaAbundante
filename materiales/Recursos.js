@@ -14,34 +14,42 @@ const RH_TEMAS = [
   {
     titulo: "El comportamiento de Jesús ante el pecado",
     html: "materiales/RH/El comportamiento de Jesús ante el pecado.html",
+    pdf: "materiales/RH/pdf/El comportamiento de Jesús ante el pecado.pdf",
     audio: "materiales/RH/El comportamiento de Jesús ante el pecado.mp3"
   },
   {
     titulo: "El Paralítico de Betesda",
     html: "materiales/RH/El Paralítico de Betesda.html",
+    pdf: "materiales/RH/pdf/El paralítico de Betesda.pdf",
     audio: "materiales/RH/El Paralítico de Betesda.mp3"
   },
   {
     titulo: "¿Estamos preparados para el milagro?",
     html: "materiales/RH/Estamos preparados para el milagro.html",
+    pdf: "materiales/RH/pdf/Estamos preparados para el milagro.pdf",
     audio: "materiales/RH/Estamos preparados para el milagro.mp3"
   },
-   {
+  {
     titulo: "El momento del milagro",
     html: "materiales/RH/El momento del milagro.html",
+    pdf: "materiales/RH/pdf/El momento del milagro.pdf",
     audio: "materiales/RH/El momento del milagro.mp3"
   },
-   {
+  {
     titulo: "El milagro del paralítico traído por 4 amigos",
     html: "materiales/RH/El milagro del paralítico traído por 4 amigos.html",
+    pdf: "materiales/RH/pdf/El milagro del paralítico traído por 4 amigos.pdf",
     audio: "materiales/RH/El milagro del paralítico traído por 4 amigos.mp3"
   },
-   {
+  {
     titulo: "Reconciliación",
     html: "materiales/RH/Reconciliación.html",
+    pdf: "materiales/RH/pdf/Reconciliación.pdf",
     audio: "materiales/RH/Reconciliación.mp3"
   }
 ];
+
+const RH_PDF_COMPLETO = "materiales/RH/pdf/RH COMPLETO.pdf";
 
 let rhIndex = 0;
 let rhIniciado = false;
@@ -499,7 +507,7 @@ function renderRHAcciones() {
       <i class="fa-solid fa-heart-circle-plus"></i>
     </button>
 
-    <button type="button" onclick="descargarRHPDF(${rhIndex})" title="Descargar PDF">
+    <button type="button" onclick="abrirOpcionesPDFRH(${rhIndex})" title="Descargar PDF">
       <i class="fa-solid fa-file-pdf"></i>
     </button>
 
@@ -594,238 +602,179 @@ window.publicarRHEnCompartidos = async (index) => {
   }
 };
 
-window.descargarRHPDF = async (index = rhIndex) => {
-  console.log("✅ descargarRHPDF NUEVA VERSION margen-fuente-fix");
+/* ================= RH - PDF PRECARGADO ================= */
 
-  const src = document.getElementById("rhContenido");
-  if (!src) {
-    alert("No encontré el contenido RH para exportar.");
+function rhNombreDescarga(nombre = "RH") {
+  return String(nombre || "RH")
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\w.\-]+/g, "_")
+    .replace(/_+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 90) + ".pdf";
+}
+
+function rhDescargarArchivo(url, nombreArchivo) {
+  if (!url) {
+    alert("No encontré el PDF para descargar.");
     return;
   }
 
-  if (typeof html2canvas !== "function") {
-    alert("No está cargado html2canvas.");
+  const a = document.createElement("a");
+  a.href = encodeURI(url);
+  a.download = nombreArchivo || "RH.pdf";
+  a.rel = "noopener";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
+window.abrirOpcionesPDFRH = (index = rhIndex) => {
+  const tema = RH_TEMAS[index];
+
+  if (!tema) {
+    alert("No encontré este módulo RH.");
     return;
   }
 
-  const JSPDF = window.jspdf?.jsPDF || window.jsPDF;
-  if (!JSPDF) {
-    alert("No está cargado jsPDF.");
-    return;
-  }
+  const viejo = document.getElementById("rhPdfModal");
+  if (viejo) viejo.remove();
 
-  const tema = RH_TEMAS?.[index] || {};
-  const nombreArchivo = (tema.titulo || "Recurso")
-    .replace(/[\\/:*?"<>|]/g, "")
-    .replace(/\s+/g, "_")
-    .trim() + ".pdf";
+  const modal = document.createElement("div");
+  modal.id = "rhPdfModal";
 
-  const host = document.createElement("div");
-  host.id = "rhPdfHost";
-  host.style.position = "fixed";
-  host.style.left = "-10000px";
-  host.style.top = "0";
-  host.style.width = "794px";
-  host.style.background = "#ffffff";
-  host.style.zIndex = "-1";
-  host.style.pointerEvents = "none";
+  modal.innerHTML = `
+    <div class="rh-pdf-backdrop" onclick="cerrarOpcionesPDFRH()"></div>
+
+    <div class="rh-pdf-box" role="dialog" aria-modal="true">
+      <button type="button" class="rh-pdf-x" onclick="cerrarOpcionesPDFRH()">×</button>
+
+      <div class="rh-pdf-title">
+        Descargar PDF
+      </div>
+
+      <div class="rh-pdf-sub">
+        Elegí qué querés descargar.
+      </div>
+
+      <button type="button" class="rh-pdf-opcion" onclick="descargarPDFRHActual(${index})">
+        <i class="fa-solid fa-file-pdf"></i>
+        <span>Módulo actual</span>
+      </button>
+
+      <button type="button" class="rh-pdf-opcion" onclick="descargarPDFRHCompleto()">
+        <i class="fa-solid fa-layer-group"></i>
+        <span>RH completo</span>
+      </button>
+    </div>
+  `;
 
   const style = document.createElement("style");
+  style.id = "rhPdfModalStyle";
   style.textContent = `
-    #rhPdfExport,
-    #rhPdfExport *{
-      box-sizing:border-box !important;
-      font-family: Arial, sans-serif !important;
-      letter-spacing: normal !important;
-      word-spacing: normal !important;
-      text-rendering: auto !important;
-      transform: none !important;
-      text-shadow: none !important;
+    #rhPdfModal{
+      position:fixed;
+      inset:0;
+      z-index:999999;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
     }
 
-    #rhPdfExport{
-      width:794px !important;
-      background:#ffffff !important;
-      color:#000000 !important;
-
-      /* ✅ margen interno del PDF */
-      padding:54px 56px 120px !important;
-
-      font-size:17px !important;
-      line-height:1.34 !important;
+    #rhPdfModal .rh-pdf-backdrop{
+      position:absolute;
+      inset:0;
+      background:rgba(0,0,0,.45);
     }
 
-    #rhPdfExport h1,
-    #rhPdfExport h2{
-      text-align:center !important;
-      line-height:1.15 !important;
-      margin:0 0 22px 0 !important;
-      padding:0 0 14px 0 !important;
-      font-family: Georgia, "Times New Roman", serif !important;
-      font-weight:800 !important;
-      letter-spacing:normal !important;
-      word-spacing:normal !important;
+    #rhPdfModal .rh-pdf-box{
+      position:relative;
+      width:min(360px, 94vw);
+      background:#fff;
+      color:#000;
+      border-radius:20px;
+      padding:18px;
+      box-shadow:0 18px 55px rgba(0,0,0,.30);
+      display:grid;
+      gap:10px;
     }
 
-    #rhPdfExport h3,
-    #rhPdfExport h4{
-      text-align:left !important;
-      line-height:1.25 !important;
-      margin:24px 0 12px 0 !important;
-      font-weight:800 !important;
+    #rhPdfModal .rh-pdf-x{
+      position:absolute;
+      top:8px;
+      right:10px;
+      width:34px;
+      height:34px;
+      border:none;
+      border-radius:999px;
+      background:rgba(0,0,0,.06);
+      color:#000;
+      cursor:pointer;
+      font-size:24px;
+      line-height:1;
     }
 
-    #rhPdfExport p,
-    #rhPdfExport div,
-    #rhPdfExport li,
-    #rhPdfExport span{
-      max-width:100% !important;
-      white-space:normal !important;
-      text-align:left !important;
-      line-height:1.34 !important;
-      letter-spacing:normal !important;
-      word-spacing:normal !important;
+    #rhPdfModal .rh-pdf-title{
+      font-size:20px;
+      font-weight:900;
+      padding-right:36px;
     }
 
-    /* ✅ versículos/citas azules sin deformarse */
-    #rhPdfExport b,
-    #rhPdfExport strong{
-      font-weight:800 !important;
+    #rhPdfModal .rh-pdf-sub{
+      font-size:14px;
+      opacity:.75;
+      margin-bottom:6px;
     }
 
-    #rhPdfExport [style*="blue"],
-    #rhPdfExport [style*="#0"],
-    #rhPdfExport .versiculo,
-    #rhPdfExport .cita{
-      white-space:normal !important;
-      text-align:left !important;
-      word-spacing:normal !important;
-      letter-spacing:normal !important;
-      line-height:1.28 !important;
+    #rhPdfModal .rh-pdf-opcion{
+      width:100%;
+      border:none;
+      border-radius:16px;
+      padding:14px;
+      background:var(--ui-azul-claro, #bcdcff);
+      color:#000;
+      cursor:pointer;
+      font-weight:900;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+      font-size:15px;
     }
 
-    /* ✅ evitar que el final quede pegado al borde */
-    #rhPdfExport::after{
-      content:"";
-      display:block;
-      height:80px;
+    #rhPdfModal .rh-pdf-opcion:hover{
+      background:var(--ui-azul-hover, #1c6fcb);
+      color:#fff;
     }
   `;
 
-  const clone = src.cloneNode(true);
-  clone.id = "rhPdfExport";
-
-  clone.querySelectorAll("audio, button, input, select, textarea").forEach(el => el.remove());
-
-  clone.querySelectorAll("*").forEach(el => {
-    el.style.letterSpacing = "normal";
-    el.style.wordSpacing = "normal";
-    el.style.whiteSpace = "normal";
-    el.style.textAlign = "left";
-    el.style.transform = "none";
-    el.style.maxWidth = "100%";
-  });
-
-  host.appendChild(style);
-  host.appendChild(clone);
-  document.body.appendChild(host);
-
-  try {
-    await document.fonts.ready;
-    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-
-    const canvas = await html2canvas(host, {
-      scale: 2,
-      backgroundColor: "#ffffff",
-      useCORS: true,
-      allowTaint: false,
-      logging: false,
-      width: 794,
-      windowWidth: 794
-    });
-
-    const pdf = new JSPDF("p", "pt", "a4");
-
-    const pageW = pdf.internal.pageSize.getWidth();
-    const pageH = pdf.internal.pageSize.getHeight();
-
-    const margenX = 36;
-    const margenTop = 34;
-
-    /* ✅ más margen abajo */
-    const margenBottom = 72;
-
-    const imgW = pageW - margenX * 2;
-    const altoUtilPDF = pageH - margenTop - margenBottom;
-
-    const sliceH = Math.floor(altoUtilPDF * canvas.width / imgW);
-
-    let y = 0;
-    let pagina = 0;
-
-    while (y < canvas.height) {
-      const altoCorte = Math.min(sliceH, canvas.height - y);
-
-      const pageCanvas = document.createElement("canvas");
-      pageCanvas.width = canvas.width;
-      pageCanvas.height = altoCorte;
-
-      const ctx = pageCanvas.getContext("2d");
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
-
-      ctx.drawImage(
-        canvas,
-        0, y,
-        canvas.width, altoCorte,
-        0, 0,
-        canvas.width, altoCorte
-      );
-
-      const imgData = pageCanvas.toDataURL("image/jpeg", 0.96);
-      const imgH = altoCorte * imgW / canvas.width;
-
-      if (pagina > 0) pdf.addPage();
-
-      pdf.addImage(imgData, "JPEG", margenX, margenTop, imgW, imgH);
-
-      y += altoCorte;
-      pagina++;
-    }
-
-    pdf.save(nombreArchivo);
-
-  } catch (e) {
-    console.error("Error generando PDF RH:", e);
-    alert("No se pudo generar el PDF.");
-  } finally {
-    host.remove();
-  }
+  document.head.appendChild(style);
+  document.body.appendChild(modal);
 };
 
-async function rhObtenerJsPDF() {
-  if (window.jspdf?.jsPDF) return window.jspdf.jsPDF;
+window.cerrarOpcionesPDFRH = () => {
+  const modal = document.getElementById("rhPdfModal");
+  const style = document.getElementById("rhPdfModalStyle");
 
-  await new Promise((resolve, reject) => {
-    const yaExiste = Array.from(document.scripts).some(s =>
-      s.src.includes("jspdf.umd.min.js")
-    );
+  if (modal) modal.remove();
+  if (style) style.remove();
+};
 
-    if (yaExiste) {
-      setTimeout(resolve, 300);
-      return;
-    }
+window.descargarPDFRHActual = (index = rhIndex) => {
+  const tema = RH_TEMAS[index];
 
-    const s = document.createElement("script");
-    s.src = "https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js";
-    s.onload = resolve;
-    s.onerror = reject;
-    document.head.appendChild(s);
-  });
+  if (!tema?.pdf) {
+    alert("Este módulo todavía no tiene PDF cargado.");
+    return;
+  }
 
-  if (window.jspdf?.jsPDF) return window.jspdf.jsPDF;
+  rhDescargarArchivo(tema.pdf, rhNombreDescarga(tema.titulo || "RH"));
+  cerrarOpcionesPDFRH();
+};
 
-  throw new Error("jsPDF no cargó.");
+window.descargarPDFRHCompleto = () => {
+  rhDescargarArchivo(RH_PDF_COMPLETO, "RH_COMPLETO.pdf");
+  cerrarOpcionesPDFRH();
 };
 
 window.abrirRHCompartido = async (index) => {
