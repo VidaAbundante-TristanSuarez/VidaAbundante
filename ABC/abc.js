@@ -4,54 +4,66 @@ const ABC_TEMAS = [
   {
     titulo: "🤍",
     html: "ABC/INTRO.html",
+    pdf: "ABC/pdf/1 INTRO.pdf",
     audio: "https://github.com/VidaAbundante-TristanSuarez/vida-abundante-audios/releases/download/v1/INTRO.mp3"
   },
   {
     titulo: "Salvación",
     html: "ABC/1 Salvación.html",
+    pdf: "ABC/pdf/2 SALVACIÓN.pdf",
     audio: "https://github.com/VidaAbundante-TristanSuarez/vida-abundante-audios/releases/download/v1/Salvacion.mp3"
   },
   {
     titulo: "Pecado",
     html: "ABC/2 Pecado.html",
+    pdf: "ABC/pdf/3 PECADO.pdf",
     audio: "https://github.com/VidaAbundante-TristanSuarez/vida-abundante-audios/releases/download/v1/Pecado.mp3"
   },
   {
     titulo: "La Palabra",
     html: "ABC/3 La Palabra.html",
+    pdf: "ABC/pdf/4 LA PALABRA.pdf",
     audio: "https://github.com/VidaAbundante-TristanSuarez/vida-abundante-audios/releases/download/v1/La.palabra.mp3"
   },
   {
     titulo: "La Oración",
     html: "ABC/4 La Oración.html",
+    pdf: "ABC/pdf/5 LA ORACIÓN.pdf",
     audio: "https://github.com/VidaAbundante-TristanSuarez/vida-abundante-audios/releases/download/v1/La.oracion.mp3"
   },
   {
     titulo: "Espíritu Santo",
     html: "ABC/5 Espíritu Santo.html",
+    pdf: "ABC/pdf/6 ESPÍRITU SANTO.pdf",
     audio: "https://github.com/VidaAbundante-TristanSuarez/vida-abundante-audios/releases/download/v1/Espiritu.Santo.mp3"
   },
   {
     titulo: "Bautismo",
     html: "ABC/6 Bautismo.html",
+    pdf: "ABC/pdf/7 BAUTISMO EJERCICIOS.pdf",
     audio: "https://github.com/VidaAbundante-TristanSuarez/vida-abundante-audios/releases/download/v1/Bautismo.mp3"
   },
   {
     titulo: "La Mayordomía",
     html: "ABC/7 La Mayordomía.html",
+    pdf: "ABC/pdf/9 LA MAYORDOMÍA.pdf",
     audio: "https://github.com/VidaAbundante-TristanSuarez/vida-abundante-audios/releases/download/v1/Mayordomia.mp3"
   },
   {
     titulo: "Evangelismo",
     html: "ABC/8 Evangelismo.html",
+    pdf: "ABC/pdf/8 EVANGELISMO.pdf",
     audio: "https://github.com/VidaAbundante-TristanSuarez/vida-abundante-audios/releases/download/v1/Evangelismo.mp3"
   },
   {
     titulo: "Visión de la iglesia",
     html: "ABC/9 La visión de la iglesia.html",
+    pdf: "ABC/pdf/9X 10 LA VISIÓN DE LA IGLESIA.pdf",
     audio: "https://github.com/VidaAbundante-TristanSuarez/vida-abundante-audios/releases/download/v1/La.vision.de.la.iglesia.mp3"
   }
 ];
+
+const ABC_PDF_COMPLETO = "ABC/pdf/ABC COMPLETO.pdf";
 
 let abcIndex = 0;
 let abcIniciado = false;
@@ -458,7 +470,7 @@ function renderABCAcciones() {
       <i class="fa-solid fa-heart-circle-plus"></i>
     </button>
 
-    <button type="button" onclick="descargarABCPDF(${abcIndex})" title="Descargar PDF">
+    <button type="button" onclick="abrirOpcionesPDFABC(${abcIndex})" title="Descargar PDF">
       <i class="fa-solid fa-file-pdf"></i>
     </button>
 
@@ -550,169 +562,180 @@ window.publicarABCEnCompartidos = async (index) => {
   }
 };
 
-window.descargarABCPDF = async (index) => {
-  const tema = ABC_TEMAS[index];
-  if (!tema) return;
+/* ================= ABC - PDF PRECARGADO ================= */
 
-  try {
-    const jsPDF = await abcObtenerJsPDF();
+function abcNombreDescarga(nombre = "ABC") {
+  return String(nombre || "ABC")
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\w.\-]+/g, "_")
+    .replace(/_+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 90) + ".pdf";
+}
 
-    const r = await fetch(encodeURI(tema.html), { cache: "no-store" });
-    if (!r.ok) throw new Error("No pude abrir el HTML de ABC");
-
-    const raw = await r.text();
-    const parsed = new DOMParser().parseFromString(raw, "text/html");
-
-    const estilos = Array.from(parsed.querySelectorAll("style"))
-      .map(s => s.outerHTML)
-      .join("");
-
-    const bodyHTML = parsed.body ? parsed.body.innerHTML : raw;
-
-    const iframe = document.createElement("iframe");
-    iframe.style.position = "fixed";
-    iframe.style.left = "-99999px";
-    iframe.style.top = "0";
-    iframe.style.width = "794px";
-    iframe.style.height = "1123px";
-    iframe.style.background = "#fff";
-    iframe.style.border = "0";
-
-    iframe.srcdoc = `
-      <!doctype html>
-      <html lang="es">
-      <head>
-        <meta charset="utf-8">
-        ${estilos}
-                <style>
-          html, body {
-            margin: 0;
-            padding: 0;
-            background: #fff;
-            color: #000;
-            box-sizing: border-box;
-          }
-
-          * {
-            box-sizing: border-box;
-          }
-
-          body {
-            padding: 34px 34px 42px;
-          }
-
-          img, table {
-            max-width: 100% !important;
-            height: auto !important;
-          }
-
-          h1, h2, h3 {
-            white-space: normal !important;
-            word-break: normal !important;
-            overflow-wrap: break-word !important;
-          }
-        </style>
-      </head>
-      <body>${bodyHTML}</body>
-      </html>
-    `;
-
-    document.body.appendChild(iframe);
-
-    await new Promise(resolve => {
-      iframe.onload = resolve;
-      setTimeout(resolve, 900);
-    });
-
-    const doc = iframe.contentDocument || iframe.contentWindow.document;
-
-    if (doc.fonts?.ready) {
-      try { await doc.fonts.ready; } catch (_) {}
-    }
-    await new Promise(resolve => setTimeout(resolve, 250));
-
-    const body = doc.body;
-
-    const canvas = await html2canvas(body, {
-      scale: 2,
-      backgroundColor: "#ffffff",
-      useCORS: true,
-      width: body.scrollWidth,
-      height: body.scrollHeight,
-      windowWidth: body.scrollWidth,
-      windowHeight: body.scrollHeight,
-      scrollX: 0,
-      scrollY: 0
-    });
-
-    const imgData = canvas.toDataURL("image/jpeg", 0.92);
-
-    const pdf = new jsPDF({
-      orientation: "portrait",
-      unit: "pt",
-      format: "a4"
-    });
-
-    const pageW = pdf.internal.pageSize.getWidth();
-    const pageH = pdf.internal.pageSize.getHeight();
-    const margin = 24;
-
-    const imgW = pageW - margin * 2;
-    const imgH = canvas.height * imgW / canvas.width;
-    const pageContentH = pageH - margin * 2;
-
-    let y = margin;
-    let remaining = imgH;
-
-    pdf.addImage(imgData, "JPEG", margin, y, imgW, imgH);
-    remaining -= pageContentH;
-
-    while (remaining > 0) {
-      y -= pageContentH;
-      pdf.addPage();
-      pdf.addImage(imgData, "JPEG", margin, y, imgW, imgH);
-      remaining -= pageContentH;
-    }
-
-    const nombre = String(tema.titulo || "abc")
-      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^\w.\-]+/g, "_")
-      .replace(/_+/g, "_")
-      .slice(0, 90);
-
-    pdf.save(`${nombre}.pdf`);
-
-    iframe.remove();
-  } catch (err) {
-    console.error(err);
-    alert("No pude generar el PDF del ABC.");
+function abcDescargarArchivo(url, nombreArchivo) {
+  if (!url) {
+    alert("No encontré el PDF para descargar.");
+    return;
   }
+
+  const a = document.createElement("a");
+  a.href = encodeURI(url);
+  a.download = nombreArchivo || "ABC.pdf";
+  a.rel = "noopener";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
+window.abrirOpcionesPDFABC = (index = abcIndex) => {
+  const tema = ABC_TEMAS[index];
+
+  if (!tema) {
+    alert("No encontré este módulo ABC.");
+    return;
+  }
+
+  const viejo = document.getElementById("abcPdfModal");
+  if (viejo) viejo.remove();
+
+  const modal = document.createElement("div");
+  modal.id = "abcPdfModal";
+
+  modal.innerHTML = `
+    <div class="abc-pdf-backdrop" onclick="cerrarOpcionesPDFABC()"></div>
+
+    <div class="abc-pdf-box" role="dialog" aria-modal="true">
+      <button type="button" class="abc-pdf-x" onclick="cerrarOpcionesPDFABC()">×</button>
+
+      <div class="abc-pdf-title">
+        Descargar PDF
+      </div>
+
+      <div class="abc-pdf-sub">
+        Elegí qué querés descargar.
+      </div>
+
+      <button type="button" class="abc-pdf-opcion" onclick="descargarPDFABCActual(${index})">
+        <i class="fa-solid fa-file-pdf"></i>
+        <span>Módulo actual</span>
+      </button>
+
+      <button type="button" class="abc-pdf-opcion" onclick="descargarPDFABCCompleto()">
+        <i class="fa-solid fa-layer-group"></i>
+        <span>ABC completo</span>
+      </button>
+    </div>
+  `;
+
+  const style = document.createElement("style");
+  style.id = "abcPdfModalStyle";
+  style.textContent = `
+    #abcPdfModal{
+      position:fixed;
+      inset:0;
+      z-index:999999;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+    }
+
+    #abcPdfModal .abc-pdf-backdrop{
+      position:absolute;
+      inset:0;
+      background:rgba(0,0,0,.45);
+    }
+
+    #abcPdfModal .abc-pdf-box{
+      position:relative;
+      width:min(360px, 94vw);
+      background:#fff;
+      color:#000;
+      border-radius:20px;
+      padding:18px;
+      box-shadow:0 18px 55px rgba(0,0,0,.30);
+      display:grid;
+      gap:10px;
+    }
+
+    #abcPdfModal .abc-pdf-x{
+      position:absolute;
+      top:8px;
+      right:10px;
+      width:34px;
+      height:34px;
+      border:none;
+      border-radius:999px;
+      background:rgba(0,0,0,.06);
+      color:#000;
+      cursor:pointer;
+      font-size:24px;
+      line-height:1;
+    }
+
+    #abcPdfModal .abc-pdf-title{
+      font-size:20px;
+      font-weight:900;
+      padding-right:36px;
+    }
+
+    #abcPdfModal .abc-pdf-sub{
+      font-size:14px;
+      opacity:.75;
+      margin-bottom:6px;
+    }
+
+    #abcPdfModal .abc-pdf-opcion{
+      width:100%;
+      border:none;
+      border-radius:16px;
+      padding:14px;
+      background:var(--ui-azul-claro, #bcdcff);
+      color:#000;
+      cursor:pointer;
+      font-weight:900;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+      font-size:15px;
+    }
+
+    #abcPdfModal .abc-pdf-opcion:hover{
+      background:var(--ui-azul-hover, #1c6fcb);
+      color:#fff;
+    }
+  `;
+
+  document.head.appendChild(style);
+  document.body.appendChild(modal);
 };
 
-async function abcObtenerJsPDF() {
-  if (window.jspdf?.jsPDF) return window.jspdf.jsPDF;
+window.cerrarOpcionesPDFABC = () => {
+  const modal = document.getElementById("abcPdfModal");
+  const style = document.getElementById("abcPdfModalStyle");
 
-  await new Promise((resolve, reject) => {
-    const yaExiste = Array.from(document.scripts).some(s =>
-      s.src.includes("jspdf.umd.min.js")
-    );
+  if (modal) modal.remove();
+  if (style) style.remove();
+};
 
-    if (yaExiste) {
-      setTimeout(resolve, 300);
-      return;
-    }
+window.descargarPDFABCActual = (index = abcIndex) => {
+  const tema = ABC_TEMAS[index];
 
-    const s = document.createElement("script");
-    s.src = "https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js";
-    s.onload = resolve;
-    s.onerror = reject;
-    document.head.appendChild(s);
-  });
+  if (!tema?.pdf) {
+    alert("Este módulo todavía no tiene PDF cargado.");
+    return;
+  }
 
-  if (window.jspdf?.jsPDF) return window.jspdf.jsPDF;
+  abcDescargarArchivo(tema.pdf, abcNombreDescarga(tema.titulo || "ABC"));
+  cerrarOpcionesPDFABC();
+};
 
-  throw new Error("jsPDF no cargó.");
-}
+window.descargarPDFABCCompleto = () => {
+  abcDescargarArchivo(ABC_PDF_COMPLETO, "ABC_COMPLETO.pdf");
+  cerrarOpcionesPDFABC();
+};
 
 // ================= ABC: FIREBASE + BLOQUES =================
 const FB = () => window.__FB || {};
