@@ -173,8 +173,7 @@ const ETIQUETAS_DEFAULT = [
   "Anuncio",
   "Plan",
   "Racimo",
-  "Oración",
-  "Culto",
+  "Oración",  
   "Santa Cena",
   "Reunion Jovenes",
   "Reunion Varones",
@@ -1316,7 +1315,7 @@ const SUBIDOS_EVENTOS_HABITUALES = [
   },
   {
     slug: "reunion-general",
-    etiqueta: "Culto",
+    etiqueta: "Predica",
     descripcion: "Reunión general",
     diaSemana: 0
   }
@@ -1503,7 +1502,6 @@ const ETIQUETAS_COLOR = {
   "plan": "#d2ff00",
   "racimo": "#00faff",
   "oracion": "#ff8000",
-  "culto": "#fff600",
   "santa cena": "#a800ff",
   "reunion jovenes": "#00ff79",
   "reunion de jovenes": "#00ff79",
@@ -3101,7 +3099,7 @@ async function guardarSubido() {
     const descripcion = (inpDesc?.value || "").trim();
     const esPredica = esPredicaSubidos(etiqueta);
 
-    const permiteSinArchivo = ["racimo", "oracion", "culto"].includes(
+    const permiteSinArchivo = ["racimo", "oracion"].includes(
   normalizarEtiquetaSubidos(etiqueta)
 );
     
