@@ -27,6 +27,7 @@ const firebaseConfig = {
 // ================= ☁️ R2 =================
 const R2_UPLOAD_URL = "https://us-central1-vidaabundante-f118a.cloudfunctions.net/subirImagenR2";
 const R2_DOWNLOAD_URL = "https://us-central1-vidaabundante-f118a.cloudfunctions.net/descargarImagenR2";
+const R2_VIDEO_UPLOAD_URL = "https://us-central1-vidaabundante-f118a.cloudfunctions.net/crearUploadVideoR2";
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -630,6 +631,127 @@ onValue(ref(db, "panelEdiciones/" + uid), s => {
     }
   });
 });
+
+
+// ================= 🎬 TEST TEMPORAL VIDEO R2 =================
+// Aparece solo si abrís la app con ?testVideo=1
+
+window.probarUploadVideoR2DesdeBoton = async function(){
+  try {
+    const user = auth.currentUser;
+
+    if (!user) {
+      alert("No hay usuario logueado.");
+      return;
+    }
+
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "video/mp4,video/webm,video/quicktime";
+
+    input.onchange = async () => {
+      try {
+        const file = input.files && input.files[0];
+        if (!file) return;
+
+        const sizeMB = file.size / 1024 / 1024;
+
+        if (sizeMB > 80) {
+          alert("Este video pesa " + sizeMB.toFixed(1) + " MB.\n\nPara esta prueba el máximo es 80 MB.");
+          return;
+        }
+
+        alert("Preparando subida directa a R2...\n\nArchivo: " + file.name + "\nPeso: " + sizeMB.toFixed(1) + " MB");
+
+        const token = await user.getIdToken();
+
+        const r = await fetch(R2_VIDEO_UPLOAD_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + token
+          },
+          body: JSON.stringify({
+            destino: "subidos",
+            fileName: file.name,
+            contentType: file.type,
+            sizeBytes: file.size
+          })
+        });
+
+        const data = await r.json().catch(() => ({}));
+
+        if (!r.ok || !data.ok || !data.uploadUrl) {
+          alert("Falló crearUploadVideoR2:\n\n" + (data.error || "Error desconocido"));
+          return;
+        }
+
+        alert("Permiso creado. Ahora subiendo el video directo a R2...");
+
+        const put = await fetch(data.uploadUrl, {
+          method: "PUT",
+          headers: {
+            "Content-Type": file.type
+          },
+          body: file
+        });
+
+        if (!put.ok) {
+          const txt = await put.text().catch(() => "");
+          alert("Falló la subida directa a R2.\n\nStatus: " + put.status + "\n" + txt);
+          return;
+        }
+
+        window.__ULTIMO_VIDEO_R2 = data.publicUrl;
+
+        try {
+          await navigator.clipboard.writeText(data.publicUrl);
+          alert("✅ Video subido a R2.\n\nCopié la URL al portapapeles:\n\n" + data.publicUrl);
+        } catch(e) {
+          alert("✅ Video subido a R2.\n\nURL:\n\n" + data.publicUrl);
+        }
+
+      } catch (e) {
+        console.error(e);
+        alert("Error probando subida:\n\n" + (e.message || e));
+      }
+    };
+
+    input.click();
+
+  } catch (e) {
+    console.error(e);
+    alert("Error:\n\n" + (e.message || e));
+  }
+};
+
+function initBotonTestVideoR2(){
+  const params = new URLSearchParams(window.location.search);
+
+  if (params.get("testVideo") !== "1") return;
+  if (document.getElementById("btnTestVideoR2")) return;
+
+  const btn = document.createElement("button");
+  btn.id = "btnTestVideoR2";
+  btn.type = "button";
+  btn.textContent = "🎬 Test video R2";
+  btn.onclick = window.probarUploadVideoR2DesdeBoton;
+
+  btn.style.position = "fixed";
+  btn.style.left = "14px";
+  btn.style.bottom = "86px";
+  btn.style.zIndex = "999999";
+  btn.style.border = "none";
+  btn.style.borderRadius = "999px";
+  btn.style.padding = "12px 14px";
+  btn.style.background = "#a6d0ff";
+  btn.style.color = "#000";
+  btn.style.fontWeight = "800";
+  btn.style.boxShadow = "0 8px 22px rgba(0,0,0,.25)";
+  btn.style.cursor = "pointer";
+
+  document.body.appendChild(btn);
+}
 
 // ================= DOM (script al final del body)  =================
 const libroSel = document.getElementById("libro");
@@ -5447,6 +5569,8 @@ window.cancelarCrearImagen = window.cancelarCrearImagen;
 
 // ================= ✅ INIT ÚNICO =================
 document.addEventListener("DOMContentLoaded", () => {
+initBotonTestVideoR2();
+  
   // 1) UI resaltador
   initResaltadorCompacto();
 
