@@ -3774,4 +3774,34 @@ body.oscuro .panel-folder-card{
   }
 }
 
+/* =========================================================
+   🚨 CORTAFUEGOS SECCIONES PRINCIPALES
+   Solo se muestra la sección que coincida con la clase del body.
+   ========================================================= */
+
+body.en-biblia #seccion-biblia,
+body.en-iglesia #seccion-iglesia,
+body.en-panel #seccion-panel,
+body.en-compartidos #seccion-compartidos{
+  display:block !important;
+}
+
+body.en-biblia #seccion-iglesia,
+body.en-biblia #seccion-panel,
+body.en-biblia #seccion-compartidos,
+
+body.en-iglesia #seccion-biblia,
+body.en-iglesia #seccion-panel,
+body.en-iglesia #seccion-compartidos,
+
+body.en-panel #seccion-biblia,
+body.en-panel #seccion-iglesia,
+body.en-panel #seccion-compartidos,
+
+body.en-compartidos #seccion-biblia,
+body.en-compartidos #seccion-iglesia,
+body.en-compartidos #seccion-panel{
+  display:none !important;
+}
+
   </style> 
