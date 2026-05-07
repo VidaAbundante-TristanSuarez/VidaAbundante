@@ -1301,6 +1301,111 @@ function agruparPorFecha(items) {
   return map;
 }
 
+const SUBIDOS_EVENTOS_HABITUALES = [
+  {
+    slug: "racimos",
+    etiqueta: "Racimo",
+    descripcion: "Racimos - 18 hs",
+    diaSemana: 2
+  },
+  {
+    slug: "oracion",
+    etiqueta: "Oración",
+    descripcion: "Oración - 17 a 19 hs",
+    diaSemana: 4
+  },
+  {
+    slug: "reunion-general",
+    etiqueta: "Culto",
+    descripcion: "Reunión general",
+    diaSemana: 0
+  }
+];
+
+function subidosIdHabitual(fechaEvento, slug) {
+  return `habitual::${fechaEvento}::${slug}`;
+}
+
+function subidosBuscarRealHabitual(fechaEvento, etiqueta) {
+  const key = normalizarEtiquetaSubidos(etiqueta);
+
+  return subidosItems.find(it =>
+    it.fechaEvento === fechaEvento &&
+    normalizarEtiquetaSubidos(it.etiqueta || "") === key
+  ) || null;
+}
+
+function subidosEventosHabitualesDelMes(year, month) {
+  const items = [];
+  const ultimoDia = new Date(year, month + 1, 0).getDate();
+
+  for (let dia = 1; dia <= ultimoDia; dia++) {
+    const d = new Date(year, month, dia);
+    const fechaEvento = fechaYMD(d);
+
+    SUBIDOS_EVENTOS_HABITUALES.forEach(ev => {
+      if (d.getDay() !== ev.diaSemana) return;
+
+      const real = subidosBuscarRealHabitual(fechaEvento, ev.etiqueta);
+      if (real) return;
+
+      items.push({
+        id: subidosIdHabitual(fechaEvento, ev.slug),
+        fecha: 0,
+        fechaEvento,
+        etiqueta: ev.etiqueta,
+        descripcion: ev.descripcion,
+        esHabitualVirtual: true
+      });
+    });
+  }
+
+  return items;
+}
+
+function subidosHabitualDesdeId(id) {
+  const partes = String(id || "").split("::");
+  if (partes.length !== 3) return null;
+
+  const fechaEvento = partes[1];
+  const slug = partes[2];
+  const ev = SUBIDOS_EVENTOS_HABITUALES.find(x => x.slug === slug);
+
+  if (!ev) return null;
+
+  return {
+    fechaEvento,
+    etiqueta: ev.etiqueta,
+    descripcion: ev.descripcion
+  };
+}
+
+function abrirNuevoHabitualDesdeCalendario(id) {
+  if (!subidosEsAdmin) {
+    alert("Solo admin puede crear o editar este evento.");
+    return;
+  }
+
+  const ev = subidosHabitualDesdeId(id);
+  if (!ev) return;
+
+  abrirModalSubidos();
+
+  const ttl = document.getElementById("subidosModalTitulo");
+  const fecha = document.getElementById("subidosFecha");
+  const etiqueta = document.getElementById("subidosEtiqueta");
+  const descripcion = document.getElementById("subidosDescripcion");
+  const archivo = document.getElementById("subidosArchivo");
+
+  if (ttl) ttl.textContent = "✏️ Nuevo evento habitual";
+  if (fecha) fecha.value = ev.fechaEvento;
+  if (etiqueta) etiqueta.value = ev.etiqueta;
+  if (descripcion) descripcion.value = ev.descripcion;
+  if (archivo) archivo.value = "";
+
+  actualizarPredicaSubidosUI();
+}
+
 function renderCalendario() {
   const box = document.getElementById("subidosCalendario");
   if (!box) return;
@@ -1318,7 +1423,8 @@ function renderCalendario() {
   let inicioSemana = primerDia.getDay();
   if (inicioSemana === 0) inicioSemana = 7;
 
-  const porFecha = agruparPorFecha(subidosItems);
+ const habitualesMes = subidosEventosHabitualesDelMes(year, month);
+ const porFecha = agruparPorFecha([...subidosItems, ...habitualesMes]);
   const diasHeader = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 
   let html = `
@@ -1344,7 +1450,7 @@ function renderCalendario() {
         <div class="subidos-day-events">
           ${itemsDia.slice(0, 3).map(it => {
             const color = colorEtiquetaSubidos(it.etiqueta || "");
-            const titulo = escaparHtml(it.etiqueta || "Subido");
+       const titulo = escaparHtml(it.descripcion || it.etiqueta || "Subido");
 
             return `
               <button
@@ -1427,6 +1533,37 @@ window.subidosOcultarPreview = function subidosOcultarPreview() {};
 
 function obtenerSubidoPorId(id) {
   return subidosItems.find(x => x.id === id) || null;
+}
+
+const SUBIDOS_IMAGEN_HORARIOS_URL = "img/subidos/horarios-habituales.jpg";
+
+window.abrirImagenHorariosSubidos = function abrirImagenHorariosSubidos() {
+  abrirModalSubidosVisor(
+    "Horarios habituales",
+    `<img src="${SUBIDOS_IMAGEN_HORARIOS_URL}" alt="Horarios habituales">`
+  );
+};
+
+function htmlImagenFijaHorariosSubidos() {
+  return `
+    <div id="subidos-imagen-horarios" class="subidos-feed-card subidos-card-imagen-fija">
+      <div class="subidos-media">
+        <button
+          type="button"
+          onclick="abrirImagenHorariosSubidos()"
+          class="subidos-media-link subidos-media-frame is-image"
+          title="Ver horarios habituales"
+        >
+          <img
+            src="${SUBIDOS_IMAGEN_HORARIOS_URL}"
+            alt="Horarios habituales"
+            loading="lazy"
+            decoding="async"
+          >
+        </button>
+      </div>
+    </div>
+  `;
 }
 
 function subidosTieneContenidoPredica(it) {
@@ -2668,8 +2805,10 @@ function renderFeed() {
   const feed = document.getElementById("subidosFeed");
   if (!feed) return;
 
+  const imagenFijaHorarios = htmlImagenFijaHorariosSubidos();
+
   if (!subidosItems.length) {
-    feed.innerHTML = `
+    feed.innerHTML = imagenFijaHorarios + `
       <div class="subidos-feed-card" style="opacity:.85;">
         No hay archivos subidos todavía.
       </div>
@@ -2677,7 +2816,7 @@ function renderFeed() {
     return;
   }
 
-  feed.innerHTML = subidosItems.map(it => {
+feed.innerHTML = imagenFijaHorarios + subidosItems.map(it => {
     const fechaTxt = it.fechaEvento
       ? new Date(it.fechaEvento + "T00:00:00").toLocaleDateString("es-AR")
       : "";
@@ -2697,10 +2836,14 @@ function renderFeed() {
                 <i class="fa-solid ${iconoSegunTipo(it.mimeType || "")}"></i>
                 ${escaparHtml(it.etiqueta || "Subido")}
               </span>
+
+              ${
+                fechaTxt
+                  ? `<span class="subidos-feed-date">${fechaTxt}</span>`
+                  : ``
+              }
             </div>
-
-            <div class="subidos-feed-date">${fechaTxt}</div>
-
+            
             ${
               it.descripcion
                 ? `<div class="subidos-feed-desc">${escaparHtml(it.descripcion || "")}</div>`
@@ -2772,6 +2915,25 @@ function renderFeed() {
 }
 
 window.abrirSubidoDesdeCalendario = function abrirSubidoDesdeCalendario(id) {
+  if (String(id || "").startsWith("habitual::")) {
+    abrirNuevoHabitualDesdeCalendario(id);
+    return;
+  }
+
+  const it = obtenerSubidoPorId(id);
+
+  if (it) {
+    if (subidosEsPredicaConContenido(it)) {
+      abrirSubidosVisorPredica(id, "all");
+      return;
+    }
+
+    if (it.url) {
+      abrirSubidosVisorArchivo(id);
+      return;
+    }
+  }
+
   const el = document.getElementById("subido-" + id);
   if (!el) return;
 
@@ -2939,6 +3101,10 @@ async function guardarSubido() {
     const descripcion = (inpDesc?.value || "").trim();
     const esPredica = esPredicaSubidos(etiqueta);
 
+    const permiteSinArchivo = ["racimo", "oracion", "culto"].includes(
+  normalizarEtiquetaSubidos(etiqueta)
+);
+    
     if (!fechaEvento) {
       alert("Completá la fecha.");
       return;
@@ -2949,7 +3115,7 @@ async function guardarSubido() {
       return;
     }
 
-    if (!file && !esPredica && !actual.url) {
+if (!file && !esPredica && !actual.url && !permiteSinArchivo) {
       alert("Elegí un archivo.");
       return;
     }
@@ -3004,8 +3170,9 @@ async function guardarSubido() {
       r2Key,
       mimeType,
       fileName,
-      uidCreador: actual.uidCreador || subidosUID,
-      esPredica,
+uidCreador: actual.uidCreador || subidosUID,
+esEventoSinArchivo: !url && permiteSinArchivo && !esPredica,
+esPredica,
       predicaVersion: esPredica ? datosPredica.version : "",
       predicaIntroduccion: esPredica ? datosPredica.introduccion : "",
       predicaCitas: esPredica ? datosPredica.citas : [],
