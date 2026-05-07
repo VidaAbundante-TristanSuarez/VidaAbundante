@@ -1533,7 +1533,7 @@ function obtenerSubidoPorId(id) {
   return subidosItems.find(x => x.id === id) || null;
 }
 
-const SUBIDOS_IMAGEN_HORARIOS_URL = "img/subidos/horarios-habituales.png";
+const SUBIDOS_IMAGEN_HORARIOS_URL = "img/subidos/horarios-habituales.png?v=2026-05-07-historia";
 
 window.abrirImagenHorariosSubidos = function abrirImagenHorariosSubidos() {
   abrirModalSubidosVisor(
