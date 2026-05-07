@@ -6057,6 +6057,7 @@ function limpiarFondosInternosApp() {
 function aplicarEstadoVisualSeccion(seccion, estado) {
   const el = getElementoSeccionFondo(seccion);
   const capa = getElementoCapaFondo(seccion);
+  const textoBiblia = document.getElementById("texto");
   if (!el || !capa) return;
 
   const limpio = normalizarEstadoApariencia(seccion, estado);
@@ -6078,24 +6079,40 @@ function aplicarEstadoVisualSeccion(seccion, estado) {
     capa.style.backgroundColor = valor;
   }
 
-  capa.style.opacity = opacidad;
+  // ✅ IMPORTANTE:
+  // En Biblia, el slider YA NO toca el fondo.
+  // Toca solamente el recuadro detrás de #texto.
+  if (seccion === "biblia") {
+    capa.style.opacity = "1";
 
-  // ✅ Color y bold SOLO para el texto bíblico.
-// No aplicamos color al contenedor, porque eso lo heredan botones/tabs.
-el.style.color = "";
-el.style.removeProperty("--va-color-texto");
-el.style.removeProperty("--va-color-texto-biblia");
-el.style.removeProperty("--va-peso-texto-biblia");
+    if (textoBiblia) {
+      textoBiblia.style.setProperty("--va-biblia-box-opacity", opacidad);
+    }
+  } else {
+    capa.style.opacity = opacidad;
 
-if (seccion === "biblia") {
-  if (colorTexto) {
-    el.style.setProperty("--va-color-texto-biblia", colorTexto);
+    // para que no quede “pegado” cuando cambiás a otras secciones
+    if (textoBiblia) {
+      textoBiblia.style.removeProperty("--va-biblia-box-opacity");
+    }
   }
 
-  if (limpio.textoBold) {
-    el.style.setProperty("--va-peso-texto-biblia", "700");
+  // ✅ Reset de variables de texto
+  el.style.color = "";
+  el.style.removeProperty("--va-color-texto");
+  el.style.removeProperty("--va-color-texto-biblia");
+  el.style.removeProperty("--va-peso-texto-biblia");
+
+  // ✅ Color y bold SOLO para el texto bíblico
+  if (seccion === "biblia") {
+    if (colorTexto) {
+      el.style.setProperty("--va-color-texto-biblia", colorTexto);
+    }
+
+    if (limpio.textoBold) {
+      el.style.setProperty("--va-peso-texto-biblia", "700");
+    }
   }
- }
 }
 
 function aplicarFondosGuardados() {
