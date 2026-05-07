@@ -1178,8 +1178,8 @@ body.oscuro .devIndexBarBottom{
   }
 }
 
-/* ✅ Mensaje cargando debajo de la barra, no perdido en el centro */
-.dev-loading-msg{
+/* ✅ Mensaje cargando dentro de Devocionales, debajo de su barra */
+#iglesia-devocionales .dev-loading-msg{
   width:min(460px, 94vw);
   margin:12px auto 0;
   padding:10px 12px;
@@ -1188,6 +1188,5 @@ body.oscuro .devIndexBarBottom{
   font-size:14px;
   box-sizing:border-box;
 }
-
 
 </style>
