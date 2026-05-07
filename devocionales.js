@@ -57,6 +57,7 @@ const DEV = {
   opColor: "#000000",
   op: 0.35,
   size: 30,
+  userChanged: false,
   style: { upper:false, bold:true, italic:false, underline:false }
 },
 
@@ -2610,11 +2611,13 @@ window.devIrFase1Desde0 = async () => {
     await new Promise(r => requestAnimationFrame(()=>requestAnimationFrame(r)));
     if (document.fonts?.ready) await document.fonts.ready;
 
-    const sugerido = sugerirTamanoVersiculoAuto(DEV?.p1?.versiculo || "");
-    DEV.f1.size = sugerido;
+    if (!DEV.f1.userChanged) {
+      const sugerido = sugerirTamanoVersiculoAuto(DEV?.p1?.versiculo || "");
+      DEV.f1.size = sugerido;
+    }
 
     const s1 = $("dev1Tamano");
-    if (s1) s1.value = fmtSize(sugerido);
+    if (s1) s1.value = fmtSize(DEV.f1.size);
 
     devRenderFase(1);
   })();
@@ -2666,6 +2669,13 @@ window.devIrFase3 = async () => {
 
     DEV.audioOk = false;
   devEnsureFase3Opciones();
+
+     const btnFinal = $("devBtnFinalizar");
+  if (btnFinal) {
+    btnFinal.innerHTML = `<i class="fa-solid fa-share-nodes"></i> Publicar y compartir`;
+    btnFinal.title = "Publicar y compartir";
+  }
+   
   devSetFinalButtons(DEV.requiereAudio ? false : true);
 
   devSetLoadingFase3(true, "⏳ Generando…");
@@ -2818,8 +2828,13 @@ window.devCambiarTamano = (fase, delta) => {
 
   inp.value = String(next);
 
-  if (fase === 1) DEV.f1.size = next;
-  else DEV.f2.size = next;
+  if (fase === 1) {
+    DEV.f1.size = next;
+    DEV.f1.userChanged = true;
+  } else {
+    DEV.f2.size = next;
+    DEV.f2.userChanged = true;
+  }
 
   devRenderFase(fase);
 };
@@ -2855,7 +2870,11 @@ function bindInputs(){
       DEV.f1.color = $("dev1Color")?.value || "#000000";
       DEV.f1.opColor = $("dev1OpColor")?.value || "#000000";
 
-      DEV.f1.size = Number($("dev1Tamano")?.value || 30);
+            DEV.f1.size = Number($("dev1Tamano")?.value || 30);
+
+      if (k === "Tamano") {
+        DEV.f1.userChanged = true;
+      }
 
       devRenderFase(1);
     });
@@ -3293,62 +3312,101 @@ async function devGuardarEnMiPanel(asset){
 // ✅ candado anti doble submit
 DEV.publicando = DEV.publicando || false;
 
+async function devAsegurarShareFinalListo(){
+  if (window.__devFinalCanvas && window.__devFinalFile) return;
+
+  const c = await renderFinalCanvasCaptureReal();
+  if (!c) throw new Error("No se pudo preparar la imagen para compartir.");
+
+  await devPrepararShareFinalDesdeCanvas(c);
+}
+
 window.devFinalizar = async () => {
   if (DEV.publicando) return;
+
   DEV.publicando = true;
-  devBusyShow("⏳ Finalizando devocional…");
 
-  const btn = document.getElementById("devBtnFinalizar");
-  if (btn) btn.disabled = true;
+  const btns = [
+    "devBtnFinalizar",
+    "devBtnDescargar",
+    "devBtnCompartir",
+    "devBtnPanelToggle",
+    "devBtnIglesia",
+    "devBtnAudio"
+  ]
+    .map(id => document.getElementById(id))
+    .filter(Boolean);
 
-  const ok = confirm("¿Finalizar devocional?\n\nSe sube a Iglesia.\nSi está tildado Mi Panel, también se sube ahí.");
+  btns.forEach(b => b.disabled = true);
+
+  const ok = confirm(
+    "¿Publicar devocional y compartir?\n\n" +
+    "1) Sube el audio a GitHub si está tildado.\n" +
+    "2) Sube el devocional a Iglesia.\n" +
+    "3) Lo guarda en Mi Panel solo si está tildado.\n" +
+    "4) Abre compartir en redes."
+  );
+
   if (!ok) {
     DEV.publicando = false;
-    if (btn) btn.disabled = false;
+    btns.forEach(b => b.disabled = false);
     return;
   }
 
   try {
     const ts = Date.now(); // ✅ 1 solo TS para todo
 
-    // ✅ si requiere audio, primero debe estar confirmado
+    // ✅ si requiere audio, primero tiene que estar confirmado/cargado
     if (DEV.requiereAudio && !DEV.audioOk) {
-      throw new Error("Primero confirmá el audio, o desactivá 'requiere audio'.");
+      throw new Error("Primero confirmá el audio, cargá un audio finalizado, o desactivá 'Requiere audio'.");
     }
 
-    // ✅ subir audio a GitHub solo si está activado
+    // ✅ subir audio a GitHub solo si corresponde
     if (DEV.requiereAudio && DEV.subirAudioGithub && !DEV.audioGithubUrl) {
-      try { await window.devDescargarFinal(); } catch (e) { console.warn(e); }
+      devBusyShow("⏳ Subiendo audio a GitHub…");
+
+      await window.devDescargarFinal();
+
+      if (!DEV.audioGithubUrl) {
+        throw new Error("El audio no quedó subido a GitHub. Revisá el audio o la Function de GitHub.");
+      }
     }
 
-    // ✅ subir UNA sola vez la imagen
+    // ✅ subir imagen/devocional
+    devBusyShow("⏳ Subiendo devocional…");
+
     const asset = await devSubirImagenBaseUnaVez(ts);
 
-    // ✅ guardar referencia en Iglesia
+    // ✅ guardar en Iglesia
     await devGuardarEnIglesia(asset);
 
-    // ✅ opcional: guardar referencia en Mi Panel
+    // ✅ guardar en Mi Panel solo si está tildado
     if (DEV.subirPanel) {
-      try {
-        await devGuardarEnMiPanel(asset);
-        alert("✅ Subido a Iglesia y a Mi Panel");
-      } catch (e) {
-        console.error("Error guardando en Mi Panel:", e);
-        alert("⚠️ Se subió a Iglesia, pero falló Mi Panel.\n\nDetalle: " + (e?.message || e));
-      }
-    } else {
-      alert("✅ Subido a Iglesia");
+      await devGuardarEnMiPanel(asset);
     }
 
+    // ✅ asegurar archivo listo para compartir
+    devBusyShow("⏳ Preparando compartir…");
+    await devAsegurarShareFinalListo();
+
+    devBusyHide();
+
+    devToast("✅ Publicado. Abriendo compartir…");
+
+    // ✅ último paso: abrir compartir en redes
+    await window.devCompartirFinal();
+
+    // ✅ recién cerramos todo después de compartir/cancelar
     devCerrarTodo();
+
   } catch (e) {
     console.error(e);
-    alert("❌ Error al finalizar/subir.\n\nDetalle: " + (e?.message || e));
-} finally {
-  DEV.publicando = false;
-  if (btn) btn.disabled = false;
-  devBusyHide();
-}
+    alert("❌ Error al publicar/compartir.\n\nDetalle: " + (e?.message || e));
+  } finally {
+    DEV.publicando = false;
+    btns.forEach(b => b.disabled = false);
+    devBusyHide();
+  }
 };
 
 /* =========================================================
@@ -3549,6 +3607,7 @@ if (btnCrear) {
     DEV.p2 = p2;
     DEV.audioText = audioText;
     DEV.f2.userChanged = false; // ✅ nuevo devocional => permitir sugerencia inicial
+    DEV.f1.userChanged = false; // ✅ nuevo devocional => permitir sugerencia inicial fase 1
      
     // reset gate audio
     DEV.audioOk = false;
@@ -3960,6 +4019,20 @@ window.devGuardarPublicadoEnMiPanel = async function(itId){
   }
 };
 
+function devMoverAddDebajoGaleria(){
+  const row = $("devIndexRow");
+  const top = $("devTopRow");
+
+  if (!row || !top) return;
+
+  top.classList.add("devTopRowDebajo");
+
+  // ✅ mueve la fila del + debajo de la galería horizontal
+  if (top.previousElementSibling !== row) {
+    row.insertAdjacentElement("afterend", top);
+  }
+}
+
 async function cargarDevocionales(){
   const fb  = window.__FB;
   const api = window.__FB_API;
@@ -3969,7 +4042,7 @@ async function cargarDevocionales(){
   if (row)  row.innerHTML  = "";
   if (feed) feed.innerHTML = `<div style="opacity:.8; padding:10px;">Cargando devocionales…</div>`;
 
-  const btnNuevo = $("btnDevNuevo");
+const btnNuevo = $("btnDevNuevo");
 if (btnNuevo) {
   btnNuevo.style.display = isAdmin() ? "inline-flex" : "none";
   btnNuevo.onclick = ()=> {
@@ -3979,6 +4052,9 @@ if (btnNuevo) {
     if (inp) inp.click();
   };
 }
+
+// ✅ baja el + debajo de la galería
+devMoverAddDebajoGaleria();
 
   const btnVolver = $("btnDevVolverHome");
   if (btnVolver) btnVolver.onclick = ()=> devMostrarHome();
