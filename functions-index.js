@@ -440,6 +440,108 @@ exports.hacerAdmin = onRequest(
 );
 
 // ================================
+// GUARDAR PEDIDO DE ORACIÓN ✅
+// ================================
+exports.guardarPedidoOracion = onRequest(
+  { cors: true },
+  async (req, res) => {
+    try {
+      if (req.method === "OPTIONS") {
+        return res.status(204).send("");
+      }
+
+      if (req.method !== "POST") {
+        return res.status(405).json({
+          ok: false,
+          error: "Use POST"
+        });
+      }
+
+      let payload = {};
+
+      try {
+        payload =
+          typeof req.body === "string"
+            ? JSON.parse(req.body || "{}")
+            : (req.body || {});
+      } catch (e) {
+        return res.status(400).json({
+          ok: false,
+          error: "Body JSON inválido"
+        });
+      }
+
+      const hermanoId = String(payload.hermanoId || "").trim();
+      const token = String(payload.token || "").trim();
+      const pedido = String(payload.pedido || "").trim();
+
+      if (!hermanoId || !token || !pedido) {
+        return res.status(400).json({
+          ok: false,
+          error: "Faltan datos"
+        });
+      }
+
+      const db = admin.database();
+
+      const hermanoRef = db.ref(`hermanos/${hermanoId}`);
+      const snap = await hermanoRef.get();
+
+      if (!snap.exists()) {
+        return res.status(404).json({
+          ok: false,
+          error: "Hermano no encontrado"
+        });
+      }
+
+      const hermano = snap.val() || {};
+
+      if (!hermano.tokenPedido || hermano.tokenPedido !== token) {
+        return res.status(403).json({
+          ok: false,
+          error: "Token inválido"
+        });
+      }
+
+      const fecha = new Date().toLocaleString("es-AR", {
+        timeZone: "America/Argentina/Buenos_Aires"
+      });
+
+      const anterior = String(hermano.pedidosOracion || "").trim();
+
+      const nuevoBloque = [
+        `📅 ${fecha}`,
+        pedido
+      ].join("\n");
+
+      const pedidosActualizados = anterior
+        ? `${anterior}\n\n${nuevoBloque}`
+        : nuevoBloque;
+
+      await hermanoRef.child("pedidosOracion").set(pedidosActualizados);
+
+      await db.ref(`historialPedidosOracion/${hermanoId}`).push().set({
+        pedido,
+        fecha,
+        ts: Date.now()
+      });
+
+      return res.json({
+        ok: true
+      });
+
+    } catch (err) {
+      console.error("guardarPedidoOracion error:", err);
+
+      return res.status(500).json({
+        ok: false,
+        error: "Error interno"
+      });
+    }
+  }
+);
+
+// ================================
 // SUBIR IMAGEN A R2 ✅ SECRET
 // ================================
 exports.subirImagenR2 = onRequest(
