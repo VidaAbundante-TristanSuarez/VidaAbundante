@@ -4604,17 +4604,23 @@ function refBonitaPanel(it){
   return "Imagen";
 }
 
-  if (topRow) {
-    topRow.innerHTML = `
-      <button
-        type="button"
-        class="btn-primary"
-        style="flex:0 0 auto; align-self:flex-start;"
-        onclick="event.preventDefault(); event.stopPropagation(); abrirCrearImagenLibrePanel(); return false;">
-        <i class="fa-solid fa-circle-plus"></i>
-      </button>
-    `;
-  }
+ if (topRow) {
+  topRow.innerHTML = `
+    <button
+      id="btnPanelImgNuevo"
+      type="button"
+      class="btn-primary panel-add-redondo"
+      onclick="event.preventDefault(); event.stopPropagation(); abrirCrearImagenLibrePanel(); return false;"
+      title="Crear imagen">
+      <i class="fa-solid fa-circle-plus"></i>
+    </button>
+  `;
+}
+
+/* ✅ deja el + debajo de la galería */
+if (topRow && indexRow && topRow.previousElementSibling !== indexRow) {
+  indexRow.insertAdjacentElement("afterend", topRow);
+}
 
   if (!items.length) {
     vacio.style.display = "block";
