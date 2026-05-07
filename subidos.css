@@ -221,7 +221,7 @@ body.oscuro .subidos-day-num{
 
 #subidosFeed{
   display:flex;
-  gap:10px !important;
+  gap:9px !important;
   overflow-x:auto;
   overflow-y:hidden;
   padding:4px 0 12px !important;
@@ -237,10 +237,10 @@ body.oscuro .subidos-day-num{
 
 .subidos-feed-card{
   position:relative;
-  width:190px !important;
-  min-width:190px !important;
+  width:195px !important;
+  min-width:195px !important;
   height:468px !important;
-  padding:8px !important;
+  padding:7px !important;
   border-radius:16px !important;
   background:rgba(255,255,255,.55) !important;
   border:1px solid rgba(255,255,255,.45) !important;
@@ -273,7 +273,7 @@ body.oscuro .subidos-day-num{
   width:100%;
   display:flex;
   flex-direction:column;
-  gap:2px;
+  gap:1px;
   margin:0 !important;
   padding:0 !important;
 }
@@ -281,9 +281,9 @@ body.oscuro .subidos-day-num{
 .subidos-feed-badges{
   display:flex;
   align-items:center;
-  flex-wrap:wrap;
-  gap:5px !important;
-  margin:0 0 2px 0 !important;
+  flex-wrap:nowrap;
+  gap:4px !important;
+  margin:0 0 1px 0 !important;
   padding:0 !important;
   min-height:22px;
 }
@@ -298,7 +298,11 @@ body.oscuro .subidos-day-num{
   line-height:1 !important;
   font-weight:800;
   color:#fff !important;
-  max-width:100%;
+max-width:calc(100% - 72px);
+min-width:0;
+white-space:nowrap;
+overflow:hidden;
+text-overflow:ellipsis;
   border:1px solid rgba(0,0,0,.08);
   background-clip:padding-box;
 }
@@ -311,9 +315,11 @@ body.oscuro .subidos-badge[style]{
 .subidos-feed-date{
   font-size:11px !important;
   line-height:1.05 !important;
-  margin:2px 0 !important;
+  margin:0 0 0 auto !important;
   padding:0 !important;
   color:var(--sub-mut);
+  white-space:nowrap;
+  flex:0 0 auto;
 }
 
 .subidos-feed-desc{
@@ -333,7 +339,7 @@ body.oscuro .subidos-badge[style]{
 /* ===== ARCHIVO / VISTA PREVIA ===== */
 
 .subidos-media{
-  margin:3px 0 5px 0 !important;
+  margin:2px 0 4px 0 !important;
   flex:1 1 auto;
   min-height:0;
   display:flex;
@@ -1017,6 +1023,21 @@ body.oscuro #modalSubidosVisor{
 .subidos-predica-mini-comentario{
   margin-top:2px !important;
   padding-top:2px !important;
+}
+
+.subidos-card-imagen-fija .subidos-media{
+  margin:0 !important;
+  flex:1 1 auto;
+}
+
+.subidos-card-imagen-fija .subidos-media-frame{
+  padding:0 !important;
+}
+
+.subidos-card-imagen-fija img{
+  width:100% !important;
+  height:100% !important;
+  object-fit:contain !important;
 }
 
 /* ✅ Subidos: toda la fuente de la card índice en negro */
