@@ -6090,13 +6090,8 @@ function aplicarEstadoVisualSeccion(seccion, estado) {
     }
   } else {
     capa.style.opacity = opacidad;
-
-    // para que no quede “pegado” cuando cambiás a otras secciones
-    if (textoBiblia) {
-      textoBiblia.style.removeProperty("--va-biblia-box-opacity");
-    }
   }
-
+  
   // ✅ Reset de variables de texto
   el.style.color = "";
   el.style.removeProperty("--va-color-texto");
