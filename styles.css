@@ -2513,44 +2513,105 @@ body.oscuro #wrapFiltrosBiblia.abierto .filtros{
 
 /* ================= MI PANEL IMAGENES ================= */
 
-/* solo imágenes del panel: mismo “aire” limpio */
+/* Contenedor principal igual criterio que Devocionales */
 #panel-imagenes.panel-seccion{
   width: min(560px, 96vw);
   margin: 0 auto;
-  padding: 0;
+  padding: 10px 0 18px;
   background: transparent;
+  border-radius: 0;
+  box-sizing: border-box;
 }
 
-#panel-imagenes{
-  width: min(560px, 96vw);
+#panelImgHome{
+  width: 100%;
   margin: 0 auto;
+  padding: 0;
+  box-sizing: border-box;
+  overflow: visible;
 }
 
-#panelImgFeed .btn-danger{
-  background:#ffe3e3 !important;
-  border:1px solid #ffb5b5 !important;
-  color:#a40000 !important;
-}
-
-#panelImgFeed .btn-danger:hover{
-  background:#ffb5b5 !important;
-  color:#000 !important;
-}
-
-/* índice superior */
+/* Galería superior */
 #panelImgIndexRow{
+  width: min(460px, 94vw);
+  margin: 0 auto;
+  padding: 8px 2px;
   display:flex;
   gap:10px;
   overflow-x:auto;
-  padding:8px 2px;
-  margin:0;
+  overflow-y:hidden;
   scroll-snap-type:x mandatory;
   align-items:flex-start;
+  box-sizing:border-box;
 }
 
-/* tarjeta índice: igual look que devocionales */
+/* Fila del add debajo de la galería */
+#panelImgTopRow{
+  width: min(460px, 94vw);
+  margin: 4px auto 8px;
+  padding: 6px 0 10px;
+  display:flex;
+  justify-content:flex-end;
+  align-items:center;
+  background:transparent;
+  box-sizing:border-box;
+}
+
+/* Botón add redondo real */
+#btnPanelImgNuevo,
+#btnPanelImgNuevo.btn-primary{
+  width:40px !important;
+  height:40px !important;
+  min-width:40px !important;
+  min-height:40px !important;
+  max-width:40px !important;
+  max-height:40px !important;
+
+  flex:0 0 40px !important;
+  aspect-ratio:1 / 1 !important;
+
+  padding:0 !important;
+  margin:0 !important;
+  border:none !important;
+  border-radius:999px !important;
+
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+
+  background:#fffcd3 !important;
+  color:#000 !important;
+  box-shadow:0 8px 18px rgba(0,0,0,.22) !important;
+
+  font-size:0 !important;
+  line-height:1 !important;
+  cursor:pointer !important;
+  overflow:hidden !important;
+  appearance:none !important;
+  -webkit-appearance:none !important;
+}
+
+#btnPanelImgNuevo i{
+  font-size:15px !important;
+  line-height:1 !important;
+  margin:0 !important;
+  padding:0 !important;
+}
+
+#btnPanelImgNuevo:hover{
+  background:var(--ui-azul-hover) !important;
+  transform:translateY(-1px);
+  box-shadow:0 10px 22px rgba(0,0,0,.28) !important;
+}
+
+body.oscuro #btnPanelImgNuevo{
+  background:var(--ui-azul-claro) !important;
+  color:#000 !important;
+}
+
+/* Tarjeta índice */
 #panelImgIndexRow .devIndexCard{
-  flex:0 0 auto;
+  flex:0 0 120px;
   width:120px;
   min-width:120px;
   max-width:120px;
@@ -2567,7 +2628,6 @@ body.oscuro #wrapFiltrosBiblia.abierto .filtros{
   scroll-snap-align:start;
 }
 
-/* barras arriba/abajo */
 #panelImgIndexRow .devIndexBar{
   padding:4px 6px;
   line-height:1.05;
@@ -2577,13 +2637,14 @@ body.oscuro #wrapFiltrosBiblia.abierto .filtros{
   text-decoration:underline;
   font-size:10px;
   flex:0 0 auto;
+  color:#000 !important;
 }
 
 #panelImgIndexRow .devIndexBarBottom{
   opacity:.85;
 }
 
-/* caja fija para emparejar todas las miniaturas */
+/* Miniatura */
 #panelImgIndexRow .devIndexImgWrap{
   width:100%;
   aspect-ratio:9 / 16;
@@ -2594,7 +2655,6 @@ body.oscuro #wrapFiltrosBiblia.abierto .filtros{
   background:rgba(255,255,255,.22);
 }
 
-/* la imagen se ve completa dentro de la caja */
 #panelImgIndexRow .devIndexImgWrap img{
   max-width:100%;
   max-height:100%;
@@ -2606,18 +2666,18 @@ body.oscuro #wrapFiltrosBiblia.abierto .filtros{
   background:transparent;
 }
 
-/* feed de abajo */
+/* Feed grande */
 #panelImgFeed{
+  width:100%;
   display:flex;
   flex-direction:column;
   gap:14px;
   margin-top:12px;
+  box-sizing:border-box;
 }
 
-/* tarjeta grande */
 #panelImgFeed .devBigCard{
-  width:fit-content;
-  max-width:min(420px, 96vw);
+  width:min(420px, 96vw);
   margin:0 auto;
   border:1px solid rgba(255,255,255,.45);
   border-radius:16px;
@@ -2626,22 +2686,18 @@ body.oscuro #wrapFiltrosBiblia.abierto .filtros{
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   box-shadow:0 12px 28px rgba(0,0,0,.08);
+  box-sizing:border-box;
 }
 
-/* abajo: cuadrada queda cuadrada, vertical queda vertical */
 #panelImgFeed .devBigCard img{
   display:block;
-  width:auto;
+  width:100%;
   height:auto;
-  max-width:min(420px, 96vw);
-  max-height:70vh;
-  aspect-ratio:auto;
   object-fit:contain;
   object-position:center;
   background:transparent;
 }
 
-/* acciones como devocionales */
 #panelImgFeed .devBigActions{
   display:flex;
   gap:10px;
@@ -2651,50 +2707,49 @@ body.oscuro #wrapFiltrosBiblia.abierto .filtros{
   flex-wrap:wrap;
 }
 
-/* ================= MI PANEL IMAGENES CELU ================= */
-@media (max-width: 600px){
-  #panel-imagenes{
-    overflow-y:auto;
-    -webkit-overflow-scrolling:touch;
-    padding-bottom:140px;
+#panelImgFeed .btn-danger{
+  background:#ffe3e3 !important;
+  border:1px solid #ffb5b5 !important;
+  color:#a40000 !important;
+}
+
+#panelImgFeed .btn-danger:hover{
+  background:#ffb5b5 !important;
+  color:#000 !important;
+}
+
+/* Celular: sin corrimiento horizontal */
+@media (max-width:700px){
+  #seccion-panel{
+    padding-left:8px !important;
+    padding-right:8px !important;
+    overflow-x:hidden !important;
+    box-sizing:border-box !important;
+  }
+
+  #panel-imagenes.panel-seccion{
+    width:100%;
+    max-width:560px;
+    padding-left:0;
+    padding-right:0;
+    overflow-x:hidden;
+  }
+
+  #panelImgIndexRow,
+  #panelImgTopRow{
+    width:100%;
+    max-width:100%;
+  }
+
+  #panelImgTopRow{
+    margin-top:0;
+    padding-top:4px;
   }
 
   #panelImgFeed .devBigCard{
-    max-width:96vw;
+    width:100%;
+    max-width:420px;
   }
-
-  #panelImgFeed .devBigCard img{
-    max-width:96vw;
-    max-height:none;
-  }
-
-  #panelImgFeed .devBigActions{
-    justify-content:center;
-  }
-}
-
-#panelImgTopRow{
-  display:flex;
-  justify-content:flex-end !important;
-  align-items:center !important;
-  width:100% !important;
-  max-width:100% !important;
-  margin:0 auto 8px !important;
-  padding:4px 2px 10px !important;
-  background:transparent !important;
-  box-sizing:border-box !important;
-}
-
-#panelImgTopRow.panelImgTopRowDebajo{
-  justify-content:flex-end !important;
-}
-
-#panelImgTopRow.panelImgTopRowDebajo{
-  width:100%;
-  max-width:100%;
-  margin:0 auto 8px;
-  padding:4px 2px 10px;
-  justify-content:flex-end !important;
 }
 
 /* ================= PICKR SELECTOR DE COLOR ================= */
@@ -3499,49 +3554,6 @@ body.oscuro #loginModal .opciones-sesion-x{
   color: #fff;
 }
 
-/* ✅ Mi Panel > Imágenes: botón add igual a Devocionales */
-#btnPanelImgNuevo{
-  width:40px !important;
-  height:40px !important;
-  min-width:40px !important;
-  min-height:40px !important;
-
-  padding:0 !important;
-  border:none !important;
-  border-radius:999px !important;
-
-  display:inline-flex !important;
-  align-items:center !important;
-  justify-content:center !important;
-
-  background:#fffcd3 !important;
-  color:#000 !important;
-  box-shadow:0 8px 18px rgba(0,0,0,.22);
-
-  cursor:pointer;
-  font-size:0 !important;
-  line-height:1 !important;
-
-  transition:transform .16s ease, box-shadow .16s ease, background .16s ease;
-}
-
-#btnPanelImgNuevo:hover{
-  background:var(--ui-azul-hover) !important;
-  transform:translateY(-1px);
-  box-shadow:0 10px 22px rgba(0,0,0,.28);
-}
-
-#btnPanelImgNuevo i{
-  font-size:15px !important;
-  line-height:1;
-  margin:0;
-}
-
-body.oscuro #btnPanelImgNuevo{
-  background:var(--ui-azul-claro) !important;
-  color:#000 !important;
-}
-
 /* ================= MI PANEL: carpetas guardadas ================= */
 
 .panel-folder-grid{
@@ -3666,125 +3678,4 @@ body.oscuro .panel-folder-card{
   }
 }
 
-/* ✅ CELULAR: Mi Panel con márgenes repartidos como Devocionales */
-@media (max-width:700px){
-
-  #seccion-panel{
-    width:100% !important;
-    max-width:100% !important;
-    padding-left:8px !important;
-    padding-right:8px !important;
-    box-sizing:border-box !important;
-    overflow-x:hidden !important;
-  }
-
-  #seccion-panel > .panel-tabs{
-    width:100% !important;
-    max-width:100% !important;
-    margin-left:auto !important;
-    margin-right:auto !important;
-    box-sizing:border-box !important;
-  }
-
-  #panel-imagenes,
-  #panel-marcadores,
-  #panel-compartidos,
-  #panel-abc,
-  #panel-recursos{
-    width:100% !important;
-    max-width:560px !important;
-    margin-left:auto !important;
-    margin-right:auto !important;
-    padding-left:8px !important;
-    padding-right:8px !important;
-    box-sizing:border-box !important;
-    overflow-x:hidden !important;
-  }
-
-  #panelImgHome{
-    width:100% !important;
-    max-width:560px !important;
-    margin-left:auto !important;
-    margin-right:auto !important;
-    padding-left:0 !important;
-    padding-right:0 !important;
-    box-sizing:border-box !important;
-    overflow-x:hidden !important;
-  }
-
-  #panelImgIndexRow,
-  #panelImgFeed,
-  #panelImgTopRow{
-    width:100% !important;
-    max-width:100% !important;
-    box-sizing:border-box !important;
-    margin-left:0 !important;
-    margin-right:0 !important;
-  }
-
-  #panelImgIndexRow{
-    padding-left:2px !important;
-    padding-right:2px !important;
-  }
-
-  #panelImgFeed .devBigCard{
-    max-width:100% !important;
-    box-sizing:border-box !important;
-  }
-
-  #panelImgFeed .devBigCard img{
-    max-width:100% !important;
-    box-sizing:border-box !important;
-  }
-}
-
-/* ✅ Mi Panel: add igual de redondo que Devocionales */
-#seccion-panel #btnPanelImgNuevo,
-#seccion-panel #btnPanelImgNuevo.btn-primary{
-  width:40px !important;
-  height:40px !important;
-  min-width:40px !important;
-  min-height:40px !important;
-  max-width:40px !important;
-  max-height:40px !important;
-
-  flex:0 0 40px !important;
-  aspect-ratio:1 / 1 !important;
-
-  padding:0 !important;
-  margin:0 !important;
-  border:none !important;
-  border-radius:999px !important;
-
-  display:inline-flex !important;
-  align-items:center !important;
-  justify-content:center !important;
-
-  background:#fffcd3 !important;
-  color:#000 !important;
-  box-shadow:0 8px 18px rgba(0,0,0,.22) !important;
-
-  font-size:0 !important;
-  line-height:0 !important;
-  cursor:pointer !important;
-  overflow:hidden !important;
-}
-
-#seccion-panel #btnPanelImgNuevo i{
-  font-size:15px !important;
-  line-height:1 !important;
-  margin:0 !important;
-  padding:0 !important;
-}
-
-#seccion-panel #btnPanelImgNuevo:hover{
-  background:var(--ui-azul-hover) !important;
-  transform:translateY(-1px);
-  box-shadow:0 10px 22px rgba(0,0,0,.28) !important;
-}
-
-body.oscuro #seccion-panel #btnPanelImgNuevo{
-  background:var(--ui-azul-claro) !important;
-  color:#000 !important;
-}
   </style> 
