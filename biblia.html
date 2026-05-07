@@ -429,73 +429,83 @@
  
 </div> <!-- ==== CIERRA IGLESIA ==== -->
 
-<!-- Tabs -->
-<div class="panel-tabs">
-  <button type="button" onclick="mostrarSeccion('imagenes')">
-    <i class="fa-solid fa-image"></i>
-    <span>Imagenes</span>
-  </button>
+<!-- ================= MI PANEL ================= -->
+<div id="seccion-panel" class="seccion" style="display:none">
+  <div id="fondoPanel"></div>
 
-  <button type="button" onclick="mostrarSeccion('marcadores')">
-    <i class="fa-solid fa-bookmark"></i>
-    <span>Notas</span>
-  </button>
+  <!-- Tabs Mi Panel -->
+  <div class="panel-tabs">
+    <button type="button" onclick="mostrarSeccion('imagenes')">
+      <i class="fa-solid fa-image"></i>
+      <span>Imagenes</span>
+    </button>
 
-  <button type="button" onclick="mostrarSeccion('compartidos')">
-    <i class="fa-solid fa-icons"></i>
-    <span>Compartidos</span>
-  </button>
+    <button type="button" onclick="mostrarSeccion('marcadores')">
+      <i class="fa-solid fa-bookmark"></i>
+      <span>Notas</span>
+    </button>
 
-  <button type="button" onclick="mostrarSeccion('abc')">
-    <i class="fa-solid fa-font"></i>
-    <span>ABC</span>
-  </button>
+    <button type="button" onclick="mostrarSeccion('compartidos')">
+      <i class="fa-solid fa-icons"></i>
+      <span>Compartidos</span>
+    </button>
 
-  <button type="button" onclick="mostrarSeccion('recursos')">
-    <i class="fa-solid fa-shield-heart"></i>
-    <span>Recursos</span>
-  </button>
-</div>
+    <button type="button" onclick="mostrarSeccion('abc')">
+      <i class="fa-solid fa-font"></i>
+      <span>ABC</span>
+    </button>
 
-  <!-- Secciones -->
-  <!-- MI PANEL - IMAGENES  -->
-<div id="panel-imagenes" class="panel-seccion">
+    <button type="button" onclick="mostrarSeccion('recursos')">
+      <i class="fa-solid fa-shield-heart"></i>
+      <span>Recursos</span>
+    </button>
+  </div>
 
-  <div id="panelImgHome">
+  <!-- MI PANEL - IMAGENES -->
+  <div id="panel-imagenes" class="panel-seccion">
 
-    <!-- fila superior -->
-    <div id="panelImgTopRow">
-      <button id="btnPanelImgNuevo" type="button" class="btn-primary" onclick="abrirCrearImagenLibrePanel(); return false;" title="Crear imagen">
-  <i class="fa-solid fa-circle-plus"></i>
-</button>
+    <div id="panelImgHome">
+
+      <!-- índice horizontal -->
+      <div id="panelImgIndexRow"></div>
+
+      <!-- fila del add debajo de la galería -->
+      <div id="panelImgTopRow">
+        <button id="btnPanelImgNuevo"
+                type="button"
+                class="btn-primary panel-add-redondo"
+                onclick="abrirCrearImagenLibrePanel(); return false;"
+                title="Crear imagen">
+          <i class="fa-solid fa-circle-plus"></i>
+        </button>
+      </div>
+
+      <!-- mensaje vacío -->
+      <p id="imagenes-vacio" style="display:none;">Todavía no generaste imágenes.</p>
+
+      <!-- feed vertical grande -->
+      <div id="panelImgFeed"></div>
+
+      <!-- compatibilidad vieja -->
+      <div id="grid-imagenes" class="grid-imagenes" style="display:none;"></div>
+
     </div>
-
-    <!-- índice horizontal -->
-    <div id="panelImgIndexRow"></div>
-
-    <!-- mensaje vacío -->
-    <p id="imagenes-vacio" style="display:none;">Todavía no generaste imágenes.</p>
-
-    <!-- feed vertical grande -->
-    <div id="panelImgFeed"></div>
-
-    <!-- ✅ lo dejamos oculto para no romper biblia.js por ahora -->
-    <div id="grid-imagenes" class="grid-imagenes" style="display:none;"></div>
 
   </div>
 
-</div>
+  <!-- MI PANEL - NOTAS -->
+  <div id="panel-marcadores" class="panel-seccion" style="display:none"></div>
 
-<div id="panel-marcadores" class="panel-seccion" style="display:none"></div>
+  <!-- MI PANEL - COMPARTIDOS GUARDADOS -->
+  <div id="panel-compartidos" class="panel-seccion" style="display:none"></div>
+
+  <!-- MI PANEL - ABC GUARDADOS -->
+  <div id="panel-abc" class="panel-seccion" style="display:none"></div>
+
+  <!-- MI PANEL - RECURSOS GUARDADOS -->
+  <div id="panel-recursos" class="panel-seccion" style="display:none"></div>
+</div>
    
-<div id="panel-compartidos" class="panel-seccion" style="display:none"></div>
-
-<div id="panel-abc" class="panel-seccion" style="display:none"></div>
-
-<div id="panel-recursos" class="panel-seccion" style="display:none"></div>
- 
-</div>
-
 <!-- ================= COMPARTIDOS ================= -->
 <div id="seccion-compartidos" class="seccion" style="display:none">
   <div id="fondoCompartidos"></div>
