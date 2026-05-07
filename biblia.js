@@ -3064,44 +3064,53 @@ if (subir) {
 window.irA = (seccion) => {
   const todas = ["biblia", "iglesia", "panel", "compartidos"];
 
-  // 1) mostrar/ocultar secciones principales
+  // ✅ 1) cerrar todas las secciones principales sí o sí
   todas.forEach(s => {
     const el = document.getElementById("seccion-" + s);
     if (el) {
-      el.style.display = (s === seccion) ? "block" : "none";
+      el.style.display = "none";
     }
   });
 
-  // 2) clases correctas en body
+  // ✅ 2) abrir solo la sección pedida
+  const activa = document.getElementById("seccion-" + seccion);
+  if (activa) {
+    activa.style.display = "block";
+  }
+
+  // ✅ 3) clase única en body para que el fondo correcto aparezca
   document.body.classList.remove("en-biblia", "en-iglesia", "en-panel", "en-compartidos");
   document.body.classList.add("en-" + seccion);
 
-  // 3) marcar botón activo del menú
+  // ✅ 4) botón activo del menú principal
   document.querySelectorAll("#menu .nav-btn").forEach(b => b.classList.remove("activo"));
+
   const btnActivo = document.querySelector(`#menu .nav-btn[onclick="irA('${seccion}')"]`);
   if (btnActivo) btnActivo.classList.add("activo");
 
-  // 4) defaults internos
+  // ✅ 5) iniciales internos SOLO de la sección abierta
   if (seccion === "iglesia") {
-    window.mostrarIglesiaSub?.("devocionales");
+    try { window.mostrarIglesiaSub?.("devocionales"); } catch(e) {}
     return;
   }
 
   if (seccion === "panel") {
-    window.mostrarSeccion?.("imagenes");
+    try { window.mostrarSeccion?.("imagenes"); } catch(e) {}
     return;
   }
 
   if (seccion === "compartidos") {
+    try { window.cargarCompartidos?.(); } catch(e) {}
+    try { window.renderCompartidos?.(); } catch(e) {}
+    try { window.iniciarCompartidos?.(); } catch(e) {}
     return;
   }
 
-  // 5) biblia
   if (seccion === "biblia") {
-    try { bibliaRestaurarUIAlVolver?.(); } catch(e){}
-    try { aplicarEstadoBarra?.("biblia"); } catch(e){}
-    try { mostrarTexto?.(); } catch(e){}
-    try { aplicarUIAccionesPorModo?.(); } catch(e){}
+    try { bibliaRestaurarUIAlVolver?.(); } catch(e) {}
+    try { aplicarEstadoBarra?.("biblia"); } catch(e) {}
+    try { mostrarTexto?.(); } catch(e) {}
+    try { aplicarUIAccionesPorModo?.(); } catch(e) {}
   }
 };
 
