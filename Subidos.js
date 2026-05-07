@@ -1500,7 +1500,7 @@ const ETIQUETAS_COLOR = {
   "predica": "#35c6b7",
   "anuncio": "#ff0000",
   "plan": "#d2ff00",
-  "racimo": "#00faff",
+  "racimo": "#00afff",
   "oracion": "#ff8000",
   "santa cena": "#a800ff",
   "reunion jovenes": "#00ff79",
