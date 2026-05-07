@@ -4483,6 +4483,20 @@ window.abrirNotaLibre = () => {
   });
 };
 
+function panelImgMoverAddDebajoGaleria(){
+  const row = document.getElementById("panelImgIndexRow");
+  const top = document.getElementById("panelImgTopRow");
+
+  if (!row || !top) return;
+
+  top.classList.add("panelImgTopRowDebajo");
+
+  // ✅ mueve el + debajo de la galería
+  if (top.previousElementSibling !== row) {
+    row.insertAdjacentElement("afterend", top);
+  }
+}
+
 // ================= 🔺 RENDERPANELIMAGENES ===================
 function renderPanelImagenes(data) {
   const grid = document.getElementById("grid-imagenes"); // compatibilidad
@@ -4492,6 +4506,7 @@ function renderPanelImagenes(data) {
   const feed = document.getElementById("panelImgFeed");
 
   if (!vacio || !indexRow || !feed) return;
+    panelImgMoverAddDebajoGaleria();
   if (grid) grid.innerHTML = "";
 
   const items = Object.entries(data || {})
