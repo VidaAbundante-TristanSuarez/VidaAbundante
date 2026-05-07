@@ -5641,7 +5641,7 @@ function renderDevFeed(items) {
 // Lee devocionales de Iglesia (ruta estándar)
 function initDevocionalesIglesiaFeed() {
   const feed = document.getElementById("devFeed");
-  if (feed) feed.innerHTML = `<div style="opacity:.7; padding:12px;">Cargando devocionales...</div>`;
+ if (feed) feed.innerHTML = `<div class="dev-loading-msg">Cargando...</div>`;
 
   // ✅ Ruta sugerida (si tu proyecto usa otra, la cambiamos)
   const r = ref(db, "devocionalesIglesia");
