@@ -5061,6 +5061,7 @@ function renderPanelRecursosGuardados() {
 
 // ================= 🔺 PANEL ===================
 window.mostrarSeccion = (tipo) => {
+    if (!document.body.classList.contains("en-panel")) return;
   ["imagenes", "marcadores", "compartidos", "abc", "recursos"].forEach(s => {
     const el = document.getElementById("panel-" + s);
     if (el) el.style.display = (s === tipo ? "block" : "none");
@@ -5533,11 +5534,18 @@ if (inputBuscarLibro && selectLibro) {
   });
 }
     
-// 4) arrancar en iglesia
-window.irA?.("iglesia");
+// 4) arranque visual por defecto, sin pisar manualmente las clases
+requestAnimationFrame(() => {
+  const yaHaySeccion =
+    document.body.classList.contains("en-biblia") ||
+    document.body.classList.contains("en-iglesia") ||
+    document.body.classList.contains("en-panel") ||
+    document.body.classList.contains("en-compartidos");
 
-document.body.classList.remove("en-biblia", "en-iglesia", "en-panel", "en-compartidos");
-document.body.classList.add("en-iglesia");
+  if (!yaHaySeccion) {
+    window.irA?.("iglesia");
+  }
+});
 
 // cuando Firebase confirma el usuario
 onAuthStateChanged(auth, (user) => {
