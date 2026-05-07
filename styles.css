@@ -3356,20 +3356,27 @@ body.oscuro .panel-marcadores-bar .pm-left .muted{
 
 /* ================= COLOR DE FUENTE SOLO EN TEXTO BÍBLICO ================= */
 
-/* ✅ Solo número + texto real del versículo */
-#seccion-biblia #texto .versiculo .num,
-#seccion-biblia #texto .versiculo .txt{
+/* ✅ SOLO cuando el versículo NO está resaltado */
+#seccion-biblia #texto .versiculo:not(.versiculo-con-fondo-resaltado) .num,
+#seccion-biblia #texto .versiculo:not(.versiculo-con-fondo-resaltado) .txt{
   color: var(--va-color-texto-biblia, inherit) !important;
+}
+
+/* ✅ Bold solo cuando NO hay resaltado */
+#seccion-biblia #texto .versiculo:not(.versiculo-con-fondo-resaltado) .txt{
+  font-weight: var(--va-peso-texto-biblia, inherit) !important;
+}
+
+/* ✅ Cuando SÍ hay resaltado, el color lo manda el JS (contraste) */
+#seccion-biblia #texto .versiculo.versiculo-con-fondo-resaltado .num,
+#seccion-biblia #texto .versiculo.versiculo-con-fondo-resaltado .txt{
+  color: inherit !important;
+  font-weight: inherit !important;
 }
 
 /* ✅ La pluma NO usa el color bíblico */
 #seccion-biblia #texto .versiculo .icono-nota{
   color: var(--ui-azul-hover, #1c6fcb) !important;
-}
-
-/* ✅ Bold solo para el texto bíblico */
-#seccion-biblia #texto .versiculo .txt{
-  font-weight: var(--va-peso-texto-biblia, inherit) !important;
 }
 
 /* =========================================================
