@@ -1098,21 +1098,90 @@ body.oscuro .devIndexBarBottom{
   padding: 0 !important;
 }
 
-/* ✅ AJUSTE CELULAR SOLO FASE 3:
-   mueve el modal hacia arriba y evita que el padding lo corte abajo */
+/* ✅ CELULAR: MODALES DEVOCIONALES MÁS ARRIBA
+   Aplica Fase 0, Fase 1, Fase 2 y Fase 3.
+   No achica el contenido: solo usa mejor el aire de arriba/abajo. */
 @media (max-width: 700px){
+
+  #modalDevFase0.modal-overlay.abierto,
+  #modalDevFase1.modal-overlay.abierto,
+  #modalDevFase2.modal-overlay.abierto,
   #modalDevFase3.modal-overlay.abierto{
     align-items:flex-start !important;
     justify-content:center !important;
     padding-top:2px !important;
     padding-bottom:14px !important;
+    padding-left:8px !important;
+    padding-right:8px !important;
+    box-sizing:border-box !important;
   }
 
+  #modalDevFase0 .modal-contenido.modal-dev,
+  #modalDevFase1 .modal-contenido.modal-dev,
+  #modalDevFase2 .modal-contenido.modal-dev,
   #modalDevFase3 .modal-contenido.modal-dev{
     box-sizing:border-box !important;
-    height: calc(100dvh - 16px) !important;
-    max-height: calc(100dvh - 16px) !important;
     margin-top:0 !important;
+    width: min(560px, 100%) !important;
+    max-width: 100% !important;
+    max-height: calc(100dvh - 16px) !important;
+  }
+
+  /* Fase 0 y Fase 3 sí usan alto completo controlado */
+  #modalDevFase0 .modal-contenido.modal-dev,
+  #modalDevFase3 .modal-contenido.modal-dev{
+    height: calc(100dvh - 16px) !important;
+  }
+
+  /* Fase 1 y Fase 2 mantienen su alto natural */
+  #modalDevFase1 .modal-contenido.modal-dev,
+  #modalDevFase2 .modal-contenido.modal-dev{
+    height:auto !important;
+  }
+}
+
+/* ✅ CELULAR: repartir margen izquierda/derecha en Devocionales */
+@media (max-width: 700px){
+
+  #iglesia-devocionales,
+  #devHome,
+  #devCrear{
+    width:100% !important;
+    max-width:560px !important;
+    margin-left:auto !important;
+    margin-right:auto !important;
+    padding-left:8px !important;
+    padding-right:8px !important;
+    box-sizing:border-box !important;
+    overflow-x:hidden !important;
+  }
+
+  #devIndexRow,
+  #devFeed,
+  #devTopRow{
+    width:100% !important;
+    max-width:100% !important;
+    box-sizing:border-box !important;
+    margin-left:0 !important;
+    margin-right:0 !important;
+  }
+
+  #devIndexRow{
+    padding-left:2px !important;
+    padding-right:2px !important;
+  }
+
+  #devHome .devBigCard{
+    width:100% !important;
+    max-width:420px !important;
+    box-sizing:border-box !important;
+  }
+
+  #devTopRow.devTopRowDebajo{
+    justify-content:flex-end !important;
+    padding-left:0 !important;
+    padding-right:0 !important;
+    width:100% !important;
   }
 }
 
