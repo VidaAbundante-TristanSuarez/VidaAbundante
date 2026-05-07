@@ -3712,7 +3712,7 @@ body.oscuro .panel-folder-card{
   align-items:center !important;
   justify-content:center !important;
 
-  background:#fffcd3 !important;
+  background: var(--ui-azul-hover); !important;
   color:#000 !important;
   box-shadow:0 8px 18px rgba(0,0,0,.22) !important;
 
