@@ -260,6 +260,9 @@ let modoMarcador = false;
 let seleccionMarcador = {};         // {idVersiculo:true}
 let marcadores = {};                // cache firebase
 
+let panelRecursosGuardados = {};
+let panelEdicionesGuardadas = {};
+
 // ================= ✅ INDICE DE NOTAS (para mostrar pluma) =================
 window.notasBibliaIndex = window.notasBibliaIndex || {};
 window.notasABCIndex    = window.notasABCIndex || {};
@@ -525,6 +528,21 @@ onValue(ref(db, "marcados/" + uid), s => {
     renderPanelImagenes(data);
   });
 
+  // ✅ Cargar recursos guardados en Mi Panel: ABC + RH / Recursos
+onValue(ref(db, "panelRecursos/" + uid), s => {
+  panelRecursosGuardados = s.val() || {};
+
+  renderPanelABCGuardados();
+  renderPanelRecursosGuardados();
+});
+
+// ✅ Cargar compartidos/ediciones guardadas en Mi Panel
+onValue(ref(db, "panelEdiciones/" + uid), s => {
+  panelEdicionesGuardadas = s.val() || {};
+
+  renderPanelCompartidosGuardados();
+});
+  
   // ✅ Cargar marcadores
   onValue(ref(db, "marcadores/" + uid), s => {
     marcadores = s.val() || {};
@@ -4807,14 +4825,236 @@ document.addEventListener("click", (e) => {
   cerrarFiltrosBiblia(true); // afuera = cancelar
 });
 
+
+// ================= 🔺 MI PANEL: COMPARTIDOS / ABC / RECURSOS ===================
+
+function panelEsc(txt = "") {
+  return String(txt ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function panelFechaBonita(ts) {
+  if (!ts) return "";
+  try {
+    return new Date(Number(ts)).toLocaleDateString("es-AR");
+  } catch {
+    return "";
+  }
+}
+
+function panelItemsFromObj(obj) {
+  return Object.entries(obj || {})
+    .map(([id, data]) => ({ id, ...(data || {}) }))
+    .sort((a, b) => Number(b.ts || b.fecha || 0) - Number(a.ts || a.fecha || 0));
+}
+
+window.abrirPanelUrl = function(urlCodificada) {
+  const url = decodeURIComponent(String(urlCodificada || ""));
+  if (!url) {
+    alert("Este elemento no tiene archivo para abrir.");
+    return;
+  }
+
+  window.open(url, "_blank");
+};
+
+window.abrirPanelEdicion = function(edicionId) {
+  if (!edicionId) return;
+
+  if (typeof window.abrirPresentacionEdicion === "function") {
+    window.abrirPresentacionEdicion(edicionId);
+    return;
+  }
+
+  // respaldo por si Ediciones.js todavía no terminó de cargar
+  const base = `${location.origin}${location.pathname}`;
+  window.open(`${base}?ver=edicion&id=${encodeURIComponent(edicionId)}`, "_blank");
+};
+
+window.eliminarPanelRecursoGuardado = async function(id) {
+  if (!id) return;
+  if (!confirm("¿Quitar este recurso de Mi Panel?")) return;
+
+  try {
+    const uid = window.__UID;
+    if (!uid) throw new Error("Usuario no disponible");
+
+    await remove(ref(db, `panelRecursos/${uid}/${id}`));
+  } catch (e) {
+    console.error(e);
+    alert("No pude quitar este recurso de Mi Panel.");
+  }
+};
+
+window.eliminarPanelEdicionGuardada = async function(id) {
+  if (!id) return;
+  if (!confirm("¿Quitar este compartido de Mi Panel?")) return;
+
+  try {
+    const uid = window.__UID;
+    if (!uid) throw new Error("Usuario no disponible");
+
+    await remove(ref(db, `panelEdiciones/${uid}/${id}`));
+  } catch (e) {
+    console.error(e);
+    alert("No pude quitar este compartido de Mi Panel.");
+  }
+};
+
+function renderPanelCompartidosGuardados() {
+  const panel = document.getElementById("panel-compartidos");
+  if (!panel) return;
+
+  const items = panelItemsFromObj(panelEdicionesGuardadas);
+
+  if (!items.length) {
+    panel.innerHTML = `<p style="opacity:.75;">Todavía no guardaste compartidos en Mi Panel.</p>`;
+    return;
+  }
+
+  panel.innerHTML = `
+    <div class="panel-folder-grid">
+      ${items.map(it => {
+        const titulo = panelEsc(it.titulo || "Compartido");
+        const portada = panelEsc(it.portadaUrl || "");
+        const fecha = panelFechaBonita(it.ts);
+
+        return `
+          <article class="panel-folder-card">
+            <button type="button" class="panel-folder-main" onclick="abrirPanelEdicion('${panelEsc(it.edicionId || it.id)}')">
+              <div class="panel-folder-icon panel-folder-cover">
+                ${
+                  portada
+                    ? `<img src="${portada}" alt="${titulo}" loading="lazy">`
+                    : `<i class="fa-solid fa-icons"></i>`
+                }
+              </div>
+
+              <div class="panel-folder-info">
+                <b>${titulo}</b>
+                <span>Compartido guardado${fecha ? " · " + fecha : ""}</span>
+              </div>
+            </button>
+
+            <button type="button" class="panel-folder-delete" onclick="eliminarPanelEdicionGuardada('${panelEsc(it.id)}')" title="Quitar">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </article>
+        `;
+      }).join("")}
+    </div>
+  `;
+}
+
+function renderPanelABCGuardados() {
+  const panel = document.getElementById("panel-abc");
+  if (!panel) return;
+
+  const items = panelItemsFromObj(panelRecursosGuardados)
+    .filter(it =>
+      it.tipo === "abc" ||
+      it.recursoTipo === "abc" ||
+      String(it.id || "").startsWith("abc_")
+    );
+
+  if (!items.length) {
+    panel.innerHTML = `<p style="opacity:.75;">Todavía no guardaste carpetas de ABC en Mi Panel.</p>`;
+    return;
+  }
+
+  panel.innerHTML = `
+    <div class="panel-folder-grid">
+      ${items.map(it => {
+        const titulo = panelEsc(it.titulo || "ABC");
+        const fecha = panelFechaBonita(it.ts);
+        const url = encodeURIComponent(it.html || "");
+
+        return `
+          <article class="panel-folder-card">
+            <button type="button" class="panel-folder-main" onclick="abrirPanelUrl('${url}')">
+              <div class="panel-folder-icon">
+                <i class="fa-solid fa-font"></i>
+              </div>
+
+              <div class="panel-folder-info">
+                <b>${titulo}</b>
+                <span>ABC guardado${fecha ? " · " + fecha : ""}</span>
+              </div>
+            </button>
+
+            <button type="button" class="panel-folder-delete" onclick="eliminarPanelRecursoGuardado('${panelEsc(it.id)}')" title="Quitar">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </article>
+        `;
+      }).join("")}
+    </div>
+  `;
+}
+
+function renderPanelRecursosGuardados() {
+  const panel = document.getElementById("panel-recursos");
+  if (!panel) return;
+
+  const items = panelItemsFromObj(panelRecursosGuardados)
+    .filter(it =>
+      !(
+        it.tipo === "abc" ||
+        it.recursoTipo === "abc" ||
+        String(it.id || "").startsWith("abc_")
+      )
+    );
+
+  if (!items.length) {
+    panel.innerHTML = `<p style="opacity:.75;">Todavía no guardaste recursos en Mi Panel.</p>`;
+    return;
+  }
+
+  panel.innerHTML = `
+    <div class="panel-folder-grid">
+      ${items.map(it => {
+        const tipo = panelEsc((it.recursoTipo || it.tipo || "recurso").toUpperCase());
+        const titulo = panelEsc(it.titulo || "Recurso");
+        const fecha = panelFechaBonita(it.ts);
+        const url = encodeURIComponent(it.html || "");
+
+        return `
+          <article class="panel-folder-card">
+            <button type="button" class="panel-folder-main" onclick="abrirPanelUrl('${url}')">
+              <div class="panel-folder-icon">
+                <i class="fa-solid fa-shield-heart"></i>
+              </div>
+
+              <div class="panel-folder-info">
+                <b>${titulo}</b>
+                <span>${tipo}${fecha ? " · " + fecha : ""}</span>
+              </div>
+            </button>
+
+            <button type="button" class="panel-folder-delete" onclick="eliminarPanelRecursoGuardado('${panelEsc(it.id)}')" title="Quitar">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </article>
+        `;
+      }).join("")}
+    </div>
+  `;
+}
+
 // ================= 🔺 PANEL ===================
 window.mostrarSeccion = (tipo) => {
-  ["imagenes", "marcadores"].forEach(s => {
+  ["imagenes", "marcadores", "compartidos", "abc", "recursos"].forEach(s => {
     const el = document.getElementById("panel-" + s);
     if (el) el.style.display = (s === tipo ? "block" : "none");
   });
 
   if (tipo === "marcadores") renderPanelMarcadores();
+  if (tipo === "compartidos") renderPanelCompartidosGuardados();
+  if (tipo === "abc") renderPanelABCGuardados();
+  if (tipo === "recursos") renderPanelRecursosGuardados();
 
   // ✅ marcar tab activo SOLO en Panel
   const tabsPanel = document.querySelectorAll("#seccion-panel .panel-tabs button");
