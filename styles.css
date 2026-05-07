@@ -261,7 +261,7 @@ body.oscuro #titulo{
 
 .btn-version-inline.activo{
   background: #a6d0ff;
-  color: #fff;
+  color: #000;
   border-color: #1c6fcb;
 }
 
@@ -1621,6 +1621,11 @@ body.oscuro .modal-card{
   background: var(--ui-azul-hover);
   color: #000;
 }
+
+body.oscuro .btn-primary{
+ background: var(--ui-azul-claro);
+  color: #000;
+  }
 
 .btn-ghost{
   background: var(--ui-azul-hover);
