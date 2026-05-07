@@ -588,7 +588,6 @@ body.modal-open{
 }
 
 #btnDevNuevo,
-#btnPanelImgNuevo,
 #btnSubidoNuevo{
   width: 40px;
   height: 40px;
@@ -600,7 +599,7 @@ body.modal-open{
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: #fffcd3 
+  background: var(--ui-azul-hover); 
   color: #000;
   box-shadow: 0 8px 18px rgba(0,0,0,.22);
   cursor: pointer;
@@ -610,7 +609,6 @@ body.modal-open{
 }
 
 #btnDevNuevo:hover,
-#btnPanelImgNuevo:hover,
 #btnSubidoNuevo:hover{
   background: var(--ui-azul-hover);
   transform: translateY(-1px);
@@ -618,7 +616,6 @@ body.modal-open{
 }
 
 #btnDevNuevo i,
-#btnPanelImgNuevo i,
 #btnSubidoNuevo i{
   font-size: 15px;
   line-height: 1;
@@ -626,13 +623,11 @@ body.modal-open{
 }
 
 body.oscuro #btnDevNuevo,
-body.oscuro #btnPanelImgNuevo,
 body.oscuro #btnSubidoNuevo{
   background: var(--ui-azul-claro);
   color: #000;
 }
 
-#btnPanelImgNuevo.btn-primary,
 #btnDevNuevo.btn-primary,
 #btnSubidoNuevo.btn-primary{
   padding: 0 !important;
@@ -735,13 +730,6 @@ body.oscuro .devIndexBarBottom{
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   box-shadow: 0 12px 28px rgba(0,0,0,.08);
-}
-
-#devTopRow.devTopRowDebajo{
-  justify-content:flex-end !important;
-  padding: 4px 0 4px !important;
-  margin: 0 auto 6px !important;
-  width: min(460px, 94vw) !important;
 }
 
 #devHome .devBigCard img{
@@ -1098,6 +1086,13 @@ body.oscuro .devIndexBarBottom{
   padding: 0 !important;
 }
 
+#devTopRow.devTopRowDebajo{
+  justify-content:flex-end !important;
+  padding: 8px 0 10px !important;
+  margin: 4px auto 6px !important;
+  width: min(460px, 94vw) !important;
+}
+
 /* ✅ CELULAR: MODALES DEVOCIONALES MÁS ARRIBA
    Aplica Fase 0, Fase 1, Fase 2 y Fase 3.
    No achica el contenido: solo usa mejor el aire de arriba/abajo. */
@@ -1178,11 +1173,20 @@ body.oscuro .devIndexBarBottom{
   }
 
   #devTopRow.devTopRowDebajo{
-    justify-content:flex-end !important;
-    padding-left:0 !important;
-    padding-right:0 !important;
-    width:100% !important;
+    padding: 4px 0 10px !important;
+    margin: 0 auto 6px !important;
   }
+}
+
+/* ✅ Mensaje cargando debajo de la barra, no perdido en el centro */
+.dev-loading-msg{
+  width:min(460px, 94vw);
+  margin:12px auto 0;
+  padding:10px 12px;
+  text-align:left;
+  opacity:.75;
+  font-size:14px;
+  box-sizing:border-box;
 }
 
 </style>
