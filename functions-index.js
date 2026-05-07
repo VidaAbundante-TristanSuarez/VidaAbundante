@@ -656,13 +656,34 @@ exports.crearUploadVideoR2 = onRequest(
     cors: true,
     secrets: ["R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY"]
   },
-  async (req, res) => {
-    try {
-      if (req.method === "OPTIONS") {
-        return res.status(204).send("");
-      }
+async (req, res) => {
+  // ✅ CORS manual para POST con Authorization
+  const origen = String(req.headers.origin || "");
 
-      if (req.method !== "POST") {
+  const permitidos = [
+    "https://vidaabundante-tristansuarez.github.io",
+    "http://localhost:3000",
+    "http://localhost:5000",
+    "http://127.0.0.1:5500"
+  ];
+
+  if (permitidos.includes(origen)) {
+    res.set("Access-Control-Allow-Origin", origen);
+  } else {
+    res.set("Access-Control-Allow-Origin", "https://vidaabundante-tristansuarez.github.io");
+  }
+
+  res.set("Vary", "Origin");
+  res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.set("Access-Control-Max-Age", "3600");
+
+  try {
+    if (req.method === "OPTIONS") {
+      return res.status(204).send("");
+    }
+
+    if (req.method !== "POST") {
         return res.status(405).json({
           ok: false,
           error: "Use POST"
