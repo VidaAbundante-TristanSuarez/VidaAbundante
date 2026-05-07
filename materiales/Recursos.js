@@ -861,6 +861,14 @@ let hermanosEscuchaActiva = false;
 let hermanosCache = [];
 let hermanoEditId = null;
 
+function hCrearTokenPedido() {
+  return (
+    Date.now().toString(36) +
+    "_" +
+    Math.random().toString(36).slice(2, 12)
+  );
+}
+
 function hEscape(v) {
   return String(v ?? "")
     .replace(/&/g, "&amp;")
@@ -875,16 +883,17 @@ function hValor(v) {
 
 function hNormalizarRegistro(data = {}) {
   return {
-    nombre: hValor(data.nombre),
-    apellido: hValor(data.apellido),
-    direccion: hValor(data.direccion),
-    telefono: hValor(data.telefono),
-    pedidosOracion: hValor(data.pedidosOracion),
-    notas: hValor(data.notas),
-    mail: hValor(data.mail),
-    creadoPor: data.creadoPor || window.__UID || "",
-    ts: data.ts || Date.now()
-  };
+  nombre: hValor(data.nombre),
+  apellido: hValor(data.apellido),
+  direccion: hValor(data.direccion),
+  telefono: hValor(data.telefono),
+  pedidosOracion: hValor(data.pedidosOracion),
+  notas: hValor(data.notas),
+  mail: hValor(data.mail),
+  tokenPedido: data.tokenPedido || "",
+  creadoPor: data.creadoPor || window.__UID || "",
+  ts: data.ts || Date.now()
+      };
 }
 
 window.mostrarHermanos = async () => {
@@ -998,6 +1007,57 @@ window.mostrarHermanos = async () => {
           word-break:break-word;
         }
 
+       .hermano-resumen{
+  width:100%;
+  border:none;
+  background:transparent;
+  padding:0;
+  cursor:pointer;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  text-align:left;
+  color:inherit;
+  font-family:inherit;
+}
+
+.hermano-resumen-info{
+  display:grid;
+  gap:4px;
+}
+
+.hermano-resumen-tel{
+  font-size:14px;
+  opacity:.82;
+  font-weight:700;
+}
+
+.hermano-resumen-icono{
+  width:34px;
+  height:34px;
+  border-radius:999px;
+  background:var(--ui-azul-claro, #bcdcff);
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  flex:0 0 auto;
+  transition: transform .18s ease;
+}
+
+.hermano-card.abierta .hermano-resumen-icono{
+  transform:rotate(180deg);
+}
+
+.hermano-detalle{
+  display:none;
+  margin-top:12px;
+}
+
+.hermano-card.abierta .hermano-detalle{
+  display:block;
+}
+        
         .hermano-grid{
           display:grid;
           grid-template-columns: repeat(2, minmax(0,1fr));
@@ -1376,13 +1436,28 @@ window.renderHermanosLista = () => {
   }
 
   lista.innerHTML = filtrados.map(h => {
-    const nombreCompleto = `${h.nombre || ""} ${h.apellido || ""}`.trim() || "Sin nombre";
+  const nombreCompleto = `${h.nombre || ""} ${h.apellido || ""}`.trim() || "Sin nombre";
 
-    return `
-      <div class="hermano-card">
+  return `
+    <div class="hermano-card" id="hermanoCard_${h.id}">
+      
+      <button type="button" class="hermano-resumen" onclick="toggleHermanoCard('${h.id}')">
+        <div class="hermano-resumen-info">
+          <div class="hermano-nombre">${hEscape(nombreCompleto)}</div>
+          <div class="hermano-resumen-tel">
+            <i class="fa-brands fa-whatsapp"></i>
+            ${hEscape(h.telefono || "Sin teléfono")}
+          </div>
+        </div>
+
+        <div class="hermano-resumen-icono">
+          <i class="fa-solid fa-chevron-down"></i>
+        </div>
+      </button>
+
+      <div class="hermano-detalle">
         <div class="hermano-top">
           <div>
-            <div class="hermano-nombre">${hEscape(nombreCompleto)}</div>
             <div class="hermano-mail">${h.mail ? hEscape(h.mail) : "Sin mail"}</div>
           </div>
         </div>
@@ -1409,14 +1484,22 @@ window.renderHermanosLista = () => {
           </div>
         </div>
 
-<div class="hermano-acciones">
-  ${window.__ES_ADMIN ? `<button type="button" onclick="editarHermano('${h.id}')">Editar</button>` : ``}
-  <button type="button" onclick="enviarHermanoPorWhatsApp('${h.id}')">WhatsApp</button>
-  ${window.__ES_ADMIN ? `<button type="button" onclick="borrarHermano('${h.id}')">Borrar</button>` : ``}
-</div>
+        <div class="hermano-acciones">
+          ${window.__ES_ADMIN ? `<button type="button" onclick="editarHermano('${h.id}')">Editar</button>` : ``}
+          <button type="button" onclick="enviarHermanoPorWhatsApp('${h.id}')">WhatsApp</button>
+          ${window.__ES_ADMIN ? `<button type="button" onclick="borrarHermano('${h.id}')">Borrar</button>` : ``}
+        </div>
       </div>
-    `;
-  }).join("");
+    </div>
+  `;
+}).join("");
+};
+
+window.toggleHermanoCard = (id) => {
+  const card = document.getElementById(`hermanoCard_${id}`);
+  if (!card) return;
+
+  card.classList.toggle("abierta");
 };
 
 window.abrirNuevoHermano = () => {
@@ -1497,17 +1580,22 @@ window.guardarHermano = async (e) => {
   }
 
   const btn = document.getElementById("btnGuardarHermano");
+  
+  const actualEditando = hermanoEditId
+  ? hermanosCache.find(x => x.id === hermanoEditId)
+  : null;
 
   const data = hNormalizarRegistro({
-    nombre: document.getElementById("hermanoNombre")?.value,
-    apellido: document.getElementById("hermanoApellido")?.value,
-    telefono: document.getElementById("hermanoTelefono")?.value,
-    mail: document.getElementById("hermanoMail")?.value,
-    direccion: document.getElementById("hermanoDireccion")?.value,
-    pedidosOracion: document.getElementById("hermanoPedidos")?.value,
-    notas: document.getElementById("hermanoNotas")?.value,
-    creadoPor: window.__UID || "",
-    ts: Date.now()
+nombre: document.getElementById("hermanoNombre")?.value,
+apellido: document.getElementById("hermanoApellido")?.value,
+telefono: document.getElementById("hermanoTelefono")?.value,
+mail: document.getElementById("hermanoMail")?.value,
+direccion: document.getElementById("hermanoDireccion")?.value,
+pedidosOracion: document.getElementById("hermanoPedidos")?.value,
+notas: document.getElementById("hermanoNotas")?.value,
+tokenPedido: actualEditando?.tokenPedido || hCrearTokenPedido(),
+creadoPor: window.__UID || "",
+ts: Date.now()
   });
 
   if (!data.nombre || !data.apellido) {
@@ -1571,23 +1659,63 @@ window.borrarHermano = async (id) => {
   }
 };
 
-window.enviarHermanoPorWhatsApp = (id) => {
+function hTelefonoWhatsApp(telefono) {
+  let n = String(telefono || "").replace(/\D/g, "");
+
+  if (!n) return "";
+
+  if (n.startsWith("549")) return n;
+
+  if (n.startsWith("54")) {
+    return "549" + n.slice(2).replace(/^15/, "");
+  }
+
+  n = n.replace(/^0+/, "").replace(/^15/, "");
+  return "549" + n;
+}
+
+window.enviarHermanoPorWhatsApp = async (id) => {
   const item = hermanosCache.find(x => x.id === id);
   if (!item) return;
 
+  const db = window.__FB?.db;
+  if (!db) {
+    alert("Firebase no está listo.");
+    return;
+  }
+
+  const numero = hTelefonoWhatsApp(item.telefono);
+
+  if (!numero) {
+    alert("Este hermano no tiene teléfono cargado.");
+    return;
+  }
+
+  let token = item.tokenPedido || "";
+
+  if (!token) {
+    token = hCrearTokenPedido();
+
+    try {
+      await set(ref(db, `hermanos/${id}/tokenPedido`), token);
+      item.tokenPedido = token;
+    } catch (err) {
+      console.error(err);
+      alert("No pude preparar el formulario de oración.");
+      return;
+    }
+  }
+
+  const linkFormulario = `${location.origin}${location.pathname}?pedidoOracion=${encodeURIComponent(id)}&token=${encodeURIComponent(token)}`;
+
   const texto = [
-    `Ficha de hermano`,
+    `Bendiciones hermano, complete sus pedidos de oración con libertad y fe en el nombre de Jesús 🙏💛`,
     ``,
-    `Nombre: ${item.nombre || ""}`,
-    `Apellido: ${item.apellido || ""}`,
-    `Dirección: ${item.direccion || ""}`,
-    `Teléfono: ${item.telefono || ""}`,
-    `Mail: ${item.mail || ""}`,
-    `Pedidos de oración: ${item.pedidosOracion || ""}`,
-    `Notas: ${item.notas || ""}`
+    `Formulario:`,
+    linkFormulario
   ].join("\n");
 
-  const url = `https://wa.me/?text=${encodeURIComponent(texto)}`;
+  const url = `https://wa.me/${numero}?text=${encodeURIComponent(texto)}`;
   window.open(url, "_blank");
 };
 
@@ -1875,3 +2003,215 @@ window.hacerAdmin = async (uidTarget) => {
     alert("No pude cambiar el rol a admin.");
   }
 };
+
+// ================= formulario publico =================
+const URL_GUARDAR_PEDIDO_ORACION = "https://us-central1-vidaabundante-f118a.cloudfunctions.net/guardarPedidoOracion";
+
+function iniciarFormularioPedidoOracionDesdeURL() {
+  const params = new URLSearchParams(window.location.search);
+  const hermanoId = params.get("pedidoOracion");
+  const token = params.get("token");
+
+  if (!hermanoId || !token) return;
+
+  abrirFormularioPedidoOracionPublico(hermanoId, token);
+}
+
+function abrirFormularioPedidoOracionPublico(hermanoId, token) {
+  const viejo = document.getElementById("modalPedidoOracionPublico");
+  if (viejo) viejo.remove();
+
+  const modal = document.createElement("div");
+  modal.id = "modalPedidoOracionPublico";
+
+  modal.innerHTML = `
+    <div class="pedido-oracion-publico-box">
+      <div class="pedido-oracion-publico-icono">
+        🙏
+      </div>
+
+      <h2>Pedido de oración</h2>
+
+      <p>
+        Bendiciones hermano, complete sus pedidos de oración con libertad y fe en el nombre de Jesús 🙏💛
+      </p>
+
+      <textarea
+        id="pedidoOracionPublicoTexto"
+        placeholder="Escriba aquí su pedido de oración..."
+      ></textarea>
+
+      <button type="button" id="btnEnviarPedidoOracionPublico">
+        Enviar pedido
+      </button>
+
+      <div id="pedidoOracionPublicoEstado"></div>
+    </div>
+  `;
+
+  const style = document.createElement("style");
+  style.id = "modalPedidoOracionPublicoStyle";
+  style.textContent = `
+    #modalPedidoOracionPublico{
+      position:fixed;
+      inset:0;
+      z-index:999999;
+      background:rgba(0,0,0,.45);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:16px;
+    }
+
+    .pedido-oracion-publico-box{
+      width:min(460px, 96vw);
+      background:#fff;
+      color:#000;
+      border-radius:22px;
+      padding:20px;
+      box-shadow:0 20px 60px rgba(0,0,0,.30);
+      text-align:center;
+    }
+
+    .pedido-oracion-publico-icono{
+      font-size:38px;
+      margin-bottom:6px;
+    }
+
+    .pedido-oracion-publico-box h2{
+      margin:0 0 8px;
+      font-size:24px;
+      font-weight:900;
+    }
+
+    .pedido-oracion-publico-box p{
+      margin:0 0 14px;
+      font-size:15px;
+      line-height:1.45;
+    }
+
+    #pedidoOracionPublicoTexto{
+      width:100%;
+      min-height:150px;
+      resize:vertical;
+      border:1px solid rgba(0,0,0,.18);
+      border-radius:16px;
+      padding:12px;
+      font-family:inherit;
+      font-size:15px;
+      outline:none;
+      box-sizing:border-box;
+    }
+
+    #btnEnviarPedidoOracionPublico{
+      width:100%;
+      margin-top:12px;
+      border:none;
+      border-radius:999px;
+      padding:12px 16px;
+      background:var(--ui-azul-hover, #1c6fcb);
+      color:#fff;
+      font-weight:900;
+      cursor:pointer;
+      font-size:15px;
+    }
+
+    #pedidoOracionPublicoEstado{
+      margin-top:10px;
+      font-size:14px;
+      font-weight:700;
+    }
+  `;
+
+  document.head.appendChild(style);
+  document.body.appendChild(modal);
+
+  const btn = document.getElementById("btnEnviarPedidoOracionPublico");
+
+  if (btn) {
+    btn.onclick = () => enviarPedidoOracionPublico(hermanoId, token);
+  }
+}
+
+async function enviarPedidoOracionPublico(hermanoId, token) {
+  const txt = document.getElementById("pedidoOracionPublicoTexto");
+  const estado = document.getElementById("pedidoOracionPublicoEstado");
+  const btn = document.getElementById("btnEnviarPedidoOracionPublico");
+
+  const pedido = String(txt?.value || "").trim();
+
+  if (!pedido) {
+    if (estado) estado.textContent = "Escriba su pedido de oración.";
+    return;
+  }
+
+  if (!URL_GUARDAR_PEDIDO_ORACION || URL_GUARDAR_PEDIDO_ORACION.includes("PEGAR_URL")) {
+    if (estado) estado.textContent = "Falta configurar la función para guardar.";
+    return;
+  }
+
+  try {
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = "Enviando...";
+    }
+
+    if (estado) estado.textContent = "";
+
+    const r = await fetch(URL_GUARDAR_PEDIDO_ORACION, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        hermanoId,
+        token,
+        pedido
+      })
+    });
+
+    const data = await r.json().catch(() => ({}));
+
+    if (!r.ok || !data.ok) {
+      throw new Error(data.error || "No se pudo enviar el pedido.");
+    }
+
+    if (estado) {
+      estado.textContent = "Pedido enviado. Dios le bendiga 🙏💛";
+    }
+
+    if (txt) txt.value = "";
+
+    setTimeout(() => {
+      const modal = document.getElementById("modalPedidoOracionPublico");
+      const style = document.getElementById("modalPedidoOracionPublicoStyle");
+
+      if (modal) modal.remove();
+      if (style) style.remove();
+
+      const url = new URL(window.location.href);
+      url.searchParams.delete("pedidoOracion");
+      url.searchParams.delete("token");
+      window.history.replaceState({}, "", url.toString());
+    }, 1800);
+
+  } catch (err) {
+    console.error(err);
+
+    if (estado) {
+      estado.textContent = "No se pudo enviar. Intente nuevamente.";
+    }
+
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = "Enviar pedido";
+    }
+  }
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", iniciarFormularioPedidoOracionDesdeURL);
+} else {
+  iniciarFormularioPedidoOracionDesdeURL();
+}
+
