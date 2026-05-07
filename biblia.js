@@ -100,7 +100,8 @@ document.addEventListener("click", function(e){
 // FIN MODAL LOGIN 
 const db = getDatabase(app);
 
-window.__FB = { db };
+window.__FB = { db, auth };
+window.__AUTH = auth;
 window.__FB_API = { ref, set, remove, onValue, get, push };
 
 // ================= 🧯 CORTAFUEGOS REAL DE SECCIONES =================
