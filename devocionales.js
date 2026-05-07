@@ -4636,39 +4636,73 @@ window.devWarmShareImage = async function(url, fileName="devocional.png"){
 
 // =========================
 // ✅ CON FUNCTIONS COMPARTIR Y DESCARGAR
+// Usa descargarImagenR2: baja ARCHIVO REAL desde R2
 // =========================
-async function fetchDevocionalBlob(url){
+
+const DEV_R2_DOWNLOAD_URL = "https://us-central1-vidaabundante-f118a.cloudfunctions.net/descargarImagenR2";
+
+function devNombreArchivoSeguro(fileName = "devocional.png"){
+  return String(fileName || "devocional.png")
+    .trim()
+    .replace(/[\/\\:*?"<>|]/g, "_")
+    .replace(/\s+/g, "_")
+    .slice(0, 120) || "devocional.png";
+}
+
+function devProxyImagenUrl(url, fileName = "devocional.png", descargar = false){
+  return DEV_R2_DOWNLOAD_URL +
+    "?url=" + encodeURIComponent(url) +
+    "&nombre=" + encodeURIComponent(devNombreArchivoSeguro(fileName)) +
+    "&descargar=" + (descargar ? "1" : "0");
+}
+
+async function fetchDevocionalBlob(url, fileName = "devocional.png"){
   if (!url) throw new Error("No hay URL de imagen");
 
-  const proxyUrl =
-    "https://us-central1-vidaabundante-f118a.cloudfunctions.net/devocionalR2Proxy" +
-    "?url=" + encodeURIComponent(url) +
-    "&name=" + encodeURIComponent("devocional.png");
+  const proxyUrl = devProxyImagenUrl(url, fileName, false);
 
-  const r = await fetch(proxyUrl);
-  if (!r.ok) throw new Error("No pude bajar PNG (" + r.status + ")");
-  return await r.blob();
+  const r = await fetch(proxyUrl, { cache: "no-store" });
+
+  if (!r.ok) {
+    const txt = await r.text().catch(() => "");
+    throw new Error("No pude bajar PNG (" + r.status + ") " + txt);
+  }
+
+  const blob = await r.blob();
+
+  if (!blob || !blob.size) {
+    throw new Error("La imagen bajó vacía");
+  }
+
+  return blob;
 }
 
 function devPrecacheFeedImages(items){
-  // ✅ desactivado: el fetch a R2 da error CORS y ensucia consola
+  // ✅ desactivado: evitamos ensuciar consola con CORS
 }
 
-window.devDescargarImagenItem = async function(url, fileName="devocional.png"){
+window.devDescargarImagenItem = async function(url, fileName = "devocional.png"){
   try{
     if (!url) throw new Error("No hay URL");
 
+    fileName = devNombreArchivoSeguro(fileName);
+
     devBusyShow("⏳ Preparando descarga…");
 
-    const blob = await fetchDevocionalBlob(url);
+    // ✅ baja ARCHIVO REAL como blob
+    const blob = await fetchDevocionalBlob(url, fileName);
+
+    const objUrl = URL.createObjectURL(blob);
+
     const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
+    a.href = objUrl;
     a.download = fileName;
     document.body.appendChild(a);
     a.click();
     a.remove();
 
-    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    setTimeout(() => URL.revokeObjectURL(objUrl), 2000);
+
   }catch(e){
     console.error(e);
     alert("❌ No se pudo descargar.\n\nDetalle: " + (e?.message || e));
@@ -4692,14 +4726,16 @@ window.devDescargarAudioItem = async function(audioUrl, baseName = "Audio_devoci
       blob.type.includes("ogg")  ? "ogg" :
       "mp3";
 
+    const objUrl = URL.createObjectURL(blob);
+
     const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
+    a.href = objUrl;
     a.download = `${baseName}.${ext}`;
     document.body.appendChild(a);
     a.click();
     a.remove();
 
-    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    setTimeout(() => URL.revokeObjectURL(objUrl), 2000);
     return true;
   }catch(e){
     console.warn("No se pudo descargar audio:", e);
@@ -4707,7 +4743,7 @@ window.devDescargarAudioItem = async function(audioUrl, baseName = "Audio_devoci
   }
 };
 
-window.devDescargarDevocionalItem = async function(url, fileName="devocional.png", audioUrl="", audioBaseName="Audio_devocional"){
+window.devDescargarDevocionalItem = async function(url, fileName = "devocional.png", audioUrl = "", audioBaseName = "Audio_devocional"){
   try{
     await window.devDescargarImagenItem(url, fileName);
 
@@ -4722,23 +4758,30 @@ window.devDescargarDevocionalItem = async function(url, fileName="devocional.png
   }
 };
 
-window.devCompartirImagenItem = async function(url, fileName="devocional.png"){
+window.devCompartirImagenItem = async function(url, fileName = "devocional.png"){
   try{
     if (!url) throw new Error("No hay URL");
 
-    // ✅ usar tu proxy (IMPORTANTE)
-    const proxyUrl =
-      "https://us-central1-vidaabundante-f118a.cloudfunctions.net/devocionalR2Proxy" +
-      "?url=" + encodeURIComponent(url) +
-      "&name=" + encodeURIComponent(fileName);
+    fileName = devNombreArchivoSeguro(fileName);
 
-    const r = await fetch(proxyUrl);
-    if (!r.ok) throw new Error("No pude bajar la imagen (" + r.status + ")");
+    devBusyShow("⏳ Preparando para compartir…");
 
-    const blob = await r.blob();
-    const file = new File([blob], fileName, { type: blob.type || "image/png" });
+    let file = null;
 
-    // ✅ intento compartir archivo REAL
+    // ✅ primero intento usar el archivo precalentado
+    try {
+      file = await window.devWarmShareImage?.(url, fileName);
+    } catch(e) {
+      file = null;
+    }
+
+    // ✅ si no estaba precalentado, bajo el archivo real ahora
+    if (!file) {
+      const blob = await fetchDevocionalBlob(url, fileName);
+      file = new File([blob], fileName, { type: blob.type || "image/png" });
+    }
+
+    // ✅ compartir ARCHIVO REAL
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
       await navigator.share({
         title: "Devocional",
@@ -4747,16 +4790,24 @@ window.devCompartirImagenItem = async function(url, fileName="devocional.png"){
       return;
     }
 
-    // ❌ fallback si el navegador no soporta compartir archivos
+    // fallback: descargar archivo real
+    const objUrl = URL.createObjectURL(file);
+
     const a = document.createElement("a");
-    a.href = URL.createObjectURL(file);
+    a.href = objUrl;
     a.download = fileName;
     document.body.appendChild(a);
     a.click();
     a.remove();
 
+    setTimeout(() => URL.revokeObjectURL(objUrl), 2000);
+
+    alert("Tu navegador no permite compartir archivo directo. Se descargó la imagen para compartirla manualmente.");
+
   } catch(e){
     console.error(e);
     alert("❌ No se pudo compartir.\n\nDetalle: " + (e?.message || e));
+  } finally {
+    devBusyHide();
   }
 };
