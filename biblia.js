@@ -103,6 +103,38 @@ const db = getDatabase(app);
 window.__FB = { db };
 window.__FB_API = { ref, set, remove, onValue, get, push };
 
+// ================= 🧯 CORTAFUEGOS REAL DE SECCIONES =================
+// Evita que Iglesia, Mi Panel y Compartidos queden visibles juntos.
+function forzarSeccionActiva(seccion) {
+  const todas = ["biblia", "iglesia", "panel", "compartidos"];
+
+  if (!todas.includes(seccion)) seccion = "iglesia";
+
+  window.__SECCION_ACTIVA = seccion;
+
+  document.body.classList.remove(
+    "en-biblia",
+    "en-iglesia",
+    "en-panel",
+    "en-compartidos"
+  );
+
+  document.body.classList.add("en-" + seccion);
+
+  todas.forEach(s => {
+    const el = document.getElementById("seccion-" + s);
+    if (!el) return;
+
+    el.style.setProperty(
+      "display",
+      s === seccion ? "block" : "none",
+      "important"
+    );
+  });
+}
+
+window.forzarSeccionActiva = forzarSeccionActiva;
+
 // ================= ESTADO GLOBAL =================
 let uid = null;
 let bibliaData = [];
@@ -3063,39 +3095,31 @@ if (subir) {
 // ================= 🔺 WINDOW / UI ⭕ ===============================
 window.irA = (seccion) => {
   const todas = ["biblia", "iglesia", "panel", "compartidos"];
+  if (!todas.includes(seccion)) seccion = "iglesia";
 
-  // ✅ 1) cerrar todas las secciones principales sí o sí
-  todas.forEach(s => {
-    const el = document.getElementById("seccion-" + s);
-    if (el) {
-      el.style.display = "none";
-    }
-  });
+  // ✅ primero cierro todo de forma fuerte
+  forzarSeccionActiva(seccion);
 
-  // ✅ 2) abrir solo la sección pedida
-  const activa = document.getElementById("seccion-" + seccion);
-  if (activa) {
-    activa.style.display = "block";
-  }
-
-  // ✅ 3) clase única en body para que el fondo correcto aparezca
-  document.body.classList.remove("en-biblia", "en-iglesia", "en-panel", "en-compartidos");
-  document.body.classList.add("en-" + seccion);
-
-  // ✅ 4) botón activo del menú principal
+  // ✅ botón activo del menú principal
   document.querySelectorAll("#menu .nav-btn").forEach(b => b.classList.remove("activo"));
 
   const btnActivo = document.querySelector(`#menu .nav-btn[onclick="irA('${seccion}')"]`);
   if (btnActivo) btnActivo.classList.add("activo");
 
-  // ✅ 5) iniciales internos SOLO de la sección abierta
+  // ✅ iniciales internos SOLO de la sección abierta
   if (seccion === "iglesia") {
     try { window.mostrarIglesiaSub?.("devocionales"); } catch(e) {}
+
+    requestAnimationFrame(() => forzarSeccionActiva("iglesia"));
+    setTimeout(() => forzarSeccionActiva("iglesia"), 80);
     return;
   }
 
   if (seccion === "panel") {
     try { window.mostrarSeccion?.("imagenes"); } catch(e) {}
+
+    requestAnimationFrame(() => forzarSeccionActiva("panel"));
+    setTimeout(() => forzarSeccionActiva("panel"), 80);
     return;
   }
 
@@ -3103,6 +3127,9 @@ window.irA = (seccion) => {
     try { window.cargarCompartidos?.(); } catch(e) {}
     try { window.renderCompartidos?.(); } catch(e) {}
     try { window.iniciarCompartidos?.(); } catch(e) {}
+
+    requestAnimationFrame(() => forzarSeccionActiva("compartidos"));
+    setTimeout(() => forzarSeccionActiva("compartidos"), 80);
     return;
   }
 
@@ -3111,6 +3138,9 @@ window.irA = (seccion) => {
     try { aplicarEstadoBarra?.("biblia"); } catch(e) {}
     try { mostrarTexto?.(); } catch(e) {}
     try { aplicarUIAccionesPorModo?.(); } catch(e) {}
+
+    requestAnimationFrame(() => forzarSeccionActiva("biblia"));
+    setTimeout(() => forzarSeccionActiva("biblia"), 80);
   }
 };
 
@@ -5061,16 +5091,39 @@ function renderPanelRecursosGuardados() {
 
 // ================= 🔺 PANEL ===================
 window.mostrarSeccion = (tipo) => {
-    if (!document.body.classList.contains("en-panel")) return;
-  ["imagenes", "marcadores", "compartidos", "abc", "recursos"].forEach(s => {
+  // ✅ Mi Panel solo puede manejar sus pestañas si realmente estamos en Mi Panel
+  if (!document.body.classList.contains("en-panel")) return;
+
+  // ✅ refuerzo: no permitir que Iglesia/Compartidos queden visibles abajo
+  if (typeof forzarSeccionActiva === "function") {
+    forzarSeccionActiva("panel");
+  }
+
+  const permitidas = ["imagenes", "marcadores", "compartidos", "abc", "recursos"];
+  if (!permitidas.includes(tipo)) tipo = "imagenes";
+
+  permitidas.forEach(s => {
     const el = document.getElementById("panel-" + s);
-    if (el) el.style.display = (s === tipo ? "block" : "none");
+    if (el) {
+      el.style.setProperty("display", s === tipo ? "block" : "none", "important");
+    }
   });
 
-  if (tipo === "marcadores") renderPanelMarcadores();
-  if (tipo === "compartidos") renderPanelCompartidosGuardados();
-  if (tipo === "abc") renderPanelABCGuardados();
-  if (tipo === "recursos") renderPanelRecursosGuardados();
+  if (tipo === "marcadores") {
+    try { renderPanelMarcadores(); } catch(e) { console.warn(e); }
+  }
+
+  if (tipo === "compartidos") {
+    try { renderPanelCompartidosGuardados(); } catch(e) { console.warn(e); }
+  }
+
+  if (tipo === "abc") {
+    try { renderPanelABCGuardados(); } catch(e) { console.warn(e); }
+  }
+
+  if (tipo === "recursos") {
+    try { renderPanelRecursosGuardados(); } catch(e) { console.warn(e); }
+  }
 
   // ✅ marcar tab activo SOLO en Panel
   const tabsPanel = document.querySelectorAll("#seccion-panel .panel-tabs button");
@@ -5078,6 +5131,13 @@ window.mostrarSeccion = (tipo) => {
 
   const btn = document.querySelector(`#seccion-panel .panel-tabs button[onclick="mostrarSeccion('${tipo}')"]`);
   if (btn) btn.classList.add("activo");
+
+  // ✅ segundo refuerzo por si algún render tarde intenta reabrir otra sección
+  requestAnimationFrame(() => {
+    if (typeof forzarSeccionActiva === "function") {
+      forzarSeccionActiva("panel");
+    }
+  });
 };
 
 // ================= 🔺 IR A LOGIN ===================
@@ -5559,40 +5619,60 @@ if (secBiblia) secBiblia.classList.remove("filtros-abiertos");
   
 // ================= 🔺 IGLESIA: SUB-SECCIONES =================
 window.mostrarIglesiaSub = (sub) => {
-  // ✅ detecto si estaba en ABC antes
-  const abcAntes = document.getElementById("iglesia-abc");
-  const estabaEnABC = !!(abcAntes && abcAntes.style.display !== "none");
+  // ✅ Iglesia solo puede manejar sus subsecciones si estamos en Iglesia
+  if (!document.body.classList.contains("en-iglesia")) return;
 
-  // ✅ si salgo de ABC a otro sub, apago ABC (devuelvo barra + resetea modo)
-  if (estabaEnABC && sub !== "abc") {
-    window.__abcOnExit?.();
+  // ✅ refuerzo: no permitir que Mi Panel/Compartidos queden visibles abajo
+  if (typeof forzarSeccionActiva === "function") {
+    forzarSeccionActiva("iglesia");
   }
 
-["devocionales", "abc", "subidos", "recursos"].forEach(k => {
+  const permitidas = ["devocionales", "abc", "subidos", "recursos"];
+  if (!permitidas.includes(sub)) sub = "devocionales";
+
+  // ✅ detecto si estaba en ABC antes
+  const abcAntes = document.getElementById("iglesia-abc");
+  const estabaEnABC = !!(abcAntes && getComputedStyle(abcAntes).display !== "none");
+
+  // ✅ si salgo de ABC a otro sub, apago ABC
+  if (estabaEnABC && sub !== "abc") {
+    try { window.__abcOnExit?.(); } catch(e) { console.warn(e); }
+  }
+
+  permitidas.forEach(k => {
     const el = document.getElementById("iglesia-" + k);
-    if (el) el.style.display = (k === sub) ? "block" : "none";
+    if (el) {
+      el.style.setProperty("display", k === sub ? "block" : "none", "important");
+    }
   });
 
   const wrap = document.getElementById("seccion-iglesia");
   if (wrap) {
     wrap.querySelectorAll(".iglesia-tab, .nav-btn, button").forEach(b => b.classList.remove("activo"));
+
     const btn = wrap.querySelector(`[onclick="mostrarIglesiaSub('${sub}')"]`);
     if (btn) btn.classList.add("activo");
   }
 
-  // ✅ cuando entro a ABC: inicializo ABC + engancho barra SIEMPRE
-  // ✅ cuando entro a ABC: guardo estado de Biblia y apago modos para que NO contaminen ABC
+  // ✅ cuando entro a ABC: inicializo ABC + apago modos de Biblia
   if (sub === "abc") {
-    try { bibliaBackupUI(); } catch(e){}
-    try { bibliaApagarModosParaCambiarSeccion(); } catch(e){}
+    try { bibliaBackupUI(); } catch(e) {}
+    try { bibliaApagarModosParaCambiarSeccion(); } catch(e) {}
 
-    window.mostrarABC?.();
-    window.__abcOnEnter?.();
+    try { window.mostrarABC?.(); } catch(e) { console.warn(e); }
+    try { window.__abcOnEnter?.(); } catch(e) { console.warn(e); }
   }
 
   if (sub === "recursos") {
-  window.mostrarRecursosSub?.("rh");
-}
+    try { window.mostrarRecursosSub?.("rh"); } catch(e) { console.warn(e); }
+  }
+
+  // ✅ segundo refuerzo por si devocionales/ABC/recursos renderizan después
+  requestAnimationFrame(() => {
+    if (typeof forzarSeccionActiva === "function") {
+      forzarSeccionActiva("iglesia");
+    }
+  });
 };
 
 // ================= SELECTOR DE COLORES REUTILIZABLE =====  
