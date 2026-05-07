@@ -4040,7 +4040,7 @@ async function cargarDevocionales(){
   const row  = $("devIndexRow");
   const feed = $("devFeed");
   if (row)  row.innerHTML  = "";
-  if (feed) feed.innerHTML = `<div style="opacity:.8; padding:10px;">Cargando devocionales…</div>`;
+ if (feed) feed.innerHTML = `<div class="dev-loading-msg">Cargando devocionales...</div>`;
 
 const btnNuevo = $("btnDevNuevo");
 if (btnNuevo) {
