@@ -5682,46 +5682,124 @@ if (btn && !btn.__ready) {
   
 }); // ================= ✅ CIERRA INIT ÚNICO =====
 
+// ================= 🔺 MI PANEL IMÁGENES: DESCARGAR / COMPARTIR ARCHIVO REAL ===================
 
-window.descargarImagenPanel = (url) => {
+function panelNombreArchivoSeguro(fileName = "imagen_vida_abundante.png"){
+  return String(fileName || "imagen_vida_abundante.png")
+    .trim()
+    .replace(/[\/\\:*?"<>|]/g, "_")
+    .replace(/\s+/g, "_")
+    .slice(0, 120) || "imagen_vida_abundante.png";
+}
+
+function panelProxyImagenUrl(url, fileName = "imagen_vida_abundante.png", descargar = false){
+  return R2_DOWNLOAD_URL +
+    "?url=" + encodeURIComponent(url) +
+    "&nombre=" + encodeURIComponent(panelNombreArchivoSeguro(fileName)) +
+    "&descargar=" + (descargar ? "1" : "0");
+}
+
+async function fetchPanelImagenBlob(url, fileName = "imagen_vida_abundante.png"){
+  if (!url) throw new Error("No hay imagen para descargar.");
+
+  const proxyUrl = panelProxyImagenUrl(url, fileName, false);
+
+  const r = await fetch(proxyUrl, { cache: "no-store" });
+
+  if (!r.ok) {
+    const txt = await r.text().catch(() => "");
+    throw new Error("No pude bajar la imagen (" + r.status + ") " + txt);
+  }
+
+  const blob = await r.blob();
+
+  if (!blob || !blob.size) {
+    throw new Error("La imagen bajó vacía.");
+  }
+
+  return blob;
+}
+
+window.descargarImagenPanel = async (url, fileName = "imagen_vida_abundante.png") => {
   try {
     if (!url) {
       alert("No hay imagen para descargar.");
       return;
     }
 
+    fileName = panelNombreArchivoSeguro(fileName);
+
+    if (typeof mostrarToast === "function") {
+      mostrarToast("⏳ Preparando descarga...");
+    }
+
+    // ✅ baja ARCHIVO REAL
+    const blob = await fetchPanelImagenBlob(url, fileName);
+
+    const objUrl = URL.createObjectURL(blob);
+
     const a = document.createElement("a");
-    a.href = `${R2_DOWNLOAD_URL}?url=${encodeURIComponent(url)}`;
-    a.download = "";
+    a.href = objUrl;
+    a.download = fileName;
     document.body.appendChild(a);
     a.click();
     a.remove();
 
+    setTimeout(() => URL.revokeObjectURL(objUrl), 2000);
+
     if (typeof mostrarToast === "function") {
       mostrarToast("📥 Descargando imagen...");
     }
+
   } catch (e) {
     console.error(e);
-    alert("No se pudo descargar la imagen.");
+    alert("No se pudo descargar la imagen.\n\nDetalle: " + (e?.message || e));
   }
 };
 
-window.compartirImagenPanel = async (url) => {
+window.compartirImagenPanel = async (url, fileName = "imagen_vida_abundante.png") => {
   try {
+    if (!url) {
+      alert("No hay imagen para compartir.");
+      return;
+    }
 
-    if (navigator.share) {
+    fileName = panelNombreArchivoSeguro(fileName);
+
+    if (typeof mostrarToast === "function") {
+      mostrarToast("⏳ Preparando para compartir...");
+    }
+
+    // ✅ baja ARCHIVO REAL
+    const blob = await fetchPanelImagenBlob(url, fileName);
+    const file = new File([blob], fileName, { type: blob.type || "image/png" });
+
+    // ✅ comparte ARCHIVO REAL
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
       await navigator.share({
         title: "Vida Abundante",
-        url
+        files: [file]
       });
       return;
     }
 
-    await navigator.clipboard.writeText(url);
-    alert("Link copiado para compartir");
+    // fallback: descargar archivo real
+    const objUrl = URL.createObjectURL(file);
+
+    const a = document.createElement("a");
+    a.href = objUrl;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    setTimeout(() => URL.revokeObjectURL(objUrl), 2000);
+
+    alert("Tu navegador no permite compartir archivo directo. Se descargó la imagen para compartirla manualmente.");
 
   } catch(e){
     console.error(e);
+    alert("No se pudo compartir la imagen.\n\nDetalle: " + (e?.message || e));
   }
 };
 
