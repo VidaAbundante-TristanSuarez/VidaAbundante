@@ -1692,27 +1692,14 @@ const colorAplicadoKeep = coincideUltimoMarcador
     ${idMarcadorPluma ? `<i class="fa-solid fa-comment-dots icono-nota" aria-hidden="true" data-mid="${idMarcadorPluma}"></i>` : ``}
   `;
 
-  // ✅ color/bold del texto bíblico, sin romper resaltadores
-  const txtBiblico = div.querySelector(".txt");
-  const secBiblia = document.getElementById("seccion-biblia");
+// ✅ dejar color bíblico temático SOLO cuando NO hay resaltado
+const hayFondoResaltado =
+  !!imagen ||
+  !!selMarcador ||
+  !!(aplicado && colorAplicadoKeep) ||
+  !!(marcado?.color);
 
-  const colorBiblico = secBiblia
-    ? getComputedStyle(secBiblia).getPropertyValue("--va-color-texto-biblia").trim()
-    : "";
-
-  const hayFondoResaltado =
-    !!imagen ||
-    !!selMarcador ||
-    !!(aplicado && colorAplicadoKeep) ||
-    !!(marcado?.color);
-
-  if (txtBiblico) {
-    if (!hayFondoResaltado && colorBiblico) {
-      txtBiblico.classList.add("va-texto-biblia-tema");
-    } else {
-      txtBiblico.classList.remove("va-texto-biblia-tema");
-    }
-  }
+div.classList.toggle("versiculo-con-fondo-resaltado", hayFondoResaltado);
 
   // ================= Click =================
   div.onclick = () => toggleVersiculo(id, v.Versiculo);
