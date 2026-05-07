@@ -725,6 +725,7 @@ body.oscuro .devIndexBarBottom{
 
 /* tarjeta grande SOLO DEVOCIONALES */
 #devHome .devBigCard{
+  position:relative;
   width: min(420px, 96vw);
   margin: 0 auto;
   border:1px solid rgba(255,255,255,.45);
@@ -734,6 +735,13 @@ body.oscuro .devIndexBarBottom{
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   box-shadow: 0 12px 28px rgba(0,0,0,.08);
+}
+
+#devTopRow.devTopRowDebajo{
+  justify-content:center;
+  padding: 4px 0 10px;
+  margin: 0 auto 6px;
+  width: min(460px, 94vw);
 }
 
 #devHome .devBigCard img{
@@ -919,17 +927,35 @@ body.oscuro .devIndexBarBottom{
 
 .devDeleteTopBtn{
   position:absolute;
-  top:10px;
-  right:10px;
+  top:auto !important;
+  bottom:10px !important;
+  right:10px !important;
   z-index:3;
-  transform:scale(.9);
+
+  width:30px !important;
+  height:30px !important;
+  min-width:30px !important;
+  min-height:30px !important;
+  padding:0 !important;
+
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+
+  font-size:13px !important;
+  transform:none !important;
   opacity:.55;
   transition:opacity .2s ease, transform .2s ease;
 }
 
+.devDeleteTopBtn i{
+  font-size:13px !important;
+  line-height:1;
+}
+
 .devDeleteTopBtn:hover{
   opacity:1;
-  transform:scale(.95);
+  transform:scale(1.03) !important;
 }
 
 /* fondo modal oración */
