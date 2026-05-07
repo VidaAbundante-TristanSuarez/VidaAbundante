@@ -6256,10 +6256,11 @@ function reflejarDraftEnModal() {
 
   asegurarControlColorTextoTema();
 
-  const label = document.getElementById("fondoSeccionActualLabel");
-  const slider = document.getElementById("opacidadFondoApp");
-  const inputColor = document.getElementById("colorFondoApp");
-  const inputTexto = document.getElementById("colorTextoApp");
+const label = document.getElementById("fondoSeccionActualLabel");
+const labelOpacidad = document.getElementById("labelOpacidadTema");
+const slider = document.getElementById("opacidadFondoApp");
+const inputColor = document.getElementById("colorFondoApp");
+const inputTexto = document.getElementById("colorTextoApp");
 
   if (label) {
     const nombres = {
@@ -6270,6 +6271,13 @@ function reflejarDraftEnModal() {
     };
     label.textContent = nombres[fondoTemaDraft.seccion] || "Biblia";
   }
+
+  if (labelOpacidad) {
+  labelOpacidad.textContent =
+    fondoTemaDraft.seccion === "biblia"
+      ? "Opacidad del recuadro"
+      : "Opacidad del fondo";
+}
 
   if (slider) {
     slider.value = String(fondoTemaDraft.opacidad || "0.35");
