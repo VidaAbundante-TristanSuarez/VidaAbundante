@@ -1271,7 +1271,7 @@ window.mostrarHermanos = async () => {
 
         <div id="hermanosTop">
           <div id="hermanosTopLeft">
-            <h3>Hermanos</h3>
+            <h3>Contactos</h3>
             <div id="hermanosCount">0 registros</div>
           </div>
 
@@ -2042,7 +2042,7 @@ function abrirFormularioPedidoOracionPublico(hermanoId, token) {
       ></textarea>
 
       <button type="button" id="btnEnviarPedidoOracionPublico">
-        Enviar pedido
+        Guardar
       </button>
 
       <div id="pedidoOracionPublicoEstado"></div>
