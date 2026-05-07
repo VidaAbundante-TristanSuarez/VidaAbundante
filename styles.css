@@ -3678,4 +3678,100 @@ body.oscuro .panel-folder-card{
   }
 }
 
+/* ✅ BLINDAJE FINAL: Mi Panel add redondo aunque JS regenere el botón */
+#panelImgTopRow{
+  width:min(460px, 94vw) !important;
+  margin:4px auto 8px !important;
+  padding:6px 0 10px !important;
+  display:flex !important;
+  justify-content:flex-end !important;
+  align-items:center !important;
+  background:transparent !important;
+  box-sizing:border-box !important;
+}
+
+#panelImgTopRow > button,
+#btnPanelImgNuevo,
+#btnPanelImgNuevo.btn-primary,
+#btnPanelImgNuevo.panel-add-redondo{
+  width:40px !important;
+  height:40px !important;
+  min-width:40px !important;
+  min-height:40px !important;
+  max-width:40px !important;
+  max-height:40px !important;
+
+  flex:0 0 40px !important;
+  padding:0 !important;
+  margin:0 !important;
+
+  border:0 !important;
+  border-radius:999px !important;
+
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+
+  background:#fffcd3 !important;
+  color:#000 !important;
+  box-shadow:0 8px 18px rgba(0,0,0,.22) !important;
+
+  font-size:0 !important;
+  line-height:1 !important;
+  overflow:hidden !important;
+  appearance:none !important;
+  -webkit-appearance:none !important;
+}
+
+#panelImgTopRow > button i,
+#btnPanelImgNuevo i{
+  font-size:15px !important;
+  line-height:1 !important;
+  margin:0 !important;
+  padding:0 !important;
+}
+
+#panelImgTopRow > button:hover,
+#btnPanelImgNuevo:hover{
+  background:var(--ui-azul-hover) !important;
+  transform:translateY(-1px);
+  box-shadow:0 10px 22px rgba(0,0,0,.28) !important;
+}
+
+@media (max-width:700px){
+  #seccion-panel{
+    padding-left:8px !important;
+    padding-right:8px !important;
+    overflow-x:hidden !important;
+    box-sizing:border-box !important;
+  }
+
+  #panel-imagenes.panel-seccion{
+    width:100% !important;
+    max-width:560px !important;
+    margin-left:auto !important;
+    margin-right:auto !important;
+    padding-left:0 !important;
+    padding-right:0 !important;
+    overflow-x:hidden !important;
+    box-sizing:border-box !important;
+  }
+
+  #panelImgIndexRow,
+  #panelImgTopRow,
+  #panelImgFeed{
+    width:100% !important;
+    max-width:100% !important;
+    box-sizing:border-box !important;
+  }
+
+  #panelImgFeed .devBigCard{
+    width:100% !important;
+    max-width:420px !important;
+    margin-left:auto !important;
+    margin-right:auto !important;
+    box-sizing:border-box !important;
+  }
+}
+
   </style> 
