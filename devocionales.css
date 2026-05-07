@@ -738,10 +738,10 @@ body.oscuro .devIndexBarBottom{
 }
 
 #devTopRow.devTopRowDebajo{
-  justify-content:center;
-  padding: 4px 0 10px;
-  margin: 0 auto 6px;
-  width: min(460px, 94vw);
+  justify-content:flex-end !important;
+  padding: 4px 0 4px !important;
+  margin: 0 auto 6px !important;
+  width: min(460px, 94vw) !important;
 }
 
 #devHome .devBigCard img{
@@ -1096,6 +1096,24 @@ body.oscuro .devIndexBarBottom{
   min-height: 44px !important;
   border-radius: 999px !important;
   padding: 0 !important;
+}
+
+/* ✅ AJUSTE CELULAR SOLO FASE 3:
+   mueve el modal hacia arriba y evita que el padding lo corte abajo */
+@media (max-width: 700px){
+  #modalDevFase3.modal-overlay.abierto{
+    align-items:flex-start !important;
+    justify-content:center !important;
+    padding-top:2px !important;
+    padding-bottom:14px !important;
+  }
+
+  #modalDevFase3 .modal-contenido.modal-dev{
+    box-sizing:border-box !important;
+    height: calc(100dvh - 16px) !important;
+    max-height: calc(100dvh - 16px) !important;
+    margin-top:0 !important;
+  }
 }
 
 </style>
