@@ -1133,6 +1133,28 @@ background: #1f3a4d;
 color: #ffffff;
 }
 
+/* ================= RECUADRO DETRÁS DEL TEXTO BÍBLICO ================= */
+#seccion-biblia #texto{
+  --va-biblia-box-opacity: 0;
+
+  width: min(920px, calc(100% - 24px));
+  margin: 10px auto 14px;
+  padding: 10px 8px 14px;
+  box-sizing: border-box;
+
+  border-radius: 22px;
+
+  /* ✅ en claro: blanco */
+  background: rgba(255, 255, 255, var(--va-biblia-box-opacity));
+
+  transition: background .2s ease;
+}
+
+body.oscuro #seccion-biblia #texto{
+  /* ✅ en oscuro: negro */
+  background: rgba(0, 0, 0, var(--va-biblia-box-opacity));
+}
+
 body.modo-imagen #texto {
 background: rgba(0,0,0,0.04);
 }
