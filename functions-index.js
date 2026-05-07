@@ -653,217 +653,198 @@ const key = `${safeFolder}/${finalName}`;
 // ================================
 exports.crearUploadVideoR2 = onRequest(
   {
-    cors: true,
     secrets: ["R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY"]
   },
-async (req, res) => {
-  // ✅ CORS manual para POST con Authorization
-  const origen = String(req.headers.origin || "");
-
-  const permitidos = [
-    "https://vidaabundante-tristansuarez.github.io",
-    "http://localhost:3000",
-    "http://localhost:5000",
-    "http://127.0.0.1:5500"
-  ];
-
-  if (permitidos.includes(origen)) {
-    res.set("Access-Control-Allow-Origin", origen);
-  } else {
-    res.set("Access-Control-Allow-Origin", "https://vidaabundante-tristansuarez.github.io");
-  }
-
-  res.set("Vary", "Origin");
-  res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  res.set("Access-Control-Max-Age", "3600");
-
-  try {
-    if (req.method === "OPTIONS") {
-      return res.status(204).send("");
-    }
-
-    if (req.method !== "POST") {
-        return res.status(405).json({
-          ok: false,
-          error: "Use POST"
-        });
-      }
-
-      // ✅ 1) Verificar usuario Firebase
-      const authHeader = String(req.headers.authorization || "");
-      const idToken = authHeader.startsWith("Bearer ")
-        ? authHeader.slice(7)
-        : "";
-
-      if (!idToken) {
-        return res.status(401).json({
-          ok: false,
-          error: "Falta token de usuario"
-        });
-      }
-
-      let decoded;
+  async (req, res) => {
+    cors(req, res, async () => {
       try {
-        decoded = await admin.auth().verifyIdToken(idToken);
+        if (req.method === "OPTIONS") {
+          return res.status(204).send("");
+        }
+
+        if (req.method !== "POST") {
+          return res.status(405).json({
+            ok: false,
+            error: "Use POST"
+          });
+        }
+
+        // ✅ 1) Verificar usuario Firebase
+        const authHeader = String(req.headers.authorization || "");
+        const idToken = authHeader.startsWith("Bearer ")
+          ? authHeader.slice(7)
+          : "";
+
+        if (!idToken) {
+          return res.status(401).json({
+            ok: false,
+            error: "Falta token de usuario"
+          });
+        }
+
+        let decoded;
+        try {
+          decoded = await admin.auth().verifyIdToken(idToken);
+        } catch (e) {
+          return res.status(401).json({
+            ok: false,
+            error: "Token inválido"
+          });
+        }
+
+        const uid = decoded.uid;
+
+        if (!uid) {
+          return res.status(401).json({
+            ok: false,
+            error: "Usuario inválido"
+          });
+        }
+
+        // ✅ 2) Permitir solo admin o colaborador
+        const db = admin.database();
+
+        const [adminSnap, colabSnap] = await Promise.all([
+          db.ref(`admins/${uid}`).get(),
+          db.ref(`colaboradores/${uid}`).get()
+        ]);
+
+        const esAdmin = !!adminSnap.val();
+        const esColaborador = !!colabSnap.val();
+
+        if (!esAdmin && !esColaborador) {
+          return res.status(403).json({
+            ok: false,
+            error: "No tenés permiso para subir videos"
+          });
+        }
+
+        // ✅ 3) Leer datos pedidos por el navegador
+        const body =
+          typeof req.body === "string"
+            ? JSON.parse(req.body || "{}")
+            : (req.body || {});
+
+        const destino = String(body.destino || "").trim(); // "subidos" | "ediciones"
+        const fileNameOriginal = String(body.fileName || "").trim();
+        const contentType = String(body.contentType || "").trim();
+        const sizeBytes = Number(body.sizeBytes || 0);
+
+        if (!["subidos", "ediciones"].includes(destino)) {
+          return res.status(400).json({
+            ok: false,
+            error: "Destino inválido"
+          });
+        }
+
+        const tiposPermitidos = {
+          "video/mp4": "mp4",
+          "video/webm": "webm",
+          "video/quicktime": "mov"
+        };
+
+        if (!tiposPermitidos[contentType]) {
+          return res.status(400).json({
+            ok: false,
+            error: "Tipo de video no permitido. Usá MP4, WEBM o MOV."
+          });
+        }
+
+        // ✅ límite inicial prudente para cuidar lo gratuito
+        const MAX_VIDEO_BYTES = 80 * 1024 * 1024; // 80 MB
+
+        if (!Number.isFinite(sizeBytes) || sizeBytes <= 0) {
+          return res.status(400).json({
+            ok: false,
+            error: "Tamaño inválido"
+          });
+        }
+
+        if (sizeBytes > MAX_VIDEO_BYTES) {
+          return res.status(400).json({
+            ok: false,
+            error: "Video demasiado grande. Máximo inicial: 80 MB."
+          });
+        }
+
+        // ✅ 4) Preparar nombre seguro
+        const safe = (s) =>
+          String(s || "")
+            .trim()
+            .replace(/[\/\\:*?"<>|]/g, "_")
+            .replace(/\s+/g, "_")
+            .slice(0, 90);
+
+        const ext = tiposPermitidos[contentType] || "mp4";
+
+        const baseName =
+          safe(fileNameOriginal.replace(/\.[^.]+$/, "")) ||
+          `video_${Date.now()}`;
+
+        const ts = Date.now();
+
+        const key = `videos/${destino}/${uid}/${ts}_${baseName}.${ext}`;
+
+        // ✅ 5) Crear cliente R2
+        const accountId = "80df1160feb2717f268710c45fcc3a38";
+        const bucket = "vida-abundante";
+
+        const accessKeyId = process.env.R2_ACCESS_KEY_ID;
+        const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
+
+        if (!accessKeyId || !secretAccessKey) {
+          return res.status(500).json({
+            ok: false,
+            error: "Faltan secrets de R2"
+          });
+        }
+
+        const s3 = new S3Client({
+          region: "auto",
+          endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
+          credentials: {
+            accessKeyId,
+            secretAccessKey
+          }
+        });
+
+        const command = new PutObjectCommand({
+          Bucket: bucket,
+          Key: key,
+          ContentType: contentType,
+          CacheControl: "public, max-age=31536000, immutable"
+        });
+
+        // ✅ URL válida 10 minutos
+        const uploadUrl = await getSignedUrl(s3, command, {
+          expiresIn: 10 * 60
+        });
+
+        const publicBaseUrl = "https://pub-f0843badb1194dc79fd37b3a5526e273.r2.dev";
+        const publicUrl = `${publicBaseUrl}/${key}`;
+
+        return res.status(200).json({
+          ok: true,
+          uploadUrl,
+          publicUrl,
+          key,
+          fileName: `${baseName}.${ext}`,
+          contentType,
+          sizeBytes,
+          destino,
+          uid,
+          expiresInSeconds: 10 * 60
+        });
+
       } catch (e) {
-        return res.status(401).json({
-          ok: false,
-          error: "Token inválido"
-        });
-      }
+        console.error("crearUploadVideoR2 error:", e);
 
-      const uid = decoded.uid;
-      if (!uid) {
-        return res.status(401).json({
-          ok: false,
-          error: "Usuario inválido"
-        });
-      }
-
-      // ✅ 2) Permitir solo admin o colaborador
-      const db = admin.database();
-
-      const [adminSnap, colabSnap] = await Promise.all([
-        db.ref(`admins/${uid}`).get(),
-        db.ref(`colaboradores/${uid}`).get()
-      ]);
-
-      const esAdmin = !!adminSnap.val();
-      const esColaborador = !!colabSnap.val();
-
-      if (!esAdmin && !esColaborador) {
-        return res.status(403).json({
-          ok: false,
-          error: "No tenés permiso para subir videos"
-        });
-      }
-
-      // ✅ 3) Leer datos pedidos por el navegador
-      const body =
-        typeof req.body === "string"
-          ? JSON.parse(req.body || "{}")
-          : (req.body || {});
-
-      const destino = String(body.destino || "").trim(); // "subidos" | "ediciones"
-      const fileNameOriginal = String(body.fileName || "").trim();
-      const contentType = String(body.contentType || "").trim();
-      const sizeBytes = Number(body.sizeBytes || 0);
-
-      if (!["subidos", "ediciones"].includes(destino)) {
-        return res.status(400).json({
-          ok: false,
-          error: "Destino inválido"
-        });
-      }
-
-      const tiposPermitidos = {
-        "video/mp4": "mp4",
-        "video/webm": "webm",
-        "video/quicktime": "mov"
-      };
-
-      if (!tiposPermitidos[contentType]) {
-        return res.status(400).json({
-          ok: false,
-          error: "Tipo de video no permitido. Usá MP4, WEBM o MOV."
-        });
-      }
-
-      // ✅ límite inicial prudente para cuidar lo gratuito
-      const MAX_VIDEO_BYTES = 80 * 1024 * 1024; // 80 MB
-
-      if (!Number.isFinite(sizeBytes) || sizeBytes <= 0) {
-        return res.status(400).json({
-          ok: false,
-          error: "Tamaño inválido"
-        });
-      }
-
-      if (sizeBytes > MAX_VIDEO_BYTES) {
-        return res.status(400).json({
-          ok: false,
-          error: "Video demasiado grande. Máximo inicial: 80 MB."
-        });
-      }
-
-      // ✅ 4) Preparar nombre seguro
-      const safe = (s) =>
-        String(s || "")
-          .trim()
-          .replace(/[\/\\:*?"<>|]/g, "_")
-          .replace(/\s+/g, "_")
-          .slice(0, 90);
-
-      const ext = tiposPermitidos[contentType] || "mp4";
-
-      const baseName =
-        safe(fileNameOriginal.replace(/\.[^.]+$/, "")) ||
-        `video_${Date.now()}`;
-
-      const ts = Date.now();
-
-      const key = `videos/${destino}/${uid}/${ts}_${baseName}.${ext}`;
-
-      // ✅ 5) Crear cliente R2
-      const accountId = "80df1160feb2717f268710c45fcc3a38";
-      const bucket = "vida-abundante";
-
-      const accessKeyId = process.env.R2_ACCESS_KEY_ID;
-      const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
-
-      if (!accessKeyId || !secretAccessKey) {
         return res.status(500).json({
           ok: false,
-          error: "Faltan secrets de R2"
+          error: String(e?.message || e)
         });
       }
-
-      const s3 = new S3Client({
-        region: "auto",
-        endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
-        credentials: {
-          accessKeyId,
-          secretAccessKey
-        }
-      });
-
-      const command = new PutObjectCommand({
-        Bucket: bucket,
-        Key: key,
-        ContentType: contentType,
-        CacheControl: "public, max-age=31536000, immutable"
-      });
-
-      // ✅ URL válida 10 minutos
-      const uploadUrl = await getSignedUrl(s3, command, {
-        expiresIn: 10 * 60
-      });
-
-      const publicBaseUrl = "https://pub-f0843badb1194dc79fd37b3a5526e273.r2.dev";
-      const publicUrl = `${publicBaseUrl}/${key}`;
-
-      return res.status(200).json({
-        ok: true,
-        uploadUrl,
-        publicUrl,
-        key,
-        fileName: `${baseName}.${ext}`,
-        contentType,
-        sizeBytes,
-        destino,
-        uid,
-        expiresInSeconds: 10 * 60
-      });
-
-    } catch (e) {
-      console.error("crearUploadVideoR2 error:", e);
-
-      return res.status(500).json({
-        ok: false,
-        error: String(e?.message || e)
-      });
-    }
+    });
   }
 );
 
