@@ -860,17 +860,30 @@ html, body {
 }
 
 #btnResaltadorActivo{
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  min-height: 30px;
+
+  border-radius: 999px;
   border: none;
   cursor: pointer;
+
   display: flex;
   align-items: center;
   justify-content: center;
+
   position: relative;
   overflow: hidden;
-  background: transparent;
+
+  background: var(--ui-azul-claro);
+  color: #000;
+  padding: 0;
+}
+
+#btnResaltadorActivo:hover{
+  background: var(--ui-azul-hover);
+  color: #000;
 }
 
 #paletaResaltadores{
