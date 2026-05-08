@@ -1386,6 +1386,18 @@ function nombreMes(d) {
   return d.toLocaleDateString("es-AR", { month: "long", year: "numeric" });
 }
 
+function setSubidosModalTitulo(texto) {
+  const ttlTexto = document.getElementById("subidosModalTituloTexto");
+  if (ttlTexto) {
+    ttlTexto.textContent = String(texto || "").trim() || "Nuevo subido";
+    return;
+  }
+
+  // fallback por si alguna vez no existiera el span interno
+  const ttl = document.getElementById("subidosModalTitulo");
+  if (ttl) ttl.textContent = String(texto || "").trim() || "Nuevo subido";
+}
+
 function abrirModalSubidos() {
   const m = document.getElementById("modalSubidos");
   if (!m) return;
@@ -1402,7 +1414,7 @@ function abrirModalSubidos() {
 
   subidosEditandoId = null;
 
-  if (ttl) ttl.textContent = "📤 Nuevo subido";
+  setSubidosModalTitulo("Nuevo subido");
   if (archivo) archivo.value = "";
   if (descripcion) descripcion.value = "";
   if (estado) estado.textContent = "";
@@ -1424,7 +1436,7 @@ window.cerrarModalSubidos = function cerrarModalSubidos() {
   if (!m) return;
 
   const ttl = document.getElementById("subidosModalTitulo");
-  if (ttl) ttl.textContent = "📤 Nuevo subido";
+  setSubidosModalTitulo("Nuevo subido");
 
   subidosEditandoId = null;
   m.style.display = "none";
@@ -1553,7 +1565,7 @@ function abrirNuevoHabitualDesdeCalendario(id) {
   const descripcion = document.getElementById("subidosDescripcion");
   const archivo = document.getElementById("subidosArchivo");
 
-  if (ttl) ttl.textContent = "✏️ Nuevo evento habitual";
+  setSubidosModalTitulo("Nuevo evento habitual");
   if (fecha) fecha.value = ev.fechaEvento;
   if (etiqueta) etiqueta.value = ev.etiqueta;
   if (descripcion) descripcion.value = ev.descripcion;
@@ -2847,8 +2859,8 @@ window.abrirEditarSubido = async function abrirEditarSubido(id) {
   subidosEditandoId = id;
 
   const ttl = document.getElementById("subidosModalTitulo");
-  if (ttl) ttl.textContent = "✏️ Editar subido";
-
+  setSubidosModalTitulo("Editar subido");
+  
   const fecha = document.getElementById("subidosFecha");
   const etiqueta = document.getElementById("subidosEtiqueta");
   const descripcion = document.getElementById("subidosDescripcion");
