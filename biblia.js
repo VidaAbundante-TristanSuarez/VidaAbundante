@@ -4641,16 +4641,40 @@ function panelImagenRenderCardHTML(it = {}, opciones = {}) {
   const itemId = panelImgJs(it.id || "");
 
   const eliminarHtml = eliminarHtmlPersonalizado || (mostrarEliminar ? `
-    <button class="btn-danger" type="button"
+    <button
+      class="btn-danger panel-img-delete-corner"
+      type="button"
       onclick="eliminarImagenPanel('${itemId}')"
       aria-label="Eliminar"
-      title="Eliminar">
+      title="Eliminar"
+      style="
+        position:absolute;
+        right:10px;
+        bottom:10px;
+        width:28px;
+        height:28px;
+        min-width:28px;
+        min-height:28px;
+        padding:0;
+        border-radius:999px;
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        opacity:.65;
+        z-index:3;
+      "
+    >
       <i class="fa-solid fa-trash"></i>
     </button>
   ` : ``);
 
   return `
-    <div class="devBigCard" id="${panelImgAttr(domId)}" data-panel-img-card-id="${panelImgAttr(it.id || "")}">
+    <div
+      class="devBigCard"
+      id="${panelImgAttr(domId)}"
+      data-panel-img-card-id="${panelImgAttr(it.id || "")}"
+      style="position:relative;"
+    >
       <img src="${urlAttr}" alt="Imagen generada" loading="lazy">
 
       <div class="devBigActions">
@@ -4672,10 +4696,10 @@ function panelImagenRenderCardHTML(it = {}, opciones = {}) {
           </button>
         ` : ``}
 
-        ${eliminarHtml}
-
         ${extraAcciones}
       </div>
+
+      ${eliminarHtml}
 
       ${extraFinal}
     </div>
