@@ -565,13 +565,20 @@ background: var(--ui-azul-hover);
    border-color: #333;
    }
 
-  .barra-acciones button {
+.barra-acciones button {
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  padding: 0;
   border-radius: 999px;
-  padding: 6px 10px;
   border: none;
   cursor: pointer;
   background: var(--ui-azul-hover);
-  }
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
 
  body.oscuro .barra-acciones button {
 background: var(--ui-azul-claro);
