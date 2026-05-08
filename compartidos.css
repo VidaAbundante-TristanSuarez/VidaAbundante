@@ -264,4 +264,167 @@ body.oscuro .comp-post {
   }
 }
 
+/* ================= COMPARTIDOS: BANNER + PROMOS ================= */
+
+#compHero{
+  margin: 0 auto 12px;
+}
+
+.comp-hero-card{
+  width: 100%;
+  border-radius: 22px;
+  overflow: hidden;
+  background: rgba(255,255,255,.72);
+  border: 1px solid rgba(255,255,255,.55);
+  box-shadow: 0 8px 22px rgba(0,0,0,.12);
+}
+
+.comp-hero-card img{
+  display:block;
+  width:100%;
+  height:auto;
+}
+
+/* ✅ escondemos la barra vieja si todavía existe */
+#compFeedTop{
+  display:none !important;
+}
+
+/* propagandas */
+#compPromos{
+  margin: 0 auto 16px;
+}
+
+.comp-promos-wrap{
+  position: relative;
+  width: 100%;
+  min-height: 118px;
+  overflow: hidden;
+  border-radius: 18px;
+}
+
+.comp-promos-group{
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.comp-promos-group img{
+  width: 100%;
+  height: 118px;
+  object-fit: cover;
+  border-radius: 16px;
+  display: block;
+  background: rgba(255,255,255,.65);
+  box-shadow: 0 6px 16px rgba(0,0,0,.10);
+}
+
+.comp-promos-a{
+  animation: compPromoA 12s infinite ease-in-out;
+}
+
+.comp-promos-b{
+  animation: compPromoB 12s infinite ease-in-out;
+}
+
+@keyframes compPromoA{
+  0%, 43%{
+    opacity: 1;
+    transform: translateY(0);
+  }
+  50%, 93%{
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100%{
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes compPromoB{
+  0%, 43%{
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  50%, 93%{
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100%{
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+.comp-post-note{
+  margin: 0 14px 14px;
+  padding: 16px;
+  border-radius: 18px;
+  background: rgba(233,246,255,.86);
+  white-space: pre-wrap;
+  line-height: 1.45;
+  font-weight: 700;
+}
+
+.comp-post-video video{
+  width: 100%;
+  max-height: 62vh;
+  display: block;
+  background: #000;
+}
+
+.comp-post-file{
+  margin: 0 14px 14px;
+  min-height: 150px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(188,220,255,.75), rgba(255,255,255,.9));
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  cursor:pointer;
+  font-weight:900;
+}
+
+.comp-post-file i{
+  font-size: 38px;
+}
+
+.comp-audio{
+  padding: 10px 14px 14px;
+}
+
+.comp-audio audio{
+  width: 100%;
+}
+
+@media (max-width: 700px){
+  .comp-hero-card{
+    border-radius: 16px;
+  }
+
+  .comp-promos-wrap{
+    min-height: 92px;
+  }
+
+  .comp-promos-group{
+    gap: 7px;
+  }
+
+  .comp-promos-group img{
+    height: 92px;
+    border-radius: 13px;
+  }
+
+  .comp-post-video video{
+    max-height: 58vh;
+  }
+}
+
 </style>
