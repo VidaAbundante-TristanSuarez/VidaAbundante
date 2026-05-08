@@ -102,8 +102,7 @@ body.oscuro .ed-card {
   margin-top: 4px;
 }
 
-.ed-card-actions button,
-.ed-pill-btn {
+.ed-card-actions button {
   border: none;
   cursor: pointer;
   border-radius: 999px;
@@ -118,6 +117,31 @@ body.oscuro .ed-card {
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
+}
+
+.ed-pill-btn {
+  border: none;
+  cursor: pointer;
+  border-radius: 999px;
+  width: auto;
+  min-width: 138px;
+  height: 38px;
+  padding: 0 14px;
+  background: var(--ui-azul-claro, #bcdcff);
+  color: #000;
+  font-weight: 800;
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.ed-pill-btn i {
+  font-size: 14px;
+  line-height: 1;
 }
 
 .ed-card-actions button.ed-danger {
@@ -291,6 +315,22 @@ body.oscuro .ed-card {
   color: #000;
   font-weight: 900;
   cursor: pointer;
+}
+
+@media (min-width: 861px) {
+  .ed-field input[type="file"] {
+    min-height: 58px;
+    font-size: 11px;
+    line-height: 1.15;
+  }
+
+  .ed-field input[type="file"]::file-selector-button {
+    display: block;
+    width: max-content;
+    max-width: 100%;
+    margin-right: 0;
+    margin-bottom: 5px;
+  }
 }
 
 #edPortadaPreview,
