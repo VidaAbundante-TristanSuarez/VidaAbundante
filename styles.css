@@ -3917,4 +3917,14 @@ body.en-compartidos #seccion-panel{
   display:none !important;
 }
 
+.pm-btn.pm-btn-compartido{
+  background: var(--ui-azul-hover) !important;
+  color:#000 !important;
+  box-shadow: inset 0 0 0 2px rgba(0,0,0,.12);
+}
+
+.pm-btn.pm-btn-compartido i{
+  color:#000 !important;
+}
+
   </style> 
