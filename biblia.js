@@ -4872,7 +4872,7 @@ if (topRow && indexRow && topRow.previousElementSibling !== indexRow) {
             <span
               style="
                 position:absolute;
-                left:50%;
+                left:62%;
                 bottom:-7px;
                 transform:translateX(-50%);
                 width:14px;
