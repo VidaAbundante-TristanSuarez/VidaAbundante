@@ -228,6 +228,29 @@ body.oscuro .ed-card {
   display: block;
 }
 
+.ed-existing-video {
+  width: 150px;
+  max-width: 100%;
+  aspect-ratio: 9 / 16;
+  border-radius: 14px;
+  border: 1px solid rgba(0,0,0,.12);
+  margin-top: 6px;
+  display: block;
+  background: #000;
+  object-fit: contain;
+}
+
+.ed-card-cover span {
+  text-align: center;
+  font-weight: 900;
+  opacity: .75;
+}
+
+.ed-card-cover span i {
+  font-size: 26px;
+  margin-bottom: 6px;
+}
+
 #edPaginasEditor {
   display: grid;
   gap: 12px;
@@ -415,6 +438,15 @@ body.oscuro .ed-card {
   border-radius: 14px;
   box-shadow: 0 10px 40px rgba(0,0,0,.35);
   background: #fff;
+}
+
+.ed-slide-video {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 14px;
+  box-shadow: 0 10px 40px rgba(0,0,0,.35);
+  background: #000;
 }
 
 .ed-audios {
