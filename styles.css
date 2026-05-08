@@ -90,7 +90,7 @@ body.oscuro #header {
 
 /* 🌙 MODO OSCURO */
 body.oscuro .nav-btn i {
-  color: var(--ui-azul-hover);
+  color: #000;
 }
     
 .nav-btn:hover{
