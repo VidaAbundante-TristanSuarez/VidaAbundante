@@ -2743,12 +2743,14 @@ body.oscuro #btnPanelImgNuevo{
 }
 
 #panelImgFeed .devBigActions{
+  position: relative;
   display:flex;
   gap:10px;
-  padding:10px;
+  padding:10px 50px 10px 10px;
   justify-content:center;
   align-items:center;
   flex-wrap:wrap;
+  min-height:50px;
 }
 
 #panelImgFeed .btn-danger{
@@ -2759,6 +2761,44 @@ body.oscuro #btnPanelImgNuevo{
 
 #panelImgFeed .btn-danger:hover{
   background:#ffb5b5 !important;
+  color:#000 !important;
+}
+
+#panelImgFeed .devBigActions .btn-delete-panel-img{
+  position:absolute;
+  right:10px;
+  bottom:10px;
+
+  width:28px;
+  height:28px;
+  min-width:28px;
+  min-height:28px;
+
+  padding:0;
+  border-radius:999px;
+  opacity:.72;
+
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+}
+
+#panelImgFeed .devBigActions .btn-delete-panel-img i{
+  font-size:12px;
+  line-height:1;
+}
+
+#panelImgFeed .devBigActions .btn-delete-panel-img:hover{
+  opacity:1;
+}
+
+#panelImgFeed .btn-panel-compartidos{
+  background:var(--ui-azul-claro) !important;
+  color:#000 !important;
+}
+
+#panelImgFeed .btn-panel-compartidos:hover{
+  background:var(--ui-azul-hover) !important;
   color:#000 !important;
 }
 
