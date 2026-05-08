@@ -297,6 +297,7 @@ let panelRecursosGuardados = {};
 let panelEdicionesGuardadas = {};
 let panelImagenesGuardadas = {};
 let panelImagenesPublicadas = {};
+let notasCompartidasPanel = {};
 
 // ================= ✅ INDICE DE NOTAS (para mostrar pluma) =================
 window.notasBibliaIndex = window.notasBibliaIndex || {};
@@ -576,6 +577,23 @@ onValue(ref(db, "panelImagenesPersonal/" + uid), s => {
   });
 
   renderPanelImagenes(panelImagenesGuardadas || {});
+});
+
+  onValue(ref(db, "compartidos/notas"), s => {
+  const data = s.val() || {};
+  notasCompartidasPanel = {};
+
+  Object.entries(data).forEach(([compId, item]) => {
+    const marcadorId = item?.marcadorId || "";
+    if (marcadorId) {
+      notasCompartidasPanel[marcadorId] = true;
+    }
+  });
+
+  const panelMarcadores = document.getElementById("panel-marcadores");
+  if (panelMarcadores && panelMarcadores.offsetParent !== null) {
+    renderPanelMarcadores();
+  }
 });
   
   // ✅ Cargar recursos guardados en Mi Panel: ABC + RH / Recursos
@@ -4153,9 +4171,12 @@ function renderPanelMarcadores() {
                   <i class="fa-solid fa-pen-to-square"></i>
                 </button>
 
-                <button type="button" class="pm-btn" onclick="abrirCompartirMarcador('${m.id}')" title="Compartir">
-                  <i class="fa-solid fa-share-nodes"></i>
-                </button>
+<button type="button"
+  class="pm-btn ${notasCompartidasPanel[m.id] ? "pm-btn-compartido" : ""}"
+  onclick="abrirCompartirMarcador('${m.id}')"
+  title="${notasCompartidasPanel[m.id] ? "Ya compartida en Compartidos" : "Compartir"}">
+  <i class="fa-solid ${notasCompartidasPanel[m.id] ? "fa-check" : "fa-share-nodes"}"></i>
+</button>
               `}
             </div>
           </div>
@@ -5336,6 +5357,12 @@ window.compartirMarcador = async (destino) => {
   const id = __compartirMarcadorId;
   if (!id) return;
 
+  if (notasCompartidasPanel[id]) {
+  mostrarToast("✅ Esta nota ya está en Compartidos");
+  cerrarCompartirMarcador();
+  return;
+}
+  
   const m = (marcadores || {})[id];
   if (!m) return;
 
@@ -5376,13 +5403,15 @@ window.compartirMarcador = async (destino) => {
   try {
     const ts = Date.now();
 
-    await set(ref(db, `compartidos/notas/${ts}`), {
-      ...m,
-      uid,
-      tipo: "nota",
-      publicadoPor: uid,
-      publicadoEn: ts
-    });
+await set(ref(db, `compartidos/notas/${ts}`), {
+  ...m,
+  marcadorId: id,
+  uid,
+  tipo: "nota",
+  publicadoPor: uid,
+  publicadoEn: ts,
+  ts
+});
 
     mostrarToast("✅ Compartido en Compartidos");
   } catch (e) {
