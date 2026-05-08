@@ -4580,6 +4580,111 @@ function panelImgMoverAddDebajoGaleria(){
   }
 }
 
+/* =========================================================
+   RENDER REUTILIZABLE: IMAGEN DE MI PANEL / BIBLIA
+   - Lo usa Mi Panel ahora.
+   - Lo va a poder usar Compartidos después sin rehacer la card.
+   ========================================================= */
+
+function panelImgHtml(v = "") {
+  return String(v ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+function panelImgAttr(v = "") {
+  return panelImgHtml(v)
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function panelImgJs(v = "") {
+  return String(v ?? "")
+    .replace(/\\/g, "\\\\")
+    .replace(/'/g, "\\'")
+    .replace(/\r?\n/g, " ");
+}
+
+function panelImgNormalizarUrlRaw(url = "") {
+  let s = String(url || "").trim();
+  if (!s) return "";
+
+  if (/^https?:\/\//i.test(s)) return s;
+
+  if (/^(?:\.\/|\/)?pub-[a-z0-9-]+\.r2\.dev\//i.test(s)) {
+    return "https://" + s.replace(/^(?:\.\/|\/)+/, "");
+  }
+
+  return s;
+}
+
+function panelImagenRenderCardHTML(it = {}, opciones = {}) {
+  const idPrefix = opciones.idPrefix ?? "panelImgBig_";
+  const domId = opciones.domId ?? `${idPrefix}${it.id || ""}`;
+
+  const mostrarDescargar = opciones.mostrarDescargar ?? true;
+  const mostrarCompartir = opciones.mostrarCompartir ?? true;
+  const mostrarEliminar = opciones.mostrarEliminar ?? true;
+
+  // ✅ para Compartidos después: podremos pasar otro delete,
+  // que borre solo de Compartidos y NO de Mi Panel.
+  const eliminarHtmlPersonalizado = opciones.eliminarHtml || "";
+
+  const extraAcciones = opciones.extraAcciones || "";
+  const extraFinal = opciones.extraFinal || "";
+
+  const urlRaw = panelImgNormalizarUrlRaw(it.url || it.shareUrl || "");
+  const urlAttr = panelImgAttr(urlRaw);
+  const urlJs = panelImgJs(urlRaw);
+
+  const itemId = panelImgJs(it.id || "");
+
+  const eliminarHtml = eliminarHtmlPersonalizado || (mostrarEliminar ? `
+    <button class="btn-danger" type="button"
+      onclick="eliminarImagenPanel('${itemId}')"
+      aria-label="Eliminar"
+      title="Eliminar">
+      <i class="fa-solid fa-trash"></i>
+    </button>
+  ` : ``);
+
+  return `
+    <div class="devBigCard" id="${panelImgAttr(domId)}" data-panel-img-card-id="${panelImgAttr(it.id || "")}">
+      <img src="${urlAttr}" alt="Imagen generada" loading="lazy">
+
+      <div class="devBigActions">
+        ${mostrarDescargar ? `
+          <button class="btn-primary" type="button"
+            onclick="descargarImagenPanel('${urlJs}')"
+            aria-label="Descargar PNG"
+            title="Descargar PNG">
+            <i class="fa-solid fa-download"></i>
+          </button>
+        ` : ``}
+
+        ${mostrarCompartir ? `
+          <button class="btn-primary" type="button"
+            onclick="compartirImagenPanel('${urlJs}')"
+            aria-label="Compartir"
+            title="Compartir">
+            <i class="fa-solid fa-share-nodes"></i>
+          </button>
+        ` : ``}
+
+        ${eliminarHtml}
+
+        ${extraAcciones}
+      </div>
+
+      ${extraFinal}
+    </div>
+  `;
+}
+
+// ✅ función pública para que Compartidos pueda reutilizarla después
+window.panelImagenRenderCardHTML = panelImagenRenderCardHTML;
+
 // ================= 🔺 RENDERPANELIMAGENES ===================
 function renderPanelImagenes(data) {
   const grid = document.getElementById("grid-imagenes"); // compatibilidad
@@ -4714,68 +4819,13 @@ if (topRow && indexRow && topRow.previousElementSibling !== indexRow) {
     `;
   }).join("");
 
-  feed.innerHTML = items.map(it => {
-    const refTxt = esc(refBonitaPanel(it));
-    const url = normalizarUrlPanel(it.url || "");
-    const audioUrl = normalizarUrlPanel(it.audioGithubUrl || "");
-    const textoLibre = esc(it.textoLibre || "");
-
-    return `
-      <div class="devBigCard" id="panelImgBig_${it.id}">
-        <div class="devIndexBar devIndexBarTop">${refTxt}</div>
-
-        ${
-          url
-            ? `<img src="${url}" alt="Imagen generada" loading="lazy" onerror="this.style.display='none'; this.insertAdjacentHTML('afterend','<div class=&quot;devBigImgFallback&quot;>Sin imagen</div>');">`
-            : `<div class="devBigImgFallback">Sin imagen</div>`
-        }
-
-        ${esDevocional(it) && audioUrl ? `
-          <div style="margin-top:10px;">
-            <audio controls preload="metadata" style="width:100%;">
-              <source src="${audioUrl}" type="audio/mpeg">
-            </audio>
-          </div>
-        ` : ``}
-
-        ${esLibrePanel(it) && textoLibre ? `
-          <div style="margin-top:10px; white-space:pre-wrap; line-height:1.4;">
-            ${textoLibre}
-          </div>
-        ` : ``}
-
-<div class="devBigActions">
-  <button class="btn-primary" type="button"
-    onclick="descargarImagenPanel('${url}')"
-    aria-label="Descargar PNG"
-    title="Descargar">
-    <i class="fa-solid fa-download"></i>
-  </button>
-
-  <button class="btn-primary" type="button"
-    onclick="compartirImagenPanel('${url}')"
-    aria-label="Compartir"
-    title="Compartir">
-    <i class="fa-solid fa-share-nodes"></i>
-  </button>
-
-<button class="btn-primary btn-panel-compartidos ${panelImagenesPublicadas[it.id] ? "activo" : ""}" type="button"
-  onclick="publicarImagenPanelEnCompartidos('${it.id}')"
-  aria-label="Publicar en Compartidos"
-  title="${panelImagenesPublicadas[it.id] ? "Ya publicado en Compartidos" : "Publicar en Compartidos"}">
-  <i class="fa-solid ${panelImagenesPublicadas[it.id] ? "fa-check" : "fa-icons"}"></i>
-</button>
-
-  <button class="btn-danger btn-delete-panel-img" type="button"
-    onclick="eliminarImagenPanel('${it.id}')"
-    aria-label="Eliminar"
-    title="Eliminar">
-    <i class="fa-solid fa-trash"></i>
-  </button>
-</div>
-      </div>
-    `;
-  }).join("");
+  // feed grande abajo
+  feed.innerHTML = items.map(it => panelImagenRenderCardHTML(it, {
+    idPrefix: "panelImgBig_",
+    mostrarDescargar: true,
+    mostrarCompartir: true,
+    mostrarEliminar: true
+  })).join("");
 }
 
 // ================= 🔺 CAPITULO ANTERIOR ===================
