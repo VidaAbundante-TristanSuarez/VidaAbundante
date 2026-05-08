@@ -164,7 +164,7 @@ body.oscuro .nav-btn.activo i{
   justify-content:space-between;
   gap:6px;
 
-  background: #eafaff;
+  background: var(--ui-azul-claro);
   padding: 6px 15px;   /* 👈 padding interno propio */
   
   border-bottom: 1px solid rgba(0,0,0,.08);
@@ -473,7 +473,7 @@ body.oscuro .panel-tabs button.activo{
   flex-wrap:wrap;
 
   margin: 4px 0 6px;        /* 👈 menos aire */
-  background: #eafaff;       /* 👈 barra */
+  background: var(--ui-azul-claro);       /* 👈 barra */
   padding: 6px 8px;
   border-radius: 12px;
   border: 1px solid rgba(0,0,0,.08);
@@ -546,7 +546,7 @@ body.oscuro .panel-tabs{
   flex-wrap: nowrap;
 
   padding: 8px 12px;
-  background: #eafaff;
+  background: var(--ui-azul-claro);
   border-top: 1px solid #ddd;
 
   margin-left: -12px;
