@@ -1,6 +1,8 @@
 import {
   ref,
-  onValue
+  onValue,
+  set,
+  remove
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 /* ================= COMPARTIDOS - FEED ================= */
@@ -27,6 +29,10 @@ let compartidosSubidosEscuchaActiva = false;
 
 let compartidosOracionesCache = {};
 let compartidosOracionesEscuchaActiva = false;
+
+let compartidosOcultosCache = {};
+let compartidosOcultosEscuchaActiva = false;
+let compPromosTimer = null;
 
 const COMP_BANNER_URL = "img/compartidos/banner-horarios.png?v=2026-05-08-2";
 
@@ -95,6 +101,74 @@ async function compEsperarDB(intentos = 30) {
   return null;
 }
 
+async function compBlobDesdeUrl(url) {
+  const r = await fetch(url, { cache: "no-store" });
+  if (!r.ok) throw new Error("No pude leer el archivo");
+
+  const blob = await r.blob();
+  const tipo = blob.type || "application/octet-stream";
+
+  return { blob, tipo };
+}
+
+window.compDescargarUrl = async function compDescargarUrl(url, fileName = "imagen.png") {
+  try {
+    if (!url) return;
+
+    const { blob } = await compBlobDesdeUrl(url);
+
+    const a = document.createElement("a");
+    const objectUrl = URL.createObjectURL(blob);
+
+    a.href = objectUrl;
+    a.download = fileName || "imagen.png";
+    document.body.appendChild(a);
+    a.click();
+
+    setTimeout(() => {
+      URL.revokeObjectURL(objectUrl);
+      a.remove();
+    }, 800);
+
+  } catch (e) {
+    console.error(e);
+    alert("No pude descargar el archivo. Voy a abrirlo para que puedas guardarlo.");
+    window.open(url, "_blank");
+  }
+};
+
+window.compCompartirUrl = async function compCompartirUrl(url, fileName = "imagen.png") {
+  try {
+    if (!url) return;
+
+    const { blob, tipo } = await compBlobDesdeUrl(url);
+    const file = new File([blob], fileName || "imagen.png", { type: tipo });
+
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({
+        files: [file],
+        title: "Vida Abundante"
+      });
+      return;
+    }
+
+    if (navigator.share) {
+      await navigator.share({
+        title: "Vida Abundante",
+        url
+      });
+      return;
+    }
+
+    await navigator.clipboard.writeText(url);
+    alert("Link copiado.");
+
+  } catch (e) {
+    console.error(e);
+    alert("No pude compartir el archivo.");
+  }
+};
+
 function compAsegurarVisor() {
   if (document.getElementById("compMediaViewer")) return;
 
@@ -105,32 +179,57 @@ function compAsegurarVisor() {
 
   div.innerHTML = `
     <div class="comp-media-viewer-backdrop" onclick="compCerrarMedia()"></div>
+
     <div class="comp-media-viewer-card">
       <button type="button" class="comp-media-close" onclick="compCerrarMedia()">✕</button>
+
       <div id="compMediaViewerBody" class="comp-media-viewer-body"></div>
+
+      <div class="comp-media-actions">
+        <button type="button" id="compMediaBtnDescargar" title="Descargar">
+          <i class="fa-solid fa-download"></i>
+        </button>
+
+        <button type="button" id="compMediaBtnCompartir" title="Compartir">
+          <i class="fa-solid fa-share-nodes"></i>
+        </button>
+      </div>
     </div>
   `;
 
   document.body.appendChild(div);
 }
 
-window.compAbrirMedia = function compAbrirMedia(url, tipo = "imagen") {
+window.compAbrirMedia = function compAbrirMedia(url, tipo = "imagen", titulo = "Archivo") {
   compAsegurarVisor();
 
   const modal = document.getElementById("compMediaViewer");
   const body = document.getElementById("compMediaViewerBody");
+  const btnDescargar = document.getElementById("compMediaBtnDescargar");
+  const btnCompartir = document.getElementById("compMediaBtnCompartir");
+
   if (!modal || !body) return;
+
+  const fileName = compFileName(url, tipo === "video" ? "video.mp4" : "imagen.png");
 
   if (tipo === "video") {
     body.innerHTML = `
-      <video controls playsinline style="width:100%; max-height:80vh; border-radius:16px; background:#000;">
+      <video controls playsinline style="width:100%; max-height:78vh; border-radius:16px; background:#000;">
         <source src="${compEscape(url)}">
       </video>
     `;
   } else {
     body.innerHTML = `
-      <img src="${compEscape(url)}" alt="Vista previa" style="width:100%; max-height:80vh; object-fit:contain; display:block; border-radius:16px; background:#fff;">
+      <img src="${compEscape(url)}" alt="${compEscape(titulo)}" style="width:100%; max-height:78vh; object-fit:contain; display:block; border-radius:16px; background:#fff;">
     `;
+  }
+
+  if (btnDescargar) {
+    btnDescargar.onclick = () => compDescargarUrl(url, fileName);
+  }
+
+  if (btnCompartir) {
+    btnCompartir.onclick = () => compCompartirUrl(url, fileName);
   }
 
   modal.style.display = "flex";
@@ -139,6 +238,7 @@ window.compAbrirMedia = function compAbrirMedia(url, tipo = "imagen") {
 window.compCerrarMedia = function compCerrarMedia() {
   const modal = document.getElementById("compMediaViewer");
   const body = document.getElementById("compMediaViewerBody");
+
   if (body) body.innerHTML = "";
   if (modal) modal.style.display = "none";
 };
@@ -187,6 +287,7 @@ window.mostrarCompartidos = async () => {
   iniciarEscuchaCompartidosDevocionales();
   iniciarEscuchaCompartidosSubidos();
   iniciarEscuchaCompartidosOraciones();
+  iniciarEscuchaCompartidosOcultos();
 };
 
 function renderCompartidosTop() {
@@ -203,24 +304,70 @@ function renderCompartidosTop() {
 
   if (promos) {
     promos.innerHTML = `
-      <div class="comp-promos-viewport">
+      <div
+        class="comp-promos-viewport"
+        id="compPromosViewport"
+        onpointerdown="compPausarPromos()"
+        ontouchstart="compPausarPromos()"
+      >
         <div class="comp-promos-slider">
           <div class="comp-promos-page">
             ${COMP_PROMOS.slice(0, 3).map((src, i) => `
-              <img src="${compEscape(src)}" alt="Promo ${i + 1}" loading="lazy">
+              <img
+                src="${compEscape(src)}"
+                alt="Promo ${i + 1}"
+                loading="lazy"
+                onclick="compAbrirMedia('${compJs(src)}', 'imagen', 'Promo ${i + 1}')"
+              >
             `).join("")}
           </div>
 
           <div class="comp-promos-page">
             ${COMP_PROMOS.slice(3, 6).map((src, i) => `
-              <img src="${compEscape(src)}" alt="Promo ${i + 4}" loading="lazy">
+              <img
+                src="${compEscape(src)}"
+                alt="Promo ${i + 4}"
+                loading="lazy"
+                onclick="compAbrirMedia('${compJs(src)}', 'imagen', 'Promo ${i + 4}')"
+              >
             `).join("")}
           </div>
         </div>
       </div>
     `;
+
+    setTimeout(compIniciarPromosAuto, 100);
   }
 }
+
+function compIniciarPromosAuto() {
+  const vp = document.getElementById("compPromosViewport");
+  if (!vp) return;
+
+  if (compPromosTimer) clearInterval(compPromosTimer);
+
+  let segunda = false;
+
+  compPromosTimer = setInterval(() => {
+    if (!document.body.classList.contains("en-compartidos")) return;
+
+    segunda = !segunda;
+
+    vp.scrollTo({
+      left: segunda ? vp.clientWidth : 0,
+      behavior: "smooth"
+    });
+  }, 9000);
+}
+
+window.compPausarPromos = function compPausarPromos() {
+  if (compPromosTimer) {
+    clearInterval(compPromosTimer);
+    compPromosTimer = null;
+  }
+
+  setTimeout(compIniciarPromosAuto, 12000);
+};
 
 function compFlattenCompartidos(val = {}) {
   const out = [];
@@ -397,18 +544,99 @@ function iniciarEscuchaCompartidosSubidos() {
   compartidosSubidosEscuchaActiva = true;
 }
 
-function iniciarEscuchaCompartidosOraciones() {
-  if (compartidosOracionesEscuchaActiva) return;
+function iniciarEscuchaCompartidosOcultos() {
+  if (compartidosOcultosEscuchaActiva) return;
 
   const db = compDB();
   if (!db) return;
 
-  onValue(ref(db, "devocionalesOraciones"), (snap) => {
-    compartidosOracionesCache = snap.val() || {};
+  onValue(ref(db, "compartidosOcultos"), (snap) => {
+    compartidosOcultosCache = snap.val() || {};
     renderCompartidos();
   });
 
-  compartidosOracionesEscuchaActiva = true;
+  compartidosOcultosEscuchaActiva = true;
+}
+
+function compEsAdmin() {
+  return !!(
+    window.__ES_ADMIN ||
+    window.__ADMIN ||
+    window.__FB?.auth?.currentUser?.admin
+  );
+}
+
+function compKeyItem(item) {
+  return [
+    item?.tipo || "",
+    item?.edicionId || "",
+    item?._subidoId || "",
+    item?.uidOwner || "",
+    item?.tsKey || "",
+    item?._compId || "",
+    item?.url || ""
+  ].join("__").replace(/[.#$/\[\]]/g, "_");
+}
+
+function compPathCompartido(item) {
+  if (item?._grupo && item?._compId) {
+    return `compartidos/${item._grupo}/${item._compId}`;
+  }
+
+  if (!item?._auto && item?._compId) {
+    return `compartidos/${item._compId}`;
+  }
+
+  return "";
+}
+
+window.compBorrarSoloCompartidos = async function compBorrarSoloCompartidos(key, path = "") {
+  const db = compDB();
+
+  if (!db) {
+    alert("Firebase no está listo.");
+    return;
+  }
+
+  if (!compEsAdmin()) {
+    alert("Solo admin puede borrar de Compartidos.");
+    return;
+  }
+
+  const ok = confirm("¿Quitar esta publicación solo de Compartidos?");
+  if (!ok) return;
+
+  try {
+    if (path) {
+      await remove(ref(db, path));
+    } else {
+      await set(ref(db, `compartidosOcultos/${key}`), true);
+    }
+
+    alert("Quitado de Compartidos.");
+
+  } catch (e) {
+    console.error(e);
+    alert("No pude quitarlo de Compartidos.");
+  }
+};
+
+function compDeleteBtn(item) {
+  if (!compEsAdmin()) return "";
+
+  const key = compKeyItem(item);
+  const path = compPathCompartido(item);
+
+  return `
+    <button
+      type="button"
+      class="comp-action-delete"
+      onclick="compBorrarSoloCompartidos('${compJs(key)}', '${compJs(path)}')"
+      title="Quitar solo de Compartidos"
+    >
+      <i class="fa-solid fa-trash"></i>
+    </button>
+  `;
 }
 
 function compStats(edicionId) {
@@ -545,7 +773,15 @@ function compEsPredica(item) {
 
 function compRenderImagen(item) {
   const url = item.url || item.imagenUrl || "";
-  const titulo = compEscape(compItemTitulo(item));
+
+  const tituloBase = String(
+    item.ref ||
+    item.referencia ||
+    item.cita ||
+    ""
+  ).trim() || "Compartido";
+
+  const titulo = compEscape(tituloBase);
   const textoLibre = String(item.textoLibre || "").trim();
 
   return `
@@ -561,7 +797,7 @@ function compRenderImagen(item) {
         </div>
       </div>
 
-      <div class="comp-post-media" onclick="compAbrirMedia('${compJs(url)}', 'imagen')" role="button">
+      <div class="comp-post-media" onclick="compAbrirMedia('${compJs(url)}', 'imagen', '${compJs(tituloBase)}')" role="button">
         ${url
           ? `<img src="${compEscape(url)}" alt="${titulo}" loading="lazy">`
           : `<div class="comp-post-empty">Sin imagen</div>`
@@ -571,13 +807,15 @@ function compRenderImagen(item) {
       ${textoLibre ? `<div class="comp-post-note-text">${compEscape(textoLibre)}</div>` : ``}
 
       <div class="comp-post-actions">
-        <button type="button" onclick="descargarImagenPanel('${compJs(url)}', '${compJs(compFileName(url, "imagen_vida_abundante.png"))}')" title="Descargar">
+        <button type="button" onclick="descargarImagenPanel('${compJs(url)}')" title="Descargar">
           <i class="fa-solid fa-download"></i>
         </button>
 
-        <button type="button" onclick="compartirImagenPanel('${compJs(url)}', '${compJs(compFileName(url, "imagen_vida_abundante.png"))}')" title="Compartir">
+        <button type="button" onclick="compartirImagenPanel('${compJs(url)}')" title="Compartir">
           <i class="fa-solid fa-share-nodes"></i>
         </button>
+
+        ${compDeleteBtn(item)}
       </div>
     </article>
   `;
@@ -677,6 +915,7 @@ function compRenderDevocional(item) {
           title="Descargar">
           <i class="fa-solid fa-download"></i>
         </button>
+        ${compDeleteBtn(item)}
       </div>
     </article>
   `;
@@ -732,7 +971,21 @@ function compRenderSubido(item) {
 
       ${
         esPredica
-          ? compRenderPredicaPreview(item)
+          ? `
+            ${url ? `
+              <div class="comp-predica-archivo-previo" onclick="abrirSubidosVisorPredica('${compJs(item._subidoId || "")}', 'all')" role="button">
+                ${
+                  esImagen
+                    ? `<img src="${compEscape(url)}" alt="${titulo}" loading="lazy">`
+                    : esVideo
+                      ? `<video preload="metadata" muted playsinline><source src="${compEscape(url)}"></video>`
+                      : `<div class="comp-post-file"><i class="fa-solid fa-file-lines"></i><span>Archivo de la prédica</span></div>`
+                }
+              </div>
+            ` : ``}
+
+            ${compRenderPredicaPreview(item)}
+          `
           : (
             esImagen
               ? `
@@ -765,6 +1018,8 @@ function compRenderSubido(item) {
         <button type="button" onclick="descargarSubido('${compJs(item._subidoId || "")}')" title="Descargar">
           <i class="fa-solid fa-download"></i>
         </button>
+
+        ${compDeleteBtn(item)}
       </div>
     </article>
   `;
@@ -799,6 +1054,8 @@ function compRenderRH(item) {
         <button type="button" onclick="descargarRHPDF(${Number(item.temaIndex || 0)})" title="Descargar PDF">
           <i class="fa-solid fa-file-pdf"></i>
         </button>
+
+        ${compDeleteBtn(item)}
       </div>
     </article>
   `;
@@ -851,6 +1108,8 @@ function compRenderEdicion(item) {
           icon: "fa-solid fa-share-nodes",
           count: st.compartidos
         })}
+
+        ${compDeleteBtn(item)}
       </div>
     </article>
   `;
@@ -867,6 +1126,7 @@ function compUnificarItems() {
 
   return todos
     .filter(item => ["edicion", "rh", "imagen", "nota", "devocional", "subido"].includes(item?.tipo || ""))
+    .filter(item => !compartidosOcultosCache?.[compKeyItem(item)])
     .filter(item => {
       const key = [
         item.tipo,
