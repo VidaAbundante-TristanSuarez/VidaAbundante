@@ -427,4 +427,467 @@ body.oscuro .comp-post {
   }
 }
 
+/* =========================================================
+   COMPARTIDOS - AJUSTES NUEVOS
+========================================================= */
+
+/* ✅ oculta esa barra superior que mostraste */
+body.en-compartidos .panel-tabs,
+body.en-compartidos #panel-tabs,
+#compFeedTop{
+  display: none !important;
+}
+
+/* ✅ más ancho: reduce aprox a la mitad los márgenes laterales */
+#compFeedWrap{
+  width: min(760px, calc(100% - 8px)) !important;
+  margin: 0 auto !important;
+}
+
+#compHero{
+  margin: 0 0 12px;
+}
+
+.comp-hero-card{
+  width: 100%;
+  border-radius: 22px;
+  overflow: hidden;
+  box-shadow: 0 6px 18px rgba(0,0,0,.10);
+  background: rgba(255,255,255,.75);
+}
+
+.comp-hero-card img{
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* ================= PROMOS ================= */
+
+#compPromos{
+  margin: 0 0 16px;
+}
+
+.comp-promos-viewport{
+  overflow: hidden;
+  border-radius: 18px;
+  width: 100%;
+}
+
+.comp-promos-slider{
+  width: 200%;
+  display: flex;
+  animation: compPromosMover 22s ease-in-out infinite;
+}
+
+.comp-promos-page{
+  width: 50%;
+  flex: 0 0 50%;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  box-sizing: border-box;
+  padding-right: 10px;
+}
+
+.comp-promos-page img{
+  width: 100%;
+  height: 126px;
+  object-fit: cover;
+  border-radius: 16px;
+  display: block;
+  box-shadow: 0 6px 16px rgba(0,0,0,.10);
+  background: rgba(255,255,255,.85);
+}
+
+@keyframes compPromosMover{
+  0%, 18%   { transform: translateX(0); }
+  45%, 70%  { transform: translateX(-50%); }
+  88%, 100% { transform: translateX(0); }
+}
+
+/* ================= FEED ================= */
+
+#compLista{
+  display: grid;
+  gap: 16px;
+}
+
+.comp-post{
+  background: rgba(255,255,255,.90);
+  color: #000;
+  border: 1px solid rgba(0,0,0,.10);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 5px 20px rgba(0,0,0,.10);
+}
+
+.comp-post-head{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 14px;
+}
+
+.comp-avatar{
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  background: var(--ui-azul-claro, #bcdcff);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.comp-post-title{
+  font-weight: 900;
+  font-size: 16px;
+  line-height: 1.15;
+}
+
+.comp-post-meta{
+  font-size: 12px;
+  opacity: .65;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+.comp-post-media,
+.comp-post-video{
+  width: 100%;
+  background: rgba(0,0,0,.05);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.comp-post-media img{
+  width: 100%;
+  max-height: 72vh;
+  object-fit: contain;
+  background: #fff;
+  display: block;
+}
+
+.comp-post-video video{
+  width: 100%;
+  max-height: 72vh;
+  object-fit: contain;
+  background: #000;
+  display: block;
+}
+
+.comp-post-empty{
+  width: 100%;
+  min-height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: .65;
+  font-weight: 800;
+}
+
+.comp-post-note-text{
+  padding: 12px 14px 0;
+  white-space: pre-wrap;
+  line-height: 1.45;
+}
+
+.comp-post-note-block{
+  margin: 0 14px 14px;
+  padding: 14px;
+  border-radius: 16px;
+  background: rgba(188,220,255,.30);
+  white-space: pre-wrap;
+  line-height: 1.45;
+  font-weight: 700;
+}
+
+.comp-audio-wrap{
+  padding: 10px 14px 0;
+}
+
+.comp-post-actions{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px 14px;
+  border-top: 1px solid rgba(0,0,0,.07);
+}
+
+.comp-post-actions button{
+  border: none;
+  cursor: pointer;
+  border-radius: 999px;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  background: var(--ui-azul-claro, #bcdcff);
+  color: #000;
+  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.comp-post-actions button:hover{
+  background: var(--ui-azul-hover, #9cc8ff);
+}
+
+.comp-action-wrap{
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.comp-action-count{
+  position: absolute;
+  right: -8px;
+  bottom: -18px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: rgba(0,0,0,.78);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.comp-action-saved{
+  background: rgba(46, 204, 113, .24) !important;
+  color: #157347 !important;
+}
+
+#compVacio{
+  padding: 22px;
+  text-align: center;
+  background: rgba(255,255,255,.82);
+  border: 1px dashed rgba(0,0,0,.18);
+  border-radius: 18px;
+}
+
+/* ================= RH ================= */
+
+.comp-post-rh{
+  margin: 0 14px 12px;
+  min-height: 180px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(188,220,255,.75), rgba(255,255,255,.9));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  cursor: pointer;
+  border: 1px solid rgba(0,0,0,.08);
+}
+
+.comp-post-rh i{
+  font-size: 42px;
+  opacity: .85;
+}
+
+.comp-post-rh span{
+  font-weight: 900;
+  font-size: 16px;
+}
+
+/* ================= DEVOCIONALES ================= */
+
+.comp-dev-oraciones-wrap{
+  padding: 12px 14px 0;
+}
+
+.comp-dev-oraciones-titulo{
+  font-weight: 900;
+  margin-bottom: 10px;
+}
+
+.comp-dev-oraciones-lista{
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.comp-dev-oracion{
+  padding: 12px;
+  border-radius: 14px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.comp-dev-oracion-top{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+  opacity: .75;
+}
+
+.comp-dev-oracion-texto{
+  white-space: pre-wrap;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+/* ================= SUBIDOS / PREDICA ================= */
+
+.comp-predica-card{
+  margin: 0 14px 12px;
+  padding: 14px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(255,255,255,.95), rgba(243,248,255,.95));
+  border: 1px solid rgba(0,0,0,.08);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.comp-predica-intro,
+.comp-predica-final{
+  white-space: pre-wrap;
+  line-height: 1.45;
+}
+
+.comp-predica-citas{
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.comp-predica-cita{
+  border-radius: 14px;
+  background: rgba(188,220,255,.18);
+  padding: 10px 12px;
+}
+
+.comp-predica-ref{
+  font-weight: 900;
+  margin-bottom: 6px;
+}
+
+.comp-predica-texto{
+  white-space: pre-wrap;
+  line-height: 1.45;
+}
+
+.comp-predica-comentario{
+  margin-top: 8px;
+  white-space: pre-wrap;
+  line-height: 1.4;
+  opacity: .88;
+}
+
+.comp-post-file{
+  margin: 0 14px 12px;
+  min-height: 150px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(188,220,255,.55), rgba(255,255,255,.95));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  border: 1px solid rgba(0,0,0,.08);
+  font-weight: 900;
+}
+
+.comp-post-file i{
+  font-size: 34px;
+}
+
+/* ================= VISOR ================= */
+
+.comp-media-viewer{
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  align-items: center;
+  justify-content: center;
+}
+
+.comp-media-viewer-backdrop{
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,.78);
+}
+
+.comp-media-viewer-card{
+  position: relative;
+  z-index: 1;
+  width: min(92vw, 980px);
+  max-height: 90vh;
+  background: rgba(20,20,20,.96);
+  border-radius: 20px;
+  padding: 18px;
+  box-sizing: border-box;
+}
+
+.comp-media-viewer-body{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.comp-media-close{
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  background: rgba(255,255,255,.92);
+  color: #000;
+  font-weight: 900;
+}
+
+/* ================= CEL ================= */
+
+@media (max-width: 700px){
+
+  #compFeedWrap{
+    width: calc(100% - 8px) !important;
+  }
+
+  .comp-promos-page{
+    gap: 7px;
+    padding-right: 7px;
+  }
+
+  .comp-promos-page img{
+    height: 92px;
+    border-radius: 13px;
+  }
+
+  .comp-post{
+    border-radius: 18px;
+  }
+
+  .comp-post-media img,
+  .comp-post-video video{
+    max-height: 58vh;
+  }
+
+  .comp-media-viewer-card{
+    width: 94vw;
+    padding: 12px;
+    border-radius: 16px;
+  }
+}
+
 </style>
