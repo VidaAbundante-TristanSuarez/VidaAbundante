@@ -79,8 +79,8 @@ body.oscuro #header {
 
  /* Estilo para los botones de navegación MODO OSCURO*/
  body.oscuro .nav-btn {
- background: #2a2a2a;
- color: #fff;
+ background: var(--ui-azul-hover);
+ color: #000;
  }
 
 .nav-btn i {
@@ -125,11 +125,11 @@ body.oscuro .nav-btn:hover i{
 
 /* oscuro */
 body.oscuro .nav-btn.activo{
-  background: var(--ui-azul-hover);
-  color: #000;
+  background: #000;
+  color: var(--ui-azul-claro);
 }
 body.oscuro .nav-btn.activo i{
-  color: #000;
+  color: var(--ui-azul-claro);
 }
 
   /* ================= SECCIONES GENERALES ================= */
