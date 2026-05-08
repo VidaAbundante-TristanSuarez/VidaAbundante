@@ -231,8 +231,8 @@ body.oscuro #barraTituloBiblia{
 
 body.oscuro #titulo{
   color: #fff;
-  background: linear-gradient(to bottom, #1f2f3a, #19394f);
-  border-color: #5a5a5a;
+  background: linear-gradient(to bottom, #000000, #86fcff);
+  border-color: var(--ui-azul-hover);
   box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 1px 3px rgba(0,0,0,.28);
 }
 
