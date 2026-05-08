@@ -150,86 +150,161 @@ body.oscuro .ed-card {
   position: fixed;
   inset: 0;
   z-index: 99999;
-  background: rgba(0,0,0,.48);
+  background: rgba(0,0,0,.52);
   display: none;
   align-items: center;
   justify-content: center;
   padding: 14px;
+  overflow: hidden;
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
 }
 
 #edModalBox {
-  width: min(940px, 100%);
+  width: min(900px, calc(100vw - 28px));
   max-height: 92vh;
-  overflow: auto;
-  background: #fff;
+
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  background:
+    radial-gradient(circle at top left, rgba(166,208,255,.34), transparent 36%),
+    rgba(255,255,255,.98);
+
   color: #000;
-  border-radius: 20px;
-  box-shadow: 0 20px 70px rgba(0,0,0,.34);
+  border-radius: 22px;
+  box-shadow: 0 22px 70px rgba(0,0,0,.36);
+  border: 1px solid rgba(255,255,255,.65);
+
+  box-sizing: border-box;
+  overscroll-behavior: contain;
+}
+
+#edModalBox * {
+  box-sizing: border-box;
+  min-width: 0;
 }
 
 #edModalHead {
   position: sticky;
   top: 0;
   z-index: 5;
-  background: #fff;
-  border-bottom: 1px solid rgba(0,0,0,.10);
-  padding: 14px;
+
+  background: rgba(255,255,255,.92);
+  border-bottom: 1px solid rgba(0,0,0,.08);
+  padding: 12px 14px;
+
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 #edModalHead h3 {
   margin: 0;
-  font-size: 21px;
+  font-size: 20px;
+  line-height: 1.1;
+  font-family: "Lora", Georgia, serif;
+  font-weight: 900;
 }
 
 #edCerrarModal {
   border: none;
   cursor: pointer;
-  background: transparent;
-  font-size: 28px;
+
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  border-radius: 999px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  background: rgba(0,0,0,.06);
+  color: #111;
+  font-size: 24px;
   line-height: 1;
-  opacity: .65;
+  padding: 0;
+  opacity: .75;
+}
+
+#edCerrarModal:hover {
+  opacity: 1;
+  background: var(--ui-azul-claro, #bcdcff);
 }
 
 #edForm {
   padding: 14px;
   display: grid;
-  gap: 14px;
+  gap: 13px;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 .ed-field {
   display: grid;
   gap: 6px;
+  min-width: 0;
 }
 
 .ed-field label {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 900;
+  opacity: .88;
 }
 
 .ed-field input[type="text"],
 .ed-field input[type="file"] {
   width: 100%;
-  border: 1px solid rgba(0,0,0,.16);
+  max-width: 100%;
+  min-width: 0;
+
+  border: 1px solid rgba(0,0,0,.13);
   border-radius: 14px;
-  padding: 10px 12px;
+  padding: 9px 10px;
+
   font-family: inherit;
+  font-size: 13px;
+
+  background: rgba(255,255,255,.82);
+  color: #000;
+
+  overflow: hidden;
+}
+
+.ed-field input[type="file"] {
+  white-space: normal;
+  line-height: 1.2;
+}
+
+.ed-field input[type="file"]::file-selector-button {
+  border: none;
+  border-radius: 999px;
+  padding: 7px 10px;
+  margin-right: 8px;
+  background: var(--ui-azul-claro, #bcdcff);
+  color: #000;
+  font-weight: 900;
+  cursor: pointer;
 }
 
 #edPortadaPreview,
 .ed-existing-preview {
-  max-width: 150px;
+  max-width: 135px;
   border-radius: 14px;
   border: 1px solid rgba(0,0,0,.12);
   margin-top: 6px;
   display: block;
+  background: #fff;
 }
 
 .ed-existing-video {
-  width: 150px;
+  width: 135px;
   max-width: 100%;
   aspect-ratio: 9 / 16;
   border-radius: 14px;
@@ -254,13 +329,19 @@ body.oscuro .ed-card {
 #edPaginasEditor {
   display: grid;
   gap: 12px;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 .ed-page-editor {
-  border: 1px solid rgba(0,0,0,.12);
-  border-radius: 18px;
+  border: 1px solid rgba(0,0,0,.10);
+  border-radius: 20px;
   padding: 12px;
-  background: rgba(0,0,0,.025);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.82), rgba(233,246,255,.45));
+  box-shadow: 0 8px 22px rgba(0,0,0,.06);
+  overflow: hidden;
 }
 
 .ed-page-head {
@@ -273,6 +354,8 @@ body.oscuro .ed-card {
 
 .ed-page-head b {
   font-size: 15px;
+  font-family: "Lora", Georgia, serif;
+  font-weight: 900;
 }
 
 .ed-page-head button {
@@ -280,15 +363,26 @@ body.oscuro .ed-card {
   background: rgba(220,53,69,.14);
   color: #8a111d;
   border-radius: 999px;
-  padding: 7px 10px;
+
+  width: 32px;
+  height: 32px;
+  padding: 0;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
   cursor: pointer;
   font-weight: 900;
 }
 
 .ed-page-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0,1fr));
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, .95fr) minmax(0, .95fr);
   gap: 10px;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .ed-page-grid .ed-field {
@@ -298,13 +392,18 @@ body.oscuro .ed-card {
 .ed-form-actions {
   position: sticky;
   bottom: 0;
-  background: #fff;
-  border-top: 1px solid rgba(0,0,0,.10);
-  padding: 12px 14px;
+
+  background: rgba(255,255,255,.94);
+  border-top: 1px solid rgba(0,0,0,.08);
+  padding: 11px 14px;
+
   display: flex;
   gap: 10px;
   justify-content: flex-end;
   flex-wrap: wrap;
+
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .ed-primary {
@@ -315,6 +414,7 @@ body.oscuro .ed-card {
   background: var(--ui-azul-hover, #1c6fcb);
   color: #fff;
   font-weight: 900;
+  box-shadow: 0 8px 18px rgba(0,0,0,.14);
 }
 
 .ed-secondary {
@@ -329,8 +429,113 @@ body.oscuro .ed-card {
 
 #edEstado {
   font-size: 13px;
-  opacity: .8;
+  opacity: .82;
   text-align: center;
+  padding: 4px 8px;
+  line-height: 1.25;
+}
+
+/* Modo oscuro del modal editor */
+body.oscuro #edModalBox {
+  background:
+    radial-gradient(circle at top left, rgba(166,208,255,.18), transparent 38%),
+    rgba(22,22,22,.98);
+  color: #fff;
+  border-color: rgba(255,255,255,.12);
+}
+
+body.oscuro #edModalHead,
+body.oscuro .ed-form-actions {
+  background: rgba(22,22,22,.92);
+  border-color: rgba(255,255,255,.10);
+}
+
+body.oscuro #edCerrarModal {
+  background: rgba(255,255,255,.10);
+  color: #fff;
+}
+
+body.oscuro .ed-field input[type="text"],
+body.oscuro .ed-field input[type="file"] {
+  background: rgba(255,255,255,.08);
+  color: #fff;
+  border-color: rgba(255,255,255,.16);
+}
+
+body.oscuro .ed-page-editor {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.08), rgba(166,208,255,.08));
+  border-color: rgba(255,255,255,.13);
+}
+
+/* Tablet/celu: una columna para evitar scroll horizontal */
+@media (max-width: 860px) {
+  #edModal {
+    padding: 8px;
+    align-items: center;
+  }
+
+  #edModalBox {
+    width: calc(100vw - 16px);
+    max-height: 94vh;
+    border-radius: 18px;
+  }
+
+  #edForm {
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .ed-page-grid {
+    grid-template-columns: 1fr;
+    gap: 9px;
+  }
+
+  .ed-page-editor {
+    padding: 11px;
+    border-radius: 18px;
+  }
+
+  #edPortadaPreview,
+  .ed-existing-preview,
+  .ed-existing-video {
+    max-width: 120px;
+    width: 120px;
+  }
+}
+
+@media (max-width: 420px) {
+  #edModal {
+    padding: 0;
+  }
+
+  #edModalBox {
+    width: 100vw;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+
+  #edModalHead {
+    padding: 10px 12px;
+  }
+
+  #edModalHead h3 {
+    font-size: 18px;
+  }
+
+  #edForm {
+    padding: 10px;
+  }
+
+  .ed-form-actions {
+    justify-content: center;
+    padding: 10px;
+  }
+
+  .ed-primary,
+  .ed-secondary {
+    flex: 1 1 130px;
+  }
 }
 
 /* ================= VISOR FULLSCREEN ================= */
