@@ -296,6 +296,7 @@ let marcadores = {};                // cache firebase
 let panelRecursosGuardados = {};
 let panelEdicionesGuardadas = {};
 let panelImagenesGuardadas = {};
+let panelImagenesPublicadas = {};
 
 // ================= ✅ INDICE DE NOTAS (para mostrar pluma) =================
 window.notasBibliaIndex = window.notasBibliaIndex || {};
@@ -563,6 +564,20 @@ onValue(ref(db, "panelImagenesPersonal/" + uid), s => {
   renderPanelImagenes(data);
 });
 
+  onValue(ref(db, "compartidos/imagenes"), s => {
+  const data = s.val() || {};
+  panelImagenesPublicadas = {};
+
+  Object.entries(data).forEach(([compId, item]) => {
+    const panelId = item?.panelItemId || "";
+    if (panelId) {
+      panelImagenesPublicadas[panelId] = true;
+    }
+  });
+
+  renderPanelImagenes(panelImagenesGuardadas || {});
+});
+  
   // ✅ Cargar recursos guardados en Mi Panel: ABC + RH / Recursos
 onValue(ref(db, "panelRecursos/" + uid), s => {
   panelRecursosGuardados = s.val() || {};
@@ -4723,12 +4738,12 @@ if (topRow && indexRow && topRow.previousElementSibling !== indexRow) {
     <i class="fa-solid fa-share-nodes"></i>
   </button>
 
-  <button class="btn-primary btn-panel-compartidos" type="button"
-    onclick="publicarImagenPanelEnCompartidos('${it.id}')"
-    aria-label="Publicar en Compartidos"
-    title="Publicar en Compartidos">
-    <i class="fa-solid fa-icons"></i>
-  </button>
+<button class="btn-primary btn-panel-compartidos ${panelImagenesPublicadas[it.id] ? "activo" : ""}" type="button"
+  onclick="publicarImagenPanelEnCompartidos('${it.id}')"
+  aria-label="Publicar en Compartidos"
+  title="${panelImagenesPublicadas[it.id] ? "Ya publicado en Compartidos" : "Publicar en Compartidos"}">
+  <i class="fa-solid ${panelImagenesPublicadas[it.id] ? "fa-check" : "fa-icons"}"></i>
+</button>
 
   <button class="btn-danger btn-delete-panel-img" type="button"
     onclick="eliminarImagenPanel('${it.id}')"
@@ -5800,6 +5815,11 @@ window.publicarImagenPanelEnCompartidos = async function(id) {
       alert("No encuentro la imagen para publicar en Compartidos.");
       return;
     }
+
+    if (panelImagenesPublicadas[id]) {
+  mostrarToast("✅ Esta imagen ya está publicada en Compartidos");
+  return;
+}
 
     const ts = Date.now();
     const url = normalizarUrlPanelParaDB(item.url);
