@@ -2967,20 +2967,32 @@ input[type="hidden"]#colorTextoApp,
   box-shadow: none !important;
 }
 
-/* ===== SOLO ICONO EN CELU: Compartidos + Recursos ===== */
+/* ===== SOLO ICONO EN CELU: Mi Panel / tabs puntuales ===== */
 @media (max-width: 640px){
-  .solo-icono-movil .text,
-  .solo-icono-movil span{
-    display: none;
-  }
-
   .solo-icono-movil{
-    min-width: 44px;
-    width: 44px;
+    width: 42px;
+    min-width: 42px;
+    height: 34px;
     padding-left: 0 !important;
     padding-right: 0 !important;
+
+    display: inline-flex;
+    align-items: center;
     justify-content: center;
+
     gap: 0;
+    font-size: 0; /* ✅ oculta el texto directo: Compartidos / ABC / Recursos */
+  }
+
+  .solo-icono-movil i{
+    font-size: 14px;
+    line-height: 1;
+    margin: 0;
+  }
+
+  .solo-icono-movil span,
+  .solo-icono-movil .text{
+    display: none;
   }
 }
 
