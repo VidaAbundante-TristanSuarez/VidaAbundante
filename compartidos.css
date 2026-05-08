@@ -890,4 +890,15 @@ body.en-compartidos #panel-tabs,
   }
 }
 
+/* ✅ Botón eliminar solo de Compartidos */
+.comp-post-actions .comp-action-delete{
+  background: #ffe3e3;
+  color: #a40000;
+}
+
+.comp-post-actions .comp-action-delete:hover{
+  background: #ffb5b5;
+  color: #000;
+}
+
 </style>
