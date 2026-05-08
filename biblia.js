@@ -1193,9 +1193,9 @@ function initResaltadorCompacto() {
   function renderBotonActivo() {
     const conf = obtenerConfigResaltadorActual();
 
-    btnActivo.innerHTML = "";
-    btnActivo.style.background = "transparent";
-    btnActivo.appendChild(crearNodoFormaResaltador(conf.color, conf.forma));
+btnActivo.innerHTML = "";
+btnActivo.style.background = "";
+btnActivo.appendChild(crearNodoFormaResaltador(conf.color, conf.forma));
   }
 
   function renderPaletaColores() {
