@@ -3019,7 +3019,13 @@ function subidosRenderCardHTML(it = {}, opciones = {}) {
   const mostrarAcciones = mostrarAccionesArchivo && !!(tieneArchivo || tienePredica);
 
   const borrarHtml = borrarHtmlPersonalizado || (mostrarBorrarOriginal ? `
-    <button type="button" class="subidosDangerMini" onclick="borrarSubido('${idJs}')" title="Borrar">
+    <button
+      type="button"
+      class="subidosDangerMini"
+      onclick="borrarSubido('${idJs}')"
+      title="Borrar"
+      style="opacity:.45;"
+    >
       <i class="fa-solid fa-trash"></i>
     </button>
   ` : ``);
@@ -3032,14 +3038,18 @@ function subidosRenderCardHTML(it = {}, opciones = {}) {
     >
       <div class="subidos-feed-head">
         <div class="subidos-feed-left">
-          <div class="subidos-feed-badges">
+          <div class="subidos-feed-badges" style="display:flex; align-items:center; gap:8px; flex-wrap:nowrap;">
             <span class="subidos-badge" style="background:${color.bg}; color:${color.fg};">
               <i class="fa-solid ${iconoSegunTipo(it.mimeType || "")}"></i>
               ${escaparHtml(it.etiqueta || "Subido")}
             </span>
-          </div>
 
-          <div class="subidos-feed-date">${fechaTxt}</div>
+            ${fechaTxt ? `
+              <span class="subidos-feed-date" style="white-space:nowrap; flex:0 0 auto;">
+                ${fechaTxt}
+              </span>
+            ` : ``}
+          </div>
 
           ${
             it.descripcion
