@@ -10,6 +10,7 @@ const {
 } = FB;
 
 const R2_UPLOAD_URL = "https://us-central1-vidaabundante-f118a.cloudfunctions.net/subirImagenR2";
+const SUBIDOS_VIDEO_UPLOAD_URL = "https://us-central1-vidaabundante-f118a.cloudfunctions.net/crearUploadVideoR2";
 const SUBIDOS_PROXY_URL = "https://us-central1-vidaabundante-f118a.cloudfunctions.net/descargarImagenR2";
 const SUBIDOS_EXPORT_BG_URL = "./img/subidos/fondo-predica-cielo.jpg";
 
@@ -103,6 +104,13 @@ function subidosMarcarArchivoAccionListo(id, listo) {
 async function subidosPrepararArchivoAccion(id) {
   const it = obtenerSubidoPorId(id);
   if (!it) return null;
+
+  // ✅ Videos grandes: NO los bajamos en memoria.
+  // Compartir/descargar usa link directo para cuidar Functions y límites.
+  if (subidosEsVideoItem(it)) {
+    subidosMarcarArchivoAccionListo(id, true);
+    return null;
+  }  
 
   const info = subidosInfoArchivoAccion(it);
   if (!info?.url) {
@@ -1223,6 +1231,155 @@ async function subirArchivoAR2DesdeWeb(file, folder = "subidos"){
   }
 
   return data;
+}
+
+/* ================= VIDEOS GRANDES: SUBIDA DIRECTA A R2 ================= */
+
+function subidosEsVideoFile(file) {
+  return !!file && String(file.type || "").startsWith("video/");
+}
+
+function subidosEsVideoItem(it) {
+  return String(it?.mimeType || "").startsWith("video/");
+}
+
+function subidosContentTypeVideo(file) {
+  const tipo = String(file?.type || "").trim();
+  if (tipo) return tipo;
+
+  const nombre = String(file?.name || "").toLowerCase();
+
+  if (nombre.endsWith(".mov")) return "video/quicktime";
+  if (nombre.endsWith(".webm")) return "video/webm";
+
+  return "video/mp4";
+}
+
+function subidosFormatoMB(bytes = 0) {
+  return (Number(bytes || 0) / 1024 / 1024).toFixed(1);
+}
+
+async function subirVideoR2DirectoSubidos(file, estadoEl = null) {
+  if (!file) throw new Error("Falta video.");
+
+  const contentType = subidosContentTypeVideo(file);
+
+  const permitidos = ["video/mp4", "video/webm", "video/quicktime"];
+  if (!permitidos.includes(contentType)) {
+    throw new Error("Tipo de video no permitido. Usá MP4, WEBM o MOV.");
+  }
+
+  const maxBytes = 80 * 1024 * 1024; // mismo límite que la Cloud Function
+  if (file.size > maxBytes) {
+    throw new Error(`Video demasiado grande: ${subidosFormatoMB(file.size)} MB. Máximo inicial: 80 MB.`);
+  }
+
+  const user =
+    window.__AUTH?.currentUser ||
+    window.__FB?.auth?.currentUser ||
+    null;
+
+  if (!user) {
+    throw new Error("No pude obtener el usuario actual para autorizar la subida.");
+  }
+
+  if (estadoEl) {
+    estadoEl.textContent = `Preparando permiso para video (${subidosFormatoMB(file.size)} MB)...`;
+  }
+
+  const token = await user.getIdToken();
+
+  const r = await fetch(SUBIDOS_VIDEO_UPLOAD_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer " + token
+    },
+    body: JSON.stringify({
+      destino: "subidos",
+      fileName: file.name || `video_${Date.now()}.mp4`,
+      contentType,
+      sizeBytes: file.size
+    })
+  });
+
+  const data = await r.json().catch(() => ({}));
+
+  if (!r.ok || !data?.ok || !data?.uploadUrl) {
+    throw new Error(data?.error || "No se pudo crear la URL de subida para el video.");
+  }
+
+  if (estadoEl) {
+    estadoEl.textContent = "Subiendo video directo a R2...";
+  }
+
+  const put = await fetch(data.uploadUrl, {
+    method: "PUT",
+    headers: {
+      "Content-Type": contentType
+    },
+    body: file
+  });
+
+  if (!put.ok) {
+    const txt = await put.text().catch(() => "");
+    throw new Error(`R2 rechazó la subida del video (${put.status}). ${txt}`);
+  }
+
+  return {
+    ok: true,
+    url: data.publicUrl,
+    key: data.key || "",
+    fileName: data.fileName || file.name || `video_${Date.now()}.mp4`,
+    contentType,
+    sizeBytes: file.size,
+    subidaDirectaVideo: true
+  };
+}
+
+function subidosDescargarVideoDirecto(it) {
+  if (!it?.url) {
+    alert("Este video no tiene URL.");
+    return;
+  }
+
+  const a = document.createElement("a");
+  a.href = it.url;
+  a.download = subidosNombreLimpio(it.fileName || `video_${Date.now()}.mp4`);
+  a.target = "_blank";
+  a.rel = "noopener";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
+async function subidosCompartirLinkVideo(it) {
+  if (!it?.url) {
+    alert("Este video no tiene URL para compartir.");
+    return;
+  }
+
+  const titulo = it.etiqueta || "Video";
+  const texto = [it.etiqueta || "Video", it.descripcion || ""]
+    .filter(Boolean)
+    .join(" — ");
+
+  if (navigator.share) {
+    await navigator.share({
+      title: titulo,
+      text: texto,
+      url: it.url
+    });
+    return;
+  }
+
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(it.url);
+    alert("Link del video copiado.");
+    return;
+  }
+
+  prompt("Copiá este link:", it.url);
 }
 
 function nombreMes(d) {
@@ -2617,6 +2774,15 @@ async function subidosAccionProtegida(id, tipo, textoProceso, accion) {
 
 window.descargarSubido = function descargarSubido(id) {
   return subidosAccionProtegida(id, "descargar", "Descargando.", async () => {
+    const it = obtenerSubidoPorId(id);
+    if (!it) return;
+
+    // ✅ Video: no lo pasamos por Functions ni lo cargamos en memoria
+    if (subidosEsVideoItem(it)) {
+      subidosDescargarVideoDirecto(it);
+      return;
+    }
+
     let file = subidosFileCache.get(id)?.file;
 
     if (!file) {
@@ -2627,7 +2793,7 @@ window.descargarSubido = function descargarSubido(id) {
       throw new Error("El archivo todavía no está listo para descargar.");
     }
 
-    // ✅ descarga real desde Blob/File, no abre link
+    // ✅ resto: descarga real desde Blob/File
     subidosDescargarFileReal(file);
   });
 };
@@ -2954,10 +3120,24 @@ window.abrirSubidoDesdeCalendario = function abrirSubidoDesdeCalendario(id) {
 
 window.compartirSubido = async function compartirSubido(id) {
   try {
+    const it = obtenerSubidoPorId(id);
+
+    if (!it) {
+      alert("No se encontró el archivo.");
+      return;
+    }
+
+    // ✅ Video: compartir link, NO archivo pesado
+    if (subidosEsVideoItem(it)) {
+      await subidosCompartirLinkVideo(it);
+      subidosAvisoProceso("Link listo ✅");
+      return;
+    }
+
     let file = subidosFileCache.get(id)?.file;
 
     if (!file) {
-      subidosAvisoProceso("El archivo todavía se está preparando...", true);
+      subidosAvisoProceso("El archivo todavía se está preparando.", true);
       file = await subidosPrepararArchivoAccion(id);
     }
 
@@ -2966,10 +3146,9 @@ window.compartirSubido = async function compartirSubido(id) {
       return;
     }
 
-    const it = obtenerSubidoPorId(id);
     const titulo = it?.etiqueta || "Archivo";
 
-    // ✅ compartir archivo real, no link
+    // ✅ imágenes / prédicas / archivos chicos: compartir archivo real
     await subidosCompartirFileObligatorio(file, titulo, subidosLinkDetalle(id));
 
     subidosAvisoProceso("Listo ✅");
@@ -3088,12 +3267,6 @@ async function guardarSubido() {
     const actual = subidosEditandoId ? (obtenerSubidoPorId(subidosEditandoId) || {}) : {};
     const file = inpFile?.files?.[0] || null;
 
-    // ⚠️ Por ahora los videos grandes pueden fallar porque se envían en base64.
-    if (file && file.type.startsWith("video/") && file.size > 18 * 1024 * 1024) {
-      alert("El video es demasiado pesado para esta forma de subida. Probá con un video de menos de 18 MB o después cambiamos la función para subir videos grandes directo a R2.");
-      return;
-    }
-
     const fechaEvento = (inpFecha?.value || "").trim();
     const etiqueta = (inpEtiqueta?.value || "").trim();
     const descripcion = (inpDesc?.value || "").trim();
@@ -3135,18 +3308,33 @@ if (!file && !esPredica && !actual.url && !permiteSinArchivo) {
 
     const ts = Date.now();
 
-    let url = actual.url || "";
-    let r2Key = actual.r2Key || "";
-    let mimeType = actual.mimeType || "";
-    let fileName = actual.fileName || "";
+let url = actual.url || "";
+let r2Key = actual.r2Key || "";
+let mimeType = actual.mimeType || "";
+let fileName = actual.fileName || "";
+let sizeBytes = Number(actual.sizeBytes || 0);
+let subidaDirectaVideo = !!actual.subidaDirectaVideo;
 
-    if (file) {
-      const subida = await subirArchivoAR2DesdeWeb(file, "subidos");
-      url = subida?.url || "";
-      r2Key = subida?.key || "";
-      mimeType = file?.type || "";
-      fileName = file?.name || "";
-    }
+if (file) {
+  const esVideo = subidosEsVideoFile(file);
+
+  if (estado) {
+    estado.textContent = esVideo
+      ? `Preparando video (${subidosFormatoMB(file.size)} MB)...`
+      : "Subiendo archivo...";
+  }
+
+  const subida = esVideo
+    ? await subirVideoR2DirectoSubidos(file, estado)
+    : await subirArchivoAR2DesdeWeb(file, "subidos");
+
+  url = subida?.url || "";
+  r2Key = subida?.key || "";
+  mimeType = subida?.contentType || file?.type || "";
+  fileName = subida?.fileName || file?.name || "";
+  sizeBytes = Number(subida?.sizeBytes || file?.size || 0);
+  subidaDirectaVideo = !!subida?.subidaDirectaVideo;
+}
 
     const destinoRef = subidosEditandoId
       ? ref(db, `subidosIglesia/${subidosEditandoId}`)
@@ -3166,8 +3354,10 @@ if (!file && !esPredica && !actual.url && !permiteSinArchivo) {
       descripcion,
       url,
       r2Key,
-      mimeType,
-      fileName,
+mimeType,
+fileName,
+sizeBytes,
+subidaDirectaVideo,
 uidCreador: actual.uidCreador || subidosUID,
 esEventoSinArchivo: !url && permiteSinArchivo && !esPredica,
 esPredica,
