@@ -35,7 +35,7 @@
 #header {
   position: relative;
   z-index: 20;
-  background: rgba(255,255,255,.92);
+  background: linear-gradient(to bottom, #e9f6ff, #f1f9ff);
   border-bottom: 1px solid #ddd;
   padding: 10px;
   display: flex;
@@ -546,7 +546,7 @@ body.oscuro .panel-tabs{
   flex-wrap: nowrap;
 
   padding: 8px 12px;
-  background: var(--ui-azul-claro);
+  background: linear-gradient(to bottom, #e9f6ff, #f1f9ff);
   border-top: 1px solid #ddd;
 
   margin-left: -12px;
