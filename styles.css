@@ -125,11 +125,11 @@ body.oscuro .nav-btn:hover i{
 
 /* oscuro */
 body.oscuro .nav-btn.activo{
-  background: #000;
-  color: var(--ui-azul-claro);
+  background: var(--ui-azul-claro);
+  color: #000;
 }
 body.oscuro .nav-btn.activo i{
-  color: var(--ui-azul-claro);
+  color: #000;
 }
 
   /* ================= SECCIONES GENERALES ================= */
