@@ -2977,14 +2977,143 @@ if (esVideo) {
   `;
 }
 
+/* =========================================================
+   RENDER REUTILIZABLE: CARD DE SUBIDOS / PRÉDICA
+   - Lo usa Subidos ahora.
+   - Lo va a poder usar Compartidos después sin rehacer la card.
+   ========================================================= */
+
+function subidosJs(v = "") {
+  return String(v ?? "")
+    .replace(/\\/g, "\\\\")
+    .replace(/'/g, "\\'")
+    .replace(/\r?\n/g, " ");
+}
+
+function subidosRenderCardHTML(it = {}, opciones = {}) {
+  const idReal = String(it.id || "").trim();
+  const idJs = subidosJs(idReal);
+
+  const idPrefix = opciones.idPrefix ?? "subido-";
+  const domId = opciones.domId ?? `${idPrefix}${idReal}`;
+
+  const mostrarEditar = opciones.mostrarEditar ?? subidosEsAdmin;
+  const mostrarBorrarOriginal = opciones.mostrarBorrarOriginal ?? subidosEsAdmin;
+  const mostrarAccionesArchivo = opciones.mostrarAccionesArchivo ?? true;
+
+  // ✅ para Compartidos después: podremos pasar otro delete,
+  // que borre solo de Compartidos y NO el archivo original.
+  const borrarHtmlPersonalizado = opciones.borrarHtml || "";
+
+  const extraFinal = opciones.extraFinal || "";
+
+  const fechaTxt = it.fechaEvento
+    ? new Date(it.fechaEvento + "T00:00:00").toLocaleDateString("es-AR")
+    : "";
+
+  const color = colorEtiquetaSubidos(it.etiqueta || "");
+  const bloquePredica = htmlPredicaBibliaSubido(it);
+
+  const tieneArchivo = !!String(it.url || "").trim();
+  const tienePredica = subidosTieneContenidoPredica(it);
+  const mostrarAcciones = mostrarAccionesArchivo && !!(tieneArchivo || tienePredica);
+
+  const borrarHtml = borrarHtmlPersonalizado || (mostrarBorrarOriginal ? `
+    <button type="button" class="subidosDangerMini" onclick="borrarSubido('${idJs}')" title="Borrar">
+      <i class="fa-solid fa-trash"></i>
+    </button>
+  ` : ``);
+
+  return `
+    <div
+      id="${escaparHtml(domId)}"
+      class="subidos-feed-card ${subidosEsPredicaConContenido(it) ? "subidos-card-predica" : ""}"
+      data-subido-card-id="${escaparHtml(idReal)}"
+    >
+      <div class="subidos-feed-head">
+        <div class="subidos-feed-left">
+          <div class="subidos-feed-badges">
+            <span class="subidos-badge" style="background:${color.bg}; color:${color.fg};">
+              <i class="fa-solid ${iconoSegunTipo(it.mimeType || "")}"></i>
+              ${escaparHtml(it.etiqueta || "Subido")}
+            </span>
+          </div>
+
+          <div class="subidos-feed-date">${fechaTxt}</div>
+
+          ${
+            it.descripcion
+              ? `<div class="subidos-feed-desc">${escaparHtml(it.descripcion || "")}</div>`
+              : ``
+          }
+        </div>
+      </div>
+
+      ${tieneArchivo ? `
+        <div class="subidos-media">
+          ${htmlPreviewArchivoSubido(it)}
+        </div>
+      ` : ``}
+
+      ${tienePredica ? bloquePredica : ``}
+
+      <div class="subidos-feed-actions">
+        ${
+          mostrarAcciones
+            ? `
+              <button
+                type="button"
+                data-subidos-download="${escaparHtml(idReal)}"
+                onclick="descargarSubido('${idJs}')"
+                title="Preparando archivo..."
+                disabled
+                style="opacity:.45; cursor:wait;"
+              >
+                <i class="fa-solid fa-download"></i>
+              </button>
+
+              <button
+                type="button"
+                data-subidos-share="${escaparHtml(idReal)}"
+                onclick="compartirSubido('${idJs}')"
+                title="Preparando archivo..."
+                disabled
+                style="opacity:.45; cursor:wait;"
+              >
+                <i class="fa-solid fa-share-nodes"></i>
+              </button>
+            `
+            : ``
+        }
+
+        ${
+          mostrarEditar
+            ? `
+              <button type="button" onclick="abrirEditarSubido('${idJs}')" title="Editar">
+                <i class="fa-solid fa-pen"></i>
+              </button>
+            `
+            : ``
+        }
+      </div>
+
+      ${borrarHtml}
+
+      ${extraFinal}
+    </div>
+  `;
+}
+
+// ✅ funciones públicas para que Compartidos pueda reutilizarlas después
+window.subidosRenderCardHTML = subidosRenderCardHTML;
+window.subidosPrepararArchivoAccion = subidosPrepararArchivoAccion;
+
 function renderFeed() {
   const feed = document.getElementById("subidosFeed");
   if (!feed) return;
 
-  const imagenFijaHorarios = htmlImagenFijaHorariosSubidos();
-
   if (!subidosItems.length) {
-    feed.innerHTML = imagenFijaHorarios + `
+    feed.innerHTML = `
       <div class="subidos-feed-card" style="opacity:.85;">
         No hay archivos subidos todavía.
       </div>
@@ -2992,102 +3121,14 @@ function renderFeed() {
     return;
   }
 
-feed.innerHTML = imagenFijaHorarios + subidosItems.map(it => {
-    const fechaTxt = it.fechaEvento
-      ? new Date(it.fechaEvento + "T00:00:00").toLocaleDateString("es-AR")
-      : "";
+  feed.innerHTML = subidosItems.map(it => subidosRenderCardHTML(it, {
+    idPrefix: "subido-",
+    mostrarEditar: subidosEsAdmin,
+    mostrarBorrarOriginal: subidosEsAdmin,
+    mostrarAccionesArchivo: true
+  })).join("");
 
-    const color = colorEtiquetaSubidos(it.etiqueta || "");
-    const bloquePredica = htmlPredicaBibliaSubido(it);
-    const tieneArchivo = !!String(it.url || "").trim();
-    const tienePredica = subidosTieneContenidoPredica(it);
-    const mostrarAcciones = !!(tieneArchivo || tienePredica);
-
-    return `
-      <div id="subido-${it.id}" class="subidos-feed-card ${subidosEsPredicaConContenido(it) ? "subidos-card-predica" : ""}">
-        <div class="subidos-feed-head">
-          <div class="subidos-feed-left">
-            <div class="subidos-feed-badges">
-              <span class="subidos-badge" style="background:${color.bg}; color:${color.fg};">
-                <i class="fa-solid ${iconoSegunTipo(it.mimeType || "")}"></i>
-                ${escaparHtml(it.etiqueta || "Subido")}
-              </span>
-
-              ${
-                fechaTxt
-                  ? `<span class="subidos-feed-date">${fechaTxt}</span>`
-                  : ``
-              }
-            </div>
-            
-            ${
-              it.descripcion
-                ? `<div class="subidos-feed-desc">${escaparHtml(it.descripcion || "")}</div>`
-                : ``
-            }
-          </div>
-        </div>
-
-        ${tieneArchivo ? `
-          <div class="subidos-media">
-            ${htmlPreviewArchivoSubido(it)}
-          </div>
-        ` : ``}
-
-        ${tienePredica ? bloquePredica : ``}
-
-        <div class="subidos-feed-actions">
-          ${
-            mostrarAcciones
-              ? `
-<button
-  type="button"
-  data-subidos-download="${it.id}"
-  onclick="descargarSubido('${it.id}')"
-  title="Preparando archivo..."
-  disabled
-  style="opacity:.45; cursor:wait;"
->
-  <i class="fa-solid fa-download"></i>
-</button>
-
-<button
-  type="button"
-  data-subidos-share="${it.id}"
-  onclick="compartirSubido('${it.id}')"
-  title="Preparando archivo..."
-  disabled
-  style="opacity:.45; cursor:wait;"
->
-  <i class="fa-solid fa-share-nodes"></i>
-</button>
-              `
-              : ``
-          }
-
-          ${
-            subidosEsAdmin
-              ? `
-                <button type="button" onclick="abrirEditarSubido('${it.id}')" title="Editar">
-                  <i class="fa-solid fa-pen"></i>
-                </button>
-              `
-              : ``
-          }
-        </div>
-
-        ${
-          subidosEsAdmin
-            ? `
-              <button type="button" class="subidosDangerMini" onclick="borrarSubido('${it.id}')" title="Borrar">
-                <i class="fa-solid fa-trash"></i>
-              </button>
-            `
-            : ``
-        }
-      </div>
-    `;
-  }).join("");
+  subidosPrepararArchivosDelFeed();
 }
 
 window.abrirSubidoDesdeCalendario = function abrirSubidoDesdeCalendario(id) {
