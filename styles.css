@@ -556,6 +556,10 @@ body.oscuro .panel-tabs{
   box-sizing: border-box;
 }
 
+.barra-acciones button:hover {
+background: var(--ui-azul-hover);
+ }
+
    body.oscuro .barra-acciones {
    background: #1e1e1e;
    border-color: #333;
@@ -571,6 +575,10 @@ body.oscuro .panel-tabs{
 
  body.oscuro .barra-acciones button {
 background: var(--ui-azul-claro);
+ }
+
+body.oscuro .barra-acciones button:hover {
+background: var(--ui-azul-hover);
  }
 
 .barra-acciones .spacer{
