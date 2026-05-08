@@ -569,6 +569,10 @@ body.oscuro .panel-tabs{
   background: var(--ui-azul-hover);
   }
 
+ body.oscuro .barra-acciones button {
+background: var(--ui-azul-claro);
+ }
+
 .barra-acciones .spacer{
   flex: 1 1 auto;
 }
