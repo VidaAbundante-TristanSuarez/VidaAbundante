@@ -295,6 +295,7 @@ let marcadores = {};                // cache firebase
 
 let panelRecursosGuardados = {};
 let panelEdicionesGuardadas = {};
+let panelImagenesGuardadas = {};
 
 // ================= ✅ INDICE DE NOTAS (para mostrar pluma) =================
 window.notasBibliaIndex = window.notasBibliaIndex || {};
@@ -556,10 +557,11 @@ onValue(ref(db, "marcados/" + uid), s => {
 });
 
   // ✅ Cargar imágenes del panel (personal)
-  onValue(ref(db, "panelImagenesPersonal/" + uid), s => {
-    const data = s.val() || {};
-    renderPanelImagenes(data);
-  });
+onValue(ref(db, "panelImagenesPersonal/" + uid), s => {
+  const data = s.val() || {};
+  panelImagenesGuardadas = data;
+  renderPanelImagenes(data);
+});
 
   // ✅ Cargar recursos guardados en Mi Panel: ABC + RH / Recursos
 onValue(ref(db, "panelRecursos/" + uid), s => {
@@ -4706,25 +4708,35 @@ if (topRow && indexRow && topRow.previousElementSibling !== indexRow) {
           </div>
         ` : ``}
 
-        <div class="devBigActions">
-          <button class="btn-primary" type="button"
-            onclick="descargarImagenPanel('${url}')"
-            aria-label="Descargar PNG">
-            <i class="fa-solid fa-download"></i>
-          </button>
+<div class="devBigActions">
+  <button class="btn-primary" type="button"
+    onclick="descargarImagenPanel('${url}')"
+    aria-label="Descargar PNG"
+    title="Descargar">
+    <i class="fa-solid fa-download"></i>
+  </button>
 
-          <button class="btn-primary" type="button"
-            onclick="compartirImagenPanel('${url}')"
-            aria-label="Compartir">
-            <i class="fa-solid fa-share-nodes"></i>
-          </button>
+  <button class="btn-primary" type="button"
+    onclick="compartirImagenPanel('${url}')"
+    aria-label="Compartir"
+    title="Compartir">
+    <i class="fa-solid fa-share-nodes"></i>
+  </button>
 
-          <button class="btn-danger" type="button"
-            onclick="eliminarImagenPanel('${it.id}')"
-            aria-label="Eliminar">
-            <i class="fa-solid fa-trash"></i>
-          </button>
-        </div>
+  <button class="btn-primary btn-panel-compartidos" type="button"
+    onclick="publicarImagenPanelEnCompartidos('${it.id}')"
+    aria-label="Publicar en Compartidos"
+    title="Publicar en Compartidos">
+    <i class="fa-solid fa-icons"></i>
+  </button>
+
+  <button class="btn-danger btn-delete-panel-img" type="button"
+    onclick="eliminarImagenPanel('${it.id}')"
+    aria-label="Eliminar"
+    title="Eliminar">
+    <i class="fa-solid fa-trash"></i>
+  </button>
+</div>
       </div>
     `;
   }).join("");
@@ -5756,6 +5768,58 @@ window.descargarImagenPanel = async (url, fileName = "imagen_vida_abundante.png"
   } catch (e) {
     console.error(e);
     alert("No se pudo descargar la imagen.\n\nDetalle: " + (e?.message || e));
+  }
+};
+
+function normalizarUrlPanelParaDB(url) {
+  let s = String(url || "").trim();
+  if (!s) return "";
+
+  if (/^https?:\/\//i.test(s)) return s;
+
+  if (/^(?:\.\/|\/)?pub-[a-z0-9-]+\.r2\.dev\//i.test(s)) {
+    s = "https://" + s.replace(/^(?:\.\/|\/)+/, "");
+  }
+
+  s = s.replace(/^https:\//i, "https://");
+  s = s.replace(/^http:\//i, "http://");
+
+  return s;
+}
+
+window.publicarImagenPanelEnCompartidos = async function(id) {
+  try {
+    if (!uid) {
+      loginModal.style.display = "flex";
+      return;
+    }
+
+    const item = panelImagenesGuardadas?.[id];
+
+    if (!item || !item.url) {
+      alert("No encuentro la imagen para publicar en Compartidos.");
+      return;
+    }
+
+    const ts = Date.now();
+    const url = normalizarUrlPanelParaDB(item.url);
+
+    await set(ref(db, `compartidos/imagenes/${ts}`), {
+      ...item,
+      url,
+      uid,
+      publicadoPor: uid,
+      tipo: item.tipo || "imagen",
+      origen: item.origen || "panel",
+      fecha: ts,
+      fechaOriginal: item.fecha || 0,
+      panelItemId: id
+    });
+
+    mostrarToast("✅ Publicado en Compartidos");
+  } catch (e) {
+    console.error(e);
+    alert("No se pudo publicar en Compartidos.");
   }
 };
 
