@@ -2802,6 +2802,16 @@ body.oscuro #btnPanelImgNuevo{
   color:#000 !important;
 }
 
+#panelImgFeed .btn-panel-compartidos.activo{
+  background: var(--ui-azul-hover) !important;
+  color:#000 !important;
+  box-shadow: inset 0 0 0 2px rgba(0,0,0,.12);
+}
+
+#panelImgFeed .btn-panel-compartidos.activo i{
+  color:#000 !important;
+}
+
 /* Celular: sin corrimiento horizontal */
 @media (max-width:700px){
   #seccion-panel{
