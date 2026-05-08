@@ -16,6 +16,7 @@ import {
 ========================================================= */
 
 const R2_UPLOAD_URL_EDICIONES = "https://us-central1-vidaabundante-f118a.cloudfunctions.net/subirImagenR2";
+const R2_VIDEO_UPLOAD_URL_EDICIONES = "https://us-central1-vidaabundante-f118a.cloudfunctions.net/crearUploadVideoR2";
 
 let edicionesIniciado = false;
 let edicionesEscuchaActiva = false;
@@ -65,14 +66,48 @@ function edSafeName(name = "archivo") {
     .slice(0, 120);
 }
 
+function edMediaUrlPagina(p = {}) {
+  return String(p.mediaUrl || p.videoUrl || p.imagenUrl || "").trim();
+}
+
+function edMediaTypePagina(p = {}) {
+  const tipo = String(p.mediaType || p.mimeType || "").trim();
+
+  if (tipo) return tipo;
+  if (p.videoUrl) return "video/mp4";
+  if (p.imagenUrl) return "image/*";
+
+  return "";
+}
+
+function edPaginaEsVideo(p = {}) {
+  return (
+    edMediaTypePagina(p).startsWith("video/") ||
+    !!p.videoUrl
+  );
+}
+
+function edPortadaEdicion(edicion) {
+  const primeraImagen = edPaginasArray(edicion)
+    .find(p => !edPaginaEsVideo(p));
+
+  return (
+    edicion?.portadaUrl ||
+    primeraImagen?.imagenUrl ||
+    primeraImagen?.mediaUrl ||
+    ""
+  );
+}
+
 function edPaginasArray(edicion) {
   const pags = edicion?.paginas || {};
+
   const arr = Array.isArray(pags)
-    ? pags.map((p, i) => ({ id: p.id || `p_${i}`, ...p }))
+    ? pags.map((p, i) => ({ id: p.id || `p_${i}`, ...(p || {}) }))
     : Object.entries(pags).map(([id, p]) => ({ id, ...(p || {}) }));
 
   return arr
-    .filter(p => p && p.imagenUrl)
+    .filter(p => p && edMediaUrlPagina(p))
     .sort((a, b) => Number(a.orden || 0) - Number(b.orden || 0));
 }
 
@@ -385,14 +420,21 @@ function renderEdiciones() {
 
   lista.innerHTML = edicionesCache.map(ed => {
     const titulo = edEscape(ed.titulo || "Sin título");
-    const portada = ed.portadaUrl || edPaginasArray(ed)[0]?.imagenUrl || "";
+   const portada = edPortadaEdicion(ed);
+   const tieneVideo = edPaginasArray(ed).some(p => edPaginaEsVideo(p));
     const st = edStats(ed.id);
     const guardada = edEstaGuardada(ed.id);
 
     return `
       <article class="ed-card">
         <div class="ed-card-cover" onclick="abrirPresentacionEdicion('${ed.id}')" role="button" title="Abrir edición">
-          ${portada ? `<img src="${edEscape(portada)}" alt="${titulo}" loading="lazy">` : `<span>Sin portada</span>`}
+      ${
+  portada
+    ? `<img src="${edEscape(portada)}" alt="${titulo}" loading="lazy">`
+    : tieneVideo
+      ? `<span><i class="fa-solid fa-video"></i><br>Edición con video</span>`
+      : `<span>Sin portada</span>`
+}
         </div>
 
         <div class="ed-card-body">
@@ -505,12 +547,26 @@ window.edAgregarPagina = (data = {}) => {
 
   const id = data.id || edKey("p");
 
+  const mediaUrl = edMediaUrlPagina(data);
+  const esVideo = edPaginaEsVideo(data);
+  const mediaType = edMediaTypePagina(data);
+
   const div = document.createElement("div");
   div.className = "ed-page-editor";
   div.dataset.pageId = id;
-  div.dataset.imagenUrl = data.imagenUrl || "";
+
+  div.dataset.mediaUrl = mediaUrl;
+  div.dataset.mediaType = mediaType;
+
+  div.dataset.imagenUrl = esVideo ? "" : (data.imagenUrl || data.mediaUrl || "");
+  div.dataset.videoUrl = esVideo ? (data.videoUrl || data.mediaUrl || data.imagenUrl || "") : "";
+
   div.dataset.audioEsUrl = data.audioEsUrl || "";
   div.dataset.audioEnUrl = data.audioEnUrl || "";
+
+  div.dataset.videoKey = data.videoKey || "";
+  div.dataset.videoFileName = data.videoFileName || "";
+  div.dataset.videoSizeBytes = data.videoSizeBytes || "";
 
   const numero = wrap.children.length + 1;
 
@@ -522,15 +578,17 @@ window.edAgregarPagina = (data = {}) => {
       </button>
     </div>
 
-    ${data.imagenUrl ? `
-      <img class="ed-existing-preview" src="${edEscape(data.imagenUrl)}" alt="Imagen actual">
-    ` : ``}
+    ${mediaUrl ? (
+      esVideo
+        ? `<video class="ed-existing-video" src="${edEscape(mediaUrl)}" controls muted playsinline preload="metadata"></video>`
+        : `<img class="ed-existing-preview" src="${edEscape(mediaUrl)}" alt="Imagen actual">`
+    ) : ``}
 
     <div class="ed-page-grid">
       <div class="ed-field">
-        <label>Imagen A4 / card</label>
-        <input class="edInputImagen" type="file" accept="image/*">
-        ${data.imagenUrl ? `<div style="font-size:12px; opacity:.7;">Ya tiene imagen. Elegí otra solo si querés reemplazarla.</div>` : ``}
+        <label>Imagen A4 / video</label>
+        <input class="edInputMedia" type="file" accept="image/*,video/mp4,video/webm,video/quicktime">
+        ${mediaUrl ? `<div style="font-size:12px; opacity:.7;">Ya tiene ${esVideo ? "video" : "imagen"}. Elegí otro archivo solo si querés reemplazarlo.</div>` : ``}
       </div>
 
       <div class="ed-field">
@@ -623,20 +681,55 @@ window.guardarEdicion = async (e) => {
       const pageId = row.dataset.pageId || edKey("p");
 
       let imagenUrl = row.dataset.imagenUrl || "";
+      let videoUrl = row.dataset.videoUrl || "";
+      let mediaUrl = row.dataset.mediaUrl || imagenUrl || videoUrl || "";
+      let mediaType = row.dataset.mediaType || (videoUrl ? "video/mp4" : (imagenUrl ? "image/*" : ""));
+
+      let videoKey = row.dataset.videoKey || "";
+      let videoFileName = row.dataset.videoFileName || "";
+      let videoSizeBytes = Number(row.dataset.videoSizeBytes || 0);
+
       let audioEsUrl = row.dataset.audioEsUrl || "";
       let audioEnUrl = row.dataset.audioEnUrl || "";
 
-      const imgFile = row.querySelector(".edInputImagen")?.files?.[0] || null;
+      const mediaFile =
+        row.querySelector(".edInputMedia")?.files?.[0] ||
+        row.querySelector(".edInputImagen")?.files?.[0] ||
+        null;
+
       const esFile = row.querySelector(".edInputAudioEs")?.files?.[0] || null;
       const enFile = row.querySelector(".edInputAudioEn")?.files?.[0] || null;
 
-      if (imgFile) {
-        edSetEstado(`Subiendo imagen ${i + 1}...`);
-        imagenUrl = await subirArchivoEdicionR2(imgFile, `ediciones/${edId}/imagenes`);
+      if (mediaFile) {
+        if (edEsVideoFile(mediaFile)) {
+          edSetEstado(`Subiendo video ${i + 1} (${edFormatoMB(mediaFile.size)} MB)...`);
+
+          const subida = await subirVideoEdicionR2Directo(mediaFile);
+
+          videoUrl = subida.url;
+          imagenUrl = "";
+          mediaUrl = subida.url;
+          mediaType = subida.contentType;
+
+          videoKey = subida.key || "";
+          videoFileName = subida.fileName || mediaFile.name || "";
+          videoSizeBytes = Number(subida.sizeBytes || mediaFile.size || 0);
+        } else {
+          edSetEstado(`Subiendo imagen ${i + 1}...`);
+
+          imagenUrl = await subirArchivoEdicionR2(mediaFile, `ediciones/${edId}/imagenes`);
+          videoUrl = "";
+          mediaUrl = imagenUrl;
+          mediaType = mediaFile.type || "image/*";
+
+          videoKey = "";
+          videoFileName = "";
+          videoSizeBytes = 0;
+        }
       }
 
-      if (!imagenUrl) {
-        alert(`La página ${i + 1} necesita imagen.`);
+      if (!mediaUrl) {
+        alert(`La página ${i + 1} necesita imagen o video.`);
         return;
       }
 
@@ -652,7 +745,19 @@ window.guardarEdicion = async (e) => {
 
       paginasObj[pageId] = {
         orden: i,
+
+        // ✅ compatibilidad vieja
         imagenUrl,
+
+        // ✅ nuevo soporte imagen / video
+        videoUrl,
+        mediaUrl,
+        mediaType,
+
+        videoKey,
+        videoFileName,
+        videoSizeBytes,
+
         audioEsUrl,
         audioEnUrl,
         actualizado: Date.now()
@@ -667,7 +772,10 @@ window.guardarEdicion = async (e) => {
     }
 
     if (!portadaUrl) {
-      portadaUrl = Object.values(paginasObj)[0]?.imagenUrl || "";
+      const primeraImagen = Object.values(paginasObj)
+        .find(p => !edPaginaEsVideo(p) && (p.imagenUrl || p.mediaUrl));
+
+      portadaUrl = primeraImagen?.imagenUrl || primeraImagen?.mediaUrl || "";
     }
 
     const data = {
@@ -689,7 +797,7 @@ window.guardarEdicion = async (e) => {
     console.error(err);
     alert(
       "No pude guardar la edición.\n\n" +
-      "Si falló al subir audios, probablemente la función R2 actual solo acepte imágenes y hay que ajustarla para audio también."
+      (err?.message || err)
     );
   } finally {
     if (btn) {
@@ -698,6 +806,111 @@ window.guardarEdicion = async (e) => {
     }
   }
 };
+
+/* ================= VIDEOS GRANDES: SUBIDA DIRECTA A R2 ================= */
+
+function edEsVideoFile(file) {
+  const tipo = String(file?.type || "");
+  const nombre = String(file?.name || "").toLowerCase();
+
+  return (
+    tipo.startsWith("video/") ||
+    nombre.endsWith(".mp4") ||
+    nombre.endsWith(".webm") ||
+    nombre.endsWith(".mov")
+  );
+}
+
+function edContentTypeVideo(file) {
+  const tipo = String(file?.type || "").trim();
+  if (tipo) return tipo;
+
+  const nombre = String(file?.name || "").toLowerCase();
+
+  if (nombre.endsWith(".mov")) return "video/quicktime";
+  if (nombre.endsWith(".webm")) return "video/webm";
+
+  return "video/mp4";
+}
+
+function edFormatoMB(bytes = 0) {
+  return (Number(bytes || 0) / 1024 / 1024).toFixed(1);
+}
+
+async function subirVideoEdicionR2Directo(file) {
+  if (!file) throw new Error("Falta video.");
+
+  const contentType = edContentTypeVideo(file);
+
+  const permitidos = ["video/mp4", "video/webm", "video/quicktime"];
+  if (!permitidos.includes(contentType)) {
+    throw new Error("Tipo de video no permitido. Usá MP4, WEBM o MOV.");
+  }
+
+  const maxBytes = 80 * 1024 * 1024;
+
+  if (file.size > maxBytes) {
+    throw new Error(`Video demasiado grande: ${edFormatoMB(file.size)} MB. Máximo inicial: 80 MB.`);
+  }
+
+  const user =
+    window.__AUTH?.currentUser ||
+    window.__FB?.auth?.currentUser ||
+    null;
+
+  if (!user) {
+    throw new Error("No pude obtener el usuario actual para autorizar la subida.");
+  }
+
+  edSetEstado(`Preparando permiso para video (${edFormatoMB(file.size)} MB)...`);
+
+  const token = await user.getIdToken();
+
+  const r = await fetch(R2_VIDEO_UPLOAD_URL_EDICIONES, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer " + token
+    },
+    body: JSON.stringify({
+      destino: "ediciones",
+      fileName: file.name || `video_${Date.now()}.mp4`,
+      contentType,
+      sizeBytes: file.size
+    })
+  });
+
+  const data = await r.json().catch(() => ({}));
+
+  if (!r.ok || !data?.ok || !data?.uploadUrl) {
+    throw new Error(data?.error || "No se pudo crear la URL de subida para el video.");
+  }
+
+  edSetEstado("Subiendo video directo a R2...");
+
+  const put = await fetch(data.uploadUrl, {
+    method: "PUT",
+    headers: {
+      "Content-Type": contentType
+    },
+    body: file
+  });
+
+  if (!put.ok) {
+    const txt = await put.text().catch(() => "");
+    throw new Error(`R2 rechazó la subida del video (${put.status}). ${txt}`);
+  }
+
+  return {
+    ok: true,
+    url: data.publicUrl,
+    key: data.key || "",
+    fileName: data.fileName || file.name || `video_${Date.now()}.mp4`,
+    contentType,
+    sizeBytes: file.size,
+    subidaDirectaVideo: true
+  };
+}
 
 async function subirArchivoEdicionR2(file, carpeta) {
   const safe = `${Date.now()}_${edSafeName(file.name)}`;
@@ -860,7 +1073,11 @@ window.abrirPresentacionEdicion = async (id) => {
         <section class="ed-slide">
           <div class="ed-slide-inner">
             <div class="ed-slide-img-wrap">
-              <img class="ed-slide-img" src="${edEscape(p.imagenUrl)}" alt="Página ${i + 1}" loading="lazy">
+              ${
+  edPaginaEsVideo(p)
+    ? `<video class="ed-slide-video" src="${edEscape(edMediaUrlPagina(p))}" controls playsinline preload="metadata"></video>`
+    : `<img class="ed-slide-img" src="${edEscape(edMediaUrlPagina(p))}" alt="Página ${i + 1}" loading="lazy">`
+}
             </div>
 
             ${(p.audioEsUrl || p.audioEnUrl) ? `
@@ -960,9 +1177,9 @@ window.descargarEdicionPDF = async (id) => {
     return;
   }
 
-  if (edTieneAudio(ed)) {
-    alert("El PDF descarga solo el documento visual. Los audios no se incluyen dentro del PDF.");
-  }
+if (edTieneAudio(ed) || paginas.some(p => edPaginaEsVideo(p))) {
+  alert("El PDF descarga solo el documento visual. Los audios y videos no se incluyen dentro del PDF.");
+}
 
   let jsPDF;
 
@@ -988,7 +1205,22 @@ window.descargarEdicionPDF = async (id) => {
     for (let i = 0; i < paginas.length; i++) {
       if (i > 0) pdf.addPage();
 
-      const dataUrl = await edUrlToDataUrl(paginas[i].imagenUrl);
+      if (edPaginaEsVideo(paginas[i])) {
+  pdf.setFontSize(18);
+  pdf.text("Página con video", pageW / 2, pageH / 2 - 12, { align: "center" });
+
+  pdf.setFontSize(11);
+  pdf.text(
+    "El video no se puede insertar dentro del PDF.",
+    pageW / 2,
+    pageH / 2 + 12,
+    { align: "center" }
+  );
+
+  continue;
+}
+
+const dataUrl = await edUrlToDataUrl(edMediaUrlPagina(paginas[i]));
       const dims = await edImageDims(dataUrl);
 
       const fit = edFit(dims.w, dims.h, pageW - margin * 2, pageH - margin * 2);
@@ -1111,7 +1343,7 @@ window.guardarEdicionEnMiPanel = async (id) => {
     return;
   }
 
-  const portadaUrl = ed.portadaUrl || edPaginasArray(ed)[0]?.imagenUrl || "";
+ const portadaUrl = edPortadaEdicion(ed);
 
   try {
     await set(panelRef, {
@@ -1166,7 +1398,7 @@ window.compartirEdicion = async (id, destino = "redes") => {
   }
 
   const titulo = ed.titulo || "Edición";
-  const portadaUrl = ed.portadaUrl || edPaginasArray(ed)[0]?.imagenUrl || "";
+ const portadaUrl = edPortadaEdicion(ed);
 
   if (destino === "compartidos") {
     if (!window.__ES_ADMIN) {
