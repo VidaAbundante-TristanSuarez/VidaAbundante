@@ -1096,7 +1096,12 @@
   <div class="modal-card" style="max-width:560px; width:100%;">
 
     <div style="padding:12px 14px; border-bottom:1px solid #ddd; display:flex; align-items:center; justify-content:space-between;">
-      <b id="subidosModalTitulo">💛 Nuevo subido</b>
+      <b id="subidosModalTitulo" class="subidos-modal-title">
+  <span class="subidos-modal-title-icon" aria-hidden="true">
+    <i class="fa-brands fa-earlybirds"></i>
+  </span>
+  <span id="subidosModalTituloTexto">Nuevo subido</span>
+</b>
       <button type="button" onclick="cerrarModalSubidos()"
         style="border:none; background:#eee; border-radius:999px; width:34px; height:34px; cursor:pointer;">✖</button>
     </div>
