@@ -4188,92 +4188,171 @@ function renderDevIndex(items){
   });
 }
 
+/* =========================================================
+   RENDER REUTILIZABLE: DEVOCIONAL PUBLICADO
+   - Lo usa Iglesia ahora.
+   - Lo va a poder usar Compartidos después sin rehacer la card.
+   ========================================================= */
+
+function devHtml(v = "") {
+  return String(v ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+function devAttr(v = "") {
+  return devHtml(v)
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function devJs(v = "") {
+  return String(v ?? "")
+    .replace(/\\/g, "\\\\")
+    .replace(/'/g, "\\'")
+    .replace(/\r?\n/g, " ");
+}
+
+function devAccionUrl(it = {}) {
+  return String(it.url || it.shareUrl || it.storagePath || "").trim();
+}
+
+function devRenderDevocionalCardHTML(it = {}, opciones = {}) {
+  const idPrefix = opciones.idPrefix ?? "devBig_";
+  const domId = opciones.domId ?? `${idPrefix}${it.id || ""}`;
+
+  const mostrarBorrar = opciones.mostrarBorrar ?? !!isAdmin();
+  const mostrarOracion = opciones.mostrarOracion ?? true;
+  const mostrarListaOraciones = opciones.mostrarListaOraciones ?? true;
+  const mostrarGuardar = opciones.mostrarGuardar ?? true;
+  const mostrarCompartir = opciones.mostrarCompartir ?? true;
+  const mostrarDescargar = opciones.mostrarDescargar ?? true;
+
+  const extraDespuesAudio = opciones.extraDespuesAudio || "";
+  const extraFinal = opciones.extraFinal || "";
+  const extraAcciones = opciones.extraAcciones || "";
+
+  // ✅ para Compartidos después: podremos pasar un delete distinto,
+  // que borre solo de Compartidos y NO el devocional original.
+  const borrarHtmlPersonalizado = opciones.borrarHtml || "";
+
+  const uidOwner = devJs(it.uidOwner || "");
+  const tsKey = Number(it.tsKey || 0);
+  const storagePath = devJs(it.storagePath || "");
+  const itemId = devJs(it.id || "");
+
+  const urlAccion = devAccionUrl(it);
+  const urlJs = devJs(urlAccion);
+  const urlAttr = devAttr(it.url || urlAccion || "");
+
+  const yaGuardado = devYaGuardadoEnPanel(it);
+
+  const saveBtnHtml = mostrarGuardar ? `
+    <button class="btn-primary ${yaGuardado ? "guardado" : ""}" type="button"
+      data-dev-save="${devAttr(it.id || "")}"
+      onclick="devGuardarPublicadoEnMiPanel('${itemId}')"
+      aria-label="${yaGuardado ? "Guardado en Mi Panel" : "Guardar en Mi Panel"}"
+      title="${yaGuardado ? "Ya guardado en Mi Panel" : "Guardar en Mi Panel"}"
+      ${yaGuardado ? "disabled" : ""}>
+      <i class="fa-solid ${yaGuardado ? "fa-heart-circle-check" : "fa-heart-circle-plus"}"></i>
+    </button>
+  ` : ``;
+
+  const audioHtml = it.audioGithubUrl ? `
+    <div class="devAudioBox">
+      <audio controls preload="none" src="${devAttr(it.audioGithubUrl)}"></audio>
+    </div>
+  ` : ``;
+
+  const deleteTopBtnHtml = borrarHtmlPersonalizado || (mostrarBorrar ? `
+    <button class="btn-primary devDanger devDeleteTopBtn" type="button"
+      onclick="devBorrarDevocional('${uidOwner}','${tsKey}','${storagePath}')"
+      aria-label="Borrar"
+      title="Borrar">
+      <i class="fa-solid fa-trash"></i>
+    </button>
+  ` : ``);
+
+  return `
+    <div class="devBigCard" id="${devAttr(domId)}" style="position:relative;" data-dev-card-id="${devAttr(it.id || "")}">
+      ${deleteTopBtnHtml}
+
+      <img src="${urlAttr}" alt="dev grande" loading="lazy">
+
+      ${audioHtml}
+
+      ${extraDespuesAudio}
+
+      <div class="devBigActions">
+        ${mostrarOracion ? `
+          <button class="btn-primary" type="button"
+            onclick="devAbrirModalOracion('${uidOwner}', '${tsKey}')"
+            aria-label="Adjuntar oración"
+            title="Adjuntar oración">
+            🙏
+          </button>
+        ` : ``}
+
+        ${mostrarListaOraciones ? `
+          <button class="btn-primary" type="button"
+            onclick="devAbrirListaOraciones('${uidOwner}', '${tsKey}')"
+            aria-label="Ver oraciones"
+            title="Ver oraciones">
+            <i class="fa-solid fa-receipt"></i>
+          </button>
+        ` : ``}
+
+        ${saveBtnHtml}
+
+        ${mostrarCompartir ? `
+          <button class="btn-primary" type="button"
+            onpointerdown="devWarmShareImage('${urlJs}', 'devocional.png')"
+            ontouchstart="devWarmShareImage('${urlJs}', 'devocional.png')"
+            onclick="devCompartirImagenItem('${urlJs}', 'devocional.png')"
+            aria-label="Compartir"
+            title="Compartir">
+            <i class="fa-solid fa-share-nodes"></i>
+          </button>
+        ` : ``}
+
+        ${mostrarDescargar ? `
+          <button class="btn-primary" type="button"
+            onclick="devDescargarImagenItem('${urlJs}', 'devocional.png')"
+            aria-label="Descargar PNG"
+            title="Descargar PNG">
+            <i class="fa-solid fa-download"></i>
+          </button>
+        ` : ``}
+
+        ${extraAcciones}
+      </div>
+
+      ${extraFinal}
+    </div>
+  `;
+}
+
+// ✅ función pública para que Compartidos pueda reutilizarla después
+window.devRenderDevocionalCardHTML = devRenderDevocionalCardHTML;
+
 function renderDevFeed(items){
   const feed = $("devFeed");
   if (!feed) return;
   feed.innerHTML = "";
 
-  const esAdmin = isAdmin();
   devPrecacheFeedImages(items);
 
   items.forEach((it)=>{
-    const card = document.createElement("div");
-    card.className = "devBigCard";
-    card.id = "devBig_" + it.id;
-    card.style.position = "relative";
-
-    const yaGuardado = devYaGuardadoEnPanel(it);
-
-    const saveBtnHtml = `
-      <button class="btn-primary ${yaGuardado ? "guardado" : ""}" type="button"
-        data-dev-save="${it.id}"
-        onclick="devGuardarPublicadoEnMiPanel('${it.id}')"
-        aria-label="${yaGuardado ? "Guardado en Mi Panel" : "Guardar en Mi Panel"}"
-        title="${yaGuardado ? "Ya guardado en Mi Panel" : "Guardar en Mi Panel"}"
-        ${yaGuardado ? "disabled" : ""}>
-        <i class="fa-solid ${yaGuardado ? "fa-heart-circle-check" : "fa-heart-circle-plus"}"></i>
-      </button>
-    `;
-
-    const audioHtml = it.audioGithubUrl
-      ? `
-        <div class="devAudioBox">
-          <audio controls preload="none" src="${it.audioGithubUrl}"></audio>
-        </div>
-      `
-      : ``;
-
-    const deleteTopBtnHtml = esAdmin ? `
-      <button class="btn-primary devDanger devDeleteTopBtn" type="button"
-       onclick="devBorrarDevocional('${it.uidOwner || ""}','${it.tsKey || 0}')"
-        aria-label="Borrar"
-        title="Borrar">
-        <i class="fa-solid fa-trash"></i>
-      </button>
-    ` : ``;
-
-    card.innerHTML = `
-      ${deleteTopBtnHtml}
-
-      <img src="${it.url || ""}" alt="dev grande">
-
-      ${audioHtml}
-
-      <div class="devBigActions">
-        <button class="btn-primary" type="button"
-          onclick="devAbrirModalOracion('${it.uidOwner || ""}', '${it.tsKey || 0}')"
-          aria-label="Adjuntar oración"
-          title="Adjuntar oración">
-          🙏
-        </button>
-
-        <button class="btn-primary" type="button"
-  onclick="devAbrirListaOraciones('${it.uidOwner || ""}', '${it.tsKey || 0}')"
-  aria-label="Ver oraciones"
-  title="Ver oraciones">
-  <i class="fa-solid fa-receipt"></i>
-</button>
-
-        ${saveBtnHtml}
-
-       <button class="btn-primary" type="button"
-  onpointerdown="devWarmShareImage('${it.url || ""}', 'devocional.png')"
-  ontouchstart="devWarmShareImage('${it.url || ""}', 'devocional.png')"
-  onclick="devCompartirImagenItem('${it.url || ""}', 'devocional.png')"
-  aria-label="Compartir"
-  title="Compartir">
-  <i class="fa-solid fa-share-nodes"></i>
-</button>
-
-        <button class="btn-primary" type="button"
-        onclick="devDescargarDevocionalItem('${it.url || ""}', 'devocional.png', '${it.audioGithubUrl || ""}', 'Audio_devocional')"
-          aria-label="Descargar PNG">
-          <i class="fa-solid fa-download"></i>
-        </button>
-      </div>
-    `;
-
-    feed.appendChild(card);
+    feed.insertAdjacentHTML("beforeend", devRenderDevocionalCardHTML(it, {
+      idPrefix: "devBig_",
+      mostrarBorrar: isAdmin(),
+      mostrarOracion: true,
+      mostrarListaOraciones: true,
+      mostrarGuardar: true,
+      mostrarCompartir: true,
+      mostrarDescargar: true
+    }));
   });
 }
 
