@@ -4844,12 +4844,58 @@ if (topRow && indexRow && topRow.previousElementSibling !== indexRow) {
   }).join("");
 
   // feed grande abajo
-  feed.innerHTML = items.map(it => panelImagenRenderCardHTML(it, {
-    idPrefix: "panelImgBig_",
-    mostrarDescargar: true,
-    mostrarCompartir: true,
-    mostrarEliminar: true
-  })).join("");
+  feed.innerHTML = items.map(it => {
+    const idJs = String(it.id || "")
+      .replace(/\\/g, "\\\\")
+      .replace(/'/g, "\\'");
+
+    const yaPublicado = !!panelImagenesPublicadas[it.id];
+
+    return panelImagenRenderCardHTML(it, {
+      idPrefix: "panelImgBig_",
+      mostrarDescargar: true,
+      mostrarCompartir: true,
+      mostrarEliminar: true,
+
+      extraAcciones: `
+        <button
+          class="btn-primary btn-panel-compartidos ${yaPublicado ? "activo" : ""}"
+          type="button"
+          onclick="publicarImagenPanelEnCompartidos('${idJs}')"
+          aria-label="Publicar en Compartidos"
+          title="${yaPublicado ? "Ya publicado en Compartidos" : "Publicar en Compartidos"}"
+          style="position:relative; overflow:visible;"
+        >
+          <i class="fa-solid fa-icons"></i>
+
+          ${yaPublicado ? `
+            <span
+              style="
+                position:absolute;
+                left:50%;
+                bottom:-7px;
+                transform:translateX(-50%);
+                width:14px;
+                height:14px;
+                border-radius:999px;
+                background:#8dbdff;
+                color:#fff;
+                display:flex;
+                align-items:center;
+                justify-content:center;
+                box-shadow:0 0 0 2px #fff;
+                line-height:1;
+                pointer-events:none;
+                z-index:2;
+              "
+            >
+              <i class="fa-solid fa-check" style="font-size:8px; line-height:1;"></i>
+            </span>
+          ` : ``}
+        </button>
+      `
+    });
+  }).join("");
 }
 
 // ================= 🔺 CAPITULO ANTERIOR ===================
