@@ -809,12 +809,68 @@ function compBuscarReferenciaEnTexto(txt = "") {
   return m ? m[0].replace(/\s+/g, " ").trim() : "";
 }
 
-function compReferenciaDesdeItem(item = {}) {
+function compDevOracionesVisibles(uidOwner, tsKey) {
+  const uid = compUidActual();
+  const raw = compartidosOracionesCache?.[uidOwner]?.[tsKey] || {};
+  const entries = Object.entries(raw || {});
+
+  return entries
+    .map(([id, it]) => ({ id, ...(it || {}) }))
+    .filter(it => it.publica === true || (uid && it.autorUid === uid))
+    .sort((a, b) => Number(b.fecha || 0) - Number(a.fecha || 0));
+}
+
+function compNormalizarEtiqueta(txt = "") {
+  return String(txt || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+}
+
+function compEsPredica(item) {
+  const et = compNormalizarEtiqueta(item?.etiqueta || "");
+  const citas = Array.isArray(item?.predicaCitas) ? item.predicaCitas : [];
+
+  return et === "predica" && (
+    citas.length ||
+    String(item?.predicaIntroduccion || item?.introduccionPredica || "").trim() ||
+    String(item?.predicaNotaFinal || item?.notaFinalGeneral || "").trim()
+  );
+}
+
+function compRangoVersiculos(nums = []) {
+  const arr = Array.from(new Set(
+    (nums || []).map(Number).filter(n => Number.isFinite(n))
+  )).sort((a, b) => a - b);
+
+  if (!arr.length) return "";
+
+  const partes = [];
+  let inicio = arr[0];
+  let anterior = arr[0];
+
+  for (let i = 1; i < arr.length; i++) {
+    if (arr[i] === anterior + 1) {
+      anterior = arr[i];
+    } else {
+      partes.push(inicio === anterior ? `${inicio}` : `${inicio}-${anterior}`);
+      inicio = anterior = arr[i];
+    }
+  }
+
+  partes.push(inicio === anterior ? `${inicio}` : `${inicio}-${anterior}`);
+  return partes.join(",");
+}
+
+function compReferenciaItem(item = {}) {
   const directo = String(
     item.ref ||
     item.referencia ||
     item.cita ||
     item.versiculoRef ||
+    item.refCompleta ||
+    item.referenciaBiblica ||
     ""
   ).trim();
 
@@ -826,6 +882,10 @@ function compReferenciaDesdeItem(item = {}) {
 
   if (libro && capitulo && versiculos.length) {
     return `${libro} ${capitulo}:${compRangoVersiculos(versiculos)}`;
+  }
+
+  if (libro && capitulo) {
+    return `${libro} ${capitulo}`;
   }
 
   const desdeTexto = compBuscarReferenciaEnTexto([
@@ -844,7 +904,11 @@ function compReferenciaDesdeItem(item = {}) {
 }
 
 function compTituloImagen(item = {}) {
-  return compReferenciaDesdeItem(item) || "Compartido";
+  return compReferenciaItem(item) || "Compartido";
+}
+
+function compTituloNota(item = {}) {
+  return compReferenciaItem(item) || String(item.titulo || item.title || "Nota").trim();
 }
 
 function compNotaFondo(item = {}) {
@@ -862,6 +926,65 @@ function compNotaFondo(item = {}) {
 function compImagenKey(item = {}) {
   return compKeyItem(item);
 }
+
+function compDevKey(item = {}) {
+  return [
+    item.uidOwner || "",
+    item.tsKey || "",
+    item.url || item.imagenUrl || ""
+  ].join("__").replace(/[.#$/\[\]]/g, "_");
+}
+
+window.compGuardarImagenCompartidaEnMiPanel = async function compGuardarImagenCompartidaEnMiPanel(key) {
+  const db = compDB();
+  const uid = compUidActual();
+
+  if (!db || !uid) {
+    alert("Tenés que estar logueado.");
+    return;
+  }
+
+  const item = compUnificarItems().find(x => x.tipo === "imagen" && compImagenKey(x) === key);
+
+  if (!item) {
+    alert("No encontré esa imagen.");
+    return;
+  }
+
+  const ts = Date.now();
+  const url = item.url || item.imagenUrl || "";
+
+  try {
+    await set(ref(db, `panelImagenesPersonal/${uid}/${ts}`), {
+      url,
+      fecha: ts,
+      uid,
+      tipo: "imagen",
+      libro: item.libro || "",
+      capitulo: Number(item.capitulo || 0),
+      versiculos: Array.isArray(item.versiculos) ? item.versiculos : [],
+      ref: compReferenciaItem(item),
+      origen: "compartidos",
+      tipoTexto: item.tipoTexto || "biblia",
+      textoLibre: item.textoLibre || item.texto || ""
+    });
+
+    document.querySelectorAll("[data-comp-img-save]").forEach(btn => {
+      if (btn.dataset.compImgSave === key) {
+        btn.innerHTML = `<i class="fa-solid fa-heart-circle-check"></i>`;
+        btn.classList.add("guardado", "activo");
+        btn.title = "Guardado en Mi Panel";
+      }
+    });
+
+    if (typeof mostrarToast === "function") mostrarToast("💙 Guardado en Mi Panel");
+    else alert("Guardado en Mi Panel.");
+
+  } catch (e) {
+    console.error(e);
+    alert("No pude guardar la imagen en Mi Panel.");
+  }
+};
 
 window.compGuardarImagenCompartidaEnMiPanel = async function compGuardarImagenCompartidaEnMiPanel(key) {
   const db = compDB();
