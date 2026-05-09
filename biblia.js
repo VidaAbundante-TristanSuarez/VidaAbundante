@@ -2799,6 +2799,15 @@ async function subirImagenBibliaUnaVezYGuardarDestinos() {
   const asset = await subirImagenBibliaBaseUnaVez();
   if (!asset) return false;
 
+  const audioUrlFinal = window.__lastAudioUrl || "";
+
+if (audioUrlFinal) {
+  asset.audioOk = true;
+  asset.audioGithubUrl = audioUrlFinal;
+  asset.audioUrl = audioUrlFinal;
+  asset.audioTexto = window.__lastAudioTexto || "";
+}
+
   await guardarReferenciaImagenEnPanel(asset);
 
   const chk = document.getElementById("checkIglesia");
