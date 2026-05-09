@@ -616,29 +616,66 @@ background: var(--ui-azul-hover);
 /* ================= MODO IMAGEN ================= */
     /* Cuando está activo el modo imagen */
 #btnCrearImagen{
-  display:none;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+
+  width: auto;
+  min-width: 0;
+  height: 30px;
+  padding: 0 12px;
+
   border-radius: 999px;
-  padding: 6px 10px;
-  height: auto;
-  font-weight: 700;
-  font-size: 14px;
   border: none;
   cursor: pointer;
+
   background: var(--ui-azul-hover);
-  color:#fff;
+  color: #000;
+
+  font-weight: 800;
+  font-size: 13px;
+  line-height: 1;
+  white-space: nowrap;
 }
+
 #btnCrearImagen:active{ transform: scale(0.98); }
-body.modo-imagen #btnCrearImagen{ display:inline-block; }
+
+body.modo-imagen #btnCrearImagen{
+  display: inline-flex;
+}
+
+#accionesBiblia #btnImagen i,
+#accionesBiblia #btnCrearImagen i{
+  color: #000;
+  font-size: 14px;
+  line-height: 1;
+}
 
 body.modo-imagen #accionesBiblia .accion-normal {
  display: none;
  }
 
- body.modo-imagen #btnImagen {
- display: inline-block;
- background: #99d6ff;
- color: #fff;
- }
+body.modo-imagen #btnImagen {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+
+  width: auto;
+  min-width: 0;
+  height: 30px;
+  padding: 0 10px;
+
+  border-radius: 999px;
+  background: var(--ui-azul-claro);
+  color: #000;
+
+  font-weight: 800;
+  font-size: 13px;
+  line-height: 1;
+  white-space: nowrap;
+}
 
  body.modo-imagen #btnCrearImagen {
  display: inline-block;
@@ -1526,12 +1563,6 @@ body.oscuro #header button[onclick="abrirModalTema()"] {
   transform: rotate(360deg);
 }
 
-/* ================= BOTÓN CREAR IMAGEN ================= */
-/* ✅ Botón Crear Imagen: mismo tamaño que los demás */
-
-body.modo-imagen #btnCrearImagen{
-  display: inline-block;
-}
 
 #bannerModoMarcador {
   display: none;
