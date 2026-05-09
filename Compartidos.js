@@ -761,6 +761,149 @@ function compItemFecha(item) {
   }
 }
 
+function compRegistrarDevocionalParaAcciones(item = {}) {
+  const uidOwner = String(item.uidOwner || "");
+  const tsKey = Number(item.tsKey || item.fecha || item.ts || 0);
+
+  const id = String(
+    item.id ||
+    (uidOwner && tsKey ? `dev_${uidOwner}_${tsKey}` : "")
+  ).trim();
+
+  const normalizado = {
+    ...item,
+    id,
+    uidOwner,
+    tsKey,
+    fecha: Number(item.fecha || tsKey || Date.now()),
+    url: item.url || item.imagenUrl || "",
+    audioGithubUrl: item.audioGithubUrl || item.audioUrl || "",
+    texto: item.texto || item.textoLibre || "",
+    cita: item.cita || "",
+    versiculo: item.versiculo || ""
+  };
+
+  window.__DEV_ITEMS_PUBLICADOS = Array.isArray(window.__DEV_ITEMS_PUBLICADOS)
+    ? window.__DEV_ITEMS_PUBLICADOS
+    : [];
+
+  if (id) {
+    const idx = window.__DEV_ITEMS_PUBLICADOS.findIndex(x => String(x.id) === id);
+
+    if (idx >= 0) {
+      window.__DEV_ITEMS_PUBLICADOS[idx] = normalizado;
+    } else {
+      window.__DEV_ITEMS_PUBLICADOS.push(normalizado);
+    }
+  }
+
+  return normalizado;
+}
+
+function compBuscarReferenciaEnTexto(txt = "") {
+  const s = String(txt || "").trim();
+  if (!s) return "";
+
+  const m = s.match(/\b(?:[1-3]\s*)?[A-ZÁÉÍÓÚÑ][A-Za-zÁÉÍÓÚÑáéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑa-záéíóúñ]+){0,3}\s+\d{1,3}\s*:\s*\d{1,3}(?:\s*[-–]\s*\d{1,3})?\b/);
+
+  return m ? m[0].replace(/\s+/g, " ").trim() : "";
+}
+
+function compReferenciaDesdeItem(item = {}) {
+  const directo = String(
+    item.ref ||
+    item.referencia ||
+    item.cita ||
+    item.versiculoRef ||
+    ""
+  ).trim();
+
+  if (directo && directo.toLowerCase() !== "compartido") return directo;
+
+  const libro = String(item.libro || "").trim();
+  const capitulo = Number(item.capitulo || 0);
+  const versiculos = Array.isArray(item.versiculos) ? item.versiculos : [];
+
+  if (libro && capitulo && versiculos.length) {
+    return `${libro} ${capitulo}:${compRangoVersiculos(versiculos)}`;
+  }
+
+  const desdeTexto = compBuscarReferenciaEnTexto([
+    item.titulo,
+    item.title,
+    item.descripcion,
+    item.textoLibre,
+    item.texto,
+    item.fileName,
+    item.nombre
+  ].filter(Boolean).join(" "));
+
+  if (desdeTexto) return desdeTexto;
+
+  return "";
+}
+
+function compTituloImagen(item = {}) {
+  return compReferenciaDesdeItem(item) || "Compartido";
+}
+
+function compNotaFondo(item = {}) {
+  return String(
+    item.color ||
+    item.fondo ||
+    item.fondoColor ||
+    item.highlightColor ||
+    item.resaltadoColor ||
+    item.colorNota ||
+    "#fff4b8"
+  ).trim();
+}
+
+function compImagenKey(item = {}) {
+  return compKeyItem(item);
+}
+
+window.compGuardarImagenCompartidaEnMiPanel = async function compGuardarImagenCompartidaEnMiPanel(key) {
+  const db = compDB();
+  const uid = compUidActual();
+
+  if (!db || !uid) {
+    alert("Tenés que estar logueado.");
+    return;
+  }
+
+  const item = compUnificarItems().find(x => compImagenKey(x) === key);
+
+  if (!item) {
+    alert("No encontré esa imagen.");
+    return;
+  }
+
+  const ts = Date.now();
+  const url = item.url || item.imagenUrl || "";
+
+  try {
+    await set(ref(db, `panelImagenesPersonal/${uid}/${ts}`), {
+      url,
+      fecha: ts,
+      uid,
+      tipo: "imagen",
+      libro: item.libro || "",
+      capitulo: Number(item.capitulo || 0),
+      versiculos: Array.isArray(item.versiculos) ? item.versiculos : [],
+      ref: compReferenciaDesdeItem(item),
+      origen: "compartidos",
+      tipoTexto: item.tipoTexto || "biblia",
+      textoLibre: item.textoLibre || item.texto || ""
+    });
+
+    alert("Guardado en Mi Panel.");
+  } catch (e) {
+    console.error(e);
+    alert("No pude guardar en Mi Panel.");
+  }
+};
+
 function compDevOracionesVisibles(uidOwner, tsKey) {
   const uid = compUidActual();
   const raw = compartidosOracionesCache?.[uidOwner]?.[tsKey] || {};
@@ -814,32 +957,26 @@ function compRangoVersiculos(nums = []) {
   return partes.join(",");
 }
 
-function compTituloImagen(item = {}) {
-  const directo = String(
-    item.ref ||
-    item.referencia ||
-    item.cita ||
-    ""
-  ).trim();
-
-  if (directo) return directo;
-
-  const libro = String(item.libro || "").trim();
-  const capitulo = Number(item.capitulo || 0);
-  const versiculos = Array.isArray(item.versiculos) ? item.versiculos : [];
-
-  if (libro && capitulo && versiculos.length) {
-    return `${libro} ${capitulo}:${compRangoVersiculos(versiculos)}`;
-  }
-
-  return "Compartido";
-}
-
 function compRenderImagen(item) {
   const url = item.url || item.imagenUrl || "";
   const tituloBase = compTituloImagen(item);
   const titulo = compEscape(tituloBase);
   const textoLibre = String(item.textoLibre || "").trim();
+  const key = compImagenKey(item);
+
+  const accionesExtra = `
+    <div class="comp-post-actions comp-post-actions--imagen-extra">
+      <button
+        type="button"
+        onclick="compGuardarImagenCompartidaEnMiPanel('${compJs(key)}')"
+        title="Guardar en Mi Panel"
+      >
+        <i class="fa-solid fa-heart-circle-plus"></i>
+      </button>
+
+      ${compDeleteBtn(item)}
+    </div>
+  `;
 
   if (typeof window.panelImagenRenderCardHTML !== "function") {
     return `
@@ -872,9 +1009,9 @@ function compRenderImagen(item) {
           <button type="button" onclick="compartirImagenPanel('${compJs(url)}')" title="Compartir">
             <i class="fa-solid fa-share-nodes"></i>
           </button>
-
-          ${compDeleteBtn(item)}
         </div>
+
+        ${accionesExtra}
       </article>
     `;
   }
@@ -890,7 +1027,7 @@ function compRenderImagen(item) {
       mostrarDescargar: true,
       mostrarCompartir: true,
       mostrarEliminar: false,
-      extraFinal: compDeleteBtn(item)
+      extraFinal: ""
     }
   );
 
@@ -915,6 +1052,8 @@ function compRenderImagen(item) {
       </div>
 
       ${textoLibre ? `<div class="comp-post-note-text">${compEscape(textoLibre)}</div>` : ``}
+
+      ${accionesExtra}
     </article>
   `;
 }
@@ -922,6 +1061,8 @@ function compRenderImagen(item) {
 function compRenderNota(item) {
   const titulo = compEscape(compItemTitulo(item));
   const texto = compEscape(item.texto || item.nota || item.textoLibre || "");
+  const fondo = compNotaFondo(item);
+  const colorTexto = compColorContraste(fondo);
 
   return `
     <article class="comp-post comp-post--nota">
@@ -936,7 +1077,10 @@ function compRenderNota(item) {
         </div>
       </div>
 
-      <div class="comp-post-note-block">${texto}</div>
+      <div
+        class="comp-post-note-block"
+        style="background:${compEscape(fondo)}; color:${compEscape(colorTexto)};"
+      >${texto}</div>
 
       ${compDeleteBtn(item)}
     </article>
@@ -1005,12 +1149,15 @@ function compRenderOracionesDevocionalHTML(item) {
 }
 
 function compRenderDevocional(item) {
-  const titulo = compEscape(compItemTitulo(item));
-  const fecha = compEscape(compItemFecha(item));
-  const url = item.url || "";
+  const devItem = compRegistrarDevocionalParaAcciones(item);
+
+  const tituloTxt = compItemTitulo(devItem);
+  const titulo = compEscape(tituloTxt);
+  const fecha = compEscape(compItemFecha(devItem));
+  const url = devItem.url || "";
   const fileName = compFileName(url, "devocional.png");
 
-  const oracionesHTML = compRenderOracionesDevocionalHTML(item);
+  const oracionesHTML = compRenderOracionesDevocionalHTML(devItem);
 
   if (typeof window.devRenderDevocionalCardHTML !== "function") {
     return `
@@ -1035,6 +1182,18 @@ function compRenderDevocional(item) {
 
         <div class="comp-post-actions">
           <button type="button"
+            onclick="devAbrirModalOracion('${compJs(devItem.uidOwner)}', ${Number(devItem.tsKey || 0)})"
+            title="Dejar oración">
+            <i class="fa-solid fa-hands-praying"></i>
+          </button>
+
+          <button type="button"
+            onclick="devGuardarPublicadoEnMiPanel('${compJs(devItem.id)}')"
+            title="Guardar en Mi Panel">
+            <i class="fa-solid fa-heart-circle-plus"></i>
+          </button>
+
+          <button type="button"
             onclick="devCompartirImagenItem('${compJs(url)}', '${compJs(fileName)}')"
             title="Compartir">
             <i class="fa-solid fa-share-nodes"></i>
@@ -1048,12 +1207,12 @@ function compRenderDevocional(item) {
         </div>
 
         ${oracionesHTML}
-        ${compDeleteBtn(item)}
+        ${compDeleteBtn(devItem)}
       </article>
     `;
   }
 
-  const card = window.devRenderDevocionalCardHTML(item, {
+  const card = window.devRenderDevocionalCardHTML(devItem, {
     idPrefix: "compDev_",
     mostrarBorrar: false,
     mostrarOracion: true,
@@ -1076,15 +1235,12 @@ function compRenderDevocional(item) {
         </div>
       </div>
 
-      <div
-        class="comp-card-click-wrap"
-        onclick="if(event.target.closest('button,audio,video,input,textarea,select')) return; compAbrirMedia('${compJs(url)}', 'imagen', '${compJs(titulo)}')"
-      >
+      <div class="comp-card-click-wrap">
         ${card}
       </div>
 
       ${oracionesHTML}
-      ${compDeleteBtn(item)}
+      ${compDeleteBtn(devItem)}
     </article>
   `;
 }
@@ -1109,50 +1265,46 @@ function compActivarBotonesSubidosRenderizados(items = []) {
 
 function compRenderSubido(item) {
   const subidoId = String(item._subidoId || item.id || "").replace(/^sub_/, "");
+  const titulo = compEscape(compItemTitulo(item));
+  const url = item.url || "";
+  const esPredica = compEsPredica(item);
+  const esVideo = compEsVideoUrl(url, item.mimeType || "");
+  const esImagen = compEsImageUrl(url, item.mimeType || "");
 
-  if (typeof window.subidosRenderCardHTML !== "function") {
-    const titulo = compEscape(compItemTitulo(item));
-    const url = item.url || "";
-    const esVideo = compEsVideoUrl(url, item.mimeType || "");
-    const esImagen = compEsImageUrl(url, item.mimeType || "");
+  if (esPredica && typeof window.subidosRenderPredicaAbiertaHTML === "function") {
+    const predicaHTML = window.subidosRenderPredicaAbiertaHTML(
+      {
+        ...item,
+        id: subidoId
+      },
+      "all"
+    );
 
     return `
-      <article class="comp-post comp-post--subido">
+      <article class="comp-post comp-post--subido comp-post--predica-abierta">
         <div class="comp-post-head">
           <div class="comp-avatar">
-            <i class="fa-solid fa-cloud-arrow-up"></i>
+            <i class="fa-solid fa-microphone-lines"></i>
           </div>
 
           <div>
             <div class="comp-post-title">${titulo}</div>
-            <div class="comp-post-meta">Subido · ${compEscape(item.etiqueta || "Subido")}</div>
+            <div class="comp-post-meta">Prédica · ${compEscape(item.fechaEvento || compItemFecha(item) || "")}</div>
           </div>
         </div>
 
-        ${
-          esImagen
-            ? `
-              <div class="comp-post-media" onclick="compAbrirMedia('${compJs(url)}', 'imagen')" role="button">
-                <img src="${compEscape(url)}" alt="${titulo}" loading="lazy">
-              </div>
-            `
-            : esVideo
-              ? `
-                <div class="comp-post-video" onclick="compAbrirMedia('${compJs(url)}', 'video')" role="button">
-                  <video preload="metadata" muted playsinline>
-                    <source src="${compEscape(url)}">
-                  </video>
-                </div>
-              `
-              : `
-                <div class="comp-post-file" onclick="abrirSubidosVisorArchivo('${compJs(subidoId)}')" role="button">
-                  <i class="fa-solid fa-file-arrow-down"></i>
-                  <span>Abrir archivo</span>
-                </div>
-              `
-        }
+        <div
+          class="comp-predica-abierta-wrap"
+          onclick="if(event.target.closest('button,audio,video,input,textarea,select')) return; abrirSubidosVisorPredica('${compJs(subidoId)}', 'all')"
+        >
+          ${predicaHTML || `<div class="comp-post-empty">No pude cargar la prédica.</div>`}
+        </div>
 
         <div class="comp-post-actions">
+          <button type="button" onclick="abrirSubidosVisorPredica('${compJs(subidoId)}', 'all')" title="Abrir prédica">
+            <i class="fa-solid fa-up-right-and-down-left-from-center"></i>
+          </button>
+
           <button type="button" onclick="compartirSubido('${compJs(subidoId)}')" title="Compartir">
             <i class="fa-solid fa-share-nodes"></i>
           </button>
@@ -1160,39 +1312,83 @@ function compRenderSubido(item) {
           <button type="button" onclick="descargarSubido('${compJs(subidoId)}')" title="Descargar">
             <i class="fa-solid fa-download"></i>
           </button>
-
-          ${compDeleteBtn(item)}
         </div>
+
+        ${compDeleteBtn(item)}
       </article>
     `;
   }
 
-  const card = window.subidosRenderCardHTML(
-    {
-      ...item,
+  if (typeof window.subidosRenderCardHTML === "function") {
+    const card = window.subidosRenderCardHTML(
+      {
+        ...item,
+        id: subidoId
+      },
+      {
+        idPrefix: "compSubido_",
+        mostrarEditar: false,
+        mostrarBorrarOriginal: false,
+        mostrarAccionesArchivo: true,
+        borrarHtml: ""
+      }
+    );
 
-      // ✅ IMPORTANTÍSIMO:
-      // Subidos necesita el ID original, no "sub_xxx".
-      id: subidoId
-    },
-    {
-      idPrefix: "compSubido_",
-      mostrarEditar: false,
-
-      // ✅ No borrar original desde Compartidos.
-      mostrarBorrarOriginal: false,
-
-      // ✅ Conservamos acciones reales de Subidos.
-      mostrarAccionesArchivo: true,
-
-      // ✅ Delete de Compartidos, no borra Subidos.
-      borrarHtml: compDeleteBtn(item)
-    }
-  );
+    return `
+      <article class="comp-post comp-post--subido comp-post--reutilizada">
+        ${card}
+        ${compDeleteBtn(item)}
+      </article>
+    `;
+  }
 
   return `
-    <article class="comp-post comp-post--subido comp-post--reutilizada">
-      ${card}
+    <article class="comp-post comp-post--subido">
+      <div class="comp-post-head">
+        <div class="comp-avatar">
+          <i class="fa-solid fa-cloud-arrow-up"></i>
+        </div>
+
+        <div>
+          <div class="comp-post-title">${titulo}</div>
+          <div class="comp-post-meta">Subido · ${compEscape(item.etiqueta || "Subido")}</div>
+        </div>
+      </div>
+
+      ${
+        esImagen
+          ? `
+            <div class="comp-post-media" onclick="compAbrirMedia('${compJs(url)}', 'imagen')" role="button">
+              <img src="${compEscape(url)}" alt="${titulo}" loading="lazy">
+            </div>
+          `
+          : esVideo
+            ? `
+              <div class="comp-post-video" onclick="compAbrirMedia('${compJs(url)}', 'video')" role="button">
+                <video preload="metadata" muted playsinline>
+                  <source src="${compEscape(url)}">
+                </video>
+              </div>
+            `
+            : `
+              <div class="comp-post-file" onclick="abrirSubidosVisorArchivo('${compJs(subidoId)}')" role="button">
+                <i class="fa-solid fa-file-arrow-down"></i>
+                <span>Abrir archivo</span>
+              </div>
+            `
+      }
+
+      <div class="comp-post-actions">
+        <button type="button" onclick="compartirSubido('${compJs(subidoId)}')" title="Compartir">
+          <i class="fa-solid fa-share-nodes"></i>
+        </button>
+
+        <button type="button" onclick="descargarSubido('${compJs(subidoId)}')" title="Descargar">
+          <i class="fa-solid fa-download"></i>
+        </button>
+      </div>
+
+      ${compDeleteBtn(item)}
     </article>
   `;
 }
