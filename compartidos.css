@@ -925,5 +925,50 @@ body.en-compartidos .comp-post--devocional .devBigActions{
   }
 }
 
+/* ajuste fino Compartidos celular */
+body.en-compartidos,
+body.en-compartidos #seccion-compartidos,
+body.en-compartidos #compartidosApp{
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+  box-sizing: border-box !important;
+}
+
+body.en-compartidos #compartidosApp{
+  padding-left: 3px !important;
+  padding-right: 3px !important;
+}
+
+body.en-compartidos #compFeedWrap,
+body.en-compartidos #compHero,
+body.en-compartidos #compPromos,
+body.en-compartidos #compLista,
+body.en-compartidos #compLista .comp-post{
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+@media (max-width: 700px){
+  body.en-compartidos #compFeedWrap{
+    width: 100% !important;
+  }
+
+  body.en-compartidos .comp-card-click-wrap{
+    min-width: 0 !important;
+    overflow: hidden !important;
+  }
+
+  body.en-compartidos .comp-post--devocional .devBigCard,
+  body.en-compartidos .comp-post--devocional .devBigCard *{
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  body.en-compartidos .comp-post--devocional img{
+    max-width: 100% !important;
+    height: auto !important;
+    object-fit: contain !important;
+  }
+}
 
 </style>
