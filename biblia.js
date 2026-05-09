@@ -2722,19 +2722,23 @@ async function guardarReferenciaImagenEnPanel(asset) {
 
   const dbPath = `panelImagenesPersonal/${uid}/${asset.ts}`;
 
-  await set(ref(db, dbPath), {
-    url: normalizarUrlGuardada(asset.url),
-    fecha: asset.ts,
-    uid,
-    tipo: "imagen",
-    libro: modoImagenLibre ? "" : (libroSel?.value || ""),
-    capitulo: modoImagenLibre ? 0 : Number(capSel?.value || 0),
-    versiculos: versiculosSel,
-    ref: refCompleta,
-    origen: origenModalImagen,
-    tipoTexto: modoImagenLibre ? "libre" : "biblia",
-    textoLibre: modoImagenLibre ? (textoLibreImagen || "") : ""
-  });
+await set(ref(db, dbPath), {
+  url: normalizarUrlGuardada(asset.url),
+  fecha: asset.ts,
+  uid,
+  tipo: "imagen",
+  libro: modoImagenLibre ? "" : (libroSel?.value || ""),
+  capitulo: modoImagenLibre ? 0 : Number(capSel?.value || 0),
+  versiculos: versiculosSel,
+  ref: refCompleta,
+  origen: origenModalImagen,
+  tipoTexto: modoImagenLibre ? "libre" : "biblia",
+  textoLibre: modoImagenLibre ? (textoLibreImagen || "") : "",
+
+  audioOk: !!(asset.audioOk || asset.audioGithubUrl || asset.audioUrl || asset.audio),
+  audioGithubUrl: asset.audioGithubUrl || asset.audioUrl || asset.audio || "",
+  audioUrl: asset.audioUrl || asset.audioGithubUrl || asset.audio || ""
+});
 }
 
 // ================= 🌍 GUARDAR REFERENCIA EN COMPARTIDOS =================
@@ -2782,7 +2786,11 @@ async function guardarReferenciaImagenEnCompartidos(asset) {
     ref: refCompleta,
     origen: origenModalImagen,
     tipoTexto: modoImagenLibre ? "libre" : "biblia",
-    textoLibre: modoImagenLibre ? (textoLibreImagen || "") : ""
+    textoLibre: modoImagenLibre ? (textoLibreImagen || "") : "",
+
+audioOk: !!(asset.audioOk || asset.audioGithubUrl || asset.audioUrl || asset.audio),
+audioGithubUrl: asset.audioGithubUrl || asset.audioUrl || asset.audio || "",
+audioUrl: asset.audioUrl || asset.audioGithubUrl || asset.audio || ""
   });
 }
 
