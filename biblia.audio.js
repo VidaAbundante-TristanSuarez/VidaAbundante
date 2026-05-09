@@ -147,17 +147,10 @@ window.subirPendingAudioAFirebase = async ({ subirIglesia = false } = {}) => {
   const p = window.__pendingAudio;
   if (!p?.audioBase64) throw new Error("No hay audio pendiente");
 
-  const { db } = window.__FB || {};
-  const { ref, set } = window.__FB_API || {};
-
-  if (!db || !ref || !set) {
-    throw new Error("Firebase no está listo para guardar la referencia del audio.");
-  }
-
   const ts = p.ts || Date.now();
   const fileName = `audio_biblia_${ts}.mp3`;
 
-  const r = await fetch("https://us-central1-vidaabundante-f118a.cloudfunctions.net/subirImagenR2", {
+  const r = await fetch(AUDIO_R2_UPLOAD_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -176,24 +169,16 @@ window.subirPendingAudioAFirebase = async ({ subirIglesia = false } = {}) => {
 
   const url = data.url;
 
-  const dbPath = subirIglesia
-    ? `panelAudiosIglesia/${window.__UID}/${ts}`
-    : `panelAudiosPersonal/${window.__UID}/${ts}`;
-
-  await set(ref(db, dbPath), {
-    url,
-    fecha: ts,
-    origen: "biblia",
-    r2Key: data.key || "",
-    fileName: data.fileName || fileName,
-    texto: p.texto || ""
-  });
-
+  // ✅ CLAVE:
+  // No guardamos en panelAudiosPersonal porque tus reglas lo están bloqueando.
+  // La URL queda unida a la imagen desde biblia.js.
   window.__lastAudioUrl = url;
   window.__lastAudioTs = ts;
   window.__lastAudioTexto = p.texto || "";
 
   window.__pendingAudio = null;
+
+  console.log("✅ Audio Biblia subido a R2:", url);
 
   return url;
 };
