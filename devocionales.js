@@ -3867,14 +3867,28 @@ window.devGuardarOracionDevocional = async function(){
 
     const newRef = push(baseRef);
 
-      await set(newRef, {
-      autorUid: uid,
-      texto,
-      publica,
-      destacado: false,
-      color,
-      fecha: Date.now()
-    });
+const oracionData = {
+  autorUid: uid,
+  texto,
+  publica,
+  destacado: false,
+  color,
+  fecha: Date.now()
+};
+
+await set(newRef, oracionData);
+
+// ✅ Si la oración fue marcada como pública,
+// guardamos una copia pública separada para Compartidos.
+if (publica === true) {
+  await set(
+    ref(
+      db,
+      `devocionalesOracionesPublicas/${DEV.oracionDevOwner}/${DEV.oracionDevTs}/${newRef.key}`
+    ),
+    oracionData
+  );
+}
 
     if (typeof devToast === "function") {
       devToast("🙏 Guardado");
