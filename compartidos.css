@@ -1,483 +1,75 @@
 <style>
-/* ================= COMPARTIDOS FEED ================= */
 
-#compartidosApp {
-  padding: 8px 10px 22px;
+/* =========================================================
+   COMPARTIDOS - FEED LIMPIO
+========================================================= */
+
+#compartidosApp{
+  padding: 8px 6px 24px;
 }
 
-#compFeedWrap {
-  width: min(680px, 100%);
+#compFeedWrap{
+  width: min(760px, calc(100% - 8px));
   margin: 0 auto;
 }
 
-#compLista {
+#compLista{
   display: grid;
-  gap: 18px;
+  gap: 14px;
 }
 
-.comp-post {
-  background: rgba(255,255,255,.86);
-  color: #000;
-  border: 1px solid rgba(0,0,0,.10);
-  border-radius: 20px;
-  overflow: hidden;
-  box-shadow: 0 5px 20px rgba(0,0,0,.10);
-}
-
-body.oscuro .comp-post {
-  background: rgba(255,255,255,.90);
-  color: #000;
-}
-
-.comp-post-head {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 13px 14px;
-}
-
-.comp-avatar {
-  width: 38px;
-  height: 38px;
-  border-radius: 999px;
-  background: var(--ui-azul-claro, #bcdcff);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
-}
-
-.comp-post-title {
-  font-weight: 900;
-  font-size: 16px;
-  line-height: 1.15;
-}
-
-.comp-post-meta {
-  font-size: 12px;
-  opacity: .65;
-  font-weight: 700;
-  margin-top: 2px;
-}
-
-.comp-post-media {
-  width: 100%;
-  background: rgba(0,0,0,.06);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.comp-post-media img {
-  width: 100%;
-  max-height: 62vh;
-  object-fit: contain;
-  background: #fff;
-  display: block;
-}
-
-.comp-post-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 14px 14px;
-  border-top: 1px solid rgba(0,0,0,.07);
-}
-
-.comp-post-actions button {
-  border: none;
-  cursor: pointer;
-  border-radius: 999px;
-  width: 42px;
-  height: 42px;
-  padding: 0;
-  background: var(--ui-azul-claro, #bcdcff);
-  color: #000;
-  font-weight: 900;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.comp-action-wrap {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
-}
-
-.comp-action-count {
-  position: absolute;
-  right: -8px;
-  bottom: -18px;
-  min-width: 16px;
-  height: 16px;
-  padding: 0 4px;
-  border-radius: 999px;
-  background: rgba(0,0,0,.78);
-  color: #fff;
-  font-size: 9px;
-  font-weight: 900;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.comp-action-saved {
-  background: rgba(46, 204, 113, .24) !important;
-  color: #157347 !important;
-}
-
-#compVacio {
-  padding: 22px;
-  text-align: center;
-  background: rgba(255,255,255,.82);
-  border: 1px dashed rgba(0,0,0,.18);
-  border-radius: 18px;
-}
-
-@media (max-width: 700px) {
-  #compartidosApp {
-    padding: 8px 8px 18px;
-  }
-
-  #compFeedWrap {
-    width: 100%;
-  }
-
-  .comp-post {
-    border-radius: 18px;
-  }
-
-  .comp-post-media img {
-    max-height: 58vh;
-  }
-
-  .comp-post-actions {
-    gap: 10px;
-  }
-}
-
-.comp-post-rh {
-  margin: 0 14px 12px;
-  min-height: 180px;
-  border-radius: 18px;
-  background: linear-gradient(135deg, rgba(188,220,255,.75), rgba(255,255,255,.9));
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  cursor: pointer;
-  border: 1px solid rgba(0,0,0,.08);
-}
-
-.comp-post-rh i {
-  font-size: 42px;
-  opacity: .85;
-}
-
-.comp-post-rh span {
-  font-weight: 900;
-  font-size: 16px;
-}
-
-/* ✅ CELULAR: visor de edición abierto, menos aire y con scroll */
-@media (max-width: 700px) {
-
-  #edViewer.ed-open {
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-    -webkit-overflow-scrolling: touch;
-    padding: 4px 8px 10px !important;
-  }
-
-  /* ✅ acerca el título a la imagen */
-  #edViewer .ed-view-top {
-    padding: 4px 8px 2px !important;
-    margin: 0 !important;
-    gap: 4px !important;
-  }
-
-  #edViewer .ed-view-title {
-    margin: 0 !important;
-    padding: 0 !important;
-    line-height: 1.05 !important;
-  }
-
-  #edViewer .ed-slides {
-    gap: 0 !important;
-    margin-top: 0 !important;
-  }
-
-  #edViewer .ed-slide {
-    padding: 0 0 8px !important;
-    min-height: auto !important;
-  }
-
-  #edViewer .ed-slide-inner {
-    gap: 2px !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    min-height: auto !important;
-    height: auto !important;
-  }
-
-  #edViewer .ed-slide-img-wrap {
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-
-  /* ✅ NO achicar la imagen */
-  #edViewer .ed-slide-img {
-    max-height: 72vh !important;
-    max-height: 72dvh !important;
-    width: auto !important;
-    max-width: 100% !important;
-    object-fit: contain !important;
-  }
-
-  /* ✅ acerca el audio a la imagen */
-  #edViewer .ed-audios {
-    margin-top: 2px !important;
-    gap: 4px !important;
-    padding-bottom: 12px !important;
-  }
-
-  #edViewer .ed-audio-box {
-    margin: 0 !important;
-    padding: 5px 8px !important;
-  }
-
-  #edViewer .ed-audio-label {
-    margin-bottom: 2px !important;
-    font-size: 12px !important;
-    line-height: 1.05 !important;
-  }
-
-  #edViewer audio {
-    width: 100% !important;
-    height: 42px !important;
-    display: block !important;
-  }
-}
-
-/* ================= COMPARTIDOS: BANNER + PROMOS ================= */
-
-#compHero{
-  margin: 0 auto 12px;
-}
-
-.comp-hero-card{
-  width: 100%;
-  border-radius: 22px;
-  overflow: hidden;
-  background: rgba(255,255,255,.72);
-  border: 1px solid rgba(255,255,255,.55);
-  box-shadow: 0 8px 22px rgba(0,0,0,.12);
-}
-
-.comp-hero-card img{
-  display:block;
-  width:100%;
-  height:auto;
-}
-
-/* ✅ escondemos la barra vieja si todavía existe */
-#compFeedTop{
-  display:none !important;
-}
-
-/* propagandas */
-#compPromos{
-  margin: 0 auto 16px;
-}
-
-.comp-promos-wrap{
-  position: relative;
-  width: 100%;
-  min-height: 118px;
-  overflow: hidden;
-  border-radius: 18px;
-}
-
-.comp-promos-group{
-  position: absolute;
-  inset: 0;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  opacity: 0;
-  transform: translateY(8px);
-}
-
-.comp-promos-group img{
-  width: 100%;
-  height: 118px;
-  object-fit: cover;
-  border-radius: 16px;
-  display: block;
-  background: rgba(255,255,255,.65);
-  box-shadow: 0 6px 16px rgba(0,0,0,.10);
-}
-
-.comp-promos-a{
-  animation: compPromoA 12s infinite ease-in-out;
-}
-
-.comp-promos-b{
-  animation: compPromoB 12s infinite ease-in-out;
-}
-
-@keyframes compPromoA{
-  0%, 43%{
-    opacity: 1;
-    transform: translateY(0);
-  }
-  50%, 93%{
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  100%{
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes compPromoB{
-  0%, 43%{
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  50%, 93%{
-    opacity: 1;
-    transform: translateY(0);
-  }
-  100%{
-    opacity: 0;
-    transform: translateY(8px);
-  }
-}
-
-.comp-post-note{
-  margin: 0 14px 14px;
-  padding: 16px;
-  border-radius: 18px;
-  background: rgba(233,246,255,.86);
-  white-space: pre-wrap;
-  line-height: 1.45;
-  font-weight: 700;
-}
-
-.comp-post-video video{
-  width: 100%;
-  max-height: 62vh;
-  display: block;
-  background: #000;
-}
-
-.comp-post-file{
-  margin: 0 14px 14px;
-  min-height: 150px;
-  border-radius: 18px;
-  background: linear-gradient(135deg, rgba(188,220,255,.75), rgba(255,255,255,.9));
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  gap:10px;
-  cursor:pointer;
-  font-weight:900;
-}
-
-.comp-post-file i{
-  font-size: 38px;
-}
-
-.comp-audio{
-  padding: 10px 14px 14px;
-}
-
-.comp-audio audio{
-  width: 100%;
-}
-
-@media (max-width: 700px){
-  .comp-hero-card{
-    border-radius: 16px;
-  }
-
-  .comp-promos-wrap{
-    min-height: 92px;
-  }
-
-  .comp-promos-group{
-    gap: 7px;
-  }
-
-  .comp-promos-group img{
-    height: 92px;
-    border-radius: 13px;
-  }
-
-  .comp-post-video video{
-    max-height: 58vh;
-  }
-}
-
-/* =========================================================
-   COMPARTIDOS - AJUSTES NUEVOS
-========================================================= */
-
-/* ✅ oculta esa barra superior que mostraste */
+#compFeedTop,
 body.en-compartidos .panel-tabs,
-body.en-compartidos #panel-tabs,
-#compFeedTop{
+body.en-compartidos #panel-tabs{
   display: none !important;
 }
 
-/* ✅ más ancho: reduce aprox a la mitad los márgenes laterales */
-#compFeedWrap{
-  width: min(760px, calc(100% - 8px)) !important;
-  margin: 0 auto !important;
-}
+/* ================= BANNER ================= */
 
 #compHero{
-  margin: 0 0 12px;
+  margin: 0 0 10px;
 }
 
 .comp-hero-card{
   width: 100%;
-  border-radius: 22px;
+  border-radius: 20px;
   overflow: hidden;
-  box-shadow: 0 6px 18px rgba(0,0,0,.10);
-  background: rgba(255,255,255,.75);
+  background: rgba(255,255,255,.76);
+  border: 1px solid rgba(255,255,255,.55);
+  box-shadow: 0 6px 18px rgba(0,0,0,.12);
 }
 
 .comp-hero-card img{
+  display: block;
   width: 100%;
   height: auto;
-  display: block;
+  transform: scale(1.03);
+  transform-origin: center;
 }
 
 /* ================= PROMOS ================= */
 
 #compPromos{
-  margin: 0 0 16px;
+  margin: 0 0 14px;
 }
 
 .comp-promos-viewport{
-  overflow: hidden;
-  border-radius: 18px;
   width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  border-radius: 16px;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.comp-promos-viewport::-webkit-scrollbar{
+  display: none;
 }
 
 .comp-promos-slider{
   width: 200%;
   display: flex;
-  animation: compPromosMover 22s ease-in-out infinite;
 }
 
 .comp-promos-page{
@@ -485,53 +77,50 @@ body.en-compartidos #panel-tabs,
   flex: 0 0 50%;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
+  gap: 8px;
   box-sizing: border-box;
-  padding-right: 10px;
+  padding-right: 8px;
+  scroll-snap-align: start;
 }
 
 .comp-promos-page img{
   width: 100%;
-  height: 126px;
+  height: 118px;
   object-fit: cover;
-  border-radius: 16px;
+  border-radius: 14px;
   display: block;
-  box-shadow: 0 6px 16px rgba(0,0,0,.10);
-  background: rgba(255,255,255,.85);
+  background: rgba(255,255,255,.82);
+  box-shadow: 0 5px 14px rgba(0,0,0,.12);
+  cursor: pointer;
 }
 
-@keyframes compPromosMover{
-  0%, 18%   { transform: translateX(0); }
-  45%, 70%  { transform: translateX(-50%); }
-  88%, 100% { transform: translateX(0); }
-}
-
-/* ================= FEED ================= */
-
-#compLista{
-  display: grid;
-  gap: 16px;
-}
+/* ================= POST BASE ================= */
 
 .comp-post{
+  position: relative;
   background: rgba(255,255,255,.90);
   color: #000;
   border: 1px solid rgba(0,0,0,.10);
   border-radius: 20px;
   overflow: hidden;
-  box-shadow: 0 5px 20px rgba(0,0,0,.10);
+  box-shadow: 0 5px 18px rgba(0,0,0,.11);
+}
+
+body.oscuro .comp-post{
+  background: rgba(255,255,255,.88);
+  color: #000;
 }
 
 .comp-post-head{
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 13px 14px;
+  padding: 11px 12px 8px;
 }
 
 .comp-avatar{
-  width: 38px;
-  height: 38px;
+  width: 34px;
+  height: 34px;
   border-radius: 999px;
   background: var(--ui-azul-claro, #bcdcff);
   display: inline-flex;
@@ -541,17 +130,52 @@ body.en-compartidos #panel-tabs,
 }
 
 .comp-post-title{
+  font-size: 15px;
   font-weight: 900;
-  font-size: 16px;
-  line-height: 1.15;
+  line-height: 1.12;
 }
 
 .comp-post-meta{
-  font-size: 12px;
-  opacity: .65;
+  font-size: 11px;
+  opacity: .68;
   font-weight: 700;
   margin-top: 2px;
 }
+
+/* ================= CARDS REUTILIZADAS ================= */
+
+.comp-post--reutilizada{
+  padding-bottom: 10px;
+}
+
+.comp-card-click-wrap{
+  padding: 0 10px 8px;
+}
+
+.comp-post--reutilizada .devBigCard,
+.comp-post--reutilizada .panelImgBigCard,
+.comp-post--reutilizada .subidos-card{
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 auto !important;
+  box-sizing: border-box !important;
+}
+
+/* evita aire gigante cuando traemos cards ya existentes */
+.comp-post--reutilizada .devBigCard{
+  border-radius: 18px !important;
+}
+
+.comp-post--reutilizada audio{
+  max-width: 100%;
+}
+
+/* si aparece el botón receipt dentro de devocionales, se oculta en Compartidos */
+.comp-post--devocional button:has(.fa-receipt){
+  display: none !important;
+}
+
+/* ================= IMÁGENES / VIDEOS FALLBACK ================= */
 
 .comp-post-media,
 .comp-post-video{
@@ -565,23 +189,23 @@ body.en-compartidos #panel-tabs,
 
 .comp-post-media img{
   width: 100%;
-  max-height: 72vh;
+  max-height: 68vh;
   object-fit: contain;
-  background: #fff;
   display: block;
+  background: #fff;
 }
 
 .comp-post-video video{
   width: 100%;
-  max-height: 72vh;
+  max-height: 68vh;
   object-fit: contain;
-  background: #000;
   display: block;
+  background: #000;
 }
 
 .comp-post-empty{
   width: 100%;
-  min-height: 220px;
+  min-height: 200px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -590,39 +214,37 @@ body.en-compartidos #panel-tabs,
 }
 
 .comp-post-note-text{
-  padding: 12px 14px 0;
+  padding: 10px 12px 0;
   white-space: pre-wrap;
-  line-height: 1.45;
+  line-height: 1.4;
 }
 
 .comp-post-note-block{
-  margin: 0 14px 14px;
-  padding: 14px;
+  margin: 0 12px 14px;
+  padding: 13px;
   border-radius: 16px;
   background: rgba(188,220,255,.30);
   white-space: pre-wrap;
-  line-height: 1.45;
+  line-height: 1.42;
   font-weight: 700;
 }
 
-.comp-audio-wrap{
-  padding: 10px 14px 0;
-}
+/* ================= ACCIONES ================= */
 
 .comp-post-actions{
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 14px 14px;
-  border-top: 1px solid rgba(0,0,0,.07);
+  gap: 9px;
+  padding: 8px 12px 12px;
 }
 
-.comp-post-actions button{
+.comp-post-actions button,
+.comp-media-actions button{
   border: none;
   cursor: pointer;
   border-radius: 999px;
-  width: 42px;
-  height: 42px;
+  width: 36px;
+  height: 36px;
   padding: 0;
   background: var(--ui-azul-claro, #bcdcff);
   color: #000;
@@ -632,8 +254,10 @@ body.en-compartidos #panel-tabs,
   justify-content: center;
 }
 
-.comp-post-actions button:hover{
+.comp-post-actions button:hover,
+.comp-media-actions button:hover{
   background: var(--ui-azul-hover, #9cc8ff);
+  color: #000;
 }
 
 .comp-action-wrap{
@@ -647,9 +271,9 @@ body.en-compartidos #panel-tabs,
 .comp-action-count{
   position: absolute;
   right: -8px;
-  bottom: -18px;
-  min-width: 16px;
-  height: 16px;
+  bottom: -15px;
+  min-width: 15px;
+  height: 15px;
   padding: 0 4px;
   border-radius: 999px;
   background: rgba(0,0,0,.78);
@@ -666,150 +290,196 @@ body.en-compartidos #panel-tabs,
   color: #157347 !important;
 }
 
-#compVacio{
-  padding: 22px;
-  text-align: center;
-  background: rgba(255,255,255,.82);
-  border: 1px dashed rgba(0,0,0,.18);
-  border-radius: 18px;
+/* ✅ delete solo Compartidos: esquina inferior derecha */
+.comp-action-delete{
+  position: absolute !important;
+  right: 9px;
+  bottom: 9px;
+  z-index: 5;
+  width: 30px !important;
+  height: 30px !important;
+  min-width: 30px !important;
+  min-height: 30px !important;
+  border-radius: 999px !important;
+  border: 1px solid rgba(164,0,0,.20) !important;
+  background: rgba(255,227,227,.88) !important;
+  color: #a40000 !important;
+  opacity: .78;
 }
 
-/* ================= RH ================= */
-
-.comp-post-rh{
-  margin: 0 14px 12px;
-  min-height: 180px;
-  border-radius: 18px;
-  background: linear-gradient(135deg, rgba(188,220,255,.75), rgba(255,255,255,.9));
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  cursor: pointer;
-  border: 1px solid rgba(0,0,0,.08);
+.comp-action-delete:hover{
+  background: #ffb5b5 !important;
+  color: #000 !important;
+  opacity: 1;
 }
 
-.comp-post-rh i{
-  font-size: 42px;
-  opacity: .85;
+/* deja espacio para que el delete no tape botones */
+.comp-post:has(.comp-action-delete){
+  padding-bottom: 26px;
 }
 
-.comp-post-rh span{
-  font-weight: 900;
-  font-size: 16px;
-}
-
-/* ================= DEVOCIONALES ================= */
+/* ================= ORACIONES DEVOCIONALES ================= */
 
 .comp-dev-oraciones-wrap{
-  padding: 12px 14px 0;
+  margin: 4px 10px 8px;
+  padding: 10px;
+  border-radius: 16px;
+  background: rgba(255,255,255,.60);
+  border: 1px solid rgba(0,0,0,.06);
 }
 
 .comp-dev-oraciones-titulo{
   font-weight: 900;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
+  font-size: 13px;
 }
 
 .comp-dev-oraciones-lista{
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .comp-dev-oracion{
-  padding: 12px;
+  padding: 10px 11px;
   border-radius: 14px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
+  box-shadow: 0 3px 10px rgba(0,0,0,.08);
 }
 
 .comp-dev-oracion-top{
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  font-size: 12px;
+  gap: 8px;
+  font-size: 11px;
   opacity: .75;
+  font-weight: 800;
 }
 
 .comp-dev-oracion-texto{
   white-space: pre-wrap;
-  line-height: 1.45;
+  line-height: 1.35;
   word-break: break-word;
+  font-weight: 700;
 }
 
-/* ================= SUBIDOS / PREDICA ================= */
+/* ================= SUBIDOS / PREDICA ABIERTA ================= */
 
-.comp-predica-card{
-  margin: 0 14px 12px;
-  padding: 14px;
+.comp-subido-archivo{
+  margin: 0 10px 10px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: rgba(0,0,0,.06);
+  cursor: pointer;
+}
+
+.comp-subido-archivo img,
+.comp-subido-archivo video{
+  width: 100%;
+  max-height: 38vh;
+  object-fit: contain;
+  display: block;
+  background: #fff;
+}
+
+.comp-predica-full{
+  margin: 0 10px 8px;
+  padding: 10px;
   border-radius: 18px;
-  background: linear-gradient(180deg, rgba(255,255,255,.95), rgba(243,248,255,.95));
+  background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(233,246,255,.86));
   border: 1px solid rgba(0,0,0,.08);
   cursor: pointer;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 9px;
+}
+
+.comp-predica-bloque{
+  border-radius: 15px;
+  background: rgba(255,255,255,.72);
+  border: 1px solid rgba(0,0,0,.06);
+  padding: 10px 11px;
+}
+
+.comp-predica-ref{
+  font-weight: 900;
+  text-align: center;
+  margin-bottom: 7px;
+}
+
+.comp-predica-texto{
+  white-space: pre-wrap;
+  line-height: 1.42;
+  font-size: 14px;
+}
+
+.comp-predica-comentario{
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(188,220,255,.22);
+  white-space: pre-wrap;
+  line-height: 1.35;
+  font-size: 13px;
 }
 
 .comp-predica-intro,
 .comp-predica-final{
   white-space: pre-wrap;
-  line-height: 1.45;
-}
-
-.comp-predica-citas{
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.comp-predica-cita{
-  border-radius: 14px;
-  background: rgba(188,220,255,.18);
-  padding: 10px 12px;
-}
-
-.comp-predica-ref{
-  font-weight: 900;
-  margin-bottom: 6px;
-}
-
-.comp-predica-texto{
-  white-space: pre-wrap;
-  line-height: 1.45;
-}
-
-.comp-predica-comentario{
-  margin-top: 8px;
-  white-space: pre-wrap;
   line-height: 1.4;
-  opacity: .88;
+  font-weight: 700;
 }
 
 .comp-post-file{
-  margin: 0 14px 12px;
-  min-height: 150px;
-  border-radius: 18px;
+  margin: 0 10px 10px;
+  min-height: 130px;
+  border-radius: 16px;
   background: linear-gradient(135deg, rgba(188,220,255,.55), rgba(255,255,255,.95));
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 9px;
   cursor: pointer;
   border: 1px solid rgba(0,0,0,.08);
   font-weight: 900;
 }
 
 .comp-post-file i{
-  font-size: 34px;
+  font-size: 32px;
 }
 
-/* ================= VISOR ================= */
+/* ================= RH ================= */
+
+.comp-post-rh{
+  margin: 0 12px 12px;
+  min-height: 150px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(188,220,255,.75), rgba(255,255,255,.9));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 11px;
+  cursor: pointer;
+  border: 1px solid rgba(0,0,0,.08);
+}
+
+.comp-post-rh i{
+  font-size: 38px;
+  opacity: .85;
+}
+
+.comp-post-rh span{
+  font-weight: 900;
+  font-size: 15px;
+}
+
+/* ================= VISOR MEDIA ================= */
 
 .comp-media-viewer{
   position: fixed;
@@ -832,7 +502,7 @@ body.en-compartidos #panel-tabs,
   max-height: 90vh;
   background: rgba(20,20,20,.96);
   border-radius: 20px;
-  padding: 18px;
+  padding: 16px;
   box-sizing: border-box;
 }
 
@@ -844,10 +514,10 @@ body.en-compartidos #panel-tabs,
 
 .comp-media-close{
   position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 38px;
-  height: 38px;
+  top: 8px;
+  right: 8px;
+  width: 36px;
+  height: 36px;
   border-radius: 999px;
   border: none;
   cursor: pointer;
@@ -856,31 +526,118 @@ body.en-compartidos #panel-tabs,
   font-weight: 900;
 }
 
-/* ================= CEL ================= */
+.comp-media-actions{
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  padding-top: 12px;
+}
+
+/* ================= VACÍO ================= */
+
+#compVacio{
+  padding: 20px;
+  text-align: center;
+  background: rgba(255,255,255,.82);
+  border: 1px dashed rgba(0,0,0,.18);
+  border-radius: 18px;
+  font-weight: 800;
+}
+
+/* ================= CELULAR ================= */
 
 @media (max-width: 700px){
 
+  #compartidosApp{
+    padding: 6px 4px 18px;
+  }
+
   #compFeedWrap{
-    width: calc(100% - 8px) !important;
+    width: calc(100% - 4px);
+  }
+
+  #compLista{
+    gap: 12px;
+  }
+
+  .comp-hero-card{
+    border-radius: 16px;
+    max-height: 135px;
+  }
+
+  .comp-hero-card img{
+    height: 135px;
+    object-fit: cover;
+    transform: scale(1.10);
   }
 
   .comp-promos-page{
-    gap: 7px;
-    padding-right: 7px;
+    gap: 6px;
+    padding-right: 6px;
   }
 
   .comp-promos-page img{
-    height: 92px;
-    border-radius: 13px;
+    height: 76px;
+    border-radius: 12px;
   }
 
   .comp-post{
     border-radius: 18px;
   }
 
+  .comp-post-head{
+    padding: 10px 10px 7px;
+  }
+
+  .comp-avatar{
+    width: 32px;
+    height: 32px;
+  }
+
+  .comp-post-title{
+    font-size: 14px;
+  }
+
+  .comp-post-meta{
+    font-size: 10.5px;
+  }
+
+  .comp-card-click-wrap{
+    padding: 0 8px 7px;
+  }
+
   .comp-post-media img,
   .comp-post-video video{
-    max-height: 58vh;
+    max-height: 56vh;
+  }
+
+  .comp-subido-archivo img,
+  .comp-subido-archivo video{
+    max-height: 30vh;
+  }
+
+  .comp-predica-full{
+    margin: 0 8px 8px;
+    padding: 8px;
+    gap: 8px;
+  }
+
+  .comp-predica-bloque{
+    padding: 9px;
+  }
+
+  .comp-predica-texto{
+    font-size: 13px;
+    line-height: 1.35;
+  }
+
+  .comp-predica-comentario{
+    font-size: 12.5px;
+  }
+
+  .comp-dev-oraciones-wrap{
+    margin: 4px 8px 8px;
+    padding: 8px;
   }
 
   .comp-media-viewer-card{
@@ -888,17 +645,6 @@ body.en-compartidos #panel-tabs,
     padding: 12px;
     border-radius: 16px;
   }
-}
-
-/* ✅ Botón eliminar solo de Compartidos */
-.comp-post-actions .comp-action-delete{
-  background: #ffe3e3;
-  color: #a40000;
-}
-
-.comp-post-actions .comp-action-delete:hover{
-  background: #ffb5b5;
-  color: #000;
 }
 
 </style>
