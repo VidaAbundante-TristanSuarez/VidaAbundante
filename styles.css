@@ -3989,4 +3989,196 @@ body.en-compartidos #seccion-panel{
   line-height: 1;
 }
 
+/* ================= MODAL TEMA COMPACTO ================= */
+
+.tema-card-compacta{
+  max-width: 340px !important;
+  padding: 14px !important;
+  border-radius: 18px !important;
+}
+
+.tema-title{
+  margin: 0 0 10px !important;
+  font-size: 18px !important;
+}
+
+.tema-grid{
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.tema-linea{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.tema-linea-full{
+  width: 100%;
+}
+
+.tema-label{
+  flex: 0 0 76px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #000;
+}
+
+.tema-pill,
+.tema-btn-full{
+  flex: 1;
+  min-height: 34px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  text-align: center;
+}
+
+.tema-pill{
+  background: var(--ui-azul-claro);
+  color: #000;
+}
+
+.tema-toggle-fondo{
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  background: #eef7ff;
+  border-radius: 999px;
+  padding: 4px;
+}
+
+.tema-toggle-fondo input{
+  display: none;
+}
+
+.tema-toggle-fondo label{
+  min-height: 30px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  color: #000;
+}
+
+.tema-toggle-fondo input:checked + label{
+  background: var(--ui-azul-hover);
+  box-shadow: 0 2px 8px rgba(0,0,0,.12);
+}
+
+.tema-control-row{
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.tema-color-btn{
+  width: 38px !important;
+  height: 34px !important;
+  min-width: 38px !important;
+  border-radius: 12px !important;
+}
+
+.tema-btn-aplicar{
+  min-height: 34px !important;
+  padding: 0 12px !important;
+  border-radius: 999px !important;
+  white-space: nowrap;
+}
+
+.tema-file-btn{
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: var(--ui-azul-claro);
+  color: #000;
+  font-weight: 800;
+  font-size: 13px;
+  cursor: pointer;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.tema-file-btn:hover{
+  background: var(--ui-azul-hover);
+}
+
+.tema-file-name{
+  min-width: 0;
+  flex: 1;
+  font-size: 12px;
+  opacity: .75;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#opacidadFondoApp{
+  flex: 1;
+  min-width: 0;
+}
+
+.tema-actions{
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.tema-actions button{
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: 999px;
+}
+
+body.oscuro .tema-card-compacta{
+  background: #161616 !important;
+  color: #fff;
+}
+
+body.oscuro .tema-label{
+  color: #fff;
+}
+
+body.oscuro .tema-toggle-fondo{
+  background: rgba(255,255,255,.08);
+}
+
+body.oscuro .tema-toggle-fondo label{
+  color: #fff;
+}
+
+body.oscuro .tema-toggle-fondo input:checked + label{
+  background: var(--ui-azul-claro);
+  color: #000;
+}
+
+@media (max-width: 420px){
+  .tema-card-compacta{
+    max-width: 92vw !important;
+  }
+
+  .tema-label{
+    flex-basis: 68px;
+  }
+
+  .tema-btn-aplicar{
+    padding: 0 10px !important;
+  }
+}
+
   </style> 
