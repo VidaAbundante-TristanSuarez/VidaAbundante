@@ -647,4 +647,201 @@ body.oscuro .comp-post{
   }
 }
 
+/* =========================================================
+   AJUSTE FINAL COMPARTIDOS - PROLIJO / CELULAR
+========================================================= */
+
+/* Banner más ancho que las cards */
+body.en-compartidos #compHero{
+  width: min(1040px, calc(100vw - 18px));
+  margin-left: 50%;
+  transform: translateX(-50%);
+}
+
+body.en-compartidos .comp-hero-card{
+  border-radius: 20px;
+}
+
+body.en-compartidos .comp-hero-card img{
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: cover;
+  transform: scale(1.08);
+  transform-origin: center;
+}
+
+/* Feed centrado */
+body.en-compartidos #compFeedWrap{
+  width: min(760px, calc(100vw - 18px));
+  margin: 0 auto;
+}
+
+body.en-compartidos #compLista{
+  justify-items: center;
+}
+
+body.en-compartidos .comp-post{
+  width: 100%;
+  max-width: 720px;
+  box-sizing: border-box;
+}
+
+/* Promos: para imágenes 2:1, no cuadradas */
+body.en-compartidos .comp-promos-viewport{
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0 2px;
+  box-sizing: border-box;
+}
+
+body.en-compartidos .comp-promos-page{
+  gap: 8px;
+  padding: 0 2px;
+  box-sizing: border-box;
+}
+
+body.en-compartidos .comp-promos-page img{
+  aspect-ratio: 2 / 1;
+  height: auto !important;
+  object-fit: cover;
+  object-position: center;
+}
+
+/* Cards reutilizadas centradas */
+body.en-compartidos .comp-card-click-wrap{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+body.en-compartidos .comp-post--reutilizada .devBigCard,
+body.en-compartidos .comp-post--reutilizada .panelImgBigCard,
+body.en-compartidos .comp-post--reutilizada .subidos-feed-card,
+body.en-compartidos .comp-post--reutilizada .subidos-card{
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+/* Devocionales: que no se desborden tan gigantes en escritorio */
+body.en-compartidos .comp-post--devocional .devBigCard{
+  max-width: 620px !important;
+}
+
+/* Imagenes compartidas: centrar la card */
+body.en-compartidos .comp-post--imagen .panelImgBigCard{
+  max-width: 520px !important;
+}
+
+/* Acciones centradas */
+body.en-compartidos .comp-post-actions{
+  justify-content: center;
+  padding-right: 48px;
+}
+
+/* Delete siempre esquina inferior derecha de la publicación */
+body.en-compartidos .comp-post{
+  position: relative;
+}
+
+body.en-compartidos .comp-action-delete{
+  position: absolute !important;
+  right: 10px !important;
+  bottom: 10px !important;
+  z-index: 20 !important;
+}
+
+/* Prédica abierta dentro de Compartidos */
+body.en-compartidos .comp-post--predica-abierta{
+  overflow: hidden;
+}
+
+body.en-compartidos .comp-predica-abierta-wrap{
+  margin: 0 10px 10px;
+  max-height: 74vh;
+  overflow: auto;
+  border-radius: 18px;
+  background: rgba(255,255,255,.40);
+  box-sizing: border-box;
+}
+
+body.en-compartidos .comp-predica-abierta-wrap .subidos-visor-marco{
+  margin: 0 auto !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+body.en-compartidos .comp-predica-abierta-wrap .subidos-visor-predica-full{
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/* Notas */
+body.en-compartidos .comp-post-note-block{
+  margin: 0 12px 16px;
+  box-shadow: 0 4px 14px rgba(0,0,0,.10);
+}
+
+/* Celular */
+@media (max-width: 700px){
+  body.en-compartidos #compFeedWrap{
+    width: calc(100vw - 10px);
+  }
+
+  body.en-compartidos #compHero{
+    width: calc(100vw - 8px);
+  }
+
+  body.en-compartidos .comp-hero-card{
+    max-height: 138px;
+  }
+
+  body.en-compartidos .comp-hero-card img{
+    height: 138px;
+    object-fit: cover;
+    transform: scale(1.12);
+  }
+
+  body.en-compartidos .comp-promos-page{
+    gap: 5px;
+    padding: 0 3px;
+  }
+
+  body.en-compartidos .comp-promos-page img{
+    border-radius: 12px;
+  }
+
+  body.en-compartidos .comp-post{
+    max-width: calc(100vw - 10px);
+  }
+
+  body.en-compartidos .comp-post-head{
+    padding: 9px 10px 6px;
+  }
+
+  body.en-compartidos .comp-post--devocional .devBigCard{
+    max-width: 100% !important;
+  }
+
+  body.en-compartidos .comp-post--imagen .panelImgBigCard{
+    max-width: 100% !important;
+  }
+
+  body.en-compartidos .comp-card-click-wrap{
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+
+  body.en-compartidos .comp-predica-abierta-wrap{
+    margin: 0 6px 10px;
+    max-height: 72vh;
+  }
+
+  body.en-compartidos .comp-post-actions{
+    gap: 8px;
+    padding: 7px 44px 12px 10px;
+  }
+}
+
 </style>
