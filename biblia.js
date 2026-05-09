@@ -2739,11 +2739,12 @@ await set(ref(db, dbPath), {
   ref: refCompleta,
   origen: origenModalImagen,
   tipoTexto: modoImagenLibre ? "libre" : "biblia",
-  textoLibre: modoImagenLibre ? (textoLibreImagen || "") : "",
+ textoLibre: modoImagenLibre ? (textoLibreImagen || "") : "",
 
-  audioOk: !!(asset.audioOk || asset.audioGithubUrl || asset.audioUrl || asset.audio),
-  audioGithubUrl: asset.audioGithubUrl || asset.audioUrl || asset.audio || "",
-  audioUrl: asset.audioUrl || asset.audioGithubUrl || asset.audio || ""
+audioOk: !!(asset.audioOk || asset.audioGithubUrl || asset.audioUrl || asset.audio),
+audioGithubUrl: asset.audioGithubUrl || asset.audioUrl || asset.audio || "",
+audioUrl: asset.audioUrl || asset.audioGithubUrl || asset.audio || "",
+audioTexto: asset.audioTexto || ""
 });
 }
 
@@ -2792,11 +2793,12 @@ async function guardarReferenciaImagenEnCompartidos(asset) {
     ref: refCompleta,
     origen: origenModalImagen,
     tipoTexto: modoImagenLibre ? "libre" : "biblia",
-    textoLibre: modoImagenLibre ? (textoLibreImagen || "") : "",
+  textoLibre: modoImagenLibre ? (textoLibreImagen || "") : "",
 
 audioOk: !!(asset.audioOk || asset.audioGithubUrl || asset.audioUrl || asset.audio),
 audioGithubUrl: asset.audioGithubUrl || asset.audioUrl || asset.audio || "",
-audioUrl: asset.audioUrl || asset.audioGithubUrl || asset.audio || ""
+audioUrl: asset.audioUrl || asset.audioGithubUrl || asset.audio || "",
+audioTexto: asset.audioTexto || ""
   });
 }
 
@@ -2805,14 +2807,14 @@ async function subirImagenBibliaUnaVezYGuardarDestinos() {
   const asset = await subirImagenBibliaBaseUnaVez();
   if (!asset) return false;
 
-  const audioUrlFinal = window.__lastAudioUrl || "";
+  const audioUrlFinal = String(window.__lastAudioUrl || "").trim();
 
-if (audioUrlFinal) {
-  asset.audioOk = true;
-  asset.audioGithubUrl = audioUrlFinal;
-  asset.audioUrl = audioUrlFinal;
-  asset.audioTexto = window.__lastAudioTexto || "";
-}
+  if (audioUrlFinal) {
+    asset.audioOk = true;
+    asset.audioGithubUrl = audioUrlFinal;
+    asset.audioUrl = audioUrlFinal;
+    asset.audioTexto = window.__lastAudioTexto || "";
+  }
 
   await guardarReferenciaImagenEnPanel(asset);
 
@@ -2825,6 +2827,10 @@ if (audioUrlFinal) {
       alert("✅ Se guardó en Mi Panel, pero no se pudo publicar en Compartidos.");
     }
   }
+
+  window.__lastAudioUrl = "";
+  window.__lastAudioTs = 0;
+  window.__lastAudioTexto = "";
 
   console.log("✅ Imagen subida una sola vez y referenciada en destinos");
   return true;
