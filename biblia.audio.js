@@ -137,9 +137,9 @@ document.addEventListener("DOMContentLoaded", () => {
     };
   }
 
-  // ✅ Subir a Firebase (cuando finalizás la imagen)
-  window.__lastAudioUrl = "";
-  window.__lastAudioTs  = 0;
+window.__lastAudioUrl = "";
+window.__lastAudioTs = 0;
+window.__lastAudioTexto = "";
 
 window.subirPendingAudioAFirebase = async ({ subirIglesia = false } = {}) => {
   if (!window.__UID) throw new Error("No hay uid");
@@ -157,7 +157,7 @@ window.subirPendingAudioAFirebase = async ({ subirIglesia = false } = {}) => {
   const ts = p.ts || Date.now();
   const fileName = `audio_biblia_${ts}.mp3`;
 
-  const r = await fetch(AUDIO_R2_UPLOAD_URL, {
+  const r = await fetch("https://us-central1-vidaabundante-f118a.cloudfunctions.net/subirImagenR2", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -170,7 +170,7 @@ window.subirPendingAudioAFirebase = async ({ subirIglesia = false } = {}) => {
 
   const data = await r.json().catch(() => ({}));
 
-  if (!r.ok || !data.url) {
+  if (!r.ok || !data?.url) {
     throw new Error(data?.error || "No pude subir el audio a R2.");
   }
 
