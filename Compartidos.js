@@ -1417,8 +1417,30 @@ function compRenderOracionesDevocionalHTML(item) {
   `;
 }
 
+function compCapitalizarReferenciaBiblica(txt = "") {
+  const s = String(txt || "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return s.replace(
+    /^((?:[1-3]\s*)?[A-Za-zÁÉÍÓÚÑáéíóúñ]+(?:\s+[A-Za-zÁÉÍÓÚÑáéíóúñ]+){0,4})(\s+\d{1,3}\s*:\s*\d{1,3}.*)$/i,
+    (_, libro, resto) => {
+      const limpio = libro.toLocaleLowerCase("es-AR");
+      const libroOk = limpio.replace(/^([1-3]\s*)?([a-záéíóúñ])/, (m, num = "", letra) => {
+        return num + letra.toLocaleUpperCase("es-AR");
+      });
+
+      return libroOk + resto;
+    }
+  );
+}
+
+function compTituloDevocional(item = {}) {
+  return compCapitalizarReferenciaBiblica(compItemTitulo(item));
+}
+
 function compRenderDevocional(item) {
-  const titulo = compEscape(compItemTitulo(item));
+  const titulo = compEscape(compTituloDevocional(item));
   const fecha = compEscape(compItemFecha(item));
   const url = item.url || item.imagenUrl || "";
   const fileName = compFileName(url, "devocional.png");
