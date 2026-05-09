@@ -839,4 +839,91 @@ body.en-compartidos .comp-post-note-block{
   }
 }
 
+
+/* =========================================================
+   COMPARTIDOS - AJUSTE V2
+   Pegar AL FINAL de compartidos.css
+========================================================= */
+
+/* ✅ Versículo visible arriba de la nota */
+body.en-compartidos .comp-post--nota .comp-post-verse-block{
+  margin: 0 12px 8px;
+  padding: 12px 13px;
+  border-radius: 16px;
+  background: rgba(255,255,255,.66);
+  border: 1px solid rgba(0,0,0,.07);
+  box-shadow: 0 3px 10px rgba(0,0,0,.07);
+  white-space: pre-wrap;
+  line-height: 1.38;
+  font-size: 13px;
+  font-weight: 800;
+  color: #111;
+}
+
+body.en-compartidos .comp-post--nota .comp-post-note-block{
+  margin-top: 0 !important;
+}
+
+/* ✅ Devocionales completos dentro de Compartidos, sin corte horizontal */
+body.en-compartidos .comp-post--devocional .comp-card-click-wrap{
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  overflow: visible !important;
+}
+
+body.en-compartidos .comp-post--devocional .devBigCard{
+  width: min(360px, 100%) !important;
+  max-width: 360px !important;
+  min-width: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+  box-sizing: border-box !important;
+}
+
+body.en-compartidos .comp-post--devocional .devBigCard *,
+body.en-compartidos .comp-post--devocional .devBigCard *::before,
+body.en-compartidos .comp-post--devocional .devBigCard *::after{
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+body.en-compartidos .comp-post--devocional .devBigCard img,
+body.en-compartidos .comp-post--devocional .devBigCard canvas,
+body.en-compartidos .comp-post--devocional .devBigCard video{
+  width: 100% !important;
+  height: auto !important;
+  max-height: none !important;
+  object-fit: contain !important;
+  object-position: center !important;
+  display: block !important;
+}
+
+body.en-compartidos .comp-post--devocional .devBigActions{
+  width: 100% !important;
+  justify-content: center !important;
+  flex-wrap: wrap !important;
+}
+
+@media (max-width: 700px){
+  body.en-compartidos .comp-post--nota .comp-post-verse-block{
+    margin: 0 10px 7px;
+    padding: 10px 11px;
+    font-size: 12.5px;
+    line-height: 1.34;
+  }
+
+  body.en-compartidos .comp-post--devocional .comp-card-click-wrap{
+    padding-left: 4px !important;
+    padding-right: 4px !important;
+  }
+
+  body.en-compartidos .comp-post--devocional .devBigCard{
+    width: min(310px, 100%) !important;
+    max-width: 310px !important;
+  }
+}
+
+
 </style>
