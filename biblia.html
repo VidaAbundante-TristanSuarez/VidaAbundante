@@ -1283,49 +1283,102 @@
 
 <!-- ================= MODAL TEMA 🎨 ================= -->
 <div id="modalTema" class="modal-overlay" style="display:none;">
-  <div class="modal-card modal-card-sm modal-tema-card">
+  <div class="modal-card modal-card-sm modal-tema-card tema-card-compacta">
 
     <button type="button" class="cerrar-modal-tema" onclick="cerrarModalTema()" aria-label="Cerrar">
       ×
     </button>
 
-    <h3 class="modal-title">🎨 Apariencia</h3>
+    <h3 class="modal-title tema-title">🎨 Apariencia</h3>
 
-    <div style="display:flex; flex-direction:column; gap:10px;">
+    <div class="tema-grid">
 
-      <button class="btn-primary" type="button" onclick="toggleTema()">
-        🌙 / ☀️ Cambiar modo
-      </button>
-
-      <label style="font-size:13px;">Sección actual</label>
-      <div id="fondoSeccionActualLabel" class="btn-ghost" style="text-align:center;">
-        Biblia
+      <!-- MODO -->
+      <div class="tema-linea tema-linea-full">
+        <span class="tema-label">Modo</span>
+        <button class="btn-primary tema-btn-full" type="button" onclick="toggleTema()">
+          🌙 / ☀️ Cambiar modo
+        </button>
       </div>
 
-      <label style="font-size:13px;">Color de fondo</label>
-      <input id="colorFondoApp" type="hidden" value="#ffffff">
-      <button
-        type="button"
-        id="colorFondoAppHost"
-        class="pickr-host"
-        data-target="#colorFondoApp"
-        aria-label="Color de fondo app"></button>
+      <!-- SECCIÓN -->
+      <div class="tema-linea">
+        <span class="tema-label">Sección</span>
+        <div id="fondoSeccionActualLabel" class="tema-pill">
+          Biblia
+        </div>
+      </div>
 
-      <button class="btn-primary" type="button" onclick="aplicarColorFondo()">
-        Aplicar color
-      </button>
+      <!-- TIPO DE FONDO -->
+      <div class="tema-linea tema-linea-full">
+        <span class="tema-label">Fondo</span>
 
-      <label style="font-size:13px;">Imagen de fondo</label>
-      <input type="file" id="imgFondoApp" accept="image/*">
+        <div class="tema-toggle-fondo">
+          <input type="radio" name="tipoFondoTema" id="temaFondoColor" checked>
+          <label for="temaFondoColor" onclick="temaMostrarFondo('color')">
+            Color plano
+          </label>
 
-      <button class="btn-primary" type="button" onclick="aplicarImagenFondo()">
-        Aplicar imagen
-      </button>
+          <input type="radio" name="tipoFondoTema" id="temaFondoImagen">
+          <label for="temaFondoImagen" onclick="temaMostrarFondo('imagen')">
+            Imagen
+          </label>
+        </div>
+      </div>
 
-      <label id="labelOpacidadTema" style="font-size:13px;">Opacidad del fondo</label>
-      <input type="range" id="opacidadFondoApp" min="0" max="1" step="0.05" value="0.35">
+      <!-- COLOR PLANO -->
+      <div id="temaBoxColor" class="tema-linea tema-linea-full">
+        <span class="tema-label">Color</span>
 
-      <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+        <div class="tema-control-row">
+          <input id="colorFondoApp" type="hidden" value="#ffffff">
+          <button
+            type="button"
+            id="colorFondoAppHost"
+            class="pickr-host tema-color-btn"
+            data-target="#colorFondoApp"
+            aria-label="Color de fondo app"></button>
+
+          <button class="btn-primary tema-btn-aplicar" type="button" onclick="aplicarColorFondo()">
+            Aplicar
+          </button>
+        </div>
+      </div>
+
+      <!-- IMAGEN -->
+      <div id="temaBoxImagen" class="tema-linea tema-linea-full" style="display:none;">
+        <span class="tema-label">Imagen</span>
+
+        <div class="tema-control-row">
+          <input
+            type="file"
+            id="imgFondoApp"
+            accept="image/*"
+            hidden
+            onchange="document.getElementById('temaNombreImagen').textContent = this.files?.[0]?.name || 'Ninguna';"
+          >
+
+          <label for="imgFondoApp" class="tema-file-btn">
+            <i class="fa-solid fa-image"></i>
+            Imagen
+          </label>
+
+          <span id="temaNombreImagen" class="tema-file-name">Ninguna</span>
+
+          <button class="btn-primary tema-btn-aplicar" type="button" onclick="aplicarImagenFondo()">
+            Aplicar
+          </button>
+        </div>
+      </div>
+
+      <!-- OPACIDAD -->
+      <div class="tema-linea tema-linea-full">
+        <span id="labelOpacidadTema" class="tema-label">Opacidad</span>
+        <input type="range" id="opacidadFondoApp" min="0" max="1" step="0.05" value="0.35">
+      </div>
+
+      <!-- ACCIONES -->
+      <div class="tema-actions">
         <button class="btn-primary" type="button" onclick="confirmarFondoTema()">
           Confirmar
         </button>
