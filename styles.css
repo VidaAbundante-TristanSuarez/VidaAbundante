@@ -421,7 +421,7 @@ body.oscuro .versiculo { color:#fff; }
 
 /* Versículo seleccionado para imagen */
 .versiculo.imagen {
-  background: #94cef4 !important;
+  background: var(--ui-azul-hover) !important; 
   color: #000 !important;
   border: 2px solid #e1f3ff !important;
 }
