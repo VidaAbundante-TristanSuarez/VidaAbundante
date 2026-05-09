@@ -2594,6 +2594,19 @@ function htmlPredicaBibliaSubidoGrande(it, abrirClave = "") {
   `;
 }
 
+// ✅ Permite que Compartidos reutilice la prédica ABIERTA,
+// sin rehacerla como mini card de galería.
+window.subidosRenderPredicaAbiertaHTML = function subidosRenderPredicaAbiertaHTML(item, abrirClave = "all") {
+  if (!item) return "";
+
+  try {
+    return htmlPredicaBibliaSubidoGrande(item, abrirClave);
+  } catch (e) {
+    console.error("No pude renderizar prédica abierta para Compartidos:", e);
+    return "";
+  }
+};
+
 window.abrirSubidosVisorPredica = function abrirSubidosVisorPredica(id, abrirClave = "") {
   const it = obtenerSubidoPorId(id);
   if (!it) return;
