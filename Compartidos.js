@@ -955,19 +955,23 @@ window.compGuardarImagenCompartidaEnMiPanel = async function compGuardarImagenCo
   const url = item.url || item.imagenUrl || "";
 
   try {
-    await set(ref(db, `panelImagenesPersonal/${uid}/${ts}`), {
-      url,
-      fecha: ts,
-      uid,
-      tipo: "imagen",
-      libro: item.libro || "",
-      capitulo: Number(item.capitulo || 0),
-      versiculos: Array.isArray(item.versiculos) ? item.versiculos : [],
-      ref: compReferenciaItem(item),
-      origen: "compartidos",
-      tipoTexto: item.tipoTexto || "biblia",
-      textoLibre: item.textoLibre || item.texto || ""
-    });
+await set(ref(db, `panelImagenesPersonal/${uid}/${ts}`), {
+  url,
+  fecha: ts,
+  uid,
+  tipo: "imagen",
+  libro: item.libro || "",
+  capitulo: Number(item.capitulo || 0),
+  versiculos: Array.isArray(item.versiculos) ? item.versiculos : [],
+  ref: compReferenciaItem(item),
+  origen: "compartidos",
+  tipoTexto: item.tipoTexto || "biblia",
+  textoLibre: item.textoLibre || item.texto || "",
+
+  audioOk: !!(item.audioOk || item.audioGithubUrl || item.audioUrl || item.audio),
+  audioGithubUrl: item.audioGithubUrl || item.audioUrl || item.audio || "",
+  audioUrl: item.audioUrl || item.audioGithubUrl || item.audio || ""
+});
 
     document.querySelectorAll("[data-comp-img-save]").forEach(btn => {
       if (btn.dataset.compImgSave === key) {
@@ -1102,7 +1106,10 @@ function compRenderImagen(item) {
     {
       ...item,
       id: item.id || item._compId || compKeyItem(item),
-      url
+      url,
+      audioGithubUrl: item.audioGithubUrl || item.audioUrl || item.audio || "",
+      audioUrl: item.audioUrl || item.audioGithubUrl || item.audio || "",
+      audioOk: !!(item.audioOk || item.audioGithubUrl || item.audioUrl || item.audio)
     },
     {
       idPrefix: "compImg_",
