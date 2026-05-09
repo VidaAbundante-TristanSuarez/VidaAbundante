@@ -904,6 +904,12 @@ function iniciar() {
   };
 
   restaurarEstadoBibliaInicial();
+  
+  setTimeout(() => {
+  if (typeof window.irA === "function") {
+    window.irA("compartidos");
+  }
+}, 150);
 }
 
 // ================= ⭐ CARGA CAPITULOS ==============================
