@@ -3486,7 +3486,11 @@ body.oscuro .panel-marcadores-bar .pm-left .muted{
 #seccion-biblia #texto .versiculo.versiculo-con-fondo-resaltado .num,
 #seccion-biblia #texto .versiculo.versiculo-con-fondo-resaltado .txt{
   color: inherit !important;
-  font-weight: inherit !important;
+}
+
+/* ✅ Mantener bold en resaltadores */
+#seccion-biblia #texto .versiculo.versiculo-con-fondo-resaltado .txt{
+  font-weight: var(--va-peso-texto-biblia, 700) !important;
 }
 
 /* ✅ La pluma NO usa el color bíblico */
