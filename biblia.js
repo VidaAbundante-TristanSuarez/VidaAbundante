@@ -5530,7 +5530,15 @@ await set(ref(db, `compartidos/notas/${ts}`), {
   tipo: "nota",
   publicadoPor: uid,
   publicadoEn: ts,
-  ts
+  ts,
+
+  // ✅ guardamos el texto bíblico ya armado desde Biblia
+  textoVersiculo: textoVers,
+  textoBiblico: textoVers,
+  ref: m.ref || "",
+  libro: m.libro || "",
+  capitulo: Number(m.capitulo || 0),
+  versiculos: Array.isArray(m.versiculos) ? m.versiculos : []
 });
 
     mostrarToast("✅ Compartido en Compartidos");
