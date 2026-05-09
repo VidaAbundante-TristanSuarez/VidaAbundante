@@ -6721,6 +6721,21 @@ window.abrirModalTema = () => {
   }, 0);
 };
 
+window.temaMostrarFondo = function(tipo) {
+  const boxColor = document.getElementById("temaBoxColor");
+  const boxImagen = document.getElementById("temaBoxImagen");
+  const radioColor = document.getElementById("temaFondoColor");
+  const radioImagen = document.getElementById("temaFondoImagen");
+
+  const esImagen = tipo === "imagen";
+
+  if (boxColor) boxColor.style.display = esImagen ? "none" : "flex";
+  if (boxImagen) boxImagen.style.display = esImagen ? "flex" : "none";
+
+  if (radioColor) radioColor.checked = !esImagen;
+  if (radioImagen) radioImagen.checked = esImagen;
+};
+
 window.cerrarModalTema = () => {
   const modal = document.getElementById("modalTema");
   if (modal) modal.style.display = "none";
