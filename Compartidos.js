@@ -544,6 +544,24 @@ function iniciarEscuchaCompartidosSubidos() {
   compartidosSubidosEscuchaActiva = true;
 }
 
+function iniciarEscuchaCompartidosOraciones() {
+  if (compartidosOracionesEscuchaActiva) return;
+
+  const db = compDB();
+  if (!db) return;
+
+  // Ruta esperada de las oraciones de devocionales:
+  // devocionalesOraciones/{uidOwner}/{tsKey}/{oracionId}
+  onValue(ref(db, "devocionalesOraciones"), (snap) => {
+    compartidosOracionesCache = snap.val() || {};
+    renderCompartidos();
+  }, (err) => {
+    console.error("Error leyendo oraciones de devocionales:", err);
+  });
+
+  compartidosOracionesEscuchaActiva = true;
+}
+
 function iniciarEscuchaCompartidosOcultos() {
   if (compartidosOcultosEscuchaActiva) return;
 
@@ -771,21 +789,112 @@ function compEsPredica(item) {
   );
 }
 
-function compRenderImagen(item) {
-  const url = item.url || item.imagenUrl || "";
+function compRangoVersiculos(nums = []) {
+  const arr = Array.from(new Set(
+    (nums || []).map(Number).filter(n => Number.isFinite(n))
+  )).sort((a, b) => a - b);
 
-  const tituloBase = String(
+  if (!arr.length) return "";
+
+  const partes = [];
+  let inicio = arr[0];
+  let anterior = arr[0];
+
+  for (let i = 1; i < arr.length; i++) {
+    if (arr[i] === anterior + 1) {
+      anterior = arr[i];
+    } else {
+      partes.push(inicio === anterior ? `${inicio}` : `${inicio}-${anterior}`);
+      inicio = anterior = arr[i];
+    }
+  }
+
+  partes.push(inicio === anterior ? `${inicio}` : `${inicio}-${anterior}`);
+  return partes.join(",");
+}
+
+function compTituloImagen(item = {}) {
+  const directo = String(
     item.ref ||
     item.referencia ||
     item.cita ||
     ""
-  ).trim() || "Compartido";
+  ).trim();
 
+  if (directo) return directo;
+
+  const libro = String(item.libro || "").trim();
+  const capitulo = Number(item.capitulo || 0);
+  const versiculos = Array.isArray(item.versiculos) ? item.versiculos : [];
+
+  if (libro && capitulo && versiculos.length) {
+    return `${libro} ${capitulo}:${compRangoVersiculos(versiculos)}`;
+  }
+
+  return "Compartido";
+}
+
+function compRenderImagen(item) {
+  const url = item.url || item.imagenUrl || "";
+  const tituloBase = compTituloImagen(item);
   const titulo = compEscape(tituloBase);
   const textoLibre = String(item.textoLibre || "").trim();
 
+  if (typeof window.panelImagenRenderCardHTML !== "function") {
+    return `
+      <article class="comp-post comp-post--imagen">
+        <div class="comp-post-head">
+          <div class="comp-avatar">
+            <i class="fa-solid fa-image"></i>
+          </div>
+
+          <div>
+            <div class="comp-post-title">${titulo}</div>
+            <div class="comp-post-meta">Imagen compartida</div>
+          </div>
+        </div>
+
+        <div class="comp-post-media" onclick="compAbrirMedia('${compJs(url)}', 'imagen', '${compJs(tituloBase)}')" role="button">
+          ${url
+            ? `<img src="${compEscape(url)}" alt="${titulo}" loading="lazy">`
+            : `<div class="comp-post-empty">Sin imagen</div>`
+          }
+        </div>
+
+        ${textoLibre ? `<div class="comp-post-note-text">${compEscape(textoLibre)}</div>` : ``}
+
+        <div class="comp-post-actions">
+          <button type="button" onclick="descargarImagenPanel('${compJs(url)}')" title="Descargar">
+            <i class="fa-solid fa-download"></i>
+          </button>
+
+          <button type="button" onclick="compartirImagenPanel('${compJs(url)}')" title="Compartir">
+            <i class="fa-solid fa-share-nodes"></i>
+          </button>
+
+          ${compDeleteBtn(item)}
+        </div>
+      </article>
+    `;
+  }
+
+  const card = window.panelImagenRenderCardHTML(
+    {
+      ...item,
+      id: item.id || item._compId || compKeyItem(item),
+      url
+    },
+    {
+      idPrefix: "compImg_",
+      mostrarDescargar: true,
+      mostrarCompartir: true,
+      mostrarEliminar: false,
+      extraFinal: compDeleteBtn(item)
+    }
+  );
+
   return `
-    <article class="comp-post">
+    <article class="comp-post comp-post--imagen comp-post--reutilizada">
       <div class="comp-post-head">
         <div class="comp-avatar">
           <i class="fa-solid fa-image"></i>
@@ -797,26 +906,14 @@ function compRenderImagen(item) {
         </div>
       </div>
 
-      <div class="comp-post-media" onclick="compAbrirMedia('${compJs(url)}', 'imagen', '${compJs(tituloBase)}')" role="button">
-        ${url
-          ? `<img src="${compEscape(url)}" alt="${titulo}" loading="lazy">`
-          : `<div class="comp-post-empty">Sin imagen</div>`
-        }
+      <div
+        class="comp-card-click-wrap"
+        onclick="if(event.target.closest('button,audio,video,input,textarea,select')) return; compAbrirMedia('${compJs(url)}', 'imagen', '${compJs(tituloBase)}')"
+      >
+        ${card}
       </div>
 
       ${textoLibre ? `<div class="comp-post-note-text">${compEscape(textoLibre)}</div>` : ``}
-
-      <div class="comp-post-actions">
-        <button type="button" onclick="descargarImagenPanel('${compJs(url)}')" title="Descargar">
-          <i class="fa-solid fa-download"></i>
-        </button>
-
-        <button type="button" onclick="compartirImagenPanel('${compJs(url)}')" title="Compartir">
-          <i class="fa-solid fa-share-nodes"></i>
-        </button>
-
-        ${compDeleteBtn(item)}
-      </div>
     </article>
   `;
 }
@@ -826,7 +923,7 @@ function compRenderNota(item) {
   const texto = compEscape(item.texto || item.nota || item.textoLibre || "");
 
   return `
-    <article class="comp-post">
+    <article class="comp-post comp-post--nota">
       <div class="comp-post-head">
         <div class="comp-avatar">
           <i class="fa-solid fa-comment-dots"></i>
@@ -839,19 +936,142 @@ function compRenderNota(item) {
       </div>
 
       <div class="comp-post-note-block">${texto}</div>
+
+      ${compDeleteBtn(item)}
     </article>
+  `;
+}
+
+function compColorContraste(hex = "#ffffff") {
+  let h = String(hex || "#ffffff").trim();
+
+  if (h.startsWith("rgb")) {
+    const nums = h.match(/\d+/g)?.map(Number) || [255, 255, 255];
+    const lum = 0.299 * nums[0] + 0.587 * nums[1] + 0.114 * nums[2];
+    return lum > 160 ? "#000000" : "#ffffff";
+  }
+
+  h = h.replace("#", "");
+
+  if (h.length === 3) {
+    h = h.split("").map(x => x + x).join("");
+  }
+
+  const r = parseInt(h.slice(0, 2), 16) || 255;
+  const g = parseInt(h.slice(2, 4), 16) || 255;
+  const b = parseInt(h.slice(4, 6), 16) || 255;
+
+  const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+  return lum > 160 ? "#000000" : "#ffffff";
+}
+
+function compRenderOracionesDevocionalHTML(item) {
+  const oraciones = compDevOracionesVisibles(item.uidOwner, item.tsKey);
+
+  if (!oraciones.length) return "";
+
+  return `
+    <div class="comp-dev-oraciones-wrap">
+      <div class="comp-dev-oraciones-titulo">🙏 Oraciones</div>
+
+      <div class="comp-dev-oraciones-lista">
+        ${oraciones.map(o => {
+          const fondo = o.color || "#f5f5f5";
+          const colorTexto = compColorContraste(fondo);
+          const autor = (compUidActual() && o.autorUid === compUidActual()) ? "Tú" : "Anónimo";
+          const fechaTxt = o.fecha
+            ? new Date(o.fecha).toLocaleDateString("es-AR", {
+                day: "2-digit",
+                month: "2-digit",
+                year: "2-digit"
+              })
+            : "";
+
+          return `
+            <div class="comp-dev-oracion" style="background:${compEscape(fondo)}; color:${colorTexto};">
+              <div class="comp-dev-oracion-top">
+                <span>${compEscape(autor)}</span>
+                <span>${compEscape(fechaTxt)}</span>
+              </div>
+
+              <div class="comp-dev-oracion-texto">${compEscape(o.texto || "")}</div>
+            </div>
+          `;
+        }).join("")}
+      </div>
+    </div>
   `;
 }
 
 function compRenderDevocional(item) {
   const titulo = compEscape(compItemTitulo(item));
+  const fecha = compEscape(compItemFecha(item));
   const url = item.url || "";
-  const audioUrl = item.audioGithubUrl || item.audioUrl || "";
-  const oraciones = compDevOracionesVisibles(item.uidOwner, item.tsKey);
   const fileName = compFileName(url, "devocional.png");
 
+  if (typeof window.devRenderDevocionalCardHTML !== "function") {
+    return `
+      <article class="comp-post comp-post--devocional">
+        <div class="comp-post-head">
+          <div class="comp-avatar">
+            <i class="fa-solid fa-book-bible"></i>
+          </div>
+
+          <div>
+            <div class="comp-post-title">${titulo}</div>
+            <div class="comp-post-meta">Devocional${fecha ? " · " + fecha : ""}</div>
+          </div>
+        </div>
+
+        <div class="comp-post-media" onclick="compAbrirMedia('${compJs(url)}', 'imagen')" role="button">
+          ${url
+            ? `<img src="${compEscape(url)}" alt="${titulo}" loading="lazy">`
+            : `<div class="comp-post-empty">Sin imagen</div>`
+          }
+        </div>
+
+        ${compRenderOracionesDevocionalHTML(item)}
+
+        <div class="comp-post-actions">
+          <button type="button"
+            onclick="devCompartirImagenItem('${compJs(url)}', '${compJs(fileName)}')"
+            title="Compartir">
+            <i class="fa-solid fa-share-nodes"></i>
+          </button>
+
+          <button type="button"
+            onclick="devDescargarImagenItem('${compJs(url)}', '${compJs(fileName)}')"
+            title="Descargar">
+            <i class="fa-solid fa-download"></i>
+          </button>
+
+          ${compDeleteBtn(item)}
+        </div>
+      </article>
+    `;
+  }
+
+  const card = window.devRenderDevocionalCardHTML(item, {
+    idPrefix: "compDev_",
+    mostrarBorrar: false,
+    mostrarOracion: true,
+
+    // ✅ No mostramos receipt porque las oraciones van debajo.
+    mostrarListaOraciones: false,
+
+    mostrarGuardar: true,
+    mostrarCompartir: true,
+    mostrarDescargar: true,
+
+    // ✅ Las oraciones quedan debajo del audio, dentro de la card real.
+    extraDespuesAudio: compRenderOracionesDevocionalHTML(item),
+
+    // ✅ Delete de Compartidos, no borra el devocional original.
+    extraFinal: compDeleteBtn(item)
+  });
+
   return `
-    <article class="comp-post">
+    <article class="comp-post comp-post--devocional comp-post--reutilizada">
       <div class="comp-post-head">
         <div class="comp-avatar">
           <i class="fa-solid fa-book-bible"></i>
@@ -859,168 +1079,124 @@ function compRenderDevocional(item) {
 
         <div>
           <div class="comp-post-title">${titulo}</div>
-          <div class="comp-post-meta">Devocional · ${compEscape(compItemFecha(item))}</div>
+          <div class="comp-post-meta">Devocional${fecha ? " · " + fecha : ""}</div>
         </div>
       </div>
 
-      <div class="comp-post-media" onclick="compAbrirMedia('${compJs(url)}', 'imagen')" role="button">
-        ${url
-          ? `<img src="${compEscape(url)}" alt="${titulo}" loading="lazy">`
-          : `<div class="comp-post-empty">Sin imagen</div>`
-        }
-      </div>
-
-      ${audioUrl ? `
-        <div class="comp-audio-wrap">
-          <audio controls preload="metadata" style="width:100%;">
-            <source src="${compEscape(audioUrl)}" type="audio/mpeg">
-          </audio>
-        </div>
-      ` : ``}
-
-      ${oraciones.length ? `
-        <div class="comp-dev-oraciones-wrap">
-          <div class="comp-dev-oraciones-titulo">🙏 Oraciones</div>
-          <div class="comp-dev-oraciones-lista">
-            ${oraciones.map(o => {
-              const fondo = o.color || "#f5f5f5";
-              const autor = (compUidActual() && o.autorUid === compUidActual()) ? "Tú" : "Anónimo";
-              const fechaTxt = o.fecha
-                ? new Date(o.fecha).toLocaleDateString("es-AR", { day:"2-digit", month:"2-digit", year:"2-digit" })
-                : "";
-
-              return `
-                <div class="comp-dev-oracion" style="background:${compEscape(fondo)};">
-                  <div class="comp-dev-oracion-top">
-                    <span>${compEscape(autor)}</span>
-                    <span>${compEscape(fechaTxt)}</span>
-                  </div>
-                  <div class="comp-dev-oracion-texto">${compEscape(o.texto || "")}</div>
-                </div>
-              `;
-            }).join("")}
-          </div>
-        </div>
-      ` : ``}
-
-      <div class="comp-post-actions">
-        <button type="button"
-          onclick="devCompartirImagenItem('${compJs(url)}', '${compJs(fileName)}')"
-          title="Compartir">
-          <i class="fa-solid fa-share-nodes"></i>
-        </button>
-
-        <button type="button"
-          onclick="devDescargarDevocionalItem('${compJs(url)}', '${compJs(fileName)}', '${compJs(audioUrl)}', 'Audio_devocional')"
-          title="Descargar">
-          <i class="fa-solid fa-download"></i>
-        </button>
-        ${compDeleteBtn(item)}
+      <div
+        class="comp-card-click-wrap"
+        onclick="if(event.target.closest('button,audio,video,input,textarea,select')) return; compAbrirMedia('${compJs(url)}', 'imagen', '${compJs(titulo)}')"
+      >
+        ${card}
       </div>
     </article>
   `;
 }
 
-function compRenderPredicaPreview(item) {
-  const intro = String(item.predicaIntroduccion || item.introduccionPredica || "").trim();
-  const notaFinal = String(item.predicaNotaFinal || item.notaFinalGeneral || "").trim();
-  const citas = Array.isArray(item.predicaCitas) ? item.predicaCitas.slice(0, 4) : [];
+function compActivarBotonesSubidosRenderizados(items = []) {
+  items
+    .filter(it => it?.tipo === "subido")
+    .forEach(it => {
+      const id = String(it._subidoId || it.id || "").trim();
+      if (!id) return;
 
-  return `
-    <div class="comp-predica-card" onclick="abrirSubidosVisorPredica('${compJs(item._subidoId || "")}', 'all')" role="button">
-      ${intro ? `<div class="comp-predica-intro">${compEscape(intro)}</div>` : ``}
-
-      <div class="comp-predica-citas">
-        ${citas.map(c => `
-          <div class="comp-predica-cita">
-            <div class="comp-predica-ref">${compEscape(c.referencia || "")}</div>
-            ${c.texto ? `<div class="comp-predica-texto">${compEscape(c.texto)}</div>` : ``}
-            ${c.comentario ? `<div class="comp-predica-comentario">⪦ ${compEscape(c.comentario)}</div>` : ``}
-          </div>
-        `).join("")}
-      </div>
-
-      ${notaFinal ? `<div class="comp-predica-final">${compEscape(notaFinal)}</div>` : ``}
-    </div>
-  `;
+      document
+        .querySelectorAll(`[data-subidos-download="${CSS.escape(id)}"], [data-subidos-share="${CSS.escape(id)}"]`)
+        .forEach(btn => {
+          btn.disabled = false;
+          btn.style.opacity = "";
+          btn.style.cursor = "";
+          btn.title = btn.dataset.subidosDownload ? "Descargar" : "Compartir";
+        });
+    });
 }
 
 function compRenderSubido(item) {
-  const titulo = compEscape(compItemTitulo(item));
-  const fechaTxt = item.fechaEvento
-    ? new Date(item.fechaEvento + "T00:00:00").toLocaleDateString("es-AR")
-    : compItemFecha(item);
+  const subidoId = String(item._subidoId || item.id || "").replace(/^sub_/, "");
 
-  const url = item.url || "";
-  const esPredica = compEsPredica(item);
-  const esVideo = compEsVideoUrl(url, item.mimeType || "");
-  const esImagen = compEsImageUrl(url, item.mimeType || "");
+  if (typeof window.subidosRenderCardHTML !== "function") {
+    const titulo = compEscape(compItemTitulo(item));
+    const url = item.url || "";
+    const esVideo = compEsVideoUrl(url, item.mimeType || "");
+    const esImagen = compEsImageUrl(url, item.mimeType || "");
 
-  return `
-    <article class="comp-post">
-      <div class="comp-post-head">
-        <div class="comp-avatar">
-          <i class="fa-solid fa-cloud-arrow-up"></i>
+    return `
+      <article class="comp-post comp-post--subido">
+        <div class="comp-post-head">
+          <div class="comp-avatar">
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+          </div>
+
+          <div>
+            <div class="comp-post-title">${titulo}</div>
+            <div class="comp-post-meta">Subido · ${compEscape(item.etiqueta || "Subido")}</div>
+          </div>
         </div>
 
-        <div>
-          <div class="comp-post-title">${titulo}</div>
-          <div class="comp-post-meta">Subido · ${compEscape(item.etiqueta || "Subido")} · ${compEscape(fechaTxt || "")}</div>
-        </div>
-      </div>
-
-      ${
-        esPredica
-          ? `
-            ${url ? `
-              <div class="comp-predica-archivo-previo" onclick="abrirSubidosVisorPredica('${compJs(item._subidoId || "")}', 'all')" role="button">
-                ${
-                  esImagen
-                    ? `<img src="${compEscape(url)}" alt="${titulo}" loading="lazy">`
-                    : esVideo
-                      ? `<video preload="metadata" muted playsinline><source src="${compEscape(url)}"></video>`
-                      : `<div class="comp-post-file"><i class="fa-solid fa-file-lines"></i><span>Archivo de la prédica</span></div>`
-                }
+        ${
+          esImagen
+            ? `
+              <div class="comp-post-media" onclick="compAbrirMedia('${compJs(url)}', 'imagen')" role="button">
+                <img src="${compEscape(url)}" alt="${titulo}" loading="lazy">
               </div>
-            ` : ``}
-
-            ${compRenderPredicaPreview(item)}
-          `
-          : (
-            esImagen
+            `
+            : esVideo
               ? `
-                <div class="comp-post-media" onclick="abrirSubidosVisorArchivo('${compJs(item._subidoId || "")}')" role="button">
-                  <img src="${compEscape(url)}" alt="${titulo}" loading="lazy">
+                <div class="comp-post-video" onclick="compAbrirMedia('${compJs(url)}', 'video')" role="button">
+                  <video preload="metadata" muted playsinline>
+                    <source src="${compEscape(url)}">
+                  </video>
                 </div>
               `
-              : esVideo
-                ? `
-                  <div class="comp-post-video" onclick="abrirSubidosVisorArchivo('${compJs(item._subidoId || "")}')" role="button">
-                    <video preload="metadata" muted playsinline>
-                      <source src="${compEscape(url)}">
-                    </video>
-                  </div>
-                `
-                : `
-                  <div class="comp-post-file" onclick="abrirSubidosVisorArchivo('${compJs(item._subidoId || "")}')" role="button">
-                    <i class="fa-solid fa-file-arrow-down"></i>
-                    <span>Abrir archivo</span>
-                  </div>
-                `
-          )
-      }
+              : `
+                <div class="comp-post-file" onclick="abrirSubidosVisorArchivo('${compJs(subidoId)}')" role="button">
+                  <i class="fa-solid fa-file-arrow-down"></i>
+                  <span>Abrir archivo</span>
+                </div>
+              `
+        }
 
-      <div class="comp-post-actions">
-        <button type="button" onclick="compartirSubido('${compJs(item._subidoId || "")}')" title="Compartir">
-          <i class="fa-solid fa-share-nodes"></i>
-        </button>
+        <div class="comp-post-actions">
+          <button type="button" onclick="compartirSubido('${compJs(subidoId)}')" title="Compartir">
+            <i class="fa-solid fa-share-nodes"></i>
+          </button>
 
-        <button type="button" onclick="descargarSubido('${compJs(item._subidoId || "")}')" title="Descargar">
-          <i class="fa-solid fa-download"></i>
-        </button>
+          <button type="button" onclick="descargarSubido('${compJs(subidoId)}')" title="Descargar">
+            <i class="fa-solid fa-download"></i>
+          </button>
 
-        ${compDeleteBtn(item)}
-      </div>
+          ${compDeleteBtn(item)}
+        </div>
+      </article>
+    `;
+  }
+
+  const card = window.subidosRenderCardHTML(
+    {
+      ...item,
+
+      // ✅ IMPORTANTÍSIMO:
+      // Subidos necesita el ID original, no "sub_xxx".
+      id: subidoId
+    },
+    {
+      idPrefix: "compSubido_",
+      mostrarEditar: false,
+
+      // ✅ No borrar original desde Compartidos.
+      mostrarBorrarOriginal: false,
+
+      // ✅ Conservamos acciones reales de Subidos.
+      mostrarAccionesArchivo: true,
+
+      // ✅ Delete de Compartidos, no borra Subidos.
+      borrarHtml: compDeleteBtn(item)
+    }
+  );
+
+  return `
+    <article class="comp-post comp-post--subido comp-post--reutilizada">
+      ${card}
     </article>
   `;
 }
@@ -1169,6 +1345,10 @@ window.renderCompartidos = function renderCompartidos() {
     if (item.tipo === "subido") return compRenderSubido(item);
     return "";
   }).join("");
+
+  // ✅ Subidos genera botones preparados para su feed.
+  // En Compartidos los activamos después de renderizar.
+  compActivarBotonesSubidosRenderizados(items);
 };
 
 setTimeout(() => {
