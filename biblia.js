@@ -539,10 +539,16 @@ await cargarFondosFirebaseUsuario();
   });
 
   // ✅ admin
-  onValue(ref(db, "admins/" + uid), (s) => {
-    window.__ES_ADMIN = !!s.val();
-    actualizarPermisosUI();
-  });
+onValue(ref(db, "admins/" + uid), (s) => {
+  window.__ES_ADMIN = !!s.val();
+  actualizarPermisosUI();
+
+  // ✅ si Compartidos ya se pintó antes de cargar permisos,
+  // lo volvemos a pintar para que aparezcan los deletes de admin
+  if (typeof window.renderCompartidos === "function") {
+    window.renderCompartidos();
+  }
+});
 
   // ✅ colaborador
   onValue(ref(db, "colaboradores/" + uid), (s) => {
