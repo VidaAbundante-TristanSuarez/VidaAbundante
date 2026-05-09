@@ -1015,4 +1015,75 @@ body.en-compartidos .comp-post--imagen .devBigCard img{
   }
 }
 
+/* ✅ Mi Panel / Compartidos: acciones debajo de la imagen, no encima */
+.devBigCard .devBigActions{
+  position: static !important;
+  transform: none !important;
+  margin: 10px 0 12px !important;
+  padding: 0 12px !important;
+
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 14px !important;
+  flex-wrap: wrap !important;
+}
+
+/* ✅ Botones redonditos reales */
+.devBigCard .devBigActions .btn-primary,
+.devBigCard .devBigActions button{
+  width: 42px !important;
+  height: 42px !important;
+  min-width: 42px !important;
+  min-height: 42px !important;
+  max-width: 42px !important;
+  max-height: 42px !important;
+
+  padding: 0 !important;
+  border-radius: 999px !important;
+
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  background: var(--ui-azul-claro, #d1eeff) !important;
+  color: #000 !important;
+  line-height: 1 !important;
+}
+
+/* ✅ Iconos centrados */
+.devBigCard .devBigActions button i{
+  color: #000 !important;
+  font-size: 16px !important;
+  line-height: 1 !important;
+}
+
+/* ✅ Audio prolijo */
+.devBigAudioBox{
+  padding: 9px 12px 0 !important;
+  box-sizing: border-box !important;
+}
+
+.devBigAudioBox audio{
+  width: 100% !important;
+  display: block !important;
+}
+
+/* ✅ En Compartidos, que no se encimen en celular */
+@media (max-width: 700px){
+  body.en-compartidos .comp-post--imagen .devBigCard .devBigActions{
+    gap: 12px !important;
+    margin-top: 9px !important;
+    margin-bottom: 13px !important;
+    padding: 0 10px !important;
+  }
+
+  body.en-compartidos .comp-post--imagen .devBigCard .devBigActions button{
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    min-height: 40px !important;
+  }
+}
+
 </style>
