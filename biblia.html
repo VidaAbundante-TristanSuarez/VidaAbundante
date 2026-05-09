@@ -28,7 +28,7 @@
 </head>
   
 <!-- =================================================== 🏩 =================================================== -->
-  <body class="en-iglesia">
+ <body class="en-compartidos">
 <!-- ================= HEADER ================= -->
 <div id="header">
 
@@ -39,6 +39,11 @@
 <!-- Botón menú sesión -->
 <button type="button" id="btnMenuSesion" class="nav-btn menu-sesion-btn" onclick="toggleMenuSesion()">
   <i class="fa-solid fa-ellipsis-vertical"></i>
+</button>
+
+ <button class="nav-btn solo-icono-movil" onclick="irA('compartidos')">
+  <i class="fa-solid fa-icons"></i>
+  <span class="text">Compartidos</span>
 </button>
 
   <button class="nav-btn" onclick="irA('iglesia')">
@@ -56,10 +61,6 @@
     <span class="text">Mi Panel</span>
   </button>
 
-<button class="nav-btn solo-icono-movil" onclick="irA('compartidos')">
-  <i class="fa-solid fa-icons"></i>
-  <span class="text">Compartidos</span>
-</button>
 </div>
 
 <!-- Botón tema -->
@@ -225,7 +226,7 @@
 </div>
 
 <!-- ================= IGLESIA ================= -->
-<div id="seccion-iglesia" class="seccion">
+<div id="seccion-iglesia" class="seccion" style="display:none">
  <div id="fondoIglesia"></div>
 
   <!-- Sub menú dentro de Iglesia -->
@@ -504,7 +505,7 @@
 </div>
    
 <!-- ================= COMPARTIDOS ================= -->
-<div id="seccion-compartidos" class="seccion" style="display:none">
+<div id="seccion-compartidos" class="seccion" style="display:block">
   <div id="fondoCompartidos"></div>
 
   <div class="panel-tabs">
