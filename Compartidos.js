@@ -957,6 +957,169 @@ function compRangoVersiculos(nums = []) {
   return partes.join(",");
 }
 
+function compReferenciaItem(item = {}) {
+  const directo = String(
+    item.ref ||
+    item.referencia ||
+    item.cita ||
+    item.versiculoRef ||
+    item.refCompleta ||
+    item.referenciaBiblica ||
+    ""
+  ).trim();
+
+  if (directo && directo.toLowerCase() !== "compartido") return directo;
+
+  const libro = String(item.libro || "").trim();
+  const capitulo = Number(item.capitulo || 0);
+  const versiculos = Array.isArray(item.versiculos) ? item.versiculos : [];
+
+  if (libro && capitulo && versiculos.length) {
+    return `${libro} ${capitulo}:${compRangoVersiculos(versiculos)}`;
+  }
+
+  if (libro && capitulo) {
+    return `${libro} ${capitulo}`;
+  }
+
+  return "";
+}
+
+function compTituloImagen(item = {}) {
+  return compReferenciaItem(item) || "Compartido";
+}
+
+function compTituloNota(item = {}) {
+  return compReferenciaItem(item) || String(item.titulo || item.title || "Nota").trim();
+}
+
+function compNotaFondo(item = {}) {
+  return String(
+    item.color ||
+    item.fondo ||
+    item.fondoColor ||
+    item.highlightColor ||
+    item.resaltadoColor ||
+    item.colorNota ||
+    "#fff4b8"
+  ).trim();
+}
+
+function compImagenKey(item = {}) {
+  return compKeyItem(item);
+}
+
+function compDevKey(item = {}) {
+  return [
+    item.uidOwner || "",
+    item.tsKey || "",
+    item.url || item.imagenUrl || ""
+  ].join("__").replace(/[.#$/\[\]]/g, "_");
+}
+
+window.compGuardarImagenCompartidaEnMiPanel = async function compGuardarImagenCompartidaEnMiPanel(key) {
+  const db = compDB();
+  const uid = compUidActual();
+
+  if (!db || !uid) {
+    alert("Tenés que estar logueado.");
+    return;
+  }
+
+  const item = compUnificarItems().find(x => x.tipo === "imagen" && compImagenKey(x) === key);
+
+  if (!item) {
+    alert("No encontré esa imagen.");
+    return;
+  }
+
+  const ts = Date.now();
+  const url = item.url || item.imagenUrl || "";
+
+  try {
+    await set(ref(db, `panelImagenesPersonal/${uid}/${ts}`), {
+      url,
+      fecha: ts,
+      uid,
+      tipo: "imagen",
+      libro: item.libro || "",
+      capitulo: Number(item.capitulo || 0),
+      versiculos: Array.isArray(item.versiculos) ? item.versiculos : [],
+      ref: compReferenciaItem(item),
+      origen: "compartidos",
+      tipoTexto: item.tipoTexto || "biblia",
+      textoLibre: item.textoLibre || item.texto || ""
+    });
+
+    document.querySelectorAll("[data-comp-img-save]").forEach(btn => {
+      if (btn.dataset.compImgSave === key) {
+        btn.innerHTML = `<i class="fa-solid fa-heart-circle-check"></i>`;
+        btn.classList.add("guardado", "activo");
+        btn.title = "Guardado en Mi Panel";
+      }
+    });
+
+    if (typeof mostrarToast === "function") mostrarToast("💙 Guardado en Mi Panel");
+    else alert("Guardado en Mi Panel.");
+
+  } catch (e) {
+    console.error(e);
+    alert("No pude guardar la imagen en Mi Panel.");
+  }
+};
+
+window.compGuardarDevocionalCompartidoEnMiPanel = async function compGuardarDevocionalCompartidoEnMiPanel(key) {
+  const db = compDB();
+  const uid = compUidActual();
+
+  if (!db || !uid) {
+    alert("Tenés que estar logueado.");
+    return;
+  }
+
+  const item = compUnificarItems().find(x => x.tipo === "devocional" && compDevKey(x) === key);
+
+  if (!item) {
+    alert("No encontré ese devocional.");
+    return;
+  }
+
+  const ts = Date.now();
+  const url = item.url || item.imagenUrl || "";
+
+  try {
+    await set(ref(db, `panelImagenesPersonal/${uid}/${ts}`), {
+      url,
+      fecha: ts,
+      origen: "devocional_publicado",
+      tipoTexto: "devocional",
+      textoLibre: item.texto || item.textoLibre || "",
+      audioOk: !!(item.audioOk || item.audioGithubUrl || item.audioUrl),
+      audioGithubUrl: item.audioGithubUrl || item.audioUrl || "",
+      cita: item.cita || "",
+      versiculo: item.versiculo || "",
+      devocionalKey: key,
+      sourceUid: item.uidOwner || "",
+      sourceTs: item.tsKey || 0
+    });
+
+    document.querySelectorAll("[data-comp-dev-save]").forEach(btn => {
+      if (btn.dataset.compDevSave === key) {
+        btn.innerHTML = `<i class="fa-solid fa-heart-circle-check"></i>`;
+        btn.classList.add("guardado", "activo");
+        btn.title = "Guardado en Mi Panel";
+      }
+    });
+
+    if (typeof mostrarToast === "function") mostrarToast("💙 Guardado en Mi Panel");
+    else alert("Guardado en Mi Panel.");
+
+  } catch (e) {
+    console.error(e);
+    alert("No pude guardar el devocional en Mi Panel.");
+  }
+};
+
 function compRenderImagen(item) {
   const url = item.url || item.imagenUrl || "";
   const tituloBase = compTituloImagen(item);
@@ -964,18 +1127,17 @@ function compRenderImagen(item) {
   const textoLibre = String(item.textoLibre || "").trim();
   const key = compImagenKey(item);
 
-  const accionesExtra = `
-    <div class="comp-post-actions comp-post-actions--imagen-extra">
-      <button
-        type="button"
-        onclick="compGuardarImagenCompartidaEnMiPanel('${compJs(key)}')"
-        title="Guardar en Mi Panel"
-      >
-        <i class="fa-solid fa-heart-circle-plus"></i>
-      </button>
-
-      ${compDeleteBtn(item)}
-    </div>
+  const guardarBtn = `
+    <button
+      class="btn-primary"
+      type="button"
+      data-comp-img-save="${compEscape(key)}"
+      onclick="compGuardarImagenCompartidaEnMiPanel('${compJs(key)}')"
+      aria-label="Guardar en Mi Panel"
+      title="Guardar en Mi Panel"
+    >
+      <i class="fa-solid fa-heart-circle-plus"></i>
+    </button>
   `;
 
   if (typeof window.panelImagenRenderCardHTML !== "function") {
@@ -1009,9 +1171,11 @@ function compRenderImagen(item) {
           <button type="button" onclick="compartirImagenPanel('${compJs(url)}')" title="Compartir">
             <i class="fa-solid fa-share-nodes"></i>
           </button>
+
+          ${guardarBtn}
         </div>
 
-        ${accionesExtra}
+        ${compDeleteBtn(item)}
       </article>
     `;
   }
@@ -1027,7 +1191,9 @@ function compRenderImagen(item) {
       mostrarDescargar: true,
       mostrarCompartir: true,
       mostrarEliminar: false,
-      extraFinal: ""
+
+      // ✅ guardar queda en la misma línea que descargar/compartir
+      extraAcciones: guardarBtn
     }
   );
 
@@ -1053,16 +1219,18 @@ function compRenderImagen(item) {
 
       ${textoLibre ? `<div class="comp-post-note-text">${compEscape(textoLibre)}</div>` : ``}
 
-      ${accionesExtra}
+      ${compDeleteBtn(item)}
     </article>
   `;
 }
 
 function compRenderNota(item) {
-  const titulo = compEscape(compItemTitulo(item));
+  const titulo = compEscape(compTituloNota(item));
   const texto = compEscape(item.texto || item.nota || item.textoLibre || "");
   const fondo = compNotaFondo(item);
-  const colorTexto = compColorContraste(fondo);
+  const colorTexto = typeof compColorContraste === "function"
+    ? compColorContraste(fondo)
+    : "#000";
 
   return `
     <article class="comp-post comp-post--nota">
@@ -1149,15 +1317,26 @@ function compRenderOracionesDevocionalHTML(item) {
 }
 
 function compRenderDevocional(item) {
-  const devItem = compRegistrarDevocionalParaAcciones(item);
-
-  const tituloTxt = compItemTitulo(devItem);
-  const titulo = compEscape(tituloTxt);
-  const fecha = compEscape(compItemFecha(devItem));
-  const url = devItem.url || "";
+  const titulo = compEscape(compItemTitulo(item));
+  const fecha = compEscape(compItemFecha(item));
+  const url = item.url || item.imagenUrl || "";
   const fileName = compFileName(url, "devocional.png");
+  const key = compDevKey(item);
 
-  const oracionesHTML = compRenderOracionesDevocionalHTML(devItem);
+  const oracionesHTML = compRenderOracionesDevocionalHTML(item);
+
+  const guardarBtn = `
+    <button
+      class="btn-primary"
+      type="button"
+      data-comp-dev-save="${compEscape(key)}"
+      onclick="compGuardarDevocionalCompartidoEnMiPanel('${compJs(key)}')"
+      aria-label="Guardar en Mi Panel"
+      title="Guardar en Mi Panel"
+    >
+      <i class="fa-solid fa-heart-circle-plus"></i>
+    </button>
+  `;
 
   if (typeof window.devRenderDevocionalCardHTML !== "function") {
     return `
@@ -1182,16 +1361,12 @@ function compRenderDevocional(item) {
 
         <div class="comp-post-actions">
           <button type="button"
-            onclick="devAbrirModalOracion('${compJs(devItem.uidOwner)}', ${Number(devItem.tsKey || 0)})"
+            onclick="devAbrirModalOracion('${compJs(item.uidOwner || "")}', ${Number(item.tsKey || 0)})"
             title="Dejar oración">
             <i class="fa-solid fa-hands-praying"></i>
           </button>
 
-          <button type="button"
-            onclick="devGuardarPublicadoEnMiPanel('${compJs(devItem.id)}')"
-            title="Guardar en Mi Panel">
-            <i class="fa-solid fa-heart-circle-plus"></i>
-          </button>
+          ${guardarBtn}
 
           <button type="button"
             onclick="devCompartirImagenItem('${compJs(url)}', '${compJs(fileName)}')"
@@ -1207,19 +1382,26 @@ function compRenderDevocional(item) {
         </div>
 
         ${oracionesHTML}
-        ${compDeleteBtn(devItem)}
+        ${compDeleteBtn(item)}
       </article>
     `;
   }
 
-  const card = window.devRenderDevocionalCardHTML(devItem, {
+  const card = window.devRenderDevocionalCardHTML(item, {
     idPrefix: "compDev_",
     mostrarBorrar: false,
     mostrarOracion: true,
     mostrarListaOraciones: false,
-    mostrarGuardar: true,
+
+    // ✅ apagamos el guardar interno de devocionales.js
+    // porque ese buscaba en __DEV_ITEMS_PUBLICADOS y daba “No encontré ese devocional”
+    mostrarGuardar: false,
+
     mostrarCompartir: true,
-    mostrarDescargar: true
+    mostrarDescargar: true,
+
+    // ✅ agregamos el guardar propio de Compartidos dentro de la misma línea de acciones
+    extraAcciones: guardarBtn
   });
 
   return `
@@ -1240,7 +1422,7 @@ function compRenderDevocional(item) {
       </div>
 
       ${oracionesHTML}
-      ${compDeleteBtn(devItem)}
+      ${compDeleteBtn(item)}
     </article>
   `;
 }
