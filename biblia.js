@@ -3311,11 +3311,13 @@ window.cancelarCrearImagen = () => {
 };
 
 // ================= ✅ FINALIZAR EDICIÓN (CONFIRMAR) =================
+// ================= ✅ FINALIZAR EDICIÓN (CONFIRMAR) =================
 window.finalizarEdicion = async (ev) => {
   if (window.__FINALIZANDO__) return;
   window.__FINALIZANDO__ = true;
 
   const btn = ev?.currentTarget;
+
   if (btn) {
     btn.disabled = true;
     btn.innerHTML = `<i class="fa-solid fa-circle-check"></i>`;
@@ -3328,6 +3330,23 @@ window.finalizarEdicion = async (ev) => {
       devToast("⏳ Guardando imagen...");
     }
 
+    // ✅ CLAVE: si hay audio confirmado, subirlo ANTES de guardar la imagen
+    if (window.__pendingAudio?.audioBase64) {
+      if (typeof devToast === "function") {
+        devToast("⏳ Subiendo audio...");
+      }
+
+      try {
+        await window.subirPendingAudioAFirebase({ subirIglesia: false });
+        console.log("✅ Audio subido y listo para unir a la imagen:", window.__lastAudioUrl);
+      } catch (e) {
+        console.error("❌ Error subiendo audio:", e);
+        alert("No se pudo subir el audio. Probá generar la previa otra vez.");
+        return;
+      }
+    }
+
+    // ✅ ahora sí: guarda imagen + toma window.__lastAudioUrl
     const ok = await withRenderLock(async () => {
       return await asegurarCanvasFinal({ subir: true });
     });
@@ -3340,9 +3359,11 @@ window.finalizarEdicion = async (ev) => {
 
     resetModalPersonalizar();
     salirModoImagen();
+
   } catch (e) {
     console.error(e);
     alert("❌ Error al guardar\n\n" + (e?.message || e));
+
   } finally {
     window.__FINALIZANDO__ = false;
 
