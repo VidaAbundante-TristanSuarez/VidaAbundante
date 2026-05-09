@@ -8,6 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ✅ URL Cloud Function
   const AUDIO_WEBAPP_URL = "https://us-central1-vidaabundante-f118a.cloudfunctions.net/ttsAudio";
+  const AUDIO_R2_UPLOAD_URL = "https://us-central1-vidaabundante-f118a.cloudfunctions.net/subirImagenR2";
 
   // ✅ Fonética (no pisa si ya existe)
   window.__FONETICA = window.__FONETICA || {};
@@ -140,42 +141,60 @@ document.addEventListener("DOMContentLoaded", () => {
   window.__lastAudioUrl = "";
   window.__lastAudioTs  = 0;
 
-  window.subirPendingAudioAFirebase = async ({ subirIglesia = false } = {}) => {
-    if (!window.__UID) throw new Error("No hay uid");
+window.subirPendingAudioAFirebase = async ({ subirIglesia = false } = {}) => {
+  if (!window.__UID) throw new Error("No hay uid");
 
-    const p = window.__pendingAudio;
-    if (!p?.audioBase64) throw new Error("No hay audio pendiente");
+  const p = window.__pendingAudio;
+  if (!p?.audioBase64) throw new Error("No hay audio pendiente");
 
-    const { db, storage } = window.__FB || {};
-    const { ref, set, sRef, uploadBytes, getDownloadURL } = window.__FB_API || {};
-    if (!db || !storage || !ref || !set || !sRef || !uploadBytes || !getDownloadURL) {
-      throw new Error("Firebase no está listo (cargá biblia.js antes de biblia.audio.js)");
-    }
+  const { db } = window.__FB || {};
+  const { ref, set } = window.__FB_API || {};
 
-    const bytes = Uint8Array.from(atob(p.audioBase64), c => c.charCodeAt(0));
-    const blob = new Blob([bytes], { type: "audio/mpeg" });
+  if (!db || !ref || !set) {
+    throw new Error("Firebase no está listo para guardar la referencia del audio.");
+  }
 
-    const ts = p.ts || Date.now();
-    const fileName = `audio_${ts}.mp3`;
+  const ts = p.ts || Date.now();
+  const fileName = `audio_biblia_${ts}.mp3`;
 
-    const storagePath = subirIglesia
-      ? `audios_iglesia/${window.__UID}/${fileName}`
-      : `audios_personal/${window.__UID}/${fileName}`;
+  const r = await fetch(AUDIO_R2_UPLOAD_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      fileBase64: p.audioBase64,
+      fileName,
+      contentType: "audio/mpeg",
+      folder: subirIglesia ? "audios_iglesia" : "audios_biblia"
+    })
+  });
 
-    const storageRef = sRef(storage, storagePath);
-    await uploadBytes(storageRef, blob, { contentType: "audio/mpeg" });
-    const url = await getDownloadURL(storageRef);
+  const data = await r.json().catch(() => ({}));
 
-    const dbPath = subirIglesia
-      ? `panelAudiosIglesia/${window.__UID}/${ts}`
-      : `panelAudiosPersonal/${window.__UID}/${ts}`;
+  if (!r.ok || !data.url) {
+    throw new Error(data?.error || "No pude subir el audio a R2.");
+  }
 
-    await set(ref(db, dbPath), { url, storagePath, fecha: ts, origen: "biblia" });
+  const url = data.url;
 
-    window.__lastAudioUrl = url;
-    window.__lastAudioTs = ts;
+  const dbPath = subirIglesia
+    ? `panelAudiosIglesia/${window.__UID}/${ts}`
+    : `panelAudiosPersonal/${window.__UID}/${ts}`;
 
-    window.__pendingAudio = null;
-    return url;
-  };
+  await set(ref(db, dbPath), {
+    url,
+    fecha: ts,
+    origen: "biblia",
+    r2Key: data.key || "",
+    fileName: data.fileName || fileName,
+    texto: p.texto || ""
+  });
+
+  window.__lastAudioUrl = url;
+  window.__lastAudioTs = ts;
+  window.__lastAudioTexto = p.texto || "";
+
+  window.__pendingAudio = null;
+
+  return url;
+};
 });
