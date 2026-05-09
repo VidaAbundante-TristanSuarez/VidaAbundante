@@ -971,4 +971,48 @@ body.en-compartidos #compLista .comp-post{
   }
 }
 
+/* ✅ Audio en Mi Panel y Compartidos */
+.devBigAudioBox{
+  padding: 8px 10px 0;
+  box-sizing: border-box;
+}
+
+.devBigAudioBox audio{
+  width: 100%;
+  display: block;
+}
+
+/* ✅ Compartidos: imágenes de Mi Panel completas en celular */
+body.en-compartidos .comp-post--imagen .comp-card-click-wrap{
+  min-width: 0 !important;
+  overflow: visible !important;
+}
+
+body.en-compartidos .comp-post--imagen .devBigCard{
+  width: min(420px, 100%) !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+body.en-compartidos .comp-post--imagen .devBigCard img{
+  width: 100% !important;
+  height: auto !important;
+  max-width: 100% !important;
+  max-height: none !important;
+  object-fit: contain !important;
+  object-position: center !important;
+  display: block !important;
+}
+
+@media (max-width: 700px){
+  body.en-compartidos .comp-post--imagen .comp-card-click-wrap{
+    padding-left: 4px !important;
+    padding-right: 4px !important;
+  }
+
+  body.en-compartidos .comp-post--imagen .devBigCard{
+    width: min(340px, 100%) !important;
+  }
+}
+
 </style>
