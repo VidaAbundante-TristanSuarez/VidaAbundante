@@ -1142,9 +1142,190 @@ function compRenderImagen(item) {
   `;
 }
 
+function compNormalizarLibroNombre(txt = "") {
+  return String(txt || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+function compPrimerTextoValido(...vals) {
+  for (const v of vals) {
+    if (Array.isArray(v)) {
+      const txt = v
+        .map(x => typeof x === "object" ? (x?.texto || x?.text || x?.versiculo || "") : x)
+        .filter(Boolean)
+        .join(" ")
+        .trim();
+      if (txt) return txt;
+      continue;
+    }
+
+    if (v && typeof v === "object") {
+      const txt = Object.values(v)
+        .map(x => typeof x === "object" ? (x?.texto || x?.text || x?.versiculo || "") : x)
+        .filter(Boolean)
+        .join(" ")
+        .trim();
+      if (txt) return txt;
+      continue;
+    }
+
+    const txt = String(v || "").trim();
+    if (txt) return txt;
+  }
+
+  return "";
+}
+
+function compBuscarLibroEnBiblia(data, libro) {
+  if (!data || !libro) return null;
+
+  const objetivo = compNormalizarLibroNombre(libro);
+
+  if (!Array.isArray(data) && typeof data === "object") {
+    if (data[libro]) return data[libro];
+
+    for (const [k, v] of Object.entries(data)) {
+      if (compNormalizarLibroNombre(k) === objetivo) return v;
+      if (v && typeof v === "object") {
+        const nom = v.nombre || v.libro || v.name || v.book || v.abbrev || v.abreviatura || "";
+        if (compNormalizarLibroNombre(nom) === objetivo) return v;
+      }
+    }
+  }
+
+  if (Array.isArray(data)) {
+    return data.find(v => {
+      const nom = v?.nombre || v?.libro || v?.name || v?.book || v?.abbrev || v?.abreviatura || "";
+      return compNormalizarLibroNombre(nom) === objetivo;
+    }) || null;
+  }
+
+  return null;
+}
+
+function compBuscarCapituloEnLibro(libroData, capitulo) {
+  const cap = Number(capitulo || 0);
+  if (!libroData || !cap) return null;
+
+  if (Array.isArray(libroData)) return libroData[cap - 1] || libroData[cap] || null;
+
+  if (typeof libroData === "object") {
+    return (
+      libroData[cap] ||
+      libroData[String(cap)] ||
+      libroData.capitulos?.[cap - 1] ||
+      libroData.capitulos?.[cap] ||
+      libroData.chapters?.[cap - 1] ||
+      libroData.chapters?.[cap] ||
+      null
+    );
+  }
+
+  return null;
+}
+
+function compBuscarVersiculoEnCapitulo(capData, num) {
+  const n = Number(num || 0);
+  if (!capData || !n) return "";
+
+  let v = "";
+
+  if (Array.isArray(capData)) {
+    v = capData[n - 1] || capData[n] || "";
+  } else if (typeof capData === "object") {
+    v = (
+      capData[n] ||
+      capData[String(n)] ||
+      capData.versiculos?.[n - 1] ||
+      capData.versiculos?.[n] ||
+      capData.verses?.[n - 1] ||
+      capData.verses?.[n] ||
+      ""
+    );
+  }
+
+  if (v && typeof v === "object") {
+    return String(v.texto || v.text || v.versiculo || v.v || "").trim();
+  }
+
+  return String(v || "").trim();
+}
+
+function compTextoBiblicoDesdeGlobales(item = {}) {
+  const libro = String(item.libro || item.book || "").trim();
+  const capitulo = Number(item.capitulo || item.chapter || 0);
+  const versiculos = Array.isArray(item.versiculos)
+    ? item.versiculos
+    : (item.versiculoNumero ? [item.versiculoNumero] : []);
+
+  if (!libro || !capitulo || !versiculos.length) return "";
+
+  const fuentes = [
+    window.BIBLIA_RV1960,
+    window.bibliaRV1960,
+    window.__BIBLIA_RV1960__,
+    window.BIBLIA?.RV1960,
+    window.bibliaData?.RV1960,
+    window.BIBLIA_NTV,
+    window.bibliaNTV,
+    window.__BIBLIA_NTV__,
+    window.BIBLIA?.NTV,
+    window.bibliaData?.NTV,
+    window.bibliaData,
+    window.biblia
+  ].filter(Boolean);
+
+  for (const fuente of fuentes) {
+    const libroData = compBuscarLibroEnBiblia(fuente, libro);
+    const capData = compBuscarCapituloEnLibro(libroData, capitulo);
+    const textos = versiculos
+      .map(n => {
+        const txt = compBuscarVersiculoEnCapitulo(capData, n);
+        return txt ? `${Number(n)}. ${txt}` : "";
+      })
+      .filter(Boolean);
+
+    if (textos.length) return textos.join(" ");
+  }
+
+  return "";
+}
+
+function compTextoVersiculoNota(item = {}, textoNota = "", titulo = "") {
+  const directo = compPrimerTextoValido(
+    item.textoVersiculo,
+    item.versiculoTexto,
+    item.textoBiblico,
+    item.textoBiblia,
+    item.textoSeleccionado,
+    item.textoOriginal,
+    item.versiculosTexto,
+    item.fragmentoBiblico,
+    item.contenidoBiblico,
+    item.versiculoCompleto
+  );
+
+  const desdeGlobales = directo || compTextoBiblicoDesdeGlobales(item);
+  const limpio = String(desdeGlobales || "").trim();
+
+  if (!limpio) return "";
+  if (limpio === String(textoNota || "").trim()) return "";
+  if (limpio === String(titulo || "").trim()) return "";
+
+  return limpio;
+}
+
 function compRenderNota(item) {
-  const titulo = compEscape(compTituloNota(item));
-  const texto = compEscape(item.texto || item.nota || item.textoLibre || "");
+  const tituloBase = compTituloNota(item);
+  const titulo = compEscape(tituloBase);
+  const textoRaw = String(item.texto || item.nota || item.textoLibre || "").trim();
+  const texto = compEscape(textoRaw);
+  const versoRaw = compTextoVersiculoNota(item, textoRaw, tituloBase);
+  const verso = compEscape(versoRaw);
   const fondo = compNotaFondo(item);
   const colorTexto = typeof compColorContraste === "function"
     ? compColorContraste(fondo)
@@ -1162,6 +1343,8 @@ function compRenderNota(item) {
           <div class="comp-post-meta">Nota compartida</div>
         </div>
       </div>
+
+      ${verso ? `<div class="comp-post-verse-block">${verso}</div>` : ``}
 
       <div
         class="comp-post-note-block"
