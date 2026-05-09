@@ -4638,6 +4638,15 @@ function panelImagenRenderCardHTML(it = {}, opciones = {}) {
   const urlAttr = panelImgAttr(urlRaw);
   const urlJs = panelImgJs(urlRaw);
 
+  const audioRaw = panelImgNormalizarUrlRaw(
+  it.audioGithubUrl ||
+  it.audioUrl ||
+  it.audio ||
+  ""
+);
+
+const audioAttr = panelImgAttr(audioRaw);
+
   const itemId = panelImgJs(it.id || "");
 
   const eliminarHtml = eliminarHtmlPersonalizado || (mostrarEliminar ? `
@@ -4675,9 +4684,15 @@ function panelImagenRenderCardHTML(it = {}, opciones = {}) {
       data-panel-img-card-id="${panelImgAttr(it.id || "")}"
       style="position:relative;"
     >
-      <img src="${urlAttr}" alt="Imagen generada" loading="lazy">
+     <img src="${urlAttr}" alt="Imagen generada" loading="lazy">
 
-      <div class="devBigActions">
+${audioRaw ? `
+  <div class="devBigAudioBox">
+    <audio controls preload="none" src="${audioAttr}"></audio>
+  </div>
+` : ``}
+
+<div class="devBigActions">
         ${mostrarDescargar ? `
           <button class="btn-primary" type="button"
             onclick="descargarImagenPanel('${urlJs}')"
@@ -4851,15 +4866,57 @@ if (topRow && indexRow && topRow.previousElementSibling !== indexRow) {
 
     const yaPublicado = !!panelImagenesPublicadas[it.id];
 
+    const esDevocionalPanel = (
+  String(it.tipoTexto || "").toLowerCase() === "devocional" ||
+  String(it.origen || "").toLowerCase().includes("devocional") ||
+  !!it.devocionalKey
+);
+
+const botonCompartidosHTML = esDevocionalPanel ? "" : `
+  <button
+    class="btn-primary btn-panel-compartidos ${yaPublicado ? "activo" : ""}"
+    type="button"
+    onclick="publicarImagenPanelEnCompartidos('${idJs}')"
+    aria-label="Publicar en Compartidos"
+    title="${yaPublicado ? "Ya publicado en Compartidos" : "Publicar en Compartidos"}"
+    style="position:relative; overflow:visible;"
+  >
+    <i class="fa-solid fa-icons"></i>
+
+    ${yaPublicado ? `
+      <span
+        style="
+          position:absolute;
+          left:72%;
+          bottom:-7px;
+          transform:translateX(-50%);
+          width:14px;
+          height:14px;
+          border-radius:999px;
+          background:#8dbdff;
+          color:#fff;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          box-shadow:0 0 0 2px #fff;
+          line-height:1;
+          pointer-events:none;
+          z-index:2;
+        "
+      >
+        <i class="fa-solid fa-check" style="font-size:8px; line-height:1;"></i>
+      </span>
+    ` : ``}
+  </button>
+`;
+
     return panelImagenRenderCardHTML(it, {
       idPrefix: "panelImgBig_",
       mostrarDescargar: true,
       mostrarCompartir: true,
       mostrarEliminar: true,
 
-      extraAcciones: `
-        <button
-          class="btn-primary btn-panel-compartidos ${yaPublicado ? "activo" : ""}"
+     extraAcciones: botonCompartidosHTML
           type="button"
           onclick="publicarImagenPanelEnCompartidos('${idJs}')"
           aria-label="Publicar en Compartidos"
