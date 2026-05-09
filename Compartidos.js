@@ -550,13 +550,14 @@ function iniciarEscuchaCompartidosOraciones() {
   const db = compDB();
   if (!db) return;
 
-  // Ruta esperada de las oraciones de devocionales:
-  // devocionalesOraciones/{uidOwner}/{tsKey}/{oracionId}
-  onValue(ref(db, "devocionalesOraciones"), (snap) => {
+  // ✅ Compartidos solo lee las oraciones públicas.
+  // Ruta:
+  // devocionalesOracionesPublicas/{uidOwner}/{tsKey}/{oracionId}
+  onValue(ref(db, "devocionalesOracionesPublicas"), (snap) => {
     compartidosOracionesCache = snap.val() || {};
     renderCompartidos();
   }, (err) => {
-    console.error("Error leyendo oraciones de devocionales:", err);
+    console.error("Error leyendo oraciones públicas de devocionales:", err);
   });
 
   compartidosOracionesEscuchaActiva = true;
@@ -1009,6 +1010,8 @@ function compRenderDevocional(item) {
   const url = item.url || "";
   const fileName = compFileName(url, "devocional.png");
 
+  const oracionesHTML = compRenderOracionesDevocionalHTML(item);
+
   if (typeof window.devRenderDevocionalCardHTML !== "function") {
     return `
       <article class="comp-post comp-post--devocional">
@@ -1030,8 +1033,6 @@ function compRenderDevocional(item) {
           }
         </div>
 
-        ${compRenderOracionesDevocionalHTML(item)}
-
         <div class="comp-post-actions">
           <button type="button"
             onclick="devCompartirImagenItem('${compJs(url)}', '${compJs(fileName)}')"
@@ -1044,9 +1045,10 @@ function compRenderDevocional(item) {
             title="Descargar">
             <i class="fa-solid fa-download"></i>
           </button>
-
-          ${compDeleteBtn(item)}
         </div>
+
+        ${oracionesHTML}
+        ${compDeleteBtn(item)}
       </article>
     `;
   }
@@ -1055,19 +1057,10 @@ function compRenderDevocional(item) {
     idPrefix: "compDev_",
     mostrarBorrar: false,
     mostrarOracion: true,
-
-    // ✅ No mostramos receipt porque las oraciones van debajo.
     mostrarListaOraciones: false,
-
     mostrarGuardar: true,
     mostrarCompartir: true,
-    mostrarDescargar: true,
-
-    // ✅ Las oraciones quedan debajo del audio, dentro de la card real.
-    extraDespuesAudio: compRenderOracionesDevocionalHTML(item),
-
-    // ✅ Delete de Compartidos, no borra el devocional original.
-    extraFinal: compDeleteBtn(item)
+    mostrarDescargar: true
   });
 
   return `
@@ -1089,6 +1082,9 @@ function compRenderDevocional(item) {
       >
         ${card}
       </div>
+
+      ${oracionesHTML}
+      ${compDeleteBtn(item)}
     </article>
   `;
 }
