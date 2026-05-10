@@ -12,7 +12,7 @@ const {
 const R2_UPLOAD_URL = "https://us-central1-vidaabundante-f118a.cloudfunctions.net/subirImagenR2";
 const SUBIDOS_VIDEO_UPLOAD_URL = "https://us-central1-vidaabundante-f118a.cloudfunctions.net/crearUploadVideoR2";
 const SUBIDOS_PROXY_URL = "https://us-central1-vidaabundante-f118a.cloudfunctions.net/descargarImagenR2";
-const SUBIDOS_EXPORT_BG_URL = "./img/subidos/fondo-predica-cielo.jpg";
+const SUBIDOS_EXPORT_BG_URL = "./img/subidos/1fondo-predica-cielo.jpg";
 
 let subidosUID = null;
 let subidosEsAdmin = false;
