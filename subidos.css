@@ -742,7 +742,7 @@ button.subidos-media-link{
   overflow:auto;
   font-size:11.5px;
   line-height:1.2;
-  text-align:left;
+  text-align:center;
   font-weight:700;
   white-space:normal !important;
   text-indent:0 !important;
@@ -1175,8 +1175,9 @@ body.oscuro #modalSubidosVisor{
   .subidos-predica-primera-texto{
     font-size:10.8px;
     line-height:1.18;
+    text-align:center;
   }
-
+  
   .subidos-feed-actions{
     gap:6px !important;
     padding-right:28px !important;
