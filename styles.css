@@ -74,7 +74,7 @@ body.oscuro #header {
  border: none;
  font-weight: bold;
  cursor: pointer;
- background: #e9f6ff;
+ background: var(--ui-azul-claro);
  }
 
  /* Estilo para los botones de navegación MODO OSCURO*/
