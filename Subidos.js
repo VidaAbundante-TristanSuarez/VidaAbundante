@@ -1919,6 +1919,38 @@ function subidosClasePrimeraCitaExport(texto = "", referencia = "") {
   return "larga";
 }
 
+function subidosPesoTextoExport(texto = "") {
+  const txt = String(texto || "").trim();
+  const plano = txt.replace(/\s+/g, " ").trim();
+  const saltos = (txt.match(/\n/g) || []).length;
+
+  return plano.length + (saltos * 22);
+}
+
+function subidosClaseCajaTextoExport(texto = "") {
+  const peso = subidosPesoTextoExport(texto);
+
+  if (peso <= 120) return "breve";
+  if (peso <= 300) return "media";
+  return "larga";
+}
+
+function subidosClaseAireIntroNotaExport(introduccion = "", notaFinal = "") {
+  const introPeso = subidosPesoTextoExport(introduccion);
+  const notaPeso = subidosPesoTextoExport(notaFinal);
+  const mayor = Math.max(introPeso, notaPeso);
+  const total = introPeso + notaPeso;
+
+  // ✅ textos cortos: más fondo visible
+  if (mayor <= 140 && total <= 240) return "aire-amplio";
+
+  // ✅ textos medianos: aire equilibrado
+  if (mayor <= 330 && total <= 520) return "aire-medio";
+
+  // ✅ textos largos: menos aire para que entre bien
+  return "aire-compacto";
+}
+
 function subidosCrearNodoExportPredica(it) {
   const exportW = subidosAnchoExportPredica();
   const exportH = Math.round((exportW * 16) / 9);
@@ -1946,6 +1978,9 @@ function subidosCrearNodoExportPredica(it) {
 
  const textosClase = subidosClaseBalanceIntroNota(introduccion, notaFinal);
  const primeraClase = subidosClasePrimeraCitaExport(primeraTexto, primeraRef);
+  const introClase = subidosClaseCajaTextoExport(introduccion);
+const notaClase = subidosClaseCajaTextoExport(notaFinal);
+const aireClase = subidosClaseAireIntroNotaExport(introduccion, notaFinal);
 
   const node = document.createElement("article");
   node.id = "subidosExportPredicaFinal";
@@ -2185,14 +2220,31 @@ function subidosCrearNodoExportPredica(it) {
         white-space:nowrap;
       }
 
-      /* ===== INTRO + NOTA FINAL ===== */
+          /* ===== INTRO + NOTA FINAL ===== */
 
       #subidosExportPredicaFinal .subidos-export-text-row{
         flex:1 1 auto;
         min-height:0;
         display:grid;
-        gap:10px;
-        align-items:stretch;
+        align-items:center;
+        align-content:center;
+        justify-items:stretch;
+      }
+
+      /* ✅ aire inteligente */
+      #subidosExportPredicaFinal .subidos-export-text-row.aire-amplio{
+        gap:24px;
+        padding:10px 0;
+      }
+
+      #subidosExportPredicaFinal .subidos-export-text-row.aire-medio{
+        gap:16px;
+        padding:5px 0;
+      }
+
+      #subidosExportPredicaFinal .subidos-export-text-row.aire-compacto{
+        gap:8px;
+        padding:0;
       }
 
       #subidosExportPredicaFinal .subidos-export-text-row.dos{
@@ -2220,16 +2272,35 @@ function subidosCrearNodoExportPredica(it) {
       }
 
       #subidosExportPredicaFinal .subidos-export-text-box{
-        min-height:0;
+        height:auto;
+        max-height:100%;
+        align-self:center;
         border:1px solid rgba(255,255,255,.52);
         background:rgba(255,255,255,.80);
         border-radius:22px;
-        padding:13px 14px;
         display:flex;
         align-items:center;
         justify-content:center;
         text-align:center;
         overflow:hidden;
+      }
+
+      /* ✅ poco texto: caja chica, más fondo alrededor */
+      #subidosExportPredicaFinal .subidos-export-text-box.breve{
+        min-height:116px;
+        padding:22px 22px;
+      }
+
+      /* ✅ texto medio */
+      #subidosExportPredicaFinal .subidos-export-text-box.media{
+        min-height:168px;
+        padding:18px 18px;
+      }
+
+      /* ✅ texto largo: caja más grande, menos aire */
+      #subidosExportPredicaFinal .subidos-export-text-box.larga{
+        min-height:228px;
+        padding:14px 15px;
       }
 
       #subidosExportPredicaFinal .subidos-export-intro,
@@ -2241,10 +2312,6 @@ function subidosCrearNodoExportPredica(it) {
         line-height:1.16;
         overflow-wrap:anywhere;
         display:block;
-      }
-
-      #subidosExportPredicaFinal .subidos-export-intro,
-      #subidosExportPredicaFinal .subidos-export-note{
         font-size:12.2px;
       }
 
@@ -2345,9 +2412,9 @@ function subidosCrearNodoExportPredica(it) {
     </div>
 
     ${introduccion || notaFinal ? `
-      <div class="subidos-export-text-row ${textosClase}">
+    <div class="subidos-export-text-row ${textosClase} ${aireClase}">
         ${introduccion ? `
-          <div class="subidos-export-text-box intro-box">
+       <div class="subidos-export-text-box intro-box ${introClase}">
             <div class="subidos-export-intro">
               ${subidosHtmlExport(introduccion)}
             </div>
@@ -2355,7 +2422,7 @@ function subidosCrearNodoExportPredica(it) {
         ` : ``}
 
         ${notaFinal ? `
-          <div class="subidos-export-text-box note-box">
+    <div class="subidos-export-text-box note-box ${notaClase}">
             <div class="subidos-export-note">
               ${subidosHtmlExport(notaFinal)}
             </div>
@@ -2408,7 +2475,7 @@ function subidosAjustarTextosExportPredica(node) {
   const primeraText = node.querySelector(".subidos-export-primera-texto");
 
   if (primeraBox && primeraText) {
-   subidosAjustarTextoSoloSiNoCabe(primeraBox, primeraText, 12.6, 0.2);
+    subidosAjustarTextoSoloSiNoCabe(primeraBox, primeraText, 12.6, 0.2);
   }
 
   const introBox = node.querySelector(".subidos-export-text-box.intro-box");
@@ -2422,14 +2489,14 @@ function subidosAjustarTextosExportPredica(node) {
   const noteText = node.querySelector(".subidos-export-note");
 
   if (noteBox && noteText) {
-    subidosAjustarTextoSoloSiNoCabe(noteBox, noteText, 9.8, 0.2);
+    subidosAjustarTextoSoloSiNoCabe(noteBox, noteText, 11.4, 0.2);
   }
 
   const otrasBox = node.querySelector(".subidos-export-otras-citas-box");
   const otrasText = node.querySelector(".subidos-export-otras-citas");
 
   if (otrasBox && otrasText) {
-    subidosAjustarTextoSoloSiNoCabe(noteBox, noteText, 11.4, 0.2);
+    subidosAjustarTextoSoloSiNoCabe(otrasBox, otrasText, 9.2, 0.2);
   }
 }
 
