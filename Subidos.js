@@ -2795,24 +2795,64 @@ function htmlArchivoGrandePredica(it) {
 
 function htmlPredicaBibliaSubidoGrande(it, abrirClave = "") {
   const citas = obtenerCitasPredicaSubido(it);
+  const primeraCita = citas[0] || null;
+  const otrasCitas = citas.slice(1);
+
   const notaFinal = String(it.predicaNotaFinal || it.notaFinalGeneral || "").trim();
   const introduccion = String(it.predicaIntroduccion || it.introduccionPredica || "").trim();
 
-  const bloques = [];
+  const comentarioPrimera = String(
+    primeraCita?.comentario || primeraCita?.nota || ""
+  ).trim();
 
-  citas.forEach((c) => {
+  const primeraBloque = primeraCita ? `
+    <section
+      class="subidos-visor-bloque"
+      style="
+        background:#d1eeff;
+        border:1px solid rgba(110, 177, 214, .45);
+        border-radius:16px;
+      "
+    >
+      <div class="subidos-visor-ref">
+        ${escaparHtml(primeraCita.referencia || "")}
+      </div>
+
+      ${primeraCita.texto ? `
+        <div class="subidos-visor-texto">
+          ${subidosTextoHtml(primeraCita.texto || "")}
+        </div>
+      ` : ``}
+
+      ${comentarioPrimera ? `
+        <div class="subidos-visor-comentario">
+          ⪦ ${subidosTextoHtml(comentarioPrimera)}
+        </div>
+      ` : ``}
+    </section>
+  ` : ``;
+
+  const bloquesRestantes = otrasCitas.map((c) => {
     const comentario = String(c.comentario || c.nota || "").trim();
 
-    bloques.push(`
+    return `
       <section class="subidos-visor-bloque">
         <div class="subidos-visor-ref">${escaparHtml(c.referencia || "")}</div>
 
-        ${c.texto ? `<div class="subidos-visor-texto">${subidosTextoHtml(c.texto || "")}</div>` : ``}
+        ${c.texto ? `
+          <div class="subidos-visor-texto">
+            ${subidosTextoHtml(c.texto || "")}
+          </div>
+        ` : ``}
 
-        ${comentario ? `<div class="subidos-visor-comentario">⪦ ${subidosTextoHtml(comentario)}</div>` : ``}
+        ${comentario ? `
+          <div class="subidos-visor-comentario">
+            ⪦ ${subidosTextoHtml(comentario)}
+          </div>
+        ` : ``}
       </section>
-    `);
-  });
+    `;
+  }).join("");
 
   return `
     <div class="subidos-visor-predica-full">
@@ -2829,22 +2869,58 @@ function htmlPredicaBibliaSubidoGrande(it, abrirClave = "") {
           </h2>
         ` : ``}
 
-        <div class="subidos-visor-contexto">
+        <div
+          style="
+            margin:12px 0 10px;
+            padding:12px 16px;
+            border-radius:16px;
+            background:rgba(255,255,255,.88);
+            border:1px solid #d8eef9;
+          "
+        >
           <div class="subidos-visor-iglesia">
             Iglesia Cristiana de la Vida Abundante
           </div>
-
-          ${introduccion ? `
-            <div class="subidos-visor-intro">• ${subidosTextoHtml(introduccion)}</div>
-          ` : ``}
         </div>
 
-        <div class="subidos-visor-bloques">
-          ${bloques.join("")}
-        </div>
+        ${primeraBloque}
+
+        ${introduccion ? `
+          <div
+            style="
+              margin:10px 0 12px;
+              padding:12px 16px;
+              border-radius:16px;
+              background:rgba(255,255,255,.88);
+              border:1px solid #d8eef9;
+            "
+          >
+            <div class="subidos-visor-intro">
+              • ${subidosTextoHtml(introduccion)}
+            </div>
+          </div>
+        ` : ``}
+
+        ${bloquesRestantes ? `
+          <div class="subidos-visor-bloques">
+            ${bloquesRestantes}
+          </div>
+        ` : ``}
 
         ${notaFinal ? `
-          <div class="subidos-visor-nota-cierre">${subidosTextoHtml(notaFinal)}</div>
+          <div
+            style="
+              margin:12px 0 0;
+              padding:12px 16px;
+              border-radius:16px;
+              background:rgba(255,255,255,.88);
+              border:1px solid #d8eef9;
+            "
+          >
+            <div class="subidos-visor-intro">
+              • ${subidosTextoHtml(notaFinal)}
+            </div>
+          </div>
         ` : ``}
 
         <div class="subidos-visor-cierre">
