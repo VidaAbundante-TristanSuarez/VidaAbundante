@@ -1098,55 +1098,38 @@ window.subidosToggleMiniPredica = function subidosToggleMiniPredica(bodyId, btn)
 function htmlPredicaBibliaSubido(it) {
   const citas = obtenerCitasPredicaSubido(it);
 
-  // ✅ En la galería mostramos solo citas, no la nota final.
+  // ✅ En la galería mostramos solo la primera cita.
   if (!citas.length) return "";
 
-  const filas = citas.map((c, i) => {
-    const bodyId = `subidosMiniPredica-${it.id}-${i}`;
-    const comentario = String(c.comentario || c.nota || "").trim();
-
-    return `
-      <div class="subidos-predica-item">
-        <div
-          class="subidos-predica-chip"
-          onclick="event.stopPropagation(); abrirSubidosVisorPredica('${it.id}', 'all')"
-          title="Abrir prédica completa"
-          role="button"
-          tabindex="0"
-        >
-          <span class="subidos-predica-chip-text">${escaparHtml(c.referencia || "")}</span>
-
-          <button
-            type="button"
-            class="subidos-predica-caret"
-            onclick="event.stopPropagation(); window.subidosToggleMiniPredica('${bodyId}', this)"
-            title="Desplegar cita"
-          >
-            <i class="fa-solid fa-caret-down"></i>
-          </button>
-        </div>
-
-        <div
-          id="${bodyId}"
-          class="subidos-predica-mini-body"
-          data-abierto="0"
-          onclick="event.stopPropagation();"
-          style="display:none;"
-        >
-          ${c.texto ? `<div class="subidos-predica-mini-texto">${subidosTextoHtml(c.texto)}</div>` : ``}
-          ${comentario ? `<div class="subidos-predica-mini-comentario">⪦ ${subidosTextoHtml(comentario)}</div>` : ``}
-        </div>
-      </div>
-    `;
-  });
+  const primera = citas[0] || {};
+  const referencia = String(primera.referencia || "").trim();
+  const texto = String(primera.texto || "").trim();
 
   return `
     <div
-      class="subidos-predica-resumen"
+      class="subidos-predica-resumen subidos-predica-resumen-unica"
       onclick="abrirSubidosVisorPredica('${it.id}', 'all')"
       title="Abrir prédica completa"
+      role="button"
+      tabindex="0"
     >
-      ${filas.join("")}
+      <div class="subidos-predica-primera">
+        ${referencia ? `
+          <div class="subidos-predica-primera-ref">
+            ${escaparHtml(referencia)}
+          </div>
+        ` : ``}
+
+        ${texto ? `
+          <div class="subidos-predica-primera-texto">
+            ${subidosTextoHtml(texto)}
+          </div>
+        ` : `
+          <div class="subidos-predica-primera-texto subidos-predica-primera-vacia">
+            Sin texto cargado.
+          </div>
+        `}
+      </div>
     </div>
   `;
 }
@@ -1901,39 +1884,27 @@ function subidosCrearNodoExportPredica(it) {
   const exportH = Math.round((exportW * 16) / 9);
 
   const citas = obtenerCitasPredicaSubido(it);
+  const primeraCita = citas[0] || null;
+
+  const primeraTexto = subidosTextoPlanoExport(primeraCita?.texto || "");
+  const primeraRef = subidosTextoPlanoExport(primeraCita?.referencia || "");
+
+  const otrasRefs = citas
+    .slice(1)
+    .map(c => subidosTextoPlanoExport(c.referencia || ""))
+    .filter(Boolean);
+
+  const otrasCitasHtml = otrasRefs.map(ref => `
+    <span class="subidos-export-ref-extra">${escaparHtml(ref)}</span>
+  `).join(`<span class="subidos-export-bullet">•</span>`);
+
   const introduccion = subidosTextoPlanoExport(it.predicaIntroduccion || it.introduccionPredica || "");
   const notaFinal = subidosTextoPlanoExport(it.predicaNotaFinal || it.notaFinalGeneral || "");
   const fechaTxt = subidosFechaBonitaExport(it.fechaEvento || "");
   const descripcion = subidosTextoPlanoExport(it.descripcion || "");
   const color = colorEtiquetaSubidos(it.etiqueta || "");
 
-  const citasCount = citas.length;
-
-  // ✅ tamaños base normales
-  const introFont = 13;
-  const notaFont = 11.8;
-
-  const citaFont =
-    citasCount >= 8 ? 11 :
-    citasCount >= 6 ? 11.3 :
-    11.5;
-
-  const iglesiaFont = 21.5;
-
-  const citasHtml = citas.map(c => {
-    const ref = subidosTextoPlanoExport(c.referencia || "");
-    if (!ref) return "";
-
-    return `
-      <div class="subidos-export-chip">
-        ~ ${escaparHtml(ref)} ~
-      </div>
-    `;
-  }).join("") || `
-    <div class="subidos-export-empty">
-      Sin citas cargadas
-    </div>
-  `;
+  const textosClase = introduccion && notaFinal ? "dos" : "uno";
 
   const node = document.createElement("article");
   node.id = "subidosExportPredicaFinal";
@@ -1953,7 +1924,7 @@ function subidosCrearNodoExportPredica(it) {
         padding:12px 14px 14px;
         display:flex;
         flex-direction:column;
-        gap:6px;
+        gap:7px;
         background-image:url("${SUBIDOS_EXPORT_BG_URL}");
         background-size:cover;
         background-position:center center;
@@ -2018,25 +1989,26 @@ function subidosCrearNodoExportPredica(it) {
       #subidosExportPredicaFinal .subidos-export-titulo{
         flex:1 1 auto;
         min-width:0;
+        font-family:"Lora", serif;
+        font-size:15px;
+        line-height:1.05;
+        font-weight:900;
+        white-space:nowrap;
         overflow:hidden;
         text-overflow:ellipsis;
-        white-space:nowrap;
-        font-weight:800;
-        font-size:14px;
-        line-height:1.05;
       }
 
       #subidosExportPredicaFinal .subidos-export-divider{
-        flex:0 0 1px;
+        flex:0 0 auto;
         height:1px;
-        background:rgba(71,126,154,.16);
-        margin:1px 0 2px;
+        background:rgba(0,0,0,.08);
       }
 
-      /* ===== HERO ===== */
+      /* ===== ARCHIVO + DATOS IGLESIA ===== */
 
       #subidosExportPredicaFinal .subidos-export-hero{
-        flex:0 0 auto;
+        flex:0 0 188px;
+        min-height:0;
         display:grid;
         grid-template-columns:var(--left-col) var(--right-col);
         gap:10px;
@@ -2045,11 +2017,11 @@ function subidosCrearNodoExportPredica(it) {
 
       #subidosExportPredicaFinal .subidos-export-media{
         width:100%;
-        aspect-ratio:1 / 1;
-        border-radius:24px;
+        min-height:0;
+        border:1px solid rgba(255,255,255,.52);
+        background:rgba(255,255,255,.70);
+        border-radius:22px;
         overflow:hidden;
-        background:rgba(255,255,255,.20);
-        border:2px solid rgba(255,255,255,.50);
         display:flex;
         align-items:center;
         justify-content:center;
@@ -2058,19 +2030,15 @@ function subidosCrearNodoExportPredica(it) {
       #subidosExportPredicaFinal .subidos-export-media img{
         width:100%;
         height:100%;
-        display:block;
         object-fit:cover;
-        object-position:center center;
+        display:block;
       }
 
       #subidosExportPredicaFinal .subidos-export-media-placeholder{
         flex-direction:column;
-        gap:8px;
-        color:#24313a;
-        font-weight:800;
-        font-size:15px;
+        gap:10px;
+        font-weight:900;
         text-align:center;
-        padding:12px;
       }
 
       #subidosExportPredicaFinal .subidos-export-media-placeholder i{
@@ -2098,7 +2066,7 @@ function subidosCrearNodoExportPredica(it) {
 
       #subidosExportPredicaFinal .subidos-export-iglesia{
         font-weight:900;
-        font-size:${iglesiaFont}px;
+        font-size:21.5px;
         line-height:1.04;
       }
 
@@ -2116,34 +2084,73 @@ function subidosCrearNodoExportPredica(it) {
         font-weight:800;
       }
 
-      /* ===== BODY ===== */
+      /* ===== PRIMERA CITA DESTACADA ===== */
 
-      #subidosExportPredicaFinal .subidos-export-body{
+      #subidosExportPredicaFinal .subidos-export-primera-box{
+        flex:0 0 122px;
+        min-height:0;
+        border:1px solid rgba(255,255,255,.56);
+        background:rgba(255,255,255,.72);
+        border-radius:22px;
+        padding:12px 16px;
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        justify-content:center;
+        text-align:center;
+        overflow:hidden;
+      }
+
+      #subidosExportPredicaFinal .subidos-export-primera-texto{
+        width:100%;
+        max-width:100%;
+        font-family:"Lora", serif;
+        font-size:15px;
+        line-height:1.16;
+        font-weight:900;
+        text-align:center;
+        overflow-wrap:anywhere;
+      }
+
+      #subidosExportPredicaFinal .subidos-export-primera-ref{
+        margin-top:8px;
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        border-radius:999px;
+        padding:4px 14px;
+        background:rgba(255,255,255,.78);
+        border:1px solid rgba(190,220,236,.95);
+        font-size:13px;
+        line-height:1;
+        font-weight:900;
+        white-space:nowrap;
+      }
+
+      /* ===== INTRO + NOTA FINAL ===== */
+
+      #subidosExportPredicaFinal .subidos-export-text-row{
         flex:1 1 auto;
         min-height:0;
         display:grid;
-        grid-template-columns:var(--left-col) var(--right-col);
         gap:10px;
         align-items:stretch;
       }
 
-      #subidosExportPredicaFinal .subidos-export-left{
-        min-height:0;
-        display:flex;
-        flex-direction:column;
-        gap:8px;
+      #subidosExportPredicaFinal .subidos-export-text-row.dos{
+        grid-template-columns:1fr 1fr;
       }
 
-      #subidosExportPredicaFinal .subidos-export-right{
-        min-height:0;
-        display:flex;
+      #subidosExportPredicaFinal .subidos-export-text-row.uno{
+        grid-template-columns:1fr;
       }
 
-      #subidosExportPredicaFinal .subidos-export-box{
+      #subidosExportPredicaFinal .subidos-export-text-box{
+        min-height:0;
         border:1px solid rgba(255,255,255,.52);
         background:rgba(255,255,255,.70);
         border-radius:22px;
-        padding:12px 12px;
+        padding:13px 14px;
         display:flex;
         align-items:center;
         justify-content:center;
@@ -2151,86 +2158,71 @@ function subidosCrearNodoExportPredica(it) {
         overflow:hidden;
       }
 
-      #subidosExportPredicaFinal .subidos-export-box.intro-box{
-        flex:0 0 auto;
-        min-height:118px;
-      }
-
-      #subidosExportPredicaFinal .subidos-export-box.note-box{
-        flex:1 1 auto;
-        min-height:0;
-      }
-
-      #subidosExportPredicaFinal .subidos-export-box.citas-box{
-        flex:1 1 auto;
+      #subidosExportPredicaFinal .subidos-export-intro,
+      #subidosExportPredicaFinal .subidos-export-note{
         width:100%;
-        min-height:0;
-        padding:12px 10px;
+        max-width:100%;
+        font-weight:800;
+        text-align:center;
+        line-height:1.16;
+        overflow-wrap:anywhere;
+        display:block;
       }
-
-#subidosExportPredicaFinal .subidos-export-intro,
-#subidosExportPredicaFinal .subidos-export-note{
-  width:100%;
-  max-width:100%;
-  font-weight:800;
-  text-align:center;
-  line-height:1.16;
-  overflow-wrap:anywhere;
-  display:block;
-}
 
       #subidosExportPredicaFinal .subidos-export-intro{
-        font-size:${introFont}px;
+        font-size:12.5px;
       }
 
       #subidosExportPredicaFinal .subidos-export-note{
-        font-size:${notaFont}px;
+        font-size:12px;
       }
 
-      #subidosExportPredicaFinal .subidos-export-citas-list{
-        width:100%;
-        height:100%;
+      /* ===== DEMÁS CITAS ===== */
+
+      #subidosExportPredicaFinal .subidos-export-otras-citas-box{
+        flex:0 0 auto;
+        min-height:42px;
+        border:1px solid rgba(255,255,255,.52);
+        background:rgba(255,255,255,.62);
+        border-radius:18px;
+        padding:8px 12px;
         display:flex;
-        flex-direction:column;
         align-items:center;
         justify-content:center;
-        gap:7px;
+        overflow:hidden;
       }
 
-      #subidosExportPredicaFinal .subidos-export-chip{
-        width:100%;
-        border-radius:999px;
-        padding:7px 9px;
-        background:rgba(255,255,255,.82);
-        border:1px solid #cfe7f6;
-        box-shadow:0 2px 8px rgba(0,0,0,.04);
-        text-align:center;
-        font-size:${citaFont}px;
+      #subidosExportPredicaFinal .subidos-export-otras-citas{
+        display:flex;
+        flex-wrap:wrap;
+        align-items:center;
+        justify-content:center;
+        gap:4px 7px;
+        font-size:11.5px;
+        line-height:1.12;
         font-weight:900;
-        line-height:1.1;
-        white-space:normal;
-        overflow-wrap:anywhere;
+        text-align:center;
       }
 
-      #subidosExportPredicaFinal .subidos-export-empty{
-        width:100%;
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        text-align:center;
-        font-size:11px;
-        font-weight:800;
-        color:#355062;
+      #subidosExportPredicaFinal .subidos-export-ref-extra{
+        white-space:nowrap;
+      }
+
+      #subidosExportPredicaFinal .subidos-export-bullet{
+        opacity:.72;
+        font-size:14px;
+        line-height:1;
+        transform:translateY(-1px);
       }
     </style>
 
     <div class="subidos-export-head">
       <div class="subidos-export-badge">
         <i class="fa-solid ${iconoSegunTipo(it.mimeType || "")}"></i>
-        ${escaparHtml(it.etiqueta || "Subido")}
+        ${escaparHtml(it.etiqueta || "Predica")}
       </div>
 
-      ${(fechaTxt || descripcion) ? `
+      ${fechaTxt || descripcion ? `
         <div class="subidos-export-meta-box">
           ${fechaTxt ? `<div class="subidos-export-fecha">${escaparHtml(fechaTxt)}</div>` : ``}
           ${descripcion ? `<div class="subidos-export-titulo">${escaparHtml(descripcion)}</div>` : ``}
@@ -2263,12 +2255,28 @@ function subidosCrearNodoExportPredica(it) {
       </div>
     </div>
 
-    <div class="subidos-export-divider"></div>
+    <div class="subidos-export-primera-box">
+      ${primeraTexto ? `
+        <div class="subidos-export-primera-texto">
+          ${subidosHtmlExport(primeraTexto)}
+        </div>
+      ` : `
+        <div class="subidos-export-primera-texto">
+          Sin versículo cargado.
+        </div>
+      `}
 
-    <div class="subidos-export-body">
-      <div class="subidos-export-left">
+      ${primeraRef ? `
+        <div class="subidos-export-primera-ref">
+          ~ ${escaparHtml(primeraRef)} ~
+        </div>
+      ` : ``}
+    </div>
+
+    ${introduccion || notaFinal ? `
+      <div class="subidos-export-text-row ${textosClase}">
         ${introduccion ? `
-          <div class="subidos-export-box intro-box">
+          <div class="subidos-export-text-box intro-box">
             <div class="subidos-export-intro">
               ${subidosHtmlExport(introduccion)}
             </div>
@@ -2276,22 +2284,22 @@ function subidosCrearNodoExportPredica(it) {
         ` : ``}
 
         ${notaFinal ? `
-          <div class="subidos-export-box note-box">
+          <div class="subidos-export-text-box note-box">
             <div class="subidos-export-note">
               ${subidosHtmlExport(notaFinal)}
             </div>
           </div>
         ` : ``}
       </div>
+    ` : ``}
 
-      <div class="subidos-export-right">
-        <div class="subidos-export-box citas-box">
-          <div class="subidos-export-citas-list">
-            ${citasHtml}
-          </div>
+    ${otrasCitasHtml ? `
+      <div class="subidos-export-otras-citas-box">
+        <div class="subidos-export-otras-citas">
+          ${otrasCitasHtml}
         </div>
       </div>
-    </div>
+    ` : ``}
   `;
 
   return node;
@@ -2325,19 +2333,32 @@ function subidosAjustarTextoSoloSiNoCabe(boxEl, textEl, minFontPx = 9.5, paso = 
 function subidosAjustarTextosExportPredica(node) {
   if (!node) return;
 
-  const introBox = node.querySelector(".subidos-export-box.intro-box");
-  const introText = node.querySelector(".subidos-export-intro");
+  const primeraBox = node.querySelector(".subidos-export-primera-box");
+  const primeraText = node.querySelector(".subidos-export-primera-texto");
 
-  const noteBox = node.querySelector(".subidos-export-box.note-box");
-  const noteText = node.querySelector(".subidos-export-note");
-
-  // ✅ un pequeño margen interno para que no quede al límite
-  if (introBox && introText) {
-    subidosAjustarTextoSoloSiNoCabe(introBox, introText, 10.8, 0.2);
+  if (primeraBox && primeraText) {
+    subidosAjustarTextoSoloSiNoCabe(primeraBox, primeraText, 12.2, 0.2);
   }
 
+  const introBox = node.querySelector(".subidos-export-text-box.intro-box");
+  const introText = node.querySelector(".subidos-export-intro");
+
+  if (introBox && introText) {
+    subidosAjustarTextoSoloSiNoCabe(introBox, introText, 10.2, 0.2);
+  }
+
+  const noteBox = node.querySelector(".subidos-export-text-box.note-box");
+  const noteText = node.querySelector(".subidos-export-note");
+
   if (noteBox && noteText) {
-    subidosAjustarTextoSoloSiNoCabe(noteBox, noteText, 9.2, 0.2);
+    subidosAjustarTextoSoloSiNoCabe(noteBox, noteText, 9.8, 0.2);
+  }
+
+  const otrasBox = node.querySelector(".subidos-export-otras-citas-box");
+  const otrasText = node.querySelector(".subidos-export-otras-citas");
+
+  if (otrasBox && otrasText) {
+    subidosAjustarTextoSoloSiNoCabe(otrasBox, otrasText, 9.2, 0.2);
   }
 }
 
