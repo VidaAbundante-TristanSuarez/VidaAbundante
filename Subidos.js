@@ -1879,6 +1879,26 @@ function subidosArchivoExportHtml(it) {
   `;
 }
 
+function subidosClaseBalanceIntroNota(introduccion = "", notaFinal = "") {
+  const intro = String(introduccion || "").trim();
+  const nota = String(notaFinal || "").trim();
+
+  if (intro && !nota) return "uno";
+  if (!intro && nota) return "uno";
+  if (!intro && !nota) return "uno";
+
+  const a = intro.length;
+  const b = nota.length;
+
+  if (a >= b * 1.9) return "intro-muy-larga";
+  if (b >= a * 1.9) return "nota-muy-larga";
+
+  if (a >= b * 1.35) return "intro-larga";
+  if (b >= a * 1.35) return "nota-larga";
+
+  return "dos";
+}
+
 function subidosCrearNodoExportPredica(it) {
   const exportW = subidosAnchoExportPredica();
   const exportH = Math.round((exportW * 16) / 9);
@@ -1904,7 +1924,7 @@ function subidosCrearNodoExportPredica(it) {
   const descripcion = subidosTextoPlanoExport(it.descripcion || "");
   const color = colorEtiquetaSubidos(it.etiqueta || "");
 
-  const textosClase = introduccion && notaFinal ? "dos" : "uno";
+ const textosClase = subidosClaseBalanceIntroNota(introduccion, notaFinal);
 
   const node = document.createElement("article");
   node.id = "subidosExportPredicaFinal";
@@ -2087,16 +2107,17 @@ function subidosCrearNodoExportPredica(it) {
       /* ===== PRIMERA CITA DESTACADA ===== */
 
       #subidosExportPredicaFinal .subidos-export-primera-box{
-        flex:0 0 122px;
+        flex:0 0 244px;
         min-height:0;
         border:1px solid rgba(255,255,255,.56);
         background:rgba(255,255,255,.72);
         border-radius:22px;
-        padding:12px 16px;
+        padding:14px 18px;
         display:flex;
         flex-direction:column;
         align-items:center;
         justify-content:center;
+        gap:8px;
         text-align:center;
         overflow:hidden;
       }
@@ -2113,12 +2134,12 @@ function subidosCrearNodoExportPredica(it) {
       }
 
       #subidosExportPredicaFinal .subidos-export-primera-ref{
-        margin-top:8px;
+        flex:0 0 auto;
         display:inline-flex;
         align-items:center;
         justify-content:center;
         border-radius:999px;
-        padding:4px 14px;
+        padding:5px 16px;
         background:rgba(255,255,255,.78);
         border:1px solid rgba(190,220,236,.95);
         font-size:13px;
@@ -2139,6 +2160,22 @@ function subidosCrearNodoExportPredica(it) {
 
       #subidosExportPredicaFinal .subidos-export-text-row.dos{
         grid-template-columns:1fr 1fr;
+      }
+
+      #subidosExportPredicaFinal .subidos-export-text-row.intro-larga{
+        grid-template-columns:1.25fr .75fr;
+      }
+
+      #subidosExportPredicaFinal .subidos-export-text-row.nota-larga{
+        grid-template-columns:.75fr 1.25fr;
+      }
+
+      #subidosExportPredicaFinal .subidos-export-text-row.intro-muy-larga{
+        grid-template-columns:1.45fr .55fr;
+      }
+
+      #subidosExportPredicaFinal .subidos-export-text-row.nota-muy-larga{
+        grid-template-columns:.55fr 1.45fr;
       }
 
       #subidosExportPredicaFinal .subidos-export-text-row.uno{
@@ -2169,12 +2206,9 @@ function subidosCrearNodoExportPredica(it) {
         display:block;
       }
 
-      #subidosExportPredicaFinal .subidos-export-intro{
-        font-size:12.5px;
-      }
-
+      #subidosExportPredicaFinal .subidos-export-intro,
       #subidosExportPredicaFinal .subidos-export-note{
-        font-size:12px;
+        font-size:12.2px;
       }
 
       /* ===== DEMÁS CITAS ===== */
@@ -2344,7 +2378,7 @@ function subidosAjustarTextosExportPredica(node) {
   const introText = node.querySelector(".subidos-export-intro");
 
   if (introBox && introText) {
-    subidosAjustarTextoSoloSiNoCabe(introBox, introText, 10.2, 0.2);
+    subidosAjustarTextoSoloSiNoCabe(introBox, introText, 11.4, 0.2);
   }
 
   const noteBox = node.querySelector(".subidos-export-text-box.note-box");
@@ -2358,7 +2392,7 @@ function subidosAjustarTextosExportPredica(node) {
   const otrasText = node.querySelector(".subidos-export-otras-citas");
 
   if (otrasBox && otrasText) {
-    subidosAjustarTextoSoloSiNoCabe(otrasBox, otrasText, 9.2, 0.2);
+    subidosAjustarTextoSoloSiNoCabe(noteBox, noteText, 11.4, 0.2);
   }
 }
 
