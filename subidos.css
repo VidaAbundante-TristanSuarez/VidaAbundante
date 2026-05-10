@@ -169,6 +169,11 @@ body.oscuro #subidosApp{
   resize:vertical;
 }
 
+#subidosDescripcion{
+  min-height:92px !important;
+  height:92px !important;
+}
+
 #modalSubidos input[type="file"]{
   white-space:normal !important;
   min-height:58px !important;
