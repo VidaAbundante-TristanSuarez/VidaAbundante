@@ -1899,6 +1899,24 @@ function subidosClaseBalanceIntroNota(introduccion = "", notaFinal = "") {
   return "dos";
 }
 
+function subidosClasePrimeraCitaExport(texto = "", referencia = "") {
+  const txt = String(texto || "").trim();
+  const ref = String(referencia || "").trim();
+
+  const textoPlano = txt.replace(/\s+/g, " ").trim();
+  const saltos = (txt.match(/\n/g) || []).length;
+  const peso = textoPlano.length + Math.round(ref.length * 0.35);
+
+  // ✅ poca carga: bloque más chico, más aire interno
+  if (peso <= 120 && saltos <= 1) return "breve";
+
+  // ✅ carga media
+  if (peso <= 220 && saltos <= 2) return "media";
+
+  // ✅ carga alta: usa el tamaño tope actual
+  return "larga";
+}
+
 function subidosCrearNodoExportPredica(it) {
   const exportW = subidosAnchoExportPredica();
   const exportH = Math.round((exportW * 16) / 9);
@@ -1925,6 +1943,7 @@ function subidosCrearNodoExportPredica(it) {
   const color = colorEtiquetaSubidos(it.etiqueta || "");
 
  const textosClase = subidosClaseBalanceIntroNota(introduccion, notaFinal);
+ const primeraClase = subidosClasePrimeraCitaExport(primeraTexto, primeraRef);
 
   const node = document.createElement("article");
   node.id = "subidosExportPredicaFinal";
@@ -1989,7 +2008,7 @@ function subidosCrearNodoExportPredica(it) {
         min-width:0;
         border-radius:16px;
         padding:6px 10px;
-        background:rgba(255,255,255,.52);
+        background:rgba(255,255,255,.62);
         border:1px solid rgba(255,255,255,.42);
         display:flex;
         align-items:center;
@@ -2039,7 +2058,7 @@ function subidosCrearNodoExportPredica(it) {
         width:100%;
         min-height:0;
         border:1px solid rgba(255,255,255,.52);
-        background:rgba(255,255,255,.70);
+        background:rgba(255,255,255,.80);
         border-radius:22px;
         overflow:hidden;
         display:flex;
@@ -2073,7 +2092,7 @@ function subidosCrearNodoExportPredica(it) {
       #subidosExportPredicaFinal .subidos-export-brand-box{
         width:100%;
         border:1px solid rgba(255,255,255,.52);
-        background:rgba(255,255,255,.70);
+        background:rgba(255,255,255,.80);
         border-radius:22px;
         padding:14px 12px;
         display:flex;
@@ -2107,12 +2126,10 @@ function subidosCrearNodoExportPredica(it) {
       /* ===== PRIMERA CITA DESTACADA ===== */
 
       #subidosExportPredicaFinal .subidos-export-primera-box{
-        flex:0 0 244px;
         min-height:0;
         border:1px solid rgba(255,255,255,.56);
-        background:rgba(255,255,255,.72);
+        background:rgba(255,255,255,.82);
         border-radius:22px;
-        padding:14px 18px;
         display:flex;
         flex-direction:column;
         align-items:center;
@@ -2120,6 +2137,24 @@ function subidosCrearNodoExportPredica(it) {
         gap:8px;
         text-align:center;
         overflow:hidden;
+      }
+
+      /* ✅ tamaño tope actual */
+      #subidosExportPredicaFinal .subidos-export-primera-box.larga{
+        flex:0 0 244px;
+        padding:14px 18px;
+      }
+
+      /* ✅ tamaño intermedio */
+      #subidosExportPredicaFinal .subidos-export-primera-box.media{
+        flex:0 0 196px;
+        padding:20px 24px;
+      }
+
+      /* ✅ texto corto: bloque más chico y más aire interno */
+      #subidosExportPredicaFinal .subidos-export-primera-box.breve{
+        flex:0 0 154px;
+        padding:26px 34px;
       }
 
       #subidosExportPredicaFinal .subidos-export-primera-texto{
@@ -2140,7 +2175,7 @@ function subidosCrearNodoExportPredica(it) {
         justify-content:center;
         border-radius:999px;
         padding:5px 16px;
-        background:rgba(255,255,255,.78);
+        background:rgba(255,255,255,.88);
         border:1px solid rgba(190,220,236,.95);
         font-size:13px;
         line-height:1;
@@ -2185,7 +2220,7 @@ function subidosCrearNodoExportPredica(it) {
       #subidosExportPredicaFinal .subidos-export-text-box{
         min-height:0;
         border:1px solid rgba(255,255,255,.52);
-        background:rgba(255,255,255,.70);
+        background:rgba(255,255,255,.80);
         border-radius:22px;
         padding:13px 14px;
         display:flex;
@@ -2217,7 +2252,7 @@ function subidosCrearNodoExportPredica(it) {
         flex:0 0 auto;
         min-height:42px;
         border:1px solid rgba(255,255,255,.52);
-        background:rgba(255,255,255,.62);
+        background:rgba(255,255,255,.72);
         border-radius:18px;
         padding:8px 12px;
         display:flex;
@@ -2289,7 +2324,7 @@ function subidosCrearNodoExportPredica(it) {
       </div>
     </div>
 
-    <div class="subidos-export-primera-box">
+    <div class="subidos-export-primera-box ${primeraClase}">
       ${primeraTexto ? `
         <div class="subidos-export-primera-texto">
           ${subidosHtmlExport(primeraTexto)}
@@ -2371,7 +2406,7 @@ function subidosAjustarTextosExportPredica(node) {
   const primeraText = node.querySelector(".subidos-export-primera-texto");
 
   if (primeraBox && primeraText) {
-    subidosAjustarTextoSoloSiNoCabe(primeraBox, primeraText, 12.2, 0.2);
+   subidosAjustarTextoSoloSiNoCabe(primeraBox, primeraText, 12.6, 0.2);
   }
 
   const introBox = node.querySelector(".subidos-export-text-box.intro-box");
