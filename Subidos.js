@@ -2807,11 +2807,12 @@ function htmlPredicaBibliaSubidoGrande(it, abrirClave = "") {
 
   const primeraBloque = primeraCita ? `
     <section
-      class="subidos-visor-bloque"
+      class="subidos-visor-bloque subidos-visor-bloque-primera"
       style="
-        background:#d1eeff;
-        border:1px solid rgba(110, 177, 214, .45);
+        background:rgba(209,238,255,.62);
+        border:1px solid rgba(150,205,235,.72);
         border-radius:16px;
+        overflow:hidden;
       "
     >
       <div class="subidos-visor-ref">
@@ -2819,7 +2820,19 @@ function htmlPredicaBibliaSubidoGrande(it, abrirClave = "") {
       </div>
 
       ${primeraCita.texto ? `
-        <div class="subidos-visor-texto">
+        <div
+          class="subidos-visor-texto-primera"
+          style="
+            padding:12px 14px 10px;
+            white-space:normal !important;
+            text-align:center !important;
+            font-family:'Lora', serif;
+            font-size:15px;
+            line-height:1.34;
+            font-weight:900;
+            color:var(--visor-texto);
+          "
+        >
           ${subidosTextoHtml(primeraCita.texto || "")}
         </div>
       ` : ``}
@@ -2854,6 +2867,14 @@ function htmlPredicaBibliaSubidoGrande(it, abrirClave = "") {
     `;
   }).join("");
 
+  const bloqueInfoEstilo = `
+    margin:10px 0 12px;
+    padding:12px 16px;
+    border-radius:16px;
+    background:rgba(255,255,255,.88);
+    border:1px solid #d8eef9;
+  `;
+
   return `
     <div class="subidos-visor-predica-full">
       <div class="subidos-visor-marco">
@@ -2869,15 +2890,7 @@ function htmlPredicaBibliaSubidoGrande(it, abrirClave = "") {
           </h2>
         ` : ``}
 
-        <div
-          style="
-            margin:12px 0 10px;
-            padding:12px 16px;
-            border-radius:16px;
-            background:rgba(255,255,255,.88);
-            border:1px solid #d8eef9;
-          "
-        >
+        <div style="${bloqueInfoEstilo}">
           <div class="subidos-visor-iglesia">
             Iglesia Cristiana de la Vida Abundante
           </div>
@@ -2886,15 +2899,7 @@ function htmlPredicaBibliaSubidoGrande(it, abrirClave = "") {
         ${primeraBloque}
 
         ${introduccion ? `
-          <div
-            style="
-              margin:10px 0 12px;
-              padding:12px 16px;
-              border-radius:16px;
-              background:rgba(255,255,255,.88);
-              border:1px solid #d8eef9;
-            "
-          >
+          <div style="${bloqueInfoEstilo}">
             <div class="subidos-visor-intro">
               • ${subidosTextoHtml(introduccion)}
             </div>
@@ -2908,15 +2913,7 @@ function htmlPredicaBibliaSubidoGrande(it, abrirClave = "") {
         ` : ``}
 
         ${notaFinal ? `
-          <div
-            style="
-              margin:12px 0 0;
-              padding:12px 16px;
-              border-radius:16px;
-              background:rgba(255,255,255,.88);
-              border:1px solid #d8eef9;
-            "
-          >
+          <div style="${bloqueInfoEstilo}">
             <div class="subidos-visor-intro">
               • ${subidosTextoHtml(notaFinal)}
             </div>
