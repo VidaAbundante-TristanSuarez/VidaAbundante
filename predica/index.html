@@ -1,0 +1,21 @@
+<script>
+  (function(){
+    const params = new URLSearchParams(window.location.search);
+
+    const ref =
+      params.get("ref") ||
+      params.get("id") ||
+      params.get("predica") ||
+      params.get("p") ||
+      "";
+
+    const path = window.location.pathname;
+    const base = path.replace(/\/predica\/?$/, "");
+
+    const destino = ref
+      ? `${window.location.origin}${base}/biblia.html?predicaRef=${encodeURIComponent(ref)}`
+      : `${window.location.origin}${base}/biblia.html`;
+
+    window.location.replace(destino);
+  })();
+</script>
