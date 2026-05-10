@@ -1905,15 +1905,17 @@ function subidosClasePrimeraCitaExport(texto = "", referencia = "") {
 
   const textoPlano = txt.replace(/\s+/g, " ").trim();
   const saltos = (txt.match(/\n/g) || []).length;
-  const peso = textoPlano.length + Math.round(ref.length * 0.35);
 
-  // ✅ poca carga: bloque más chico, más aire interno
-  if (peso <= 120 && saltos <= 1) return "breve";
+  // ✅ peso general del contenido
+  const peso = textoPlano.length + Math.round(ref.length * 0.35) + (saltos * 18);
 
-  // ✅ carga media
-  if (peso <= 220 && saltos <= 2) return "media";
+  // ✅ muy corto / corto
+  if (peso <= 185) return "breve";
 
-  // ✅ carga alta: usa el tamaño tope actual
+  // ✅ medio: acá queremos que entre el caso como 1 Samuel 17:34-35
+  if (peso <= 340) return "media";
+
+  // ✅ largo: recién acá usa el tamaño máximo actual
   return "larga";
 }
 
@@ -2139,22 +2141,22 @@ function subidosCrearNodoExportPredica(it) {
         overflow:hidden;
       }
 
-      /* ✅ tamaño tope actual */
+           /* ✅ tamaño tope actual */
       #subidosExportPredicaFinal .subidos-export-primera-box.larga{
         flex:0 0 244px;
         padding:14px 18px;
       }
 
-      /* ✅ tamaño intermedio */
+      /* ✅ tamaño intermedio: aprox 25% más chico que el grande */
       #subidosExportPredicaFinal .subidos-export-primera-box.media{
-        flex:0 0 196px;
-        padding:20px 24px;
+        flex:0 0 182px;
+        padding:24px 30px;
       }
 
       /* ✅ texto corto: bloque más chico y más aire interno */
       #subidosExportPredicaFinal .subidos-export-primera-box.breve{
-        flex:0 0 154px;
-        padding:26px 34px;
+        flex:0 0 146px;
+        padding:30px 38px;
       }
 
       #subidosExportPredicaFinal .subidos-export-primera-texto{
