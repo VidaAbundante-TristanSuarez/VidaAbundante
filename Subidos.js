@@ -1931,8 +1931,12 @@ function subidosPesoTextoExport(texto = "") {
 function subidosClaseCajaTextoExport(texto = "") {
   const peso = subidosPesoTextoExport(texto);
 
-  if (peso <= 150) return "breve";
-  if (peso <= 340) return "media";
+  // ✅ un texto corto no debe heredar una caja alta
+  if (peso <= 180) return "breve";
+
+  // ✅ texto medio: suficiente, sin inflar demasiado
+  if (peso <= 440) return "media";
+
   return "larga";
 }
 
@@ -1977,44 +1981,53 @@ function subidosRepartoFlexiblePredicaExport(primeraTexto = "", introduccion = "
   const p1 = subidosPesoTextoExport(primeraTexto);
   const intro = subidosPesoTextoExport(introduccion);
   const nota = subidosPesoTextoExport(notaFinal);
-  const secundarios = intro + nota;
-  const haySecundarios = secundarios > 0;
 
-  // ✅ El espacio se reparte por peso de texto, no por alturas fijas.
-  let growPrimera = 2.2 + (p1 / 125);
-  let growTextos = haySecundarios ? 1.2 + (secundarios / 160) : 0;
+  // ✅ Como intro y nota van una al lado de la otra,
+  // NO usamos intro + nota para el alto de esa fila.
+  // Usamos principalmente el más largo.
+  const mayorSecundario = Math.max(intro, nota);
+  const totalSecundario = intro + nota;
+  const haySecundarios = totalSecundario > 0;
 
-  // ✅ Si el versículo 1 es claramente más grande, toma más espacio.
-  if (p1 > secundarios * 1.35) growPrimera += 1.4;
+  let growPrimera = 2.4 + (p1 / 135);
+  let growTextos = haySecundarios ? 0.85 + (mayorSecundario / 210) : 0;
 
-  // ✅ Si intro/nota pesan más, toman más espacio.
-  if (haySecundarios && secundarios > p1 * 1.25) growTextos += 1.2;
+  // ✅ Si el primer versículo pesa más, le damos más espacio.
+  if (p1 > mayorSecundario * 1.25) {
+    growPrimera += 1.1;
+  }
 
-  growPrimera = subidosClampNumero(growPrimera, 2.2, 8.2);
-  growTextos = haySecundarios ? subidosClampNumero(growTextos, 1.1, 5.8) : 0;
+  // ✅ Si intro/nota realmente necesitan más, recién ahí crece esa fila.
+  if (haySecundarios && mayorSecundario > p1 * 1.15) {
+    growTextos += 0.9;
+  }
 
-  // ✅ Aire inteligente: mínimo 1px, más aire cuando los textos son chicos.
-  let gapGeneral = 8;
+  // ✅ Evita que la fila de intro/nota se infle por aire.
+  growPrimera = subidosClampNumero(growPrimera, 2.4, 8.4);
+  growTextos = haySecundarios ? subidosClampNumero(growTextos, 0.85, 3.8) : 0;
 
-  if (p1 >= 650 && secundarios <= 520) {
+  // ✅ Aire general: mínimo 1px.
+  let gapGeneral = 7;
+
+  if (p1 >= 650 && mayorSecundario <= 360) {
     gapGeneral = 3;
   } else if (p1 >= 470) {
     gapGeneral = 5;
-  } else if (p1 <= 220 && secundarios <= 280) {
-    gapGeneral = 16;
-  } else if (secundarios <= 360) {
-    gapGeneral = 12;
+  } else if (p1 <= 240 && mayorSecundario <= 220) {
+    gapGeneral = 13;
+  } else if (mayorSecundario <= 340) {
+    gapGeneral = 9;
   }
 
   // ✅ Aire entre intro y nota.
   let gapTextos = 12;
 
-  if (p1 >= 650 && secundarios <= 520) {
+  if (p1 >= 650 && mayorSecundario <= 360) {
     gapTextos = 8;
-  } else if (p1 <= 220 && secundarios <= 280) {
-    gapTextos = 20;
-  } else if (secundarios <= 360) {
-    gapTextos = 16;
+  } else if (mayorSecundario <= 180) {
+    gapTextos = 18;
+  } else if (mayorSecundario <= 340) {
+    gapTextos = 14;
   }
 
   return {
@@ -2308,8 +2321,8 @@ node.style.setProperty("--gap-textos", `${repartoFlexible.gapTextos}px`);
         min-height:0;
         max-height:none;
         display:grid;
-        align-items:stretch;
-        align-content:stretch;
+        align-items:center;
+        align-content:center;
         justify-items:stretch;
         overflow:hidden;
         gap:var(--gap-textos, 12px);
@@ -2340,9 +2353,11 @@ node.style.setProperty("--gap-textos", `${repartoFlexible.gapTextos}px`);
       }
 
       #subidosExportPredicaFinal .subidos-export-text-box{
+        width:100%;
+        height:auto;
         min-height:0;
-        height:100%;
         max-height:100%;
+        align-self:center;
         border:1px solid rgba(255,255,255,.52);
         background:rgba(255,255,255,.80);
         border-radius:22px;
@@ -2353,15 +2368,21 @@ node.style.setProperty("--gap-textos", `${repartoFlexible.gapTextos}px`);
         overflow:hidden;
       }
 
+      /* ✅ poco texto: bloque chico */
       #subidosExportPredicaFinal .subidos-export-text-box.breve{
-        padding:10px 14px;
+        min-height:76px;
+        padding:12px 14px;
       }
 
+      /* ✅ texto medio: bloque moderado */
       #subidosExportPredicaFinal .subidos-export-text-box.media{
-        padding:11px 15px;
+        min-height:118px;
+        padding:12px 15px;
       }
 
+      /* ✅ texto largo: crece más, pero no ocupa aire de más */
       #subidosExportPredicaFinal .subidos-export-text-box.larga{
+        min-height:154px;
         padding:12px 16px;
       }
 
