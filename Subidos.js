@@ -1962,18 +1962,69 @@ function subidosClaseLayoutPredicaExport(primeraTexto = "", introduccion = "", n
   const nota = subidosPesoTextoExport(notaFinal);
   const secundarios = intro + nota;
 
-  // ✅ Mucho versículo 1 + poca intro/nota: el espacio principal va al versículo.
   if (p1 >= 650 && secundarios <= 620) return "v1-max";
-
-  // ✅ Versículo 1 largo + secundarios no tan grandes.
   if (p1 >= 470 && secundarios <= 700) return "v1-grande";
-
-  // ✅ Versículo 1 medio.
   if (p1 >= 300) return "v1-medio";
 
-  // ✅ Versículo 1 corto.
   return "v1-normal";
 }
+
+function subidosClampNumero(n, min, max) {
+  return Math.max(min, Math.min(max, Number(n) || min));
+}
+
+function subidosRepartoFlexiblePredicaExport(primeraTexto = "", introduccion = "", notaFinal = "") {
+  const p1 = subidosPesoTextoExport(primeraTexto);
+  const intro = subidosPesoTextoExport(introduccion);
+  const nota = subidosPesoTextoExport(notaFinal);
+  const secundarios = intro + nota;
+  const haySecundarios = secundarios > 0;
+
+  // ✅ El espacio se reparte por peso de texto, no por alturas fijas.
+  let growPrimera = 2.2 + (p1 / 125);
+  let growTextos = haySecundarios ? 1.2 + (secundarios / 160) : 0;
+
+  // ✅ Si el versículo 1 es claramente más grande, toma más espacio.
+  if (p1 > secundarios * 1.35) growPrimera += 1.4;
+
+  // ✅ Si intro/nota pesan más, toman más espacio.
+  if (haySecundarios && secundarios > p1 * 1.25) growTextos += 1.2;
+
+  growPrimera = subidosClampNumero(growPrimera, 2.2, 8.2);
+  growTextos = haySecundarios ? subidosClampNumero(growTextos, 1.1, 5.8) : 0;
+
+  // ✅ Aire inteligente: mínimo 1px, más aire cuando los textos son chicos.
+  let gapGeneral = 8;
+
+  if (p1 >= 650 && secundarios <= 520) {
+    gapGeneral = 3;
+  } else if (p1 >= 470) {
+    gapGeneral = 5;
+  } else if (p1 <= 220 && secundarios <= 280) {
+    gapGeneral = 16;
+  } else if (secundarios <= 360) {
+    gapGeneral = 12;
+  }
+
+  // ✅ Aire entre intro y nota.
+  let gapTextos = 12;
+
+  if (p1 >= 650 && secundarios <= 520) {
+    gapTextos = 8;
+  } else if (p1 <= 220 && secundarios <= 280) {
+    gapTextos = 20;
+  } else if (secundarios <= 360) {
+    gapTextos = 16;
+  }
+
+  return {
+    growPrimera: growPrimera.toFixed(2),
+    growTextos: growTextos.toFixed(2),
+    gapGeneral: Math.max(1, Math.round(gapGeneral)),
+    gapTextos: Math.max(1, Math.round(gapTextos))
+  };
+}
+
 function subidosCrearNodoExportPredica(it) {
   const exportW = subidosAnchoExportPredica();
   const exportH = Math.round((exportW * 16) / 9);
@@ -2005,10 +2056,15 @@ function subidosCrearNodoExportPredica(it) {
 const notaClase = subidosClaseCajaTextoExport(notaFinal);
 const aireClase = subidosClaseAireIntroNotaExport(introduccion, notaFinal, primeraTexto);
 const layoutClase = subidosClaseLayoutPredicaExport(primeraTexto, introduccion, notaFinal);
+  const repartoFlexible = subidosRepartoFlexiblePredicaExport(primeraTexto, introduccion, notaFinal);
 
   const node = document.createElement("article");
   node.id = "subidosExportPredicaFinal";
 node.className = `subidos-export-template ${layoutClase}`;
+  node.style.setProperty("--grow-primera", repartoFlexible.growPrimera);
+node.style.setProperty("--grow-textos", repartoFlexible.growTextos);
+node.style.setProperty("--gap-general", `${repartoFlexible.gapGeneral}px`);
+node.style.setProperty("--gap-textos", `${repartoFlexible.gapTextos}px`);
 
   node.innerHTML = `
     <style>
@@ -2024,7 +2080,7 @@ node.className = `subidos-export-template ${layoutClase}`;
         padding:12px 14px 14px;
         display:flex;
         flex-direction:column;
-        gap:7px;
+        gap:var(--gap-general, 7px);
         background-image:url("${SUBIDOS_EXPORT_BG_URL}");
         background-size:cover;
         background-position:center center;
@@ -2184,10 +2240,12 @@ node.className = `subidos-export-template ${layoutClase}`;
         font-weight:800;
       }
 
-           /* ===== PRIMERA CITA DESTACADA ===== */
+                /* ===== PRIMERA CITA DESTACADA ===== */
 
       #subidosExportPredicaFinal .subidos-export-primera-box{
+        flex:var(--grow-primera, 3) 1 0;
         min-height:0;
+        max-height:none;
         border:1px solid rgba(255,255,255,.56);
         background:rgba(255,255,255,.82);
         border-radius:22px;
@@ -2201,34 +2259,15 @@ node.className = `subidos-export-template ${layoutClase}`;
       }
 
       #subidosExportPredicaFinal .subidos-export-primera-box.larga{
-        flex:0 0 244px;
-        padding:14px 18px;
+        padding:12px 18px;
       }
 
       #subidosExportPredicaFinal .subidos-export-primera-box.media{
-        flex:0 0 182px;
-        padding:24px 30px;
+        padding:18px 24px;
       }
 
       #subidosExportPredicaFinal .subidos-export-primera-box.breve{
-        flex:0 0 146px;
-        padding:30px 38px;
-      }
-
-      /* ✅ layout general: si el versículo 1 es largo, recibe más espacio */
-      #subidosExportPredicaFinal.v1-medio .subidos-export-primera-box{
-        flex-basis:210px;
-        padding:18px 22px;
-      }
-
-      #subidosExportPredicaFinal.v1-grande .subidos-export-primera-box{
-        flex-basis:278px;
-        padding:14px 18px;
-      }
-
-      #subidosExportPredicaFinal.v1-max .subidos-export-primera-box{
-        flex-basis:328px;
-        padding:12px 17px;
+        padding:24px 34px;
       }
 
       #subidosExportPredicaFinal .subidos-export-primera-texto{
@@ -2236,7 +2275,7 @@ node.className = `subidos-export-template ${layoutClase}`;
         max-width:100%;
         font-family:"Lora", serif;
         font-size:15px;
-        line-height:1.16;
+        line-height:1.14;
         font-weight:900;
         text-align:center;
         overflow-wrap:anywhere;
@@ -2244,7 +2283,7 @@ node.className = `subidos-export-template ${layoutClase}`;
 
       #subidosExportPredicaFinal.v1-grande .subidos-export-primera-texto,
       #subidosExportPredicaFinal.v1-max .subidos-export-primera-texto{
-        line-height:1.12;
+        line-height:1.10;
       }
 
       #subidosExportPredicaFinal .subidos-export-primera-ref{
@@ -2265,34 +2304,15 @@ node.className = `subidos-export-template ${layoutClase}`;
       /* ===== INTRO + NOTA FINAL ===== */
 
       #subidosExportPredicaFinal .subidos-export-text-row{
-        flex:1 1 auto;
+        flex:var(--grow-textos, 2) 1 0;
         min-height:0;
+        max-height:none;
         display:grid;
-        align-items:center;
-        align-content:center;
+        align-items:stretch;
+        align-content:stretch;
         justify-items:stretch;
-      }
-
-      #subidosExportPredicaFinal .subidos-export-text-row.aire-amplio{
-        gap:30px;
-        padding:24px 0;
-      }
-
-      #subidosExportPredicaFinal .subidos-export-text-row.aire-medio{
-        gap:22px;
-        padding:14px 0;
-      }
-
-      #subidosExportPredicaFinal .subidos-export-text-row.aire-compacto{
-        gap:12px;
-        padding:4px 0;
-      }
-
-      /* ✅ si versículo 1 ocupa mucho, compactamos secundarios */
-      #subidosExportPredicaFinal.v1-grande .subidos-export-text-row,
-      #subidosExportPredicaFinal.v1-max .subidos-export-text-row{
-        gap:18px;
-        padding:5px 0;
+        overflow:hidden;
+        gap:var(--gap-textos, 12px);
       }
 
       #subidosExportPredicaFinal .subidos-export-text-row.dos{
@@ -2320,9 +2340,9 @@ node.className = `subidos-export-template ${layoutClase}`;
       }
 
       #subidosExportPredicaFinal .subidos-export-text-box{
-        height:auto;
+        min-height:0;
+        height:100%;
         max-height:100%;
-        align-self:center;
         border:1px solid rgba(255,255,255,.52);
         background:rgba(255,255,255,.80);
         border-radius:22px;
@@ -2334,37 +2354,15 @@ node.className = `subidos-export-template ${layoutClase}`;
       }
 
       #subidosExportPredicaFinal .subidos-export-text-box.breve{
-        min-height:82px;
-        padding:15px 17px;
+        padding:10px 14px;
       }
 
       #subidosExportPredicaFinal .subidos-export-text-box.media{
-        min-height:112px;
-        padding:14px 16px;
+        padding:11px 15px;
       }
 
       #subidosExportPredicaFinal .subidos-export-text-box.larga{
-        min-height:148px;
-        padding:12px 14px;
-      }
-
-      /* ✅ cuando el versículo 1 manda, bajamos más las cajas secundarias */
-      #subidosExportPredicaFinal.v1-grande .subidos-export-text-box.breve,
-      #subidosExportPredicaFinal.v1-max .subidos-export-text-box.breve{
-        min-height:66px;
-        padding:10px 14px;
-      }
-
-      #subidosExportPredicaFinal.v1-grande .subidos-export-text-box.media,
-      #subidosExportPredicaFinal.v1-max .subidos-export-text-box.media{
-        min-height:86px;
-        padding:10px 14px;
-      }
-
-      #subidosExportPredicaFinal.v1-grande .subidos-export-text-box.larga,
-      #subidosExportPredicaFinal.v1-max .subidos-export-text-box.larga{
-        min-height:118px;
-        padding:10px 13px;
+        padding:12px 16px;
       }
 
       #subidosExportPredicaFinal .subidos-export-intro,
@@ -2373,29 +2371,30 @@ node.className = `subidos-export-template ${layoutClase}`;
         max-width:100%;
         font-weight:800;
         text-align:center;
-        line-height:1.16;
+        line-height:1.12;
         overflow-wrap:anywhere;
         display:block;
-        font-size:12.2px;
+        font-size:12px;
       }
 
       #subidosExportPredicaFinal.v1-grande .subidos-export-intro,
       #subidosExportPredicaFinal.v1-grande .subidos-export-note,
       #subidosExportPredicaFinal.v1-max .subidos-export-intro,
       #subidosExportPredicaFinal.v1-max .subidos-export-note{
-        font-size:11.6px;
-        line-height:1.12;
+        font-size:11.4px;
+        line-height:1.08;
       }
 
       /* ===== DEMÁS CITAS ===== */
 
       #subidosExportPredicaFinal .subidos-export-otras-citas-box{
-        flex:0 0 auto;
-        min-height:42px;
+        flex:0 1 auto;
+        min-height:36px;
+        max-height:58px;
         border:1px solid rgba(255,255,255,.52);
         background:rgba(255,255,255,.72);
         border-radius:18px;
-        padding:8px 12px;
+        padding:7px 12px;
         display:flex;
         align-items:center;
         justify-content:center;
@@ -2409,9 +2408,10 @@ node.className = `subidos-export-template ${layoutClase}`;
         justify-content:center;
         gap:4px 7px;
         font-size:11.5px;
-        line-height:1.12;
+        line-height:1.10;
         font-weight:900;
         text-align:center;
+        overflow:hidden;
       }
 
       #subidosExportPredicaFinal .subidos-export-ref-extra{
@@ -2424,6 +2424,7 @@ node.className = `subidos-export-template ${layoutClase}`;
         line-height:1;
         transform:translateY(-1px);
       }
+      
     </style>
 
     <div class="subidos-export-head">
@@ -2532,15 +2533,13 @@ function subidosAjustarTextoSoloSiNoCabe(boxEl, textEl, minFontPx = 9.5, paso = 
 
   const hayOverflow = () => {
     return (
-      boxEl.scrollHeight > boxEl.clientHeight + 1 ||
-      boxEl.scrollWidth > boxEl.clientWidth + 1
+      textEl.scrollHeight > boxEl.clientHeight + 1 ||
+      textEl.scrollWidth > boxEl.clientWidth + 1
     );
   };
 
-  // ✅ si ya entra todo el bloque, no tocamos fuente
   if (!hayOverflow()) return;
 
-  // ✅ si no entra, bajamos solo hasta que entre
   while (fontSize > minFontPx && hayOverflow()) {
     fontSize = Math.max(minFontPx, fontSize - paso);
     textEl.style.fontSize = fontSize + "px";
@@ -2550,18 +2549,18 @@ function subidosAjustarTextoSoloSiNoCabe(boxEl, textEl, minFontPx = 9.5, paso = 
 function subidosAjustarTextosExportPredica(node) {
   if (!node) return;
 
+  const layoutMuyAjustado =
+    node.classList.contains("v1-grande") ||
+    node.classList.contains("v1-max");
+
   const primeraBox = node.querySelector(".subidos-export-primera-box");
   const primeraText = node.querySelector(".subidos-export-primera-texto");
 
-   if (primeraBox && primeraText) {
-    const primeraMuyLarga =
-      node.classList.contains("v1-grande") ||
-      node.classList.contains("v1-max");
-
+  if (primeraBox && primeraText) {
     subidosAjustarTextoSoloSiNoCabe(
       primeraBox,
       primeraText,
-      primeraMuyLarga ? 10.6 : 12.6,
+      layoutMuyAjustado ? 10.2 : 12.4,
       0.2
     );
   }
@@ -2570,21 +2569,36 @@ function subidosAjustarTextosExportPredica(node) {
   const introText = node.querySelector(".subidos-export-intro");
 
   if (introBox && introText) {
-    subidosAjustarTextoSoloSiNoCabe(introBox, introText, 11.4, 0.2);
+    subidosAjustarTextoSoloSiNoCabe(
+      introBox,
+      introText,
+      layoutMuyAjustado ? 9.6 : 11.2,
+      0.2
+    );
   }
 
   const noteBox = node.querySelector(".subidos-export-text-box.note-box");
   const noteText = node.querySelector(".subidos-export-note");
 
   if (noteBox && noteText) {
-    subidosAjustarTextoSoloSiNoCabe(noteBox, noteText, 11.4, 0.2);
+    subidosAjustarTextoSoloSiNoCabe(
+      noteBox,
+      noteText,
+      layoutMuyAjustado ? 9.6 : 11.2,
+      0.2
+    );
   }
 
   const otrasBox = node.querySelector(".subidos-export-otras-citas-box");
   const otrasText = node.querySelector(".subidos-export-otras-citas");
 
   if (otrasBox && otrasText) {
-    subidosAjustarTextoSoloSiNoCabe(otrasBox, otrasText, 9.2, 0.2);
+    subidosAjustarTextoSoloSiNoCabe(
+      otrasBox,
+      otrasText,
+      9.2,
+      0.2
+    );
   }
 }
 
