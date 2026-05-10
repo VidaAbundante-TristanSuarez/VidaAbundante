@@ -2220,7 +2220,7 @@ const aireClase = subidosClaseAireIntroNotaExport(introduccion, notaFinal);
         white-space:nowrap;
       }
 
-          /* ===== INTRO + NOTA FINAL ===== */
+         /* ===== INTRO + NOTA FINAL ===== */
 
       #subidosExportPredicaFinal .subidos-export-text-row{
         flex:1 1 auto;
@@ -2231,20 +2231,22 @@ const aireClase = subidosClaseAireIntroNotaExport(introduccion, notaFinal);
         justify-items:stretch;
       }
 
-      /* ✅ aire inteligente */
+      /* ✅ aire inteligente:
+         poco texto = más fondo visible
+         mucho texto = menos fondo visible */
       #subidosExportPredicaFinal .subidos-export-text-row.aire-amplio{
-        gap:24px;
-        padding:10px 0;
+        gap:22px;
+        padding:18px 0;
       }
 
       #subidosExportPredicaFinal .subidos-export-text-row.aire-medio{
         gap:16px;
-        padding:5px 0;
+        padding:10px 0;
       }
 
       #subidosExportPredicaFinal .subidos-export-text-row.aire-compacto{
-        gap:8px;
-        padding:0;
+        gap:10px;
+        padding:3px 0;
       }
 
       #subidosExportPredicaFinal .subidos-export-text-row.dos{
@@ -2252,19 +2254,19 @@ const aireClase = subidosClaseAireIntroNotaExport(introduccion, notaFinal);
       }
 
       #subidosExportPredicaFinal .subidos-export-text-row.intro-larga{
-        grid-template-columns:1.25fr .75fr;
+        grid-template-columns:1.12fr .88fr;
       }
 
       #subidosExportPredicaFinal .subidos-export-text-row.nota-larga{
-        grid-template-columns:.75fr 1.25fr;
+        grid-template-columns:.88fr 1.12fr;
       }
 
       #subidosExportPredicaFinal .subidos-export-text-row.intro-muy-larga{
-        grid-template-columns:1.45fr .55fr;
+        grid-template-columns:1.22fr .78fr;
       }
 
       #subidosExportPredicaFinal .subidos-export-text-row.nota-muy-larga{
-        grid-template-columns:.55fr 1.45fr;
+        grid-template-columns:.78fr 1.22fr;
       }
 
       #subidosExportPredicaFinal .subidos-export-text-row.uno{
@@ -2285,22 +2287,22 @@ const aireClase = subidosClaseAireIntroNotaExport(introduccion, notaFinal);
         overflow:hidden;
       }
 
-      /* ✅ poco texto: caja chica, más fondo alrededor */
+      /* ✅ poco texto: caja chica */
       #subidosExportPredicaFinal .subidos-export-text-box.breve{
-        min-height:116px;
-        padding:22px 22px;
+        min-height:104px;
+        padding:20px 20px;
       }
 
-      /* ✅ texto medio */
+      /* ✅ texto medio: caja moderada */
       #subidosExportPredicaFinal .subidos-export-text-box.media{
-        min-height:168px;
-        padding:18px 18px;
+        min-height:142px;
+        padding:17px 18px;
       }
 
-      /* ✅ texto largo: caja más grande, menos aire */
+      /* ✅ texto largo: crece, pero no gigante */
       #subidosExportPredicaFinal .subidos-export-text-box.larga{
-        min-height:228px;
-        padding:14px 15px;
+        min-height:184px;
+        padding:14px 16px;
       }
 
       #subidosExportPredicaFinal .subidos-export-intro,
