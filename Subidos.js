@@ -20,6 +20,7 @@ let subidosMesActual = new Date();
 let subidosItems = [];
 let subidosEtiquetas = [];
 let subidosEditandoId = null;
+let subidosDeepLinkAbierto = false;
 
 /* ================= ARCHIVOS REALES PARA COMPARTIR/DESCARGAR ================= */
 
@@ -1720,6 +1721,125 @@ function subidosTieneContenidoPredica(it) {
   return !!(obtenerCitasPredicaSubido(it).length || String(it.predicaNotaFinal || it.notaFinalGeneral || "").trim());
 }
 
+function subidosBaseUrlApp() {
+  const url = new URL(window.location.href);
+  let path = url.pathname;
+
+  if (path.endsWith("/")) path = path.slice(0, -1);
+
+  const partes = path.split("/");
+  const ultimo = partes[partes.length - 1] || "";
+
+  if (ultimo.includes(".")) {
+    partes.pop();
+    path = partes.join("/");
+  }
+
+  return url.origin + path.replace(/\/$/, "");
+}
+
+function subidosNormalizarRefPredica(txt = "") {
+  return String(txt || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9-]+/g, "-")
+    .replace(/-{2,}/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function subidosNumeroDesdePredicaRef(refTxt = "", fechaEvento = "") {
+  const ref = String(refTxt || "").trim();
+  const fecha = String(fechaEvento || "").trim();
+
+  if (!ref || !fecha) return 0;
+
+  const m = ref.match(new RegExp("^" + fecha.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "-(\\d+)$"));
+  return m ? Number(m[1] || 0) : 0;
+}
+
+function subidosListaPredicasMismaFecha(fechaEvento = "", excluirId = "") {
+  const fecha = String(fechaEvento || "").trim();
+  const excluir = String(excluirId || "").trim();
+
+  if (!fecha) return [];
+
+  return subidosItems
+    .filter(it =>
+      String(it.id || "") !== excluir &&
+      esPredicaSubidos(it.etiqueta || "") &&
+      String(it.fechaEvento || "") === fecha
+    )
+    .sort((a, b) => {
+      const fa = Number(a.fecha || 0);
+      const fb = Number(b.fecha || 0);
+      if (fa !== fb) return fa - fb;
+      return String(a.id || "").localeCompare(String(b.id || ""));
+    });
+}
+
+function subidosCrearPredicaRef(fechaEvento = "", excluirId = "") {
+  const fecha = String(fechaEvento || "").trim() || fechaYMD(new Date());
+  const existentes = subidosListaPredicasMismaFecha(fecha, excluirId);
+
+  const maxNumeroGuardado = existentes.reduce((max, it) => {
+    const n = subidosNumeroDesdePredicaRef(it.predicaRef || "", fecha);
+    return Math.max(max, n);
+  }, 0);
+
+  const numero = Math.max(maxNumeroGuardado, existentes.length) + 1;
+
+  return `${fecha}-${numero}`;
+}
+
+function subidosRefPredicaItem(it = {}) {
+  if (it.predicaRef) return String(it.predicaRef || "").trim();
+
+  const fecha = String(it.fechaEvento || "").trim();
+  if (!fecha) return String(it.id || "").trim();
+
+  const lista = subidosListaPredicasMismaFecha(fecha, "");
+
+  const index = lista.findIndex(x => String(x.id || "") === String(it.id || ""));
+  const numero = index >= 0 ? index + 1 : 1;
+
+  return `${fecha}-${numero}`;
+}
+
+function subidosBuscarPredicaPorReferencia(refTxt = "") {
+  const refLimpia = decodeURIComponent(String(refTxt || "").trim());
+  if (!refLimpia) return null;
+
+  // ✅ Compatibilidad: si entra el ID raro viejo, también abre.
+  const porId = obtenerSubidoPorId(refLimpia);
+  if (porId) return porId;
+
+  const refNorm = subidosNormalizarRefPredica(refLimpia);
+
+  const candidatas = subidosItems
+    .filter(it => subidosEsPredicaConContenido(it))
+    .filter(it => {
+      const guardada = subidosNormalizarRefPredica(it.predicaRef || "");
+      const calculada = subidosNormalizarRefPredica(subidosRefPredicaItem(it));
+      const fecha = String(it.fechaEvento || "").trim();
+
+      return (
+        guardada === refNorm ||
+        calculada === refNorm ||
+        fecha === refLimpia
+      );
+    })
+    .sort((a, b) => {
+      const fa = Number(a.fecha || 0);
+      const fb = Number(b.fecha || 0);
+      if (fa !== fb) return fa - fb;
+      return String(a.id || "").localeCompare(String(b.id || ""));
+    });
+
+  return candidatas[0] || null;
+}
+
 function subidosTextoPlanoPredica(it) {
   const citas = obtenerCitasPredicaSubido(it);
   const notaFinal = String(it.predicaNotaFinal || it.notaFinalGeneral || "").trim();
@@ -1777,9 +1897,14 @@ function abrirModalSubidosVisor(titulo, html) {
 }
 
 function subidosLinkDetalle(id) {
-  const url = new URL(window.location.href);
-  url.hash = `subido=${encodeURIComponent(id)}&open=all`;
-  return url.toString();
+  const base = subidosBaseUrlApp();
+  const it = obtenerSubidoPorId(id);
+
+  const ref = it && subidosEsPredicaConContenido(it)
+    ? subidosRefPredicaItem(it)
+    : id;
+
+  return `${base}/predica/?ref=${encodeURIComponent(ref)}`;
 }
 
 function subidosEsperarImagenes(node) {
@@ -3004,35 +3129,71 @@ function subidosEsPredicaConContenido(it) {
   return esPredicaSubidos(it?.etiqueta || "") && subidosTieneContenidoPredica(it);
 }
 
-function subidosAbrirDesdeHash() {
+function subidosLeerLinkPredicaDirecta() {
+  const url = new URL(window.location.href);
+
+  const refQuery =
+    url.searchParams.get("predicaRef") ||
+    url.searchParams.get("ref") ||
+    url.searchParams.get("predica") ||
+    url.searchParams.get("p") ||
+    url.searchParams.get("idPredica");
+
+  if (refQuery) {
+    return {
+      ref: String(refQuery || "").trim(),
+      limpiarHash: false
+    };
+  }
+
   const rawHash = String(window.location.hash || "").replace(/^#/, "");
-  if (!rawHash.startsWith("subido=")) return;
+  if (!rawHash) return null;
 
-  const params = new URLSearchParams(rawHash);
-  const id = String(params.get("subido") || "").trim();
-  const open = String(params.get("open") || "").trim();
+  if (rawHash.startsWith("subido=")) {
+    const params = new URLSearchParams(rawHash);
+    return {
+      ref: String(params.get("subido") || "").trim(),
+      limpiarHash: true
+    };
+  }
 
-  if (!id) return;
+  if (rawHash.startsWith("predica=")) {
+    const params = new URLSearchParams(rawHash);
+    return {
+      ref: String(params.get("predica") || "").trim(),
+      limpiarHash: true
+    };
+  }
 
-  const it = obtenerSubidoPorId(id);
+  return null;
+}
+
+function subidosAbrirDesdeHash() {
+  if (subidosDeepLinkAbierto) return;
+
+  const link = subidosLeerLinkPredicaDirecta();
+  if (!link?.ref) return;
+
+  const it = subidosBuscarPredicaPorReferencia(link.ref);
   if (!it) return;
 
-  // ✅ Consumimos el hash una sola vez para que al refrescar no se abra sola otra vez.
-  subidosLimpiarHashDetalle();
+  subidosDeepLinkAbierto = true;
+
+  if (link.limpiarHash) {
+    subidosLimpiarHashDetalle();
+  }
 
   if (typeof window.irA === "function") window.irA("iglesia");
   if (typeof window.mostrarIglesiaSub === "function") window.mostrarIglesiaSub("subidos");
 
   setTimeout(() => {
-    const abrirClave = open === "all" ? "all" : "";
-
     if (subidosEsPredicaConContenido(it)) {
-      abrirSubidosVisorPredica(id, abrirClave);
+      abrirSubidosVisorPredica(it.id, "all");
       return;
     }
 
     if (it.url) {
-      abrirSubidosVisorArchivo(id);
+      abrirSubidosVisorArchivo(it.id);
     }
   }, 180);
 }
@@ -4070,6 +4231,13 @@ if (file) {
       : push(ref(db, "subidosIglesia"));
 
     const idFinal = destinoRef.key;
+    const predicaRef = esPredica
+  ? (
+      actual.predicaRef && actual.fechaEvento === fechaEvento
+        ? actual.predicaRef
+        : subidosCrearPredicaRef(fechaEvento, idFinal)
+    )
+  : "";
 
     // ✅ cuando guardo/edito, borro cache viejo para no compartir imagen anterior
     subidosFileCache.delete(idFinal);
@@ -4090,7 +4258,8 @@ subidaDirectaVideo,
 uidCreador: actual.uidCreador || subidosUID,
 esEventoSinArchivo: !url && permiteSinArchivo && !esPredica,
 esPredica,
-      predicaVersion: esPredica ? datosPredica.version : "",
+predicaRef,
+predicaVersion: esPredica ? datosPredica.version : "",
       predicaIntroduccion: esPredica ? datosPredica.introduccion : "",
       predicaCitas: esPredica ? datosPredica.citas : [],
       predicaNotaFinal: esPredica ? datosPredica.notaFinalGeneral : "",
