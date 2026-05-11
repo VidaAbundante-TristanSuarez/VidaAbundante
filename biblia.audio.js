@@ -8,7 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ✅ URL Cloud Function
   const AUDIO_WEBAPP_URL = "https://subir-imagen-r2.vidaabundante-tristansuarez.workers.dev";
-  const AUDIO_R2_UPLOAD_URL = "https://us-central1-vidaabundante-f118a.cloudfunctions.net/subirImagenR2";
+  const AUDIO_R2_UPLOAD_URL = "https://subir-imagen-r2.vidaabundante-tristansuarez.workers.dev";
 
   // ✅ Fonética (no pisa si ya existe)
   window.__FONETICA = window.__FONETICA || {};
