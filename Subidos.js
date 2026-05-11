@@ -9,7 +9,7 @@ const {
   push
 } = FB;
 
-const R2_UPLOAD_URL = "https://us-central1-vidaabundante-f118a.cloudfunctions.net/subirImagenR2";
+const R2_UPLOAD_URL = "https://subir-imagen-r2.vidaabundante-tristansuarez.workers.dev";
 const SUBIDOS_VIDEO_UPLOAD_URL = "https://us-central1-vidaabundante-f118a.cloudfunctions.net/crearUploadVideoR2";
 const SUBIDOS_PROXY_URL = "https://us-central1-vidaabundante-f118a.cloudfunctions.net/descargarImagenR2";
 const SUBIDOS_EXPORT_BG_URL = "./img/subidos/1fondo-predica-cielo.jpg";
