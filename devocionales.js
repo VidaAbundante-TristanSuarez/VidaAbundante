@@ -5,10 +5,13 @@
 
 // ✅ SIN FUNCTIONS para OCR/R2.
 // ✅ Audio queda en Functions por ahora.
-const GH_UPLOAD_URL = "https://us-central1-vidaabundante-f118a.cloudfunctions.net/subirAudioDevocionalGithub";
-const TTS_URL = "https://us-central1-vidaabundante-f118a.cloudfunctions.net/ttsAudio";
-
 const R2_WORKER_URL = "https://subir-imagen-r2.vidaabundante-tristansuarez.workers.dev";
+
+// ✅ Audio sigue en Functions, pero el navegador llama al Worker para evitar CORS.
+const GH_UPLOAD_URL = R2_WORKER_URL;
+const TTS_URL = R2_WORKER_URL;
+
+// ✅ R2 también va por Worker.
 const R2_UPLOAD_URL = R2_WORKER_URL;
 
 console.log("✅ devocionales.js cargó (module)", "VERSION 1");
