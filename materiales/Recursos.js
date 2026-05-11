@@ -1674,6 +1674,104 @@ function hTelefonoWhatsApp(telefono) {
   return "549" + n;
 }
 
+function hFechaYMDArgentina() {
+  const partes = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Argentina/Buenos_Aires",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).formatToParts(new Date());
+
+  const y = partes.find(p => p.type === "year")?.value || "";
+  const m = partes.find(p => p.type === "month")?.value || "";
+  const d = partes.find(p => p.type === "day")?.value || "";
+
+  return `${y}-${m}-${d}`;
+}
+
+function hPrimerNombre(nombre = "") {
+  return String(nombre || "")
+    .trim()
+    .split(/\s+/)[0] || "hermano";
+}
+
+function hSlugPedidoOracion(txt = "") {
+  return String(txt || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/-{2,}/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function hLetraDesdeNumeroPedidoOracion(num = 1) {
+  const letras = "abcdefghijklmnopqrstuvwxyz";
+  const n = Math.max(1, Number(num) || 1);
+
+  if (n <= 26) return letras[n - 1];
+
+  const primero = Math.floor((n - 1) / 26) - 1;
+  const segundo = (n - 1) % 26;
+
+  return letras[Math.max(0, primero)] + letras[segundo];
+}
+
+async function hCrearRefPedidoOracion({ db, hermanoId, token, nombre }) {
+  const fecha = hFechaYMDArgentina();
+  const primerNombre = hPrimerNombre(nombre);
+  const nombreSlug = hSlugPedidoOracion(primerNombre);
+  const baseRef = `${fecha}-${nombreSlug}`;
+
+  const getFn = window.__FB_API?.get;
+
+  let usados = [];
+
+  if (typeof getFn === "function") {
+    try {
+      const snap = await getFn(ref(db, "linksPedidosOracion"));
+      const data = snap.val() || {};
+
+      usados = Object.keys(data).filter(k => k.startsWith(baseRef + "-"));
+    } catch (e) {
+      console.warn("No pude leer linksPedidosOracion para calcular letra:", e);
+    }
+  }
+
+  let numero = usados.length + 1;
+  let letra = hLetraDesdeNumeroPedidoOracion(numero);
+  let refPedido = `${baseRef}-${letra}`;
+
+  while (usados.includes(refPedido)) {
+    numero++;
+    letra = hLetraDesdeNumeroPedidoOracion(numero);
+    refPedido = `${baseRef}-${letra}`;
+  }
+
+  await set(ref(db, `linksPedidosOracion/${refPedido}`), {
+    hermanoId,
+    token,
+    nombre: primerNombre,
+    fecha,
+    letra,
+    activo: true,
+    creadoEn: Date.now(),
+    creadoPor: window.__UID || ""
+  });
+
+  return refPedido;
+}
+
+function hBaseUrlApp() {
+  const path = location.pathname;
+
+  // Si estás en /VidaAbundante/biblia.html, deja /VidaAbundante
+  const basePath = path.replace(/\/[^\/]*\.html$/, "");
+
+  return `${location.origin}${basePath}`;
+}
+
 window.enviarHermanoPorWhatsApp = async (id) => {
   const item = hermanosCache.find(x => x.id === id);
   if (!item) return;
@@ -1706,7 +1804,22 @@ window.enviarHermanoPorWhatsApp = async (id) => {
     }
   }
 
-  const linkFormulario = `${location.origin}${location.pathname}?pedidoOracion=${encodeURIComponent(id)}&token=${encodeURIComponent(token)}`;
+  let refPedido = "";
+
+  try {
+    refPedido = await hCrearRefPedidoOracion({
+      db,
+      hermanoId: id,
+      token,
+      nombre: item.nombre || "hermano"
+    });
+  } catch (err) {
+    console.error(err);
+    alert("No pude crear el link corto de oración.");
+    return;
+  }
+
+  const linkFormulario = `${hBaseUrlApp()}/pedidosdeoracion/?ref=${encodeURIComponent(refPedido)}`;
 
   const texto = [
     `Bendiciones hermano, complete sus pedidos de oración con libertad y fe en el nombre de Jesús 🙏💛`,
@@ -2009,17 +2122,49 @@ const URL_GUARDAR_PEDIDO_ORACION = "https://us-central1-vidaabundante-f118a.clou
 
 function iniciarFormularioPedidoOracionDesdeURL() {
   const params = new URLSearchParams(window.location.search);
-  const hermanoId = params.get("pedidoOracion");
-  const token = params.get("token");
+  const path = String(window.location.pathname || "").toLowerCase();
 
-  if (!hermanoId || !token) return;
+  // ✅ Link nuevo recomendado:
+  // biblia.html?pedidoOracionRef=2026-04-19-juan-a
+  const refNuevo =
+    params.get("pedidoOracionRef") ||
+    params.get("refPedidoOracion") ||
+    "";
 
-  abrirFormularioPedidoOracionPublico(hermanoId, token);
+  // ✅ Solo aceptamos ?ref=... si estamos entrando desde /pedidosdeoracion/
+  // Así no se mezcla con otros links tipo prédica.
+  const refDesdePaginaPedidos = path.includes("/pedidosdeoracion/")
+    ? (params.get("ref") || "")
+    : "";
+
+  const refPedido = String(refNuevo || refDesdePaginaPedidos || "").trim();
+
+  // ✅ Link viejo:
+  // biblia.html?pedidoOracion=ID&token=TOKEN
+  const hermanoId = String(params.get("pedidoOracion") || "").trim();
+  const token = String(params.get("token") || "").trim();
+
+  if (refPedido) {
+    abrirFormularioPedidoOracionPublico({
+      ref: refPedido
+    });
+    return;
+  }
+
+  if (hermanoId && token) {
+    abrirFormularioPedidoOracionPublico({
+      hermanoId,
+      token
+    });
+  }
 }
 
-function abrirFormularioPedidoOracionPublico(hermanoId, token) {
+function abrirFormularioPedidoOracionPublico(datos = {}) {
   const viejo = document.getElementById("modalPedidoOracionPublico");
   if (viejo) viejo.remove();
+
+  const styleViejo = document.getElementById("modalPedidoOracionPublicoStyle");
+  if (styleViejo) styleViejo.remove();
 
   const modal = document.createElement("div");
   modal.id = "modalPedidoOracionPublico";
@@ -2116,6 +2261,11 @@ function abrirFormularioPedidoOracionPublico(hermanoId, token) {
       font-size:15px;
     }
 
+    #btnEnviarPedidoOracionPublico:disabled{
+      opacity:.65;
+      cursor:wait;
+    }
+
     #pedidoOracionPublicoEstado{
       margin-top:10px;
       font-size:14px;
@@ -2129,11 +2279,11 @@ function abrirFormularioPedidoOracionPublico(hermanoId, token) {
   const btn = document.getElementById("btnEnviarPedidoOracionPublico");
 
   if (btn) {
-    btn.onclick = () => enviarPedidoOracionPublico(hermanoId, token);
+    btn.onclick = () => enviarPedidoOracionPublico(datos);
   }
 }
 
-async function enviarPedidoOracionPublico(hermanoId, token) {
+async function enviarPedidoOracionPublico(datos = {}) {
   const txt = document.getElementById("pedidoOracionPublicoTexto");
   const estado = document.getElementById("pedidoOracionPublicoEstado");
   const btn = document.getElementById("btnEnviarPedidoOracionPublico");
@@ -2150,6 +2300,15 @@ async function enviarPedidoOracionPublico(hermanoId, token) {
     return;
   }
 
+  const refPedido = String(datos.ref || "").trim();
+  const hermanoId = String(datos.hermanoId || "").trim();
+  const token = String(datos.token || "").trim();
+
+  if (!refPedido && (!hermanoId || !token)) {
+    if (estado) estado.textContent = "Link inválido o incompleto.";
+    return;
+  }
+
   try {
     if (btn) {
       btn.disabled = true;
@@ -2158,16 +2317,23 @@ async function enviarPedidoOracionPublico(hermanoId, token) {
 
     if (estado) estado.textContent = "";
 
+    const payload = refPedido
+      ? {
+          ref: refPedido,
+          pedido
+        }
+      : {
+          hermanoId,
+          token,
+          pedido
+        };
+
     const r = await fetch(URL_GUARDAR_PEDIDO_ORACION, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({
-        hermanoId,
-        token,
-        pedido
-      })
+      body: JSON.stringify(payload)
     });
 
     const data = await r.json().catch(() => ({}));
@@ -2190,8 +2356,20 @@ async function enviarPedidoOracionPublico(hermanoId, token) {
       if (style) style.remove();
 
       const url = new URL(window.location.href);
+
+      // ✅ limpiamos link nuevo
+      url.searchParams.delete("pedidoOracionRef");
+      url.searchParams.delete("refPedidoOracion");
+
+      // ✅ limpiamos link viejo
       url.searchParams.delete("pedidoOracion");
       url.searchParams.delete("token");
+
+      // ✅ solo quitamos ref si estamos en pedidosdeoracion
+      if (String(url.pathname || "").toLowerCase().includes("/pedidosdeoracion/")) {
+        url.searchParams.delete("ref");
+      }
+
       window.history.replaceState({}, "", url.toString());
     }, 1800);
 
@@ -2199,7 +2377,7 @@ async function enviarPedidoOracionPublico(hermanoId, token) {
     console.error(err);
 
     if (estado) {
-      estado.textContent = "No se pudo enviar. Intente nuevamente.";
+      estado.textContent = err?.message || "No se pudo enviar. Intente nuevamente.";
     }
 
     if (btn) {
@@ -2214,4 +2392,3 @@ if (document.readyState === "loading") {
 } else {
   iniciarFormularioPedidoOracionDesdeURL();
 }
-
