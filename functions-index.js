@@ -442,6 +442,9 @@ exports.hacerAdmin = onRequest(
 
 // ================================
 // GUARDAR PEDIDO DE ORACIÓN ✅
+// Acepta:
+// 1) ref amigable: 2026-04-19-juan-a
+// 2) hermanoId + token viejo
 // ================================
 exports.guardarPedidoOracion = onRequest(
   { cors: true },
@@ -472,18 +475,66 @@ exports.guardarPedidoOracion = onRequest(
         });
       }
 
-      const hermanoId = String(payload.hermanoId || "").trim();
-      const token = String(payload.token || "").trim();
+      const refPedido = String(payload.ref || "").trim();
+      let hermanoId = String(payload.hermanoId || "").trim();
+      let token = String(payload.token || "").trim();
       const pedido = String(payload.pedido || "").trim();
 
-      if (!hermanoId || !token || !pedido) {
+      if (!pedido) {
+        return res.status(400).json({
+          ok: false,
+          error: "Pedido vacío"
+        });
+      }
+
+      const db = admin.database();
+
+      // ✅ NUEVO: si viene ref, buscamos el hermano/token desde linksPedidosOracion
+      if (refPedido) {
+        const refLimpia = refPedido
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-z0-9-]/g, "-")
+          .replace(/-{2,}/g, "-")
+          .replace(/^-+|-+$/g, "");
+
+        const linkSnap = await db.ref(`linksPedidosOracion/${refLimpia}`).get();
+
+        if (!linkSnap.exists()) {
+          return res.status(404).json({
+            ok: false,
+            error: "Link no válido"
+          });
+        }
+
+        const linkData = linkSnap.val() || {};
+
+        if (linkData.activo === false) {
+          return res.status(403).json({
+            ok: false,
+            error: "Link desactivado"
+          });
+        }
+
+        hermanoId = String(linkData.hermanoId || "").trim();
+        token = String(linkData.token || "").trim();
+
+        if (!hermanoId || !token) {
+          return res.status(400).json({
+            ok: false,
+            error: "Link incompleto"
+          });
+        }
+      }
+
+      // ✅ Compatibilidad vieja: si no vino ref, exige hermanoId + token
+      if (!hermanoId || !token) {
         return res.status(400).json({
           ok: false,
           error: "Faltan datos"
         });
       }
-
-      const db = admin.database();
 
       const hermanoRef = db.ref(`hermanos/${hermanoId}`);
       const snap = await hermanoRef.get();
@@ -524,7 +575,8 @@ exports.guardarPedidoOracion = onRequest(
       await db.ref(`historialPedidosOracion/${hermanoId}`).push().set({
         pedido,
         fecha,
-        ts: Date.now()
+        ts: Date.now(),
+        refPedido: refPedido || ""
       });
 
       return res.json({
