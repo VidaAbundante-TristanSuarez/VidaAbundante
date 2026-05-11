@@ -3,10 +3,13 @@
 // ✅ NO toca biblia.js
 // ✅ Reusa modalAudio existente (si está cargado biblia.audio.js)
 
-const OCR_URL = "https://us-central1-vidaabundante-f118a.cloudfunctions.net/ocrDevocional";
+// ✅ SIN FUNCTIONS para OCR/R2.
+// ✅ Audio queda en Functions por ahora.
 const GH_UPLOAD_URL = "https://us-central1-vidaabundante-f118a.cloudfunctions.net/subirAudioDevocionalGithub";
 const TTS_URL = "https://us-central1-vidaabundante-f118a.cloudfunctions.net/ttsAudio";
-const R2_UPLOAD_URL = "https://us-central1-vidaabundante-f118a.cloudfunctions.net/subirImagenR2";
+
+const R2_WORKER_URL = "https://subir-imagen-r2.vidaabundante-tristansuarez.workers.dev";
+const R2_UPLOAD_URL = R2_WORKER_URL;
 
 console.log("✅ devocionales.js cargó (module)", "VERSION 1");
 window.__DEV_DEVOCIONALES_LOADED__ = true;
@@ -118,6 +121,50 @@ const DEV = {
 function ocrSetStatus(msg){
   const el = $("estadoOCRDev");
   if (el) el.textContent = msg || "";
+}
+
+async function devOCRLocalDesdeBlob(blob, modo = "devocional") {
+  if (!blob) {
+    throw new Error("Falta imagen para OCR.");
+  }
+
+  if (!window.Tesseract || typeof window.Tesseract.recognize !== "function") {
+    throw new Error("OCR local no cargó. Revisá que Tesseract esté agregado en biblia.html.");
+  }
+
+  ocrSetStatus("⏳ Leyendo texto en el navegador…");
+
+  const result = await window.Tesseract.recognize(
+    blob,
+    "spa",
+    {
+      logger: (m) => {
+        const status = String(m?.status || "");
+        const progress = Number(m?.progress || 0);
+
+        if (!status) return;
+
+        if (status.includes("loading")) {
+          ocrSetStatus("⏳ Cargando OCR local…");
+          return;
+        }
+
+        if (status.includes("recognizing")) {
+          const pct = Math.max(1, Math.min(99, Math.round(progress * 100)));
+          ocrSetStatus(`⏳ Reconociendo texto… ${pct}%`);
+          return;
+        }
+      }
+    }
+  );
+
+  const text = String(result?.data?.text || "").trim();
+
+  if (!text) {
+    throw new Error("No se detectó texto en la imagen.");
+  }
+
+  return text;
 }
 
 function show(id, on){
@@ -496,17 +543,19 @@ async function blobToBase64(blob){
 }
 
 async function subirImagenAR2DesdeWeb(fileBase64, fileName, contentType = "image/png"){
-const r = await fetch(R2_UPLOAD_URL, {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    fileBase64,
-    fileName,
-    contentType
-  })
-});
+  const r = await fetch(R2_UPLOAD_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      fileBase64,
+      fileName,
+      contentType,
+      folder: "devocionales"
+    })
+  });
 
   const data = await r.json().catch(() => ({}));
+
   if (!r.ok || !data?.ok || !data?.url) {
     throw new Error(data?.error || data?.detail || "No se pudo subir imagen a R2");
   }
@@ -964,21 +1013,11 @@ window.devCargarFinalizado = async function(file){
     DEV.audioGithubUrl = "";
     devResetAudioManual();
 
-    const imageBase64 = await blobToBase64(file);
+const text = await devOCRLocalDesdeBlob(file, "finalizado");
 
-    const r = await fetch(OCR_URL, {
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({ imageBase64 })
-    });
-
-    const data = await r.json().catch(()=> ({}));
-    if (!r.ok) {
-      throw new Error(data?.error || data?.detail || ("OCR " + r.status));
-    }
-
-    const text = (data?.text || "").trim();
-    if (!text) throw new Error("No se detectó texto en la imagen finalizada.");
+if (!text) {
+  throw new Error("No se detectó texto en la imagen finalizada.");
+}
 
     DEV.rawText = text;
 
@@ -3499,14 +3538,15 @@ draw();
 
       if (boxCanvas) boxCanvas.classList.remove("hidden");
 
-      // ocultar textarea hasta OCR
-      const boxText = $("devTextoBox");
-      if (boxText) boxText.classList.add("hidden");
-      ta.value = "";
-      syncBtnCrear();
+// ✅ OCR local: mantenemos el flujo limpio, sin Functions
+const boxText = $("devTextoBox");
+if (boxText) boxText.classList.add("hidden");
 
-      URL.revokeObjectURL(url);
-      ocrSetStatus("✅ Imagen cargada. Podés recortar o tocar OCR.");
+ta.value = "";
+syncBtnCrear();
+
+URL.revokeObjectURL(url);
+ocrSetStatus("✅ Imagen cargada. Ajustá el recorte y tocá OCR.");
     };
 
     image.src = url;
@@ -3542,53 +3582,42 @@ btnListo.addEventListener("click", ()=>{
   draw();
 });
 
-  // OCR
+  // OCR LOCAL — sin Firebase Functions
   btnOCR.addEventListener("click", async ()=>{
-    if (!DEV.img) { alert("Primero cargá una imagen"); return; }
+    if (!DEV.img) {
+      alert("Primero cargá una imagen");
+      return;
+    }
 
     btnOCR.disabled = true;
     btnOCR.style.opacity = "0.6";
-    ocrSetStatus("⏳ Enviando imagen al OCR…");
+    ocrSetStatus("⏳ Preparando OCR local…");
 
     try{
       const blob = await getCroppedBlob();
-      if (!blob) return;
-
-      const imageBase64 = await blobToBase64(blob);
-
-      const r = await fetch(OCR_URL, {
-        method:"POST",
-        headers:{ "Content-Type":"application/json" },
-        body: JSON.stringify({ imageBase64 })
-      });
-
-      const data = await r.json().catch(()=> ({}));
-      if (!r.ok) {
-        ocrSetStatus("❌ Error OCR: " + (data?.error || r.status));
-        return;
+      if (!blob) {
+        throw new Error("No pude obtener la imagen recortada.");
       }
 
-      const text = (data?.text || "").trim();
-      if (!text) {
-        ocrSetStatus("⚠️ No se detectó texto.");
-        return;
-      }
+      const text = await devOCRLocalDesdeBlob(blob, "recorte");
 
       DEV.rawText = text;
       ta.value = text;
 
-      // mostrar textarea
       const boxText = $("devTextoBox");
       if (boxText) boxText.classList.remove("hidden");
 
       syncBtnCrear();
+
       ocrSetStatus("✅ OCR listo.");
-      await devAbrirFase0();  // ✅ abre el modal 0 al terminar OCR
-       btnOCR.style.display = "none";
+      await devAbrirFase0();
+
+      btnOCR.style.display = "none";
 
     }catch(e){
       console.error(e);
-      ocrSetStatus("❌ Error OCR: " + (e?.message || e));
+      ocrSetStatus("❌ Error OCR local: " + (e?.message || e));
+      alert("❌ No pude leer el texto con OCR local.\n\nDetalle: " + (e?.message || e));
     }finally{
       btnOCR.disabled = false;
       btnOCR.style.opacity = "1";
@@ -4732,7 +4761,7 @@ window.devWarmShareImage = async function(url, fileName="devocional.png"){
 // Usa descargarImagenR2: baja ARCHIVO REAL desde R2
 // =========================
 
-const DEV_R2_DOWNLOAD_URL = "https://us-central1-vidaabundante-f118a.cloudfunctions.net/descargarImagenR2";
+const DEV_R2_DOWNLOAD_URL = R2_WORKER_URL;
 
 function devNombreArchivoSeguro(fileName = "devocional.png"){
   return String(fileName || "devocional.png")
