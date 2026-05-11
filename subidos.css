@@ -1337,8 +1337,8 @@ body.oscuro #modalSubidosVisor{
   border: none !important;
   box-shadow: none !important;
   padding: 0 !important;
-  overflow: hidden !important;
-  border-radius: 10px !important;
+  overflow: visible !important;
+  border-radius: 0 !important;
 }
 
 /* ✅ Redondear sutilmente el archivo real, no el bloque de atrás */
@@ -1349,7 +1349,14 @@ body.oscuro #modalSubidosVisor{
   display: block !important;
 }
 
-.subidos-feed-card.subidos-card-predica .subidos-media img{
+.subidos-feed-card.subidos-card-predica .subidos-media .subidos-media-link.is-image > img{
+  width: auto !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: contain !important;
+  display: block !important;
+
   border-radius: 10px !important;
   clip-path: inset(0 round 10px) !important;
 }
