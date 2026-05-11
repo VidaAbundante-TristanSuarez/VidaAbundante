@@ -929,7 +929,7 @@ body.oscuro #modalSubidosVisor{
 #modalSubidosVisor .modal-card{
   background:
     linear-gradient(var(--visor-modal-overlay), var(--visor-modal-overlay)),
-    url("img/subidos/fondo-predica-cielo.jpg") center / cover no-repeat !important;
+    url("/VidaAbundante/img/subidos/1fondo-predica-cielo.jpg?v=2026-05-10") center / cover no-repeat !important;
   color: var(--visor-texto);
   box-shadow: 0 18px 42px rgba(0,0,0,.18);
 }
@@ -1315,8 +1315,16 @@ body.oscuro #modalSubidosVisor{
 }
 
 /* ✅ Subidos: toda la fuente de la card índice en negro */
-.subidos-feed-card,
-.subidos-feed-card *{
+.subidos-feed-card{
+  color:#000 !important;
+}
+
+.subidos-feed-card .subidos-feed-date,
+.subidos-feed-card .subidos-feed-desc,
+.subidos-feed-card .subidos-predica-primera,
+.subidos-feed-card .subidos-predica-primera-texto,
+.subidos-feed-card .subidos-file-open,
+.subidos-feed-card .subidos-file-open *{
   color:#000 !important;
 }
 
@@ -1329,7 +1337,7 @@ body.oscuro #modalSubidosVisor{
   overflow: visible !important;
 }
 
-/* ✅ El botón/marco que envuelve el archivo NO debe pintar fondo */
+/* ✅ El botón/marco que envuelve el archivo NO pinta fondo, pero sí recorta bordes */
 .subidos-feed-card.subidos-card-predica .subidos-media button.subidos-media-link,
 .subidos-feed-card.subidos-card-predica .subidos-media .subidos-media-link,
 .subidos-feed-card.subidos-card-predica .subidos-media .subidos-media-frame{
@@ -1337,8 +1345,8 @@ body.oscuro #modalSubidosVisor{
   border: none !important;
   box-shadow: none !important;
   padding: 0 !important;
-  overflow: visible !important;
-  border-radius: 0 !important;
+  overflow: hidden !important;
+  border-radius: 10px !important;
 }
 
 /* ✅ Redondear sutilmente el archivo real, no el bloque de atrás */
@@ -1356,9 +1364,8 @@ body.oscuro #modalSubidosVisor{
   max-height: 100% !important;
   object-fit: contain !important;
   display: block !important;
-
+  background: transparent !important;
   border-radius: 10px !important;
-  clip-path: inset(0 round 10px) !important;
 }
 
 </style>
