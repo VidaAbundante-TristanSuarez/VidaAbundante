@@ -928,86 +928,90 @@ exports.crearUploadVideoR2 = onRequest(
 exports.descargarImagenR2 = onRequest(
   {
     cors: true,
-    timeoutSeconds: 120,
-    memory: "1GiB"
+    timeoutSeconds: 60,
+    memory: "256MiB"
   },
   async (req, res) => {
+    // ✅ CORS SIEMPRE, incluso si hay error
+    res.set("Access-Control-Allow-Origin", "*");
+    res.set("Access-Control-Allow-Methods", "GET, OPTIONS");
+    res.set("Access-Control-Allow-Headers", "Content-Type");
+
     try {
       if (req.method === "OPTIONS") {
-        res.status(204).send("");
-        return;
+        return res.status(204).send("");
       }
 
       if (req.method !== "GET") {
-        res.status(405).json({ ok: false, error: "Use GET" });
-        return;
+        return res.status(405).json({
+          ok: false,
+          error: "Use GET"
+        });
       }
 
-      const rawUrl = String(req.query.url || "").trim();
-      const nombreParam = String(req.query.nombre || req.query.name || "").trim();
-      const descargar = String(req.query.descargar || req.query.download || "") === "1";
+      const url = String(req.query.url || "").trim();
+      const nombre = String(req.query.nombre || "archivo").trim() || "archivo";
+      const descargar = String(req.query.descargar || "") === "1";
 
-      if (!rawUrl) {
-        res.status(400).json({ ok: false, error: "Falta url" });
-        return;
+      if (!url) {
+        return res.status(400).json({
+          ok: false,
+          error: "Falta url"
+        });
       }
 
-      const u = new URL(rawUrl);
-
-      // ✅ Solo permitir TU bucket público R2
-      const permitido = u.href.startsWith("https://pub-f0843badb1194dc79fd37b3a5526e273.r2.dev/");
-      if (!permitido) {
-        res.status(400).json({ ok: false, error: "URL no permitida" });
-        return;
+      if (!/^https?:\/\//i.test(url)) {
+        return res.status(400).json({
+          ok: false,
+          error: "URL inválida"
+        });
       }
 
-      const r = await fetch(rawUrl);
+      const r = await fetch(url, {
+        method: "GET",
+        headers: {
+          "User-Agent": "VidaAbundante/1.0"
+        }
+      });
 
       if (!r.ok) {
-        res.status(502).json({
+        return res.status(502).json({
           ok: false,
-          error: "No pude leer el archivo desde R2",
+          error: "No pude leer el archivo remoto",
           status: r.status
         });
-        return;
       }
 
-      const arr = await r.arrayBuffer();
-      const buf = Buffer.from(arr);
+      const contentType =
+        r.headers.get("content-type") ||
+        "application/octet-stream";
 
-      const contentType = r.headers.get("content-type") || "application/octet-stream";
-
-      const nombreDesdeUrl = decodeURIComponent(
-        u.pathname.split("/").pop() || `archivo_${Date.now()}`
-      );
-
-      const fileName = (nombreParam || nombreDesdeUrl || `archivo_${Date.now()}`)
-        .replace(/[\r\n"]/g, "_")
-        .slice(0, 160);
-
-      res.set("Access-Control-Allow-Origin", "*");
-      res.set("Access-Control-Allow-Methods", "GET, OPTIONS");
-      res.set("Access-Control-Allow-Headers", "Content-Type");
-      res.set("Access-Control-Expose-Headers", "Content-Type, Content-Length, Content-Disposition");
+      const arrayBuffer = await r.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
 
       res.set("Content-Type", contentType);
-      res.set("Content-Length", String(buf.length));
       res.set("Cache-Control", "public, max-age=3600");
 
       if (descargar) {
-        const encoded = encodeURIComponent(fileName);
-        res.set("Content-Disposition", `attachment; filename*=UTF-8''${encoded}`);
-      } else {
-        const encoded = encodeURIComponent(fileName);
-        res.set("Content-Disposition", `inline; filename*=UTF-8''${encoded}`);
+        const nombreSeguro = nombre
+          .replace(/[\/\\:*?"<>|]/g, "_")
+          .replace(/\s+/g, "_")
+          .slice(0, 160);
+
+        res.set(
+          "Content-Disposition",
+          `attachment; filename="${nombreSeguro}"`
+        );
       }
 
-      res.status(200).send(buf);
-    } catch (e) {
-      console.error("descargarImagenR2 error:", e);
-      res.status(500).json({
+      return res.status(200).send(buffer);
+
+    } catch (err) {
+      console.error("descargarImagenR2 error:", err);
+
+      return res.status(500).json({
         ok: false,
-        error: e?.message || "Error descargando archivo"
+        error: "Error interno descargando archivo"
       });
     }
   }
