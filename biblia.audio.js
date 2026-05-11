@@ -7,7 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let __audioTextoOriginal = "";
 
   // ✅ URL Cloud Function
-  const AUDIO_WEBAPP_URL = "https://us-central1-vidaabundante-f118a.cloudfunctions.net/ttsAudio";
+  const AUDIO_WEBAPP_URL = "https://subir-imagen-r2.vidaabundante-tristansuarez.workers.dev";
   const AUDIO_R2_UPLOAD_URL = "https://us-central1-vidaabundante-f118a.cloudfunctions.net/subirImagenR2";
 
   // ✅ Fonética (no pisa si ya existe)
