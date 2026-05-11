@@ -2219,17 +2219,32 @@ node.style.setProperty("--gap-textos", `${repartoFlexible.gapTextos}px`);
         display:flex;
         flex-direction:column;
         gap:var(--gap-general, 7px);
-        background-image:url("${SUBIDOS_EXPORT_BG_URL}");
-        background-size:cover;
-        background-position:center center;
-        background-repeat:no-repeat;
-        font-family:"Lora", serif;
-        color:#111;
+       position:relative;
+background:#f7fbff;
+font-family:"Lora", serif;
+color:#111;
       }
 
-      #subidosExportPredicaFinal *{
-        box-sizing:border-box;
-      }
+    #subidosExportPredicaFinal *{
+  box-sizing:border-box;
+}
+
+#subidosExportPredicaFinal::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background-image:url("${SUBIDOS_EXPORT_BG_URL}");
+  background-size:cover;
+  background-position:center center;
+  background-repeat:no-repeat;
+  opacity:.90;
+  z-index:0;
+}
+
+#subidosExportPredicaFinal > :not(style){
+  position:relative;
+  z-index:1;
+}
 
       /* ===== TOP ===== */
 
@@ -2533,19 +2548,20 @@ node.style.setProperty("--gap-textos", `${repartoFlexible.gapTextos}px`);
 
       /* ===== DEMÁS CITAS ===== */
 
-      #subidosExportPredicaFinal .subidos-export-otras-citas-box{
-        flex:0 1 auto;
-        min-height:36px;
-        max-height:58px;
-        border:1px solid rgba(255,255,255,.52);
-        background:rgba(255,255,255,.72);
-        border-radius:18px;
-        padding:7px 12px;
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        overflow:hidden;
-      }
+#subidosExportPredicaFinal .subidos-export-otras-citas-box{
+  flex:0 0 auto;
+  width:100%;
+  min-height:0;
+  max-height:none;
+  border:1px solid rgba(255,255,255,.52);
+  background:rgba(255,255,255,.72);
+  border-radius:18px;
+  padding:5px 10px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+}
 
       #subidosExportPredicaFinal .subidos-export-otras-citas{
         display:flex;
@@ -2553,8 +2569,8 @@ node.style.setProperty("--gap-textos", `${repartoFlexible.gapTextos}px`);
         align-items:center;
         justify-content:center;
         gap:4px 7px;
-        font-size:11.5px;
-        line-height:1.10;
+       font-size:12px;
+line-height:1.12;
         font-weight:900;
         text-align:center;
         overflow:hidden;
@@ -2690,9 +2706,11 @@ function subidosAjustarTextoSoloSiNoCabe(boxEl, textEl, minFontPx = 9.5, paso = 
 function subidosOverflowTextoExport(textEl) {
   if (!textEl) return false;
 
+  const esCitasExtra = textEl.classList?.contains("subidos-export-otras-citas");
+
   return (
     textEl.scrollHeight > textEl.clientHeight + 1 ||
-    textEl.scrollWidth > textEl.clientWidth + 1
+    (!esCitasExtra && textEl.scrollWidth > textEl.clientWidth + 1)
   );
 }
 
@@ -2891,6 +2909,11 @@ function subidosAjustarLayoutInteligenteExportPredica(node) {
 
   if (!primeraBox || !primeraText) return;
 
+  const hayIntro = !!(introBox && introText);
+  const hayNota = !!(noteBox && noteText);
+  const hayRow = !!(row && (hayIntro || hayNota));
+  const hayOtras = !!(otrasBox && otrasText && String(otrasText.textContent || "").trim());
+
   // ✅ Reseteo limpio antes de medir.
   node.style.justifyContent = "flex-start";
   node.style.gap = MIN_GAP + "px";
@@ -2908,17 +2931,38 @@ function subidosAjustarLayoutInteligenteExportPredica(node) {
     row.style.overflow = "hidden";
   }
 
+  if (otrasBox) {
+    otrasBox.style.flex = "0 0 auto";
+    otrasBox.style.height = "auto";
+    otrasBox.style.minHeight = "0";
+    otrasBox.style.maxHeight = "none";
+    otrasBox.style.alignSelf = "stretch";
+    otrasBox.style.overflow = "hidden";
+  }
+
   subidosResetCajaExport(primeraBox);
   subidosResetCajaExport(introBox);
   subidosResetCajaExport(noteBox);
+  subidosResetCajaExport(otrasBox);
+
+  if (otrasBox) {
+    otrasBox.style.width = "100%";
+    otrasBox.style.alignSelf = "stretch";
+  }
 
   // ✅ Ancho inteligente entre intro y nota ANTES de medir alto.
   subidosAplicarColumnasIntroNotaExport(row, introText, noteText);
 
-  // ✅ Fuente base: si el texto es muy breve, sube 1 punto.
+  // ✅ Fuente base. Textos muy breves pueden subir 1 punto.
   subidosFuenteInicialExport(primeraText, 15, 1, 150);
   subidosFuenteInicialExport(introText, 12, 1, 110);
   subidosFuenteInicialExport(noteText, 12, 1, 110);
+
+  // ✅ Las citas finales quedan del mismo tamaño base que intro/nota.
+  if (otrasText) {
+    otrasText.style.fontSize = "12px";
+    otrasText.style.lineHeight = "1.12";
+  }
 
   // ✅ Altos naturales reales: no categorías fijas.
   const altoPrimeraNatural = subidosAltoNaturalPrimeraExport(
@@ -2930,12 +2974,12 @@ function subidosAjustarLayoutInteligenteExportPredica(node) {
   const altoIntroNatural = subidosAltoNaturalCajaExport(introBox, introText);
   const altoNotaNatural = subidosAltoNaturalCajaExport(noteBox, noteText);
 
-  const hayIntro = !!(introBox && introText);
-  const hayNota = !!(noteBox && noteText);
-  const hayRow = !!(row && (hayIntro || hayNota));
-
   const altoRowNatural = hayRow
     ? Math.max(altoIntroNatural || 0, altoNotaNatural || 0)
+    : 0;
+
+  const altoOtrasNatural = hayOtras
+    ? subidosAltoNaturalCajaExport(otrasBox, otrasText)
     : 0;
 
   // ✅ Medimos altura disponible real dentro del PNG.
@@ -2954,6 +2998,7 @@ function subidosAjustarLayoutInteligenteExportPredica(node) {
   const altoFijo = hijos.reduce((total, el) => {
     if (el === primeraBox) return total;
     if (el === row) return total;
+    if (el === otrasBox) return total;
     return total + el.offsetHeight;
   }, 0);
 
@@ -2962,14 +3007,18 @@ function subidosAjustarLayoutInteligenteExportPredica(node) {
     altoContenido - altoFijo - (MIN_GAP * espacios)
   );
 
-  const requerido = altoPrimeraNatural + altoRowNatural;
+  const requerido =
+    altoPrimeraNatural +
+    altoRowNatural +
+    altoOtrasNatural;
 
   let altoPrimera = altoPrimeraNatural;
   let altoRow = altoRowNatural;
+  let altoOtras = altoOtrasNatural;
 
   if (requerido <= disponibleParaTextos) {
-    // ✅ Si entra todo, las cajas quedan ajustadas al texto.
-    // El sobrante se vuelve aire ENTRE bloques, no dentro de bloques.
+    // ✅ Si entra todo, cada caja queda ajustada al texto.
+    // El sobrante se reparte como aire ENTRE bloques, no dentro.
     const gapCalculado = espacios
       ? Math.floor((altoContenido - altoFijo - requerido) / espacios)
       : MIN_GAP;
@@ -2979,27 +3028,44 @@ function subidosAjustarLayoutInteligenteExportPredica(node) {
     node.style.gap = gapFinal + "px";
     if (row) row.style.gap = subidosClampNumero(gapFinal, MIN_GAP, 16) + "px";
   } else {
-    // ✅ Si no entra todo, repartimos proporcionalmente entre:
-    // primer versículo y fila intro/nota.
+    // ✅ Si no entra todo, primero protegemos las citas finales.
+    // Después repartimos el resto entre primer versículo e intro/nota.
     node.style.gap = MIN_GAP + "px";
     if (row) row.style.gap = MIN_GAP + "px";
 
     const minPrimera = 80;
     const minRow = hayRow ? 62 : 0;
+    const minOtras = hayOtras ? 28 : 0;
 
-    const ratio = disponibleParaTextos / Math.max(1, requerido);
+    altoOtras = hayOtras
+      ? Math.min(
+          altoOtrasNatural,
+          Math.max(minOtras, disponibleParaTextos - minPrimera - minRow)
+        )
+      : 0;
+
+    altoOtras = hayOtras
+      ? subidosClampNumero(altoOtras, minOtras, altoOtrasNatural)
+      : 0;
+
+    const disponibleMain = Math.max(
+      1,
+      disponibleParaTextos - altoOtras
+    );
+
+    const requeridoMain = altoPrimeraNatural + altoRowNatural;
+    const ratio = disponibleMain / Math.max(1, requeridoMain);
 
     altoPrimera = Math.floor(altoPrimeraNatural * ratio);
-    altoRow = disponibleParaTextos - altoPrimera;
 
     altoPrimera = subidosClampNumero(
       altoPrimera,
       minPrimera,
-      disponibleParaTextos - minRow
+      hayRow ? disponibleMain - minRow : disponibleMain
     );
 
     altoRow = hayRow
-      ? Math.max(minRow, disponibleParaTextos - altoPrimera)
+      ? Math.max(minRow, disponibleMain - altoPrimera)
       : 0;
   }
 
@@ -3012,7 +3078,12 @@ function subidosAjustarLayoutInteligenteExportPredica(node) {
     row.style.flex = "0 0 " + Math.max(1, Math.floor(altoRow)) + "px";
   }
 
-  // ✅ Intro y nota NO heredan la altura de la fila.
+  if (otrasBox && hayOtras) {
+    otrasBox.style.height = Math.max(1, Math.floor(altoOtras)) + "px";
+    otrasBox.style.flex = "0 0 " + Math.max(1, Math.floor(altoOtras)) + "px";
+  }
+
+  // ✅ Intro y nota NO heredan la altura completa de la fila.
   // Cada una usa lo que necesita. Si no entra, se limita a la fila.
   if (introBox && introText) {
     const h = Math.min(altoIntroNatural, altoRow || altoIntroNatural);
@@ -3028,15 +3099,29 @@ function subidosAjustarLayoutInteligenteExportPredica(node) {
   subidosSetMaxPrimeraExport(primeraBox, primeraText, primeraRef);
   subidosSetMaxTextoCajaExport(introBox, introText);
   subidosSetMaxTextoCajaExport(noteBox, noteText);
+  subidosSetMaxTextoCajaExport(otrasBox, otrasText);
 
-  // ✅ Si no cabe: baja fuente. Si aun no cabe: recorta con […].
+  // ✅ Si no cabe: baja fuente. Si aun no cabe: recién ahí recorta.
   subidosAjustarFuenteYRecorteExport(primeraText, 10.2, 0.2);
   subidosAjustarFuenteYRecorteExport(introText, 9.4, 0.2);
   subidosAjustarFuenteYRecorteExport(noteText, 9.4, 0.2);
 
+  // ✅ Citas finales: primero intenta entrar completas usando su altura natural.
+  // Solo baja fuente si de verdad no entra en alto.
   if (otrasBox && otrasText) {
-    subidosSetMaxTextoCajaExport(otrasBox, otrasText);
-    subidosAjustarFuenteYRecorteExport(otrasText, 9.2, 0.2);
+    const overflowAltoOtras = () =>
+      otrasText.scrollHeight > otrasText.clientHeight + 1;
+
+    let fontSize = parseFloat(window.getComputedStyle(otrasText).fontSize || "12");
+
+    while (fontSize > 10.8 && overflowAltoOtras()) {
+      fontSize = Math.max(10.8, fontSize - 0.2);
+      otrasText.style.fontSize = fontSize + "px";
+    }
+
+    if (overflowAltoOtras()) {
+      subidosRecortarTextoHastaEntrarExport(otrasText);
+    }
   }
 }
 
