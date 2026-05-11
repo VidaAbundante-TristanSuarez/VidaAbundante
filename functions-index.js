@@ -7,6 +7,30 @@ const cors = require("cors")({ origin: true });
 const admin = require("firebase-admin");
 admin.initializeApp();
 
+function vaSetCors(req, res) {
+  const origen = String(req.headers.origin || "");
+
+  const permitidos = [
+    "https://vidaabundante-tristansuarez.github.io",
+    "http://localhost:3000",
+    "http://localhost:5000",
+    "http://127.0.0.1:5500"
+  ];
+
+  res.set(
+    "Access-Control-Allow-Origin",
+    permitidos.includes(origen)
+      ? origen
+      : "https://vidaabundante-tristansuarez.github.io"
+  );
+
+  res.set("Vary", "Origin");
+  res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.set("Access-Control-Expose-Headers", "Content-Type, Content-Length, Content-Disposition");
+  res.set("Access-Control-Max-Age", "3600");
+}
+
 // ✅ GEN 2
 const { onRequest } = require("firebase-functions/v2/https");
 const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
@@ -603,13 +627,38 @@ exports.subirImagenR2 = onRequest(
     secrets: ["R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY"]
   },
   async (req, res) => {
+    // ✅ CORS SIEMPRE, incluso si hay error
+    const origen = String(req.headers.origin || "");
+
+    const permitidos = [
+      "https://vidaabundante-tristansuarez.github.io",
+      "http://localhost:3000",
+      "http://localhost:5000",
+      "http://127.0.0.1:5500"
+    ];
+
+    res.set(
+      "Access-Control-Allow-Origin",
+      permitidos.includes(origen)
+        ? origen
+        : "https://vidaabundante-tristansuarez.github.io"
+    );
+
+    res.set("Vary", "Origin");
+    res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    res.set("Access-Control-Max-Age", "3600");
+
     try {
       if (req.method === "OPTIONS") {
         return res.status(204).send("");
       }
 
       if (req.method !== "POST") {
-        return res.status(405).json({ error: "Use POST" });
+        return res.status(405).json({
+          ok: false,
+          error: "Use POST"
+        });
       }
 
       let payload = {};
@@ -620,10 +669,13 @@ exports.subirImagenR2 = onRequest(
             ? JSON.parse(req.body || "{}")
             : (req.body || {});
       } catch (e) {
-        return res.status(400).json({ error: "Body JSON inválido" });
+        return res.status(400).json({
+          ok: false,
+          error: "Body JSON inválido"
+        });
       }
 
-const {
+      const {
         fileBase64 = "",
         fileName = "",
         contentType = "application/octet-stream",
@@ -631,7 +683,10 @@ const {
       } = payload;
 
       if (!fileBase64) {
-        return res.status(400).json({ error: "Falta fileBase64" });
+        return res.status(400).json({
+          ok: false,
+          error: "Falta fileBase64"
+        });
       }
 
       const accountId = "80df1160feb2717f268710c45fcc3a38";
@@ -641,7 +696,10 @@ const {
       const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
 
       if (!accessKeyId || !secretAccessKey) {
-        return res.status(500).json({ error: "Faltan secrets de R2" });
+        return res.status(500).json({
+          ok: false,
+          error: "Faltan secrets de R2"
+        });
       }
 
       const safe = (s) =>
@@ -651,15 +709,21 @@ const {
           .replace(/\s+/g, "_")
           .slice(0, 120);
 
-const finalName = safe(fileName) || `archivo_${Date.now()}`;
-const safeFolder = safe(folder || "devocionales").replace(/^_+|_+$/g, "") || "devocionales";
-const key = `${safeFolder}/${finalName}`;
+      const finalName = safe(fileName) || `archivo_${Date.now()}`;
+      const safeFolder =
+        safe(folder || "devocionales").replace(/^_+|_+$/g, "") || "devocionales";
+
+      const key = `${safeFolder}/${finalName}`;
 
       let buffer;
+
       try {
         buffer = Buffer.from(String(fileBase64).trim(), "base64");
       } catch (e) {
-        return res.status(400).json({ error: "fileBase64 inválido" });
+        return res.status(400).json({
+          ok: false,
+          error: "fileBase64 inválido"
+        });
       }
 
       const s3 = new S3Client({
@@ -688,11 +752,15 @@ const key = `${safeFolder}/${finalName}`;
         ok: true,
         url: publicUrl,
         key,
-        fileName: finalName
+        fileName: finalName,
+        contentType
       });
+
     } catch (e) {
       console.error("subirImagenR2 error:", e);
+
       return res.status(500).json({
+        ok: false,
         error: String(e?.message || e)
       });
     }
@@ -928,14 +996,32 @@ exports.crearUploadVideoR2 = onRequest(
 exports.descargarImagenR2 = onRequest(
   {
     cors: true,
-    timeoutSeconds: 60,
+    timeoutSeconds: 120,
     memory: "256MiB"
   },
   async (req, res) => {
     // ✅ CORS SIEMPRE, incluso si hay error
-    res.set("Access-Control-Allow-Origin", "*");
+    const origen = String(req.headers.origin || "");
+
+    const permitidos = [
+      "https://vidaabundante-tristansuarez.github.io",
+      "http://localhost:3000",
+      "http://localhost:5000",
+      "http://127.0.0.1:5500"
+    ];
+
+    res.set(
+      "Access-Control-Allow-Origin",
+      permitidos.includes(origen)
+        ? origen
+        : "https://vidaabundante-tristansuarez.github.io"
+    );
+
+    res.set("Vary", "Origin");
     res.set("Access-Control-Allow-Methods", "GET, OPTIONS");
-    res.set("Access-Control-Allow-Headers", "Content-Type");
+    res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    res.set("Access-Control-Expose-Headers", "Content-Type, Content-Length, Content-Disposition");
+    res.set("Access-Control-Max-Age", "3600");
 
     try {
       if (req.method === "OPTIONS") {
@@ -949,25 +1035,27 @@ exports.descargarImagenR2 = onRequest(
         });
       }
 
-      const url = String(req.query.url || "").trim();
-      const nombre = String(req.query.nombre || "archivo").trim() || "archivo";
-      const descargar = String(req.query.descargar || "") === "1";
+      const rawUrl = String(req.query.url || "").trim();
+      const nombreParam = String(req.query.nombre || req.query.name || "").trim();
+      const descargar = String(req.query.descargar || req.query.download || "") === "1";
 
-      if (!url) {
+      if (!rawUrl) {
         return res.status(400).json({
           ok: false,
           error: "Falta url"
         });
       }
 
-      if (!/^https?:\/\//i.test(url)) {
+      if (!/^https?:\/\//i.test(rawUrl)) {
         return res.status(400).json({
           ok: false,
           error: "URL inválida"
         });
       }
 
-      const r = await fetch(url, {
+      const u = new URL(rawUrl);
+
+      const r = await fetch(rawUrl, {
         method: "GET",
         headers: {
           "User-Agent": "VidaAbundante/1.0"
@@ -989,18 +1077,29 @@ exports.descargarImagenR2 = onRequest(
       const arrayBuffer = await r.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
 
+      const nombreDesdeUrl = decodeURIComponent(
+        u.pathname.split("/").pop() || `archivo_${Date.now()}`
+      );
+
+      const nombreSeguro = String(nombreParam || nombreDesdeUrl || `archivo_${Date.now()}`)
+        .replace(/[\r\n"]/g, "_")
+        .replace(/[\/\\:*?"<>|]/g, "_")
+        .replace(/\s+/g, "_")
+        .slice(0, 160);
+
       res.set("Content-Type", contentType);
+      res.set("Content-Length", String(buffer.length));
       res.set("Cache-Control", "public, max-age=3600");
 
       if (descargar) {
-        const nombreSeguro = nombre
-          .replace(/[\/\\:*?"<>|]/g, "_")
-          .replace(/\s+/g, "_")
-          .slice(0, 160);
-
         res.set(
           "Content-Disposition",
           `attachment; filename="${nombreSeguro}"`
+        );
+      } else {
+        res.set(
+          "Content-Disposition",
+          `inline; filename="${nombreSeguro}"`
         );
       }
 
@@ -1011,7 +1110,8 @@ exports.descargarImagenR2 = onRequest(
 
       return res.status(500).json({
         ok: false,
-        error: "Error interno descargando archivo"
+        error: "Error interno descargando archivo",
+        detail: String(err?.message || err)
       });
     }
   }
