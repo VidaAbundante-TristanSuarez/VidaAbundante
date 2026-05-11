@@ -4,15 +4,16 @@
 // ✅ Reusa modalAudio existente (si está cargado biblia.audio.js)
 
 // ✅ SIN FUNCTIONS para OCR/R2.
-// ✅ Audio queda en Functions por ahora.
 const R2_WORKER_URL = "https://subir-imagen-r2.vidaabundante-tristansuarez.workers.dev";
 
-// ✅ Audio sigue en Functions, pero el navegador llama al Worker para evitar CORS.
+// ✅ OCR bueno y R2 pasan por Worker.
+const OCR_URL = R2_WORKER_URL;
+const R2_UPLOAD_URL = R2_WORKER_URL;
+
+// ✅ Audio también pasa por Worker para evitar CORS,
+// pero adentro sigue usando tus Functions originales.
 const GH_UPLOAD_URL = R2_WORKER_URL;
 const TTS_URL = R2_WORKER_URL;
-
-// ✅ R2 también va por Worker.
-const R2_UPLOAD_URL = R2_WORKER_URL;
 
 console.log("✅ devocionales.js cargó (module)", "VERSION 1");
 window.__DEV_DEVOCIONALES_LOADED__ = true;
@@ -124,50 +125,6 @@ const DEV = {
 function ocrSetStatus(msg){
   const el = $("estadoOCRDev");
   if (el) el.textContent = msg || "";
-}
-
-async function devOCRLocalDesdeBlob(blob, modo = "devocional") {
-  if (!blob) {
-    throw new Error("Falta imagen para OCR.");
-  }
-
-  if (!window.Tesseract || typeof window.Tesseract.recognize !== "function") {
-    throw new Error("OCR local no cargó. Revisá que Tesseract esté agregado en biblia.html.");
-  }
-
-  ocrSetStatus("⏳ Leyendo texto en el navegador…");
-
-  const result = await window.Tesseract.recognize(
-    blob,
-    "spa",
-    {
-      logger: (m) => {
-        const status = String(m?.status || "");
-        const progress = Number(m?.progress || 0);
-
-        if (!status) return;
-
-        if (status.includes("loading")) {
-          ocrSetStatus("⏳ Cargando OCR local…");
-          return;
-        }
-
-        if (status.includes("recognizing")) {
-          const pct = Math.max(1, Math.min(99, Math.round(progress * 100)));
-          ocrSetStatus(`⏳ Reconociendo texto… ${pct}%`);
-          return;
-        }
-      }
-    }
-  );
-
-  const text = String(result?.data?.text || "").trim();
-
-  if (!text) {
-    throw new Error("No se detectó texto en la imagen.");
-  }
-
-  return text;
 }
 
 function show(id, on){
@@ -1016,11 +973,21 @@ window.devCargarFinalizado = async function(file){
     DEV.audioGithubUrl = "";
     devResetAudioManual();
 
-const text = await devOCRLocalDesdeBlob(file, "finalizado");
+const imageBase64 = await blobToBase64(file);
 
-if (!text) {
-  throw new Error("No se detectó texto en la imagen finalizada.");
+const r = await fetch(OCR_URL, {
+  method:"POST",
+  headers:{ "Content-Type":"application/json" },
+  body: JSON.stringify({ imageBase64 })
+});
+
+const data = await r.json().catch(()=> ({}));
+if (!r.ok) {
+  throw new Error(data?.error || data?.detail || ("OCR " + r.status));
 }
+
+const text = (data?.text || "").trim();
+if (!text) throw new Error("No se detectó texto en la imagen finalizada.");
 
     DEV.rawText = text;
 
@@ -3585,24 +3552,37 @@ btnListo.addEventListener("click", ()=>{
   draw();
 });
 
-  // OCR LOCAL — sin Firebase Functions
+   // OCR
   btnOCR.addEventListener("click", async ()=>{
-    if (!DEV.img) {
-      alert("Primero cargá una imagen");
-      return;
-    }
+    if (!DEV.img) { alert("Primero cargá una imagen"); return; }
 
     btnOCR.disabled = true;
     btnOCR.style.opacity = "0.6";
-    ocrSetStatus("⏳ Preparando OCR local…");
+    ocrSetStatus("⏳ Enviando imagen al OCR…");
 
     try{
       const blob = await getCroppedBlob();
-      if (!blob) {
-        throw new Error("No pude obtener la imagen recortada.");
+      if (!blob) return;
+
+      const imageBase64 = await blobToBase64(blob);
+
+      const r = await fetch(OCR_URL, {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({ imageBase64 })
+      });
+
+      const data = await r.json().catch(()=> ({}));
+      if (!r.ok) {
+        ocrSetStatus("❌ Error OCR: " + (data?.error || data?.detail || r.status));
+        return;
       }
 
-      const text = await devOCRLocalDesdeBlob(blob, "recorte");
+      const text = (data?.text || "").trim();
+      if (!text) {
+        ocrSetStatus("⚠️ No se detectó texto.");
+        return;
+      }
 
       DEV.rawText = text;
       ta.value = text;
@@ -3611,7 +3591,6 @@ btnListo.addEventListener("click", ()=>{
       if (boxText) boxText.classList.remove("hidden");
 
       syncBtnCrear();
-
       ocrSetStatus("✅ OCR listo.");
       await devAbrirFase0();
 
@@ -3619,14 +3598,13 @@ btnListo.addEventListener("click", ()=>{
 
     }catch(e){
       console.error(e);
-      ocrSetStatus("❌ Error OCR local: " + (e?.message || e));
-      alert("❌ No pude leer el texto con OCR local.\n\nDetalle: " + (e?.message || e));
+      ocrSetStatus("❌ Error OCR: " + (e?.message || e));
     }finally{
       btnOCR.disabled = false;
       btnOCR.style.opacity = "1";
     }
   });
-
+   
  // CREAR DEVOCIONAL => construir bloques y abrir fase 1
 if (btnCrear) {
   btnCrear.addEventListener("click", ()=>{
