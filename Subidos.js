@@ -9,9 +9,13 @@ const {
   push
 } = FB;
 
-const R2_UPLOAD_URL = "https://subir-imagen-r2.vidaabundante-tristansuarez.workers.dev";
-const SUBIDOS_VIDEO_UPLOAD_URL = "https://us-central1-vidaabundante-f118a.cloudfunctions.net/crearUploadVideoR2";
-const SUBIDOS_PROXY_URL = "https://subir-imagen-r2.vidaabundante-tristansuarez.workers.dev";
+// ✅ SIN FUNCTIONS para R2 / proxy / video.
+// ✅ Todo esto va por Cloudflare Worker.
+const R2_WORKER_URL = "https://subir-imagen-r2.vidaabundante-tristansuarez.workers.dev";
+const R2_UPLOAD_URL = R2_WORKER_URL;
+const SUBIDOS_VIDEO_UPLOAD_URL = R2_WORKER_URL;
+const SUBIDOS_PROXY_URL = R2_WORKER_URL;
+
 const SUBIDOS_EXPORT_BG_URL = "./img/subidos/1fondo-predica-cielo.jpg";
 
 let subidosUID = null;
@@ -1253,70 +1257,50 @@ async function subirVideoR2DirectoSubidos(file, estadoEl = null) {
     throw new Error("Tipo de video no permitido. Usá MP4, WEBM o MOV.");
   }
 
-  const maxBytes = 80 * 1024 * 1024; // mismo límite que la Cloud Function
+  // ✅ Sin Functions: lo subimos vía Worker.
+  // Para cuidar memoria/navegador, bajamos el límite inicial.
+  const maxBytes = 30 * 1024 * 1024;
+
   if (file.size > maxBytes) {
-    throw new Error(`Video demasiado grande: ${subidosFormatoMB(file.size)} MB. Máximo inicial: 80 MB.`);
-  }
-
-  const user =
-    window.__AUTH?.currentUser ||
-    window.__FB?.auth?.currentUser ||
-    null;
-
-  if (!user) {
-    throw new Error("No pude obtener el usuario actual para autorizar la subida.");
+    throw new Error(`Video demasiado grande: ${subidosFormatoMB(file.size)} MB. Máximo sin Functions: 30 MB.`);
   }
 
   if (estadoEl) {
-    estadoEl.textContent = `Preparando permiso para video (${subidosFormatoMB(file.size)} MB)...`;
+    estadoEl.textContent = `Preparando video (${subidosFormatoMB(file.size)} MB)...`;
   }
 
-  const token = await user.getIdToken();
+  const fileBase64 = await blobToBase64(file);
+
+  if (estadoEl) {
+    estadoEl.textContent = "Subiendo video a R2...";
+  }
 
   const r = await fetch(SUBIDOS_VIDEO_UPLOAD_URL, {
     method: "POST",
     headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer " + token
+      "Content-Type": "application/json"
     },
     body: JSON.stringify({
-      destino: "subidos",
+      fileBase64,
       fileName: file.name || `video_${Date.now()}.mp4`,
       contentType,
-      sizeBytes: file.size
+      folder: "videos/subidos"
     })
   });
 
   const data = await r.json().catch(() => ({}));
 
-  if (!r.ok || !data?.ok || !data?.uploadUrl) {
-    throw new Error(data?.error || "No se pudo crear la URL de subida para el video.");
-  }
-
-  if (estadoEl) {
-    estadoEl.textContent = "Subiendo video directo a R2...";
-  }
-
-  const put = await fetch(data.uploadUrl, {
-    method: "PUT",
-    headers: {
-      "Content-Type": contentType
-    },
-    body: file
-  });
-
-  if (!put.ok) {
-    const txt = await put.text().catch(() => "");
-    throw new Error(`R2 rechazó la subida del video (${put.status}). ${txt}`);
+  if (!r.ok || !data?.ok || !data?.url) {
+    throw new Error(data?.error || data?.detail || "No se pudo subir video a R2.");
   }
 
   return {
     ok: true,
-    url: data.publicUrl,
+    url: data.url,
     key: data.key || "",
     fileName: data.fileName || file.name || `video_${Date.now()}.mp4`,
     contentType,
-    sizeBytes: file.size,
+    sizeBytes: Number(data.sizeBytes || file.size || 0),
     subidaDirectaVideo: true
   };
 }
