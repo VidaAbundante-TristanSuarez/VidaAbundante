@@ -1320,5 +1320,33 @@ body.oscuro #modalSubidosVisor{
   color:#000 !important;
 }
 
+/* ✅ Predica galería: quitar bloque blanco detrás del archivo */
+.subidos-feed-card.subidos-card-predica .subidos-media{
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  overflow: visible !important;
+}
+
+/* ✅ El botón/marco que envuelve el archivo NO debe pintar fondo */
+.subidos-feed-card.subidos-card-predica .subidos-media button.subidos-media-link,
+.subidos-feed-card.subidos-card-predica .subidos-media .subidos-media-link,
+.subidos-feed-card.subidos-card-predica .subidos-media .subidos-media-frame{
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  overflow: visible !important;
+}
+
+/* ✅ Redondear sutilmente el archivo real, no el bloque de atrás */
+.subidos-feed-card.subidos-card-predica .subidos-media img,
+.subidos-feed-card.subidos-card-predica .subidos-media video{
+  border-radius: 10px !important;
+  overflow: hidden !important;
+  display: block !important;
+}
+
 </style>
 
