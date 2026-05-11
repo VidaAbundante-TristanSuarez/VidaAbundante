@@ -2219,13 +2219,12 @@ node.style.setProperty("--gap-textos", `${repartoFlexible.gapTextos}px`);
         display:flex;
         flex-direction:column;
         gap:var(--gap-general, 7px);
-       position:relative;
+        position:relative;
 background:#f7fbff;
 font-family:"Lora", serif;
 color:#111;
       }
-
-    #subidosExportPredicaFinal *{
+#subidosExportPredicaFinal *{
   box-sizing:border-box;
 }
 
@@ -2569,7 +2568,7 @@ color:#111;
         align-items:center;
         justify-content:center;
         gap:4px 7px;
-       font-size:12px;
+      font-size:12px;
 line-height:1.12;
         font-weight:900;
         text-align:center;
