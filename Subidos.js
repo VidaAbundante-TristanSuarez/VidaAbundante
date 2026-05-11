@@ -12,6 +12,7 @@ const {
 // ✅ SIN FUNCTIONS para R2 / proxy / video.
 // ✅ Todo esto va por Cloudflare Worker.
 const R2_WORKER_URL = "https://subir-imagen-r2.vidaabundante-tristansuarez.workers.dev";
+
 const R2_UPLOAD_URL = R2_WORKER_URL;
 const SUBIDOS_VIDEO_UPLOAD_URL = R2_WORKER_URL;
 const SUBIDOS_PROXY_URL = R2_WORKER_URL;
@@ -1257,8 +1258,8 @@ async function subirVideoR2DirectoSubidos(file, estadoEl = null) {
     throw new Error("Tipo de video no permitido. Usá MP4, WEBM o MOV.");
   }
 
-  // ✅ Sin Functions: lo subimos vía Worker.
-  // Para cuidar memoria/navegador, bajamos el límite inicial.
+  // ✅ Sin Functions: subimos por Worker.
+  // 30 MB para no romper memoria del navegador/base64.
   const maxBytes = 30 * 1024 * 1024;
 
   if (file.size > maxBytes) {
