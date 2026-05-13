@@ -1404,32 +1404,50 @@ body.oscuro #modalSubidosVisor{
   font-weight: 800;
 }
 
-.subidos-archivos-carrusel{
+/* ✅ Subidos: varios archivos sin cambiar el aspecto original de la card */
+.subidos-media .subidos-archivos-carrusel{
   width:100%;
   max-width:100%;
   display:flex;
   gap:0;
+  margin:0;
+  padding:0;
+  background:transparent !important;
+  border:0 !important;
+  box-shadow:none !important;
   overflow-x:auto;
   overflow-y:hidden;
   scroll-snap-type:x mandatory;
   -webkit-overflow-scrolling:touch;
-  padding:0 0 8px;
+  border-radius:inherit;
+  scrollbar-width:none;
 }
 
-.subidos-archivo-pagina{
+.subidos-media .subidos-archivos-carrusel::-webkit-scrollbar{
+  display:none;
+}
+
+.subidos-media .subidos-archivo-pagina{
   flex:0 0 100%;
   width:100%;
   min-width:100%;
   max-width:100%;
+  margin:0;
+  padding:0;
+  background:transparent !important;
+  border:0 !important;
+  box-shadow:none !important;
   scroll-snap-align:start;
-  position:relative;
   box-sizing:border-box;
 }
 
-.subidos-archivo-pagina > .subidos-media-link{
+.subidos-media .subidos-archivo-pagina > .subidos-media-link{
   width:100%;
+  max-width:100%;
+  margin:0;
 }
 
+/* ✅ contador sin afectar tamaño ni fondo del archivo */
 .subidos-archivo-contador{
   position:absolute;
   top:8px;
@@ -1442,20 +1460,7 @@ body.oscuro #modalSubidosVisor{
   font-size:12px;
   font-weight:900;
   line-height:1;
-}
-
-.subidos-archivo-contador{
-  position:absolute;
-  top:8px;
-  right:8px;
-  z-index:3;
-  background:rgba(0,0,0,.58);
-  color:#fff;
-  border-radius:999px;
-  padding:5px 9px;
-  font-size:12px;
-  font-weight:900;
-  line-height:1;
+  pointer-events:none;
 }
 
 </style>
