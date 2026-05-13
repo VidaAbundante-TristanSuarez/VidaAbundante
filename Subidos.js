@@ -4189,94 +4189,148 @@ function htmlPreviewArchivoSubido(it) {
   if (!archivos.length) return "";
 
   const idJs = subidosJs(it.id || "");
+  const total = archivos.length;
 
-  function htmlThumb(a, i) {
+  function htmlArchivo(a, i) {
     const nombre = escaparHtml(a.fileName || `archivo_${i + 1}`);
     const mime = String(a.mimeType || "");
     const esImg = mime.startsWith("image/");
     const esVideo = mime.startsWith("video/");
     const esAudio = mime.startsWith("audio/");
 
-    const accionAbrir = `abrirSubidosVisorArchivo('${idJs}', ${i})`;
+    // ✅ Si es prédica, tocar el archivo abre la prédica completa, como antes.
+    const accionAbrir = subidosEsPredicaConContenido(it)
+      ? `abrirSubidosVisorPredica('${idJs}', 'all')`
+      : `abrirSubidosVisorArchivo('${idJs}', ${i})`;
+
+    const contador = total > 1 ? `
+      <span class="subidos-archivo-contador">${i + 1}/${total}</span>
+    ` : ``;
 
     if (esImg) {
       return `
-        <button
-          type="button"
-          onclick="${accionAbrir}"
-          class="subidos-media-link subidos-media-frame is-image subidos-archivo-slide"
-          title="${nombre}"
-        >
-          <img
-            src="${a.url}"
-            alt="${nombre}"
-            loading="lazy"
-            decoding="async"
+        <div class="subidos-archivo-pagina">
+          <button
+            type="button"
+            onclick="${accionAbrir}"
+            class="subidos-media-link subidos-media-frame is-image"
+            title="Abrir"
           >
-
-          ${archivos.length > 1 ? `
-            <span class="subidos-archivo-contador">${i + 1}/${archivos.length}</span>
-          ` : ``}
-        </button>
+            <img
+              src="${a.url}"
+              alt="${nombre}"
+              loading="lazy"
+              decoding="async"
+            >
+            ${contador}
+          </button>
+        </div>
       `;
     }
 
     if (esVideo) {
       return `
-        <button
-          type="button"
-          onclick="${accionAbrir}"
-          class="subidos-media-link subidos-media-frame is-video subidos-video-frame subidos-archivo-slide"
-          title="${nombre}"
-        >
-          <video
-            src="${a.url}"
-            muted
-            playsinline
-            preload="metadata"
-            style="display:block; width:100%; height:100%; object-fit:cover; background:#000;"
-          ></video>
+        <div class="subidos-archivo-pagina">
+          <button
+            type="button"
+            onclick="${accionAbrir}"
+            class="subidos-media-link subidos-media-frame is-video subidos-video-frame"
+            title="Abrir video"
+          >
+            <video
+              src="${a.url}"
+              muted
+              playsinline
+              preload="metadata"
+              style="display:block; width:100%; height:100%; object-fit:cover; background:#000;"
+            ></video>
 
-          <span class="subidos-video-play">
-            <i class="fa-solid fa-circle-play"></i>
-          </span>
+            <span class="subidos-video-play">
+              <i class="fa-solid fa-circle-play"></i>
+            </span>
 
-          ${archivos.length > 1 ? `
-            <span class="subidos-archivo-contador">${i + 1}/${archivos.length}</span>
-          ` : ``}
-        </button>
+            ${contador}
+          </button>
+        </div>
       `;
     }
 
-    const icono = esAudio ? "fa-headphones" : "fa-file-lines";
-    const texto = esAudio ? "Audio" : "Archivo";
+    if (esAudio) {
+      return `
+        <div class="subidos-archivo-pagina">
+          <button
+            type="button"
+            onclick="${accionAbrir}"
+            class="subidos-media-link subidos-media-frame is-audio"
+            title="Abrir"
+          >
+            <div class="subidos-file-open">
+              <i class="fa-solid fa-headphones"></i>
+              <span>${nombre}</span>
+              <small>Tocar para abrir</small>
+            </div>
+            ${contador}
+          </button>
+        </div>
+      `;
+    }
 
     return `
-      <button
-        type="button"
-        onclick="${accionAbrir}"
-        class="subidos-media-link subidos-media-frame is-file subidos-archivo-slide"
-        title="${nombre}"
-      >
-        <div class="subidos-file-open">
-          <i class="fa-solid ${icono}"></i>
-          <span>${nombre}</span>
-          <small>${texto} ${i + 1}/${archivos.length}</small>
-        </div>
-      </button>
+      <div class="subidos-archivo-pagina">
+        <button
+          type="button"
+          onclick="${accionAbrir}"
+          class="subidos-media-link subidos-media-frame is-file"
+          title="Abrir"
+        >
+          <div class="subidos-file-open">
+            <i class="fa-solid fa-file-lines"></i>
+            <span>${nombre}</span>
+            <small>Tocar para abrir</small>
+          </div>
+          ${contador}
+        </button>
+      </div>
     `;
   }
 
+  // ✅ Si hay un solo archivo, queda EXACTAMENTE como antes, sin carrusel.
   if (archivos.length === 1) {
-    return htmlThumb(archivos[0], 0);
+    return htmlArchivo(archivos[0], 0).replace(
+      '<div class="subidos-archivo-pagina">',
+      ''
+    ).replace(
+      '</button>\n        </div>',
+      '</button>'
+    );
   }
 
+  // ✅ Si hay varios, cada archivo ocupa el ancho completo.
+  // Los demás se ven solo deslizando horizontal.
   return `
-    <div class="subidos-archivos-carrusel">
-      ${archivos.map((a, i) => htmlThumb(a, i)).join("")}
+    <div
+      class="subidos-archivos-carrusel"
+      data-archivo-actual="0"
+      onscroll="subidosActualizarArchivoActual(this)"
+    >
+      ${archivos.map((a, i) => htmlArchivo(a, i)).join("")}
     </div>
   `;
 }
+
+window.subidosActualizarArchivoActual = function subidosActualizarArchivoActual(el) {
+  if (!el) return;
+
+  const ancho = el.clientWidth || 1;
+  const index = Math.max(0, Math.round(el.scrollLeft / ancho));
+
+  el.dataset.archivoActual = String(index);
+
+  const card = el.closest("[data-subido-card-id]");
+  if (card) {
+    card.dataset.archivoActual = String(index);
+  }
+};
 
 /* =========================================================
    RENDER REUTILIZABLE: CARD DE SUBIDOS / PRÉDICA
