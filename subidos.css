@@ -1412,7 +1412,7 @@ body.oscuro #modalSubidosVisor{
 .subidos-feed-card.subidos-card-predica{
   width:238px !important;
   min-width:238px !important;
-  height:359px !important;
+  height:365px !important;
   aspect-ratio:auto !important;
   padding:7px !important;
   overflow:hidden !important;
@@ -1656,6 +1656,54 @@ body.oscuro #modalSubidosVisor{
   .subidos-visor-flecha{
     display:none;
   }
+}
+
+/* =====================================================
+   ✅ CORRECCIÓN FINAL: redondear el ARCHIVO real
+   No toca tamaño de card, solo cómo se ve la imagen/video
+   ===================================================== */
+
+/* El contenedor sigue transparente y con recorte */
+.subidos-feed-card .subidos-media-link,
+.subidos-feed-card .subidos-media-frame,
+.subidos-feed-card .subidos-media-slide{
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 14px !important;
+  overflow: hidden !important;
+}
+
+/* Imágenes: que el elemento tenga el tamaño real visible, así redondea las puntas */
+.subidos-feed-card .subidos-media-link.is-image > img,
+.subidos-feed-card .subidos-media-frame.is-image > img,
+.subidos-feed-card .subidos-media-slide.is-image > img{
+  width: auto !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: contain !important;
+  object-position: center !important;
+  background: transparent !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  display: block !important;
+}
+
+/* Videos: estos sí pueden ocupar todo el marco */
+.subidos-feed-card .subidos-media-link.is-video > video,
+.subidos-feed-card .subidos-media-frame.is-video > video,
+.subidos-feed-card .subidos-media-slide.is-video > video{
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: contain !important;
+  object-position: center !important;
+  background: transparent !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  display: block !important;
 }
 
 </style>
