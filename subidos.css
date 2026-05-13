@@ -1404,8 +1404,8 @@ body.oscuro #modalSubidosVisor{
   font-weight: 800;
 }
 
-/* ✅ Subidos: varios archivos sin cambiar el aspecto original de la card */
-.subidos-media .subidos-archivos-carrusel{
+/* ✅ Subidos: varios archivos sin cambiar el diseño original */
+.subidos-media .subidos-archivos-scroll{
   width:100%;
   max-width:100%;
   display:flex;
@@ -1419,15 +1419,14 @@ body.oscuro #modalSubidosVisor{
   overflow-y:hidden;
   scroll-snap-type:x mandatory;
   -webkit-overflow-scrolling:touch;
-  border-radius:inherit;
   scrollbar-width:none;
 }
 
-.subidos-media .subidos-archivos-carrusel::-webkit-scrollbar{
+.subidos-media .subidos-archivos-scroll::-webkit-scrollbar{
   display:none;
 }
 
-.subidos-media .subidos-archivo-pagina{
+.subidos-media .subidos-archivos-scroll-page{
   flex:0 0 100%;
   width:100%;
   min-width:100%;
@@ -1441,13 +1440,22 @@ body.oscuro #modalSubidosVisor{
   box-sizing:border-box;
 }
 
-.subidos-media .subidos-archivo-pagina > .subidos-media-link{
+.subidos-media .subidos-archivos-scroll-page > .subidos-media-link{
   width:100%;
   max-width:100%;
   margin:0;
 }
 
-/* ✅ contador sin afectar tamaño ni fondo del archivo */
+/* ✅ anulamos restos del CSS anterior si quedó algo */
+.subidos-media .subidos-archivo-slide{
+  flex:unset !important;
+  width:100% !important;
+  max-width:100% !important;
+  margin:0 !important;
+  padding:0 !important;
+}
+
+/* ✅ contador encima, sin afectar tamaño de imagen */
 .subidos-archivo-contador{
   position:absolute;
   top:8px;
