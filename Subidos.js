@@ -78,6 +78,80 @@ function subidosInfoArchivoAccion(it) {
   return null;
 }
 
+function subidosInfoArchivoPorIndice(it, indice = 0) {
+  if (!it) return null;
+
+  if (subidosEsPredicaConContenido(it)) {
+    return subidosInfoArchivoAccion(it);
+  }
+
+  const archivos = subidosArchivosItem(it);
+  const idx = Math.max(0, Math.min(Number(indice || 0), archivos.length - 1));
+  const a = archivos[idx];
+
+  if (!a?.url) return null;
+
+  return {
+    url: a.url,
+    fileName: a.fileName || `archivo_${idx + 1}`,
+    mimeType: a.mimeType || "application/octet-stream"
+  };
+}
+
+function subidosIndiceActualDesdeBoton(id, btn) {
+  const base =
+    btn?.closest?.(".subidos-feed-card") ||
+    btn?.closest?.(".comp-post") ||
+    btn?.closest?.("#modalSubidosVisor") ||
+    document.getElementById(`subido-${id}`) ||
+    null;
+
+  const carril =
+    base?.querySelector?.(".subidos-media-carril") ||
+    base?.querySelector?.(".subidos-visor-archivos-carril") ||
+    document.querySelector("#modalSubidosVisor .subidos-visor-archivos-carril");
+
+  if (!carril) return 0;
+
+  const selector = carril.classList.contains("subidos-visor-archivos-carril")
+    ? ".subidos-visor-archivo-slide"
+    : ".subidos-media-slide";
+
+  return subidosIndiceActualCarril(carril, selector);
+}
+
+async function subidosCrearFileDeItemPorIndice(it, indice = 0) {
+  const info = subidosInfoArchivoPorIndice(it, indice);
+  if (!info?.url) throw new Error("No se encontró el archivo.");
+
+  return await subidosCrearFileDesdeInfo(info);
+}
+
+async function subidosCrearFilesDeItem(it, indices = []) {
+  const files = [];
+
+  for (const idx of indices) {
+    const file = await subidosCrearFileDeItemPorIndice(it, idx);
+    files.push(file);
+  }
+
+  return files;
+}
+
+function subidosElegirTodoOActual(accion, cantidad) {
+  if (cantidad <= 1) return "actual";
+
+  const verbo = accion === "compartir" ? "compartir" : "descargar";
+
+  const ok = confirm(
+    `Este subido tiene ${cantidad} archivos.\n\n` +
+    `Aceptar = ${verbo} TODO\n` +
+    `Cancelar = ${verbo} solo la imagen/archivo actual`
+  );
+
+  return ok ? "todo" : "actual";
+}
+
 async function subidosCrearFileDesdeInfo(info) {
   if (!info?.url) throw new Error("Falta URL del archivo.");
 
@@ -3928,20 +4002,7 @@ window.subidosMoverVisorArchivo = function subidosMoverVisorArchivo(btn, dir) {
   const carril = shell?.querySelector(".subidos-visor-archivos-carril");
   if (!carril) return;
 
-  const slides = [...carril.querySelectorAll(".subidos-visor-archivo-slide")];
-  if (!slides.length) return;
-
-  const actual = Math.round(carril.scrollLeft / Math.max(1, carril.clientWidth));
-  let siguiente = actual + Number(dir || 0);
-
-  if (siguiente < 0) siguiente = slides.length - 1;
-  if (siguiente >= slides.length) siguiente = 0;
-
-  slides[siguiente].scrollIntoView({
-    behavior: "smooth",
-    block: "nearest",
-    inline: "center"
-  });
+  subidosMoverCarrilCircular(carril, dir, ".subidos-visor-archivo-slide");
 };
 
 window.abrirSubidosVisorArchivo = function abrirSubidosVisorArchivo(id, indiceInicial = 0) {
@@ -4134,30 +4195,51 @@ async function subidosAccionProtegida(id, tipo, textoProceso, accion) {
   }
 }
 
-window.descargarSubido = function descargarSubido(id) {
-  return subidosAccionProtegida(id, "descargar", "Descargando.", async () => {
+window.descargarSubido = async function descargarSubido(id, btn = null) {
+  try {
     const it = obtenerSubidoPorId(id);
-    if (!it) return;
 
-    // ✅ Video: no lo pasamos por Functions ni lo cargamos en memoria
+    if (!it) {
+      alert("No se encontró el archivo.");
+      return;
+    }
+
     if (subidosEsVideoItem(it)) {
       subidosDescargarVideoDirecto(it);
       return;
     }
 
-    let file = subidosFileCache.get(id)?.file;
+    const archivos = subidosArchivosItem(it);
+    const cantidad = subidosEsPredicaConContenido(it) ? 1 : archivos.length;
+    const actual = subidosIndiceActualDesdeBoton(id, btn);
+    const modo = subidosElegirTodoOActual("descargar", cantidad);
 
-    if (!file) {
-      file = await subidosPrepararArchivoAccion(id);
+    if (modo === "todo" && cantidad > 1) {
+      subidosAvisoProceso("Preparando todos los archivos...", true);
+
+      for (let i = 0; i < cantidad; i++) {
+        const file = await subidosCrearFileDeItemPorIndice(it, i);
+        subidosDescargarFileReal(file);
+
+        // pequeño respiro para que el navegador no bloquee descargas seguidas
+        await new Promise(resolve => setTimeout(resolve, 350));
+      }
+
+      subidosAvisoProceso("Descarga lista ✅");
+      return;
     }
 
-    if (!file) {
-      throw new Error("El archivo todavía no está listo para descargar.");
-    }
+    subidosAvisoProceso("Preparando archivo actual...", true);
 
-    // ✅ resto: descarga real desde Blob/File
+    const file = await subidosCrearFileDeItemPorIndice(it, actual);
     subidosDescargarFileReal(file);
-  });
+
+    subidosAvisoProceso("Descarga lista ✅");
+  } catch (e) {
+    console.error("Error descargando:", e);
+    subidosAvisoProceso("No se pudo descargar");
+    alert("No se pudo descargar.");
+  }
 };
 
 function subidosNumsDesdeCitaGuardada(cita) {
@@ -4316,6 +4398,116 @@ function subidosHtmlBotonArchivoPreview(it, archivo, idx = 0) {
   `;
 }
 
+function subidosIndiceActualCarril(carril, selectorSlide) {
+  const slides = [...carril.querySelectorAll(selectorSlide)]
+    .filter(s => s.dataset.clon !== "1");
+
+  if (!slides.length) return 0;
+
+  const ancho = Math.max(1, carril.clientWidth);
+  let idx = Math.round(carril.scrollLeft / ancho);
+
+  if (idx < 0) idx = 0;
+  if (idx >= slides.length) idx = slides.length - 1;
+
+  return idx;
+}
+
+function subidosMoverCarrilCircular(carril, dir, selectorSlide) {
+  if (!carril || carril.__subidosMoviendoCircular) return;
+
+  const slides = [...carril.querySelectorAll(selectorSlide)]
+    .filter(s => s.dataset.clon !== "1");
+
+  if (slides.length <= 1) return;
+
+  const actual = subidosIndiceActualCarril(carril, selectorSlide);
+  const ultimo = slides.length - 1;
+  const direccion = Number(dir || 0);
+
+  carril.__subidosMoviendoCircular = true;
+
+  // ✅ siguiente desde la última: avanza a un clon y luego salta invisible a la primera
+  if (direccion > 0 && actual === ultimo) {
+    const clonPrimera = slides[0].cloneNode(true);
+    clonPrimera.dataset.clon = "1";
+    carril.appendChild(clonPrimera);
+
+    clonPrimera.scrollIntoView({
+      behavior: "smooth",
+      block: "nearest",
+      inline: "center"
+    });
+
+    setTimeout(() => {
+      carril.style.scrollBehavior = "auto";
+
+      slides[0].scrollIntoView({
+        behavior: "auto",
+        block: "nearest",
+        inline: "center"
+      });
+
+      clonPrimera.remove();
+
+      requestAnimationFrame(() => {
+        carril.style.scrollBehavior = "";
+        carril.__subidosMoviendoCircular = false;
+      });
+    }, 430);
+
+    return;
+  }
+
+  // ✅ anterior desde la primera: va a un clon anterior y luego salta invisible a la última
+  if (direccion < 0 && actual === 0) {
+    const clonUltima = slides[ultimo].cloneNode(true);
+    clonUltima.dataset.clon = "1";
+
+    carril.insertBefore(clonUltima, carril.firstElementChild);
+
+    const ancho = Math.max(1, carril.clientWidth);
+    carril.scrollLeft += ancho;
+
+    clonUltima.scrollIntoView({
+      behavior: "smooth",
+      block: "nearest",
+      inline: "center"
+    });
+
+    setTimeout(() => {
+      carril.style.scrollBehavior = "auto";
+
+      clonUltima.remove();
+
+      slides[ultimo].scrollIntoView({
+        behavior: "auto",
+        block: "nearest",
+        inline: "center"
+      });
+
+      requestAnimationFrame(() => {
+        carril.style.scrollBehavior = "";
+        carril.__subidosMoviendoCircular = false;
+      });
+    }, 430);
+
+    return;
+  }
+
+  const siguiente = actual + direccion;
+
+  slides[siguiente].scrollIntoView({
+    behavior: "smooth",
+    block: "nearest",
+    inline: "center"
+  });
+
+  setTimeout(() => {
+    carril.__subidosMoviendoCircular = false;
+  }, 430);
+}
+
 window.subidosMoverCarruselCard = function subidosMoverCarruselCard(ev, btn, dir) {
   ev.preventDefault();
   ev.stopPropagation();
@@ -4323,10 +4515,7 @@ window.subidosMoverCarruselCard = function subidosMoverCarruselCard(ev, btn, dir
   const carril = btn.closest(".subidos-media-carousel")?.querySelector(".subidos-media-carril");
   if (!carril) return;
 
-  carril.scrollBy({
-    left: dir * carril.clientWidth,
-    behavior: "smooth"
-  });
+  subidosMoverCarrilCircular(carril, dir, ".subidos-media-slide");
 };
 
 function htmlPreviewArchivoSubido(it) {
@@ -4454,7 +4643,7 @@ const tieneArchivo = archivosItem.length > 0;
               <button
                 type="button"
                 data-subidos-download="${escaparHtml(idReal)}"
-                onclick="descargarSubido('${idJs}')"
+                onclick="descargarSubido('${idJs}', this)"
                 title="Preparando archivo..."
                 disabled
                 style="opacity:.45; cursor:wait;"
@@ -4465,7 +4654,7 @@ const tieneArchivo = archivosItem.length > 0;
               <button
                 type="button"
                 data-subidos-share="${escaparHtml(idReal)}"
-                onclick="compartirSubido('${idJs}')"
+                onclick="compartirSubido('${idJs}', this)"
                 title="Preparando archivo..."
                 disabled
                 style="opacity:.45; cursor:wait;"
@@ -4561,7 +4750,7 @@ window.abrirSubidoDesdeCalendario = function abrirSubidoDesdeCalendario(id) {
   }, 1800);
 };
 
-window.compartirSubido = async function compartirSubido(id) {
+window.compartirSubido = async function compartirSubido(id, btn = null) {
   try {
     const it = obtenerSubidoPorId(id);
 
@@ -4570,29 +4759,49 @@ window.compartirSubido = async function compartirSubido(id) {
       return;
     }
 
-    // ✅ Video: compartir link, NO archivo pesado
     if (subidosEsVideoItem(it)) {
       await subidosCompartirLinkVideo(it);
       subidosAvisoProceso("Link listo ✅");
       return;
     }
 
-    let file = subidosFileCache.get(id)?.file;
+    const archivos = subidosArchivosItem(it);
+    const cantidad = subidosEsPredicaConContenido(it) ? 1 : archivos.length;
+    const actual = subidosIndiceActualDesdeBoton(id, btn);
+    const modo = subidosElegirTodoOActual("compartir", cantidad);
+    const titulo = it?.descripcion || it?.etiqueta || "Archivo";
 
-    if (!file) {
-      subidosAvisoProceso("El archivo todavía se está preparando.", true);
-      file = await subidosPrepararArchivoAccion(id);
-    }
+    if (modo === "todo" && cantidad > 1) {
+      subidosAvisoProceso("Preparando todos los archivos...", true);
 
-    if (!file) {
-      alert("El archivo todavía no está listo para compartir. Probá de nuevo en unos segundos.");
+      const indices = archivos.map((_, i) => i);
+      const files = await subidosCrearFilesDeItem(it, indices);
+
+      if (navigator.canShare?.({ files })) {
+        await navigator.share({
+          title: titulo,
+          text: titulo,
+          files
+        });
+
+        subidosAvisoProceso("Listo ✅");
+        return;
+      }
+
+      alert("Este dispositivo o navegador no permite compartir varios archivos juntos. Probá con Descargar todo.");
+      subidosAvisoProceso("No se pudo compartir todo");
       return;
     }
 
-    const titulo = it?.etiqueta || "Archivo";
+    subidosAvisoProceso("Preparando archivo actual...", true);
 
-    // ✅ imágenes / prédicas / archivos chicos: compartir archivo real
-    await subidosCompartirFileObligatorio(file, titulo, subidosLinkDetalle(id));
+    const file = await subidosCrearFileDeItemPorIndice(it, actual);
+
+    await subidosCompartirFileObligatorio(
+      file,
+      titulo,
+      subidosLinkDetalle(id)
+    );
 
     subidosAvisoProceso("Listo ✅");
   } catch (e) {
