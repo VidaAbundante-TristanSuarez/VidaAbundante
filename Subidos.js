@@ -4285,12 +4285,11 @@ function htmlPreviewArchivoSubido(it) {
   const idJs = subidosJs(it.id || "");
   const total = archivos.length;
 
-  function htmlArchivo(a, i) {
+  function htmlArchivoOriginal(a, i) {
     const nombre = escaparHtml(a.fileName || `archivo_${i + 1}`);
-    const mime = String(a.mimeType || "");
-    const esImg = mime.startsWith("image/");
-    const esVideo = mime.startsWith("video/");
-    const esAudio = mime.startsWith("audio/");
+    const esImg = String(a.mimeType || "").startsWith("image/");
+    const esVideo = String(a.mimeType || "").startsWith("video/");
+    const esAudio = String(a.mimeType || "").startsWith("audio/");
 
     const accionAbrir = subidosEsPredicaConContenido(it)
       ? `abrirSubidosVisorPredica('${idJs}', 'all')`
@@ -4302,13 +4301,7 @@ function htmlPreviewArchivoSubido(it) {
 
     if (esImg) {
       return `
-        <button
-          type="button"
-          onclick="${accionAbrir}"
-          class="subidos-media-link subidos-media-frame is-image"
-          title="Abrir"
-          data-archivo-index="${i}"
-        >
+        <button type="button" onclick="${accionAbrir}" class="subidos-media-link subidos-media-frame is-image" title="Abrir">
           <img
             src="${a.url}"
             alt="${nombre}"
@@ -4322,13 +4315,7 @@ function htmlPreviewArchivoSubido(it) {
 
     if (esVideo) {
       return `
-        <button
-          type="button"
-          onclick="${accionAbrir}"
-          class="subidos-media-link subidos-media-frame is-video subidos-video-frame"
-          title="Abrir video"
-          data-archivo-index="${i}"
-        >
+        <button type="button" onclick="${accionAbrir}" class="subidos-media-link subidos-media-frame is-video subidos-video-frame" title="Abrir video">
           <video
             src="${a.url}"
             muted
@@ -4346,21 +4333,25 @@ function htmlPreviewArchivoSubido(it) {
       `;
     }
 
-    const icono = esAudio ? "fa-headphones" : "fa-file-lines";
-    const texto = esAudio ? "Audio" : "Archivo";
+    if (esAudio) {
+      return `
+        <button type="button" onclick="${accionAbrir}" class="subidos-media-link subidos-media-frame is-audio" title="Abrir">
+          <div class="subidos-file-open">
+            <i class="fa-solid fa-headphones"></i>
+            <span>${nombre}</span>
+            <small>Tocar para abrir</small>
+          </div>
+          ${contador}
+        </button>
+      `;
+    }
 
     return `
-      <button
-        type="button"
-        onclick="${accionAbrir}"
-        class="subidos-media-link subidos-media-frame is-file"
-        title="Abrir"
-        data-archivo-index="${i}"
-      >
+      <button type="button" onclick="${accionAbrir}" class="subidos-media-link subidos-media-frame is-file" title="Abrir">
         <div class="subidos-file-open">
-          <i class="fa-solid ${icono}"></i>
+          <i class="fa-solid fa-file-lines"></i>
           <span>${nombre}</span>
-          <small>${texto}</small>
+          <small>Tocar para abrir</small>
         </div>
         ${contador}
       </button>
@@ -4368,18 +4359,18 @@ function htmlPreviewArchivoSubido(it) {
   }
 
   if (archivos.length === 1) {
-    return htmlArchivo(archivos[0], 0);
+    return htmlArchivoOriginal(archivos[0], 0);
   }
 
   return `
     <div
-      class="subidos-archivos-carrusel"
+      class="subidos-archivos-scroll"
       data-archivo-actual="0"
       onscroll="subidosActualizarArchivoActual(this)"
     >
       ${archivos.map((a, i) => `
-        <div class="subidos-archivo-pagina">
-          ${htmlArchivo(a, i)}
+        <div class="subidos-archivos-scroll-page">
+          ${htmlArchivoOriginal(a, i)}
         </div>
       `).join("")}
     </div>
