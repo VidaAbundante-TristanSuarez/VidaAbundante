@@ -4022,29 +4022,123 @@ async function subidosAccionProtegida(id, tipo, textoProceso, accion) {
   }
 }
 
+window.__subidosArchivoAccionCachePorIndice = window.__subidosArchivoAccionCachePorIndice || new Map();
+
+function subidosIndiceArchivoActual(id) {
+  const card =
+    document.getElementById(`subido-${id}`) ||
+    document.querySelector(`[data-subido-card-id="${id}"]`);
+
+  const n = Number(
+    card?.dataset?.archivoActual ||
+    card?.querySelector(".subidos-archivos-carrusel")?.dataset?.archivoActual ||
+    0
+  );
+
+  return Number.isFinite(n) && n >= 0 ? n : 0;
+}
+
+function subidosItemArchivoVirtual(it, index = 0) {
+  const a = subidosArchivoDeItem(it, index);
+  if (!a) return null;
+
+  return {
+    ...it,
+    url: a.url || "",
+    r2Key: a.r2Key || "",
+    mimeType: a.mimeType || "",
+    fileName: a.fileName || "archivo",
+    sizeBytes: Number(a.sizeBytes || 0),
+    subidaDirectaVideo: !!a.subidaDirectaVideo,
+    shareUrl: a.url || "",
+    shareR2Key: a.r2Key || "",
+    shareMimeType: a.mimeType || "",
+    shareFileName: a.fileName || "archivo"
+  };
+}
+
+function subidosElegirModoArchivos(tipo, total) {
+  if (Number(total || 0) <= 1) return "actual";
+
+  const usarActual = confirm(
+    `${tipo}: ¿querés usar solamente el archivo que está visible ahora?\n\n` +
+    `Aceptar = archivo actual\n` +
+    `Cancelar = todos los archivos`
+  );
+
+  return usarActual ? "actual" : "todos";
+}
+
+async function subidosFileDesdeArchivoIndice(it, index = 0) {
+  const virtual = subidosItemArchivoVirtual(it, index);
+  if (!virtual?.url) throw new Error("No encontré el archivo.");
+
+  const key = `${it.id || "subido"}::${index}::${virtual.url}`;
+  const cache = window.__subidosArchivoAccionCachePorIndice;
+
+  if (cache.has(key)) return cache.get(key);
+
+  const file = await subidosCrearFileDesdeInfo({
+    url: virtual.url,
+    fileName: virtual.fileName,
+    mimeType: virtual.mimeType
+  });
+
+  cache.set(key, file);
+  return file;
+}
+
+function subidosEsperar(ms = 250) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 window.descargarSubido = function descargarSubido(id) {
   return subidosAccionProtegida(id, "descargar", "Descargando.", async () => {
     const it = obtenerSubidoPorId(id);
     if (!it) return;
 
-    // ✅ Video: no lo pasamos por Functions ni lo cargamos en memoria
-    if (subidosEsVideoItem(it)) {
-      subidosDescargarVideoDirecto(it);
+    // ✅ Prédica conserva su lógica especial de imagen preparada.
+    if (subidosEsPredicaConContenido(it)) {
+      if (subidosEsVideoItem(it)) {
+        subidosDescargarVideoDirecto(it);
+        return;
+      }
+
+      let file = subidosFileCache.get(id)?.file;
+
+      if (!file) {
+        file = await subidosPrepararArchivoAccion(id);
+      }
+
+      if (!file) {
+        throw new Error("El archivo todavía no está listo para descargar.");
+      }
+
+      subidosDescargarFileReal(file);
       return;
     }
 
-    let file = subidosFileCache.get(id)?.file;
+    const archivos = subidosArchivosItemComoLista(it);
+    if (!archivos.length) throw new Error("No hay archivos para descargar.");
 
-    if (!file) {
-      file = await subidosPrepararArchivoAccion(id);
+    const modo = subidosElegirModoArchivos("Descargar", archivos.length);
+    const indices = modo === "todos"
+      ? archivos.map((_, i) => i)
+      : [subidosIndiceArchivoActual(id)];
+
+    for (const index of indices) {
+      const virtual = subidosItemArchivoVirtual(it, index);
+      if (!virtual?.url) continue;
+
+      if (subidosEsVideoItem(virtual)) {
+        subidosDescargarVideoDirecto(virtual);
+      } else {
+        const file = await subidosFileDesdeArchivoIndice(it, index);
+        subidosDescargarFileReal(file);
+      }
+
+      await subidosEsperar(350);
     }
-
-    if (!file) {
-      throw new Error("El archivo todavía no está listo para descargar.");
-    }
-
-    // ✅ resto: descarga real desde Blob/File
-    subidosDescargarFileReal(file);
   });
 };
 
@@ -4198,7 +4292,6 @@ function htmlPreviewArchivoSubido(it) {
     const esVideo = mime.startsWith("video/");
     const esAudio = mime.startsWith("audio/");
 
-    // ✅ Si es prédica, tocar el archivo abre la prédica completa, como antes.
     const accionAbrir = subidosEsPredicaConContenido(it)
       ? `abrirSubidosVisorPredica('${idJs}', 'all')`
       : `abrirSubidosVisorArchivo('${idJs}', ${i})`;
@@ -4209,111 +4302,86 @@ function htmlPreviewArchivoSubido(it) {
 
     if (esImg) {
       return `
-        <div class="subidos-archivo-pagina">
-          <button
-            type="button"
-            onclick="${accionAbrir}"
-            class="subidos-media-link subidos-media-frame is-image"
-            title="Abrir"
+        <button
+          type="button"
+          onclick="${accionAbrir}"
+          class="subidos-media-link subidos-media-frame is-image"
+          title="Abrir"
+          data-archivo-index="${i}"
+        >
+          <img
+            src="${a.url}"
+            alt="${nombre}"
+            loading="lazy"
+            decoding="async"
           >
-            <img
-              src="${a.url}"
-              alt="${nombre}"
-              loading="lazy"
-              decoding="async"
-            >
-            ${contador}
-          </button>
-        </div>
+          ${contador}
+        </button>
       `;
     }
 
     if (esVideo) {
       return `
-        <div class="subidos-archivo-pagina">
-          <button
-            type="button"
-            onclick="${accionAbrir}"
-            class="subidos-media-link subidos-media-frame is-video subidos-video-frame"
-            title="Abrir video"
-          >
-            <video
-              src="${a.url}"
-              muted
-              playsinline
-              preload="metadata"
-              style="display:block; width:100%; height:100%; object-fit:cover; background:#000;"
-            ></video>
-
-            <span class="subidos-video-play">
-              <i class="fa-solid fa-circle-play"></i>
-            </span>
-
-            ${contador}
-          </button>
-        </div>
-      `;
-    }
-
-    if (esAudio) {
-      return `
-        <div class="subidos-archivo-pagina">
-          <button
-            type="button"
-            onclick="${accionAbrir}"
-            class="subidos-media-link subidos-media-frame is-audio"
-            title="Abrir"
-          >
-            <div class="subidos-file-open">
-              <i class="fa-solid fa-headphones"></i>
-              <span>${nombre}</span>
-              <small>Tocar para abrir</small>
-            </div>
-            ${contador}
-          </button>
-        </div>
-      `;
-    }
-
-    return `
-      <div class="subidos-archivo-pagina">
         <button
           type="button"
           onclick="${accionAbrir}"
-          class="subidos-media-link subidos-media-frame is-file"
-          title="Abrir"
+          class="subidos-media-link subidos-media-frame is-video subidos-video-frame"
+          title="Abrir video"
+          data-archivo-index="${i}"
         >
-          <div class="subidos-file-open">
-            <i class="fa-solid fa-file-lines"></i>
-            <span>${nombre}</span>
-            <small>Tocar para abrir</small>
-          </div>
+          <video
+            src="${a.url}"
+            muted
+            playsinline
+            preload="metadata"
+            style="display:block; width:100%; height:100%; object-fit:cover; background:#000;"
+          ></video>
+
+          <span class="subidos-video-play">
+            <i class="fa-solid fa-circle-play"></i>
+          </span>
+
           ${contador}
         </button>
-      </div>
+      `;
+    }
+
+    const icono = esAudio ? "fa-headphones" : "fa-file-lines";
+    const texto = esAudio ? "Audio" : "Archivo";
+
+    return `
+      <button
+        type="button"
+        onclick="${accionAbrir}"
+        class="subidos-media-link subidos-media-frame is-file"
+        title="Abrir"
+        data-archivo-index="${i}"
+      >
+        <div class="subidos-file-open">
+          <i class="fa-solid ${icono}"></i>
+          <span>${nombre}</span>
+          <small>${texto}</small>
+        </div>
+        ${contador}
+      </button>
     `;
   }
 
-  // ✅ Si hay un solo archivo, queda EXACTAMENTE como antes, sin carrusel.
   if (archivos.length === 1) {
-    return htmlArchivo(archivos[0], 0).replace(
-      '<div class="subidos-archivo-pagina">',
-      ''
-    ).replace(
-      '</button>\n        </div>',
-      '</button>'
-    );
+    return htmlArchivo(archivos[0], 0);
   }
 
-  // ✅ Si hay varios, cada archivo ocupa el ancho completo.
-  // Los demás se ven solo deslizando horizontal.
   return `
     <div
       class="subidos-archivos-carrusel"
       data-archivo-actual="0"
       onscroll="subidosActualizarArchivoActual(this)"
     >
-      ${archivos.map((a, i) => htmlArchivo(a, i)).join("")}
+      ${archivos.map((a, i) => `
+        <div class="subidos-archivo-pagina">
+          ${htmlArchivo(a, i)}
+        </div>
+      `).join("")}
     </div>
   `;
 }
@@ -4545,31 +4613,97 @@ window.compartirSubido = async function compartirSubido(id) {
       return;
     }
 
-    // ✅ Video: compartir link, NO archivo pesado
-    if (subidosEsVideoItem(it)) {
-      await subidosCompartirLinkVideo(it);
+    // ✅ Prédica conserva su lógica especial: comparte la imagen preparada de la prédica.
+    if (subidosEsPredicaConContenido(it)) {
+      if (subidosEsVideoItem(it)) {
+        await subidosCompartirLinkVideo(it);
+        subidosAvisoProceso("Link listo ✅");
+        return;
+      }
+
+      let file = subidosFileCache.get(id)?.file;
+
+      if (!file) {
+        subidosAvisoProceso("El archivo todavía se está preparando.", true);
+        file = await subidosPrepararArchivoAccion(id);
+      }
+
+      if (!file) {
+        alert("El archivo todavía no está listo para compartir. Probá de nuevo en unos segundos.");
+        return;
+      }
+
+      await subidosCompartirFileObligatorio(file, it?.etiqueta || "Archivo", subidosLinkDetalle(id));
+      subidosAvisoProceso("Listo ✅");
+      return;
+    }
+
+    const archivos = subidosArchivosItemComoLista(it);
+    if (!archivos.length) {
+      alert("No hay archivos para compartir.");
+      return;
+    }
+
+    const modo = subidosElegirModoArchivos("Compartir", archivos.length);
+    const indices = modo === "todos"
+      ? archivos.map((_, i) => i)
+      : [subidosIndiceArchivoActual(id)];
+
+    const virtuales = indices
+      .map(i => subidosItemArchivoVirtual(it, i))
+      .filter(Boolean);
+
+    if (!virtuales.length) {
+      alert("No encontré archivos para compartir.");
+      return;
+    }
+
+    // ✅ Si es un solo video, compartimos link para no cargarlo en memoria.
+    if (virtuales.length === 1 && subidosEsVideoItem(virtuales[0])) {
+      await subidosCompartirLinkVideo(virtuales[0]);
       subidosAvisoProceso("Link listo ✅");
       return;
     }
 
-    let file = subidosFileCache.get(id)?.file;
-
-    if (!file) {
-      subidosAvisoProceso("El archivo todavía se está preparando.", true);
-      file = await subidosPrepararArchivoAccion(id);
-    }
-
-    if (!file) {
-      alert("El archivo todavía no está listo para compartir. Probá de nuevo en unos segundos.");
+    // ✅ Para compartir todos, evitamos mezclar videos porque pueden ser pesados.
+    if (virtuales.length > 1 && virtuales.some(subidosEsVideoItem)) {
+      alert("Para compartir varios archivos juntos, evitá incluir videos. Compartí el video actual como link.");
       return;
     }
 
-    const titulo = it?.etiqueta || "Archivo";
+    subidosAvisoProceso("Preparando archivo...", true);
 
-    // ✅ imágenes / prédicas / archivos chicos: compartir archivo real
-    await subidosCompartirFileObligatorio(file, titulo, subidosLinkDetalle(id));
+    const files = [];
+
+    for (const index of indices) {
+      const virtual = subidosItemArchivoVirtual(it, index);
+      if (!virtual || subidosEsVideoItem(virtual)) continue;
+
+      const file = await subidosFileDesdeArchivoIndice(it, index);
+      files.push(file);
+    }
+
+    if (!files.length) {
+      alert("No pude preparar los archivos para compartir.");
+      return;
+    }
+
+    if (!navigator.share) {
+      throw new Error("Este navegador no permite compartir desde la web.");
+    }
+
+    if (!navigator.canShare || !navigator.canShare({ files })) {
+      throw new Error("Este navegador no acepta compartir estos archivos juntos.");
+    }
+
+    await navigator.share({
+      files,
+      title: it?.etiqueta || "Archivo",
+      text: subidosLinkDetalle(id)
+    });
 
     subidosAvisoProceso("Listo ✅");
+
   } catch (e) {
     console.error("Error en compartir:", e);
 
