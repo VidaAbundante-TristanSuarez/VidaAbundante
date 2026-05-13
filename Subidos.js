@@ -3903,19 +3903,19 @@ function subidosHtmlArchivosAbiertos(it, indiceInicial = 0) {
   const mostrarFlechas = archivos.length > 1;
 
   return `
-    <div class="subidos-visor-archivos-shell">
+    <div class="subidos-visor-archivos-shell" data-indice-inicial="${Number(indiceInicial || 0)}">
       ${mostrarFlechas ? `
-        <button type="button" class="subidos-visor-flecha subidos-visor-flecha-izq" onclick="subidosMoverVisorArchivo(-1)" title="Anterior">
+        <button type="button" class="subidos-visor-flecha subidos-visor-flecha-izq" onclick="subidosMoverVisorArchivo(this, -1)" title="Anterior">
           <i class="fa-solid fa-chevron-left"></i>
         </button>
       ` : ``}
 
-      <div id="subidosVisorArchivosCarril" class="subidos-visor-archivos-carril">
+      <div class="subidos-visor-archivos-carril">
         ${archivos.map((a, i) => subidosHtmlArchivoVisor(a, i)).join("")}
       </div>
 
       ${mostrarFlechas ? `
-        <button type="button" class="subidos-visor-flecha subidos-visor-flecha-der" onclick="subidosMoverVisorArchivo(1)" title="Siguiente">
+        <button type="button" class="subidos-visor-flecha subidos-visor-flecha-der" onclick="subidosMoverVisorArchivo(this, 1)" title="Siguiente">
           <i class="fa-solid fa-chevron-right"></i>
         </button>
       ` : ``}
@@ -3923,13 +3923,24 @@ function subidosHtmlArchivosAbiertos(it, indiceInicial = 0) {
   `;
 }
 
-window.subidosMoverVisorArchivo = function subidosMoverVisorArchivo(dir) {
-  const carril = document.getElementById("subidosVisorArchivosCarril");
+window.subidosMoverVisorArchivo = function subidosMoverVisorArchivo(btn, dir) {
+  const shell = btn?.closest?.(".subidos-visor-archivos-shell");
+  const carril = shell?.querySelector(".subidos-visor-archivos-carril");
   if (!carril) return;
 
-  carril.scrollBy({
-    left: dir * carril.clientWidth,
-    behavior: "smooth"
+  const slides = [...carril.querySelectorAll(".subidos-visor-archivo-slide")];
+  if (!slides.length) return;
+
+  const actual = Math.round(carril.scrollLeft / Math.max(1, carril.clientWidth));
+  let siguiente = actual + Number(dir || 0);
+
+  if (siguiente < 0) siguiente = slides.length - 1;
+  if (siguiente >= slides.length) siguiente = 0;
+
+  slides[siguiente].scrollIntoView({
+    behavior: "smooth",
+    block: "nearest",
+    inline: "center"
   });
 };
 
@@ -3940,25 +3951,32 @@ window.abrirSubidosVisorArchivo = function abrirSubidosVisorArchivo(id, indiceIn
   if (!it || !archivos.length) return;
 
   const idx = Math.max(0, Math.min(Number(indiceInicial || 0), archivos.length - 1));
-  const nombre = archivos.length > 1
-    ? `${archivos[idx]?.fileName || "archivo"} (${idx + 1}/${archivos.length})`
-    : (archivos[0]?.fileName || "archivo");
+
+  // ✅ Arriba mostramos descripción, no nombre larguísimo del archivo
+  const titulo = String(
+    it.descripcion ||
+    it.etiqueta ||
+    "Vista previa"
+  ).trim();
 
   abrirModalSubidosVisor(
-    nombre,
+    titulo,
     subidosHtmlArchivosAbiertos(it, idx)
   );
 
   setTimeout(() => {
-    const slide = document.getElementById(`subidosVisorArchivo-${idx}`);
-    if (slide) {
+    const body = document.getElementById("subidosVisorBody");
+    const carril = body?.querySelector(".subidos-visor-archivos-carril");
+    const slide = body?.querySelector(`#subidosVisorArchivo-${idx}`);
+
+    if (carril && slide) {
       slide.scrollIntoView({
         behavior: "instant",
         block: "nearest",
         inline: "center"
       });
     }
-  }, 60);
+  }, 80);
 };
 
 // ✅ Para Compartidos: permite mostrar archivo común como card abierta, no mini card.
