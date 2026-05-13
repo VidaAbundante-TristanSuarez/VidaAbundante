@@ -1706,5 +1706,30 @@ body.oscuro #modalSubidosVisor{
   display: block !important;
 }
 
+/* ✅ Visor Subidos: botón X redondo */
+#modalSubidosVisor button[onclick*="cerrarModalSubidosVisor"]{
+  width:34px !important;
+  height:34px !important;
+  min-width:34px !important;
+  min-height:34px !important;
+  padding:0 !important;
+  border:none !important;
+  border-radius:999px !important;
+  background:rgba(255,255,255,.88) !important;
+  color:#111 !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  line-height:1 !important;
+  font-size:18px !important;
+  font-weight:900 !important;
+  box-shadow:0 4px 12px rgba(0,0,0,.16) !important;
+}
+
+#modalSubidosVisor button[onclick*="cerrarModalSubidosVisor"]:hover{
+  background:var(--ui-azul-claro, #bcdcff) !important;
+  color:#000 !important;
+}
+
 </style>
 
