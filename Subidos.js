@@ -4518,6 +4518,41 @@ async function subidosCrearSharePredicaAlGuardar(id, datosBase) {
   }
 }
 
+async function subidosSubirArchivoSeleccionado(file, estadoEl = null, index = 1, total = 1) {
+  if (!file) {
+    return {
+      url: "",
+      r2Key: "",
+      mimeType: "",
+      fileName: "",
+      sizeBytes: 0,
+      subidaDirectaVideo: false
+    };
+  }
+
+  const esVideo = subidosEsVideoFile(file);
+  const prefijo = total > 1 ? `Archivo ${index}/${total}: ` : "";
+
+  if (estadoEl) {
+    estadoEl.textContent = esVideo
+      ? `${prefijo}Preparando video (${subidosFormatoMB(file.size)} MB)...`
+      : `${prefijo}Subiendo archivo...`;
+  }
+
+  const subida = esVideo
+    ? await subirVideoR2DirectoSubidos(file, estadoEl)
+    : await subirArchivoAR2DesdeWeb(file, "subidos");
+
+  return {
+    url: subida?.url || "",
+    r2Key: subida?.key || "",
+    mimeType: subida?.contentType || file?.type || "",
+    fileName: subida?.fileName || file?.name || "",
+    sizeBytes: Number(subida?.sizeBytes || file?.size || 0),
+    subidaDirectaVideo: !!subida?.subidaDirectaVideo
+  };
+}
+
 async function guardarSubido() {
   if (subidosGuardando) return;
 
@@ -4540,25 +4575,27 @@ async function guardarSubido() {
     const btnGuardar = document.getElementById("btnGuardarSubido");
 
     const actual = subidosEditandoId ? (obtenerSubidoPorId(subidosEditandoId) || {}) : {};
-    const file = inpFile?.files?.[0] || null;
+    const archivos = Array.from(inpFile?.files || []).filter(Boolean);
+    const file = archivos[0] || null;
 
     const fechaEvento = (inpFecha?.value || "").trim();
     const etiqueta = (inpEtiqueta?.value || "").trim();
     const descripcion = (inpDesc?.value || "").trim();
+
     const esPredica = esPredicaSubidos(etiqueta);
     const modalSubidos = document.getElementById("modalSubidos");
     const esCumpleanos = subidosEsCumpleanos(etiqueta);
 
     const datosCumpleanos = esCumpleanos ? {
-  cumpleHermanoId: modalSubidos?.dataset?.cumpleHermanoId || actual.cumpleHermanoId || "",
-  cumpleTelefono: modalSubidos?.dataset?.cumpleTelefono || actual.cumpleTelefono || "",
-  cumpleNombre: modalSubidos?.dataset?.cumpleNombre || actual.cumpleNombre || descripcion || ""
-} : {};
+      cumpleHermanoId: modalSubidos?.dataset?.cumpleHermanoId || actual.cumpleHermanoId || "",
+      cumpleTelefono: modalSubidos?.dataset?.cumpleTelefono || actual.cumpleTelefono || "",
+      cumpleNombre: modalSubidos?.dataset?.cumpleNombre || actual.cumpleNombre || descripcion || ""
+    } : {};
 
     const permiteSinArchivo = ["racimo", "oracion", "cumpleanos"].includes(
-    normalizarEtiquetaSubidos(etiqueta)
-);
-    
+      normalizarEtiquetaSubidos(etiqueta)
+    );
+
     if (!fechaEvento) {
       alert("Completá la fecha.");
       return;
@@ -4569,7 +4606,27 @@ async function guardarSubido() {
       return;
     }
 
-if (!file && !esPredica && !actual.url && !permiteSinArchivo) {
+    if (subidosEditandoId && archivos.length > 1) {
+      alert("Al editar un subido, elegí solo 1 archivo para reemplazarlo.");
+      return;
+    }
+
+    if (esPredica && archivos.length > 1) {
+      alert("Para Prédica usá solo 1 archivo. La carga múltiple queda para subidos comunes.");
+      return;
+    }
+
+    if (archivos.length > 8) {
+      alert("Para cuidar la app, subí hasta 8 archivos por vez.");
+      return;
+    }
+
+    if (archivos.length > 1 && archivos.some(subidosEsVideoFile)) {
+      alert("Para videos, subí de a 1. Es más seguro porque consumen mucha memoria al prepararse.");
+      return;
+    }
+
+    if (!file && !esPredica && !actual.url && !permiteSinArchivo) {
       alert("Elegí un archivo.");
       return;
     }
@@ -4587,52 +4644,111 @@ if (!file && !esPredica && !actual.url && !permiteSinArchivo) {
 
     subidosGuardando = true;
     if (btnGuardar) btnGuardar.disabled = true;
-    if (estado) estado.textContent = file ? "Subiendo archivo..." : "Guardando...";
 
     const ts = Date.now();
 
-let url = actual.url || "";
-let r2Key = actual.r2Key || "";
-let mimeType = actual.mimeType || "";
-let fileName = actual.fileName || "";
-let sizeBytes = Number(actual.sizeBytes || 0);
-let subidaDirectaVideo = !!actual.subidaDirectaVideo;
+    const esCargaMultiple = !subidosEditandoId && !esPredica && archivos.length > 1;
 
-if (file) {
-  const esVideo = subidosEsVideoFile(file);
+    // ✅ CARGA MÚLTIPLE:
+    // Crea un registro separado por cada archivo.
+    if (esCargaMultiple) {
+      for (let i = 0; i < archivos.length; i++) {
+        const archivoActual = archivos[i];
 
-  if (estado) {
-    estado.textContent = esVideo
-      ? `Preparando video (${subidosFormatoMB(file.size)} MB)...`
-      : "Subiendo archivo...";
-  }
+        const subidaDatos = await subidosSubirArchivoSeleccionado(
+          archivoActual,
+          estado,
+          i + 1,
+          archivos.length
+        );
 
-  const subida = esVideo
-    ? await subirVideoR2DirectoSubidos(file, estado)
-    : await subirArchivoAR2DesdeWeb(file, "subidos");
+        const destinoRef = push(ref(db, "subidosIglesia"));
+        const idFinal = destinoRef.key;
 
-  url = subida?.url || "";
-  r2Key = subida?.key || "";
-  mimeType = subida?.contentType || file?.type || "";
-  fileName = subida?.fileName || file?.name || "";
-  sizeBytes = Number(subida?.sizeBytes || file?.size || 0);
-  subidaDirectaVideo = !!subida?.subidaDirectaVideo;
-}
+        subidosFileCache.delete(idFinal);
+        subidosFilePreparando.delete(idFinal);
+
+        const datosBase = {
+          fecha: ts + i,
+          fechaEdicion: "",
+          fechaEvento,
+          etiqueta,
+          descripcion: descripcion || archivoActual.name || "",
+          url: subidaDatos.url,
+          r2Key: subidaDatos.r2Key,
+          mimeType: subidaDatos.mimeType,
+          fileName: subidaDatos.fileName,
+          sizeBytes: subidaDatos.sizeBytes,
+          subidaDirectaVideo: subidaDatos.subidaDirectaVideo,
+          uidCreador: subidosUID,
+
+          esEventoSinArchivo: false,
+          esPredica: false,
+          predicaRef: "",
+          predicaVersion: "",
+          predicaIntroduccion: "",
+          predicaCitas: [],
+          predicaNotaFinal: "",
+
+          shareUrl: subidaDatos.url,
+          shareR2Key: subidaDatos.r2Key,
+          shareMimeType: subidaDatos.mimeType,
+          shareFileName: subidaDatos.fileName,
+
+          ...datosCumpleanos
+        };
+
+        await set(destinoRef, datosBase);
+      }
+
+      const etiquetaNormalizada = etiqueta.trim();
+      if (etiquetaNormalizada) {
+        const lista = Array.from(new Set([...(subidosEtiquetas || []), etiquetaNormalizada]));
+        await set(ref(db, "subidosEtiquetas"), lista);
+      }
+
+      if (estado) estado.textContent = "✅ Guardados";
+      cerrarModalSubidos();
+      return;
+    }
+
+    // ✅ CARGA NORMAL: 1 archivo, edición, prédica o evento sin archivo.
+    if (estado) {
+      estado.textContent = file ? "Subiendo archivo..." : "Guardando...";
+    }
+
+    let url = actual.url || "";
+    let r2Key = actual.r2Key || "";
+    let mimeType = actual.mimeType || "";
+    let fileName = actual.fileName || "";
+    let sizeBytes = Number(actual.sizeBytes || 0);
+    let subidaDirectaVideo = !!actual.subidaDirectaVideo;
+
+    if (file) {
+      const subidaDatos = await subidosSubirArchivoSeleccionado(file, estado, 1, 1);
+
+      url = subidaDatos.url;
+      r2Key = subidaDatos.r2Key;
+      mimeType = subidaDatos.mimeType;
+      fileName = subidaDatos.fileName;
+      sizeBytes = subidaDatos.sizeBytes;
+      subidaDirectaVideo = subidaDatos.subidaDirectaVideo;
+    }
 
     const destinoRef = subidosEditandoId
       ? ref(db, `subidosIglesia/${subidosEditandoId}`)
       : push(ref(db, "subidosIglesia"));
 
     const idFinal = destinoRef.key;
-    const predicaRef = esPredica
-  ? (
-      actual.predicaRef && actual.fechaEvento === fechaEvento
-        ? actual.predicaRef
-        : subidosCrearPredicaRef(fechaEvento, idFinal)
-    )
-  : "";
 
-    // ✅ cuando guardo/edito, borro cache viejo para no compartir imagen anterior
+    const predicaRef = esPredica
+      ? (
+          actual.predicaRef && actual.fechaEvento === fechaEvento
+            ? actual.predicaRef
+            : subidosCrearPredicaRef(fechaEvento, idFinal)
+        )
+      : "";
+
     subidosFileCache.delete(idFinal);
     subidosFilePreparando.delete(idFinal);
 
@@ -4644,31 +4760,31 @@ if (file) {
       descripcion,
       url,
       r2Key,
-mimeType,
-fileName,
-sizeBytes,
-subidaDirectaVideo,
-uidCreador: actual.uidCreador || subidosUID,
-esEventoSinArchivo: !url && permiteSinArchivo && !esPredica,
-esPredica,
-predicaRef,
-predicaVersion: esPredica ? datosPredica.version : "",
+      mimeType,
+      fileName,
+      sizeBytes,
+      subidaDirectaVideo,
+      uidCreador: actual.uidCreador || subidosUID,
+
+      esEventoSinArchivo: !url && permiteSinArchivo && !esPredica,
+      esPredica,
+      predicaRef,
+      predicaVersion: esPredica ? datosPredica.version : "",
       predicaIntroduccion: esPredica ? datosPredica.introduccion : "",
       predicaCitas: esPredica ? datosPredica.citas : [],
       predicaNotaFinal: esPredica ? datosPredica.notaFinalGeneral : "",
 
-      // ✅ para acciones reales de archivo
       shareUrl: !esPredica ? url : "",
       shareR2Key: !esPredica ? r2Key : "",
       shareMimeType: !esPredica ? mimeType : "",
       shareFileName: !esPredica ? fileName : "",
 
-...datosCumpleanos
+      ...datosCumpleanos
     };
 
     await set(destinoRef, datosBase);
 
-    // ✅ si es prédica, genero PNG final una sola vez y lo guardo en R2
+    // ✅ Si es prédica, genero PNG final una sola vez y lo guardo en R2.
     if (esPredica) {
       const share = await subidosCrearSharePredicaAlGuardar(idFinal, datosBase);
 
@@ -4678,7 +4794,6 @@ predicaVersion: esPredica ? datosPredica.version : "",
           ...share
         });
 
-        // ✅ fuerza a preparar el archivo nuevo, no el anterior
         subidosFileCache.delete(idFinal);
         subidosFilePreparando.delete(idFinal);
       }
@@ -4692,13 +4807,18 @@ predicaVersion: esPredica ? datosPredica.version : "",
 
     if (estado) estado.textContent = "✅ Guardado";
     cerrarModalSubidos();
+
   } catch (e) {
     console.error("Error guardando subido:", e);
+
     const estado = document.getElementById("subidosEstado");
     if (estado) estado.textContent = "❌ No se pudo guardar";
+
     alert("No se pudo guardar el subido.\n\n" + (e?.message || e));
+
   } finally {
     subidosGuardando = false;
+
     const btnGuardar = document.getElementById("btnGuardarSubido");
     if (btnGuardar) btnGuardar.disabled = false;
   }
