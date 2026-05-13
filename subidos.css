@@ -1731,5 +1731,57 @@ body.oscuro #modalSubidosVisor{
   color:#000 !important;
 }
 
+/* ✅ Modal real para elegir actual / todas / cancelar */
+.subidos-modal-eleccion-archivos{
+  position:fixed;
+  inset:0;
+  z-index:999999;
+  background:rgba(0,0,0,.42);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:18px;
+}
+
+.subidos-modal-eleccion-card{
+  width:min(420px, 100%);
+  border-radius:22px;
+  background:rgba(255,255,255,.96);
+  color:#111;
+  padding:18px;
+  box-shadow:0 18px 50px rgba(0,0,0,.28);
+  text-align:center;
+}
+
+.subidos-modal-eleccion-card h3{
+  margin:0 0 16px;
+  font-size:18px;
+  line-height:1.25;
+  font-weight:900;
+}
+
+.subidos-modal-eleccion-actions{
+  display:flex;
+  gap:10px;
+  justify-content:center;
+  flex-wrap:wrap;
+}
+
+.subidos-modal-eleccion-actions button{
+  border:none;
+  border-radius:999px;
+  min-height:38px;
+  padding:0 16px;
+  background:var(--ui-azul-claro, #bcdcff);
+  color:#000;
+  font-weight:900;
+  cursor:pointer;
+}
+
+.subidos-modal-eleccion-actions .subidos-modal-eleccion-cancelar{
+  background:rgba(0,0,0,.08);
+  color:#111;
+}
+
 </style>
 
