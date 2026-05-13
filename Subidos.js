@@ -139,17 +139,43 @@ async function subidosCrearFilesDeItem(it, indices = []) {
 }
 
 function subidosElegirTodoOActual(accion, cantidad) {
-  if (cantidad <= 1) return "actual";
+  if (cantidad <= 1) return Promise.resolve("actual");
 
-  const verbo = accion === "compartir" ? "compartir" : "descargar";
+  return new Promise(resolve => {
+    const verbo = accion === "compartir" ? "compartir" : "descargar";
 
-  const ok = confirm(
-    `Este subido tiene ${cantidad} archivos.\n\n` +
-    `Aceptar = ${verbo} TODO\n` +
-    `Cancelar = ${verbo} solo la imagen/archivo actual`
-  );
+    const modal = document.createElement("div");
+    modal.className = "subidos-modal-eleccion-archivos";
+    modal.innerHTML = `
+      <div class="subidos-modal-eleccion-card">
+        <h3>¿Querés ${verbo} todas las imágenes o solo la actual?</h3>
 
-  return ok ? "todo" : "actual";
+        <div class="subidos-modal-eleccion-actions">
+          <button type="button" data-opcion="actual">
+            Solo la actual
+          </button>
+
+          <button type="button" data-opcion="todo">
+            Todas
+          </button>
+
+          <button type="button" data-opcion="cancelar" class="subidos-modal-eleccion-cancelar">
+            Cancelar
+          </button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    modal.querySelectorAll("[data-opcion]").forEach(btn => {
+      btn.onclick = () => {
+        const opcion = btn.dataset.opcion || "cancelar";
+        modal.remove();
+        resolve(opcion);
+      };
+    });
+  });
 }
 
 async function subidosCrearFileDesdeInfo(info) {
@@ -4212,7 +4238,11 @@ window.descargarSubido = async function descargarSubido(id, btn = null) {
     const archivos = subidosArchivosItem(it);
     const cantidad = subidosEsPredicaConContenido(it) ? 1 : archivos.length;
     const actual = subidosIndiceActualDesdeBoton(id, btn);
-    const modo = subidosElegirTodoOActual("descargar", cantidad);
+    const modo = await subidosElegirTodoOActual("descargar", cantidad);
+if (modo === "cancelar") {
+  subidosAvisoProceso("Acción cancelada");
+  return;
+}
 
     if (modo === "todo" && cantidad > 1) {
       subidosAvisoProceso("Preparando todos los archivos...", true);
