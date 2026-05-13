@@ -1099,4 +1099,27 @@ body.en-compartidos .comp-post--imagen .devBigCard img{
   }
 }
 
+/* ✅ Compartidos: subidos comunes como card abierta, igual estilo que prédica */
+body.en-compartidos .comp-post--archivo-abierto .comp-archivo-abierta-wrap{
+  width:100%;
+  display:flex;
+  justify-content:center;
+}
+
+body.en-compartidos .comp-post--archivo-abierto .subidos-visor-archivos-shell{
+  width:100%;
+  max-width:760px;
+}
+
+body.en-compartidos .comp-post--archivo-abierto .subidos-visor-archivo-slide img,
+body.en-compartidos .comp-post--archivo-abierto .subidos-visor-archivo-slide video{
+  max-height:46vh;
+  background:transparent !important;
+  border-radius:16px;
+}
+
+body.en-compartidos .comp-post--archivo-abierto .subidos-visor-archivo-slide iframe{
+  height:46vh;
+}
+
 </style>
