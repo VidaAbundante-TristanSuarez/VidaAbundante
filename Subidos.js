@@ -23,6 +23,7 @@ let subidosUID = null;
 let subidosEsAdmin = false;
 let subidosMesActual = new Date();
 let subidosItems = [];
+let subidosHermanosCumples = [];
 let subidosEtiquetas = [];
 let subidosEditandoId = null;
 let subidosDeepLinkAbierto = false;
@@ -187,7 +188,8 @@ const ETIQUETAS_DEFAULT = [
   "Anuncio",
   "Plan",
   "Racimo",
-  "Oración",  
+  "Oración",
+  "Cumpleaños",
   "Santa Cena",
   "Reunion Jovenes",
   "Reunion Varones",
@@ -1392,7 +1394,11 @@ function abrirModalSubidos() {
   if (archivoBox) archivoBox.style.display = "none";
   if (archivoNombre) archivoNombre.textContent = "";
   if (btnVerArchivo) btnVerArchivo.onclick = null;
-
+  
+delete m.dataset.cumpleHermanoId;
+delete m.dataset.cumpleTelefono;
+delete m.dataset.cumpleNombre;
+  
   resetPredicaSubidosUI();
   actualizarPredicaSubidosUI();
 
@@ -1560,8 +1566,12 @@ function renderCalendario() {
   let inicioSemana = primerDia.getDay();
   if (inicioSemana === 0) inicioSemana = 7;
 
- const habitualesMes = subidosEventosHabitualesDelMes(year, month);
- const porFecha = agruparPorFecha([...subidosItems, ...habitualesMes]);
+  const habitualesMes = subidosEventosHabitualesDelMes(year, month);
+
+  // ✅ Los cumpleaños NO van como chip normal.
+  const itemsSinCumple = subidosItems.filter(it => !subidosEsCumpleanos(it.etiqueta || ""));
+
+  const porFecha = agruparPorFecha([...itemsSinCumple, ...habitualesMes]);
   const diasHeader = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 
   let html = `
@@ -1579,15 +1589,33 @@ function renderCalendario() {
   for (let dia = 1; dia <= diasMes; dia++) {
     const f = `${year}-${pad(month + 1)}-${pad(dia)}`;
     const itemsDia = (porFecha[f] || []).sort((a, b) => (b.fecha || 0) - (a.fecha || 0));
+    const cumplesDia = subidosCumplesDia(f);
     const esHoy = f === hoyYMD;
+
+    const tituloCumple = cumplesDia.length === 1
+      ? `Cumpleaños: ${cumplesDia[0].nombreCompleto || cumplesDia[0].descripcion || ""}`
+      : `Cumpleaños: ${cumplesDia.length}`;
 
     html += `
       <div class="subidos-day ${esHoy ? "today" : ""}">
         <div class="subidos-day-num">${dia}</div>
+
+        ${cumplesDia.length ? `
+          <button
+            type="button"
+            class="subidos-cumple-icon"
+            onclick="abrirCumpleanosDesdeCalendario('${f}')"
+            title="${subidosEsc(tituloCumple)}"
+            aria-label="${subidosEsc(tituloCumple)}"
+          >
+            <i class="fa-solid fa-cake-candles"></i>
+          </button>
+        ` : ``}
+
         <div class="subidos-day-events">
           ${itemsDia.slice(0, 3).map(it => {
             const color = colorEtiquetaSubidos(it.etiqueta || "");
-       const titulo = escaparHtml(it.descripcion || it.etiqueta || "Subido");
+            const titulo = escaparHtml(it.descripcion || it.etiqueta || "Subido");
 
             return `
               <button
@@ -1640,6 +1668,7 @@ const ETIQUETAS_COLOR = {
   "plan": "#d2ff00",
   "racimo": "#00afff",
   "oracion": "#ff8000",
+  "cumpleanos": "#ff5fb7",
   "santa cena": "#a800ff",
   "reunion jovenes": "#00ff79",
   "reunion de jovenes": "#00ff79",
@@ -1670,6 +1699,293 @@ window.subidosOcultarPreview = function subidosOcultarPreview() {};
 function obtenerSubidoPorId(id) {
   return subidosItems.find(x => x.id === id) || null;
 }
+
+function subidosEsCumpleanos(etiqueta = "") {
+  return normalizarEtiquetaSubidos(etiqueta) === "cumpleanos";
+}
+
+function subidosEsc(txt = "") {
+  return String(txt ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function subidosNombreCompletoHermano(h = {}) {
+  return `${h.nombre || ""} ${h.apellido || ""}`.trim() || "Sin nombre";
+}
+
+function subidosPrimerNombre(txt = "") {
+  return String(txt || "").trim().split(/\s+/)[0] || "hermano";
+}
+
+function subidosCumpleValor(h = {}) {
+  return String(
+    h.cumpleanos ||
+    h.cumpleaños ||
+    h.fechaCumpleanos ||
+    h.fechaCumpleaños ||
+    ""
+  ).trim();
+}
+
+function subidosFechaCumpleEnAnio(cumple = "", year) {
+  const s = String(cumple || "").trim();
+  if (!s) return "";
+
+  // Esperado desde input type="date": YYYY-MM-DD
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return "";
+
+  const mes = m[2];
+  const dia = m[3];
+
+  return `${year}-${mes}-${dia}`;
+}
+
+function subidosIdCumple(fechaEvento, hermanoId) {
+  return `cumple::${fechaEvento}::${hermanoId}`;
+}
+
+function subidosCumpleanosDelMes(year, month) {
+  return (subidosHermanosCumples || [])
+    .map(h => {
+      const fechaEvento = subidosFechaCumpleEnAnio(subidosCumpleValor(h), year);
+      if (!fechaEvento) return null;
+
+      const partes = fechaEvento.split("-");
+      const mes = Number(partes[1] || 0) - 1;
+
+      if (mes !== month) return null;
+
+      const nombreCompleto = subidosNombreCompletoHermano(h);
+
+      return {
+        id: subidosIdCumple(fechaEvento, h.id),
+        fecha: 0,
+        fechaEvento,
+        etiqueta: "Cumpleaños",
+        descripcion: `Cumpleaños de ${nombreCompleto}`,
+        esCumpleVirtual: true,
+        hermanoId: h.id,
+        nombreCompleto,
+        telefono: h.telefono || "",
+        cumpleOriginal: subidosCumpleValor(h)
+      };
+    })
+    .filter(Boolean);
+}
+
+function subidosCumplesDia(fechaEvento) {
+  const fecha = String(fechaEvento || "").trim();
+  if (!fecha) return [];
+
+  const partes = fecha.split("-");
+  const year = Number(partes[0] || 0);
+  const month = Number(partes[1] || 1) - 1;
+
+  const desdeContactos = subidosCumpleanosDelMes(year, month)
+    .filter(it => it.fechaEvento === fecha);
+
+  const desdeSubidos = subidosItems
+    .filter(it =>
+      it.fechaEvento === fecha &&
+      subidosEsCumpleanos(it.etiqueta || "")
+    )
+    .map(it => ({
+      ...it,
+      esCumpleReal: true,
+      nombreCompleto: it.cumpleNombre || it.descripcion || "Cumpleaños",
+      telefono: it.cumpleTelefono || ""
+    }));
+
+  return [...desdeContactos, ...desdeSubidos];
+}
+
+function subidosBuscarCumpleItem(id) {
+  const raw = String(id || "").trim();
+  if (!raw) return null;
+
+  if (!raw.startsWith("cumple::")) {
+    return obtenerSubidoPorId(raw);
+  }
+
+  const partes = raw.split("::");
+  const fechaEvento = partes[1] || "";
+
+  return subidosCumplesDia(fechaEvento).find(x => String(x.id) === raw) || null;
+}
+
+function subidosTelefonoWhatsApp(telefono) {
+  let n = String(telefono || "").replace(/\D/g, "");
+
+  if (!n) return "";
+
+  if (n.startsWith("549")) return n;
+
+  if (n.startsWith("54")) {
+    return "549" + n.slice(2).replace(/^15/, "");
+  }
+
+  n = n.replace(/^0+/, "").replace(/^15/, "");
+  return "549" + n;
+}
+
+window.enviarWhatsAppCumpleSubidos = function enviarWhatsAppCumpleSubidos(id) {
+  const it = subidosBuscarCumpleItem(id);
+  if (!it) return;
+
+  const numero = subidosTelefonoWhatsApp(it.telefono || it.cumpleTelefono || "");
+
+  if (!numero) {
+    alert("Este contacto no tiene teléfono cargado.");
+    return;
+  }
+
+  const nombre = subidosPrimerNombre(it.nombreCompleto || it.cumpleNombre || it.descripcion || "");
+
+  const texto = [
+    `Feliz Cumpleaños, ${nombre} 🎂🎉`,
+    ``,
+    `Que el Señor te bendiga grandemente en este día tan especial.`
+  ].join("\n");
+
+  const url = `https://wa.me/${numero}?text=${encodeURIComponent(texto)}`;
+  window.open(url, "_blank");
+};
+
+window.abrirEditarCumpleanosSubidos = function abrirEditarCumpleanosSubidos(id) {
+  if (!subidosEsAdmin) {
+    alert("Solo admin puede editar cumpleaños.");
+    return;
+  }
+
+  const it = subidosBuscarCumpleItem(id);
+  if (!it) return;
+
+  // Si ya es un subido real, editamos ese subido.
+  if (!it.esCumpleVirtual && it.id) {
+    cerrarModalSubidosVisor();
+    abrirEditarSubido(it.id);
+    return;
+  }
+
+  cerrarModalSubidosVisor();
+  abrirModalSubidos();
+
+  const modal = document.getElementById("modalSubidos");
+  const fecha = document.getElementById("subidosFecha");
+  const etiqueta = document.getElementById("subidosEtiqueta");
+  const descripcion = document.getElementById("subidosDescripcion");
+  const archivo = document.getElementById("subidosArchivo");
+
+  setSubidosModalTitulo("Cumpleaños");
+
+  if (modal) {
+    modal.dataset.cumpleHermanoId = it.hermanoId || "";
+    modal.dataset.cumpleTelefono = it.telefono || "";
+    modal.dataset.cumpleNombre = it.nombreCompleto || "";
+  }
+
+  if (fecha) fecha.value = it.fechaEvento || fechaYMD(new Date());
+  if (etiqueta) etiqueta.value = "Cumpleaños";
+  if (descripcion) descripcion.value = it.descripcion || `Cumpleaños de ${it.nombreCompleto || ""}`;
+  if (archivo) archivo.value = "";
+
+  actualizarPredicaSubidosUI();
+};
+
+window.abrirCumpleanosDesdeCalendario = function abrirCumpleanosDesdeCalendario(fechaEvento) {
+  const items = subidosCumplesDia(fechaEvento);
+
+  if (!items.length) return;
+
+  const fechaTxt = new Date(fechaEvento + "T00:00:00").toLocaleDateString("es-AR");
+
+  const html = `
+    <style>
+      .subidos-cumple-lista{
+        display:grid;
+        gap:12px;
+      }
+
+      .subidos-cumple-row{
+        background:#fff;
+        color:#000;
+        border:1px solid rgba(0,0,0,.10);
+        border-radius:16px;
+        padding:12px;
+        display:grid;
+        gap:8px;
+      }
+
+      .subidos-cumple-nombre{
+        font-weight:900;
+        font-size:17px;
+        display:flex;
+        align-items:center;
+        gap:8px;
+      }
+
+      .subidos-cumple-fecha{
+        font-size:13px;
+        opacity:.75;
+        font-weight:700;
+      }
+
+      .subidos-cumple-acciones{
+        display:flex;
+        gap:8px;
+        flex-wrap:wrap;
+      }
+
+      .subidos-cumple-acciones button{
+        border:none;
+        border-radius:999px;
+        padding:9px 12px;
+        background:var(--ui-azul-claro, #bcdcff);
+        color:#000;
+        font-weight:900;
+        cursor:pointer;
+      }
+    </style>
+
+    <div class="subidos-cumple-lista">
+      ${items.map(it => {
+        const idJs = subidosJs(it.id || "");
+        const nombre = it.nombreCompleto || it.cumpleNombre || it.descripcion || "Cumpleaños";
+
+        return `
+          <div class="subidos-cumple-row">
+            <div class="subidos-cumple-nombre">
+              <i class="fa-solid fa-cake-candles"></i>
+              ${subidosEsc(nombre)}
+            </div>
+
+            <div class="subidos-cumple-fecha">
+              ${subidosEsc(fechaTxt)} · Etiqueta: Cumpleaños
+            </div>
+
+            <div class="subidos-cumple-acciones">
+              <button type="button" onclick="enviarWhatsAppCumpleSubidos('${idJs}')">
+                <i class="fa-brands fa-whatsapp"></i> WhatsApp
+              </button>
+
+              ${subidosEsAdmin ? `
+                <button type="button" onclick="abrirEditarCumpleanosSubidos('${idJs}')">
+                  Editar
+                </button>
+              ` : ``}
+            </div>
+          </div>
+        `;
+      }).join("")}
+    </div>
+  `;
+
+  abrirModalSubidosVisor("Cumpleaños", html);
+};
 
 const SUBIDOS_IMAGEN_HORARIOS_URL = "img/subidos/horarios-habituales.png?v=2026-05-07-historia";
 
@@ -4230,9 +4546,18 @@ async function guardarSubido() {
     const etiqueta = (inpEtiqueta?.value || "").trim();
     const descripcion = (inpDesc?.value || "").trim();
     const esPredica = esPredicaSubidos(etiqueta);
+    const modalSubidos = document.getElementById("modalSubidos");
+    const esCumpleanos = subidosEsCumpleanos(etiqueta);
 
-    const permiteSinArchivo = ["racimo", "oracion"].includes(
-  normalizarEtiquetaSubidos(etiqueta)
+    const datosCumpleanos = esCumpleanos ? {
+  cumpleHermanoId: modalSubidos?.dataset?.cumpleHermanoId || actual.cumpleHermanoId || "",
+  cumpleTelefono: modalSubidos?.dataset?.cumpleTelefono || actual.cumpleTelefono || "",
+  cumpleNombre: modalSubidos?.dataset?.cumpleNombre || actual.cumpleNombre || descripcion || ""
+} : {};
+
+    const permiteSinArchivo = ["racimo", "oracion", "cumpleanos"].includes(
+    normalizarEtiquetaSubidos(etiqueta)
+);
 );
     
     if (!fechaEvento) {
@@ -4337,7 +4662,9 @@ predicaVersion: esPredica ? datosPredica.version : "",
       shareUrl: !esPredica ? url : "",
       shareR2Key: !esPredica ? r2Key : "",
       shareMimeType: !esPredica ? mimeType : "",
-      shareFileName: !esPredica ? fileName : ""
+      shareFileName: !esPredica ? fileName : "",
+
+...datosCumpleanos
     };
 
     await set(destinoRef, datosBase);
@@ -4437,6 +4764,14 @@ function initSubidosBotones() {
 
       try {
         await set(ref(db, "subidosEtiquetas"), lista);
+
+        subidosEtiquetas = lista;
+poblarEtiquetas();
+
+if (selEtiqueta) {
+  selEtiqueta.value = limpia;
+  selEtiqueta.dispatchEvent(new Event("change", { bubbles: true }));
+}
       } catch (e) {
         console.error(e);
         alert("No se pudo guardar la etiqueta.");
@@ -4469,6 +4804,16 @@ onValue(ref(db, "subidosIglesia"), (s) => {
     poblarEtiquetas();
     refrescarSubidos();
   });
+
+  onValue(ref(db, "hermanos"), (s) => {
+  const data = s.val() || {};
+
+  subidosHermanosCumples = Object.entries(data)
+    .map(([id, obj]) => ({ id, ...(obj || {}) }))
+    .filter(h => subidosCumpleValor(h));
+
+  refrescarSubidos();
+});
 
 const esperarAuth = () => {
   const uidPrevio = subidosUID;
