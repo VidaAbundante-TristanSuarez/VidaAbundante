@@ -4558,7 +4558,6 @@ async function guardarSubido() {
     const permiteSinArchivo = ["racimo", "oracion", "cumpleanos"].includes(
     normalizarEtiquetaSubidos(etiqueta)
 );
-);
     
     if (!fechaEvento) {
       alert("Completá la fecha.");
