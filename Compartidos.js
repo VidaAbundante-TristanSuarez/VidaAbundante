@@ -1631,6 +1631,51 @@ function compRenderSubido(item) {
     `;
   }
 
+  if (!esPredica && typeof window.subidosRenderArchivoAbiertoHTML === "function") {
+    const archivoHTML = window.subidosRenderArchivoAbiertoHTML(
+      {
+        ...item,
+        id: subidoId
+      },
+      0
+    );
+
+    return `
+      <article class="comp-post comp-post--subido comp-post--archivo-abierto">
+        <div class="comp-post-head">
+          <div class="comp-avatar">
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+          </div>
+
+          <div>
+            <div class="comp-post-title">${titulo}</div>
+            <div class="comp-post-meta">Subido · ${compEscape(item.etiqueta || "Subido")}</div>
+          </div>
+        </div>
+
+        <div class="comp-archivo-abierta-wrap">
+          ${archivoHTML || `<div class="comp-post-empty">No pude cargar el archivo.</div>`}
+        </div>
+
+        <div class="comp-post-actions">
+          <button type="button" onclick="abrirSubidosVisorArchivo('${compJs(subidoId)}', 0)" title="Abrir archivo">
+            <i class="fa-solid fa-up-right-and-down-left-from-center"></i>
+          </button>
+
+          <button type="button" onclick="compartirSubido('${compJs(subidoId)}')" title="Compartir">
+            <i class="fa-solid fa-share-nodes"></i>
+          </button>
+
+          <button type="button" onclick="descargarSubido('${compJs(subidoId)}')" title="Descargar">
+            <i class="fa-solid fa-download"></i>
+          </button>
+        </div>
+
+        ${compDeleteBtn(item)}
+      </article>
+    `;
+  }
+  
   if (typeof window.subidosRenderCardHTML === "function") {
     const card = window.subidosRenderCardHTML(
       {
