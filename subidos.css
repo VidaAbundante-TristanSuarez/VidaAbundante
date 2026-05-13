@@ -1368,5 +1368,41 @@ body.oscuro #modalSubidosVisor{
   border-radius: 10px !important;
 }
 
+.subidos-day{
+  position: relative;
+}
+
+.subidos-cumple-icon{
+  position:absolute;
+  top:6px;
+  right:6px;
+  z-index:3;
+
+  width:26px;
+  height:26px;
+  border:none;
+  border-radius:999px;
+
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+
+  background:#ff5fb7;
+  color:#fff;
+  box-shadow:0 2px 8px rgba(0,0,0,.18);
+  cursor:pointer;
+  font-size:13px;
+}
+
+.subidos-cumple-icon:hover{
+  transform:scale(1.06);
+}
+
+#subidosEtiqueta,
+#subidosEtiqueta option{
+  font-family: inherit;
+  font-weight: 800;
+}
+
 </style>
 
