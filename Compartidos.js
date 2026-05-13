@@ -1617,11 +1617,11 @@ function compRenderSubido(item) {
             <i class="fa-solid fa-up-right-and-down-left-from-center"></i>
           </button>
 
-          <button type="button" onclick="compartirSubido('${compJs(subidoId)}')" title="Compartir">
+          <button type="button" onclick="compartirSubido('${compJs(subidoId)}', this)" title="Compartir">
             <i class="fa-solid fa-share-nodes"></i>
           </button>
 
-          <button type="button" onclick="descargarSubido('${compJs(subidoId)}')" title="Descargar">
+          <button type="button" onclick="descargarSubido('${compJs(subidoId)}', this)" title="Descargar">
             <i class="fa-solid fa-download"></i>
           </button>
         </div>
