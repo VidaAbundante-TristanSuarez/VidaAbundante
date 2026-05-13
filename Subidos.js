@@ -4642,32 +4642,6 @@ async function subidosSubirArchivoSeleccionado(file, estadoEl = null, index = 1,
   };
 }
 
-async function subidosSubirArchivoSeleccionado(file, estadoEl = null, index = 1, total = 1) {
-  if (!file) return null;
-
-  const esVideo = subidosEsVideoFile(file);
-  const prefijo = total > 1 ? `Archivo ${index}/${total}: ` : "";
-
-  if (estadoEl) {
-    estadoEl.textContent = esVideo
-      ? `${prefijo}Preparando video (${subidosFormatoMB(file.size)} MB)...`
-      : `${prefijo}Subiendo archivo...`;
-  }
-
-  const subida = esVideo
-    ? await subirVideoR2DirectoSubidos(file, estadoEl)
-    : await subirArchivoAR2DesdeWeb(file, "subidos");
-
-  return {
-    url: subida?.url || "",
-    r2Key: subida?.key || "",
-    mimeType: subida?.contentType || file?.type || "",
-    fileName: subida?.fileName || file?.name || "",
-    sizeBytes: Number(subida?.sizeBytes || file?.size || 0),
-    subidaDirectaVideo: !!subida?.subidaDirectaVideo
-  };
-}
-
 function subidosArchivosActualesComoLista(actual = {}) {
   if (Array.isArray(actual.archivos) && actual.archivos.length) {
     return actual.archivos;
