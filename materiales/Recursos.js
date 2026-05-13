@@ -881,19 +881,33 @@ function hValor(v) {
   return String(v ?? "").trim();
 }
 
+function hFechaCumple(v) {
+  const s = hValor(v);
+  if (!s) return "";
+
+  const partes = s.split("-");
+  if (partes.length === 3) {
+    const [y, m, d] = partes;
+    if (y && m && d) return `${d}/${m}/${y}`;
+  }
+
+  return s;
+}
+
 function hNormalizarRegistro(data = {}) {
   return {
-  nombre: hValor(data.nombre),
-  apellido: hValor(data.apellido),
-  direccion: hValor(data.direccion),
-  telefono: hValor(data.telefono),
-  pedidosOracion: hValor(data.pedidosOracion),
-  notas: hValor(data.notas),
-  mail: hValor(data.mail),
-  tokenPedido: data.tokenPedido || "",
-  creadoPor: data.creadoPor || window.__UID || "",
-  ts: data.ts || Date.now()
-      };
+    nombre: hValor(data.nombre),
+    apellido: hValor(data.apellido),
+    direccion: hValor(data.direccion),
+    telefono: hValor(data.telefono),
+    cumpleanos: hValor(data.cumpleanos),
+    pedidosOracion: hValor(data.pedidosOracion),
+    notas: hValor(data.notas),
+    mail: hValor(data.mail),
+    tokenPedido: data.tokenPedido || "",
+    creadoPor: data.creadoPor || window.__UID || "",
+    ts: data.ts || Date.now()
+  };
 }
 
 window.mostrarHermanos = async () => {
@@ -1058,12 +1072,21 @@ window.mostrarHermanos = async () => {
   display:block;
 }
         
-        .hermano-grid{
+.hermano-grid{
           display:grid;
           grid-template-columns: repeat(2, minmax(0,1fr));
+          grid-template-areas:
+            "direccion cumple"
+            "pedidos telefono"
+            "notas notas";
           gap:10px 14px;
         }
 
+        .hermano-campo-direccion{ grid-area: direccion; }
+        .hermano-campo-cumple{ grid-area: cumple; }
+        .hermano-campo-telefono{ grid-area: telefono; }
+        .hermano-campo-pedidos{ grid-area: pedidos; }
+        .hermano-campo-notas{ grid-area: notas; }
         .hermano-campo{
           background: rgba(0,0,0,.03);
           border-radius:12px;
@@ -1255,9 +1278,18 @@ window.mostrarHermanos = async () => {
             width:100%;
           }
 
-          .hermano-grid,
+         .hermano-grid,
           .hermano-form-grid{
             grid-template-columns: 1fr;
+          }
+
+          .hermano-grid{
+            grid-template-areas:
+              "direccion"
+              "cumple"
+              "telefono"
+              "pedidos"
+              "notas";
           }
 
           #modalHermanoBox{
@@ -1279,7 +1311,7 @@ window.mostrarHermanos = async () => {
             <input
               id="hermanosBuscar"
               type="text"
-              placeholder="Buscar por nombre, apellido, teléfono o mail"
+              placeholder="Buscar por nombre, apellido, teléfono, mail o cumpleaños"
               oninput="renderHermanosLista()"
             />
 ${window.__ES_ADMIN ? `
@@ -1312,6 +1344,11 @@ ${window.__ES_ADMIN ? `
               <div class="hermano-form-campo">
                 <label for="hermanoApellido">Apellido</label>
                 <input id="hermanoApellido" type="text" required />
+              </div>
+
+              <div class="hermano-form-campo">
+                <label for="hermanoCumpleanos">Cumpleaños</label>
+                <input id="hermanoCumpleanos" type="date" />
               </div>
 
               <div class="hermano-form-campo">
@@ -1414,6 +1451,7 @@ window.renderHermanosLista = () => {
           h.nombre,
           h.apellido,
           h.telefono,
+          h.cumpleanos,
           h.mail,
           h.direccion,
           h.pedidosOracion,
@@ -1463,22 +1501,27 @@ window.renderHermanosLista = () => {
         </div>
 
         <div class="hermano-grid">
-          <div class="hermano-campo">
+          <div class="hermano-campo hermano-campo-direccion">
             <div class="hermano-campo-label">Dirección</div>
             <div class="hermano-campo-valor">${hEscape(h.direccion || "—")}</div>
           </div>
 
-          <div class="hermano-campo">
-            <div class="hermano-campo-label">Teléfono</div>
-            <div class="hermano-campo-valor">${hEscape(h.telefono || "—")}</div>
+          <div class="hermano-campo hermano-campo-cumple">
+            <div class="hermano-campo-label">Cumpleaños</div>
+            <div class="hermano-campo-valor">${hEscape(hFechaCumple(h.cumpleanos) || "—")}</div>
           </div>
 
-          <div class="hermano-campo">
+          <div class="hermano-campo hermano-campo-pedidos">
             <div class="hermano-campo-label">Pedidos de oración</div>
             <div class="hermano-campo-valor">${hEscape(h.pedidosOracion || "—")}</div>
           </div>
 
-          <div class="hermano-campo">
+          <div class="hermano-campo hermano-campo-telefono">
+            <div class="hermano-campo-label">Teléfono</div>
+            <div class="hermano-campo-valor">${hEscape(h.telefono || "—")}</div>
+          </div>
+
+          <div class="hermano-campo hermano-campo-notas">
             <div class="hermano-campo-label">Notas</div>
             <div class="hermano-campo-valor">${hEscape(h.notas || "—")}</div>
           </div>
@@ -1538,6 +1581,7 @@ window.editarHermano = (id) => {
   const nombre = document.getElementById("hermanoNombre");
   const apellido = document.getElementById("hermanoApellido");
   const telefono = document.getElementById("hermanoTelefono");
+  const cumpleanos = document.getElementById("hermanoCumpleanos");
   const mail = document.getElementById("hermanoMail");
   const direccion = document.getElementById("hermanoDireccion");
   const pedidos = document.getElementById("hermanoPedidos");
@@ -1546,6 +1590,7 @@ window.editarHermano = (id) => {
   if (nombre) nombre.value = item.nombre || "";
   if (apellido) apellido.value = item.apellido || "";
   if (telefono) telefono.value = item.telefono || "";
+  if (cumpleanos) cumpleanos.value = item.cumpleanos || "";
   if (mail) mail.value = item.mail || "";
   if (direccion) direccion.value = item.direccion || "";
   if (pedidos) pedidos.value = item.pedidosOracion || "";
@@ -1589,6 +1634,7 @@ window.guardarHermano = async (e) => {
 nombre: document.getElementById("hermanoNombre")?.value,
 apellido: document.getElementById("hermanoApellido")?.value,
 telefono: document.getElementById("hermanoTelefono")?.value,
+cumpleanos: document.getElementById("hermanoCumpleanos")?.value,
 mail: document.getElementById("hermanoMail")?.value,
 direccion: document.getElementById("hermanoDireccion")?.value,
 pedidosOracion: document.getElementById("hermanoPedidos")?.value,
