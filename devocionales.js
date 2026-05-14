@@ -1804,7 +1804,8 @@ function hexToRgb(hex){
 
 const DEV_CUENTAGOTAS_F2 = {
   color: "#000000",
-  ctx: null
+  ctx: null,
+  arrastrando: false
 };
 
 function devRgbToHex(r, g, b){
@@ -1863,7 +1864,12 @@ function devEnsureModalCuentagotasF2(){
         Tocá una parte de la imagen para copiar ese color.
       </p>
 
-      <canvas id="devCuentagotasCanvas"></canvas>
+           <canvas id="devCuentagotasCanvas"></canvas>
+
+      <div id="devCuentagotasCursor">
+        <span id="devCuentagotasCursorColor"></span>
+        <span id="devCuentagotasCursorHex">#000000</span>
+      </div>
 
       <div class="dev-cuentagotas-colorbox">
         <span id="devCuentagotasMuestra"></span>
@@ -1943,7 +1949,36 @@ window.devAbrirCuentagotasF2 = async function(){
 
     devSetColorCuentagotasF2("#000000");
 
-    canvas.onclick = (e)=>{
+       canvas.style.touchAction = "none";
+
+    const cursor = $("devCuentagotasCursor");
+    const cursorColor = $("devCuentagotasCursorColor");
+    const cursorHex = $("devCuentagotasCursorHex");
+
+    const moverCursor = (e, hex) => {
+      if (!cursor) return;
+
+      const margen = 86;
+      let left = e.clientX;
+      let top = e.clientY;
+
+      // ✅ para que no se salga de pantalla
+      left = Math.max(70, Math.min(window.innerWidth - 70, left));
+      top = Math.max(margen, Math.min(window.innerHeight - 20, top));
+
+      cursor.style.left = left + "px";
+      cursor.style.top = top + "px";
+      cursor.style.display = "flex";
+
+      if (cursorColor) cursorColor.style.background = hex;
+      if (cursorHex) cursorHex.textContent = hex;
+    };
+
+    const ocultarCursor = () => {
+      if (cursor) cursor.style.display = "none";
+    };
+
+    const tomarColorDesdePunto = (e) => {
       const r = canvas.getBoundingClientRect();
 
       const x = Math.max(0, Math.min(canvas.width - 1,
@@ -1958,6 +1993,51 @@ window.devAbrirCuentagotasF2 = async function(){
       const hex = devRgbToHex(px[0], px[1], px[2]);
 
       devSetColorCuentagotasF2(hex);
+      moverCursor(e, hex);
+
+      return hex;
+    };
+
+    canvas.onpointerdown = (e) => {
+      e.preventDefault();
+
+      DEV_CUENTAGOTAS_F2.arrastrando = true;
+      canvas.setPointerCapture?.(e.pointerId);
+
+      tomarColorDesdePunto(e);
+    };
+
+    canvas.onpointermove = (e) => {
+      if (!DEV_CUENTAGOTAS_F2.arrastrando) return;
+
+      e.preventDefault();
+      tomarColorDesdePunto(e);
+    };
+
+    const terminarArrastre = (e) => {
+      if (!DEV_CUENTAGOTAS_F2.arrastrando) return;
+
+      e.preventDefault();
+
+      // ✅ al soltar, dejamos elegido el último color tocado
+      tomarColorDesdePunto(e);
+
+      DEV_CUENTAGOTAS_F2.arrastrando = false;
+      canvas.releasePointerCapture?.(e.pointerId);
+
+      setTimeout(ocultarCursor, 250);
+    };
+
+    canvas.onpointerup = terminarArrastre;
+    canvas.onpointercancel = () => {
+      DEV_CUENTAGOTAS_F2.arrastrando = false;
+      ocultarCursor();
+    };
+
+    canvas.onpointerleave = () => {
+      if (!DEV_CUENTAGOTAS_F2.arrastrando) {
+        ocultarCursor();
+      }
     };
 
   } catch(e) {
