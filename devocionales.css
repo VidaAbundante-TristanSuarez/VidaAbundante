@@ -1271,4 +1271,108 @@ body.oscuro .devIndexBarBottom{
   box-sizing:border-box;
 }
 
+/* ================= FASE 2: CUENTAGOTAS SOBRE FONDO FASE 1 ================= */
+
+.dev2-eyedropper-row{
+  width: min(540px, 94vw);
+  margin: 8px auto 0;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+
+.dev2-eyedropper-row button{
+  border: 1px solid #d6d6d6;
+  background: var(--ui-azul-claro);
+  color:#000;
+  font-weight:800;
+  cursor:pointer;
+  padding:10px 14px;
+  border-radius:999px;
+}
+
+.dev2-eyedropper-row button:hover{
+  background: var(--ui-azul-hover);
+  color:#fff;
+  border-color: var(--ui-azul-hover);
+}
+
+#modalDevCuentagotasF2.modal-overlay{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.62);
+  align-items: center;
+  justify-content: center;
+  padding: 14px;
+  z-index: 7000;
+}
+
+#modalDevCuentagotasF2.abierto{
+  display:flex;
+}
+
+#modalDevCuentagotasF2 .modal-contenido{
+  width: min(620px, 96vw);
+  max-height: calc(100dvh - 24px);
+  overflow:auto;
+  background:#fff;
+  border-radius:18px;
+  padding:14px;
+  box-shadow: 0 18px 60px rgba(0,0,0,.30);
+  position:relative;
+  text-align:center;
+}
+
+#devCuentagotasCanvas{
+  width: min(560px, 92vw);
+  max-height: 62dvh;
+  object-fit:contain;
+  border-radius:16px;
+  display:block;
+  margin: 10px auto;
+  border:1px solid rgba(0,0,0,.16);
+  cursor: crosshair;
+  background:#f5f5f5;
+}
+
+.dev-cuentagotas-colorbox{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  margin:10px auto;
+  font-weight:800;
+}
+
+#devCuentagotasMuestra{
+  width:34px;
+  height:34px;
+  border-radius:999px;
+  border:1px solid rgba(0,0,0,.25);
+  box-shadow: 0 4px 12px rgba(0,0,0,.16);
+}
+
+.dev-cuentagotas-actions{
+  display:flex;
+  gap:10px;
+  justify-content:center;
+  flex-wrap:wrap;
+  margin-top:10px;
+}
+
+.dev-cuentagotas-actions button{
+  border: 1px solid #d6d6d6;
+  background: var(--ui-azul-claro);
+  color:#000;
+  font-weight:800;
+  cursor:pointer;
+  padding:10px 14px;
+  border-radius:999px;
+}
+
+.dev-cuentagotas-actions button:hover{
+  background: var(--ui-azul-hover);
+  color:#fff;
+}
+
 </style>
