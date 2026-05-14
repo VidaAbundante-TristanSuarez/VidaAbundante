@@ -1802,6 +1802,201 @@ function hexToRgb(hex){
   };
 }
 
+const DEV_CUENTAGOTAS_F2 = {
+  color: "#000000",
+  ctx: null
+};
+
+function devRgbToHex(r, g, b){
+  const hx = n => Math.max(0, Math.min(255, Math.round(n)))
+    .toString(16)
+    .padStart(2, "0");
+
+  return `#${hx(r)}${hx(g)}${hx(b)}`;
+}
+
+function devEnsureBotonCuentagotasF2(){
+  if ($("devBtnCuentagotasF2")) return;
+
+  const previewBox =
+    $("dev2Preview")?.closest(".dev-preview-box") ||
+    $("dev2Preview")?.parentElement;
+
+  if (!previewBox) return;
+
+  const row = document.createElement("div");
+  row.className = "dev2-eyedropper-row";
+  row.innerHTML = `
+    <button type="button" id="devBtnCuentagotasF2">
+      <i class="fa-solid fa-eye-dropper"></i>
+      Tomar color del fondo de fase 1
+    </button>
+  `;
+
+  previewBox.insertAdjacentElement("afterend", row);
+
+  const btn = $("devBtnCuentagotasF2");
+  if (btn) {
+    btn.addEventListener("click", () => {
+      window.devAbrirCuentagotasF2();
+    });
+  }
+}
+
+function devEnsureModalCuentagotasF2(){
+  if ($("modalDevCuentagotasF2")) return;
+
+  const div = document.createElement("div");
+  div.id = "modalDevCuentagotasF2";
+  div.className = "modal-overlay";
+  div.setAttribute("aria-hidden", "true");
+
+  div.innerHTML = `
+    <div class="modal-contenido">
+      <button type="button" class="cerrar-modal" onclick="cerrarModal('modalDevCuentagotasF2')">✕</button>
+
+      <h3 style="margin:8px 36px 4px; color:#0e286f;">
+        Tomar color del fondo
+      </h3>
+
+      <p style="margin:0; font-size:14px; opacity:.75;">
+        Tocá una parte de la imagen para copiar ese color.
+      </p>
+
+      <canvas id="devCuentagotasCanvas"></canvas>
+
+      <div class="dev-cuentagotas-colorbox">
+        <span id="devCuentagotasMuestra"></span>
+        <span id="devCuentagotasHex">#000000</span>
+      </div>
+
+      <div class="dev-cuentagotas-actions">
+        <button type="button" onclick="devAplicarCuentagotasF2('texto')">
+          Usar en texto
+        </button>
+
+        <button type="button" onclick="devAplicarCuentagotasF2('fondo')">
+          Usar en fondo
+        </button>
+
+        <button type="button" onclick="cerrarModal('modalDevCuentagotasF2')">
+          Cancelar
+        </button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(div);
+}
+
+function devSetColorCuentagotasF2(hex){
+  DEV_CUENTAGOTAS_F2.color = hex || "#000000";
+
+  const muestra = $("devCuentagotasMuestra");
+  const label = $("devCuentagotasHex");
+
+  if (muestra) muestra.style.background = DEV_CUENTAGOTAS_F2.color;
+  if (label) label.textContent = DEV_CUENTAGOTAS_F2.color;
+}
+
+function devCargarImagenCuentagotasF2(src){
+  return new Promise((resolve, reject)=>{
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error("No pude cargar la imagen para tomar color."));
+
+    img.src = src;
+  });
+}
+
+window.devAbrirCuentagotasF2 = async function(){
+  const src = DEV.f1?.fondoBlob || DEV.f1?.fondoUrl || "";
+
+  if (!src) {
+    alert("Primero elegí un fondo en la fase 1.");
+    return;
+  }
+
+  devEnsureModalCuentagotasF2();
+  abrirModal("modalDevCuentagotasF2");
+
+  const canvas = $("devCuentagotasCanvas");
+  if (!canvas) return;
+
+  try {
+    const img = await devCargarImagenCuentagotasF2(src);
+
+    const maxW = 900;
+    const maxH = 900;
+    const sc = Math.min(maxW / img.width, maxH / img.height, 1);
+
+    canvas.width = Math.max(1, Math.round(img.width * sc));
+    canvas.height = Math.max(1, Math.round(img.height * sc));
+
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    DEV_CUENTAGOTAS_F2.ctx = ctx;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+    devSetColorCuentagotasF2("#000000");
+
+    canvas.onclick = (e)=>{
+      const r = canvas.getBoundingClientRect();
+
+      const x = Math.max(0, Math.min(canvas.width - 1,
+        Math.floor((e.clientX - r.left) * (canvas.width / r.width))
+      ));
+
+      const y = Math.max(0, Math.min(canvas.height - 1,
+        Math.floor((e.clientY - r.top) * (canvas.height / r.height))
+      ));
+
+      const px = ctx.getImageData(x, y, 1, 1).data;
+      const hex = devRgbToHex(px[0], px[1], px[2]);
+
+      devSetColorCuentagotasF2(hex);
+    };
+
+  } catch(e) {
+    console.error(e);
+    alert("No pude abrir el cuentagotas.\n\nDetalle: " + (e?.message || e));
+  }
+};
+
+window.devAplicarCuentagotasF2 = function(tipo){
+  const hex = DEV_CUENTAGOTAS_F2.color || "#000000";
+
+  if (tipo === "texto") {
+    DEV.f2.color = hex;
+    DEV.f2.userChanged = true;
+
+    const inp = $("dev2Color");
+    if (inp) {
+      inp.value = hex;
+      inp.dispatchEvent(new Event("input", { bubbles:true }));
+    } else {
+      devRenderFase(2);
+    }
+  }
+
+  if (tipo === "fondo") {
+    DEV.f2.fondoColor = hex;
+
+    const inp = $("dev2Fondo");
+    if (inp) {
+      inp.value = hex;
+      inp.dispatchEvent(new Event("input", { bubbles:true }));
+    } else {
+      devRenderFase(2);
+    }
+  }
+
+  cerrarModal("modalDevCuentagotasF2");
+};
+
 function wrapperBgFromOpacity(op, color){
   const x = Math.max(0, Math.min(1, Number(op) || 0));
   const { r, g, b } = hexToRgb(color || "#000000");
@@ -2731,8 +2926,10 @@ window.devVolverFase0 = () => {
 window.devIrFase2 = () => {
   devRenderFase(1);
 
-    cerrarModal("modalDevFase1");
+  cerrarModal("modalDevFase1");
   abrirModal("modalDevFase2");
+
+  devEnsureBotonCuentagotasF2();
 
   if (typeof window.initPickrEnHosts === "function") {
     window.initPickrEnHosts("#dev2FondoHost, #dev2ColorHost");
