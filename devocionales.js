@@ -57,9 +57,10 @@ const DEV = {
 
   // fase1 (9:9) settings
   f1: {
-  fondoUrl: null,
-  fondoBlob: null,
-  fuente: "Roboto",
+fondoUrl: null,
+fondoBlob: null,
+fondoSrc: "",
+fuente: "Roboto",
   color: "#000000",
   opColor: "#000000",
   op: 0.35,
@@ -118,6 +119,61 @@ const DEV = {
   oracionDevTs: 0,
 
 };
+
+function devResetAjustesDevocionalNuevo(){
+  // ✅ limpiar fondo anterior de fase 1
+  if (DEV.f1?.fondoBlob) {
+    try { URL.revokeObjectURL(DEV.f1.fondoBlob); } catch {}
+  }
+
+  DEV.f1.fondoUrl = null;
+  DEV.f1.fondoBlob = null;
+  DEV.f1.fondoSrc = "";
+  DEV.f1.fuente = "Roboto";
+  DEV.f1.color = "#000000";
+  DEV.f1.opColor = "#000000";
+  DEV.f1.op = 0.35;
+  DEV.f1.size = 30;
+  DEV.f1.userChanged = false;
+  DEV.f1.style = { upper:false, bold:true, italic:false, underline:false };
+
+  // ✅ limpiar fase 2 también
+  DEV.f2.fondoColor = "#ffffff";
+  DEV.f2.texturaUrl = null;
+  DEV.f2.texturaOp = 0.22;
+  DEV.f2.fuente = "Roboto";
+  DEV.f2.color = "#000000";
+  DEV.f2.op = 0.15;
+  DEV.f2.size = 26;
+  DEV.f2.userChanged = false;
+  DEV.f2.adornoUrl = null;
+  DEV.f2.adornoWidth = 70;
+  DEV.f2.style = { upper:false, bold:false, italic:false, underline:false };
+
+  DEV.audioOk = false;
+  DEV.audioGithubUrl = "";
+
+  // ✅ sincronizar inputs si existen
+  const setVal = (id, val) => {
+    const el = $(id);
+    if (el) el.value = val;
+  };
+
+  setVal("dev1Color", "#000000");
+  setVal("dev1OpColor", "#000000");
+  setVal("dev1Opacidad", "0.35");
+  setVal("dev1Tamano", "30");
+
+  setVal("dev2Fondo", "#ffffff");
+  setVal("dev2Color", "#000000");
+  setVal("dev2TexturaOp", "0.22");
+  setVal("dev2Tamano", "26");
+
+  // ✅ limpiar activos visuales
+  document.querySelectorAll("#dev1Fondos img.activo").forEach(x => x.classList.remove("activo"));
+  document.querySelectorAll("#dev2Adornos button.activo").forEach(x => x.classList.remove("activo"));
+  document.querySelectorAll("#dev2Texturas button.activo").forEach(x => x.classList.remove("activo"));
+}
 
 /* =========================================================
    1) OCR UI helpers
@@ -180,6 +236,7 @@ function devMostrarCrear(){
   const crear = $("devCrear");
   if (home) home.style.display = "none";
   if (crear) crear.style.display = "block";
+     devResetAjustesDevocionalNuevo();
 
   const btnFinal = $("btnDevCargarFinal");
   const btnListo = $("btnDevListo");
