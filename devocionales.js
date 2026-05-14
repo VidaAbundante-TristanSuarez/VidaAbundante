@@ -2005,16 +2005,44 @@ function buildFase1HTML(versiculoCanvasPx, scale){
   `;
 }
 
-function buildFase2HTML(basePx){
+function devEvitarUltimaPalabraSola(s){
+  let txt = oneLine(s || "")
+    .replace(/\s+([,.;:!?])/g, "$1");
+
+  const words = txt.split(/\s+/).filter(Boolean);
+
+  // Si hay varias palabras, unimos las últimas 2 con espacio duro.
+  // Esto evita finales feos tipo:
+  // "Hola buenas tardes como"
+  // "estas?"
+  if (words.length >= 4) {
+    const ult = words.pop();
+    const ant = words.pop();
+    return [...words, `${ant}\u00A0${ult}`].join(" ");
+  }
+
+  return txt;
+}
+
+function buildFase2HTML(basePx, scale = 1){
   const p2 = DEV.p2;
   if (!p2) return "";
 
-  const ref = oneLine(p2.reflexion || "");
-  const ora = oneLine(p2.oracion || "");
+  scale = Number(scale) || 1;
+
+  const ref = devEvitarUltimaPalabraSola(p2.reflexion || "");
+  const ora = devEvitarUltimaPalabraSola(p2.oracion || "");
+
   const fw  = DEV.f2.style.bold ? 700 : 400;
 
   const adorno  = DEV.f2.adornoUrl;
   const adornoW = Math.max(30, Math.min(95, Number(DEV.f2.adornoWidth || 70)));
+
+  // ✅ Estos valores ahora escalan igual en preview y en final
+  const padTop = Math.max(1, Math.round(4 * scale));
+  const padX   = Math.max(1, Math.round(18 * scale));
+  const gapOra = Math.max(2, Math.round(6 * scale));
+  const adornoMaxH = Math.max(24, Math.round(86 * scale));
 
   return `
     <div style="
@@ -2025,14 +2053,13 @@ function buildFase2HTML(basePx){
       overflow:hidden;
     ">
 
-      <!-- ✅ TEXTO: ocupa el espacio disponible y queda centrado -->
-                  <div style="
+      <div style="
         flex:1 1 auto;
         min-height:0;
         display:flex;
         align-items:center;
         justify-content:center;
-        padding: 4px 18px 0;
+        padding:${padTop}px ${padX}px 0;
         box-sizing:border-box;
         text-align:center;
         overflow:hidden;
@@ -2043,25 +2070,27 @@ function buildFase2HTML(basePx){
           font-size:${basePx}px;
           font-weight:${fw};
           line-height:1.18;
-          word-break:break-word;
+          word-break:normal;
+          overflow-wrap:normal;
+          hyphens:none;
+          text-wrap:pretty;
           display:flex;
           flex-direction:column;
           align-items:center;
           justify-content:center;
         ">
           <div style="width:100%;">Reflexión: ${esc(ref)}</div>
-          ${ora ? `<div style="width:100%; margin-top:6px;">Oración: ${esc(ora)}</div>` : ``}
+          ${ora ? `<div style="width:100%; margin-top:${gapOra}px;">Oración: ${esc(ora)}</div>` : ``}
         </div>
       </div>
 
-      <!-- ✅ ADORNO: fijo abajo, no empuja ni corta el texto -->
-            ${adorno ? `
+      ${adorno ? `
         <div style="
           flex:0 0 auto;
           display:flex;
           align-items:flex-end;
           justify-content:center;
-          padding: 0 0 4px;
+          padding:0 0 ${padTop}px;
           box-sizing:border-box;
           pointer-events:none;
         ">
@@ -2070,7 +2099,7 @@ function buildFase2HTML(basePx){
             alt="adorno"
             style="
               width:${adornoW}%;
-              max-height:86px;
+              max-height:${adornoMaxH}px;
               height:auto;
               object-fit:contain;
               display:block;
@@ -2163,8 +2192,13 @@ if (fase === 2) {
 
   const st = DEV.f2;
 
-  const pxPreview = Math.max(8, (st.size * scalePreviewF2()));
-  t.innerHTML = buildFase2HTML(pxPreview);
+  const sc2 = scalePreviewF2();
+  const pxPreview = Math.max(8, (st.size * sc2));
+
+  // ✅ El inset también escala, para que la preview sea proporcional al final
+  w.style.inset = `${Math.max(4, Math.round(16 * sc2))}px`;
+
+  t.innerHTML = buildFase2HTML(pxPreview, sc2);
 
   if (b) b.style.display = "none";
 
@@ -2435,8 +2469,7 @@ async function renderFinalCanvasCaptureReal(){
     texto.style.textShadow = textShadowLegibleFinal(st.color);
     texto.style.webkitTextStroke = "0.5px " + outlineColor(st.color);
     texto.style.paintOrder = "stroke fill";
-    texto.innerHTML = buildFase2HTML(Math.max(12, roundToHalf(st.size * 1.12)));
-
+    texto.innerHTML = buildFase2HTML(st.size, 1);
     wrap.appendChild(texto);
     node.appendChild(wrap);
 
@@ -3090,30 +3123,118 @@ window.devCompartirFinal = async () => {
     const file = window.__devFinalFile;
     const canvas = window.__devFinalCanvas;
 
-    // ✅ NO renderizar acá: ya debía quedar preparado al entrar a fase 3
     if (!file || !canvas) {
-      alert("Todavía se está preparando la imagen. Esperá un instante y tocá compartir otra vez.");
-      return;
+      alert("Todavía se está preparando la imagen. Tocá compartir otra vez en un instante.");
+      return false;
     }
 
+    // ✅ Compartir real: SOLO funciona bien cuando viene de un toque directo del usuario
     if (navigator.share && navigator.canShare?.({ files: [file] })) {
       await navigator.share({
         files: [file],
         title: "Devocional"
       });
-    } else {
-      await devDescargarImagenSolo(canvas);
-      alert("Tu dispositivo o navegador no permite compartir directo. Se descargó la imagen para compartirla manualmente.");
+      return true;
     }
-  } catch (e) {
-    console.warn("Share cancelado o falló:", e);
 
-    if (window.__devFinalCanvas) {
-      await devDescargarImagenSolo(window.__devFinalCanvas);
-    } else {
-      alert("❌ No se pudo compartir.\n\nDetalle: " + (e?.message || e));
+    // ✅ Ya NO descarga automáticamente.
+    // Solo ofrece descargar si el navegador realmente no soporta compartir archivo.
+    const descargar = confirm(
+      "Este navegador no permite compartir la imagen directamente.\n\n¿Querés descargar el PNG para compartirlo manualmente?"
+    );
+
+    if (descargar) {
+      await devDescargarImagenSolo(canvas);
     }
+
+    return false;
+
+  } catch (e) {
+    // ✅ Si el usuario cancela compartir, NO descargamos nada.
+    console.warn("Share cancelado o falló:", e);
+    return false;
   }
+};
+
+function devCrearModalCompartirPublicado(){
+  if ($("modalDevCompartirPublicado")) return;
+
+  const div = document.createElement("div");
+  div.id = "modalDevCompartirPublicado";
+  div.className = "modal-overlay";
+  div.setAttribute("aria-hidden", "true");
+
+  div.innerHTML = `
+    <div class="modal-contenido modal-dev" style="
+      max-width:420px;
+      height:auto;
+      text-align:center;
+      padding:18px;
+      gap:14px;
+    ">
+      <button type="button" class="cerrar-modal" onclick="devCerrarModalCompartirPublicado(true)">✕</button>
+
+      <h3 style="margin:8px 34px 0; color:#0e286f;">
+        ✅ Devocional publicado
+      </h3>
+
+      <p style="margin:0; font-size:15px; line-height:1.35;">
+        Ahora tocá compartir para abrir el menú de redes.
+      </p>
+
+      <div style="
+        display:flex;
+        gap:10px;
+        justify-content:center;
+        flex-wrap:wrap;
+        margin-top:4px;
+      ">
+        <button type="button" class="btn-primary" onclick="devCompartirPublicadoAhora()">
+          <i class="fa-solid fa-share-nodes"></i>
+          Compartir ahora
+        </button>
+
+        <button type="button" class="btn-ghost" onclick="devDescargarPublicadoAhora()">
+          <i class="fa-solid fa-download"></i>
+          Descargar PNG
+        </button>
+
+        <button type="button" class="btn-ghost" onclick="devCerrarModalCompartirPublicado(true)">
+          Listo
+        </button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(div);
+}
+
+window.devAbrirModalCompartirPublicado = function(){
+  devCrearModalCompartirPublicado();
+  abrirModal("modalDevCompartirPublicado");
+};
+
+window.devCerrarModalCompartirPublicado = function(cerrarTodo = true){
+  cerrarModal("modalDevCompartirPublicado");
+
+  if (cerrarTodo) {
+    devCerrarTodo();
+  }
+};
+
+window.devCompartirPublicadoAhora = async function(){
+  await window.devCompartirFinal();
+  window.devCerrarModalCompartirPublicado(true);
+};
+
+window.devDescargarPublicadoAhora = async function(){
+  if (!window.__devFinalCanvas) {
+    alert("No hay imagen preparada para descargar.");
+    return;
+  }
+
+  await devDescargarImagenSolo(window.__devFinalCanvas);
+  window.devCerrarModalCompartirPublicado(true);
 };
 
 function safeFilePart(s){
@@ -3398,15 +3519,14 @@ window.devFinalizar = async () => {
     devBusyShow("⏳ Preparando compartir…");
     await devAsegurarShareFinalListo();
 
-    devBusyHide();
+       devBusyHide();
 
-    devToast("✅ Publicado. Abriendo compartir…");
+    devToast("✅ Publicado. Elegí cómo compartir…");
 
-    // ✅ último paso: abrir compartir en redes
-    await window.devCompartirFinal();
-
-    // ✅ recién cerramos todo después de compartir/cancelar
-    devCerrarTodo();
+    // ✅ Importante:
+    // No llamamos navigator.share automáticamente después de procesos async.
+    // Abrimos un modal propio y el usuario toca "Compartir ahora".
+    window.devAbrirModalCompartirPublicado();
 
   } catch (e) {
     console.error(e);
