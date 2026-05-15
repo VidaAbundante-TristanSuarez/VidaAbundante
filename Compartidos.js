@@ -56,24 +56,19 @@ function comp$(id) {
 }
 
 function compEstaCargandoFeed() {
-  const maxEspera = 12000;
-
-  return (
-    Date.now() - compCargaInicio < maxEspera &&
-    (!compBaseListo || !compDevocionalesListo || !compSubidosListo)
-  );
+  // ✅ Mientras las 3 fuentes principales no respondieron,
+  // seguimos mostrando cargando. Sin límite falso de 12 segundos.
+  return !compBaseListo || !compDevocionalesListo || !compSubidosListo;
 }
 
 function compProgramarRepintadoCarga() {
   if (compTimerCarga) clearTimeout(compTimerCarga);
 
-  if (!compEstaCargandoFeed()) return;
-
   compTimerCarga = setTimeout(() => {
     if (typeof window.renderCompartidos === "function") {
       window.renderCompartidos();
     }
-  }, 700);
+  }, 900);
 }
 
 function compLoaderHTML() {
@@ -560,30 +555,35 @@ function iniciarEscuchaCompartidosDevocionales() {
   const db = compDB();
   if (!db) return;
 
-  onValue(ref(db, "devocionalesIglesia"), (snap) => {
-    compDevocionalesListo = true;
-    const val = snap.val() || {};
-    const items = [];
+onValue(ref(db, "devocionalesIglesia"), (snap) => {
+  compDevocionalesListo = true;
 
-    for (const [uid, byTs] of Object.entries(val)) {
-      if (!byTs || typeof byTs !== "object") continue;
+  const val = snap.val() || {};
+  const items = [];
 
-      for (const [ts, it] of Object.entries(byTs)) {
-        if (!it || typeof it !== "object") continue;
+  for (const [uid, byTs] of Object.entries(val)) {
+    if (!byTs || typeof byTs !== "object") continue;
 
-        items.push({
-          id: `dev_${uid}_${ts}`,
-          tipo: "devocional",
-          uidOwner: uid,
-          tsKey: Number(ts) || 0,
-          ...it
-        });
-      }
+    for (const [ts, it] of Object.entries(byTs)) {
+      if (!it || typeof it !== "object") continue;
+
+      items.push({
+        id: `dev_${uid}_${ts}`,
+        tipo: "devocional",
+        uidOwner: uid,
+        tsKey: Number(ts) || 0,
+        ...it
+      });
     }
+  }
 
-    compartidosDevocionalesCache = items;
-    renderCompartidos();
-  });
+  compartidosDevocionalesCache = items;
+  renderCompartidos();
+}, (err) => {
+  compDevocionalesListo = true;
+  console.error("Error leyendo devocionales para Compartidos:", err);
+  renderCompartidos();
+});
 
   compartidosDevocionalesEscuchaActiva = true;
 }
@@ -594,20 +594,25 @@ function iniciarEscuchaCompartidosSubidos() {
   const db = compDB();
   if (!db) return;
 
-  onValue(ref(db, "subidosIglesia"), (snap) => {
-    compSubidosListo = true;
-    const val = snap.val() || {};
+onValue(ref(db, "subidosIglesia"), (snap) => {
+  compSubidosListo = true;
 
-    compartidosSubidosCache = Object.entries(val)
-      .map(([id, it]) => ({
-        id: `sub_${id}`,
-        tipo: "subido",
-        _subidoId: id,
-        ...(it || {})
-      }));
+  const val = snap.val() || {};
 
-    renderCompartidos();
-  });
+  compartidosSubidosCache = Object.entries(val)
+    .map(([id, it]) => ({
+      id: `sub_${id}`,
+      tipo: "subido",
+      _subidoId: id,
+      ...(it || {})
+    }));
+
+  renderCompartidos();
+}, (err) => {
+  compSubidosListo = true;
+  console.error("Error leyendo subidos para Compartidos:", err);
+  renderCompartidos();
+});
 
   compartidosSubidosEscuchaActiva = true;
 }
@@ -1944,36 +1949,43 @@ window.renderCompartidos = function renderCompartidos() {
 
   const items = compUnificarItems();
 
-if (!items.length) {
+  // ✅ Si ya hay algo, mostramos al toque aunque otras fuentes sigan cargando.
+  if (items.length) {
+    lista.innerHTML = items.map(item => {
+      if (item.tipo === "rh") return compRenderRH(item);
+      if (item.tipo === "edicion") return compRenderEdicion(item);
+      if (item.tipo === "imagen") return compRenderImagen(item);
+      if (item.tipo === "nota") return compRenderNota(item);
+      if (item.tipo === "devocional") return compRenderDevocional(item);
+      if (item.tipo === "subido") return compRenderSubido(item);
+      return "";
+    }).join("");
+
+    compActivarBotonesSubidosRenderizados(items);
+    return;
+  }
+
+  // ✅ Si todavía no respondió todo, NO mostramos “no hay publicaciones”.
   if (compEstaCargandoFeed()) {
     lista.innerHTML = compLoaderHTML();
     compProgramarRepintadoCarga();
     return;
   }
 
+  // ✅ Solo mostramos vacío cuando de verdad respondieron las fuentes principales.
   lista.innerHTML = `
     <div id="compVacio">
       Todavía no hay publicaciones compartidas.
     </div>
   `;
-  return;
-}
-
-  lista.innerHTML = items.map(item => {
-    if (item.tipo === "rh") return compRenderRH(item);
-    if (item.tipo === "edicion") return compRenderEdicion(item);
-    if (item.tipo === "imagen") return compRenderImagen(item);
-    if (item.tipo === "nota") return compRenderNota(item);
-    if (item.tipo === "devocional") return compRenderDevocional(item);
-    if (item.tipo === "subido") return compRenderSubido(item);
-    return "";
-  }).join("");
-
-  // ✅ Subidos genera botones preparados para su feed.
-  // En Compartidos los activamos después de renderizar.
-  compActivarBotonesSubidosRenderizados(items);
 };
 
-setTimeout(() => {
+// ✅ Iniciar Compartidos lo antes posible.
+// Si Firebase todavía no está listo, mostrarCompartidos espera con compEsperarDB().
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", () => {
+    mostrarCompartidos();
+  }, { once: true });
+} else {
   mostrarCompartidos();
-}, 1200);
+}
