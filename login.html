@@ -177,10 +177,10 @@
         <span>Ingresar con Google</span>
       </button>
 
-   <button
+  <button
   type="button"
   class="login-sin-registro"
-  onclick="if(window.VAAppGate){ window.VAAppGate.continuarSinLogin('/VidaAbundante/'); } else { window.location.href='/VidaAbundante/?vaWeb=1'; }"
+  onclick="window.VAAppGate.continuarSinLogin()"
 >
   Continuar sin iniciar sesión
 </button>
