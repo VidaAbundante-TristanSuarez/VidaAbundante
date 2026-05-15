@@ -1,20 +1,42 @@
-/* ================= APP GATE VIDA ABUNDANTE - CONSEJO APP ================= */
-/* Ya no muestra "Descargar app" al entrar. Solo ordena login/sin login y muestra consejo después. */
+/* ================= APP GATE VIDA ABUNDANTE - FINAL SIN BUCLE ================= */
 
 (function(){
   const KEY_MODO_WEB = "VA_MODO_WEB_OK";
   const KEY_SIN_LOGIN = "VA_CONTINUAR_SIN_LOGIN";
   const KEY_TIP_VISTO = "VA_TIP_APP_VISTO";
 
+  function qs(name){
+    try {
+      return new URL(location.href).searchParams.get(name);
+    } catch {
+      return "";
+    }
+  }
+
+  function limpiarUrl(){
+    try {
+      const u = new URL(location.href);
+      const borrar = ["sinLogin", "loginOk", "resetGate"];
+      let cambio = false;
+
+      borrar.forEach(k => {
+        if (u.searchParams.has(k)) {
+          u.searchParams.delete(k);
+          cambio = true;
+        }
+      });
+
+      if (cambio) {
+        history.replaceState({}, "", u.pathname + u.search + u.hash);
+      }
+    } catch {}
+  }
+
   function vaEsStandalone(){
     return (
       window.matchMedia?.("(display-mode: standalone)")?.matches ||
       window.navigator.standalone === true
     );
-  }
-
-  function vaEsLoginPage(){
-    return /\/login\.html$/i.test(location.pathname);
   }
 
   function vaHayLogin(){
@@ -24,12 +46,36 @@
     );
   }
 
-  function vaPuedeSinLogin(){
-    return localStorage.getItem(KEY_SIN_LOGIN) === "1";
+  function vaTienePermisoEntrada(){
+    return (
+      localStorage.getItem(KEY_MODO_WEB) === "1" ||
+      localStorage.getItem(KEY_SIN_LOGIN) === "1" ||
+      qs("sinLogin") === "1" ||
+      qs("loginOk") === "1"
+    );
+  }
+
+  function vaMarcarEntradaDesdeUrl(){
+    if (qs("resetGate") === "1") {
+      localStorage.removeItem(KEY_MODO_WEB);
+      localStorage.removeItem(KEY_SIN_LOGIN);
+      localStorage.removeItem(KEY_TIP_VISTO);
+    }
+
+    if (qs("sinLogin") === "1") {
+      localStorage.setItem(KEY_MODO_WEB, "1");
+      localStorage.setItem(KEY_SIN_LOGIN, "1");
+    }
+
+    if (qs("loginOk") === "1") {
+      localStorage.setItem(KEY_MODO_WEB, "1");
+      localStorage.removeItem(KEY_SIN_LOGIN);
+    }
+
+    limpiarUrl();
   }
 
   function vaIrLogin(){
-    if (vaEsLoginPage()) return;
     location.replace("/VidaAbundante/login.html");
   }
 
@@ -49,7 +95,7 @@
         }
       }
 
-      if (intentos < 40) {
+      if (intentos < 50) {
         setTimeout(tick, 150);
       }
     };
@@ -280,7 +326,7 @@
         vaCrearTip();
         const tip = document.getElementById("vaAppTip");
         if (tip) tip.classList.add("va-abierto");
-      }, 900);
+      }, 1200);
     };
 
     if (document.readyState === "complete") {
@@ -291,8 +337,9 @@
   }
 
   function vaEntradaLimpia(){
-    if (vaEsLoginPage()) return;
+    vaMarcarEntradaDesdeUrl();
 
+    // Si no hay permiso de entrada y no hay login detectado todavía, vamos a login.
     let intentos = 0;
 
     const tick = () => {
@@ -307,16 +354,13 @@
         return;
       }
 
-      if (vaPuedeSinLogin()) {
-        localStorage.setItem(KEY_MODO_WEB, "1");
-
+      if (localStorage.getItem(KEY_SIN_LOGIN) === "1" || vaTienePermisoEntrada()) {
         vaIrCompartidosCuandoEsteListo();
         vaMostrarTipDespuesDeCarga();
         return;
       }
 
-      // Espera un poco a Firebase para no mandar a login antes de saber si hay sesión.
-      if (intentos > 34) {
+      if (intentos > 28) {
         vaIrLogin();
         return;
       }
@@ -330,17 +374,8 @@
   window.VAAppGate = {
     entradaLimpia: vaEntradaLimpia,
 
-    continuarSinLogin: function(){
-      localStorage.setItem(KEY_MODO_WEB, "1");
-      localStorage.setItem(KEY_SIN_LOGIN, "1");
-      location.replace("/VidaAbundante/");
-    },
-
-    resetPrueba: function(){
-      localStorage.removeItem(KEY_MODO_WEB);
-      localStorage.removeItem(KEY_SIN_LOGIN);
-      localStorage.removeItem(KEY_TIP_VISTO);
-      location.replace("/VidaAbundante/");
+    resetPruebaUrl: function(){
+      location.replace("/VidaAbundante/?resetGate=1");
     },
 
     mostrarConsejoApp: function(){
