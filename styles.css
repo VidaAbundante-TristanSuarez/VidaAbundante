@@ -4285,4 +4285,49 @@ body.oscuro .tema-toggle-fondo input:checked + label{
   color: #263238;
 }
 
+.panel-vacio-login {
+  margin: 26px auto;
+  max-width: 520px;
+  padding: 22px 18px;
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at top left, rgba(166,208,255,.35), transparent 42%),
+    radial-gradient(circle at bottom right, rgba(233,246,255,.85), transparent 48%),
+    rgba(255,255,255,.92);
+  box-shadow: 0 12px 32px rgba(0,0,0,.12);
+  text-align: center;
+  color: #263238;
+  line-height: 1.45;
+}
+
+.panel-vacio-login-icon {
+  width: 58px;
+  height: 58px;
+  margin: 0 auto 12px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #e9f6ff, #a6d0ff);
+  color: #111;
+  box-shadow: 0 8px 18px rgba(0,0,0,.14);
+}
+
+.panel-vacio-login-icon i {
+  font-size: 24px;
+}
+
+.panel-vacio-login b {
+  display: block;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 21px;
+  margin-bottom: 8px;
+}
+
+.panel-vacio-login p {
+  margin: 0 auto 16px;
+  max-width: 390px;
+  font-size: 15px;
+}
+
   </style> 
