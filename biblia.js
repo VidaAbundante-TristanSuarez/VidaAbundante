@@ -6900,18 +6900,17 @@ function asegurarControlColorTextoTema() {
         >B</button>
       </div>
     `;
+  }
 
-    const temaBoxImagen = document.getElementById("temaBoxImagen");
-    const labelOpacidad = document.getElementById("labelOpacidadTema");
+  // ✅ Siempre lo reubicamos antes de Opacidad.
+  // Así no queda perdido entre Color/Imagen.
+  const labelOpacidad = document.getElementById("labelOpacidadTema");
+  const lineaOpacidad = labelOpacidad?.closest(".tema-linea");
 
-    // ✅ Va después de Color/Imagen y antes de Opacidad
-    if (temaBoxImagen) {
-      temaBoxImagen.insertAdjacentElement("afterend", box);
-    } else if (labelOpacidad?.parentElement) {
-      labelOpacidad.parentElement.insertAdjacentElement("beforebegin", box);
-    } else {
-      modal.querySelector(".tema-grid")?.appendChild(box);
-    }
+  if (lineaOpacidad && box.nextElementSibling !== lineaOpacidad) {
+    lineaOpacidad.insertAdjacentElement("beforebegin", box);
+  } else if (!lineaOpacidad) {
+    modal.querySelector(".tema-grid")?.appendChild(box);
   }
 
   box.style.display = fondoTemaDraft?.seccion === "biblia" ? "flex" : "none";
