@@ -25,6 +25,37 @@
 <link rel="stylesheet" href="materiales/ediciones.css">
 <link rel="stylesheet" href="compartidos.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/themes/classic.min.css"/>
+
+<!-- ================= APP / PWA VIDA ABUNDANTE ================= -->
+<link rel="manifest" href="/VidaAbundante/manifest.webmanifest">
+
+<meta name="theme-color" content="#a6d0ff">
+<meta name="application-name" content="Vida Abundante">
+
+<!-- Íconos -->
+<link rel="icon" type="image/png" sizes="192x192" href="/VidaAbundante/img/app/icon-192.png">
+<link rel="apple-touch-icon" href="/VidaAbundante/img/app/icon-192.png">
+
+<!-- iPhone / iPad -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Vida Abundante">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+<!-- Vista previa WhatsApp / Facebook -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="Vida Abundante">
+<meta property="og:description" content="Iglesia Cristiana de la Vida Abundante · Biblia, devocionales, recursos y más.">
+<meta property="og:image" content="https://vidaabundante-tristansuarez.github.io/VidaAbundante/img/app/preview-whatsapp.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:url" content="https://vidaabundante-tristansuarez.github.io/VidaAbundante/">
+
+<!-- Vista previa en otras redes -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Vida Abundante">
+<meta name="twitter:description" content="Iglesia Cristiana de la Vida Abundante · Biblia, devocionales, recursos y más.">
+<meta name="twitter:image" content="https://vidaabundante-tristansuarez.github.io/VidaAbundante/img/app/preview-whatsapp.png">
+ 
 </head>
   
 <!-- =================================================== 🏩 =================================================== -->
@@ -1406,6 +1437,17 @@
 <script type="module" src="materiales/Ediciones.js"></script>
 <script type="module" src="Compartidos.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/pickr.min.js"></script> 
+
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker
+        .register("/VidaAbundante/service-worker.js")
+        .catch(err => console.warn("SW error:", err));
+    });
+  }
+</script>
+  
 </body>
 </html>
 
