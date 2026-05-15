@@ -4,6 +4,8 @@
   const KEY_MODO_WEB = "VA_MODO_WEB_OK";
   const KEY_SIN_LOGIN = "VA_CONTINUAR_SIN_LOGIN";
   const KEY_TIP_VISTO = "VA_TIP_APP_VISTO";
+  let VA_ENTRADA_ACTUAL_OK = false;
+  let VA_SIN_LOGIN_ACTUAL_OK = false;
 
   function qs(name){
     try {
@@ -46,34 +48,50 @@
     );
   }
 
-  function vaTienePermisoEntrada(){
-    return (
-      localStorage.getItem(KEY_MODO_WEB) === "1" ||
-      localStorage.getItem(KEY_SIN_LOGIN) === "1" ||
-      qs("sinLogin") === "1" ||
-      qs("loginOk") === "1"
-    );
+function vaTienePermisoEntrada(){
+  return (
+    VA_ENTRADA_ACTUAL_OK ||
+    localStorage.getItem(KEY_MODO_WEB) === "1" ||
+    localStorage.getItem(KEY_SIN_LOGIN) === "1" ||
+    qs("sinLogin") === "1" ||
+    qs("loginOk") === "1"
+  );
+}
+
+function vaMarcarEntradaDesdeUrl(){
+  if (qs("resetGate") === "1") {
+    VA_ENTRADA_ACTUAL_OK = false;
+    VA_SIN_LOGIN_ACTUAL_OK = false;
+
+    localStorage.removeItem(KEY_MODO_WEB);
+    localStorage.removeItem(KEY_SIN_LOGIN);
+    localStorage.removeItem(KEY_TIP_VISTO);
   }
 
-  function vaMarcarEntradaDesdeUrl(){
-    if (qs("resetGate") === "1") {
-      localStorage.removeItem(KEY_MODO_WEB);
-      localStorage.removeItem(KEY_SIN_LOGIN);
-      localStorage.removeItem(KEY_TIP_VISTO);
-    }
+  if (qs("sinLogin") === "1") {
+    // ✅ permiso inmediato aunque localStorage falle o tarde
+    VA_ENTRADA_ACTUAL_OK = true;
+    VA_SIN_LOGIN_ACTUAL_OK = true;
 
-    if (qs("sinLogin") === "1") {
+    try {
       localStorage.setItem(KEY_MODO_WEB, "1");
       localStorage.setItem(KEY_SIN_LOGIN, "1");
-    }
+    } catch {}
+  }
 
-    if (qs("loginOk") === "1") {
+  if (qs("loginOk") === "1") {
+    // ✅ permiso inmediato aunque localStorage falle o tarde
+    VA_ENTRADA_ACTUAL_OK = true;
+    VA_SIN_LOGIN_ACTUAL_OK = false;
+
+    try {
       localStorage.setItem(KEY_MODO_WEB, "1");
       localStorage.removeItem(KEY_SIN_LOGIN);
-    }
-
-    limpiarUrl();
+    } catch {}
   }
+
+  limpiarUrl();
+}
 
   function vaIrLogin(){
     location.replace("/VidaAbundante/login.html");
@@ -354,7 +372,7 @@
         return;
       }
 
-      if (localStorage.getItem(KEY_SIN_LOGIN) === "1" || vaTienePermisoEntrada()) {
+     if (VA_SIN_LOGIN_ACTUAL_OK || localStorage.getItem(KEY_SIN_LOGIN) === "1" || vaTienePermisoEntrada()) {
         vaIrCompartidosCuandoEsteListo();
         vaMostrarTipDespuesDeCarga();
         return;
