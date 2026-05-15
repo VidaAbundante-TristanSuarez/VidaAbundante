@@ -823,4 +823,150 @@ body.ed-link-directo #edViewer {
 .ed-card-cover {
   cursor: pointer;
 }
+
+/* ================= EDICIONES POR RAMA: FLYERS / LIBROS ================= */
+
+#edLista.ed-lista-ramas {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 24px !important;
+  width: 100%;
+  max-width: 100%;
+  overflow: visible;
+}
+
+.ed-rama-section {
+  width: 100%;
+  max-width: 100%;
+}
+
+.ed-rama-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 0 10px;
+  padding: 0 2px;
+}
+
+.ed-rama-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-family: "Lora", Georgia, serif;
+  font-size: 22px;
+  font-weight: 900;
+  color: #111;
+}
+
+.ed-rama-title i {
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ui-azul-claro, #bcdcff);
+  color: #000;
+  font-size: 17px;
+}
+
+.ed-rama-count {
+  font-size: 12px;
+  font-weight: 900;
+  opacity: .7;
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.72);
+  border: 1px solid rgba(0,0,0,.07);
+  white-space: nowrap;
+}
+
+.ed-rama-track {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 2px 2px 14px;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+.ed-rama-track .ed-card {
+  flex: 0 0 clamp(230px, 28vw, 295px);
+  scroll-snap-align: start;
+  margin: 0;
+}
+
+.ed-rama-track .ed-card-cover {
+  width: calc(100% - 22px);
+  margin: 11px auto 0;
+  aspect-ratio: 3 / 4;
+}
+
+.ed-rama-vacia {
+  padding: 18px;
+  border-radius: 20px;
+  background: rgba(255,255,255,.72);
+  border: 1px dashed rgba(0,0,0,.16);
+  font-weight: 800;
+  text-align: center;
+  opacity: .8;
+}
+
+#edForm .ed-field select {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  border: 1px solid rgba(0,0,0,.13);
+  border-radius: 14px;
+  padding: 10px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  background: rgba(255,255,255,.82);
+  color: #000;
+}
+
+body.oscuro #edForm .ed-field select {
+  background: rgba(255,255,255,.08);
+  color: #fff;
+  border-color: rgba(255,255,255,.16);
+}
+
+body.oscuro .ed-rama-title {
+  color: #fff;
+}
+
+body.oscuro .ed-rama-count,
+body.oscuro .ed-rama-vacia {
+  background: rgba(255,255,255,.12);
+  color: #fff;
+  border-color: rgba(255,255,255,.12);
+}
+
+@media (max-width: 700px) {
+  #edLista.ed-lista-ramas {
+    gap: 22px !important;
+  }
+
+  .ed-rama-title {
+    font-size: 20px;
+  }
+
+  .ed-rama-track {
+    gap: 12px;
+    padding-bottom: 12px;
+  }
+
+  .ed-rama-track .ed-card {
+    flex: 0 0 min(78vw, 245px);
+  }
+
+  .ed-rama-count {
+    font-size: 11px;
+  }
+}
+
 </style> 
