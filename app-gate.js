@@ -1,11 +1,12 @@
-/* ================= APP GATE VIDA ABUNDANTE ================= */
-/* Muestra Instalar app / Ver en web antes de login o entrada */
+/* ================= APP GATE VIDA ABUNDANTE V2 ================= */
+/* Instalar app / Ver en web sin bucles ni pantallas forzadas */
 
 (function(){
   const KEY_INSTALADA = "VA_APP_INSTALADA";
-  const KEY_VER_WEB = "VA_VER_WEB_OK";
+  const PARAM_WEB = "vaWeb";
 
   let deferredPrompt = null;
+  let pasoWebActual = false;
 
   function vaEsStandalone(){
     return (
@@ -21,11 +22,39 @@
     );
   }
 
+  function vaUrlTienePasoWeb(){
+    try {
+      const u = new URL(location.href);
+      return u.searchParams.get(PARAM_WEB) === "1";
+    } catch {
+      return false;
+    }
+  }
+
+  function vaLimpiarPasoWebDeUrl(){
+    try {
+      const u = new URL(location.href);
+      if (!u.searchParams.has(PARAM_WEB)) return;
+
+      u.searchParams.delete(PARAM_WEB);
+      history.replaceState({}, "", u.pathname + u.search + u.hash);
+    } catch {}
+  }
+
   function vaDebeMostrarGate(){
-    return (
-      !vaAppInstalada() &&
-      sessionStorage.getItem(KEY_VER_WEB) !== "1"
-    );
+    if (vaAppInstalada()) return false;
+
+    // ✅ Este parámetro permite pasar UNA sola carga sin mostrar el cartel.
+    // Después se limpia, así al refrescar vuelve a aparecer si no está instalada.
+    if (vaUrlTienePasoWeb()) {
+      pasoWebActual = true;
+      vaLimpiarPasoWebDeUrl();
+      return false;
+    }
+
+    if (pasoWebActual) return false;
+
+    return true;
   }
 
   function vaEsLoginPage(){
@@ -66,7 +95,7 @@
         background:
           radial-gradient(circle at top right, rgba(166,208,255,.45), transparent 30%),
           radial-gradient(circle at bottom left, rgba(233,246,255,.65), transparent 30%),
-          rgba(255,255,255,.92);
+          rgba(255,255,255,.94);
         box-shadow:0 22px 60px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.9);
         border:1px solid rgba(166,208,255,.65);
         text-align:center;
@@ -149,6 +178,14 @@
       .va-app-ayuda strong{
         display:block;
         margin-bottom:4px;
+      }
+
+      /* ✅ Centrado vertical general de login */
+      body.va-login-centrado{
+        min-height:100dvh !important;
+        display:flex !important;
+        align-items:center !important;
+        justify-content:center !important;
       }
     `;
 
@@ -248,7 +285,7 @@
 
         if (choice?.outcome === "accepted") {
           localStorage.setItem(KEY_INSTALADA, "1");
-          sessionStorage.setItem(KEY_VER_WEB, "1");
+          pasoWebActual = true;
           vaCerrarGate();
           vaEntradaLimpia();
           return;
@@ -264,7 +301,9 @@
   }
 
   function vaVerEnWeb(){
-    sessionStorage.setItem(KEY_VER_WEB, "1");
+    // ✅ Solo vale para esta carga actual.
+    // Si actualizás y no está instalada, vuelve a preguntar.
+    pasoWebActual = true;
     vaCerrarGate();
     vaEntradaLimpia();
   }
@@ -274,6 +313,12 @@
       window.__UID ||
       window.__FB?.auth?.currentUser?.uid
     );
+  }
+
+  function vaUrlWeb(destino = "/VidaAbundante/"){
+    const u = new URL(destino, location.origin);
+    u.searchParams.set(PARAM_WEB, "1");
+    return u.pathname + u.search + u.hash;
   }
 
   function vaAbrirLoginSiExiste(){
@@ -291,16 +336,24 @@
   }
 
   function vaEntradaLimpia(){
-    // ✅ Si estamos en login.html, no paseamos a otra pantalla.
-    // Ahí simplemente dejamos ver las opciones de login.
-    if (vaEsLoginPage()) return;
+    // ✅ Si no está instalada y todavía no eligió Ver en web, no dejamos pasar.
+    if (!pasoWebActual && vaDebeMostrarGate()) {
+      vaMostrarGate();
+      return;
+    }
+
+    // ✅ Login.html: después de Ver en web, simplemente deja ver sus botones.
+    if (vaEsLoginPage()) {
+      document.body.classList.add("va-login-centrado");
+      return;
+    }
 
     let intentos = 0;
 
     const tick = () => {
       intentos++;
 
-      // ✅ Si hay usuario, vamos limpio a Compartidos
+      // ✅ Si hay usuario, vamos limpio a Compartidos.
       if (vaHayLogin()) {
         if (typeof window.irA === "function") {
           try {
@@ -313,12 +366,14 @@
         }
       }
 
-      // ✅ Si no hay login y existe modal de login, abrirlo
-      if (intentos > 10 && !vaHayLogin()) {
+      // ✅ Si no hay usuario, mandamos a login limpio y sin repetir gate.
+      if (intentos > 8 && !vaHayLogin()) {
         if (vaAbrirLoginSiExiste()) return;
+
+        location.href = vaUrlWeb("/VidaAbundante/login.html");
+        return;
       }
 
-      // Intentar un ratito porque Firebase/router a veces carga después
       if (intentos < 24) {
         setTimeout(tick, 250);
       }
@@ -334,7 +389,7 @@
 
   window.addEventListener("appinstalled", () => {
     localStorage.setItem(KEY_INSTALADA, "1");
-    sessionStorage.setItem(KEY_VER_WEB, "1");
+    pasoWebActual = true;
     vaCerrarGate();
     vaEntradaLimpia();
   });
@@ -343,7 +398,11 @@
     instalada: vaAppInstalada,
     mostrar: vaMostrarGate,
     cerrar: vaCerrarGate,
-    entradaLimpia: vaEntradaLimpia
+    entradaLimpia: vaEntradaLimpia,
+    urlWeb: vaUrlWeb,
+    continuarSinLogin: function(destino = "/VidaAbundante/"){
+      location.href = vaUrlWeb(destino);
+    }
   };
 
   document.addEventListener("DOMContentLoaded", () => {
