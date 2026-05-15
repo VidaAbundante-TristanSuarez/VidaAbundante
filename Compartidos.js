@@ -310,8 +310,18 @@ window.mostrarCompartidos = async () => {
 
   if (!db) {
     cont.innerHTML = `
-      <div style="padding:20px; text-align:center;">
-        Firebase todavía no está listo.
+      <div class="comp-loading-feed">
+        <div class="comp-loading-icon">
+          <i class="fa-solid fa-dove"></i>
+        </div>
+
+        <div class="comp-loading-title">
+          Conectando con Vida Abundante
+        </div>
+
+        <div class="comp-loading-text">
+          Estamos preparando las publicaciones...
+        </div>
       </div>
     `;
     return;
@@ -319,13 +329,13 @@ window.mostrarCompartidos = async () => {
 
   if (!compartidosIniciado) {
     cont.innerHTML = `
-      cont.innerHTML = `
-  <div id="compFeedWrap">
-    <div id="compHero"></div>
-    <div id="compPromos"></div>
-    <div id="compLista">${compLoaderHTML()}</div>
-  </div>
-`;
+      <div id="compFeedWrap">
+        <div id="compHero"></div>
+        <div id="compPromos"></div>
+        <div id="compLista">${compLoaderHTML()}</div>
+      </div>
+    `;
+
     compartidosIniciado = true;
   }
 
@@ -460,19 +470,16 @@ function iniciarEscuchaCompartidos() {
   const db = compDB();
   if (!db) return;
 
-onValue(ref(db, "compartidos"), (snap) => {
-  compBaseListo = true;
+  onValue(ref(db, "compartidos"), (snap) => {
+    compBaseListo = true;
 
-  const val = snap.val() || {};
-  compartidosCache = compFlattenCompartidos(val);
-  renderCompartidos();
-}, (err) => {
-  compBaseListo = true;
-  console.error("Error leyendo compartidos:", err);
-  renderCompartidos();
-});
-  
+    const val = snap.val() || {};
+    compartidosCache = compFlattenCompartidos(val);
+    renderCompartidos();
+  }, (err) => {
+    compBaseListo = true;
     console.error("Error leyendo compartidos:", err);
+    renderCompartidos();
   });
 
   compartidosEscuchaActiva = true;
