@@ -66,6 +66,52 @@ window.toggleMenuSesion = function(){
   modal.setAttribute("aria-hidden", "false");
 };
 
+window.abrirLoginParaGuardarMiPanel = function () {
+  const modal = document.getElementById("loginModal");
+
+  if (!modal) {
+    window.location.href = "login.html";
+    return;
+  }
+
+  const titulo = document.getElementById("opcionesSesionTitulo");
+  const texto = document.getElementById("opcionesSesionTexto");
+  const btnLogin = document.getElementById("btnOpcionLogin");
+  const btnLogout = document.getElementById("btnOpcionLogout");
+
+  if (titulo) {
+    titulo.textContent = "Bendecido hermano";
+  }
+
+  if (texto) {
+    texto.innerHTML = `
+      Para guardar publicaciones, devocionales, notas e imágenes en
+      <b>Mi Panel</b>, necesitás iniciar sesión con Google.
+      <br><br>
+      Así vas a poder recuperar tus guardados cuando vuelvas a entrar.
+    `;
+  }
+
+  if (btnLogin) {
+    btnLogin.style.display = "inline-flex";
+    btnLogin.innerHTML = `
+      <i class="fa-brands fa-google"></i>
+      <span>Iniciar sesión con Google</span>
+    `;
+    btnLogin.onclick = () => {
+      window.location.href = "login.html";
+    };
+  }
+
+  if (btnLogout) {
+    btnLogout.style.display = "none";
+  }
+
+  modal.style.display = "flex";
+  modal.classList.add("abierto");
+  modal.setAttribute("aria-hidden", "false");
+};
+
 window.cerrarLogin = function(){
   const modal = document.getElementById("loginModal");
   if (!modal) return;
