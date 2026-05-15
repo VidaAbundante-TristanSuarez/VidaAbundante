@@ -4921,7 +4921,7 @@ window.devAbrirListaOraciones = async function(uidOwner, tsKey){
 
     box.innerHTML = visibles.map(it=>{
       const soyYo = uid && it.autorUid === uid;
-      const autorTxt = soyYo ? "Tú" : (it.publica ? "Anónimo" : "Privada");
+      const autorTxt = soyYo ? "Tú" : (it.publica ? "Hermano/a" : "Privada");
       const fondo = it.color || "#f5f5f5";
       const fechaTxt = it.fecha ? fmtFecha(it.fecha) : "";
 
