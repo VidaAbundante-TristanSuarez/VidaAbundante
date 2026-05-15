@@ -1,0 +1,23 @@
+{
+  "name": "Vida Abundante",
+  "short_name": "Vida Abundante",
+  "description": "Iglesia Cristiana de la Vida Abundante",
+  "start_url": "/VidaAbundante/biblia.html",
+  "scope": "/VidaAbundante/",
+  "display": "standalone",
+  "background_color": "#fff8ea",
+  "theme_color": "#a6d0ff",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/VidaAbundante/img/app/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/VidaAbundante/img/app/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
