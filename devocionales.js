@@ -4440,10 +4440,14 @@ window.devGuardarPublicadoEnMiPanel = async function(itId){
   const api = window.__FB_API;
   const uid = window.__UID;
 
-  if (!fb || !api || !uid) {
-    alert("Tenés que estar logueado.");
-    return;
+ if (!fb || !api || !uid) {
+  if (typeof window.abrirLoginParaGuardarMiPanel === "function") {
+    window.abrirLoginParaGuardarMiPanel();
+  } else {
+    window.location.href = "login.html";
   }
+  return;
+}
 
   const item = (window.__DEV_ITEMS_PUBLICADOS || []).find(x => x.id === itId);
   if (!item) {
