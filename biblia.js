@@ -6177,7 +6177,8 @@ if (inputBuscarLibro && selectLibro) {
   });
 }
     
-// 4) arranque visual por defecto, sin pisar manualmente las clases
+// 4) arranque visual por defecto
+// ✅ La pantalla pública inicial es Compartidos, no Iglesia.
 requestAnimationFrame(() => {
   const yaHaySeccion =
     document.body.classList.contains("en-biblia") ||
@@ -6186,7 +6187,7 @@ requestAnimationFrame(() => {
     document.body.classList.contains("en-compartidos");
 
   if (!yaHaySeccion) {
-    window.irA?.("iglesia");
+    window.irA?.("compartidos");
   }
 });
 
