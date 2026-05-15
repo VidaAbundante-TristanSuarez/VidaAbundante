@@ -135,6 +135,11 @@ function forzarSeccionActiva(seccion) {
       "important"
     );
   });
+
+  if (seccion === "panel" && !uid) {
+  setTimeout(mostrarPanelVisitante, 0);
+}
+
 }
 
 window.forzarSeccionActiva = forzarSeccionActiva;
@@ -604,10 +609,89 @@ async function registrarUsuarioActual(user) {
   }
 }
 
+function mostrarPanelVisitante() {
+  const panel = document.getElementById("seccion-panel");
+  if (!panel) return;
+
+  const tabs = panel.querySelector(".panel-tabs");
+  if (tabs) tabs.style.display = "none";
+
+  ["imagenes", "marcadores", "compartidos", "abc", "recursos"].forEach(s => {
+    const el = document.getElementById("panel-" + s);
+    if (el) el.style.setProperty("display", "none", "important");
+  });
+
+  const topRow = document.getElementById("panelImgTopRow");
+  const indexRow = document.getElementById("panelImgIndexRow");
+  const feed = document.getElementById("panelImgFeed");
+  const grid = document.getElementById("grid-imagenes");
+  const vacio = document.getElementById("imagenes-vacio");
+
+  if (topRow) topRow.innerHTML = "";
+  if (indexRow) indexRow.innerHTML = "";
+  if (grid) grid.innerHTML = "";
+  if (vacio) vacio.style.display = "none";
+  if (feed) feed.innerHTML = "";
+
+  let msg = document.getElementById("panelVisitanteMsg");
+
+  if (!msg) {
+    msg = document.createElement("div");
+    msg.id = "panelVisitanteMsg";
+    msg.className = "panel-vacio-login";
+    panel.appendChild(msg);
+  }
+
+  msg.innerHTML = `
+    <div class="panel-vacio-login-icon">
+      <i class="fa-solid fa-user-lock"></i>
+    </div>
+
+    <b>Mi Panel</b>
+
+    <p>
+      Puedes loguearte para guardar aquí tus devocionales preferidos,
+      las publicaciones que te gusten, las notas que generes y más.
+    </p>
+
+    <button type="button" class="btn-primary" onclick="window.location.href='login.html'">
+      <i class="fa-brands fa-google"></i>
+      Iniciar sesión
+    </button>
+  `;
+
+  msg.style.display = "block";
+}
+
+function ocultarPanelVisitante() {
+  const panel = document.getElementById("seccion-panel");
+  if (!panel) return;
+
+  const tabs = panel.querySelector(".panel-tabs");
+  if (tabs) tabs.style.display = "";
+
+  const msg = document.getElementById("panelVisitanteMsg");
+  if (msg) msg.style.display = "none";
+}
+
 window.actualizarPermisosUI = function () {
   const esAdmin = !!window.__ES_ADMIN;
   const esColaborador = !!window.__ES_COLABORADOR;
   const puedeVerRecursos = esAdmin || esColaborador;
+
+  if (!uid) {
+  const btnPanelImgNuevo = document.getElementById("btnPanelImgNuevo");
+  if (btnPanelImgNuevo) btnPanelImgNuevo.style.display = "none";
+
+  const panelImgTopRow = document.getElementById("panelImgTopRow");
+  if (panelImgTopRow) panelImgTopRow.innerHTML = "";
+
+  if (document.body.classList.contains("en-panel")) {
+    mostrarPanelVisitante();
+  }
+} else {
+  ocultarPanelVisitante();
+}
 
   // si tenés botón/tab principal de Recursos, agregale este id en HTML:
   // id="btnTabRecursos"
@@ -1411,12 +1495,29 @@ function initResaltadorCompacto() {
 
   paleta.style.display = "none";
 
+  function pedirLoginResaltador() {
+    if (typeof window.toggleMenuSesion === "function") {
+      window.toggleMenuSesion();
+      return;
+    }
+
+    const modal = document.getElementById("loginModal");
+    if (modal) {
+      modal.style.display = "flex";
+      modal.classList.add("abierto");
+      modal.setAttribute("aria-hidden", "false");
+      return;
+    }
+
+    window.location.href = "login.html";
+  }
+
   function renderBotonActivo() {
     const conf = obtenerConfigResaltadorActual();
 
-btnActivo.innerHTML = "";
-btnActivo.style.background = "";
-btnActivo.appendChild(crearNodoFormaResaltador(conf.color, conf.forma));
+    btnActivo.innerHTML = "";
+    btnActivo.style.background = "";
+    btnActivo.appendChild(crearNodoFormaResaltador(conf.color, conf.forma));
   }
 
   function renderPaletaColores() {
@@ -1439,6 +1540,11 @@ btnActivo.appendChild(crearNodoFormaResaltador(conf.color, conf.forma));
         e.preventDefault();
         e.stopPropagation();
 
+        if (!uid) {
+          pedirLoginResaltador();
+          return;
+        }
+
         colorActual = item.color;
         window.colorActual = colorActual;
 
@@ -1448,6 +1554,7 @@ btnActivo.appendChild(crearNodoFormaResaltador(conf.color, conf.forma));
         renderBotonActivo();
         renderPaletaColores();
         actualizarUICandadoResaltador();
+
         paleta.style.display = "none";
       };
 
@@ -1455,21 +1562,34 @@ btnActivo.appendChild(crearNodoFormaResaltador(conf.color, conf.forma));
     });
   }
 
-  btnActivo.onclick = e => {
+  btnActivo.onclick = (e) => {
     e.preventDefault();
     e.stopPropagation();
+
+    if (!uid) {
+      pedirLoginResaltador();
+      return;
+    }
+
     const visible = paleta.style.display === "grid";
     paleta.style.display = visible ? "none" : "grid";
+
     cont.classList.remove("mover-derecha");
+
     if (!visible) {
       const rect = paleta.getBoundingClientRect();
       if (rect.top < 10) cont.classList.add("mover-derecha");
     }
   };
 
-  btnBloquear.onclick = e => {
+  btnBloquear.onclick = (e) => {
     e.preventDefault();
     e.stopPropagation();
+
+    if (!uid) {
+      pedirLoginResaltador();
+      return;
+    }
 
     resaltadorBloqueado = !resaltadorBloqueado;
     window.resaltadorBloqueado = resaltadorBloqueado;
@@ -1480,11 +1600,19 @@ btnActivo.appendChild(crearNodoFormaResaltador(conf.color, conf.forma));
   btnEditar.onclick = (e) => {
     e.preventDefault();
     e.stopPropagation();
+
+    if (!uid) {
+      pedirLoginResaltador();
+      return;
+    }
+
     abrirModalEditarPaletaResaltador();
   };
 
-  document.addEventListener("click", e => {
-    if (!cont.contains(e.target)) paleta.style.display = "none";
+  document.addEventListener("click", (e) => {
+    if (!cont.contains(e.target)) {
+      paleta.style.display = "none";
+    }
   });
 
   renderBotonActivo();
@@ -5526,6 +5654,11 @@ function renderPanelRecursosGuardados() {
 window.mostrarSeccion = (tipo) => {
   // ✅ Mi Panel solo puede manejar sus pestañas si realmente estamos en Mi Panel
   if (!document.body.classList.contains("en-panel")) return;
+
+  if (!uid) {
+  mostrarPanelVisitante();
+  return;
+}
 
   // ✅ refuerzo: no permitir que Iglesia/Compartidos queden visibles abajo
   if (typeof forzarSeccionActiva === "function") {
