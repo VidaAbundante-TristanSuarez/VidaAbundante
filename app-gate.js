@@ -1,33 +1,16 @@
-/* ================= APP GATE VIDA ABUNDANTE V3 ================= */
-/* Instalar app / Ver en web / Login sin bucles */
+/* ================= APP GATE VIDA ABUNDANTE - CONSEJO APP ================= */
+/* Ya no muestra "Descargar app" al entrar. Solo ordena login/sin login y muestra consejo después. */
 
 (function(){
-  const KEY_INSTALADA = "VA_APP_INSTALADA";
-  const KEY_VER_WEB = "VA_VER_WEB_OK";
-  const KEY_SIN_LOGIN = "VA_SIN_LOGIN_OK";
-
-  let deferredPrompt = null;
+  const KEY_MODO_WEB = "VA_MODO_WEB_OK";
+  const KEY_SIN_LOGIN = "VA_CONTINUAR_SIN_LOGIN";
+  const KEY_TIP_VISTO = "VA_TIP_APP_VISTO";
 
   function vaEsStandalone(){
     return (
       window.matchMedia?.("(display-mode: standalone)")?.matches ||
       window.navigator.standalone === true
     );
-  }
-
-  function vaAppInstalada(){
-    return (
-      vaEsStandalone() ||
-      localStorage.getItem(KEY_INSTALADA) === "1"
-    );
-  }
-
-  function vaPuedeVerWeb(){
-    return localStorage.getItem(KEY_VER_WEB) === "1";
-  }
-
-  function vaPuedeSinLogin(){
-    return localStorage.getItem(KEY_SIN_LOGIN) === "1";
   }
 
   function vaEsLoginPage(){
@@ -41,13 +24,47 @@
     );
   }
 
-  function vaCrearEstilos(){
-    if (document.getElementById("vaAppGateStyle")) return;
+  function vaPuedeSinLogin(){
+    return localStorage.getItem(KEY_SIN_LOGIN) === "1";
+  }
+
+  function vaIrLogin(){
+    if (vaEsLoginPage()) return;
+    location.replace("/VidaAbundante/login.html");
+  }
+
+  function vaIrCompartidosCuandoEsteListo(){
+    let intentos = 0;
+
+    const tick = () => {
+      intentos++;
+
+      if (typeof window.irA === "function") {
+        try {
+          window.irA("compartidos");
+          window.scrollTo(0, 0);
+          return;
+        } catch(e) {
+          console.warn("Todavía no pude abrir Compartidos:", e);
+        }
+      }
+
+      if (intentos < 40) {
+        setTimeout(tick, 150);
+      }
+    };
+
+    tick();
+  }
+
+  function vaCrearEstilosTip(){
+    if (document.getElementById("vaAppTipStyle")) return;
 
     const st = document.createElement("style");
-    st.id = "vaAppGateStyle";
+    st.id = "vaAppTipStyle";
+
     st.textContent = `
-      #vaAppGate{
+      #vaAppTip{
         position:fixed;
         inset:0;
         z-index:999999;
@@ -55,19 +72,16 @@
         align-items:center;
         justify-content:center;
         padding:18px;
-        background:
-          radial-gradient(circle at top left, rgba(166,208,255,.55), transparent 34%),
-          radial-gradient(circle at bottom right, rgba(233,246,255,.95), transparent 42%),
-          linear-gradient(180deg, #ffffff, #eef8ff);
+        background:rgba(0,0,0,.38);
         font-family: Arial, sans-serif;
         color:#111;
       }
 
-      #vaAppGate.va-abierto{
+      #vaAppTip.va-abierto{
         display:flex;
       }
 
-      .va-app-card{
+      .va-tip-card{
         position:relative;
         width:min(92vw, 410px);
         padding:30px 24px 24px;
@@ -75,16 +89,16 @@
         background:
           radial-gradient(circle at top left, rgba(166,208,255,.48), transparent 42%),
           radial-gradient(circle at bottom right, rgba(233,246,255,.9), transparent 48%),
-          rgba(255,255,255,.94);
+          rgba(255,255,255,.96);
         border:1px solid rgba(255,255,255,.9);
         box-shadow:
-          0 22px 60px rgba(0,0,0,.18),
+          0 22px 60px rgba(0,0,0,.22),
           inset 0 1px 0 rgba(255,255,255,.9);
         text-align:center;
         overflow:hidden;
       }
 
-      .va-app-card::before{
+      .va-tip-card::before{
         content:"";
         position:absolute;
         width:160px;
@@ -95,7 +109,7 @@
         background:rgba(166,208,255,.38);
       }
 
-      .va-app-card::after{
+      .va-tip-card::after{
         content:"";
         position:absolute;
         width:120px;
@@ -106,12 +120,12 @@
         background:rgba(233,246,255,.9);
       }
 
-      .va-app-content{
+      .va-tip-content{
         position:relative;
         z-index:2;
       }
 
-      .va-app-icon{
+      .va-tip-icon{
         width:62px;
         height:62px;
         margin:0 auto 14px;
@@ -124,12 +138,12 @@
         box-shadow:0 10px 24px rgba(0,0,0,.14);
       }
 
-      .va-app-icon i{
+      .va-tip-icon i{
         font-size:26px;
         line-height:1;
       }
 
-      .va-app-title{
+      .va-tip-title{
         margin:0;
         font-family: Georgia, "Times New Roman", serif;
         font-size:21px;
@@ -138,21 +152,32 @@
         color:#111;
       }
 
-      .va-app-text{
-        margin:13px auto 22px;
+      .va-tip-text{
+        margin:13px auto 16px;
         max-width:340px;
         font-size:14px;
         line-height:1.45;
         color:#263238;
       }
 
-      .va-app-actions{
-        display:flex;
-        flex-direction:column;
-        gap:10px;
+      .va-tip-instrucciones{
+        margin:0 auto 18px;
+        padding:12px;
+        border-radius:18px;
+        background:rgba(255,255,255,.82);
+        border:1px solid rgba(0,0,0,.08);
+        text-align:left;
+        font-size:13px;
+        line-height:1.4;
+        color:#263238;
       }
 
-      .va-app-btn{
+      .va-tip-instrucciones strong{
+        display:block;
+        margin-bottom:5px;
+      }
+
+      .va-tip-btn{
         width:100%;
         min-height:46px;
         border:none;
@@ -162,258 +187,167 @@
         align-items:center;
         justify-content:center;
         gap:10px;
-        font-weight:900;
-        font-size:14px;
-        cursor:pointer;
-      }
-
-      .va-app-btn-primary{
         background:#a6d0ff;
         color:#000;
+        font-weight:900;
+        font-size:14px;
         box-shadow:0 8px 18px rgba(0,0,0,.16);
-      }
-
-      .va-app-btn-light{
-        margin-top:2px;
-        background:transparent;
-        color:#263238;
-        font-size:13px;
-        font-weight:800;
-        box-shadow:none;
-      }
-
-      .va-app-ayuda{
-        display:none;
-        margin-top:12px;
-        padding:12px;
-        border-radius:18px;
-        background:rgba(255,255,255,.82);
-        border:1px solid rgba(0,0,0,.08);
-        font-size:13px;
-        line-height:1.35;
-        text-align:left;
-      }
-
-      .va-app-ayuda strong{
-        display:block;
-        margin-bottom:4px;
+        cursor:pointer;
       }
     `;
 
     document.head.appendChild(st);
   }
 
-  function vaCrearGate(){
-    if (document.getElementById("vaAppGate")) return;
+  function vaTextoInstalacion(){
+    const ua = navigator.userAgent || "";
+    const esIOS = /iphone|ipad|ipod/i.test(ua);
+    const esAndroid = /android/i.test(ua);
 
-    vaCrearEstilos();
+    if (esIOS) {
+      return `
+        <strong>Para usarla como app en iPhone:</strong>
+        Tocá el botón de compartir de Safari y elegí
+        <b>Agregar a pantalla de inicio</b>.
+      `;
+    }
+
+    if (esAndroid) {
+      return `
+        <strong>Para usarla como app en Android:</strong>
+        Si el navegador te muestra la opción <b>Instalar app</b>, aceptala.
+        Si no aparece, tocá el menú <b>⋮</b> de Chrome y elegí
+        <b>Instalar app</b> o <b>Agregar a pantalla principal</b>.
+      `;
+    }
+
+    return `
+      <strong>Para usarla como app:</strong>
+      Si tu navegador muestra la opción <b>Instalar app</b>, aceptala.
+      También podés crear un acceso directo desde el menú del navegador.
+    `;
+  }
+
+  function vaCrearTip(){
+    if (document.getElementById("vaAppTip")) return;
+
+    vaCrearEstilosTip();
 
     const div = document.createElement("div");
-    div.id = "vaAppGate";
+    div.id = "vaAppTip";
 
     div.innerHTML = `
-      <div class="va-app-card">
-        <div class="va-app-content">
-          <div class="va-app-icon">
+      <div class="va-tip-card">
+        <div class="va-tip-content">
+          <div class="va-tip-icon">
             <i class="fa-solid fa-dove"></i>
           </div>
 
-          <h2 class="va-app-title">
-            Bendecido hermano, bienvenido<br>
-            a Vida Abundante App
+          <h2 class="va-tip-title">
+            Bendecido hermano
           </h2>
 
-          <p class="va-app-text">
-            Puedes instalar la app en tu celular, o continuar viéndola desde la web.
+          <p class="va-tip-text">
+            Te animamos a usar Vida Abundante como aplicación en tu celular
+            para acceder más rápido a Biblia, devocionales, recursos y compartidos.
           </p>
 
-          <div class="va-app-actions">
-            <button type="button" class="va-app-btn va-app-btn-primary" id="vaBtnInstalarApp">
-              <i class="fa-solid fa-download"></i>
-              Descargar app
-            </button>
-
-            <button type="button" class="va-app-btn va-app-btn-light" id="vaBtnVerWeb">
-              Ver en web
-            </button>
+          <div class="va-tip-instrucciones">
+            ${vaTextoInstalacion()}
           </div>
 
-          <div class="va-app-ayuda" id="vaAppAyuda"></div>
+          <button type="button" class="va-tip-btn" id="vaTipContinuar">
+            Continuar en web
+          </button>
         </div>
       </div>
     `;
 
     document.body.appendChild(div);
 
-    document.getElementById("vaBtnInstalarApp")?.addEventListener("click", vaInstalarApp);
-    document.getElementById("vaBtnVerWeb")?.addEventListener("click", vaVerEnWeb);
+    document.getElementById("vaTipContinuar")?.addEventListener("click", () => {
+      localStorage.setItem(KEY_TIP_VISTO, "1");
+      div.classList.remove("va-abierto");
+    });
   }
 
-  function vaMostrarGate(){
-    vaCrearGate();
-    const gate = document.getElementById("vaAppGate");
-    if (gate) gate.classList.add("va-abierto");
-  }
+  function vaMostrarTipDespuesDeCarga(){
+    if (vaEsStandalone()) return;
+    if (localStorage.getItem(KEY_TIP_VISTO) === "1") return;
 
-  function vaCerrarGate(){
-    const gate = document.getElementById("vaAppGate");
-    if (gate) gate.classList.remove("va-abierto");
-  }
+    const mostrar = () => {
+      setTimeout(() => {
+        vaCrearTip();
+        const tip = document.getElementById("vaAppTip");
+        if (tip) tip.classList.add("va-abierto");
+      }, 900);
+    };
 
-  function vaMostrarAyudaInstalacion(){
-    const ayuda = document.getElementById("vaAppAyuda");
-    if (!ayuda) return;
-
-    ayuda.innerHTML = `
-      <strong>No pude abrir la instalación automática.</strong>
-      En algunos celulares el navegador no permite instalar desde un botón.
-      Si querés que sea una descarga directa como archivo, necesitamos hacer una versión APK para Android.
-    `;
-
-    ayuda.style.display = "block";
-  }
-
-  async function vaInstalarApp(){
-    try {
-      if (deferredPrompt) {
-        deferredPrompt.prompt();
-
-        const choice = await deferredPrompt.userChoice;
-        deferredPrompt = null;
-
-        if (choice?.outcome === "accepted") {
-          localStorage.setItem(KEY_INSTALADA, "1");
-          localStorage.setItem(KEY_VER_WEB, "1");
-          vaCerrarGate();
-          vaEntradaLimpia();
-          return;
-        }
-
-        return;
-      }
-
-      vaMostrarAyudaInstalacion();
-
-    } catch(e) {
-      console.warn("No se pudo abrir instalación:", e);
-      vaMostrarAyudaInstalacion();
+    if (document.readyState === "complete") {
+      mostrar();
+    } else {
+      window.addEventListener("load", mostrar, { once:true });
     }
-  }
-
-  function vaVerEnWeb(){
-    localStorage.setItem(KEY_VER_WEB, "1");
-    vaCerrarGate();
-
-    if (vaEsLoginPage()) return;
-
-    vaEntradaLimpia();
-  }
-
-  function vaIrLogin(){
-    if (vaEsLoginPage()) return;
-
-    localStorage.setItem(KEY_VER_WEB, "1");
-    location.href = "/VidaAbundante/login.html";
-  }
-
-  function vaIrHome(){
-    localStorage.setItem(KEY_VER_WEB, "1");
-    location.href = "/VidaAbundante/";
   }
 
   function vaEntradaLimpia(){
-    // Si no está instalada y nunca eligió web, mostrar cartel.
-    if (!vaAppInstalada() && !vaPuedeVerWeb()) {
-      vaMostrarGate();
-      return;
-    }
-
-    // En login.html no hacemos nada más: dejamos ver login.
-    if (vaEsLoginPage()) {
-      vaCerrarGate();
-      return;
-    }
+    if (vaEsLoginPage()) return;
 
     let intentos = 0;
 
     const tick = () => {
       intentos++;
 
-      // Si está logueado, va a Compartidos.
       if (vaHayLogin()) {
-        if (typeof window.irA === "function") {
-          try {
-            window.irA("compartidos");
-            window.scrollTo(0, 0);
-            return;
-          } catch(e) {
-            console.warn("No pude ir a Compartidos todavía:", e);
-          }
-        }
-      }
+        localStorage.setItem(KEY_MODO_WEB, "1");
+        localStorage.removeItem(KEY_SIN_LOGIN);
 
-      // Si eligió continuar sin login, dejamos la web visible sin mandar a login.
-      if (vaPuedeSinLogin()) {
+        vaIrCompartidosCuandoEsteListo();
+        vaMostrarTipDespuesDeCarga();
         return;
       }
 
-      // Si no hay login, mandamos a login una sola vez.
-      if (intentos > 8 && !vaHayLogin()) {
+      if (vaPuedeSinLogin()) {
+        localStorage.setItem(KEY_MODO_WEB, "1");
+
+        vaIrCompartidosCuandoEsteListo();
+        vaMostrarTipDespuesDeCarga();
+        return;
+      }
+
+      // Espera un poco a Firebase para no mandar a login antes de saber si hay sesión.
+      if (intentos > 34) {
         vaIrLogin();
         return;
       }
 
-      if (intentos < 24) {
-        setTimeout(tick, 250);
-      }
+      setTimeout(tick, 150);
     };
 
     tick();
   }
 
-  window.addEventListener("beforeinstallprompt", (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-  });
-
-  window.addEventListener("appinstalled", () => {
-    localStorage.setItem(KEY_INSTALADA, "1");
-    localStorage.setItem(KEY_VER_WEB, "1");
-    vaCerrarGate();
-    vaEntradaLimpia();
-  });
-
   window.VAAppGate = {
-    instalada: vaAppInstalada,
-    mostrar: vaMostrarGate,
-    cerrar: vaCerrarGate,
     entradaLimpia: vaEntradaLimpia,
 
-    verWeb: function(){
-      localStorage.setItem(KEY_VER_WEB, "1");
-      vaCerrarGate();
-    },
-
     continuarSinLogin: function(){
-      localStorage.setItem(KEY_VER_WEB, "1");
+      localStorage.setItem(KEY_MODO_WEB, "1");
       localStorage.setItem(KEY_SIN_LOGIN, "1");
-      vaIrHome();
-    },
-
-    cerrarSesion: function(){
-      localStorage.removeItem(KEY_SIN_LOGIN);
+      location.replace("/VidaAbundante/");
     },
 
     resetPrueba: function(){
-      localStorage.removeItem(KEY_INSTALADA);
-      localStorage.removeItem(KEY_VER_WEB);
+      localStorage.removeItem(KEY_MODO_WEB);
       localStorage.removeItem(KEY_SIN_LOGIN);
-      location.href = "/VidaAbundante/";
+      localStorage.removeItem(KEY_TIP_VISTO);
+      location.replace("/VidaAbundante/");
+    },
+
+    mostrarConsejoApp: function(){
+      localStorage.removeItem(KEY_TIP_VISTO);
+      vaMostrarTipDespuesDeCarga();
     }
   };
 
-  document.addEventListener("DOMContentLoaded", () => {
-    vaCrearGate();
-    vaEntradaLimpia();
-  });
+  document.addEventListener("DOMContentLoaded", vaEntradaLimpia);
 })();
