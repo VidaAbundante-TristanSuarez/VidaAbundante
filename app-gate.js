@@ -114,12 +114,10 @@
         box-shadow:0 8px 22px rgba(0,0,0,.12);
       }
 
-      .va-app-icon img{
-        width:48px;
-        height:48px;
-        border-radius:999px;
-        object-fit:cover;
-      }
+.va-app-icon i{
+  font-size:26px;
+  line-height:1;
+}
 
       .va-app-title{
         margin:0 0 8px;
@@ -202,19 +200,20 @@
 
     div.innerHTML = `
       <div class="va-app-card">
-        <div class="va-app-icon">
-          <img src="/VidaAbundante/img/app/icon-192.png" alt="Vida Abundante">
-        </div>
+<div class="va-app-icon">
+  <i class="fa-solid fa-dove"></i>
+</div>
 
-        <h2 class="va-app-title">
-          Vida Abundante App
-        </h2>
+<h2 class="va-app-title">
+  Bendecido hermano, bienvenido<br>
+  a Vida Abundante App
+</h2>
 
-        <p class="va-app-text">
-          Podés instalar la app en tu celular o continuar viéndola desde la web.
-        </p>
+<p class="va-app-text">
+  Puedes instalar la app en tu celular, o continuar viéndola desde la web.
+</p>
 
-        <div class="va-app-actions">
+<div class="va-app-actions">
           <button type="button" class="va-app-btn va-app-btn-primary" id="vaBtnInstalarApp">
             Descargar app
           </button>
