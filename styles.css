@@ -4284,12 +4284,15 @@ body.oscuro .tema-toggle-fondo input:checked + label{
 /* ================= MODAL APARIENCIA - TEXTO BÍBLICO LIMPIO ================= */
 
 #modalTema #colorTextoAppBox {
-  display: flex !important;
   flex-direction: row !important;
   align-items: center !important;
   width: 100% !important;
   gap: 10px !important;
   margin: 0 !important;
+}
+
+#modalTema #colorTextoAppBox.oculto {
+  display: none !important;
 }
 
 #modalTema #colorTextoAppBox .tema-label {
