@@ -1480,7 +1480,9 @@ function compRenderOracionesDevocionalHTML(item) {
         ${oraciones.map(o => {
           const fondo = o.color || "#f5f5f5";
           const colorTexto = compColorContraste(fondo);
-          const autor = (compUidActual() && o.autorUid === compUidActual()) ? "Tú" : "Anónimo";
+          const autor = (compUidActual() && o.autorUid === compUidActual())
+  ? "Tú"
+  : (o.autorNombre || o.nombreAutor || "Hermano/a");
           const fechaTxt = o.fecha
             ? new Date(o.fecha).toLocaleDateString("es-AR", {
                 day: "2-digit",
