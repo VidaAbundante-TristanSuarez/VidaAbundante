@@ -8,7 +8,6 @@ self.addEventListener("install", (event) => {
 return cache.addAll([
   "/VidaAbundante/",
   "/VidaAbundante/index.html",
-  "/VidaAbundante/biblia.html",
   "/VidaAbundante/manifest.webmanifest",
   "/VidaAbundante/img/app/icon-192.png",
   "/VidaAbundante/img/app/icon-512.png",
