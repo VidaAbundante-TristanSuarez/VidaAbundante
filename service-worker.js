@@ -5,13 +5,15 @@ self.addEventListener("install", (event) => {
 
   event.waitUntil(
     caches.open(VA_CACHE).then((cache) => {
-      return cache.addAll([
-        "/VidaAbundante/biblia.html",
-        "/VidaAbundante/manifest.webmanifest",
-        "/VidaAbundante/img/app/icon-192.png",
-        "/VidaAbundante/img/app/icon-512.png",
-        "/VidaAbundante/img/app/preview-whatsapp.png"
-      ]);
+return cache.addAll([
+  "/VidaAbundante/",
+  "/VidaAbundante/index.html",
+  "/VidaAbundante/biblia.html",
+  "/VidaAbundante/manifest.webmanifest",
+  "/VidaAbundante/img/app/icon-192.png",
+  "/VidaAbundante/img/app/icon-512.png",
+  "/VidaAbundante/img/app/preview-whatsapp.png"
+]);
     }).catch(() => null)
   );
 });
