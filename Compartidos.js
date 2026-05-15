@@ -34,6 +34,12 @@ let compartidosOcultosCache = {};
 let compartidosOcultosEscuchaActiva = false;
 let compPromosTimer = null;
 
+let compBaseListo = false;
+let compDevocionalesListo = false;
+let compSubidosListo = false;
+let compCargaInicio = Date.now();
+let compTimerCarga = null;
+
 const COMP_BANNER_URL = "img/compartidos/banner-horarios.png?v=2026-05-08-2";
 
 const COMP_PROMOS = [
@@ -47,6 +53,51 @@ const COMP_PROMOS = [
 
 function comp$(id) {
   return document.getElementById(id);
+}
+
+function compEstaCargandoFeed() {
+  const maxEspera = 12000;
+
+  return (
+    Date.now() - compCargaInicio < maxEspera &&
+    (!compBaseListo || !compDevocionalesListo || !compSubidosListo)
+  );
+}
+
+function compProgramarRepintadoCarga() {
+  if (compTimerCarga) clearTimeout(compTimerCarga);
+
+  if (!compEstaCargandoFeed()) return;
+
+  compTimerCarga = setTimeout(() => {
+    if (typeof window.renderCompartidos === "function") {
+      window.renderCompartidos();
+    }
+  }, 700);
+}
+
+function compLoaderHTML() {
+  return `
+    <div class="comp-loading-feed">
+      <div class="comp-loading-icon">
+        <i class="fa-solid fa-dove"></i>
+      </div>
+
+      <div class="comp-loading-title">
+        Preparando publicaciones
+      </div>
+
+      <div class="comp-loading-text">
+        Estamos acomodando los devocionales, imágenes y recursos compartidos...
+      </div>
+
+      <div class="comp-loading-dots">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+    </div>
+  `;
 }
 
 function compDB() {
@@ -268,12 +319,13 @@ window.mostrarCompartidos = async () => {
 
   if (!compartidosIniciado) {
     cont.innerHTML = `
-      <div id="compFeedWrap">
-        <div id="compHero"></div>
-        <div id="compPromos"></div>
-        <div id="compLista"></div>
-      </div>
-    `;
+      cont.innerHTML = `
+  <div id="compFeedWrap">
+    <div id="compHero"></div>
+    <div id="compPromos"></div>
+    <div id="compLista">${compLoaderHTML()}</div>
+  </div>
+`;
     compartidosIniciado = true;
   }
 
@@ -408,11 +460,18 @@ function iniciarEscuchaCompartidos() {
   const db = compDB();
   if (!db) return;
 
-  onValue(ref(db, "compartidos"), (snap) => {
-    const val = snap.val() || {};
-    compartidosCache = compFlattenCompartidos(val);
-    renderCompartidos();
-  }, (err) => {
+onValue(ref(db, "compartidos"), (snap) => {
+  compBaseListo = true;
+
+  const val = snap.val() || {};
+  compartidosCache = compFlattenCompartidos(val);
+  renderCompartidos();
+}, (err) => {
+  compBaseListo = true;
+  console.error("Error leyendo compartidos:", err);
+  renderCompartidos();
+});
+  
     console.error("Error leyendo compartidos:", err);
   });
 
@@ -495,6 +554,7 @@ function iniciarEscuchaCompartidosDevocionales() {
   if (!db) return;
 
   onValue(ref(db, "devocionalesIglesia"), (snap) => {
+    compDevocionalesListo = true;
     const val = snap.val() || {};
     const items = [];
 
@@ -528,6 +588,7 @@ function iniciarEscuchaCompartidosSubidos() {
   if (!db) return;
 
   onValue(ref(db, "subidosIglesia"), (snap) => {
+    compSubidosListo = true;
     const val = snap.val() || {};
 
     compartidosSubidosCache = Object.entries(val)
@@ -1876,14 +1937,20 @@ window.renderCompartidos = function renderCompartidos() {
 
   const items = compUnificarItems();
 
-  if (!items.length) {
-    lista.innerHTML = `
-      <div id="compVacio">
-        Todavía no hay publicaciones compartidas.
-      </div>
-    `;
+if (!items.length) {
+  if (compEstaCargandoFeed()) {
+    lista.innerHTML = compLoaderHTML();
+    compProgramarRepintadoCarga();
     return;
   }
+
+  lista.innerHTML = `
+    <div id="compVacio">
+      Todavía no hay publicaciones compartidas.
+    </div>
+  `;
+  return;
+}
 
   lista.innerHTML = items.map(item => {
     if (item.tipo === "rh") return compRenderRH(item);
