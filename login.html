@@ -157,8 +157,6 @@
 </head>
 
 <body>
-<script src="/VidaAbundante/app-gate.js"></script>
-
   <main class="login-page-card">
     <div class="login-content">
 
@@ -180,10 +178,15 @@
   <button
   type="button"
   class="login-sin-registro"
-  onclick="window.VAAppGate.continuarSinLogin()"
+  onclick="
+    localStorage.setItem('VA_MODO_WEB_OK', '1');
+    localStorage.setItem('VA_CONTINUAR_SIN_LOGIN', '1');
+    window.location.href = '/VidaAbundante/';
+  "
 >
   Continuar sin iniciar sesión
 </button>
+      
     </div>
   </main>
 
