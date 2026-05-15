@@ -6873,11 +6873,9 @@ function asegurarControlColorTextoTema() {
     box.className = "tema-linea tema-linea-full tema-color-texto-box";
 
     box.innerHTML = `
-      <span class="tema-label">Texto</span>
+      <span class="tema-label">Texto bíblico</span>
 
-      <div class="tema-control-row tema-biblia-row">
-        <span class="tema-biblia-label">Color de texto bíblico</span>
-
+      <div class="tema-control-row tema-control-row-texto-biblico">
         <input
           id="colorTextoApp"
           type="hidden"
@@ -6902,12 +6900,14 @@ function asegurarControlColorTextoTema() {
       </div>
     `;
 
-    const temaBoxColor = document.getElementById("temaBoxColor");
     const temaBoxImagen = document.getElementById("temaBoxImagen");
+    const labelOpacidad = document.getElementById("labelOpacidadTema");
 
-    // ✅ Lo ponemos como fila propia, entre COLOR e IMAGEN.
-    if (temaBoxColor && temaBoxImagen) {
-      temaBoxColor.insertAdjacentElement("afterend", box);
+    // ✅ Va después de Color/Imagen y antes de Opacidad
+    if (temaBoxImagen) {
+      temaBoxImagen.insertAdjacentElement("afterend", box);
+    } else if (labelOpacidad?.parentElement) {
+      labelOpacidad.parentElement.insertAdjacentElement("beforebegin", box);
     } else {
       modal.querySelector(".tema-grid")?.appendChild(box);
     }
