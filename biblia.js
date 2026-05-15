@@ -361,6 +361,122 @@ let scrollCapituloAnterior = 0;
 // ================= 💾 ESTADO DE NAVEGACIÓN BIBLIA =================
 const LS_BIBLIA_ESTADO = "va_biblia_estado_v1";
 
+const VA_VISITANTE_KEY = "VA_VISITANTE_OK";
+const VA_TIP_APP_KEY = "VA_TIP_APP_VISTO";
+
+function vaParam(nombre) {
+  try {
+    return new URL(location.href).searchParams.get(nombre) || "";
+  } catch {
+    return "";
+  }
+}
+
+function vaLimpiarParamsEntrada() {
+  try {
+    const u = new URL(location.href);
+    ["visitante", "loginOk"].forEach(k => u.searchParams.delete(k));
+    history.replaceState({}, "", u.pathname + u.search + u.hash);
+  } catch {}
+}
+
+function vaEsStandalone() {
+  return (
+    window.matchMedia?.("(display-mode: standalone)")?.matches ||
+    window.navigator.standalone === true
+  );
+}
+
+function vaEntradaVisitante() {
+  return (
+    vaParam("visitante") === "1" ||
+    localStorage.getItem(VA_VISITANTE_KEY) === "1"
+  );
+}
+
+function vaEntradaDesdeLogin() {
+  return vaParam("loginOk") === "1" || vaParam("visitante") === "1";
+}
+
+function vaSeccionInicialLogueado() {
+  const estado = leerEstadoBiblia();
+
+  // ✅ Si está instalada y hay usuario, abre donde quedó.
+  if (vaEsStandalone() && estado?.seccion && !vaEntradaDesdeLogin()) {
+    return estado.seccion;
+  }
+
+  // ✅ Link normal / recién logueado: Compartidos.
+  return "compartidos";
+}
+
+function vaTextoInstalarApp() {
+  const ua = navigator.userAgent || "";
+  const esIOS = /iphone|ipad|ipod/i.test(ua);
+  const esAndroid = /android/i.test(ua);
+
+  if (esIOS) {
+    return `
+      <strong>Para usarla como app en iPhone:</strong>
+      Tocá el botón de compartir de Safari y elegí
+      <b>Agregar a pantalla de inicio</b>.
+    `;
+  }
+
+  if (esAndroid) {
+    return `
+      <strong>Para usarla como app en Android:</strong>
+      Si Chrome muestra <b>Instalar app</b>, aceptalo.
+      Si no aparece, tocá el menú <b>⋮</b> y elegí
+      <b>Agregar a pantalla principal</b>.
+    `;
+  }
+
+  return `
+    <strong>Para usarla como app:</strong>
+    Si tu navegador muestra <b>Instalar app</b>, aceptalo.
+    También podés crear un acceso directo desde el menú del navegador.
+  `;
+}
+
+function vaMostrarConsejoInstalarApp() {
+  if (vaEsStandalone()) return;
+  if (localStorage.getItem(VA_TIP_APP_KEY) === "1") return;
+  if (document.getElementById("vaTipInstalarApp")) return;
+
+  const div = document.createElement("div");
+  div.id = "vaTipInstalarApp";
+  div.innerHTML = `
+    <div class="va-tip-app-card">
+      <div class="va-tip-app-icon">
+        <i class="fa-solid fa-dove"></i>
+      </div>
+
+      <h3>Bendecido hermano</h3>
+
+      <p>
+        Te animamos a usar Vida Abundante como aplicación en tu celular
+        para acceder más rápido a Biblia, devocionales, recursos y compartidos.
+      </p>
+
+      <div class="va-tip-app-info">
+        ${vaTextoInstalarApp()}
+      </div>
+
+      <button type="button" id="btnVaContinuarWeb">
+        Continuar en web
+      </button>
+    </div>
+  `;
+
+  document.body.appendChild(div);
+
+  document.getElementById("btnVaContinuarWeb")?.addEventListener("click", () => {
+    localStorage.setItem(VA_TIP_APP_KEY, "1");
+    div.remove();
+  });
+}
+
 function obtenerSeccionActual() {
   if (document.body.classList.contains("en-iglesia")) return "iglesia";
   if (document.body.classList.contains("en-panel")) return "panel";
@@ -512,6 +628,13 @@ window.actualizarPermisosUI = function () {
 
   const btnSubidoNuevo = document.getElementById("btnSubidoNuevo");
   if (btnSubidoNuevo) btnSubidoNuevo.style.display = esAdmin ? "inline-flex" : "none";
+
+  const btnPanelImgNuevo = document.getElementById("btnPanelImgNuevo");
+if (btnPanelImgNuevo) btnPanelImgNuevo.style.display = esAdmin ? "inline-flex" : "none";
+
+const panelImgTopRow = document.getElementById("panelImgTopRow");
+if (panelImgTopRow && !esAdmin) panelImgTopRow.innerHTML = "";
+  
 };
 
 // ================= AUTH =====================================
@@ -520,8 +643,19 @@ onAuthStateChanged(auth, async user => {
 
   window.__UID = uid;
 
-  if (!uid) {
-  // ✅ MODO VISITANTE: permite entrar sin iniciar sesión
+if (!uid) {
+  const puedeEntrarComoVisitante = vaEntradaVisitante();
+
+  // ✅ Primer ingreso real sin login y sin elegir visitante:
+  // va a la pantalla bienvenida/login.
+  if (!puedeEntrarComoVisitante) {
+    window.location.replace("/VidaAbundante/login.html");
+    return;
+  }
+
+  // ✅ MODO VISITANTE
+  localStorage.setItem(VA_VISITANTE_KEY, "1");
+
   window.__UID = null;
   window.__ES_ADMIN = false;
   window.__ES_COLABORADOR = false;
@@ -532,7 +666,8 @@ onAuthStateChanged(auth, async user => {
     console.warn("No pude actualizar permisos visitante:", e);
   }
 
-  // ✅ Entrada pública: Compartidos
+  vaLimpiarParamsEntrada();
+
   setTimeout(() => {
     try {
       if (typeof window.irA === "function") {
@@ -540,6 +675,8 @@ onAuthStateChanged(auth, async user => {
       } else if (typeof window.mostrarCompartidos === "function") {
         window.mostrarCompartidos();
       }
+
+      vaMostrarConsejoInstalarApp();
     } catch (e) {
       console.warn("No pude abrir Compartidos visitante:", e);
     }
@@ -548,6 +685,9 @@ onAuthStateChanged(auth, async user => {
   return;
 }
 
+localStorage.removeItem(VA_VISITANTE_KEY);
+vaLimpiarParamsEntrada();
+  
   // ✅ registrar automáticamente al usuario que entró
   await registrarUsuarioActual(user);
 
@@ -696,6 +836,19 @@ onValue(ref(db, "panelEdiciones/" + uid), s => {
       abcMarcarSeleccionUI();
     }
   });
+
+  setTimeout(() => {
+  try {
+    if (typeof window.irA === "function") {
+      window.irA(vaSeccionInicialLogueado());
+    }
+
+    vaMostrarConsejoInstalarApp();
+  } catch (e) {
+    console.warn("No pude abrir sección inicial:", e);
+  }
+}, 500);
+
 });
 
 // ================= DOM (script al final del body)  =================
@@ -937,11 +1090,6 @@ function iniciar() {
 
   restaurarEstadoBibliaInicial();
   
-  setTimeout(() => {
-  if (typeof window.irA === "function") {
-    window.irA("compartidos");
-  }
-}, 150);
 }
 
 // ================= ⭐ CARGA CAPITULOS ==============================
@@ -4812,6 +4960,25 @@ function renderPanelImagenes(data) {
   const grid = document.getElementById("grid-imagenes"); // compatibilidad
   const vacio = document.getElementById("imagenes-vacio");
   const topRow = document.getElementById("panelImgTopRow");
+
+  if (!uid) {
+  if (topRow) topRow.innerHTML = "";
+  if (indexRow) indexRow.innerHTML = "";
+
+  if (vacio) vacio.style.display = "none";
+
+  if (feed) {
+    feed.innerHTML = `
+      <div class="panel-vacio-login">
+        Puedes loguearte para guardar aquí tus devocionales preferidos,
+        las publicaciones que te gusten, las notas que generes y más.
+      </div>
+    `;
+  }
+
+  return;
+}
+  
   const indexRow = document.getElementById("panelImgIndexRow");
   const feed = document.getElementById("panelImgFeed");
 
@@ -4896,17 +5063,21 @@ function refBonitaPanel(it){
   return "Imagen";
 }
 
- if (topRow) {
-  topRow.innerHTML = `
-    <button
-      id="btnPanelImgNuevo"
-      type="button"
-      class="btn-primary panel-add-redondo"
-      onclick="event.preventDefault(); event.stopPropagation(); abrirCrearImagenLibrePanel(); return false;"
-      title="Crear imagen">
-      <i class="fa-solid fa-circle-plus"></i>
-    </button>
-  `;
+if (topRow) {
+  if (window.__ES_ADMIN) {
+    topRow.innerHTML = `
+      <button
+        id="btnPanelImgNuevo"
+        type="button"
+        class="btn-primary panel-add-redondo"
+        onclick="event.preventDefault(); event.stopPropagation(); abrirCrearImagenLibrePanel(); return false;"
+        title="Crear imagen">
+        <i class="fa-solid fa-circle-plus"></i>
+      </button>
+    `;
+  } else {
+    topRow.innerHTML = "";
+  }
 }
 
 /* ✅ deja el + debajo de la galería */
