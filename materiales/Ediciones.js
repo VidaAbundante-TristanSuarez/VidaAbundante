@@ -61,6 +61,30 @@ function edValor(v) {
   return String(v ?? "").trim();
 }
 
+function edNormalizarRama(v = "") {
+  const s = String(v || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+
+  if (s === "libro" || s === "libros") return "libros";
+  return "flyers";
+}
+
+function edRamaEdicion(edicion = {}) {
+  return edNormalizarRama(
+    edicion.rama ||
+    edicion.categoria ||
+    edicion.tipoEdicion ||
+    "flyers"
+  );
+}
+
+function edTituloRama(rama = "") {
+  return edNormalizarRama(rama) === "libros" ? "Libros" : "Flyers";
+}
+
 function edKey(prefix = "p") {
   return `${prefix}_${Date.now()}_${Math.random().toString(16).slice(2)}`;
 }
@@ -176,13 +200,26 @@ window.mostrarEdiciones = async () => {
           </div>
 
           <form id="edForm" onsubmit="guardarEdicion(event)">
-            <div class="ed-field">
-              <label for="edTitulo">Título de la edición</label>
-              <input id="edTitulo" type="text" required placeholder="Ej: David y Goliat" />
-            </div>
+       <div class="ed-field">
+  <label for="edTitulo">Título de la edición</label>
+  <input id="edTitulo" type="text" required placeholder="Ej: David y Goliat" />
+</div>
 
-            <div class="ed-field">
-              <label for="edPortadaFile">Portada</label>
+<div class="ed-field">
+  <label for="edRama">Rama</label>
+
+  <select id="edRama">
+    <option value="flyers">Flyers</option>
+    <option value="libros">Libros</option>
+  </select>
+
+  <div style="font-size:12px; opacity:.75;">
+    Elegí si esta edición pertenece a Flyers o Libros.
+  </div>
+</div>
+
+<div class="ed-field">
+  <label for="edPortadaFile">Portada</label>
               <input id="edPortadaFile" type="file" accept="image/*" />
               <img id="edPortadaPreview" alt="Portada actual" style="display:none;">
               <div style="font-size:12px; opacity:.75;">
@@ -462,6 +499,8 @@ function renderEdiciones() {
   const lista = ed$("edLista");
   if (!lista) return;
 
+  lista.classList.add("ed-lista-ramas");
+
   if (!edicionesCache.length) {
     lista.innerHTML = `
       <div id="edVacio">
@@ -471,50 +510,105 @@ function renderEdiciones() {
     return;
   }
 
-  lista.innerHTML = edicionesCache.map(ed => {
+  function renderCardEdicion(ed) {
     const titulo = edEscape(ed.titulo || "Sin título");
-   const portada = edPortadaEdicion(ed);
-   const tieneVideo = edPaginasArray(ed).some(p => edPaginaEsVideo(p));
-    const st = edStats(ed.id);
-    const guardada = edEstaGuardada(ed.id);
+    const portada = edPortadaEdicion(ed);
+    const tieneVideo = edPaginasArray(ed).some(p => edPaginaEsVideo(p));
+    const publicada = edEstaPublicadaEnCompartidos(ed.id);
 
     return `
-      <article class="ed-card">
-        <div class="ed-card-cover" onclick="abrirPresentacionEdicion('${ed.id}')" role="button" title="Abrir edición">
-      ${
-  portada
-    ? `<img src="${edEscape(portada)}" alt="${titulo}" loading="lazy">`
-    : tieneVideo
-      ? `<span><i class="fa-solid fa-video"></i><br>Edición con video</span>`
-      : `<span>Sin portada</span>`
-}
+      <article class="ed-card ed-card-rama">
+        <div
+          class="ed-card-cover"
+          onclick="abrirPresentacionEdicion('${ed.id}')"
+          role="button"
+          title="Abrir edición"
+        >
+          ${
+            portada
+              ? `<img src="${edEscape(portada)}" alt="${titulo}" loading="lazy">`
+              : tieneVideo
+                ? `<span><i class="fa-solid fa-video"></i><br>Edición con video</span>`
+                : `<span>Sin portada</span>`
+          }
         </div>
 
         <div class="ed-card-body">
           <div class="ed-card-title">${titulo}</div>
 
-                 ${window.__ES_ADMIN ? `
-  <div class="ed-card-actions">
-    <button
-      type="button"
-      class="${edEstaPublicadaEnCompartidos(ed.id) ? "ed-action-saved" : ""}"
-      onclick="compartirEdicion('${ed.id}', 'compartidos')"
-      title="${edEstaPublicadaEnCompartidos(ed.id) ? "Ya está en Compartidos. Tocar para volver a compartir" : "Enviar a Compartidos"}"
-    >
-      <i class="fa-solid ${edEstaPublicadaEnCompartidos(ed.id) ? "fa-circle-check" : "fa-icons"}"></i>
-    </button>
+          ${window.__ES_ADMIN ? `
+            <div class="ed-card-actions">
+              <button
+                type="button"
+                class="${publicada ? "ed-action-saved" : ""}"
+                onclick="compartirEdicion('${ed.id}', 'compartidos')"
+                title="${publicada ? "Ya está en Compartidos. Tocar para volver a compartir" : "Enviar a Compartidos"}"
+              >
+                <i class="fa-solid ${publicada ? "fa-circle-check" : "fa-icons"}"></i>
+              </button>
 
-    <button type="button" onclick="editarEdicion('${ed.id}')" title="Editar">
-      <i class="fa-solid fa-pen"></i>
-    </button>
+              <button type="button" onclick="editarEdicion('${ed.id}')" title="Editar">
+                <i class="fa-solid fa-pen"></i>
+              </button>
 
-    <button type="button" class="ed-danger ed-danger-mini" onclick="borrarEdicion('${ed.id}')" title="Borrar">
-      <i class="fa-solid fa-trash"></i>
-    </button>
-  </div>
-` : ``}
+              <button
+                type="button"
+                class="ed-danger ed-danger-mini"
+                onclick="borrarEdicion('${ed.id}')"
+                title="Borrar"
+              >
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </div>
+          ` : ``}
         </div>
       </article>
+    `;
+  }
+
+  const ramas = [
+    {
+      key: "flyers",
+      titulo: "Flyers",
+      icono: "fa-solid fa-image"
+    },
+    {
+      key: "libros",
+      titulo: "Libros",
+      icono: "fa-solid fa-book-open"
+    }
+  ];
+
+  lista.innerHTML = ramas.map(rama => {
+    const items = edicionesCache.filter(ed => edRamaEdicion(ed) === rama.key);
+
+    return `
+      <section class="ed-rama-section ed-rama-${rama.key}">
+        <div class="ed-rama-head">
+          <div class="ed-rama-title">
+            <i class="${rama.icono}"></i>
+            <span>${rama.titulo}</span>
+          </div>
+
+          <div class="ed-rama-count">
+            ${items.length} ${items.length === 1 ? "edición" : "ediciones"}
+          </div>
+        </div>
+
+        ${
+          items.length
+            ? `
+              <div class="ed-rama-track">
+                ${items.map(renderCardEdicion).join("")}
+              </div>
+            `
+            : `
+              <div class="ed-rama-vacia">
+                Todavía no hay ${rama.titulo.toLowerCase()} cargados.
+              </div>
+            `
+        }
+      </section>
     `;
   }).join("");
 }
@@ -537,6 +631,10 @@ window.abrirNuevaEdicion = () => {
 
   if (tituloModal) tituloModal.textContent = "Nueva edición";
   if (form) form.reset();
+
+  const selectRama = ed$("edRama");
+if (selectRama) selectRama.value = "flyers";
+  
   if (portadaPreview) {
     portadaPreview.style.display = "none";
     portadaPreview.src = "";
@@ -574,6 +672,9 @@ window.editarEdicion = async (id) => {
   if (tituloModal) tituloModal.textContent = "Editar edición";
   if (form) form.reset();
   if (inputTitulo) inputTitulo.value = ed.titulo || "";
+
+  const selectRama = ed$("edRama");
+if (selectRama) selectRama.value = edRamaEdicion(ed);
 
   if (portadaPreview && ed.portadaUrl) {
     portadaPreview.src = ed.portadaUrl;
@@ -708,7 +809,8 @@ window.guardarEdicion = async (e) => {
 
   const btn = ed$("edBtnGuardar");
   const titulo = edValor(ed$("edTitulo")?.value);
-  const portadaFile = ed$("edPortadaFile")?.files?.[0] || null;
+const rama = edNormalizarRama(ed$("edRama")?.value || "flyers");
+const portadaFile = ed$("edPortadaFile")?.files?.[0] || null;
   const rows = Array.from(document.querySelectorAll("#edPaginasEditor .ed-page-editor"));
 
   if (!titulo) {
@@ -836,15 +938,18 @@ window.guardarEdicion = async (e) => {
       portadaUrl = primeraImagen?.imagenUrl || primeraImagen?.mediaUrl || "";
     }
 
-    const data = {
-      titulo,
-      portadaUrl,
-      paginas: paginasObj,
-      publicada: true,
-      creadoPor: existente?.creadoPor || window.__UID || "",
-      ts: existente?.ts || Date.now(),
-      actualizado: Date.now()
-    };
+const data = {
+  titulo,
+  rama,
+  categoria: rama,
+  tipoEdicion: rama,
+  portadaUrl,
+  paginas: paginasObj,
+  publicada: true,
+  creadoPor: existente?.creadoPor || window.__UID || "",
+  ts: existente?.ts || Date.now(),
+  actualizado: Date.now()
+};
 
     edSetEstado("Guardando datos...");
     await set(ref(db, `ediciones/${edId}`), data);
@@ -1463,17 +1568,20 @@ window.compartirEdicion = async (id, destino = "redes") => {
 
     const ts = Date.now();
 
-    await set(compRef, {
-      tipo: "edicion",
-      edicionId: id,
-      titulo,
-      portadaUrl,
-      creadoPor: snap.val()?.creadoPor || window.__UID || "",
-      actualizadoPor: window.__UID || "",
-      ts,
-      publicadoEn: ts,
-      republicadoEn: yaEstaba ? ts : 0
-    });
+await set(compRef, {
+  tipo: "edicion",
+  edicionId: id,
+  titulo,
+  rama: edRamaEdicion(ed),
+  categoria: edRamaEdicion(ed),
+  tipoEdicion: edRamaEdicion(ed),
+  portadaUrl,
+  creadoPor: snap.val()?.creadoPor || window.__UID || "",
+  actualizadoPor: window.__UID || "",
+  ts,
+  publicadoEn: ts,
+  republicadoEn: yaEstaba ? ts : 0
+});
 
     edicionesPublicadasCache[id] = true;
     renderEdiciones();
