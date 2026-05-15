@@ -2,6 +2,17 @@ const VA_CACHE = "vida-abundante-pwa-v1";
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
+
+  event.waitUntil(
+    caches.open(VA_CACHE).then((cache) => {
+      return cache.addAll([
+        "/VidaAbundante/manifest.webmanifest",
+        "/VidaAbundante/img/app/icon-192.png",
+        "/VidaAbundante/img/app/icon-512.png",
+        "/VidaAbundante/img/app/preview-whatsapp.jpg"
+      ]);
+    }).catch(() => null)
+  );
 });
 
 self.addEventListener("activate", (event) => {
@@ -18,15 +29,12 @@ self.addEventListener("activate", (event) => {
   );
 });
 
+// ✅ Service Worker activo para PWA.
+// ✅ Pero sin cache agresiva de HTML/JS/CSS, así no vuelve el problema viejo.
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
 
-  // ✅ Service Worker válido para PWA.
-  // ✅ No cachea index ni JS durante pruebas.
-  // ✅ Evita que vuelva basura vieja.
   event.respondWith(
-    fetch(event.request).catch(() => {
-      return caches.match(event.request);
-    })
+    fetch(event.request).catch(() => caches.match(event.request))
   );
 });
