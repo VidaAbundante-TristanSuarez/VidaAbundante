@@ -48,5 +48,7 @@ window.loginGoogle = async () => {
 
 // SI YA ESTÁ LOGUEADO → APP
 onAuthStateChanged(auth, (user) => {
-  if (user) window.location.href = "biblia.html";
+  if (user) {
+    window.location.href = "/VidaAbundante/?vaWeb=1";
+  }
 });
