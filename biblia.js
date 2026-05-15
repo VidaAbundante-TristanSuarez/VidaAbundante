@@ -25,8 +25,11 @@ const firebaseConfig = {
  };
 
 // ================= ☁️ R2 =================
-const R2_UPLOAD_URL = "https://us-central1-vidaabundante-f118a.cloudfunctions.net/subirImagenR2";
-const R2_DOWNLOAD_URL = "https://us-central1-vidaabundante-f118a.cloudfunctions.net/descargarImagenR2";
+// ✅ SIN FIREBASE FUNCTIONS: Biblia usa Cloudflare Worker + R2
+const R2_WORKER_URL = "https://subir-imagen-r2.vidaabundante-tristansuarez.workers.dev";
+
+const R2_UPLOAD_URL = R2_WORKER_URL;
+const R2_DOWNLOAD_URL = R2_WORKER_URL;
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -2171,7 +2174,8 @@ async function subirImagenAR2DesdeWeb(fileBase64, fileName, contentType = "image
     body: JSON.stringify({
       fileBase64,
       fileName,
-      contentType
+      contentType,
+      folder: "biblia"
     })
   });
 
