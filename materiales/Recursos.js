@@ -2164,7 +2164,8 @@ window.hacerAdmin = async (uidTarget) => {
 };
 
 // ================= formulario publico =================
-const URL_GUARDAR_PEDIDO_ORACION = "https://us-central1-vidaabundante-f118a.cloudfunctions.net/guardarPedidoOracion";
+// ✅ SIN FIREBASE FUNCTIONS: pedidos de oración pasan por Cloudflare Worker
+const URL_GUARDAR_PEDIDO_ORACION = "https://subir-imagen-r2.vidaabundante-tristansuarez.workers.dev";
 
 function iniciarFormularioPedidoOracionDesdeURL() {
   const params = new URLSearchParams(window.location.search);
@@ -2363,16 +2364,18 @@ async function enviarPedidoOracionPublico(datos = {}) {
 
     if (estado) estado.textContent = "";
 
-    const payload = refPedido
-      ? {
-          ref: refPedido,
-          pedido
-        }
-      : {
-          hermanoId,
-          token,
-          pedido
-        };
+const payload = refPedido
+  ? {
+      action: "pedidoOracion",
+      ref: refPedido,
+      pedido
+    }
+  : {
+      action: "pedidoOracion",
+      hermanoId,
+      token,
+      pedido
+    };
 
     const r = await fetch(URL_GUARDAR_PEDIDO_ORACION, {
       method: "POST",
