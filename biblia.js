@@ -6865,57 +6865,55 @@ function asegurarControlColorTextoTema() {
   const modal = document.getElementById("modalTema");
   if (!modal) return;
 
-  const existente = document.getElementById("colorTextoAppBox");
-  if (existente) {
-    existente.style.display = fondoTemaDraft?.seccion === "biblia" ? "flex" : "none";
-    return;
+  let box = document.getElementById("colorTextoAppBox");
+
+  if (!box) {
+    box = document.createElement("div");
+    box.id = "colorTextoAppBox";
+    box.className = "tema-linea tema-linea-full tema-color-texto-box";
+
+    box.innerHTML = `
+      <span class="tema-label">Texto</span>
+
+      <div class="tema-control-row tema-biblia-row">
+        <span class="tema-biblia-label">Color de texto bíblico</span>
+
+        <input
+          id="colorTextoApp"
+          type="hidden"
+          value="#111111"
+        >
+
+        <button
+          type="button"
+          id="colorTextoAppHost"
+          class="pickr-host"
+          data-target="#colorTextoApp"
+          aria-label="Color de texto bíblico"
+        ></button>
+
+        <button
+          type="button"
+          id="btnBoldTextoBiblia"
+          class="btn-bold-biblia"
+          onclick="toggleBoldTextoBiblia()"
+          title="Texto bíblico en negrita"
+        >B</button>
+      </div>
+    `;
+
+    const temaBoxColor = document.getElementById("temaBoxColor");
+    const temaBoxImagen = document.getElementById("temaBoxImagen");
+
+    // ✅ Lo ponemos como fila propia, entre COLOR e IMAGEN.
+    if (temaBoxColor && temaBoxImagen) {
+      temaBoxColor.insertAdjacentElement("afterend", box);
+    } else {
+      modal.querySelector(".tema-grid")?.appendChild(box);
+    }
   }
 
-  const box = document.createElement("div");
-  box.id = "colorTextoAppBox";
   box.style.display = fondoTemaDraft?.seccion === "biblia" ? "flex" : "none";
-
-  box.innerHTML = `
-    <label class="tema-biblia-label">Color de texto bíblico</label>
-
-    <div class="tema-biblia-row">
-      <input
-        id="colorTextoApp"
-        type="hidden"
-        value="#111111"
-      >
-
-      <button
-        type="button"
-        id="colorTextoAppHost"
-        class="pickr-host"
-        data-target="#colorTextoApp"
-        aria-label="Color de texto bíblico"
-      ></button>
-
-      <button
-        type="button"
-        id="btnBoldTextoBiblia"
-        class="btn-bold-biblia"
-        onclick="toggleBoldTextoBiblia()"
-        title="Texto bíblico en negrita"
-      >B</button>
-    </div>
-  `;
-
-  const colorFondo = document.getElementById("colorFondoApp");
-  const colorHost = document.getElementById("colorFondoAppHost");
-
-  const refEl =
-    colorHost?.parentElement ||
-    colorFondo?.parentElement ||
-    modal.querySelector(".modal-card div");
-
-  if (refEl) {
-    refEl.insertAdjacentElement("afterend", box);
-  } else {
-    modal.querySelector(".modal-card")?.appendChild(box);
-  }
 
   const input = document.getElementById("colorTextoApp");
 
@@ -7000,6 +6998,26 @@ const inputTexto = document.getElementById("colorTextoApp");
   if (slider) {
     slider.value = String(fondoTemaDraft.opacidad || "0.35");
   }
+
+  const nombreImagen = document.getElementById("temaNombreImagen");
+const radioColor = document.getElementById("temaFondoColor");
+const radioImagen = document.getElementById("temaFondoImagen");
+const boxColor = document.getElementById("temaBoxColor");
+const boxImagen = document.getElementById("temaBoxImagen");
+
+const esImagenGuardada =
+  fondoTemaDraft.tipo === "imagen" &&
+  String(fondoTemaDraft.valor || "").trim();
+
+if (radioColor) radioColor.checked = fondoTemaDraft.tipo !== "imagen";
+if (radioImagen) radioImagen.checked = fondoTemaDraft.tipo === "imagen";
+
+if (boxColor) boxColor.style.display = fondoTemaDraft.tipo === "imagen" ? "none" : "flex";
+if (boxImagen) boxImagen.style.display = fondoTemaDraft.tipo === "imagen" ? "flex" : "none";
+
+if (nombreImagen) {
+  nombreImagen.textContent = esImagenGuardada ? "Imagen guardada" : "Ninguna";
+}
 
   if (inputColor && fondoTemaDraft.tipo === "color") {
     inputColor.value = fondoTemaDraft.valor || "#ffffff";
