@@ -15,8 +15,12 @@ import {
    - Archivos pesados van a R2.
 ========================================================= */
 
-const R2_UPLOAD_URL_EDICIONES = "https://us-central1-vidaabundante-f118a.cloudfunctions.net/subirImagenR2";
-const R2_VIDEO_UPLOAD_URL_EDICIONES = "https://us-central1-vidaabundante-f118a.cloudfunctions.net/crearUploadVideoR2";
+// ✅ SIN FIREBASE FUNCTIONS: Ediciones usa Cloudflare Worker + R2
+const R2_WORKER_URL_EDICIONES = "https://subir-imagen-r2.vidaabundante-tristansuarez.workers.dev";
+
+const R2_UPLOAD_URL_EDICIONES = R2_WORKER_URL_EDICIONES;
+const R2_VIDEO_UPLOAD_URL_EDICIONES = R2_WORKER_URL_EDICIONES;
+const R2_PROXY_URL_EDICIONES = R2_WORKER_URL_EDICIONES;
 
 let edicionesIniciado = false;
 let edicionesEscuchaActiva = false;
@@ -853,61 +857,34 @@ async function subirVideoEdicionR2Directo(file) {
     throw new Error(`Video demasiado grande: ${edFormatoMB(file.size)} MB. Máximo inicial: 80 MB.`);
   }
 
-  const user =
-    window.__AUTH?.currentUser ||
-    window.__FB?.auth?.currentUser ||
-    null;
+  edSetEstado(`Subiendo video a R2 (${edFormatoMB(file.size)} MB)...`);
 
-  if (!user) {
-    throw new Error("No pude obtener el usuario actual para autorizar la subida.");
-  }
-
-  edSetEstado(`Preparando permiso para video (${edFormatoMB(file.size)} MB)...`);
-
-  const token = await user.getIdToken();
+  // ✅ Sin base64, sin Firebase Functions.
+  // El video viaja como archivo real al Worker.
+  const form = new FormData();
+  form.append("file", file);
+  form.append("destino", "ediciones");
+  form.append("folder", "videos/ediciones");
+  form.append("contentType", contentType);
 
   const r = await fetch(R2_VIDEO_UPLOAD_URL_EDICIONES, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer " + token
-    },
-    body: JSON.stringify({
-      destino: "ediciones",
-      fileName: file.name || `video_${Date.now()}.mp4`,
-      contentType,
-      sizeBytes: file.size
-    })
+    body: form
   });
 
   const data = await r.json().catch(() => ({}));
 
-  if (!r.ok || !data?.ok || !data?.uploadUrl) {
-    throw new Error(data?.error || "No se pudo crear la URL de subida para el video.");
-  }
-
-  edSetEstado("Subiendo video directo a R2...");
-
-  const put = await fetch(data.uploadUrl, {
-    method: "PUT",
-    headers: {
-      "Content-Type": contentType
-    },
-    body: file
-  });
-
-  if (!put.ok) {
-    const txt = await put.text().catch(() => "");
-    throw new Error(`R2 rechazó la subida del video (${put.status}). ${txt}`);
+  if (!r.ok || !data?.ok || !data?.url) {
+    throw new Error(data?.error || data?.detail || "No se pudo subir video a R2.");
   }
 
   return {
     ok: true,
-    url: data.publicUrl,
+    url: data.url,
     key: data.key || "",
     fileName: data.fileName || file.name || `video_${Date.now()}.mp4`,
-    contentType,
-    sizeBytes: file.size,
+    contentType: data.contentType || contentType,
+    sizeBytes: Number(data.sizeBytes || file.size || 0),
     subidaDirectaVideo: true
   };
 }
@@ -1291,8 +1268,10 @@ async function edUrlToDataUrl(url) {
 }
 
 function edBuildR2ProxyUrl(url) {
-  const base = "https://us-central1-vidaabundante-f118a.cloudfunctions.net/descargarImagenR2";
-  return `${base}?url=${encodeURIComponent(url)}`;
+  const u = new URL(R2_PROXY_URL_EDICIONES);
+  u.searchParams.set("url", url);
+  u.searchParams.set("nombre", "edicion");
+  return u.toString();
 }
 
 function edImageDims(dataUrl) {
