@@ -51,6 +51,6 @@ onAuthStateChanged(auth, (user) => {
   if (user) {
     localStorage.setItem("VA_MODO_WEB_OK", "1");
     localStorage.removeItem("VA_CONTINUAR_SIN_LOGIN");
-    window.location.replace("/VidaAbundante/");
+    window.location.replace("/VidaAbundante/?loginOk=1");
   }
 });
