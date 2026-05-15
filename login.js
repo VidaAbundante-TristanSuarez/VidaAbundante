@@ -49,6 +49,7 @@ window.loginGoogle = async () => {
 // SI YA ESTÁ LOGUEADO → APP
 onAuthStateChanged(auth, (user) => {
   if (user) {
-    window.location.replace("/VidaAbundante/");
+    localStorage.removeItem("VA_VISITANTE_OK");
+    window.location.replace("/VidaAbundante/?loginOk=1");
   }
 });
