@@ -1013,9 +1013,13 @@ window.compGuardarImagenCompartidaEnMiPanel = async function compGuardarImagenCo
   const uid = compUidActual();
 
   if (!db || !uid) {
-    alert("Tenés que estar logueado.");
-    return;
+  if (typeof window.abrirLoginParaGuardarMiPanel === "function") {
+    window.abrirLoginParaGuardarMiPanel();
+  } else {
+    window.location.href = "login.html";
   }
+  return;
+}
 
   const item = compUnificarItems().find(x => x.tipo === "imagen" && compImagenKey(x) === key);
 
@@ -1068,9 +1072,13 @@ window.compGuardarDevocionalCompartidoEnMiPanel = async function compGuardarDevo
   const uid = compUidActual();
 
   if (!db || !uid) {
-    alert("Tenés que estar logueado.");
-    return;
+  if (typeof window.abrirLoginParaGuardarMiPanel === "function") {
+    window.abrirLoginParaGuardarMiPanel();
+  } else {
+    window.location.href = "login.html";
   }
+  return;
+}
 
   const item = compUnificarItems().find(x => x.tipo === "devocional" && compDevKey(x) === key);
 
