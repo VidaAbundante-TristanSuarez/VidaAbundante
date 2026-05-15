@@ -6913,7 +6913,10 @@ function asegurarControlColorTextoTema() {
     modal.querySelector(".tema-grid")?.appendChild(box);
   }
 
-  box.style.display = fondoTemaDraft?.seccion === "biblia" ? "flex" : "none";
+ const mostrarTextoBiblico = fondoTemaDraft?.seccion === "biblia";
+
+box.classList.toggle("oculto", !mostrarTextoBiblico);
+box.style.display = mostrarTextoBiblico ? "flex" : "none";
 
   const input = document.getElementById("colorTextoApp");
 
@@ -7025,10 +7028,13 @@ if (nombreImagen) {
     inputColor.dispatchEvent(new Event("change", { bubbles: true }));
   }
 
-  const boxTextoBiblico = document.getElementById("colorTextoAppBox");
-  if (boxTextoBiblico) {
-    boxTextoBiblico.style.display = fondoTemaDraft.seccion === "biblia" ? "flex" : "none";
-  }
+ const boxTextoBiblico = document.getElementById("colorTextoAppBox");
+if (boxTextoBiblico) {
+  const mostrarTextoBiblico = fondoTemaDraft.seccion === "biblia";
+
+  boxTextoBiblico.classList.toggle("oculto", !mostrarTextoBiblico);
+  boxTextoBiblico.style.display = mostrarTextoBiblico ? "flex" : "none";
+}
 
   if (inputTexto) {
     const colorTexto = fondoTemaDraft.colorTexto || "#111111";
@@ -7057,9 +7063,17 @@ window.abrirModalTema = () => {
   const modal = document.getElementById("modalTema");
   if (!modal) return;
 
-  const seccion = getSeccionActualFondoKey();
-  cargarDraftDesdeGuardado(seccion);
-  reflejarDraftEnModal();
+ const seccion = getSeccionActualFondoKey();
+cargarDraftDesdeGuardado(seccion);
+
+// ✅ Si no estoy en Biblia, borro visualmente el control bíblico antes de pintar
+const boxTextoBiblico = document.getElementById("colorTextoAppBox");
+if (boxTextoBiblico && seccion !== "biblia") {
+  boxTextoBiblico.classList.add("oculto");
+  boxTextoBiblico.style.display = "none";
+}
+
+reflejarDraftEnModal();
 
   modal.style.display = "flex";
 
