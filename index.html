@@ -1445,7 +1445,7 @@
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-        .register("/VidaAbundante/service-worker.js")
+        .register("/VidaAbundante/service-worker.js?v=clean-1")
         .catch(err => console.warn("SW error:", err));
     });
   }
