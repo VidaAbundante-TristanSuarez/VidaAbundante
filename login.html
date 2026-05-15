@@ -176,10 +176,13 @@
         <span>Ingresar con Google</span>
       </button>
 
-      <button type="button" class="login-sin-registro" onclick="window.location.href='biblia.html'">
-        Continuar sin iniciar sesión
-      </button>
-
+   <button
+  type="button"
+  class="login-sin-registro"
+  onclick="if(window.VAAppGate){ window.VAAppGate.continuarSinLogin('/VidaAbundante/'); } else { window.location.href='/VidaAbundante/?vaWeb=1'; }"
+>
+  Continuar sin iniciar sesión
+</button>
     </div>
   </main>
 
