@@ -38,6 +38,9 @@ let edicionesDescargadasCache = {};
 let edicionesDescargadasUid = null;
 let edicionesDescargadasEscuchaActiva = false;
 
+let edicionesPublicadasCache = {};
+let edicionesPublicadasEscuchaActiva = false;
+
 function ed$(id) {
   return document.getElementById(id);
 }
@@ -216,6 +219,7 @@ iniciarEscuchaEdiciones();
 iniciarEscuchaEdicionesStats();
 iniciarEscuchaMisEdicionesGuardadas();
 iniciarEscuchaMisEdicionesDescargadas();
+iniciarEscuchaEdicionesPublicadas();
 };
 
 function iniciarEscuchaEdiciones() {
@@ -302,6 +306,51 @@ function edStats(id) {
     descargas: Number(s.descargas || 0),
     compartidos: Number(s.compartidos || 0)
   };
+}
+
+function iniciarEscuchaEdicionesPublicadas() {
+  if (edicionesPublicadasEscuchaActiva) return;
+
+  const db = edDB();
+  if (!db) return;
+
+  onValue(ref(db, "compartidos"), (snap) => {
+    const val = snap.val() || {};
+    edicionesPublicadasCache = {};
+
+    Object.entries(val || {}).forEach(([key, item]) => {
+      if (!item || typeof item !== "object") return;
+
+      // formato actual: compartidos/edicion_ID
+      if (item.tipo === "edicion" && item.edicionId) {
+        edicionesPublicadasCache[item.edicionId] = true;
+      }
+
+      // respaldo por si el id de la ruta ya trae edicion_
+      if (key.startsWith("edicion_")) {
+        edicionesPublicadasCache[key.replace(/^edicion_/, "")] = true;
+      }
+
+      // formato agrupado futuro: compartidos/ediciones/{id}
+      if (key === "ediciones") {
+        Object.entries(item || {}).forEach(([subId, subItem]) => {
+          if (subItem?.tipo === "edicion" && subItem?.edicionId) {
+            edicionesPublicadasCache[subItem.edicionId] = true;
+          } else {
+            edicionesPublicadasCache[subId] = true;
+          }
+        });
+      }
+    });
+
+    renderEdiciones();
+  });
+
+  edicionesPublicadasEscuchaActiva = true;
+}
+
+function edEstaPublicadaEnCompartidos(id) {
+  return !!edicionesPublicadasCache?.[id];
 }
 
 function iniciarEscuchaMisEdicionesDescargadas() {
@@ -444,21 +493,26 @@ function renderEdiciones() {
         <div class="ed-card-body">
           <div class="ed-card-title">${titulo}</div>
 
-                   ${window.__ES_ADMIN ? `
-            <div class="ed-card-actions">
-              <button type="button" onclick="compartirEdicion('${ed.id}', 'compartidos')" title="Enviar a Compartidos">
-                <i class="fa-solid fa-icons"></i>
-              </button>
+                 ${window.__ES_ADMIN ? `
+  <div class="ed-card-actions">
+    <button
+      type="button"
+      class="${edEstaPublicadaEnCompartidos(ed.id) ? "ed-action-saved" : ""}"
+      onclick="compartirEdicion('${ed.id}', 'compartidos')"
+      title="${edEstaPublicadaEnCompartidos(ed.id) ? "Ya está en Compartidos. Tocar para volver a compartir" : "Enviar a Compartidos"}"
+    >
+      <i class="fa-solid ${edEstaPublicadaEnCompartidos(ed.id) ? "fa-circle-check" : "fa-icons"}"></i>
+    </button>
 
-              <button type="button" onclick="editarEdicion('${ed.id}')" title="Editar">
-                <i class="fa-solid fa-pen"></i>
-              </button>
+    <button type="button" onclick="editarEdicion('${ed.id}')" title="Editar">
+      <i class="fa-solid fa-pen"></i>
+    </button>
 
-              <button type="button" class="ed-danger ed-danger-mini" onclick="borrarEdicion('${ed.id}')" title="Borrar">
-                <i class="fa-solid fa-trash"></i>
-              </button>
-            </div>
-          ` : ``}
+    <button type="button" class="ed-danger ed-danger-mini" onclick="borrarEdicion('${ed.id}')" title="Borrar">
+      <i class="fa-solid fa-trash"></i>
+    </button>
+  </div>
+` : ``}
         </div>
       </article>
     `;
@@ -1371,13 +1425,16 @@ function edPedirLoginParaPanel() {
 
 window.compartirEdicion = async (id, destino = "redes") => {
   const ed = await obtenerEdicion(id);
+
   if (!ed) {
     alert("No encontré la edición.");
     return;
   }
 
   const titulo = ed.titulo || "Edición";
- const portadaUrl = edPortadaEdicion(ed);
+  const portadaUrl = typeof edPortadaEdicion === "function"
+    ? edPortadaEdicion(ed)
+    : (ed.portadaUrl || edPaginasArray(ed)[0]?.imagenUrl || "");
 
   if (destino === "compartidos") {
     if (!window.__ES_ADMIN) {
@@ -1386,21 +1443,51 @@ window.compartirEdicion = async (id, destino = "redes") => {
     }
 
     const db = edDB();
+
     if (!db) {
       alert("Firebase no está listo.");
       return;
     }
 
-    await set(ref(db, `compartidos/edicion_${id}`), {
+    const compRef = ref(db, `compartidos/edicion_${id}`);
+    const snap = await get(compRef);
+    const yaEstaba = snap.exists();
+
+    if (yaEstaba) {
+      const ok = confirm(
+        "Esta edición ya está en Compartidos.\n\n¿Volvemos a compartirla para que quede arriba?"
+      );
+
+      if (!ok) return;
+    }
+
+    const ts = Date.now();
+
+    await set(compRef, {
       tipo: "edicion",
       edicionId: id,
       titulo,
       portadaUrl,
-      creadoPor: window.__UID || "",
-      ts: Date.now()
+      creadoPor: snap.val()?.creadoPor || window.__UID || "",
+      actualizadoPor: window.__UID || "",
+      ts,
+      publicadoEn: ts,
+      republicadoEn: yaEstaba ? ts : 0
     });
 
-    alert("Edición enviada a Compartidos.");
+    edicionesPublicadasCache[id] = true;
+    renderEdiciones();
+
+    if (typeof window.renderCompartidos === "function") {
+      window.renderCompartidos();
+    }
+
+    if (typeof mostrarToast === "function") {
+      mostrarToast(yaEstaba ? "✅ Edición compartida nuevamente" : "✅ Edición enviada a Compartidos");
+    } else {
+      alert(yaEstaba ? "Edición compartida nuevamente." : "Edición enviada a Compartidos.");
+    }
+
     return;
   }
 
@@ -1408,22 +1495,27 @@ window.compartirEdicion = async (id, destino = "redes") => {
   const texto = `${titulo}\n${url}`;
 
   try {
-if (navigator.share) {
-  await navigator.share({
-    title: titulo,
-    text: titulo,
-    url
-  });
+    if (navigator.share) {
+      await navigator.share({
+        title: titulo,
+        text: titulo,
+        url
+      });
 
-  await edIncrementarStat(id, "compartidos");
-} else if (navigator.clipboard) {
-  await navigator.clipboard.writeText(texto);
-  await edIncrementarStat(id, "compartidos");
-  alert("Link copiado para compartir.");
-} else {
-  prompt("Copiá este link:", url);
-  await edIncrementarStat(id, "compartidos");
-}
+      await edIncrementarStat(id, "compartidos");
+    } else if (navigator.clipboard) {
+      await navigator.clipboard.writeText(texto);
+      await edIncrementarStat(id, "compartidos");
+
+      if (typeof mostrarToast === "function") {
+        mostrarToast("🔗 Link copiado para compartir");
+      } else {
+        alert("Link copiado para compartir.");
+      }
+    } else {
+      prompt("Copiá este link:", url);
+      await edIncrementarStat(id, "compartidos");
+    }
   } catch (err) {
     console.warn("Compartir cancelado o falló:", err);
   }
