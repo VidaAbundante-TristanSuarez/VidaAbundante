@@ -1398,35 +1398,27 @@ async function subirVideoR2DirectoSubidos(file, estadoEl = null) {
     throw new Error("Tipo de video no permitido. Usá MP4, WEBM o MOV.");
   }
 
-  // ✅ Sin Functions: subimos por Worker.
-  // 30 MB para no romper memoria del navegador/base64.
-  const maxBytes = 30 * 1024 * 1024;
+  const maxBytes = 80 * 1024 * 1024;
 
   if (file.size > maxBytes) {
-    throw new Error(`Video demasiado grande: ${subidosFormatoMB(file.size)} MB. Máximo sin Functions: 30 MB.`);
+    throw new Error(`Video demasiado grande: ${subidosFormatoMB(file.size)} MB. Máximo inicial: 80 MB.`);
   }
 
   if (estadoEl) {
-    estadoEl.textContent = `Preparando video (${subidosFormatoMB(file.size)} MB)...`;
+    estadoEl.textContent = `Subiendo video a R2 (${subidosFormatoMB(file.size)} MB)...`;
   }
 
-  const fileBase64 = await blobToBase64(file);
-
-  if (estadoEl) {
-    estadoEl.textContent = "Subiendo video a R2...";
-  }
+  // ✅ Sin base64 y sin Firebase Functions.
+  // El video viaja como archivo real al Worker.
+  const form = new FormData();
+  form.append("file", file);
+  form.append("destino", "subidos");
+  form.append("folder", "videos/subidos");
+  form.append("contentType", contentType);
 
   const r = await fetch(SUBIDOS_VIDEO_UPLOAD_URL, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      fileBase64,
-      fileName: file.name || `video_${Date.now()}.mp4`,
-      contentType,
-      folder: "videos/subidos"
-    })
+    body: form
   });
 
   const data = await r.json().catch(() => ({}));
@@ -1440,7 +1432,7 @@ async function subirVideoR2DirectoSubidos(file, estadoEl = null) {
     url: data.url,
     key: data.key || "",
     fileName: data.fileName || file.name || `video_${Date.now()}.mp4`,
-    contentType,
+    contentType: data.contentType || contentType,
     sizeBytes: Number(data.sizeBytes || file.size || 0),
     subidaDirectaVideo: true
   };
