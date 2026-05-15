@@ -521,9 +521,32 @@ onAuthStateChanged(auth, async user => {
   window.__UID = uid;
 
   if (!uid) {
-    window.location.href = "login.html";
-    return;
+  // ✅ MODO VISITANTE: permite entrar sin iniciar sesión
+  window.__UID = null;
+  window.__ES_ADMIN = false;
+  window.__ES_COLABORADOR = false;
+
+  try {
+    actualizarPermisosUI();
+  } catch (e) {
+    console.warn("No pude actualizar permisos visitante:", e);
   }
+
+  // ✅ Entrada pública: Compartidos
+  setTimeout(() => {
+    try {
+      if (typeof window.irA === "function") {
+        window.irA("compartidos");
+      } else if (typeof window.mostrarCompartidos === "function") {
+        window.mostrarCompartidos();
+      }
+    } catch (e) {
+      console.warn("No pude abrir Compartidos visitante:", e);
+    }
+  }, 300);
+
+  return;
+}
 
   // ✅ registrar automáticamente al usuario que entró
   await registrarUsuarioActual(user);
