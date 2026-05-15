@@ -3498,55 +3498,6 @@ body.oscuro .panel-marcadores-bar .pm-left .muted{
   color: var(--ui-azul-hover, #1c6fcb) !important;
 }
 
-/* =========================================================
-   MODAL TEMA: COLOR DE TEXTO BÍBLICO + BOLD
-   ========================================================= */
-
-#colorTextoAppBox{
-  flex-direction:column;
-  gap:6px;
-  margin-top:8px;
-}
-
-#colorTextoAppBox .tema-biblia-label{
-  font-weight:800;
-  font-size:13px;
-}
-
-#colorTextoAppBox .tema-biblia-row{
-  display:flex;
-  align-items:center;
-  gap:10px;
-}
-
-#colorTextoAppHost{
-  width:48px !important;
-  min-width:48px !important;
-  height:40px !important;
-  border-radius:10px !important;
-}
-
-#btnBoldTextoBiblia{
-  width:42px;
-  height:40px;
-  min-width:42px;
-  border:none;
-  border-radius:10px;
-  background:var(--ui-azul-claro);
-  color:#000;
-  font-weight:700;
-  font-size:17px;
-  cursor:pointer;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-}
-
-#btnBoldTextoBiblia.activo{
-  background:var(--ui-azul-hover);
-  color:#fff;
-}
-
 /* ================= BOTÓN MENÚ SESIÓN (...) ================= */
 
 #btnMenuSesion.menu-sesion-btn{
@@ -4330,98 +4281,72 @@ body.oscuro .tema-toggle-fondo input:checked + label{
   font-size: 15px;
 }
 
-#colorTextoAppBox {
-  align-items: center;
-}
+/* ================= MODAL APARIENCIA - TEXTO BÍBLICO LIMPIO ================= */
 
-.tema-color-texto-box {
-  width: 100%;
-}
-
-.tema-color-texto-box .tema-control-row {
-  justify-content: flex-start;
-  gap: 10px;
-  flex-wrap: nowrap;
-}
-
-.tema-biblia-label {
-  font-weight: 800;
-  font-size: 12px;
-  white-space: nowrap;
-}
-
-.tema-biblia-row .pickr-host {
-  flex: 0 0 auto;
-}
-
-.btn-bold-biblia {
-  width: 38px;
-  height: 38px;
-  border: none;
-  border-radius: 12px;
-  background: #a6d0ff;
-  color: #fff;
-  font-weight: 900;
-  box-shadow: 0 5px 12px rgba(0,0,0,.14);
-}
-
-.btn-bold-biblia.activo {
-  background: #466966;
-  color: #fff;
-}
-
-/* ================= MODAL APARIENCIA - TEXTO BÍBLICO ================= */
-
-#colorTextoAppBox {
-  width: 100%;
-  align-items: center !important;
-  gap: 10px !important;
-  margin-top: 0 !important;
-}
-
-#colorTextoAppBox .tema-label {
-  flex: 0 0 76px;
-  text-align: left;
-  font-size: 13px;
-  font-weight: 800;
-}
-
-.tema-control-row-texto-biblico {
-  flex: 1;
+#modalTema #colorTextoAppBox {
   display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  width: 100% !important;
+  gap: 10px !important;
+  margin: 0 !important;
+}
+
+#modalTema #colorTextoAppBox .tema-label {
+  flex: 0 0 76px !important;
+  text-align: left !important;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+  color: #000 !important;
+}
+
+#modalTema .tema-control-row-texto-biblico {
+  flex: 1 1 auto !important;
+  display: flex !important;
+  flex-direction: row !important;
   align-items: center !important;
   justify-content: flex-start !important;
   gap: 10px !important;
-  min-height: 42px;
+  min-height: 42px !important;
 }
 
-.tema-control-row-texto-biblico .pickr-host {
-  flex: 0 0 auto !important;
+#modalTema #colorTextoAppHost {
+  width: 42px !important;
+  min-width: 42px !important;
+  height: 38px !important;
+  border-radius: 12px !important;
+  flex: 0 0 42px !important;
 }
 
-.btn-bold-biblia {
-  width: 38px;
-  height: 38px;
-  flex: 0 0 38px;
-  border: none;
-  border-radius: 12px;
-  background: #a6d0ff;
-  color: #fff;
-  font-weight: 900;
-  font-size: 16px;
-  box-shadow: 0 5px 12px rgba(0,0,0,.14);
+#modalTema #btnBoldTextoBiblia,
+#modalTema .btn-bold-biblia {
+  width: 38px !important;
+  min-width: 38px !important;
+  height: 38px !important;
+  flex: 0 0 38px !important;
+  border: none !important;
+  border-radius: 12px !important;
+  background: #a6d0ff !important;
+  color: #fff !important;
+  font-weight: 900 !important;
+  font-size: 16px !important;
+  box-shadow: 0 5px 12px rgba(0,0,0,.14) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
-.btn-bold-biblia.activo {
-  background: #466966;
-  color: #fff;
+#modalTema #btnBoldTextoBiblia.activo,
+#modalTema .btn-bold-biblia.activo {
+  background: #466966 !important;
+  color: #fff !important;
 }
 
-.tema-file-name {
-  max-width: 92px;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+#modalTema .tema-file-name {
+  max-width: 92px !important;
+  overflow: hidden !important;
+  white-space: nowrap !important;
+  text-overflow: ellipsis !important;
 }
 
-  </style> 
+</style> 
