@@ -6,7 +6,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // ================= MODAL 3: AUDIO (BIBLIA) =================
   let __audioTextoOriginal = "";
 
-  // ✅ URL Cloud Function
+  // ✅ URL Worker: el Worker llama al TTS con arpa
   const AUDIO_WEBAPP_URL = "https://subir-imagen-r2.vidaabundante-tristansuarez.workers.dev";
   const AUDIO_R2_UPLOAD_URL = "https://subir-imagen-r2.vidaabundante-tristansuarez.workers.dev";
 
