@@ -49,6 +49,8 @@ window.loginGoogle = async () => {
 // SI YA ESTÁ LOGUEADO → APP
 onAuthStateChanged(auth, (user) => {
   if (user) {
-    window.location.href = "/VidaAbundante/?vaWeb=1";
+    localStorage.setItem("VA_MODO_WEB_OK", "1");
+    localStorage.removeItem("VA_CONTINUAR_SIN_LOGIN");
+    window.location.replace("/VidaAbundante/");
   }
 });
