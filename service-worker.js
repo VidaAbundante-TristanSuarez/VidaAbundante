@@ -1,4 +1,4 @@
-const VA_CACHE = "vida-abundante-app-v3";
+const VA_CACHE = "vida-abundante-app-v4";
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
