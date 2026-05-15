@@ -1,12 +1,12 @@
-/* ================= APP GATE VIDA ABUNDANTE V2 ================= */
-/* Instalar app / Ver en web sin bucles ni pantallas forzadas */
+/* ================= APP GATE VIDA ABUNDANTE V3 ================= */
+/* Instalar app / Ver en web / Login sin bucles */
 
 (function(){
   const KEY_INSTALADA = "VA_APP_INSTALADA";
-  const PARAM_WEB = "vaWeb";
+  const KEY_VER_WEB = "VA_VER_WEB_OK";
+  const KEY_SIN_LOGIN = "VA_SIN_LOGIN_OK";
 
   let deferredPrompt = null;
-  let pasoWebActual = false;
 
   function vaEsStandalone(){
     return (
@@ -22,43 +22,23 @@
     );
   }
 
-  function vaUrlTienePasoWeb(){
-    try {
-      const u = new URL(location.href);
-      return u.searchParams.get(PARAM_WEB) === "1";
-    } catch {
-      return false;
-    }
+  function vaPuedeVerWeb(){
+    return localStorage.getItem(KEY_VER_WEB) === "1";
   }
 
-  function vaLimpiarPasoWebDeUrl(){
-    try {
-      const u = new URL(location.href);
-      if (!u.searchParams.has(PARAM_WEB)) return;
-
-      u.searchParams.delete(PARAM_WEB);
-      history.replaceState({}, "", u.pathname + u.search + u.hash);
-    } catch {}
-  }
-
-  function vaDebeMostrarGate(){
-    if (vaAppInstalada()) return false;
-
-    // ✅ Este parámetro permite pasar UNA sola carga sin mostrar el cartel.
-    // Después se limpia, así al refrescar vuelve a aparecer si no está instalada.
-    if (vaUrlTienePasoWeb()) {
-      pasoWebActual = true;
-      vaLimpiarPasoWebDeUrl();
-      return false;
-    }
-
-    if (pasoWebActual) return false;
-
-    return true;
+  function vaPuedeSinLogin(){
+    return localStorage.getItem(KEY_SIN_LOGIN) === "1";
   }
 
   function vaEsLoginPage(){
     return /\/login\.html$/i.test(location.pathname);
+  }
+
+  function vaHayLogin(){
+    return !!(
+      window.__UID ||
+      window.__FB?.auth?.currentUser?.uid
+    );
   }
 
   function vaCrearEstilos(){
@@ -76,9 +56,9 @@
         justify-content:center;
         padding:18px;
         background:
-          radial-gradient(circle at top left, rgba(166,208,255,.45), transparent 42%),
-          radial-gradient(circle at bottom right, rgba(233,246,255,.70), transparent 42%),
-          linear-gradient(180deg, #ffffff, #eefaff);
+          radial-gradient(circle at top left, rgba(166,208,255,.55), transparent 34%),
+          radial-gradient(circle at bottom right, rgba(233,246,255,.95), transparent 42%),
+          linear-gradient(180deg, #ffffff, #eef8ff);
         font-family: Arial, sans-serif;
         color:#111;
       }
@@ -89,76 +69,117 @@
 
       .va-app-card{
         position:relative;
-        width:min(420px, 92vw);
+        width:min(92vw, 410px);
         padding:30px 24px 24px;
         border-radius:30px;
         background:
-          radial-gradient(circle at top right, rgba(166,208,255,.45), transparent 30%),
-          radial-gradient(circle at bottom left, rgba(233,246,255,.65), transparent 30%),
+          radial-gradient(circle at top left, rgba(166,208,255,.48), transparent 42%),
+          radial-gradient(circle at bottom right, rgba(233,246,255,.9), transparent 48%),
           rgba(255,255,255,.94);
-        box-shadow:0 22px 60px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.9);
-        border:1px solid rgba(166,208,255,.65);
+        border:1px solid rgba(255,255,255,.9);
+        box-shadow:
+          0 22px 60px rgba(0,0,0,.18),
+          inset 0 1px 0 rgba(255,255,255,.9);
         text-align:center;
         overflow:hidden;
       }
 
+      .va-app-card::before{
+        content:"";
+        position:absolute;
+        width:160px;
+        height:160px;
+        right:-75px;
+        top:-75px;
+        border-radius:999px;
+        background:rgba(166,208,255,.38);
+      }
+
+      .va-app-card::after{
+        content:"";
+        position:absolute;
+        width:120px;
+        height:120px;
+        left:-60px;
+        bottom:-60px;
+        border-radius:999px;
+        background:rgba(233,246,255,.9);
+      }
+
+      .va-app-content{
+        position:relative;
+        z-index:2;
+      }
+
       .va-app-icon{
-        width:64px;
-        height:64px;
+        width:62px;
+        height:62px;
         margin:0 auto 14px;
         border-radius:999px;
         display:flex;
         align-items:center;
         justify-content:center;
-        background:#d1eeff;
-        box-shadow:0 8px 22px rgba(0,0,0,.12);
+        background:linear-gradient(180deg, #e9f6ff, #a6d0ff);
+        color:#111;
+        box-shadow:0 10px 24px rgba(0,0,0,.14);
       }
 
-.va-app-icon i{
-  font-size:26px;
-  line-height:1;
-}
+      .va-app-icon i{
+        font-size:26px;
+        line-height:1;
+      }
 
       .va-app-title{
-        margin:0 0 8px;
+        margin:0;
         font-family: Georgia, "Times New Roman", serif;
-        font-size:23px;
-        line-height:1.08;
-        color:#000;
+        font-size:21px;
+        font-weight:900;
+        line-height:1.18;
+        color:#111;
       }
 
       .va-app-text{
-        margin:0 auto 18px;
-        max-width:310px;
+        margin:13px auto 22px;
+        max-width:340px;
         font-size:14px;
-        line-height:1.4;
+        line-height:1.45;
+        color:#263238;
       }
 
       .va-app-actions{
         display:flex;
         flex-direction:column;
         gap:10px;
-        margin-top:12px;
       }
 
       .va-app-btn{
-        border:0;
+        width:100%;
+        min-height:46px;
+        border:none;
         border-radius:999px;
-        padding:13px 16px;
-        font-weight:800;
-        font-size:15px;
+        padding:0 18px;
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        gap:10px;
+        font-weight:900;
+        font-size:14px;
         cursor:pointer;
       }
 
       .va-app-btn-primary{
         background:#a6d0ff;
         color:#000;
-        box-shadow:0 8px 20px rgba(0,0,0,.14);
+        box-shadow:0 8px 18px rgba(0,0,0,.16);
       }
 
       .va-app-btn-light{
+        margin-top:2px;
         background:transparent;
-        color:#000;
+        color:#263238;
+        font-size:13px;
+        font-weight:800;
+        box-shadow:none;
       }
 
       .va-app-ayuda{
@@ -177,14 +198,6 @@
         display:block;
         margin-bottom:4px;
       }
-
-      /* ✅ Centrado vertical general de login */
-      body.va-login-centrado{
-        min-height:100dvh !important;
-        display:flex !important;
-        align-items:center !important;
-        justify-content:center !important;
-      }
     `;
 
     document.head.appendChild(st);
@@ -200,30 +213,33 @@
 
     div.innerHTML = `
       <div class="va-app-card">
-<div class="va-app-icon">
-  <i class="fa-solid fa-dove"></i>
-</div>
+        <div class="va-app-content">
+          <div class="va-app-icon">
+            <i class="fa-solid fa-dove"></i>
+          </div>
 
-<h2 class="va-app-title">
-  Bendecido hermano, bienvenido<br>
-  a Vida Abundante App
-</h2>
+          <h2 class="va-app-title">
+            Bendecido hermano, bienvenido<br>
+            a Vida Abundante App
+          </h2>
 
-<p class="va-app-text">
-  Puedes instalar la app en tu celular, o continuar viéndola desde la web.
-</p>
+          <p class="va-app-text">
+            Puedes instalar la app en tu celular, o continuar viéndola desde la web.
+          </p>
 
-<div class="va-app-actions">
-          <button type="button" class="va-app-btn va-app-btn-primary" id="vaBtnInstalarApp">
-            Descargar app
-          </button>
+          <div class="va-app-actions">
+            <button type="button" class="va-app-btn va-app-btn-primary" id="vaBtnInstalarApp">
+              <i class="fa-solid fa-download"></i>
+              Descargar app
+            </button>
 
-          <button type="button" class="va-app-btn va-app-btn-light" id="vaBtnVerWeb">
-            Ver en web
-          </button>
+            <button type="button" class="va-app-btn va-app-btn-light" id="vaBtnVerWeb">
+              Ver en web
+            </button>
+          </div>
+
+          <div class="va-app-ayuda" id="vaAppAyuda"></div>
         </div>
-
-        <div class="va-app-ayuda" id="vaAppAyuda"></div>
       </div>
     `;
 
@@ -248,28 +264,11 @@
     const ayuda = document.getElementById("vaAppAyuda");
     if (!ayuda) return;
 
-    const esIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-    const esAndroid = /android/i.test(navigator.userAgent);
-
-    if (esIOS) {
-      ayuda.innerHTML = `
-        <strong>Para instalar en iPhone:</strong>
-        Tocá el botón de compartir de Safari y elegí
-        <b>Agregar a pantalla de inicio</b>.
-      `;
-    } else if (esAndroid) {
-      ayuda.innerHTML = `
-        <strong>Para instalar en Android:</strong>
-        Tocá el menú de Chrome ⋮ y elegí
-        <b>Instalar app</b> o <b>Agregar a pantalla principal</b>.
-      `;
-    } else {
-      ayuda.innerHTML = `
-        <strong>Instalación:</strong>
-        Si tu navegador no muestra el cartel automático,
-        buscá la opción <b>Instalar app</b> en el menú del navegador.
-      `;
-    }
+    ayuda.innerHTML = `
+      <strong>No pude abrir la instalación automática.</strong>
+      En algunos celulares el navegador no permite instalar desde un botón.
+      Si querés que sea una descarga directa como archivo, necesitamos hacer una versión APK para Android.
+    `;
 
     ayuda.style.display = "block";
   }
@@ -284,11 +283,13 @@
 
         if (choice?.outcome === "accepted") {
           localStorage.setItem(KEY_INSTALADA, "1");
-          pasoWebActual = true;
+          localStorage.setItem(KEY_VER_WEB, "1");
           vaCerrarGate();
           vaEntradaLimpia();
           return;
         }
+
+        return;
       }
 
       vaMostrarAyudaInstalacion();
@@ -300,50 +301,36 @@
   }
 
   function vaVerEnWeb(){
-    // ✅ Solo vale para esta carga actual.
-    // Si actualizás y no está instalada, vuelve a preguntar.
-    pasoWebActual = true;
+    localStorage.setItem(KEY_VER_WEB, "1");
     vaCerrarGate();
+
+    if (vaEsLoginPage()) return;
+
     vaEntradaLimpia();
   }
 
-  function vaHayLogin(){
-    return !!(
-      window.__UID ||
-      window.__FB?.auth?.currentUser?.uid
-    );
+  function vaIrLogin(){
+    if (vaEsLoginPage()) return;
+
+    localStorage.setItem(KEY_VER_WEB, "1");
+    location.href = "/VidaAbundante/login.html";
   }
 
-  function vaUrlWeb(destino = "/VidaAbundante/"){
-    const u = new URL(destino, location.origin);
-    u.searchParams.set(PARAM_WEB, "1");
-    return u.pathname + u.search + u.hash;
-  }
-
-  function vaAbrirLoginSiExiste(){
-    if (typeof window.abrirLogin === "function") {
-      window.abrirLogin();
-      return true;
-    }
-
-    if (typeof window.toggleMenuSesion === "function") {
-      window.toggleMenuSesion();
-      return true;
-    }
-
-    return false;
+  function vaIrHome(){
+    localStorage.setItem(KEY_VER_WEB, "1");
+    location.href = "/VidaAbundante/";
   }
 
   function vaEntradaLimpia(){
-    // ✅ Si no está instalada y todavía no eligió Ver en web, no dejamos pasar.
-    if (!pasoWebActual && vaDebeMostrarGate()) {
+    // Si no está instalada y nunca eligió web, mostrar cartel.
+    if (!vaAppInstalada() && !vaPuedeVerWeb()) {
       vaMostrarGate();
       return;
     }
 
-    // ✅ Login.html: después de Ver en web, simplemente deja ver sus botones.
+    // En login.html no hacemos nada más: dejamos ver login.
     if (vaEsLoginPage()) {
-      document.body.classList.add("va-login-centrado");
+      vaCerrarGate();
       return;
     }
 
@@ -352,7 +339,7 @@
     const tick = () => {
       intentos++;
 
-      // ✅ Si hay usuario, vamos limpio a Compartidos.
+      // Si está logueado, va a Compartidos.
       if (vaHayLogin()) {
         if (typeof window.irA === "function") {
           try {
@@ -365,11 +352,14 @@
         }
       }
 
-      // ✅ Si no hay usuario, mandamos a login limpio y sin repetir gate.
-      if (intentos > 8 && !vaHayLogin()) {
-        if (vaAbrirLoginSiExiste()) return;
+      // Si eligió continuar sin login, dejamos la web visible sin mandar a login.
+      if (vaPuedeSinLogin()) {
+        return;
+      }
 
-        location.href = vaUrlWeb("/VidaAbundante/login.html");
+      // Si no hay login, mandamos a login una sola vez.
+      if (intentos > 8 && !vaHayLogin()) {
+        vaIrLogin();
         return;
       }
 
@@ -388,7 +378,7 @@
 
   window.addEventListener("appinstalled", () => {
     localStorage.setItem(KEY_INSTALADA, "1");
-    pasoWebActual = true;
+    localStorage.setItem(KEY_VER_WEB, "1");
     vaCerrarGate();
     vaEntradaLimpia();
   });
@@ -398,20 +388,32 @@
     mostrar: vaMostrarGate,
     cerrar: vaCerrarGate,
     entradaLimpia: vaEntradaLimpia,
-    urlWeb: vaUrlWeb,
-    continuarSinLogin: function(destino = "/VidaAbundante/"){
-      location.href = vaUrlWeb(destino);
+
+    verWeb: function(){
+      localStorage.setItem(KEY_VER_WEB, "1");
+      vaCerrarGate();
+    },
+
+    continuarSinLogin: function(){
+      localStorage.setItem(KEY_VER_WEB, "1");
+      localStorage.setItem(KEY_SIN_LOGIN, "1");
+      vaIrHome();
+    },
+
+    cerrarSesion: function(){
+      localStorage.removeItem(KEY_SIN_LOGIN);
+    },
+
+    resetPrueba: function(){
+      localStorage.removeItem(KEY_INSTALADA);
+      localStorage.removeItem(KEY_VER_WEB);
+      localStorage.removeItem(KEY_SIN_LOGIN);
+      location.href = "/VidaAbundante/";
     }
   };
 
   document.addEventListener("DOMContentLoaded", () => {
     vaCrearGate();
-
-    if (vaDebeMostrarGate()) {
-      vaMostrarGate();
-      return;
-    }
-
     vaEntradaLimpia();
   });
 })();
