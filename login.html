@@ -148,6 +148,8 @@
       cursor: pointer;
       padding: 8px 10px;
       border-radius: 999px;
+      display: inline-block;
+text-decoration: none;
     }
 
     .login-sin-registro:hover {
@@ -175,17 +177,12 @@
         <span>Ingresar con Google</span>
       </button>
 
-  <button
-  type="button"
+ <a
   class="login-sin-registro"
-  onclick="
-    localStorage.setItem('VA_MODO_WEB_OK', '1');
-    localStorage.setItem('VA_CONTINUAR_SIN_LOGIN', '1');
-    window.location.replace('/VidaAbundante/?sinLogin=1');
-  "
+  href="/VidaAbundante/?sinLogin=1"
 >
   Continuar sin iniciar sesión
-</button>
+</a>
       
     </div>
   </main>
