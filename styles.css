@@ -4370,4 +4370,58 @@ body.oscuro .tema-toggle-fondo input:checked + label{
   color: #fff;
 }
 
+/* ================= MODAL APARIENCIA - TEXTO BÍBLICO ================= */
+
+#colorTextoAppBox {
+  width: 100%;
+  align-items: center !important;
+  gap: 10px !important;
+  margin-top: 0 !important;
+}
+
+#colorTextoAppBox .tema-label {
+  flex: 0 0 76px;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.tema-control-row-texto-biblico {
+  flex: 1;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 10px !important;
+  min-height: 42px;
+}
+
+.tema-control-row-texto-biblico .pickr-host {
+  flex: 0 0 auto !important;
+}
+
+.btn-bold-biblia {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  border: none;
+  border-radius: 12px;
+  background: #a6d0ff;
+  color: #fff;
+  font-weight: 900;
+  font-size: 16px;
+  box-shadow: 0 5px 12px rgba(0,0,0,.14);
+}
+
+.btn-bold-biblia.activo {
+  background: #466966;
+  color: #fff;
+}
+
+.tema-file-name {
+  max-width: 92px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
   </style> 
