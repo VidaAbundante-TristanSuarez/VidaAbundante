@@ -2,7 +2,7 @@
   "name": "Vida Abundante",
   "short_name": "Vida Abundante",
   "description": "Iglesia Cristiana de la Vida Abundante",
-  "start_url": "/VidaAbundante/biblia.html",
+  "start_url": "/VidaAbundante/",
   "scope": "/VidaAbundante/",
   "display": "standalone",
   "background_color": "#fff8ea",
