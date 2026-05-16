@@ -1261,6 +1261,8 @@ window.abrirPresentacionEdicion = async (id) => {
     </div>
   `;
 
+  edPrepararVisorEdicion(viewer);
+
   viewer.classList.add("ed-open");
   document.body.style.overflow = "hidden";
   edIntentarPantallaCompleta(viewer);
@@ -1282,8 +1284,161 @@ function edIntentarPantallaCompleta(el) {
   } catch (_) {}
 }
 
+function edAjustarViewportEdiciones() {
+  const h =
+    window.visualViewport?.height ||
+    window.innerHeight ||
+    document.documentElement.clientHeight ||
+    0;
+
+  if (h) {
+    document.documentElement.style.setProperty("--ed-vh", `${h}px`);
+  }
+}
+
+function edActivarViewportEdiciones() {
+  if (window.__ED_VIEWPORT_LISTENER_OK) return;
+
+  window.__ED_VIEWPORT_LISTENER_OK = true;
+
+  edAjustarViewportEdiciones();
+
+  window.addEventListener("resize", edAjustarViewportEdiciones);
+
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", edAjustarViewportEdiciones);
+    window.visualViewport.addEventListener("scroll", edAjustarViewportEdiciones);
+  }
+}
+
+function edPausarMediosEdicion(excepto = null) {
+  document.querySelectorAll("#edViewer audio, #edViewer video").forEach((media) => {
+    if (excepto && media === excepto) return;
+
+    try {
+      media.pause();
+    } catch (_) {}
+  });
+}
+
+function edIndiceSlideActual(slides = null) {
+  const cont = slides || document.querySelector("#edViewer .ed-slides");
+  if (!cont) return 0;
+
+  const ancho = cont.clientWidth || window.innerWidth || 1;
+  return Math.round(cont.scrollLeft / ancho);
+}
+
+function edIrASlide(indice, behavior = "smooth") {
+  const slides = document.querySelector("#edViewer .ed-slides");
+  if (!slides) return;
+
+  const total = slides.querySelectorAll(".ed-slide").length;
+  if (!total) return;
+
+  const ancho = slides.clientWidth || window.innerWidth || 1;
+  const seguro = Math.max(0, Math.min(total - 1, Number(indice || 0)));
+
+  edPausarMediosEdicion();
+
+  slides.dataset.edSlideActual = String(seguro);
+
+  slides.scrollTo({
+    left: seguro * ancho,
+    behavior
+  });
+}
+
+function edPrepararVisorEdicion(viewer) {
+  if (!viewer) return;
+
+  edActivarViewportEdiciones();
+
+  const slides = viewer.querySelector(".ed-slides");
+  if (!slides) return;
+
+  slides.dataset.edSlideActual = "0";
+
+  // ✅ Si un audio/video empieza, se detienen todos los demás.
+  viewer.querySelectorAll("audio, video").forEach((media) => {
+    media.addEventListener("play", () => {
+      edPausarMediosEdicion(media);
+    });
+  });
+
+  let scrollTimer = null;
+
+  // ✅ Si cambia la página por scroll, se detienen los audios.
+  slides.addEventListener("scroll", () => {
+    clearTimeout(scrollTimer);
+
+    scrollTimer = setTimeout(() => {
+      const actual = edIndiceSlideActual(slides);
+
+      if (slides.dataset.edSlideActual !== String(actual)) {
+        slides.dataset.edSlideActual = String(actual);
+        edPausarMediosEdicion();
+      }
+
+      // Corrige para que quede clavado en una página.
+      edIrASlide(actual, "smooth");
+    }, 120);
+  }, { passive: true });
+
+  let touchActivo = false;
+  let touchX = 0;
+  let touchY = 0;
+  let touchInicioIndice = 0;
+
+  slides.addEventListener("touchstart", (e) => {
+    if (e.target?.closest?.("audio, video, button, input, select, textarea")) return;
+
+    const t = e.touches?.[0];
+    if (!t) return;
+
+    touchActivo = true;
+    touchX = t.clientX;
+    touchY = t.clientY;
+    touchInicioIndice = edIndiceSlideActual(slides);
+  }, { passive: true });
+
+  slides.addEventListener("touchend", (e) => {
+    if (!touchActivo) return;
+
+    touchActivo = false;
+
+    const t = e.changedTouches?.[0];
+    if (!t) return;
+
+    const dx = t.clientX - touchX;
+    const dy = t.clientY - touchY;
+
+    const total = slides.querySelectorAll(".ed-slide").length;
+    let destino = touchInicioIndice;
+
+    // ✅ Un gesto = máximo una página.
+    if (Math.abs(dx) > 35 && Math.abs(dx) > Math.abs(dy)) {
+      destino = touchInicioIndice + (dx < 0 ? 1 : -1);
+    }
+
+    destino = Math.max(0, Math.min(total - 1, destino));
+
+    edPausarMediosEdicion();
+
+    setTimeout(() => edIrASlide(destino, "smooth"), 30);
+    setTimeout(() => edIrASlide(destino, "smooth"), 180);
+    setTimeout(() => edIrASlide(destino, "smooth"), 360);
+  }, { passive: true });
+
+  slides.addEventListener("touchcancel", () => {
+    touchActivo = false;
+  }, { passive: true });
+}
+
 window.cerrarPresentacionEdicion = () => {
   const veniaDeLinkDirecto = document.body.classList.contains("ed-link-directo");
+
+  edPausarMediosEdicion();
 
   const viewer = ed$("edViewer");
   if (viewer) {
@@ -1322,19 +1477,14 @@ window.edMoverSlide = (dir = 1) => {
   const total = slides.querySelectorAll(".ed-slide").length;
   if (!total) return;
 
-  const ancho = slides.clientWidth || window.innerWidth || 1;
-  const actual = Math.round(slides.scrollLeft / ancho);
+  const actual = edIndiceSlideActual(slides);
 
   let siguiente = actual + Number(dir || 1);
 
-  // Si llega al final vuelve al inicio, y si va atrás desde la primera va a la última.
   if (siguiente < 0) siguiente = total - 1;
   if (siguiente >= total) siguiente = 0;
 
-  slides.scrollTo({
-    left: siguiente * ancho,
-    behavior: "smooth"
-  });
+  edIrASlide(siguiente, "smooth");
 };
 
 document.addEventListener("keydown", (e) => {
