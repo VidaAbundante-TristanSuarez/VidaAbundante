@@ -1468,9 +1468,15 @@ function compColorContraste(hex = "#ffffff") {
 }
 
 function compRenderOracionesDevocionalHTML(item) {
-  const oraciones = compDevOracionesVisibles(item.uidOwner, item.tsKey);
+  const uidOwner = String(item.uidOwner || item.sourceUid || item.ownerUid || item.devocionalUid || "");
+  const tsKey = Number(item.tsKey || item.sourceTs || item.devocionalTs || item.fecha || item.ts || 0);
+
+  const oraciones = compDevOracionesVisibles(uidOwner, tsKey);
 
   if (!oraciones.length) return "";
+
+  const uidActual = compUidActual();
+  const admin = compEsAdmin();
 
   return `
     <div class="comp-dev-oraciones-wrap">
@@ -1480,9 +1486,11 @@ function compRenderOracionesDevocionalHTML(item) {
         ${oraciones.map(o => {
           const fondo = o.color || "#f5f5f5";
           const colorTexto = compColorContraste(fondo);
-          const autor = (compUidActual() && o.autorUid === compUidActual())
-  ? "Tú"
-  : (o.autorNombre || o.nombreAutor || "Hermano/a");
+
+          const autor = (uidActual && o.autorUid === uidActual)
+            ? "Tú"
+            : (o.autorNombre || o.nombreAutor || "Hermano/a");
+
           const fechaTxt = o.fecha
             ? new Date(o.fecha).toLocaleDateString("es-AR", {
                 day: "2-digit",
@@ -1491,14 +1499,44 @@ function compRenderOracionesDevocionalHTML(item) {
               })
             : "";
 
+          const oracionId = String(o.id || o.comentId || o.key || "");
+
+          const puedeEditar = !!oracionId && (
+            admin ||
+            (uidActual && o.autorUid === uidActual)
+          );
+
           return `
-            <div class="comp-dev-oracion" style="background:${compEscape(fondo)}; color:${colorTexto};">
+            <div class="comp-dev-oracion" style="background:${compEscape(fondo)}; color:${compEscape(colorTexto)};">
               <div class="comp-dev-oracion-top">
                 <span>${compEscape(autor)}</span>
                 <span>${compEscape(fechaTxt)}</span>
               </div>
 
               <div class="comp-dev-oracion-texto">${compEscape(o.texto || "")}</div>
+
+              ${puedeEditar ? `
+                <div class="comp-dev-oracion-actions">
+                  <button
+                    type="button"
+                    onclick="devEditarOracionPropia('${compJs(uidOwner)}','${compJs(tsKey)}','${compJs(oracionId)}')"
+                    title="Editar oración"
+                  >
+                    <i class="fa-solid fa-pen"></i>
+                    Editar
+                  </button>
+
+                  <button
+                    type="button"
+                    class="comp-dev-oracion-delete"
+                    onclick="devBorrarOracionPropia('${compJs(uidOwner)}','${compJs(tsKey)}','${compJs(oracionId)}')"
+                    title="Borrar oración"
+                  >
+                    <i class="fa-solid fa-trash"></i>
+                    Borrar
+                  </button>
+                </div>
+              ` : ``}
             </div>
           `;
         }).join("")}
