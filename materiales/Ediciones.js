@@ -1204,6 +1204,28 @@ window.abrirPresentacionEdicion = async (id) => {
       </div>
     </div>
 
+    ${paginas.length > 1 ? `
+      <button
+        type="button"
+        class="ed-nav-btn ed-nav-prev"
+        onclick="edMoverSlide(-1)"
+        title="Página anterior"
+        aria-label="Página anterior"
+      >
+        <i class="fa-solid fa-chevron-left"></i>
+      </button>
+
+      <button
+        type="button"
+        class="ed-nav-btn ed-nav-next"
+        onclick="edMoverSlide(1)"
+        title="Página siguiente"
+        aria-label="Página siguiente"
+      >
+        <i class="fa-solid fa-chevron-right"></i>
+      </button>
+    ` : ``}
+
     <div class="ed-slides">
       ${paginas.map((p, i) => `
         <section class="ed-slide">
@@ -1293,9 +1315,44 @@ window.cerrarPresentacionEdicion = () => {
   }
 };
 
+window.edMoverSlide = (dir = 1) => {
+  const slides = document.querySelector("#edViewer .ed-slides");
+  if (!slides) return;
+
+  const total = slides.querySelectorAll(".ed-slide").length;
+  if (!total) return;
+
+  const ancho = slides.clientWidth || window.innerWidth || 1;
+  const actual = Math.round(slides.scrollLeft / ancho);
+
+  let siguiente = actual + Number(dir || 1);
+
+  // Si llega al final vuelve al inicio, y si va atrás desde la primera va a la última.
+  if (siguiente < 0) siguiente = total - 1;
+  if (siguiente >= total) siguiente = 0;
+
+  slides.scrollTo({
+    left: siguiente * ancho,
+    behavior: "smooth"
+  });
+};
+
 document.addEventListener("keydown", (e) => {
+  const viewerAbierto = document.querySelector("#edViewer.ed-open");
+
   if (e.key === "Escape") {
     cerrarPresentacionEdicion();
+    return;
+  }
+
+  if (!viewerAbierto) return;
+
+  if (e.key === "ArrowRight") {
+    edMoverSlide(1);
+  }
+
+  if (e.key === "ArrowLeft") {
+    edMoverSlide(-1);
   }
 });
 
