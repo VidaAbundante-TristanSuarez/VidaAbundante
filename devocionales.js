@@ -1187,6 +1187,14 @@ function cerrarModal(id){
   const m = $(id);
   if (!m) return;
 
+  // ✅ si el foco quedó adentro del modal, lo sacamos antes de ocultarlo
+  // evita el warning de aria-hidden y que quede “trabado” visualmente
+  try {
+    if (m.contains(document.activeElement)) {
+      document.activeElement.blur();
+    }
+  } catch {}
+
   // ✅ cerrar SOLO con clase
   m.classList.remove("abierto");
   m.setAttribute("aria-hidden","true");
@@ -5261,6 +5269,33 @@ window.devCerrarListaOraciones = function(){
   cerrarModal("modalDevListaOraciones");
 };
 
+function devCerrarPantallasOracion(){
+  try {
+    const activo = document.activeElement;
+    if (activo && typeof activo.blur === "function") activo.blur();
+  } catch {}
+
+  cerrarModal("modalDevListaOraciones");
+  cerrarModal("modalDevOracion");
+
+  const alguno = document.querySelector(".modal-overlay.abierto");
+  if (!alguno) document.body.classList.remove("modal-open");
+}
+
+function devRefrescarPantallaTrasOracion(){
+  try {
+    if (typeof window.renderCompartidos === "function") {
+      window.renderCompartidos();
+    }
+  } catch {}
+
+  try {
+    if (typeof cargarDevocionales === "function") {
+      cargarDevocionales();
+    }
+  } catch {}
+}
+
 window.devBorrarOracionPropia = async function(uidOwner, tsKey, comentId){
   const fb = window.__FB;
   const api = window.__FB_API;
@@ -5276,6 +5311,11 @@ window.devBorrarOracionPropia = async function(uidOwner, tsKey, comentId){
 
   const { db } = fb;
   const { ref, remove } = api;
+
+  if (typeof remove !== "function") {
+    alert("❌ Firebase remove no está listo.");
+    return;
+  }
 
   try{
     const paths = devOracionPaths(uidOwner, tsKey, comentId);
@@ -5295,8 +5335,14 @@ window.devBorrarOracionPropia = async function(uidOwner, tsKey, comentId){
       throw res.find(r => r.status === "rejected")?.reason || new Error("No se pudo borrar.");
     }
 
-    if (typeof devToast === "function") devToast("🗑 Oración borrada");
-    await window.devAbrirListaOraciones(uidOwner, tsKey);
+    if (typeof devToast === "function") {
+      devToast("🗑 Oración borrada");
+    }
+
+    // ✅ NO volvemos a abrir el modal de lista.
+    // Cerramos y volvemos a la pantalla normal donde estabas.
+    devCerrarPantallasOracion();
+    devRefrescarPantallaTrasOracion();
 
   } catch(e){
     console.error(e);
@@ -5315,7 +5361,14 @@ window.devEditarOracionPropia = async function(uidOwner, tsKey, comentId){
   }
 
   const { db } = fb;
-  const { ref, update } = api;
+  const { ref, set } = api;
+
+  // ✅ No usamos update porque en tu app window.__FB_API.update no está cargado.
+  // Usamos set conservando todos los datos anteriores.
+  if (typeof set !== "function") {
+    alert("❌ Firebase set no está listo.");
+    return;
+  }
 
   try{
     const data = await devBuscarOracionData(uidOwner, tsKey, comentId);
@@ -5341,19 +5394,38 @@ window.devEditarOracionPropia = async function(uidOwner, tsKey, comentId){
 
     const paths = devOracionPaths(uidOwner, tsKey, comentId);
 
-    const updateData = {
+    const dataActualizadaBase = {
+      ...data,
+      autorUid: data.autorUid || uid,
       texto: limpio,
       editado: Date.now()
     };
 
     const targets = [
-      paths.privadaItem,
-      paths.miaItem,
-      data.publica === true ? paths.publicaItem : ""
-    ].filter(Boolean);
+      {
+        path: paths.privadaItem,
+        data: dataActualizadaBase
+      },
+      {
+        path: paths.miaItem,
+        data: {
+          ...dataActualizadaBase,
+          uidOwner: String(uidOwner || ""),
+          tsKey: Number(tsKey || 0)
+        }
+      },
+      dataActualizadaBase.publica === true ? {
+        path: paths.publicaItem,
+        data: {
+          ...dataActualizadaBase,
+          uidOwner: String(uidOwner || ""),
+          tsKey: Number(tsKey || 0)
+        }
+      } : null
+    ].filter(x => x && x.path);
 
     const res = await Promise.allSettled(
-      targets.map(path => update(ref(db, path), updateData))
+      targets.map(t => set(ref(db, t.path), t.data))
     );
 
     const algunoOk = res.some(r => r.status === "fulfilled");
@@ -5362,8 +5434,14 @@ window.devEditarOracionPropia = async function(uidOwner, tsKey, comentId){
       throw res.find(r => r.status === "rejected")?.reason || new Error("No se pudo editar.");
     }
 
-    if (typeof devToast === "function") devToast("✏️ Oración actualizada");
-    await window.devAbrirListaOraciones(uidOwner, tsKey);
+    if (typeof devToast === "function") {
+      devToast("✏️ Oración actualizada");
+    }
+
+    // ✅ No abrimos modal después de editar.
+    // Volvemos a la pantalla normal.
+    devCerrarPantallasOracion();
+    devRefrescarPantallaTrasOracion();
 
   } catch(e){
     console.error(e);
