@@ -3497,6 +3497,7 @@ function devCrearModalCompartirPublicado(){
   div.id = "modalDevCompartirPublicado";
   div.className = "modal-overlay";
   div.setAttribute("aria-hidden", "true");
+     div.style.zIndex = "100000";
 
   div.innerHTML = `
     <div class="modal-contenido modal-dev" style="
@@ -3557,8 +3558,13 @@ window.devCerrarModalCompartirPublicado = function(cerrarTodo = true){
 };
 
 window.devCompartirPublicadoAhora = async function(){
-  await window.devCompartirFinal();
-  window.devCerrarModalCompartirPublicado(true);
+  const ok = await window.devCompartirFinal();
+
+  // ✅ Solo cerramos y reseteamos si realmente compartió.
+  // Si todavía no estaba listo, el modal queda abierto y no se pierde el archivo.
+  if (ok) {
+    window.devCerrarModalCompartirPublicado(true);
+  }
 };
 
 window.devDescargarPublicadoAhora = async function(){
@@ -3580,8 +3586,13 @@ function safeFilePart(s){
     .slice(0, 60);
 }
 
-window.devDescargarFinal = async () => {
-  devBusyShow("⏳ Preparando audio…");
+window.devDescargarFinal = async (opts = {}) => {
+  const silent = !!opts.silent;
+  const descargarLocal = opts.descargarLocal !== false;
+
+  if (!silent) {
+    devBusyShow("⏳ Preparando audio…");
+  }
 
   try {
     let pack = null;
@@ -3602,10 +3613,10 @@ window.devDescargarFinal = async () => {
     // 3) si no existe, generarlo automáticamente
     if (!pack?.base64 || !pack?.blob) {
       window.__AUDIO_VOICE_NAME = "es-US-Neural2-B";
+
       const texto = (DEV.audioText || "").trim();
       if (!texto) {
-        alert("No hay texto para audio.");
-        return;
+        throw new Error("No hay texto para audio.");
       }
 
       const r = await fetch(TTS_URL, {
@@ -3619,8 +3630,7 @@ window.devDescargarFinal = async () => {
 
       const data = await r.json().catch(() => ({}));
       if (!r.ok || !data?.audioBase64) {
-        alert("No pude generar el audio automáticamente.");
-        return;
+        throw new Error(data?.error || data?.detail || "No pude generar el audio automáticamente.");
       }
 
       const bytes = Uint8Array.from(atob(data.audioBase64), c => c.charCodeAt(0));
@@ -3631,51 +3641,77 @@ window.devDescargarFinal = async () => {
 
     // 4) subir a GitHub opcional
     let gh = null;
+
     if (DEV.subirAudioGithub) {
       try {
         gh = await subirAudioAGithubDesdeWeb(pack.base64);
         DEV.audioGithubUrl = gh.url || "";
       } catch (e) {
         console.warn("GitHub upload falló:", e);
+
+        // ✅ En finalizar/compartir no seguimos si GitHub era requerido
+        if (silent) {
+          throw e;
+        }
+
         alert("⚠️ No pude subir a GitHub, pero igual te lo descargo.\n\nDetalle: " + (e?.message || e));
       }
     } else {
       DEV.audioGithubUrl = "";
     }
 
-    // 5) descargar local siempre
-    const fecha = DEV?.p1?.fecha || "sin_fecha";
-    const baseName = "Audio_" + safeFilePart(fecha);
+    // 5) descargar local solo cuando corresponde
+    if (descargarLocal) {
+      const fecha = DEV?.p1?.fecha || "sin_fecha";
+      const baseName = "Audio_" + safeFilePart(fecha);
 
-    const ext =
-      pack.blob.type.includes("wav")  ? "wav" :
-      pack.blob.type.includes("ogg")  ? "ogg" :
-      pack.blob.type.includes("mpeg") ? "mp3" :
-      "mp3";
+      const ext =
+        pack.blob.type.includes("wav")  ? "wav" :
+        pack.blob.type.includes("ogg")  ? "ogg" :
+        pack.blob.type.includes("mpeg") ? "mp3" :
+        "mp3";
 
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(pack.blob);
-    a.download = `${baseName}.${ext}`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(pack.blob);
+      a.download = `${baseName}.${ext}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    }
 
     DEV.audioOk = true;
     devSetFinalButtons(true);
     devUpdateAudioManualUI();
 
-    if (gh?.url) {
-      alert("✅ Audio subido a GitHub y descargado.\n\nURL:\n" + gh.url);
-    } else {
-      alert("✅ Audio descargado.");
+    if (!silent) {
+      if (gh?.url) {
+        alert("✅ Audio subido a GitHub y descargado.\n\nURL:\n" + gh.url);
+      } else if (descargarLocal) {
+        alert("✅ Audio descargado.");
+      } else {
+        alert("✅ Audio preparado.");
+      }
     }
+
+    return {
+      ok: true,
+      githubUrl: DEV.audioGithubUrl || ""
+    };
 
   } catch (e) {
     console.error(e);
-    alert("❌ No se pudo descargar/subir el audio.\n\nDetalle: " + (e?.message || e));
+
+    if (!silent) {
+      alert("❌ No se pudo descargar/subir el audio.\n\nDetalle: " + (e?.message || e));
+    }
+
+    throw e;
+
   } finally {
-    devBusyHide();
+    if (!silent) {
+      devBusyHide();
+    }
   }
 };
 
@@ -3829,7 +3865,7 @@ window.devFinalizar = async () => {
     if (DEV.requiereAudio && DEV.subirAudioGithub && !DEV.audioGithubUrl) {
       devBusyShow("⏳ Subiendo audio a GitHub…");
 
-      await window.devDescargarFinal();
+      await window.devDescargarFinal({ silent: true, descargarLocal: false });
 
       if (!DEV.audioGithubUrl) {
         throw new Error("El audio no quedó subido a GitHub. Revisá el audio o la Function de GitHub.");
@@ -3853,13 +3889,16 @@ window.devFinalizar = async () => {
     devBusyShow("⏳ Preparando compartir…");
     await devAsegurarShareFinalListo();
 
-       devBusyHide();
+    devBusyHide();
+
+    // ✅ MUY IMPORTANTE:
+    // Cerramos solo Fase 3, NO devCerrarTodo(),
+    // porque devCerrarTodo borra window.__devFinalCanvas y window.__devFinalFile.
+    cerrarModal("modalDevFase3");
 
     devToast("✅ Publicado. Elegí cómo compartir…");
 
-    // ✅ Importante:
-    // No llamamos navigator.share automáticamente después de procesos async.
-    // Abrimos un modal propio y el usuario toca "Compartir ahora".
+    // ✅ Ahora el modal ya no queda escondido detrás de Fase 3.
     window.devAbrirModalCompartirPublicado();
 
   } catch (e) {
@@ -4273,13 +4312,19 @@ window.devAbrirModalOracion = function(uidOwner, tsKey){
   DEV.oracionDevTs = Number(tsKey || 0);
   DEV.oracionDevActual = `${DEV.oracionDevOwner}_${DEV.oracionDevTs}`;
 
+  if (!DEV.oracionDevOwner || !DEV.oracionDevTs) {
+    alert("No encontré el devocional para adjuntar la oración.");
+    return;
+  }
+
   const ta = document.getElementById("devOracionTexto");
   const chk = document.getElementById("devOracionPublica");
-  const color = document.getElementById("devOracionColor");
 
   if (ta) ta.value = "";
   if (chk) chk.checked = true;
-  if (color) color.value = "#fff4b8";
+
+  // ✅ resetea valor real + color visual del selector
+  devSetColorOracionVisual(DEV_ORACION_COLOR_DEFAULT);
 
   devPrivacidadLabel();
   abrirModal("modalDevOracion");
@@ -4288,6 +4333,11 @@ window.devAbrirModalOracion = function(uidOwner, tsKey){
     if (typeof window.initPickrEnHosts === "function") {
       window.initPickrEnHosts("#devOracionColorHost");
     }
+
+    // ✅ lo repetimos después de inicializar Pickr,
+    // porque Pickr a veces recuerda visualmente el color anterior
+    devSetColorOracionVisual(DEV_ORACION_COLOR_DEFAULT);
+
     document.getElementById("devOracionTexto")?.focus();
   }, 80);
 };
@@ -4308,7 +4358,7 @@ window.devGuardarOracionDevocional = async function(){
 
   const texto = (document.getElementById("devOracionTexto")?.value || "").trim();
   const publica = !!document.getElementById("devOracionPublica")?.checked;
-  const color = document.getElementById("devOracionColor")?.value || "#fff4b8";
+  const color = devLeerColorOracionSeguro();
 
   if (!texto) {
     alert("Escribí algo primero.");
@@ -4324,41 +4374,45 @@ window.devGuardarOracionDevocional = async function(){
   const { ref, push, set } = api;
 
   try {
-    const baseRef = ref(
-      db,
-      `devocionalesOraciones/${DEV.oracionDevOwner}/${DEV.oracionDevTs}`
-    );
+    const pathsBase = devOracionPaths(DEV.oracionDevOwner, DEV.oracionDevTs);
+    const newRef = push(ref(db, pathsBase.basePrivada));
+    const comentId = newRef.key;
 
-    const newRef = push(baseRef);
+    const paths = devOracionPaths(DEV.oracionDevOwner, DEV.oracionDevTs, comentId);
 
-const oracionData = {
-  autorUid: uid,
-  texto,
-  publica,
-  destacado: false,
-  color,
-  fecha: Date.now()
-};
+    const oracionData = {
+      autorUid: uid,
+      texto,
+      publica,
+      destacado: false,
+      color,
+      fecha: Date.now()
+    };
 
-await set(newRef, oracionData);
+    // ✅ copia principal relacionada al devocional
+    await set(ref(db, paths.privadaItem), oracionData);
 
-// ✅ Si la oración fue marcada como pública,
-// guardamos una copia pública separada para Compartidos.
-if (publica === true) {
-  await set(
-    ref(
-      db,
-      `devocionalesOracionesPublicas/${DEV.oracionDevOwner}/${DEV.oracionDevTs}/${newRef.key}`
-    ),
-    oracionData
-  );
-}
+    // ✅ copia propia del autor: permite editar/borrar aunque estés viendo desde Compartidos
+    if (paths.miaItem) {
+      set(ref(db, paths.miaItem), {
+        ...oracionData,
+        uidOwner: DEV.oracionDevOwner,
+        tsKey: DEV.oracionDevTs
+      }).catch(e => console.warn("No se pudo guardar copia propia de oración:", e));
+    }
+
+    // ✅ copia pública separada para poder leer desde Compartidos sin permission_denied
+    if (publica === true) {
+      set(ref(db, paths.publicaItem), oracionData)
+        .catch(e => console.warn("No se pudo guardar copia pública de oración:", e));
+    }
 
     if (typeof devToast === "function") {
       devToast("🙏 Guardado");
     }
 
     devCerrarModalOracion();
+
   } catch (e) {
     console.error(e);
     alert("❌ No se pudo guardar.\n\nDetalle: " + (e?.message || e));
@@ -4696,6 +4750,132 @@ function devJs(v = "") {
     .replace(/\r?\n/g, " ");
 }
 
+/* =========================================================
+   ORACIONES DEVOCIONAL — helpers seguros
+   ========================================================= */
+const DEV_ORACION_COLOR_DEFAULT = "#fff4b8";
+
+function devColorHexValido(hex){
+  return /^#[0-9a-fA-F]{6}$/.test(String(hex || "").trim());
+}
+
+function devSetColorOracionVisual(color = DEV_ORACION_COLOR_DEFAULT){
+  const c = devColorHexValido(color) ? color : DEV_ORACION_COLOR_DEFAULT;
+
+  const input = document.getElementById("devOracionColor");
+  if (input) input.value = c;
+
+  const host = document.getElementById("devOracionColorHost");
+  if (!host) return;
+
+  host.dataset.color = c;
+  host.dataset.value = c;
+  host.style.background = c;
+  host.style.backgroundColor = c;
+  host.style.setProperty("--pickr-color", c);
+
+  const interno = host.querySelector(".pcr-button, button");
+  if (interno) {
+    interno.style.background = c;
+    interno.style.backgroundColor = c;
+    interno.style.color = c;
+  }
+
+  ["_pickr", "__pickr", "pickr"].forEach(k => {
+    try {
+      if (host[k] && typeof host[k].setColor === "function") {
+        host[k].setColor(c, true);
+      }
+    } catch {}
+  });
+}
+
+function devLeerColorOracionSeguro(){
+  const v = document.getElementById("devOracionColor")?.value || DEV_ORACION_COLOR_DEFAULT;
+  return devColorHexValido(v) ? v : DEV_ORACION_COLOR_DEFAULT;
+}
+
+function devEsErrorPermiso(e){
+  return /permission_denied|permission denied/i.test(
+    String(e?.message || e?.code || e || "")
+  );
+}
+
+function devOracionPaths(uidOwner, tsKey, comentId = ""){
+  const owner = String(uidOwner || "");
+  const ts = String(tsKey || "");
+  const id = String(comentId || "");
+  const uid = window.__UID || "";
+
+  const basePrivada = `devocionalesOraciones/${owner}/${ts}`;
+  const basePublica = `devocionalesOracionesPublicas/${owner}/${ts}`;
+  const baseMia = uid ? `devocionalesOracionesMias/${uid}/${owner}_${ts}` : "";
+
+  return {
+    basePrivada,
+    basePublica,
+    baseMia,
+
+    privadaItem: id ? `${basePrivada}/${id}` : "",
+    publicaItem: id ? `${basePublica}/${id}` : "",
+    miaItem: id && baseMia ? `${baseMia}/${id}` : ""
+  };
+}
+
+async function devSafeGetPath(db, refFn, path){
+  if (!path) {
+    return { ok:false, val:{}, error:new Error("Path vacío") };
+  }
+
+  try {
+    const snap = await get(refFn(db, path));
+    return { ok:true, val:snap.val() || {}, error:null };
+  } catch(e) {
+    return { ok:false, val:{}, error:e };
+  }
+}
+
+function devCombinarOraciones(...raws){
+  const out = {};
+
+  raws.forEach(raw => {
+    Object.entries(raw || {}).forEach(([id, it]) => {
+      if (!it || typeof it !== "object") return;
+      out[id] = { ...(out[id] || {}), ...it };
+    });
+  });
+
+  return out;
+}
+
+async function devBuscarOracionData(uidOwner, tsKey, comentId){
+  const fb = window.__FB;
+  const api = window.__FB_API;
+  if (!fb || !api) return null;
+
+  const { db } = fb;
+  const { ref, get } = api;
+  const p = devOracionPaths(uidOwner, tsKey, comentId);
+
+  const lecturas = await Promise.all([
+    devSafeGetPath(db, ref, p.miaItem),
+    devSafeGetPath(db, ref, p.publicaItem),
+    devSafeGetPath(db, ref, p.privadaItem)
+  ]);
+
+  for (const r of lecturas) {
+    if (r.ok && r.val && typeof r.val === "object" && Object.keys(r.val).length) {
+      return r.val;
+    }
+  }
+
+  return null;
+}
+
+function devEsAdminActual(){
+  return typeof isAdmin === "function" && isAdmin();
+}
+
 function devAccionUrl(it = {}) {
   return String(it.url || it.shareUrl || it.storagePath || "").trim();
 }
@@ -4719,8 +4899,8 @@ function devRenderDevocionalCardHTML(it = {}, opciones = {}) {
   // que borre solo de Compartidos y NO el devocional original.
   const borrarHtmlPersonalizado = opciones.borrarHtml || "";
 
-  const uidOwner = devJs(it.uidOwner || "");
-  const tsKey = Number(it.tsKey || 0);
+ const uidOwner = devJs(it.uidOwner || it.sourceUid || it.ownerUid || it.devocionalUid || "");
+const tsKey = Number(it.tsKey || it.sourceTs || it.devocionalTs || 0);
   const storagePath = devJs(it.storagePath || "");
   const itemId = devJs(it.id || "");
 
@@ -4895,23 +5075,52 @@ window.devAbrirListaOraciones = async function(uidOwner, tsKey){
     return;
   }
 
+  uidOwner = String(uidOwner || "");
+  tsKey = String(tsKey || "");
+
+  if (!uidOwner || !tsKey || tsKey === "0") {
+    if (box) {
+      box.innerHTML = `<div style="text-align:center; opacity:.6;">No encontré el devocional.</div>`;
+    }
+    return;
+  }
+
   const { db } = fb;
   const { ref, get } = api;
 
   try{
-    const basePath = `devocionalesOraciones/${uidOwner}/${tsKey}`;
-    const baseSnap = await get(ref(db, basePath));
-    const raw = baseSnap.val() || {};
+    const paths = devOracionPaths(uidOwner, tsKey);
+
+    // ✅ Primero público y copia propia.
+    // ✅ El privado puede dar permission_denied y NO debe romper el modal.
+    const [pubRes, miaRes, privRes] = await Promise.all([
+      devSafeGetPath(db, ref, paths.basePublica),
+      devSafeGetPath(db, ref, paths.baseMia),
+      devSafeGetPath(db, ref, paths.basePrivada)
+    ]);
+
+    [pubRes, miaRes, privRes].forEach(r => {
+      if (!r.ok && !devEsErrorPermiso(r.error)) {
+        console.warn("Lectura oración falló:", r.error);
+      }
+    });
+
+    const raw = devCombinarOraciones(
+      pubRes.val,
+      miaRes.val,
+      privRes.val
+    );
 
     const entries = Object.entries(raw);
+
     if (!entries.length) {
-      box.innerHTML = `<div style="text-align:center; opacity:.6;">Sin oraciones todavía</div>`;
+      box.innerHTML = `<div style="text-align:center; opacity:.6;">Sin oraciones visibles todavía</div>`;
       return;
     }
 
     const visibles = entries
       .map(([id, it]) => ({ id, ...(it || {}) }))
-      .filter(it => it.publica === true || (uid && it.autorUid === uid))
+      .filter(it => it.publica === true || (uid && it.autorUid === uid) || devEsAdminActual())
       .sort((a,b)=>(b.fecha||0)-(a.fecha||0));
 
     if (!visibles.length){
@@ -4919,11 +5128,17 @@ window.devAbrirListaOraciones = async function(uidOwner, tsKey){
       return;
     }
 
+    const uidJs = devJs(uidOwner);
+    const tsJs = devJs(tsKey);
+
     box.innerHTML = visibles.map(it=>{
       const soyYo = uid && it.autorUid === uid;
+      const puedeEditar = soyYo || devEsAdminActual();
+
       const autorTxt = soyYo ? "Tú" : (it.publica ? "Hermano/a" : "Privada");
-      const fondo = it.color || "#f5f5f5";
+      const fondo = devColorHexValido(it.color) ? it.color : "#f5f5f5";
       const fechaTxt = it.fecha ? fmtFecha(it.fecha) : "";
+      const idJs = devJs(it.id);
 
       return `
         <div style="
@@ -4944,33 +5159,29 @@ window.devAbrirListaOraciones = async function(uidOwner, tsKey){
             font-size:12px;
             opacity:.75;
           ">
-            <span>${autorTxt}</span>
-            <span>${fechaTxt}</span>
+            <span>${devHtml(autorTxt)}</span>
+            <span>${devHtml(fechaTxt)}</span>
           </div>
 
           <div style="
             white-space:pre-wrap;
             line-height:1.45;
             word-break:break-word;
-          ">${(it.texto || "")
-            .replace(/&/g,"&amp;")
-            .replace(/</g,"&lt;")
-            .replace(/>/g,"&gt;")
-          }</div>
+          ">${devHtml(it.texto || "")}</div>
 
-          ${soyYo ? `
+          ${puedeEditar ? `
             <div style="
               display:flex;
               justify-content:flex-end;
               gap:8px;
             ">
               <button class="btn-primary" type="button"
-                onclick="devEditarOracionPropia('${uidOwner}','${tsKey}','${it.id}')">
+                onclick="devEditarOracionPropia('${uidJs}','${tsJs}','${idJs}')">
                 Editar
               </button>
 
               <button class="btn-primary devDanger" type="button"
-                onclick="devBorrarOracionPropia('${uidOwner}','${tsKey}','${it.id}')">
+                onclick="devBorrarOracionPropia('${uidJs}','${tsJs}','${idJs}')">
                 Borrar
               </button>
             </div>
@@ -4994,9 +5205,10 @@ window.devCerrarListaOraciones = function(){
 window.devBorrarOracionPropia = async function(uidOwner, tsKey, comentId){
   const fb = window.__FB;
   const api = window.__FB_API;
+  const uid = window.__UID;
 
-  if (!fb || !api) {
-    alert("Firebase no listo.");
+  if (!fb || !api || !uid) {
+    alert("Tenés que estar logueado.");
     return;
   }
 
@@ -5007,9 +5219,26 @@ window.devBorrarOracionPropia = async function(uidOwner, tsKey, comentId){
   const { ref, remove } = api;
 
   try{
-    await remove(ref(db, `devocionalesOraciones/${uidOwner}/${tsKey}/${comentId}`));
+    const paths = devOracionPaths(uidOwner, tsKey, comentId);
+
+    const tareas = [
+      paths.privadaItem,
+      paths.publicaItem,
+      paths.miaItem
+    ]
+      .filter(Boolean)
+      .map(path => remove(ref(db, path)));
+
+    const res = await Promise.allSettled(tareas);
+    const algunoOk = res.some(r => r.status === "fulfilled");
+
+    if (!algunoOk) {
+      throw res.find(r => r.status === "rejected")?.reason || new Error("No se pudo borrar.");
+    }
+
     if (typeof devToast === "function") devToast("🗑 Oración borrada");
     await window.devAbrirListaOraciones(uidOwner, tsKey);
+
   } catch(e){
     console.error(e);
     alert("❌ No se pudo borrar.\n\nDetalle: " + (e?.message || e));
@@ -5019,21 +5248,26 @@ window.devBorrarOracionPropia = async function(uidOwner, tsKey, comentId){
 window.devEditarOracionPropia = async function(uidOwner, tsKey, comentId){
   const fb = window.__FB;
   const api = window.__FB_API;
+  const uid = window.__UID;
 
-  if (!fb || !api) {
-    alert("Firebase no listo.");
+  if (!fb || !api || !uid) {
+    alert("Tenés que estar logueado.");
     return;
   }
 
   const { db } = fb;
-  const { ref, get, update } = api;
+  const { ref, update } = api;
 
   try{
-    const snap = await get(ref(db, `devocionalesOraciones/${uidOwner}/${tsKey}/${comentId}`));
-    const data = snap.val();
+    const data = await devBuscarOracionData(uidOwner, tsKey, comentId);
 
     if (!data) {
       alert("No encontré la oración.");
+      return;
+    }
+
+    if (data.autorUid && data.autorUid !== uid && !devEsAdminActual()) {
+      alert("Solo podés editar tus propias oraciones.");
       return;
     }
 
@@ -5046,12 +5280,32 @@ window.devEditarOracionPropia = async function(uidOwner, tsKey, comentId){
       return;
     }
 
-    await update(ref(db, `devocionalesOraciones/${uidOwner}/${tsKey}/${comentId}`), {
-      texto: limpio
-    });
+    const paths = devOracionPaths(uidOwner, tsKey, comentId);
+
+    const updateData = {
+      texto: limpio,
+      editado: Date.now()
+    };
+
+    const targets = [
+      paths.privadaItem,
+      paths.miaItem,
+      data.publica === true ? paths.publicaItem : ""
+    ].filter(Boolean);
+
+    const res = await Promise.allSettled(
+      targets.map(path => update(ref(db, path), updateData))
+    );
+
+    const algunoOk = res.some(r => r.status === "fulfilled");
+
+    if (!algunoOk) {
+      throw res.find(r => r.status === "rejected")?.reason || new Error("No se pudo editar.");
+    }
 
     if (typeof devToast === "function") devToast("✏️ Oración actualizada");
     await window.devAbrirListaOraciones(uidOwner, tsKey);
+
   } catch(e){
     console.error(e);
     alert("❌ No se pudo editar.\n\nDetalle: " + (e?.message || e));
