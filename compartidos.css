@@ -1216,4 +1216,35 @@ body.en-compartidos .comp-post--archivo-abierto .subidos-visor-archivo-slide ifr
   }
 }
 
+.comp-dev-oracion-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.comp-dev-oracion-actions button {
+  border: 0;
+  border-radius: 999px;
+  padding: 7px 11px;
+  background: rgba(255,255,255,.72);
+  color: #123;
+  font-size: 12px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.comp-dev-oracion-actions button:hover {
+  background: var(--ui-azul-claro);
+  color: #000;
+}
+
+.comp-dev-oracion-actions .comp-dev-oracion-delete {
+  background: rgba(255, 220, 220, .8);
+  color: #8b1111;
+}
+
 </style>
