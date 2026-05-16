@@ -646,6 +646,16 @@ body.oscuro .ed-page-editor {
   display: flex;
   scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch;
+
+  /* Oculta la barra horizontal sin romper el scroll con dedo */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.ed-slides::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 .ed-slide {
@@ -967,6 +977,51 @@ body.oscuro .ed-rama-vacia {
   .ed-rama-count {
     font-size: 11px;
   }
+
+    .ed-nav-btn {
+    display: none !important;
+  }
+  
+}
+
+.ed-nav-btn {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 20;
+
+  width: 48px;
+  height: 48px;
+  border: none;
+  border-radius: 999px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  background: rgba(255,255,255,.18);
+  color: #fff;
+  font-size: 22px;
+  cursor: pointer;
+
+  box-shadow: 0 8px 24px rgba(0,0,0,.25);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+
+  opacity: .88;
+}
+
+.ed-nav-btn:hover {
+  opacity: 1;
+  background: rgba(255,255,255,.28);
+}
+
+.ed-nav-prev {
+  left: 18px;
+}
+
+.ed-nav-next {
+  right: 18px;
 }
 
 </style> 
