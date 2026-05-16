@@ -3497,23 +3497,63 @@ function devCrearModalCompartirPublicado(){
   div.id = "modalDevCompartirPublicado";
   div.className = "modal-overlay";
   div.setAttribute("aria-hidden", "true");
-     div.style.zIndex = "100000";
+  div.style.zIndex = "100000";
 
   div.innerHTML = `
     <div class="modal-contenido modal-dev" style="
+      width:min(92vw, 420px);
       max-width:420px;
       height:auto;
+      min-height:0;
       text-align:center;
-      padding:18px;
+      padding:22px 18px 18px;
       gap:14px;
+      background:#ffffff;
+      color:#13213a;
+      border-radius:24px;
+      box-shadow:0 18px 60px rgba(0,0,0,.35);
+      border:1px solid rgba(0,0,0,.08);
+      position:relative;
+      box-sizing:border-box;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
     ">
-      <button type="button" class="cerrar-modal" onclick="devCerrarModalCompartirPublicado(true)">✕</button>
+      <button
+        type="button"
+        class="cerrar-modal"
+        onclick="devCerrarModalCompartirPublicado(true)"
+        style="
+          position:absolute;
+          top:10px;
+          right:10px;
+          width:34px;
+          height:34px;
+          border-radius:999px;
+          border:0;
+          background:#f2f4f8;
+          color:#111;
+          font-weight:900;
+          cursor:pointer;
+        "
+      >✕</button>
 
-      <h3 style="margin:8px 34px 0; color:#0e286f;">
+      <h3 style="
+        margin:8px 34px 0;
+        color:#0e286f;
+        font-size:20px;
+        line-height:1.2;
+      ">
         ✅ Devocional publicado
       </h3>
 
-      <p style="margin:0; font-size:15px; line-height:1.35;">
+      <p style="
+        margin:0;
+        font-size:15px;
+        line-height:1.35;
+        color:#24324a;
+      ">
         Ahora tocá compartir para abrir el menú de redes.
       </p>
 
@@ -3522,7 +3562,7 @@ function devCrearModalCompartirPublicado(){
         gap:10px;
         justify-content:center;
         flex-wrap:wrap;
-        margin-top:4px;
+        margin-top:6px;
       ">
         <button type="button" class="btn-primary" onclick="devCompartirPublicadoAhora()">
           <i class="fa-solid fa-share-nodes"></i>
@@ -4389,22 +4429,25 @@ window.devGuardarOracionDevocional = async function(){
       fecha: Date.now()
     };
 
-    // ✅ copia principal relacionada al devocional
+    // ✅ 1) principal
     await set(ref(db, paths.privadaItem), oracionData);
 
-    // ✅ copia propia del autor: permite editar/borrar aunque estés viendo desde Compartidos
+    // ✅ 2) copia propia para que el autor pueda editar/borrar desde Compartidos
     if (paths.miaItem) {
-      set(ref(db, paths.miaItem), {
+      await set(ref(db, paths.miaItem), {
         ...oracionData,
         uidOwner: DEV.oracionDevOwner,
         tsKey: DEV.oracionDevTs
-      }).catch(e => console.warn("No se pudo guardar copia propia de oración:", e));
+      });
     }
 
-    // ✅ copia pública separada para poder leer desde Compartidos sin permission_denied
+    // ✅ 3) copia pública para que Compartidos pueda leer sin permission_denied
     if (publica === true) {
-      set(ref(db, paths.publicaItem), oracionData)
-        .catch(e => console.warn("No se pudo guardar copia pública de oración:", e));
+      await set(ref(db, paths.publicaItem), {
+        ...oracionData,
+        uidOwner: DEV.oracionDevOwner,
+        tsKey: DEV.oracionDevTs
+      });
     }
 
     if (typeof devToast === "function") {
@@ -4828,10 +4871,26 @@ async function devSafeGetPath(db, refFn, path){
   }
 
   try {
-    const snap = await get(refFn(db, path));
-    return { ok:true, val:snap.val() || {}, error:null };
+    const getFn = window.__FB_API?.get;
+
+    if (typeof getFn !== "function") {
+      throw new Error("Firebase get no está listo");
+    }
+
+    const snap = await getFn(refFn(db, path));
+
+    return {
+      ok: true,
+      val: snap.val() || {},
+      error: null
+    };
+
   } catch(e) {
-    return { ok:false, val:{}, error:e };
+    return {
+      ok: false,
+      val: {},
+      error: e
+    };
   }
 }
 
