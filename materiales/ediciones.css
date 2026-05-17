@@ -1171,4 +1171,57 @@ body.oscuro .ed-card-rama-label {
   }
 }
 
+/* ================= EDICIONES - CHECK PUBLICADO SIN CONTADOR ================= */
+
+.ed-card-actions-ediciones .ed-action-count {
+  display: none !important;
+}
+
+.ed-btn-publicar {
+  position: relative;
+}
+
+.ed-publicar-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.ed-btn-publicar.ed-publicada {
+  background: var(--ui-azul-claro, #bcdcff) !important;
+  color: #000 !important;
+}
+
+.ed-check-mini {
+  position: absolute;
+  right: -7px;
+  bottom: -7px;
+
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+
+  background: #8dbdff;
+  color: #fff;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  box-shadow: 0 0 0 2px #fff;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.ed-check-mini i {
+  font-size: 8px;
+  line-height: 1;
+}
+
+body.oscuro .ed-check-mini {
+  box-shadow: 0 0 0 2px rgba(20,20,20,.95);
+}
+
 </style> 
