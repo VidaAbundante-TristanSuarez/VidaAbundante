@@ -97,6 +97,76 @@ function edSafeName(name = "archivo") {
     .slice(0, 120);
 }
 
+function edSlugTituloPublico(txt = "edicion") {
+  return String(txt || "edicion")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60) || "edicion";
+}
+
+function edBasePublicaApp() {
+  const partes = location.pathname.split("/").filter(Boolean);
+
+  // En GitHub Pages del repo queda /VidaAbundante
+  if (partes[0] && partes[0].toLowerCase() === "vidaabundante") {
+    return `${location.origin}/${partes[0]}`;
+  }
+
+  // En dominio propio o raíz
+  return location.origin;
+}
+
+async function edCrearRefPublicaUnica(titulo, edicionId) {
+  const db = edDB();
+  if (!db) throw new Error("Firebase no está listo.");
+
+  const base = edSlugTituloPublico(titulo);
+
+  for (let n = 1; n <= 200; n++) {
+    const refPublica = `${base}-${n}`;
+    const snap = await get(ref(db, `edicionesRefs/${refPublica}`));
+    const val = snap.val();
+
+    const usadoPor =
+      typeof val === "string"
+        ? val
+        : val?.edicionId || "";
+
+    if (!usadoPor || usadoPor === edicionId) {
+      return refPublica;
+    }
+  }
+
+  return `${base}-${Date.now()}`;
+}
+
+async function edAsegurarRefPublica(edicionId, titulo) {
+  const db = edDB();
+  if (!db) throw new Error("Firebase no está listo.");
+
+  const ed = await obtenerEdicion(edicionId);
+  const refExistente = String(ed?.refPublica || "").trim();
+
+  if (refExistente) {
+    return refExistente;
+  }
+
+  const refPublica = await edCrearRefPublicaUnica(titulo, edicionId);
+
+  await set(ref(db, `ediciones/${edicionId}/refPublica`), refPublica);
+
+  await set(ref(db, `edicionesRefs/${refPublica}`), {
+    edicionId,
+    titulo: titulo || "Edición",
+    ts: Date.now()
+  });
+
+  return refPublica;
+}
+
 function edMediaUrlPagina(p = {}) {
   return String(p.mediaUrl || p.videoUrl || p.imagenUrl || "").trim();
 }
@@ -825,6 +895,7 @@ const portadaFile = ed$("edPortadaFile")?.files?.[0] || null;
 
   const existente = edicionEditId ? await obtenerEdicion(edicionEditId) : null;
   const edId = edicionEditId || push(ref(db, "ediciones")).key;
+    const refPublica = existente?.refPublica || await edCrearRefPublicaUnica(titulo, edId);
 
   try {
     if (btn) {
@@ -939,7 +1010,8 @@ const portadaFile = ed$("edPortadaFile")?.files?.[0] || null;
     }
 
 const data = {
-  titulo,
+    titulo,
+  refPublica,
   rama,
   categoria: rama,
   tipoEdicion: rama,
@@ -953,7 +1025,11 @@ const data = {
 
     edSetEstado("Guardando datos...");
     await set(ref(db, `ediciones/${edId}`), data);
-
+await set(ref(db, `edicionesRefs/${refPublica}`), {
+  edicionId: edId,
+  titulo,
+  ts: Date.now()
+});
     edSetEstado("Edición guardada.");
     cerrarEditorEdicion();
   } catch (err) {
@@ -1457,7 +1533,7 @@ window.cerrarPresentacionEdicion = () => {
 
   if (veniaDeLinkDirecto) {
     try {
-      history.replaceState(null, "", location.pathname);
+      history.replaceState(null, "", `${edBasePublicaApp()}/index.html`);
     } catch (_) {}
 
     if (typeof window.irA === "function") {
@@ -1806,7 +1882,7 @@ await set(compRef, {
     return;
   }
 
-  const url = crearLinkPublicoEdicion(id);
+  const url = await crearLinkPublicoEdicion(id, titulo);
   const texto = `${titulo}\n${url}`;
 
   try {
@@ -1836,22 +1912,97 @@ await set(compRef, {
   }
 };
 
-function crearLinkPublicoEdicion(id) {
-  const base = `${location.origin}${location.pathname}`;
-  return `${base}?ver=edicion&id=${encodeURIComponent(id)}`;
+async function crearLinkPublicoEdicion(id, titulo = "Edición") {
+  const refPublica = await edAsegurarRefPublica(id, titulo);
+  return `${edBasePublicaApp()}/ediciones/?ref=${encodeURIComponent(refPublica)}`;
+}
+
+/* ================= LINK PÚBLICO ================= */
+
+async function edIdDesdeLinkPublico() {
+  const params = new URLSearchParams(location.search);
+
+  // Link viejo, para que no se rompan los anteriores:
+  // ?ver=edicion&id=...
+  if (params.get("ver") === "edicion" && params.get("id")) {
+    return {
+      id: params.get("id"),
+      refPublica: ""
+    };
+  }
+
+  // Link nuevo redirigido desde /ediciones/?ref=...
+  const refPublica =
+    params.get("edicionRef") ||
+    params.get("ref") ||
+    "";
+
+  if (!refPublica) {
+    return {
+      id: "",
+      refPublica: ""
+    };
+  }
+
+  const db = await edEsperarDB();
+  if (!db) {
+    return {
+      id: "",
+      refPublica
+    };
+  }
+
+  const snapRef = await get(ref(db, `edicionesRefs/${refPublica}`));
+  const valRef = snapRef.val();
+
+  const idDesdeRef =
+    typeof valRef === "string"
+      ? valRef
+      : valRef?.edicionId || "";
+
+  if (idDesdeRef) {
+    return {
+      id: idDesdeRef,
+      refPublica
+    };
+  }
+
+  // Respaldo por si existe refPublica dentro de ediciones,
+  // pero todavía no existe edicionesRefs.
+  const snapEds = await get(ref(db, "ediciones"));
+  const eds = snapEds.val() || {};
+
+  const encontrado = Object.entries(eds).find(([_, item]) => {
+    return String(item?.refPublica || "") === refPublica;
+  });
+
+  return {
+    id: encontrado?.[0] || "",
+    refPublica
+  };
 }
 
 /* ================= LINK PÚBLICO ================= */
 
 async function abrirEdicionDesdeURL() {
-  const params = new URLSearchParams(location.search);
-  const ver = params.get("ver");
-  const id = params.get("id");
+  const data = await edIdDesdeLinkPublico();
+  const id = data.id;
+  const refPublica = data.refPublica;
 
-  if (ver !== "edicion" || !id) return;
+  if (!id) return;
 
   window.__ED_LINK_DIRECTO = true;
   document.body.classList.add("ed-link-directo");
+
+  if (refPublica) {
+    try {
+      history.replaceState(
+        null,
+        "",
+        `${edBasePublicaApp()}/ediciones/?ref=${encodeURIComponent(refPublica)}`
+      );
+    } catch (_) {}
+  }
 
   await edEsperarDB();
 
