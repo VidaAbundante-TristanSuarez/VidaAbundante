@@ -6640,8 +6640,14 @@ window.mostrarIglesiaSub = (sub) => {
     try { window.__abcOnEnter?.(); } catch(e) { console.warn(e); }
   }
 
-  if (sub === "recursos") {
-    try { window.mostrarRecursosSub?.("rh"); } catch(e) { console.warn(e); }
+ if (sub === "recursos") {
+    const estado = leerEstadoBiblia?.() || {};
+    const subRecursosGuardada =
+      window.__RECURSOS_SUB_ACTIVA ||
+      estado.subRecursos ||
+      "ediciones";
+
+    try { window.mostrarRecursosSub?.(subRecursosGuardada); } catch(e) { console.warn(e); }
   }
 
   // ✅ segundo refuerzo por si devocionales/ABC/recursos renderizan después
