@@ -1057,12 +1057,15 @@ const portadaFile = ed$("edPortadaFile")?.files?.[0] || null;
     return;
   }
 
-  if (!rows.length) {
-    alert("Agregá al menos una página.");
+    const existente = edicionEditId ? await obtenerEdicion(edicionEditId) : null;
+
+  const portadaExistente = String(existente?.portadaUrl || "").trim();
+
+  if (!rows.length && !portadaFile && !portadaExistente) {
+    alert("Cargá una portada o agregá al menos una página.");
     return;
   }
-
-  const existente = edicionEditId ? await obtenerEdicion(edicionEditId) : null;
+  
   const edId = edicionEditId || push(ref(db, "ediciones")).key;
     const refPublica = existente?.refPublica || await edCrearRefPublicaUnica(titulo, edId);
 
@@ -1128,9 +1131,21 @@ const portadaFile = ed$("edPortadaFile")?.files?.[0] || null;
         }
       }
 
-      if (!mediaUrl) {
-        alert(`La página ${i + 1} necesita imagen o video.`);
-        return;
+           if (!mediaUrl) {
+        const tieneAudioSinImagen =
+          esFile ||
+          enFile ||
+          audioEsUrl ||
+          audioEnUrl;
+
+        if (tieneAudioSinImagen) {
+          alert(`La página ${i + 1} tiene audio, pero le falta imagen o video.`);
+          return;
+        }
+
+        // ✅ Si la página está vacía, la salteamos.
+        // Esto permite guardar una edición solo con portada.
+        continue;
       }
 
       if (esFile) {
@@ -1171,11 +1186,36 @@ const portadaFile = ed$("edPortadaFile")?.files?.[0] || null;
       portadaUrl = await subirArchivoEdicionR2(portadaFile, `ediciones/${edId}/portada`);
     }
 
-    if (!portadaUrl) {
+       if (!portadaUrl) {
       const primeraImagen = Object.values(paginasObj)
         .find(p => !edPaginaEsVideo(p) && (p.imagenUrl || p.mediaUrl));
 
       portadaUrl = primeraImagen?.imagenUrl || primeraImagen?.mediaUrl || "";
+    }
+
+    // ✅ Si no hay páginas, pero sí hay portada,
+    // usamos la portada como única página de la edición.
+    if (!Object.keys(paginasObj).length) {
+      if (!portadaUrl) {
+        alert("Cargá una portada o al menos una página.");
+        return;
+      }
+
+      const portadaPageId = edKey("p");
+
+      paginasObj[portadaPageId] = {
+        orden: 0,
+        imagenUrl: portadaUrl,
+        videoUrl: "",
+        mediaUrl: portadaUrl,
+        mediaType: "image/*",
+        videoKey: "",
+        videoFileName: "",
+        videoSizeBytes: 0,
+        audioEsUrl: "",
+        audioEnUrl: "",
+        actualizado: Date.now()
+      };
     }
 
 const data = {
