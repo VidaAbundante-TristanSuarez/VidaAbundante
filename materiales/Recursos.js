@@ -54,9 +54,8 @@ const RH_PDF_COMPLETO = "materiales/RH/pdf/RH COMPLETO CON PORTADA.pdf";
 let rhIndex = 0;
 let rhIniciado = false;
 
-// ✅ abrir RH por defecto
-// ✅ abrir RH por defecto
-window.mostrarRecursosSub = async (sub) => {
+// ✅ abrir Ediciones por defecto
+window.mostrarRecursosSub = async (sub = "ediciones") => {
   const esAdmin = !!window.__ES_ADMIN;
   const esColab = !!window.__ES_COLABORADOR;
   const puedeVerRecursos = esAdmin || esColab;
@@ -65,6 +64,21 @@ window.mostrarRecursosSub = async (sub) => {
     alert("No tenés permiso para entrar a Recursos.");
     return;
   }
+
+  const permitidas = ["rh", "talleres", "hermanos", "permisos", "ediciones"];
+  if (!permitidas.includes(sub)) sub = "ediciones";
+
+  // ✅ guardar estado interno: Iglesia > Recursos > sub
+  window.__IGLESIA_SUB_ACTIVA = "recursos";
+  window.__RECURSOS_SUB_ACTIVA = sub;
+
+  try {
+    window.guardarEstadoBiblia?.({
+      seccion: "iglesia",
+      subIglesia: "recursos",
+      subRecursos: sub
+    });
+  } catch(e) {}
 
   const rh = document.getElementById("recursos-rh");
   const talleres = document.getElementById("recursos-talleres");
@@ -81,6 +95,7 @@ window.mostrarRecursosSub = async (sub) => {
   const wrap = document.getElementById("iglesia-recursos");
   if (wrap) {
     wrap.querySelectorAll(".panel-tabs button").forEach(b => b.classList.remove("activo"));
+
     const btn = wrap.querySelector(`[onclick="mostrarRecursosSub('${sub}')"]`);
     if (btn) btn.classList.add("activo");
   }
@@ -98,6 +113,7 @@ window.mostrarRecursosSub = async (sub) => {
       alert("Solo los administradores pueden ver Permisos.");
       return;
     }
+
     await mostrarPermisos();
   }
 
