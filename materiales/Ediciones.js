@@ -310,6 +310,18 @@ async function edEsperarDB(intentos = 30) {
 /* ================= PANTALLA RECURSOS > EDICIONES ================= */
 
 window.mostrarEdiciones = async () => {
+
+    window.__IGLESIA_SUB_ACTIVA = "recursos";
+  window.__RECURSOS_SUB_ACTIVA = "ediciones";
+
+  try {
+    window.guardarEstadoBiblia?.({
+      seccion: "iglesia",
+      subIglesia: "recursos",
+      subRecursos: "ediciones"
+    });
+  } catch(e) {}
+  
   const cont = ed$("edicionesApp");
   if (!cont) return;
 
