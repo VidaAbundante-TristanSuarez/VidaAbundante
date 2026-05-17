@@ -1146,15 +1146,31 @@ body.oscuro .ed-card-rama-label {
     max-width: 100%;
   }
 
-  #edFiltros {
-    align-items: flex-start;
-    flex-direction: column;
+   #edFiltros {
+    align-items: center;
+    flex-direction: row;
+    justify-content: space-between;
     gap: 8px;
+    flex-wrap: nowrap;
+  }
+
+  .ed-filtros-title {
+    flex: 0 0 auto;
+    white-space: nowrap;
   }
 
   .ed-filtros-actions {
-    width: 100%;
-    justify-content: flex-start;
+    width: auto;
+    flex: 0 0 auto;
+    justify-content: flex-end;
+    flex-wrap: nowrap;
+    gap: 6px;
+  }
+
+  .ed-filter-pill {
+    padding: 7px 10px;
+    font-size: 12px;
+    white-space: nowrap;
   }
 
   .ed-galeria-track {
