@@ -1716,6 +1716,71 @@ function edBuildR2ProxyUrl(url) {
   return u.toString();
 }
 
+async function edCrearFileDesdeUrl(url, nombre = "edicion.png") {
+  if (!url) throw new Error("Falta URL de imagen.");
+
+  const proxy = edBuildR2ProxyUrl(url);
+
+  const r = await fetch(proxy, { mode: "cors" });
+  if (!r.ok) throw new Error("No pude preparar la imagen para compartir.");
+
+  const blob = await r.blob();
+
+  const tipo = blob.type || "image/png";
+  const extension = tipo.includes("jpeg") || tipo.includes("jpg")
+    ? ".jpg"
+    : tipo.includes("webp")
+      ? ".webp"
+      : ".png";
+
+  const limpio = edSafeName(nombre || "edicion").replace(/\.[^.]+$/, "");
+
+  return new File([blob], `${limpio}${extension}`, {
+    type: tipo
+  });
+}
+
+async function edCompartirConPortada({ titulo, url, portadaUrl }) {
+  const texto = `${titulo}\n${url}`;
+
+  if (!navigator.share) {
+    if (navigator.clipboard) {
+      await navigator.clipboard.writeText(texto);
+      return "copiado";
+    }
+
+    prompt("Copiá este link:", url);
+    return "prompt";
+  }
+
+  if (portadaUrl) {
+    try {
+      const file = await edCrearFileDesdeUrl(portadaUrl, titulo || "edicion");
+
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({
+          title: titulo,
+          text: texto,
+          url,
+          files: [file]
+        });
+
+        return "archivo";
+      }
+    } catch (err) {
+      console.warn("No pude compartir la portada como archivo. Uso link solo:", err);
+    }
+  }
+
+  await navigator.share({
+    title: titulo,
+    text: titulo,
+    url
+  });
+
+  return "link";
+}
+
 function edImageDims(dataUrl) {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -1883,29 +1948,22 @@ await set(compRef, {
   }
 
   const url = await crearLinkPublicoEdicion(id, titulo);
-  const texto = `${titulo}\n${url}`;
 
   try {
-    if (navigator.share) {
-      await navigator.share({
-        title: titulo,
-        text: titulo,
-        url
-      });
+    const resultado = await edCompartirConPortada({
+      titulo,
+      url,
+      portadaUrl
+    });
 
-      await edIncrementarStat(id, "compartidos");
-    } else if (navigator.clipboard) {
-      await navigator.clipboard.writeText(texto);
-      await edIncrementarStat(id, "compartidos");
+    await edIncrementarStat(id, "compartidos");
 
+    if (resultado === "copiado") {
       if (typeof mostrarToast === "function") {
         mostrarToast("🔗 Link copiado para compartir");
       } else {
         alert("Link copiado para compartir.");
       }
-    } else {
-      prompt("Copiá este link:", url);
-      await edIncrementarStat(id, "compartidos");
     }
   } catch (err) {
     console.warn("Compartir cancelado o falló:", err);
