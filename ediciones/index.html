@@ -1,0 +1,19 @@
+<script>
+  (function () {
+    const params = new URLSearchParams(window.location.search);
+
+    const ref =
+      params.get("ref") ||
+      params.get("id") ||
+      "";
+
+    const path = window.location.pathname.replace(/\/ediciones\/?$/i, "");
+    const base = path || "";
+
+    const destino = ref
+      ? `${window.location.origin}${base}/index.html?edicionRef=${encodeURIComponent(ref)}`
+      : `${window.location.origin}${base}/index.html`;
+
+    window.location.replace(destino);
+  })();
+</script>
