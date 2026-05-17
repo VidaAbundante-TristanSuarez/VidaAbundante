@@ -41,6 +41,11 @@ let edicionesDescargadasEscuchaActiva = false;
 let edicionesPublicadasCache = {};
 let edicionesPublicadasEscuchaActiva = false;
 
+let edFiltroFlyers = true;
+let edFiltroLibros = true;
+let edBusquedaTexto = "";
+let edBuscadorAbierto = false;
+
 function ed$(id) {
   return document.getElementById(id);
 }
@@ -60,6 +65,79 @@ function edEscape(v) {
 function edValor(v) {
   return String(v ?? "").trim();
 }
+
+function edNormalizarTexto(txt = "") {
+  return String(txt || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+}
+
+function edActualizarControlesEdiciones() {
+  const btnFlyers = ed$("edFiltroFlyersBtn");
+  const btnLibros = ed$("edFiltroLibrosBtn");
+  const boxBuscar = ed$("edBuscadorBox");
+  const inputBuscar = ed$("edBuscarInput");
+
+  if (btnFlyers) {
+    btnFlyers.classList.toggle("ed-filter-active", edFiltroFlyers);
+  }
+
+  if (btnLibros) {
+    btnLibros.classList.toggle("ed-filter-active", edFiltroLibros);
+  }
+
+  if (boxBuscar) {
+    boxBuscar.style.display = edBuscadorAbierto ? "block" : "none";
+  }
+
+  if (inputBuscar && inputBuscar.value !== edBusquedaTexto) {
+    inputBuscar.value = edBusquedaTexto;
+  }
+}
+
+window.edToggleFiltroEdicion = (tipo) => {
+  if (tipo === "flyers") {
+    edFiltroFlyers = !edFiltroFlyers;
+  }
+
+  if (tipo === "libros") {
+    edFiltroLibros = !edFiltroLibros;
+  }
+
+  // Evita que queden los 2 apagados y la galería parezca vacía por error.
+  if (!edFiltroFlyers && !edFiltroLibros) {
+    edFiltroFlyers = true;
+    edFiltroLibros = true;
+  }
+
+  renderEdiciones();
+};
+
+window.edToggleBuscadorEdiciones = () => {
+  edBuscadorAbierto = !edBuscadorAbierto;
+  edActualizarControlesEdiciones();
+
+  if (edBuscadorAbierto) {
+    setTimeout(() => {
+      const input = ed$("edBuscarInput");
+      if (input) input.focus();
+    }, 50);
+  }
+};
+
+window.edBuscarEdiciones = (valor = "") => {
+  edBusquedaTexto = String(valor || "");
+  renderEdiciones();
+};
+
+window.edLimpiarBusquedaEdiciones = () => {
+  edBusquedaTexto = "";
+  const input = ed$("edBuscarInput");
+  if (input) input.value = "";
+  renderEdiciones();
+};
 
 function edNormalizarRama(v = "") {
   const s = String(v || "")
@@ -248,14 +326,77 @@ window.mostrarEdiciones = async () => {
   if (!edicionesIniciado) {
     cont.innerHTML = `
       <div id="edWrap">
-        <div id="edTop">
-          <h3>Ediciones</h3>
+               <div id="edTop">
+          <div class="ed-top-title">
+            <h3>Ediciones</h3>
 
-          ${window.__ES_ADMIN ? `
-            <button id="edBtnNueva" type="button" onclick="abrirNuevaEdicion()" title="Nueva edición">
-              <i class="fa-solid fa-circle-plus"></i>
+            <button
+              type="button"
+              class="ed-top-icon"
+              onclick="edToggleBuscadorEdiciones()"
+              title="Buscar edición"
+              aria-label="Buscar edición"
+            >
+              <i class="fa-solid fa-magnifying-glass"></i>
             </button>
-          ` : ``}
+          </div>
+
+          <div class="ed-top-actions">
+            ${window.__ES_ADMIN ? `
+              <button id="edBtnNueva" type="button" onclick="abrirNuevaEdicion()" title="Nueva edición">
+                <i class="fa-solid fa-circle-plus"></i>
+              </button>
+            ` : ``}
+          </div>
+        </div>
+
+        <div id="edBuscadorBox" style="display:none;">
+          <div class="ed-search-wrap">
+            <i class="fa-solid fa-magnifying-glass"></i>
+
+            <input
+              id="edBuscarInput"
+              type="search"
+              placeholder="Buscar por título..."
+              oninput="edBuscarEdiciones(this.value)"
+            >
+
+            <button
+              type="button"
+              onclick="edLimpiarBusquedaEdiciones()"
+              title="Limpiar búsqueda"
+              aria-label="Limpiar búsqueda"
+            >
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+        </div>
+
+        <div id="edFiltros">
+          <div class="ed-filtros-title">
+            <i class="fa-solid fa-filter"></i>
+            <span>Filtros</span>
+          </div>
+
+          <div class="ed-filtros-actions">
+            <button
+              id="edFiltroFlyersBtn"
+              type="button"
+              class="ed-filter-pill ed-filter-active"
+              onclick="edToggleFiltroEdicion('flyers')"
+            >
+              Flyers
+            </button>
+
+            <button
+              id="edFiltroLibrosBtn"
+              type="button"
+              class="ed-filter-pill ed-filter-active"
+              onclick="edToggleFiltroEdicion('libros')"
+            >
+              Libros
+            </button>
+          </div>
         </div>
 
         <div id="edLista"></div>
@@ -569,7 +710,10 @@ function renderEdiciones() {
   const lista = ed$("edLista");
   if (!lista) return;
 
-  lista.classList.add("ed-lista-ramas");
+  lista.classList.remove("ed-lista-ramas");
+  lista.classList.add("ed-lista-galeria");
+
+  edActualizarControlesEdiciones();
 
   if (!edicionesCache.length) {
     lista.innerHTML = `
@@ -580,14 +724,49 @@ function renderEdiciones() {
     return;
   }
 
+  const busqueda = edNormalizarTexto(edBusquedaTexto);
+
+  const items = edicionesCache.filter(ed => {
+    const rama = edRamaEdicion(ed);
+
+    if (rama === "flyers" && !edFiltroFlyers) return false;
+    if (rama === "libros" && !edFiltroLibros) return false;
+
+    if (busqueda) {
+      const texto = edNormalizarTexto([
+        ed.titulo || "",
+        ed.refPublica || "",
+        edRamaEdicion(ed),
+        edTituloRama(edRamaEdicion(ed))
+      ].join(" "));
+
+      if (!texto.includes(busqueda)) return false;
+    }
+
+    return true;
+  });
+
+  if (!items.length) {
+    lista.innerHTML = `
+      <div id="edVacio">
+        No encontré ediciones con esos filtros.
+      </div>
+    `;
+    return;
+  }
+
   function renderCardEdicion(ed) {
     const titulo = edEscape(ed.titulo || "Sin título");
     const portada = edPortadaEdicion(ed);
     const tieneVideo = edPaginasArray(ed).some(p => edPaginaEsVideo(p));
     const publicada = edEstaPublicadaEnCompartidos(ed.id);
+    const descargada = edEstaDescargada(ed.id);
+    const stats = edStats(ed.id);
+    const rama = edRamaEdicion(ed);
+    const ramaTitulo = edTituloRama(rama);
 
     return `
-      <article class="ed-card ed-card-rama">
+      <article class="ed-card ed-card-rama ed-card-galeria">
         <div
           class="ed-card-cover"
           onclick="abrirPresentacionEdicion('${ed.id}')"
@@ -606,17 +785,46 @@ function renderEdiciones() {
         <div class="ed-card-body">
           <div class="ed-card-title">${titulo}</div>
 
-          ${window.__ES_ADMIN ? `
-            <div class="ed-card-actions">
+          <div class="ed-card-rama-label">
+            ${ramaTitulo}
+          </div>
+
+          <div class="ed-card-actions ed-card-actions-ediciones">
+            ${window.__ES_ADMIN ? `
               <button
                 type="button"
                 class="${publicada ? "ed-action-saved" : ""}"
                 onclick="compartirEdicion('${ed.id}', 'compartidos')"
                 title="${publicada ? "Ya está en Compartidos. Tocar para volver a compartir" : "Enviar a Compartidos"}"
               >
-                <i class="fa-solid ${publicada ? "fa-circle-check" : "fa-icons"}"></i>
+                <span class="ed-action-wrap">
+                  <i class="fa-solid ${publicada ? "fa-circle-check" : "fa-icons"}"></i>
+                  <span class="ed-action-count">${Number(stats.compartidos || 0)}</span>
+                </span>
               </button>
+            ` : ``}
 
+            <button
+              type="button"
+              class="${descargada ? "ed-action-saved" : ""}"
+              onclick="descargarEdicionPDF('${ed.id}')"
+              title="Descargar PDF"
+            >
+              <span class="ed-action-wrap">
+                <i class="fa-solid fa-file-pdf"></i>
+                <span class="ed-action-count">${Number(stats.descargas || 0)}</span>
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onclick="compartirEdicion('${ed.id}', 'redes')"
+              title="Compartir en redes"
+            >
+              <i class="fa-solid fa-share-nodes"></i>
+            </button>
+
+            ${window.__ES_ADMIN ? `
               <button type="button" onclick="editarEdicion('${ed.id}')" title="Editar">
                 <i class="fa-solid fa-pen"></i>
               </button>
@@ -629,58 +837,18 @@ function renderEdiciones() {
               >
                 <i class="fa-solid fa-trash"></i>
               </button>
-            </div>
-          ` : ``}
+            ` : ``}
+          </div>
         </div>
       </article>
     `;
   }
 
-  const ramas = [
-    {
-      key: "flyers",
-      titulo: "Flyers",
-      icono: "fa-solid fa-image"
-    },
-    {
-      key: "libros",
-      titulo: "Libros",
-      icono: "fa-solid fa-book-open"
-    }
-  ];
-
-  lista.innerHTML = ramas.map(rama => {
-    const items = edicionesCache.filter(ed => edRamaEdicion(ed) === rama.key);
-
-    return `
-      <section class="ed-rama-section ed-rama-${rama.key}">
-        <div class="ed-rama-head">
-          <div class="ed-rama-title">
-            <i class="${rama.icono}"></i>
-            <span>${rama.titulo}</span>
-          </div>
-
-          <div class="ed-rama-count">
-            ${items.length} ${items.length === 1 ? "edición" : "ediciones"}
-          </div>
-        </div>
-
-        ${
-          items.length
-            ? `
-              <div class="ed-rama-track">
-                ${items.map(renderCardEdicion).join("")}
-              </div>
-            `
-            : `
-              <div class="ed-rama-vacia">
-                Todavía no hay ${rama.titulo.toLowerCase()} cargados.
-              </div>
-            `
-        }
-      </section>
-    `;
-  }).join("");
+  lista.innerHTML = `
+    <div class="ed-galeria-track">
+      ${items.map(renderCardEdicion).join("")}
+    </div>
+  `;
 }
 
 /* ================= EDITOR ================= */
