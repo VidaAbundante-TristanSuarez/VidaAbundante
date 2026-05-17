@@ -760,8 +760,6 @@ function renderEdiciones() {
     const portada = edPortadaEdicion(ed);
     const tieneVideo = edPaginasArray(ed).some(p => edPaginaEsVideo(p));
     const publicada = edEstaPublicadaEnCompartidos(ed.id);
-    const descargada = edEstaDescargada(ed.id);
-    const stats = edStats(ed.id);
     const rama = edRamaEdicion(ed);
     const ramaTitulo = edTituloRama(rama);
 
@@ -793,28 +791,31 @@ function renderEdiciones() {
             ${window.__ES_ADMIN ? `
               <button
                 type="button"
-                class="${publicada ? "ed-action-saved" : ""}"
+                class="ed-btn-publicar ${publicada ? "ed-publicada" : ""}"
                 onclick="compartirEdicion('${ed.id}', 'compartidos')"
                 title="${publicada ? "Ya está en Compartidos. Tocar para volver a compartir" : "Enviar a Compartidos"}"
               >
-                <span class="ed-action-wrap">
-                  <i class="fa-solid ${publicada ? "fa-circle-check" : "fa-icons"}"></i>
-                  <span class="ed-action-count">${Number(stats.compartidos || 0)}</span>
+                <span class="ed-publicar-wrap">
+                  <i class="fa-solid fa-icons"></i>
+
+                  ${publicada ? `
+                    <span class="ed-check-mini">
+                      <i class="fa-solid fa-check"></i>
+                    </span>
+                  ` : ``}
                 </span>
               </button>
             ` : ``}
 
-            <button
-              type="button"
-              class="${descargada ? "ed-action-saved" : ""}"
-              onclick="descargarEdicionPDF('${ed.id}')"
-              title="Descargar PDF"
-            >
-              <span class="ed-action-wrap">
+            ${!tieneVideo ? `
+              <button
+                type="button"
+                onclick="descargarEdicionPDF('${ed.id}')"
+                title="Descargar PDF"
+              >
                 <i class="fa-solid fa-file-pdf"></i>
-                <span class="ed-action-count">${Number(stats.descargas || 0)}</span>
-              </span>
-            </button>
+              </button>
+            ` : ``}
 
             <button
               type="button"
@@ -1418,6 +1419,8 @@ window.abrirPresentacionEdicion = async (id) => {
     return;
   }
 
+  const tieneVideo = paginas.some(p => edPaginaEsVideo(p));
+
   let viewer = ed$("edViewer");
 
   if (!viewer) {
@@ -1434,9 +1437,11 @@ window.abrirPresentacionEdicion = async (id) => {
       <button type="button" onclick="guardarEdicionEnMiPanel('${ed.id}')" title="Guardar en Mi Panel">
   <i class="fa-solid fa-heart-circle-plus"></i>
 </button>
-        <button type="button" onclick="descargarEdicionPDF('${ed.id}')" title="Descargar PDF">
-          <i class="fa-solid fa-file-pdf"></i>
-        </button>
+               ${!tieneVideo ? `
+          <button type="button" onclick="descargarEdicionPDF('${ed.id}')" title="Descargar PDF">
+            <i class="fa-solid fa-file-pdf"></i>
+          </button>
+        ` : ``}
 
         <button type="button" onclick="compartirEdicion('${ed.id}', 'redes')" title="Compartir">
           <i class="fa-solid fa-share-nodes"></i>
@@ -1764,8 +1769,13 @@ window.descargarEdicionPDF = async (id) => {
     return;
   }
 
-if (edTieneAudio(ed) || paginas.some(p => edPaginaEsVideo(p))) {
-  alert("El PDF descarga solo el documento visual. Los audios y videos no se incluyen dentro del PDF.");
+if (paginas.some(p => edPaginaEsVideo(p))) {
+  alert("Esta edición contiene video, por eso no tiene descarga PDF.");
+  return;
+}
+
+if (edTieneAudio(ed)) {
+  alert("El PDF descarga solo el documento visual. Los audios no se incluyen dentro del PDF.");
 }
 
   let jsPDF;
