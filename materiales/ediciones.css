@@ -6,8 +6,7 @@
 }
 
 #edWrap {
-  max-width: 1100px;
-  margin: 0 auto;
+   margin: 0 auto;
 }
 
 #edTop {
@@ -15,8 +14,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 14px;
-}
+  }
 
 #edTop h3 {
   margin: 0;
@@ -36,12 +34,6 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-}
-
-#edLista {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 14px;
 }
 
 .ed-card {
@@ -753,12 +745,8 @@ body.oscuro .ed-page-editor {
 }
 
 @media (max-width: 700px) {
-  #edLista {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
-  }
 
-.ed-card-body {
+  .ed-card-body {
   padding: 10px 12px 28px;
 }
 
@@ -858,97 +846,6 @@ body.ed-link-directo #edViewer {
   cursor: pointer;
 }
 
-/* ================= EDICIONES POR RAMA: FLYERS / LIBROS ================= */
-
-#edLista.ed-lista-ramas {
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 24px !important;
-  width: 100%;
-  max-width: 100%;
-  overflow: visible;
-}
-
-.ed-rama-section {
-  width: 100%;
-  max-width: 100%;
-}
-
-.ed-rama-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin: 0 0 10px;
-  padding: 0 2px;
-}
-
-.ed-rama-title {
-  display: inline-flex;
-  align-items: center;
-  gap: 9px;
-  font-family: "Lora", Georgia, serif;
-  font-size: 22px;
-  font-weight: 900;
-  color: #111;
-}
-
-.ed-rama-title i {
-  width: 38px;
-  height: 38px;
-  border-radius: 999px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--ui-azul-claro, #bcdcff);
-  color: #000;
-  font-size: 17px;
-}
-
-.ed-rama-count {
-  font-size: 12px;
-  font-weight: 900;
-  opacity: .7;
-  padding: 7px 10px;
-  border-radius: 999px;
-  background: rgba(255,255,255,.72);
-  border: 1px solid rgba(0,0,0,.07);
-  white-space: nowrap;
-}
-
-.ed-rama-track {
-  display: flex;
-  gap: 14px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  padding: 2px 2px 14px;
-  scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: thin;
-}
-
-.ed-rama-track .ed-card {
-  flex: 0 0 clamp(230px, 28vw, 295px);
-  scroll-snap-align: start;
-  margin: 0;
-}
-
-.ed-rama-track .ed-card-cover {
-  width: calc(100% - 22px);
-  margin: 11px auto 0;
-  aspect-ratio: 3 / 4;
-}
-
-.ed-rama-vacia {
-  padding: 18px;
-  border-radius: 20px;
-  background: rgba(255,255,255,.72);
-  border: 1px dashed rgba(0,0,0,.16);
-  font-weight: 800;
-  text-align: center;
-  opacity: .8;
-}
-
 #edForm .ed-field select {
   width: 100%;
   max-width: 100%;
@@ -969,43 +866,10 @@ body.oscuro #edForm .ed-field select {
   border-color: rgba(255,255,255,.16);
 }
 
-body.oscuro .ed-rama-title {
-  color: #fff;
-}
-
-body.oscuro .ed-rama-count,
-body.oscuro .ed-rama-vacia {
-  background: rgba(255,255,255,.12);
-  color: #fff;
-  border-color: rgba(255,255,255,.12);
-}
-
 @media (max-width: 700px) {
-  #edLista.ed-lista-ramas {
-    gap: 22px !important;
-  }
-
-  .ed-rama-title {
-    font-size: 20px;
-  }
-
-  .ed-rama-track {
-    gap: 12px;
-    padding-bottom: 12px;
-  }
-
-  .ed-rama-track .ed-card {
-    flex: 0 0 min(78vw, 245px);
-  }
-
-  .ed-rama-count {
-    font-size: 11px;
-  }
-
-    .ed-nav-btn {
+     .ed-nav-btn {
     display: none !important;
   }
-  
 }
 
 .ed-nav-btn {
@@ -1046,6 +910,265 @@ body.oscuro .ed-rama-vacia {
 
 .ed-nav-next {
   right: 18px;
+}
+
+
+/* ================= EDICIONES - GALERÍA ÚNICA + FILTROS ================= */
+
+#edWrap {
+  max-width: 1240px;
+}
+
+#edTop {
+  margin-bottom: 10px;
+}
+
+.ed-top-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.ed-top-title h3 {
+  margin: 0;
+}
+
+.ed-top-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ed-top-icon {
+  border: none;
+  cursor: pointer;
+  border-radius: 999px;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  background: rgba(255,255,255,.72);
+  color: #111;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 14px rgba(0,0,0,.08);
+}
+
+.ed-top-icon:hover {
+  background: var(--ui-azul-claro, #bcdcff);
+  color: #000;
+}
+
+#edBuscadorBox {
+  margin: 0 0 10px;
+}
+
+.ed-search-wrap {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) 34px;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 8px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.84);
+  border: 1px solid rgba(0,0,0,.09);
+  box-shadow: 0 4px 14px rgba(0,0,0,.07);
+}
+
+.ed-search-wrap i {
+  text-align: center;
+  opacity: .75;
+}
+
+.ed-search-wrap input {
+  width: 100%;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #000;
+  font: inherit;
+  font-weight: 800;
+  padding: 8px 2px;
+}
+
+.ed-search-wrap button {
+  border: none;
+  cursor: pointer;
+  border-radius: 999px;
+  width: 32px;
+  height: 32px;
+  background: rgba(0,0,0,.06);
+  color: #111;
+}
+
+#edFiltros {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 18px;
+  background: rgba(255,255,255,.72);
+  border: 1px solid rgba(0,0,0,.07);
+}
+
+.ed-filtros-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 900;
+  color: #111;
+}
+
+.ed-filtros-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.ed-filter-pill {
+  border: none;
+  cursor: pointer;
+  border-radius: 999px;
+  padding: 8px 13px;
+  background: rgba(0,0,0,.07);
+  color: #111;
+  font-weight: 900;
+  opacity: .68;
+}
+
+.ed-filter-pill.ed-filter-active {
+  background: var(--ui-azul-claro, #bcdcff);
+  color: #000;
+  opacity: 1;
+  box-shadow: 0 4px 12px rgba(0,0,0,.10);
+}
+
+#edLista.ed-lista-galeria {
+  display: block !important;
+  width: 100%;
+  max-width: 100%;
+  overflow: visible;
+}
+
+.ed-galeria-track {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 4px 2px 16px;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+
+.ed-galeria-track::-webkit-scrollbar {
+  height: 8px;
+}
+
+.ed-galeria-track .ed-card-galeria {
+  flex: 0 0 clamp(270px, 31vw, 360px);
+  scroll-snap-align: start;
+  margin: 0;
+}
+
+.ed-card-galeria .ed-card-cover {
+  width: calc(100% - 22px);
+  margin: 11px auto 0;
+  aspect-ratio: 3 / 4;
+}
+
+.ed-card-galeria .ed-card-body {
+  padding: 11px 12px 14px;
+}
+
+.ed-card-rama-label {
+  display: inline-flex;
+  width: max-content;
+  max-width: 100%;
+  margin: 0 0 10px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(0,0,0,.06);
+  color: #111;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.ed-card-actions-ediciones {
+  flex-wrap: wrap !important;
+  justify-content: center !important;
+  gap: 9px !important;
+  overflow: visible !important;
+  padding-bottom: 5px !important;
+  margin-top: 2px !important;
+}
+
+.ed-card-actions-ediciones button {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+}
+
+.ed-card-actions-ediciones button.ed-danger-mini {
+  position: static;
+  width: 28px;
+  height: 28px;
+  font-size: 10px;
+  opacity: .45;
+  margin-left: 2px;
+}
+
+body.oscuro .ed-top-icon,
+body.oscuro #edFiltros,
+body.oscuro .ed-search-wrap {
+  background: rgba(255,255,255,.12);
+  color: #fff;
+  border-color: rgba(255,255,255,.12);
+}
+
+body.oscuro .ed-search-wrap input,
+body.oscuro .ed-filtros-title,
+body.oscuro .ed-card-rama-label {
+  color: #fff;
+}
+
+body.oscuro .ed-card-rama-label {
+  background: rgba(255,255,255,.12);
+}
+
+@media (max-width: 700px) {
+  #edWrap {
+    max-width: 100%;
+  }
+
+  #edFiltros {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .ed-filtros-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .ed-galeria-track {
+    gap: 12px;
+    padding-bottom: 14px;
+  }
+
+  .ed-galeria-track .ed-card-galeria {
+    flex: 0 0 min(82vw, 310px);
+  }
+
+  .ed-card-actions-ediciones {
+    gap: 8px !important;
+  }
 }
 
 </style> 
