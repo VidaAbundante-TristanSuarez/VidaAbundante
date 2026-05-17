@@ -607,21 +607,35 @@ function obtenerSeccionActual() {
 
 function guardarEstadoBiblia(extra = {}) {
   try {
+    const anterior = leerEstadoBiblia() || {};
+
     const estado = {
+      ...anterior,
+
       seccion: obtenerSeccionActual(),
+
+      // ✅ ahora también recordamos pantallas internas
+      subIglesia: window.__IGLESIA_SUB_ACTIVA || anterior.subIglesia || "",
+      subRecursos: window.__RECURSOS_SUB_ACTIVA || anterior.subRecursos || "",
+      subPanel: window.__PANEL_SUB_ACTIVA || anterior.subPanel || "",
+
       version: versionActual || "RV1960",
-      libro: libroSel?.value || "",
-      capitulo: Number(capSel?.value || 1),
+      libro: libroSel?.value || anterior.libro || "",
+      capitulo: Number(capSel?.value || anterior.capitulo || 1),
       scrollBiblia: window.scrollY || document.documentElement.scrollTop || 0,
       modoImagen: !!modoImagen,
       ts: Date.now(),
+
       ...extra
     };
+
     localStorage.setItem(LS_BIBLIA_ESTADO, JSON.stringify(estado));
   } catch (e) {
     console.warn("No pude guardar estado Biblia:", e);
   }
 }
+
+window.guardarEstadoBiblia = guardarEstadoBiblia;
 
 function leerEstadoBiblia() {
   try {
@@ -3822,10 +3836,41 @@ window.irA = (seccion) => {
 
   // ✅ iniciales internos SOLO de la sección abierta
   if (seccion === "iglesia") {
-    try { window.mostrarIglesiaSub?.("devocionales"); } catch(e) {}
+    const estado = leerEstadoBiblia() || {};
+
+    const subIglesiaGuardada =
+      window.__IGLESIA_SUB_ACTIVA ||
+      estado.subIglesia ||
+      "devocionales";
+
+    const subRecursosGuardada =
+      window.__RECURSOS_SUB_ACTIVA ||
+      estado.subRecursos ||
+      "";
+
+    try {
+      window.mostrarIglesiaSub?.(subIglesiaGuardada);
+    } catch(e) {}
+
+    // ✅ Si estabas en Recursos > Ediciones, vuelve ahí después del refresh
+    if (subIglesiaGuardada === "recursos") {
+      setTimeout(() => {
+        try {
+          if (subRecursosGuardada && typeof window.mostrarRecursosSub === "function") {
+            window.mostrarRecursosSub(subRecursosGuardada);
+          }
+
+          if (subRecursosGuardada === "ediciones" && typeof window.mostrarEdiciones === "function") {
+            window.mostrarEdiciones();
+          }
+        } catch(e) {
+          console.warn("No pude restaurar subpantalla de Recursos:", e);
+        }
+      }, 80);
+    }
 
     requestAnimationFrame(() => forzarSeccionActiva("iglesia"));
-    setTimeout(() => forzarSeccionActiva("iglesia"), 80);
+    setTimeout(() => forzarSeccionActiva("iglesia"), 120);
     return;
   }
 
@@ -6552,6 +6597,15 @@ window.mostrarIglesiaSub = (sub) => {
 
   const permitidas = ["devocionales", "abc", "subidos", "recursos"];
   if (!permitidas.includes(sub)) sub = "devocionales";
+
+    window.__IGLESIA_SUB_ACTIVA = sub;
+
+  try {
+    guardarEstadoBiblia({
+      seccion: "iglesia",
+      subIglesia: sub
+    });
+  } catch(e) {}
 
   // ✅ detecto si estaba en ABC antes
   const abcAntes = document.getElementById("iglesia-abc");
