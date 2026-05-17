@@ -449,16 +449,82 @@ function vaEntradaDesdeLogin() {
   return vaParam("loginOk") === "1" || vaParam("visitante") === "1";
 }
 
+function vaSeccionValidaApp(seccion) {
+  return ["biblia", "iglesia", "panel", "compartidos"].includes(seccion);
+}
+
+function vaHayLinkDirectoInterno() {
+  try {
+    const params = new URLSearchParams(location.search);
+
+    // Links directos que NO debe pisar el arranque normal.
+    if (params.get("edicionRef")) return true;
+    if (params.get("ver") === "edicion") return true;
+
+    return false;
+  } catch {
+    return false;
+  }
+}
+
 function vaSeccionInicialLogueado() {
   const estado = leerEstadoBiblia();
+  const seccionGuardada = estado?.seccion || "";
 
-  // ✅ Si está instalada y hay usuario, abre donde quedó.
-  if (vaEsStandalone() && estado?.seccion && !vaEntradaDesdeLogin()) {
-    return estado.seccion;
+  // Si viene de un link especial, no forzamos pantalla.
+  if (vaHayLinkDirectoInterno()) {
+    return "";
   }
 
-  // ✅ Link normal / recién logueado: Compartidos.
+  // Si recién viene del login, entramos a Compartidos.
+  if (vaEntradaDesdeLogin()) {
+    return "compartidos";
+  }
+
+  // Si ya usó la app antes, abrimos donde quedó.
+  if (vaSeccionValidaApp(seccionGuardada)) {
+    return seccionGuardada;
+  }
+
+  // Primera vez: Compartidos.
   return "compartidos";
+}
+
+function vaSeccionInicialVisitante() {
+  const estado = leerEstadoBiblia();
+  const seccionGuardada = estado?.seccion || "";
+
+  if (vaHayLinkDirectoInterno()) {
+    return "";
+  }
+
+  if (vaSeccionValidaApp(seccionGuardada)) {
+    return seccionGuardada;
+  }
+
+  return "compartidos";
+}
+
+let vaPantallaInicialAplicada = false;
+
+function vaAbrirPantallaInicialUnaVez(seccion, motivo = "") {
+  if (vaPantallaInicialAplicada) return;
+  if (!seccion) return;
+  if (!vaSeccionValidaApp(seccion)) seccion = "compartidos";
+
+  vaPantallaInicialAplicada = true;
+
+  setTimeout(() => {
+    try {
+      if (typeof window.irA === "function") {
+        window.irA(seccion);
+      }
+
+      vaMostrarConsejoInstalarApp();
+    } catch (e) {
+      console.warn("No pude abrir pantalla inicial:", motivo, e);
+    }
+  }, 0);
 }
 
 function vaTextoInstalarApp() {
@@ -609,19 +675,18 @@ function restaurarEstadoBibliaInicial() {
   // capítulos
   cargarCapitulos({ capituloPreferido: estado.capitulo, irArriba: false, guardar: false });
 
-  // restaurar sección después de que esté todo armado
-  setTimeout(() => {
-    if (estado.seccion && typeof window.irA === "function") {
-      try { window.irA(estado.seccion); } catch(e) {}
-    }
-
-    // restaurar scroll solo si estaba en biblia
-    if (estado.seccion === "biblia") {
-      setTimeout(() => {
-        window.scrollTo({ top: Number(estado.scrollBiblia || 0), behavior: "auto" });
-      }, 60);
-    }
-  }, 0);
+   // ✅ Biblia solo restaura Biblia.
+  // La pantalla inicial la decide vaAbrirPantallaInicialUnaVez().
+  if (estado.seccion === "biblia") {
+    setTimeout(() => {
+      if (obtenerSeccionActual() === "biblia") {
+        window.scrollTo({
+          top: Number(estado.scrollBiblia || 0),
+          behavior: "auto"
+        });
+      }
+    }, 120);
+  }
 }
 
 // ================= REGISTRAR USUARIO ===================================
@@ -798,19 +863,7 @@ if (!uid) {
 
   vaLimpiarParamsEntrada();
 
-  setTimeout(() => {
-    try {
-      if (typeof window.irA === "function") {
-        window.irA("compartidos");
-      } else if (typeof window.mostrarCompartidos === "function") {
-        window.mostrarCompartidos();
-      }
-
-      vaMostrarConsejoInstalarApp();
-    } catch (e) {
-      console.warn("No pude abrir Compartidos visitante:", e);
-    }
-  }, 300);
+if (typeof window.irA === "function") {
 
   return;
 }
@@ -967,17 +1020,10 @@ onValue(ref(db, "panelEdiciones/" + uid), s => {
     }
   });
 
-  setTimeout(() => {
-  try {
-    if (typeof window.irA === "function") {
-      window.irA(vaSeccionInicialLogueado());
-    }
-
-    vaMostrarConsejoInstalarApp();
-  } catch (e) {
-    console.warn("No pude abrir sección inicial:", e);
-  }
-}, 500);
+   vaAbrirPantallaInicialUnaVez(
+    vaSeccionInicialLogueado(),
+    "usuario-logueado"
+  );
 
 });
 
@@ -3502,7 +3548,18 @@ if (subir) {
 // ================= 🔺 WINDOW / UI ⭕ ===============================
 window.irA = (seccion) => {
   const todas = ["biblia", "iglesia", "panel", "compartidos"];
-  if (!todas.includes(seccion)) seccion = "iglesia";
+
+  // ✅ Si algo manda una sección rara, no abrimos Iglesia por error:
+  // abrimos Compartidos, como vos pediste para primera entrada / fallback.
+  if (!todas.includes(seccion)) seccion = "compartidos";
+
+  // ✅ guardamos la sección apenas se toca el menú o se cambia pantalla.
+  // Esto ayuda a volver donde estabas si Android mata la app.
+  try {
+    guardarEstadoBiblia({ seccion });
+  } catch (e) {
+    console.warn("No pude guardar sección actual:", e);
+  }
 
   // ✅ primero cierro todo de forma fuerte
   forzarSeccionActiva(seccion);
@@ -6223,20 +6280,6 @@ if (inputBuscarLibro && selectLibro) {
   });
 }
     
-// 4) arranque visual por defecto
-// ✅ La pantalla pública inicial es Compartidos, no Iglesia.
-requestAnimationFrame(() => {
-  const yaHaySeccion =
-    document.body.classList.contains("en-biblia") ||
-    document.body.classList.contains("en-iglesia") ||
-    document.body.classList.contains("en-panel") ||
-    document.body.classList.contains("en-compartidos");
-
-  if (!yaHaySeccion) {
-    window.irA?.("compartidos");
-  }
-});
-
 // cuando Firebase confirma el usuario
 onAuthStateChanged(auth, (user) => {
   if (!user) return;
