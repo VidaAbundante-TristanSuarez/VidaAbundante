@@ -412,6 +412,10 @@ let scrollCapituloAnterior = 0;
 // ================= 💾 ESTADO DE NAVEGACIÓN BIBLIA =================
 const LS_BIBLIA_ESTADO = "va_biblia_estado_v1";
 
+const VA_UI_SNAPSHOT_KEY = "va_ui_snapshot_v1";
+const VA_UI_SNAPSHOT_MAX_AGE = 1000 * 60 * 60 * 24 * 3; // 3 días
+const VA_UI_SNAPSHOT_MAX_HTML = 900000; // evita romper localStorage con HTML enorme
+
 const VA_VISITANTE_KEY = "VA_VISITANTE_OK";
 const VA_TIP_APP_KEY = "VA_TIP_APP_VISTO";
 
@@ -626,6 +630,227 @@ function leerEstadoBiblia() {
   } catch (e) {
     console.warn("No pude leer estado Biblia:", e);
     return null;
+  }
+}
+
+function vaSelectorVisible(selectores = []) {
+  for (const sel of selectores) {
+    const el = document.querySelector(sel);
+    if (!el) continue;
+
+    const st = getComputedStyle(el);
+    if (st.display !== "none") return sel;
+  }
+
+  return "";
+}
+
+function vaSelectorCacheActual(seccion) {
+  if (seccion === "biblia") {
+    return "#texto";
+  }
+
+  if (seccion === "iglesia") {
+    return vaSelectorVisible([
+      "#iglesia-devocionales",
+      "#iglesia-abc",
+      "#iglesia-subidos",
+      "#iglesia-recursos"
+    ]) || "#seccion-iglesia";
+  }
+
+  if (seccion === "panel") {
+    return vaSelectorVisible([
+      "#panel-imagenes",
+      "#panel-marcadores",
+      "#panel-compartidos",
+      "#panel-abc",
+      "#panel-recursos"
+    ]) || "#seccion-panel";
+  }
+
+  if (seccion === "compartidos") {
+    return vaSelectorVisible([
+      "#compFeed",
+      "#compartidosFeed",
+      "#feedCompartidos",
+      "#listaCompartidos",
+      "#seccion-compartidos"
+    ]) || "#seccion-compartidos";
+  }
+
+  return "";
+}
+
+function vaGuardarSnapshotVisual() {
+  try {
+    guardarEstadoBiblia();
+
+    const seccion = obtenerSeccionActual();
+    if (!vaSeccionValidaApp(seccion)) return;
+
+    // No guardamos encima si hay un modal grande abierto.
+    if (document.querySelector("#edViewer.ed-open")) return;
+    if (document.querySelector("#edModal[style*='flex']")) return;
+    if (document.querySelector("#modalPersonalizar.abierto")) return;
+
+    const selector = vaSelectorCacheActual(seccion);
+    const el = selector ? document.querySelector(selector) : null;
+
+    let html = el ? String(el.innerHTML || "") : "";
+
+    // Evita guardar cosas gigantes que rompan localStorage.
+    if (html.length > VA_UI_SNAPSHOT_MAX_HTML) {
+      html = "";
+    }
+
+    const snap = {
+      seccion,
+      selector,
+      html,
+      tituloBibliaHtml: document.getElementById("titulo")?.innerHTML || "",
+      scrollY: window.scrollY || document.documentElement.scrollTop || 0,
+      scrollTopInterno: el && el !== document.body ? Number(el.scrollTop || 0) : 0,
+      bodyOscuro: document.body.classList.contains("oscuro"),
+      ts: Date.now()
+    };
+
+    localStorage.setItem(VA_UI_SNAPSHOT_KEY, JSON.stringify(snap));
+  } catch (e) {
+    console.warn("No pude guardar caché visual rápido:", e);
+  }
+}
+
+function vaLeerSnapshotVisual() {
+  try {
+    const raw = localStorage.getItem(VA_UI_SNAPSHOT_KEY);
+    if (!raw) return null;
+
+    const snap = JSON.parse(raw);
+    if (!snap || !snap.ts) return null;
+
+    const vencido = Date.now() - Number(snap.ts || 0) > VA_UI_SNAPSHOT_MAX_AGE;
+    if (vencido) return null;
+
+    if (!vaSeccionValidaApp(snap.seccion)) return null;
+
+    return snap;
+  } catch (e) {
+    console.warn("No pude leer caché visual rápido:", e);
+    return null;
+  }
+}
+
+function vaMostrarCargandoSuave(texto = "Actualizando...") {
+  let pill = document.getElementById("vaCacheActualizando");
+  if (!pill) {
+    pill = document.createElement("div");
+    pill.id = "vaCacheActualizando";
+    pill.style.cssText = `
+      position:fixed;
+      left:50%;
+      bottom:78px;
+      transform:translateX(-50%);
+      z-index:999999;
+      padding:8px 12px;
+      border-radius:999px;
+      background:rgba(0,0,0,.68);
+      color:#fff;
+      font-size:12px;
+      font-weight:800;
+      box-shadow:0 6px 18px rgba(0,0,0,.22);
+      pointer-events:none;
+      opacity:.92;
+    `;
+    document.body.appendChild(pill);
+  }
+
+  pill.textContent = texto;
+
+  clearTimeout(pill._tm);
+  pill._tm = setTimeout(() => {
+    pill.remove();
+  }, 3500);
+}
+
+function vaRestaurarSnapshotVisualRapido() {
+  const snap = vaLeerSnapshotVisual();
+  if (!snap) return false;
+  if (vaHayLinkDirectoInterno()) return false;
+
+  try {
+    if (snap.bodyOscuro) {
+      document.body.classList.add("oscuro");
+    }
+
+    forzarSeccionActiva(snap.seccion);
+
+    // Menú activo rápido.
+    document.querySelectorAll("#menu .nav-btn").forEach(b => b.classList.remove("activo"));
+    const btnActivo = document.querySelector(`#menu .nav-btn[onclick="irA('${snap.seccion}')"]`);
+    if (btnActivo) btnActivo.classList.add("activo");
+
+    // Restaurar HTML del contenedor visible.
+    if (snap.selector && snap.html) {
+      const el = document.querySelector(snap.selector);
+      if (el) {
+        el.innerHTML = snap.html;
+
+        if (snap.selector.startsWith("#iglesia-")) {
+          ["devocionales", "abc", "subidos", "recursos"].forEach(k => {
+            const sub = document.getElementById("iglesia-" + k);
+            if (sub) {
+              sub.style.setProperty(
+                "display",
+                snap.selector === "#iglesia-" + k ? "block" : "none",
+                "important"
+              );
+            }
+          });
+        }
+
+        if (snap.selector.startsWith("#panel-")) {
+          ["imagenes", "marcadores", "compartidos", "abc", "recursos"].forEach(k => {
+            const sub = document.getElementById("panel-" + k);
+            if (sub) {
+              sub.style.setProperty(
+                "display",
+                snap.selector === "#panel-" + k ? "block" : "none",
+                "important"
+              );
+            }
+          });
+        }
+
+        if (Number(snap.scrollTopInterno || 0) > 0) {
+          setTimeout(() => {
+            try {
+              el.scrollTop = Number(snap.scrollTopInterno || 0);
+            } catch (_) {}
+          }, 60);
+        }
+      }
+    }
+
+    // Biblia: restaurar título visual rápido si estaba disponible.
+    if (snap.seccion === "biblia" && snap.tituloBibliaHtml) {
+      const t = document.getElementById("titulo");
+      if (t) t.innerHTML = snap.tituloBibliaHtml;
+    }
+
+    setTimeout(() => {
+      window.scrollTo({
+        top: Number(snap.scrollY || 0),
+        behavior: "auto"
+      });
+    }, 80);
+
+    vaMostrarCargandoSuave("Restaurando donde estabas...");
+
+    return true;
+  } catch (e) {
+    console.warn("No pude restaurar caché visual rápido:", e);
+    return false;
   }
 }
 
@@ -863,12 +1088,18 @@ if (!uid) {
 
   vaLimpiarParamsEntrada();
 
-if (typeof window.irA === "function") {
+ vaAbrirPantallaInicialUnaVez(
+    vaSeccionInicialVisitante(),
+    "visitante"
+  );
+
+  setTimeout(() => {
+    document.getElementById("vaCacheActualizando")?.remove();
+    vaGuardarSnapshotVisual();
+  }, 1200);
 
   return;
 }
-
-localStorage.removeItem(VA_VISITANTE_KEY);
 vaLimpiarParamsEntrada();
   
   // ✅ registrar automáticamente al usuario que entró
@@ -1025,6 +1256,11 @@ onValue(ref(db, "panelEdiciones/" + uid), s => {
     "usuario-logueado"
   );
 
+  setTimeout(() => {
+  document.getElementById("vaCacheActualizando")?.remove();
+  vaGuardarSnapshotVisual();
+}, 1200);
+
 });
 
 // ================= DOM (script al final del body)  =================
@@ -1033,6 +1269,10 @@ const capSel = document.getElementById("capitulo");
 const texto = document.getElementById("texto");
 const titulo = document.getElementById("titulo");
 const loginModal = document.getElementById("loginModal");
+
+// ✅ Muestra rápido la última pantalla guardada,
+// mientras Firebase/Biblia/R2 terminan de cargar de verdad.
+vaRestaurarSnapshotVisualRapido();
 
 // ================= 🔎 HELPERS FILTROS BIBLIA =================
 let filtroBibliaBackup = null;
@@ -2411,13 +2651,22 @@ function initPersonalizarListeners() {
 
 document.addEventListener("DOMContentLoaded", initPersonalizarListeners);
 window.addEventListener("beforeunload", () => {
-  guardarEstadoBiblia();
+  vaGuardarSnapshotVisual();
+});
+
+window.addEventListener("pagehide", () => {
+  vaGuardarSnapshotVisual();
 });
 
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") {
-    guardarEstadoBiblia();
+    vaGuardarSnapshotVisual();
   }
+});
+
+// Algunos Android/Chrome disparan freeze antes de matar la app.
+document.addEventListener("freeze", () => {
+  vaGuardarSnapshotVisual();
 });
 
 // ================= 🎀 LISTA VISUAL DE FUENTES =================
@@ -3555,8 +3804,9 @@ window.irA = (seccion) => {
 
   // ✅ guardamos la sección apenas se toca el menú o se cambia pantalla.
   // Esto ayuda a volver donde estabas si Android mata la app.
-  try {
+ try {
     guardarEstadoBiblia({ seccion });
+    setTimeout(vaGuardarSnapshotVisual, 120);
   } catch (e) {
     console.warn("No pude guardar sección actual:", e);
   }
