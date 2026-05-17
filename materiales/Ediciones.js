@@ -1741,11 +1741,12 @@ async function edCrearFileDesdeUrl(url, nombre = "edicion.png") {
 }
 
 async function edCompartirConPortada({ titulo, url, portadaUrl }) {
-  const texto = `${titulo}\n${url}`;
+  const tituloLimpio = String(titulo || "Edición").trim() || "Edición";
+  const textoFallback = `${tituloLimpio}\n${url}`;
 
   if (!navigator.share) {
     if (navigator.clipboard) {
-      await navigator.clipboard.writeText(texto);
+      await navigator.clipboard.writeText(textoFallback);
       return "copiado";
     }
 
@@ -1755,12 +1756,12 @@ async function edCompartirConPortada({ titulo, url, portadaUrl }) {
 
   if (portadaUrl) {
     try {
-      const file = await edCrearFileDesdeUrl(portadaUrl, titulo || "edicion");
+      const file = await edCrearFileDesdeUrl(portadaUrl, tituloLimpio);
 
       if (navigator.canShare?.({ files: [file] })) {
         await navigator.share({
-          title: titulo,
-          text: texto,
+          title: tituloLimpio,
+          text: tituloLimpio,
           url,
           files: [file]
         });
@@ -1773,8 +1774,8 @@ async function edCompartirConPortada({ titulo, url, portadaUrl }) {
   }
 
   await navigator.share({
-    title: titulo,
-    text: titulo,
+    title: tituloLimpio,
+    text: tituloLimpio,
     url
   });
 
