@@ -726,18 +726,20 @@ button.subidos-media-link{
   min-height:0;
   display:flex;
   flex-direction:column;
-  gap:4px;
+  gap:3px;
   padding:7px 8px;
   border:1px solid rgba(216,238,249,.95);
   background:rgba(255,255,255,.82);
   border-radius:12px;
   font-family:"Lora", serif;
   overflow:hidden;
+  align-items:stretch;
+  justify-content:flex-start;
 }
 
 .subidos-predica-primera-ref{
   flex:0 0 auto;
-  align-self:center;
+  align-self:flex-start;
   max-width:100%;
   border-radius:999px;
   padding:4px 10px;
@@ -749,27 +751,42 @@ button.subidos-media-link{
   white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
-  text-align:center;
+  text-align:left;
+  margin:0;
 }
 
 .subidos-predica-primera-texto{
   flex:1 1 auto;
   min-height:0;
-  overflow:auto;
-
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  flex-direction:column;
-
+  overflow:hidden;
+  display:block;
   font-size:11.5px;
-  line-height:1.2;
-  text-align:center;
+  line-height:1.16;
+  text-align:left;
   font-weight:700;
   white-space:normal !important;
   text-indent:0 !important;
   margin:0 !important;
   padding:0 !important;
+}
+
+.subidos-predica-card-titulo{
+  flex:0 0 auto;
+  font-family:"Lora", serif;
+  font-size:13px;
+  line-height:1.08;
+  font-weight:900;
+  text-align:center;
+  color:#000;
+  margin:0 0 3px;
+  padding:4px 6px;
+  border-radius:10px;
+  background:rgba(255,255,255,.70);
+  border:1px solid rgba(216,238,249,.85);
+  overflow:hidden;
+  display:-webkit-box;
+  -webkit-line-clamp:2;
+  -webkit-box-orient:vertical;
 }
 
 .subidos-predica-primera-vacia{
@@ -1182,21 +1199,29 @@ body.oscuro #modalSubidosVisor{
     overflow:hidden;
   }
 
-  .subidos-predica-primera{
-    padding:6px 7px;
-    gap:3px;
-  }
+ .subidos-predica-primera{
+  padding:6px 7px;
+  gap:2px;
+}
 
-  .subidos-predica-primera-ref{
-    font-size:11.5px;
-    padding:4px 9px;
-  }
+.subidos-predica-primera-ref{
+  font-size:11.3px;
+  padding:4px 8px;
+  align-self:flex-start;
+}
 
-  .subidos-predica-primera-texto{
-    font-size:10.8px;
-    line-height:1.18;
-    text-align:center;
-  }
+.subidos-predica-primera-texto{
+  font-size:10.6px;
+  line-height:1.13;
+  text-align:left;
+}
+
+.subidos-predica-card-titulo{
+  font-size:12px;
+  line-height:1.05;
+  margin-bottom:2px;
+  -webkit-line-clamp:2;
+}
   
   .subidos-feed-actions{
     gap:6px !important;
@@ -1416,7 +1441,7 @@ body.oscuro #modalSubidosVisor{
 .subidos-feed-card.subidos-card-predica{
   width:238px !important;
   min-width:238px !important;
-  height:438px !important;
+  height:460px !important;
   aspect-ratio:auto !important;
   padding:7px !important;
   overflow:hidden !important;
@@ -1643,7 +1668,7 @@ body.oscuro #modalSubidosVisor{
   .subidos-feed-card.subidos-card-predica{
     width:222px !important;
     min-width:222px !important;
-    height:322px !important;
+    height:338px !important;
   }
 
   .subidos-feed-card.subidos-card-predica .subidos-media{
@@ -1790,6 +1815,63 @@ body.oscuro #modalSubidosVisor{
 /* =====================================================
    ✅ AJUSTES PRÉDICA ABIERTA + GALERÍA DE FONDOS
    ===================================================== */
+
+.subidos-visor-encabezado-predica{
+  margin:0 0 12px;
+  padding:10px 14px;
+  border-radius:16px;
+  background:rgba(255,255,255,.88);
+  border:1px solid #d8eef9;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  font-family:"Lora", serif;
+  backdrop-filter:blur(3px);
+  -webkit-backdrop-filter:blur(3px);
+}
+
+.subidos-visor-iglesia-top{
+  flex:1 1 auto;
+  min-width:0;
+  font-size:18px;
+  line-height:1.12;
+  font-weight:900;
+  text-align:left;
+  color:var(--visor-texto);
+}
+
+.subidos-visor-desc-top{
+  flex:0 1 45%;
+  min-width:0;
+  font-size:21px;
+  line-height:1.08;
+  font-weight:900;
+  text-align:right;
+  color:var(--visor-texto);
+  overflow-wrap:anywhere;
+}
+
+.subidos-visor-predica-titulo{
+  text-align:center !important;
+}
+
+@media (max-width:800px){
+  .subidos-visor-encabezado-predica{
+    align-items:flex-start;
+    gap:8px;
+    padding:9px 11px;
+  }
+
+  .subidos-visor-iglesia-top{
+    font-size:15.5px;
+  }
+
+  .subidos-visor-desc-top{
+    font-size:19px;
+    flex-basis:46%;
+  }
+}
 
 .subidos-fondo-predica-galeria{
   width:100%;
