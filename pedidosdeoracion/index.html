@@ -79,8 +79,8 @@
       const base = path.replace(/\/pedidosdeoracion\/?$/, "");
 
       const destino = ref
-        ? `${window.location.origin}${base}/biblia.html?pedidoOracionRef=${encodeURIComponent(ref)}`
-        : `${window.location.origin}${base}/biblia.html`;
+        ? `${window.location.origin}${base}/index.html?pedidoOracionRef=${encodeURIComponent(ref)}`
+        : `${window.location.origin}${base}/index.html`;
 
       window.location.replace(destino);
     })();
