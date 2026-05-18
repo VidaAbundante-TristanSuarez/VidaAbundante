@@ -1831,62 +1831,366 @@ body.oscuro #modalSubidosVisor{
    ✅ AJUSTES PRÉDICA ABIERTA + GALERÍA DE FONDOS
    ===================================================== */
 
+/* =========================
+   PRÉDICA ABIERTA
+   ========================= */
+
 .subidos-visor-encabezado-predica{
-  margin:0 0 12px;
-  padding:10px 14px;
-  border-radius:16px;
-  background:rgba(255,255,255,.88);
-  border:1px solid #d8eef9;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
-  font-family:"Lora", serif;
+  margin:0 0 12px !important;
+  padding:10px 14px !important;
+  border-radius:16px !important;
+  background:rgba(255,255,255,.88) !important;
+  border:1px solid #d8eef9 !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:12px !important;
+  font-family:"Lora", serif !important;
+  text-align:center !important;
   backdrop-filter:blur(3px);
   -webkit-backdrop-filter:blur(3px);
 }
 
 .subidos-visor-iglesia-top{
-  flex:1 1 auto;
-  min-width:0;
-  font-size:18px;
-  line-height:1.12;
-  font-weight:900;
-  text-align:left;
-  color:var(--visor-texto);
+  flex:1 1 auto !important;
+  min-width:0 !important;
+  font-size:18px !important;
+  line-height:1.12 !important;
+  font-weight:900 !important;
+  text-align:center !important;
+  color:var(--visor-texto) !important;
 }
 
 .subidos-visor-desc-top{
-  flex:0 1 45%;
-  min-width:0;
-  font-size:21px;
-  line-height:1.08;
-  font-weight:900;
-  text-align:right;
-  color:var(--visor-texto);
-  overflow-wrap:anywhere;
+  flex:0 1 45% !important;
+  min-width:0 !important;
+  font-size:21px !important;
+  line-height:1.08 !important;
+  font-weight:900 !important;
+  text-align:center !important;
+  color:var(--visor-texto) !important;
+  overflow-wrap:anywhere !important;
 }
 
-.subidos-visor-predica-titulo{
+.subidos-visor-marco{
+  position:relative !important;
+  overflow:hidden !important;
+  background:rgba(255,255,255,.52) !important;
+}
+
+.subidos-visor-marco::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background-image:var(--subidos-predica-fondo, url("./img/fondos/Paisajes/1.jpeg"));
+  background-size:cover;
+  background-position:center;
+  background-repeat:no-repeat;
+  opacity:.60;
+  z-index:0;
+}
+
+.subidos-visor-marco > *{
+  position:relative;
+  z-index:1;
+}
+
+/* ✅ Título, iglesia, descripción, citas y cierre centrados */
+.subidos-visor-titulo,
+.subidos-visor-iglesia,
+.subidos-visor-iglesia-top,
+.subidos-visor-desc-top,
+.subidos-visor-cierre,
+.subidos-visor-predica-titulo,
+.subidos-visor-ref{
   text-align:center !important;
 }
 
-@media (max-width:800px){
-  .subidos-visor-encabezado-predica{
-    align-items:flex-start;
-    gap:8px;
-    padding:9px 11px;
-  }
-
-  .subidos-visor-iglesia-top{
-    font-size:15.5px;
-  }
-
-  .subidos-visor-desc-top{
-    font-size:19px;
-    flex-basis:46%;
-  }
+/* ✅ Descripción / intro y nota final centradas */
+.subidos-visor-intro,
+.subidos-visor-nota-cierre{
+  text-align:center !important;
+  white-space:normal !important;
+  text-indent:0 !important;
+  font-weight:400 !important;
 }
+
+/* ✅ Bloques de prédica */
+.subidos-visor-bloques{
+  display:flex !important;
+  flex-direction:column !important;
+  gap:10px !important;
+}
+
+/* ✅ Primer versículo destacado */
+.subidos-visor-bloque-primera,
+.subidos-visor-bloques .subidos-visor-bloque:first-child{
+  background:#d1eeff !important;
+  border:1px solid rgba(150,205,235,.72) !important;
+  border-radius:16px !important;
+  overflow:hidden !important;
+}
+
+/* ✅ Referencias bíblicas centradas */
+.subidos-visor-ref{
+  font-weight:900 !important;
+  border-bottom:1px solid rgba(70,105,102,.22) !important;
+}
+
+/* ✅ Textos bíblicos con bold */
+.subidos-visor-versiculo-box,
+.subidos-visor-texto,
+.subidos-visor-texto-primera{
+  margin:10px 12px !important;
+  padding:11px 12px !important;
+  border:1px solid rgba(70,105,102,.34) !important;
+  border-radius:14px !important;
+  background:rgba(255,255,255,.76) !important;
+  line-height:1.35 !important;
+  font-family:"Lora", serif !important;
+  color:var(--visor-texto) !important;
+  font-weight:800 !important;
+  text-align:left !important;
+  white-space:normal !important;
+  text-indent:0 !important;
+  overflow-x:hidden !important;
+  overflow-wrap:break-word !important;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.35);
+}
+
+/* ✅ Comentarios sin bold, solo italic */
+.subidos-visor-comentario{
+  font-style:italic !important;
+  font-weight:400 !important;
+  text-align:left !important;
+  margin:6px 12px 12px !important;
+  padding:8px 10px !important;
+  white-space:normal !important;
+  text-indent:0 !important;
+  overflow-x:hidden !important;
+  overflow-wrap:break-word !important;
+}
+
+/* ✅ Título interno de prédica */
+.subidos-visor-predica-titulo{
+  margin:10px 0 12px !important;
+  padding:10px 14px !important;
+  border-radius:16px !important;
+  background:rgba(255,255,255,.88) !important;
+  border:1px solid #d8eef9 !important;
+  font-family:"Lora", serif !important;
+  font-size:20px !important;
+  line-height:1.12 !important;
+  font-weight:900 !important;
+  color:var(--visor-texto) !important;
+  text-align:center !important;
+  backdrop-filter:blur(3px);
+  -webkit-backdrop-filter:blur(3px);
+}
+
+/* =========================
+   CARD DE PRÉDICA EN GALERÍA
+   ========================= */
+
+/* ✅ Card de prédica 15% más alta, sin tocar las demás cards */
+.subidos-feed-card.subidos-card-predica{
+  width:238px !important;
+  min-width:238px !important;
+  height:529px !important;
+  aspect-ratio:auto !important;
+  padding:7px !important;
+  overflow:hidden !important;
+}
+
+/* ✅ El título viejo de arriba se oculta solo en prédica */
+.subidos-feed-card.subidos-card-predica .subidos-feed-desc{
+  display:none !important;
+}
+
+/* ✅ Imagen/archivo mantiene su zona */
+.subidos-feed-card.subidos-card-predica .subidos-media{
+  flex:0 0 122px !important;
+  height:122px !important;
+  min-height:122px !important;
+  max-height:122px !important;
+  margin:0 0 5px 0 !important;
+  background:transparent !important;
+  border:none !important;
+  box-shadow:none !important;
+  padding:0 !important;
+  overflow:hidden !important;
+}
+
+/* ✅ Contenedor general debajo de la imagen */
+.subidos-feed-card.subidos-card-predica .subidos-predica-resumen,
+.subidos-feed-card.subidos-card-predica .subidos-predica-resumen-unica{
+  flex:1 1 auto !important;
+  min-height:0 !important;
+  width:100% !important;
+
+  display:flex !important;
+  flex-direction:column !important;
+  gap:5px !important;
+
+  margin:0 !important;
+  padding:0 !important;
+
+  overflow:hidden !important;
+  overflow-x:hidden !important;
+
+  cursor:pointer !important;
+}
+
+/* ✅ Evita scroll horizontal en toda la zona de prédica de galería */
+.subidos-feed-card.subidos-card-predica .subidos-predica-resumen *,
+.subidos-feed-card.subidos-card-predica .subidos-predica-resumen-unica *{
+  box-sizing:border-box !important;
+  max-width:100% !important;
+  min-width:0 !important;
+  overflow-x:hidden !important;
+  overflow-wrap:break-word !important;
+}
+
+/* ✅ Contenedor del título restaurado */
+.subidos-predica-galeria-titulo,
+.subidos-predica-card-titulo{
+  flex:0 0 auto !important;
+
+  display:block !important;
+  text-align:center !important;
+
+  font-family:"Lora", serif !important;
+  font-size:13px !important;
+  line-height:1.15 !important;
+  font-weight:900 !important;
+  color:#000 !important;
+
+  margin:0 !important;
+  padding:6px 8px !important;
+
+  border-radius:13px !important;
+  border:1px solid rgba(216,238,249,.95) !important;
+  background:rgba(255,255,255,.76) !important;
+  box-shadow:0 1px 4px rgba(0,0,0,.08) !important;
+
+  white-space:normal !important;
+  overflow:hidden !important;
+}
+
+/* ✅ Contenedor de cita + texto bíblico con fondo elegido, bordes y redondeado */
+.subidos-predica-primera{
+  position:relative !important;
+
+  flex:1 1 auto !important;
+  min-height:0 !important;
+  width:100% !important;
+
+  display:flex !important;
+  flex-direction:column !important;
+  justify-content:center !important;
+  align-items:stretch !important;
+  gap:5px !important;
+
+  margin:0 !important;
+  padding:7px !important;
+
+  border-radius:14px !important;
+  border:1px solid rgba(70,105,102,.30) !important;
+  background:rgba(255,255,255,.64) !important;
+
+  overflow:hidden !important;
+  overflow-x:hidden !important;
+
+  font-family:"Lora", serif !important;
+
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.45),
+    0 4px 10px rgba(0,0,0,.06) !important;
+}
+
+/* ✅ Fondo elegido para el PNG / prédica abierta / card de galería */
+.subidos-predica-primera::before{
+  content:"" !important;
+  position:absolute !important;
+  inset:0 !important;
+
+  background-image:var(--subidos-predica-card-fondo, none) !important;
+  background-size:cover !important;
+  background-position:center !important;
+  background-repeat:no-repeat !important;
+
+  opacity:.40 !important;
+  z-index:0 !important;
+  border-radius:inherit !important;
+}
+
+.subidos-predica-primera > *{
+  position:relative !important;
+  z-index:1 !important;
+}
+
+/* ✅ Cita centrada horizontalmente */
+.subidos-predica-primera-ref{
+  flex:0 0 auto !important;
+  align-self:center !important;
+
+  max-width:100% !important;
+
+  text-align:center !important;
+  font-size:11.6px !important;
+  font-weight:900 !important;
+  line-height:1.08 !important;
+
+  margin:0 !important;
+  padding:4px 9px !important;
+
+  border-radius:999px !important;
+  background:rgba(188,220,255,.90) !important;
+  border:1px solid #d8eef9 !important;
+
+  white-space:normal !important;
+  overflow:hidden !important;
+  text-overflow:clip !important;
+}
+
+/* ✅ Texto bíblico a la izquierda, con bold, y SOLO scroll vertical si hace falta */
+.subidos-predica-primera-texto{
+  flex:0 1 auto !important;
+  min-height:0 !important;
+  max-height:100% !important;
+
+  display:block !important;
+
+  font-size:11px !important;
+  line-height:1.18 !important;
+  font-weight:800 !important;
+
+  text-align:left !important;
+  white-space:normal !important;
+  text-indent:0 !important;
+
+  margin:0 !important;
+  padding:0 2px !important;
+
+  overflow-y:auto !important;
+  overflow-x:hidden !important;
+  overflow-wrap:break-word !important;
+}
+
+/* ✅ Comentario mini/card sin bold, solo italic */
+.subidos-predica-mini-comentario{
+  font-style:italic !important;
+  font-weight:400 !important;
+}
+
+/* ✅ Texto bíblico mini con bold */
+.subidos-predica-mini-texto{
+  font-weight:800 !important;
+}
+
+/* =========================
+   GALERÍA DE FONDOS
+   ========================= */
 
 .subidos-fondo-predica-galeria{
   width:100%;
@@ -1964,199 +2268,47 @@ body.oscuro #modalSubidosVisor{
   background-repeat:no-repeat;
 }
 
-.subidos-visor-marco{
-  position:relative !important;
-  overflow:hidden !important;
-  background:rgba(255,255,255,.52) !important;
-}
+/* =========================
+   TELÉFONO
+   ========================= */
 
-.subidos-visor-marco::before{
-  content:"";
-  position:absolute;
-  inset:0;
-  background-image:var(--subidos-predica-fondo, url("./img/fondos/Paisajes/1.jpeg"));
-  background-size:cover;
-  background-position:center;
-  background-repeat:no-repeat;
-  opacity:.60;
-  z-index:0;
-}
-
-.subidos-visor-marco > *{
-  position:relative;
-  z-index:1;
-}
-
-/* =====================================================
-   ✅ PRÉDICA ABIERTA: CENTRADOS + VERSÍCULOS + COMENTARIOS
-   ===================================================== */
-
-/* ✅ Título, descripción, iglesia, citas y cierre centrados */
-.subidos-visor-titulo,
-.subidos-visor-iglesia,
-.subidos-visor-iglesia-top,
-.subidos-visor-desc-top,
-.subidos-visor-cierre,
-.subidos-visor-predica-titulo,
-.subidos-visor-ref{
-  text-align:center !important;
-}
-
-/* ✅ Introducción y nota final centradas también */
-.subidos-visor-intro,
-.subidos-visor-nota-cierre{
-  text-align:center !important;
-  white-space:normal !important;
-  text-indent:0 !important;
-  font-weight:400 !important;
-}
-
-/* ✅ Los textos bíblicos quedan con bold */
-.subidos-visor-versiculo-box,
-.subidos-visor-texto,
-.subidos-visor-texto-primera{
-  margin:10px 12px !important;
-  padding:11px 12px !important;
-  border:1px solid rgba(70,105,102,.34) !important;
-  border-radius:14px !important;
-  background:rgba(255,255,255,.76) !important;
-  line-height:1.35 !important;
-  font-family:"Lora", serif !important;
-  color:var(--visor-texto) !important;
-  font-weight:800 !important;
-  text-align:left !important;
-  white-space:normal !important;
-  text-indent:0 !important;
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.35);
-}
-
-/* ✅ Primer versículo destacado con fondo exacto */
-.subidos-visor-bloque-primera{
-  background:#d1eeff !important;
-  border:1px solid rgba(150,205,235,.72) !important;
-  border-radius:16px !important;
-  overflow:hidden !important;
-}
-
-/* ✅ Comentarios: sin bold, solo italic */
-.subidos-visor-comentario{
-  font-style:italic !important;
-  font-weight:400 !important;
-  text-align:left !important;
-  margin:6px 12px 12px !important;
-  padding:8px 10px !important;
-  white-space:normal !important;
-  text-indent:0 !important;
-}
-
-/* ✅ Título interno de prédica */
-.subidos-visor-predica-titulo{
-  margin:10px 0 12px;
-  padding:10px 14px;
-  border-radius:16px;
-  background:rgba(255,255,255,.88);
-  border:1px solid #d8eef9;
-  font-family:"Lora", serif;
-  font-size:20px;
-  line-height:1.12;
-  font-weight:900;
-  color:var(--visor-texto);
-  backdrop-filter:blur(3px);
-  -webkit-backdrop-filter:blur(3px);
-}
-
-/* ✅ Referencias bíblicas centradas */
-.subidos-visor-ref{
-  font-weight:900 !important;
-  border-bottom:1px solid rgba(70,105,102,.22) !important;
-}
-
-/* ✅ Header de prédica abierta si está usando iglesia + descripción arriba */
-.subidos-visor-encabezado-predica{
-  text-align:center !important;
-}
-
-.subidos-visor-iglesia-top,
-.subidos-visor-desc-top{
-  text-align:center !important;
-}
-
-/* =====================================================
-   ✅ PREDICA CARD DE GALERÍA
-   ===================================================== */
-
-/* ✅ Ocultamos el título viejo de arriba solo en prédica,
-   porque ahora va debajo de la imagen */
-.subidos-feed-card.subidos-card-predica .subidos-feed-desc{
-  display:none !important;
-}
-
-/* ✅ El bloque debajo de la imagen permite scroll */
-.subidos-feed-card.subidos-card-predica .subidos-predica-resumen,
-.subidos-feed-card.subidos-card-predica .subidos-predica-resumen-unica{
-  flex:1 1 auto !important;
-  min-height:0 !important;
-  overflow:auto !important;
-  display:flex !important;
-  flex-direction:column !important;
-  gap:6px !important;
-  margin:0 !important;
-  padding:0 !important;
-}
-
-/* ✅ Título centrado arriba del contenedor de texto */
-.subidos-predica-galeria-titulo{
-  flex:0 0 auto !important;
-  text-align:center !important;
-  font-family:"Lora", serif !important;
-  font-size:13px !important;
-  line-height:1.15 !important;
-  font-weight:900 !important;
-  color:#000 !important;
-  padding:4px 6px 2px !important;
-}
-
-/* ✅ Contenedor de cita + texto centrado verticalmente */
-.subidos-predica-primera{
-  flex:1 1 auto !important;
-  min-height:0 !important;
-  overflow:auto !important;
-  display:flex !important;
-  flex-direction:column !important;
-  justify-content:center !important;
-  align-items:stretch !important;
-  gap:5px !important;
-  padding:6px 7px !important;
-}
-
-/* ✅ Cita centrada horizontalmente */
-.subidos-predica-primera-ref{
-  text-align:center !important;
-  align-self:center !important;
-  font-weight:900 !important;
-}
-
-/* ✅ Texto bíblico a la izquierda y con bold */
-.subidos-predica-primera-texto{
-  text-align:left !important;
-  font-weight:800 !important;
-  white-space:normal !important;
-  overflow:visible !important;
-}
-
-/* ✅ Comentario de mini/card: sin bold, solo italic */
-.subidos-predica-mini-comentario{
-  font-style:italic !important;
-  font-weight:400 !important;
-}
-
-/* ✅ Texto bíblico mini con bold */
-.subidos-predica-mini-texto{
-  font-weight:800 !important;
-}
-
-/* ✅ Teléfono: descripción debajo del nombre de iglesia y 10% más chica */
 @media (max-width:800px){
+
+  /* ✅ Prédica abierta al ancho real de la pantalla */
+  #modalSubidosVisor{
+    padding-left:0 !important;
+    padding-right:0 !important;
+  }
+
+  #modalSubidosVisor .modal-card{
+    width:100vw !important;
+    max-width:100vw !important;
+    margin-left:0 !important;
+    margin-right:0 !important;
+    border-radius:0 !important;
+  }
+
+  #subidosVisorBody{
+    width:100% !important;
+    max-width:100% !important;
+    overflow-x:hidden !important;
+  }
+
+  .subidos-visor-predica-full{
+    width:100vw !important;
+    max-width:100vw !important;
+    margin-left:calc(50% - 50vw) !important;
+    margin-right:calc(50% - 50vw) !important;
+  }
+
+  .subidos-visor-marco{
+    width:100% !important;
+    max-width:100% !important;
+    border-radius:0 !important;
+    padding:10px !important;
+  }
+
+  /* ✅ Nombre de iglesia arriba y descripción abajo, 10% más chica */
   .subidos-visor-encabezado-predica{
     display:flex !important;
     flex-direction:column !important;
@@ -2164,6 +2316,7 @@ body.oscuro #modalSubidosVisor{
     justify-content:center !important;
     gap:4px !important;
     text-align:center !important;
+    padding:9px 11px !important;
   }
 
   .subidos-visor-iglesia-top{
@@ -2181,8 +2334,8 @@ body.oscuro #modalSubidosVisor{
   }
 
   .subidos-visor-predica-titulo{
-    font-size:18px;
-    padding:9px 12px;
+    font-size:18px !important;
+    padding:9px 12px !important;
   }
 
   .subidos-visor-versiculo-box,
@@ -2192,8 +2345,48 @@ body.oscuro #modalSubidosVisor{
     padding:10px 10px !important;
   }
 
-  .subidos-fondo-predica-galeria{
-    grid-template-columns:repeat(auto-fill, minmax(82px, 1fr));
+  /* ✅ Card de galería 15% más alta en teléfono */
+  .subidos-feed-card.subidos-card-predica{
+    width:222px !important;
+    min-width:222px !important;
+    height:389px !important;
+    aspect-ratio:auto !important;
+    padding:7px !important;
+  }
+
+  .subidos-feed-card.subidos-card-predica .subidos-media{
+    flex:0 0 108px !important;
+    height:108px !important;
+    min-height:108px !important;
+    max-height:108px !important;
+    margin:0 0 5px 0 !important;
+  }
+
+  .subidos-predica-galeria-titulo,
+  .subidos-predica-card-titulo{
+    font-size:11.6px !important;
+    line-height:1.08 !important;
+    padding:5px 7px !important;
+  }
+
+  .subidos-predica-primera{
+    padding:7px !important;
+    gap:5px !important;
+  }
+
+  .subidos-predica-primera-ref{
+    font-size:11px !important;
+    padding:4px 8px !important;
+    align-self:center !important;
+    text-align:center !important;
+  }
+
+  .subidos-predica-primera-texto{
+    font-size:10.4px !important;
+    line-height:1.15 !important;
+    text-align:left !important;
+    overflow-y:auto !important;
+    overflow-x:hidden !important;
   }
 }
 
