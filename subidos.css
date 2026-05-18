@@ -933,9 +933,7 @@ body.oscuro #modalSubidosVisor{
 
 /* fondo del modal */
 #modalSubidosVisor .modal-card{
-  background:
-    linear-gradient(var(--visor-modal-overlay), var(--visor-modal-overlay)),
-    url("/VidaAbundante/img/subidos/1fondo-predica-cielo.jpg?v=2026-05-10") center / cover no-repeat !important;
+  background: var(--visor-modal-overlay) !important;
   color: var(--visor-texto);
   box-shadow: 0 18px 42px rgba(0,0,0,.18);
 }
@@ -1794,22 +1792,64 @@ body.oscuro #modalSubidosVisor{
    ===================================================== */
 
 .subidos-fondo-predica-galeria{
-  display:grid;
-  grid-template-columns:repeat(auto-fill, minmax(92px, 1fr));
+  width:100%;
+  display:flex;
+  flex-direction:column;
+  gap:7px;
+  overflow:hidden;
+}
+
+.subidos-fondo-predica-cats{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  overflow-x:auto;
+  overflow-y:hidden;
+  scrollbar-width:thin;
+  padding-bottom:2px;
+}
+
+.subidos-fondo-predica-cat{
+  flex:0 0 auto;
+  border:none;
+  border-radius:999px;
+  padding:5px 10px;
+  background:rgba(188,220,255,.72);
+  color:#111;
+  font-size:11px;
+  line-height:1;
+  font-weight:900;
+  cursor:pointer;
+}
+
+.subidos-fondo-predica-cat.activo{
+  background:#35c6b7;
+  color:#fff;
+}
+
+.subidos-fondo-predica-carril{
+  width:100%;
+  display:flex;
+  align-items:center;
   gap:8px;
+  overflow-x:auto;
+  overflow-y:hidden;
+  padding:2px 2px 7px;
+  scroll-snap-type:x proximity;
+  scrollbar-width:thin;
 }
 
 .subidos-fondo-predica-opcion{
-  border:1px solid rgba(0,0,0,.14);
-  border-radius:14px;
-  background:rgba(255,255,255,.78);
-  padding:6px;
+  flex:0 0 72px;
+  width:72px;
+  height:72px;
+  border:2px solid transparent;
+  border-radius:13px;
+  background:transparent;
+  padding:0;
   cursor:pointer;
-  display:flex;
-  flex-direction:column;
-  gap:5px;
-  align-items:stretch;
-  text-align:left;
+  overflow:hidden;
+  scroll-snap-align:start;
 }
 
 .subidos-fondo-predica-opcion.activo{
@@ -1820,21 +1860,11 @@ body.oscuro #modalSubidosVisor{
 .subidos-fondo-predica-preview{
   display:block;
   width:100%;
-  aspect-ratio:16 / 10;
+  height:100%;
   border-radius:10px;
   background-size:cover;
   background-position:center;
   background-repeat:no-repeat;
-}
-
-.subidos-fondo-predica-opcion small{
-  font-size:10.5px;
-  line-height:1.1;
-  font-weight:800;
-  color:#111;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
 }
 
 .subidos-visor-marco{
