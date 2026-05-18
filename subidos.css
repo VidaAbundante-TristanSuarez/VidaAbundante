@@ -1296,7 +1296,7 @@ body.oscuro #modalSubidosVisor{
 .subidos-visor-intro,
 .subidos-visor-nota-cierre{
   white-space:normal !important;
-  text-align:center !important;
+  text-align:left !important;
   font-weight:800;
 }
 
@@ -1790,8 +1790,52 @@ body.oscuro #modalSubidosVisor{
 }
 
 /* =====================================================
-   ✅ AJUSTES PRÉDICA ABIERTA: fondo, título, versículos y comentarios
+   ✅ AJUSTES PRÉDICA ABIERTA + GALERÍA DE FONDOS
    ===================================================== */
+
+.subidos-fondo-predica-galeria{
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(92px, 1fr));
+  gap:8px;
+}
+
+.subidos-fondo-predica-opcion{
+  border:1px solid rgba(0,0,0,.14);
+  border-radius:14px;
+  background:rgba(255,255,255,.78);
+  padding:6px;
+  cursor:pointer;
+  display:flex;
+  flex-direction:column;
+  gap:5px;
+  align-items:stretch;
+  text-align:left;
+}
+
+.subidos-fondo-predica-opcion.activo{
+  border-color:#35c6b7;
+  box-shadow:0 0 0 3px rgba(53,198,183,.22);
+}
+
+.subidos-fondo-predica-preview{
+  display:block;
+  width:100%;
+  aspect-ratio:16 / 10;
+  border-radius:10px;
+  background-size:cover;
+  background-position:center;
+  background-repeat:no-repeat;
+}
+
+.subidos-fondo-predica-opcion small{
+  font-size:10.5px;
+  line-height:1.1;
+  font-weight:800;
+  color:#111;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
 
 .subidos-visor-marco{
   position:relative !important;
@@ -1803,17 +1847,31 @@ body.oscuro #modalSubidosVisor{
   content:"";
   position:absolute;
   inset:0;
-  background-image:var(--subidos-predica-fondo, url("./img/subidos/1fondo-predica-cielo.jpg"));
+  background-image:var(--subidos-predica-fondo, url("./img/fondos/Paisajes/1.jpeg"));
   background-size:cover;
   background-position:center;
   background-repeat:no-repeat;
-  opacity:.34;
+  opacity:.60;
   z-index:0;
 }
 
 .subidos-visor-marco > *{
   position:relative;
   z-index:1;
+}
+
+/* ✅ Todo a la izquierda */
+.subidos-visor-titulo,
+.subidos-visor-iglesia,
+.subidos-visor-intro,
+.subidos-visor-nota-cierre,
+.subidos-visor-cierre,
+.subidos-visor-predica-titulo,
+.subidos-visor-ref,
+.subidos-visor-texto,
+.subidos-visor-texto-primera,
+.subidos-visor-comentario{
+  text-align:left !important;
 }
 
 .subidos-visor-predica-titulo{
@@ -1826,29 +1884,12 @@ body.oscuro #modalSubidosVisor{
   font-size:20px;
   line-height:1.12;
   font-weight:900;
-  text-align:center !important;
   color:var(--visor-texto);
   backdrop-filter:blur(3px);
   -webkit-backdrop-filter:blur(3px);
 }
 
-/* ✅ Textos que NO son versículos: centrados */
-.subidos-visor-titulo,
-.subidos-visor-iglesia,
-.subidos-visor-intro,
-.subidos-visor-nota-cierre,
-.subidos-visor-cierre{
-  text-align:center !important;
-}
-
-/* ✅ Citas y versículos: izquierda */
-.subidos-visor-ref,
-.subidos-visor-texto,
-.subidos-visor-texto-primera{
-  text-align:left !important;
-}
-
-/* ✅ Marco/contorno para diferenciar claramente el contenedor del versículo */
+/* ✅ Marco para diferenciar versículos */
 .subidos-visor-versiculo-box,
 .subidos-visor-texto,
 .subidos-visor-texto-primera{
@@ -1863,23 +1904,24 @@ body.oscuro #modalSubidosVisor{
   box-shadow:inset 0 0 0 1px rgba(255,255,255,.35);
 }
 
-/* ✅ Comentarios: centrados e italic */
+/* ✅ Comentarios: izquierda + italic */
 .subidos-visor-comentario{
-  text-align:center !important;
   font-style:italic !important;
   font-weight:700 !important;
   margin:6px 12px 12px !important;
   padding:8px 10px !important;
 }
 
-/* ✅ Cita más distinguible */
 .subidos-visor-ref{
   font-weight:900 !important;
   border-bottom:1px solid rgba(70,105,102,.22) !important;
 }
 
-/* ✅ En celular, no exagerar tamaños */
 @media (max-width:800px){
+  .subidos-fondo-predica-galeria{
+    grid-template-columns:repeat(auto-fill, minmax(82px, 1fr));
+  }
+
   .subidos-visor-predica-titulo{
     font-size:18px;
     padding:9px 12px;
