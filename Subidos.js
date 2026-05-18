@@ -247,6 +247,7 @@ let subidosUID = null;
 let subidosEsAdmin = false;
 let subidosMesActual = new Date();
 let subidosItems = [];
+let subidosCargados = false;
 let subidosHermanosCumples = [];
 let subidosEtiquetas = [];
 let subidosEditandoId = null;
@@ -4969,6 +4970,15 @@ function renderFeed() {
   const feed = document.getElementById("subidosFeed");
   if (!feed) return;
 
+  if (!subidosCargados) {
+    feed.innerHTML = `
+      <div class="subidos-feed-card" style="opacity:.85;">
+        Cargando...
+      </div>
+    `;
+    return;
+  }
+
   if (!subidosItems.length) {
     feed.innerHTML = `
       <div class="subidos-feed-card" style="opacity:.85;">
@@ -5495,6 +5505,7 @@ if (selEtiqueta) {
 
 function initLecturas() {
 onValue(ref(db, "subidosIglesia"), (s) => {
+   subidosCargados = true;
   const data = s.val() || {};
   subidosItems = Object.entries(data)
     .map(([id, obj]) => ({ id, ...(obj || {}) }))
