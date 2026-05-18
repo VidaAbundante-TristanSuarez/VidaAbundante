@@ -19,22 +19,142 @@ const SUBIDOS_PROXY_URL = R2_WORKER_URL;
 
 const SUBIDOS_EXPORT_BG_URL = "./img/fondos/Paisajes/1.jpeg";
 
-const SUBIDOS_PREDICA_FONDOS = [
-  ...Array.from({ length: 13 }, (_, i) => ({
-    nombre: `Paisaje ${i + 1}`,
-    url: `./img/fondos/Paisajes/${i + 1}.jpeg`
-  })),
+/* ✅ Pegamos tus fondos reales, separados por categoría */
+const fondosCategorias = {
+  paisajes: [
+    "./img/fondos/Paisajes/1.jpeg",
+    "./img/fondos/Paisajes/2.jpeg",
+    "./img/fondos/Paisajes/3.jpeg",
+    "./img/fondos/Paisajes/4.jpeg",
+    "./img/fondos/Paisajes/5.jpeg",
+    "./img/fondos/Paisajes/6.jpeg",
+    "./img/fondos/Paisajes/7.jpeg",
+    "./img/fondos/Paisajes/8.jpeg",
+    "./img/fondos/Paisajes/9.jpeg",
+    "./img/fondos/Paisajes/10.jpeg",
+    "./img/fondos/Paisajes/11.jpeg",
+    "./img/fondos/Paisajes/12.jpeg",
+    "./img/fondos/Paisajes/13.jpeg",
 
-  { nombre: "Tarjeta cielo rosa", url: "./img/fondos/Tarjetas/cielorosa_pc0puk_b1qrvx.jpg" },
-  { nombre: "Tarjeta flores", url: "./img/fondos/Tarjetas/flores_riug8f_whpgds.jpg" },
-  { nombre: "Tarjeta pájaros", url: "./img/fondos/Tarjetas/amarillopajarosnubes_ar0qqg_x9rx4p.jpg" },
-  { nombre: "Tarjeta cielo y flores", url: "./img/fondos/Tarjetas/cielopastofloresrosas_cyfof2_dbqnq7.jpg" },
+    "./img/fondos/Paisajes/Untitled_Project_10_scjlfu.jpg",
+    "./img/fondos/Paisajes/Untitled_Project_11_z3nudj.jpg",
+    "./img/fondos/Paisajes/Untitled_Project_12_crdynt.jpg",
+    "./img/fondos/Paisajes/Untitled_Project_13_dzxm4k.jpg",
+    "./img/fondos/Paisajes/Untitled_Project_14_iww2jx.jpg",
+    "./img/fondos/Paisajes/Untitled_Project_15_iu1uxj.jpg",
+    "./img/fondos/Paisajes/Untitled_Project_1_cg9dfu.jpg",
+    "./img/fondos/Paisajes/Untitled_Project_1_jwctxg.jpg",
+    "./img/fondos/Paisajes/Untitled_Project_1_q3uzog.jpg",
+    "./img/fondos/Paisajes/Untitled_Project_1_qttkkt.jpg",
+    "./img/fondos/Paisajes/Untitled_Project_1_z6ol0o.jpg",
+    "./img/fondos/Paisajes/Untitled_Project_2_a1wlsh.jpg",
+    "./img/fondos/Paisajes/Untitled_Project_2_ehfqna.jpg",
+    "./img/fondos/Paisajes/Untitled_Project_2_hi9hhz.jpg",
+    "./img/fondos/Paisajes/Untitled_Project_2_twzefr.jpg",
+    "./img/fondos/Paisajes/Untitled_Project_2_wzlhio.jpg",
+    "./img/fondos/Paisajes/Untitled_Project_3_jhrx0j.jpg",
+    "./img/fondos/Paisajes/Untitled_Project_3_qfbqel.jpg",
+    "./img/fondos/Paisajes/Untitled_Project_3_thrkka_b1ibx2.jpg",
+    "./img/fondos/Paisajes/Untitled_Project_3_tjsq2f.jpg",
+    "./img/fondos/Paisajes/Untitled_Project_3_zw4kl2.jpg",
+    "./img/fondos/Paisajes/Untitled_Project_5_brmypi.jpg",
+    "./img/fondos/Paisajes/Untitled_Project_5_ftamyb.jpg",
+    "./img/fondos/Paisajes/Untitled_Project_5_htsxrq.jpg",
+    "./img/fondos/Paisajes/Untitled_Project_6_ghg8ux.jpg",
+    "./img/fondos/Paisajes/Untitled_Project_6_kpgvmm.jpg",
+    "./img/fondos/Paisajes/Untitled_Project_7_qpfbuy.jpg",
+    "./img/fondos/Paisajes/Untitled_Project_8_ivok7j.jpg",
+    "./img/fondos/Paisajes/Untitled_Project_c2feyb_juy9d6.jpg",
+    "./img/fondos/Paisajes/Untitled_Project_ycpnpv.jpg",
+    "./img/fondos/Paisajes/amanecer1600x1600_igddhh.jpg",
+    "./img/fondos/Paisajes/amanecerpiedras_zb18j1.jpg",
+    "./img/fondos/Paisajes/arbustos_pwdcsk.jpg",
+    "./img/fondos/Paisajes/arcadafloresrosas_fc4aj4.jpg",
+    "./img/fondos/Paisajes/arcoflores_lnrfa9.jpg",
+    "./img/fondos/Paisajes/bebedero_ystc1u.jpg",
+    "./img/fondos/Paisajes/boda_nmzaub.jpg",
+    "./img/fondos/Paisajes/camino_madnav.jpg",
+    "./img/fondos/Paisajes/casitalejosarboles_by72rz_upjpn4.jpg",
+    "./img/fondos/Paisajes/cielocelesterosaarboles_y4t720.jpg",
+    "./img/fondos/Paisajes/cielovioleta_us3ilw.jpg",
+    "./img/fondos/Paisajes/faro2_s5ynwu.jpg",
+    "./img/fondos/Paisajes/faro_aginuk.jpg",
+    "./img/fondos/Paisajes/floresamarillas_mhosyy.jpg",
+    "./img/fondos/Paisajes/floresblancasyrosas_ehpvfy.jpg",
+    "./img/fondos/Paisajes/floresmontañas_h8qhkd.jpg",
+    "./img/fondos/Paisajes/jardinflores_eqxwe5.jpg",
+    "./img/fondos/Paisajes/jardinflorescielorosas_qctpa1.jpg",
+    "./img/fondos/Paisajes/lagunapastofloresrosas_gibn7c.jpg",
+    "./img/fondos/Paisajes/margaritasporton_wnpdps.jpg",
+    "./img/fondos/Paisajes/mariposas_mmo86f.jpg",
+    "./img/fondos/Paisajes/montaña_c455zz.jpg",
+    "./img/fondos/Paisajes/montañagrande_vwag5k.jpg",
+    "./img/fondos/Paisajes/olascielo_igbddx.jpg",
+    "./img/fondos/Paisajes/otoño2_mwn77p.jpg",
+    "./img/fondos/Paisajes/otoño_kdx8u5.jpg",
+    "./img/fondos/Paisajes/pastofloresrosas_i0woqq.jpg",
+    "./img/fondos/Paisajes/piedrasaguamontañas_lseoki.jpg",
+    "./img/fondos/Paisajes/playaarenamarolas_oxkh2z.jpg",
+    "./img/fondos/Paisajes/plazaamanecer_nvjtqa.jpg",
+    "./img/fondos/Paisajes/puente_gox2gz.jpg",
+    "./img/fondos/Paisajes/puenteotoñoagua_r9tskw.jpg",
+    "./img/fondos/Paisajes/puertaangostaflores_fvdw8o.jpg",
+    "./img/fondos/Paisajes/puertafloresblancas_ouomif.jpg",
+    "./img/fondos/Paisajes/puertaflroesvioletas_q4f1bq.jpg"
+  ],
 
-  { nombre: "Acuarela casita", url: "./img/fondos/Acuarelas/casita_sxlvcf_s5lvth.jpg" },
-  { nombre: "Acuarela nube y pasto", url: "./img/fondos/Acuarelas/nubepasto_w0pg1i.jpg" },
-  { nombre: "Acuarela botes rosa", url: "./img/fondos/Acuarelas/rosabotes_bwnvws.jpg" },
-  { nombre: "Acuarela flores fucsias", url: "./img/fondos/Acuarelas/floresfucsias_f17kul.jpg" }
-];
+  acuarelas: [
+    "./img/fondos/Acuarelas/Untitled_Project_10_dzbofe_hudn3p.jpg",
+    "./img/fondos/Acuarelas/Untitled_Project_10_hgtbrz.jpg",
+    "./img/fondos/Acuarelas/Untitled_Project_1_gffwqd.jpg",
+    "./img/fondos/Acuarelas/Untitled_Project_2_vdks5w.jpg",
+    "./img/fondos/Acuarelas/Untitled_Project_3_crxvum.jpg",
+    "./img/fondos/Acuarelas/Untitled_Project_4_rplu10_avqvn9.jpg",
+    "./img/fondos/Acuarelas/Untitled_Project_4_xubjvd_wyhnzq.jpg",
+    "./img/fondos/Acuarelas/Untitled_Project_4_yp8i7h_vtja0u.jpg",
+    "./img/fondos/Acuarelas/Untitled_Project_6_ghlggy_ogar08.jpg",
+    "./img/fondos/Acuarelas/Untitled_Project_6_r3cqwb.jpg",
+    "./img/fondos/Acuarelas/Untitled_Project_6_wychbo.jpg",
+    "./img/fondos/Acuarelas/Untitled_Project_7_cf7yzv_ujyx6n.jpg",
+    "./img/fondos/Acuarelas/Untitled_Project_7_hnxuau_yhk6w7.jpg",
+    "./img/fondos/Acuarelas/Untitled_Project_8_h5y32e.jpg",
+    "./img/fondos/Acuarelas/Untitled_Project_9_b3tkxx_jgo6gs.jpg",
+    "./img/fondos/Acuarelas/Untitled_Project_9_zhryll.jpg",
+    "./img/fondos/Acuarelas/Untitled_Project_l02emm_gtylbq.jpg",
+    "./img/fondos/Acuarelas/Untitled_Project_wefjkh.jpg",
+    "./img/fondos/Acuarelas/casita_sxlvcf_s5lvth.jpg",
+    "./img/fondos/Acuarelas/floresfucsias_f17kul.jpg",
+    "./img/fondos/Acuarelas/lilamontañasflores_vayxei_ubvtpm.jpg",
+    "./img/fondos/Acuarelas/nubepasto_w0pg1i.jpg",
+    "./img/fondos/Acuarelas/rosabotes_bwnvws.jpg"
+  ],
+
+  tarjetas: [
+    "./img/fondos/Tarjetas/Untitled_Project_12_oal95a.jpg",
+    "./img/fondos/Tarjetas/Untitled_Project_1_arstzx_inkdoy.jpg",
+    "./img/fondos/Tarjetas/Untitled_Project_2_wza5pr_rgvyrz.jpg",
+    "./img/fondos/Tarjetas/Untitled_Project_3_xyutfs_wwvy6h.jpg",
+    "./img/fondos/Tarjetas/Untitled_Project_4_fwlgtt.jpg",
+    "./img/fondos/Tarjetas/Untitled_Project_4_kwzbbn_iuh5nl.jpg",
+    "./img/fondos/Tarjetas/Untitled_Project_5_uxzbsn_f1a2vp.jpg",
+    "./img/fondos/Tarjetas/Untitled_Project_5_zey825.jpg",
+    "./img/fondos/Tarjetas/Untitled_Project_7_gunjzi_t9iy0d.jpg",
+    "./img/fondos/Tarjetas/Untitled_Project_7_qv09sl.jpg",
+    "./img/fondos/Tarjetas/Untitled_Project_8_xzqnli_opyzjn.jpg",
+    "./img/fondos/Tarjetas/Untitled_Project_9_uoqpfk_k7v565.jpg",
+    "./img/fondos/Tarjetas/Untitled_Project_tgzcpn_u75stk.jpg",
+    "./img/fondos/Tarjetas/amarillopajarosnubes_ar0qqg_x9rx4p.jpg",
+    "./img/fondos/Tarjetas/cielopastofloresrosas_cyfof2_dbqnq7.jpg",
+    "./img/fondos/Tarjetas/cielorosa_pc0puk_b1qrvx.jpg",
+    "./img/fondos/Tarjetas/flores_riug8f_whpgds.jpg"
+  ]
+};
+
+const fondosEtiquetas = {
+  paisajes: "Paisajes",
+  acuarelas: "Acuarelas",
+  tarjetas: "Tarjetas"
+};
 
 function subidosFondoPredicaActual(it = null) {
   return String(
@@ -50,42 +170,77 @@ function subidosCssUrl(url = "") {
     .replace(/'/g, "\\'");
 }
 
-function subidosPoblarFondosPredica(valorActual = "") {
+function subidosPoblarFondosPredica(valorActual = "", categoriaInicial = "") {
   const input = document.getElementById("subidosPredicaFondo");
   const galeria = document.getElementById("subidosPredicaFondosGaleria");
 
   if (!input || !galeria) return;
 
   const actual = String(valorActual || input.value || SUBIDOS_EXPORT_BG_URL).trim();
-
   input.value = actual;
 
-  galeria.innerHTML = SUBIDOS_PREDICA_FONDOS.map(f => {
-    const activo = f.url === actual;
+  const categorias = Object.keys(fondosCategorias || {});
+  let categoriaActual =
+    categoriaInicial ||
+    categorias.find(cat => (fondosCategorias[cat] || []).includes(actual)) ||
+    "paisajes";
 
-    return `
-      <button
-        type="button"
-        class="subidos-fondo-predica-opcion ${activo ? "activo" : ""}"
-        data-fondo-url="${escaparHtml(f.url)}"
-        title="${escaparHtml(f.nombre)}"
-      >
-        <span
-          class="subidos-fondo-predica-preview"
-          style="background-image:url('${subidosCssUrl(f.url)}');"
-        ></span>
-        <small>${escaparHtml(f.nombre)}</small>
-      </button>
+  const render = (cat) => {
+    categoriaActual = cat || "paisajes";
+
+    const fondos = fondosCategorias[categoriaActual] || [];
+
+    galeria.innerHTML = `
+      <div class="subidos-fondo-predica-cats">
+        ${categorias.map(c => `
+          <button
+            type="button"
+            class="subidos-fondo-predica-cat ${c === categoriaActual ? "activo" : ""}"
+            data-fondo-cat="${escaparHtml(c)}"
+          >
+            ${escaparHtml(fondosEtiquetas[c] || c)}
+          </button>
+        `).join("")}
+      </div>
+
+      <div class="subidos-fondo-predica-carril">
+        ${fondos.map(url => {
+          const activo = url === input.value;
+
+          return `
+            <button
+              type="button"
+              class="subidos-fondo-predica-opcion ${activo ? "activo" : ""}"
+              data-fondo-url="${escaparHtml(url)}"
+              aria-label="Elegir fondo"
+              title="Elegir fondo"
+            >
+              <span
+                class="subidos-fondo-predica-preview"
+                style="background-image:url('${subidosCssUrl(url)}');"
+              ></span>
+            </button>
+          `;
+        }).join("")}
+      </div>
     `;
-  }).join("");
 
-  galeria.querySelectorAll("[data-fondo-url]").forEach(btn => {
-    btn.onclick = () => {
-      const url = btn.dataset.fondoUrl || SUBIDOS_EXPORT_BG_URL;
-      input.value = url;
-      subidosPoblarFondosPredica(url);
-    };
-  });
+    galeria.querySelectorAll("[data-fondo-cat]").forEach(btn => {
+      btn.onclick = () => {
+        render(btn.dataset.fondoCat || "paisajes");
+      };
+    });
+
+    galeria.querySelectorAll("[data-fondo-url]").forEach(btn => {
+      btn.onclick = () => {
+        const url = btn.dataset.fondoUrl || SUBIDOS_EXPORT_BG_URL;
+        input.value = url;
+        render(categoriaActual);
+      };
+    });
+  };
+
+  render(categoriaActual);
 }
 
 let subidosUID = null;
@@ -477,6 +632,7 @@ function resetPredicaSubidosUI() {
   if (intro) intro.value = "";
   if (titulo) titulo.value = "";
   if (fondo) fondo.value = SUBIDOS_EXPORT_BG_URL;
+  subidosPoblarFondosPredica(SUBIDOS_EXPORT_BG_URL);
 }
 
 function actualizarPredicaSubidosUI() {
@@ -488,9 +644,7 @@ function actualizarPredicaSubidosUI() {
   const titulo = document.getElementById("subidosPredicaTitulo");
   const fondo = document.getElementById("subidosPredicaFondo");
 
-  if (!sel || !box || !wrap) return;
-
-  subidosPoblarFondosPredica();
+  if (!sel || !box || !wrap) return
 
   const mostrar = esPredicaSubidos(sel.value);
 
@@ -502,10 +656,12 @@ function actualizarPredicaSubidosUI() {
     if (notaFinal) notaFinal.value = "";
     if (titulo) titulo.value = "";
     if (fondo) fondo.value = SUBIDOS_EXPORT_BG_URL;
+    subidosPoblarFondosPredica(SUBIDOS_EXPORT_BG_URL);
     return;
   }
 
   if (!wrap.children.length) {
+    subidosPoblarFondosPredica(fondo?.value || SUBIDOS_EXPORT_BG_URL);
     window.subidosAgregarCitaPredica();
   }
 }
@@ -2470,6 +2626,15 @@ function subidosHtmlExport(txt = "") {
   return escaparHtml(subidosTextoPlanoExport(txt)).replace(/\n/g, "<br>");
 }
 
+function subidosHtmlExportInline(txt = "") {
+  return escaparHtml(
+    subidosTextoPlanoExport(txt)
+      .replace(/\s*\n+\s*/g, " ")
+      .replace(/\s{2,}/g, " ")
+      .trim()
+  );
+}
+
 function subidosFechaBonitaExport(ymd = "") {
   if (!ymd) return "";
   try {
@@ -2689,14 +2854,32 @@ function subidosCrearNodoExportPredica(it) {
   const primeraTexto = subidosTextoPlanoExport(primeraCita?.texto || "");
   const primeraRef = subidosTextoPlanoExport(primeraCita?.referencia || "");
 
-  const otrasRefs = citas
-    .slice(1)
-    .map(c => subidosTextoPlanoExport(c.referencia || ""))
-    .filter(Boolean);
+const otrasCitasHtml = citas
+  .slice(1)
+  .map(c => {
+    const ref = subidosTextoPlanoExport(c.referencia || "");
+    const texto = subidosTextoPlanoExport(c.texto || "");
 
-  const otrasCitasHtml = otrasRefs.map(ref => `
-    <span class="subidos-export-ref-extra">${escaparHtml(ref)}</span>
-  `).join(`<span class="subidos-export-bullet">•</span>`);
+    if (!ref && !texto) return "";
+
+    return `
+      <div class="subidos-export-cita-extra-card">
+        ${ref ? `
+          <div class="subidos-export-cita-extra-ref">
+            ${escaparHtml(ref)}
+          </div>
+        ` : ``}
+
+        ${texto ? `
+          <div class="subidos-export-cita-extra-texto">
+            ${subidosHtmlExportInline(texto)}
+          </div>
+        ` : ``}
+      </div>
+    `;
+  })
+  .filter(Boolean)
+  .join("");
 
   const introduccion = subidosTextoPlanoExport(it.predicaIntroduccion || it.introduccionPredica || "");
   const notaFinal = subidosTextoPlanoExport(it.predicaNotaFinal || it.notaFinalGeneral || "");
@@ -2736,7 +2919,7 @@ node.style.setProperty("--gap-textos", `${repartoFlexible.gapTextos}px`);
         padding:12px 14px 14px;
         display:flex;
         flex-direction:column;
-        gap:var(--gap-general, 7px);
+        gap:var(--gap-general, 2px);
         position:relative;
 background:#f7fbff;
 font-family:"Lora", serif;
@@ -2833,7 +3016,7 @@ color:#111;
       /* ===== ARCHIVO + DATOS IGLESIA ===== */
 
       #subidosExportPredicaFinal .subidos-export-hero{
-        flex:0 0 170px;
+        flex:0 0 168px;
         min-height:0;
         display:grid;
         grid-template-columns:var(--left-col) var(--right-col);
@@ -2881,7 +3064,7 @@ color:#111;
         border:1px solid rgba(255,255,255,.52);
         background:rgba(255,255,255,.80);
         border-radius:22px;
-        padding:14px 12px;
+        padding:8px 10px;
         display:flex;
         flex-direction:column;
         align-items:center;
@@ -2890,25 +3073,25 @@ color:#111;
         overflow:hidden;
       }
 
-      #subidosExportPredicaFinal .subidos-export-iglesia{
-        font-weight:900;
-        font-size:21.5px;
-        line-height:1.04;
-      }
+#subidosExportPredicaFinal .subidos-export-iglesia{
+  font-weight:900;
+  font-size:18.5px;
+  line-height:1.02;
+}
 
-      #subidosExportPredicaFinal .subidos-export-address{
-        margin-top:12px;
-        font-size:13.5px;
-        line-height:1.12;
-        font-weight:800;
-      }
+#subidosExportPredicaFinal .subidos-export-address{
+  margin-top:7px;
+  font-size:12.5px;
+  line-height:1.08;
+  font-weight:800;
+}
 
-      #subidosExportPredicaFinal .subidos-export-meeting{
-        margin-top:10px;
-        font-size:13.5px;
-        line-height:1.12;
-        font-weight:800;
-      }
+#subidosExportPredicaFinal .subidos-export-meeting{
+  margin-top:6px;
+  font-size:12.5px;
+  line-height:1.08;
+  font-weight:800;
+}
 
                 /* ===== PRIMERA CITA DESTACADA ===== */
 
@@ -3019,9 +3202,9 @@ color:#111;
         background:rgba(255,255,255,.80);
         border-radius:22px;
         display:flex;
-        align-items:center;
-        justify-content:center;
-        text-align:center;
+        align-items:flex-start;
+justify-content:center;
+text-align:left;
         overflow:hidden;
       }
 
@@ -3044,16 +3227,16 @@ color:#111;
       }
 
       #subidosExportPredicaFinal .subidos-export-intro,
-      #subidosExportPredicaFinal .subidos-export-note{
-        width:100%;
-        max-width:100%;
-        font-weight:800;
-        text-align:center;
-        line-height:1.12;
-        overflow-wrap:anywhere;
-        display:block;
-        font-size:12px;
-      }
+#subidosExportPredicaFinal .subidos-export-note{
+  width:100%;
+  max-width:100%;
+  font-weight:800;
+  text-align:left;
+  line-height:1.10;
+  overflow-wrap:anywhere;
+  display:block;
+  font-size:11.4px;
+}
 
       #subidosExportPredicaFinal.v1-grande .subidos-export-intro,
       #subidosExportPredicaFinal.v1-grande .subidos-export-note,
@@ -3063,7 +3246,7 @@ color:#111;
         line-height:1.08;
       }
 
-      /* ===== DEMÁS CITAS ===== */
+     /* ===== DEMÁS CITAS CON TEXTO LITERAL ===== */
 
 #subidosExportPredicaFinal .subidos-export-otras-citas-box{
   flex:0 0 auto;
@@ -3073,37 +3256,36 @@ color:#111;
   border:1px solid rgba(255,255,255,.52);
   background:rgba(255,255,255,.72);
   border-radius:18px;
-  padding:5px 10px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
+  padding:5px 8px;
+  display:block;
   overflow:hidden;
 }
 
-      #subidosExportPredicaFinal .subidos-export-otras-citas{
-        display:flex;
-        flex-wrap:wrap;
-        align-items:center;
-        justify-content:center;
-        gap:4px 7px;
-      font-size:12px;
-line-height:1.12;
-        font-weight:900;
-        text-align:center;
-        overflow:hidden;
-      }
+#subidosExportPredicaFinal .subidos-export-otras-citas{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  font-size:10.4px;
+  line-height:1.08;
+  font-weight:800;
+  text-align:left;
+  overflow:hidden;
+}
 
-      #subidosExportPredicaFinal .subidos-export-ref-extra{
-        white-space:nowrap;
-      }
+#subidosExportPredicaFinal .subidos-export-cita-extra-card{
+  display:block;
+  width:100%;
+  text-align:left;
+}
 
-      #subidosExportPredicaFinal .subidos-export-bullet{
-        opacity:.72;
-        font-size:14px;
-        line-height:1;
-        transform:translateY(-1px);
-      }
+#subidosExportPredicaFinal .subidos-export-cita-extra-ref{
+  font-weight:900;
+  margin-bottom:1px;
+}
 
+#subidosExportPredicaFinal .subidos-export-cita-extra-texto{
+  font-weight:800;
+}
       #subidosExportPredicaFinal .subidos-export-predica-titulo{
   flex:0 0 auto;
   width:100%;
@@ -3161,12 +3343,6 @@ line-height:1.12;
 
     <div class="subidos-export-divider"></div>
 
-    ${tituloPredica ? `
-  <div class="subidos-export-predica-titulo">
-    ${escaparHtml(tituloPredica)}
-  </div>
-` : ``}
-
     <div class="subidos-export-hero">
       ${subidosArchivoExportHtml(it)}
 
@@ -3208,34 +3384,40 @@ line-height:1.12;
       ` : ``}
     </div>
 
-    ${introduccion || notaFinal ? `
-    <div class="subidos-export-text-row ${textosClase} ${aireClase}">
-        ${introduccion ? `
-       <div class="subidos-export-text-box intro-box ${introClase}">
-            <div class="subidos-export-intro">
-              ${subidosHtmlExport(introduccion)}
-            </div>
-          </div>
-        ` : ``}
+${tituloPredica ? `
+  <div class="subidos-export-predica-titulo">
+    ${escaparHtml(tituloPredica)}
+  </div>
+` : ``}
 
-        ${notaFinal ? `
+    ${introduccion ? `
+  <div class="subidos-export-text-row intro-row">
+    <div class="subidos-export-text-box intro-box ${introClase}">
+      <div class="subidos-export-intro">
+        ${subidosHtmlExport(introduccion)}
+      </div>
+    </div>
+  </div>
+` : ``}
+
+${otrasCitasHtml ? `
+  <div class="subidos-export-otras-citas-box">
+    <div class="subidos-export-otras-citas">
+      ${otrasCitasHtml}
+    </div>
+  </div>
+` : ``}
+
+${notaFinal ? `
+  <div class="subidos-export-text-row note-row">
     <div class="subidos-export-text-box note-box ${notaClase}">
-            <div class="subidos-export-note">
-              ${subidosHtmlExport(notaFinal)}
-            </div>
-          </div>
-        ` : ``}
+      <div class="subidos-export-note">
+        ${subidosHtmlExport(notaFinal)}
       </div>
-    ` : ``}
-
-    ${otrasCitasHtml ? `
-      <div class="subidos-export-otras-citas-box">
-        <div class="subidos-export-otras-citas">
-          ${otrasCitasHtml}
-        </div>
-      </div>
-    ` : ``}
-  `;
+    </div>
+  </div>
+` : ``}
+`;
 
   return node;
 }
