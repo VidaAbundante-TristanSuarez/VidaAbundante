@@ -1469,6 +1469,46 @@
 </script>
 
  <script src="/VidaAbundante/pwa-install.js?v=pwa-v1"></script>
-  
+
+<script>
+  // ✅ Mantiene la pantalla despierta mientras la app está abierta y visible.
+  // No usa Firebase, no usa R2, no usa APIs pagas.
+
+  let vidaWakeLock = null;
+
+  async function activarVidaWakeLock() {
+    try {
+      if (!("wakeLock" in navigator)) return;
+      if (document.visibilityState !== "visible") return;
+      if (vidaWakeLock) return;
+
+      vidaWakeLock = await navigator.wakeLock.request("screen");
+
+      vidaWakeLock.addEventListener("release", () => {
+        vidaWakeLock = null;
+      });
+
+      console.log("✅ Wake Lock activo: la pantalla no debería dormirse.");
+    } catch (e) {
+      console.warn("Wake Lock no disponible o fue bloqueado:", e);
+      vidaWakeLock = null;
+    }
+  }
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+      activarVidaWakeLock();
+    }
+  });
+
+  window.addEventListener("focus", activarVidaWakeLock);
+  window.addEventListener("load", activarVidaWakeLock);
+
+  // También intenta activarlo cuando el usuario toca la pantalla,
+  // porque algunos celulares lo permiten mejor después de una acción del usuario.
+  document.addEventListener("click", activarVidaWakeLock, { passive: true });
+  document.addEventListener("touchstart", activarVidaWakeLock, { passive: true });
+</script>
+ 
 </body>
 </html>
