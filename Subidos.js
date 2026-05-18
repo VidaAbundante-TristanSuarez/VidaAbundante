@@ -2077,7 +2077,7 @@ const ETIQUETAS_COLOR = {
 
 function colorEtiquetaSubidos(etiqueta = "") {
   const t = normalizarEtiquetaSubidos(etiqueta);
-  const color = ETIQUETAS_COLOR[t] || "#dbeafe";
+  const color = ETIQUETAS_COLOR[t] || "#8babfa";
 
   return {
     bg: color,
