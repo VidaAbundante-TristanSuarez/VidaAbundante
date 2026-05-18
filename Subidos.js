@@ -1450,32 +1450,35 @@ window.subidosToggleMiniPredica = function subidosToggleMiniPredica(bodyId, btn)
 function htmlPredicaBibliaSubido(it) {
   const citas = obtenerCitasPredicaSubido(it);
 
+  // ✅ En la galería mostramos solo la primera cita.
   if (!citas.length) return "";
 
   const primera = citas[0] || {};
   const referencia = String(primera.referencia || "").trim();
   const texto = String(primera.texto || "").trim();
-  const tituloPredica = String(it.predicaTitulo || it.tituloPredica || "").trim();
-  const fondoUrl = subidosFondoPredicaActual(it);
-  const idJs = subidosJs(it.id || "");
+
+  const tituloPredica = String(
+    it?.predicaTitulo ||
+    it?.tituloPredica ||
+    it?.descripcion ||
+    ""
+  ).trim();
 
   return `
     <div
       class="subidos-predica-resumen subidos-predica-resumen-unica"
-      onclick="abrirSubidosVisorPredica('${idJs}', 'all')"
+      onclick="abrirSubidosVisorPredica('${it.id}', 'all')"
       title="Abrir prédica completa"
       role="button"
       tabindex="0"
-      style="--subidos-predica-card-fondo:url('${subidosCssUrl(fondoUrl)}');"
     >
+      ${tituloPredica ? `
+        <div class="subidos-predica-galeria-titulo">
+          ${escaparHtml(tituloPredica)}
+        </div>
+      ` : ``}
+
       <div class="subidos-predica-primera">
-
-        ${tituloPredica ? `
-          <div class="subidos-predica-card-titulo">
-            ${escaparHtml(tituloPredica)}
-          </div>
-        ` : ``}
-
         ${referencia ? `
           <div class="subidos-predica-primera-ref">
             ${escaparHtml(referencia)}
@@ -1486,11 +1489,7 @@ function htmlPredicaBibliaSubido(it) {
           <div class="subidos-predica-primera-texto">
             ${subidosTextoHtml(texto)}
           </div>
-        ` : `
-          <div class="subidos-predica-primera-texto subidos-predica-primera-vacia">
-            Sin texto cargado.
-          </div>
-        `}
+        ` : ``}
       </div>
     </div>
   `;
