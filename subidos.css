@@ -1919,19 +1919,26 @@ body.oscuro #modalSubidosVisor{
   gap:10px !important;
 }
 
-.subidos-visor-bloque-primera,
-.subidos-visor-bloques .subidos-visor-bloque:first-child{
-  background:#d1eeff !important;
-  border:1px solid rgba(150,205,235,.72) !important;
+/* ✅ Los bloques NO van celestes por defecto */
+.subidos-visor-bloque,
+.subidos-visor-bloque-primera{
+  border:1px solid var(--visor-borde-suave) !important;
   border-radius:16px !important;
+  background:var(--visor-bloque-bg) !important;
   overflow:hidden !important;
+  color:var(--visor-texto) !important;
+  backdrop-filter:blur(3px);
+  -webkit-backdrop-filter:blur(3px);
 }
 
+/* ✅ Referencias bíblicas centradas */
 .subidos-visor-ref{
   font-weight:900 !important;
   border-bottom:1px solid rgba(70,105,102,.22) !important;
+  text-align:center !important;
 }
 
+/* ✅ Textos bíblicos: todos normales/blancos */
 .subidos-visor-versiculo-box,
 .subidos-visor-texto,
 .subidos-visor-texto-primera{
@@ -1950,6 +1957,13 @@ body.oscuro #modalSubidosVisor{
   overflow-x:hidden !important;
   overflow-wrap:break-word !important;
   box-shadow:inset 0 0 0 1px rgba(255,255,255,.35);
+}
+
+/* ✅ SOLO el texto del primer versículo va celeste */
+.subidos-visor-bloques .subidos-visor-bloque:first-child .subidos-visor-texto,
+.subidos-visor-bloques .subidos-visor-bloque:first-child .subidos-visor-texto-primera{
+  background:#d1eeff !important;
+  border-color:rgba(150,205,235,.72) !important;
 }
 
 .subidos-visor-comentario{
@@ -2304,54 +2318,78 @@ body.oscuro #modalSubidosVisor{
 
 @media (max-width:800px){
 
-  /* ✅ Prédica abierta centrada, sin margen izquierdo ni corte derecho */
-  #modalSubidosVisor{
-    padding:0 !important;
-    margin:0 !important;
-    overflow-x:hidden !important;
-    align-items:stretch !important;
-    justify-content:center !important;
-  }
+/* ✅ Prédica abierta centrada y ocupando todo el ancho + alto del celular */
+#modalSubidosVisor{
+  padding:0 !important;
+  margin:0 !important;
+  width:100vw !important;
+  height:100dvh !important;
+  max-height:100dvh !important;
+  overflow:hidden !important;
+  align-items:stretch !important;
+  justify-content:center !important;
+}
 
-  #modalSubidosVisor .modal-card{
-    width:100% !important;
-    max-width:100% !important;
-    margin:0 auto !important;
-    left:auto !important;
-    right:auto !important;
-    transform:none !important;
-    border-radius:0 !important;
-    box-sizing:border-box !important;
-  }
+#modalSubidosVisor .modal-card{
+  width:100% !important;
+  max-width:100% !important;
+  height:100dvh !important;
+  min-height:100dvh !important;
+  max-height:100dvh !important;
+  margin:0 auto !important;
+  left:auto !important;
+  right:auto !important;
+  transform:none !important;
+  border-radius:0 !important;
+  box-sizing:border-box !important;
+  display:flex !important;
+  flex-direction:column !important;
+  overflow:hidden !important;
+}
 
-  #subidosVisorBody{
-    width:100% !important;
-    max-width:100% !important;
-    margin:0 auto !important;
-    padding-left:0 !important;
-    padding-right:0 !important;
-    overflow-x:hidden !important;
-    box-sizing:border-box !important;
-  }
+#modalSubidosVisor .modal-card > div:first-child{
+  flex:0 0 auto !important;
+}
 
-  .subidos-visor-predica-full{
-    width:100% !important;
-    max-width:100% !important;
-    margin:0 auto !important;
-    left:auto !important;
-    right:auto !important;
-    transform:none !important;
-    box-sizing:border-box !important;
-  }
+#subidosVisorBody{
+  flex:1 1 auto !important;
+  width:100% !important;
+  max-width:100% !important;
+  min-height:0 !important;
+  height:auto !important;
+  margin:0 auto !important;
+  padding-left:0 !important;
+  padding-right:0 !important;
+  overflow-y:auto !important;
+  overflow-x:hidden !important;
+  box-sizing:border-box !important;
+}
 
-  .subidos-visor-marco{
-    width:100% !important;
-    max-width:100% !important;
-    margin:0 auto !important;
-    border-radius:0 !important;
-    padding:10px !important;
-    box-sizing:border-box !important;
-  }
+.subidos-visor-predica-full{
+  width:100% !important;
+  max-width:100% !important;
+  min-height:100% !important;
+  margin:0 auto !important;
+  left:auto !important;
+  right:auto !important;
+  transform:none !important;
+  box-sizing:border-box !important;
+  display:flex !important;
+  flex-direction:column !important;
+}
+
+.subidos-visor-marco{
+  width:100% !important;
+  max-width:100% !important;
+  min-height:100% !important;
+  flex:1 1 auto !important;
+  margin:0 auto !important;
+  border-radius:0 !important;
+  padding:10px !important;
+  box-sizing:border-box !important;
+  overflow-y:auto !important;
+  overflow-x:hidden !important;
+}
 
   .subidos-visor-encabezado-predica{
     display:flex !important;
