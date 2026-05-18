@@ -17,17 +17,23 @@ const R2_UPLOAD_URL = R2_WORKER_URL;
 const SUBIDOS_VIDEO_UPLOAD_URL = R2_WORKER_URL;
 const SUBIDOS_PROXY_URL = R2_WORKER_URL;
 
-const SUBIDOS_EXPORT_BG_URL = "./img/subidos/1fondo-predica-cielo.jpg";
+const SUBIDOS_EXPORT_BG_URL = "./img/fondos/Paisajes/1.jpeg";
 
-// ✅ Usá rutas de tu app, NO la URL de /tree/ de GitHub.
-// Cuando subas más fondos a img/fondos, agregás acá el nombre real del archivo.
 const SUBIDOS_PREDICA_FONDOS = [
-  { nombre: "Cielo prédica", url: "./img/subidos/1fondo-predica-cielo.jpg" },
+  ...Array.from({ length: 13 }, (_, i) => ({
+    nombre: `Paisaje ${i + 1}`,
+    url: `./img/fondos/Paisajes/${i + 1}.jpeg`
+  })),
 
-  // Ejemplos: cambiá estos nombres por los archivos reales que tengas en img/fondos
-  { nombre: "Fondo 1", url: "./img/fondos/fondo-1.jpg" },
-  { nombre: "Fondo 2", url: "./img/fondos/fondo-2.jpg" },
-  { nombre: "Fondo 3", url: "./img/fondos/fondo-3.jpg" }
+  { nombre: "Tarjeta cielo rosa", url: "./img/fondos/Tarjetas/cielorosa_pc0puk_b1qrvx.jpg" },
+  { nombre: "Tarjeta flores", url: "./img/fondos/Tarjetas/flores_riug8f_whpgds.jpg" },
+  { nombre: "Tarjeta pájaros", url: "./img/fondos/Tarjetas/amarillopajarosnubes_ar0qqg_x9rx4p.jpg" },
+  { nombre: "Tarjeta cielo y flores", url: "./img/fondos/Tarjetas/cielopastofloresrosas_cyfof2_dbqnq7.jpg" },
+
+  { nombre: "Acuarela casita", url: "./img/fondos/Acuarelas/casita_sxlvcf_s5lvth.jpg" },
+  { nombre: "Acuarela nube y pasto", url: "./img/fondos/Acuarelas/nubepasto_w0pg1i.jpg" },
+  { nombre: "Acuarela botes rosa", url: "./img/fondos/Acuarelas/rosabotes_bwnvws.jpg" },
+  { nombre: "Acuarela flores fucsias", url: "./img/fondos/Acuarelas/floresfucsias_f17kul.jpg" }
 ];
 
 function subidosFondoPredicaActual(it = null) {
@@ -44,13 +50,42 @@ function subidosCssUrl(url = "") {
     .replace(/'/g, "\\'");
 }
 
-function subidosPoblarFondosPredica() {
-  const sel = document.getElementById("subidosPredicaFondo");
-  if (!sel) return;
+function subidosPoblarFondosPredica(valorActual = "") {
+  const input = document.getElementById("subidosPredicaFondo");
+  const galeria = document.getElementById("subidosPredicaFondosGaleria");
 
-  sel.innerHTML = SUBIDOS_PREDICA_FONDOS.map(f => `
-    <option value="${escaparHtml(f.url)}">${escaparHtml(f.nombre)}</option>
-  `).join("");
+  if (!input || !galeria) return;
+
+  const actual = String(valorActual || input.value || SUBIDOS_EXPORT_BG_URL).trim();
+
+  input.value = actual;
+
+  galeria.innerHTML = SUBIDOS_PREDICA_FONDOS.map(f => {
+    const activo = f.url === actual;
+
+    return `
+      <button
+        type="button"
+        class="subidos-fondo-predica-opcion ${activo ? "activo" : ""}"
+        data-fondo-url="${escaparHtml(f.url)}"
+        title="${escaparHtml(f.nombre)}"
+      >
+        <span
+          class="subidos-fondo-predica-preview"
+          style="background-image:url('${subidosCssUrl(f.url)}');"
+        ></span>
+        <small>${escaparHtml(f.nombre)}</small>
+      </button>
+    `;
+  }).join("");
+
+  galeria.querySelectorAll("[data-fondo-url]").forEach(btn => {
+    btn.onclick = () => {
+      const url = btn.dataset.fondoUrl || SUBIDOS_EXPORT_BG_URL;
+      input.value = url;
+      subidosPoblarFondosPredica(url);
+    };
+  });
 }
 
 let subidosUID = null;
@@ -2719,7 +2754,7 @@ color:#111;
   background-size:cover;
   background-position:center center;
   background-repeat:no-repeat;
-  opacity:.90;
+  opacity:.60;
   z-index:0;
 }
 
@@ -4460,8 +4495,8 @@ if (archivoNombre) {
     if (intro) intro.value = it.predicaIntroduccion || it.introduccionPredica || "";
     if (tituloPredica) tituloPredica.value = it.predicaTitulo || it.tituloPredica || "";
 if (fondoPredica) {
-  subidosPoblarFondosPredica();
   fondoPredica.value = it.predicaFondoUrl || SUBIDOS_EXPORT_BG_URL;
+  subidosPoblarFondosPredica(fondoPredica.value);
 }
     if (wrap) wrap.innerHTML = "";
 
