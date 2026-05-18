@@ -1789,5 +1789,109 @@ body.oscuro #modalSubidosVisor{
   color:#111;
 }
 
+/* =====================================================
+   ✅ AJUSTES PRÉDICA ABIERTA: fondo, título, versículos y comentarios
+   ===================================================== */
+
+.subidos-visor-marco{
+  position:relative !important;
+  overflow:hidden !important;
+  background:rgba(255,255,255,.52) !important;
+}
+
+.subidos-visor-marco::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background-image:var(--subidos-predica-fondo, url("./img/subidos/1fondo-predica-cielo.jpg"));
+  background-size:cover;
+  background-position:center;
+  background-repeat:no-repeat;
+  opacity:.34;
+  z-index:0;
+}
+
+.subidos-visor-marco > *{
+  position:relative;
+  z-index:1;
+}
+
+.subidos-visor-predica-titulo{
+  margin:10px 0 12px;
+  padding:10px 14px;
+  border-radius:16px;
+  background:rgba(255,255,255,.88);
+  border:1px solid #d8eef9;
+  font-family:"Lora", serif;
+  font-size:20px;
+  line-height:1.12;
+  font-weight:900;
+  text-align:center !important;
+  color:var(--visor-texto);
+  backdrop-filter:blur(3px);
+  -webkit-backdrop-filter:blur(3px);
+}
+
+/* ✅ Textos que NO son versículos: centrados */
+.subidos-visor-titulo,
+.subidos-visor-iglesia,
+.subidos-visor-intro,
+.subidos-visor-nota-cierre,
+.subidos-visor-cierre{
+  text-align:center !important;
+}
+
+/* ✅ Citas y versículos: izquierda */
+.subidos-visor-ref,
+.subidos-visor-texto,
+.subidos-visor-texto-primera{
+  text-align:left !important;
+}
+
+/* ✅ Marco/contorno para diferenciar claramente el contenedor del versículo */
+.subidos-visor-versiculo-box,
+.subidos-visor-texto,
+.subidos-visor-texto-primera{
+  margin:10px 12px !important;
+  padding:11px 12px !important;
+  border:1px solid rgba(70,105,102,.34) !important;
+  border-radius:14px !important;
+  background:rgba(255,255,255,.76) !important;
+  line-height:1.35 !important;
+  font-family:"Lora", serif !important;
+  color:var(--visor-texto) !important;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.35);
+}
+
+/* ✅ Comentarios: centrados e italic */
+.subidos-visor-comentario{
+  text-align:center !important;
+  font-style:italic !important;
+  font-weight:700 !important;
+  margin:6px 12px 12px !important;
+  padding:8px 10px !important;
+}
+
+/* ✅ Cita más distinguible */
+.subidos-visor-ref{
+  font-weight:900 !important;
+  border-bottom:1px solid rgba(70,105,102,.22) !important;
+}
+
+/* ✅ En celular, no exagerar tamaños */
+@media (max-width:800px){
+  .subidos-visor-predica-titulo{
+    font-size:18px;
+    padding:9px 12px;
+  }
+
+  .subidos-visor-versiculo-box,
+  .subidos-visor-texto,
+  .subidos-visor-texto-primera{
+    margin:8px 9px !important;
+    padding:10px 10px !important;
+  }
+}
+
 </style>
 
