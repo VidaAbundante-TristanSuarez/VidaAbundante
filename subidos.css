@@ -1895,7 +1895,6 @@ body.oscuro #modalSubidosVisor{
   z-index:1;
 }
 
-/* ✅ Título, iglesia, descripción, citas y cierre centrados */
 .subidos-visor-titulo,
 .subidos-visor-iglesia,
 .subidos-visor-iglesia-top,
@@ -1906,7 +1905,6 @@ body.oscuro #modalSubidosVisor{
   text-align:center !important;
 }
 
-/* ✅ Descripción / intro y nota final centradas */
 .subidos-visor-intro,
 .subidos-visor-nota-cierre{
   text-align:center !important;
@@ -1915,14 +1913,12 @@ body.oscuro #modalSubidosVisor{
   font-weight:400 !important;
 }
 
-/* ✅ Bloques de prédica */
 .subidos-visor-bloques{
   display:flex !important;
   flex-direction:column !important;
   gap:10px !important;
 }
 
-/* ✅ Primer versículo destacado */
 .subidos-visor-bloque-primera,
 .subidos-visor-bloques .subidos-visor-bloque:first-child{
   background:#d1eeff !important;
@@ -1931,13 +1927,11 @@ body.oscuro #modalSubidosVisor{
   overflow:hidden !important;
 }
 
-/* ✅ Referencias bíblicas centradas */
 .subidos-visor-ref{
   font-weight:900 !important;
   border-bottom:1px solid rgba(70,105,102,.22) !important;
 }
 
-/* ✅ Textos bíblicos con bold */
 .subidos-visor-versiculo-box,
 .subidos-visor-texto,
 .subidos-visor-texto-primera{
@@ -1958,7 +1952,6 @@ body.oscuro #modalSubidosVisor{
   box-shadow:inset 0 0 0 1px rgba(255,255,255,.35);
 }
 
-/* ✅ Comentarios sin bold, solo italic */
 .subidos-visor-comentario{
   font-style:italic !important;
   font-weight:400 !important;
@@ -1971,7 +1964,6 @@ body.oscuro #modalSubidosVisor{
   overflow-wrap:break-word !important;
 }
 
-/* ✅ Título interno de prédica */
 .subidos-visor-predica-titulo{
   margin:10px 0 12px !important;
   padding:10px 14px !important;
@@ -1989,10 +1981,10 @@ body.oscuro #modalSubidosVisor{
 }
 
 /* =========================
-   CARD DE PRÉDICA EN GALERÍA
+   TODAS LAS CARDS MISMO TAMAÑO
    ========================= */
 
-/* ✅ Card de prédica 15% más alta, sin tocar las demás cards */
+.subidos-feed-card,
 .subidos-feed-card.subidos-card-predica{
   width:238px !important;
   min-width:238px !important;
@@ -2002,12 +1994,51 @@ body.oscuro #modalSubidosVisor{
   overflow:hidden !important;
 }
 
-/* ✅ El título viejo de arriba se oculta solo en prédica */
+/* ✅ Gaps de la card a 5px */
+.subidos-feed-card{
+  gap:5px !important;
+}
+
+.subidos-feed-head{
+  min-height:auto !important;
+  margin:0 0 5px 0 !important;
+  padding:0 !important;
+  flex:0 0 auto !important;
+}
+
+.subidos-feed-left{
+  gap:5px !important;
+  margin:0 !important;
+  padding:0 !important;
+}
+
+.subidos-feed-badges{
+  gap:5px !important;
+  margin:0 !important;
+  padding:0 !important;
+  min-height:auto !important;
+}
+
+.subidos-feed-date{
+  margin:0 0 0 auto !important;
+  padding:0 !important;
+}
+
+.subidos-feed-desc{
+  margin:0 !important;
+  padding:0 !important;
+}
+
+/* ✅ En prédica ocultamos la descripción vieja de arriba,
+   porque el título va debajo de la imagen con su contenedor original */
 .subidos-feed-card.subidos-card-predica .subidos-feed-desc{
   display:none !important;
 }
 
-/* ✅ Imagen/archivo mantiene su zona */
+.subidos-feed-card .subidos-media{
+  margin:0 0 5px 0 !important;
+}
+
 .subidos-feed-card.subidos-card-predica .subidos-media{
   flex:0 0 122px !important;
   height:122px !important;
@@ -2021,7 +2052,14 @@ body.oscuro #modalSubidosVisor{
   overflow:hidden !important;
 }
 
-/* ✅ Contenedor general debajo de la imagen */
+.subidos-feed-actions{
+  padding-top:5px !important;
+}
+
+/* =========================
+   CARD DE PRÉDICA EN GALERÍA
+   ========================= */
+
 .subidos-feed-card.subidos-card-predica .subidos-predica-resumen,
 .subidos-feed-card.subidos-card-predica .subidos-predica-resumen-unica{
   flex:1 1 auto !important;
@@ -2041,7 +2079,6 @@ body.oscuro #modalSubidosVisor{
   cursor:pointer !important;
 }
 
-/* ✅ Evita scroll horizontal en toda la zona de prédica de galería */
 .subidos-feed-card.subidos-card-predica .subidos-predica-resumen *,
 .subidos-feed-card.subidos-card-predica .subidos-predica-resumen-unica *{
   box-sizing:border-box !important;
@@ -2051,33 +2088,30 @@ body.oscuro #modalSubidosVisor{
   overflow-wrap:break-word !important;
 }
 
-/* ✅ Contenedor del título restaurado */
-.subidos-predica-galeria-titulo,
+/* ✅ Contenedor del título como el que ya tenías */
 .subidos-predica-card-titulo{
   flex:0 0 auto !important;
-
-  display:block !important;
-  text-align:center !important;
-
   font-family:"Lora", serif !important;
-  font-size:13px !important;
-  line-height:1.15 !important;
+  font-size:12.5px !important;
+  line-height:1.06 !important;
   font-weight:900 !important;
+  text-align:center !important;
   color:#000 !important;
 
   margin:0 !important;
-  padding:6px 8px !important;
+  padding:4px 6px !important;
 
-  border-radius:13px !important;
-  border:1px solid rgba(216,238,249,.95) !important;
+  border-radius:10px !important;
   background:rgba(255,255,255,.76) !important;
-  box-shadow:0 1px 4px rgba(0,0,0,.08) !important;
+  border:1px solid rgba(216,238,249,.90) !important;
 
-  white-space:normal !important;
   overflow:hidden !important;
+  display:-webkit-box !important;
+  -webkit-line-clamp:2 !important;
+  -webkit-box-orient:vertical !important;
 }
 
-/* ✅ Contenedor de cita + texto bíblico con fondo elegido, bordes y redondeado */
+/* ✅ Contenedor de cita + texto bíblico con fondo elegido y esquinas redondeadas */
 .subidos-predica-primera{
   position:relative !important;
 
@@ -2108,7 +2142,7 @@ body.oscuro #modalSubidosVisor{
     0 4px 10px rgba(0,0,0,.06) !important;
 }
 
-/* ✅ Fondo elegido para el PNG / prédica abierta / card de galería */
+/* ✅ Fondo elegido para PNG / prédica abierta / card de galería */
 .subidos-predica-primera::before{
   content:"" !important;
   position:absolute !important;
@@ -2129,7 +2163,6 @@ body.oscuro #modalSubidosVisor{
   z-index:1 !important;
 }
 
-/* ✅ Cita centrada horizontalmente */
 .subidos-predica-primera-ref{
   flex:0 0 auto !important;
   align-self:center !important;
@@ -2153,7 +2186,6 @@ body.oscuro #modalSubidosVisor{
   text-overflow:clip !important;
 }
 
-/* ✅ Texto bíblico a la izquierda, con bold, y SOLO scroll vertical si hace falta */
 .subidos-predica-primera-texto{
   flex:0 1 auto !important;
   min-height:0 !important;
@@ -2177,13 +2209,11 @@ body.oscuro #modalSubidosVisor{
   overflow-wrap:break-word !important;
 }
 
-/* ✅ Comentario mini/card sin bold, solo italic */
 .subidos-predica-mini-comentario{
   font-style:italic !important;
   font-weight:400 !important;
 }
 
-/* ✅ Texto bíblico mini con bold */
 .subidos-predica-mini-texto{
   font-weight:800 !important;
 }
@@ -2274,41 +2304,55 @@ body.oscuro #modalSubidosVisor{
 
 @media (max-width:800px){
 
-  /* ✅ Prédica abierta al ancho real de la pantalla */
+  /* ✅ Prédica abierta centrada, sin margen izquierdo ni corte derecho */
   #modalSubidosVisor{
-    padding-left:0 !important;
-    padding-right:0 !important;
+    padding:0 !important;
+    margin:0 !important;
+    overflow-x:hidden !important;
+    align-items:stretch !important;
+    justify-content:center !important;
   }
 
   #modalSubidosVisor .modal-card{
-    width:100vw !important;
-    max-width:100vw !important;
-    margin-left:0 !important;
-    margin-right:0 !important;
+    width:100% !important;
+    max-width:100% !important;
+    margin:0 auto !important;
+    left:auto !important;
+    right:auto !important;
+    transform:none !important;
     border-radius:0 !important;
+    box-sizing:border-box !important;
   }
 
   #subidosVisorBody{
     width:100% !important;
     max-width:100% !important;
+    margin:0 auto !important;
+    padding-left:0 !important;
+    padding-right:0 !important;
     overflow-x:hidden !important;
+    box-sizing:border-box !important;
   }
 
   .subidos-visor-predica-full{
-    width:100vw !important;
-    max-width:100vw !important;
-    margin-left:calc(50% - 50vw) !important;
-    margin-right:calc(50% - 50vw) !important;
+    width:100% !important;
+    max-width:100% !important;
+    margin:0 auto !important;
+    left:auto !important;
+    right:auto !important;
+    transform:none !important;
+    box-sizing:border-box !important;
   }
 
   .subidos-visor-marco{
     width:100% !important;
     max-width:100% !important;
+    margin:0 auto !important;
     border-radius:0 !important;
     padding:10px !important;
+    box-sizing:border-box !important;
   }
 
-  /* ✅ Nombre de iglesia arriba y descripción abajo, 10% más chica */
   .subidos-visor-encabezado-predica{
     display:flex !important;
     flex-direction:column !important;
@@ -2345,7 +2389,8 @@ body.oscuro #modalSubidosVisor{
     padding:10px 10px !important;
   }
 
-  /* ✅ Card de galería 15% más alta en teléfono */
+  /* ✅ Todas las cards iguales también en teléfono */
+  .subidos-feed-card,
   .subidos-feed-card.subidos-card-predica{
     width:222px !important;
     min-width:222px !important;
@@ -2362,11 +2407,11 @@ body.oscuro #modalSubidosVisor{
     margin:0 0 5px 0 !important;
   }
 
-  .subidos-predica-galeria-titulo,
   .subidos-predica-card-titulo{
     font-size:11.6px !important;
-    line-height:1.08 !important;
-    padding:5px 7px !important;
+    line-height:1.04 !important;
+    padding:4px 6px !important;
+    margin:0 !important;
   }
 
   .subidos-predica-primera{
