@@ -1456,14 +1456,17 @@ function htmlPredicaBibliaSubido(it) {
   const referencia = String(primera.referencia || "").trim();
   const texto = String(primera.texto || "").trim();
   const tituloPredica = String(it.predicaTitulo || it.tituloPredica || "").trim();
+  const fondoUrl = subidosFondoPredicaActual(it);
+  const idJs = subidosJs(it.id || "");
 
   return `
     <div
       class="subidos-predica-resumen subidos-predica-resumen-unica"
-      onclick="abrirSubidosVisorPredica('${it.id}', 'all')"
+      onclick="abrirSubidosVisorPredica('${idJs}', 'all')"
       title="Abrir prédica completa"
       role="button"
       tabindex="0"
+      style="--subidos-predica-card-fondo:url('${subidosCssUrl(fondoUrl)}');"
     >
       <div class="subidos-predica-primera">
 
@@ -3152,39 +3155,37 @@ color:#111;
         grid-template-columns:1fr;
       }
 
-      #subidosExportPredicaFinal .subidos-export-text-box{
-        width:100%;
-        height:auto;
-        min-height:0;
-        max-height:100%;
-        align-self:center;
-        border:1px solid rgba(255,255,255,.52);
-        background:rgba(255,255,255,.80);
-        border-radius:22px;
-        display:flex;
-        align-items:flex-start;
-justify-content:center;
-text-align:left;
-        overflow:hidden;
-      }
+#subidosExportPredicaFinal .subidos-export-text-box{
+  width:100%;
+  height:auto;
+  min-height:0;
+  max-height:none;
+  align-self:stretch;
+  border:1px solid rgba(255,255,255,.52);
+  background:rgba(255,255,255,.80);
+  border-radius:22px;
+  display:flex;
+  align-items:flex-start;
+  justify-content:center;
+  text-align:left;
+  overflow:hidden;
+  padding:10px 14px;
+}
 
-      /* ✅ poco texto: bloque chico */
-      #subidosExportPredicaFinal .subidos-export-text-box.breve{
-        min-height:76px;
-        padding:12px 14px;
-      }
+#subidosExportPredicaFinal .subidos-export-text-box.breve{
+  min-height:0;
+  padding:10px 14px;
+}
 
-      /* ✅ texto medio: bloque moderado */
-      #subidosExportPredicaFinal .subidos-export-text-box.media{
-        min-height:118px;
-        padding:12px 15px;
-      }
+#subidosExportPredicaFinal .subidos-export-text-box.media{
+  min-height:0;
+  padding:10px 14px;
+}
 
-      /* ✅ texto largo: crece más, pero no ocupa aire de más */
-      #subidosExportPredicaFinal .subidos-export-text-box.larga{
-        min-height:154px;
-        padding:12px 16px;
-      }
+#subidosExportPredicaFinal .subidos-export-text-box.larga{
+  min-height:0;
+  padding:10px 14px;
+}
 
 #subidosExportPredicaFinal .subidos-export-intro,
 #subidosExportPredicaFinal .subidos-export-note{
@@ -3192,10 +3193,10 @@ text-align:left;
   max-width:100%;
   font-weight:800;
   text-align:left;
-  line-height:1.10;
+  line-height:1.12;
   overflow-wrap:anywhere;
   display:block;
-  font-size:11.4px;
+  font-size:11.8px;
 }
 
       #subidosExportPredicaFinal.v1-grande .subidos-export-intro,
@@ -3216,7 +3217,7 @@ text-align:left;
   border:1px solid rgba(255,255,255,.52);
   background:rgba(255,255,255,.72);
   border-radius:18px;
-  padding:8px 14px;
+  padding:9px 14px;
   display:flex;
   align-items:center;
   justify-content:center;
@@ -3230,7 +3231,7 @@ text-align:left;
   justify-content:center;
   gap:4px 8px;
   font-size:12px;
-  line-height:1.12;
+  line-height:1.14;
   font-weight:900;
   text-align:center;
   overflow:hidden;
@@ -3606,241 +3607,88 @@ function subidosSetMaxPrimeraExport(box, textEl, refEl) {
 function subidosAjustarLayoutInteligenteExportPredica(node) {
   if (!node) return;
 
-  const MIN_GAP = 5;
+  const GAP = 5;
 
   const primeraBox = node.querySelector(".subidos-export-primera-box");
   const primeraText = node.querySelector(".subidos-export-primera-texto");
   const primeraRef = node.querySelector(".subidos-export-primera-ref");
 
-  const row = node.querySelector(".subidos-export-text-row");
-
+  const rows = [...node.querySelectorAll(".subidos-export-text-row")];
   const introBox = node.querySelector(".subidos-export-text-box.intro-box");
   const introText = node.querySelector(".subidos-export-intro");
-
   const noteBox = node.querySelector(".subidos-export-text-box.note-box");
   const noteText = node.querySelector(".subidos-export-note");
 
   const otrasBox = node.querySelector(".subidos-export-otras-citas-box");
   const otrasText = node.querySelector(".subidos-export-otras-citas");
 
-  if (!primeraBox || !primeraText) return;
-
-  const hayIntro = !!(introBox && introText);
-  const hayNota = !!(noteBox && noteText);
-  const hayRow = !!(row && (hayIntro || hayNota));
-  const hayOtras = !!(otrasBox && otrasText && String(otrasText.textContent || "").trim());
-
-  // ✅ Reseteo limpio antes de medir.
+  node.style.height = "auto";
+  node.style.minHeight = "0";
   node.style.justifyContent = "flex-start";
-  node.style.gap = MIN_GAP + "px";
+  node.style.gap = GAP + "px";
+  node.style.overflow = "hidden";
 
-  primeraBox.style.flex = "0 0 auto";
-
-  if (row) {
-    row.style.flex = "0 0 auto";
-    row.style.height = "auto";
-    row.style.minHeight = "0";
-    row.style.maxHeight = "none";
-    row.style.alignItems = "center";
-    row.style.alignContent = "center";
-    row.style.gap = MIN_GAP + "px";
-    row.style.overflow = "hidden";
-  }
-
-  if (otrasBox) {
-    otrasBox.style.flex = "0 0 auto";
-    otrasBox.style.height = "auto";
-    otrasBox.style.minHeight = "0";
-    otrasBox.style.maxHeight = "none";
-    otrasBox.style.alignSelf = "stretch";
-    otrasBox.style.overflow = "hidden";
-  }
-
-  subidosResetCajaExport(primeraBox);
-  subidosResetCajaExport(introBox);
-  subidosResetCajaExport(noteBox);
-  subidosResetCajaExport(otrasBox);
-
-  if (otrasBox) {
-    otrasBox.style.width = "100%";
-    otrasBox.style.alignSelf = "stretch";
-  }
-
-  // ✅ Ancho inteligente entre intro y nota ANTES de medir alto.
-  subidosAplicarColumnasIntroNotaExport(row, introText, noteText);
-
-  // ✅ Fuente base. Textos muy breves pueden subir 1 punto.
-  subidosFuenteInicialExport(primeraText, 15, 1, 150);
-  subidosFuenteInicialExport(introText, 12, 1, 110);
-  subidosFuenteInicialExport(noteText, 12, 1, 110);
-
-  // ✅ Las citas finales quedan del mismo tamaño base que intro/nota.
-  if (otrasText) {
-    otrasText.style.fontSize = "12px";
-    otrasText.style.lineHeight = "1.12";
-  }
-
-  // ✅ Altos naturales reales: no categorías fijas.
-  const altoPrimeraNatural = subidosAltoNaturalPrimeraExport(
-    primeraBox,
-    primeraText,
-    primeraRef
-  );
-
-  const altoIntroNatural = subidosAltoNaturalCajaExport(introBox, introText);
-  const altoNotaNatural = subidosAltoNaturalCajaExport(noteBox, noteText);
-
- const altoRowNatural = hayRow
-  ? (
-      (altoIntroNatural || 0) +
-      (altoNotaNatural || 0) +
-      (hayIntro && hayNota ? MIN_GAP : 0)
-    )
-  : 0;
-  
-  const altoOtrasNatural = hayOtras
-    ? subidosAltoNaturalCajaExport(otrasBox, otrasText)
-    : 0;
-
-  // ✅ Medimos altura disponible real dentro del PNG.
-  const csNode = window.getComputedStyle(node);
-  const altoContenido = node.clientHeight
-    - parseFloat(csNode.paddingTop || "0")
-    - parseFloat(csNode.paddingBottom || "0");
-
-  const hijos = [...node.children].filter(el => {
-    if (!el || el.tagName === "STYLE") return false;
-    return window.getComputedStyle(el).display !== "none";
+  [primeraBox, introBox, noteBox, otrasBox, ...rows].forEach(el => {
+    if (!el) return;
+    el.style.flex = "0 0 auto";
+    el.style.height = "auto";
+    el.style.minHeight = "0";
+    el.style.maxHeight = "none";
+    el.style.overflow = "hidden";
   });
 
-  const espacios = Math.max(0, hijos.length - 1);
+  rows.forEach(row => {
+    row.style.display = "flex";
+    row.style.flexDirection = "column";
+    row.style.gap = GAP + "px";
+    row.style.alignItems = "stretch";
+    row.style.alignContent = "stretch";
+  });
 
-  const altoFijo = hijos.reduce((total, el) => {
-    if (el === primeraBox) return total;
-    if (el === row) return total;
-    if (el === otrasBox) return total;
-    return total + el.offsetHeight;
-  }, 0);
+  [primeraText, introText, noteText, otrasText].forEach(el => {
+    if (!el) return;
+    el.style.maxHeight = "none";
+    el.style.overflow = "visible";
+  });
 
-  const disponibleParaTextos = Math.max(
-    1,
-    altoContenido - altoFijo - (MIN_GAP * espacios)
-  );
-
-  const requerido =
-    altoPrimeraNatural +
-    altoRowNatural +
-    altoOtrasNatural;
-
-  let altoPrimera = altoPrimeraNatural;
-  let altoRow = altoRowNatural;
-  let altoOtras = altoOtrasNatural;
-
-  if (requerido <= disponibleParaTextos) {
-    // ✅ Si entra todo, cada caja queda ajustada al texto.
-    // El sobrante se reparte como aire ENTRE bloques, no dentro.
-    const gapCalculado = espacios
-      ? Math.floor((altoContenido - altoFijo - requerido) / espacios)
-      : MIN_GAP;
-
-    const gapFinal = subidosClampNumero(gapCalculado, MIN_GAP, 22);
-
-    node.style.gap = gapFinal + "px";
-    if (row) row.style.gap = subidosClampNumero(gapFinal, MIN_GAP, 16) + "px";
-  } else {
-    // ✅ Si no entra todo, primero protegemos las citas finales.
-    // Después repartimos el resto entre primer versículo e intro/nota.
-    node.style.gap = MIN_GAP + "px";
-    if (row) row.style.gap = MIN_GAP + "px";
-
-    const minPrimera = 80;
-    const minRow = hayRow ? 62 : 0;
-    const minOtras = hayOtras ? 28 : 0;
-
-    altoOtras = hayOtras
-      ? Math.min(
-          altoOtrasNatural,
-          Math.max(minOtras, disponibleParaTextos - minPrimera - minRow)
-        )
-      : 0;
-
-    altoOtras = hayOtras
-      ? subidosClampNumero(altoOtras, minOtras, altoOtrasNatural)
-      : 0;
-
-    const disponibleMain = Math.max(
-      1,
-      disponibleParaTextos - altoOtras
-    );
-
-    const requeridoMain = altoPrimeraNatural + altoRowNatural;
-    const ratio = disponibleMain / Math.max(1, requeridoMain);
-
-    altoPrimera = Math.floor(altoPrimeraNatural * ratio);
-
-    altoPrimera = subidosClampNumero(
-      altoPrimera,
-      minPrimera,
-      hayRow ? disponibleMain - minRow : disponibleMain
-    );
-
-    altoRow = hayRow
-      ? Math.max(minRow, disponibleMain - altoPrimera)
-      : 0;
+  if (primeraBox) {
+    primeraBox.style.gap = "7px";
   }
 
-  // ✅ Aplicamos alturas reales.
-  primeraBox.style.height = Math.max(1, Math.floor(altoPrimera)) + "px";
-  primeraBox.style.flex = "0 0 " + Math.max(1, Math.floor(altoPrimera)) + "px";
-
-  if (row && hayRow) {
-    row.style.height = Math.max(1, Math.floor(altoRow)) + "px";
-    row.style.flex = "0 0 " + Math.max(1, Math.floor(altoRow)) + "px";
+  if (primeraText) {
+    primeraText.style.fontSize = "15px";
+    primeraText.style.lineHeight = "1.12";
   }
 
-  if (otrasBox && hayOtras) {
-    otrasBox.style.height = Math.max(1, Math.floor(altoOtras)) + "px";
-    otrasBox.style.flex = "0 0 " + Math.max(1, Math.floor(altoOtras)) + "px";
+  if (introText) {
+    introText.style.fontSize = "11.8px";
+    introText.style.lineHeight = "1.12";
+    introText.style.textAlign = "left";
   }
 
-  // ✅ Intro y nota NO heredan la altura completa de la fila.
-  // Cada una usa lo que necesita. Si no entra, se limita a la fila.
-  if (introBox && introText) {
-    const h = Math.min(altoIntroNatural, altoRow || altoIntroNatural);
-    introBox.style.height = Math.max(1, Math.floor(h)) + "px";
+  if (noteText) {
+    noteText.style.fontSize = "11.8px";
+    noteText.style.lineHeight = "1.12";
+    noteText.style.textAlign = "left";
   }
 
-  if (noteBox && noteText) {
-    const h = Math.min(altoNotaNatural, altoRow || altoNotaNatural);
-    noteBox.style.height = Math.max(1, Math.floor(h)) + "px";
+  if (otrasText) {
+    otrasText.style.fontSize = "12px";
+    otrasText.style.lineHeight = "1.14";
+    otrasText.style.textAlign = "center";
+    otrasText.style.justifyContent = "center";
   }
 
-  // ✅ Máximos internos para que no pise ni corte feo.
-  subidosSetMaxPrimeraExport(primeraBox, primeraText, primeraRef);
-  subidosSetMaxTextoCajaExport(introBox, introText);
-  subidosSetMaxTextoCajaExport(noteBox, noteText);
-  subidosSetMaxTextoCajaExport(otrasBox, otrasText);
+  // Si el primer versículo queda muy alto, baja un poquito antes de medir el alto final.
+  if (primeraText && primeraBox) {
+    let fontSize = parseFloat(window.getComputedStyle(primeraText).fontSize || "15");
 
-  // ✅ Si no cabe: baja fuente. Si aun no cabe: recién ahí recorta.
-  subidosAjustarFuenteYRecorteExport(primeraText, 10.2, 0.2);
-  subidosAjustarFuenteYRecorteExport(introText, 9.4, 0.2);
-  subidosAjustarFuenteYRecorteExport(noteText, 9.4, 0.2);
-
-  // ✅ Citas finales: primero intenta entrar completas usando su altura natural.
-  // Solo baja fuente si de verdad no entra en alto.
-  if (otrasBox && otrasText) {
-    const overflowAltoOtras = () =>
-      otrasText.scrollHeight > otrasText.clientHeight + 1;
-
-    let fontSize = parseFloat(window.getComputedStyle(otrasText).fontSize || "12");
-
-    while (fontSize > 10.8 && overflowAltoOtras()) {
-      fontSize = Math.max(10.8, fontSize - 0.2);
-      otrasText.style.fontSize = fontSize + "px";
-    }
-
-    if (overflowAltoOtras()) {
-      subidosRecortarTextoHastaEntrarExport(otrasText);
+    while (
+      fontSize > 11.2 &&
+      primeraText.scrollHeight > 190
+    ) {
+      fontSize -= 0.2;
+      primeraText.style.fontSize = fontSize + "px";
     }
   }
 }
@@ -3859,42 +3707,83 @@ function subidosAjustarAltoFinalExportPredica(node) {
   // Máximo: historia 9:16.
   const MAX_H = Math.round((exportW * 16) / 9);
 
-  // Mínimo: permite PNG más bajo cuando hay poco contenido.
-  const MIN_H = 430;
+  // Mínimo: no lo dejamos demasiado petiso.
+  const MIN_H = 500;
 
   const GAP = 5;
 
-  node.style.justifyContent = "flex-start";
-  node.style.gap = GAP + "px";
-  node.style.minHeight = "0";
-
-  // ✅ IMPORTANTE:
-  // primero lo dejamos auto para medir dónde termina realmente el último bloque.
   node.style.height = "auto";
+  node.style.minHeight = "0";
+  node.style.gap = GAP + "px";
+  node.style.justifyContent = "flex-start";
 
-  const csNode = window.getComputedStyle(node);
-  const paddingBottom = parseFloat(csNode.paddingBottom || "0");
+  const textosReducibles = [
+    ...node.querySelectorAll(`
+      .subidos-export-primera-texto,
+      .subidos-export-intro,
+      .subidos-export-note,
+      .subidos-export-otras-citas
+    `)
+  ];
 
-  const hijos = [...node.children].filter(el => {
-    if (!el || el.tagName === "STYLE") return false;
-    return window.getComputedStyle(el).display !== "none";
-  });
+  const hero = node.querySelector(".subidos-export-hero");
 
-  const nodeTop = node.getBoundingClientRect().top;
+  const medirAltoNatural = () => {
+    const cs = window.getComputedStyle(node);
 
-  let bottomMax = 0;
+    const paddingY =
+      parseFloat(cs.paddingTop || "0") +
+      parseFloat(cs.paddingBottom || "0");
 
-  hijos.forEach(el => {
-    const r = el.getBoundingClientRect();
-    bottomMax = Math.max(bottomMax, r.bottom - nodeTop);
-  });
+    const hijos = [...node.children].filter(el => {
+      if (!el || el.tagName === "STYLE") return false;
+      return window.getComputedStyle(el).display !== "none";
+    });
 
-  const altoFinal = subidosClampNumero(
-    Math.ceil(bottomMax + paddingBottom + 6),
-    MIN_H,
-    MAX_H
-  );
+    const altoHijos = hijos.reduce((total, el) => {
+      return total + Math.ceil(el.getBoundingClientRect().height || el.offsetHeight || 0);
+    }, 0);
 
+    const gaps = Math.max(0, hijos.length - 1) * GAP;
+
+    return Math.ceil(paddingY + altoHijos + gaps + 10);
+  };
+
+  let altoNatural = medirAltoNatural();
+
+  // Si entra en menos que 9:16, usamos el alto real y NO recortamos.
+  if (altoNatural <= MAX_H) {
+    const altoFinal = subidosClampNumero(altoNatural, MIN_H, MAX_H);
+    node.style.height = altoFinal + "px";
+    return;
+  }
+
+  // Si no entra, primero reducimos un poco fuentes.
+  for (let i = 0; i < 18 && altoNatural > MAX_H; i++) {
+    textosReducibles.forEach(el => {
+      const actual = parseFloat(window.getComputedStyle(el).fontSize || "12");
+      const min = el.classList.contains("subidos-export-primera-texto") ? 10.4 : 9.8;
+
+      if (actual > min) {
+        el.style.fontSize = Math.max(min, actual - 0.25) + "px";
+      }
+    });
+
+    altoNatural = medirAltoNatural();
+  }
+
+  // Si todavía no entra, bajamos un poco el bloque de foto + iglesia.
+  if (altoNatural > MAX_H && hero) {
+    let heroH = Math.round(hero.getBoundingClientRect().height || 168);
+
+    while (heroH > 142 && altoNatural > MAX_H) {
+      heroH -= 4;
+      hero.style.flexBasis = heroH + "px";
+      altoNatural = medirAltoNatural();
+    }
+  }
+
+  const altoFinal = subidosClampNumero(altoNatural, MIN_H, MAX_H);
   node.style.height = altoFinal + "px";
 }
 
