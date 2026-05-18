@@ -19,6 +19,40 @@ const SUBIDOS_PROXY_URL = R2_WORKER_URL;
 
 const SUBIDOS_EXPORT_BG_URL = "./img/subidos/1fondo-predica-cielo.jpg";
 
+// ✅ Usá rutas de tu app, NO la URL de /tree/ de GitHub.
+// Cuando subas más fondos a img/fondos, agregás acá el nombre real del archivo.
+const SUBIDOS_PREDICA_FONDOS = [
+  { nombre: "Cielo prédica", url: "./img/subidos/1fondo-predica-cielo.jpg" },
+
+  // Ejemplos: cambiá estos nombres por los archivos reales que tengas en img/fondos
+  { nombre: "Fondo 1", url: "./img/fondos/fondo-1.jpg" },
+  { nombre: "Fondo 2", url: "./img/fondos/fondo-2.jpg" },
+  { nombre: "Fondo 3", url: "./img/fondos/fondo-3.jpg" }
+];
+
+function subidosFondoPredicaActual(it = null) {
+  return String(
+    it?.predicaFondoUrl ||
+    document.getElementById("subidosPredicaFondo")?.value ||
+    SUBIDOS_EXPORT_BG_URL
+  ).trim() || SUBIDOS_EXPORT_BG_URL;
+}
+
+function subidosCssUrl(url = "") {
+  return String(url || "")
+    .replace(/\\/g, "\\\\")
+    .replace(/'/g, "\\'");
+}
+
+function subidosPoblarFondosPredica() {
+  const sel = document.getElementById("subidosPredicaFondo");
+  if (!sel) return;
+
+  sel.innerHTML = SUBIDOS_PREDICA_FONDOS.map(f => `
+    <option value="${escaparHtml(f.url)}">${escaparHtml(f.nombre)}</option>
+  `).join("");
+}
+
 let subidosUID = null;
 let subidosEsAdmin = false;
 let subidosMesActual = new Date();
@@ -396,12 +430,18 @@ function resetPredicaSubidosUI() {
   const notaFinal = document.getElementById("subidosPredicaNotaFinal");
   const version = document.getElementById("subidosPredicaVersion");
   const intro = document.getElementById("subidosPredicaIntro");
+  const titulo = document.getElementById("subidosPredicaTitulo");
+  const fondo = document.getElementById("subidosPredicaFondo");
+
+  subidosPoblarFondosPredica();
 
   if (box) box.style.display = "none";
   if (wrap) wrap.innerHTML = "";
   if (notaFinal) notaFinal.value = "";
   if (version) version.value = "RV1960";
   if (intro) intro.value = "";
+  if (titulo) titulo.value = "";
+  if (fondo) fondo.value = SUBIDOS_EXPORT_BG_URL;
 }
 
 function actualizarPredicaSubidosUI() {
@@ -410,8 +450,12 @@ function actualizarPredicaSubidosUI() {
   const wrap = document.getElementById("subidosPredicaCitasWrap");
   const intro = document.getElementById("subidosPredicaIntro");
   const notaFinal = document.getElementById("subidosPredicaNotaFinal");
+  const titulo = document.getElementById("subidosPredicaTitulo");
+  const fondo = document.getElementById("subidosPredicaFondo");
 
   if (!sel || !box || !wrap) return;
+
+  subidosPoblarFondosPredica();
 
   const mostrar = esPredicaSubidos(sel.value);
 
@@ -421,6 +465,8 @@ function actualizarPredicaSubidosUI() {
     wrap.innerHTML = "";
     if (intro) intro.value = "";
     if (notaFinal) notaFinal.value = "";
+    if (titulo) titulo.value = "";
+    if (fondo) fondo.value = SUBIDOS_EXPORT_BG_URL;
     return;
   }
 
@@ -1145,6 +1191,8 @@ function recogerDatosPredicaSubidos() {
   const wrap = document.getElementById("subidosPredicaCitasWrap");
   const notaFinal = document.getElementById("subidosPredicaNotaFinal")?.value?.trim() || "";
   const introduccion = document.getElementById("subidosPredicaIntro")?.value?.trim() || "";
+  const titulo = document.getElementById("subidosPredicaTitulo")?.value?.trim() || "";
+  const fondoUrl = subidosFondoPredicaActual();
   const version = subidosVersionPredicaActual();
 
   const citas = [];
@@ -1177,6 +1225,8 @@ function recogerDatosPredicaSubidos() {
 
   return {
     version,
+    titulo,
+    fondoUrl,
     introduccion,
     citas,
     notaFinalGeneral: notaFinal
@@ -2617,6 +2667,8 @@ function subidosCrearNodoExportPredica(it) {
   const notaFinal = subidosTextoPlanoExport(it.predicaNotaFinal || it.notaFinalGeneral || "");
   const fechaTxt = subidosFechaBonitaExport(it.fechaEvento || "");
   const descripcion = subidosTextoPlanoExport(it.descripcion || "");
+  const tituloPredica = subidosTextoPlanoExport(it.predicaTitulo || it.tituloPredica || "");
+const fondoUrl = subidosFondoPredicaActual(it);
   const color = colorEtiquetaSubidos(it.etiqueta || "");
 
  const textosClase = subidosClaseBalanceIntroNota(introduccion, notaFinal);
@@ -2663,7 +2715,7 @@ color:#111;
   content:"";
   position:absolute;
   inset:0;
-  background-image:url("${SUBIDOS_EXPORT_BG_URL}");
+  background-image:url("${fondoUrl}");
   background-size:cover;
   background-position:center center;
   background-repeat:no-repeat;
@@ -2746,7 +2798,7 @@ color:#111;
       /* ===== ARCHIVO + DATOS IGLESIA ===== */
 
       #subidosExportPredicaFinal .subidos-export-hero{
-        flex:0 0 188px;
+        flex:0 0 170px;
         min-height:0;
         display:grid;
         grid-template-columns:var(--left-col) var(--right-col);
@@ -3016,7 +3068,46 @@ line-height:1.12;
         line-height:1;
         transform:translateY(-1px);
       }
-      
+
+      #subidosExportPredicaFinal .subidos-export-predica-titulo{
+  flex:0 0 auto;
+  width:100%;
+  padding:6px 12px;
+  border-radius:18px;
+  background:rgba(255,255,255,.74);
+  border:1px solid rgba(255,255,255,.52);
+  font-family:"Lora", serif;
+  font-size:17px;
+  line-height:1.05;
+  font-weight:900;
+  text-align:center;
+  color:#111;
+  overflow:hidden;
+  white-space:nowrap;
+  text-overflow:ellipsis;
+}
+
+/* ✅ Intro y nota final una debajo de la otra */
+#subidosExportPredicaFinal .subidos-export-text-row,
+#subidosExportPredicaFinal .subidos-export-text-row.dos,
+#subidosExportPredicaFinal .subidos-export-text-row.uno,
+#subidosExportPredicaFinal .subidos-export-text-row.intro-larga,
+#subidosExportPredicaFinal .subidos-export-text-row.nota-larga,
+#subidosExportPredicaFinal .subidos-export-text-row.intro-muy-larga,
+#subidosExportPredicaFinal .subidos-export-text-row.nota-muy-larga{
+  display:flex !important;
+  flex-direction:column !important;
+  grid-template-columns:none !important;
+  align-items:stretch !important;
+  align-content:center !important;
+  gap:6px !important;
+}
+
+#subidosExportPredicaFinal .subidos-export-text-box{
+  align-self:stretch !important;
+  width:100% !important;
+}
+   
     </style>
 
     <div class="subidos-export-head">
@@ -3034,6 +3125,12 @@ line-height:1.12;
     </div>
 
     <div class="subidos-export-divider"></div>
+
+    ${tituloPredica ? `
+  <div class="subidos-export-predica-titulo">
+    ${escaparHtml(tituloPredica)}
+  </div>
+` : ``}
 
     <div class="subidos-export-hero">
       ${subidosArchivoExportHtml(it)}
@@ -3404,10 +3501,14 @@ function subidosAjustarLayoutInteligenteExportPredica(node) {
   const altoIntroNatural = subidosAltoNaturalCajaExport(introBox, introText);
   const altoNotaNatural = subidosAltoNaturalCajaExport(noteBox, noteText);
 
-  const altoRowNatural = hayRow
-    ? Math.max(altoIntroNatural || 0, altoNotaNatural || 0)
-    : 0;
-
+ const altoRowNatural = hayRow
+  ? (
+      (altoIntroNatural || 0) +
+      (altoNotaNatural || 0) +
+      (hayIntro && hayNota ? MIN_GAP : 0)
+    )
+  : 0;
+  
   const altoOtrasNatural = hayOtras
     ? subidosAltoNaturalCajaExport(otrasBox, otrasText)
     : 0;
@@ -3714,23 +3815,33 @@ function subidosAbrirDesdeHash() {
 }
 
 function htmlArchivoGrandePredica(it) {
-  if (!it?.url) return "";
+  const archivos = subidosArchivosItem(it);
+  if (!archivos.length) return "";
 
-  const nombre = escaparHtml(it.fileName || "archivo");
-  const mime = String(it.mimeType || "");
+  // ✅ Si la prédica tiene varios archivos, usa el mismo carrusel grande que las demás etiquetas.
+  if (archivos.length > 1) {
+    return subidosHtmlArchivosAbiertos(it, 0);
+  }
+
+  const archivo = archivos[0];
+  const url = String(archivo.url || "").trim();
+  if (!url) return "";
+
+  const nombre = escaparHtml(archivo.fileName || "archivo");
+  const mime = String(archivo.mimeType || "");
 
   if (mime.startsWith("image/")) {
     return `
       <button
         type="button"
         onclick="abrirSubidosVisorArchivo('${it.id}')"
-        style="width:100%; border:none; background:#fff; border-radius:16px; padding:0; overflow:hidden; cursor:pointer;"
+        style="width:100%; border:none; background:transparent; border-radius:16px; padding:0; overflow:hidden; cursor:pointer;"
         title="Abrir archivo"
       >
         <img
-          src="${it.url}"
+          src="${url}"
           alt="${nombre}"
-          style="display:block; width:100%; max-height:46vh; object-fit:contain; background:#fff;"
+          style="display:block; width:100%; max-height:46vh; object-fit:contain; background:transparent;"
         >
       </button>
     `;
@@ -3741,11 +3852,11 @@ function htmlArchivoGrandePredica(it) {
       <button
         type="button"
         onclick="abrirSubidosVisorArchivo('${it.id}')"
-        style="width:100%; border:none; background:#fff; border-radius:16px; padding:0; overflow:hidden; cursor:pointer;"
+        style="width:100%; border:none; background:transparent; border-radius:16px; padding:0; overflow:hidden; cursor:pointer;"
         title="Abrir video"
       >
         <video
-          src="${it.url}"
+          src="${url}"
           muted
           playsinline
           preload="metadata"
@@ -3795,39 +3906,21 @@ function htmlPredicaBibliaSubidoGrande(it, abrirClave = "") {
 
   const notaFinal = String(it.predicaNotaFinal || it.notaFinalGeneral || "").trim();
   const introduccion = String(it.predicaIntroduccion || it.introduccionPredica || "").trim();
+  const tituloPredica = String(it.predicaTitulo || it.tituloPredica || "").trim();
+  const fondoUrl = subidosFondoPredicaActual(it);
 
   const comentarioPrimera = String(
     primeraCita?.comentario || primeraCita?.nota || ""
   ).trim();
 
   const primeraBloque = primeraCita ? `
-    <section
-      class="subidos-visor-bloque subidos-visor-bloque-primera"
-      style="
-        background:rgba(209,238,255,.62);
-        border:1px solid rgba(150,205,235,.72);
-        border-radius:16px;
-        overflow:hidden;
-      "
-    >
+    <section class="subidos-visor-bloque subidos-visor-bloque-primera">
       <div class="subidos-visor-ref">
         ${escaparHtml(primeraCita.referencia || "")}
       </div>
 
       ${primeraCita.texto ? `
-        <div
-          class="subidos-visor-texto-primera"
-          style="
-            padding:12px 14px 10px;
-            white-space:normal !important;
-            text-align:center !important;
-            font-family:'Lora', serif;
-            font-size:15px;
-            line-height:1.34;
-            font-weight:900;
-            color:var(--visor-texto);
-          "
-        >
+        <div class="subidos-visor-texto subidos-visor-texto-primera subidos-visor-versiculo-box">
           ${subidosTextoHtml(primeraCita.texto || "")}
         </div>
       ` : ``}
@@ -3848,7 +3941,7 @@ function htmlPredicaBibliaSubidoGrande(it, abrirClave = "") {
         <div class="subidos-visor-ref">${escaparHtml(c.referencia || "")}</div>
 
         ${c.texto ? `
-          <div class="subidos-visor-texto">
+          <div class="subidos-visor-texto subidos-visor-versiculo-box">
             ${subidosTextoHtml(c.texto || "")}
           </div>
         ` : ``}
@@ -3872,7 +3965,10 @@ function htmlPredicaBibliaSubidoGrande(it, abrirClave = "") {
 
   return `
     <div class="subidos-visor-predica-full">
-      <div class="subidos-visor-marco">
+      <div
+        class="subidos-visor-marco"
+        style="--subidos-predica-fondo:url('${subidosCssUrl(fondoUrl)}');"
+      >
         ${it.url ? `
           <div class="subidos-visor-archivo">
             ${htmlArchivoGrandePredica(it)}
@@ -3891,12 +3987,18 @@ function htmlPredicaBibliaSubidoGrande(it, abrirClave = "") {
           </div>
         </div>
 
+        ${tituloPredica ? `
+          <div class="subidos-visor-predica-titulo">
+            ${escaparHtml(tituloPredica)}
+          </div>
+        ` : ``}
+
         ${primeraBloque}
 
         ${introduccion ? `
           <div style="${bloqueInfoEstilo}">
             <div class="subidos-visor-intro">
-              • ${subidosTextoHtml(introduccion)}
+              ${subidosTextoHtml(introduccion)}
             </div>
           </div>
         ` : ``}
@@ -3910,7 +4012,7 @@ function htmlPredicaBibliaSubidoGrande(it, abrirClave = "") {
         ${notaFinal ? `
           <div style="${bloqueInfoEstilo}">
             <div class="subidos-visor-intro">
-              • ${subidosTextoHtml(notaFinal)}
+              ${subidosTextoHtml(notaFinal)}
             </div>
           </div>
         ` : ``}
@@ -4316,13 +4418,15 @@ window.abrirEditarSubido = async function abrirEditarSubido(id) {
   setSubidosModalTitulo("Editar subido");
   
   const fecha = document.getElementById("subidosFecha");
-  const etiqueta = document.getElementById("subidosEtiqueta");
-  const descripcion = document.getElementById("subidosDescripcion");
-  const archivo = document.getElementById("subidosArchivo");
-  const version = document.getElementById("subidosPredicaVersion");
-  const notaFinal = document.getElementById("subidosPredicaNotaFinal");
-  const intro = document.getElementById("subidosPredicaIntro");
-  const wrap = document.getElementById("subidosPredicaCitasWrap");
+const etiqueta = document.getElementById("subidosEtiqueta");
+const descripcion = document.getElementById("subidosDescripcion");
+const archivo = document.getElementById("subidosArchivo");
+const version = document.getElementById("subidosPredicaVersion");
+const notaFinal = document.getElementById("subidosPredicaNotaFinal");
+const intro = document.getElementById("subidosPredicaIntro");
+const wrap = document.getElementById("subidosPredicaCitasWrap");
+const tituloPredica = document.getElementById("subidosPredicaTitulo");
+const fondoPredica = document.getElementById("subidosPredicaFondo");
 
   if (fecha) fecha.value = it.fechaEvento || "";
   if (etiqueta) etiqueta.value = it.etiqueta || "";
@@ -4333,8 +4437,15 @@ window.abrirEditarSubido = async function abrirEditarSubido(id) {
   const archivoNombre = document.getElementById("subidosArchivoActualNombre");
   const btnVerArchivo = document.getElementById("btnVerArchivoActualSubido");
 
-  if (archivoBox) archivoBox.style.display = it.url ? "block" : "none";
-  if (archivoNombre) archivoNombre.textContent = it.fileName || "Archivo actual guardado";
+ const archivosActuales = subidosArchivosItem(it);
+
+if (archivoBox) archivoBox.style.display = archivosActuales.length ? "block" : "none";
+
+if (archivoNombre) {
+  archivoNombre.textContent = archivosActuales.length > 1
+    ? `${archivosActuales.length} archivos guardados`
+    : (archivosActuales[0]?.fileName || it.fileName || "Archivo actual guardado");
+}
   if (btnVerArchivo) {
     btnVerArchivo.onclick = () => {
       abrirSubidosVisorArchivo(it.id);
@@ -4347,6 +4458,11 @@ window.abrirEditarSubido = async function abrirEditarSubido(id) {
     if (version) version.value = it.predicaVersion || (obtenerCitasPredicaSubido(it)[0]?.version || "RV1960");
     if (notaFinal) notaFinal.value = it.predicaNotaFinal || it.notaFinalGeneral || "";
     if (intro) intro.value = it.predicaIntroduccion || it.introduccionPredica || "";
+    if (tituloPredica) tituloPredica.value = it.predicaTitulo || it.tituloPredica || "";
+if (fondoPredica) {
+  subidosPoblarFondosPredica();
+  fondoPredica.value = it.predicaFondoUrl || SUBIDOS_EXPORT_BG_URL;
+}
     if (wrap) wrap.innerHTML = "";
 
     const citas = obtenerCitasPredicaSubido(it);
@@ -4982,12 +5098,14 @@ async function guardarSubido() {
       return;
     }
 
-    let datosPredica = {
-      version: "",
-      introduccion: "",
-      citas: [],
-      notaFinalGeneral: ""
-    };
+let datosPredica = {
+  version: "",
+  titulo: "",
+  fondoUrl: SUBIDOS_EXPORT_BG_URL,
+  introduccion: "",
+  citas: [],
+  notaFinalGeneral: ""
+};
 
     if (esPredica) {
       datosPredica = recogerDatosPredicaSubidos();
@@ -5104,9 +5222,11 @@ async function guardarSubido() {
       esPredica,
       predicaRef,
       predicaVersion: esPredica ? datosPredica.version : "",
-      predicaIntroduccion: esPredica ? datosPredica.introduccion : "",
-      predicaCitas: esPredica ? datosPredica.citas : [],
-      predicaNotaFinal: esPredica ? datosPredica.notaFinalGeneral : "",
+predicaTitulo: esPredica ? datosPredica.titulo : "",
+predicaFondoUrl: esPredica ? datosPredica.fondoUrl : "",
+predicaIntroduccion: esPredica ? datosPredica.introduccion : "",
+predicaCitas: esPredica ? datosPredica.citas : [],
+predicaNotaFinal: esPredica ? datosPredica.notaFinalGeneral : "",
 
       // ✅ para acciones reales de archivo
       shareUrl: !esPredica ? url : "",
