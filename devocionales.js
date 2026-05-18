@@ -2097,14 +2097,16 @@ function wrapperShadowFromOpacity(op, color){
 
   const { r, g, b } = hexToRgb(color || "#000000");
 
-  const a1 = Math.min(0.48, x * 1.05);
-  const a2 = Math.min(0.28, x * 0.72);
-  const a3 = Math.min(0.18, x * 0.42);
+  const a1 = Math.min(0.42, x * 0.95);
+  const a2 = Math.min(0.24, x * 0.65);
+  const a3 = Math.min(0.14, x * 0.38);
 
   return `
-    0 0 22px rgba(${r}, ${g}, ${b}, ${a1}),
-    0 0 48px rgba(${r}, ${g}, ${b}, ${a2}),
-    0 0 80px rgba(${r}, ${g}, ${b}, ${a3})
+    0 0 18px rgba(${r}, ${g}, ${b}, ${a1}),
+    0 0 42px rgba(${r}, ${g}, ${b}, ${a2}),
+    0 0 76px rgba(${r}, ${g}, ${b}, ${a3}),
+    inset 0 0 26px rgba(255, 255, 255, ${Math.min(0.32, x * 0.55)}),
+    inset 0 0 46px rgba(${r}, ${g}, ${b}, ${Math.min(0.16, x * 0.35)})
   `;
 }
 
@@ -2517,6 +2519,7 @@ function devRenderFase(fase){
 
     w.style.backgroundColor = wrapperBgFromOpacity(st.op, st.opColor);
     w.style.boxShadow = wrapperShadowFromOpacity(st.op, st.opColor);
+    w.style.borderRadius = "34px";
 
     applyTextStylesToOne(t, st);
     devSyncStyleButtons(1);
@@ -2742,6 +2745,7 @@ async function renderFinalCanvasCaptureReal(){
     wrap.style.position = "absolute";
     wrap.style.inset = "6%";
     wrap.style.borderRadius = "14px";
+    wrap.style.borderRadius = "56px";
     wrap.style.overflow = "hidden";
     wrap.style.backgroundColor = wrapperBgFromOpacity(st.op, st.opColor);
     wrap.style.boxShadow = wrapperShadowFromOpacity(st.op, st.opColor);
@@ -3635,8 +3639,9 @@ function safeFilePart(s){
 }
 
 window.devDescargarFinal = async (opts = {}) => {
-  const silent = !!opts.silent;
-  const descargarLocal = opts.descargarLocal !== false;
+ const silent = !!opts.silent;
+const descargarLocal = opts.descargarLocal !== false;
+const subirGithub = opts.subirGithub !== false;
 
   if (!silent) {
     devBusyShow("⏳ Preparando audio…");
@@ -3687,26 +3692,26 @@ window.devDescargarFinal = async (opts = {}) => {
       pack = { base64: data.audioBase64, blob };
     }
 
-    // 4) subir a GitHub opcional
-    let gh = null;
+// 4) subir a GitHub opcional
+let gh = null;
 
-    if (DEV.subirAudioGithub) {
-      try {
-        gh = await subirAudioAGithubDesdeWeb(pack.base64);
-        DEV.audioGithubUrl = gh.url || "";
-      } catch (e) {
-        console.warn("GitHub upload falló:", e);
+if (DEV.subirAudioGithub && subirGithub && !DEV.audioGithubUrl) {
+  try {
+    gh = await subirAudioAGithubDesdeWeb(pack.base64);
+    DEV.audioGithubUrl = gh.url || "";
+  } catch (e) {
+    console.warn("GitHub upload falló:", e);
 
-        // ✅ En finalizar/compartir no seguimos si GitHub era requerido
-        if (silent) {
-          throw e;
-        }
-
-        alert("⚠️ No pude subir a GitHub, pero igual te lo descargo.\n\nDetalle: " + (e?.message || e));
-      }
-    } else {
-      DEV.audioGithubUrl = "";
+    // ✅ En finalizar/compartir no seguimos si GitHub era requerido
+    if (silent) {
+      throw e;
     }
+
+    alert("⚠️ No pude subir a GitHub, pero igual te lo descargo.\n\nDetalle: " + (e?.message || e));
+  }
+} else if (!DEV.subirAudioGithub) {
+  DEV.audioGithubUrl = "";
+}
 
     // 5) descargar local solo cuando corresponde
     if (descargarLocal) {
@@ -3889,7 +3894,7 @@ window.devFinalizar = async () => {
 
   const ok = confirm(
     "¿Publicar devocional y compartir?\n\n" +
-    "1) Sube el audio a GitHub si está tildado.\n" +
+    "1) Sube el audio a GitHub si está tildado y lo descarga.\n" +
     "2) Sube el devocional a Iglesia.\n" +
     "3) Lo guarda en Mi Panel solo si está tildado.\n" +
     "4) Abre compartir en redes."
@@ -3909,16 +3914,24 @@ window.devFinalizar = async () => {
       throw new Error("Primero confirmá el audio, cargá un audio finalizado, o desactivá 'Requiere audio'.");
     }
 
-    // ✅ subir audio a GitHub solo si corresponde
-    if (DEV.requiereAudio && DEV.subirAudioGithub && !DEV.audioGithubUrl) {
-      devBusyShow("⏳ Subiendo audio a GitHub…");
+// ✅ preparar audio: subir a GitHub si corresponde Y descargar local
+if (DEV.requiereAudio) {
+  devBusyShow(
+    DEV.subirAudioGithub
+      ? "⏳ Subiendo y descargando audio…"
+      : "⏳ Descargando audio…"
+  );
 
-      await window.devDescargarFinal({ silent: true, descargarLocal: false });
+  await window.devDescargarFinal({
+    silent: true,
+    descargarLocal: true,
+    subirGithub: !!DEV.subirAudioGithub
+  });
 
-      if (!DEV.audioGithubUrl) {
-        throw new Error("El audio no quedó subido a GitHub. Revisá el audio o la Function de GitHub.");
-      }
-    }
+  if (DEV.subirAudioGithub && !DEV.audioGithubUrl) {
+    throw new Error("El audio no quedó subido a GitHub. Revisá el audio o la Function de GitHub.");
+  }
+}
 
     // ✅ subir imagen/devocional
     devBusyShow("⏳ Subiendo devocional…");
