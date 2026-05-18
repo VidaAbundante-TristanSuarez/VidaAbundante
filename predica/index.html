@@ -10,11 +10,13 @@
       "";
 
     const path = window.location.pathname;
-    const base = path.replace(/\/predica\/?$/, "");
+
+    // /VidaAbundante/predica/  =>  /VidaAbundante
+    const base = path.replace(/\/predica\/?$/i, "");
 
     const destino = ref
-      ? `${window.location.origin}${base}/biblia.html?predicaRef=${encodeURIComponent(ref)}`
-      : `${window.location.origin}${base}/biblia.html`;
+      ? `${window.location.origin}${base}/index.html?predicaRef=${encodeURIComponent(ref)}`
+      : `${window.location.origin}${base}/index.html`;
 
     window.location.replace(destino);
   })();
