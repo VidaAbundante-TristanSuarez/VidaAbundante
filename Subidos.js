@@ -1464,47 +1464,33 @@ function htmlPredicaBibliaSubido(it) {
     ""
   ).trim();
 
-  // ✅ Recupera el fondo elegido para la prédica/card si está guardado en el item
-  const fondoUrl = String(
-    it?.predicaFondoUrl ||
-    it?.fondoPredicaUrl ||
-    it?.fondoCardPredicaUrl ||
-    it?.fondoUrl ||
-    it?.fondoImagenUrl ||
-    it?.predica?.fondoUrl ||
-    it?.predica?.fondoImagenUrl ||
-    ""
-  ).trim();
+  // ✅ Usa el MISMO fondo elegido para el PNG y la prédica abierta.
+  // Esta es la variable que tu CSS ya venía usando:
+  // --subidos-predica-card-fondo
+  const fondoUrl = subidosFondoPredicaActual(it);
 
-  const fondoColor = String(
-    it?.predicaFondoColor ||
-    it?.fondoPredicaColor ||
-    it?.fondoColor ||
-    it?.predica?.fondoColor ||
-    "#f7fbff"
-  ).trim();
-
-  const estiloFondo = [
-    `--predica-card-fondo-color:${fondoColor};`,
-    fondoUrl ? `--predica-card-fondo-img:url(${JSON.stringify(fondoUrl)});` : ""
-  ].join("");
+  const idJs = String(it?.id || "")
+    .replace(/\\/g, "\\\\")
+    .replace(/'/g, "\\'");
 
   return `
     <div
       class="subidos-predica-resumen subidos-predica-resumen-unica"
-      style="${escaparHtml(estiloFondo)}"
-      onclick="abrirSubidosVisorPredica('${it.id}', 'all')"
+      onclick="abrirSubidosVisorPredica('${idJs}', 'all')"
       title="Abrir prédica completa"
       role="button"
       tabindex="0"
     >
       ${tituloPredica ? `
-        <div class="subidos-predica-galeria-titulo">
+        <div class="subidos-predica-card-titulo">
           ${escaparHtml(tituloPredica)}
         </div>
       ` : ``}
 
-      <div class="subidos-predica-primera">
+      <div
+        class="subidos-predica-primera"
+        style="--subidos-predica-card-fondo:url('${subidosCssUrl(fondoUrl)}');"
+      >
         ${referencia ? `
           <div class="subidos-predica-primera-ref">
             ${escaparHtml(referencia)}
