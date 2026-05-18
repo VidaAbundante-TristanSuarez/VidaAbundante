@@ -1959,11 +1959,20 @@ body.oscuro #modalSubidosVisor{
   box-shadow:inset 0 0 0 1px rgba(255,255,255,.35);
 }
 
-/* ✅ SOLO el texto del primer versículo va celeste */
-.subidos-visor-bloques .subidos-visor-bloque:first-child .subidos-visor-texto,
-.subidos-visor-bloques .subidos-visor-bloque:first-child .subidos-visor-texto-primera{
+/* ✅ SOLO el versículo principal va celeste.
+   OJO: el principal NO está dentro de .subidos-visor-bloques */
+.subidos-visor-bloque-primera .subidos-visor-texto,
+.subidos-visor-bloque-primera .subidos-visor-texto-primera,
+.subidos-visor-bloque-primera .subidos-visor-versiculo-box{
   background:#d1eeff !important;
   border-color:rgba(150,205,235,.72) !important;
+}
+
+/* ✅ Las otras citas quedan normales */
+.subidos-visor-bloques .subidos-visor-bloque .subidos-visor-texto,
+.subidos-visor-bloques .subidos-visor-bloque .subidos-visor-versiculo-box{
+  background:rgba(255,255,255,.76) !important;
+  border-color:rgba(70,105,102,.34) !important;
 }
 
 .subidos-visor-comentario{
@@ -2318,28 +2327,30 @@ body.oscuro #modalSubidosVisor{
 
 @media (max-width:800px){
 
-/* ✅ Prédica abierta centrada y ocupando todo el ancho + alto del celular */
+/* ✅ Prédica abierta ocupando todo el alto real del celular */
 #modalSubidosVisor{
+  position:fixed !important;
+  inset:0 !important;
+  width:100vw !important;
+  height:100vh !important;
+  height:100dvh !important;
+  max-height:none !important;
   padding:0 !important;
   margin:0 !important;
-  width:100vw !important;
-  height:100dvh !important;
-  max-height:100dvh !important;
   overflow:hidden !important;
   align-items:stretch !important;
-  justify-content:center !important;
+  justify-content:stretch !important;
 }
 
 #modalSubidosVisor .modal-card{
-  width:100% !important;
-  max-width:100% !important;
+  width:100vw !important;
+  max-width:100vw !important;
+  height:100vh !important;
   height:100dvh !important;
+  min-height:100vh !important;
   min-height:100dvh !important;
-  max-height:100dvh !important;
-  margin:0 auto !important;
-  left:auto !important;
-  right:auto !important;
-  transform:none !important;
+  max-height:none !important;
+  margin:0 !important;
   border-radius:0 !important;
   box-sizing:border-box !important;
   display:flex !important;
@@ -2355,11 +2366,10 @@ body.oscuro #modalSubidosVisor{
   flex:1 1 auto !important;
   width:100% !important;
   max-width:100% !important;
-  min-height:0 !important;
   height:auto !important;
-  margin:0 auto !important;
-  padding-left:0 !important;
-  padding-right:0 !important;
+  min-height:0 !important;
+  margin:0 !important;
+  padding:0 !important;
   overflow-y:auto !important;
   overflow-x:hidden !important;
   box-sizing:border-box !important;
@@ -2368,11 +2378,8 @@ body.oscuro #modalSubidosVisor{
 .subidos-visor-predica-full{
   width:100% !important;
   max-width:100% !important;
-  min-height:100% !important;
-  margin:0 auto !important;
-  left:auto !important;
-  right:auto !important;
-  transform:none !important;
+  min-height:calc(100dvh - 48px) !important;
+  margin:0 !important;
   box-sizing:border-box !important;
   display:flex !important;
   flex-direction:column !important;
@@ -2381,16 +2388,15 @@ body.oscuro #modalSubidosVisor{
 .subidos-visor-marco{
   width:100% !important;
   max-width:100% !important;
-  min-height:100% !important;
+  min-height:calc(100dvh - 48px) !important;
   flex:1 1 auto !important;
-  margin:0 auto !important;
+  margin:0 !important;
   border-radius:0 !important;
   padding:10px !important;
   box-sizing:border-box !important;
   overflow-y:auto !important;
   overflow-x:hidden !important;
 }
-
   .subidos-visor-encabezado-predica{
     display:flex !important;
     flex-direction:column !important;
