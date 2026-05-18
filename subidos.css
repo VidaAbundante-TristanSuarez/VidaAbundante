@@ -1987,20 +1987,69 @@ body.oscuro #modalSubidosVisor{
   z-index:1;
 }
 
-/* ✅ Todo a la izquierda */
+/* =====================================================
+   ✅ PRÉDICA ABIERTA: CENTRADOS + VERSÍCULOS + COMENTARIOS
+   ===================================================== */
+
+/* ✅ Título, descripción, iglesia, citas y cierre centrados */
 .subidos-visor-titulo,
 .subidos-visor-iglesia,
-.subidos-visor-intro,
-.subidos-visor-nota-cierre,
+.subidos-visor-iglesia-top,
+.subidos-visor-desc-top,
 .subidos-visor-cierre,
 .subidos-visor-predica-titulo,
-.subidos-visor-ref,
-.subidos-visor-texto,
-.subidos-visor-texto-primera,
-.subidos-visor-comentario{
-  text-align:left !important;
+.subidos-visor-ref{
+  text-align:center !important;
 }
 
+/* ✅ Introducción y nota final centradas también */
+.subidos-visor-intro,
+.subidos-visor-nota-cierre{
+  text-align:center !important;
+  white-space:normal !important;
+  text-indent:0 !important;
+  font-weight:400 !important;
+}
+
+/* ✅ Los textos bíblicos quedan con bold */
+.subidos-visor-versiculo-box,
+.subidos-visor-texto,
+.subidos-visor-texto-primera{
+  margin:10px 12px !important;
+  padding:11px 12px !important;
+  border:1px solid rgba(70,105,102,.34) !important;
+  border-radius:14px !important;
+  background:rgba(255,255,255,.76) !important;
+  line-height:1.35 !important;
+  font-family:"Lora", serif !important;
+  color:var(--visor-texto) !important;
+  font-weight:800 !important;
+  text-align:left !important;
+  white-space:normal !important;
+  text-indent:0 !important;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.35);
+}
+
+/* ✅ Primer versículo destacado con fondo exacto */
+.subidos-visor-bloque-primera{
+  background:#d1eeff !important;
+  border:1px solid rgba(150,205,235,.72) !important;
+  border-radius:16px !important;
+  overflow:hidden !important;
+}
+
+/* ✅ Comentarios: sin bold, solo italic */
+.subidos-visor-comentario{
+  font-style:italic !important;
+  font-weight:400 !important;
+  text-align:left !important;
+  margin:6px 12px 12px !important;
+  padding:8px 10px !important;
+  white-space:normal !important;
+  text-indent:0 !important;
+}
+
+/* ✅ Título interno de prédica */
 .subidos-visor-predica-titulo{
   margin:10px 0 12px;
   padding:10px 14px;
@@ -2016,37 +2065,119 @@ body.oscuro #modalSubidosVisor{
   -webkit-backdrop-filter:blur(3px);
 }
 
-/* ✅ Marco para diferenciar versículos */
-.subidos-visor-versiculo-box,
-.subidos-visor-texto,
-.subidos-visor-texto-primera{
-  margin:10px 12px !important;
-  padding:11px 12px !important;
-  border:1px solid rgba(70,105,102,.34) !important;
-  border-radius:14px !important;
-  background:rgba(255,255,255,.76) !important;
-  line-height:1.35 !important;
-  font-family:"Lora", serif !important;
-  color:var(--visor-texto) !important;
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.35);
-}
-
-/* ✅ Comentarios: izquierda + italic */
-.subidos-visor-comentario{
-  font-style:italic !important;
-  font-weight:700 !important;
-  margin:6px 12px 12px !important;
-  padding:8px 10px !important;
-}
-
+/* ✅ Referencias bíblicas centradas */
 .subidos-visor-ref{
   font-weight:900 !important;
   border-bottom:1px solid rgba(70,105,102,.22) !important;
 }
 
+/* ✅ Header de prédica abierta si está usando iglesia + descripción arriba */
+.subidos-visor-encabezado-predica{
+  text-align:center !important;
+}
+
+.subidos-visor-iglesia-top,
+.subidos-visor-desc-top{
+  text-align:center !important;
+}
+
+/* =====================================================
+   ✅ PREDICA CARD DE GALERÍA
+   ===================================================== */
+
+/* ✅ Ocultamos el título viejo de arriba solo en prédica,
+   porque ahora va debajo de la imagen */
+.subidos-feed-card.subidos-card-predica .subidos-feed-desc{
+  display:none !important;
+}
+
+/* ✅ El bloque debajo de la imagen permite scroll */
+.subidos-feed-card.subidos-card-predica .subidos-predica-resumen,
+.subidos-feed-card.subidos-card-predica .subidos-predica-resumen-unica{
+  flex:1 1 auto !important;
+  min-height:0 !important;
+  overflow:auto !important;
+  display:flex !important;
+  flex-direction:column !important;
+  gap:6px !important;
+  margin:0 !important;
+  padding:0 !important;
+}
+
+/* ✅ Título centrado arriba del contenedor de texto */
+.subidos-predica-galeria-titulo{
+  flex:0 0 auto !important;
+  text-align:center !important;
+  font-family:"Lora", serif !important;
+  font-size:13px !important;
+  line-height:1.15 !important;
+  font-weight:900 !important;
+  color:#000 !important;
+  padding:4px 6px 2px !important;
+}
+
+/* ✅ Contenedor de cita + texto centrado verticalmente */
+.subidos-predica-primera{
+  flex:1 1 auto !important;
+  min-height:0 !important;
+  overflow:auto !important;
+  display:flex !important;
+  flex-direction:column !important;
+  justify-content:center !important;
+  align-items:stretch !important;
+  gap:5px !important;
+  padding:6px 7px !important;
+}
+
+/* ✅ Cita centrada horizontalmente */
+.subidos-predica-primera-ref{
+  text-align:center !important;
+  align-self:center !important;
+  font-weight:900 !important;
+}
+
+/* ✅ Texto bíblico a la izquierda y con bold */
+.subidos-predica-primera-texto{
+  text-align:left !important;
+  font-weight:800 !important;
+  white-space:normal !important;
+  overflow:visible !important;
+}
+
+/* ✅ Comentario de mini/card: sin bold, solo italic */
+.subidos-predica-mini-comentario{
+  font-style:italic !important;
+  font-weight:400 !important;
+}
+
+/* ✅ Texto bíblico mini con bold */
+.subidos-predica-mini-texto{
+  font-weight:800 !important;
+}
+
+/* ✅ Teléfono: descripción debajo del nombre de iglesia y 10% más chica */
 @media (max-width:800px){
-  .subidos-fondo-predica-galeria{
-    grid-template-columns:repeat(auto-fill, minmax(82px, 1fr));
+  .subidos-visor-encabezado-predica{
+    display:flex !important;
+    flex-direction:column !important;
+    align-items:center !important;
+    justify-content:center !important;
+    gap:4px !important;
+    text-align:center !important;
+  }
+
+  .subidos-visor-iglesia-top{
+    flex:none !important;
+    width:100% !important;
+    font-size:16px !important;
+    text-align:center !important;
+  }
+
+  .subidos-visor-desc-top{
+    flex:none !important;
+    width:100% !important;
+    font-size:14.4px !important;
+    text-align:center !important;
   }
 
   .subidos-visor-predica-titulo{
@@ -2059,6 +2190,10 @@ body.oscuro #modalSubidosVisor{
   .subidos-visor-texto-primera{
     margin:8px 9px !important;
     padding:10px 10px !important;
+  }
+
+  .subidos-fondo-predica-galeria{
+    grid-template-columns:repeat(auto-fill, minmax(82px, 1fr));
   }
 }
 
