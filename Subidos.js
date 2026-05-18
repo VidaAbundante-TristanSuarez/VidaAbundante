@@ -1464,9 +1464,35 @@ function htmlPredicaBibliaSubido(it) {
     ""
   ).trim();
 
+  // ✅ Recupera el fondo elegido para la prédica/card si está guardado en el item
+  const fondoUrl = String(
+    it?.predicaFondoUrl ||
+    it?.fondoPredicaUrl ||
+    it?.fondoCardPredicaUrl ||
+    it?.fondoUrl ||
+    it?.fondoImagenUrl ||
+    it?.predica?.fondoUrl ||
+    it?.predica?.fondoImagenUrl ||
+    ""
+  ).trim();
+
+  const fondoColor = String(
+    it?.predicaFondoColor ||
+    it?.fondoPredicaColor ||
+    it?.fondoColor ||
+    it?.predica?.fondoColor ||
+    "#f7fbff"
+  ).trim();
+
+  const estiloFondo = [
+    `--predica-card-fondo-color:${fondoColor};`,
+    fondoUrl ? `--predica-card-fondo-img:url(${JSON.stringify(fondoUrl)});` : ""
+  ].join("");
+
   return `
     <div
       class="subidos-predica-resumen subidos-predica-resumen-unica"
+      style="${escaparHtml(estiloFondo)}"
       onclick="abrirSubidosVisorPredica('${it.id}', 'all')"
       title="Abrir prédica completa"
       role="button"
