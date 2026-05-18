@@ -2626,15 +2626,6 @@ function subidosHtmlExport(txt = "") {
   return escaparHtml(subidosTextoPlanoExport(txt)).replace(/\n/g, "<br>");
 }
 
-function subidosHtmlExportInline(txt = "") {
-  return escaparHtml(
-    subidosTextoPlanoExport(txt)
-      .replace(/\s*\n+\s*/g, " ")
-      .replace(/\s{2,}/g, " ")
-      .trim()
-  );
-}
-
 function subidosFechaBonitaExport(ymd = "") {
   if (!ymd) return "";
   try {
@@ -2854,32 +2845,14 @@ function subidosCrearNodoExportPredica(it) {
   const primeraTexto = subidosTextoPlanoExport(primeraCita?.texto || "");
   const primeraRef = subidosTextoPlanoExport(primeraCita?.referencia || "");
 
-const otrasCitasHtml = citas
+const otrasRefs = citas
   .slice(1)
-  .map(c => {
-    const ref = subidosTextoPlanoExport(c.referencia || "");
-    const texto = subidosTextoPlanoExport(c.texto || "");
+  .map(c => subidosTextoPlanoExport(c.referencia || ""))
+  .filter(Boolean);
 
-    if (!ref && !texto) return "";
-
-    return `
-      <div class="subidos-export-cita-extra-card">
-        ${ref ? `
-          <div class="subidos-export-cita-extra-ref">
-            ${escaparHtml(ref)}
-          </div>
-        ` : ``}
-
-        ${texto ? `
-          <div class="subidos-export-cita-extra-texto">
-            ${subidosHtmlExportInline(texto)}
-          </div>
-        ` : ``}
-      </div>
-    `;
-  })
-  .filter(Boolean)
-  .join("");
+const otrasCitasHtml = otrasRefs.map(ref => `
+  <span class="subidos-export-ref-extra">${escaparHtml(ref)}</span>
+`).join(`<span class="subidos-export-bullet">•</span>`);
 
   const introduccion = subidosTextoPlanoExport(it.predicaIntroduccion || it.introduccionPredica || "");
   const notaFinal = subidosTextoPlanoExport(it.predicaNotaFinal || it.notaFinalGeneral || "");
@@ -3246,7 +3219,7 @@ text-align:left;
         line-height:1.08;
       }
 
-     /* ===== DEMÁS CITAS CON TEXTO LITERAL ===== */
+    /* ===== DEMÁS CITAS: SOLO REFERENCIAS ===== */
 
 #subidosExportPredicaFinal .subidos-export-otras-citas-box{
   flex:0 0 auto;
@@ -3256,35 +3229,35 @@ text-align:left;
   border:1px solid rgba(255,255,255,.52);
   background:rgba(255,255,255,.72);
   border-radius:18px;
-  padding:5px 8px;
-  display:block;
+  padding:5px 10px;
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
   overflow:hidden;
 }
 
 #subidosExportPredicaFinal .subidos-export-otras-citas{
   display:flex;
-  flex-direction:column;
-  gap:2px;
-  font-size:10.4px;
-  line-height:1.08;
-  font-weight:800;
+  flex-wrap:wrap;
+  align-items:center;
+  justify-content:flex-start;
+  gap:4px 7px;
+  font-size:12px;
+  line-height:1.12;
+  font-weight:900;
   text-align:left;
   overflow:hidden;
 }
 
-#subidosExportPredicaFinal .subidos-export-cita-extra-card{
-  display:block;
-  width:100%;
-  text-align:left;
+#subidosExportPredicaFinal .subidos-export-ref-extra{
+  white-space:nowrap;
 }
 
-#subidosExportPredicaFinal .subidos-export-cita-extra-ref{
-  font-weight:900;
-  margin-bottom:1px;
-}
-
-#subidosExportPredicaFinal .subidos-export-cita-extra-texto{
-  font-weight:800;
+#subidosExportPredicaFinal .subidos-export-bullet{
+  opacity:.72;
+  font-size:14px;
+  line-height:1;
+  transform:translateY(-1px);
 }
       #subidosExportPredicaFinal .subidos-export-predica-titulo{
   flex:0 0 auto;
@@ -3879,6 +3852,44 @@ function subidosAjustarTextosExportPredica(node) {
   subidosAjustarLayoutInteligenteExportPredica(node);
 }
 
+function subidosAjustarAltoFinalExportPredica(node) {
+  if (!node) return;
+
+  const exportW = subidosAnchoExportPredica();
+
+  // ✅ máximo: historia 9:16 como ahora
+  const MAX_H = Math.round((exportW * 16) / 9);
+
+  // ✅ mínimo: más pequeño, pero todavía vistoso y compartible
+  const MIN_H = 560;
+
+  const csNode = window.getComputedStyle(node);
+
+  const paddingY =
+    parseFloat(csNode.paddingTop || "0") +
+    parseFloat(csNode.paddingBottom || "0");
+
+  const hijos = [...node.children].filter(el => {
+    if (!el || el.tagName === "STYLE") return false;
+    return window.getComputedStyle(el).display !== "none";
+  });
+
+  const GAP = 2;
+
+  const altoUsado = hijos.reduce((total, el) => {
+    return total + el.offsetHeight;
+  }, 0);
+
+  const altoConGaps = altoUsado + (Math.max(0, hijos.length - 1) * GAP);
+  const altoFinal = subidosClampNumero(
+    Math.ceil(paddingY + altoConGaps + 8),
+    MIN_H,
+    MAX_H
+  );
+
+  node.style.height = altoFinal + "px";
+}
+
 async function subidosConvertirImagenesExportConProxy(node) {
   const imgs = [...node.querySelectorAll("img")];
 
@@ -3925,11 +3936,13 @@ async function subidosGenerarBlobCardPredica(id, itemOverride = null) {
   await subidosEsperarImagenes(exportNode);
   await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 
-  // ✅ solo achica fuente si realmente no entra
-  subidosAjustarTextosExportPredica(exportNode);
+ subidosAjustarTextosExportPredica(exportNode);
 
-  // ✅ esperamos otro frame para que el navegador aplique el nuevo tamaño si cambió
-  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+// ✅ Achica el alto final del PNG si no necesita todo el 9:16.
+subidosAjustarAltoFinalExportPredica(exportNode);
+
+// ✅ esperamos otro frame para que el navegador aplique el nuevo tamaño si cambió
+await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 
   let canvas;
 
