@@ -3834,7 +3834,7 @@ function htmlPredicaBibliaSubidoGrande(it, abrirClave = "") {
 
       ${comentarioPrimera ? `
         <div class="subidos-visor-comentario">
-          ⪦ ${subidosTextoHtml(comentarioPrimera)}
+          ${subidosTextoHtml(comentarioPrimera)}
         </div>
       ` : ``}
     </section>
@@ -3855,7 +3855,7 @@ function htmlPredicaBibliaSubidoGrande(it, abrirClave = "") {
 
         ${comentario ? `
           <div class="subidos-visor-comentario">
-            ⪦ ${subidosTextoHtml(comentario)}
+            ${subidosTextoHtml(comentario)}
           </div>
         ` : ``}
       </section>
