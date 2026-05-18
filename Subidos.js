@@ -1450,12 +1450,12 @@ window.subidosToggleMiniPredica = function subidosToggleMiniPredica(bodyId, btn)
 function htmlPredicaBibliaSubido(it) {
   const citas = obtenerCitasPredicaSubido(it);
 
-  // ✅ En la galería mostramos solo la primera cita.
   if (!citas.length) return "";
 
   const primera = citas[0] || {};
   const referencia = String(primera.referencia || "").trim();
   const texto = String(primera.texto || "").trim();
+  const tituloPredica = String(it.predicaTitulo || it.tituloPredica || "").trim();
 
   return `
     <div
@@ -1466,6 +1466,13 @@ function htmlPredicaBibliaSubido(it) {
       tabindex="0"
     >
       <div class="subidos-predica-primera">
+
+        ${tituloPredica ? `
+          <div class="subidos-predica-card-titulo">
+            ${escaparHtml(tituloPredica)}
+          </div>
+        ` : ``}
+
         ${referencia ? `
           <div class="subidos-predica-primera-ref">
             ${escaparHtml(referencia)}
@@ -2803,36 +2810,16 @@ function subidosRepartoFlexiblePredicaExport(primeraTexto = "", introduccion = "
   growPrimera = subidosClampNumero(growPrimera, 2.4, 8.4);
   growTextos = haySecundarios ? subidosClampNumero(growTextos, 0.85, 3.8) : 0;
 
-  // ✅ Aire general: mínimo 1px.
-  let gapGeneral = 7;
+// ✅ Gap fijo y prolijo para que no vuelva el aire exagerado.
+const gapGeneral = 5;
+const gapTextos = 5;
 
-  if (p1 >= 650 && mayorSecundario <= 360) {
-    gapGeneral = 3;
-  } else if (p1 >= 470) {
-    gapGeneral = 5;
-  } else if (p1 <= 240 && mayorSecundario <= 220) {
-    gapGeneral = 13;
-  } else if (mayorSecundario <= 340) {
-    gapGeneral = 9;
-  }
-
-  // ✅ Aire entre intro y nota.
-  let gapTextos = 12;
-
-  if (p1 >= 650 && mayorSecundario <= 360) {
-    gapTextos = 8;
-  } else if (mayorSecundario <= 180) {
-    gapTextos = 18;
-  } else if (mayorSecundario <= 340) {
-    gapTextos = 14;
-  }
-
-  return {
-    growPrimera: growPrimera.toFixed(2),
-    growTextos: growTextos.toFixed(2),
-    gapGeneral: Math.max(1, Math.round(gapGeneral)),
-    gapTextos: Math.max(1, Math.round(gapTextos))
-  };
+return {
+  growPrimera: growPrimera.toFixed(2),
+  growTextos: growTextos.toFixed(2),
+  gapGeneral,
+  gapTextos
+};
 }
 
 function subidosCrearNodoExportPredica(it) {
@@ -2892,7 +2879,7 @@ node.style.setProperty("--gap-textos", `${repartoFlexible.gapTextos}px`);
         padding:12px 14px 14px;
         display:flex;
         flex-direction:column;
-        gap:var(--gap-general, 2px);
+       gap:5px;
         position:relative;
 background:#f7fbff;
 font-family:"Lora", serif;
@@ -3199,7 +3186,7 @@ text-align:left;
         padding:12px 16px;
       }
 
-      #subidosExportPredicaFinal .subidos-export-intro,
+#subidosExportPredicaFinal .subidos-export-intro,
 #subidosExportPredicaFinal .subidos-export-note{
   width:100%;
   max-width:100%;
@@ -3219,7 +3206,7 @@ text-align:left;
         line-height:1.08;
       }
 
-    /* ===== DEMÁS CITAS: SOLO REFERENCIAS ===== */
+/* ===== DEMÁS CITAS: SOLO REFERENCIAS ===== */
 
 #subidosExportPredicaFinal .subidos-export-otras-citas-box{
   flex:0 0 auto;
@@ -3229,10 +3216,10 @@ text-align:left;
   border:1px solid rgba(255,255,255,.52);
   background:rgba(255,255,255,.72);
   border-radius:18px;
-  padding:5px 10px;
+  padding:8px 14px;
   display:flex;
   align-items:center;
-  justify-content:flex-start;
+  justify-content:center;
   overflow:hidden;
 }
 
@@ -3240,12 +3227,12 @@ text-align:left;
   display:flex;
   flex-wrap:wrap;
   align-items:center;
-  justify-content:flex-start;
-  gap:4px 7px;
+  justify-content:center;
+  gap:4px 8px;
   font-size:12px;
   line-height:1.12;
   font-weight:900;
-  text-align:left;
+  text-align:center;
   overflow:hidden;
 }
 
@@ -3290,12 +3277,24 @@ text-align:left;
   grid-template-columns:none !important;
   align-items:stretch !important;
   align-content:center !important;
-  gap:6px !important;
+  gap:5px !important;
 }
 
 #subidosExportPredicaFinal .subidos-export-text-box{
-  align-self:stretch !important;
-  width:100% !important;
+  width:100%;
+  height:auto;
+  min-height:0;
+  max-height:100%;
+  align-self:center;
+  border:1px solid rgba(255,255,255,.52);
+  background:rgba(255,255,255,.80);
+  border-radius:22px;
+  display:flex;
+  align-items:flex-start;
+  justify-content:center;
+  text-align:left;
+  overflow:hidden;
+  padding:8px 14px;
 }
    
     </style>
@@ -3607,7 +3606,7 @@ function subidosSetMaxPrimeraExport(box, textEl, refEl) {
 function subidosAjustarLayoutInteligenteExportPredica(node) {
   if (!node) return;
 
-  const MIN_GAP = 2;
+  const MIN_GAP = 5;
 
   const primeraBox = node.querySelector(".subidos-export-primera-box");
   const primeraText = node.querySelector(".subidos-export-primera-texto");
@@ -3857,32 +3856,41 @@ function subidosAjustarAltoFinalExportPredica(node) {
 
   const exportW = subidosAnchoExportPredica();
 
-  // ✅ máximo: historia 9:16 como ahora
+  // Máximo: historia 9:16.
   const MAX_H = Math.round((exportW * 16) / 9);
 
-  // ✅ mínimo: más pequeño, pero todavía vistoso y compartible
-  const MIN_H = 560;
+  // Mínimo: permite PNG más bajo cuando hay poco contenido.
+  const MIN_H = 430;
+
+  const GAP = 5;
+
+  node.style.justifyContent = "flex-start";
+  node.style.gap = GAP + "px";
+  node.style.minHeight = "0";
+
+  // ✅ IMPORTANTE:
+  // primero lo dejamos auto para medir dónde termina realmente el último bloque.
+  node.style.height = "auto";
 
   const csNode = window.getComputedStyle(node);
-
-  const paddingY =
-    parseFloat(csNode.paddingTop || "0") +
-    parseFloat(csNode.paddingBottom || "0");
+  const paddingBottom = parseFloat(csNode.paddingBottom || "0");
 
   const hijos = [...node.children].filter(el => {
     if (!el || el.tagName === "STYLE") return false;
     return window.getComputedStyle(el).display !== "none";
   });
 
-  const GAP = 2;
+  const nodeTop = node.getBoundingClientRect().top;
 
-  const altoUsado = hijos.reduce((total, el) => {
-    return total + el.offsetHeight;
-  }, 0);
+  let bottomMax = 0;
 
-  const altoConGaps = altoUsado + (Math.max(0, hijos.length - 1) * GAP);
+  hijos.forEach(el => {
+    const r = el.getBoundingClientRect();
+    bottomMax = Math.max(bottomMax, r.bottom - nodeTop);
+  });
+
   const altoFinal = subidosClampNumero(
-    Math.ceil(paddingY + altoConGaps + 8),
+    Math.ceil(bottomMax + paddingBottom + 6),
     MIN_H,
     MAX_H
   );
@@ -4185,6 +4193,10 @@ function htmlPredicaBibliaSubidoGrande(it, abrirClave = "") {
     `;
   }).join("");
 
+const descripcionPredica = String(
+  it.descripcion || "Pastor Kevin Gauna"
+).trim();
+  
   const bloqueInfoEstilo = `
     margin:10px 0 12px;
     padding:12px 16px;
@@ -4199,23 +4211,21 @@ function htmlPredicaBibliaSubidoGrande(it, abrirClave = "") {
         class="subidos-visor-marco"
         style="--subidos-predica-fondo:url('${subidosCssUrl(fondoUrl)}');"
       >
+               <div class="subidos-visor-encabezado-predica">
+          <div class="subidos-visor-iglesia-top">
+            Iglesia Cristiana de la Vida Abundante
+          </div>
+
+          <div class="subidos-visor-desc-top">
+            ${escaparHtml(descripcionPredica)}
+          </div>
+        </div>
+
         ${it.url ? `
           <div class="subidos-visor-archivo">
             ${htmlArchivoGrandePredica(it)}
           </div>
         ` : ``}
-
-        ${it.descripcion ? `
-          <h2 class="subidos-visor-titulo">
-            ${escaparHtml(it.descripcion)}
-          </h2>
-        ` : ``}
-
-        <div style="${bloqueInfoEstilo}">
-          <div class="subidos-visor-iglesia">
-            Iglesia Cristiana de la Vida Abundante
-          </div>
-        </div>
 
         ${tituloPredica ? `
           <div class="subidos-visor-predica-titulo">
