@@ -2088,84 +2088,123 @@ window.devAplicarCuentagotasF2 = function(tipo){
   cerrarModal("modalDevCuentagotasF2");
 };
 
-function wrapperVisualBackground(op, color){
-  const raw = Math.max(0, Math.min(1, Number(op) || 0));
-  if (raw <= 0) return "transparent";
+const DEV_WRAPPER_CACHE = new Map();
 
-  const { r, g, b } = hexToRgb(color || "#000000");
+function devRoundRectPath(ctx, x, y, w, h, r){
+  r = Math.min(r, w / 2, h / 2);
 
-  const lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
-
-  // Centro visible. Si el color es claro, lo reforzamos apenas.
-  const center = lum > 0.78 ? Math.max(raw, 0.30) : raw;
-
-  // ✅ Esquinas casi transparentes.
-  const mid      = Math.max(0.02, center * 0.42);
-  const nearEdge = Math.max(0.00, center * 0.08);
-
-  // ✅ Contraste de esquinas:
-  // color oscuro = brillo blanco suave
-  // color claro/blanco = sombra gris/negra suave
-  const cornerRgb = lum > 0.78 ? "0, 0, 0" : "255, 255, 255";
-  const cornerA1 = Math.min(0.36, Math.max(0.12, raw * 0.70));
-  const cornerA2 = Math.min(0.20, Math.max(0.06, raw * 0.38));
-
-  return `
-    radial-gradient(circle at 0% 0%,
-      rgba(${cornerRgb}, ${cornerA1}) 0%,
-      rgba(${cornerRgb}, ${cornerA2}) 15%,
-      transparent 34%
-    ),
-    radial-gradient(circle at 100% 0%,
-      rgba(${cornerRgb}, ${cornerA1}) 0%,
-      rgba(${cornerRgb}, ${cornerA2}) 15%,
-      transparent 34%
-    ),
-    radial-gradient(circle at 0% 100%,
-      rgba(${cornerRgb}, ${cornerA1}) 0%,
-      rgba(${cornerRgb}, ${cornerA2}) 15%,
-      transparent 34%
-    ),
-    radial-gradient(circle at 100% 100%,
-      rgba(${cornerRgb}, ${cornerA1}) 0%,
-      rgba(${cornerRgb}, ${cornerA2}) 15%,
-      transparent 34%
-    ),
-    radial-gradient(
-      115% 115% at 50% 50%,
-      rgba(${r}, ${g}, ${b}, ${center}) 0%,
-      rgba(${r}, ${g}, ${b}, ${center}) 48%,
-      rgba(${r}, ${g}, ${b}, ${mid}) 72%,
-      rgba(${r}, ${g}, ${b}, ${nearEdge}) 86%,
-      rgba(${r}, ${g}, ${b}, 0) 100%
-    )
-  `;
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
 }
 
-function wrapperVisualShadow(op, color, scale = 1){
+function wrapperVisualDataUrl(op, color){
   const raw = Math.max(0, Math.min(1, Number(op) || 0));
-  if (raw <= 0) return "none";
+  const col = color || "#000000";
 
-  const { r, g, b } = hexToRgb(color || "#000000");
+  const key = `${raw.toFixed(3)}_${col}`;
+  if (DEV_WRAPPER_CACHE.has(key)) return DEV_WRAPPER_CACHE.get(key);
+
+  const { r, g, b } = hexToRgb(col);
   const lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
-  const s = Math.max(0.12, Number(scale) || 1);
 
-  const cornerRgb = lum > 0.78 ? "0, 0, 0" : "255, 255, 255";
+  const size = 1000;
+  const c = document.createElement("canvas");
+  c.width = size;
+  c.height = size;
 
-  return `
-    inset 0 0 ${Math.round(34 * s)}px rgba(${cornerRgb}, ${Math.min(0.22, raw * 0.38)}),
-    inset 0 0 ${Math.round(72 * s)}px rgba(${r}, ${g}, ${b}, ${Math.min(0.05, raw * 0.08)})
-  `;
+  const ctx = c.getContext("2d");
+  ctx.clearRect(0, 0, size, size);
+
+  const radius = 150;
+  devRoundRectPath(ctx, 0, 0, size, size, radius);
+  ctx.clip();
+
+  // ✅ Fondo base: centro más fuerte, bordes/esquinas más transparentes.
+  const center = lum > 0.78 ? Math.max(raw, 0.32) : raw;
+  const mid    = Math.max(0.03, center * 0.48);
+  const edge   = Math.max(0.00, center * 0.035);
+
+  const base = ctx.createRadialGradient(
+    size * 0.50, size * 0.50, size * 0.05,
+    size * 0.50, size * 0.50, size * 0.78
+  );
+
+  base.addColorStop(0.00, `rgba(${r}, ${g}, ${b}, ${center})`);
+  base.addColorStop(0.54, `rgba(${r}, ${g}, ${b}, ${center})`);
+  base.addColorStop(0.78, `rgba(${r}, ${g}, ${b}, ${mid})`);
+  base.addColorStop(1.00, `rgba(${r}, ${g}, ${b}, ${edge})`);
+
+  ctx.fillStyle = base;
+  ctx.fillRect(0, 0, size, size);
+
+  // ✅ Efecto tipo 3D en esquinas.
+  // Si el fondo es oscuro: brillo blanco.
+  // Si el fondo es claro/blanco: sombra gris.
+  const corner = lum > 0.78 ? [0, 0, 0] : [255, 255, 255];
+  const a1 = lum > 0.78
+    ? Math.min(0.30, Math.max(0.10, raw * 0.34))
+    : Math.min(0.34, Math.max(0.12, raw * 0.48));
+
+  const a2 = lum > 0.78
+    ? Math.min(0.12, Math.max(0.04, raw * 0.15))
+    : Math.min(0.16, Math.max(0.05, raw * 0.22));
+
+  const drawCorner = (x, y) => {
+    const gCorner = ctx.createRadialGradient(x, y, 0, x, y, size * 0.34);
+    gCorner.addColorStop(0.00, `rgba(${corner[0]}, ${corner[1]}, ${corner[2]}, ${a1})`);
+    gCorner.addColorStop(0.36, `rgba(${corner[0]}, ${corner[1]}, ${corner[2]}, ${a2})`);
+    gCorner.addColorStop(1.00, `rgba(${corner[0]}, ${corner[1]}, ${corner[2]}, 0)`);
+
+    ctx.fillStyle = gCorner;
+    ctx.fillRect(0, 0, size, size);
+  };
+
+  drawCorner(0, 0);
+  drawCorner(size, 0);
+  drawCorner(0, size);
+  drawCorner(size, size);
+
+  // ✅ Sombra interior suave para profundidad, sin borde duro.
+  const inner = ctx.createRadialGradient(
+    size * 0.50, size * 0.50, size * 0.52,
+    size * 0.50, size * 0.50, size * 0.86
+  );
+
+  inner.addColorStop(0.00, "rgba(0,0,0,0)");
+  inner.addColorStop(1.00, lum > 0.78 ? "rgba(0,0,0,.10)" : "rgba(255,255,255,.10)");
+
+  ctx.fillStyle = inner;
+  ctx.fillRect(0, 0, size, size);
+
+  const url = c.toDataURL("image/png");
+  DEV_WRAPPER_CACHE.set(key, url);
+  return url;
 }
 
 function applyFase1WrapperLook(el, st, scale = 1){
   if (!el || !st) return;
 
   const s = Math.max(0.12, Number(scale) || 1);
+  const url = wrapperVisualDataUrl(st.op, st.opColor);
 
-  el.style.background = wrapperVisualBackground(st.op, st.opColor);
+  el.style.backgroundImage = `url("${url}")`;
+  el.style.backgroundSize = "100% 100%";
+  el.style.backgroundPosition = "center";
+  el.style.backgroundRepeat = "no-repeat";
   el.style.backgroundColor = "transparent";
-  el.style.boxShadow = wrapperVisualShadow(st.op, st.opColor, s);
+
+  // ✅ No usar box-shadow acá: html2canvas lo interpreta distinto.
+  el.style.boxShadow = "none";
+
   el.style.borderRadius = `${Math.round(118 * s)}px`;
   el.style.overflow = "hidden";
 }
