@@ -1135,7 +1135,9 @@ await cargarFondosFirebaseUsuario();
   // ✅ admin
 onValue(ref(db, "admins/" + uid), (s) => {
   window.__ES_ADMIN = !!s.val();
+
   actualizarPermisosUI();
+  aplicarUIAccionesPorModo();
 
   // ✅ si Compartidos ya se pintó antes de cargar permisos,
   // lo volvemos a pintar para que aparezcan los deletes de admin
@@ -4037,7 +4039,23 @@ window.irA = (seccion) => {
 
 // ================= 🔺 MODO IMAGEN ===============================
 window.toggleModoImagen = () => {
-  if (!uid) { loginModal.style.display = "flex"; return; }
+  if (!uid) {
+    loginModal.style.display = "flex";
+    return;
+  }
+
+  if (!window.__ES_ADMIN) {
+    modoImagen = false;
+    seleccionImagen = {};
+    document.body.classList.remove("modo-imagen");
+
+    const banner = document.getElementById("bannerModoImagen");
+    if (banner) banner.style.display = "none";
+
+    aplicarUIAccionesPorModo();
+    alert("Solo los administradores pueden crear imágenes.");
+    return;
+  }
 
   modoImagen = !modoImagen;
   seleccionImagen = {};
@@ -4047,8 +4065,8 @@ window.toggleModoImagen = () => {
   const banner = document.getElementById("bannerModoImagen");
   if (banner) banner.style.display = modoImagen ? "block" : "none";
 
-  aplicarUIAccionesPorModo();          // ✅ CLAVE
-  refrescarBotonGuardarMarcador();     // ✅ CLAVE
+  aplicarUIAccionesPorModo();
+  refrescarBotonGuardarMarcador();
 
   mostrarTexto();
 };
@@ -4069,6 +4087,12 @@ function cerrarModalPersonalizar() {
 
 // ================= 🔺 GENERAR IMAGEN ===============================
 window.generarImagen = async () => {
+
+    if (!window.__ES_ADMIN) {
+    alert("Solo los administradores pueden crear imágenes.");
+    return;
+  }
+  
   if (Object.keys(seleccionImagen).length === 0) {
     alert("Seleccioná al menos un versículo");
     return;
@@ -6498,9 +6522,16 @@ function forceDefaultCheckIglesia() {
 }
 
 // ================= UI: ocultar acciones al entrar en modo marcador =================
+function usuarioPuedeCrearImagen() {
+  return !!window.__ES_ADMIN;
+}
+
+// ================= UI: ocultar acciones al entrar en modo marcador =================
 function aplicarUIAccionesPorModo() {
   const acciones = document.getElementById("accionesBiblia");
   if (!acciones) return;
+
+  const esAdmin = usuarioPuedeCrearImagen();
 
   const btnModo = document.getElementById("btnModoMarcadorBarra"); // 📌
   const btnGuardar = document.getElementById("btnGuardarMarcador"); // ✅
@@ -6510,12 +6541,18 @@ function aplicarUIAccionesPorModo() {
 
   const normales = acciones.querySelectorAll(".accion-normal, #resaltadorCompacto");
 
-  // ✅ MODO IMAGEN: ocultar marcadores + mostrar Crear Imagen
+  // ✅ Si NO es admin, nunca mostramos creación de imagen
+  if (!esAdmin) {
+    if (btnImagen) btnImagen.style.display = "none";
+    if (btnCrear) btnCrear.style.display = "none";
+  }
+
+  // ✅ MODO IMAGEN: ocultar marcadores + mostrar Crear Imagen SOLO admin
   if (modoImagen) {
     normales.forEach(el => (el.style.display = "none"));
 
-    if (btnImagen) btnImagen.style.display = "inline-flex";
-    if (btnCrear) btnCrear.style.display = "inline-flex";
+    if (btnImagen) btnImagen.style.display = esAdmin ? "inline-flex" : "none";
+    if (btnCrear) btnCrear.style.display = esAdmin ? "inline-flex" : "none";
 
     if (btnModo) btnModo.style.display = "none";
     if (btnGuardar) btnGuardar.style.display = "none";
@@ -6536,9 +6573,14 @@ function aplicarUIAccionesPorModo() {
 
   // ✅ MODO NORMAL
   normales.forEach(el => (el.style.display = ""));
+
   if (btnModo) btnModo.style.display = "inline-flex";
   if (btnLista) btnLista.style.display = "inline-flex";
-  if (btnImagen) btnImagen.style.display = "inline-flex";
+
+  // ✅ Solo admin ve el botón para entrar a crear imagen
+  if (btnImagen) btnImagen.style.display = esAdmin ? "inline-flex" : "none";
+
+  // Este aparece solo dentro del modo imagen
   if (btnCrear) btnCrear.style.display = "none";
 }
 
