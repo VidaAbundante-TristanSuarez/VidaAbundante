@@ -2091,22 +2091,46 @@ function wrapperBgFromOpacity(op, color){
   return `rgba(${r}, ${g}, ${b}, ${x})`;
 }
 
+function wrapperSoftBackgroundFromOpacity(op, color){
+  const xRaw = Math.max(0, Math.min(1, Number(op) || 0));
+  if (xRaw <= 0) return "transparent";
+
+  const { r, g, b } = hexToRgb(color || "#000000");
+
+  // ✅ si el color es muy claro, lo hacemos un poquito más visible
+  const lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+  const x = lum > 0.78 ? Math.max(xRaw, 0.42) : xRaw;
+
+  const centro = Math.min(1, x);
+  const medio  = Math.min(1, x * 0.86);
+  const borde  = Math.max(0.04, x * 0.34);
+
+  return `
+    radial-gradient(
+      ellipse at center,
+      rgba(${r}, ${g}, ${b}, ${centro}) 0%,
+      rgba(${r}, ${g}, ${b}, ${centro}) 62%,
+      rgba(${r}, ${g}, ${b}, ${medio}) 82%,
+      rgba(${r}, ${g}, ${b}, ${borde}) 100%
+    )
+  `;
+}
+
 function wrapperShadowFromOpacity(op, color){
   const x = Math.max(0, Math.min(1, Number(op) || 0));
   if (x <= 0) return "none";
 
   const { r, g, b } = hexToRgb(color || "#000000");
+  const lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
 
-  const a1 = Math.min(0.42, x * 0.95);
-  const a2 = Math.min(0.24, x * 0.65);
-  const a3 = Math.min(0.14, x * 0.38);
+  // ✅ borde suave neutral: en colores claros se nota, en oscuros no molesta
+  const linea = lum > 0.72
+    ? "rgba(0,0,0,.14)"
+    : "rgba(255,255,255,.14)";
 
   return `
-    0 0 18px rgba(${r}, ${g}, ${b}, ${a1}),
-    0 0 42px rgba(${r}, ${g}, ${b}, ${a2}),
-    0 0 76px rgba(${r}, ${g}, ${b}, ${a3}),
-    inset 0 0 26px rgba(255, 255, 255, ${Math.min(0.32, x * 0.55)}),
-    inset 0 0 46px rgba(${r}, ${g}, ${b}, ${Math.min(0.16, x * 0.35)})
+    inset 0 0 0 2px ${linea},
+    inset 0 0 34px rgba(${r}, ${g}, ${b}, ${Math.min(0.38, Math.max(0.10, x * 0.62))})
   `;
 }
 
@@ -2517,9 +2541,10 @@ function devRenderFase(fase){
     t.style.webkitTextStroke = "0px";
     t.style.paintOrder = "normal";
 
-    w.style.backgroundColor = wrapperBgFromOpacity(st.op, st.opColor);
-    w.style.boxShadow = wrapperShadowFromOpacity(st.op, st.opColor);
-    w.style.borderRadius = "34px";
+w.style.background = wrapperSoftBackgroundFromOpacity(st.op, st.opColor);
+w.style.boxShadow = wrapperShadowFromOpacity(st.op, st.opColor);
+w.style.borderRadius = "44px";
+w.style.overflow = "hidden";
 
     applyTextStylesToOne(t, st);
     devSyncStyleButtons(1);
@@ -2744,11 +2769,10 @@ async function renderFinalCanvasCaptureReal(){
     const wrap = document.createElement("div");
     wrap.style.position = "absolute";
     wrap.style.inset = "6%";
-    wrap.style.borderRadius = "14px";
-    wrap.style.borderRadius = "56px";
-    wrap.style.overflow = "hidden";
-    wrap.style.backgroundColor = wrapperBgFromOpacity(st.op, st.opColor);
-    wrap.style.boxShadow = wrapperShadowFromOpacity(st.op, st.opColor);
+wrap.style.borderRadius = "44px";
+wrap.style.overflow = "hidden";
+wrap.style.background = wrapperSoftBackgroundFromOpacity(st.op, st.opColor);
+wrap.style.boxShadow = wrapperShadowFromOpacity(st.op, st.opColor);
 
     const texto = document.createElement("div");
     texto.style.position = "absolute";
