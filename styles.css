@@ -4175,4 +4175,9 @@ body.oscuro .tema-toggle-fondo input:checked + label{
   text-overflow: ellipsis !important;
 }
 
+#btnImagen,
+#btnCrearImagen {
+  display: none;
+}
+
 </style> 
