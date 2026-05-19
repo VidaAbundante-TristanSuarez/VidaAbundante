@@ -60,13 +60,25 @@ window.mostrarRecursosSub = async (sub = "ediciones") => {
   const esColab = !!window.__ES_COLABORADOR;
   const puedeVerRecursos = esAdmin || esColab;
 
+  // ✅ Recursos solo admin o colaborador
   if (!puedeVerRecursos) {
     alert("No tenés permiso para entrar a Recursos.");
+
+    try {
+      window.mostrarIglesiaSub?.("devocionales");
+    } catch (e) {}
+
     return;
   }
 
   const permitidas = ["rh", "talleres", "hermanos", "permisos", "ediciones"];
   if (!permitidas.includes(sub)) sub = "ediciones";
+
+  // ✅ Permisos solo admin.
+  // Si un colaborador intenta entrar a Permisos, lo mandamos a Ediciones.
+  if (sub === "permisos" && !esAdmin) {
+    sub = "ediciones";
+  }
 
   // ✅ guardar estado interno: Iglesia > Recursos > sub
   window.__IGLESIA_SUB_ACTIVA = "recursos";
@@ -98,6 +110,12 @@ window.mostrarRecursosSub = async (sub = "ediciones") => {
 
     const btn = wrap.querySelector(`[onclick="mostrarRecursosSub('${sub}')"]`);
     if (btn) btn.classList.add("activo");
+
+    // ✅ Ocultar botón Permisos dentro de Recursos si NO es admin
+    const btnPermisos = document.getElementById("btnTabPermisos");
+    if (btnPermisos) {
+      btnPermisos.style.display = esAdmin ? "inline-flex" : "none";
+    }
   }
 
   if (sub === "rh") {
@@ -109,11 +127,6 @@ window.mostrarRecursosSub = async (sub = "ediciones") => {
   }
 
   if (sub === "permisos") {
-    if (!window.__ES_ADMIN) {
-      alert("Solo los administradores pueden ver Permisos.");
-      return;
-    }
-
     await mostrarPermisos();
   }
 
