@@ -2085,53 +2085,54 @@ window.devAplicarCuentagotasF2 = function(tipo){
   cerrarModal("modalDevCuentagotasF2");
 };
 
-function wrapperBgFromOpacity(op, color){
-  const x = Math.max(0, Math.min(1, Number(op) || 0));
-  const { r, g, b } = hexToRgb(color || "#000000");
-  return `rgba(${r}, ${g}, ${b}, ${x})`;
-}
-
-function wrapperSoftBackgroundFromOpacity(op, color){
-  const xRaw = Math.max(0, Math.min(1, Number(op) || 0));
-  if (xRaw <= 0) return "transparent";
+function wrapperVisualBackground(op, color){
+  const raw = Math.max(0, Math.min(1, Number(op) || 0));
+  if (raw <= 0) return "transparent";
 
   const { r, g, b } = hexToRgb(color || "#000000");
 
-  // ✅ si el color es muy claro, lo hacemos un poquito más visible
+  // luminosidad para ayudar un poco a colores muy claros
   const lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
-  const x = lum > 0.78 ? Math.max(xRaw, 0.42) : xRaw;
 
-  const centro = Math.min(1, x);
-  const medio  = Math.min(1, x * 0.86);
-  const borde  = Math.max(0.04, x * 0.34);
+  // centro: mantiene la opacidad elegida
+  // en colores muy claros, la reforzamos apenas para que se note
+  const center = lum > 0.78 ? Math.max(raw, 0.26) : raw;
+
+  // transición suave
+  const mid  = Math.max(0.03, center * 0.58);
+  const edge = Math.max(0.01, center * 0.10);
 
   return `
     radial-gradient(
-      ellipse at center,
-      rgba(${r}, ${g}, ${b}, ${centro}) 0%,
-      rgba(${r}, ${g}, ${b}, ${centro}) 62%,
-      rgba(${r}, ${g}, ${b}, ${medio}) 82%,
-      rgba(${r}, ${g}, ${b}, ${borde}) 100%
+      145% 145% at 50% 42%,
+      rgba(${r}, ${g}, ${b}, ${center}) 0%,
+      rgba(${r}, ${g}, ${b}, ${center}) 54%,
+      rgba(${r}, ${g}, ${b}, ${mid}) 82%,
+      rgba(${r}, ${g}, ${b}, ${edge}) 100%
     )
   `;
 }
 
-function wrapperShadowFromOpacity(op, color){
-  const x = Math.max(0, Math.min(1, Number(op) || 0));
-  if (x <= 0) return "none";
+function wrapperVisualShadow(op, color){
+  const raw = Math.max(0, Math.min(1, Number(op) || 0));
+  if (raw <= 0) return "none";
 
   const { r, g, b } = hexToRgb(color || "#000000");
-  const lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
 
-  // ✅ borde suave neutral: en colores claros se nota, en oscuros no molesta
-  const linea = lum > 0.72
-    ? "rgba(0,0,0,.14)"
-    : "rgba(255,255,255,.14)";
-
+  // ✅ sombra MUY suave, para que no parezca borde
   return `
-    inset 0 0 0 2px ${linea},
-    inset 0 0 34px rgba(${r}, ${g}, ${b}, ${Math.min(0.38, Math.max(0.10, x * 0.62))})
+    inset 0 0 20px rgba(${r}, ${g}, ${b}, ${Math.min(0.08, raw * 0.12)})
   `;
+}
+
+function applyFase1WrapperLook(el, st){
+  if (!el || !st) return;
+
+  el.style.background = wrapperVisualBackground(st.op, st.opColor);
+  el.style.backgroundColor = "transparent";
+  el.style.boxShadow = wrapperVisualShadow(st.op, st.opColor);
+  el.style.borderRadius = "40px";
+  el.style.overflow = "hidden";
 }
 
 function esc(s){
@@ -2537,15 +2538,11 @@ function devRenderFase(fase){
 
     t.style.fontFamily = st.fuente;
     t.style.color = st.color;
-    t.style.textShadow = textShadowLegible(st.color);
-    t.style.webkitTextStroke = "0px";
-    t.style.paintOrder = "normal";
+t.style.textShadow = textShadowLegibleFinal(st.color);
+t.style.webkitTextStroke = "0.6px " + outlineColor(st.color);
+t.style.paintOrder = "stroke fill";
 
-w.style.background = wrapperSoftBackgroundFromOpacity(st.op, st.opColor);
-w.style.boxShadow = wrapperShadowFromOpacity(st.op, st.opColor);
-w.style.borderRadius = "44px";
-w.style.overflow = "hidden";
-
+applyFase1WrapperLook(w, st);
     applyTextStylesToOne(t, st);
     devSyncStyleButtons(1);
     return;
@@ -2769,10 +2766,7 @@ async function renderFinalCanvasCaptureReal(){
     const wrap = document.createElement("div");
     wrap.style.position = "absolute";
     wrap.style.inset = "6%";
-wrap.style.borderRadius = "44px";
-wrap.style.overflow = "hidden";
-wrap.style.background = wrapperSoftBackgroundFromOpacity(st.op, st.opColor);
-wrap.style.boxShadow = wrapperShadowFromOpacity(st.op, st.opColor);
+applyFase1WrapperLook(wrap, st);
 
     const texto = document.createElement("div");
     texto.style.position = "absolute";
