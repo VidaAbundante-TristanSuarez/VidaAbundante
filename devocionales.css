@@ -380,6 +380,20 @@ button.activo,
   max-height: calc(100dvh - 24px);
 }
 
+/* ✅ PC: evita que Anterior/Siguiente queden cortados abajo en Fase 2 */
+@media (min-width: 700px){
+  #modalDevFase2 .modal-contenido.modal-dev{
+    overflow-y: auto;
+    padding-bottom: 22px;
+  }
+
+  #modalDevFase2 .dev-final{
+    flex: 0 0 auto;
+    margin-bottom: 4px;
+    padding-bottom: 4px;
+  }
+}
+
 /* ================= CERRAR (X) ================= */
 .cerrar-modal{
   position:absolute;
