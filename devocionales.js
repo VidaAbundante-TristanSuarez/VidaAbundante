@@ -1775,18 +1775,21 @@ function textShadowLegible(textHex){
   `;
 }
 
-function textShadowLegibleFinal(textHex){
+function textShadowLegibleFinal(textHex, scale = 1){
   const oc = outlineColor(textHex || "#000000");
+  const s = Math.max(0.12, Number(scale) || 1);
+  const px = (n) => `${(n * s).toFixed(2)}px`;
+
   return `
-    -3px 0 ${oc},
-     3px 0 ${oc},
-     0 -3px ${oc},
-     0  3px ${oc},
-    -2px -2px ${oc},
-     2px -2px ${oc},
-    -2px  2px ${oc},
-     2px  2px ${oc},
-     0 0 4px ${oc}
+    -${px(3)} 0 ${oc},
+     ${px(3)} 0 ${oc},
+     0 -${px(3)} ${oc},
+     0  ${px(3)} ${oc},
+    -${px(2)} -${px(2)} ${oc},
+     ${px(2)} -${px(2)} ${oc},
+    -${px(2)}  ${px(2)} ${oc},
+     ${px(2)}  ${px(2)} ${oc},
+     0 0 ${px(4)} ${oc}
   `;
 }
 
@@ -2091,47 +2094,52 @@ function wrapperVisualBackground(op, color){
 
   const { r, g, b } = hexToRgb(color || "#000000");
 
-  // luminosidad para ayudar un poco a colores muy claros
   const lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
 
-  // centro: mantiene la opacidad elegida
-  // en colores muy claros, la reforzamos apenas para que se note
-  const center = lum > 0.78 ? Math.max(raw, 0.26) : raw;
+  // En colores claros, subimos un poquito el centro para que se note.
+  const center = lum > 0.78 ? Math.max(raw, 0.28) : raw;
 
-  // transición suave
-  const mid  = Math.max(0.03, center * 0.58);
-  const edge = Math.max(0.01, center * 0.10);
+  // ✅ Las esquinas bajan mucho la opacidad.
+  const mid      = Math.max(0.02, center * 0.42);
+  const nearEdge = Math.max(0.01, center * 0.12);
+  const edge     = Math.max(0.00, center * 0.015);
 
   return `
     radial-gradient(
-      145% 145% at 50% 42%,
+      120% 120% at 50% 50%,
       rgba(${r}, ${g}, ${b}, ${center}) 0%,
-      rgba(${r}, ${g}, ${b}, ${center}) 54%,
-      rgba(${r}, ${g}, ${b}, ${mid}) 82%,
+      rgba(${r}, ${g}, ${b}, ${center}) 50%,
+      rgba(${r}, ${g}, ${b}, ${mid}) 76%,
+      rgba(${r}, ${g}, ${b}, ${nearEdge}) 90%,
       rgba(${r}, ${g}, ${b}, ${edge}) 100%
     )
   `;
 }
 
-function wrapperVisualShadow(op, color){
+function wrapperVisualShadow(op, color, scale = 1){
   const raw = Math.max(0, Math.min(1, Number(op) || 0));
   if (raw <= 0) return "none";
 
   const { r, g, b } = hexToRgb(color || "#000000");
+  const s = Math.max(0.12, Number(scale) || 1);
 
-  // ✅ sombra MUY suave, para que no parezca borde
+  // Muy suave. No borde duro.
   return `
-    inset 0 0 20px rgba(${r}, ${g}, ${b}, ${Math.min(0.08, raw * 0.12)})
+    inset 0 0 ${Math.round(42 * s)}px rgba(${r}, ${g}, ${b}, ${Math.min(0.06, raw * 0.08)})
   `;
 }
 
-function applyFase1WrapperLook(el, st){
+function applyFase1WrapperLook(el, st, scale = 1){
   if (!el || !st) return;
+
+  const s = Math.max(0.12, Number(scale) || 1);
 
   el.style.background = wrapperVisualBackground(st.op, st.opColor);
   el.style.backgroundColor = "transparent";
-  el.style.boxShadow = wrapperVisualShadow(st.op, st.opColor);
-  el.style.borderRadius = "40px";
+  el.style.boxShadow = wrapperVisualShadow(st.op, st.opColor, s);
+
+  // ✅ 118px en canvas final equivale visualmente a ~40px en preview.
+  el.style.borderRadius = `${Math.round(118 * s)}px`;
   el.style.overflow = "hidden";
 }
 
@@ -2538,11 +2546,13 @@ function devRenderFase(fase){
 
     t.style.fontFamily = st.fuente;
     t.style.color = st.color;
-t.style.textShadow = textShadowLegibleFinal(st.color);
-t.style.webkitTextStroke = "0.6px " + outlineColor(st.color);
+     
+t.style.textShadow = textShadowLegibleFinal(st.color, sc);
+t.style.webkitTextStroke = `${(0.6 * sc).toFixed(2)}px ` + outlineColor(st.color);
 t.style.paintOrder = "stroke fill";
 
-applyFase1WrapperLook(w, st);
+applyFase1WrapperLook(w, st, sc);
+     
     applyTextStylesToOne(t, st);
     devSyncStyleButtons(1);
     return;
@@ -2763,10 +2773,11 @@ async function renderFinalCanvasCaptureReal(){
     node.style.backgroundPosition = "center";
     node.style.backgroundColor = fondoUsable ? "transparent" : "#ffffff";
 
-    const wrap = document.createElement("div");
-    wrap.style.position = "absolute";
-    wrap.style.inset = "6%";
-applyFase1WrapperLook(wrap, st);
+const wrap = document.createElement("div");
+wrap.style.position = "absolute";
+wrap.style.inset = "6%";
+
+applyFase1WrapperLook(wrap, st, 1);
 
     const texto = document.createElement("div");
     texto.style.position = "absolute";
@@ -2775,9 +2786,9 @@ applyFase1WrapperLook(wrap, st);
     texto.style.color = st.color;
     applyTextStylesToOne(texto, st);
 
-    texto.style.textShadow = textShadowLegibleFinal(st.color);
-    texto.style.webkitTextStroke = "0.6px " + outlineColor(st.color);
-    texto.style.paintOrder = "stroke fill";
+   texto.style.textShadow = textShadowLegibleFinal(st.color, 1);
+texto.style.webkitTextStroke = "0.6px " + outlineColor(st.color);
+texto.style.paintOrder = "stroke fill";
     texto.innerHTML = buildFase1HTML(st.size, 1);
 
     wrap.appendChild(texto);
