@@ -3069,6 +3069,133 @@ async function urlToBlobURL(url) {
   return URL.createObjectURL(blob);
 }
 
+// ================= WRAPPER SUAVE PARA CREAR IMAGEN BIBLIA =================
+const BIBLIA_WRAPPER_CACHE = new Map();
+
+function bibliaHexToRgb(hex){
+  const h = String(hex || "#000000").replace("#", "").trim();
+
+  const full = h.length === 3
+    ? h.split("").map(x => x + x).join("")
+    : h.padEnd(6, "0").slice(0, 6);
+
+  return {
+    r: parseInt(full.slice(0, 2), 16) || 0,
+    g: parseInt(full.slice(2, 4), 16) || 0,
+    b: parseInt(full.slice(4, 6), 16) || 0
+  };
+}
+
+function bibliaRoundRectPath(ctx, x, y, w, h, r){
+  r = Math.min(r, w / 2, h / 2);
+
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+function bibliaWrapperVisualDataUrl(op, color){
+  const raw = Math.max(0, Math.min(1, Number(op) || 0));
+  const col = color || "#000000";
+
+  if (raw <= 0) return "";
+
+  const key = `${raw.toFixed(3)}_${col}`;
+  if (BIBLIA_WRAPPER_CACHE.has(key)) return BIBLIA_WRAPPER_CACHE.get(key);
+
+  const { r, g, b } = bibliaHexToRgb(col);
+  const lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+
+  const size = 1000;
+  const c = document.createElement("canvas");
+  c.width = size;
+  c.height = size;
+
+  const ctx = c.getContext("2d");
+  ctx.clearRect(0, 0, size, size);
+
+  bibliaRoundRectPath(ctx, 0, 0, size, size, 145);
+  ctx.clip();
+
+  // Centro visible, bordes más suaves.
+  const center = lum > 0.78 ? Math.max(raw, 0.30) : raw;
+  const mid    = Math.max(0.03, center * 0.48);
+  const edge   = Math.max(0.00, center * 0.035);
+
+  const base = ctx.createRadialGradient(
+    size * 0.50, size * 0.50, size * 0.04,
+    size * 0.50, size * 0.50, size * 0.78
+  );
+
+  base.addColorStop(0.00, `rgba(${r}, ${g}, ${b}, ${center})`);
+  base.addColorStop(0.54, `rgba(${r}, ${g}, ${b}, ${center})`);
+  base.addColorStop(0.78, `rgba(${r}, ${g}, ${b}, ${mid})`);
+  base.addColorStop(1.00, `rgba(${r}, ${g}, ${b}, ${edge})`);
+
+  ctx.fillStyle = base;
+  ctx.fillRect(0, 0, size, size);
+
+  // Esquinas tipo 3D:
+  // fondo oscuro = brillo blanco
+  // fondo claro = sombra gris/negra
+  const corner = lum > 0.78 ? [0, 0, 0] : [255, 255, 255];
+
+  const a1 = lum > 0.78
+    ? Math.min(0.30, Math.max(0.10, raw * 0.34))
+    : Math.min(0.34, Math.max(0.12, raw * 0.48));
+
+  const a2 = lum > 0.78
+    ? Math.min(0.12, Math.max(0.04, raw * 0.15))
+    : Math.min(0.16, Math.max(0.05, raw * 0.22));
+
+  const drawCorner = (x, y) => {
+    const gCorner = ctx.createRadialGradient(x, y, 0, x, y, size * 0.34);
+    gCorner.addColorStop(0.00, `rgba(${corner[0]}, ${corner[1]}, ${corner[2]}, ${a1})`);
+    gCorner.addColorStop(0.36, `rgba(${corner[0]}, ${corner[1]}, ${corner[2]}, ${a2})`);
+    gCorner.addColorStop(1.00, `rgba(${corner[0]}, ${corner[1]}, ${corner[2]}, 0)`);
+
+    ctx.fillStyle = gCorner;
+    ctx.fillRect(0, 0, size, size);
+  };
+
+  drawCorner(0, 0);
+  drawCorner(size, 0);
+  drawCorner(0, size);
+  drawCorner(size, size);
+
+  const url = c.toDataURL("image/png");
+  BIBLIA_WRAPPER_CACHE.set(key, url);
+  return url;
+}
+
+function aplicarWrapperBibliaImagen(wrapper, op, color){
+  if (!wrapper) return;
+
+  const raw = Math.max(0, Math.min(1, Number(op) || 0));
+
+  wrapper.style.backgroundColor = "transparent";
+  wrapper.style.boxShadow = "none";
+  wrapper.style.backgroundRepeat = "no-repeat";
+  wrapper.style.backgroundPosition = "center";
+  wrapper.style.backgroundSize = "100% 100%";
+
+  if (raw <= 0) {
+    wrapper.style.backgroundImage = "none";
+    return;
+  }
+
+  const url = bibliaWrapperVisualDataUrl(raw, color || "#000000");
+  wrapper.style.backgroundImage = url ? `url("${url}")` : "none";
+}
+
 // ================= ⭐ ACTUALIZAR VISTA PREVIA (FIX) 🌅 =======================
 function actualizarPreview() {
   const previewImagen = document.getElementById("previewImagen");
@@ -3202,7 +3329,7 @@ if (!isNaN(op)) {
   bgColor = `rgba(${r}, ${g}, ${b}, ${Math.max(0, Math.min(1, op))})`;
 }
 
-wrapper.style.backgroundColor = bgColor;
+aplicarWrapperBibliaImagen(wrapper, op, opColor);
 
   // ================= Estilos Texto =================
   const transform = textStyle?.upper ? "uppercase" : "none";
@@ -3641,10 +3768,15 @@ function resetModalPersonalizar() {
   if (t2) t2.style.display = "block";
 
   const wrapper = document.getElementById("previewTextoWrapper");
-  if (wrapper) {
-    wrapper.style.pointerEvents = "auto";
-    wrapper.style.background = "";
-  }
+if (wrapper) {
+  wrapper.style.pointerEvents = "auto";
+  wrapper.style.background = "";
+  wrapper.style.backgroundImage = "none";
+  wrapper.style.backgroundSize = "";
+  wrapper.style.backgroundPosition = "";
+  wrapper.style.backgroundRepeat = "";
+  wrapper.style.boxShadow = "";
+}
 
   const fondosBox = document.getElementById("personalizarFondos");
   if (fondosBox) fondosBox.style.display = "flex";
