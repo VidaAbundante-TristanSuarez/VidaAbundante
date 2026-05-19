@@ -4180,4 +4180,9 @@ body.oscuro .tema-toggle-fondo input:checked + label{
   display: none;
 }
 
+#btnTabRecursos,
+#btnTabPermisos {
+  display: none;
+}
+
 </style> 
