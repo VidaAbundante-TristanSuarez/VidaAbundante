@@ -380,20 +380,6 @@ button.activo,
   max-height: calc(100dvh - 24px);
 }
 
-/* ✅ PC: evita que Anterior/Siguiente queden cortados abajo en Fase 2 */
-@media (min-width: 700px){
-  #modalDevFase2 .modal-contenido.modal-dev{
-    overflow-y: auto;
-    padding-bottom: 22px;
-  }
-
-  #modalDevFase2 .dev-final{
-    flex: 0 0 auto;
-    margin-bottom: 4px;
-    padding-bottom: 4px;
-  }
-}
-
 /* ================= CERRAR (X) ================= */
 .cerrar-modal{
   position:absolute;
@@ -1479,6 +1465,64 @@ body.oscuro .devIndexBarBottom{
 #dev2Adornos .dev-adorno-btn-none.activo,
 #dev2Texturas .dev-textura-btn-none.activo{
   background: var(--ui-azul-hover) !important;
+}
+
+/* ================= FASE 2 PC: que entre sin scroll ================= */
+@media (min-width: 701px){
+
+  #modalDevFase2.modal-overlay.abierto{
+    align-items: center;
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+
+  #modalDevFase2 .modal-contenido.modal-dev{
+    overflow: hidden !important;
+    max-height: calc(100dvh - 16px);
+    padding: 10px 12px 8px;
+    gap: 6px;
+  }
+
+  /* baja apenas la vista para recuperar alto, sin achicarla mucho */
+  #modalDevFase2 #dev2Preview{
+    width: min(500px, 90vw);
+  }
+
+  /* compactar espacios entre bloques */
+  #modalDevFase2 .dev-preview-box{
+    margin: 0;
+  }
+
+  #modalDevFase2 .dev2-eyedropper-row{
+    margin-top: 4px;
+  }
+
+  #modalDevFase2 .dev-adorno-row{
+    margin-top: 4px;
+  }
+
+  #modalDevFase2 .dev-adorno-list{
+    padding-top: 6px;
+    padding-bottom: 6px;
+    max-height: 78px;
+  }
+
+  #modalDevFase2 .dev-tools{
+    margin-top: 6px;
+    gap: 8px;
+  }
+
+  #modalDevFase2 .dev-row{
+    margin-top: 6px;
+    gap: 8px;
+  }
+
+  #modalDevFase2 .dev-final{
+    margin-top: 6px;
+    margin-bottom: 0;
+    padding-bottom: 0;
+    flex: 0 0 auto;
+  }
 }
 
 </style>
