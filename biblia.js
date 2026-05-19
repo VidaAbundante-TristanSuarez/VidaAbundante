@@ -1030,30 +1030,63 @@ window.actualizarPermisosUI = function () {
   const puedeVerRecursos = esAdmin || esColaborador;
 
   if (!uid) {
-  const btnPanelImgNuevo = document.getElementById("btnPanelImgNuevo");
-  if (btnPanelImgNuevo) btnPanelImgNuevo.style.display = "none";
+    const btnPanelImgNuevo = document.getElementById("btnPanelImgNuevo");
+    if (btnPanelImgNuevo) btnPanelImgNuevo.style.display = "none";
 
-  const panelImgTopRow = document.getElementById("panelImgTopRow");
-  if (panelImgTopRow) panelImgTopRow.innerHTML = "";
+    const panelImgTopRow = document.getElementById("panelImgTopRow");
+    if (panelImgTopRow) panelImgTopRow.innerHTML = "";
 
-  if (document.body.classList.contains("en-panel")) {
-    mostrarPanelVisitante();
+    if (document.body.classList.contains("en-panel")) {
+      mostrarPanelVisitante();
+    }
+  } else {
+    ocultarPanelVisitante();
   }
-} else {
-  ocultarPanelVisitante();
-}
 
-  // si tenés botón/tab principal de Recursos, agregale este id en HTML:
-  // id="btnTabRecursos"
+  // ✅ Recursos: solo admin o colaborador
   const btnTabRecursos = document.getElementById("btnTabRecursos");
   if (btnTabRecursos) {
     btnTabRecursos.style.display = puedeVerRecursos ? "inline-flex" : "none";
   }
 
-  // si existe la sección ya abierta, la escondemos si no tiene permiso
+  // ✅ Permisos dentro de Recursos: solo admin
+  const btnTabPermisos = document.getElementById("btnTabPermisos");
+  if (btnTabPermisos) {
+    btnTabPermisos.style.display = esAdmin ? "inline-flex" : "none";
+  }
+
   const wrapRecursos = document.getElementById("iglesia-recursos");
+  const recursosPermisos = document.getElementById("recursos-permisos");
+
+  // ✅ Si usuario común quedó en Recursos por estado guardado, lo sacamos
   if (wrapRecursos && !puedeVerRecursos) {
     wrapRecursos.style.display = "none";
+
+    if (document.body.classList.contains("en-iglesia")) {
+      setTimeout(() => {
+        try {
+          window.mostrarIglesiaSub?.("devocionales");
+        } catch (e) {
+          console.warn(e);
+        }
+      }, 0);
+    }
+  }
+
+  // ✅ Si colaborador estaba en Permisos, lo mandamos a Ediciones
+  if (
+    puedeVerRecursos &&
+    !esAdmin &&
+    recursosPermisos &&
+    getComputedStyle(recursosPermisos).display !== "none"
+  ) {
+    setTimeout(() => {
+      try {
+        window.mostrarRecursosSub?.("ediciones");
+      } catch (e) {
+        console.warn(e);
+      }
+    }, 0);
   }
 
   // botones ya existentes que dependían de admin
@@ -1064,11 +1097,10 @@ window.actualizarPermisosUI = function () {
   if (btnSubidoNuevo) btnSubidoNuevo.style.display = esAdmin ? "inline-flex" : "none";
 
   const btnPanelImgNuevo = document.getElementById("btnPanelImgNuevo");
-if (btnPanelImgNuevo) btnPanelImgNuevo.style.display = esAdmin ? "inline-flex" : "none";
+  if (btnPanelImgNuevo) btnPanelImgNuevo.style.display = esAdmin ? "inline-flex" : "none";
 
-const panelImgTopRow = document.getElementById("panelImgTopRow");
-if (panelImgTopRow && !esAdmin) panelImgTopRow.innerHTML = "";
-  
+  const panelImgTopRow = document.getElementById("panelImgTopRow");
+  if (panelImgTopRow && !esAdmin) panelImgTopRow.innerHTML = "";
 };
 
 // ================= AUTH =====================================
@@ -6771,6 +6803,15 @@ window.mostrarIglesiaSub = (sub) => {
 
   const permitidas = ["devocionales", "abc", "subidos", "recursos"];
   if (!permitidas.includes(sub)) sub = "devocionales";
+
+    // ✅ Usuarios comunes no pueden abrir Recursos
+  if (sub === "recursos") {
+    const puedeVerRecursos = !!window.__ES_ADMIN || !!window.__ES_COLABORADOR;
+
+    if (!puedeVerRecursos) {
+      sub = "devocionales";
+    }
+  }
 
     window.__IGLESIA_SUB_ACTIVA = sub;
 
