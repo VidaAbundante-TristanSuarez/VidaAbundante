@@ -2313,7 +2313,7 @@ function buildFase1HTML(versiculoCanvasPx, scale){
   left:0;
   right:0;
   margin:0 auto;
-  width:96%;
+  width:98%;
   text-align:center;
   padding:0;
   font-size:${px}px;
@@ -2353,8 +2353,8 @@ function buildFase1HTML(versiculoCanvasPx, scale){
         margin:0 auto;
         top:${Y_VBOX}%;
         height:${H_VBOX}%;
-        width:96%;
-        padding: 0 ${Math.round(36 * scale)}px;
+        width:98%;
+        padding: 0 ${Math.round(18 * scale)}px;
         box-sizing: border-box;
         display:flex;
         align-items:center;
@@ -2813,10 +2813,12 @@ applyFase1WrapperLook(wrap, st, 1);
     texto.style.color = st.color;
     applyTextStylesToOne(texto, st);
 
-   texto.style.textShadow = textShadowLegibleFinal(st.color, 1);
-texto.style.webkitTextStroke = "0.6px " + outlineColor(st.color);
+const outlineFinalF1 = 1.9;
+
+texto.style.textShadow = textShadowLegibleFinal(st.color, outlineFinalF1);
+texto.style.webkitTextStroke = `${(0.6 * outlineFinalF1).toFixed(2)}px ` + outlineColor(st.color);
 texto.style.paintOrder = "stroke fill";
-    texto.innerHTML = buildFase1HTML(st.size, 1);
+texto.innerHTML = buildFase1HTML(st.size, 1);
 
     wrap.appendChild(texto);
     node.appendChild(wrap);
