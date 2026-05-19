@@ -1410,30 +1410,6 @@ body.oscuro .devIndexBarBottom{
   text-align: left;
 }
 
-/* ================= FIX FASE 1: esquinas más suaves ================= */
-#modalDevFase1 #dev1TextoWrapper{
-  border-radius:34px !important;
-  overflow:hidden;
-}
-
-#modalDevFase1 #dev1TextoWrapper::after{
-  content:"";
-  position:absolute;
-  inset:0;
-  border-radius:inherit;
-  pointer-events:none;
-  box-shadow:
-    inset 0 0 26px rgba(255,255,255,.28),
-    inset 0 0 46px rgba(0,0,0,.08);
-  z-index:3;
-}
-
-#modalDevFase1 #dev1Texto,
-#modalDevFase1 #dev1TextoBack{
-  z-index:4;
-}
-
-
 /* ================= FIX FASE 2 CELULAR: controles acomodados ================= */
 @media (max-width: 520px){
   #modalDevFase2 .dev-tools{
