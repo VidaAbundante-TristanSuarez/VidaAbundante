@@ -2096,22 +2096,48 @@ function wrapperVisualBackground(op, color){
 
   const lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
 
-  // En colores claros, subimos un poquito el centro para que se note.
-  const center = lum > 0.78 ? Math.max(raw, 0.28) : raw;
+  // Centro visible. Si el color es claro, lo reforzamos apenas.
+  const center = lum > 0.78 ? Math.max(raw, 0.30) : raw;
 
-  // ✅ Las esquinas bajan mucho la opacidad.
+  // ✅ Esquinas casi transparentes.
   const mid      = Math.max(0.02, center * 0.42);
-  const nearEdge = Math.max(0.01, center * 0.12);
-  const edge     = Math.max(0.00, center * 0.015);
+  const nearEdge = Math.max(0.00, center * 0.08);
+
+  // ✅ Contraste de esquinas:
+  // color oscuro = brillo blanco suave
+  // color claro/blanco = sombra gris/negra suave
+  const cornerRgb = lum > 0.78 ? "0, 0, 0" : "255, 255, 255";
+  const cornerA1 = Math.min(0.36, Math.max(0.12, raw * 0.70));
+  const cornerA2 = Math.min(0.20, Math.max(0.06, raw * 0.38));
 
   return `
+    radial-gradient(circle at 0% 0%,
+      rgba(${cornerRgb}, ${cornerA1}) 0%,
+      rgba(${cornerRgb}, ${cornerA2}) 15%,
+      transparent 34%
+    ),
+    radial-gradient(circle at 100% 0%,
+      rgba(${cornerRgb}, ${cornerA1}) 0%,
+      rgba(${cornerRgb}, ${cornerA2}) 15%,
+      transparent 34%
+    ),
+    radial-gradient(circle at 0% 100%,
+      rgba(${cornerRgb}, ${cornerA1}) 0%,
+      rgba(${cornerRgb}, ${cornerA2}) 15%,
+      transparent 34%
+    ),
+    radial-gradient(circle at 100% 100%,
+      rgba(${cornerRgb}, ${cornerA1}) 0%,
+      rgba(${cornerRgb}, ${cornerA2}) 15%,
+      transparent 34%
+    ),
     radial-gradient(
-      120% 120% at 50% 50%,
+      115% 115% at 50% 50%,
       rgba(${r}, ${g}, ${b}, ${center}) 0%,
-      rgba(${r}, ${g}, ${b}, ${center}) 50%,
-      rgba(${r}, ${g}, ${b}, ${mid}) 76%,
-      rgba(${r}, ${g}, ${b}, ${nearEdge}) 90%,
-      rgba(${r}, ${g}, ${b}, ${edge}) 100%
+      rgba(${r}, ${g}, ${b}, ${center}) 48%,
+      rgba(${r}, ${g}, ${b}, ${mid}) 72%,
+      rgba(${r}, ${g}, ${b}, ${nearEdge}) 86%,
+      rgba(${r}, ${g}, ${b}, 0) 100%
     )
   `;
 }
@@ -2121,12 +2147,27 @@ function wrapperVisualShadow(op, color, scale = 1){
   if (raw <= 0) return "none";
 
   const { r, g, b } = hexToRgb(color || "#000000");
+  const lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
   const s = Math.max(0.12, Number(scale) || 1);
 
-  // Muy suave. No borde duro.
+  const cornerRgb = lum > 0.78 ? "0, 0, 0" : "255, 255, 255";
+
   return `
-    inset 0 0 ${Math.round(42 * s)}px rgba(${r}, ${g}, ${b}, ${Math.min(0.06, raw * 0.08)})
+    inset 0 0 ${Math.round(34 * s)}px rgba(${cornerRgb}, ${Math.min(0.22, raw * 0.38)}),
+    inset 0 0 ${Math.round(72 * s)}px rgba(${r}, ${g}, ${b}, ${Math.min(0.05, raw * 0.08)})
   `;
+}
+
+function applyFase1WrapperLook(el, st, scale = 1){
+  if (!el || !st) return;
+
+  const s = Math.max(0.12, Number(scale) || 1);
+
+  el.style.background = wrapperVisualBackground(st.op, st.opColor);
+  el.style.backgroundColor = "transparent";
+  el.style.boxShadow = wrapperVisualShadow(st.op, st.opColor, s);
+  el.style.borderRadius = `${Math.round(118 * s)}px`;
+  el.style.overflow = "hidden";
 }
 
 function applyFase1WrapperLook(el, st, scale = 1){
