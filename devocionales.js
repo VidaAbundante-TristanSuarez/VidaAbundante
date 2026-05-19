@@ -2170,20 +2170,6 @@ function applyFase1WrapperLook(el, st, scale = 1){
   el.style.overflow = "hidden";
 }
 
-function applyFase1WrapperLook(el, st, scale = 1){
-  if (!el || !st) return;
-
-  const s = Math.max(0.12, Number(scale) || 1);
-
-  el.style.background = wrapperVisualBackground(st.op, st.opColor);
-  el.style.backgroundColor = "transparent";
-  el.style.boxShadow = wrapperVisualShadow(st.op, st.opColor, s);
-
-  // ✅ 118px en canvas final equivale visualmente a ~40px en preview.
-  el.style.borderRadius = `${Math.round(118 * s)}px`;
-  el.style.overflow = "hidden";
-}
-
 function esc(s){
   return String(s || "")
     .replace(/&/g,"&amp;")
