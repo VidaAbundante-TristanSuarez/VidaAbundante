@@ -1066,6 +1066,77 @@ body.oscuro #edForm .ed-field select {
   -webkit-overflow-scrolling: touch;
 }
 
+/* ================= FLECHAS GALERÍA EDICIONES - PC ================= */
+
+.ed-galeria-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.ed-galeria-track {
+  scroll-behavior: smooth;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+.ed-galeria-nav {
+  position: absolute;
+  top: 44%;
+  transform: translateY(-50%);
+  z-index: 8;
+
+  width: 46px;
+  height: 46px;
+  border: none;
+  border-radius: 999px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  background: rgba(255,255,255,.94);
+  color: #111;
+  font-size: 19px;
+  cursor: pointer;
+
+  box-shadow: 0 8px 22px rgba(0,0,0,.20);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+
+  opacity: 1;
+  transition: opacity .18s ease, transform .18s ease, background .18s ease;
+}
+
+.ed-galeria-nav:hover {
+  background: var(--ui-azul-claro, #bcdcff);
+}
+
+.ed-galeria-prev {
+  left: 10px;
+}
+
+.ed-galeria-next {
+  right: 10px;
+}
+
+.ed-galeria-nav-oculta {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-50%) scale(.92);
+}
+
+body.oscuro .ed-galeria-nav {
+  background: rgba(22,22,22,.88);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,.16);
+}
+
+@media (max-width: 700px) {
+  .ed-galeria-nav {
+    display: none !important;
+  }
+}
+
 .ed-galeria-track::-webkit-scrollbar {
   height: 8px;
 }
