@@ -139,6 +139,74 @@ window.edLimpiarBusquedaEdiciones = () => {
   renderEdiciones();
 };
 
+/* ================= FLECHAS GALERÍA EDICIONES - PC ================= */
+
+function edActualizarFlechasGaleria() {
+  const track = document.querySelector("#edLista .ed-galeria-track");
+  if (!track) return;
+
+  const wrap = track.closest(".ed-galeria-wrap");
+  if (!wrap) return;
+
+  const btnPrev = wrap.querySelector(".ed-galeria-prev");
+  const btnNext = wrap.querySelector(".ed-galeria-next");
+
+  if (!btnPrev || !btnNext) return;
+
+  const hayScroll = track.scrollWidth > track.clientWidth + 8;
+  const estaAlInicio = track.scrollLeft <= 4;
+  const estaAlFinal =
+    track.scrollLeft + track.clientWidth >= track.scrollWidth - 4;
+
+  btnPrev.classList.toggle(
+    "ed-galeria-nav-oculta",
+    !hayScroll || estaAlInicio
+  );
+
+  btnNext.classList.toggle(
+    "ed-galeria-nav-oculta",
+    !hayScroll || estaAlFinal
+  );
+}
+
+window.edMoverGaleria = (direccion = 1) => {
+  const track = document.querySelector("#edLista .ed-galeria-track");
+  if (!track) return;
+
+  const card = track.querySelector(".ed-card-galeria");
+
+  const distancia = card
+    ? card.getBoundingClientRect().width + 16
+    : Math.max(track.clientWidth * 0.85, 280);
+
+  track.scrollBy({
+    left: distancia * Number(direccion || 1),
+    behavior: "smooth"
+  });
+
+  setTimeout(edActualizarFlechasGaleria, 350);
+};
+
+function edActivarFlechasGaleria() {
+  const track = document.querySelector("#edLista .ed-galeria-track");
+  if (!track) return;
+
+  if (track.dataset.flechasActivas !== "1") {
+    track.dataset.flechasActivas = "1";
+
+    track.addEventListener("scroll", edActualizarFlechasGaleria, {
+      passive: true
+    });
+  }
+
+  if (!window.__ED_GALERIA_RESIZE_ACTIVO) {
+    window.__ED_GALERIA_RESIZE_ACTIVO = true;
+    window.addEventListener("resize", edActualizarFlechasGaleria);
+  }
+
+  requestAnimationFrame(edActualizarFlechasGaleria);
+}
+
 function edNormalizarRama(v = "") {
   const s = String(v || "")
     .normalize("NFD")
@@ -857,11 +925,37 @@ function renderEdiciones() {
     `;
   }
 
-  lista.innerHTML = `
-    <div class="ed-galeria-track">
-      ${items.map(renderCardEdicion).join("")}
+   lista.innerHTML = `
+    <div class="ed-galeria-wrap">
+
+      <button
+        type="button"
+        class="ed-galeria-nav ed-galeria-prev ed-galeria-nav-oculta"
+        onclick="edMoverGaleria(-1)"
+        title="Ver ediciones anteriores"
+        aria-label="Ver ediciones anteriores"
+      >
+        <i class="fa-solid fa-chevron-left"></i>
+      </button>
+
+      <div class="ed-galeria-track">
+        ${items.map(renderCardEdicion).join("")}
+      </div>
+
+      <button
+        type="button"
+        class="ed-galeria-nav ed-galeria-next ed-galeria-nav-oculta"
+        onclick="edMoverGaleria(1)"
+        title="Ver más ediciones"
+        aria-label="Ver más ediciones"
+      >
+        <i class="fa-solid fa-chevron-right"></i>
+      </button>
+
     </div>
   `;
+
+  edActivarFlechasGaleria();
 }
 
 /* ================= EDITOR ================= */
@@ -1737,11 +1831,14 @@ function edPrepararVisorEdicion(viewer) {
 }
 
 window.cerrarPresentacionEdicion = () => {
-  const veniaDeLinkDirecto = document.body.classList.contains("ed-link-directo");
+  const veniaDesdeLinkCompartidos =
+    !!window.__ED_ABIERTA_DESDE_LINK_COMPARTIDOS ||
+    document.body.classList.contains("ed-link-directo");
 
   edPausarMediosEdicion();
 
   const viewer = ed$("edViewer");
+
   if (viewer) {
     viewer.classList.remove("ed-open");
     viewer.innerHTML = "";
@@ -1756,9 +1853,15 @@ window.cerrarPresentacionEdicion = () => {
     }
   } catch (_) {}
 
-  if (veniaDeLinkDirecto) {
+  if (veniaDesdeLinkCompartidos) {
+    window.__ED_ABIERTA_DESDE_LINK_COMPARTIDOS = false;
+
     try {
-      history.replaceState(null, "", `${edBasePublicaApp()}/index.html`);
+      history.replaceState(
+        null,
+        "",
+        `${edBasePublicaApp()}/`
+      );
     } catch (_) {}
 
     if (typeof window.irA === "function") {
@@ -2107,6 +2210,78 @@ function edPedirLoginParaPanel() {
   alert("Iniciá sesión para guardar esta edición en Mi Panel.");
 }
 
+async function edAsegurarPublicadaParaCompartir(ed) {
+  const db = edDB();
+
+  if (!db) {
+    alert("Firebase no está listo.");
+    return false;
+  }
+
+  const id = ed?.id || "";
+
+  if (!id) {
+    alert("No encontré la edición.");
+    return false;
+  }
+
+  const compRef = ref(db, `compartidos/edicion_${id}`);
+  const snap = await get(compRef);
+
+  // Si ya está publicada, no alteramos la fecha ni la subimos de nuevo.
+  if (snap.exists()) {
+    return true;
+  }
+
+  // Mantiene tu regla actual: publicar en Compartidos es tarea de admin.
+  if (!window.__ES_ADMIN) {
+    alert(
+      "Esta edición todavía no está publicada en Compartidos.\n\n" +
+      "Un administrador debe enviarla a Compartidos antes de compartir el enlace."
+    );
+    return false;
+  }
+
+  const titulo = ed.titulo || "Edición";
+  const portadaUrl = edPortadaEdicion(ed);
+  const ts = Date.now();
+
+  try {
+    await set(compRef, {
+      tipo: "edicion",
+      edicionId: id,
+      titulo,
+      rama: edRamaEdicion(ed),
+      categoria: edRamaEdicion(ed),
+      tipoEdicion: edRamaEdicion(ed),
+      portadaUrl,
+      creadoPor: window.__UID || "",
+      actualizadoPor: window.__UID || "",
+      ts,
+      publicadoEn: ts,
+      republicadoEn: 0
+    });
+
+    edicionesPublicadasCache[id] = true;
+
+    renderEdiciones();
+
+    if (typeof window.renderCompartidos === "function") {
+      window.renderCompartidos();
+    }
+
+    if (typeof mostrarToast === "function") {
+      mostrarToast("✅ Edición enviada a Compartidos para poder compartirla");
+    }
+
+    return true;
+  } catch (err) {
+    console.error("No pude enviar la edición a Compartidos:", err);
+    alert("No pude enviar la edición a Compartidos.");
+    return false;
+  }
+}
+
 window.compartirEdicion = async (id, destino = "redes") => {
   const ed = await obtenerEdicion(id);
 
@@ -2116,9 +2291,9 @@ window.compartirEdicion = async (id, destino = "redes") => {
   }
 
   const titulo = ed.titulo || "Edición";
-  const portadaUrl = typeof edPortadaEdicion === "function"
-    ? edPortadaEdicion(ed)
-    : (ed.portadaUrl || edPaginasArray(ed)[0]?.imagenUrl || "");
+  const portadaUrl = edPortadaEdicion(ed);
+
+  /* ===== Botón publicar / volver a publicar en Compartidos ===== */
 
   if (destino === "compartidos") {
     if (!window.__ES_ADMIN) {
@@ -2139,7 +2314,8 @@ window.compartirEdicion = async (id, destino = "redes") => {
 
     if (yaEstaba) {
       const ok = confirm(
-        "Esta edición ya está en Compartidos.\n\n¿Volvemos a compartirla para que quede arriba?"
+        "Esta edición ya está en Compartidos.\n\n" +
+        "¿Volvemos a compartirla para que quede arriba?"
       );
 
       if (!ok) return;
@@ -2147,36 +2323,57 @@ window.compartirEdicion = async (id, destino = "redes") => {
 
     const ts = Date.now();
 
-await set(compRef, {
-  tipo: "edicion",
-  edicionId: id,
-  titulo,
-  rama: edRamaEdicion(ed),
-  categoria: edRamaEdicion(ed),
-  tipoEdicion: edRamaEdicion(ed),
-  portadaUrl,
-  creadoPor: snap.val()?.creadoPor || window.__UID || "",
-  actualizadoPor: window.__UID || "",
-  ts,
-  publicadoEn: ts,
-  republicadoEn: yaEstaba ? ts : 0
-});
+    try {
+      await set(compRef, {
+        tipo: "edicion",
+        edicionId: id,
+        titulo,
+        rama: edRamaEdicion(ed),
+        categoria: edRamaEdicion(ed),
+        tipoEdicion: edRamaEdicion(ed),
+        portadaUrl,
+        creadoPor: snap.val()?.creadoPor || window.__UID || "",
+        actualizadoPor: window.__UID || "",
+        ts,
+        publicadoEn: ts,
+        republicadoEn: yaEstaba ? ts : 0
+      });
 
-    edicionesPublicadasCache[id] = true;
-    renderEdiciones();
+      edicionesPublicadasCache[id] = true;
+      renderEdiciones();
 
-    if (typeof window.renderCompartidos === "function") {
-      window.renderCompartidos();
-    }
+      if (typeof window.renderCompartidos === "function") {
+        window.renderCompartidos();
+      }
 
-    if (typeof mostrarToast === "function") {
-      mostrarToast(yaEstaba ? "✅ Edición compartida nuevamente" : "✅ Edición enviada a Compartidos");
-    } else {
-      alert(yaEstaba ? "Edición compartida nuevamente." : "Edición enviada a Compartidos.");
+      if (typeof mostrarToast === "function") {
+        mostrarToast(
+          yaEstaba
+            ? "✅ Edición compartida nuevamente"
+            : "✅ Edición enviada a Compartidos"
+        );
+      } else {
+        alert(
+          yaEstaba
+            ? "Edición compartida nuevamente."
+            : "Edición enviada a Compartidos."
+        );
+      }
+    } catch (err) {
+      console.error("No pude publicar en Compartidos:", err);
+      alert("No pude enviar la edición a Compartidos.");
     }
 
     return;
   }
+
+  /* ===== Botón compartir en redes =====
+     Antes de compartir, garantizamos que exista en Compartidos.
+  */
+
+  const publicada = await edAsegurarPublicadaParaCompartir(ed);
+
+  if (!publicada) return;
 
   const url = await crearLinkPublicoEdicion(id, titulo);
 
@@ -2203,7 +2400,8 @@ await set(compRef, {
 
 async function crearLinkPublicoEdicion(id, titulo = "Edición") {
   const refPublica = await edAsegurarRefPublica(id, titulo);
-  return `${edBasePublicaApp()}/ediciones/?ref=${encodeURIComponent(refPublica)}`;
+
+  return `${edBasePublicaApp()}/?ver=compartidos&edicionRef=${encodeURIComponent(refPublica)}`;
 }
 
 /* ================= LINK PÚBLICO ================= */
@@ -2280,20 +2478,37 @@ async function abrirEdicionDesdeURL() {
 
   if (!id) return;
 
-  window.__ED_LINK_DIRECTO = true;
-  document.body.classList.add("ed-link-directo");
+  /*
+    Este indicador sirve para que, al cerrar la edición,
+    la persona quede en Compartidos y no vuelva a Recursos.
+  */
+  window.__ED_ABIERTA_DESDE_LINK_COMPARTIDOS = true;
+
+  /*
+    Ya no usamos el modo que ocultaba toda la app como link directo.
+    Ahora la sección real de fondo será Compartidos.
+  */
+  document.body.classList.remove("ed-link-directo");
 
   if (refPublica) {
     try {
       history.replaceState(
         null,
         "",
-        `${edBasePublicaApp()}/ediciones/?ref=${encodeURIComponent(refPublica)}`
+        `${edBasePublicaApp()}/?ver=compartidos&edicionRef=${encodeURIComponent(refPublica)}`
       );
     } catch (_) {}
   }
 
   await edEsperarDB();
+
+  if (typeof window.irA === "function") {
+    window.irA("compartidos");
+  }
+
+  if (typeof window.mostrarCompartidos === "function") {
+    await window.mostrarCompartidos();
+  }
 
   setTimeout(() => {
     abrirPresentacionEdicion(id);
