@@ -1525,4 +1525,224 @@ body.oscuro .devIndexBarBottom{
   }
 }
 
+
+
+/* =========================================================
+   FASE 2 DEVOCIONALES: FONDO DISEÑADO COMPACTO
+   Fondo plano/degradado + Textura + Adorno sin scroll horizontal
+   ========================================================= */
+#modalDevFase2 .modal-contenido.modal-dev{
+  overflow-x:hidden !important;
+}
+
+#modalDevFase2 .dev2-diseno-panel{
+  width:min(540px, 94vw);
+  max-width:100%;
+  margin:4px auto 0;
+  padding:7px 8px 8px;
+  border-radius:16px;
+  background:#eaf7ff;
+  border:1px solid rgba(0,0,0,.07);
+  overflow:hidden;
+  box-sizing:border-box;
+}
+
+#modalDevFase2 .dev2-diseno-tabs{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  margin-bottom:7px;
+}
+
+#modalDevFase2 .dev2-diseno-tabs button{
+  min-height:36px;
+  height:36px;
+  padding:0 15px;
+  border:none;
+  border-radius:999px;
+  background:var(--ui-azul-claro);
+  color:#000;
+  font-weight:800;
+  cursor:pointer;
+}
+
+#modalDevFase2 .dev2-diseno-tabs button.activo{
+  background:var(--ui-azul-hover);
+  color:#fff;
+  box-shadow:0 4px 12px rgba(0,0,0,.14);
+}
+
+#modalDevFase2 .dev2-diseno-pane{
+  display:none;
+  min-width:0;
+  overflow:hidden;
+}
+
+#modalDevFase2 .dev2-diseno-pane.activo{
+  display:block;
+}
+
+#modalDevFase2 .dev2-fondo-opciones{
+  min-height:50px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+  flex-wrap:wrap;
+  padding:2px 0;
+}
+
+#modalDevFase2 .dev2-modo-btn,
+#modalDevFase2 .dev2-mas-color{
+  width:43px;
+  min-width:43px;
+  height:42px;
+  padding:0;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border:none;
+  border-radius:12px;
+  background:var(--ui-azul-claro);
+  color:#000;
+  cursor:pointer;
+  font-size:17px;
+}
+
+#modalDevFase2 .dev2-modo-btn.activo,
+#modalDevFase2 .dev2-mas-color.activo{
+  background:var(--ui-azul-hover);
+  color:#fff;
+}
+
+#modalDevFase2 .dev2-grad-extra{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+  flex-wrap:wrap;
+  min-width:0;
+}
+
+#modalDevFase2 #dev2Color3Wrap{
+  align-items:center;
+}
+
+#modalDevFase2 .dev2-grad-forma{
+  height:42px;
+  max-width:116px;
+  min-width:100px;
+  padding:0 8px;
+  border-radius:12px;
+  border:1px solid rgba(0,0,0,.18);
+  background:#fff;
+  color:#000;
+  font-size:14px;
+}
+
+#modalDevFase2 .dev-adorno-list{
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  margin:0;
+  padding:6px 7px;
+  max-height:66px;
+  overflow-x:auto;
+  overflow-y:hidden;
+  box-sizing:border-box;
+}
+
+#modalDevFase2 .dev-adorno-btn,
+#modalDevFase2 .dev-textura-btn{
+  padding:6px;
+}
+
+#modalDevFase2 .dev-adorno-thumb,
+#modalDevFase2 .dev-textura-thumb{
+  height:22px !important;
+  min-height:22px !important;
+  max-height:22px !important;
+}
+
+#modalDevFase2 .dev2-slider-row{
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  margin:6px auto 0;
+  padding:0 8px 1px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  box-sizing:border-box;
+  overflow:hidden;
+}
+
+#modalDevFase2 .dev2-slider-row i{
+  flex:0 0 auto;
+  font-size:14px;
+  color:#465a6b;
+}
+
+#modalDevFase2 .dev2-slider-row input[type="range"]{
+  display:block;
+  flex:0 1 235px;
+  width:min(235px, calc(100% - 32px));
+  min-width:0;
+  max-width:calc(100% - 32px);
+  margin:0;
+}
+
+#modalDevFase2 .dev2-size-row{
+  width:min(540px, 94vw);
+  margin:6px auto 0;
+}
+
+/* En teléfono mantiene panel corto y sin desbordes laterales. */
+@media (max-width:520px){
+  #modalDevFase2 .dev2-diseno-panel{
+    width:94vw;
+    padding:6px;
+  }
+
+  #modalDevFase2 .dev2-diseno-tabs{
+    gap:6px;
+    margin-bottom:6px;
+  }
+
+  #modalDevFase2 .dev2-diseno-tabs button{
+    height:34px;
+    min-height:34px;
+    padding:0 12px;
+    font-size:13px;
+  }
+
+  #modalDevFase2 .dev2-fondo-opciones,
+  #modalDevFase2 .dev2-grad-extra{
+    gap:6px;
+  }
+
+  #modalDevFase2 .dev2-modo-btn,
+  #modalDevFase2 .dev2-mas-color{
+    width:39px;
+    min-width:39px;
+    height:39px;
+  }
+
+  #modalDevFase2 .pickr-host{
+    width:43px;
+    min-width:43px;
+    height:39px;
+    min-height:39px;
+  }
+
+  #modalDevFase2 .dev2-grad-forma{
+    height:39px;
+    min-width:94px;
+    max-width:102px;
+    font-size:13px;
+  }
+}
+
 </style>
