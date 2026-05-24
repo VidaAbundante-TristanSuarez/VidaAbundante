@@ -4185,4 +4185,239 @@ body.oscuro .tema-toggle-fondo input:checked + label{
   display: none;
 }
 
+/* =========================================================
+   CREAR IMAGEN BIBLIA · MODO FONDO DISEÑADO
+   Se agrega sin modificar el modo actual de galería.
+   ========================================================= */
+
+/* Toggle enfrentado a la X */
+#modalPersonalizar #btnModoFondoBiblia{
+  position:absolute !important;
+  top:12px !important;
+  left:12px !important;
+  z-index:99999 !important;
+
+  width:42px !important;
+  min-width:42px !important;
+  height:34px !important;
+  padding:0 !important;
+
+  border:none !important;
+  border-radius:999px !important;
+  background:rgba(255,255,255,.88) !important;
+  color:#4f6fa8 !important;
+  box-shadow:0 3px 10px rgba(0,0,0,.16);
+}
+
+#modalPersonalizar #btnModoFondoBiblia i{
+  font-size:23px;
+  line-height:1;
+}
+
+#modalPersonalizar #btnModoFondoBiblia.activo{
+  background:var(--ui-azul-hover) !important;
+  color:#000 !important;
+}
+
+body.oscuro #modalPersonalizar #btnModoFondoBiblia{
+  background:rgba(0,0,0,.55) !important;
+  color:#d1eeff !important;
+  border:1px solid rgba(255,255,255,.25) !important;
+}
+
+/* Capas dentro de la imagen: base -> textura -> adorno -> texto */
+#previewImagen #bibliaFondoTexturaLayer{
+  position:absolute;
+  inset:0;
+  z-index:0;
+  display:none;
+  pointer-events:none;
+  background-repeat:no-repeat;
+  background-position:center;
+  background-size:cover;
+}
+
+#previewImagen #bibliaFondoAdornoLayer{
+  position:absolute;
+  inset:0;
+  z-index:1;
+  display:none;
+  align-items:flex-end;
+  justify-content:center;
+  padding:0 0 18px;
+  pointer-events:none;
+  overflow:hidden;
+}
+
+#previewImagen #bibliaFondoAdornoImg{
+  display:block;
+  height:auto;
+  max-height:40%;
+  object-fit:contain;
+}
+
+#previewImagen #previewTextoWrapper{
+  z-index:3;
+}
+
+/* Panel: ocupa el lugar de la galería vieja, no se acumula debajo */
+#bibliaDisenoFondos{
+  display:none;
+  flex-direction:column;
+  gap:5px;
+  width:min(420px, 100%);
+  height:94px;
+  min-height:94px;
+  margin:0 auto;
+  padding:4px 6px 5px;
+  overflow:hidden;
+  border:1px solid rgba(0,0,0,.08);
+  border-radius:12px;
+  background:rgba(233,246,255,.75);
+}
+
+#bibliaDisenoFondos .biblia-diseno-tabs{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+  flex:0 0 30px;
+}
+
+#modalPersonalizar #bibliaDisenoFondos .biblia-diseno-tabs button{
+  height:28px;
+  min-width:0;
+  padding:0 10px;
+  border-radius:999px;
+  font-size:12px;
+}
+
+#bibliaDisenoFondos .biblia-diseno-panel{
+  display:none;
+  align-items:center;
+  min-height:50px;
+  gap:6px;
+}
+
+#bibliaDisenoFondos .biblia-diseno-panel.activo{
+  display:flex;
+}
+
+#bibliaPanelFondo .biblia-base-btns{
+  flex:0 0 auto;
+  display:flex;
+  gap:4px;
+}
+
+#modalPersonalizar #bibliaPanelFondo .biblia-base-btns button,
+#modalPersonalizar #btnBibliaColor3{
+  width:32px;
+  min-width:32px;
+  height:32px;
+  padding:0;
+}
+
+.biblia-diseno-ajustes{
+  min-width:0;
+  display:flex;
+  align-items:center;
+  gap:5px;
+  overflow-x:auto;
+  overflow-y:hidden;
+  scrollbar-width:none;
+}
+
+.biblia-diseno-ajustes::-webkit-scrollbar,
+.biblia-recursos-carril::-webkit-scrollbar{
+  display:none;
+}
+
+.biblia-color-mini{
+  width:32px;
+  min-width:32px;
+  height:32px;
+  padding:2px;
+  border:1px solid rgba(0,0,0,.15);
+  border-radius:999px;
+  background:#fff;
+  cursor:pointer;
+}
+
+#bibliaGradienteForma{
+  height:32px;
+  min-width:86px;
+  padding:0 6px;
+  border:1px solid rgba(0,0,0,.15);
+  border-radius:10px;
+  font-size:12px;
+  background:#fff;
+  color:#000;
+}
+
+.biblia-recursos-carril{
+  flex:1 1 auto;
+  min-width:0;
+  height:48px;
+  display:flex;
+  align-items:center;
+  gap:5px;
+  overflow-x:auto;
+  overflow-y:hidden;
+  scrollbar-width:none;
+}
+
+#modalPersonalizar .biblia-recurso-mini{
+  flex:0 0 44px;
+  width:44px;
+  min-width:44px;
+  height:44px;
+  padding:2px;
+  border-radius:9px;
+  overflow:hidden;
+}
+
+#modalPersonalizar .biblia-recurso-mini img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  border-radius:7px;
+}
+
+#modalPersonalizar .biblia-recurso-mini.activo{
+  outline:2px solid #4f6fa8;
+  outline-offset:-2px;
+  background:var(--ui-azul-hover);
+}
+
+.biblia-slider-mini{
+  flex:0 0 84px;
+  width:84px;
+  accent-color:#4f6fa8;
+}
+
+@media (max-width:600px){
+  #bibliaDisenoFondos{
+    height:90px;
+    min-height:90px;
+    padding-left:5px;
+    padding-right:5px;
+  }
+
+  #modalPersonalizar #bibliaDisenoFondos .biblia-diseno-tabs button{
+    padding:0 9px;
+  }
+
+  #modalPersonalizar .biblia-recurso-mini{
+    flex-basis:40px;
+    width:40px;
+    min-width:40px;
+    height:40px;
+  }
+
+  .biblia-slider-mini{
+    flex-basis:74px;
+    width:74px;
+  }
+}
+
 </style> 
