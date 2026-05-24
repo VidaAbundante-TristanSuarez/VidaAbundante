@@ -2701,6 +2701,24 @@ function colorOutlineDesdeBase(color) {
   return lum > 160 ? "#000000" : "#ffffff";
 }
 
+function textShadowLegibleBiblia(textHex, scale = 1){
+  const oc = colorOutlineDesdeBase(textHex || "#000000");
+  const s = Math.max(0.12, Number(scale) || 1);
+  const px = (n) => `${(n * s).toFixed(2)}px`;
+
+  return `
+    -${px(2.2)} 0 ${oc},
+     ${px(2.2)} 0 ${oc},
+     0 -${px(2.2)} ${oc},
+     0  ${px(2.2)} ${oc},
+    -${px(1.6)} -${px(1.6)} ${oc},
+     ${px(1.6)} -${px(1.6)} ${oc},
+    -${px(1.6)}  ${px(1.6)} ${oc},
+     ${px(1.6)}  ${px(1.6)} ${oc},
+     0 0 ${px(3.2)} ${oc}
+  `;
+}
+
 // ================= 🎀 FUENTES  =======================
 // 🔗 Listeners de personalización (✅ se enganchan cuando el DOM ya existe)
 function initPersonalizarListeners() {
@@ -3305,7 +3323,7 @@ previewImagen.style.backgroundColor = fondoUsable ? "transparent" : "#ffffff";
   // ✅ IMPORTANTE: aplicar estilos ANTES de medir el tamaño.
   // Así Mayúsculas, Bold e Italic no se calculan con el estado anterior.
   const transform = textStyle?.upper ? "uppercase" : "none";
-  const pesoTexto = textStyle?.bold ? "800" : "400";
+  const pesoTexto = textStyle?.bold ? "800" : "500";
   const estiloTexto = textStyle?.italic ? "italic" : "normal";
   const decoracionTexto = textStyle?.underline ? "underline" : "none";
 
@@ -3351,6 +3369,7 @@ if (innerBack) {
   innerBack.style.width = "100%";
   innerBack.style.margin = "0";
 }
+  
   // ================= Color / Outline =================
   const colorEl = document.getElementById("personalizarColor");
   const opEl = document.getElementById("personalizarOpacidad");
@@ -3358,34 +3377,36 @@ if (innerBack) {
   const color = colorEl ? colorEl.value : "#000000";
   const opacidad = opEl ? opEl.value : "0.3";
   const outlineColor = colorOutlineDesdeBase(color);
-  const px = 0.80; // 👈 grosor del borde
+
+  // ✅ más parecido a Devocionales: contorno más visible y prolijo
+  const outlineScale = 1.35;
+  const strokePx = (0.75 * outlineScale).toFixed(2);
 
   // ✅ NO tocar position acá. La define el CSS para que queden idénticos.
-previewTexto.style.zIndex = "2";
-previewTextoBack.style.zIndex = "1";
-  
-// reset acumulables (back)
-previewTextoBack.style.transform = "none";     // ✅ sin desplazamiento
-previewTextoBack.style.filter = "none";        // ✅ sin blur
-previewTextoBack.style.textShadow = "none";
+  previewTexto.style.zIndex = "2";
+  previewTextoBack.style.zIndex = "1";
 
-previewTexto.style.color = color;
+  // reset acumulables
+  previewTexto.style.textShadow = "none";
+  previewTexto.style.WebkitTextStroke = "0px";
+  previewTexto.style.webkitTextFillColor = color;
+  previewTexto.style.paintOrder = "stroke fill";
 
-// back: borde REAL (mejor para html2canvas)
-previewTextoBack.style.color = outlineColor;                 // color del borde
-previewTextoBack.style.WebkitTextStroke = `${px}px ${outlineColor}`;
-previewTextoBack.style.webkitTextFillColor = "transparent"; // relleno transparente (solo borde)
-previewTextoBack.style.transform = "none";
-previewTextoBack.style.filter = "none";
+  previewTextoBack.style.transform = "none";
+  previewTextoBack.style.filter = "none";
+  previewTextoBack.style.textShadow = "none";
+  previewTextoBack.style.paintOrder = "stroke fill";
 
-// ✅ backup MUCHO más suave (solo 4 direcciones, no 8)
-previewTextoBack.style.textShadow = `
-  -${px}px 0 ${outlineColor},
-   ${px}px 0 ${outlineColor},
-   0 -${px}px ${outlineColor},
-   0  ${px}px ${outlineColor}
-`;
+  // frente = texto normal
+  previewTexto.style.color = color;
 
+  // atrás = contorno visible
+  previewTextoBack.style.color = outlineColor;
+  previewTextoBack.style.WebkitTextStroke = `${strokePx}px ${outlineColor}`;
+  previewTextoBack.style.webkitTextFillColor = "transparent";
+  previewTextoBack.style.transform = "none";
+  previewTextoBack.style.filter = "none";
+  previewTextoBack.style.textShadow = textShadowLegibleBiblia(color, outlineScale);
 
 // ================= Opacidad Oscuro/Claro =================
 const op = parseFloat(opacidad);
