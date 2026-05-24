@@ -71,7 +71,14 @@ fuente: "Roboto",
 
   // fase2 (9:7) settings
   f2: {
-    fondoColor: "#ffffff",
+    // ✅ Fondo diseñado fase 2: mantiene fondo plano y suma degradado
+    baseTipo: "plano",          // "plano" | "gradiente"
+    fondoColor: "#ffffff",      // color principal / primer color
+    gradienteColor2: "#d1eeff",
+    gradienteColor3: "#a6d0ff",
+    usarColor3: false,
+    gradienteForma: "vertical", // "vertical" | "horizontal" | "diagonal" | "radial"
+    tabActiva: "fondo",         // "fondo" | "textura" | "adorno"
     texturaUrl: null,
     texturaOp: 0.22,
     fuente: "Roboto",
@@ -138,7 +145,13 @@ function devResetAjustesDevocionalNuevo(){
   DEV.f1.style = { upper:false, bold:true, italic:false, underline:false };
 
   // ✅ limpiar fase 2 también
+  DEV.f2.baseTipo = "plano";
   DEV.f2.fondoColor = "#ffffff";
+  DEV.f2.gradienteColor2 = "#d1eeff";
+  DEV.f2.gradienteColor3 = "#a6d0ff";
+  DEV.f2.usarColor3 = false;
+  DEV.f2.gradienteForma = "vertical";
+  DEV.f2.tabActiva = "fondo";
   DEV.f2.texturaUrl = null;
   DEV.f2.texturaOp = 0.22;
   DEV.f2.fuente = "Roboto";
@@ -165,9 +178,20 @@ function devResetAjustesDevocionalNuevo(){
   setVal("dev1Tamano", "30");
 
   setVal("dev2Fondo", "#ffffff");
+  setVal("dev2GradColor2", "#d1eeff");
+  setVal("dev2GradColor3", "#a6d0ff");
   setVal("dev2Color", "#000000");
   setVal("dev2TexturaOp", "0.22");
+  setVal("dev2AdornoTamano", "70");
   setVal("dev2Tamano", "26");
+
+  const formaGradiente = $("dev2GradForma");
+  if (formaGradiente) formaGradiente.value = "vertical";
+
+  // ✅ Panel nuevo vuelve siempre a Fondo/Plano
+  if (typeof dev2ActualizarPanelUI === "function") {
+    dev2ActualizarPanelUI();
+  }
 
   // ✅ limpiar activos visuales
   document.querySelectorAll("#dev1Fondos img.activo").forEach(x => x.classList.remove("activo"));
@@ -2589,6 +2613,91 @@ function ensureDev2TextureLayer(container){
   return layer;
 }
 
+
+// ================= FASE 2: FONDO DISEÑADO COMPACTO =================
+// Fase 2 ya era el bloque diseñado del devocional: no agregamos toggle.
+// Conservamos fondo plano/textura/adorno y sumamos degradado sin mezclar Fase 1.
+function dev2GradienteCSS(st = DEV.f2){
+  const c1 = st.fondoColor || "#ffffff";
+  const c2 = st.gradienteColor2 || "#d1eeff";
+  const c3 = st.gradienteColor3 || "#a6d0ff";
+  const colores = st.usarColor3 ? `${c1}, ${c2}, ${c3}` : `${c1}, ${c2}`;
+
+  switch (st.gradienteForma) {
+    case "horizontal":
+      return `linear-gradient(90deg, ${colores})`;
+    case "diagonal":
+      return `linear-gradient(135deg, ${colores})`;
+    case "radial":
+      return `radial-gradient(circle, ${colores})`;
+    case "vertical":
+    default:
+      return `linear-gradient(180deg, ${colores})`;
+  }
+}
+
+function dev2AplicarFondoBase(el, st = DEV.f2){
+  if (!el) return;
+
+  el.style.backgroundColor = st.fondoColor || "#ffffff";
+  el.style.backgroundImage = st.baseTipo === "gradiente"
+    ? dev2GradienteCSS(st)
+    : "none";
+  el.style.backgroundSize = "cover";
+  el.style.backgroundPosition = "center";
+  el.style.backgroundRepeat = "no-repeat";
+}
+
+function dev2ActualizarPanelUI(){
+  const st = DEV.f2;
+  const tab = ["fondo", "textura", "adorno"].includes(st.tabActiva)
+    ? st.tabActiva
+    : "fondo";
+
+  ["fondo", "textura", "adorno"].forEach(nombre => {
+    const btn = $(`dev2Tab${nombre.charAt(0).toUpperCase()}${nombre.slice(1)}`);
+    const pane = $(`dev2Pane${nombre.charAt(0).toUpperCase()}${nombre.slice(1)}`);
+
+    if (btn) btn.classList.toggle("activo", tab === nombre);
+    if (pane) pane.classList.toggle("activo", tab === nombre);
+  });
+
+  const esGradiente = st.baseTipo === "gradiente";
+  $("dev2BtnPlano")?.classList.toggle("activo", !esGradiente);
+  $("dev2BtnGradiente")?.classList.toggle("activo", esGradiente);
+
+  const extra = $("dev2GradExtra");
+  if (extra) extra.style.display = esGradiente ? "flex" : "none";
+
+  const color3Wrap = $("dev2Color3Wrap");
+  if (color3Wrap) color3Wrap.style.display = esGradiente && st.usarColor3 ? "inline-flex" : "none";
+
+  const btnMas = $("dev2BtnColor3");
+  if (btnMas) {
+    btnMas.classList.toggle("activo", !!st.usarColor3);
+    btnMas.title = st.usarColor3 ? "Quitar tercer color" : "Agregar tercer color";
+  }
+}
+
+window.dev2MostrarTab = function(tab){
+  DEV.f2.tabActiva = ["fondo", "textura", "adorno"].includes(tab) ? tab : "fondo";
+  dev2ActualizarPanelUI();
+};
+
+window.dev2ElegirBase = function(tipo){
+  DEV.f2.baseTipo = tipo === "gradiente" ? "gradiente" : "plano";
+  DEV.f2.userChanged = true;
+  dev2ActualizarPanelUI();
+  devRenderFase(2);
+};
+
+window.dev2ToggleColor3 = function(){
+  DEV.f2.usarColor3 = !DEV.f2.usarColor3;
+  DEV.f2.userChanged = true;
+  dev2ActualizarPanelUI();
+  devRenderFase(2);
+};
+
 function devRenderFase(fase){
   if (fase === 1) {
     const p = $("dev1Preview");
@@ -2647,12 +2756,9 @@ if (fase === 2) {
   // base del preview
   // =========================
   p.style.position = "relative";
-  p.style.backgroundColor = st.fondoColor || "#ffffff";
-  p.style.backgroundImage = "none";
+  dev2AplicarFondoBase(p, st);
   p.style.backgroundBlendMode = "normal";
-  p.style.backgroundSize = "";
-  p.style.backgroundPosition = "";
-  p.style.backgroundRepeat = "";
+  dev2ActualizarPanelUI();
 
   // =========================
   // textura en capa separada
@@ -2873,7 +2979,7 @@ texto.innerHTML = buildFase1HTML(st.size, 1);
     node.style.position = "relative";
     node.style.overflow = "hidden";
     node.style.borderRadius = "0";
-    node.style.backgroundColor = st.fondoColor || "#ffffff";
+    dev2AplicarFondoBase(node, st);
 
     if (st.texturaUrl) {
       const textureLayer = document.createElement("div");
@@ -3121,8 +3227,10 @@ window.devIrFase2 = () => {
   devEnsureBotonCuentagotasF2();
 
   if (typeof window.initPickrEnHosts === "function") {
-    window.initPickrEnHosts("#dev2FondoHost, #dev2ColorHost");
+    window.initPickrEnHosts("#dev2FondoHost, #dev2GradColor2Host, #dev2GradColor3Host, #dev2ColorHost");
   }
+
+  dev2ActualizarPanelUI();
 
   requestAnimationFrame(()=>{
 
@@ -3366,9 +3474,9 @@ function bindInputs(){
   });
 
 // =========================
-// FASE 2 (color plano) - tamaño / color (SIN opacidad)
+// FASE 2: texto, textura y adorno
 // =========================
-["Tamano","Color","TexturaOp"].forEach(k=>{
+["Tamano","Color","TexturaOp","AdornoTamano"].forEach(k=>{
   const el = $(`dev2${k}`);
   if (!el) return;
 
@@ -3378,16 +3486,45 @@ function bindInputs(){
     DEV.f2.size = Number($("dev2Tamano")?.value || 26);
     DEV.f2.color = $("dev2Color")?.value || "#000000";
     DEV.f2.texturaOp = Number($("dev2TexturaOp")?.value || 0.22);
+    DEV.f2.adornoWidth = Number($("dev2AdornoTamano")?.value || 70);
 
     requestAnimationFrame(()=> devRenderFase(2));
   });
 });
 
-  // Fondo fase 2
+  // Fondo principal fase 2: sirve para plano y como primer color del degradado
   const fondo2 = $("dev2Fondo");
   if (fondo2) {
     fondo2.addEventListener("input", ()=>{
       DEV.f2.fondoColor = fondo2.value || "#ffffff";
+      DEV.f2.userChanged = true;
+      devRenderFase(2);
+    });
+  }
+
+  const gradColor2 = $("dev2GradColor2");
+  if (gradColor2) {
+    gradColor2.addEventListener("input", ()=>{
+      DEV.f2.gradienteColor2 = gradColor2.value || "#d1eeff";
+      DEV.f2.userChanged = true;
+      devRenderFase(2);
+    });
+  }
+
+  const gradColor3 = $("dev2GradColor3");
+  if (gradColor3) {
+    gradColor3.addEventListener("input", ()=>{
+      DEV.f2.gradienteColor3 = gradColor3.value || "#a6d0ff";
+      DEV.f2.userChanged = true;
+      devRenderFase(2);
+    });
+  }
+
+  const gradForma = $("dev2GradForma");
+  if (gradForma) {
+    gradForma.addEventListener("change", ()=>{
+      DEV.f2.gradienteForma = gradForma.value || "vertical";
+      DEV.f2.userChanged = true;
       devRenderFase(2);
     });
   }
