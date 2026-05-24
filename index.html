@@ -631,26 +631,35 @@
         <div class="biblia-base-btns">
           <button id="btnBibliaPlano" type="button" class="activo"
                   onclick="setTipoBaseFondoBiblia('plano')" title="Fondo plano">
-            <i class="fa-solid fa-square"></i>
+            <i class="fa-solid fa-brush"></i>
           </button>
           <button id="btnBibliaGradiente" type="button"
                   onclick="setTipoBaseFondoBiblia('gradiente')" title="Degradado">
-            <i class="fa-solid fa-fill-drip"></i>
+            <i class="fa-solid fa-palette"></i>
           </button>
         </div>
 
         <div class="biblia-diseno-ajustes">
-          <input id="bibliaFondoColor1" class="biblia-color-mini" type="color" value="#ffffff"
-                 oninput="actualizarFondoDisenoBibliaDesdeUI()" aria-label="Color principal">
+          <input id="bibliaFondoColor1" type="hidden" value="#ffffff"
+                 oninput="actualizarFondoDisenoBibliaDesdeUI()">
+          <button type="button" id="bibliaFondoColor1Host"
+                  class="pickr-host biblia-color-host"
+                  data-target="#bibliaFondoColor1" aria-label="Color principal"></button>
 
           <span class="solo-gradiente-biblia">
-            <input id="bibliaFondoColor2" class="biblia-color-mini" type="color" value="#d1eeff"
-                   oninput="actualizarFondoDisenoBibliaDesdeUI()" aria-label="Segundo color">
+            <input id="bibliaFondoColor2" type="hidden" value="#d1eeff"
+                   oninput="actualizarFondoDisenoBibliaDesdeUI()">
+            <button type="button" id="bibliaFondoColor2Host"
+                    class="pickr-host biblia-color-host"
+                    data-target="#bibliaFondoColor2" aria-label="Segundo color"></button>
           </span>
 
-          <span id="bibliaColor3Wrap" class="solo-gradiente-biblia" style="display:none;">
-            <input id="bibliaFondoColor3" class="biblia-color-mini" type="color" value="#a6d0ff"
-                   oninput="actualizarFondoDisenoBibliaDesdeUI()" aria-label="Tercer color">
+          <span id="bibliaColor3Wrap" style="display:none;">
+            <input id="bibliaFondoColor3" type="hidden" value="#a6d0ff"
+                   oninput="actualizarFondoDisenoBibliaDesdeUI()">
+            <button type="button" id="bibliaFondoColor3Host"
+                    class="pickr-host biblia-color-host"
+                    data-target="#bibliaFondoColor3" aria-label="Tercer color"></button>
           </span>
 
           <button id="btnBibliaColor3" class="solo-gradiente-biblia" type="button"
@@ -670,16 +679,20 @@
 
       <div id="bibliaPanelTextura" class="biblia-diseno-panel" data-biblia-panel="textura">
         <div id="bibliaTexturasCarril" class="biblia-recursos-carril"></div>
-        <input id="bibliaTexturaOpacidad" class="biblia-slider-mini" type="range"
-               min="0" max="1" step="0.05" value="0.22"
-               oninput="actualizarFondoDisenoBibliaDesdeUI()" aria-label="Opacidad de textura">
+        <div class="biblia-slider-row">
+          <input id="bibliaTexturaOpacidad" class="biblia-slider-mini" type="range"
+                 min="0" max="1" step="0.05" value="0.22"
+                 oninput="actualizarFondoDisenoBibliaDesdeUI()" aria-label="Opacidad de textura">
+        </div>
       </div>
 
       <div id="bibliaPanelAdorno" class="biblia-diseno-panel" data-biblia-panel="adorno">
         <div id="bibliaAdornosCarril" class="biblia-recursos-carril"></div>
-        <input id="bibliaAdornoTamano" class="biblia-slider-mini" type="range"
-               min="20" max="100" step="1" value="70"
-               oninput="actualizarFondoDisenoBibliaDesdeUI()" aria-label="Tamaño de adorno">
+        <div class="biblia-slider-row">
+          <input id="bibliaAdornoTamano" class="biblia-slider-mini" type="range"
+                 min="20" max="100" step="1" value="70"
+                 oninput="actualizarFondoDisenoBibliaDesdeUI()" aria-label="Tamaño de adorno">
+        </div>
       </div>
     </div>
 
