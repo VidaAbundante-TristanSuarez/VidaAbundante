@@ -591,19 +591,97 @@
   <!-- CONTENEDOR INTERNO -->
   <div class="modal-contenido">
 
-    <!-- CERRAR -->
+    <!-- MODOS DE FONDO / CERRAR -->
+    <button id="btnModoFondoBiblia" type="button" onclick="toggleModoFondoBiblia()"
+            title="Usar fondo diseñado" aria-label="Usar fondo diseñado">
+      <i class="fa-solid fa-toggle-off"></i>
+    </button>
+
     <button class="cerrar-modal" onclick="cancelarCrearImagen()">✖</button>
 
     <!-- PREVIEW -->
     <div id="previewImagen">
+      <!-- Capas exclusivas del fondo diseñado; en modo imagen quedan ocultas -->
+      <div id="bibliaFondoTexturaLayer" aria-hidden="true"></div>
+      <div id="bibliaFondoAdornoLayer" aria-hidden="true">
+        <img id="bibliaFondoAdornoImg" crossorigin="anonymous" alt="">
+      </div>
+
       <div id="previewTextoWrapper">
         <div id="previewTextoBack"></div>
         <div id="previewTexto"></div>
       </div>
     </div>
 
-        <!-- FONDOS -->
+        <!-- FONDOS CON IMÁGENES: modo actual, no se modifica -->
     <div id="personalizarFondos"></div>
+
+    <!-- FONDO DISEÑADO: reemplaza visualmente a la galería cuando el toggle está encendido -->
+    <div id="bibliaDisenoFondos" aria-hidden="true">
+      <div class="biblia-diseno-tabs">
+        <button type="button" class="activo" data-biblia-tab="fondo"
+                onclick="mostrarTabFondoDisenoBiblia('fondo')">Fondo</button>
+        <button type="button" data-biblia-tab="textura"
+                onclick="mostrarTabFondoDisenoBiblia('textura')">Textura</button>
+        <button type="button" data-biblia-tab="adorno"
+                onclick="mostrarTabFondoDisenoBiblia('adorno')">Adorno</button>
+      </div>
+
+      <div id="bibliaPanelFondo" class="biblia-diseno-panel activo" data-biblia-panel="fondo">
+        <div class="biblia-base-btns">
+          <button id="btnBibliaPlano" type="button" class="activo"
+                  onclick="setTipoBaseFondoBiblia('plano')" title="Fondo plano">
+            <i class="fa-solid fa-square"></i>
+          </button>
+          <button id="btnBibliaGradiente" type="button"
+                  onclick="setTipoBaseFondoBiblia('gradiente')" title="Degradado">
+            <i class="fa-solid fa-fill-drip"></i>
+          </button>
+        </div>
+
+        <div class="biblia-diseno-ajustes">
+          <input id="bibliaFondoColor1" class="biblia-color-mini" type="color" value="#ffffff"
+                 oninput="actualizarFondoDisenoBibliaDesdeUI()" aria-label="Color principal">
+
+          <span class="solo-gradiente-biblia">
+            <input id="bibliaFondoColor2" class="biblia-color-mini" type="color" value="#d1eeff"
+                   oninput="actualizarFondoDisenoBibliaDesdeUI()" aria-label="Segundo color">
+          </span>
+
+          <span id="bibliaColor3Wrap" class="solo-gradiente-biblia" style="display:none;">
+            <input id="bibliaFondoColor3" class="biblia-color-mini" type="color" value="#a6d0ff"
+                   oninput="actualizarFondoDisenoBibliaDesdeUI()" aria-label="Tercer color">
+          </span>
+
+          <button id="btnBibliaColor3" class="solo-gradiente-biblia" type="button"
+                  onclick="toggleTercerColorBiblia()" title="Agregar tercer color">
+            <i class="fa-solid fa-plus"></i>
+          </button>
+
+          <select id="bibliaGradienteForma" class="solo-gradiente-biblia"
+                  onchange="actualizarFondoDisenoBibliaDesdeUI()" aria-label="Forma del degradado">
+            <option value="vertical">Vertical</option>
+            <option value="horizontal">Horizontal</option>
+            <option value="diagonal">Diagonal</option>
+            <option value="radial">Radial</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="bibliaPanelTextura" class="biblia-diseno-panel" data-biblia-panel="textura">
+        <div id="bibliaTexturasCarril" class="biblia-recursos-carril"></div>
+        <input id="bibliaTexturaOpacidad" class="biblia-slider-mini" type="range"
+               min="0" max="1" step="0.05" value="0.22"
+               oninput="actualizarFondoDisenoBibliaDesdeUI()" aria-label="Opacidad de textura">
+      </div>
+
+      <div id="bibliaPanelAdorno" class="biblia-diseno-panel" data-biblia-panel="adorno">
+        <div id="bibliaAdornosCarril" class="biblia-recursos-carril"></div>
+        <input id="bibliaAdornoTamano" class="biblia-slider-mini" type="range"
+               min="20" max="100" step="1" value="70"
+               oninput="actualizarFondoDisenoBibliaDesdeUI()" aria-label="Tamaño de adorno">
+      </div>
+    </div>
 
     <!-- ================= GRUPO 1: FILA A ================= -->
     <div id="rowA">
