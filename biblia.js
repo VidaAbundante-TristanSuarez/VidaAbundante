@@ -3285,6 +3285,21 @@ function bibliaAplicarFondoAlPreview(previewImagen) {
   }
 }
 
+function bibliaSincronizarHostPickrFondo(idHost, color) {
+  const host = document.getElementById(idHost);
+  if (!host) return;
+
+  const valor = color || "#ffffff";
+  host.style.setProperty("--pickr-color", valor);
+  host.style.background = valor;
+
+  try {
+    if (host._pickr && typeof host._pickr.setColor === "function") {
+      host._pickr.setColor(valor, true);
+    }
+  } catch (e) {}
+}
+
 function bibliaSincronizarControlesFondoDiseno() {
   const color1 = document.getElementById("bibliaFondoColor1");
   const color2 = document.getElementById("bibliaFondoColor2");
@@ -3300,11 +3315,24 @@ function bibliaSincronizarControlesFondoDiseno() {
   if (color1) color1.value = fondoDisenoBiblia.color1;
   if (color2) color2.value = fondoDisenoBiblia.color2;
   if (color3) color3.value = fondoDisenoBiblia.color3;
+
+  // ✅ los tres colores usan el Pickr de la app y reflejan el estado actual
+  bibliaSincronizarHostPickrFondo("bibliaFondoColor1Host", fondoDisenoBiblia.color1);
+  bibliaSincronizarHostPickrFondo("bibliaFondoColor2Host", fondoDisenoBiblia.color2);
+  bibliaSincronizarHostPickrFondo("bibliaFondoColor3Host", fondoDisenoBiblia.color3);
+
   if (forma) forma.value = fondoDisenoBiblia.gradienteForma;
   if (texturaOp) texturaOp.value = String(fondoDisenoBiblia.texturaOpacidad);
   if (adornoTam) adornoTam.value = String(fondoDisenoBiblia.adornoTamano);
 
-  if (color3Wrap) color3Wrap.style.display = fondoDisenoBiblia.usarColor3 ? "inline-flex" : "none";
+  if (color3Wrap) {
+    const mostrarColor3 =
+      fondoDisenoBiblia.baseTipo === "gradiente" &&
+      fondoDisenoBiblia.usarColor3;
+
+    color3Wrap.style.display = mostrarColor3 ? "inline-flex" : "none";
+  }
+
   if (btnColor3) {
     btnColor3.innerHTML = fondoDisenoBiblia.usarColor3
       ? '<i class="fa-solid fa-minus"></i>'
@@ -7291,7 +7319,7 @@ window.mostrarIglesiaSub = (sub) => {
 // ================= SELECTOR DE COLORES REUTILIZABLE =====  
 setTimeout(() => {
  initPickrEnHosts(
-  "#personalizarColorHost, #marcadorColorHost, #dev1ColorHost, #dev1OpColorHost, #dev2ColorHost, #colorFondoPlanoHost, #dev2FondoHost, #colorOpacidadBibliaHost, #colorFondoAppHost, #colorTextoAppHost"
+  "#personalizarColorHost, #marcadorColorHost, #dev1ColorHost, #dev1OpColorHost, #dev2ColorHost, #colorFondoPlanoHost, #dev2FondoHost, #colorOpacidadBibliaHost, #colorFondoAppHost, #colorTextoAppHost, #bibliaFondoColor1Host, #bibliaFondoColor2Host, #bibliaFondoColor3Host"
 );
 }, 0);
 
