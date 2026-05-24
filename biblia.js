@@ -396,6 +396,47 @@ let modoImagenLibre = false;        // true cuando el texto viene de un textarea
 let textoLibreImagen = "";          // texto escrito manualmente en Mi Panel
 let formatoImagenActual = "post"; // "post" | "story"
 
+// ================= FONDO DISEÑADO: CREAR IMAGEN BIBLIA =================
+// El modo viejo de imágenes queda intacto. Este estado solo se usa con el toggle encendido.
+let modoFondoBiblia = "imagen"; // "imagen" | "diseno"
+
+function bibliaNuevoEstadoFondoDiseno() {
+  return {
+    baseTipo: "plano",           // "plano" | "gradiente"
+    color1: "#ffffff",
+    color2: "#d1eeff",
+    color3: "#a6d0ff",
+    usarColor3: false,
+    gradienteForma: "vertical",  // "vertical" | "horizontal" | "diagonal" | "radial"
+    texturaUrl: null,
+    texturaOpacidad: 0.22,
+    adornoUrl: null,
+    adornoTamano: 70
+  };
+}
+
+let fondoDisenoBiblia = bibliaNuevoEstadoFondoDiseno();
+
+const BIBLIA_TEXTURAS_DISENO = [
+  { nombre: "Sin textura", url: null },
+  ...Array.from({ length: 20 }, (_, i) => ({
+    nombre: `Textura ${i + 1}`,
+    url: `./img/texturas/TEXTURA${i + 1}.png`
+  }))
+];
+
+const BIBLIA_ADORNOS_DISENO = [
+  { nombre: "Sin adorno", url: null },
+  ...Array.from({ length: 18 }, (_, i) => ({
+    nombre: `Ornamento ${i + 1}`,
+    url: `./img/ornamentos/O${i + 1}.png`
+  })),
+  ...Array.from({ length: 13 }, (_, i) => ({
+    nombre: `Adorno ${i + 1}`,
+    url: `./img/ornamentos/adorno${i + 1}.png`
+  }))
+];
+
 // ================= AUTO TAMAÑO PREVIEW =================
 let userSetFontSize = false; // si el usuario tocó tamaño (slider o + -), queda manual hasta que cambie el texto
 
@@ -3145,6 +3186,306 @@ async function urlToBlobURL(url) {
   return URL.createObjectURL(blob);
 }
 
+// ================= FONDO DISEÑADO BIBLIA =======================
+function bibliaCssGradienteDiseno() {
+  const colores = [
+    fondoDisenoBiblia.color1 || "#ffffff",
+    fondoDisenoBiblia.color2 || "#d1eeff"
+  ];
+
+  if (fondoDisenoBiblia.usarColor3) {
+    colores.push(fondoDisenoBiblia.color3 || "#a6d0ff");
+  }
+
+  const lista = colores.join(", ");
+
+  switch (fondoDisenoBiblia.gradienteForma) {
+    case "horizontal":
+      return `linear-gradient(90deg, ${lista})`;
+    case "diagonal":
+      return `linear-gradient(135deg, ${lista})`;
+    case "radial":
+      return `radial-gradient(circle at center, ${lista})`;
+    case "vertical":
+    default:
+      return `linear-gradient(180deg, ${lista})`;
+  }
+}
+
+function bibliaLimpiarCapasFondoDiseno() {
+  const textura = document.getElementById("bibliaFondoTexturaLayer");
+  const adorno = document.getElementById("bibliaFondoAdornoLayer");
+  const imgAdorno = document.getElementById("bibliaFondoAdornoImg");
+
+  if (textura) {
+    textura.style.display = "none";
+    textura.style.backgroundImage = "none";
+    textura.style.opacity = "0";
+  }
+
+  if (adorno) adorno.style.display = "none";
+
+  if (imgAdorno) {
+    imgAdorno.removeAttribute("src");
+    imgAdorno.style.width = "";
+  }
+}
+
+function bibliaAplicarFondoAlPreview(previewImagen) {
+  if (!previewImagen) return;
+
+  const fondoUsable = fondoFinalBlobUrl || fondoFinal;
+  const textura = document.getElementById("bibliaFondoTexturaLayer");
+  const adorno = document.getElementById("bibliaFondoAdornoLayer");
+  const imgAdorno = document.getElementById("bibliaFondoAdornoImg");
+
+  if (modoFondoBiblia !== "diseno") {
+    bibliaLimpiarCapasFondoDiseno();
+
+    if (fondoUsable) {
+      previewImagen.style.backgroundImage = `url("${fondoUsable}")`;
+      previewImagen.style.backgroundColor = "transparent";
+    } else {
+      previewImagen.style.backgroundImage = "none";
+      previewImagen.style.backgroundColor = "#ffffff";
+    }
+
+    return;
+  }
+
+  previewImagen.style.backgroundColor = fondoDisenoBiblia.color1 || "#ffffff";
+  previewImagen.style.backgroundImage =
+    fondoDisenoBiblia.baseTipo === "gradiente"
+      ? bibliaCssGradienteDiseno()
+      : "none";
+
+  if (textura) {
+    if (fondoDisenoBiblia.texturaUrl) {
+      textura.style.display = "block";
+      textura.style.backgroundImage = `url("${fondoDisenoBiblia.texturaUrl}")`;
+      textura.style.opacity = String(
+        Math.max(0, Math.min(1, Number(fondoDisenoBiblia.texturaOpacidad) || 0))
+      );
+    } else {
+      textura.style.display = "none";
+      textura.style.backgroundImage = "none";
+      textura.style.opacity = "0";
+    }
+  }
+
+  if (adorno && imgAdorno) {
+    if (fondoDisenoBiblia.adornoUrl) {
+      adorno.style.display = "flex";
+      imgAdorno.src = fondoDisenoBiblia.adornoUrl;
+      imgAdorno.style.width = `${Math.max(20, Math.min(100, Number(fondoDisenoBiblia.adornoTamano) || 70))}%`;
+    } else {
+      adorno.style.display = "none";
+      imgAdorno.removeAttribute("src");
+    }
+  }
+}
+
+function bibliaSincronizarControlesFondoDiseno() {
+  const color1 = document.getElementById("bibliaFondoColor1");
+  const color2 = document.getElementById("bibliaFondoColor2");
+  const color3 = document.getElementById("bibliaFondoColor3");
+  const forma = document.getElementById("bibliaGradienteForma");
+  const texturaOp = document.getElementById("bibliaTexturaOpacidad");
+  const adornoTam = document.getElementById("bibliaAdornoTamano");
+  const color3Wrap = document.getElementById("bibliaColor3Wrap");
+  const btnColor3 = document.getElementById("btnBibliaColor3");
+  const btnPlano = document.getElementById("btnBibliaPlano");
+  const btnGradiente = document.getElementById("btnBibliaGradiente");
+
+  if (color1) color1.value = fondoDisenoBiblia.color1;
+  if (color2) color2.value = fondoDisenoBiblia.color2;
+  if (color3) color3.value = fondoDisenoBiblia.color3;
+  if (forma) forma.value = fondoDisenoBiblia.gradienteForma;
+  if (texturaOp) texturaOp.value = String(fondoDisenoBiblia.texturaOpacidad);
+  if (adornoTam) adornoTam.value = String(fondoDisenoBiblia.adornoTamano);
+
+  if (color3Wrap) color3Wrap.style.display = fondoDisenoBiblia.usarColor3 ? "inline-flex" : "none";
+  if (btnColor3) {
+    btnColor3.innerHTML = fondoDisenoBiblia.usarColor3
+      ? '<i class="fa-solid fa-minus"></i>'
+      : '<i class="fa-solid fa-plus"></i>';
+    btnColor3.title = fondoDisenoBiblia.usarColor3 ? "Quitar tercer color" : "Agregar tercer color";
+  }
+
+  if (btnPlano) btnPlano.classList.toggle("activo", fondoDisenoBiblia.baseTipo === "plano");
+  if (btnGradiente) btnGradiente.classList.toggle("activo", fondoDisenoBiblia.baseTipo === "gradiente");
+
+  const soloGradiente = document.querySelectorAll(".solo-gradiente-biblia");
+  soloGradiente.forEach(el => {
+    el.style.display = fondoDisenoBiblia.baseTipo === "gradiente" ? "" : "none";
+  });
+}
+
+function bibliaRenderTexturasDiseno() {
+  const cont = document.getElementById("bibliaTexturasCarril");
+  if (!cont) return;
+
+  cont.innerHTML = "";
+
+  BIBLIA_TEXTURAS_DISENO.forEach(item => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "biblia-recurso-mini";
+    btn.classList.toggle("activo", fondoDisenoBiblia.texturaUrl === item.url);
+    btn.title = item.nombre;
+
+    if (item.url) {
+      btn.innerHTML = `<img src="${item.url}" alt="${item.nombre}">`;
+    } else {
+      btn.innerHTML = `<i class="fa-solid fa-ban"></i>`;
+    }
+
+    btn.onclick = () => {
+      fondoDisenoBiblia.texturaUrl = item.url;
+      bibliaRenderTexturasDiseno();
+      actualizarPreview();
+    };
+
+    cont.appendChild(btn);
+  });
+}
+
+function bibliaRenderAdornosDiseno() {
+  const cont = document.getElementById("bibliaAdornosCarril");
+  if (!cont) return;
+
+  cont.innerHTML = "";
+
+  BIBLIA_ADORNOS_DISENO.forEach(item => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "biblia-recurso-mini";
+    btn.classList.toggle("activo", fondoDisenoBiblia.adornoUrl === item.url);
+    btn.title = item.nombre;
+
+    if (item.url) {
+      btn.innerHTML = `<img src="${item.url}" alt="${item.nombre}">`;
+    } else {
+      btn.innerHTML = `<i class="fa-solid fa-ban"></i>`;
+    }
+
+    btn.onclick = () => {
+      fondoDisenoBiblia.adornoUrl = item.url;
+      bibliaRenderAdornosDiseno();
+      actualizarPreview();
+    };
+
+    cont.appendChild(btn);
+  });
+}
+
+window.mostrarTabFondoDisenoBiblia = function(tab = "fondo") {
+  const permitidas = ["fondo", "textura", "adorno"];
+  const elegida = permitidas.includes(tab) ? tab : "fondo";
+
+  document.querySelectorAll("#bibliaDisenoFondos [data-biblia-tab]").forEach(btn => {
+    btn.classList.toggle("activo", btn.dataset.bibliaTab === elegida);
+  });
+
+  document.querySelectorAll("#bibliaDisenoFondos [data-biblia-panel]").forEach(panel => {
+    panel.classList.toggle("activo", panel.dataset.bibliaPanel === elegida);
+  });
+};
+
+window.setTipoBaseFondoBiblia = function(tipo) {
+  fondoDisenoBiblia.baseTipo = tipo === "gradiente" ? "gradiente" : "plano";
+  bibliaSincronizarControlesFondoDiseno();
+  actualizarPreview();
+};
+
+window.toggleTercerColorBiblia = function() {
+  fondoDisenoBiblia.usarColor3 = !fondoDisenoBiblia.usarColor3;
+  bibliaSincronizarControlesFondoDiseno();
+  actualizarPreview();
+};
+
+window.actualizarFondoDisenoBibliaDesdeUI = function() {
+  const color1 = document.getElementById("bibliaFondoColor1");
+  const color2 = document.getElementById("bibliaFondoColor2");
+  const color3 = document.getElementById("bibliaFondoColor3");
+  const forma = document.getElementById("bibliaGradienteForma");
+  const texturaOp = document.getElementById("bibliaTexturaOpacidad");
+  const adornoTam = document.getElementById("bibliaAdornoTamano");
+
+  if (color1) fondoDisenoBiblia.color1 = color1.value || "#ffffff";
+  if (color2) fondoDisenoBiblia.color2 = color2.value || "#d1eeff";
+  if (color3) fondoDisenoBiblia.color3 = color3.value || "#a6d0ff";
+  if (forma) fondoDisenoBiblia.gradienteForma = forma.value || "vertical";
+  if (texturaOp) fondoDisenoBiblia.texturaOpacidad = Number(texturaOp.value || 0);
+  if (adornoTam) fondoDisenoBiblia.adornoTamano = Number(adornoTam.value || 70);
+
+  actualizarPreview();
+};
+
+function bibliaActualizarUIModoFondo() {
+  const esDiseno = modoFondoBiblia === "diseno";
+  const modal = document.getElementById("modalPersonalizar");
+  const btn = document.getElementById("btnModoFondoBiblia");
+  const galeria = document.getElementById("personalizarFondos");
+  const diseno = document.getElementById("bibliaDisenoFondos");
+
+  if (modal) modal.classList.toggle("fondo-diseno-activo", esDiseno);
+
+  if (btn) {
+    btn.classList.toggle("activo", esDiseno);
+    btn.innerHTML = esDiseno
+      ? '<i class="fa-solid fa-toggle-on"></i>'
+      : '<i class="fa-solid fa-toggle-off"></i>';
+    btn.title = esDiseno ? "Volver a fondos con imágenes" : "Usar fondo diseñado";
+    btn.setAttribute("aria-label", btn.title);
+  }
+
+  if (galeria) galeria.style.display = esDiseno ? "none" : "flex";
+  if (diseno) {
+    diseno.style.display = esDiseno ? "flex" : "none";
+    diseno.setAttribute("aria-hidden", esDiseno ? "false" : "true");
+  }
+}
+
+window.toggleModoFondoBiblia = function() {
+  modoFondoBiblia = modoFondoBiblia === "diseno" ? "imagen" : "diseno";
+  bibliaActualizarUIModoFondo();
+  actualizarPreview();
+};
+
+function bibliaResetFondoDiseno() {
+  modoFondoBiblia = "imagen";
+  fondoDisenoBiblia = bibliaNuevoEstadoFondoDiseno();
+
+  bibliaSincronizarControlesFondoDiseno();
+  bibliaRenderTexturasDiseno();
+  bibliaRenderAdornosDiseno();
+  window.mostrarTabFondoDisenoBiblia("fondo");
+  bibliaActualizarUIModoFondo();
+  bibliaLimpiarCapasFondoDiseno();
+}
+
+function bibliaPrecargarRecurso(url) {
+  if (!url) return Promise.resolve();
+
+  return new Promise(resolve => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = resolve;
+    img.onerror = resolve;
+    img.src = url;
+  });
+}
+
+async function bibliaEsperarRecursosDiseno() {
+  if (modoFondoBiblia !== "diseno") return;
+
+  await Promise.all([
+    bibliaPrecargarRecurso(fondoDisenoBiblia.texturaUrl),
+    bibliaPrecargarRecurso(fondoDisenoBiblia.adornoUrl)
+  ]);
+}
+
 // ================= WRAPPER SUAVE PARA CREAR IMAGEN BIBLIA =================
 const BIBLIA_WRAPPER_CACHE = new Map();
 
@@ -3302,17 +3643,8 @@ previewTexto.style.textAlign = "center";
 previewTextoBack.style.textAlign = "center";
   
   // ================= Fondo =================
-const fondoUsable = fondoFinalBlobUrl || fondoFinal;
-
-if (fondoUsable) {
-  previewImagen.style.backgroundImage = `url("${fondoUsable}")`;
-} else {
-  previewImagen.style.backgroundImage = "none";
-}
-
- // ✅ Fondo: si hay imagen, dejamos TRANSPARENTE para que no aparezcan “esquinas blancas”
-// ✅ Si NO hay fondo, usamos blanco para evitar negro
-previewImagen.style.backgroundColor = fondoUsable ? "transparent" : "#ffffff";
+  // ✅ Modo imagen conserva el fondo viejo; modo diseño usa color/degradado + capas.
+  bibliaAplicarFondoAlPreview(previewImagen);
 
   // ================= Fuente =================
   const fuente = fuenteActual || "Arial";
@@ -3480,6 +3812,9 @@ async function generarImagenFinal(opts = {}) {
       });
     }
 
+    // ✅ Si está activo el fondo diseñado, esperamos textura y adorno antes de capturar.
+    await bibliaEsperarRecursosDiseno();
+
     const canvasTemp = await html2canvas(preview, {
       scale: SCALE,
       useCORS: true,
@@ -3487,7 +3822,7 @@ async function generarImagenFinal(opts = {}) {
       logging: false,
       width: Math.round(rect.width),
       height: Math.round(rect.height),
-      backgroundColor: fondoUsable ? null : "#ffffff"
+      backgroundColor: (modoFondoBiblia === "diseno" || fondoUsable) ? null : "#ffffff"
     });
 
     canvasFinal.width = canvasTemp.width;
@@ -3878,6 +4213,9 @@ if (wrapper) {
   const inputTextoLibre = document.getElementById("textoLibrePanelInput");
   if (inputTextoLibre) inputTextoLibre.value = "";
 
+  // ✅ Cada apertura comienza en el modo actual de imágenes, sin perderlo durante el uso.
+  bibliaResetFondoDiseno();
+
   forceDefaultCheckIglesia();
   actualizarPreview();
 }
@@ -3953,6 +4291,9 @@ function getRenderKey() {
 
   const rect = preview.getBoundingClientRect();
   const fondoUsable = (fondoFinalBlobUrl || fondoFinal || "") + "";
+  const firmaFondo = modoFondoBiblia === "diseno"
+    ? JSON.stringify(fondoDisenoBiblia)
+    : fondoUsable;
   const texto = (document.getElementById("previewTexto")?.textContent || "").trim();
   const font = getComputedStyle(document.getElementById("previewTexto") || preview).fontFamily || "";
   const color = getComputedStyle(document.getElementById("previewTexto") || preview).color || "";
@@ -3962,7 +4303,8 @@ function getRenderKey() {
   return [
     Math.round(rect.width),
     Math.round(rect.height),
-    fondoUsable,
+    modoFondoBiblia,
+    firmaFondo,
     texto,
     font,
     color,
@@ -7930,5 +8272,3 @@ window.addEventListener("load", () => {
     });
   }
 });
-
-
