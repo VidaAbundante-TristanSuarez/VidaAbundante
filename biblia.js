@@ -3411,6 +3411,8 @@ aplicarWrapperBibliaImagen(wrapper, op, opColor);
 
 invalidarRenderFinal();
 
+} // ✅ CIERRA actualizarPreview()
+
 // ================= ⭐ CANVAS GENERA IMAGEN FINAL (FIX REAL) ============================
 async function generarImagenFinal(opts = {}) {
   const { subir = true } = opts; // ✅ por defecto sube (Finalizar), pero Descargar/Compartir pasan false
