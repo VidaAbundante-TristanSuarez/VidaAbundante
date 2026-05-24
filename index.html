@@ -1069,46 +1069,99 @@
 
     <button class="cerrar-modal" type="button" onclick="devCerrarTodo()">✖</button>
 
-   <!-- PREVIEW (9:7) -->
-<div class="dev-preview-box">
-  <div id="dev2Preview" class="dev-preview dev-97">
-    <div id="dev2TextoWrapper">
-      <div id="dev2TextoBack" class="dev-text back"></div>
-      <div id="dev2Texto" class="dev-text front"></div>
+    <!-- PREVIEW (9:7) -->
+    <div class="dev-preview-box">
+      <div id="dev2Preview" class="dev-preview dev-97">
+        <div id="dev2TextoWrapper">
+          <div id="dev2TextoBack" class="dev-text back"></div>
+          <div id="dev2Texto" class="dev-text front"></div>
+        </div>
+      </div>
     </div>
-  </div>
-</div>
- 
-   <!-- ADORNOS -->
-  <div class="dev-adorno-row">
-    <div class="dev-adorno-label">Adorno</div>
-    <div id="dev2Adornos" class="dev-adorno-list"></div>
-  </div>
 
-     <!-- TEXTURAS -->
-  <div class="dev-adorno-row">
-    <div class="dev-adorno-label">Textura</div>
-    <div id="dev2Texturas" class="dev-adorno-list"></div>
-  </div>
-   
-   <!-- CONTROLES en UNA sola fila + Fondo plano vistoso (sin títulos) -->
-<div class="dev-tools">
-  <div class="dev-fondo-chip" title="Fondo plano">
-    <input id="dev2Fondo" type="hidden" value="#ffffff">
-    <button type="button" id="dev2FondoHost" class="pickr-host" data-target="#dev2Fondo" aria-label="Fondo fase 2"></button>
-  </div>
+    <!-- ✅ FONDO DISEÑADO COMPACTO: Fondo | Textura | Adorno -->
+    <div id="dev2DisenoPanel" class="dev2-diseno-panel">
+      <div class="dev2-diseno-tabs" aria-label="Opciones de fondo fase 2">
+        <button type="button" id="dev2TabFondo" class="activo" onclick="dev2MostrarTab('fondo')">Fondo</button>
+        <button type="button" id="dev2TabTextura" onclick="dev2MostrarTab('textura')">Textura</button>
+        <button type="button" id="dev2TabAdorno" onclick="dev2MostrarTab('adorno')">Adorno</button>
+      </div>
 
-  <input id="dev2TexturaOp" class="opacidad-slider" type="range" min="0" max="0.6" step="0.02" value="0.22">
+      <!-- FONDO: plano / degradado -->
+      <div id="dev2PaneFondo" class="dev2-diseno-pane activo">
+        <div class="dev2-fondo-opciones">
+          <button type="button" id="dev2BtnPlano" class="dev2-modo-btn activo"
+                  onclick="dev2ElegirBase('plano')" title="Fondo plano" aria-label="Fondo plano">
+            <i class="fa-solid fa-brush"></i>
+          </button>
 
-  <div class="dev-stepper">
-    <button type="button" class="btn-ghost" onclick="devCambiarTamano(2,-1)">−</button>
-    <input id="dev2Tamano" class="tamano-input" type="number" value="26" min="10" max="90" step="0.5">
-    <button type="button" class="btn-ghost" onclick="devCambiarTamano(2,1)">+</button>
-  </div>
+          <button type="button" id="dev2BtnGradiente" class="dev2-modo-btn"
+                  onclick="dev2ElegirBase('gradiente')" title="Fondo degradado" aria-label="Fondo degradado">
+            <i class="fa-solid fa-palette"></i>
+          </button>
 
-</div>
+          <input id="dev2Fondo" type="hidden" value="#ffffff">
+          <button type="button" id="dev2FondoHost" class="pickr-host"
+                  data-target="#dev2Fondo" aria-label="Color principal del fondo" title="Color principal"></button>
 
-        <div class="dev-row">
+          <div id="dev2GradExtra" class="dev2-grad-extra" style="display:none;">
+            <input id="dev2GradColor2" type="hidden" value="#d1eeff">
+            <button type="button" id="dev2GradColor2Host" class="pickr-host"
+                    data-target="#dev2GradColor2" aria-label="Segundo color del degradado" title="Segundo color"></button>
+
+            <span id="dev2Color3Wrap" style="display:none;">
+              <input id="dev2GradColor3" type="hidden" value="#a6d0ff">
+              <button type="button" id="dev2GradColor3Host" class="pickr-host"
+                      data-target="#dev2GradColor3" aria-label="Tercer color del degradado" title="Tercer color"></button>
+            </span>
+
+            <button type="button" id="dev2BtnColor3" class="dev2-mas-color"
+                    onclick="dev2ToggleColor3()" title="Agregar tercer color" aria-label="Agregar tercer color">
+              <i class="fa-solid fa-plus"></i>
+            </button>
+
+            <select id="dev2GradForma" class="dev2-grad-forma" aria-label="Forma del degradado">
+              <option value="vertical">Vertical</option>
+              <option value="horizontal">Horizontal</option>
+              <option value="diagonal">Diagonal</option>
+              <option value="radial">Radial</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- TEXTURA: carril + slider dentro del panel -->
+      <div id="dev2PaneTextura" class="dev2-diseno-pane">
+        <div id="dev2Texturas" class="dev-adorno-list"></div>
+        <div class="dev2-slider-row" title="Opacidad de textura">
+          <i class="fa-solid fa-layer-group"></i>
+          <input id="dev2TexturaOp" class="opacidad-slider" type="range"
+                 min="0" max="0.6" step="0.02" value="0.22" aria-label="Opacidad de textura">
+        </div>
+      </div>
+
+      <!-- ADORNO: carril + tamaño dentro del panel -->
+      <div id="dev2PaneAdorno" class="dev2-diseno-pane">
+        <div id="dev2Adornos" class="dev-adorno-list"></div>
+        <div class="dev2-slider-row" title="Tamaño del adorno">
+          <i class="fa-solid fa-up-right-and-down-left-from-center"></i>
+          <input id="dev2AdornoTamano" class="opacidad-slider" type="range"
+                 min="30" max="95" step="1" value="70" aria-label="Tamaño del adorno">
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTROLES DE TAMAÑO -->
+    <div class="dev-tools dev2-size-row">
+      <div class="dev-stepper">
+        <button type="button" class="btn-ghost" onclick="devCambiarTamano(2,-1)">−</button>
+        <input id="dev2Tamano" class="tamano-input" type="number" value="26" min="10" max="90" step="0.5">
+        <button type="button" class="btn-ghost" onclick="devCambiarTamano(2,1)">+</button>
+      </div>
+    </div>
+
+    <!-- TIPOGRAFÍA / ESTILO -->
+    <div class="dev-row">
       <div style="position:relative;">
         <button id="dev2BtnFuentes" class="style-btn" type="button">🔤 Fuentes</button>
         <div id="dev2ListaFuentes" class="dev-lista-fuentes"></div>
@@ -1120,8 +1173,8 @@
         <button type="button" id="dev2Italic" onclick="devToggleStyle(2,'italic')">I</button>
         <button type="button" id="dev2Under" onclick="devToggleStyle(2,'underline')">U</button>
 
-       <input id="dev2Color" type="hidden" value="#000000">
-       <button type="button"
+        <input id="dev2Color" type="hidden" value="#000000">
+        <button type="button"
                 id="dev2ColorHost"
                 class="pickr-host dev-style-color"
                 data-target="#dev2Color"
