@@ -711,6 +711,13 @@ function vaGuardarSnapshotVisual() {
     const selector = vaSelectorCacheActual(seccion);
     const el = selector ? document.querySelector(selector) : null;
 
+        // ✅ Por seguridad, nunca guardar HTML visual de Recursos.
+    // Así no puede reaparecer al iniciar antes de validar permisos.
+    if (seccion === "iglesia" && selector === "#iglesia-recursos") {
+      localStorage.removeItem(VA_UI_SNAPSHOT_KEY);
+      return;
+    }
+
     let html = el ? String(el.innerHTML || "") : "";
 
     // Evita guardar cosas gigantes que rompan localStorage.
@@ -791,6 +798,12 @@ function vaRestaurarSnapshotVisualRapido() {
   const snap = vaLeerSnapshotVisual();
   if (!snap) return false;
   if (vaHayLinkDirectoInterno()) return false;
+
+    // ✅ Si quedó una caché vieja de Recursos, no mostrarla nunca.
+  if (snap.seccion === "iglesia" && snap.selector === "#iglesia-recursos") {
+    localStorage.removeItem(VA_UI_SNAPSHOT_KEY);
+    return false;
+  }
 
   try {
     if (snap.bodyOscuro) {
@@ -1151,8 +1164,19 @@ vaLimpiarParamsEntrada();
   // ✅ registrar automáticamente al usuario que entró
   await registrarUsuarioActual(user);
 
-  // ✅ cargar apariencia del usuario desde Firebase/R2
-await cargarFondosFirebaseUsuario();
+  // ✅ Pintar de inmediato la apariencia guardada en este dispositivo.
+  // Así la app abre visualmente sin esperar Firebase.
+  try {
+    aplicarFondosGuardados();
+  } catch (e) {
+    console.warn("No pude aplicar apariencia local:", e);
+  }
+
+  // ✅ Actualizar fondos desde Firebase en segundo plano.
+  // Ya no frena la entrada a la app.
+  cargarFondosFirebaseUsuario().catch((e) => {
+    console.warn("No pude actualizar apariencia en segundo plano:", e);
+  });
 
   // ✅ roles globales
   window.__ES_ADMIN = false;
@@ -4004,36 +4028,31 @@ window.irA = (seccion) => {
   if (seccion === "iglesia") {
     const estado = leerEstadoBiblia() || {};
 
-    const subIglesiaGuardada =
+    let subIglesiaGuardada =
       window.__IGLESIA_SUB_ACTIVA ||
       estado.subIglesia ||
       "devocionales";
 
-    const subRecursosGuardada =
-      window.__RECURSOS_SUB_ACTIVA ||
-      estado.subRecursos ||
-      "";
+    // ✅ Por seguridad Recursos nunca se reabre automáticamente.
+    // Aunque el usuario haya quedado allí, al volver a Iglesia inicia en Devocionales.
+    if (subIglesiaGuardada === "recursos") {
+      subIglesiaGuardada = "devocionales";
+
+      window.__IGLESIA_SUB_ACTIVA = "devocionales";
+      window.__RECURSOS_SUB_ACTIVA = "";
+
+      try {
+        guardarEstadoBiblia({
+          seccion: "iglesia",
+          subIglesia: "devocionales",
+          subRecursos: ""
+        });
+      } catch (e) {}
+    }
 
     try {
       window.mostrarIglesiaSub?.(subIglesiaGuardada);
     } catch(e) {}
-
-    // ✅ Si estabas en Recursos > Ediciones, vuelve ahí después del refresh
-    if (subIglesiaGuardada === "recursos") {
-      setTimeout(() => {
-        try {
-          if (subRecursosGuardada && typeof window.mostrarRecursosSub === "function") {
-            window.mostrarRecursosSub(subRecursosGuardada);
-          }
-
-          if (subRecursosGuardada === "ediciones" && typeof window.mostrarEdiciones === "function") {
-            window.mostrarEdiciones();
-          }
-        } catch(e) {
-          console.warn("No pude restaurar subpantalla de Recursos:", e);
-        }
-      }, 80);
-    }
 
     requestAnimationFrame(() => forzarSeccionActiva("iglesia"));
     setTimeout(() => forzarSeccionActiva("iglesia"), 120);
