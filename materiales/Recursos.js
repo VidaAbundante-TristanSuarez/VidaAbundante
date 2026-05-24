@@ -60,10 +60,10 @@ window.mostrarRecursosSub = async (sub = "ediciones") => {
   const esColab = !!window.__ES_COLABORADOR;
   const puedeVerRecursos = esAdmin || esColab;
 
-  // ✅ Recursos solo admin o colaborador
+  // ✅ Recursos solo admin o colaborador.
+  // Si por algún estado viejo se intenta abrir sin permiso,
+  // volvemos a Devocionales en silencio.
   if (!puedeVerRecursos) {
-    alert("No tenés permiso para entrar a Recursos.");
-
     try {
       window.mostrarIglesiaSub?.("devocionales");
     } catch (e) {}
