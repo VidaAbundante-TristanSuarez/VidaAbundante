@@ -3301,6 +3301,26 @@ previewImagen.style.backgroundColor = fondoUsable ? "transparent" : "#ffffff";
   previewTexto.style.fontFamily = fuente;
   previewTextoBack.style.fontFamily = fuente;
 
+  // ================= Estilos Texto =================
+  // ✅ IMPORTANTE: aplicar estilos ANTES de medir el tamaño.
+  // Así Mayúsculas, Bold e Italic no se calculan con el estado anterior.
+  const transform = textStyle?.upper ? "uppercase" : "none";
+  const pesoTexto = textStyle?.bold ? "800" : "400";
+  const estiloTexto = textStyle?.italic ? "italic" : "normal";
+  const decoracionTexto = textStyle?.underline ? "underline" : "none";
+
+  previewTexto.style.textTransform = transform;
+  previewTextoBack.style.textTransform = transform;
+
+  previewTexto.style.fontWeight = pesoTexto;
+  previewTextoBack.style.fontWeight = pesoTexto;
+
+  previewTexto.style.fontStyle = estiloTexto;
+  previewTextoBack.style.fontStyle = estiloTexto;
+
+  previewTexto.style.textDecoration = decoracionTexto;
+  previewTextoBack.style.textDecoration = decoracionTexto;
+
 // ================= Tamaño (AUTO sugerido por MEDICION / MANUAL libre) =================
 const sizeSlider = document.getElementById("personalizarTamaño");
 
@@ -3389,23 +3409,7 @@ if (!isNaN(op)) {
 
 aplicarWrapperBibliaImagen(wrapper, op, opColor);
 
-  // ================= Estilos Texto =================
-  const transform = textStyle?.upper ? "uppercase" : "none";
-
-  previewTexto.style.textTransform = transform;
-  previewTextoBack.style.textTransform = transform;
-
-  previewTexto.style.fontWeight = textStyle?.bold ? "800" : "600";
-  previewTexto.style.fontStyle = textStyle?.italic ? "italic" : "normal";
-  previewTexto.style.textDecoration = textStyle?.underline ? "underline" : "none";
-
-  previewTextoBack.style.fontWeight = previewTexto.style.fontWeight;
-  previewTextoBack.style.fontStyle = previewTexto.style.fontStyle;
-  previewTextoBack.style.textDecoration = previewTexto.style.textDecoration;
-
 invalidarRenderFinal();
-
-}
 
 // ================= ⭐ CANVAS GENERA IMAGEN FINAL (FIX REAL) ============================
 async function generarImagenFinal(opts = {}) {
@@ -6316,38 +6320,65 @@ window.irALogin = () => {
   window.location.href = "login.html";
 };
 
+// ================= 🔺 CONSERVAR TAMAÑO AL CAMBIAR ESTILO ===================
+// ✅ Los botones de estilo no deben agrandar ni achicar la letra solos.
+// El tamaño vuelve a calcularse automáticamente cuando cambia el texto/versículo.
+function conservarTamanoAlCambiarEstilo() {
+  const inp = document.getElementById("personalizarTamaño");
+
+  if (inp && inp.value !== "") {
+    userSetFontSize = true;
+  }
+}
+
 // ================= 🔺 TEXTO MAYUSCULAR ===================
 window.toggleUpper = () => {
+  conservarTamanoAlCambiarEstilo();
+
   textStyle.upper = !textStyle.upper;
+
   const b = document.getElementById("btnUpper");
   if (b) b.classList.toggle("activo", textStyle.upper);
+
   actualizarPreview();
 };
 
 // ================= 🔺 TEXTO NEGRITA ===================
 window.toggleBold = () => {
+  conservarTamanoAlCambiarEstilo();
+
   textStyle.bold = !textStyle.bold;
+
   const b = document.getElementById("btnBold");
   if (b) b.classList.toggle("activo", textStyle.bold);
+
   actualizarPreview();
 };
 
 // ================= 🔺 TEXTO ITALIC ===================
 window.toggleItalic = () => {
+  conservarTamanoAlCambiarEstilo();
+
   textStyle.italic = !textStyle.italic;
+
   const b = document.getElementById("btnItalic");
   if (b) b.classList.toggle("activo", textStyle.italic);
+
   actualizarPreview();
 };
 
 // ================= 🔺 TEXTO UNDERLINE ===================
 window.toggleUnderline = () => {
+  conservarTamanoAlCambiarEstilo();
+
   textStyle.underline = !textStyle.underline;
+
   const b = document.getElementById("btnUnderline");
   if (b) b.classList.toggle("activo", textStyle.underline);
+
   actualizarPreview();
 };
-
+  
 // ================= 🔺 SET FORMATO IMAGEN ===========================
 window.setFormatoImagen = tipo => {
   formatoImagenActual = (tipo === "story") ? "story" : "post";
