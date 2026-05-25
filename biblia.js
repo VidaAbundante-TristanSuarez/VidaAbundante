@@ -199,7 +199,7 @@ let versionActual = "RV1960"; // "RV1960" | "NTV"
 
 let marcados = {};
 let size = 18;
-let fuenteActual = "Arial";
+let fuenteActual = "Roboto, sans-serif";
 let colorActual = "#fff3b0"; // 💛 amarillo por default
 let resaltadorBloqueado = true; // 🔒 nuevo estado
 window.colorActual = colorActual;
@@ -2802,25 +2802,36 @@ document.addEventListener("freeze", () => {
 
 // ================= 🎀 LISTA VISUAL DE FUENTES =================
 const fuentesGoogle = [
+  // ================= Limpias y muy legibles =================
   { nombre: "Roboto", css: "Roboto, sans-serif" },
-  { nombre: "Lobster", css: "Lobster, cursive" },
-  { nombre: "Playfair Display", css: "'Playfair Display', serif" },
+  { nombre: "Lexend", css: "Lexend, sans-serif" },
   { nombre: "Montserrat", css: "Montserrat, sans-serif" },
   { nombre: "Poppins", css: "Poppins, sans-serif" },
-  { nombre: "Abril Fatface", css: "'Abril Fatface', serif" },
-  { nombre: "Cormorant", css: "Cormorant, serif" },
+  { nombre: "Oswald", css: "Oswald, sans-serif" },
   { nombre: "Josefin Sans", css: "'Josefin Sans', sans-serif" },
+
+  // ================= Clásicas / bíblicas =================
+  { nombre: "Lora", css: "Lora, serif" },
+  { nombre: "Merriweather", css: "Merriweather, serif" },
+  { nombre: "Libre Baskerville", css: "'Libre Baskerville', serif" },
+  { nombre: "Alegreya", css: "Alegreya, serif" },
+  { nombre: "Playfair Display", css: "'Playfair Display', serif" },
+  { nombre: "DM Serif Display", css: "'DM Serif Display', serif" },
+  { nombre: "Cinzel", css: "Cinzel, serif" },
+  { nombre: "Cormorant", css: "Cormorant, serif" },
+
+  // ================= Fuertes para títulos =================
+  { nombre: "Bebas Neue", css: "'Bebas Neue', sans-serif" },
+  { nombre: "Abril Fatface", css: "'Abril Fatface', serif" },
+
+  // ================= Manuscritas / decorativas =================
+  { nombre: "Lobster", css: "Lobster, cursive" },
+  { nombre: "Caveat", css: "Caveat, cursive" },
+  { nombre: "Dancing Script", css: "'Dancing Script', cursive" },
+  { nombre: "Courgette", css: "Courgette, cursive" },
   { nombre: "Great Vibes", css: "'Great Vibes', cursive" },
 
-  { nombre: "Lexend", css: "Lexend, sans-serif" },
-  { nombre: "Lora", css: "Lora, serif" },
-  { nombre: "Caveat", css: "Caveat, cursive" },
-  { nombre: "Merriweather", css: "Merriweather, serif" },
-
-  { nombre: "Arial", css: "Arial, sans-serif" },
-  { nombre: "Arial Black", css: "'Arial Black', Arial, sans-serif" },
-  { nombre: "Verdana", css: "Verdana, sans-serif" },
-  { nombre: "Trebuchet MS", css: "'Trebuchet MS', sans-serif" },
+  // ✅ La dejamos porque en tu celular sí se visualiza bien
   { nombre: "Comic Sans MS", css: "'Comic Sans MS', cursive" }
 ];
 
@@ -3675,7 +3686,7 @@ previewTextoBack.style.textAlign = "center";
   bibliaAplicarFondoAlPreview(previewImagen);
 
   // ================= Fuente =================
-  const fuente = fuenteActual || "Arial";
+  const fuente = fuenteActual || "Roboto, sans-serif";
   previewTexto.style.fontFamily = fuente;
   previewTextoBack.style.fontFamily = fuente;
 
@@ -4195,7 +4206,7 @@ function resetModalPersonalizar() {
   textStyle = { upper:false, bold:false, italic:false, underline:false };
 
   document.getElementById("personalizarOpacidad").value = 0.35;
-  fuenteActual = "Arial";
+  fuenteActual = "Roboto, sans-serif";
 
   const colorInput = document.getElementById("personalizarColor");
   if (colorInput) {
