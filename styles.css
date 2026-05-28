@@ -2761,51 +2761,86 @@ input[type="hidden"]#colorTextoApp,
   z-index: 200000 !important;
 }
 
-/* boton global subir arriba */
+/* =========================================================
+   BOTÓN GLOBAL SUBIR ARRIBA
+   Discreto, temporal y sin tapar publicaciones
+========================================================= */
+
 #btnScrollTopGlobal{
   position: fixed;
-  right: 20px;
-  bottom: 72px;
-  z-index: 999;
-  width: 42px;
-  height: 42px;
-  border: none;
+  right: 5px;
+  bottom: max(12px, env(safe-area-inset-bottom));
+  z-index: 80;
+
+  width: 35px;
+  height: 35px;
+  min-width: 35px;
+  min-height: 35px;
+
+  border: 1px solid rgba(0,0,0,.08);
   border-radius: 999px;
-  display: flex;
+
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: #444;
-  color: #fff;
-  box-shadow: 0 8px 18px rgba(0,0,0,.22);
+
+  background: rgba(209,238,255,.90);
+  color: #000;
+  box-shadow: 0 4px 12px rgba(0,0,0,.14);
+
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+
   opacity: 0;
   pointer-events: none;
-  transform: translateY(8px);
-  transition: opacity .18s ease, transform .18s ease, box-shadow .18s ease, background .18s ease;
+  transform: translate(12px, 7px) scale(.95);
+
+  transition:
+    opacity .18s ease,
+    transform .18s ease,
+    box-shadow .18s ease,
+    background .18s ease;
 }
 
 #btnScrollTopGlobal.mostrar{
-  opacity: 1;
+  opacity: .52;
   pointer-events: auto;
-  transform: translateY(0);
+  transform: translate(0, 0) scale(1);
 }
 
-#btnScrollTopGlobal:hover{
-  background: #1a73e8;
-  box-shadow: 0 10px 22px rgba(0,0,0,.28);
+#btnScrollTopGlobal.mostrar:hover,
+#btnScrollTopGlobal.mostrar:focus-visible,
+#btnScrollTopGlobal.mostrar:active{
+  opacity: 1;
+  background: var(--ui-azul-hover, #a6d0ff);
+  box-shadow: 0 6px 16px rgba(0,0,0,.20);
+  transform: translate(0, 0) scale(1.04);
 }
 
 #btnScrollTopGlobal i{
-  font-size: 16px;
+  font-size: 14px;
   line-height: 1;
+  color: #000;
+}
+
+body.oscuro #btnScrollTopGlobal{
+  background: rgba(209,238,255,.90);
+  color: #000;
+}
+
+/* Biblia ya tiene subir arriba en su propia barra */
+body.en-biblia #btnScrollTopGlobal{
+  display: none !important;
 }
 
 @media (max-width: 800px){
   #btnScrollTopGlobal{
-    right: 14px;
-    bottom: 68px;
-    width: 40px;
-    height: 40px;
+    right: 4px;
+    bottom: max(10px, env(safe-area-inset-bottom));
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+    min-height: 34px;
   }
 }
 
@@ -3048,10 +3083,6 @@ body.oscuro .subir-iglesia-btn:has(input:checked){
   white-space:pre-wrap;
   word-break:break-word;
   margin:0;
-}
-
-body.en-biblia #btnScrollTopGlobal{
-  display: none !important;
 }
 
 #btnToggleFiltros{
