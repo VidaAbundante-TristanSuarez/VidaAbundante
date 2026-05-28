@@ -1098,15 +1098,15 @@ window.compAbrirListaOracionesPublicacion = async function compAbrirListaOracion
 };
 
 window.compEditarOracionPublicacion = function compEditarOracionPublicacion(key, id) {
-  const data = compOraListaActual[`${key}__${id}`];
+  const uid = compOraRequerirLogin();
+  if (!uid) return;
+
+  const data = compartidosOracionesPublicacionesCache?.[key]?.[id] || null;
 
   if (!data) {
     alert("No encontré esa oración.");
     return;
   }
-
-  const uid = compOraRequerirLogin();
-  if (!uid) return;
 
   if (String(data.autorUid || "") !== String(uid)) {
     alert("Solo podés editar tus propias oraciones.");
@@ -1114,7 +1114,11 @@ window.compEditarOracionPublicacion = function compEditarOracionPublicacion(key,
   }
 
   const item = compOraBuscarItem(key);
-  if (!item) return;
+
+  if (!item) {
+    alert("No encontré esa publicación.");
+    return;
+  }
 
   compOraAsegurarModales();
 
@@ -1130,15 +1134,16 @@ window.compEditarOracionPublicacion = function compEditarOracionPublicacion(key,
   const publica = document.getElementById("compOraPublica");
 
   if (titulo) {
-    titulo.textContent = `🙏 Editar oración`;
+    titulo.textContent = "🙏 Editar oración";
   }
 
   if (texto) texto.value = data.texto || "";
   if (color) color.value = compOraColorSeguro(data.color);
   if (publica) publica.checked = data.publica !== false;
 
-  compOraCerrarModal("compOraListaModal");
   compOraAbrirModal("compOraModal");
+
+  setTimeout(() => texto?.focus(), 80);
 };
 
 window.compBorrarOracionPublicacion = async function compBorrarOracionPublicacion(key, id) {
@@ -1147,22 +1152,39 @@ window.compBorrarOracionPublicacion = async function compBorrarOracionPublicacio
 
   if (!uid || !db) return;
 
-  const data = compOraListaActual[`${key}__${id}`];
+  const data = compartidosOracionesPublicacionesCache?.[key]?.[id] || null;
 
-  if (!data || String(data.autorUid || "") !== String(uid)) {
+  if (!data) {
+    alert("No encontré esa oración.");
+    return;
+  }
+
+  const esMia = String(data.autorUid || "") === String(uid);
+  const admin = compEsAdmin();
+
+  if (!esMia && !admin) {
     alert("Solo podés borrar tus propias oraciones.");
     return;
   }
 
   if (!confirm("¿Borrar esta oración?")) return;
 
-  try {
-    await Promise.all([
-      remove(ref(db, compOraPathMia(uid, key, id))),
-      remove(ref(db, compOraPathPublica(key, id))).catch(() => {})
-    ]);
+  const autorUid = String(data.autorUid || "");
 
-    compOraCerrarModal("compOraListaModal");
+  try {
+    const tareas = [
+      remove(ref(db, compOraPathPublica(key, id)))
+    ];
+
+    // ✅ También borra la copia personal del autor real.
+    if (autorUid) {
+      tareas.push(
+        remove(ref(db, compOraPathMia(autorUid, key, id))).catch(() => {})
+      );
+    }
+
+    await Promise.all(tareas);
+
     compOraNotificar("🗑 Oración borrada");
     renderCompartidos();
 
@@ -1180,11 +1202,10 @@ function compCantidadOracionesPublicacion(item = {}) {
 }
 
 function compAccionesOracionPublicacion(item = {}) {
-  // ✅ Devocionales conservan sus propios botones y oraciones.
+  // ✅ Devocionales conservan su sistema actual.
   if (!item || item.tipo === "devocional") return "";
 
   const key = compKeyItem(item);
-  const cantidad = compCantidadOracionesPublicacion(item);
 
   return `
     <button
@@ -1196,30 +1217,28 @@ function compAccionesOracionPublicacion(item = {}) {
     >
       🙏
     </button>
-
-    <button
-      class="btn-primary comp-ora-ver-btn"
-      type="button"
-      onclick="compAbrirListaOracionesPublicacion('${compJs(key)}')"
-      aria-label="Ver oraciones"
-      title="Ver oraciones"
-    >
-      <i class="fa-solid fa-receipt"></i>
-      ${cantidad ? `<span class="comp-ora-badge">${cantidad}</span>` : ``}
-    </button>
   `;
 }
 
 function compRenderOracionesPublicacionHTML(item = {}) {
+  // ✅ Los devocionales ya tienen su propio render directo de oraciones.
   if (!item || item.tipo === "devocional") return "";
 
   const key = compKeyItem(item);
+  const uidActual = String(compUidActual() || "");
+  const admin = compEsAdmin();
 
-  const lista = Object.values(
+  const lista = Object.entries(
     compartidosOracionesPublicacionesCache?.[key] || {}
   )
-    .filter(it => it && typeof it === "object" && it.publica !== false)
-    .sort((a, b) => Number(b.creadoEn || 0) - Number(a.creadoEn || 0));
+    .filter(([, it]) =>
+      it &&
+      typeof it === "object" &&
+      it.publica !== false
+    )
+    .sort((a, b) =>
+      Number(b[1]?.creadoEn || 0) - Number(a[1]?.creadoEn || 0)
+    );
 
   if (!lista.length) return "";
 
@@ -1228,19 +1247,76 @@ function compRenderOracionesPublicacionHTML(item = {}) {
       <div class="comp-dev-oraciones-titulo">🙏 Oraciones</div>
 
       <div class="comp-dev-oraciones-lista">
-        ${lista.map(it => `
-          <div
-            class="comp-dev-oracion"
-            style="background:${compEscape(compOraColorSeguro(it.color))};"
-          >
-            <div class="comp-dev-oracion-top">
-              <span>${compEscape(it.autorNombre || "Hermano/a")}</span>
-              <span>${compEscape(compOraFecha(it.creadoEn))}</span>
-            </div>
+        ${lista.map(([id, it]) => {
+          const fondo = compOraColorSeguro(it.color || "#fff4b8");
 
-            <div class="comp-dev-oracion-texto">${compEscape(it.texto || "")}</div>
-          </div>
-        `).join("")}
+          const colorTexto = typeof compColorContraste === "function"
+            ? compColorContraste(fondo)
+            : "#000000";
+
+          const esMia = !!uidActual &&
+            String(it.autorUid || "") === uidActual;
+
+          const autor = esMia
+            ? "Tú"
+            : String(it.autorNombre || "Hermano/a");
+
+          const fechaTxt = it.creadoEn
+            ? new Date(Number(it.creadoEn)).toLocaleDateString("es-AR", {
+                day: "2-digit",
+                month: "2-digit",
+                year: "2-digit"
+              })
+            : "";
+
+          // ✅ Editar solamente la propia.
+          // ✅ Borrar la propia o, si sos admin, moderar una ajena.
+          const puedeEditar = esMia;
+          const puedeBorrar = esMia || admin;
+
+          return `
+            <div
+              class="comp-dev-oracion"
+              style="background:${compEscape(fondo)}; color:${compEscape(colorTexto)};"
+            >
+              <div class="comp-dev-oracion-top">
+                <span>${compEscape(autor)}</span>
+                <span>${compEscape(fechaTxt)}</span>
+              </div>
+
+              <div class="comp-dev-oracion-texto">${compEscape(it.texto || "")}</div>
+
+              ${(puedeEditar || puedeBorrar) ? `
+                <div class="comp-dev-oracion-actions">
+
+                  ${puedeEditar ? `
+                    <button
+                      type="button"
+                      onclick="compEditarOracionPublicacion('${compJs(key)}', '${compJs(id)}')"
+                      title="Editar oración"
+                    >
+                      <i class="fa-solid fa-pen"></i>
+                      Editar
+                    </button>
+                  ` : ``}
+
+                  ${puedeBorrar ? `
+                    <button
+                      type="button"
+                      class="comp-dev-oracion-delete"
+                      onclick="compBorrarOracionPublicacion('${compJs(key)}', '${compJs(id)}')"
+                      title="Borrar oración"
+                    >
+                      <i class="fa-solid fa-trash"></i>
+                      Borrar
+                    </button>
+                  ` : ``}
+
+                </div>
+              ` : ``}
+            </div>
+          `;
+        }).join("")}
       </div>
     </div>
   `;
