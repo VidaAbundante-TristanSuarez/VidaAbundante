@@ -30,6 +30,20 @@ let compartidosSubidosEscuchaActiva = false;
 let compartidosOracionesCache = {};
 let compartidosOracionesEscuchaActiva = false;
 
+/* ================= ORACIONES GENERALES DE PUBLICACIONES ================= */
+/* Devocionales mantienen su sistema actual; esto es para notas, imágenes,
+   ediciones, RH y subidos/prédicas. */
+
+let compartidosOracionesPublicacionesCache = {};
+let compartidosOracionesPublicacionesEscuchaActiva = false;
+
+let compOraListaActual = {};
+let compOraEdicionActual = {
+  key: "",
+  id: "",
+  data: null
+};
+
 let compartidosOcultosCache = {};
 let compartidosOcultosEscuchaActiva = false;
 let compPromosTimer = null;
@@ -344,6 +358,7 @@ window.mostrarCompartidos = async () => {
   iniciarEscuchaCompartidosDevocionales();
   iniciarEscuchaCompartidosSubidos();
   iniciarEscuchaCompartidosOraciones();
+  iniciarEscuchaOracionesPublicacionesCompartidos();
   iniciarEscuchaCompartidosOcultos();
 };
 
@@ -634,6 +649,640 @@ function iniciarEscuchaCompartidosOraciones() {
   });
 
   compartidosOracionesEscuchaActiva = true;
+}
+
+/* =========================================================
+   ORACIONES GENERALES PARA PUBLICACIONES DE COMPARTIDOS
+   - Devocionales siguen usando su sistema original.
+   - Este sistema cubre: nota, imagen, edicion, rh y subido.
+========================================================= */
+
+function iniciarEscuchaOracionesPublicacionesCompartidos() {
+  if (compartidosOracionesPublicacionesEscuchaActiva) return;
+
+  const db = compDB();
+  if (!db) return;
+
+  onValue(ref(db, "compartidosOracionesPublicas"), (snap) => {
+    compartidosOracionesPublicacionesCache = snap.val() || {};
+    renderCompartidos();
+  }, (err) => {
+    console.error("Error leyendo oraciones públicas de publicaciones:", err);
+  });
+
+  compartidosOracionesPublicacionesEscuchaActiva = true;
+}
+
+function compOraPathPublica(key, id = "") {
+  return `compartidosOracionesPublicas/${key}${id ? "/" + id : ""}`;
+}
+
+function compOraPathMia(uid, key, id = "") {
+  return `compartidosOracionesMias/${uid}/${key}${id ? "/" + id : ""}`;
+}
+
+function compOraNotificar(texto) {
+  if (typeof window.mostrarToast === "function") {
+    window.mostrarToast(texto);
+  } else {
+    alert(texto);
+  }
+}
+
+function compOraRequerirLogin() {
+  const uid = compUidActual();
+
+  if (uid) return uid;
+
+  if (typeof window.abrirLoginParaGuardarMiPanel === "function") {
+    window.abrirLoginParaGuardarMiPanel();
+  } else {
+    window.location.href = "login.html";
+  }
+
+  return "";
+}
+
+function compOraUsuarioNombre() {
+  const user = window.__FB?.auth?.currentUser;
+
+  return String(
+    user?.displayName ||
+    user?.email?.split("@")[0] ||
+    "Hermano/a"
+  ).trim();
+}
+
+function compOraColorSeguro(color = "#fff4b8") {
+  const limpio = String(color || "").trim();
+
+  return /^#[0-9a-f]{6}$/i.test(limpio)
+    ? limpio
+    : "#fff4b8";
+}
+
+function compOraBuscarItem(key) {
+  return compUnificarItems().find(item => compKeyItem(item) === key) || null;
+}
+
+function compOraTituloItem(item = {}) {
+  if (item.tipo === "nota") {
+    return String(item.titulo || item.title || "Nota compartida").trim();
+  }
+
+  if (item.tipo === "imagen") {
+    return String(compTituloImagen(item) || "Imagen compartida").trim();
+  }
+
+  if (item.tipo === "edicion") {
+    return String(item.titulo || "Edición compartida").trim();
+  }
+
+  if (item.tipo === "subido") {
+    return String(compItemTitulo(item) || "Publicación compartida").trim();
+  }
+
+  if (item.tipo === "rh") {
+    return String(item.titulo || "Recurso compartido").trim();
+  }
+
+  return "Publicación compartida";
+}
+
+function compOraFecha(ts) {
+  if (!ts) return "";
+
+  try {
+    return new Date(Number(ts)).toLocaleString("es-AR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+  } catch {
+    return "";
+  }
+}
+
+function compOraAsegurarModales() {
+  if (!document.getElementById("compOraModal")) {
+    const modal = document.createElement("div");
+    modal.id = "compOraModal";
+    modal.className = "comp-ora-overlay";
+
+    modal.innerHTML = `
+      <div class="comp-ora-card">
+        <button
+          type="button"
+          class="comp-ora-close"
+          onclick="compCerrarModalOracionPublicacion()"
+          aria-label="Cerrar"
+        >✕</button>
+
+        <h3 id="compOraModalTitulo">🙏 Dejar oración</h3>
+
+        <textarea
+          id="compOraTexto"
+          class="comp-ora-textarea"
+          placeholder="Escribí tu oración o comentario..."
+        ></textarea>
+
+        <div class="comp-ora-controls">
+          <label class="comp-ora-color-label">
+            <span>Color</span>
+            <input id="compOraColor" type="color" value="#fff4b8">
+          </label>
+
+          <label class="comp-ora-publica-label">
+            <input id="compOraPublica" type="checkbox" checked>
+            <span>Mostrar públicamente</span>
+          </label>
+        </div>
+
+        <div class="comp-ora-actions-modal">
+          <button
+            type="button"
+            class="btn-primary"
+            onclick="compGuardarOracionPublicacion()"
+          >
+            Guardar
+          </button>
+
+          <button
+            type="button"
+            class="btn-primary"
+            onclick="compCerrarModalOracionPublicacion()"
+          >
+            Cancelar
+          </button>
+        </div>
+      </div>
+    `;
+
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) {
+        window.compCerrarModalOracionPublicacion();
+      }
+    });
+
+    document.body.appendChild(modal);
+  }
+
+  if (!document.getElementById("compOraListaModal")) {
+    const modalLista = document.createElement("div");
+    modalLista.id = "compOraListaModal";
+    modalLista.className = "comp-ora-overlay";
+
+    modalLista.innerHTML = `
+      <div class="comp-ora-card comp-ora-card--lista">
+        <button
+          type="button"
+          class="comp-ora-close"
+          onclick="compCerrarListaOracionesPublicacion()"
+          aria-label="Cerrar"
+        >✕</button>
+
+        <h3>🙏 Oraciones</h3>
+
+        <div id="compOraListaContenido" class="comp-ora-lista-contenido">
+          <div class="comp-ora-vacio">Cargando...</div>
+        </div>
+      </div>
+    `;
+
+    modalLista.addEventListener("click", (e) => {
+      if (e.target === modalLista) {
+        window.compCerrarListaOracionesPublicacion();
+      }
+    });
+
+    document.body.appendChild(modalLista);
+  }
+}
+
+function compOraAbrirModal(id) {
+  const modal = document.getElementById(id);
+  if (!modal) return;
+
+  modal.style.display = "flex";
+  modal.classList.add("abierto");
+  document.body.classList.add("modal-open");
+}
+
+function compOraCerrarModal(id) {
+  const modal = document.getElementById(id);
+  if (!modal) return;
+
+  try {
+    document.activeElement?.blur?.();
+  } catch (_) {}
+
+  modal.style.display = "none";
+  modal.classList.remove("abierto");
+
+  if (!document.querySelector(".comp-ora-overlay.abierto")) {
+    document.body.classList.remove("modal-open");
+  }
+}
+
+window.compCerrarModalOracionPublicacion = function compCerrarModalOracionPublicacion() {
+  compOraEdicionActual = {
+    key: "",
+    id: "",
+    data: null
+  };
+
+  compOraCerrarModal("compOraModal");
+};
+
+window.compCerrarListaOracionesPublicacion = function compCerrarListaOracionesPublicacion() {
+  compOraListaActual = {};
+  compOraCerrarModal("compOraListaModal");
+};
+
+window.compAbrirModalOracionPublicacion = function compAbrirModalOracionPublicacion(key) {
+  const uid = compOraRequerirLogin();
+  if (!uid) return;
+
+  const item = compOraBuscarItem(key);
+  if (!item) {
+    alert("No encontré esa publicación.");
+    return;
+  }
+
+  compOraAsegurarModales();
+
+  compOraEdicionActual = {
+    key,
+    id: "",
+    data: null
+  };
+
+  const titulo = document.getElementById("compOraModalTitulo");
+  const texto = document.getElementById("compOraTexto");
+  const color = document.getElementById("compOraColor");
+  const publica = document.getElementById("compOraPublica");
+
+  if (titulo) {
+    titulo.textContent = `🙏 ${compOraTituloItem(item)}`;
+  }
+
+  if (texto) texto.value = "";
+  if (color) color.value = "#fff4b8";
+  if (publica) publica.checked = true;
+
+  compOraAbrirModal("compOraModal");
+
+  setTimeout(() => texto?.focus(), 80);
+};
+
+window.compGuardarOracionPublicacion = async function compGuardarOracionPublicacion() {
+  const db = compDB();
+  const uid = compOraRequerirLogin();
+
+  if (!db || !uid) return;
+
+  const key = String(compOraEdicionActual.key || "").trim();
+  const item = compOraBuscarItem(key);
+
+  if (!key || !item) {
+    alert("No encontré esa publicación.");
+    return;
+  }
+
+  const texto = String(document.getElementById("compOraTexto")?.value || "").trim();
+  const color = compOraColorSeguro(document.getElementById("compOraColor")?.value);
+  const publica = !!document.getElementById("compOraPublica")?.checked;
+
+  if (!texto) {
+    alert("Escribí una oración antes de guardar.");
+    return;
+  }
+
+  const anterior = compOraEdicionActual.data || {};
+  const ahora = Date.now();
+
+  const id = compOraEdicionActual.id || `${ahora}_${uid.slice(0, 8)}`;
+
+  const data = {
+    ...anterior,
+    texto,
+    color,
+    publica,
+    autorUid: uid,
+    autorNombre: anterior.autorNombre || compOraUsuarioNombre(),
+    creadoEn: Number(anterior.creadoEn || ahora),
+    editadoEn: compOraEdicionActual.id ? ahora : 0,
+
+    publicacionKey: key,
+    publicacionTipo: item.tipo || "",
+    publicacionTitulo: compOraTituloItem(item)
+  };
+
+  try {
+    await set(ref(db, compOraPathMia(uid, key, id)), data);
+
+    if (publica) {
+      await set(ref(db, compOraPathPublica(key, id)), data);
+    } else {
+      await remove(ref(db, compOraPathPublica(key, id))).catch(() => {});
+    }
+
+    window.compCerrarModalOracionPublicacion();
+
+    compOraNotificar(
+      publica
+        ? "🙏 Oración publicada"
+        : "🙏 Oración guardada solo para vos"
+    );
+
+    renderCompartidos();
+
+  } catch (e) {
+    console.error("No pude guardar oración de publicación:", e);
+    alert("No pude guardar la oración.\n\nDetalle: " + (e?.message || e));
+  }
+};
+
+async function compOraLeerPropias(key) {
+  const uid = compUidActual();
+  const getFn = window.__FB_API?.get;
+  const db = compDB();
+
+  if (!uid || !db || typeof getFn !== "function") return {};
+
+  try {
+    const snap = await getFn(ref(db, compOraPathMia(uid, key)));
+    return snap.val() || {};
+  } catch (e) {
+    console.warn("No pude leer oraciones propias de esta publicación:", e);
+    return {};
+  }
+}
+
+window.compAbrirListaOracionesPublicacion = async function compAbrirListaOracionesPublicacion(key) {
+  compOraAsegurarModales();
+  compOraAbrirModal("compOraListaModal");
+
+  const box = document.getElementById("compOraListaContenido");
+  if (!box) return;
+
+  box.innerHTML = `<div class="comp-ora-vacio">Cargando...</div>`;
+
+  const uid = compUidActual();
+  const publicas = compartidosOracionesPublicacionesCache?.[key] || {};
+  const propias = await compOraLeerPropias(key);
+
+  const combinadas = {
+    ...publicas,
+    ...propias
+  };
+
+  const entries = Object.entries(combinadas)
+    .filter(([, it]) => it && typeof it === "object")
+    .sort((a, b) => Number(b[1]?.creadoEn || 0) - Number(a[1]?.creadoEn || 0));
+
+  if (!entries.length) {
+    box.innerHTML = `
+      <div class="comp-ora-vacio">
+        Todavía no hay oraciones visibles en esta publicación.
+      </div>
+    `;
+    return;
+  }
+
+  compOraListaActual = {};
+
+  box.innerHTML = entries.map(([id, it]) => {
+    const puedeEditar = !!uid && String(it.autorUid || "") === String(uid);
+    const color = compOraColorSeguro(it.color);
+    const privada = it.publica === false;
+
+    compOraListaActual[`${key}__${id}`] = it;
+
+    return `
+      <div class="comp-ora-item" style="background:${compEscape(color)};">
+        <div class="comp-ora-item-head">
+          <strong>${compEscape(it.autorNombre || "Hermano/a")}</strong>
+          <span>
+            ${privada ? "Privada · " : ""}
+            ${compEscape(compOraFecha(it.creadoEn))}
+          </span>
+        </div>
+
+        <div class="comp-ora-item-texto">${compEscape(it.texto || "")}</div>
+
+        ${puedeEditar ? `
+          <div class="comp-ora-item-actions">
+            <button
+              type="button"
+              class="btn-primary"
+              onclick="compEditarOracionPublicacion('${compJs(key)}', '${compJs(id)}')"
+            >
+              Editar
+            </button>
+
+            <button
+              type="button"
+              class="btn-primary comp-ora-danger"
+              onclick="compBorrarOracionPublicacion('${compJs(key)}', '${compJs(id)}')"
+            >
+              Borrar
+            </button>
+          </div>
+        ` : ``}
+      </div>
+    `;
+  }).join("");
+};
+
+window.compEditarOracionPublicacion = function compEditarOracionPublicacion(key, id) {
+  const data = compOraListaActual[`${key}__${id}`];
+
+  if (!data) {
+    alert("No encontré esa oración.");
+    return;
+  }
+
+  const uid = compOraRequerirLogin();
+  if (!uid) return;
+
+  if (String(data.autorUid || "") !== String(uid)) {
+    alert("Solo podés editar tus propias oraciones.");
+    return;
+  }
+
+  const item = compOraBuscarItem(key);
+  if (!item) return;
+
+  compOraAsegurarModales();
+
+  compOraEdicionActual = {
+    key,
+    id,
+    data
+  };
+
+  const titulo = document.getElementById("compOraModalTitulo");
+  const texto = document.getElementById("compOraTexto");
+  const color = document.getElementById("compOraColor");
+  const publica = document.getElementById("compOraPublica");
+
+  if (titulo) {
+    titulo.textContent = `🙏 Editar oración`;
+  }
+
+  if (texto) texto.value = data.texto || "";
+  if (color) color.value = compOraColorSeguro(data.color);
+  if (publica) publica.checked = data.publica !== false;
+
+  compOraCerrarModal("compOraListaModal");
+  compOraAbrirModal("compOraModal");
+};
+
+window.compBorrarOracionPublicacion = async function compBorrarOracionPublicacion(key, id) {
+  const uid = compOraRequerirLogin();
+  const db = compDB();
+
+  if (!uid || !db) return;
+
+  const data = compOraListaActual[`${key}__${id}`];
+
+  if (!data || String(data.autorUid || "") !== String(uid)) {
+    alert("Solo podés borrar tus propias oraciones.");
+    return;
+  }
+
+  if (!confirm("¿Borrar esta oración?")) return;
+
+  try {
+    await Promise.all([
+      remove(ref(db, compOraPathMia(uid, key, id))),
+      remove(ref(db, compOraPathPublica(key, id))).catch(() => {})
+    ]);
+
+    compOraCerrarModal("compOraListaModal");
+    compOraNotificar("🗑 Oración borrada");
+    renderCompartidos();
+
+  } catch (e) {
+    console.error("No pude borrar oración:", e);
+    alert("No pude borrar la oración.");
+  }
+};
+
+function compCantidadOracionesPublicacion(item = {}) {
+  if (!item || item.tipo === "devocional") return 0;
+
+  const key = compKeyItem(item);
+  return Object.keys(compartidosOracionesPublicacionesCache?.[key] || {}).length;
+}
+
+function compAccionesOracionPublicacion(item = {}) {
+  // ✅ Devocionales conservan sus propios botones y oraciones.
+  if (!item || item.tipo === "devocional") return "";
+
+  const key = compKeyItem(item);
+  const cantidad = compCantidadOracionesPublicacion(item);
+
+  return `
+    <button
+      class="btn-primary"
+      type="button"
+      onclick="compAbrirModalOracionPublicacion('${compJs(key)}')"
+      aria-label="Dejar oración"
+      title="Dejar oración"
+    >
+      🙏
+    </button>
+
+    <button
+      class="btn-primary comp-ora-ver-btn"
+      type="button"
+      onclick="compAbrirListaOracionesPublicacion('${compJs(key)}')"
+      aria-label="Ver oraciones"
+      title="Ver oraciones"
+    >
+      <i class="fa-solid fa-receipt"></i>
+      ${cantidad ? `<span class="comp-ora-badge">${cantidad}</span>` : ``}
+    </button>
+  `;
+}
+
+function compRenderOracionesPublicacionHTML(item = {}) {
+  if (!item || item.tipo === "devocional") return "";
+
+  const key = compKeyItem(item);
+
+  const lista = Object.values(
+    compartidosOracionesPublicacionesCache?.[key] || {}
+  )
+    .filter(it => it && typeof it === "object" && it.publica !== false)
+    .sort((a, b) => Number(b.creadoEn || 0) - Number(a.creadoEn || 0));
+
+  if (!lista.length) return "";
+
+  return `
+    <div class="comp-dev-oraciones-wrap">
+      <div class="comp-dev-oraciones-titulo">🙏 Oraciones</div>
+
+      <div class="comp-dev-oraciones-lista">
+        ${lista.map(it => `
+          <div
+            class="comp-dev-oracion"
+            style="background:${compEscape(compOraColorSeguro(it.color))};"
+          >
+            <div class="comp-dev-oracion-top">
+              <span>${compEscape(it.autorNombre || "Hermano/a")}</span>
+              <span>${compEscape(compOraFecha(it.creadoEn))}</span>
+            </div>
+
+            <div class="comp-dev-oracion-texto">${compEscape(it.texto || "")}</div>
+          </div>
+        `).join("")}
+      </div>
+    </div>
+  `;
+}
+
+/*
+  ✅ Agrega los botones a la fila de acciones que la publicación ya tiene.
+  Así no hay que reescribir una por una nota, imagen, edición, RH y prédica.
+*/
+function compAgregarOracionesAPublicacionHTML(html = "", item = {}) {
+  if (!html || !item || item.tipo === "devocional") return html;
+
+  const botones = compAccionesOracionPublicacion(item);
+  const oraciones = compRenderOracionesPublicacionHTML(item);
+
+  let salida = String(html);
+
+  if (salida.includes('<div class="comp-post-actions')) {
+    salida = salida.replace(
+      /<div class="comp-post-actions([^"]*)">/,
+      `<div class="comp-post-actions$1">${botones}`
+    );
+  } else if (salida.includes('<div class="devBigActions">')) {
+    salida = salida.replace(
+      '<div class="devBigActions">',
+      `<div class="devBigActions">${botones}`
+    );
+  } else {
+    salida = salida.replace(
+      /<\/article>\s*$/,
+      `<div class="comp-post-actions">${botones}</div></article>`
+    );
+  }
+
+  if (oraciones) {
+    salida = salida.replace(
+      /<\/article>\s*$/,
+      `${oraciones}</article>`
+    );
+  }
+
+  return salida;
 }
 
 function iniciarEscuchaCompartidosOcultos() {
@@ -2306,13 +2955,16 @@ window.renderCompartidos = function renderCompartidos() {
   // ✅ Si ya hay algo, mostramos al toque aunque otras fuentes sigan cargando.
   if (items.length) {
     lista.innerHTML = items.map(item => {
-      if (item.tipo === "rh") return compRenderRH(item);
-      if (item.tipo === "edicion") return compRenderEdicion(item);
-      if (item.tipo === "imagen") return compRenderImagen(item);
-      if (item.tipo === "nota") return compRenderNota(item);
-      if (item.tipo === "devocional") return compRenderDevocional(item);
-      if (item.tipo === "subido") return compRenderSubido(item);
-      return "";
+      let html = "";
+
+      if (item.tipo === "rh") html = compRenderRH(item);
+      if (item.tipo === "edicion") html = compRenderEdicion(item);
+      if (item.tipo === "imagen") html = compRenderImagen(item);
+      if (item.tipo === "nota") html = compRenderNota(item);
+      if (item.tipo === "devocional") html = compRenderDevocional(item);
+      if (item.tipo === "subido") html = compRenderSubido(item);
+
+      return compAgregarOracionesAPublicacionHTML(html, item);
     }).join("");
 
 compActivarBotonesSubidosRenderizados(items);
