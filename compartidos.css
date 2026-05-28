@@ -858,25 +858,6 @@ body.en-compartidos .comp-post-note-block{
    Pegar AL FINAL de compartidos.css
 ========================================================= */
 
-/* ✅ Versículo visible arriba de la nota */
-body.en-compartidos .comp-post--nota .comp-post-verse-block{
-  margin: 0 12px 8px;
-  padding: 12px 13px;
-  border-radius: 16px;
-  background: rgba(255,255,255,.66);
-  border: 1px solid rgba(0,0,0,.07);
-  box-shadow: 0 3px 10px rgba(0,0,0,.07);
-  white-space: pre-wrap;
-  line-height: 1.38;
-  font-size: 13px;
-  font-weight: 800;
-  color: #111;
-}
-
-body.en-compartidos .comp-post--nota .comp-post-note-block{
-  margin-top: 0 !important;
-}
-
 /* ✅ Devocionales completos dentro de Compartidos, sin corte horizontal */
 body.en-compartidos .comp-post--devocional .comp-card-click-wrap{
   width: 100% !important;
@@ -920,12 +901,6 @@ body.en-compartidos .comp-post--devocional .devBigActions{
 }
 
 @media (max-width: 700px){
-  body.en-compartidos .comp-post--nota .comp-post-verse-block{
-    margin: 0 10px 7px;
-    padding: 10px 11px;
-    font-size: 12.5px;
-    line-height: 1.34;
-  }
 
   body.en-compartidos .comp-post--devocional .comp-card-click-wrap{
     padding-left: 4px !important;
@@ -1248,11 +1223,10 @@ body.en-compartidos .comp-post--archivo-abierto .subidos-visor-archivo-slide ifr
 }
 
 /* =========================================================
-   COMPARTIDOS - NOTAS COMO MI PANEL
-   Fondo completo + versículo destacado + reflexión normal
+   COMPARTIDOS - NOTAS
+   Apariencia de Mi Panel + acciones coherentes
 ========================================================= */
 
-/* ✅ Toda la publicación toma el color elegido de la nota */
 body.en-compartidos .comp-post.comp-post--nota{
   background: var(--comp-nota-fondo, #e9f6ff) !important;
   color: var(--comp-nota-texto, #000) !important;
@@ -1260,13 +1234,11 @@ body.en-compartidos .comp-post.comp-post--nota{
   box-shadow: 0 5px 18px rgba(0,0,0,.11);
 }
 
-/* ✅ Ícono suave sobre el mismo fondo */
 body.en-compartidos .comp-post--nota .comp-avatar{
   background: rgba(255,255,255,.46) !important;
   color: inherit !important;
 }
 
-/* ✅ Título y referencia respetan el contraste del fondo */
 body.en-compartidos .comp-post--nota .comp-post-title,
 body.en-compartidos .comp-post--nota .comp-post-meta{
   color: inherit !important;
@@ -1276,54 +1248,87 @@ body.en-compartidos .comp-post--nota .comp-post-meta{
   opacity: .78;
 }
 
-/* ✅ Contenedor interior limpio, sin cajitas separadas */
 body.en-compartidos .comp-post--nota .comp-post-nota-contenido{
-  padding: 2px 13px 16px;
+  padding: 2px 13px 15px;
 }
 
-/* ✅ Versículo: bold e italic, como en Mi Panel */
 body.en-compartidos .comp-post--nota .comp-post-verse-block{
   margin: 0 0 12px !important;
   padding: 0 !important;
-
-  border: none !important;
+  border: 0 !important;
   border-radius: 0 !important;
   background: transparent !important;
   box-shadow: none !important;
-
   color: inherit !important;
-  white-space: pre-wrap;
-  line-height: 1.36;
-  font-size: 15px;
 
-  font-family: "Lora", serif;
+  white-space: pre-wrap;
+  font-family: "Lora", Georgia, serif;
   font-style: italic;
   font-weight: 700 !important;
+  font-size: 15px;
+  line-height: 1.36;
 }
 
-/* ✅ Reflexión: texto normal, sin bold */
 body.en-compartidos .comp-post--nota .comp-post-note-block{
   margin: 0 !important;
   padding: 0 !important;
-
   border-radius: 0 !important;
   background: transparent !important;
   box-shadow: none !important;
-
   color: inherit !important;
+
   white-space: pre-wrap;
-  line-height: 1.46;
   font-size: 15px;
+  line-height: 1.46;
   font-weight: 400 !important;
 }
 
-/* ✅ El tachito queda visible sin romper el diseño */
+body.en-compartidos .comp-post--nota .comp-post-actions--nota{
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  gap: 12px !important;
+  padding: 0 48px 14px 12px !important;
+}
+
+body.en-compartidos .comp-post--nota .comp-post-actions--nota .btn-primary{
+  width: 42px !important;
+  height: 42px !important;
+  min-width: 42px !important;
+  min-height: 42px !important;
+  padding: 0 !important;
+
+  border: 0;
+  border-radius: 999px !important;
+
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  background: var(--ui-azul-claro, #d1eeff) !important;
+  color: #000 !important;
+}
+
+body.en-compartidos .comp-post--nota .comp-post-actions--nota .btn-primary:hover{
+  background: var(--ui-azul-hover, #a6d0ff) !important;
+}
+
+body.en-compartidos .comp-post--nota .comp-post-actions--nota .btn-primary:disabled{
+  opacity: .60;
+  cursor: wait;
+}
+
+body.en-compartidos .comp-post--nota .comp-post-actions--nota .btn-primary i{
+  color: #000 !important;
+  font-size: 16px;
+  line-height: 1;
+}
+
 body.en-compartidos .comp-post--nota .comp-action-delete{
   background: rgba(255,255,255,.52) !important;
   border: 1px solid rgba(164,0,0,.18) !important;
 }
 
-/* ✅ Espacio final cuando aparece el botón borrar */
 body.en-compartidos .comp-post--nota:has(.comp-action-delete){
   padding-bottom: 38px;
 }
@@ -1331,7 +1336,7 @@ body.en-compartidos .comp-post--nota:has(.comp-action-delete){
 @media (max-width: 700px){
 
   body.en-compartidos .comp-post--nota .comp-post-nota-contenido{
-    padding: 2px 11px 15px;
+    padding: 2px 11px 14px;
   }
 
   body.en-compartidos .comp-post--nota .comp-post-verse-block{
@@ -1344,35 +1349,13 @@ body.en-compartidos .comp-post--nota:has(.comp-action-delete){
     font-size: 14px;
     line-height: 1.44;
   }
-}
 
-/* =========================================================
-   COMPARTIDOS - ACCIÓN COMPARTIR PARA NOTAS
-========================================================= */
-
-body.en-compartidos .comp-post--nota .comp-post-actions--nota{
-  padding: 0 48px 14px 12px !important;
-  justify-content: center !important;
-}
-
-body.en-compartidos .comp-post--nota .comp-post-actions--nota button{
-  background: rgba(255,255,255,.52) !important;
-  color: inherit !important;
-  border: 1px solid rgba(0,0,0,.08);
-}
-
-body.en-compartidos .comp-post--nota .comp-post-actions--nota button:hover{
-  background: rgba(255,255,255,.74) !important;
-  color: inherit !important;
-}
-
-body.en-compartidos .comp-post--nota .comp-post-actions--nota button:disabled{
-  opacity: .65;
-  cursor: wait;
-}
-
-body.en-compartidos .comp-post--nota .comp-post-actions--nota button i{
-  color: inherit !important;
+  body.en-compartidos .comp-post--nota .comp-post-actions--nota .btn-primary{
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    min-height: 40px !important;
+  }
 }
 
 </style>
