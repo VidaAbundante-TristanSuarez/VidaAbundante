@@ -4898,6 +4898,11 @@ window.editarMarcadorDesdeLista = (idMarcador) => {
   const m = (marcadores || {})[idMarcador];
   if (!m) return;
 
+  if (typeof notaPanelVieneDeCompartidos === "function" && notaPanelVieneDeCompartidos(m)) {
+    mostrarToast("Esta nota fue guardada desde Compartidos y no se puede editar.");
+    return;
+  }
+
   const versiculosM = Array.isArray(m.versiculos)
     ? m.versiculos.map(Number).filter(n => !isNaN(n))
     : [];
@@ -5037,16 +5042,58 @@ const items = Object.entries(marcadores || {})
       const titulo = (m.titulo || "Marcador").replace(/</g, "&lt;").replace(/>/g, "&gt;");
       const linea = `${refTxt} - ${fechaTxt} - ${titulo}`;
 
+      const fondoNota = m.color || "#fff3b0";
+      const colorTexto = (typeof colorContraste === "function")
+        ? colorContraste(fondoNota)
+        : "#000";
+
+      const notaVieneDeCompartidos =
+        (typeof notaPanelVieneDeCompartidos === "function")
+          ? notaPanelVieneDeCompartidos(m)
+          : (m?.origen === "compartidos" || !!m?.sourceCompKey);
+
+      const puedeEditarNota = !notaVieneDeCompartidos;
+
       return `
-        <div class="card-marcador" style="display:flex; justify-content:space-between; gap:10px; align-items:center;">
-          <div style="cursor:pointer; flex:1; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"
-               onclick="abrirMarcador('${m.id}')">
+        <div
+          class="card-marcador"
+          style="
+            display:flex;
+            justify-content:space-between;
+            gap:10px;
+            align-items:center;
+            background:${fondoNota} !important;
+            color:${colorTexto} !important;
+            border:1px solid rgba(0,0,0,.10);
+          "
+        >
+          <div
+            style="
+              cursor:pointer;
+              flex:1;
+              font-size:13px;
+              font-weight:700;
+              white-space:nowrap;
+              overflow:hidden;
+              text-overflow:ellipsis;
+              color:${colorTexto} !important;
+            "
+            onclick="abrirMarcador('${m.id}')"
+            title="${linea}"
+          >
             ${linea}
           </div>
 
-          <button type="button" class="pm-btn"
-                  onclick="editarMarcadorDesdeLista('${m.id}')"
-                  title="Editar">✏️</button>
+          ${puedeEditarNota ? `
+            <button
+              type="button"
+              class="pm-btn"
+              onclick="editarMarcadorDesdeLista('${m.id}')"
+              title="Editar"
+            >
+              <i class="fa-solid fa-pen-to-square"></i>
+            </button>
+          ` : ``}
         </div>
       `;
     }).join("");
