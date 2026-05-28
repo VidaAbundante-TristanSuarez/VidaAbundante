@@ -1247,4 +1247,103 @@ body.en-compartidos .comp-post--archivo-abierto .subidos-visor-archivo-slide ifr
   color: #8b1111;
 }
 
+/* =========================================================
+   COMPARTIDOS - NOTAS COMO MI PANEL
+   Fondo completo + versículo destacado + reflexión normal
+========================================================= */
+
+/* ✅ Toda la publicación toma el color elegido de la nota */
+body.en-compartidos .comp-post.comp-post--nota{
+  background: var(--comp-nota-fondo, #e9f6ff) !important;
+  color: var(--comp-nota-texto, #000) !important;
+  border: 1px solid rgba(0,0,0,.10);
+  box-shadow: 0 5px 18px rgba(0,0,0,.11);
+}
+
+/* ✅ Ícono suave sobre el mismo fondo */
+body.en-compartidos .comp-post--nota .comp-avatar{
+  background: rgba(255,255,255,.46) !important;
+  color: inherit !important;
+}
+
+/* ✅ Título y referencia respetan el contraste del fondo */
+body.en-compartidos .comp-post--nota .comp-post-title,
+body.en-compartidos .comp-post--nota .comp-post-meta{
+  color: inherit !important;
+}
+
+body.en-compartidos .comp-post--nota .comp-post-meta{
+  opacity: .78;
+}
+
+/* ✅ Contenedor interior limpio, sin cajitas separadas */
+body.en-compartidos .comp-post--nota .comp-post-nota-contenido{
+  padding: 2px 13px 16px;
+}
+
+/* ✅ Versículo: bold e italic, como en Mi Panel */
+body.en-compartidos .comp-post--nota .comp-post-verse-block{
+  margin: 0 0 12px !important;
+  padding: 0 !important;
+
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+
+  color: inherit !important;
+  white-space: pre-wrap;
+  line-height: 1.36;
+  font-size: 15px;
+
+  font-family: "Lora", serif;
+  font-style: italic;
+  font-weight: 700 !important;
+}
+
+/* ✅ Reflexión: texto normal, sin bold */
+body.en-compartidos .comp-post--nota .comp-post-note-block{
+  margin: 0 !important;
+  padding: 0 !important;
+
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+
+  color: inherit !important;
+  white-space: pre-wrap;
+  line-height: 1.46;
+  font-size: 15px;
+  font-weight: 400 !important;
+}
+
+/* ✅ El tachito queda visible sin romper el diseño */
+body.en-compartidos .comp-post--nota .comp-action-delete{
+  background: rgba(255,255,255,.52) !important;
+  border: 1px solid rgba(164,0,0,.18) !important;
+}
+
+/* ✅ Espacio final cuando aparece el botón borrar */
+body.en-compartidos .comp-post--nota:has(.comp-action-delete){
+  padding-bottom: 38px;
+}
+
+@media (max-width: 700px){
+
+  body.en-compartidos .comp-post--nota .comp-post-nota-contenido{
+    padding: 2px 11px 15px;
+  }
+
+  body.en-compartidos .comp-post--nota .comp-post-verse-block{
+    margin-bottom: 11px !important;
+    font-size: 14px;
+    line-height: 1.34;
+  }
+
+  body.en-compartidos .comp-post--nota .comp-post-note-block{
+    font-size: 14px;
+    line-height: 1.44;
+  }
+}
+
 </style>
