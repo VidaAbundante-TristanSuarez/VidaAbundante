@@ -6900,98 +6900,445 @@ window.mostrarBarraAcciones = () => {
   aplicarEstadoBarra(ctx);
 };
 
-// ================= 🔺 ABRIR COMPARTIR MARCADOR ===========================
+// ================= 🔺 COMPARTIR NOTA COMO IMAGEN PNG ===========================
+
 let __compartirMarcadorId = null;
+
+window.__notaShareFiles = window.__notaShareFiles || new Map();
+
+function notaShareColorContraste(color = "#fff3b0") {
+  const c = String(color || "#fff3b0").trim();
+
+  if (c.startsWith("rgb")) {
+    const nums = c.match(/\d+/g)?.map(Number) || [255, 255, 255];
+    const lum = (0.299 * nums[0]) + (0.587 * nums[1]) + (0.114 * nums[2]);
+    return lum > 155 ? "#000000" : "#ffffff";
+  }
+
+  let hex = c.replace("#", "");
+  if (hex.length === 3) {
+    hex = hex.split("").map(x => x + x).join("");
+  }
+
+  const r = parseInt(hex.slice(0, 2), 16) || 255;
+  const g = parseInt(hex.slice(2, 4), 16) || 255;
+  const b = parseInt(hex.slice(4, 6), 16) || 255;
+
+  const lum = (0.299 * r) + (0.587 * g) + (0.114 * b);
+  return lum > 155 ? "#000000" : "#ffffff";
+}
+
+function notaShareNombreArchivo(titulo = "nota") {
+  const limpio = String(titulo || "nota")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 46);
+
+  return `nota_${limpio || "vida_abundante"}.png`;
+}
+
+function notaShareFondoPantallaActual() {
+  const ids = document.body.classList.contains("en-panel")
+    ? ["fondoPanel", "fondoCompartidos", "fondoBiblia"]
+    : ["fondoCompartidos", "fondoPanel", "fondoBiblia"];
+
+  for (const id of ids) {
+    const el = document.getElementById(id);
+    if (!el) continue;
+
+    const bg = getComputedStyle(el).backgroundImage;
+    if (bg && bg !== "none") {
+      return bg;
+    }
+  }
+
+  return "";
+}
+
+function notaShareRangoVersiculos(numeros = []) {
+  const nums = [...new Set(
+    (numeros || [])
+      .map(Number)
+      .filter(n => Number.isFinite(n))
+  )].sort((a, b) => a - b);
+
+  if (!nums.length) return "";
+
+  const rangos = [];
+  let inicio = nums[0];
+  let fin = nums[0];
+
+  for (let i = 1; i < nums.length; i++) {
+    const actual = nums[i];
+
+    if (actual === fin + 1) {
+      fin = actual;
+      continue;
+    }
+
+    rangos.push(inicio === fin ? `${inicio}` : `${inicio}-${fin}`);
+    inicio = actual;
+    fin = actual;
+  }
+
+  rangos.push(inicio === fin ? `${inicio}` : `${inicio}-${fin}`);
+
+  return rangos.join(" y ");
+}
+
+function notaShareTextoVersiculoMarcador(m = {}) {
+  if (m?.origen === "abc") {
+    return String(m.abcTexto || "").trim();
+  }
+
+  if (!m.libro || !m.capitulo || !(m.versiculos || []).length) {
+    return "";
+  }
+
+  return (m.versiculos || [])
+    .map(n => {
+      const vv = bibliaData.find(x =>
+        x.Libro === m.libro &&
+        Number(x.Capitulo) === Number(m.capitulo) &&
+        Number(x.Versiculo) === Number(n)
+      );
+
+      return vv ? getTextoVersiculo(vv) : "";
+    })
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+}
+
+function notaShareReferenciaMarcador(m = {}) {
+  if (m.ref) return String(m.ref).trim();
+
+  if (m.libro && m.capitulo && (m.versiculos || []).length) {
+    const rango = notaShareRangoVersiculos(m.versiculos);
+    return `${m.libro} ${m.capitulo}:${rango}`;
+  }
+
+  if (m.libro && m.capitulo) {
+    return `${m.libro} ${m.capitulo}`;
+  }
+
+  return "Nota";
+}
+
+function notaShareFechaHora(ts) {
+  if (!ts) return "";
+
+  try {
+    return new Date(Number(ts)).toLocaleString("es-AR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+  } catch {
+    return "";
+  }
+}
+
+function notaShareDatosDesdeMarcador(m = {}) {
+  const referencia = notaShareReferenciaMarcador(m);
+  const fecha = notaShareFechaHora(m.fecha);
+
+  return {
+    titulo: String(m.titulo || "Nota").trim() || "Nota",
+    referencia,
+    meta: [referencia, fecha].filter(Boolean).join(" · "),
+    versiculo: notaShareTextoVersiculoMarcador(m),
+    texto: String(m.nota || "").trim(),
+    fondo: String(m.color || "#fff3b0").trim()
+  };
+}
+
+function notaShareCrearNodo(datos = {}) {
+  const stage = document.createElement("div");
+  stage.className = "nota-share-stage";
+
+  const fondoPantalla = notaShareFondoPantallaActual();
+
+  if (fondoPantalla) {
+    stage.style.backgroundImage = fondoPantalla;
+  } else {
+    stage.style.backgroundImage =
+      "linear-gradient(145deg, rgba(255,214,232,.72), rgba(209,238,255,.72))";
+  }
+
+  const card = document.createElement("div");
+  card.className = "nota-share-card";
+  card.style.setProperty("--nota-share-fondo", datos.fondo || "#fff3b0");
+  card.style.setProperty(
+    "--nota-share-texto",
+    notaShareColorContraste(datos.fondo || "#fff3b0")
+  );
+
+  const agregar = (clase, texto) => {
+    const limpio = String(texto || "").trim();
+    if (!limpio) return;
+
+    const div = document.createElement("div");
+    div.className = clase;
+    div.textContent = limpio;
+    card.appendChild(div);
+  };
+
+  agregar("nota-share-title", datos.titulo);
+  agregar("nota-share-meta", datos.meta);
+  agregar("nota-share-verse", datos.versiculo);
+  agregar("nota-share-text", datos.texto);
+  agregar("nota-share-firma", "Vida Abundante");
+
+  stage.appendChild(card);
+  document.body.appendChild(stage);
+
+  return stage;
+}
+
+function notaShareCanvasBlob(canvas) {
+  return new Promise((resolve, reject) => {
+    try {
+      canvas.toBlob(blob => {
+        if (!blob) {
+          reject(new Error("No se pudo convertir la nota a PNG."));
+          return;
+        }
+
+        resolve(blob);
+      }, "image/png", 0.98);
+    } catch (e) {
+      reject(e);
+    }
+  });
+}
+
+function notaShareClaveCache(claveBase = "", datos = {}) {
+  return [
+    claveBase,
+    datos.titulo,
+    datos.meta,
+    datos.versiculo,
+    datos.texto,
+    datos.fondo
+  ].join("|");
+}
+
+async function notaShareGenerarArchivo(datos = {}) {
+  if (typeof html2canvas !== "function") {
+    throw new Error("Falta html2canvas para generar la imagen.");
+  }
+
+  const stage = notaShareCrearNodo(datos);
+
+  try {
+    await new Promise(resolve =>
+      requestAnimationFrame(() => requestAnimationFrame(resolve))
+    );
+
+    if (document.fonts?.ready) {
+      await document.fonts.ready;
+    }
+
+    const capturar = async () => {
+      const canvas = await html2canvas(stage, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: false,
+        logging: false,
+        backgroundColor: null
+      });
+
+      return await notaShareCanvasBlob(canvas);
+    };
+
+    let blob;
+
+    try {
+      blob = await capturar();
+    } catch (errorFondo) {
+      console.warn("No pude usar el fondo visual en la captura. Uso fondo suave.", errorFondo);
+
+      stage.style.backgroundImage =
+        "linear-gradient(145deg, rgba(255,214,232,.82), rgba(209,238,255,.82))";
+
+      blob = await capturar();
+    }
+
+    return new File(
+      [blob],
+      notaShareNombreArchivo(datos.titulo),
+      { type: "image/png" }
+    );
+
+  } finally {
+    stage.remove();
+  }
+}
+
+window.notaPrepararComoImagen = async function(datos = {}, claveBase = "nota") {
+  const clave = notaShareClaveCache(claveBase, datos);
+
+  if (window.__notaShareFiles.has(clave)) {
+    return await window.__notaShareFiles.get(clave);
+  }
+
+  const preparando = notaShareGenerarArchivo(datos);
+  window.__notaShareFiles.set(clave, preparando);
+
+  try {
+    return await preparando;
+  } catch (e) {
+    window.__notaShareFiles.delete(clave);
+    throw e;
+  }
+};
+
+window.notaCompartirComoImagen = async function(datos = {}, claveBase = "nota", boton = null) {
+  const icono = boton?.querySelector("i");
+  const claseAnterior = icono?.className || "";
+
+  try {
+    if (boton) boton.disabled = true;
+
+    if (icono) {
+      icono.className = "fa-solid fa-spinner fa-spin";
+    }
+
+    const file = await window.notaPrepararComoImagen(datos, claveBase);
+
+    if (navigator.share && navigator.canShare?.({ files: [file] })) {
+      await navigator.share({
+        files: [file],
+        title: datos.titulo || "Nota - Vida Abundante"
+      });
+
+      return true;
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+    const a = document.createElement("a");
+
+    a.href = objectUrl;
+    a.download = file.name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 2000);
+
+    alert("Este navegador no permite compartir la imagen directamente. Descargué el PNG para que puedas enviarlo.");
+
+    return false;
+
+  } catch (e) {
+    if (e?.name !== "AbortError") {
+      console.error("No pude compartir la nota como imagen:", e);
+      alert("No pude generar o compartir la imagen de esta nota.");
+    }
+
+    return false;
+
+  } finally {
+    if (boton) boton.disabled = false;
+
+    if (icono && claseAnterior) {
+      icono.className = claseAnterior;
+    }
+  }
+};
+
+// ================= 🔺 ABRIR COMPARTIR MARCADOR ===========================
 
 window.abrirCompartirMarcador = (id) => {
   __compartirMarcadorId = id;
+
   const modal = document.getElementById("modalCompartirMarcador");
   if (modal) {
     modal.style.display = "flex";
-    modal.setAttribute("aria-hidden","false");
+    modal.setAttribute("aria-hidden", "false");
+  }
+
+  // ✅ Prepara el PNG apenas se abre el modal.
+  // Así, cuando se toca compartir en redes, el archivo ya está listo.
+  const m = (marcadores || {})[id];
+
+  if (m && typeof window.notaPrepararComoImagen === "function") {
+    const datos = notaShareDatosDesdeMarcador(m);
+
+    window.notaPrepararComoImagen(datos, `panel_${id}`)
+      .catch(e => console.warn("No pude precargar imagen de nota:", e));
   }
 };
 
 // ================= 🔺 CERRAR COMPARTIR MARCADOR ===========================
+
 window.cerrarCompartirMarcador = () => {
   __compartirMarcadorId = null;
+
   const modal = document.getElementById("modalCompartirMarcador");
   if (modal) {
     modal.style.display = "none";
-    modal.setAttribute("aria-hidden","true");
+    modal.setAttribute("aria-hidden", "true");
   }
 };
 
 // ================= 🔺 COMPARTIR MARCADOR ===========================
+
 window.compartirMarcador = async (destino) => {
   const id = __compartirMarcadorId;
   if (!id) return;
 
-  if (notasCompartidasPanel[id]) {
-  mostrarToast("✅ Esta nota ya está en Compartidos");
-  cerrarCompartirMarcador();
-  return;
-}
-  
   const m = (marcadores || {})[id];
   if (!m) return;
 
-  // armar texto
-  let textoVers = "";
-  if (m.libro && m.capitulo && (m.versiculos || []).length) {
-    const partes = (m.versiculos || []).map(n => {
-      const vv = bibliaData.find(x => x.Libro === m.libro && x.Capitulo == m.capitulo && x.Versiculo == n);
-    return vv ? getTextoVersiculo(vv) : "";
-    }).filter(Boolean);
-    textoVers = partes.join(" ");
-  }
+  const datos = notaShareDatosDesdeMarcador(m);
+  const textoVers = datos.versiculo;
+  const referencia = datos.referencia;
 
-  const payload = [
-    m.titulo ? `*${m.titulo}*` : "",
-    m.ref ? m.ref : "Nota",
-    textoVers,
-    m.nota || ""
-  ].filter(Boolean).join("\n\n");
-
+  // ✅ REDES SIEMPRE PERMITIDO, aunque ya esté en Compartidos.
+  // Comparte imagen PNG, no texto.
   if (destino === "redes") {
-    try {
-      if (navigator.share) {
-        await navigator.share({ text: payload, title: "Marcador" });
-      } else {
-        await navigator.clipboard.writeText(payload);
-        alert("Tu dispositivo no permite compartir directo. Copié el texto al portapapeles.");
-      }
-    } catch (e) {
-      console.error(e);
-    }
+    await window.notaCompartirComoImagen(datos, `panel_${id}`);
     cerrarCompartirMarcador();
     return;
   }
 
-  // destino = iglesia: guardar copia en DB
-  // destino = compartidos: guardar copia en DB
+  // ✅ Este bloqueo solo aplica a volver a publicar en Compartidos.
+  if (notasCompartidasPanel[id]) {
+    mostrarToast("✅ Esta nota ya está en Compartidos");
+    cerrarCompartirMarcador();
+    return;
+  }
+
   try {
     const ts = Date.now();
 
-await set(ref(db, `compartidos/notas/${ts}`), {
-  ...m,
-  marcadorId: id,
-  uid,
-  tipo: "nota",
-  publicadoPor: uid,
-  publicadoEn: ts,
-  ts,
+    await set(ref(db, `compartidos/notas/${ts}`), {
+      ...m,
+      marcadorId: id,
+      uid,
+      tipo: "nota",
+      publicadoPor: uid,
+      publicadoEn: ts,
+      ts,
 
-  // ✅ guardamos el texto bíblico ya armado desde Biblia
-  textoVersiculo: textoVers,
-  textoBiblico: textoVers,
-  ref: m.ref || "",
-  libro: m.libro || "",
-  capitulo: Number(m.capitulo || 0),
-  versiculos: Array.isArray(m.versiculos) ? m.versiculos : []
-});
+      // ✅ Guardamos estos datos para que desde Compartidos
+      // se pueda volver a generar la misma imagen.
+      textoVersiculo: textoVers,
+      textoBiblico: textoVers,
+      ref: referencia,
+      libro: m.libro || "",
+      capitulo: Number(m.capitulo || 0),
+      versiculos: Array.isArray(m.versiculos) ? m.versiculos : []
+    });
 
     mostrarToast("✅ Compartido en Compartidos");
+
   } catch (e) {
     console.error(e);
     mostrarToast("❌ No se pudo compartir");
