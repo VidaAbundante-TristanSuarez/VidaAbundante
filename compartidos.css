@@ -1360,7 +1360,7 @@ body.en-compartidos .comp-post--nota:has(.comp-action-delete){
 
 /* =========================================================
    COMPARTIDOS - ORACIONES GENERALES DE PUBLICACIONES
-   Clases nuevas: no pisan notas, imágenes ni devocionales
+   Modal compacto + Pickr + sin scroll horizontal
 ========================================================= */
 
 .comp-ora-overlay{
@@ -1368,8 +1368,12 @@ body.en-compartidos .comp-post--nota:has(.comp-action-delete){
   position: fixed;
   inset: 0;
   z-index: 1000000;
-  padding: 16px;
+
+  padding: 14px;
+  overflow: hidden;
+
   background: rgba(0,0,0,.58);
+
   align-items: center;
   justify-content: center;
 }
@@ -1380,119 +1384,197 @@ body.en-compartidos .comp-post--nota:has(.comp-action-delete){
 
 .comp-ora-card{
   position: relative;
-  width: min(100%, 460px);
-  max-height: min(92vh, 720px);
-  overflow: auto;
+
+  width: min(460px, calc(100vw - 28px)) !important;
+  max-width: 460px !important;
+  min-width: 0 !important;
+
+  max-height: min(92dvh, 720px);
+
+  overflow-y: auto;
+  overflow-x: hidden;
+
   padding: 18px 16px 16px;
+  box-sizing: border-box;
+
   border-radius: 22px;
   background: #fff;
   color: #000;
+
   box-shadow: 0 16px 42px rgba(0,0,0,.26);
 }
 
-.comp-ora-card h3{
-  margin: 2px 36px 15px 0;
-  font-size: 18px;
-  line-height: 1.25;
+.comp-ora-card *,
+.comp-ora-card *::before,
+.comp-ora-card *::after{
+  box-sizing: border-box;
+  max-width: 100%;
 }
 
-.comp-ora-card--lista{
-  width: min(100%, 520px);
+.comp-ora-card h3{
+  margin: 2px 40px 15px 0;
+  padding: 0;
+
+  font-size: 18px;
+  line-height: 1.25;
+  font-weight: 900;
+
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .comp-ora-close{
   position: absolute;
   top: 10px;
   right: 10px;
+
   width: 34px;
   height: 34px;
   min-width: 34px;
+
   border: none;
   border-radius: 999px;
+
   background: var(--ui-azul-claro, #d1eeff);
   color: #000;
+
   font-weight: 900;
+  font-size: 18px;
+  line-height: 1;
+
   cursor: pointer;
 }
 
 .comp-ora-textarea{
   display: block;
+
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   min-height: 145px;
-  resize: vertical;
+
   padding: 13px 12px;
+  margin: 0;
+
   border: 1px solid rgba(0,0,0,.16);
   border-radius: 16px;
+
   font: inherit;
   font-size: 14px;
   line-height: 1.45;
+
   color: #000;
   background: #fff;
+
+  resize: vertical;
+  overflow-x: hidden;
 }
 
 .comp-ora-controls{
   display: flex;
   flex-direction: column;
   gap: 12px;
+
+  width: 100%;
+  min-width: 0;
+
   margin-top: 13px;
   padding: 12px;
+
+  overflow: hidden;
+
   border-radius: 15px;
   background: rgba(209,238,255,.40);
 }
 
-.comp-ora-color-label,
-.comp-ora-publica-label{
+.comp-ora-color-label{
   display: flex;
   align-items: center;
   gap: 10px;
+
+  min-width: 0;
+
   font-size: 14px;
   font-weight: 700;
 }
 
-.comp-ora-color-label input[type="color"]{
-  width: 38px;
-  height: 38px;
-  padding: 2px;
-  border: 1px solid rgba(0,0,0,.18);
-  border-radius: 999px;
-  background: #fff;
-  cursor: pointer;
+.comp-ora-color-label .pickr-host,
+.comp-ora-color-label .pickr-host.pickr,
+.comp-ora-color-label .pickr-host.pcr-button{
+  width: 48px;
+  height: 40px;
+  min-width: 48px;
+  min-height: 40px;
+
+  border-radius: 10px;
+  flex: 0 0 48px;
+}
+
+.comp-ora-publica-label{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  min-width: 0;
+
+  font-size: 14px;
+  font-weight: 700;
 }
 
 .comp-ora-publica-label input{
   width: 18px;
   height: 18px;
+  min-width: 18px;
+  flex: 0 0 18px;
 }
 
 .comp-ora-actions-modal{
   display: flex;
   justify-content: center;
   gap: 10px;
+
+  width: 100%;
   margin-top: 16px;
 }
 
-.comp-ora-actions-modal .btn-primary,
-.comp-ora-item-actions .btn-primary{
+.comp-ora-actions-modal .btn-primary{
   width: auto !important;
   height: auto !important;
   min-width: 0 !important;
   min-height: 0 !important;
-  padding: 10px 14px !important;
+
+  padding: 10px 15px !important;
+
+  border: none;
   border-radius: 999px !important;
+
   background: var(--ui-azul-claro, #d1eeff) !important;
   color: #000 !important;
+
+  font-size: 14px;
   font-weight: 800;
-  border: none;
+
   cursor: pointer;
+}
+
+.comp-ora-actions-modal .btn-primary:hover{
+  background: var(--ui-azul-hover, #a6d0ff) !important;
+}
+
+/* Se mantienen porque el modal de lista privada todavía existe internamente */
+.comp-ora-card--lista{
+  width: min(520px, calc(100vw - 28px)) !important;
+  max-width: 520px !important;
 }
 
 .comp-ora-lista-contenido{
   display: flex;
   flex-direction: column;
   gap: 10px;
+
   max-height: 64vh;
   overflow-y: auto;
-  padding-right: 2px;
+  overflow-x: hidden;
 }
 
 .comp-ora-vacio{
@@ -1514,7 +1596,9 @@ body.en-compartidos .comp-post--nota:has(.comp-action-delete){
   display: flex;
   justify-content: space-between;
   gap: 8px;
+
   margin-bottom: 7px;
+
   font-size: 11px;
   line-height: 1.25;
   opacity: .72;
@@ -1522,7 +1606,7 @@ body.en-compartidos .comp-post--nota:has(.comp-action-delete){
 
 .comp-ora-item-texto{
   white-space: pre-wrap;
-  word-break: break-word;
+  overflow-wrap: anywhere;
   font-size: 14px;
   line-height: 1.42;
 }
@@ -1532,6 +1616,19 @@ body.en-compartidos .comp-post--nota:has(.comp-action-delete){
   justify-content: flex-end;
   gap: 8px;
   margin-top: 11px;
+}
+
+.comp-ora-item-actions .btn-primary{
+  width: auto !important;
+  height: auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+
+  padding: 9px 13px !important;
+  border-radius: 999px !important;
+
+  background: var(--ui-azul-claro, #d1eeff) !important;
+  color: #000 !important;
 }
 
 .comp-ora-item-actions .comp-ora-danger{
@@ -1546,12 +1643,21 @@ body.en-compartidos .comp-post--nota:has(.comp-action-delete){
   }
 
   .comp-ora-card{
+    width: calc(100vw - 20px) !important;
+    max-width: calc(100vw - 20px) !important;
+    max-height: calc(100dvh - 20px);
+
     padding: 16px 13px 14px;
     border-radius: 19px;
   }
 
+  .comp-ora-card--lista{
+    width: calc(100vw - 20px) !important;
+    max-width: calc(100vw - 20px) !important;
+  }
+
   .comp-ora-textarea{
-    min-height: 130px;
+    min-height: 128px;
   }
 }
 
