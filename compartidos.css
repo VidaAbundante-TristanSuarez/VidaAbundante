@@ -1539,27 +1539,6 @@ body.en-compartidos .comp-post--nota:has(.comp-action-delete){
   color: #940000 !important;
 }
 
-.comp-ora-ver-btn{
-  position: relative;
-}
-
-.comp-ora-badge{
-  position: absolute;
-  right: -5px;
-  top: -5px;
-  min-width: 17px;
-  height: 17px;
-  padding: 0 4px;
-  border-radius: 999px;
-  background: #1d3f71;
-  color: #fff;
-  font-size: 10px;
-  font-weight: 900;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
 @media (max-width: 700px){
 
   .comp-ora-overlay{
