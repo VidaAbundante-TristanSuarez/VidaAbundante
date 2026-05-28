@@ -1095,16 +1095,18 @@ window.compAbrirListaOracionesPublicacion = async function compAbrirListaOracion
   compOraListaActual = {};
 
   box.innerHTML = entries.map(([id, it]) => {
-    const puedeEditar = !!uid && String(it.autorUid || "") === String(uid);
-    const color = compOraColorSeguro(it.color);
-    const privada = it.publica === false;
+const esMia = !!uid && String(it.autorUid || "") === String(uid);
+const puedeEditar = esMia;
+const color = compOraColorSeguro(it.color);
+const privada = it.publica === false;
+const autor = esMia ? "Tú" : "Hermano/a";
 
     compOraListaActual[`${key}__${id}`] = it;
 
     return `
       <div class="comp-ora-item" style="background:${compEscape(color)};">
         <div class="comp-ora-item-head">
-          <strong>${compEscape(it.autorNombre || "Hermano/a")}</strong>
+          <strong>${compEscape(autor)}</strong>
           <span>
             ${privada ? "Privada · " : ""}
             ${compEscape(compOraFecha(it.creadoEn))}
@@ -1116,20 +1118,24 @@ window.compAbrirListaOracionesPublicacion = async function compAbrirListaOracion
         ${puedeEditar ? `
           <div class="comp-ora-item-actions">
             <button
-              type="button"
-              class="btn-primary"
-              onclick="compEditarOracionPublicacion('${compJs(key)}', '${compJs(id)}')"
-            >
-              Editar
-            </button>
+  type="button"
+  class="btn-primary"
+  onclick="compEditarOracionPublicacion('${compJs(key)}', '${compJs(id)}')"
+  title="Editar oración"
+  aria-label="Editar oración"
+>
+  <i class="fa-solid fa-pen"></i>
+</button>
 
-            <button
-              type="button"
-              class="btn-primary comp-ora-danger"
-              onclick="compBorrarOracionPublicacion('${compJs(key)}', '${compJs(id)}')"
-            >
-              Borrar
-            </button>
+<button
+  type="button"
+  class="btn-primary comp-ora-danger"
+  onclick="compBorrarOracionPublicacion('${compJs(key)}', '${compJs(id)}')"
+  title="Borrar oración"
+  aria-label="Borrar oración"
+>
+  <i class="fa-solid fa-trash"></i>
+</button>
           </div>
         ` : ``}
       </div>
@@ -1297,9 +1303,8 @@ function compRenderOracionesPublicacionHTML(item = {}) {
           const esMia = !!uidActual &&
             String(it.autorUid || "") === uidActual;
 
-          const autor = esMia
-            ? "Tú"
-            : String(it.autorNombre || "Hermano/a");
+          // ✅ Nunca mostramos nombre real de la cuenta
+          const autor = esMia ? "Tú" : "Hermano/a";
 
           const fechaTxt = it.creadoEn
             ? new Date(Number(it.creadoEn)).toLocaleDateString("es-AR", {
@@ -1309,8 +1314,6 @@ function compRenderOracionesPublicacionHTML(item = {}) {
               })
             : "";
 
-          // ✅ Editar solamente la propia.
-          // ✅ Borrar la propia o, si sos admin, moderar una ajena.
           const puedeEditar = esMia;
           const puedeBorrar = esMia || admin;
 
@@ -1334,9 +1337,9 @@ function compRenderOracionesPublicacionHTML(item = {}) {
                       type="button"
                       onclick="compEditarOracionPublicacion('${compJs(key)}', '${compJs(id)}')"
                       title="Editar oración"
+                      aria-label="Editar oración"
                     >
                       <i class="fa-solid fa-pen"></i>
-                      Editar
                     </button>
                   ` : ``}
 
@@ -1346,9 +1349,9 @@ function compRenderOracionesPublicacionHTML(item = {}) {
                       class="comp-dev-oracion-delete"
                       onclick="compBorrarOracionPublicacion('${compJs(key)}', '${compJs(id)}')"
                       title="Borrar oración"
+                      aria-label="Borrar oración"
                     >
                       <i class="fa-solid fa-trash"></i>
-                      Borrar
                     </button>
                   ` : ``}
 
@@ -2546,7 +2549,7 @@ function compRenderOracionesDevocionalHTML(item) {
 
   if (!oraciones.length) return "";
 
-  const uidActual = compUidActual();
+  const uidActual = String(compUidActual() || "");
   const admin = compEsAdmin();
 
   return `
@@ -2558,9 +2561,11 @@ function compRenderOracionesDevocionalHTML(item) {
           const fondo = o.color || "#f5f5f5";
           const colorTexto = compColorContraste(fondo);
 
-          const autor = (uidActual && o.autorUid === uidActual)
-            ? "Tú"
-            : (o.autorNombre || o.nombreAutor || "Hermano/a");
+          const esMia = !!uidActual &&
+            String(o.autorUid || "") === uidActual;
+
+          // ✅ Nunca mostramos nombre de cuenta en Compartidos
+          const autor = esMia ? "Tú" : "Hermano/a";
 
           const fechaTxt = o.fecha
             ? new Date(o.fecha).toLocaleDateString("es-AR", {
@@ -2572,13 +2577,14 @@ function compRenderOracionesDevocionalHTML(item) {
 
           const oracionId = String(o.id || o.comentId || o.key || "");
 
-          const puedeEditar = !!oracionId && (
-            admin ||
-            (uidActual && o.autorUid === uidActual)
-          );
+          const puedeEditar = !!oracionId && esMia;
+          const puedeBorrar = !!oracionId && (esMia || admin);
 
           return `
-            <div class="comp-dev-oracion" style="background:${compEscape(fondo)}; color:${compEscape(colorTexto)};">
+            <div
+              class="comp-dev-oracion"
+              style="background:${compEscape(fondo)}; color:${compEscape(colorTexto)};"
+            >
               <div class="comp-dev-oracion-top">
                 <span>${compEscape(autor)}</span>
                 <span>${compEscape(fechaTxt)}</span>
@@ -2586,26 +2592,32 @@ function compRenderOracionesDevocionalHTML(item) {
 
               <div class="comp-dev-oracion-texto">${compEscape(o.texto || "")}</div>
 
-              ${puedeEditar ? `
+              ${(puedeEditar || puedeBorrar) ? `
                 <div class="comp-dev-oracion-actions">
-                  <button
-                    type="button"
-                    onclick="devEditarOracionPropia('${compJs(uidOwner)}','${compJs(tsKey)}','${compJs(oracionId)}')"
-                    title="Editar oración"
-                  >
-                    <i class="fa-solid fa-pen"></i>
-                    Editar
-                  </button>
 
-                  <button
-                    type="button"
-                    class="comp-dev-oracion-delete"
-                    onclick="devBorrarOracionPropia('${compJs(uidOwner)}','${compJs(tsKey)}','${compJs(oracionId)}')"
-                    title="Borrar oración"
-                  >
-                    <i class="fa-solid fa-trash"></i>
-                    Borrar
-                  </button>
+                  ${puedeEditar ? `
+                    <button
+                      type="button"
+                      onclick="devEditarOracionPropia('${compJs(uidOwner)}','${compJs(tsKey)}','${compJs(oracionId)}')"
+                      title="Editar oración"
+                      aria-label="Editar oración"
+                    >
+                      <i class="fa-solid fa-pen"></i>
+                    </button>
+                  ` : ``}
+
+                  ${puedeBorrar ? `
+                    <button
+                      type="button"
+                      class="comp-dev-oracion-delete"
+                      onclick="devBorrarOracionPropia('${compJs(uidOwner)}','${compJs(tsKey)}','${compJs(oracionId)}')"
+                      title="Borrar oración"
+                      aria-label="Borrar oración"
+                    >
+                      <i class="fa-solid fa-trash"></i>
+                    </button>
+                  ` : ``}
+
                 </div>
               ` : ``}
             </div>
