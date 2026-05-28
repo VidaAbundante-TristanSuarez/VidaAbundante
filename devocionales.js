@@ -1398,9 +1398,9 @@ function crearListaFuentes(fase){
    ========================================================= */
 const fondosCategorias = {
   paisajes: [
-     "./img/fondos/Paisajes/1a.jpeg",
-      "./img/fondos/Paisajes/2a.jpeg",
-      "./img/fondos/Paisajes/3a.jpeg",
+     "./img/fondos/Paisajes/1a.jpg",
+      "./img/fondos/Paisajes/2a.jpg",
+      "./img/fondos/Paisajes/3a.jpg",
       "./img/fondos/Paisajes/4a.jfif",
       "./img/fondos/Paisajes/5a.jfif",
       "./img/fondos/Paisajes/6a.jfif",
