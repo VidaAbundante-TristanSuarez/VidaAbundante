@@ -4450,4 +4450,90 @@ body.oscuro #modalPersonalizar #btnModoFondoBiblia{
   }
 }
 
+/* =========================================================
+   NOTAS - CAPTURA PNG PARA COMPARTIR EN REDES
+   Se usa desde Mi Panel y desde Compartidos
+========================================================= */
+
+.nota-share-stage{
+  position: fixed;
+  left: -12000px;
+  top: 0;
+  z-index: -1;
+
+  width: 720px;
+  padding: 24px;
+
+  background-color: #f4eef2;
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+
+  font-family: Arial, sans-serif;
+  box-sizing: border-box;
+}
+
+.nota-share-card{
+  width: 100%;
+  box-sizing: border-box;
+
+  padding: 26px 25px 30px;
+  border-radius: 30px;
+
+  background: var(--nota-share-fondo, #fff3b0);
+  color: var(--nota-share-texto, #000);
+
+  border: 1px solid rgba(0,0,0,.10);
+  box-shadow: 0 10px 28px rgba(0,0,0,.16);
+}
+
+.nota-share-title{
+  font-size: 27px;
+  line-height: 1.18;
+  font-weight: 800;
+  margin: 0 0 5px;
+}
+
+.nota-share-meta{
+  font-size: 20px;
+  line-height: 1.25;
+  font-weight: 400;
+  opacity: .88;
+  margin: 0 0 22px;
+}
+
+.nota-share-verse{
+  margin: 0 0 20px;
+
+  font-family: "Lora", Georgia, serif;
+  font-size: 25px;
+  line-height: 1.36;
+  font-weight: 700;
+  font-style: italic;
+
+  white-space: pre-wrap;
+}
+
+.nota-share-text{
+  margin: 0;
+
+  font-size: 24px;
+  line-height: 1.56;
+  font-weight: 400;
+
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.nota-share-firma{
+  margin-top: 25px;
+  padding-top: 13px;
+  border-top: 1px solid rgba(0,0,0,.12);
+
+  font-size: 16px;
+  font-weight: 700;
+  opacity: .70;
+  text-align: right;
+}
+
 </style> 
