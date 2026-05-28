@@ -2743,7 +2743,7 @@ body.oscuro .pickr-host.pcr-button{
   display:none !important;
 }
 
-/* inputs hidden reales */
+/* inputs hidden reales usados por Pickr */
 input[type="hidden"]#personalizarColor,
 input[type="hidden"]#marcadorColor,
 input[type="hidden"]#dev1Color,
@@ -2752,6 +2752,7 @@ input[type="hidden"]#colorFondoPlano,
 input[type="hidden"]#dev2Fondo,
 input[type="hidden"]#colorFondoApp,
 input[type="hidden"]#colorTextoApp,
+input[type="hidden"]#compOraColor,
 .input-color-paleta{
   display:none !important;
 }
