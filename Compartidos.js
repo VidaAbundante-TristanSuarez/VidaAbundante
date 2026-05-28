@@ -1407,18 +1407,128 @@ function compTextoVersiculoNota(item = {}, textoNota = "", titulo = "") {
   return limpio;
 }
 
+function compFechaHoraNota(item = {}) {
+  const ts = compTs(item);
+  if (!ts) return "";
+
+  try {
+    return new Date(ts).toLocaleString("es-AR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+  } catch {
+    return "";
+  }
+}
+
+function compDatosImagenNota(item = {}) {
+  const titulo = String(item.titulo || item.title || "Nota").trim() || "Nota";
+  const texto = String(item.texto || item.nota || item.textoLibre || "").trim();
+
+  const versiculo = compTextoVersiculoNota(item, texto, titulo);
+  const referencia = compReferenciaItem(item) || "Nota";
+  const fecha = compFechaHoraNota(item);
+
+  return {
+    titulo,
+    referencia,
+    meta: [referencia, fecha].filter(Boolean).join(" · "),
+    versiculo,
+    texto,
+    fondo: compNotaFondo(item)
+  };
+}
+
+function compBuscarNotaPorKey(key) {
+  return compUnificarItems().find(item =>
+    item.tipo === "nota" &&
+    compKeyItem(item) === key
+  );
+}
+
+window.compCompartirNotaComoImagen = async function compCompartirNotaComoImagen(key, boton = null) {
+  const item = compBuscarNotaPorKey(key);
+
+  if (!item) {
+    alert("No encontré esa nota.");
+    return;
+  }
+
+  if (typeof window.notaCompartirComoImagen !== "function") {
+    alert("Todavía no está listo el generador de imagen de notas.");
+    return;
+  }
+
+  const datos = compDatosImagenNota(item);
+
+  await window.notaCompartirComoImagen(
+    datos,
+    `compartidos_${key}`,
+    boton
+  );
+};
+
+function compPrepararImagenNotaCompartida(key) {
+  const item = compBuscarNotaPorKey(key);
+
+  if (!item) return;
+  if (typeof window.notaPrepararComoImagen !== "function") return;
+
+  const datos = compDatosImagenNota(item);
+
+  window.notaPrepararComoImagen(datos, `compartidos_${key}`)
+    .catch(e => console.warn("No pude precargar la nota compartida:", e));
+}
+
+let compNotasShareObserver = null;
+
+function compObservarNotasParaCompartir() {
+  const cards = document.querySelectorAll(
+    "#compLista .comp-post--nota[data-comp-nota-key]"
+  );
+
+  if (!cards.length) return;
+
+  if (!("IntersectionObserver" in window)) {
+    cards.forEach(card => {
+      compPrepararImagenNotaCompartida(card.dataset.compNotaKey || "");
+    });
+    return;
+  }
+
+  if (!compNotasShareObserver) {
+    compNotasShareObserver = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (!entry.isIntersecting) return;
+
+        const card = entry.target;
+        const key = card.dataset.compNotaKey || "";
+
+        compPrepararImagenNotaCompartida(key);
+        compNotasShareObserver.unobserve(card);
+      });
+    }, {
+      rootMargin: "280px 0px"
+    });
+  }
+
+  cards.forEach(card => {
+    compNotasShareObserver.observe(card);
+  });
+}
+
 function compRenderNota(item) {
-  // ✅ Título real de la nota, como en Mi Panel
   const tituloRaw = String(item.titulo || item.title || "Nota").trim() || "Nota";
   const titulo = compEscape(tituloRaw);
 
-  // ✅ Referencia bíblica + fecha debajo del título
   const referenciaRaw = compReferenciaItem(item) || "Nota compartida";
   const fechaRaw = compItemFecha(item);
   const metaRaw = [referenciaRaw, fechaRaw].filter(Boolean).join(" · ");
   const meta = compEscape(metaRaw);
 
-  // ✅ Reflexión / texto de la nota
   const textoRaw = String(
     item.texto ||
     item.nota ||
@@ -1428,20 +1538,21 @@ function compRenderNota(item) {
 
   const texto = compEscape(textoRaw);
 
-  // ✅ Texto bíblico guardado al compartir desde Mi Panel
   const versoRaw = compTextoVersiculoNota(item, textoRaw, tituloRaw);
   const verso = compEscape(versoRaw);
 
-  // ✅ El color elegido ahora pinta TODA la tarjeta
   const fondo = compNotaFondo(item);
 
   const colorTexto = typeof compColorContraste === "function"
     ? compColorContraste(fondo)
     : "#000000";
 
+  const key = compKeyItem(item);
+
   return `
     <article
       class="comp-post comp-post--nota"
+      data-comp-nota-key="${compEscape(key)}"
       style="
         --comp-nota-fondo:${compEscape(fondo)};
         --comp-nota-texto:${compEscape(colorTexto)};
@@ -1468,6 +1579,17 @@ function compRenderNota(item) {
         ${texto ? `
           <div class="comp-post-note-block">${texto}</div>
         ` : ``}
+      </div>
+
+      <div class="comp-post-actions comp-post-actions--nota">
+        <button
+          type="button"
+          onclick="compCompartirNotaComoImagen('${compJs(key)}', this)"
+          title="Compartir imagen en redes"
+          aria-label="Compartir imagen en redes"
+        >
+          <i class="fa-solid fa-share-nodes"></i>
+        </button>
       </div>
 
       ${compDeleteBtn(item)}
@@ -2040,8 +2162,9 @@ window.renderCompartidos = function renderCompartidos() {
       return "";
     }).join("");
 
-    compActivarBotonesSubidosRenderizados(items);
-    return;
+compActivarBotonesSubidosRenderizados(items);
+compObservarNotasParaCompartir();
+return;
   }
 
   // ✅ Si todavía no respondió todo, NO mostramos “no hay publicaciones”.
