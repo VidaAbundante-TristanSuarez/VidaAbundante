@@ -1278,14 +1278,20 @@ onValue(ref(db, "panelImagenesPersonal/" + uid), s => {
   renderPanelImagenes(panelImagenesGuardadas || {});
 });
 
-  onValue(ref(db, "compartidos/notas"), s => {
+onValue(ref(db, "compartidos/notas"), s => {
   const data = s.val() || {};
   notasCompartidasPanel = {};
 
   Object.entries(data).forEach(([compId, item]) => {
-    const marcadorId = item?.marcadorId || "";
-    if (marcadorId) {
-      notasCompartidasPanel[marcadorId] = true;
+    const marcadorId = String(item?.marcadorId || "");
+    const owner = String(item?.publicadoPor || item?.uid || "");
+
+    // ✅ Solo relacionamos con Mi Panel las publicaciones creadas por este usuario.
+    if (marcadorId && owner === String(uid || "")) {
+      notasCompartidasPanel[marcadorId] = {
+        compId,
+        item
+      };
     }
   });
 
@@ -5572,6 +5578,14 @@ function renderPanelMarcadores() {
       const bgDestacada = (m.destacada || m.keep) ? (m.color || "#fff3b0") : "";
       const colorTextoDestacada = bgDestacada ? colorContraste(bgDestacada) : "";
 
+      const notaVieneDeCompartidos =
+  m?.origen === "compartidos" ||
+  !!m?.sourceCompKey;
+
+const notaEstaPublicadaEnCompartidos =
+  !notaVieneDeCompartidos &&
+  !!notasCompartidasPanel[m.id];
+
       return `
         <div class="card-marcador" style="${bgDestacada ? `background:${bgDestacada} !important; color:${colorTextoDestacada} !important; border:1px solid rgba(0,0,0,.10);` : ""}">
           <div style="display:flex; justify-content:space-between; gap:10px; align-items:center;">
@@ -5596,10 +5610,19 @@ function renderPanelMarcadores() {
                 </button>
 
 <button type="button"
-  class="pm-btn ${notasCompartidasPanel[m.id] ? "pm-btn-compartido" : ""}"
+  class="pm-btn pm-share-main ${notaEstaPublicadaEnCompartidos ? "pm-btn-compartido" : ""}"
   onclick="abrirCompartirMarcador('${m.id}')"
-  title="${notasCompartidasPanel[m.id] ? "Ya compartida en Compartidos" : "Compartir"}">
-  <i class="fa-solid ${notasCompartidasPanel[m.id] ? "fa-check" : "fa-share-nodes"}"></i>
+  title="${notaEstaPublicadaEnCompartidos ? "Ya publicada en Compartidos · tocar para compartir nuevamente" : "Compartir"}">
+  
+  <span class="pm-share-icon-wrap">
+    <i class="fa-solid fa-share-nodes"></i>
+
+    ${notaEstaPublicadaEnCompartidos ? `
+      <span class="pm-share-mini-check">
+        <i class="fa-solid fa-check"></i>
+      </span>
+    ` : ``}
+  </span>
 </button>
               `}
             </div>
@@ -7447,19 +7470,72 @@ window.notaCompartirComoImagen = async function(datos = {}, claveBase = "nota", 
   }
 };
 
-// ================= 🔺 ABRIR COMPARTIR MARCADOR ===========================
+// ================= 🔺 COMPARTIR NOTA DESDE MI PANEL ===========================
+
+function notaPanelVieneDeCompartidos(m = {}) {
+  return (
+    m?.origen === "compartidos" ||
+    !!m?.sourceCompKey
+  );
+}
+
+function notaPanelPublicacionCompartida(id) {
+  return notasCompartidasPanel?.[id] || null;
+}
+
+function actualizarEstadoModalCompartirNota(id) {
+  const m = (marcadores || {})[id];
+  if (!m) return;
+
+  const btnCompartidos = document.getElementById("btnModalNotaCompartidos");
+  const btnRedes = document.getElementById("btnModalNotaRedes");
+  const texto = document.getElementById("modalCompartirMarcadorTexto");
+
+  const vieneDeCompartidos = notaPanelVieneDeCompartidos(m);
+  const yaPublicadaEnCompartidos =
+    !vieneDeCompartidos &&
+    !!notaPanelPublicacionCompartida(id);
+
+  const yaCompartidaEnRedes = m?.compartidaEnRedes === true;
+
+  if (btnCompartidos) {
+    // ✅ Si esta nota vino de Compartidos, no tiene sentido volver a publicarla allí.
+    btnCompartidos.style.display = vieneDeCompartidos ? "none" : "inline-flex";
+    btnCompartidos.classList.toggle("marcada", yaPublicadaEnCompartidos);
+
+    btnCompartidos.title = yaPublicadaEnCompartidos
+      ? "Volver a mostrar arriba en Compartidos"
+      : "Publicar en Compartidos";
+  }
+
+  if (btnRedes) {
+    btnRedes.classList.toggle("marcada", yaCompartidaEnRedes);
+  }
+
+  if (texto) {
+    if (vieneDeCompartidos) {
+      texto.textContent = "Esta nota ya viene de Compartidos. Podés compartirla en redes.";
+    } else if (yaPublicadaEnCompartidos) {
+      texto.textContent = "Ya está en Compartidos. Al tocarlo nuevamente volverá arriba del feed.";
+    } else {
+      texto.textContent = "¿Dónde querés compartir esta nota?";
+    }
+  }
+}
 
 window.abrirCompartirMarcador = (id) => {
   __compartirMarcadorId = id;
 
+  actualizarEstadoModalCompartirNota(id);
+
   const modal = document.getElementById("modalCompartirMarcador");
   if (modal) {
     modal.style.display = "flex";
+    modal.classList.add("abierto");
     modal.setAttribute("aria-hidden", "false");
   }
 
-  // ✅ Prepara el PNG apenas se abre el modal.
-  // Así, cuando se toca compartir en redes, el archivo ya está listo.
+  // ✅ Prepara la imagen apenas abrís el modal para compartir en redes.
   const m = (marcadores || {})[id];
 
   if (m && typeof window.notaPrepararComoImagen === "function") {
@@ -7470,66 +7546,140 @@ window.abrirCompartirMarcador = (id) => {
   }
 };
 
-// ================= 🔺 CERRAR COMPARTIR MARCADOR ===========================
-
 window.cerrarCompartirMarcador = () => {
   __compartirMarcadorId = null;
 
   const modal = document.getElementById("modalCompartirMarcador");
   if (modal) {
     modal.style.display = "none";
+    modal.classList.remove("abierto");
     modal.setAttribute("aria-hidden", "true");
   }
 };
 
-// ================= 🔺 COMPARTIR MARCADOR ===========================
-
-window.compartirMarcador = async (destino) => {
+window.compartirMarcador = async (destino, boton = null) => {
   const id = __compartirMarcadorId;
   if (!id) return;
 
   const m = (marcadores || {})[id];
   if (!m) return;
 
+  const vieneDeCompartidos = notaPanelVieneDeCompartidos(m);
   const datos = notaShareDatosDesdeMarcador(m);
-  const textoVers = datos.versiculo;
-  const referencia = datos.referencia;
+  const textoVers = datos.versiculo || "";
+  const referencia = datos.referencia || m.ref || "";
 
-  // ✅ REDES SIEMPRE PERMITIDO, aunque ya esté en Compartidos.
-  // Comparte imagen PNG, no texto.
+  // =========================================================
+  // REDES: siempre permitido, incluso si ya está en Compartidos
+  // =========================================================
   if (destino === "redes") {
-    await window.notaCompartirComoImagen(datos, `panel_${id}`);
+    const compartio = await window.notaCompartirComoImagen(
+      datos,
+      `panel_${id}`,
+      boton
+    );
+
+    if (compartio) {
+      try {
+        // ✅ Recordamos que esta nota ya se compartió en redes.
+        await Promise.all([
+          set(ref(db, `marcadores/${uid}/${id}/compartidaEnRedes`), true),
+          set(ref(db, `marcadores/${uid}/${id}/compartidaEnRedesTs`), Date.now())
+        ]);
+
+        actualizarEstadoModalCompartirNota(id);
+
+        if (typeof renderPanelMarcadores === "function") {
+          renderPanelMarcadores();
+        }
+
+      } catch (e) {
+        console.warn("Se compartió la imagen, pero no pude guardar el check de Redes:", e);
+      }
+    }
+
     cerrarCompartirMarcador();
     return;
   }
 
-  // ✅ Este bloqueo solo aplica a volver a publicar en Compartidos.
-  if (notasCompartidasPanel[id]) {
-    mostrarToast("✅ Esta nota ya está en Compartidos");
-    cerrarCompartirMarcador();
+  // =========================================================
+  // COMPARTIDOS: una nota recibida desde allí no se republica
+  // =========================================================
+  if (destino === "compartidos" && vieneDeCompartidos) {
+    mostrarToast("Esta nota ya proviene de Compartidos.");
+    actualizarEstadoModalCompartirNota(id);
     return;
   }
 
   try {
-    const ts = Date.now();
+    const ahora = Date.now();
+    const existente = notaPanelPublicacionCompartida(id);
 
-    await set(ref(db, `compartidos/notas/${ts}`), {
+    // =======================================================
+    // YA PUBLICADA: actualizar la MISMA publicación
+    // =======================================================
+    if (existente?.compId) {
+      const publicadaAnterior = existente.item || {};
+
+      await set(ref(db, `compartidos/notas/${existente.compId}`), {
+        ...publicadaAnterior,
+
+        // ✅ Conserva el mismo registro, pero actualiza el contenido
+        // si la nota fue editada antes de volver a compartirla.
+        ...m,
+
+        marcadorId: id,
+        uid,
+        publicadoPor: uid,
+        tipo: "nota",
+
+        textoVersiculo: textoVers,
+        textoBiblico: textoVers,
+        ref: referencia,
+        libro: m.libro || "",
+        capitulo: Number(m.capitulo || 0),
+        versiculos: Array.isArray(m.versiculos) ? m.versiculos : [],
+
+        // ✅ Mantiene fecha original y refresca posición en el feed.
+        fechaOriginal: Number(
+          publicadaAnterior.fechaOriginal ||
+          publicadaAnterior.fecha ||
+          m.fecha ||
+          0
+        ),
+        fecha: ahora,
+        publicadoEn: ahora,
+        ts: ahora,
+        republicadaEn: ahora
+      });
+
+      mostrarToast("✅ La nota volvió arriba en Compartidos");
+      cerrarCompartirMarcador();
+      return;
+    }
+
+    // =======================================================
+    // PRIMERA PUBLICACIÓN: crear una sola vez
+    // =======================================================
+    await set(ref(db, `compartidos/notas/${ahora}`), {
       ...m,
+
       marcadorId: id,
       uid,
-      tipo: "nota",
       publicadoPor: uid,
-      publicadoEn: ts,
-      ts,
+      tipo: "nota",
 
-      // ✅ Guardamos estos datos para que desde Compartidos
-      // se pueda volver a generar la misma imagen.
       textoVersiculo: textoVers,
       textoBiblico: textoVers,
       ref: referencia,
       libro: m.libro || "",
       capitulo: Number(m.capitulo || 0),
-      versiculos: Array.isArray(m.versiculos) ? m.versiculos : []
+      versiculos: Array.isArray(m.versiculos) ? m.versiculos : [],
+
+      fechaOriginal: Number(m.fecha || 0),
+      fecha: ahora,
+      publicadoEn: ahora,
+      ts: ahora
     });
 
     mostrarToast("✅ Compartido en Compartidos");
@@ -7541,7 +7691,6 @@ window.compartirMarcador = async (destino) => {
 
   cerrarCompartirMarcador();
 };
-
 // ================= 🔺 FORCE DEFAULT CHECK IGLESIA estado pinta css ===========================
 function forceDefaultCheckIglesia() {
   const chk = document.getElementById("checkIglesia");
