@@ -658,6 +658,22 @@ function compEsAdmin() {
   );
 }
 
+function compOwnerUid(item = {}) {
+  return String(
+    item.publicadoPor ||
+    item.uid ||
+    item.uidOwner ||
+    item.ownerUid ||
+    item.sourceUid ||
+    ""
+  );
+}
+
+function compEsPropia(item = {}) {
+  const uidActual = String(compUidActual() || "");
+  return !!uidActual && compOwnerUid(item) === uidActual;
+}
+
 function compKeyItem(item) {
   return [
     item?.tipo || "",
@@ -1028,6 +1044,13 @@ window.compGuardarImagenCompartidaEnMiPanel = async function compGuardarImagenCo
     return;
   }
 
+  if (compEsPropia(item)) {
+    if (typeof mostrarToast === "function") {
+      mostrarToast("Esta imagen ya es tuya y ya está en Mi Panel.");
+    }
+    return;
+  }
+
   const ts = Date.now();
   const url = item.url || item.imagenUrl || "";
 
@@ -1130,7 +1153,7 @@ function compRenderImagen(item) {
   const textoLibre = String(item.textoLibre || "").trim();
   const key = compImagenKey(item);
 
-  const guardarBtn = `
+  const guardarBtn = compEsPropia(item) ? "" : `
     <button
       class="btn-primary"
       type="button"
@@ -1462,13 +1485,117 @@ window.compCompartirNotaComoImagen = async function compCompartirNotaComoImagen(
     return;
   }
 
-  const datos = compDatosImagenNota(item);
-
   await window.notaCompartirComoImagen(
-    datos,
+    compDatosImagenNota(item),
     `compartidos_${key}`,
     boton
   );
+};
+
+window.compDescargarNotaComoImagen = async function compDescargarNotaComoImagen(key, boton = null) {
+  const item = compBuscarNotaPorKey(key);
+
+  if (!item) {
+    alert("No encontré esa nota.");
+    return;
+  }
+
+  if (typeof window.notaDescargarComoImagen !== "function") {
+    alert("Todavía no está listo el generador de imagen de notas.");
+    return;
+  }
+
+  await window.notaDescargarComoImagen(
+    compDatosImagenNota(item),
+    `compartidos_${key}`,
+    boton
+  );
+};
+
+window.compGuardarNotaCompartidaEnMiPanel = async function compGuardarNotaCompartidaEnMiPanel(key, boton = null) {
+  const db = compDB();
+  const uid = compUidActual();
+
+  if (!db || !uid) {
+    if (typeof window.abrirLoginParaGuardarMiPanel === "function") {
+      window.abrirLoginParaGuardarMiPanel();
+    } else {
+      window.location.href = "login.html";
+    }
+    return;
+  }
+
+  const item = compBuscarNotaPorKey(key);
+
+  if (!item) {
+    alert("No encontré esa nota.");
+    return;
+  }
+
+  if (compEsPropia(item)) {
+    if (typeof mostrarToast === "function") {
+      mostrarToast("Esta nota ya es tuya y ya está en Mi Panel.");
+    }
+    return;
+  }
+
+  if (boton?.classList.contains("guardado")) {
+    if (typeof mostrarToast === "function") {
+      mostrarToast("✅ Esta nota ya está guardada en Mi Panel");
+    }
+    return;
+  }
+
+  const datos = compDatosImagenNota(item);
+
+  const id = window.crypto?.randomUUID
+    ? window.crypto.randomUUID()
+    : String(Date.now());
+
+  try {
+    if (boton) boton.disabled = true;
+
+    // ✅ Las notas de Mi Panel salen de marcadores/{uid},
+    // no de panelImagenesPersonal.
+    await set(ref(db, `marcadores/${uid}/${id}`), {
+      titulo: datos.titulo,
+      nota: datos.texto,
+      color: datos.fondo,
+      destacada: true,
+      keep: false,
+
+      libro: item.libro || "",
+      capitulo: Number(item.capitulo || 0),
+      versiculos: Array.isArray(item.versiculos) ? item.versiculos : [],
+      ref: datos.referencia || "",
+      textoVersiculo: datos.versiculo || "",
+
+      origen: item.origen === "abc" ? "abc" : "compartidos",
+      abcTexto: item.abcTexto || datos.versiculo || "",
+
+      fecha: Date.now(),
+      sourceUid: compOwnerUid(item),
+      sourceCompKey: key
+    });
+
+    if (boton) {
+      boton.innerHTML = `<i class="fa-solid fa-heart-circle-check"></i>`;
+      boton.classList.add("guardado", "activo");
+      boton.title = "Guardada en Mi Panel";
+      boton.setAttribute("aria-label", "Guardada en Mi Panel");
+    }
+
+    if (typeof mostrarToast === "function") {
+      mostrarToast("💙 Nota guardada en Mi Panel");
+    }
+
+  } catch (e) {
+    console.error(e);
+    alert("No pude guardar la nota en Mi Panel.");
+
+  } finally {
+    if (boton) boton.disabled = false;
+  }
 };
 
 function compPrepararImagenNotaCompartida(key) {
@@ -1549,6 +1676,19 @@ function compRenderNota(item) {
 
   const key = compKeyItem(item);
 
+  const guardarBtn = compEsPropia(item) ? "" : `
+    <button
+      class="btn-primary"
+      type="button"
+      data-comp-nota-save="${compEscape(key)}"
+      onclick="compGuardarNotaCompartidaEnMiPanel('${compJs(key)}', this)"
+      title="Guardar en Mi Panel"
+      aria-label="Guardar en Mi Panel"
+    >
+      <i class="fa-solid fa-heart-circle-plus"></i>
+    </button>
+  `;
+
   return `
     <article
       class="comp-post comp-post--nota"
@@ -1583,13 +1723,26 @@ function compRenderNota(item) {
 
       <div class="comp-post-actions comp-post-actions--nota">
         <button
+          class="btn-primary"
+          type="button"
+          onclick="compDescargarNotaComoImagen('${compJs(key)}', this)"
+          title="Descargar PNG"
+          aria-label="Descargar PNG"
+        >
+          <i class="fa-solid fa-download"></i>
+        </button>
+
+        <button
+          class="btn-primary"
           type="button"
           onclick="compCompartirNotaComoImagen('${compJs(key)}', this)"
-          title="Compartir imagen en redes"
-          aria-label="Compartir imagen en redes"
+          title="Compartir"
+          aria-label="Compartir"
         >
           <i class="fa-solid fa-share-nodes"></i>
         </button>
+
+        ${guardarBtn}
       </div>
 
       ${compDeleteBtn(item)}
