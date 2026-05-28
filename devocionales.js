@@ -5533,23 +5533,56 @@ window.devAbrirListaOraciones = async function(uidOwner, tsKey){
             word-break:break-word;
           ">${devHtml(it.texto || "")}</div>
 
-          ${puedeEditar ? `
-            <div style="
-              display:flex;
-              justify-content:flex-end;
-              gap:8px;
-            ">
-              <button class="btn-primary" type="button"
-                onclick="devEditarOracionPropia('${uidJs}','${tsJs}','${idJs}')">
-                Editar
-              </button>
+${puedeEditar ? `
+  <div style="
+    display:flex;
+    justify-content:flex-end;
+    align-items:center;
+    gap:6px;
+  ">
+    <button
+      class="btn-primary"
+      type="button"
+      onclick="devEditarOracionPropia('${uidJs}','${tsJs}','${idJs}')"
+      title="Editar oración"
+      aria-label="Editar oración"
+      style="
+        width:29px;
+        height:29px;
+        min-width:29px;
+        min-height:29px;
+        padding:0;
+        border-radius:999px;
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+      "
+    >
+      <i class="fa-solid fa-pen" style="font-size:11px; line-height:1;"></i>
+    </button>
 
-              <button class="btn-primary devDanger" type="button"
-                onclick="devBorrarOracionPropia('${uidJs}','${tsJs}','${idJs}')">
-                Borrar
-              </button>
-            </div>
-          ` : ``}
+    <button
+      class="btn-primary devDanger"
+      type="button"
+      onclick="devBorrarOracionPropia('${uidJs}','${tsJs}','${idJs}')"
+      title="Borrar oración"
+      aria-label="Borrar oración"
+      style="
+        width:29px;
+        height:29px;
+        min-width:29px;
+        min-height:29px;
+        padding:0;
+        border-radius:999px;
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+      "
+    >
+      <i class="fa-solid fa-trash" style="font-size:11px; line-height:1;"></i>
+    </button>
+  </div>
+` : ``}
         </div>
       `;
     }).join("");
