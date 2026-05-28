@@ -1398,7 +1398,20 @@ function crearListaFuentes(fase){
    ========================================================= */
 const fondosCategorias = {
   paisajes: [
-      "./img/fondos/Paisajes/1.jpeg",
+     "./img/fondos/Paisajes/1a.jpeg",
+      "./img/fondos/Paisajes/2a.jpeg",
+      "./img/fondos/Paisajes/3a.jpeg",
+      "./img/fondos/Paisajes/4a.jfif",
+      "./img/fondos/Paisajes/5a.jfif",
+      "./img/fondos/Paisajes/6a.jfif",
+      "./img/fondos/Paisajes/7a.jfif",
+      "./img/fondos/Paisajes/8a.jfif",
+      "./img/fondos/Paisajes/9a.jfif",
+      "./img/fondos/Paisajes/10a.jfif",
+      "./img/fondos/Paisajes/11a.jfif",
+      "./img/fondos/Paisajes/12a.jfif",
+      "./img/fondos/Paisajes/13a.jfif",     
+     "./img/fondos/Paisajes/1.jpeg",
       "./img/fondos/Paisajes/2.jpeg",
       "./img/fondos/Paisajes/3.jpeg",
       "./img/fondos/Paisajes/4.jpeg",
