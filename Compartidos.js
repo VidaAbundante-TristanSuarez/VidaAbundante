@@ -1408,19 +1408,47 @@ function compTextoVersiculoNota(item = {}, textoNota = "", titulo = "") {
 }
 
 function compRenderNota(item) {
-  const tituloBase = compTituloNota(item);
-  const titulo = compEscape(tituloBase);
-  const textoRaw = String(item.texto || item.nota || item.textoLibre || "").trim();
+  // ✅ Título real de la nota, como en Mi Panel
+  const tituloRaw = String(item.titulo || item.title || "Nota").trim() || "Nota";
+  const titulo = compEscape(tituloRaw);
+
+  // ✅ Referencia bíblica + fecha debajo del título
+  const referenciaRaw = compReferenciaItem(item) || "Nota compartida";
+  const fechaRaw = compItemFecha(item);
+  const metaRaw = [referenciaRaw, fechaRaw].filter(Boolean).join(" · ");
+  const meta = compEscape(metaRaw);
+
+  // ✅ Reflexión / texto de la nota
+  const textoRaw = String(
+    item.texto ||
+    item.nota ||
+    item.textoLibre ||
+    ""
+  ).trim();
+
   const texto = compEscape(textoRaw);
-  const versoRaw = compTextoVersiculoNota(item, textoRaw, tituloBase);
+
+  // ✅ Texto bíblico guardado al compartir desde Mi Panel
+  const versoRaw = compTextoVersiculoNota(item, textoRaw, tituloRaw);
   const verso = compEscape(versoRaw);
+
+  // ✅ El color elegido ahora pinta TODA la tarjeta
   const fondo = compNotaFondo(item);
+
   const colorTexto = typeof compColorContraste === "function"
     ? compColorContraste(fondo)
-    : "#000";
+    : "#000000";
 
   return `
-    <article class="comp-post comp-post--nota">
+    <article
+      class="comp-post comp-post--nota"
+      style="
+        --comp-nota-fondo:${compEscape(fondo)};
+        --comp-nota-texto:${compEscape(colorTexto)};
+        background:${compEscape(fondo)};
+        color:${compEscape(colorTexto)};
+      "
+    >
       <div class="comp-post-head">
         <div class="comp-avatar">
           <i class="fa-solid fa-comment-dots"></i>
@@ -1428,16 +1456,19 @@ function compRenderNota(item) {
 
         <div>
           <div class="comp-post-title">${titulo}</div>
-          <div class="comp-post-meta">Nota compartida</div>
+          <div class="comp-post-meta">${meta}</div>
         </div>
       </div>
 
-      ${verso ? `<div class="comp-post-verse-block">${verso}</div>` : ``}
+      <div class="comp-post-nota-contenido">
+        ${verso ? `
+          <div class="comp-post-verse-block">${verso}</div>
+        ` : ``}
 
-      <div
-        class="comp-post-note-block"
-        style="background:${compEscape(fondo)}; color:${compEscape(colorTexto)};"
-      >${texto}</div>
+        ${texto ? `
+          <div class="comp-post-note-block">${texto}</div>
+        ` : ``}
+      </div>
 
       ${compDeleteBtn(item)}
     </article>
