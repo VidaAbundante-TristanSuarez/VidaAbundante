@@ -6957,6 +6957,40 @@ function notaShareFondoPantallaActual() {
   return "";
 }
 
+function notaShareExtraerUrlFondo(cssBackground = "") {
+  const match = String(cssBackground || "").match(/url\((['"]?)(.*?)\1\)/i);
+  return match?.[2] || "";
+}
+
+async function notaShareAplicarFondoSeguro(stage) {
+  // ✅ Fondo base seguro mientras se prepara la imagen real
+  stage.style.backgroundImage =
+    "linear-gradient(145deg, rgba(255,214,232,.82), rgba(209,238,255,.82))";
+
+  const cssFondo = notaShareFondoPantallaActual();
+  const urlRaw = notaShareExtraerUrlFondo(cssFondo);
+
+  if (!urlRaw || typeof fetchPanelImagenBlob !== "function") return;
+
+  try {
+    const urlAbsoluta = new URL(urlRaw, window.location.href).href;
+
+    // ✅ Usa el Worker/proxy que ya tenés en biblia.js.
+    // Así html2canvas no intenta leer R2 directamente y no choca con CORS.
+    const blob = await fetchPanelImagenBlob(urlAbsoluta, "fondo_nota.jpg");
+    const objectUrl = URL.createObjectURL(blob);
+
+    stage.__notaShareFondoObjectUrl = objectUrl;
+
+    stage.style.backgroundImage = `
+      linear-gradient(rgba(255,255,255,.40), rgba(255,255,255,.40)),
+      url("${objectUrl}")
+    `;
+  } catch (e) {
+    console.warn("No pude cargar el fondo visual de la nota. Uso fondo suave.", e);
+  }
+}
+
 function notaShareRangoVersiculos(numeros = []) {
   const nums = [...new Set(
     (numeros || [])
@@ -7061,14 +7095,10 @@ function notaShareCrearNodo(datos = {}) {
   const stage = document.createElement("div");
   stage.className = "nota-share-stage";
 
-  const fondoPantalla = notaShareFondoPantallaActual();
-
-  if (fondoPantalla) {
-    stage.style.backgroundImage = fondoPantalla;
-  } else {
-    stage.style.backgroundImage =
-      "linear-gradient(145deg, rgba(255,214,232,.72), rgba(209,238,255,.72))";
-  }
+  // ✅ Nunca ponemos acá directamente la URL de R2.
+  // El fondo real se aplica después mediante Blob seguro.
+  stage.style.backgroundImage =
+    "linear-gradient(145deg, rgba(255,214,232,.82), rgba(209,238,255,.82))";
 
   const card = document.createElement("div");
   card.className = "nota-share-card";
@@ -7136,6 +7166,9 @@ async function notaShareGenerarArchivo(datos = {}) {
   const stage = notaShareCrearNodo(datos);
 
   try {
+    // ✅ Traemos el fondo por proxy antes de capturar.
+    await notaShareAplicarFondoSeguro(stage);
+
     await new Promise(resolve =>
       requestAnimationFrame(() => requestAnimationFrame(resolve))
     );
@@ -7144,30 +7177,15 @@ async function notaShareGenerarArchivo(datos = {}) {
       await document.fonts.ready;
     }
 
-    const capturar = async () => {
-      const canvas = await html2canvas(stage, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: false,
-        logging: false,
-        backgroundColor: null
-      });
+    const canvas = await html2canvas(stage, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: false,
+      logging: false,
+      backgroundColor: null
+    });
 
-      return await notaShareCanvasBlob(canvas);
-    };
-
-    let blob;
-
-    try {
-      blob = await capturar();
-    } catch (errorFondo) {
-      console.warn("No pude usar el fondo visual en la captura. Uso fondo suave.", errorFondo);
-
-      stage.style.backgroundImage =
-        "linear-gradient(145deg, rgba(255,214,232,.82), rgba(209,238,255,.82))";
-
-      blob = await capturar();
-    }
+    const blob = await notaShareCanvasBlob(canvas);
 
     return new File(
       [blob],
@@ -7176,6 +7194,10 @@ async function notaShareGenerarArchivo(datos = {}) {
     );
 
   } finally {
+    if (stage.__notaShareFondoObjectUrl) {
+      URL.revokeObjectURL(stage.__notaShareFondoObjectUrl);
+    }
+
     stage.remove();
   }
 }
@@ -7198,20 +7220,134 @@ window.notaPrepararComoImagen = async function(datos = {}, claveBase = "nota") {
   }
 };
 
-window.notaCompartirComoImagen = async function(datos = {}, claveBase = "nota", boton = null) {
+window.__notaShareAccionEnCurso = false;
+
+function notaShareBusyShow(texto = "Preparando…") {
+  let box = document.getElementById("notaShareBusy");
+
+  if (!box) {
+    box = document.createElement("div");
+    box.id = "notaShareBusy";
+
+    box.style.cssText = `
+      position: fixed;
+      left: 50%;
+      bottom: 82px;
+      transform: translateX(-50%);
+      z-index: 1000000;
+      display: none;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(15,20,30,.92);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 800;
+      box-shadow: 0 10px 28px rgba(0,0,0,.25);
+      pointer-events: none;
+      white-space: nowrap;
+    `;
+
+    box.innerHTML = `
+      <i class="fa-solid fa-spinner fa-spin"></i>
+      <span></span>
+    `;
+
+    document.body.appendChild(box);
+  }
+
+  const span = box.querySelector("span");
+  if (span) span.textContent = texto;
+
+  box.style.display = "inline-flex";
+}
+
+function notaShareBusyHide() {
+  const box = document.getElementById("notaShareBusy");
+  if (box) box.style.display = "none";
+}
+
+function notaShareDescargarArchivo(file) {
+  const objectUrl = URL.createObjectURL(file);
+  const a = document.createElement("a");
+
+  a.href = objectUrl;
+  a.download = file.name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+
+  setTimeout(() => URL.revokeObjectURL(objectUrl), 2000);
+}
+
+window.notaDescargarComoImagen = async function(datos = {}, claveBase = "nota", boton = null) {
+  if (window.__notaShareAccionEnCurso) {
+    if (typeof mostrarToast === "function") {
+      mostrarToast("⏳ Ya se está preparando una imagen.");
+    }
+    return false;
+  }
+
   const icono = boton?.querySelector("i");
   const claseAnterior = icono?.className || "";
 
+  window.__notaShareAccionEnCurso = true;
+
   try {
     if (boton) boton.disabled = true;
+    if (icono) icono.className = "fa-solid fa-spinner fa-spin";
 
-    if (icono) {
-      icono.className = "fa-solid fa-spinner fa-spin";
+    notaShareBusyShow("Preparando descarga…");
+
+    const file = await window.notaPrepararComoImagen(datos, claveBase);
+
+    notaShareDescargarArchivo(file);
+
+    if (typeof mostrarToast === "function") {
+      mostrarToast("📥 Descargando imagen");
     }
+
+    return true;
+
+  } catch (e) {
+    console.error("No pude descargar la nota como imagen:", e);
+    alert("No pude generar la imagen de esta nota.");
+    return false;
+
+  } finally {
+    window.__notaShareAccionEnCurso = false;
+    notaShareBusyHide();
+
+    if (boton) boton.disabled = false;
+    if (icono && claseAnterior) icono.className = claseAnterior;
+  }
+};
+
+window.notaCompartirComoImagen = async function(datos = {}, claveBase = "nota", boton = null) {
+  if (window.__notaShareAccionEnCurso) {
+    if (typeof mostrarToast === "function") {
+      mostrarToast("⏳ Ya se está preparando para compartir.");
+    }
+    return false;
+  }
+
+  const icono = boton?.querySelector("i");
+  const claseAnterior = icono?.className || "";
+
+  window.__notaShareAccionEnCurso = true;
+
+  try {
+    if (boton) boton.disabled = true;
+    if (icono) icono.className = "fa-solid fa-spinner fa-spin";
+
+    notaShareBusyShow("Preparando para compartir…");
 
     const file = await window.notaPrepararComoImagen(datos, claveBase);
 
     if (navigator.share && navigator.canShare?.({ files: [file] })) {
+      notaShareBusyShow("Abriendo opciones para compartir…");
+
       await navigator.share({
         files: [file],
         title: datos.titulo || "Nota - Vida Abundante"
@@ -7220,35 +7356,42 @@ window.notaCompartirComoImagen = async function(datos = {}, claveBase = "nota", 
       return true;
     }
 
-    const objectUrl = URL.createObjectURL(file);
-    const a = document.createElement("a");
+    const descargar = confirm(
+      "Este navegador no permite compartir la imagen directamente.\n\n¿Querés descargar el PNG?"
+    );
 
-    a.href = objectUrl;
-    a.download = file.name;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
+    if (descargar) {
+      notaShareDescargarArchivo(file);
 
-    setTimeout(() => URL.revokeObjectURL(objectUrl), 2000);
-
-    alert("Este navegador no permite compartir la imagen directamente. Descargué el PNG para que puedas enviarlo.");
+      if (typeof mostrarToast === "function") {
+        mostrarToast("📥 Descargando imagen");
+      }
+    }
 
     return false;
 
   } catch (e) {
-    if (e?.name !== "AbortError") {
-      console.error("No pude compartir la nota como imagen:", e);
-      alert("No pude generar o compartir la imagen de esta nota.");
+    if (e?.name === "AbortError") {
+      return false;
     }
 
+    if (e?.name === "InvalidStateError") {
+      if (typeof mostrarToast === "function") {
+        mostrarToast("⏳ Cerrá el compartir anterior antes de volver a intentar.");
+      }
+      return false;
+    }
+
+    console.error("No pude compartir la nota como imagen:", e);
+    alert("No pude generar o compartir la imagen de esta nota.");
     return false;
 
   } finally {
-    if (boton) boton.disabled = false;
+    window.__notaShareAccionEnCurso = false;
+    notaShareBusyHide();
 
-    if (icono && claseAnterior) {
-      icono.className = claseAnterior;
-    }
+    if (boton) boton.disabled = false;
+    if (icono && claseAnterior) icono.className = claseAnterior;
   }
 };
 
