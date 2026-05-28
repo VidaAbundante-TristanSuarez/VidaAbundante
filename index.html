@@ -1623,7 +1623,7 @@
 <!-- ================= SCRIPT PRINCIPAL ================= -->
 <!-- ⚠️ biblia.js CONTROLA TODO -->
 
-<script type="module" src="biblia.js?v=20260528-0345"></script>
+<script type="module" src="biblia.js?v=20260528-0415"></script>
 <script type="module" src="biblia.audio.js"></script>
 <script type="module" src="devocionales.js"></script>
 <script type="module" src="Subidos.js"></script>
@@ -1637,7 +1637,7 @@
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-        .register("/VidaAbundante/service-worker.js?v=pwa-v1")
+        .register("/VidaAbundante/service-worker.js?v=pwa-v2")
         .catch(err => console.warn("SW error:", err));
     });
   }
