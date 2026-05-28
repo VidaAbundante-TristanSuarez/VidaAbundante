@@ -721,6 +721,28 @@ function compOraColorSeguro(color = "#fff4b8") {
     : "#fff4b8";
 }
 
+function compOraSetColorVisual(color = "#fff4b8") {
+  const c = compOraColorSeguro(color);
+
+  const input = document.getElementById("compOraColor");
+  if (input) {
+    input.value = c;
+  }
+
+  const host = document.getElementById("compOraColorHost");
+  if (!host) return;
+
+  host.style.setProperty("--pickr-color", c);
+  host.style.background = c;
+  host.style.backgroundColor = c;
+
+  try {
+    if (host._pickr && typeof host._pickr.setColor === "function") {
+      host._pickr.setColor(c, true);
+    }
+  } catch (_) {}
+}
+
 function compOraBuscarItem(key) {
   return compUnificarItems().find(item => compKeyItem(item) === key) || null;
 }
@@ -789,10 +811,20 @@ function compOraAsegurarModales() {
         ></textarea>
 
         <div class="comp-ora-controls">
-          <label class="comp-ora-color-label">
-            <span>Color</span>
-            <input id="compOraColor" type="color" value="#fff4b8">
-          </label>
+<label class="comp-ora-color-label">
+  <span>Color</span>
+
+  <input id="compOraColor" type="hidden" value="#fff4b8">
+
+  <button
+    type="button"
+    id="compOraColorHost"
+    class="pickr-host"
+    data-target="#compOraColor"
+    aria-label="Color oración"
+    title="Color oración"
+  ></button>
+</label>
 
           <label class="comp-ora-publica-label">
             <input id="compOraPublica" type="checkbox" checked>
@@ -827,6 +859,14 @@ function compOraAsegurarModales() {
     });
 
     document.body.appendChild(modal);
+
+    setTimeout(() => {
+  if (typeof window.initPickrEnHosts === "function") {
+    window.initPickrEnHosts("#compOraColorHost");
+  }
+
+  compOraSetColorVisual("#fff4b8");
+}, 0);
   }
 
   if (!document.getElementById("compOraListaModal")) {
@@ -929,7 +969,7 @@ window.compAbrirModalOracionPublicacion = function compAbrirModalOracionPublicac
   }
 
   if (texto) texto.value = "";
-  if (color) color.value = "#fff4b8";
+ compOraSetColorVisual("#fff4b8");
   if (publica) publica.checked = true;
 
   compOraAbrirModal("compOraModal");
@@ -1138,7 +1178,7 @@ window.compEditarOracionPublicacion = function compEditarOracionPublicacion(key,
   }
 
   if (texto) texto.value = data.texto || "";
-  if (color) color.value = compOraColorSeguro(data.color);
+  compOraSetColorVisual(data.color);
   if (publica) publica.checked = data.publica !== false;
 
   compOraAbrirModal("compOraModal");
