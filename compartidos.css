@@ -1346,4 +1346,33 @@ body.en-compartidos .comp-post--nota:has(.comp-action-delete){
   }
 }
 
+/* =========================================================
+   COMPARTIDOS - ACCIÓN COMPARTIR PARA NOTAS
+========================================================= */
+
+body.en-compartidos .comp-post--nota .comp-post-actions--nota{
+  padding: 0 48px 14px 12px !important;
+  justify-content: center !important;
+}
+
+body.en-compartidos .comp-post--nota .comp-post-actions--nota button{
+  background: rgba(255,255,255,.52) !important;
+  color: inherit !important;
+  border: 1px solid rgba(0,0,0,.08);
+}
+
+body.en-compartidos .comp-post--nota .comp-post-actions--nota button:hover{
+  background: rgba(255,255,255,.74) !important;
+  color: inherit !important;
+}
+
+body.en-compartidos .comp-post--nota .comp-post-actions--nota button:disabled{
+  opacity: .65;
+  cursor: wait;
+}
+
+body.en-compartidos .comp-post--nota .comp-post-actions--nota button i{
+  color: inherit !important;
+}
+
 </style>
