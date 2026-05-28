@@ -8034,29 +8034,67 @@ window.eliminarImagenPanel = async (id) => {
 
 (function initScrollTopGlobal(){
   const btn = document.getElementById("btnScrollTopGlobal");
-  if (!btn) return;
+  if (!btn || btn.dataset.iniciado === "1") return;
 
-  function seccionVisible(id) {
-    const el = document.getElementById(id);
-    return !!el && getComputedStyle(el).display !== "none";
+  btn.dataset.iniciado = "1";
+
+  let timerOcultar = null;
+
+  function elementoVisible(el) {
+    if (!el) return false;
+
+    return (
+      el.getClientRects().length > 0 &&
+      getComputedStyle(el).display !== "none"
+    );
+  }
+
+  function hayModalAbierto() {
+    if (document.querySelector(".modal-overlay.abierto, .comp-ora-overlay.abierto")) {
+      return true;
+    }
+
+    const ids = [
+      "modalPersonalizar",
+      "modalTema",
+      "compMediaViewer",
+      "compOraModal",
+      "compOraListaModal"
+    ];
+
+    return ids.some(id => {
+      const el = document.getElementById(id);
+      return el && getComputedStyle(el).display !== "none";
+    });
+  }
+
+  function seccionPermiteBoton() {
+    return (
+      document.body.classList.contains("en-iglesia") ||
+      document.body.classList.contains("en-panel") ||
+      document.body.classList.contains("en-compartidos")
+    );
   }
 
   function obtenerContenedorScrollActivo() {
     const candidatos = [
-      document.getElementById("iglesia-devocionales"),
-      document.getElementById("iglesia-subidos"),
-      document.getElementById("panel-imagenes"),
-      document.getElementById("panel-marcadores"),
-      document.getElementById("seccion-iglesia"),
-      document.getElementById("seccion-panel")
-    ].filter(Boolean);
+      document.querySelector("body.en-compartidos #seccion-compartidos"),
+
+      document.querySelector("body.en-iglesia #iglesia-devocionales"),
+      document.querySelector("body.en-iglesia #iglesia-subidos"),
+      document.querySelector("body.en-iglesia #seccion-iglesia"),
+
+      document.querySelector("body.en-panel #panel-imagenes"),
+      document.querySelector("body.en-panel #panel-marcadores"),
+      document.querySelector("body.en-panel #seccion-panel")
+    ].filter(elementoVisible);
 
     for (const el of candidatos) {
       const st = getComputedStyle(el);
+
       const tieneScrollInterno =
         (st.overflowY === "auto" || st.overflowY === "scroll") &&
-        el.scrollHeight > el.clientHeight + 10 &&
-        st.display !== "none";
+        el.scrollHeight > el.clientHeight + 10;
 
       if (tieneScrollInterno) return el;
     }
@@ -8064,40 +8102,85 @@ window.eliminarImagenPanel = async (id) => {
     return window;
   }
 
-  function hayZonaActiva() {
-    return (
-      seccionVisible("iglesia-devocionales") ||
-      seccionVisible("iglesia-subidos") ||
-      seccionVisible("panel-imagenes") ||
-      seccionVisible("panel-marcadores")
-    );
-  }
-
   function obtenerScrollActual() {
     const cont = obtenerContenedorScrollActivo();
     return cont === window ? window.scrollY : cont.scrollTop;
   }
 
-  function actualizarBotonScrollTop() {
-    if (hayZonaActiva() && obtenerScrollActual() > 260) {
-      btn.classList.add("mostrar");
-    } else {
+  function ocultarBoton() {
+    clearTimeout(timerOcultar);
+    btn.classList.remove("mostrar");
+  }
+
+  function programarOcultado() {
+    clearTimeout(timerOcultar);
+
+    timerOcultar = setTimeout(() => {
       btn.classList.remove("mostrar");
+    }, 1800);
+  }
+
+  function puedeMostrarse() {
+    return (
+      seccionPermiteBoton() &&
+      !document.body.classList.contains("en-biblia") &&
+      !hayModalAbierto() &&
+      obtenerScrollActual() > 480
+    );
+  }
+
+  function mostrarSoloUnMomento() {
+    if (!puedeMostrarse()) {
+      ocultarBoton();
+      return;
+    }
+
+    btn.classList.add("mostrar");
+    programarOcultado();
+  }
+
+  function revisarSiDebeOcultarse() {
+    if (!puedeMostrarse()) {
+      ocultarBoton();
     }
   }
 
-  window.addEventListener("scroll", actualizarBotonScrollTop, { passive: true });
-  window.addEventListener("resize", actualizarBotonScrollTop);
+  window.addEventListener("scroll", mostrarSoloUnMomento, { passive: true });
+  window.addEventListener("resize", revisarSiDebeOcultarse);
 
-  ["iglesia-devocionales", "iglesia-subidos", "panel-imagenes", "panel-marcadores", "seccion-iglesia", "seccion-panel"]
+  [
+    "seccion-compartidos",
+    "iglesia-devocionales",
+    "iglesia-subidos",
+    "panel-imagenes",
+    "panel-marcadores",
+    "seccion-iglesia",
+    "seccion-panel"
+  ]
     .map(id => document.getElementById(id))
     .filter(Boolean)
     .forEach(el => {
-      el.addEventListener("scroll", actualizarBotonScrollTop, { passive: true });
+      el.addEventListener("scroll", mostrarSoloUnMomento, { passive: true });
     });
+
+  btn.addEventListener("mouseenter", () => {
+    clearTimeout(timerOcultar);
+  });
+
+  btn.addEventListener("mouseleave", () => {
+    if (btn.classList.contains("mostrar")) {
+      programarOcultado();
+    }
+  });
+
+  btn.addEventListener("pointerdown", () => {
+    clearTimeout(timerOcultar);
+  });
 
   btn.addEventListener("click", () => {
     const cont = obtenerContenedorScrollActivo();
+
+    ocultarBoton();
 
     if (cont === window) {
       window.scrollTo({
@@ -8112,9 +8195,8 @@ window.eliminarImagenPanel = async (id) => {
     }
   });
 
-  setInterval(actualizarBotonScrollTop, 500);
+  setInterval(revisarSiDebeOcultarse, 400);
 })();
-
 
 // ================= MODAL TEMA + FONDOS POR SECCIÓN =================
 const FONDO_SECCIONES = {
