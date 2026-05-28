@@ -845,20 +845,50 @@
   </div>
 </div>
 
-<!-- ================= MODAL COMPARTIR MARCADOR 📋================= -->
-  <div id="modalCompartirMarcador" class="modal-overlay" aria-hidden="true">
+<!-- ================= MODAL COMPARTIR NOTA ================= -->
+<div id="modalCompartirMarcador" class="modal-overlay" aria-hidden="true">
   <div class="modal-card modal-card-sm">
     <h3 class="modal-title">📤 Compartir</h3>
-    <p class="modal-sub">¿Dónde querés compartir este marcador?</p>
+    <p id="modalCompartirMarcadorTexto" class="modal-sub">
+      ¿Dónde querés compartir esta nota?
+    </p>
 
     <div class="modal-actions">
-      <button class="btn-primary" onclick="compartirMarcador('compartidos')"><i class="fa-solid fa-icons"></i> Compartidos</button>
-      <button class="btn-primary" onclick="compartirMarcador('redes')">📱 Redes</button>
-      <button class="btn-ghost" onclick="cerrarCompartirMarcador()">Cancelar</button>
+      <button
+        id="btnModalNotaCompartidos"
+        class="btn-primary pm-share-choice"
+        type="button"
+        onclick="compartirMarcador('compartidos', this)"
+      >
+        <i class="fa-solid fa-icons"></i>
+        <span>Compartidos</span>
+
+        <span class="pm-choice-check" aria-hidden="true">
+          <i class="fa-solid fa-check"></i>
+        </span>
+      </button>
+
+      <button
+        id="btnModalNotaRedes"
+        class="btn-primary pm-share-choice"
+        type="button"
+        onclick="compartirMarcador('redes', this)"
+      >
+        <i class="fa-solid fa-share-nodes"></i>
+        <span>Redes</span>
+
+        <span class="pm-choice-check" aria-hidden="true">
+          <i class="fa-solid fa-check"></i>
+        </span>
+      </button>
+
+      <button class="btn-ghost" type="button" onclick="cerrarCompartirMarcador()">
+        Cancelar
+      </button>
     </div>
   </div>
 </div>
-
+ 
 <!-- ================= MODAL 3: AUDIO (REUTILIZA ESTILO DE MODALES) ================= -->
 <div id="modalAudio" class="modal-overlay" aria-hidden="true">
   <div class="modal-card">
