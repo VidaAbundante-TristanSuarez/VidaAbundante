@@ -285,9 +285,22 @@ body.oscuro .comp-post{
   justify-content: center;
 }
 
-.comp-action-saved{
-  background: rgba(46, 204, 113, .24) !important;
-  color: #157347 !important;
+/* ✅ Acción Guardar activa: mismo color que hover */
+.comp-action-saved,
+body.en-compartidos .comp-post-actions .btn-primary.guardado,
+body.en-compartidos .comp-post-actions .btn-primary.activo,
+body.en-compartidos .comp-post .devBigActions .btn-primary.guardado,
+body.en-compartidos .comp-post .devBigActions .btn-primary.activo{
+  background: var(--ui-azul-hover, #a6d0ff) !important;
+  color: #000 !important;
+}
+
+.comp-action-saved i,
+body.en-compartidos .comp-post-actions .btn-primary.guardado i,
+body.en-compartidos .comp-post-actions .btn-primary.activo i,
+body.en-compartidos .comp-post .devBigActions .btn-primary.guardado i,
+body.en-compartidos .comp-post .devBigActions .btn-primary.activo i{
+  color: #000 !important;
 }
 
 /* ✅ delete solo Compartidos: esquina inferior derecha */
@@ -1334,8 +1347,11 @@ body.en-compartidos .comp-post--nota .comp-post-actions--nota .btn-primary{
   color: #000 !important;
 }
 
-body.en-compartidos .comp-post--nota .comp-post-actions--nota .btn-primary:hover{
+body.en-compartidos .comp-post--nota .comp-post-actions--nota .btn-primary:hover,
+body.en-compartidos .comp-post--nota .comp-post-actions--nota .btn-primary.guardado,
+body.en-compartidos .comp-post--nota .comp-post-actions--nota .btn-primary.activo{
   background: var(--ui-azul-hover, #a6d0ff) !important;
+  color: #000 !important;
 }
 
 body.en-compartidos .comp-post--nota .comp-post-actions--nota .btn-primary:disabled{
