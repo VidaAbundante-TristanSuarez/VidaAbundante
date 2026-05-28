@@ -5586,6 +5586,8 @@ const notaEstaPublicadaEnCompartidos =
   !notaVieneDeCompartidos &&
   !!notasCompartidasPanel[m.id];
 
+      const puedeEditarNota = !notaVieneDeCompartidos;
+
       return `
         <div class="card-marcador" style="${bgDestacada ? `background:${bgDestacada} !important; color:${colorTextoDestacada} !important; border:1px solid rgba(0,0,0,.10);` : ""}">
           <div style="display:flex; justify-content:space-between; gap:10px; align-items:center;">
@@ -5605,9 +5607,11 @@ const notaEstaPublicadaEnCompartidos =
                   </button>
                 ` : ""}
 
-                <button type="button" class="pm-btn" onclick="editarMarcadorEnPanel('${m.id}')" title="Editar">
-                  <i class="fa-solid fa-pen-to-square"></i>
-                </button>
+               ${puedeEditarNota ? `
+  <button type="button" class="pm-btn" onclick="editarMarcadorEnPanel('${m.id}')" title="Editar">
+    <i class="fa-solid fa-pen-to-square"></i>
+  </button>
+` : ``}
 
 <button type="button"
   class="pm-btn pm-share-main ${notaEstaPublicadaEnCompartidos ? "pm-btn-compartido" : ""}"
@@ -5703,6 +5707,11 @@ if (esNotaLibre) {
 window.editarMarcadorEnPanel = (idMarcador) => {
   const m = (marcadores || {})[idMarcador];
   if (!m) return;
+
+  if (notaPanelVieneDeCompartidos(m)) {
+    mostrarToast("Esta nota fue guardada desde Compartidos y no se puede editar.");
+    return;
+  }
 
   const esNotaLibre = !((m.versiculos || []).length > 0);
 
