@@ -1575,6 +1575,8 @@ function compEstaGuardada(edicionId) {
 }
 
 function compActionButton({ title, onclick, icon, count = 0, saved = false }) {
+  // ✅ En Compartidos NO mostramos contadores.
+  // Los contadores quedan solo en Recursos > Ediciones.
   return `
     <button
       type="button"
@@ -1584,7 +1586,6 @@ function compActionButton({ title, onclick, icon, count = 0, saved = false }) {
     >
       <span class="comp-action-wrap">
         <i class="${icon}"></i>
-        <span class="comp-action-count">${Number(count || 0)}</span>
       </span>
     </button>
   `;
@@ -3024,11 +3025,17 @@ function compRenderRH(item) {
 }
 
 function compRenderEdicion(item) {
-  const titulo = compEscape(item.titulo || "Compartido");
+  const titulo = compEscape(item.titulo || "Edición");
   const portada = item.portadaUrl || "";
   const edicionId = item.edicionId;
   const st = compStats(edicionId);
   const guardada = compEstaGuardada(edicionId);
+  const descargada = compEstaDescargada(edicionId);
+
+  const miniPaginas =
+    typeof window.edMiniPaginasHTML === "function"
+      ? window.edMiniPaginasHTML(edicionId, "compartidos")
+      : "";
 
   return `
     <article class="comp-post">
@@ -3043,8 +3050,20 @@ function compRenderEdicion(item) {
         </div>
       </div>
 
-      <div class="comp-post-media" onclick="abrirPresentacionEdicion('${compJs(edicionId)}')" role="button" title="Abrir edición">
-        ${portada ? `<img src="${compEscape(portada)}" alt="${titulo}" loading="lazy">` : `<div class="comp-post-empty">Sin portada</div>`}
+      <div
+        class="comp-post-media comp-post-media--edicion-scroll"
+        role="region"
+        title="Deslizá para ver las imágenes"
+      >
+        ${
+          miniPaginas
+            ? miniPaginas
+            : (
+                portada
+                  ? `<img src="${compEscape(portada)}" alt="${titulo}" loading="lazy" onclick="abrirPresentacionEdicion('${compJs(edicionId)}')">`
+                  : `<div class="comp-post-empty">Sin portada</div>`
+              )
+        }
       </div>
 
       <div class="comp-post-actions">
@@ -3057,11 +3076,19 @@ function compRenderEdicion(item) {
         })}
 
         ${compActionButton({
-          title: compEstaDescargada(edicionId) ? "PDF descargado" : "Descargar PDF",
+          title: descargada ? "PDF descargado" : "Descargar PDF",
           onclick: `descargarEdicionPDF('${compJs(edicionId)}')`,
-          icon: compEstaDescargada(edicionId) ? "fa-solid fa-file-circle-check" : "fa-solid fa-file-pdf",
+          icon: descargada ? "fa-solid fa-file-circle-check" : "fa-solid fa-file-pdf",
           count: st.descargas,
-          saved: compEstaDescargada(edicionId)
+          saved: descargada
+        })}
+
+        ${compActionButton({
+          title: "Descargar imágenes PNG",
+          onclick: `descargarEdicionPNGs('${compJs(edicionId)}', this)`,
+          icon: "fa-solid fa-images",
+          count: st.descargas,
+          saved: descargada
         })}
 
         ${compActionButton({
