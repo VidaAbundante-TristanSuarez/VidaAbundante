@@ -483,6 +483,15 @@ function vaEsStandalone() {
   );
 }
 
+function vaEsIOS() {
+  const ua = navigator.userAgent || "";
+
+  return (
+    /iphone|ipad|ipod/i.test(ua) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+  );
+}
+
 function vaEntradaVisitante() {
   return (
     vaParam("visitante") === "1" ||
@@ -767,6 +776,16 @@ function vaSelectorCacheActual(seccion) {
 }
 
 function vaGuardarSnapshotVisual() {
+
+    // ✅ iPhone/Safari: no guardar HTML visual pesado.
+  // Evita restauraciones viejas o recargas por memoria.
+  if (vaEsIOS()) {
+    try {
+      localStorage.removeItem(VA_UI_SNAPSHOT_KEY);
+    } catch (_) {}
+    return;
+  }
+  
   try {
     guardarEstadoBiblia();
 
@@ -865,6 +884,15 @@ function vaMostrarCargandoSuave(texto = "Actualizando...") {
 }
 
 function vaRestaurarSnapshotVisualRapido() {
+  
+    // ✅ iPhone/Safari: no restaurar HTML cacheado.
+  if (vaEsIOS()) {
+    try {
+      localStorage.removeItem(VA_UI_SNAPSHOT_KEY);
+    } catch (_) {}
+    return false;
+  }
+  
   const snap = vaLeerSnapshotVisual();
   if (!snap) return false;
   if (vaHayLinkDirectoInterno()) return false;
