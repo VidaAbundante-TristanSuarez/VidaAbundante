@@ -54,6 +54,31 @@ let compSubidosListo = false;
 let compCargaInicio = Date.now();
 let compTimerCarga = null;
 
+function compEsIOS() {
+  const ua = navigator.userAgent || "";
+
+  return (
+    /iphone|ipad|ipod/i.test(ua) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+  );
+}
+
+// ✅ En iPhone no pintamos todo el feed junto.
+let compItemsVisibles = compEsIOS() ? 8 : 9999;
+
+window.compVerMasPublicaciones = function compVerMasPublicaciones() {
+  compItemsVisibles += compEsIOS() ? 8 : 20;
+  renderCompartidos();
+};
+
+function compOptimizarImagenesFeed() {
+  document.querySelectorAll("#compLista img").forEach(img => {
+    img.loading = "lazy";
+    img.decoding = "async";
+    img.referrerPolicy = "no-referrer";
+  });
+}
+
 const COMP_BANNER_URL = "img/compartidos/banner-horarios.png?v=2026-05-08-2";
 
 const COMP_PROMOS = [
@@ -375,6 +400,14 @@ function renderCompartidosTop() {
   }
 
   if (promos) {
+
+        // ✅ En iPhone evitamos cargar carrusel/promos arriba del feed.
+    // Reduce memoria al entrar desde Safari/WhatsApp.
+    if (compEsIOS()) {
+      promos.innerHTML = "";
+      return;
+    }
+    
     promos.innerHTML = `
       <div
         class="comp-promos-viewport"
@@ -3078,36 +3111,66 @@ window.renderCompartidos = function renderCompartidos() {
   const lista = comp$("compLista");
   if (!lista) return;
 
-  const items = compUnificarItems();
+  const itemsTodos = compUnificarItems();
 
-  // ✅ Si ya hay algo, mostramos al toque aunque otras fuentes sigan cargando.
+  // ✅ iPhone/Safari: pintar por tandas.
+  // PC/Android siguen viendo todo como antes.
+  const items = compEsIOS()
+    ? itemsTodos.slice(0, compItemsVisibles)
+    : itemsTodos;
+
   if (items.length) {
-    lista.innerHTML = items.map(item => {
-      let html = "";
+    lista.innerHTML = `
+      ${items.map(item => {
+        let html = "";
 
-      if (item.tipo === "rh") html = compRenderRH(item);
-      if (item.tipo === "edicion") html = compRenderEdicion(item);
-      if (item.tipo === "imagen") html = compRenderImagen(item);
-      if (item.tipo === "nota") html = compRenderNota(item);
-      if (item.tipo === "devocional") html = compRenderDevocional(item);
-      if (item.tipo === "subido") html = compRenderSubido(item);
+        if (item.tipo === "rh") html = compRenderRH(item);
+        if (item.tipo === "edicion") html = compRenderEdicion(item);
+        if (item.tipo === "imagen") html = compRenderImagen(item);
+        if (item.tipo === "nota") html = compRenderNota(item);
+        if (item.tipo === "devocional") html = compRenderDevocional(item);
+        if (item.tipo === "subido") html = compRenderSubido(item);
 
-      return compAgregarOracionesAPublicacionHTML(html, item);
-    }).join("");
+        if (typeof compAgregarOracionesAPublicacionHTML === "function") {
+          return compAgregarOracionesAPublicacionHTML(html, item);
+        }
 
-compActivarBotonesSubidosRenderizados(items);
-compObservarNotasParaCompartir();
-return;
+        return html;
+      }).join("")}
+
+      ${
+        compEsIOS() && itemsTodos.length > items.length
+          ? `
+            <div class="comp-ver-mas-wrap">
+              <button
+                type="button"
+                class="btn-primary"
+                onclick="compVerMasPublicaciones()"
+              >
+                Ver más publicaciones
+              </button>
+            </div>
+          `
+          : ``
+      }
+    `;
+
+    compActivarBotonesSubidosRenderizados(items);
+
+    if (typeof compObservarNotasParaCompartir === "function") {
+      compObservarNotasParaCompartir();
+    }
+
+    compOptimizarImagenesFeed();
+    return;
   }
 
-  // ✅ Si todavía no respondió todo, NO mostramos “no hay publicaciones”.
   if (compEstaCargandoFeed()) {
     lista.innerHTML = compLoaderHTML();
     compProgramarRepintadoCarga();
     return;
   }
 
-  // ✅ Solo mostramos vacío cuando de verdad respondieron las fuentes principales.
   lista.innerHTML = `
     <div id="compVacio">
       Todavía no hay publicaciones compartidas.
