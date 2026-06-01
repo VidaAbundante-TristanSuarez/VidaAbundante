@@ -3975,11 +3975,28 @@ async function generarImagenFinal(opts = {}) {
   const rect = preview.getBoundingClientRect();
   if (rect.width < 10 || rect.height < 10) return false;
 
-  preview.classList.remove("render-final");
-  const t1 = document.getElementById("previewTexto");
-  const t2 = document.getElementById("previewTextoBack");
-  if (t1) t1.style.display = "block";
-  if (t2) t2.style.display = "block";
+preview.classList.remove("render-final");
+
+const t1 = document.getElementById("previewTexto");
+const t2 = document.getElementById("previewTextoBack");
+const wrapperTexto = document.getElementById("previewTextoWrapper");
+
+if (wrapperTexto) {
+  wrapperTexto.style.display = "flex";
+  wrapperTexto.style.alignItems = "center";
+  wrapperTexto.style.justifyContent = "center";
+  wrapperTexto.style.textAlign = "center";
+}
+
+[t1, t2].forEach(t => {
+  if (!t) return;
+
+  t.style.display = "grid";
+  t.style.placeItems = "center";
+  t.style.textAlign = "center";
+  t.style.alignItems = "center";
+  t.style.justifyItems = "center";
+});
 
   const fondoUsable = fondoFinalBlobUrl || fondoFinal;
 
