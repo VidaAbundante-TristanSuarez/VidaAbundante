@@ -1731,4 +1731,62 @@ body.en-compartidos .comp-post--nota:has(.comp-action-delete){
   font-weight:800;
 }
 
+/* =========================================================
+   COMPARTIDOS - EDICIONES CON SCROLL HORIZONTAL
+========================================================= */
+
+body.en-compartidos .comp-post-media--edicion-scroll{
+  width: 100%;
+  max-height: none;
+
+  display: block;
+  overflow: hidden;
+
+  padding: 0;
+  background: rgba(255,255,255,.35);
+
+  cursor: default;
+}
+
+body.en-compartidos .comp-post-media--edicion-scroll > img{
+  cursor: pointer;
+}
+
+body.en-compartidos .comp-post-media--edicion-scroll .ed-mini-paginas{
+  height: min(68vh, 620px);
+  min-height: 360px;
+
+  padding: 8px;
+  gap: 12px;
+}
+
+body.en-compartidos .comp-post-media--edicion-scroll .ed-mini-page{
+  flex-basis: 100%;
+}
+
+body.en-compartidos .comp-post-media--edicion-scroll .ed-mini-page img{
+  width: 100% !important;
+  height: 100% !important;
+  max-height: none !important;
+  object-fit: contain !important;
+  background: #fff;
+}
+
+body.en-compartidos .comp-post-media--edicion-scroll .ed-mini-download{
+  right: 12px;
+  bottom: 12px;
+}
+
+/* ✅ En Compartidos no mostramos contadores de acciones */
+body.en-compartidos .comp-action-count{
+  display: none !important;
+}
+
+@media (max-width: 700px){
+  body.en-compartidos .comp-post-media--edicion-scroll .ed-mini-paginas{
+    height: min(64vh, 560px);
+    min-height: 330px;
+  }
+}
+
 </style>
