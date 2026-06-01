@@ -566,9 +566,13 @@ function iniciarEscuchaEdiciones() {
 
     edicionesCache.sort((a, b) => Number(b.actualizado || b.ts || 0) - Number(a.actualizado || a.ts || 0));
 
-    window.__EDICIONES_CACHE = edicionesCache;
+window.__EDICIONES_CACHE = edicionesCache;
 
-    renderEdiciones();
+renderEdiciones();
+
+if (typeof window.renderCompartidos === "function") {
+  window.renderCompartidos();
+}
   }, (err) => {
     console.error("Error leyendo ediciones:", err);
   });
@@ -845,20 +849,21 @@ function renderEdiciones() {
 
     return `
       <article class="ed-card ed-card-rama ed-card-galeria">
-        <div
-          class="ed-card-cover"
-          onclick="abrirPresentacionEdicion('${ed.id}')"
-          role="button"
-          title="Abrir edición"
-        >
-          ${
-            portada
-              ? `<img src="${edEscape(portada)}" alt="${titulo}" loading="lazy">`
-              : tieneVideo
-                ? `<span><i class="fa-solid fa-video"></i><br>Edición con video</span>`
-                : `<span>Sin portada</span>`
-          }
-        </div>
+<div
+  class="ed-card-cover ed-card-cover-scroll"
+  role="region"
+  title="Deslizá para ver las imágenes"
+>
+  ${
+    tieneVideo
+      ? (
+          portada
+            ? `<img src="${edEscape(portada)}" alt="${titulo}" loading="lazy" onclick="abrirPresentacionEdicion('${ed.id}')">`
+            : `<span><i class="fa-solid fa-video"></i><br>Edición con video</span>`
+        )
+      : edMiniPaginasHTML(ed.id, "ediciones")
+  }
+</div>
 
         <div class="ed-card-body">
           <div class="ed-card-title">${titulo}</div>
@@ -1523,6 +1528,225 @@ async function obtenerEdicion(id) {
 
 window.obtenerEdicion = obtenerEdicion;
 
+/* ================= DESCARGA PNG + MINI GALERÍA EDICIONES ================= */
+
+function edPaginasImagenes(edicion = {}) {
+  return edPaginasArray(edicion)
+    .filter(p => !edPaginaEsVideo(p))
+    .filter(p => edMediaUrlPagina(p));
+}
+
+async function edBlobPngDesdeUrl(url) {
+  const dataUrl = await edUrlToDataUrl(url);
+
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      const w = img.naturalWidth || img.width;
+      const h = img.naturalHeight || img.height;
+
+      canvas.width = w;
+      canvas.height = h;
+
+      const ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, w, h);
+      ctx.drawImage(img, 0, 0, w, h);
+
+      canvas.toBlob(blob => {
+        if (!blob) {
+          reject(new Error("No pude convertir la imagen a PNG."));
+          return;
+        }
+
+        resolve(blob);
+      }, "image/png");
+    };
+
+    img.onerror = () => reject(new Error("No pude leer la imagen."));
+    img.src = dataUrl;
+  });
+}
+
+function edDescargarBlob(blob, nombre = "imagen.png") {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+
+  a.href = url;
+  a.download = nombre;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+
+async function edObtenerJSZip() {
+  if (window.JSZip) return window.JSZip;
+
+  await edCargarScript("https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js");
+
+  if (window.JSZip) return window.JSZip;
+
+  throw new Error("JSZip no quedó disponible.");
+}
+
+window.descargarPaginaEdicionPNG = async function descargarPaginaEdicionPNG(id, index = 0, boton = null) {
+  const ed = await obtenerEdicion(id);
+
+  if (!ed) {
+    alert("No encontré la edición.");
+    return;
+  }
+
+  const paginas = edPaginasImagenes(ed);
+  const pagina = paginas[Number(index || 0)];
+
+  if (!pagina) {
+    alert("No encontré esa imagen.");
+    return;
+  }
+
+  const icono = boton?.querySelector("i");
+  const claseAnterior = icono?.className || "";
+
+  try {
+    if (boton) boton.disabled = true;
+    if (icono) icono.className = "fa-solid fa-spinner fa-spin";
+
+    const blob = await edBlobPngDesdeUrl(edMediaUrlPagina(pagina));
+    const base = edSafeName(ed.titulo || "edicion").replace(/\.[^.]+$/, "");
+    const nombre = `${base}_pagina_${Number(index || 0) + 1}.png`;
+
+    edDescargarBlob(blob, nombre);
+
+    await edMarcarDescargada(id);
+    await edIncrementarStat(id, "descargas");
+
+  } catch (e) {
+    console.error(e);
+    alert(
+      "No pude descargar esta imagen como PNG.\n\n" +
+      "Puede ser un problema temporal de CORS/R2 o conexión."
+    );
+
+  } finally {
+    if (boton) boton.disabled = false;
+    if (icono && claseAnterior) icono.className = claseAnterior;
+  }
+};
+
+window.descargarEdicionPNGs = async function descargarEdicionPNGs(id, boton = null) {
+  const ed = await obtenerEdicion(id);
+
+  if (!ed) {
+    alert("No encontré la edición.");
+    return;
+  }
+
+  const paginas = edPaginasImagenes(ed);
+
+  if (!paginas.length) {
+    alert("Esta edición no tiene imágenes para descargar.");
+    return;
+  }
+
+  const icono = boton?.querySelector("i");
+  const claseAnterior = icono?.className || "";
+
+  try {
+    if (boton) boton.disabled = true;
+    if (icono) icono.className = "fa-solid fa-spinner fa-spin";
+
+    const JSZip = await edObtenerJSZip();
+    const zip = new JSZip();
+
+    const base = edSafeName(ed.titulo || "edicion").replace(/\.[^.]+$/, "");
+
+    for (let i = 0; i < paginas.length; i++) {
+      const blob = await edBlobPngDesdeUrl(edMediaUrlPagina(paginas[i]));
+      zip.file(`${base}_pagina_${i + 1}.png`, blob);
+    }
+
+    const zipBlob = await zip.generateAsync({ type: "blob" });
+
+    edDescargarBlob(zipBlob, `${base}_imagenes_png.zip`);
+
+    await edMarcarDescargada(id);
+    await edIncrementarStat(id, "descargas");
+
+  } catch (e) {
+    console.error(e);
+    alert(
+      "No pude descargar el conjunto de imágenes PNG.\n\n" +
+      "Puede ser un problema temporal de CORS/R2 o conexión."
+    );
+
+  } finally {
+    if (boton) boton.disabled = false;
+    if (icono && claseAnterior) icono.className = claseAnterior;
+  }
+};
+
+function edMiniPaginasHTML(id, contexto = "ediciones") {
+  const ed =
+    edicionesCache.find(x => x.id === id) ||
+    (window.__EDICIONES_CACHE || []).find(x => x.id === id);
+
+  if (!ed) return "";
+
+  const paginas = edPaginasImagenes(ed);
+
+  if (!paginas.length) {
+    const portada = edPortadaEdicion(ed);
+
+    return portada ? `
+      <div class="ed-mini-paginas ed-mini-paginas--${edEscape(contexto)}">
+        <div class="ed-mini-page">
+          <img
+            src="${edEscape(portada)}"
+            alt="${edEscape(ed.titulo || "Edición")}"
+            loading="lazy"
+            onclick="abrirPresentacionEdicion('${edEscape(id)}')"
+          >
+        </div>
+      </div>
+    ` : `<div class="ed-mini-empty">Sin imagen</div>`;
+  }
+
+  return `
+    <div class="ed-mini-paginas ed-mini-paginas--${edEscape(contexto)}">
+      ${paginas.map((p, i) => {
+        const url = edMediaUrlPagina(p);
+
+        return `
+          <div class="ed-mini-page">
+            <img
+              src="${edEscape(url)}"
+              alt="${edEscape(ed.titulo || "Edición")} ${i + 1}"
+              loading="lazy"
+              onclick="abrirPresentacionEdicion('${edEscape(id)}')"
+            >
+
+            <button
+              type="button"
+              class="ed-mini-download"
+              onclick="event.stopPropagation(); descargarPaginaEdicionPNG('${edEscape(id)}', ${i}, this)"
+              title="Descargar esta imagen PNG"
+              aria-label="Descargar esta imagen PNG"
+            >
+              <i class="fa-solid fa-download"></i>
+            </button>
+          </div>
+        `;
+      }).join("")}
+    </div>
+  `;
+}
+
+window.edMiniPaginasHTML = edMiniPaginasHTML;
+
 window.borrarEdicion = async (id) => {
   if (!window.__ES_ADMIN) {
     alert("Solo los administradores pueden borrar ediciones.");
@@ -1588,6 +1812,12 @@ window.abrirPresentacionEdicion = async (id) => {
             <i class="fa-solid fa-file-pdf"></i>
           </button>
         ` : ``}
+
+        ${!tieneVideo ? `
+  <button type="button" onclick="descargarEdicionPNGs('${ed.id}', this)" title="Descargar imágenes PNG">
+    <i class="fa-solid fa-images"></i>
+  </button>
+` : ``}
 
         <button type="button" onclick="compartirEdicion('${ed.id}', 'redes')" title="Compartir">
           <i class="fa-solid fa-share-nodes"></i>
