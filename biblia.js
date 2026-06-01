@@ -2692,55 +2692,78 @@ function obtenerTextoParaPreview() {
 }
 
 function asegurarCajaTextoLibrePanel() {
-  const modalBox = document.querySelector("#modalPersonalizar .modal-contenido");
-  const preview = document.getElementById("previewImagen");
-  if (!modalBox || !preview) return;
+  // ✅ Ya no usamos el bloque feo de arriba.
+  // Si quedó de una versión anterior, lo sacamos.
+  const box = document.getElementById("boxTextoLibrePanel");
+  if (box) box.remove();
+}
 
-  let box = document.getElementById("boxTextoLibrePanel");
+function textoLibreHtmlSeguro(texto) {
+  return String(texto || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\n/g, "<br>");
+}
 
-  if (!box) {
-    box = document.createElement("div");
-    box.id = "boxTextoLibrePanel";
-    box.style.display = "none";
-    box.style.maxWidth = "420px";
-    box.style.margin = "0 auto 10px auto";
-    box.style.width = "100%";
+function activarEdicionDirectaTextoLibre() {
+  const previewTexto = document.getElementById("previewTexto");
+  const previewTextoBack = document.getElementById("previewTextoBack");
+  const wrapper = document.getElementById("previewTextoWrapper");
+  const colorEl = document.getElementById("personalizarColor");
 
-box.innerHTML = `
-  <textarea
-    id="textoLibrePanelInput"
-    placeholder="Escribí o pegá tu texto acá..."
-    style="
-      width:100%;
-      min-height:120px;
-      border-radius:14px;
-      border:1px solid #d9d9d9;
-      padding:12px;
-      resize:vertical;
-      font-size:15px;
-      line-height:1.35;
-      box-sizing:border-box;
-    "
-  ></textarea>
-`;
+  if (!previewTexto || !previewTextoBack || !wrapper) return;
 
-    modalBox.insertBefore(box, preview);
+  // ✅ Si no estamos en modo imagen libre, limpiar edición directa
+  if (!modoImagenLibre) {
+    previewTexto.removeAttribute("contenteditable");
+    previewTexto.removeAttribute("spellcheck");
+    previewTexto.removeAttribute("role");
+    previewTexto.style.cursor = "";
+    previewTexto.style.outline = "";
+    previewTexto.style.caretColor = "";
+    wrapper.style.cursor = "";
+    return;
   }
 
-  const input = document.getElementById("textoLibrePanelInput");
-  if (input && !input.dataset.ready) {
-    input.addEventListener("input", () => {
-      textoLibreImagen = input.value || "";
-      userSetFontSize = false;
-      actualizarPreview();
+  previewTexto.setAttribute("contenteditable", "true");
+  previewTexto.setAttribute("spellcheck", "false");
+  previewTexto.setAttribute("role", "textbox");
+  previewTexto.setAttribute("aria-label", "Escribí tu texto sobre la imagen");
+
+  previewTexto.style.cursor = "text";
+  previewTexto.style.outline = "none";
+  previewTexto.style.caretColor = colorEl ? colorEl.value : "#000000";
+  previewTexto.style.whiteSpace = "pre-wrap";
+
+  previewTextoBack.style.pointerEvents = "none";
+  wrapper.style.cursor = "text";
+
+  if (!previewTexto.dataset.libreReady) {
+    previewTexto.addEventListener("input", () => {
+      textoLibreImagen = (previewTexto.innerText || "").replace(/\r/g, "");
+
+      previewTextoBack.innerHTML = `
+        <div class="preview-text-inner">${textoLibreHtmlSeguro(textoLibreImagen)}</div>
+      `;
+
+      const innerBack = previewTextoBack.querySelector(".preview-text-inner");
+      if (innerBack) {
+        innerBack.style.width = "100%";
+        innerBack.style.margin = "0";
+      }
+
+      invalidarRenderFinal();
     });
-    input.dataset.ready = "1";
+
+    previewTexto.dataset.libreReady = "1";
   }
 
-  box.style.display = modoImagenLibre ? "block" : "none";
-
-  if (input) {
-    input.value = textoLibreImagen || "";
+  if (!wrapper.dataset.libreClickReady) {
+    wrapper.addEventListener("click", () => {
+      if (modoImagenLibre) previewTexto.focus();
+    });
+    wrapper.dataset.libreClickReady = "1";
   }
 }
 
@@ -3789,10 +3812,7 @@ function actualizarPreview() {
 
   const textoFinal = obtenerTextoParaPreview();
 
-  const textoSeguro = String(textoFinal || "")
-  .replace(/&/g, "&amp;")
-  .replace(/</g, "&lt;")
-  .replace(/>/g, "&gt;");
+const textoSeguro = textoLibreHtmlSeguro(textoFinal);
 
 previewTexto.innerHTML = `<div class="preview-text-inner">${textoSeguro}</div>`;
 previewTextoBack.innerHTML = `<div class="preview-text-inner">${textoSeguro}</div>`;
@@ -3893,6 +3913,7 @@ if (innerBack) {
 
   // frente = texto normal
   previewTexto.style.color = color;
+  previewTexto.style.caretColor = color;
 
   // atrás = contorno visible
   previewTextoBack.style.color = outlineColor;
@@ -3924,6 +3945,8 @@ if (!isNaN(op)) {
 
 aplicarWrapperBibliaImagen(wrapper, op, opColor);
 
+activarEdicionDirectaTextoLibre();
+  
 invalidarRenderFinal();
 
 } // ✅ CIERRA actualizarPreview()
@@ -4369,11 +4392,18 @@ if (wrapper) {
   const acciones = document.getElementById("accionesFinales");
   if (acciones) acciones.remove();
 
-  const boxTextoLibre = document.getElementById("boxTextoLibrePanel");
-  if (boxTextoLibre) boxTextoLibre.style.display = "none";
+const boxTextoLibre = document.getElementById("boxTextoLibrePanel");
+if (boxTextoLibre) boxTextoLibre.remove();
 
-  const inputTextoLibre = document.getElementById("textoLibrePanelInput");
-  if (inputTextoLibre) inputTextoLibre.value = "";
+const previewTextoLibre = document.getElementById("previewTexto");
+if (previewTextoLibre) {
+  previewTextoLibre.removeAttribute("contenteditable");
+  previewTextoLibre.removeAttribute("spellcheck");
+  previewTextoLibre.removeAttribute("role");
+  previewTextoLibre.style.cursor = "";
+  previewTextoLibre.style.outline = "";
+  previewTextoLibre.style.caretColor = "";
+}
 
   // ✅ Cada apertura comienza en el modo actual de imágenes, sin perderlo durante el uso.
   bibliaResetFondoDiseno();
@@ -4730,17 +4760,24 @@ window.abrirCrearImagenLibrePanel = async () => {
 
   await new Promise(r => requestAnimationFrame(r));
 
-  asegurarCajaTextoLibrePanel();
-
-  const input = document.getElementById("textoLibrePanelInput");
-  if (input) {
-    input.value = "ESCRIBÍ AQUÍ TU TEXTO";
-    textoLibreImagen = input.value;
-    input.focus();
-    input.select();
-  }
+  textoLibreImagen = "ESCRIBÍ\nAQUÍ TU\nTEXTO";
 
   actualizarPreview();
+
+  requestAnimationFrame(() => {
+    const previewTexto = document.getElementById("previewTexto");
+    if (!previewTexto) return;
+
+    previewTexto.focus();
+
+    try {
+      const sel = window.getSelection();
+      const range = document.createRange();
+      range.selectNodeContents(previewTexto);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    } catch (e) {}
+  });
 };
 
 // ================= 🔺 CANCELAR CREAR IMAGEN ===============================
