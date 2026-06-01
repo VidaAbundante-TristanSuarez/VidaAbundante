@@ -1623,21 +1623,21 @@
 <!-- ================= SCRIPT PRINCIPAL ================= -->
 <!-- ⚠️ biblia.js CONTROLA TODO -->
 
-<script type="module" src="./biblia.js?v=20260531-iphone1"></script>
+<script type="module" src="./biblia.js?v=20260531-ios3"></script>
 <script type="module" src="biblia.audio.js"></script>
 <script type="module" src="devocionales.js"></script>
 <script type="module" src="Subidos.js"></script>
 <script type="module" src="ABC/abc.js"></script>
 <script type="module" src="materiales/Recursos.js"></script>
 <script type="module" src="materiales/Ediciones.js"></script>
-<script type="module" src="Compartidos.js"></script>
+<script type="module" src="./Compartidos.js?v=20260531-ios3"></script>
 <script src="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/pickr.min.js"></script> 
 
 <script>
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-        .register("/VidaAbundante/service-worker.js?v=pwa-v2")
+        .register("/VidaAbundante/service-worker.js?v=pwa-v3")
         .catch(err => console.warn("SW error:", err));
     });
   }
