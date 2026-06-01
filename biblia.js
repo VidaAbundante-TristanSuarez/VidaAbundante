@@ -1150,11 +1150,9 @@ window.actualizarPermisosUI = function () {
   const btnSubidoNuevo = document.getElementById("btnSubidoNuevo");
   if (btnSubidoNuevo) btnSubidoNuevo.style.display = esAdmin ? "inline-flex" : "none";
 
-  const btnPanelImgNuevo = document.getElementById("btnPanelImgNuevo");
-  if (btnPanelImgNuevo) btnPanelImgNuevo.style.display = esAdmin ? "inline-flex" : "none";
-
-  const panelImgTopRow = document.getElementById("panelImgTopRow");
-  if (panelImgTopRow && !esAdmin) panelImgTopRow.innerHTML = "";
+if (typeof panelImgRenderAddBoton === "function") {
+  panelImgRenderAddBoton();
+}
 };
 
 // ================= AUTH =====================================
@@ -1235,6 +1233,16 @@ onValue(ref(db, "admins/" + uid), (s) => {
 
   actualizarPermisosUI();
   aplicarUIAccionesPorModo();
+
+  // ✅ iPhone/Safari: si Mi Panel Imágenes se pintó antes de saber que era admin,
+  // reconstruimos el botón + apenas llega el permiso.
+  if (typeof panelImgRenderAddBoton === "function") {
+    panelImgRenderAddBoton();
+  }
+
+  if (typeof renderPanelImagenes === "function") {
+    renderPanelImagenes(panelImagenesGuardadas || {});
+  }
 
   // ✅ si Compartidos ya se pintó antes de cargar permisos,
   // lo volvemos a pintar para que aparezcan los deletes de admin
@@ -6083,6 +6091,34 @@ function panelImgMoverAddDebajoGaleria(){
   }
 }
 
+function panelImgRenderAddBoton() {
+  const topRow = document.getElementById("panelImgTopRow");
+  if (!topRow) return;
+
+  // ✅ Si no hay usuario o no es admin, no mostramos el +
+  if (!uid || !window.__ES_ADMIN) {
+    topRow.innerHTML = "";
+    return;
+  }
+
+  // ✅ Reconstruye el botón aunque Safari/iPhone haya restaurado
+  // un HTML viejo o aunque otra función haya vaciado panelImgTopRow.
+  topRow.innerHTML = `
+    <button
+      id="btnPanelImgNuevo"
+      type="button"
+      class="btn-primary panel-add-redondo"
+      onclick="event.preventDefault(); event.stopPropagation(); abrirCrearImagenLibrePanel(); return false;"
+      title="Crear imagen"
+      aria-label="Crear imagen"
+    >
+      <i class="fa-solid fa-circle-plus"></i>
+    </button>
+  `;
+
+  panelImgMoverAddDebajoGaleria();
+}
+
 /* =========================================================
    RENDER REUTILIZABLE: IMAGEN DE MI PANEL / BIBLIA
    - Lo usa Mi Panel ahora.
@@ -6335,27 +6371,7 @@ function refBonitaPanel(it){
   return "Imagen";
 }
 
-if (topRow) {
-  if (window.__ES_ADMIN) {
-    topRow.innerHTML = `
-      <button
-        id="btnPanelImgNuevo"
-        type="button"
-        class="btn-primary panel-add-redondo"
-        onclick="event.preventDefault(); event.stopPropagation(); abrirCrearImagenLibrePanel(); return false;"
-        title="Crear imagen">
-        <i class="fa-solid fa-circle-plus"></i>
-      </button>
-    `;
-  } else {
-    topRow.innerHTML = "";
-  }
-}
-
-/* ✅ deja el + debajo de la galería */
-if (topRow && indexRow && topRow.previousElementSibling !== indexRow) {
-  indexRow.insertAdjacentElement("afterend", topRow);
-}
+panelImgRenderAddBoton();
 
   if (!items.length) {
     vacio.style.display = "block";
