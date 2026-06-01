@@ -498,6 +498,19 @@ function vaSeccionValidaApp(seccion) {
   return ["biblia", "iglesia", "panel", "compartidos"].includes(seccion);
 }
 
+function vaEsLinkCompartidosDirecto() {
+  try {
+    const params = new URLSearchParams(location.search);
+
+    return (
+      params.get("ver") === "compartidos" &&
+      !!params.get("edicionRef")
+    );
+  } catch {
+    return false;
+  }
+}
+
 function vaHayLinkDirectoInterno() {
   try {
     const params = new URLSearchParams(location.search);
@@ -516,7 +529,13 @@ function vaSeccionInicialLogueado() {
   const estado = leerEstadoBiblia();
   const seccionGuardada = estado?.seccion || "";
 
-  // Si viene de un link especial, no forzamos pantalla.
+  // ✅ Link directo a una publicación de Compartidos:
+  // abrimos Compartidos sí o sí, pero sin restaurar caché vieja.
+  if (vaEsLinkCompartidosDirecto()) {
+    return "compartidos";
+  }
+
+  // Si viene de otro link especial, no forzamos pantalla.
   if (vaHayLinkDirectoInterno()) {
     return "";
   }
@@ -538,6 +557,12 @@ function vaSeccionInicialLogueado() {
 function vaSeccionInicialVisitante() {
   const estado = leerEstadoBiblia();
   const seccionGuardada = estado?.seccion || "";
+
+  // ✅ Link directo a una publicación de Compartidos:
+  // abrimos Compartidos también en modo visitante.
+  if (vaEsLinkCompartidosDirecto()) {
+    return "compartidos";
+  }
 
   if (vaHayLinkDirectoInterno()) {
     return "";
@@ -561,11 +586,15 @@ function vaAbrirPantallaInicialUnaVez(seccion, motivo = "") {
 
   setTimeout(() => {
     try {
-      if (typeof window.irA === "function") {
-        window.irA(seccion);
-      }
+if (typeof window.irA === "function") {
+  window.irA(seccion);
+}
 
-      vaMostrarConsejoInstalarApp();
+// ✅ En links directos no mostramos cartel de instalar app.
+// En iPhone puede molestar y sumar carga visual justo al abrir desde WhatsApp.
+if (!vaHayLinkDirectoInterno()) {
+  vaMostrarConsejoInstalarApp();
+}
     } catch (e) {
       console.warn("No pude abrir pantalla inicial:", motivo, e);
     }
