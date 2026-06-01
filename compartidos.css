@@ -1711,4 +1711,24 @@ body.en-compartidos .comp-post--nota:has(.comp-action-delete){
   }
 }
 
+/* =========================================================
+   COMPARTIDOS - iPhone render liviano
+========================================================= */
+
+.comp-ver-mas-wrap{
+  display:flex;
+  justify-content:center;
+  padding:16px 0 28px;
+}
+
+.comp-ver-mas-wrap .btn-primary{
+  width:auto !important;
+  height:auto !important;
+  min-width:0 !important;
+  min-height:0 !important;
+  padding:10px 18px !important;
+  border-radius:999px !important;
+  font-weight:800;
+}
+
 </style>
