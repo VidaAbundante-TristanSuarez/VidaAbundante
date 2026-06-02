@@ -2795,6 +2795,43 @@ function compRenderDevocional(item) {
   `;
 }
 
+window.compTogglePredicaCompartidos = function compTogglePredicaCompartidos(subidoId, ev = null) {
+  if (ev) {
+    ev.preventDefault();
+    ev.stopPropagation();
+  }
+
+  const id = String(subidoId || "");
+  const card = document.querySelector(
+    `.comp-post--predica-abierta[data-comp-predica-id="${CSS.escape(id)}"]`
+  );
+
+  if (!card) return;
+
+  const yaAbierta = card.classList.contains("comp-predica-expandida");
+
+  document
+    .querySelectorAll(".comp-post--predica-abierta.comp-predica-expandida")
+    .forEach(el => {
+      if (el !== card) el.classList.remove("comp-predica-expandida");
+    });
+
+  card.classList.toggle("comp-predica-expandida", !yaAbierta);
+};
+
+// ✅ Tocando fuera de la prédica, se comprime otra vez.
+if (!window.__COMP_PREDICA_COMPRIMIR_CLICK_READY) {
+  window.__COMP_PREDICA_COMPRIMIR_CLICK_READY = true;
+
+  document.addEventListener("click", e => {
+    if (e.target.closest(".comp-post--predica-abierta")) return;
+
+    document
+      .querySelectorAll(".comp-post--predica-abierta.comp-predica-expandida")
+      .forEach(el => el.classList.remove("comp-predica-expandida"));
+  });
+}
+
 function compActivarBotonesSubidosRenderizados(items = []) {
   items
     .filter(it => it?.tipo === "subido")
@@ -2831,7 +2868,10 @@ function compRenderSubido(item) {
     );
 
     return `
-      <article class="comp-post comp-post--subido comp-post--predica-abierta">
+    <article
+  class="comp-post comp-post--subido comp-post--predica-abierta"
+  data-comp-predica-id="${compEscape(subidoId)}"
+>
         <div class="comp-post-head">
           <div class="comp-avatar">
             <i class="fa-solid fa-microphone-lines"></i>
@@ -2843,17 +2883,25 @@ function compRenderSubido(item) {
           </div>
         </div>
 
-        <div
-          class="comp-predica-abierta-wrap"
-          onclick="if(event.target.closest('button,audio,video,input,textarea,select')) return; abrirSubidosVisorPredica('${compJs(subidoId)}', 'all')"
-        >
-          ${predicaHTML || `<div class="comp-post-empty">No pude cargar la prédica.</div>`}
-        </div>
+<div
+  class="comp-predica-abierta-wrap"
+  onclick="compTogglePredicaCompartidos('${compJs(subidoId)}', event)"
+  title="Tocar para desplegar"
+>
+  ${predicaHTML || `<div class="comp-post-empty">No pude cargar la prédica.</div>`}
+</div>
+
+<button
+  type="button"
+  class="comp-predica-desplegar"
+  onclick="compTogglePredicaCompartidos('${compJs(subidoId)}', event)"
+  title="Desplegar prédica"
+  aria-label="Desplegar prédica"
+>
+  <i class="fa-solid fa-arrow-down-short-wide"></i>
+</button>
 
         <div class="comp-post-actions">
-          <button type="button" onclick="abrirSubidosVisorPredica('${compJs(subidoId)}', 'all')" title="Abrir prédica">
-            <i class="fa-solid fa-up-right-and-down-left-from-center"></i>
-          </button>
 
           <button type="button" onclick="compartirSubido('${compJs(subidoId)}', this)" title="Compartir">
             <i class="fa-solid fa-share-nodes"></i>
