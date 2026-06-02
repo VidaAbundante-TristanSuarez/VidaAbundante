@@ -1787,58 +1787,6 @@ window.descargarEdicionPNGs = async function descargarEdicionPNGs(id, boton = nu
   }
 };
 
-window.descargarEdicionPNGs = async function descargarEdicionPNGs(id, boton = null) {
-  const ed = await obtenerEdicion(id);
-
-  if (!ed) {
-    alert("No encontré la edición.");
-    return;
-  }
-
-  const paginas = edPaginasImagenes(ed);
-
-  if (!paginas.length) {
-    alert("Esta edición no tiene imágenes para descargar.");
-    return;
-  }
-
-  const icono = boton?.querySelector("i");
-  const claseAnterior = icono?.className || "";
-
-  try {
-    if (boton) boton.disabled = true;
-    if (icono) icono.className = "fa-solid fa-spinner fa-spin";
-
-    const JSZip = await edObtenerJSZip();
-    const zip = new JSZip();
-
-    const base = edSafeName(ed.titulo || "edicion").replace(/\.[^.]+$/, "");
-
-    for (let i = 0; i < paginas.length; i++) {
-      const blob = await edBlobPngDesdeUrl(edMediaUrlPagina(paginas[i]));
-      zip.file(`${base}_pagina_${i + 1}.png`, blob);
-    }
-
-    const zipBlob = await zip.generateAsync({ type: "blob" });
-
-    edDescargarBlob(zipBlob, `${base}_imagenes_png.zip`);
-
-    await edMarcarDescargada(id);
-    await edIncrementarStat(id, "descargas");
-
-  } catch (e) {
-    console.error(e);
-    alert(
-      "No pude descargar el conjunto de imágenes PNG.\n\n" +
-      "Puede ser un problema temporal de CORS/R2 o conexión."
-    );
-
-  } finally {
-    if (boton) boton.disabled = false;
-    if (icono && claseAnterior) icono.className = claseAnterior;
-  }
-};
-
 function edMiniPaginasHTML(id, contexto = "ediciones") {
   const ed =
     edicionesCache.find(x => x.id === id) ||
