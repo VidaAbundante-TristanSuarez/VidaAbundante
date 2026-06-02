@@ -1799,4 +1799,42 @@ body.en-compartidos .comp-action-count{
   }
 }
 
+/* ✅ Compartidos: prédica comprimida hasta la introducción */
+body.en-compartidos .comp-post--predica-abierta:not(.comp-predica-expandida)
+.comp-predica-intro ~ *{
+  display: none !important;
+}
+
+body.en-compartidos .comp-predica-abierta-wrap{
+  cursor: pointer;
+}
+
+/* Flechita de desplegar */
+body.en-compartidos .comp-predica-desplegar{
+  border: none;
+  cursor: pointer;
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  margin: 2px auto 8px;
+  padding: 0;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  background: var(--ui-azul-claro, #bcdcff);
+  color: #000;
+  font-weight: 900;
+}
+
+body.en-compartidos .comp-predica-desplegar:hover{
+  background: var(--ui-azul-hover, #9cc8ff);
+}
+
+body.en-compartidos .comp-post--predica-abierta.comp-predica-expandida
+.comp-predica-desplegar{
+  display: none;
+}
+
 </style>
