@@ -1312,11 +1312,18 @@ body.oscuro .ed-check-mini {
 }
 
 /* =========================================================
-   EDICIONES - MINI GALERÍA HORIZONTAL + DESCARGAS PNG
+   EDICIONES - MINI GALERÍA HORIZONTAL
 ========================================================= */
 
 .ed-card-cover-scroll{
   cursor: default;
+}
+
+.ed-mini-galeria{
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
 }
 
 .ed-mini-paginas{
@@ -1324,24 +1331,35 @@ body.oscuro .ed-check-mini {
   height: 100%;
 
   display: flex;
-  gap: 10px;
+  gap: 0;
 
   overflow-x: auto;
   overflow-y: hidden;
 
   scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  overscroll-behavior-x: contain;
   -webkit-overflow-scrolling: touch;
 
-  padding: 4px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+
   box-sizing: border-box;
+}
+
+.ed-mini-paginas::-webkit-scrollbar{
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 .ed-mini-page{
   position: relative;
 
   flex: 0 0 100%;
+  width: 100%;
   height: 100%;
-  min-width: 0;
+  min-width: 100%;
 
   display: flex;
   align-items: center;
@@ -1363,18 +1381,18 @@ body.oscuro .ed-check-mini {
   cursor: pointer;
 }
 
-.ed-mini-download{
+.ed-mini-nav{
   position: absolute;
-  right: 8px;
-  bottom: 8px;
-  z-index: 3;
+  top: 50%;
+  z-index: 4;
 
-  width: 30px;
-  height: 30px;
-  min-width: 30px;
-  min-height: 30px;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
 
-  padding: 0;
+  transform: translateY(-50%);
+
   border: none;
   border-radius: 999px;
 
@@ -1382,21 +1400,29 @@ body.oscuro .ed-check-mini {
   align-items: center;
   justify-content: center;
 
-  background: rgba(209,238,255,.94);
+  background: rgba(209,238,255,.92);
   color: #000;
 
   box-shadow: 0 4px 12px rgba(0,0,0,.18);
   cursor: pointer;
 }
 
-.ed-mini-download i{
+.ed-mini-prev{
+  left: 7px;
+}
+
+.ed-mini-next{
+  right: 7px;
+}
+
+.ed-mini-nav i{
   font-size: 12px;
   line-height: 1;
 }
 
-.ed-mini-download:disabled{
-  opacity: .65;
-  cursor: wait;
+.ed-mini-nav-oculta{
+  opacity: 0;
+  pointer-events: none;
 }
 
 .ed-mini-empty{
@@ -1406,6 +1432,12 @@ body.oscuro .ed-check-mini {
   place-items: center;
   font-weight: 900;
   opacity: .65;
+}
+
+@media (max-width: 700px){
+  .ed-mini-nav{
+    display: none;
+  }
 }
 
 </style> 
