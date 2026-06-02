@@ -3340,6 +3340,47 @@ body.oscuro #buscarLibroBiblia{
   font-weight: 700;
 }
 
+/* ✅ Apariencia: elegir sección actual / todas */
+#fondoSeccionActualLabel.tema-ambito-wrap{
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 5px !important;
+  padding: 3px !important;
+  min-height: 38px !important;
+}
+
+#fondoSeccionActualLabel .tema-ambito-btn{
+  border: none !important;
+  border-radius: 999px !important;
+  padding: 7px 12px !important;
+  min-height: 30px !important;
+
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  background: rgba(255,255,255,.55) !important;
+  color: #000 !important;
+
+  font-weight: 900 !important;
+  font-size: 13px !important;
+  line-height: 1 !important;
+
+  cursor: pointer !important;
+}
+
+#fondoSeccionActualLabel .tema-ambito-btn.activo{
+  background: var(--ui-azul-hover, #a6d0ff) !important;
+  color: #000 !important;
+}
+
+#fondoSeccionActualLabel .tema-ambito-sep{
+  font-weight: 900 !important;
+  opacity: .65 !important;
+  line-height: 1 !important;
+}
+
 body.en-biblia #accionesBiblia{
   position: fixed !important;
   left: 0;
