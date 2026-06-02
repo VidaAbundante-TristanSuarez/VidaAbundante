@@ -1301,10 +1301,11 @@ vaLimpiarParamsEntrada();
 
   // ✅ admin
 onValue(ref(db, "admins/" + uid), (s) => {
-  window.__ES_ADMIN = !!s.val();
+window.__ES_ADMIN = !!s.val();
+window.__PUEDE_CREAR_IMAGEN_BIBLIA = !!(window.__ES_ADMIN || window.__ES_COLABORADOR);
 
-  actualizarPermisosUI();
-  aplicarUIAccionesPorModo();
+actualizarPermisosUI();
+vaRepintarCrearImagenBibliaConReintentos();
 
   // ✅ iPhone/Safari: si Mi Panel Imágenes se pintó antes de saber que era admin,
   // reconstruimos el botón + apenas llega el permiso.
@@ -1326,14 +1327,13 @@ onValue(ref(db, "admins/" + uid), (s) => {
   // ✅ colaborador
 onValue(ref(db, "colaboradores/" + uid), (s) => {
   window.__ES_COLABORADOR = !!s.val();
+  window.__PUEDE_CREAR_IMAGEN_BIBLIA = !!(window.__ES_ADMIN || window.__ES_COLABORADOR);
 
   actualizarPermisosUI();
 
-  // ✅ Al llegar el rol colaborador, repintamos la barra de Biblia.
-  // Si no hacemos esto, el botón queda oculto porque arrancó en display:none.
-  try {
-    aplicarUIAccionesPorModo();
-  } catch(e) {}
+  // ✅ El rol colaborador llega después de pintar la barra.
+  // Repintamos varias veces para ganarle a cualquier render posterior.
+  vaRepintarCrearImagenBibliaConReintentos();
 
   try {
     if (obtenerSeccionActual() === "biblia") {
@@ -7958,9 +7958,38 @@ function vaEsColaboradorActual() {
   return !!window.__ES_COLABORADOR;
 }
 
-function usuarioPuedeCrearImagen() {
-  return vaEsAdminActual() || vaEsColaboradorActual();
+function vaPuedeCrearImagenPorRol() {
+  return !!(window.__ES_ADMIN || window.__ES_COLABORADOR);
 }
+
+function usuarioPuedeCrearImagen() {
+  return (
+    vaPuedeCrearImagenPorRol() ||
+    window.__PUEDE_CREAR_IMAGEN_BIBLIA === true
+  );
+}
+
+function vaSetDisplay(el, valor) {
+  if (!el) return;
+  el.style.setProperty("display", valor, "important");
+}
+
+function vaActualizarFlagCrearImagenBiblia() {
+  window.__PUEDE_CREAR_IMAGEN_BIBLIA = vaPuedeCrearImagenPorRol();
+  return !!window.__PUEDE_CREAR_IMAGEN_BIBLIA;
+}
+
+function vaRepintarCrearImagenBibliaConReintentos() {
+  [0, 80, 250, 600, 1200].forEach(ms => {
+    setTimeout(() => {
+      try {
+        aplicarUIAccionesPorModo?.();
+      } catch(e) {}
+    }, ms);
+  });
+}
+
+window.vaRepintarCrearImagenBibliaConReintentos = vaRepintarCrearImagenBibliaConReintentos;
 
 function vaPathUsoDiarioColaborador(tipo = "crearImagenBiblia") {
   const uidActual = window.__UID || window.__FB?.auth?.currentUser?.uid || "";
@@ -8047,57 +8076,65 @@ function aplicarUIAccionesPorModo() {
   const acciones = document.getElementById("accionesBiblia");
   if (!acciones) return;
 
-  const puedeCrearImagen = usuarioPuedeCrearImagen();
+  const puedeCrearImagen = vaActualizarFlagCrearImagenBiblia();
 
-  const btnModo = document.getElementById("btnModoMarcadorBarra"); // 📌
-  const btnGuardar = document.getElementById("btnGuardarMarcador"); // ✅
-  const btnLista = document.getElementById("btnListaMarcadores"); // list
-  const btnImagen = document.getElementById("btnImagen"); // panorama
-  const btnCrear = document.getElementById("btnCrearImagen"); // Crear Imagen
+  const btnModo = document.getElementById("btnModoMarcadorBarra");
+  const btnGuardar = document.getElementById("btnGuardarMarcador");
+  const btnLista = document.getElementById("btnListaMarcadores");
+  const btnImagen = document.getElementById("btnImagen");
+  const btnCrear = document.getElementById("btnCrearImagen");
 
-  const normales = acciones.querySelectorAll(".accion-normal, #resaltadorCompacto");
+  const normales = Array.from(
+    acciones.querySelectorAll(".accion-normal, #resaltadorCompacto")
+  );
 
-// ✅ Si NO es admin ni colaborador, nunca mostramos creación de imagen
-if (!puedeCrearImagen) {
-  if (btnImagen) btnImagen.style.display = "none";
-  if (btnCrear) btnCrear.style.display = "none";
-}
+  // ✅ Sin permiso: ocultar fuerte, aunque CSS lo quiera mantener oculto/visible.
+  if (!puedeCrearImagen) {
+    vaSetDisplay(btnImagen, "none");
+    vaSetDisplay(btnCrear, "none");
+  }
 
-// ✅ MODO IMAGEN: ocultar marcadores + mostrar Crear Imagen a admin/colaborador
-if (modoImagen) {
-  normales.forEach(el => (el.style.display = "none"));
+  // ✅ MODO IMAGEN: mostrar botón de imagen + Crear Imagen a admin/colaborador.
+  if (modoImagen) {
+    normales.forEach(el => {
+      if (el === btnImagen || el === btnCrear) return;
+      vaSetDisplay(el, "none");
+    });
 
-  if (btnImagen) btnImagen.style.display = puedeCrearImagen ? "inline-flex" : "none";
-  if (btnCrear) btnCrear.style.display = puedeCrearImagen ? "inline-flex" : "none";
+    vaSetDisplay(btnImagen, puedeCrearImagen ? "inline-flex" : "none");
+    vaSetDisplay(btnCrear, puedeCrearImagen ? "inline-flex" : "none");
 
-  if (btnModo) btnModo.style.display = "none";
-  if (btnGuardar) btnGuardar.style.display = "none";
-  if (btnLista) btnLista.style.display = "none";
-  return;
-}
+    vaSetDisplay(btnModo, "none");
+    vaSetDisplay(btnGuardar, "none");
+    vaSetDisplay(btnLista, "none");
+    return;
+  }
 
   // ✅ MODO MARCADOR
   if (modoMarcador) {
-    normales.forEach(el => (el.style.display = "none"));
+    normales.forEach(el => vaSetDisplay(el, "none"));
 
-    if (btnModo) btnModo.style.display = "inline-flex";
-    if (btnLista) btnLista.style.display = "none";
-    if (btnImagen) btnImagen.style.display = "none";
-    if (btnCrear) btnCrear.style.display = "none";
+    vaSetDisplay(btnModo, "inline-flex");
+    vaSetDisplay(btnLista, "none");
+    vaSetDisplay(btnImagen, "none");
+    vaSetDisplay(btnCrear, "none");
     return;
   }
 
   // ✅ MODO NORMAL
-  normales.forEach(el => (el.style.display = ""));
+  normales.forEach(el => {
+    if (el === btnImagen || el === btnCrear) return;
+    el.style.removeProperty("display");
+  });
 
-  if (btnModo) btnModo.style.display = "inline-flex";
-  if (btnLista) btnLista.style.display = "inline-flex";
+  vaSetDisplay(btnModo, "inline-flex");
+  vaSetDisplay(btnLista, "inline-flex");
 
-// ✅ Admin y colaborador ven el botón para entrar a crear imagen
-if (btnImagen) btnImagen.style.display = puedeCrearImagen ? "inline-flex" : "none";
+  // ✅ Admin y colaborador ven el botón para entrar a modo imagen.
+  vaSetDisplay(btnImagen, puedeCrearImagen ? "inline-flex" : "none");
 
-  // Este aparece solo dentro del modo imagen
-  if (btnCrear) btnCrear.style.display = "none";
+  // ✅ Este solo aparece dentro del modo imagen.
+  vaSetDisplay(btnCrear, "none");
 }
 
 window.aplicarUIAccionesPorModo = aplicarUIAccionesPorModo;
@@ -8374,6 +8411,8 @@ if (btn && !btn.__ready) {
     aplicarFiltrosBiblia();
   });
 }
+  
+vaRepintarCrearImagenBibliaConReintentos();
   
 }); // ================= ✅ CIERRA INIT ÚNICO =====
 
