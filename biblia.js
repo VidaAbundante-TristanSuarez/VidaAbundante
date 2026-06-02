@@ -13,7 +13,8 @@ import {
   remove,
   onValue,
   get,
-  push
+  push,
+  runTransaction
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 // ================= FIREBASE CONFIG =================
@@ -151,7 +152,7 @@ const db = getDatabase(app);
 
 window.__FB = { db, auth };
 window.__AUTH = auth;
-window.__FB_API = { ref, set, remove, onValue, get, push };
+window.__FB_API = { ref, set, remove, onValue, get, push, runTransaction };
 
 // ================= 🧯 CORTAFUEGOS REAL DE SECCIONES =================
 // Evita que Iglesia, Mi Panel y Compartidos queden visibles juntos.
@@ -1220,6 +1221,10 @@ window.actualizarPermisosUI = function () {
 if (typeof panelImgRenderAddBoton === "function") {
   panelImgRenderAddBoton();
 }
+
+try {
+  aplicarUIAccionesPorModo?.();
+} catch(e) {}
 };
 
 // ================= AUTH =====================================
@@ -4709,7 +4714,7 @@ window.toggleModoImagen = () => {
     return;
   }
 
-  if (!window.__ES_ADMIN) {
+  if (!usuarioPuedeCrearImagen()) {
     modoImagen = false;
     seleccionImagen = {};
     document.body.classList.remove("modo-imagen");
@@ -4718,7 +4723,7 @@ window.toggleModoImagen = () => {
     if (banner) banner.style.display = "none";
 
     aplicarUIAccionesPorModo();
-    alert("Solo los administradores pueden crear imágenes.");
+    alert("Solo administradores o colaboradores pueden crear imágenes.");
     return;
   }
 
@@ -4728,7 +4733,9 @@ window.toggleModoImagen = () => {
   document.body.classList.toggle("modo-imagen", modoImagen);
 
   const banner = document.getElementById("bannerModoImagen");
-  if (banner) banner.style.display = modoImagen ? "block" : "none";
+  if (banner) {
+    banner.style.display = modoImagen ? "block" : "none";
+  }
 
   aplicarUIAccionesPorModo();
   refrescarBotonGuardarMarcador();
@@ -4752,12 +4759,11 @@ function cerrarModalPersonalizar() {
 
 // ================= 🔺 GENERAR IMAGEN ===============================
 window.generarImagen = async () => {
-
-    if (!window.__ES_ADMIN) {
-    alert("Solo los administradores pueden crear imágenes.");
+  if (!usuarioPuedeCrearImagen()) {
+    alert("Solo administradores o colaboradores pueden crear imágenes.");
     return;
   }
-  
+
   if (Object.keys(seleccionImagen).length === 0) {
     alert("Seleccioná al menos un versículo");
     return;
