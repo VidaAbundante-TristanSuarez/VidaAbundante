@@ -3274,8 +3274,8 @@ ${compActionButton({
 })}
 
         ${compActionButton({
-          title: "Compartir",
-          onclick: `compartirEdicion('${compJs(edicionId)}', 'redes')`,
+          title: "Compartir imagen o publicación",
+          onclick: `edAbrirOpcionesCompartirEdicion('${compJs(edicionId)}', 'compartidos', this)`,
           icon: "fa-solid fa-share-nodes",
           count: st.compartidos
         })}
