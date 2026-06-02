@@ -4824,10 +4824,20 @@ window.finalizarEdicion = async (ev) => {
     btn.style.cursor = "wait";
   }
 
+try {
   try {
-    if (typeof devToast === "function") {
-      devToast("⏳ Guardando imagen...");
-    }
+    await window.vaConsumirUsoColaborador?.(
+      "crearImagenBiblia",
+      VA_LIMITE_COLAB_IMAGENES_DIA
+    );
+  } catch (limiteErr) {
+    alert(limiteErr?.message || "No podés crear más imágenes por hoy.");
+    return;
+  }
+
+  if (typeof devToast === "function") {
+    devToast("⏳ Guardando imagen.");
+  }
 
     // ✅ CLAVE: si hay audio confirmado, subirlo ANTES de guardar la imagen
     if (window.__pendingAudio?.audioBase64) {
@@ -7882,9 +7892,113 @@ function forceDefaultCheckIglesia() {
 }
 
 // ================= UI: ocultar acciones al entrar en modo marcador =================
-function usuarioPuedeCrearImagen() {
+const VA_LIMITE_COLAB_IMAGENES_DIA = 3;
+const VA_LIMITE_COLAB_AUDIOS_DIA = 3;
+
+function vaFechaArgentinaKey() {
+  try {
+    return new Intl.DateTimeFormat("en-CA", {
+      timeZone: "America/Argentina/Buenos_Aires",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit"
+    }).format(new Date());
+  } catch (_) {
+    return new Date().toISOString().slice(0, 10);
+  }
+}
+
+function vaEsAdminActual() {
   return !!window.__ES_ADMIN;
 }
+
+function vaEsColaboradorActual() {
+  return !!window.__ES_COLABORADOR;
+}
+
+function usuarioPuedeCrearImagen() {
+  return vaEsAdminActual() || vaEsColaboradorActual();
+}
+
+function vaPathUsoDiarioColaborador(tipo = "crearImagenBiblia") {
+  const uidActual = window.__UID || window.__FB?.auth?.currentUser?.uid || "";
+  const fecha = vaFechaArgentinaKey();
+
+  return `usuariosConfig/${uidActual}/usoDiario/${fecha}/${tipo}`;
+}
+
+async function vaLeerRestantesUsoColaborador(tipo = "crearImagenBiblia", limite = 3) {
+  const uidActual = window.__UID || window.__FB?.auth?.currentUser?.uid || "";
+
+  if (!uidActual) return 0;
+  if (vaEsAdminActual()) return null;
+  if (!vaEsColaboradorActual()) return 0;
+
+  try {
+    const snap = await get(ref(db, vaPathUsoDiarioColaborador(tipo)));
+    const data = snap.val() || {};
+    const cantidad = Number(data.cantidad || 0);
+
+    return Math.max(0, Number(limite || 3) - cantidad);
+  } catch (e) {
+    console.warn("No pude leer límite diario:", e);
+    return 0;
+  }
+}
+
+async function vaConsumirUsoColaborador(tipo = "crearImagenBiblia", limite = 3) {
+  const uidActual = window.__UID || window.__FB?.auth?.currentUser?.uid || "";
+
+  if (vaEsAdminActual()) {
+    return {
+      ok: true,
+      admin: true,
+      restantes: null
+    };
+  }
+
+  if (!vaEsColaboradorActual()) {
+    throw new Error("Solo administradores o colaboradores pueden usar esta función.");
+  }
+
+  if (!uidActual) {
+    throw new Error("Necesitás iniciar sesión.");
+  }
+
+  const path = vaPathUsoDiarioColaborador(tipo);
+  const fecha = vaFechaArgentinaKey();
+
+  const res = await runTransaction(ref(db, path), actual => {
+    const data = actual || {};
+    const cantidad = Number(data.cantidad || 0);
+
+    if (cantidad >= Number(limite || 3)) {
+      return;
+    }
+
+    return {
+      cantidad: cantidad + 1,
+      limite: Number(limite || 3),
+      fecha,
+      actualizadoEn: Date.now()
+    };
+  });
+
+  if (!res.committed) {
+    throw new Error(`Llegaste al límite diario de ${limite}. Podés volver a usarlo mañana.`);
+  }
+
+  const cantidadFinal = Number(res.snapshot?.val()?.cantidad || 0);
+
+  return {
+    ok: true,
+    admin: false,
+    restantes: Math.max(0, Number(limite || 3) - cantidadFinal)
+  };
+}
+
+window.vaLeerRestantesUsoColaborador = vaLeerRestantesUsoColaborador;
+window.vaConsumirUsoColaborador = vaConsumirUsoColaborador;
 
 // ================= UI: ocultar acciones al entrar en modo marcador =================
 function aplicarUIAccionesPorModo() {
