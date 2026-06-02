@@ -3083,13 +3083,13 @@ function compRenderEdicion(item) {
           saved: descargada
         })}
 
-        ${compActionButton({
-          title: "Descargar imágenes PNG",
-          onclick: `descargarEdicionPNGs('${compJs(edicionId)}', this)`,
-          icon: "fa-solid fa-images",
-          count: st.descargas,
-          saved: descargada
-        })}
+${compActionButton({
+  title: "Descargar PNG",
+  onclick: `descargarEdicionPNGs('${compJs(edicionId)}', this, 'compartidos')`,
+  icon: "fa-solid fa-download",
+  count: st.descargas,
+  saved: descargada
+})}
 
         ${compActionButton({
           title: "Compartir",
@@ -3188,8 +3188,13 @@ window.renderCompartidos = function renderCompartidos() {
       compObservarNotasParaCompartir();
     }
 
-    compOptimizarImagenesFeed();
-    return;
+compOptimizarImagenesFeed();
+
+if (typeof window.edActivarMiniGalerias === "function") {
+  window.edActivarMiniGalerias(lista);
+}
+
+return;
   }
 
   if (compEstaCargandoFeed()) {
