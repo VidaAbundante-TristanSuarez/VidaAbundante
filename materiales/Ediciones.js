@@ -902,6 +902,16 @@ function renderEdiciones() {
               </button>
             ` : ``}
 
+            ${!tieneVideo ? `
+  <button
+    type="button"
+    onclick="descargarEdicionPNGs('${ed.id}', this, 'ediciones')"
+    title="Descargar PNG"
+  >
+    <i class="fa-solid fa-download"></i>
+  </button>
+` : ``}
+
             <button
               type="button"
               onclick="compartirEdicion('${ed.id}', 'redes')"
@@ -960,7 +970,8 @@ function renderEdiciones() {
     </div>
   `;
 
-  edActivarFlechasGaleria();
+edActivarFlechasGaleria();
+edActivarMiniGalerias(lista);
 }
 
 /* ================= EDITOR ================= */
@@ -1582,21 +1593,90 @@ function edDescargarBlob(blob, nombre = "imagen.png") {
   setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
 
-async function edObtenerJSZip() {
-  if (window.JSZip) return window.JSZip;
+function edIndiceActualMiniGaleria(id, contexto = "ediciones") {
+  const track = document.getElementById(`edMiniTrack_${contexto}_${id}`);
+  if (!track) return 0;
 
-  await edCargarScript("https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js");
-
-  if (window.JSZip) return window.JSZip;
-
-  throw new Error("JSZip no quedó disponible.");
+  const ancho = track.clientWidth || 1;
+  return Math.max(0, Math.round((track.scrollLeft || 0) / ancho));
 }
 
-window.descargarPaginaEdicionPNG = async function descargarPaginaEdicionPNG(id, index = 0, boton = null) {
+function edIndiceActualVisor() {
+  const track = document.querySelector("#edViewer .ed-slides");
+  if (!track) return 0;
+
+  const ancho = track.clientWidth || 1;
+  return Math.max(0, Math.round((track.scrollLeft || 0) / ancho));
+}
+
+window.edMoverMiniGaleria = function edMoverMiniGaleria(id, contexto = "ediciones", direccion = 1) {
+  const track = document.getElementById(`edMiniTrack_${contexto}_${id}`);
+  if (!track) return;
+
+  track.scrollBy({
+    left: track.clientWidth * Number(direccion || 1),
+    behavior: "smooth"
+  });
+
+  setTimeout(() => edActualizarMiniFlechas(id, contexto), 300);
+};
+
+window.edActualizarMiniFlechas = function edActualizarMiniFlechas(id, contexto = "ediciones") {
+  const track = document.getElementById(`edMiniTrack_${contexto}_${id}`);
+  if (!track) return;
+
+  const wrap = track.closest(".ed-mini-galeria");
+  if (!wrap) return;
+
+  const prev = wrap.querySelector(".ed-mini-prev");
+  const next = wrap.querySelector(".ed-mini-next");
+
+  if (!prev || !next) return;
+
+  const hayScroll = track.scrollWidth > track.clientWidth + 8;
+  const inicio = track.scrollLeft <= 4;
+  const final = track.scrollLeft + track.clientWidth >= track.scrollWidth - 4;
+
+  prev.classList.toggle("ed-mini-nav-oculta", !hayScroll || inicio);
+  next.classList.toggle("ed-mini-nav-oculta", !hayScroll || final);
+};
+
+window.edActivarMiniGalerias = function edActivarMiniGalerias(root = document) {
+  const tracks = root.querySelectorAll?.(".ed-mini-paginas") || [];
+
+  tracks.forEach(track => {
+    const wrap = track.closest(".ed-mini-galeria");
+    if (!wrap) return;
+
+    const id = wrap.dataset.edId || "";
+    const contexto = wrap.dataset.contexto || "ediciones";
+
+    if (track.dataset.readyMini !== "1") {
+      track.dataset.readyMini = "1";
+
+      track.addEventListener("scroll", () => {
+        edActualizarMiniFlechas(id, contexto);
+      }, { passive: true });
+
+      // PC: rueda vertical sobre la imagen mueve horizontal.
+      track.addEventListener("wheel", e => {
+        if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+
+        e.preventDefault();
+        track.scrollLeft += e.deltaY;
+        edActualizarMiniFlechas(id, contexto);
+      }, { passive: false });
+    }
+
+    requestAnimationFrame(() => edActualizarMiniFlechas(id, contexto));
+  });
+};
+
+window.descargarPaginaEdicionPNG = async function descargarPaginaEdicionPNG(id, index = 0, boton = null, opts = {}) {
   const ed = await obtenerEdicion(id);
 
   if (!ed) {
-    alert("No encontré la edición.");
+    if (!opts.silencioso) alert("No encontré la edición.");
     return;
   }
 
@@ -1604,7 +1684,7 @@ window.descargarPaginaEdicionPNG = async function descargarPaginaEdicionPNG(id, 
   const pagina = paginas[Number(index || 0)];
 
   if (!pagina) {
-    alert("No encontré esa imagen.");
+    if (!opts.silencioso) alert("No encontré esa imagen.");
     return;
   }
 
@@ -1621,15 +1701,85 @@ window.descargarPaginaEdicionPNG = async function descargarPaginaEdicionPNG(id, 
 
     edDescargarBlob(blob, nombre);
 
+    if (opts.marcar !== false) {
+      await edMarcarDescargada(id);
+      await edIncrementarStat(id, "descargas");
+    }
+
+  } catch (e) {
+    console.error(e);
+
+    if (!opts.silencioso) {
+      alert("No pude descargar esta imagen como PNG.");
+    }
+
+    throw e;
+
+  } finally {
+    if (boton) boton.disabled = false;
+    if (icono && claseAnterior) icono.className = claseAnterior;
+  }
+};
+
+window.descargarEdicionPNGs = async function descargarEdicionPNGs(id, boton = null, contexto = "ediciones") {
+  const ed = await obtenerEdicion(id);
+
+  if (!ed) {
+    alert("No encontré la edición.");
+    return;
+  }
+
+  const paginas = edPaginasImagenes(ed);
+
+  if (!paginas.length) {
+    alert("Esta edición no tiene imágenes para descargar.");
+    return;
+  }
+
+  const indiceActual =
+    contexto === "visor"
+      ? edIndiceActualVisor()
+      : edIndiceActualMiniGaleria(id, contexto);
+
+  let descargarTodas = false;
+
+  if (paginas.length > 1) {
+    descargarTodas = confirm(
+      "¿Qué querés descargar?\n\n" +
+      "Aceptar: todas las imágenes.\n" +
+      "Cancelar: solo la imagen actual."
+    );
+  }
+
+  const icono = boton?.querySelector("i");
+  const claseAnterior = icono?.className || "";
+
+  try {
+    if (boton) boton.disabled = true;
+    if (icono) icono.className = "fa-solid fa-spinner fa-spin";
+
+    if (descargarTodas) {
+      for (let i = 0; i < paginas.length; i++) {
+        await descargarPaginaEdicionPNG(id, i, null, {
+          marcar: false,
+          silencioso: true
+        });
+
+        await new Promise(r => setTimeout(r, 350));
+      }
+    } else {
+      await descargarPaginaEdicionPNG(id, indiceActual, null, {
+        marcar: false,
+        silencioso: true
+      });
+    }
+
     await edMarcarDescargada(id);
     await edIncrementarStat(id, "descargas");
 
   } catch (e) {
     console.error(e);
-    alert(
-      "No pude descargar esta imagen como PNG.\n\n" +
-      "Puede ser un problema temporal de CORS/R2 o conexión."
-    );
+    alert("No pude descargar las imágenes PNG.");
 
   } finally {
     if (boton) boton.disabled = false;
@@ -1702,45 +1852,75 @@ function edMiniPaginasHTML(id, contexto = "ediciones") {
     const portada = edPortadaEdicion(ed);
 
     return portada ? `
-      <div class="ed-mini-paginas ed-mini-paginas--${edEscape(contexto)}">
-        <div class="ed-mini-page">
-          <img
-            src="${edEscape(portada)}"
-            alt="${edEscape(ed.titulo || "Edición")}"
-            loading="lazy"
-            onclick="abrirPresentacionEdicion('${edEscape(id)}')"
-          >
+      <div
+        class="ed-mini-galeria ed-mini-galeria--${edEscape(contexto)}"
+        data-ed-id="${edEscape(id)}"
+        data-contexto="${edEscape(contexto)}"
+      >
+        <div id="edMiniTrack_${edEscape(contexto)}_${edEscape(id)}" class="ed-mini-paginas">
+          <div class="ed-mini-page">
+            <img
+              src="${edEscape(portada)}"
+              alt="${edEscape(ed.titulo || "Edición")}"
+              loading="lazy"
+              onclick="abrirPresentacionEdicion('${edEscape(id)}')"
+            >
+          </div>
         </div>
       </div>
     ` : `<div class="ed-mini-empty">Sin imagen</div>`;
   }
 
   return `
-    <div class="ed-mini-paginas ed-mini-paginas--${edEscape(contexto)}">
-      ${paginas.map((p, i) => {
-        const url = edMediaUrlPagina(p);
+    <div
+      class="ed-mini-galeria ed-mini-galeria--${edEscape(contexto)}"
+      data-ed-id="${edEscape(id)}"
+      data-contexto="${edEscape(contexto)}"
+    >
 
-        return `
-          <div class="ed-mini-page">
-            <img
-              src="${edEscape(url)}"
-              alt="${edEscape(ed.titulo || "Edición")} ${i + 1}"
-              loading="lazy"
-              onclick="abrirPresentacionEdicion('${edEscape(id)}')"
-            >
+      ${paginas.length > 1 ? `
+        <button
+          type="button"
+          class="ed-mini-nav ed-mini-prev ed-mini-nav-oculta"
+          onclick="event.stopPropagation(); edMoverMiniGaleria('${edEscape(id)}', '${edEscape(contexto)}', -1)"
+          title="Imagen anterior"
+          aria-label="Imagen anterior"
+        >
+          <i class="fa-solid fa-chevron-left"></i>
+        </button>
+      ` : ``}
 
-            <button
-              type="button"
-              class="ed-mini-download"
-              onclick="event.stopPropagation(); descargarPaginaEdicionPNG('${edEscape(id)}', ${i}, this)"
-              title="Descargar esta imagen PNG"
-              aria-label="Descargar esta imagen PNG"
-            >
-              <i class="fa-solid fa-download"></i>
-            </button>
-          </div>
-        `;
-      }).join("")}
+      <div
+        id="edMiniTrack_${edEscape(contexto)}_${edEscape(id)}"
+        class="ed-mini-paginas"
+      >
+        ${paginas.map((p, i) => {
+          const url = edMediaUrlPagina(p);
+
+          return `
+            <div class="ed-mini-page">
+              <img
+                src="${edEscape(url)}"
+                alt="${edEscape(ed.titulo || "Edición")} ${i + 1}"
+                loading="lazy"
+                onclick="abrirPresentacionEdicion('${edEscape(id)}')"
+              >
+            </div>
+          `;
+        }).join("")}
+      </div>
+
+      ${paginas.length > 1 ? `
+        <button
+          type="button"
+          class="ed-mini-nav ed-mini-next ed-mini-nav-oculta"
+          onclick="event.stopPropagation(); edMoverMiniGaleria('${edEscape(id)}', '${edEscape(contexto)}', 1)"
+          title="Siguiente imagen"
+          aria-label="Siguiente imagen"
+        >
+          <i class="fa-solid fa-chevron-right"></i>
+        </button>
+      ` : ``}
     </div>
   `;
 }
@@ -1813,9 +1993,9 @@ window.abrirPresentacionEdicion = async (id) => {
           </button>
         ` : ``}
 
-        ${!tieneVideo ? `
-  <button type="button" onclick="descargarEdicionPNGs('${ed.id}', this)" title="Descargar imágenes PNG">
-    <i class="fa-solid fa-images"></i>
+${!tieneVideo ? `
+  <button type="button" onclick="descargarEdicionPNGs('${ed.id}', this, 'visor')" title="Descargar PNG">
+    <i class="fa-solid fa-download"></i>
   </button>
 ` : ``}
 
