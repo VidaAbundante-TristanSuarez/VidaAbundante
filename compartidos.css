@@ -1799,24 +1799,56 @@ body.en-compartidos .comp-action-count{
   }
 }
 
-/* ✅ Compartidos: prédica comprimida hasta la introducción */
-body.en-compartidos .comp-post--predica-abierta:not(.comp-predica-expandida)
-.comp-predica-intro ~ *{
-  display: none !important;
-}
+/* =========================================================
+   COMPARTIDOS - PRÉDICA ABIERTA COMPRIMIDA
+   Cerrada: muestra todo hasta la introducción.
+   Abierta: muestra la prédica completa.
+========================================================= */
 
 body.en-compartidos .comp-predica-abierta-wrap{
   cursor: pointer;
 }
 
-/* Flechita de desplegar */
+/* ✅ Cuando está cerrada, oculta todo lo que viene después del bloque de introducción */
+body.en-compartidos .comp-post--predica-abierta:not(.comp-predica-expandida)
+.comp-predica-intro-wrap ~ *{
+  display: none !important;
+}
+
+/* ✅ Respaldo para la estructura real que viene desde Subidos */
+body.en-compartidos .comp-post--predica-abierta:not(.comp-predica-expandida)
+.subidos-visor-bloques,
+body.en-compartidos .comp-post--predica-abierta:not(.comp-predica-expandida)
+.subidos-visor-cierre{
+  display: none !important;
+}
+
+/* ✅ La introducción queda en una línea flexible:
+   texto a la izquierda, icono al final a la derecha */
+body.en-compartidos .comp-predica-intro-preparada{
+  display: flex !important;
+  align-items: flex-end !important;
+  gap: 8px !important;
+}
+
+body.en-compartidos .comp-predica-intro-text{
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: inherit;
+}
+
+/* ✅ Icono de desplegar en la misma línea final de la introducción */
 body.en-compartidos .comp-predica-desplegar{
   border: none;
   cursor: pointer;
-  width: 38px;
-  height: 38px;
+
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  min-height: 34px;
+
   border-radius: 999px;
-  margin: 2px auto 8px;
+  margin: 0 0 1px 4px;
   padding: 0;
 
   display: inline-flex;
@@ -1826,15 +1858,32 @@ body.en-compartidos .comp-predica-desplegar{
   background: var(--ui-azul-claro, #bcdcff);
   color: #000;
   font-weight: 900;
+  box-shadow: 0 3px 10px rgba(0,0,0,.10);
 }
 
 body.en-compartidos .comp-predica-desplegar:hover{
   background: var(--ui-azul-hover, #9cc8ff);
+  color: #000;
 }
 
+/* ✅ Cuando la prédica está abierta, no hace falta mostrar el icono */
 body.en-compartidos .comp-post--predica-abierta.comp-predica-expandida
 .comp-predica-desplegar{
-  display: none;
+  display: none !important;
+}
+
+@media (max-width: 700px){
+  body.en-compartidos .comp-predica-intro-preparada{
+    gap: 7px !important;
+  }
+
+  body.en-compartidos .comp-predica-desplegar{
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+    margin-bottom: 0;
+  }
 }
 
 </style>
