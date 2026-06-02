@@ -2607,6 +2607,43 @@ function edDescargarFileFallback(file) {
   setTimeout(() => URL.revokeObjectURL(objectUrl), 2000);
 }
 
+function edShareSetTrabajando(texto = "") {
+  let aviso = document.getElementById("edShareWorkingAviso");
+
+  if (!aviso) {
+    aviso = document.createElement("div");
+    aviso.id = "edShareWorkingAviso";
+    aviso.innerHTML = `
+      <span class="ed-share-working-spinner"></span>
+      <span id="edShareWorkingTexto"></span>
+    `;
+    document.body.appendChild(aviso);
+  }
+
+  const txt = document.getElementById("edShareWorkingTexto");
+  if (txt) txt.textContent = texto || "Preparando...";
+
+  aviso.style.display = texto ? "inline-flex" : "none";
+}
+
+function edShareBloquearBotonesModal(bloquear = false, texto = "Preparando...") {
+  const modal = document.getElementById("edShareChoiceModal");
+  if (!modal) return;
+
+  const botones = modal.querySelectorAll("button");
+  botones.forEach(btn => {
+    btn.disabled = bloquear;
+  });
+
+  modal.classList.toggle("ed-share-busy", bloquear);
+
+  const titulo = modal.querySelector(".modal-title");
+  const sub = modal.querySelector(".modal-sub");
+
+  if (titulo && bloquear) titulo.textContent = "Un momento...";
+  if (sub && bloquear) sub.textContent = texto;
+}
+
 function edAsegurarModalCompartirEdicion() {
   if (document.getElementById("edShareChoiceModal")) return;
 
@@ -2662,19 +2699,39 @@ function edElegirTipoCompartirEdicion() {
       if (cerrado) return;
       cerrado = true;
 
-      modal.classList.remove("abierto");
-      modal.style.display = "none";
+      if (!valor) {
+        modal.classList.remove("abierto", "ed-share-busy");
+        modal.style.display = "none";
+      }
 
       resolve(valor);
     };
 
-    btnImagen.onclick = () => cerrar("imagen");
-    btnPublicacion.onclick = () => cerrar("publicacion");
+    btnImagen.onclick = () => {
+      edShareBloquearBotonesModal(true, "Preparando la imagen para compartir...");
+      edShareSetTrabajando("Preparando imagen...");
+      cerrar("imagen");
+    };
+
+    btnPublicacion.onclick = () => {
+      edShareBloquearBotonesModal(true, "Preparando el link de la publicación...");
+      edShareSetTrabajando("Preparando publicación...");
+      cerrar("publicacion");
+    };
+
     btnCancelar.onclick = () => cerrar("");
 
     modal.onclick = e => {
       if (e.target === modal) cerrar("");
     };
+
+    edShareBloquearBotonesModal(false);
+
+    const titulo = modal.querySelector(".modal-title");
+    const sub = modal.querySelector(".modal-sub");
+
+    if (titulo) titulo.textContent = "Compartir edición";
+    if (sub) sub.textContent = "Elegí qué querés compartir.";
 
     modal.style.display = "flex";
     modal.classList.add("abierto");
@@ -2775,15 +2832,42 @@ window.edAbrirOpcionesCompartirEdicion = async function edAbrirOpcionesCompartir
   contexto = "ediciones",
   boton = null
 ) {
-  const opcion = await edElegirTipoCompartirEdicion();
+  const icono = boton?.querySelector("i");
+  const claseAnterior = icono?.className || "";
 
-  if (opcion === "imagen") {
-    await edCompartirImagenActualEdicion(id, contexto, boton);
-    return;
-  }
+  try {
+    const opcion = await edElegirTipoCompartirEdicion();
 
-  if (opcion === "publicacion") {
-    await compartirEdicion(id, "redes");
+    if (!opcion) {
+      edShareSetTrabajando("");
+      return;
+    }
+
+    if (boton) boton.disabled = true;
+    if (icono) icono.className = "fa-solid fa-spinner fa-spin";
+
+    if (opcion === "imagen") {
+      edShareSetTrabajando("Preparando imagen...");
+      await edCompartirImagenActualEdicion(id, contexto, boton);
+      return;
+    }
+
+    if (opcion === "publicacion") {
+      edShareSetTrabajando("Preparando publicación...");
+      await compartirEdicion(id, "redes");
+    }
+
+  } finally {
+    const modal = document.getElementById("edShareChoiceModal");
+    if (modal) {
+      modal.classList.remove("abierto", "ed-share-busy");
+      modal.style.display = "none";
+    }
+
+    edShareSetTrabajando("");
+
+    if (boton) boton.disabled = false;
+    if (icono && claseAnterior) icono.className = claseAnterior;
   }
 };
 
