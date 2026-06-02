@@ -2875,6 +2875,31 @@ body.oscuro #btnScrollTopGlobal{
   color: #000;
 }
 
+/* ✅ Biblia también usa el botón global.
+   Si la barra de acciones está visible, lo subimos para que no la tape. */
+body.en-biblia #btnScrollTopGlobal{
+  display: inline-flex !important;
+}
+
+body.en-biblia:not(.barra-oculta) #btnScrollTopGlobal{
+  bottom: max(62px, calc(env(safe-area-inset-bottom) + 62px));
+}
+
+@media (max-width: 800px){
+  #btnScrollTopGlobal{
+    right: 4px;
+    bottom: max(10px, env(safe-area-inset-bottom));
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+    min-height: 34px;
+  }
+
+  body.en-biblia:not(.barra-oculta) #btnScrollTopGlobal{
+    bottom: max(58px, calc(env(safe-area-inset-bottom) + 58px));
+  }
+}
+
 /* Biblia ya tiene subir arriba en su propia barra */
 body.en-biblia #btnScrollTopGlobal{
   display: none !important;
@@ -2955,30 +2980,76 @@ body.en-biblia #btnScrollTopGlobal{
 
 /* ===== SOLO ICONO EN CELU: Mi Panel / tabs puntuales ===== */
 @media (max-width: 640px){
-  .solo-icono-movil{
-    width: 42px;
-    min-width: 42px;
-    height: 34px;
-    padding-left: 0 !important;
-    padding-right: 0 !important;
 
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+  .solo-icono-movil,
+  .panel-tabs button.solo-icono-movil,
+  .iglesia-tab.solo-icono-movil,
+  .nav-btn.solo-icono-movil{
+    width: 42px !important;
+    min-width: 42px !important;
+    max-width: 42px !important;
 
-    gap: 0;
-    font-size: 0; /* ✅ oculta el texto directo: Compartidos / ABC / Recursos */
+    height: 34px !important;
+    min-height: 34px !important;
+    max-height: 34px !important;
+
+    padding: 0 !important;
+    margin: 0 !important;
+
+    border-radius: 999px !important;
+
+    display: inline-grid !important;
+    place-items: center !important;
+
+    text-align: center !important;
+    line-height: 1 !important;
+    gap: 0 !important;
+
+    flex: 0 0 42px !important;
+
+    font-size: 0 !important;
+    overflow: hidden !important;
   }
 
-  .solo-icono-movil i{
-    font-size: 14px;
-    line-height: 1;
-    margin: 0;
+  .solo-icono-movil i,
+  .panel-tabs button.solo-icono-movil i,
+  .iglesia-tab.solo-icono-movil i,
+  .nav-btn.solo-icono-movil i{
+    display: block !important;
+    grid-area: 1 / 1 !important;
+
+    width: auto !important;
+    height: auto !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    font-size: 15px !important;
+    line-height: 1 !important;
+
+    color: #000 !important;
+    text-align: center !important;
+    transform: none !important;
+  }
+
+  .solo-icono-movil i::before,
+  .panel-tabs button.solo-icono-movil i::before,
+  .iglesia-tab.solo-icono-movil i::before,
+  .nav-btn.solo-icono-movil i::before{
+    display: block !important;
+    line-height: 1 !important;
+    margin: 0 !important;
   }
 
   .solo-icono-movil span,
-  .solo-icono-movil .text{
-    display: none;
+  .solo-icono-movil .text,
+  .panel-tabs button.solo-icono-movil span,
+  .panel-tabs button.solo-icono-movil .text,
+  .iglesia-tab.solo-icono-movil span,
+  .iglesia-tab.solo-icono-movil .text,
+  .nav-btn.solo-icono-movil span,
+  .nav-btn.solo-icono-movil .text{
+    display: none !important;
   }
 }
 
