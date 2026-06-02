@@ -8452,39 +8452,42 @@ window.eliminarImagenPanel = async (id) => {
     });
   }
 
-  function seccionPermiteBoton() {
-    return (
-      document.body.classList.contains("en-iglesia") ||
-      document.body.classList.contains("en-panel") ||
-      document.body.classList.contains("en-compartidos")
-    );
+function seccionPermiteBoton() {
+  return (
+    document.body.classList.contains("en-biblia") ||
+    document.body.classList.contains("en-iglesia") ||
+    document.body.classList.contains("en-panel") ||
+    document.body.classList.contains("en-compartidos")
+  );
+}
+
+function obtenerContenedorScrollActivo() {
+  const candidatos = [
+    document.querySelector("body.en-biblia #seccion-biblia"),
+
+    document.querySelector("body.en-compartidos #seccion-compartidos"),
+
+    document.querySelector("body.en-iglesia #iglesia-devocionales"),
+    document.querySelector("body.en-iglesia #iglesia-subidos"),
+    document.querySelector("body.en-iglesia #seccion-iglesia"),
+
+    document.querySelector("body.en-panel #panel-imagenes"),
+    document.querySelector("body.en-panel #panel-marcadores"),
+    document.querySelector("body.en-panel #seccion-panel")
+  ].filter(elementoVisible);
+
+  for (const el of candidatos) {
+    const st = getComputedStyle(el);
+
+    const tieneScrollInterno =
+      (st.overflowY === "auto" || st.overflowY === "scroll") &&
+      el.scrollHeight > el.clientHeight + 10;
+
+    if (tieneScrollInterno) return el;
   }
 
-  function obtenerContenedorScrollActivo() {
-    const candidatos = [
-      document.querySelector("body.en-compartidos #seccion-compartidos"),
-
-      document.querySelector("body.en-iglesia #iglesia-devocionales"),
-      document.querySelector("body.en-iglesia #iglesia-subidos"),
-      document.querySelector("body.en-iglesia #seccion-iglesia"),
-
-      document.querySelector("body.en-panel #panel-imagenes"),
-      document.querySelector("body.en-panel #panel-marcadores"),
-      document.querySelector("body.en-panel #seccion-panel")
-    ].filter(elementoVisible);
-
-    for (const el of candidatos) {
-      const st = getComputedStyle(el);
-
-      const tieneScrollInterno =
-        (st.overflowY === "auto" || st.overflowY === "scroll") &&
-        el.scrollHeight > el.clientHeight + 10;
-
-      if (tieneScrollInterno) return el;
-    }
-
-    return window;
-  }
+  return window;
+}
 
   function obtenerScrollActual() {
     const cont = obtenerContenedorScrollActivo();
@@ -8504,14 +8507,13 @@ window.eliminarImagenPanel = async (id) => {
     }, 1800);
   }
 
-  function puedeMostrarse() {
-    return (
-      seccionPermiteBoton() &&
-      !document.body.classList.contains("en-biblia") &&
-      !hayModalAbierto() &&
-      obtenerScrollActual() > 480
-    );
-  }
+function puedeMostrarse() {
+  return (
+    seccionPermiteBoton() &&
+    !hayModalAbierto() &&
+    obtenerScrollActual() > 480
+  );
+}
 
   function mostrarSoloUnMomento() {
     if (!puedeMostrarse()) {
@@ -8532,15 +8534,16 @@ window.eliminarImagenPanel = async (id) => {
   window.addEventListener("scroll", mostrarSoloUnMomento, { passive: true });
   window.addEventListener("resize", revisarSiDebeOcultarse);
 
-  [
-    "seccion-compartidos",
-    "iglesia-devocionales",
-    "iglesia-subidos",
-    "panel-imagenes",
-    "panel-marcadores",
-    "seccion-iglesia",
-    "seccion-panel"
-  ]
+[
+  "seccion-biblia",
+  "seccion-compartidos",
+  "iglesia-devocionales",
+  "iglesia-subidos",
+  "panel-imagenes",
+  "panel-marcadores",
+  "seccion-iglesia",
+  "seccion-panel"
+]
     .map(id => document.getElementById(id))
     .filter(Boolean)
     .forEach(el => {
