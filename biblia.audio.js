@@ -10,6 +10,50 @@ document.addEventListener("DOMContentLoaded", () => {
   const AUDIO_WEBAPP_URL = "https://subir-imagen-r2.vidaabundante-tristansuarez.workers.dev";
   const AUDIO_R2_UPLOAD_URL = "https://subir-imagen-r2.vidaabundante-tristansuarez.workers.dev";
 
+ const AUDIO_VOZ_ADMIN = "es-US-Wavenet-B";
+const AUDIO_VOZ_COLAB = "es-US-Standard-B";
+const AUDIO_LIMITE_COLAB_DIA = 3;
+
+window.__audioCacheLocal = window.__audioCacheLocal || {
+  texto: "",
+  voiceName: "",
+  audioBase64: ""
+};
+
+function audioEsAdmin() {
+  return !!window.__ES_ADMIN;
+}
+
+function audioEsColaborador() {
+  return !!window.__ES_COLABORADOR;
+}
+
+function audioPuedeGenerar() {
+  return audioEsAdmin() || audioEsColaborador();
+}
+
+async function audioActualizarEstadoInicial() {
+  const estado = document.getElementById("audioEstado");
+  if (!estado) return;
+
+  if (audioEsAdmin()) {
+    estado.textContent = "Listo para previsualizar.";
+    return;
+  }
+
+  if (audioEsColaborador()) {
+    const restantes = await window.vaLeerRestantesUsoColaborador?.(
+      "audioBiblia",
+      AUDIO_LIMITE_COLAB_DIA
+    );
+
+    estado.textContent = `Listo para previsualizar. Te quedan ${restantes ?? 0} audios reales hoy.`;
+    return;
+  }
+
+  estado.textContent = "No tenés permiso para generar audio.";
+}
+  
   // ✅ Fonética (no pisa si ya existe)
   window.__FONETICA = window.__FONETICA || {};
   if (!window.__FONETICA["Joiada"]) window.__FONETICA["Joiada"] = "Joíada";
@@ -28,7 +72,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!modal || !ta) return;
 
     if (audio) audio.removeAttribute("src");
-    if (estado) estado.textContent = "Listo para previsualizar.";
+  if (estado) estado.textContent = "Preparando audio...";
+audioActualizarEstadoInicial();
 
     // ✅ guardar original + autocompletar si estaba vacío
     __audioTextoOriginal = (ta.value || "").trim() || audio_getTextoDesdePreview();
@@ -55,43 +100,49 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   // ✅ Previa real
-  window.escucharPreviaAudio = async () => {
-    const ta = document.getElementById("textoAudio");
-    const estado = document.getElementById("audioEstado");
-    const audio = document.getElementById("audioPreview");
-    if (!ta || !audio) return;
+window.escucharPreviaAudio = async () => {
+  const ta = document.getElementById("textoAudio");
+  const estado = document.getElementById("audioEstado");
+  const audio = document.getElementById("audioPreview");
+  if (!ta || !audio) return;
 
-    const texto = (ta.value || "").trim();
-    if (!texto) {
-      if (estado) estado.textContent = "⚠️ No hay texto para previsualizar.";
-      return;
-    }
+  if (!audioPuedeGenerar()) {
+    if (estado) estado.textContent = "⚠️ Solo admin o colaborador puede generar audio.";
+    return;
+  }
 
-    const textoLimpio = texto
-      .replace(/[•▪●■□◆◇▶►◼◻]/g, "")
-      .replace(/\s{2,}/g, " ")
-      .trim();
+  const texto = (ta.value || "").trim();
 
-    try {
-      window.__audioBase64 = null;
-      if (estado) estado.textContent = "🎧 Generando previa real…";
+  if (!texto) {
+    if (estado) estado.textContent = "⚠️ No hay texto para previsualizar.";
+    return;
+  }
 
-      const voiceName = window.__AUDIO_VOICE_NAME || "es-US-Wavenet-B";
-      const r = await fetch(AUDIO_WEBAPP_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-         body: JSON.stringify({ texto: textoLimpio, voiceName })
-      });
+  const textoLimpio = texto
+    .replace(/[•▪●■□◆◇▶►◼◻]/g, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
 
-      
+  const esColabSeco = !audioEsAdmin() && audioEsColaborador();
 
-      const data = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(data?.error || "Error HTTP " + r.status);
-      if (!data.audioBase64) throw new Error("No devolvió audioBase64");
+  const voiceName = esColabSeco
+    ? AUDIO_VOZ_COLAB
+    : (window.__AUDIO_VOICE_NAME || AUDIO_VOZ_ADMIN);
 
-      window.__audioBase64 = data.audioBase64;
+  const cache = window.__audioCacheLocal || {};
 
-      const bytes = Uint8Array.from(atob(data.audioBase64), c => c.charCodeAt(0));
+  const puedeReutilizar =
+    cache.texto === textoLimpio &&
+    cache.voiceName === voiceName &&
+    cache.audioBase64;
+
+  try {
+    window.__audioBase64 = null;
+
+    if (puedeReutilizar) {
+      window.__audioBase64 = cache.audioBase64;
+
+      const bytes = Uint8Array.from(atob(cache.audioBase64), c => c.charCodeAt(0));
       const blob = new Blob([bytes], { type: "audio/mpeg" });
       const localUrl = URL.createObjectURL(blob);
 
@@ -99,12 +150,91 @@ document.addEventListener("DOMContentLoaded", () => {
       audio.load();
       await audio.play();
 
-      if (estado) estado.textContent = "✅ Previa reproduciendo.";
-    } catch (e) {
-      console.error(e);
-      if (estado) estado.textContent = "❌ No se pudo generar la previa real.";
+      if (estado) {
+        estado.textContent = "✅ Reproduciendo audio ya generado. No se descontó otro uso.";
+      }
+
+      return;
     }
-  };
+
+    if (esColabSeco) {
+      try {
+        const consumo = await window.vaConsumirUsoColaborador?.(
+          "audioBiblia",
+          AUDIO_LIMITE_COLAB_DIA
+        );
+
+        if (estado) {
+          estado.textContent = `🎧 Generando voz seca... Te quedan ${consumo?.restantes ?? 0} audios hoy.`;
+        }
+      } catch (limiteErr) {
+        if (estado) {
+          estado.textContent = "⚠️ " + (limiteErr?.message || "Llegaste al límite diario de audio.");
+        }
+        return;
+      }
+    } else if (estado) {
+      estado.textContent = "🎧 Generando previa real con arpa...";
+    }
+
+    const body = esColabSeco
+      ? {
+          action: "ttsSeco",
+          texto: textoLimpio,
+          voiceName,
+          languageCode: "es-US"
+        }
+      : {
+          action: "tts",
+          texto: textoLimpio,
+          voiceName
+        };
+
+    const r = await fetch(AUDIO_WEBAPP_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+
+    const data = await r.json().catch(() => ({}));
+
+    if (!r.ok) {
+      throw new Error(data?.error || "Error HTTP " + r.status);
+    }
+
+    if (!data.audioBase64) {
+      throw new Error("No devolvió audioBase64");
+    }
+
+    window.__audioBase64 = data.audioBase64;
+
+    window.__audioCacheLocal = {
+      texto: textoLimpio,
+      voiceName,
+      audioBase64: data.audioBase64
+    };
+
+    const bytes = Uint8Array.from(atob(data.audioBase64), c => c.charCodeAt(0));
+    const blob = new Blob([bytes], { type: "audio/mpeg" });
+    const localUrl = URL.createObjectURL(blob);
+
+    audio.src = localUrl;
+    audio.load();
+    await audio.play();
+
+    if (estado) {
+      estado.textContent = esColabSeco
+        ? "✅ Voz seca reproduciendo."
+        : "✅ Previa reproduciendo.";
+    }
+
+  } catch (e) {
+    console.error(e);
+    if (estado) {
+      estado.textContent = "❌ No se pudo generar la previa real.";
+    }
+  }
+};
 
   // ✅ Confirmar (no sube todavía)
   window.finalizarYSubirAudio = async () => {
