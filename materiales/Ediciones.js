@@ -1721,6 +1721,148 @@ window.descargarPaginaEdicionPNG = async function descargarPaginaEdicionPNG(id, 
   }
 };
 
+function edElegirDescargaPNG(total = 1) {
+  return new Promise(resolve => {
+    // Si hay una sola imagen, no preguntamos nada.
+    if (Number(total || 0) <= 1) {
+      resolve("actual");
+      return;
+    }
+
+    const anterior = document.getElementById("edDescargaPngModal");
+    if (anterior) anterior.remove();
+
+    const modal = document.createElement("div");
+    modal.id = "edDescargaPngModal";
+    modal.className = "modal-overlay abierto";
+    modal.setAttribute("aria-hidden", "false");
+
+    modal.style.cssText = `
+      position: fixed;
+      inset: 0;
+      z-index: 999999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,.45);
+      padding: 14px;
+      box-sizing: border-box;
+    `;
+
+    modal.innerHTML = `
+      <div
+        class="modal-card modal-card-sm"
+        style="
+          width: min(380px, calc(100vw - 32px));
+          background: rgba(255,255,255,.98);
+          color: #000;
+          border-radius: 20px;
+          padding: 18px;
+          box-shadow: 0 16px 50px rgba(0,0,0,.28);
+          position: relative;
+          box-sizing: border-box;
+        "
+      >
+        <button
+          type="button"
+          data-ed-png-close="1"
+          aria-label="Cerrar"
+          title="Cerrar"
+          style="
+            position: absolute;
+            right: 12px;
+            top: 12px;
+            width: 34px;
+            height: 34px;
+            border: none;
+            border-radius: 999px;
+            background: rgba(0,0,0,.06);
+            color: #000;
+            font-size: 20px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+          "
+        >
+          ×
+        </button>
+
+        <h3 style="margin: 0 0 8px; font-size: 22px; font-weight: 900;">
+          Descargar PNG
+        </h3>
+
+        <p style="margin: 0 0 16px; font-size: 14px; opacity: .75;">
+          Elegí qué querés descargar.
+        </p>
+
+        <div style="display: grid; gap: 10px;">
+          <button
+            type="button"
+            class="btn-primary"
+            data-ed-png-opcion="actual"
+            style="
+              width: 100%;
+              min-height: 46px;
+              border-radius: 14px;
+              font-weight: 900;
+              display: inline-flex;
+              align-items: center;
+              justify-content: center;
+              gap: 8px;
+            "
+          >
+            <i class="fa-solid fa-download"></i>
+            Descargar imagen actual
+          </button>
+
+          <button
+            type="button"
+            class="btn-primary"
+            data-ed-png-opcion="todas"
+            style="
+              width: 100%;
+              min-height: 46px;
+              border-radius: 14px;
+              font-weight: 900;
+              display: inline-flex;
+              align-items: center;
+              justify-content: center;
+              gap: 8px;
+            "
+          >
+            <i class="fa-solid fa-download"></i>
+            Descargar todas
+          </button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    const cerrar = valor => {
+      modal.remove();
+      resolve(valor);
+    };
+
+    modal.querySelector('[data-ed-png-close="1"]')?.addEventListener("click", () => {
+      cerrar(null);
+    });
+
+    modal.querySelector('[data-ed-png-opcion="actual"]')?.addEventListener("click", () => {
+      cerrar("actual");
+    });
+
+    modal.querySelector('[data-ed-png-opcion="todas"]')?.addEventListener("click", () => {
+      cerrar("todas");
+    });
+
+    modal.addEventListener("click", e => {
+      if (e.target === modal) cerrar(null);
+    });
+  });
+}
+
 window.descargarEdicionPNGs = async function descargarEdicionPNGs(id, boton = null, contexto = "ediciones") {
   const ed = await obtenerEdicion(id);
 
@@ -1741,15 +1883,13 @@ window.descargarEdicionPNGs = async function descargarEdicionPNGs(id, boton = nu
       ? edIndiceActualVisor()
       : edIndiceActualMiniGaleria(id, contexto);
 
-  let descargarTodas = false;
+const eleccion = await edElegirDescargaPNG(paginas.length);
 
-  if (paginas.length > 1) {
-    descargarTodas = confirm(
-      "¿Qué querés descargar?\n\n" +
-      "Aceptar: todas las imágenes.\n" +
-      "Cancelar: solo la imagen actual."
-    );
-  }
+if (!eleccion) {
+  return;
+}
+
+const descargarTodas = eleccion === "todas";
 
   const icono = boton?.querySelector("i");
   const claseAnterior = icono?.className || "";
