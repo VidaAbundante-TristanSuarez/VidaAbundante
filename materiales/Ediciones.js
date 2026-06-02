@@ -914,8 +914,8 @@ function renderEdiciones() {
 
             <button
               type="button"
-              onclick="compartirEdicion('${ed.id}', 'redes')"
-              title="Compartir en redes"
+onclick="edAbrirOpcionesCompartirEdicion('${ed.id}', 'ediciones', this)"
+title="Compartir imagen o publicación"
             >
               <i class="fa-solid fa-share-nodes"></i>
             </button>
@@ -2087,7 +2087,7 @@ ${!tieneVideo ? `
   </button>
 ` : ``}
 
-        <button type="button" onclick="compartirEdicion('${ed.id}', 'redes')" title="Compartir">
+        <button type="button" onclick="edAbrirOpcionesCompartirEdicion('${ed.id}', 'visor', this)" title="Compartir imagen o publicación">
           <i class="fa-solid fa-share-nodes"></i>
         </button>
 
@@ -2571,7 +2571,7 @@ async function edCrearFileDesdeUrl(url, nombre = "edicion.png") {
   });
 }
 
-async function edCompartirConPortada({ titulo, url, portadaUrl }) {
+async function edCompartirPublicacionLink({ titulo, url }) {
   const tituloLimpio = String(titulo || "Edición").trim() || "Edición";
   const textoFallback = `${tituloLimpio}\n${url}`;
 
@@ -2585,25 +2585,6 @@ async function edCompartirConPortada({ titulo, url, portadaUrl }) {
     return "prompt";
   }
 
-  if (portadaUrl) {
-    try {
-      const file = await edCrearFileDesdeUrl(portadaUrl, tituloLimpio);
-
-      if (navigator.canShare?.({ files: [file] })) {
-        await navigator.share({
-          title: tituloLimpio,
-          text: tituloLimpio,
-          url,
-          files: [file]
-        });
-
-        return "archivo";
-      }
-    } catch (err) {
-      console.warn("No pude compartir la portada como archivo. Uso link solo:", err);
-    }
-  }
-
   await navigator.share({
     title: tituloLimpio,
     text: tituloLimpio,
@@ -2612,6 +2593,199 @@ async function edCompartirConPortada({ titulo, url, portadaUrl }) {
 
   return "link";
 }
+
+function edDescargarFileFallback(file) {
+  const objectUrl = URL.createObjectURL(file);
+  const a = document.createElement("a");
+
+  a.href = objectUrl;
+  a.download = file.name || "edicion.png";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+
+  setTimeout(() => URL.revokeObjectURL(objectUrl), 2000);
+}
+
+function edAsegurarModalCompartirEdicion() {
+  if (document.getElementById("edShareChoiceModal")) return;
+
+  const modal = document.createElement("div");
+  modal.id = "edShareChoiceModal";
+  modal.className = "modal-overlay";
+
+  modal.innerHTML = `
+    <div class="modal-card modal-card-sm" onclick="event.stopPropagation()">
+      <h3 class="modal-title">Compartir edición</h3>
+
+      <p class="modal-sub">
+        Elegí qué querés compartir.
+      </p>
+
+      <div class="modal-actions">
+        <button type="button" id="edShareChoiceImagen" class="btn-primary">
+          <i class="fa-solid fa-image"></i>
+          Imagen
+        </button>
+
+        <button type="button" id="edShareChoicePublicacion" class="btn-primary">
+          <i class="fa-solid fa-link"></i>
+          Publicación
+        </button>
+
+        <button type="button" id="edShareChoiceCancelar" class="btn-ghost">
+          Cancelar
+        </button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+}
+
+function edElegirTipoCompartirEdicion() {
+  edAsegurarModalCompartirEdicion();
+
+  const modal = document.getElementById("edShareChoiceModal");
+  const btnImagen = document.getElementById("edShareChoiceImagen");
+  const btnPublicacion = document.getElementById("edShareChoicePublicacion");
+  const btnCancelar = document.getElementById("edShareChoiceCancelar");
+
+  if (!modal || !btnImagen || !btnPublicacion || !btnCancelar) {
+    return Promise.resolve("");
+  }
+
+  return new Promise(resolve => {
+    let cerrado = false;
+
+    const cerrar = (valor = "") => {
+      if (cerrado) return;
+      cerrado = true;
+
+      modal.classList.remove("abierto");
+      modal.style.display = "none";
+
+      resolve(valor);
+    };
+
+    btnImagen.onclick = () => cerrar("imagen");
+    btnPublicacion.onclick = () => cerrar("publicacion");
+    btnCancelar.onclick = () => cerrar("");
+
+    modal.onclick = e => {
+      if (e.target === modal) cerrar("");
+    };
+
+    modal.style.display = "flex";
+    modal.classList.add("abierto");
+  });
+}
+
+function edIndiceCompartirActual(id, contexto = "ediciones") {
+  try {
+    if (contexto === "visor" && typeof edIndiceActualVisor === "function") {
+      return edIndiceActualVisor();
+    }
+
+    if (typeof edIndiceActualMiniGaleria === "function") {
+      return edIndiceActualMiniGaleria(id, contexto);
+    }
+  } catch (_) {}
+
+  return 0;
+}
+
+window.edCompartirImagenActualEdicion = async function edCompartirImagenActualEdicion(
+  id,
+  contexto = "ediciones",
+  boton = null
+) {
+  const ed = await obtenerEdicion(id);
+
+  if (!ed) {
+    alert("No encontré la edición.");
+    return;
+  }
+
+  const paginas = edPaginasImagenes(ed);
+
+  if (!paginas.length) {
+    alert("Esta edición no tiene imágenes para compartir.");
+    return;
+  }
+
+  const titulo = ed.titulo || "Edición";
+  const indiceRaw = Number(edIndiceCompartirActual(id, contexto) || 0);
+  const indice = Math.max(0, Math.min(indiceRaw, paginas.length - 1));
+  const pagina = paginas[indice] || paginas[0];
+  const imagenUrl = edMediaUrlPagina(pagina);
+
+  if (!imagenUrl) {
+    alert("No encontré la imagen actual.");
+    return;
+  }
+
+  const icono = boton?.querySelector("i");
+  const claseAnterior = icono?.className || "";
+
+  try {
+    if (boton) boton.disabled = true;
+    if (icono) icono.className = "fa-solid fa-spinner fa-spin";
+
+    if (typeof mostrarToast === "function") {
+      mostrarToast("⏳ Preparando imagen para compartir...");
+    }
+
+    const file = await edCrearFileDesdeUrl(
+      imagenUrl,
+      `${titulo}_${indice + 1}`
+    );
+
+    if (navigator.share && navigator.canShare?.({ files: [file] })) {
+      await navigator.share({
+        title: titulo,
+        files: [file]
+      });
+
+      await edIncrementarStat(id, "compartidos");
+      return;
+    }
+
+    edDescargarFileFallback(file);
+
+    alert(
+      "Este navegador no permite compartir la imagen directamente.\n\n" +
+      "Se descargó la imagen para que puedas compartirla manualmente."
+    );
+
+  } catch (e) {
+    if (e?.name !== "AbortError") {
+      console.error("No pude compartir la imagen actual:", e);
+      alert("No pude compartir la imagen actual.");
+    }
+
+  } finally {
+    if (boton) boton.disabled = false;
+    if (icono && claseAnterior) icono.className = claseAnterior;
+  }
+};
+
+window.edAbrirOpcionesCompartirEdicion = async function edAbrirOpcionesCompartirEdicion(
+  id,
+  contexto = "ediciones",
+  boton = null
+) {
+  const opcion = await edElegirTipoCompartirEdicion();
+
+  if (opcion === "imagen") {
+    await edCompartirImagenActualEdicion(id, contexto, boton);
+    return;
+  }
+
+  if (opcion === "publicacion") {
+    await compartirEdicion(id, "redes");
+  }
+};
 
 function edImageDims(dataUrl) {
   return new Promise((resolve, reject) => {
@@ -2865,9 +3039,7 @@ window.compartirEdicion = async (id, destino = "redes") => {
     return;
   }
 
-  /* ===== Botón compartir en redes =====
-     Antes de compartir, garantizamos que exista en Compartidos.
-  */
+  /* ===== Compartir publicación con link ===== */
 
   const publicada = await edAsegurarPublicadaParaCompartir(ed);
 
@@ -2876,10 +3048,9 @@ window.compartirEdicion = async (id, destino = "redes") => {
   const url = await crearLinkPublicoEdicion(id, titulo);
 
   try {
-    const resultado = await edCompartirConPortada({
+    const resultado = await edCompartirPublicacionLink({
       titulo,
-      url,
-      portadaUrl
+      url
     });
 
     await edIncrementarStat(id, "compartidos");
