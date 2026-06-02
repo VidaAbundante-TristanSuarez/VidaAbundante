@@ -1886,4 +1886,58 @@ body.en-compartidos .comp-post--predica-abierta.comp-predica-expandida
   }
 }
 
+/* =========================================================
+   EDICIONES - AVISO COMPARTIR EN PROCESO
+========================================================= */
+
+#edShareWorkingAviso{
+  position: fixed;
+  left: 50%;
+  bottom: max(78px, calc(env(safe-area-inset-bottom) + 78px));
+  transform: translateX(-50%);
+  z-index: 999999;
+
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  padding: 9px 13px;
+  border-radius: 999px;
+
+  background: rgba(0,0,0,.78);
+  color: #fff;
+
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1;
+
+  box-shadow: 0 8px 22px rgba(0,0,0,.25);
+  pointer-events: none;
+}
+
+.ed-share-working-spinner{
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  border: 2px solid rgba(255,255,255,.35);
+  border-top-color: #fff;
+  animation: edShareSpin .75s linear infinite;
+}
+
+@keyframes edShareSpin{
+  to{
+    transform: rotate(360deg);
+  }
+}
+
+#edShareChoiceModal.ed-share-busy .modal-actions button{
+  opacity: .55;
+  cursor: wait;
+}
+
+#edShareChoiceModal.ed-share-busy .modal-card{
+  cursor: wait;
+}
+
 </style>
