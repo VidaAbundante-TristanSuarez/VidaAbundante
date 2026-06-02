@@ -8607,6 +8607,242 @@ const FONDO_SECCIONES = {
 
 let fondoTemaDraft = null;
 
+let fondoTemaBackupAbrir = null;
+
+function getNombreSeccionTema(seccion) {
+  const nombres = {
+    biblia: "Biblia",
+    iglesia: "Iglesia",
+    panel: "Mi Panel",
+    compartidos: "Compartidos"
+  };
+
+  return nombres[seccion] || "Biblia";
+}
+
+function getSeccionesTemaDestino() {
+  if (fondoTemaDraft?.ambito === "todas") {
+    return Object.keys(FONDO_SECCIONES);
+  }
+
+  return [fondoTemaDraft?.seccion || getSeccionActualFondoKey()];
+}
+
+function guardarBackupTemaActual() {
+  fondoTemaBackupAbrir = {};
+
+  Object.keys(FONDO_SECCIONES).forEach(seccion => {
+    fondoTemaBackupAbrir[seccion] = getEstadoGuardadoSeccion(seccion);
+  });
+}
+
+function restaurarBackupTemaVisual() {
+  const backup = fondoTemaBackupAbrir || {};
+
+  Object.keys(FONDO_SECCIONES).forEach(seccion => {
+    const estado = backup[seccion] || getEstadoGuardadoSeccion(seccion);
+    aplicarEstadoVisualSeccion(seccion, estado);
+  });
+
+  limpiarFondosInternosApp();
+
+  try {
+    if (obtenerSeccionActual() === "biblia" && typeof mostrarTexto === "function") {
+      mostrarTexto({ guardar: false });
+    }
+  } catch(e) {}
+}
+
+function getEstadoDraftParaSeccionTema(seccion) {
+  return normalizarEstadoApariencia(seccion, {
+    ...fondoTemaDraft,
+    seccion
+  });
+}
+
+function aplicarDraftTemaVisual() {
+  if (!fondoTemaDraft) return;
+
+  getSeccionesTemaDestino().forEach(seccion => {
+    aplicarEstadoVisualSeccion(
+      seccion,
+      getEstadoDraftParaSeccionTema(seccion)
+    );
+  });
+
+  limpiarFondosInternosApp();
+  repintarTextoBibliaTema();
+}
+
+function temaGetFirmaImagenInput() {
+  const input = document.getElementById("imgFondoApp");
+  const file = input?.files?.[0];
+
+  if (!file) return "";
+
+  return `${file.name}|${file.size}|${file.lastModified}`;
+}
+
+function temaLeerImagenComprimida(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = function(e) {
+      const src = e?.target?.result;
+
+      if (!src) {
+        reject(new Error("No pude leer la imagen."));
+        return;
+      }
+
+      const img = new Image();
+
+      img.onload = () => {
+        const maxLado = 1600;
+        let { width, height } = img;
+
+        if (width > height && width > maxLado) {
+          height = Math.round(height * (maxLado / width));
+          width = maxLado;
+        } else if (height >= width && height > maxLado) {
+          width = Math.round(width * (maxLado / height));
+          height = maxLado;
+        }
+
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext("2d");
+
+        if (!ctx) {
+          reject(new Error("No pude preparar la imagen."));
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0, width, height);
+
+        resolve(canvas.toDataURL("image/jpeg", 0.78));
+      };
+
+      img.onerror = () => reject(new Error("La imagen no se pudo cargar."));
+      img.src = src;
+    };
+
+    reader.onerror = () => reject(new Error("No pude leer el archivo."));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function temaAsegurarImagenSeleccionadaEnDraft({ aplicarVisual = false } = {}) {
+  if (!fondoTemaDraft) return false;
+
+  const input = document.getElementById("imgFondoApp");
+  const file = input?.files?.[0];
+
+  if (!file) return false;
+
+  const firma = temaGetFirmaImagenInput();
+
+  if (
+    input.dataset.temaAplicadoFirma === firma &&
+    fondoTemaDraft.tipo === "imagen" &&
+    String(fondoTemaDraft.valor || "").startsWith("data:")
+  ) {
+    return true;
+  }
+
+  const dataUrl = await temaLeerImagenComprimida(file);
+
+  fondoTemaDraft.tipo = "imagen";
+  fondoTemaDraft.valor = dataUrl;
+
+  input.dataset.temaAplicadoFirma = firma;
+
+  const nombreImagen = document.getElementById("temaNombreImagen");
+  if (nombreImagen) nombreImagen.textContent = file.name || "Imagen seleccionada";
+
+  if (aplicarVisual) {
+    aplicarDraftTemaVisual();
+  }
+
+  return true;
+}
+
+function temaSincronizarDraftDesdeControles() {
+  if (!fondoTemaDraft) return;
+
+  const slider = document.getElementById("opacidadFondoApp");
+  if (slider) {
+    fondoTemaDraft.opacidad = slider.value || "0.35";
+  }
+
+  const inputTexto = document.getElementById("colorTextoApp");
+  if (inputTexto) {
+    fondoTemaDraft.colorTexto = inputTexto.value || "";
+  }
+
+  const btnBold = document.getElementById("btnBoldTextoBiblia");
+  if (btnBold) {
+    fondoTemaDraft.textoBold = btnBold.classList.contains("activo");
+  }
+
+  const radioImagen = document.getElementById("temaFondoImagen");
+  const usarImagen = !!radioImagen?.checked;
+
+  if (!usarImagen) {
+    const inputColor = document.getElementById("colorFondoApp");
+
+    fondoTemaDraft.tipo = "color";
+    fondoTemaDraft.valor = inputColor?.value || fondoTemaDraft.valor || "#ffffff";
+  }
+}
+
+function asegurarControlAmbitoTema() {
+  if (!fondoTemaDraft) return;
+
+  const host = document.getElementById("fondoSeccionActualLabel");
+  if (!host) return;
+
+  const nombre = getNombreSeccionTema(fondoTemaDraft.seccion);
+  const ambito = fondoTemaDraft.ambito || "seccion";
+
+  host.classList.add("tema-ambito-wrap");
+
+  host.innerHTML = `
+    <button
+      type="button"
+      id="btnTemaAmbitoSeccion"
+      class="tema-ambito-btn ${ambito !== "todas" ? "activo" : ""}"
+      onclick="cambiarAmbitoFondoTema('seccion')"
+    >
+      ${nombre}
+    </button>
+
+    <span class="tema-ambito-sep">/</span>
+
+    <button
+      type="button"
+      id="btnTemaAmbitoTodas"
+      class="tema-ambito-btn ${ambito === "todas" ? "activo" : ""}"
+      onclick="cambiarAmbitoFondoTema('todas')"
+    >
+      Todas
+    </button>
+  `;
+}
+
+window.cambiarAmbitoFondoTema = function cambiarAmbitoFondoTema(ambito) {
+  if (!fondoTemaDraft) return;
+
+  fondoTemaDraft.ambito = ambito === "todas" ? "todas" : "seccion";
+
+  asegurarControlAmbitoTema();
+  asegurarControlColorTextoTema();
+  aplicarDraftTemaVisual();
+  reflejarDraftEnModal();
+};
+
 function getSeccionActualFondoKey() {
   if (document.body.classList.contains("en-iglesia")) return "iglesia";
   if (document.body.classList.contains("en-panel")) return "panel";
@@ -8869,6 +9105,7 @@ function cargarDraftDesdeGuardado(seccion) {
 
   fondoTemaDraft = {
     seccion,
+    ambito: "seccion",
     tipo: guardado.tipo,
     valor: guardado.valor,
     opacidad: guardado.opacidad,
@@ -8879,8 +9116,12 @@ function cargarDraftDesdeGuardado(seccion) {
 
 function repintarTextoBibliaTema() {
   try {
+    const tocaBiblia =
+      fondoTemaDraft?.seccion === "biblia" ||
+      fondoTemaDraft?.ambito === "todas";
+
     if (
-      fondoTemaDraft?.seccion === "biblia" &&
+      tocaBiblia &&
       obtenerSeccionActual() === "biblia" &&
       typeof mostrarTexto === "function"
     ) {
@@ -8940,7 +9181,9 @@ function asegurarControlColorTextoTema() {
     modal.querySelector(".tema-grid")?.appendChild(box);
   }
 
- const mostrarTextoBiblico = fondoTemaDraft?.seccion === "biblia";
+const mostrarTextoBiblico =
+  fondoTemaDraft?.seccion === "biblia" ||
+  fondoTemaDraft?.ambito === "todas";
 
 box.classList.toggle("oculto", !mostrarTextoBiblico);
 box.style.display = mostrarTextoBiblico ? "flex" : "none";
@@ -8955,9 +9198,7 @@ box.style.display = mostrarTextoBiblico ? "flex" : "none";
 
       fondoTemaDraft.colorTexto = input.value || "";
 
-      aplicarEstadoVisualSeccion(fondoTemaDraft.seccion, fondoTemaDraft);
-      limpiarFondosInternosApp();
-      repintarTextoBibliaTema();
+aplicarDraftTemaVisual();
     };
 
     input.addEventListener("input", handler);
@@ -9008,15 +9249,7 @@ const slider = document.getElementById("opacidadFondoApp");
 const inputColor = document.getElementById("colorFondoApp");
 const inputTexto = document.getElementById("colorTextoApp");
 
-  if (label) {
-    const nombres = {
-      biblia: "Biblia",
-      iglesia: "Iglesia",
-      panel: "Mi Panel",
-      compartidos: "Compartidos"
-    };
-    label.textContent = nombres[fondoTemaDraft.seccion] || "Biblia";
-  }
+asegurarControlAmbitoTema();
 
   if (labelOpacidad) {
   labelOpacidad.textContent =
@@ -9057,7 +9290,9 @@ if (nombreImagen) {
 
  const boxTextoBiblico = document.getElementById("colorTextoAppBox");
 if (boxTextoBiblico) {
-  const mostrarTextoBiblico = fondoTemaDraft.seccion === "biblia";
+const mostrarTextoBiblico =
+  fondoTemaDraft.seccion === "biblia" ||
+  fondoTemaDraft.ambito === "todas";
 
   boxTextoBiblico.classList.toggle("oculto", !mostrarTextoBiblico);
   boxTextoBiblico.style.display = mostrarTextoBiblico ? "flex" : "none";
@@ -9090,17 +9325,24 @@ window.abrirModalTema = () => {
   const modal = document.getElementById("modalTema");
   if (!modal) return;
 
- const seccion = getSeccionActualFondoKey();
-cargarDraftDesdeGuardado(seccion);
+  guardarBackupTemaActual();
 
-// ✅ Si no estoy en Biblia, borro visualmente el control bíblico antes de pintar
-const boxTextoBiblico = document.getElementById("colorTextoAppBox");
-if (boxTextoBiblico && seccion !== "biblia") {
-  boxTextoBiblico.classList.add("oculto");
-  boxTextoBiblico.style.display = "none";
-}
+  const seccion = getSeccionActualFondoKey();
+  cargarDraftDesdeGuardado(seccion);
 
-reflejarDraftEnModal();
+  const inputImagen = document.getElementById("imgFondoApp");
+  if (inputImagen) {
+    inputImagen.value = "";
+    inputImagen.dataset.temaAplicadoFirma = "";
+  }
+
+  const boxTextoBiblico = document.getElementById("colorTextoAppBox");
+  if (boxTextoBiblico && seccion !== "biblia") {
+    boxTextoBiblico.classList.add("oculto");
+    boxTextoBiblico.style.display = "none";
+  }
+
+  reflejarDraftEnModal();
 
   modal.style.display = "flex";
 
@@ -9140,77 +9382,76 @@ window.aplicarColorFondo = () => {
   fondoTemaDraft.tipo = "color";
   fondoTemaDraft.valor = input.value || "#ffffff";
 
-  aplicarEstadoVisualSeccion(fondoTemaDraft.seccion, fondoTemaDraft);
-  limpiarFondosInternosApp();
+  aplicarDraftTemaVisual();
 };
 
-window.aplicarImagenFondo = () => {
+window.aplicarImagenFondo = async () => {
   if (!fondoTemaDraft) return;
 
-  const input = document.getElementById("imgFondoApp");
-  if (!input || !input.files || !input.files[0]) return;
+  try {
+    const ok = await temaAsegurarImagenSeleccionadaEnDraft({
+      aplicarVisual: true
+    });
 
-  const file = input.files[0];
-  const reader = new FileReader();
-
-  reader.onload = function(e) {
-    const src = e?.target?.result;
-    if (!src) return;
-
-    const img = new Image();
-    img.onload = () => {
-      const maxLado = 1600; // suficiente para fondo, mucho más liviano
-      let { width, height } = img;
-
-      if (width > height && width > maxLado) {
-        height = Math.round(height * (maxLado / width));
-        width = maxLado;
-      } else if (height >= width && height > maxLado) {
-        width = Math.round(width * (maxLado / height));
-        height = maxLado;
-      }
-
-      const canvas = document.createElement("canvas");
-      canvas.width = width;
-      canvas.height = height;
-
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return;
-
-      ctx.drawImage(img, 0, 0, width, height);
-
-      // ✅ guardamos versión comprimida, no el archivo bruto
-      const dataUrl = canvas.toDataURL("image/jpeg", 0.78);
-
-      fondoTemaDraft.tipo = "imagen";
-      fondoTemaDraft.valor = dataUrl;
-
-      aplicarEstadoVisualSeccion(fondoTemaDraft.seccion, fondoTemaDraft);
-      limpiarFondosInternosApp();
-    };
-
-    img.src = src;
-  };
-
-  reader.readAsDataURL(file);
+    if (!ok) {
+      alert("Elegí una imagen primero.");
+    }
+  } catch (e) {
+    console.error("No pude aplicar la imagen:", e);
+    alert("No pude aplicar la imagen.\n\n" + (e?.message || e));
+  }
 };
 
 window.confirmarFondoTema = async () => {
   if (!fondoTemaDraft) return;
 
   try {
-    const estadoFinal = await prepararEstadoTemaParaGuardar(fondoTemaDraft);
+    temaSincronizarDraftDesdeControles();
 
-    fondoTemaDraft = estadoFinal;
+    const radioImagen = document.getElementById("temaFondoImagen");
 
-    // ✅ respaldo local
-    guardarEstadoSeccion(estadoFinal.seccion, estadoFinal);
+    // ✅ Si eligió una imagen pero no tocó "Aplicar",
+    // igual la procesamos y se guarda correctamente.
+    if (radioImagen?.checked) {
+      await temaAsegurarImagenSeleccionadaEnDraft({
+        aplicarVisual: false
+      });
+    }
 
-    // ✅ guardado real por usuario en Firebase
-    await guardarEstadoSeccionFirebase(estadoFinal.seccion, estadoFinal);
+    let estadoBase = normalizarEstadoApariencia(
+      fondoTemaDraft.seccion || getSeccionActualFondoKey(),
+      fondoTemaDraft
+    );
+
+    // ✅ Si se aplica a todas, subimos la imagen una sola vez.
+    if (
+      estadoBase.tipo === "imagen" &&
+      String(estadoBase.valor || "").startsWith("data:")
+    ) {
+      estadoBase.valor = await subirFondoTemaAR2(
+        estadoBase.valor,
+        fondoTemaDraft.ambito === "todas" ? "todas" : estadoBase.seccion
+      );
+    }
+
+    const seccionesDestino = getSeccionesTemaDestino();
+
+    for (const seccion of seccionesDestino) {
+      const estadoFinal = normalizarEstadoApariencia(seccion, {
+        ...estadoBase,
+        seccion
+      });
+
+      guardarEstadoSeccion(seccion, estadoFinal);
+      await guardarEstadoSeccionFirebase(seccion, estadoFinal);
+    }
+
+    fondoTemaDraft = null;
+    fondoTemaBackupAbrir = null;
 
     aplicarFondosGuardados();
     cerrarModalTema();
+
   } catch (e) {
     console.error("Error al confirmar apariencia:", e);
     alert("No se pudo guardar la apariencia.\n\n" + (e?.message || e));
@@ -9218,16 +9459,11 @@ window.confirmarFondoTema = async () => {
 };
 
 window.cancelarFondoTema = () => {
-  if (!fondoTemaDraft) {
-    cerrarModalTema();
-    return;
-  }
-
-  const guardado = getEstadoGuardadoSeccion(fondoTemaDraft.seccion);
-  aplicarEstadoVisualSeccion(fondoTemaDraft.seccion, guardado);
-  limpiarFondosInternosApp();
+  restaurarBackupTemaVisual();
 
   fondoTemaDraft = null;
+  fondoTemaBackupAbrir = null;
+
   cerrarModalTema();
 };
 
@@ -9262,11 +9498,12 @@ window.addEventListener("load", () => {
   if (slider && !slider.dataset.ready) {
     slider.dataset.ready = "1";
 
-    slider.addEventListener("input", () => {
-      if (!fondoTemaDraft) return;
-      fondoTemaDraft.opacidad = slider.value || "0.35";
-      aplicarEstadoVisualSeccion(fondoTemaDraft.seccion, fondoTemaDraft);
-      limpiarFondosInternosApp();
-    });
+slider.addEventListener("input", () => {
+  if (!fondoTemaDraft) return;
+
+  fondoTemaDraft.opacidad = slider.value || "0.35";
+
+  aplicarDraftTemaVisual();
+});
   }
 });
