@@ -492,6 +492,16 @@ function vaEsIOS() {
   );
 }
 
+function vaEsMovil() {
+  const ua = navigator.userAgent || "";
+
+  return (
+    vaEsIOS() ||
+    /android|mobile/i.test(ua) ||
+    window.innerWidth <= 760
+  );
+}
+
 function vaEntradaVisitante() {
   return (
     vaParam("visitante") === "1" ||
@@ -777,14 +787,14 @@ function vaSelectorCacheActual(seccion) {
 
 function vaGuardarSnapshotVisual() {
 
-    // ✅ iPhone/Safari: no guardar HTML visual pesado.
-  // Evita restauraciones viejas o recargas por memoria.
-  if (vaEsIOS()) {
-    try {
-      localStorage.removeItem(VA_UI_SNAPSHOT_KEY);
-    } catch (_) {}
-    return;
-  }
+// ✅ Teléfonos: no guardar HTML visual pesado.
+// Evita restauraciones lentas, memoria alta y cargas eternas.
+if (vaEsMovil()) {
+  try {
+    localStorage.removeItem(VA_UI_SNAPSHOT_KEY);
+  } catch (_) {}
+  return;
+}
   
   try {
     guardarEstadoBiblia();
@@ -885,13 +895,13 @@ function vaMostrarCargandoSuave(texto = "Actualizando...") {
 
 function vaRestaurarSnapshotVisualRapido() {
   
-    // ✅ iPhone/Safari: no restaurar HTML cacheado.
-  if (vaEsIOS()) {
-    try {
-      localStorage.removeItem(VA_UI_SNAPSHOT_KEY);
-    } catch (_) {}
-    return false;
-  }
+// ✅ Teléfonos: no restaurar HTML cacheado pesado.
+if (vaEsMovil()) {
+  try {
+    localStorage.removeItem(VA_UI_SNAPSHOT_KEY);
+  } catch (_) {}
+  return false;
+}
   
   const snap = vaLeerSnapshotVisual();
   if (!snap) return false;
@@ -1309,10 +1319,23 @@ onValue(ref(db, "admins/" + uid), (s) => {
 });
 
   // ✅ colaborador
-  onValue(ref(db, "colaboradores/" + uid), (s) => {
-    window.__ES_COLABORADOR = !!s.val();
-    actualizarPermisosUI();
-  });
+onValue(ref(db, "colaboradores/" + uid), (s) => {
+  window.__ES_COLABORADOR = !!s.val();
+
+  actualizarPermisosUI();
+
+  // ✅ Al llegar el rol colaborador, repintamos la barra de Biblia.
+  // Si no hacemos esto, el botón queda oculto porque arrancó en display:none.
+  try {
+    aplicarUIAccionesPorModo();
+  } catch(e) {}
+
+  try {
+    if (obtenerSeccionActual() === "biblia") {
+      mostrarTexto({ guardar: false });
+    }
+  } catch(e) {}
+});
 
 onValue(ref(db, "marcados/" + uid), s => {
   marcados = s.val() || {};
@@ -1326,7 +1349,15 @@ onValue(ref(db, "marcados/" + uid), s => {
 onValue(ref(db, "panelImagenesPersonal/" + uid), s => {
   const data = s.val() || {};
   panelImagenesGuardadas = data;
-  renderPanelImagenes(data);
+
+  // ✅ En celulares no renderizamos Mi Panel si no está visible.
+  // Esto evita cargar muchas imágenes al iniciar Biblia/Compartidos.
+  if (
+    document.body.classList.contains("en-panel") &&
+    document.getElementById("panel-imagenes")?.offsetParent !== null
+  ) {
+    renderPanelImagenes(data);
+  }
 });
 
   onValue(ref(db, "compartidos/imagenes"), s => {
@@ -1340,7 +1371,12 @@ onValue(ref(db, "panelImagenesPersonal/" + uid), s => {
     }
   });
 
+ if (
+  document.body.classList.contains("en-panel") &&
+  document.getElementById("panel-imagenes")?.offsetParent !== null
+) {
   renderPanelImagenes(panelImagenesGuardadas || {});
+}
 });
 
 onValue(ref(db, "compartidos/notas"), s => {
@@ -8005,7 +8041,7 @@ function aplicarUIAccionesPorModo() {
   const acciones = document.getElementById("accionesBiblia");
   if (!acciones) return;
 
-  const esAdmin = usuarioPuedeCrearImagen();
+  const puedeCrearImagen = usuarioPuedeCrearImagen();
 
   const btnModo = document.getElementById("btnModoMarcadorBarra"); // 📌
   const btnGuardar = document.getElementById("btnGuardarMarcador"); // ✅
@@ -8015,24 +8051,24 @@ function aplicarUIAccionesPorModo() {
 
   const normales = acciones.querySelectorAll(".accion-normal, #resaltadorCompacto");
 
-  // ✅ Si NO es admin, nunca mostramos creación de imagen
-  if (!esAdmin) {
-    if (btnImagen) btnImagen.style.display = "none";
-    if (btnCrear) btnCrear.style.display = "none";
-  }
+// ✅ Si NO es admin ni colaborador, nunca mostramos creación de imagen
+if (!puedeCrearImagen) {
+  if (btnImagen) btnImagen.style.display = "none";
+  if (btnCrear) btnCrear.style.display = "none";
+}
 
-  // ✅ MODO IMAGEN: ocultar marcadores + mostrar Crear Imagen SOLO admin
-  if (modoImagen) {
-    normales.forEach(el => (el.style.display = "none"));
+// ✅ MODO IMAGEN: ocultar marcadores + mostrar Crear Imagen a admin/colaborador
+if (modoImagen) {
+  normales.forEach(el => (el.style.display = "none"));
 
-    if (btnImagen) btnImagen.style.display = esAdmin ? "inline-flex" : "none";
-    if (btnCrear) btnCrear.style.display = esAdmin ? "inline-flex" : "none";
+  if (btnImagen) btnImagen.style.display = puedeCrearImagen ? "inline-flex" : "none";
+  if (btnCrear) btnCrear.style.display = puedeCrearImagen ? "inline-flex" : "none";
 
-    if (btnModo) btnModo.style.display = "none";
-    if (btnGuardar) btnGuardar.style.display = "none";
-    if (btnLista) btnLista.style.display = "none";
-    return;
-  }
+  if (btnModo) btnModo.style.display = "none";
+  if (btnGuardar) btnGuardar.style.display = "none";
+  if (btnLista) btnLista.style.display = "none";
+  return;
+}
 
   // ✅ MODO MARCADOR
   if (modoMarcador) {
@@ -8051,8 +8087,8 @@ function aplicarUIAccionesPorModo() {
   if (btnModo) btnModo.style.display = "inline-flex";
   if (btnLista) btnLista.style.display = "inline-flex";
 
-  // ✅ Solo admin ve el botón para entrar a crear imagen
-  if (btnImagen) btnImagen.style.display = esAdmin ? "inline-flex" : "none";
+// ✅ Admin y colaborador ven el botón para entrar a crear imagen
+if (btnImagen) btnImagen.style.display = puedeCrearImagen ? "inline-flex" : "none";
 
   // Este aparece solo dentro del modo imagen
   if (btnCrear) btnCrear.style.display = "none";
