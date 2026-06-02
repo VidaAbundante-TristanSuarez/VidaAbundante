@@ -3024,6 +3024,43 @@ function compRenderRH(item) {
   `;
 }
 
+window.__COMP_ED_MINI_CARGANDO = window.__COMP_ED_MINI_CARGANDO || new Set();
+
+async function compAsegurarEdicionMini(edicionId) {
+  if (!edicionId) return;
+
+  const cache = window.__EDICIONES_CACHE || [];
+  if (cache.some(x => x?.id === edicionId)) return;
+
+  if (window.__COMP_ED_MINI_CARGANDO.has(edicionId)) return;
+  window.__COMP_ED_MINI_CARGANDO.add(edicionId);
+
+  try {
+    if (typeof window.obtenerEdicion !== "function") return;
+
+    const ed = await window.obtenerEdicion(edicionId);
+    if (!ed) return;
+
+    const actual = window.__EDICIONES_CACHE || [];
+    const sinDuplicar = actual.filter(x => x?.id !== edicionId);
+
+    window.__EDICIONES_CACHE = [
+      ...sinDuplicar,
+      ed
+    ];
+
+    if (typeof window.renderCompartidos === "function") {
+      window.renderCompartidos();
+    }
+
+  } catch (e) {
+    console.warn("No pude cargar páginas de la edición para Compartidos:", e);
+
+  } finally {
+    window.__COMP_ED_MINI_CARGANDO.delete(edicionId);
+  }
+}
+
 function compRenderEdicion(item) {
   const titulo = compEscape(item.titulo || "Edición");
   const portada = item.portadaUrl || "";
@@ -3036,6 +3073,10 @@ function compRenderEdicion(item) {
     typeof window.edMiniPaginasHTML === "function"
       ? window.edMiniPaginasHTML(edicionId, "compartidos")
       : "";
+
+  if (!miniPaginas && edicionId) {
+  compAsegurarEdicionMini(edicionId);
+}
 
   return `
     <article class="comp-post">
