@@ -1752,16 +1752,19 @@ body.en-compartidos .comp-post-media--edicion-scroll > img{
   cursor: pointer;
 }
 
-body.en-compartidos .comp-post-media--edicion-scroll .ed-mini-paginas{
+body.en-compartidos .comp-post-media--edicion-scroll .ed-mini-galeria{
   height: min(68vh, 620px);
   min-height: 360px;
+}
 
-  padding: 8px;
-  gap: 12px;
+body.en-compartidos .comp-post-media--edicion-scroll .ed-mini-paginas{
+  height: 100%;
 }
 
 body.en-compartidos .comp-post-media--edicion-scroll .ed-mini-page{
-  flex-basis: 100%;
+  flex: 0 0 100%;
+  width: 100%;
+  min-width: 100%;
 }
 
 body.en-compartidos .comp-post-media--edicion-scroll .ed-mini-page img{
@@ -1772,9 +1775,12 @@ body.en-compartidos .comp-post-media--edicion-scroll .ed-mini-page img{
   background: #fff;
 }
 
-body.en-compartidos .comp-post-media--edicion-scroll .ed-mini-download{
+body.en-compartidos .comp-post-media--edicion-scroll .ed-mini-prev{
+  left: 12px;
+}
+
+body.en-compartidos .comp-post-media--edicion-scroll .ed-mini-next{
   right: 12px;
-  bottom: 12px;
 }
 
 /* ✅ En Compartidos no mostramos contadores de acciones */
@@ -1783,9 +1789,13 @@ body.en-compartidos .comp-action-count{
 }
 
 @media (max-width: 700px){
-  body.en-compartidos .comp-post-media--edicion-scroll .ed-mini-paginas{
+  body.en-compartidos .comp-post-media--edicion-scroll .ed-mini-galeria{
     height: min(64vh, 560px);
     min-height: 330px;
+  }
+
+  body.en-compartidos .comp-post-media--edicion-scroll .ed-mini-nav{
+    display: none;
   }
 }
 
