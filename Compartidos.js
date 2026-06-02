@@ -2795,6 +2795,32 @@ function compRenderDevocional(item) {
   `;
 }
 
+function compCssEscape(v) {
+  const s = String(v ?? "");
+
+  if (window.CSS && typeof window.CSS.escape === "function") {
+    return window.CSS.escape(s);
+  }
+
+  return s.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}
+
+function compActualizarEstadoBotonPredica(card) {
+  if (!card) return;
+
+  const abierta = card.classList.contains("comp-predica-expandida");
+
+  card.querySelectorAll(".comp-predica-desplegar").forEach(btn => {
+    btn.title = abierta ? "Cerrar prédica" : "Desplegar prédica";
+    btn.setAttribute("aria-label", abierta ? "Cerrar prédica" : "Desplegar prédica");
+  });
+
+  const wrap = card.querySelector(".comp-predica-abierta-wrap");
+  if (wrap) {
+    wrap.title = abierta ? "Tocar para cerrar" : "Tocar para desplegar";
+  }
+}
+
 window.compTogglePredicaCompartidos = function compTogglePredicaCompartidos(subidoId, ev = null) {
   if (ev) {
     ev.preventDefault();
@@ -2802,8 +2828,9 @@ window.compTogglePredicaCompartidos = function compTogglePredicaCompartidos(subi
   }
 
   const id = String(subidoId || "");
+
   const card = document.querySelector(
-    `.comp-post--predica-abierta[data-comp-predica-id="${CSS.escape(id)}"]`
+    `.comp-post--predica-abierta[data-comp-predica-id="${compCssEscape(id)}"]`
   );
 
   if (!card) return;
@@ -2813,10 +2840,14 @@ window.compTogglePredicaCompartidos = function compTogglePredicaCompartidos(subi
   document
     .querySelectorAll(".comp-post--predica-abierta.comp-predica-expandida")
     .forEach(el => {
-      if (el !== card) el.classList.remove("comp-predica-expandida");
+      if (el !== card) {
+        el.classList.remove("comp-predica-expandida");
+        compActualizarEstadoBotonPredica(el);
+      }
     });
 
   card.classList.toggle("comp-predica-expandida", !yaAbierta);
+  compActualizarEstadoBotonPredica(card);
 };
 
 // ✅ Tocando fuera de la prédica, se comprime otra vez.
@@ -2828,8 +2859,75 @@ if (!window.__COMP_PREDICA_COMPRIMIR_CLICK_READY) {
 
     document
       .querySelectorAll(".comp-post--predica-abierta.comp-predica-expandida")
-      .forEach(el => el.classList.remove("comp-predica-expandida"));
+      .forEach(el => {
+        el.classList.remove("comp-predica-expandida");
+        compActualizarEstadoBotonPredica(el);
+      });
   });
+}
+
+function compCrearBotonPredicaIntro(subidoId) {
+  const btn = document.createElement("button");
+
+  btn.type = "button";
+  btn.className = "comp-predica-desplegar";
+  btn.title = "Desplegar prédica";
+  btn.setAttribute("aria-label", "Desplegar prédica");
+  btn.setAttribute(
+    "onclick",
+    `compTogglePredicaCompartidos('${compJs(subidoId)}', event)`
+  );
+
+  btn.innerHTML = `<i class="fa-solid fa-arrow-down-short-wide"></i>`;
+
+  return btn;
+}
+
+function compPrepararPredicaCompartidosHTML(html = "", subidoId = "") {
+  const raw = String(html || "").trim();
+  if (!raw) return "";
+
+  const tpl = document.createElement("template");
+  tpl.innerHTML = raw;
+
+  const root = tpl.content;
+
+  // ✅ Soporta la prédica vieja (.comp-predica-intro)
+  // y la prédica abierta reutilizada de Subidos (.subidos-visor-intro).
+  const intro = root.querySelector(".subidos-visor-intro, .comp-predica-intro");
+
+  if (!intro) return raw;
+
+  intro.classList.add("comp-predica-intro-preparada");
+
+  // ✅ Marcamos el bloque real de introducción para ocultar todo lo que viene después.
+  const parent = intro.parentElement;
+
+  if (
+    parent &&
+    parent.children.length === 1 &&
+    !parent.classList.contains("subidos-visor-marco") &&
+    !parent.classList.contains("comp-predica-full")
+  ) {
+    parent.classList.add("comp-predica-intro-wrap");
+  } else {
+    intro.classList.add("comp-predica-intro-wrap");
+  }
+
+  // Evita duplicados si en algún momento el HTML viniera ya preparado.
+  intro.querySelectorAll(".comp-predica-desplegar").forEach(btn => btn.remove());
+
+  const texto = document.createElement("span");
+  texto.className = "comp-predica-intro-text";
+
+  while (intro.firstChild) {
+    texto.appendChild(intro.firstChild);
+  }
+
+  intro.appendChild(texto);
+  intro.appendChild(compCrearBotonPredicaIntro(subidoId));
+
+  return tpl.innerHTML;
 }
 
 function compActivarBotonesSubidosRenderizados(items = []) {
@@ -2859,7 +2957,7 @@ function compRenderSubido(item) {
   const esImagen = compEsImageUrl(url, item.mimeType || "");
 
   if (esPredica && typeof window.subidosRenderPredicaAbiertaHTML === "function") {
-    const predicaHTML = window.subidosRenderPredicaAbiertaHTML(
+    const predicaHTMLBase = window.subidosRenderPredicaAbiertaHTML(
       {
         ...item,
         id: subidoId
@@ -2867,11 +2965,16 @@ function compRenderSubido(item) {
       "all"
     );
 
+    const predicaHTML = compPrepararPredicaCompartidosHTML(
+      predicaHTMLBase,
+      subidoId
+    );
+
     return `
-    <article
-  class="comp-post comp-post--subido comp-post--predica-abierta"
-  data-comp-predica-id="${compEscape(subidoId)}"
->
+      <article
+        class="comp-post comp-post--subido comp-post--predica-abierta"
+        data-comp-predica-id="${compEscape(subidoId)}"
+      >
         <div class="comp-post-head">
           <div class="comp-avatar">
             <i class="fa-solid fa-microphone-lines"></i>
@@ -2883,26 +2986,16 @@ function compRenderSubido(item) {
           </div>
         </div>
 
-<div
-  class="comp-predica-abierta-wrap"
-  onclick="compTogglePredicaCompartidos('${compJs(subidoId)}', event)"
-  title="Tocar para desplegar"
->
-  ${predicaHTML || `<div class="comp-post-empty">No pude cargar la prédica.</div>`}
-</div>
-
-<button
-  type="button"
-  class="comp-predica-desplegar"
-  onclick="compTogglePredicaCompartidos('${compJs(subidoId)}', event)"
-  title="Desplegar prédica"
-  aria-label="Desplegar prédica"
->
-  <i class="fa-solid fa-arrow-down-short-wide"></i>
-</button>
+        <div
+          class="comp-predica-abierta-wrap"
+          onclick="compTogglePredicaCompartidos('${compJs(subidoId)}', event)"
+          title="Tocar para desplegar"
+          role="button"
+        >
+          ${predicaHTML || `<div class="comp-post-empty">No pude cargar la prédica.</div>`}
+        </div>
 
         <div class="comp-post-actions">
-
           <button type="button" onclick="compartirSubido('${compJs(subidoId)}', this)" title="Compartir">
             <i class="fa-solid fa-share-nodes"></i>
           </button>
@@ -2961,7 +3054,7 @@ function compRenderSubido(item) {
       </article>
     `;
   }
-  
+
   if (typeof window.subidosRenderCardHTML === "function") {
     const card = window.subidosRenderCardHTML(
       {
