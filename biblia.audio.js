@@ -157,25 +157,27 @@ window.escucharPreviaAudio = async () => {
       return;
     }
 
-    if (esColabSeco) {
-      try {
-        const consumo = await window.vaConsumirUsoColaborador?.(
-          "audioBiblia",
-          AUDIO_LIMITE_COLAB_DIA
-        );
+let restantesAntes = null;
 
-        if (estado) {
-          estado.textContent = `🎧 Generando voz seca... Te quedan ${consumo?.restantes ?? 0} audios hoy.`;
-        }
-      } catch (limiteErr) {
-        if (estado) {
-          estado.textContent = "⚠️ " + (limiteErr?.message || "Llegaste al límite diario de audio.");
-        }
-        return;
-      }
-    } else if (estado) {
-      estado.textContent = "🎧 Generando previa real con arpa...";
+if (esColabSeco) {
+  restantesAntes = await window.vaLeerRestantesUsoColaborador?.(
+    "audioBiblia",
+    AUDIO_LIMITE_COLAB_DIA
+  );
+
+  if (Number(restantesAntes || 0) <= 0) {
+    if (estado) {
+      estado.textContent = `⚠️ Llegaste al límite diario de ${AUDIO_LIMITE_COLAB_DIA} audios. Podés volver a usarlo mañana.`;
     }
+    return;
+  }
+
+  if (estado) {
+    estado.textContent = `🎧 Generando voz seca... Te quedan ${restantesAntes} audios hoy.`;
+  }
+} else if (estado) {
+  estado.textContent = "🎧 Generando previa real con arpa...";
+}
 
     const body = esColabSeco
       ? {
@@ -207,6 +209,24 @@ window.escucharPreviaAudio = async () => {
     }
 
     window.__audioBase64 = data.audioBase64;
+
+    if (esColabSeco) {
+  try {
+    const consumo = await window.vaConsumirUsoColaborador?.(
+      "audioBiblia",
+      AUDIO_LIMITE_COLAB_DIA
+    );
+
+    if (estado) {
+      estado.textContent = `✅ Voz seca generada. Te quedan ${consumo?.restantes ?? 0} audios hoy.`;
+    }
+  } catch (limiteErr) {
+    if (estado) {
+      estado.textContent = "⚠️ " + (limiteErr?.message || "No pude registrar el uso diario.");
+    }
+    return;
+  }
+}
 
     window.__audioCacheLocal = {
       texto: textoLimpio,
