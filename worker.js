@@ -235,11 +235,7 @@ async function manejarTTSGoogleSeco(payload, env, cors) {
     }, 400, cors);
   }
 
-  const apiKey = String(
-    env.GOOGLE_TTS_API_KEY ||
-    env.GOOGLE_VISION_API_KEY ||
-    ""
-  ).trim();
+const apiKey = String(env.GOOGLE_TTS_API_KEY || "").trim();
 
   if (!apiKey) {
     return responderJson({
