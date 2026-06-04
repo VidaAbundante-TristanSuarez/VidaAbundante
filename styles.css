@@ -1259,16 +1259,31 @@ color: #000; /* 🔥 Modal SIEMPRE legible (no gris) */
 
 @media (max-width: 600px) {
   #modalPersonalizar {
-    padding: 0;               /* 👈 clave, sin margen fantasma */
-    align-items: stretch;     /* ocupa todo alto */
+    padding: 0;
+    align-items: flex-start;
+    justify-content: flex-start;
+    overflow-y: auto;
   }
 
   #modalPersonalizar .modal-contenido {
-    width: 100vw;             /* 👈 ocupa pantalla */
+    width: 100vw;
     max-width: 100vw;
     margin: 0;
-    border-radius: 0;
-    max-height: 100vh;
+
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+
+    border-radius: 0 0 18px 18px;
+    overflow: visible;
+
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+
+  #modalPersonalizar.solo-imagen .modal-contenido {
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
   }
 }
 
@@ -2259,64 +2274,7 @@ body.oscuro #modalPersonalizar #personalizarTamaño{
   padding: 0 10px;
 }
 
-/* ✅ Devocional: layout dentro del preview */
-#modalPersonalizar.modo-devocional #previewTextoWrapper{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding: 18px;
-  text-align:center;
-}
-
-#modalPersonalizar.modo-devocional #previewTexto,
-#modalPersonalizar.modo-devocional #previewTextoBack{
-  width:100%;
-}
-
-/* Bloque 1 */
-#modalPersonalizar.modo-devocional .dev-titulo{
-  font-weight:900;
-  font-size: 22px;
-  letter-spacing: .5px;
-}
-#modalPersonalizar.modo-devocional .dev-fecha{
-  margin-top: 4px;
-  font-weight:700;
-  font-size: 14px;
-  opacity:.9;
-}
-#modalPersonalizar.modo-devocional .dev-versiculo{
-  margin-top: 14px;
-  font-weight:900;
-  font-size: 28px;
-  line-height:1.15;
-}
-#modalPersonalizar.modo-devocional .dev-cita{
-  margin-top: 12px;
-  font-weight:900;
-  font-size: 16px;
-}
-#modalPersonalizar.modo-devocional .dev-footer{
-  margin-top: 10px;
-  font-weight:800;
-  font-size: 12px;
-  opacity:.95;
-}
-
-/* Bloque 2 */
-#modalPersonalizar.modo-devocional .dev-reflexion{
-  font-weight:800;
-  font-size: 16px;
-  line-height:1.25;
-}
-#modalPersonalizar.modo-devocional .dev-oracion{
-  margin-top: 12px;
-  font-weight:900;
-  font-size: 16px;
-}
-
 /* ================= BARRA BIBLIA: LUPA + FLECHAS PRO (sin pisar) ================= */
-
 /* Lupa: misma “forma botón” que el resto */
 #btnToggleFiltros{
   width: 30px;
