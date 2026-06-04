@@ -58,6 +58,168 @@ async function audioActualizarEstadoInicial() {
   window.__FONETICA = window.__FONETICA || {};
   if (!window.__FONETICA["Joiada"]) window.__FONETICA["Joiada"] = "Joíada";
 
+  function audioNumeroATexto(n) {
+  n = Number(n);
+
+  const especiales = {
+    0: "cero",
+    1: "uno",
+    2: "dos",
+    3: "tres",
+    4: "cuatro",
+    5: "cinco",
+    6: "seis",
+    7: "siete",
+    8: "ocho",
+    9: "nueve",
+    10: "diez",
+    11: "once",
+    12: "doce",
+    13: "trece",
+    14: "catorce",
+    15: "quince",
+    16: "dieciséis",
+    17: "diecisiete",
+    18: "dieciocho",
+    19: "diecinueve",
+    20: "veinte",
+    21: "veintiuno",
+    22: "veintidós",
+    23: "veintitrés",
+    24: "veinticuatro",
+    25: "veinticinco",
+    26: "veintiséis",
+    27: "veintisiete",
+    28: "veintiocho",
+    29: "veintinueve",
+    30: "treinta"
+  };
+
+  if (especiales[n]) return especiales[n];
+
+  const decenas = {
+    40: "cuarenta",
+    50: "cincuenta",
+    60: "sesenta",
+    70: "setenta",
+    80: "ochenta",
+    90: "noventa"
+  };
+
+  if (n < 100) {
+    const d = Math.floor(n / 10) * 10;
+    const u = n % 10;
+
+    return u
+      ? `${decenas[d]} y ${especiales[u]}`
+      : decenas[d];
+  }
+
+  if (n === 100) return "cien";
+
+  if (n < 200) {
+    return `ciento ${audioNumeroATexto(n - 100)}`;
+  }
+
+  return String(n);
+}
+
+function audioNormalizarLibrosNumerados(txt = "") {
+  return String(txt || "")
+    .replace(/\b1\s+Juan\b/gi, "Primera de Juan")
+    .replace(/\b2\s+Juan\b/gi, "Segunda de Juan")
+    .replace(/\b3\s+Juan\b/gi, "Tercera de Juan")
+
+    .replace(/\b1\s+Pedro\b/gi, "Primera de Pedro")
+    .replace(/\b2\s+Pedro\b/gi, "Segunda de Pedro")
+
+    .replace(/\b1\s+Corintios\b/gi, "Primera de Corintios")
+    .replace(/\b2\s+Corintios\b/gi, "Segunda de Corintios")
+
+    .replace(/\b1\s+Tesalonicenses\b/gi, "Primera de Tesalonicenses")
+    .replace(/\b2\s+Tesalonicenses\b/gi, "Segunda de Tesalonicenses")
+
+    .replace(/\b1\s+Timoteo\b/gi, "Primera de Timoteo")
+    .replace(/\b2\s+Timoteo\b/gi, "Segunda de Timoteo")
+
+    .replace(/\b1\s+Samuel\b/gi, "Primera de Samuel")
+    .replace(/\b2\s+Samuel\b/gi, "Segunda de Samuel")
+
+    .replace(/\b1\s+Reyes\b/gi, "Primera de Reyes")
+    .replace(/\b2\s+Reyes\b/gi, "Segunda de Reyes")
+
+    .replace(/\b1\s+Crónicas\b/gi, "Primera de Crónicas")
+    .replace(/\b2\s+Crónicas\b/gi, "Segunda de Crónicas");
+}
+
+function audioNormalizarReferenciasBiblicas(txt = "") {
+  let out = audioNormalizarLibrosNumerados(txt);
+
+  const libros = [
+    "Génesis", "Genesis", "Éxodo", "Exodo", "Levítico", "Levitico",
+    "Números", "Numeros", "Deuteronomio", "Josué", "Josue", "Jueces",
+    "Rut", "Samuel", "Reyes", "Crónicas", "Cronicas", "Esdras",
+    "Nehemías", "Nehemias", "Ester", "Job", "Salmos", "Salmo",
+    "Proverbios", "Eclesiastés", "Eclesiastes", "Cantares", "Isaías",
+    "Isaias", "Jeremías", "Jeremias", "Lamentaciones", "Ezequiel",
+    "Daniel", "Oseas", "Joel", "Amós", "Amos", "Abdías", "Abdias",
+    "Jonás", "Jonas", "Miqueas", "Nahúm", "Nahum", "Habacuc",
+    "Sofonías", "Sofonias", "Hageo", "Zacarías", "Zacarias",
+    "Malaquías", "Malaquias", "Mateo", "Marcos", "Lucas", "Juan",
+    "Hechos", "Romanos", "Corintios", "Gálatas", "Galatas", "Efesios",
+    "Filipenses", "Colosenses", "Tesalonicenses", "Timoteo", "Tito",
+    "Filemón", "Filemon", "Hebreos", "Santiago", "Pedro", "Judas",
+    "Apocalipsis"
+  ];
+
+  const librosRegex = libros.join("|");
+
+  // Ej: Juan 1:3 / Mateo 9:14-17
+  out = out.replace(
+    new RegExp(`\\b(${librosRegex})\\s+(\\d{1,3})\\s*:\\s*(\\d{1,3})(?:\\s*[-–]\\s*(\\d{1,3}))?\\b`, "gi"),
+    (m, libro, cap, v1, v2) => {
+      const capTxt = audioNumeroATexto(cap);
+      const v1Txt = audioNumeroATexto(v1);
+
+      if (v2) {
+        return `${libro} ${capTxt} del ${v1Txt} al ${audioNumeroATexto(v2)}`;
+      }
+
+      return `${libro} ${capTxt} ${v1Txt}`;
+    }
+  );
+
+  // Ej: Mateo 9 del 14 al 17
+  out = out.replace(
+    new RegExp(`\\b(${librosRegex})\\s+(\\d{1,3})\\s+del\\s+(\\d{1,3})\\s+al\\s+(\\d{1,3})\\b`, "gi"),
+    (m, libro, cap, v1, v2) => {
+      return `${libro} ${audioNumeroATexto(cap)} del ${audioNumeroATexto(v1)} al ${audioNumeroATexto(v2)}`;
+    }
+  );
+
+  return out;
+}
+
+function audioPrepararTextoParaTTS(txt = "") {
+  let out = String(txt || "")
+    .replace(/[•▪●■□◆◇▶►◼◻]/g, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+
+  out = audioNormalizarReferenciasBiblicas(out);
+
+  Object.entries(window.__FONETICA || {}).forEach(([buscar, reemplazo]) => {
+    if (!buscar || !reemplazo) return;
+
+    out = out.replace(
+      new RegExp(`\\b${buscar.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "g"),
+      reemplazo
+    );
+  });
+
+  return out;
+}
+
   function audio_getTextoDesdePreview() {
     const el = document.getElementById("previewTexto");
     return (el ? (el.innerText || "") : "").trim();
@@ -118,10 +280,7 @@ window.escucharPreviaAudio = async () => {
     return;
   }
 
-  const textoLimpio = texto
-    .replace(/[•▪●■□◆◇▶►◼◻]/g, "")
-    .replace(/\s{2,}/g, " ")
-    .trim();
+const textoLimpio = audioPrepararTextoParaTTS(texto);
 
   const esColabSeco = !audioEsAdmin() && audioEsColaborador();
 
