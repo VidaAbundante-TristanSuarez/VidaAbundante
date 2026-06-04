@@ -2139,20 +2139,20 @@ body.oscuro #modalAudio textarea{
 }
 
 /* =========================================================
-   ✅ CONTROLES (Tamaño + Color) igual alto que botones estilo
-   + 0,5 cm más anchos (≈ 19px)
-   ========================================================= */
+   ✅ CREAR IMAGEN - CONTROLES DE TEXTO
+   Tamaño conserva ancho cómodo.
+   Colores quedan del mismo tamaño que Aa / B / I / U.
+========================================================= */
 
 :root{
-  --alto-ui: 38px;           /* igual que tus botones del modal */
-  --extra-ancho: 19px;       /* 0,5 cm aprox */
-  --ancho-base-btn: 38px;    /* min-width de tus botones */
+  --alto-ui: 38px;
+  --extra-ancho: 19px;
+  --ancho-base-btn: 38px;
   --ancho-control: calc(var(--ancho-base-btn) + var(--extra-ancho));
 }
 
-/* El input numérico y el color picker */
-#modalPersonalizar #personalizarTamaño,
-#modalPersonalizar #personalizarColor{
+/* Número de tamaño: mantiene ancho cómodo */
+#modalPersonalizar #personalizarTamaño{
   height: var(--alto-ui);
   width: var(--ancho-control);
   margin: 0;
@@ -2163,57 +2163,100 @@ body.oscuro #modalAudio textarea{
   background: var(--ui-azul-claro);
   color: #000;
 
-  padding: 0 10px;
-  font-weight: 800;
-  font-size: 14px;
-
-  display: block;         /* ✅ evita el “bajón” raro del input */
-  align-self: center;     /* ✅ lo centra dentro de tu rowB (flex) */
-  vertical-align: middle; /* ✅ por si la fila no es flex en algún lado */
-
-}
-
-/* el num centrado */
-#modalPersonalizar #personalizarTamaño{
-  text-align: center;
-  padding: 0;               /* que no agrande raro */
+  padding: 0;
   font-weight: 400;
+  font-size: 14px;
+  text-align: center;
+  line-height: var(--alto-ui);
 
+  display: block;
+  align-self: center;
+  vertical-align: middle;
 }
 
-/* ✅ sacar flechitas del number */
+/* Inputs reales del Pickr: ocultos, los botones son los visibles */
+#modalPersonalizar #personalizarColor,
+#modalPersonalizar #personalizarOutlineColor{
+  display: none !important;
+}
+
+/* Selector color texto + selector contorno */
+#modalPersonalizar #personalizarColorHost,
+#modalPersonalizar #personalizarOutlineHost{
+  width: var(--alto-ui) !important;
+  min-width: var(--alto-ui) !important;
+  max-width: var(--alto-ui) !important;
+
+  height: var(--alto-ui) !important;
+  min-height: var(--alto-ui) !important;
+  max-height: var(--alto-ui) !important;
+
+  padding: 0 !important;
+  margin: 0 !important;
+
+  border: none !important;
+  cursor: pointer;
+
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  flex: 0 0 var(--alto-ui) !important;
+
+  background: var(--pickr-color, #000000);
+  color: #000;
+  box-shadow:
+    inset 0 0 0 1px rgba(0,0,0,.16),
+    0 1px 3px rgba(0,0,0,.10);
+}
+
+/* Texto: mismo tamaño, levemente cuadradito como control */
+#modalPersonalizar #personalizarColorHost{
+  border-radius: 10px !important;
+}
+
+/* Contorno: redondo */
+#modalPersonalizar #personalizarOutlineHost{
+  border-radius: 999px !important;
+}
+
+#modalPersonalizar #personalizarOutlineHost::after{
+  content: "";
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  border: 2px solid rgba(255,255,255,.9);
+  box-shadow:
+    0 0 0 1px rgba(0,0,0,.35),
+    inset 0 0 0 1px rgba(0,0,0,.15);
+}
+
+/* sacar flechitas del number */
 #modalPersonalizar #personalizarTamaño::-webkit-inner-spin-button,
 #modalPersonalizar #personalizarTamaño::-webkit-outer-spin-button{
   -webkit-appearance: none;
   margin: 0;
 }
 
-/* modo oscuro: mantener legible */
-body.oscuro #modalPersonalizar #personalizarTamaño,
-body.oscuro #modalPersonalizar #personalizarColor{
+body.oscuro #modalPersonalizar #personalizarTamaño{
   background: #d1eeff;
   color: #000;
 }
 
-/* ✅ En la fila, todo con el MISMO alto real */
+/* En la fila, todo con el mismo alto real */
 #modalPersonalizar .style-row > *{
   height: var(--alto-ui);
   box-sizing: border-box;
-  margin: 0;            /* inputs a veces traen margen raro */
+  margin: 0;
 }
 
-/* ✅ Botones: que el icono/texto queden perfectamente centrados */
+/* Botones: icono/texto centrados */
 #modalPersonalizar .style-row button{
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  line-height: 1;       /* evita “bajón” por line-height */
-  padding: 0 10px;      /* o el padding que uses */
-}
-
-/* ✅ Number: que no “baje” por la línea interna */
-#modalPersonalizar #personalizarTamaño{
-  line-height: var(--alto-ui);
+  line-height: 1;
+  padding: 0 10px;
 }
 
 /* ✅ Devocional: layout dentro del preview */
