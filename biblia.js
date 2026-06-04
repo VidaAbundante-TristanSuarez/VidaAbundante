@@ -571,6 +571,84 @@ let textStyle = {
   underline: false
 };
 
+function bibliaHexSeguro(color = "") {
+  const c = String(color || "").trim();
+  return /^#[0-9a-f]{6}$/i.test(c) ? c : "";
+}
+
+function bibliaSetHostColorVisual(hostId, color) {
+  const host = document.getElementById(hostId);
+  const c = bibliaHexSeguro(color) || "#ffffff";
+
+  if (!host) return;
+
+  host.style.setProperty("--pickr-color", c);
+  host.style.background = c;
+  host.style.backgroundColor = c;
+}
+
+function asegurarColorContornoBiblia() {
+  const colorHost = document.getElementById("personalizarColorHost");
+  if (!colorHost) return null;
+
+  colorHost.classList.add("biblia-text-color-host");
+  colorHost.title = "Color del texto";
+  colorHost.setAttribute("aria-label", "Color del texto");
+
+  const colorTexto = document.getElementById("personalizarColor")?.value || "#000000";
+  const sugerido = colorOutlineDesdeBase(colorTexto);
+
+  let input = document.getElementById("personalizarOutlineColor");
+
+  if (!input) {
+    input = document.createElement("input");
+    input.type = "hidden";
+    input.id = "personalizarOutlineColor";
+    input.value = sugerido;
+    input.dataset.manual = "0";
+
+    colorHost.insertAdjacentElement("afterend", input);
+  }
+
+  let host = document.getElementById("personalizarOutlineHost");
+
+  if (!host) {
+    host = document.createElement("button");
+    host.type = "button";
+    host.id = "personalizarOutlineHost";
+    host.className = "pickr-host biblia-outline-color-host";
+    host.dataset.target = "#personalizarOutlineColor";
+    host.title = "Color del contorno";
+    host.setAttribute("aria-label", "Color del contorno");
+
+    input.insertAdjacentElement("afterend", host);
+  }
+
+  if (!input.dataset.ready) {
+    input.dataset.ready = "1";
+
+    const handler = () => {
+      input.dataset.manual = "1";
+      bibliaSetHostColorVisual("personalizarOutlineHost", input.value);
+      actualizarPreview();
+      invalidarRenderFinal();
+    };
+
+    input.addEventListener("input", handler);
+    input.addEventListener("change", handler);
+  }
+
+  if (!host.dataset.pickrReady && typeof initPickrEnHosts === "function") {
+    setTimeout(() => {
+      initPickrEnHosts("#personalizarOutlineHost");
+    }, 0);
+  }
+
+  bibliaSetHostColorVisual("personalizarOutlineHost", input.value || sugerido);
+
+  return input;
+}
+
 // ================= 🧠 MEMORIA SCROLL CAPÍTULOS =================
 let scrollCapituloAnterior = 0;
 
@@ -2939,8 +3017,11 @@ function colorOutlineDesdeBase(color) {
   return lum > 160 ? "#000000" : "#ffffff";
 }
 
-function textShadowLegibleBiblia(textHex, scale = 1){
-  const oc = colorOutlineDesdeBase(textHex || "#000000");
+function textShadowLegibleBiblia(textHex, scale = 1, outlineHex = null){
+  const oc =
+    bibliaHexSeguro(outlineHex) ||
+    colorOutlineDesdeBase(textHex || "#000000");
+
   const s = Math.max(0.12, Number(scale) || 1);
   const px = (n) => `${(n * s).toFixed(2)}px`;
 
@@ -3987,13 +4068,32 @@ if (innerBack) {
   innerBack.style.margin = "0";
 }
   
-  // ================= Color / Outline =================
-  const colorEl = document.getElementById("personalizarColor");
-  const opEl = document.getElementById("personalizarOpacidad");
+// ================= Color / Outline =================
+const colorEl = document.getElementById("personalizarColor");
+const opEl = document.getElementById("personalizarOpacidad");
+const outlineEl = asegurarColorContornoBiblia();
 
-  const color = colorEl ? colorEl.value : "#000000";
-  const opacidad = opEl ? opEl.value : "0.3";
-  const outlineColor = colorOutlineDesdeBase(color);
+const color = colorEl ? colorEl.value : "#000000";
+const opacidad = opEl ? opEl.value : "0.3";
+
+let outlineColor = colorOutlineDesdeBase(color);
+
+// ✅ Si el usuario no eligió contorno manualmente,
+// seguimos sugiriendo blanco/negro automático.
+if (outlineEl) {
+  const manual = outlineEl.dataset.manual === "1";
+  const valorManual = bibliaHexSeguro(outlineEl.value);
+
+  if (manual && valorManual) {
+    outlineColor = valorManual;
+  } else {
+    outlineEl.value = outlineColor;
+    outlineEl.dataset.manual = "0";
+  }
+}
+
+bibliaSetHostColorVisual("personalizarColorHost", color);
+bibliaSetHostColorVisual("personalizarOutlineHost", outlineColor);
 
   // ✅ más parecido a Devocionales: contorno más visible y prolijo
   const outlineScale = 1.35;
@@ -4024,8 +4124,8 @@ if (innerBack) {
   previewTextoBack.style.webkitTextFillColor = "transparent";
   previewTextoBack.style.transform = "none";
   previewTextoBack.style.filter = "none";
-  previewTextoBack.style.textShadow = textShadowLegibleBiblia(color, outlineScale);
-
+ previewTextoBack.style.textShadow = textShadowLegibleBiblia(color, outlineScale, outlineColor);
+  
 // ================= Opacidad Oscuro/Claro =================
 const op = parseFloat(opacidad);
 let bgColor = "rgba(0,0,0,0)";
@@ -8460,8 +8560,8 @@ window.mostrarIglesiaSub = (sub) => {
 
 // ================= SELECTOR DE COLORES REUTILIZABLE =====  
 setTimeout(() => {
- initPickrEnHosts(
-  "#personalizarColorHost, #marcadorColorHost, #dev1ColorHost, #dev1OpColorHost, #dev2ColorHost, #colorFondoPlanoHost, #dev2FondoHost, #colorOpacidadBibliaHost, #colorFondoAppHost, #colorTextoAppHost, #bibliaFondoColor1Host, #bibliaFondoColor2Host, #bibliaFondoColor3Host"
+initPickrEnHosts(
+  "#personalizarColorHost, #personalizarOutlineHost, #marcadorColorHost, #dev1ColorHost, #dev1OpColorHost, #dev2ColorHost, #colorFondoPlanoHost, #dev2FondoHost, #colorOpacidadBibliaHost, #colorFondoAppHost, #colorTextoAppHost, #bibliaFondoColor1Host, #bibliaFondoColor2Host, #bibliaFondoColor3Host"
 );
 }, 0);
 
