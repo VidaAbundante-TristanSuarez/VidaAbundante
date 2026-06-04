@@ -387,6 +387,7 @@ window.getMarcadorCtx = function() {
 // ========= Modo Imagen
 let modoImagen = false;
 let seleccionImagen = {};
+let seleccionImagenOrden = [];
 let fondoFinal = null;
 let fondoFinalBlobUrl = null; // ✅ fondo seguro para html2canvas
 let creandoNotaLibre = false; // ✅ estado: nota sin versículo
@@ -396,6 +397,128 @@ let origenModalImagen = "biblia";   // "biblia" | "panel"
 let modoImagenLibre = false;        // true cuando el texto viene de un textarea libre
 let textoLibreImagen = "";          // texto escrito manualmente en Mi Panel
 let formatoImagenActual = "post"; // "post" | "story"
+
+function limpiarSeleccionImagenCompleta() {
+  seleccionImagen = {};
+  seleccionImagenOrden = [];
+}
+
+function marcarImagenEnOrden(id) {
+  id = String(id || "").trim();
+  if (!id) return;
+
+  if (seleccionImagen[id]) {
+    delete seleccionImagen[id];
+    seleccionImagenOrden = seleccionImagenOrden.filter(x => x !== id);
+    return;
+  }
+
+  seleccionImagen[id] = true;
+
+  if (!seleccionImagenOrden.includes(id)) {
+    seleccionImagenOrden.push(id);
+  }
+}
+
+function getIdsImagenEnOrden() {
+  const vivos = new Set(Object.keys(seleccionImagen || {}));
+
+  seleccionImagenOrden = (seleccionImagenOrden || []).filter(id => vivos.has(id));
+
+  Object.keys(seleccionImagen || {}).forEach(id => {
+    if (!seleccionImagenOrden.includes(id)) {
+      seleccionImagenOrden.push(id);
+    }
+  });
+
+  return [...seleccionImagenOrden];
+}
+
+function getItemsImagenEnOrden() {
+  return getIdsImagenEnOrden()
+    .map(id => {
+      const [Libro, Capitulo, Versiculo] = String(id || "").split("_");
+
+      return {
+        id,
+        Libro,
+        Capitulo: Number(Capitulo),
+        Versiculo: Number(Versiculo)
+      };
+    })
+    .filter(x => x.Libro && !isNaN(x.Capitulo) && !isNaN(x.Versiculo));
+}
+
+function rangosVersiculosImagen(nums) {
+  const a = Array.from(new Set(nums.map(Number).filter(n => !isNaN(n))))
+    .sort((x, y) => x - y);
+
+  if (!a.length) return "";
+
+  const partes = [];
+  let ini = a[0];
+  let ant = a[0];
+
+  for (let i = 1; i < a.length; i++) {
+    if (a[i] === ant + 1) {
+      ant = a[i];
+    } else {
+      partes.push(ini === ant ? `${ini}` : `${ini}-${ant}`);
+      ini = ant = a[i];
+    }
+  }
+
+  partes.push(ini === ant ? `${ini}` : `${ini}-${ant}`);
+
+  return partes.join(",");
+}
+
+function referenciaImagenEnOrden(items = []) {
+  const grupos = [];
+  const mapa = {};
+
+  items.forEach(it => {
+    const key = `${it.Libro}__${it.Capitulo}`;
+
+    if (!mapa[key]) {
+      mapa[key] = {
+        Libro: it.Libro,
+        Capitulo: it.Capitulo,
+        versiculos: []
+      };
+
+      grupos.push(mapa[key]);
+    }
+
+    mapa[key].versiculos.push(it.Versiculo);
+  });
+
+  if (!grupos.length) return "";
+
+  const porLibro = [];
+  const mapaLibro = {};
+
+  grupos.forEach(g => {
+    if (!mapaLibro[g.Libro]) {
+      mapaLibro[g.Libro] = {
+        Libro: g.Libro,
+        capitulos: []
+      };
+
+      porLibro.push(mapaLibro[g.Libro]);
+    }
+
+    mapaLibro[g.Libro].capitulos.push(g);
+  });
+
+  return porLibro.map(libroGrupo => {
+    const partes = libroGrupo.capitulos.map(c =>
+      `${c.Capitulo}:${rangosVersiculosImagen(c.versiculos)}`
+    );
+
+    return `${libroGrupo.Libro} ${partes.join(" y ")}`;
+  }).join("; ");
+}
 
 // ================= FONDO DISEÑADO: CREAR IMAGEN BIBLIA =================
 // El modo viejo de imágenes queda intacto. Este estado solo se usa con el toggle encendido.
@@ -1616,6 +1739,7 @@ function bibliaBackupUI() {
     modoImagen: !!modoImagen,
     modoMarcador: !!modoMarcador,
     seleccionImagen: { ...(seleccionImagen || {}) },
+    seleccionImagenOrden: [...(seleccionImagenOrden || [])],
     seleccionMarcador: { ...(seleccionMarcador || {}) },
     userSetFontSize: !!userSetFontSize
   };
@@ -1655,6 +1779,7 @@ function bibliaRestaurarUIAlVolver() {
   modoImagen = !!bk.modoImagen;
   modoMarcador = !!bk.modoMarcador;
   seleccionImagen = { ...(bk.seleccionImagen || {}) };
+  seleccionImagenOrden = [...(bk.seleccionImagenOrden || [])];
   seleccionMarcador = { ...(bk.seleccionMarcador || {}) };
   userSetFontSize = !!bk.userSetFontSize;
 
@@ -2455,11 +2580,7 @@ function toggleVersiculo(id, num) {
       return;
     }
 
-    if (seleccionImagen[id]) {
-      delete seleccionImagen[id];
-    } else {
-      seleccionImagen[id] = true;
-    }
+marcarImagenEnOrden(id);
 
         mostrarTexto({ guardar: false });
     userSetFontSize = false; // ✅ cambió el texto => volver a AUTO
@@ -2643,84 +2764,25 @@ div.classList.toggle("versiculo-con-fondo-resaltado", hayFondoResaltado);
 
 // ================= ⭐ OBTIENE VERSICULO SELECCIONADO (FIX MULTI CAP) =======================
 function obtenerVersiculoSeleccionado() {
-  const ids = Object.keys(seleccionImagen || {});
-  if (ids.length === 0) return "";
+  const items = getItemsImagenEnOrden();
 
-  // 1) Parse + ordenar por Libro, Cap, Vers
-  const items = ids.map(id => {
-    const [Libro, Capitulo, Versiculo] = id.split("_");
-    return {
-      id,
-      Libro,
-      Capitulo: Number(Capitulo),
-      Versiculo: Number(Versiculo)
-    };
-  }).filter(x => x.Libro && !isNaN(x.Capitulo) && !isNaN(x.Versiculo));
+  if (!items.length) return "";
 
-  items.sort((a, b) => {
-    if (a.Libro !== b.Libro) return a.Libro.localeCompare(b.Libro);
-    if (a.Capitulo !== b.Capitulo) return a.Capitulo - b.Capitulo;
-    return a.Versiculo - b.Versiculo;
-  });
-
-  // 2) Armar texto (en el orden ya ordenado)
   const textos = [];
+
   for (const it of items) {
     const vers = bibliaData.find(x =>
       x.Libro === it.Libro &&
       Number(x.Capitulo) === it.Capitulo &&
       Number(x.Versiculo) === it.Versiculo
     );
+
     const txt = getTextoVersiculo(vers);
-if (txt) textos.push(txt);
+    if (txt) textos.push(txt);
   }
 
-  // 3) Agrupar por Libro + Capítulo para referencia
-  const porLibro = {}; // {Libro: {Capitulo: [versiculos]}}
-  for (const it of items) {
-    porLibro[it.Libro] = porLibro[it.Libro] || {};
-    porLibro[it.Libro][it.Capitulo] = porLibro[it.Libro][it.Capitulo] || [];
-    porLibro[it.Libro][it.Capitulo].push(it.Versiculo);
-  }
+  const referencia = referenciaImagenEnOrden(items);
 
-  // helper: rangos "5-7,9,11-13"
-  const rangos = (nums) => {
-    const a = Array.from(new Set(nums.map(Number).filter(n => !isNaN(n)))).sort((x,y)=>x-y);
-    if (!a.length) return "";
-    const partes = [];
-    let ini = a[0], ant = a[0];
-    for (let i = 1; i < a.length; i++) {
-      if (a[i] === ant + 1) ant = a[i];
-      else {
-        partes.push(ini === ant ? `${ini}` : `${ini}-${ant}`);
-        ini = ant = a[i];
-      }
-    }
-    partes.push(ini === ant ? `${ini}` : `${ini}-${ant}`);
-    return partes.join(",");
-  };
-
-  // 4) Construir referencia bonita
-  const librosOrdenados = Object.keys(porLibro).sort((a,b)=>a.localeCompare(b));
-
-  let referencia = "";
-  if (librosOrdenados.length === 1) {
-    // ✅ MISMO LIBRO: "Génesis 1:5-7 y 2:1-3"
-    const L = librosOrdenados[0];
-    const caps = Object.keys(porLibro[L]).map(Number).sort((a,b)=>a-b);
-    const partes = caps.map(c => `${c}:${rangos(porLibro[L][c])}`);
-    referencia = `${L} ${partes.join(" y ")}`;
-  } else {
-    // ✅ VARIOS LIBROS: "Génesis 1:5-7; Éxodo 2:1-3"
-    const partesLibros = librosOrdenados.map(L => {
-      const caps = Object.keys(porLibro[L]).map(Number).sort((a,b)=>a-b);
-      const partes = caps.map(c => `${c}:${rangos(porLibro[L][c])}`);
-      return `${L} ${partes.join(" , ")}`;
-    });
-    referencia = partesLibros.join("; ");
-  }
-
-  // 5) Salida final
   return (textos.join(" ") + "\n\n▪ " + referencia).trim();
 }
 
@@ -4169,16 +4231,17 @@ async function guardarReferenciaImagenEnPanel(asset) {
     return s;
   }
 
-  const versiculosSel = modoImagenLibre
-    ? []
-    : Object.keys(seleccionImagen || {})
-        .map(id => Number(id.split("_")[2]))
-        .filter(n => !isNaN(n))
-        .sort((a, b) => a - b);
+const itemsSel = modoImagenLibre ? [] : getItemsImagenEnOrden();
 
-  const refCompleta = (!modoImagenLibre && libroSel?.value && capSel?.value && versiculosSel.length)
-    ? `${libroSel.value} ${capSel.value}:${formatearVersiculosComoRango(versiculosSel)}`
-    : "";
+const versiculosSel = itemsSel.map(it => ({
+  libro: it.Libro,
+  capitulo: it.Capitulo,
+  versiculo: it.Versiculo
+}));
+
+const refCompleta = (!modoImagenLibre && itemsSel.length)
+  ? referenciaImagenEnOrden(itemsSel)
+  : "";
 
   const dbPath = `panelImagenesPersonal/${uid}/${asset.ts}`;
 
@@ -4187,10 +4250,10 @@ await set(ref(db, dbPath), {
   fecha: asset.ts,
   uid,
   tipo: "imagen",
-  libro: modoImagenLibre ? "" : (libroSel?.value || ""),
-  capitulo: modoImagenLibre ? 0 : Number(capSel?.value || 0),
-  versiculos: versiculosSel,
-  ref: refCompleta,
+libro: modoImagenLibre ? "" : (itemsSel[0]?.Libro || libroSel?.value || ""),
+capitulo: modoImagenLibre ? 0 : Number(itemsSel[0]?.Capitulo || capSel?.value || 0),
+versiculos: versiculosSel,
+ref: refCompleta,
   origen: origenModalImagen,
   tipoTexto: modoImagenLibre ? "libre" : "biblia",
  textoLibre: modoImagenLibre ? (textoLibreImagen || "") : "",
@@ -4222,16 +4285,17 @@ async function guardarReferenciaImagenEnCompartidos(asset) {
     return s;
   }
 
-  const versiculosSel = modoImagenLibre
-    ? []
-    : Object.keys(seleccionImagen || {})
-        .map(id => Number(id.split("_")[2]))
-        .filter(n => !isNaN(n))
-        .sort((a, b) => a - b);
+const itemsSel = modoImagenLibre ? [] : getItemsImagenEnOrden();
 
-  const refCompleta = (!modoImagenLibre && libroSel?.value && capSel?.value && versiculosSel.length)
-    ? `${libroSel.value} ${capSel.value}:${formatearVersiculosComoRango(versiculosSel)}`
-    : "";
+const versiculosSel = itemsSel.map(it => ({
+  libro: it.Libro,
+  capitulo: it.Capitulo,
+  versiculo: it.Versiculo
+}));
+
+const refCompleta = (!modoImagenLibre && itemsSel.length)
+  ? referenciaImagenEnOrden(itemsSel)
+  : "";
 
   const dbPath = `compartidos/imagenes/${asset.ts}`;
 
@@ -4241,10 +4305,10 @@ async function guardarReferenciaImagenEnCompartidos(asset) {
     uid,
     publicadoPor: uid,
     tipo: "imagen",
-    libro: modoImagenLibre ? "" : (libroSel?.value || ""),
-    capitulo: modoImagenLibre ? 0 : Number(capSel?.value || 0),
-    versiculos: versiculosSel,
-    ref: refCompleta,
+libro: modoImagenLibre ? "" : (itemsSel[0]?.Libro || libroSel?.value || ""),
+capitulo: modoImagenLibre ? 0 : Number(itemsSel[0]?.Capitulo || capSel?.value || 0),
+versiculos: versiculosSel,
+ref: refCompleta,
     origen: origenModalImagen,
     tipoTexto: modoImagenLibre ? "libre" : "biblia",
   textoLibre: modoImagenLibre ? (textoLibreImagen || "") : "",
@@ -4472,9 +4536,9 @@ if (previewTextoLibre) {
 
 // ================= ⭐ SALIR DEL MODO IMAGEN  ======================= 
 function salirModoImagen() {
-  modoImagen = false;
-  seleccionImagen = {};
-  fondoFinal = null;
+modoImagen = false;
+limpiarSeleccionImagenCompleta();
+fondoFinal = null;
   if (fondoFinalBlobUrl) {
   URL.revokeObjectURL(fondoFinalBlobUrl);
   fondoFinalBlobUrl = null;
@@ -4716,7 +4780,7 @@ window.toggleModoImagen = () => {
 
   if (!usuarioPuedeCrearImagen()) {
     modoImagen = false;
-    seleccionImagen = {};
+    limpiarSeleccionImagenCompleta();
     document.body.classList.remove("modo-imagen");
 
     const banner = document.getElementById("bannerModoImagen");
@@ -4728,7 +4792,7 @@ window.toggleModoImagen = () => {
   }
 
   modoImagen = !modoImagen;
-  seleccionImagen = {};
+  limpiarSeleccionImagenCompleta();
 
   document.body.classList.toggle("modo-imagen", modoImagen);
 
