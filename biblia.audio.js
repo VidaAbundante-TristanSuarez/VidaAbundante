@@ -225,26 +225,71 @@ function audioPrepararTextoParaTTS(txt = "") {
     return (el ? (el.innerText || "") : "").trim();
   }
 
-  // ✅ Abrir modal
-  window.abrirModalAudio = () => {
-    const modal = document.getElementById("modalAudio");
-    const ta = document.getElementById("textoAudio");
-    const estado = document.getElementById("audioEstado");
-    const audio = document.getElementById("audioPreview");
-    if (!modal || !ta) return;
+  function audioTextoBaseActual() {
+  return audio_getTextoDesdePreview().trim();
+}
 
-    if (audio) audio.removeAttribute("src");
-  if (estado) estado.textContent = "Preparando audio...";
-audioActualizarEstadoInicial();
+function audioLimpiarEstadoViejoSiCambioTexto(textoNuevo = "") {
+  const nuevo = String(textoNuevo || "").trim();
+  const pendienteTexto = String(window.__pendingAudio?.texto || "").trim();
+  const cacheTexto = String(window.__audioCacheLocal?.texto || "").trim();
 
-    // ✅ guardar original + autocompletar si estaba vacío
-    __audioTextoOriginal = (ta.value || "").trim() || audio_getTextoDesdePreview();
-    if (!ta.value.trim()) ta.value = __audioTextoOriginal;
+  const coincidePendiente = nuevo && pendienteTexto && nuevo === pendienteTexto;
+  const coincideCache = nuevo && cacheTexto && nuevo === cacheTexto;
 
-    modal.style.display = "flex";
-    modal.setAttribute("aria-hidden", "false");
+  if (coincidePendiente || coincideCache) return;
+
+  window.__audioBase64 = null;
+  window.__pendingAudio = null;
+
+  window.__audioCacheLocal = {
+    texto: "",
+    voiceName: "",
+    audioBase64: ""
   };
 
+  const audio = document.getElementById("audioPreview");
+  if (audio) {
+    try {
+      audio.pause();
+      audio.removeAttribute("src");
+      audio.load();
+    } catch (_) {}
+  }
+}
+
+  // ✅ Abrir modal
+window.abrirModalAudio = () => {
+  const modal = document.getElementById("modalAudio");
+  const ta = document.getElementById("textoAudio");
+  const estado = document.getElementById("audioEstado");
+  const audio = document.getElementById("audioPreview");
+
+  if (!modal || !ta) return;
+
+  const textoActual = audioTextoBaseActual();
+
+  audioLimpiarEstadoViejoSiCambioTexto(textoActual);
+
+  if (audio) {
+    try {
+      audio.pause();
+      audio.removeAttribute("src");
+      audio.load();
+    } catch (_) {}
+  }
+
+  // ✅ Siempre sincronizamos el textarea con el texto actual de la imagen.
+  // Esto evita que quede pegado el audio/texto anterior hasta refrescar.
+  __audioTextoOriginal = textoActual || "";
+  ta.value = __audioTextoOriginal;
+
+  if (estado) estado.textContent = "Preparando audio...";
+  audioActualizarEstadoInicial();
+
+  modal.style.display = "flex";
+  modal.setAttribute("aria-hidden", "false");
+};
   // ✅ Cerrar modal
   window.cerrarModalAudio = () => {
     const modal = document.getElementById("modalAudio");
@@ -431,7 +476,15 @@ if (esColabSeco) {
       return;
     }
 
-    window.__pendingAudio = { texto, audioBase64: window.__audioBase64, ts: Date.now() };
+const textoFinalAudio = audioPrepararTextoParaTTS
+  ? audioPrepararTextoParaTTS(texto)
+  : texto;
+
+window.__pendingAudio = {
+  texto: textoFinalAudio,
+  audioBase64: window.__audioBase64,
+  ts: Date.now()
+};
     if (estado) estado.textContent = "✅ Audio confirmado. Volvé a la imagen para finalizar.";
   };
 
