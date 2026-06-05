@@ -3920,8 +3920,16 @@ body.oscuro .panel-folder-card{
 
 /* =========================================================
    🚨 CORTAFUEGOS SECCIONES PRINCIPALES
-   Solo se muestra la sección que coincida con la clase del body.
+   Antes de que JS decida la pantalla, no mostramos ninguna sección.
+   Después solo se muestra la sección activa.
    ========================================================= */
+
+body:not(.en-biblia):not(.en-iglesia):not(.en-panel):not(.en-compartidos) #seccion-biblia,
+body:not(.en-biblia):not(.en-iglesia):not(.en-panel):not(.en-compartidos) #seccion-iglesia,
+body:not(.en-biblia):not(.en-iglesia):not(.en-panel):not(.en-compartidos) #seccion-panel,
+body:not(.en-biblia):not(.en-iglesia):not(.en-panel):not(.en-compartidos) #seccion-compartidos{
+  display:none !important;
+}
 
 body.en-biblia #seccion-biblia,
 body.en-iglesia #seccion-iglesia,
