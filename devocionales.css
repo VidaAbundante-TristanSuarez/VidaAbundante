@@ -1525,12 +1525,11 @@ body.oscuro .devIndexBarBottom{
   }
 }
 
-
-
 /* =========================================================
    FASE 2 DEVOCIONALES: FONDO DISEÑADO COMPACTO
-   Fondo plano/degradado + Textura + Adorno sin scroll horizontal
-   ========================================================= */
+   Color 1 + agregar color 2/3 con opciones: imagen o paleta.
+========================================================= */
+
 #modalDevFase2 .modal-contenido.modal-dev{
   overflow-x:hidden !important;
 }
@@ -1593,7 +1592,13 @@ body.oscuro .devIndexBarBottom{
   padding:2px 0;
 }
 
-#modalDevFase2 .dev2-modo-btn,
+/* Ocultamos el viejo pincel/plano */
+#modalDevFase2 #dev2BtnPlano{
+  display:none !important;
+}
+
+/* La paleta queda como selector principal */
+#modalDevFase2 #dev2BtnGradiente,
 #modalDevFase2 .dev2-mas-color{
   width:43px;
   min-width:43px;
@@ -1610,7 +1615,7 @@ body.oscuro .devIndexBarBottom{
   font-size:17px;
 }
 
-#modalDevFase2 .dev2-modo-btn.activo,
+#modalDevFase2 #dev2BtnGradiente.activo,
 #modalDevFase2 .dev2-mas-color.activo{
   background:var(--ui-azul-hover);
   color:#fff;
@@ -1631,8 +1636,8 @@ body.oscuro .devIndexBarBottom{
 
 #modalDevFase2 .dev2-grad-forma{
   height:42px;
-  max-width:116px;
-  min-width:100px;
+  max-width:120px;
+  min-width:104px;
   padding:0 8px;
   border-radius:12px;
   border:1px solid rgba(0,0,0,.18);
@@ -1641,6 +1646,53 @@ body.oscuro .devIndexBarBottom{
   font-size:14px;
 }
 
+#modalDevFase2 .dev2-fila-fuente-tamano{
+  width:min(540px, 94vw);
+  margin:8px auto 0;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  flex-wrap:nowrap;
+}
+
+#modalDevFase2 .dev2-fila-fuente-tamano #dev2BtnFuentes{
+  min-width:110px;
+  height:38px;
+  padding:0 12px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+}
+
+#modalDevFase2 .dev2-fila-fuente-tamano #dev2Tamano{
+  width:70px;
+  height:38px;
+  padding:0;
+  text-align:center;
+  font-weight:800;
+}
+
+#modalDevFase2 .dev2-fila-fuente-tamano button:not(#dev2BtnFuentes){
+  width:42px;
+  min-width:42px;
+  height:38px;
+  padding:0;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+}
+
+#modalDevFase2 .dev2-size-row{
+  display:none !important;
+}
+
+#modalDevFase2 .dev2-eyedropper-row{
+  display:none !important;
+}
+
+/* Galerías textura/adorno */
 #modalDevFase2 .dev-adorno-list{
   width:100%;
   max-width:100%;
@@ -1694,12 +1746,66 @@ body.oscuro .devIndexBarBottom{
   margin:0;
 }
 
-#modalDevFase2 .dev2-size-row{
-  width:min(540px, 94vw);
-  margin:6px auto 0;
+/* Mini modal: elegir imagen o paleta */
+#modalDevColorFondoOpciones.modal-overlay{
+  position:fixed;
+  inset:0;
+  z-index:100000;
+  background:rgba(0,0,0,.45);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:14px;
 }
 
-/* En teléfono mantiene panel corto y sin desbordes laterales. */
+#modalDevColorFondoOpciones.abierto{
+  display:flex;
+}
+
+#modalDevColorFondoOpciones .modal-dev-color-opciones{
+  width:min(360px, 92vw);
+  height:auto;
+  min-height:0;
+  background:#fff;
+  border-radius:22px;
+  padding:18px 16px 16px;
+  text-align:center;
+  position:relative;
+  box-shadow:0 18px 50px rgba(0,0,0,.28);
+}
+
+#modalDevColorFondoOpciones h3{
+  margin:4px 36px 6px;
+  color:#0e286f;
+}
+
+#modalDevColorFondoOpciones p{
+  margin:0 0 12px;
+  font-size:14px;
+  opacity:.72;
+}
+
+#modalDevColorFondoOpciones .dev-color-opciones-actions{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+#modalDevColorFondoOpciones .dev-color-opciones-actions button{
+  min-height:42px;
+  border:none;
+  border-radius:999px;
+  background:var(--ui-azul-claro);
+  color:#000;
+  font-weight:900;
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+}
+
+/* Teléfono: mantiene todo compacto */
 @media (max-width:520px){
   #modalDevFase2 .dev2-diseno-panel{
     width:94vw;
@@ -1723,7 +1829,7 @@ body.oscuro .devIndexBarBottom{
     gap:6px;
   }
 
-  #modalDevFase2 .dev2-modo-btn,
+  #modalDevFase2 #dev2BtnGradiente,
   #modalDevFase2 .dev2-mas-color{
     width:39px;
     min-width:39px;
@@ -1740,8 +1846,25 @@ body.oscuro .devIndexBarBottom{
   #modalDevFase2 .dev2-grad-forma{
     height:39px;
     min-width:94px;
-    max-width:102px;
+    max-width:108px;
     font-size:13px;
+  }
+
+  #modalDevFase2 .dev2-fila-fuente-tamano{
+    gap:6px;
+  }
+
+  #modalDevFase2 .dev2-fila-fuente-tamano #dev2BtnFuentes{
+    min-width:104px;
+  }
+
+  #modalDevFase2 .dev2-fila-fuente-tamano #dev2Tamano{
+    width:62px;
+  }
+
+  #modalDevFase2 .dev2-fila-fuente-tamano button:not(#dev2BtnFuentes){
+    width:38px;
+    min-width:38px;
   }
 }
 
