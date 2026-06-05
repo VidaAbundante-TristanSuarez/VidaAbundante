@@ -694,6 +694,12 @@ body.en-compartidos #compHero{
   margin: 0 auto 10px;
 }
 
+body.en-compartidos #compHero:empty,
+body.en-compartidos #compPromos:empty{
+  display:none !important;
+  margin:0 !important;
+}
+
 body.en-compartidos .comp-hero-card{
   height: clamp(118px, 18vw, 185px);
   border-radius: 20px;
