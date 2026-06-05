@@ -2592,9 +2592,35 @@ async function edCrearFileDesdeUrl(url, nombre = "edicion.png") {
   });
 }
 
-async function edCompartirPublicacionLink({ titulo, url }) {
+async function edCompartirPublicacionLink({ titulo, url, portadaUrl = "" }) {
   const tituloLimpio = String(titulo || "Edición").trim() || "Edición";
   const textoFallback = `${tituloLimpio}\n${url}`;
+
+  // ✅ WhatsApp / compartir móvil:
+  // mandamos portada como imagen adjunta + texto con link.
+  if (navigator.share && portadaUrl) {
+    try {
+      const portadaFile = await edCrearFileDesdeUrl(
+        portadaUrl,
+        `${tituloLimpio}_portada.png`
+      );
+
+      if (
+        navigator.canShare &&
+        navigator.canShare({ files: [portadaFile] })
+      ) {
+        await navigator.share({
+          title: tituloLimpio,
+          text: textoFallback,
+          files: [portadaFile]
+        });
+
+        return "archivo-link";
+      }
+    } catch (e) {
+      console.warn("No pude adjuntar portada, comparto solo link:", e);
+    }
+  }
 
   if (!navigator.share) {
     if (navigator.clipboard) {
@@ -3153,9 +3179,10 @@ window.compartirEdicion = async (id, destino = "redes") => {
   const url = await crearLinkPublicoEdicion(id, titulo);
 
   try {
-    const resultado = await edCompartirPublicacionLink({
+const resultado = await edCompartirPublicacionLink({
       titulo,
-      url
+      url,
+      portadaUrl
     });
 
     await edIncrementarStat(id, "compartidos");
