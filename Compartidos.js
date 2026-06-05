@@ -90,6 +90,142 @@ const COMP_PROMOS = [
   "img/compartidos/promo-6.png?v=2026-05-08-2"
 ];
 
+function compRefPredicaDirecta() {
+  try {
+    const params = new URLSearchParams(location.search);
+    const path = String(location.pathname || "").toLowerCase();
+
+    if (path.includes("/predica/")) {
+      return params.get("ref") || params.get("id") || "";
+    }
+
+    if (params.get("ver") === "compartidos" && params.get("predicaRef")) {
+      return params.get("predicaRef") || "";
+    }
+
+    return "";
+  } catch (_) {
+    return "";
+  }
+}
+
+function compEsPredicaLinkDirecto() {
+  return !!String(compRefPredicaDirecta() || "").trim();
+}
+
+function compNormalizarRefDirecta(v = "") {
+  try {
+    return decodeURIComponent(String(v || ""));
+  } catch (_) {
+    return String(v || "");
+  }
+}
+
+function compClaveDirecta(v = "") {
+  return compNormalizarRefDirecta(v)
+    .replace(/^sub_/, "")
+    .trim()
+    .toLowerCase();
+}
+
+function compPrepararVistaDirectaPredica() {
+  if (!compEsPredicaLinkDirecto()) return;
+
+  document.body.classList.remove("en-biblia", "en-iglesia", "en-panel");
+  document.body.classList.add("en-compartidos", "comp-link-directo");
+
+  let sec = document.getElementById("seccion-compartidos");
+
+  if (!sec) {
+    sec = document.createElement("section");
+    sec.id = "seccion-compartidos";
+    sec.className = "seccion";
+    document.body.appendChild(sec);
+  }
+
+  sec.style.setProperty("display", "block", "important");
+}
+
+function compBuscarPredicaDirecta(refDirecta = "") {
+  const buscada = compClaveDirecta(refDirecta);
+
+  if (!buscada) return null;
+
+  return (compartidosSubidosCache || []).find(item => {
+    const claves = [
+      item?._subidoId,
+      item?.id,
+      item?.ref,
+      item?.refPublica,
+      item?.predicaRef,
+      item?.slug
+    ].map(compClaveDirecta);
+
+    return claves.includes(buscada);
+  }) || null;
+}
+
+function compLoaderPredicaDirectaHTML() {
+  return `
+    <div class="comp-loading-feed">
+      <div class="comp-loading-icon">
+        <i class="fa-solid fa-microphone-lines"></i>
+      </div>
+
+      <div class="comp-loading-title">
+        Abriendo prédica
+      </div>
+
+      <div class="comp-loading-text">
+        Estamos preparando el mensaje...
+      </div>
+
+      <div class="comp-loading-dots">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+    </div>
+  `;
+}
+
+function compRenderPredicaDirecta(refDirecta = "") {
+  const lista = comp$("compLista");
+  if (!lista) return;
+
+  compLimpiarCompartidosTop();
+
+  if (!compSubidosListo) {
+    lista.innerHTML = compLoaderPredicaDirectaHTML();
+    return;
+  }
+
+  const item = compBuscarPredicaDirecta(refDirecta);
+
+  if (!item) {
+    lista.innerHTML = `
+      <div id="compVacio">
+        No encontré esta prédica.
+      </div>
+    `;
+    return;
+  }
+
+  lista.innerHTML = `
+    <div class="comp-directo-simple">
+      ${compRenderSubido(item)}
+    </div>
+  `;
+
+  // ✅ En link directo, la prédica se ve abierta completa.
+  setTimeout(() => {
+    const art = lista.querySelector(".comp-post--predica-abierta");
+    if (art) art.classList.add("comp-predica-expandida");
+  }, 0);
+
+  compActivarBotonesSubidosRenderizados([item]);
+}
+
 function comp$(id) {
   return document.getElementById(id);
 }
@@ -349,6 +485,9 @@ function compLimpiarCompartidosTop() {
 }
 
 window.mostrarCompartidos = async () => {
+    if (compEsPredicaLinkDirecto()) {
+    compPrepararVistaDirectaPredica();
+  }
   let cont = comp$("compartidosApp");
 
   if (!cont) {
@@ -394,6 +533,15 @@ window.mostrarCompartidos = async () => {
   }
 
   compAsegurarVisor();
+
+  // ✅ Link directo de prédica:
+  // no cargamos banner, promos ni feed completo.
+  if (compEsPredicaLinkDirecto()) {
+    compLimpiarCompartidosTop();
+    iniciarEscuchaCompartidosSubidos();
+    renderCompartidos();
+    return;
+  }
 
   // ✅ Mientras carga, no mostramos banner ni promos vacías.
   compLimpiarCompartidosTop();
@@ -3359,6 +3507,13 @@ window.renderCompartidos = function renderCompartidos() {
   const lista = comp$("compLista");
   if (!lista) return;
 
+    const predicaRefDirecta = compRefPredicaDirecta();
+
+  if (predicaRefDirecta) {
+    compRenderPredicaDirecta(predicaRefDirecta);
+    return;
+  }
+
   // ✅ Primero esperamos a que las fuentes principales respondan.
   // Así no se ve el feed a medias, ni promos vacías, ni cards fantasmas.
   if (compEstaCargandoFeed()) {
@@ -3452,7 +3607,10 @@ window.iniciarCompartidos = function iniciarCompartidos() {
 };
 
 function compIniciarCompartidosSiVisible() {
-  if (document.body.classList.contains("en-compartidos")) {
+  if (
+    document.body.classList.contains("en-compartidos") ||
+    compEsPredicaLinkDirecto()
+  ) {
     window.mostrarCompartidos();
   }
 }
