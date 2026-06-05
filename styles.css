@@ -849,44 +849,83 @@ html, body {
   margin: 8px 0;
 }
 
-.dev-style-color{
-  width:42px;
-  min-width:42px;
-  height:42px;
-  border-radius:999px;
-  border:1px solid #cfcfcf;
-  padding:0;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  overflow:hidden;
-  vertical-align:middle;
-}
+/* ================= CONTROLES COLOR DEVOCIONALES ================= */
 
-.dev-style-color::before{
-  content:"";
-  width:20px;
-  height:20px;
-  border-radius:999px;
-  border:1px solid rgba(0,0,0,.15);
-  background:currentColor;
-  display:block;
-}
-
+.dev-style-color,
 #dev1ColorHost,
+#dev1OutlineColorHost,
+#dev1OpColorHost,
 #dev2ColorHost,
-#dev1OpColorHost{
-  position:relative;
+#dev2OutlineColorHost{
+  width: 38px !important;
+  min-width: 38px !important;
+  max-width: 38px !important;
+
+  height: 38px !important;
+  min-height: 38px !important;
+  max-height: 38px !important;
+
+  padding: 0 !important;
+  margin: 0 !important;
+
+  border: none !important;
+  cursor: pointer;
+
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  flex: 0 0 38px !important;
+
+  background: var(--pickr-color, #000000);
+  color: #000;
+
+  box-shadow:
+    inset 0 0 0 1px rgba(0,0,0,.16),
+    0 1px 3px rgba(0,0,0,.10);
+
+  vertical-align: middle;
 }
 
+/* Color texto: cuadradito como Aa / B / I / U */
+#dev1ColorHost,
+#dev2ColorHost{
+  border-radius: 10px !important;
+}
+
+/* Contorno: redondo */
+#dev1OutlineColorHost,
+#dev2OutlineColorHost{
+  border-radius: 999px !important;
+}
+
+/* Color de wrapper/opacidad fase 1: también redondo */
+#dev1OpColorHost{
+  border-radius: 999px !important;
+}
+
+/* aro interno para distinguir el botón de contorno */
+#dev1OutlineColorHost::after,
+#dev2OutlineColorHost::after{
+  content: "";
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  border: 2px solid rgba(255,255,255,.9);
+  box-shadow:
+    0 0 0 1px rgba(0,0,0,.35),
+    inset 0 0 0 1px rgba(0,0,0,.15);
+}
+
+/* aro simple para color normal */
 #dev1ColorHost::before,
 #dev2ColorHost::before,
 #dev1OpColorHost::before{
-  content:"";
-  position:absolute;
-  inset:10px;
-  border-radius:999px;
-  border:1px solid rgba(0,0,0,.18);
+  content: "";
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(0,0,0,.18);
 }
 
 /* ================= RESALTADOR PERSONALIZABLE ================= */
