@@ -272,12 +272,14 @@ input[type="number"]{
   padding:10px 12px;
 }
 
-.dev-final button:hover,
-.dev-row button:hover,
-.dev-lista-fuentes button:hover{
-  background: var(--ui-azul-hover);
-  color:#fff;
-  border-color: var(--ui-azul-hover);
+@media (hover:hover){
+  .dev-final button:hover,
+  .dev-row button:hover,
+  .dev-lista-fuentes button:hover{
+    background: var(--ui-azul-hover);
+    color:#fff;
+    border-color: var(--ui-azul-hover);
+  }
 }
 
 .dev-final button.btn-primary{
@@ -1865,6 +1867,75 @@ body.oscuro .devIndexBarBottom{
   #modalDevFase2 .dev2-fila-fuente-tamano button:not(#dev2BtnFuentes){
     width:38px;
     min-width:38px;
+  }
+}
+
+/* ================= FILA COMPACTA TEXTO DEV FASE 1 ================= */
+
+#modalDevFase1 .dev-fila-texto-compacta{
+  width:min(460px, 94vw);
+  margin:8px auto 0;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  flex-wrap:nowrap;
+}
+
+#modalDevFase1 .dev-fila-texto-compacta #dev1BtnFuentes{
+  min-width:112px;
+  height:38px;
+  padding:0 12px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+}
+
+#modalDevFase1 .dev-fila-texto-compacta button:not(#dev1BtnFuentes),
+#modalDevFase1 .dev-fila-texto-compacta .pickr-host{
+  width:38px !important;
+  min-width:38px !important;
+  max-width:38px !important;
+
+  height:38px !important;
+  min-height:38px !important;
+  max-height:38px !important;
+
+  padding:0 !important;
+  margin:0 !important;
+
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  flex:0 0 38px !important;
+}
+
+#modalDevFase1 #dev1Under,
+#modalDevFase2 #dev2Under{
+  display:none !important;
+}
+
+@media (max-width:520px){
+  #modalDevFase1 .dev-fila-texto-compacta{
+    gap:6px;
+  }
+
+  #modalDevFase1 .dev-fila-texto-compacta #dev1BtnFuentes{
+    min-width:104px;
+  }
+
+  #modalDevFase1 .dev-fila-texto-compacta button:not(#dev1BtnFuentes),
+  #modalDevFase1 .dev-fila-texto-compacta .pickr-host{
+    width:36px !important;
+    min-width:36px !important;
+    max-width:36px !important;
+
+    height:36px !important;
+    min-height:36px !important;
+    max-height:36px !important;
+
+    flex-basis:36px !important;
   }
 }
 
