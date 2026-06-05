@@ -61,9 +61,10 @@ fondoUrl: null,
 fondoBlob: null,
 fondoSrc: "",
 fuente: "Roboto",
-  color: "#000000",
-  opColor: "#000000",
-  op: 0.35,
+color: "#000000",
+outlineColor: "",
+opColor: "#000000",
+op: 0.35,
   size: 30,
   userChanged: false,
   style: { upper:false, bold:true, italic:false, underline:false }
@@ -82,8 +83,9 @@ fuente: "Roboto",
     texturaUrl: null,
     texturaOp: 0.22,
     fuente: "Roboto",
-    color: "#000000",
-    op: 0.15,
+color: "#000000",
+outlineColor: "",
+op: 0.15,
     size: 26,
     userChanged: false,
     adornoUrl: null,
@@ -137,8 +139,9 @@ function devResetAjustesDevocionalNuevo(){
   DEV.f1.fondoBlob = null;
   DEV.f1.fondoSrc = "";
   DEV.f1.fuente = "Roboto";
-  DEV.f1.color = "#000000";
-  DEV.f1.opColor = "#000000";
+DEV.f1.color = "#000000";
+DEV.f1.outlineColor = "";
+DEV.f1.opColor = "#000000";
   DEV.f1.op = 0.35;
   DEV.f1.size = 30;
   DEV.f1.userChanged = false;
@@ -155,8 +158,9 @@ function devResetAjustesDevocionalNuevo(){
   DEV.f2.texturaUrl = null;
   DEV.f2.texturaOp = 0.22;
   DEV.f2.fuente = "Roboto";
-  DEV.f2.color = "#000000";
-  DEV.f2.op = 0.15;
+DEV.f2.color = "#000000";
+DEV.f2.outlineColor = "";
+DEV.f2.op = 0.15;
   DEV.f2.size = 26;
   DEV.f2.userChanged = false;
   DEV.f2.adornoUrl = null;
@@ -173,6 +177,7 @@ function devResetAjustesDevocionalNuevo(){
   };
 
   setVal("dev1Color", "#000000");
+   setVal("dev1OutlineColor", "");
   setVal("dev1OpColor", "#000000");
   setVal("dev1Opacidad", "0.35");
   setVal("dev1Tamano", "30");
@@ -181,6 +186,7 @@ function devResetAjustesDevocionalNuevo(){
   setVal("dev2GradColor2", "#d1eeff");
   setVal("dev2GradColor3", "#a6d0ff");
   setVal("dev2Color", "#000000");
+   setVal("dev2OutlineColor", "");
   setVal("dev2TexturaOp", "0.22");
   setVal("dev2AdornoTamano", "70");
   setVal("dev2Tamano", "26");
@@ -1838,8 +1844,9 @@ function outlineColor(hex){
   return lum > 160 ? "#000000" : "#ffffff";
 }
 
-function textShadowLegible(textHex){
-  const oc = outlineColor(textHex || "#000000");
+function textShadowLegible(textHex, outlineHex = null){
+  const oc = devHexSeguro(outlineHex) || outlineColor(textHex || "#000000");
+
   return `
     -1px 0 ${oc},
      1px 0 ${oc},
@@ -1849,8 +1856,104 @@ function textShadowLegible(textHex){
   `;
 }
 
-function textShadowLegibleFinal(textHex, scale = 1){
-  const oc = outlineColor(textHex || "#000000");
+function devHexSeguro(color = "") {
+  const c = String(color || "").trim();
+  return /^#[0-9a-f]{6}$/i.test(c) ? c : "";
+}
+
+function devSetHostColorVisual(hostId, color) {
+  const host = $(hostId);
+  const c = devHexSeguro(color) || "#ffffff";
+
+  if (!host) return;
+
+  host.style.setProperty("--pickr-color", c);
+  host.style.background = c;
+  host.style.backgroundColor = c;
+}
+
+function devAsegurarControlContorno(fase) {
+  const colorHost = $(`dev${fase}ColorHost`);
+  if (!colorHost) return null;
+
+  let input = $(`dev${fase}OutlineColor`);
+
+  if (!input) {
+    input = document.createElement("input");
+    input.type = "hidden";
+    input.id = `dev${fase}OutlineColor`;
+    input.value = "";
+    input.dataset.manual = "0";
+
+    colorHost.insertAdjacentElement("afterend", input);
+  }
+
+  let host = $(`dev${fase}OutlineColorHost`);
+
+  if (!host) {
+    host = document.createElement("button");
+    host.type = "button";
+    host.id = `dev${fase}OutlineColorHost`;
+    host.className = "pickr-host dev-outline-color-host";
+    host.dataset.target = `#dev${fase}OutlineColor`;
+    host.title = "Color del contorno";
+    host.setAttribute("aria-label", "Color del contorno");
+
+    input.insertAdjacentElement("afterend", host);
+  }
+
+  if (!input.dataset.ready) {
+    input.dataset.ready = "1";
+
+    input.addEventListener("input", () => {
+      const st = fase === 1 ? DEV.f1 : DEV.f2;
+
+      input.dataset.manual = "1";
+      st.outlineColor = devHexSeguro(input.value) || "";
+
+      devSetHostColorVisual(`dev${fase}OutlineColorHost`, st.outlineColor || outlineColor(st.color));
+      devRenderFase(fase);
+    });
+  }
+
+  if (!host.dataset.pickrReady && typeof initPickrEnHosts === "function") {
+    setTimeout(() => {
+      initPickrEnHosts(`#dev${fase}OutlineColorHost`);
+    }, 0);
+  }
+
+  return input;
+}
+
+function devGetOutlineColor(fase, colorTexto) {
+  const st = fase === 1 ? DEV.f1 : DEV.f2;
+  const input = devAsegurarControlContorno(fase);
+
+  const sugerido = outlineColor(colorTexto || "#000000");
+  let final = sugerido;
+
+  if (input) {
+    const manual = input.dataset.manual === "1";
+    const elegido = devHexSeguro(input.value || st.outlineColor);
+
+    if (manual && elegido) {
+      final = elegido;
+    } else {
+      input.value = sugerido;
+      input.dataset.manual = "0";
+      final = sugerido;
+    }
+  }
+
+  st.outlineColor = final;
+  devSetHostColorVisual(`dev${fase}ColorHost`, colorTexto || "#000000");
+  devSetHostColorVisual(`dev${fase}OutlineColorHost`, final);
+
+  return final;
+}
+
+function textShadowLegibleFinal(textHex, scale = 1, outlineHex = null){
+  const oc = devHexSeguro(outlineHex) || outlineColor(textHex || "#000000");
   const s = Math.max(0.12, Number(scale) || 1);
   const px = (n) => `${(n * s).toFixed(2)}px`;
 
@@ -2769,13 +2872,14 @@ function devRenderFase(fase){
     p.style.backgroundPosition = "center";
     p.style.backgroundColor = fondoUsable ? "transparent" : "#ffffff";
 
-    t.style.fontFamily = st.fuente;
-    t.style.color = st.color;
-     
-t.style.textShadow = textShadowLegibleFinal(st.color, sc);
-t.style.webkitTextStroke = `${(0.6 * sc).toFixed(2)}px ` + outlineColor(st.color);
-t.style.paintOrder = "stroke fill";
+t.style.fontFamily = st.fuente;
+t.style.color = st.color;
 
+const outline1 = devGetOutlineColor(1, st.color);
+
+t.style.textShadow = textShadowLegibleFinal(st.color, sc, outline1);
+t.style.webkitTextStroke = `${(0.6 * sc).toFixed(2)}px ${outline1}`;
+t.style.paintOrder = "stroke fill";
 applyFase1WrapperLook(w, st, sc);
      
     applyTextStylesToOne(t, st);
@@ -2840,11 +2944,14 @@ if (st.texturaUrl) {
   w.style.zIndex = "1";
   w.style.backgroundColor = "transparent";
 
-  t.style.fontFamily = st.fuente;
-  t.style.color = st.color;
-  t.style.textShadow = textShadowLegible(st.color);
-  t.style.webkitTextStroke = "0px";
-  t.style.paintOrder = "normal";
+t.style.fontFamily = st.fuente;
+t.style.color = st.color;
+
+const outline2 = devGetOutlineColor(2, st.color);
+
+t.style.textShadow = textShadowLegible(st.color, outline2);
+t.style.webkitTextStroke = `0.35px ${outline2}`;
+t.style.paintOrder = "stroke fill";
 
   applyTextStylesToOne(t, st);
   devSyncStyleButtons(2);
