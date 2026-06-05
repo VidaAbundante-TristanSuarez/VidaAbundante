@@ -10,8 +10,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const AUDIO_WEBAPP_URL = "https://subir-imagen-r2.vidaabundante-tristansuarez.workers.dev";
   const AUDIO_R2_UPLOAD_URL = "https://subir-imagen-r2.vidaabundante-tristansuarez.workers.dev";
 
- const AUDIO_VOZ_ADMIN = "es-US-Wavenet-B";
-const AUDIO_VOZ_COLAB = "es-US-Standard-B";
+// ✅ Biblia Crear Imagen: SIEMPRE Standard seco, sin arpa y sin Firebase Function
+const AUDIO_VOZ_BIBLIA = "es-US-Standard-B";
+
+// ✅ Devocionales: Wavenet + arpa, pasando por Firebase Function
+const AUDIO_VOZ_DEVOCIONAL = "es-US-Wavenet-B";
+
 const AUDIO_LIMITE_COLAB_DIA = 3;
 
 window.__audioCacheLocal = window.__audioCacheLocal || {
@@ -220,15 +224,57 @@ function audioPrepararTextoParaTTS(txt = "") {
   return out;
 }
 
-  function audio_getTextoDesdePreview() {
-    const el = document.getElementById("previewTexto");
-    return (el ? (el.innerText || "") : "").trim();
+function audioContextoActual() {
+  const modalImagen = document.getElementById("modalPersonalizar");
+
+  // ✅ Devocionales usa el mismo modal, pero marcado como modo-devocional
+  if (
+    window.__AUDIO_ORIGEN === "devocional" ||
+    window.__DEVOCIONAL_AUDIO_ACTIVO === true ||
+    modalImagen?.classList.contains("modo-devocional")
+  ) {
+    return "devocional";
   }
 
-  function audioTextoBaseActual() {
-  return audio_getTextoDesdePreview().trim();
+  // ✅ Por defecto: Biblia / Crear Imagen
+  return "biblia";
 }
 
+function audio_getTextoDesdePreview() {
+  const el = document.getElementById("previewTexto");
+  return (el ? (el.innerText || el.textContent || "") : "").trim();
+}
+
+function audioTextoBaseActual() {
+  const contexto = audioContextoActual();
+  const ta = document.getElementById("textoAudio");
+
+  // ✅ DEVOCIONALES:
+  // Si devocionales ya armó el texto y lo puso en el textarea,
+  // NO lo pisamos con previewTexto.
+  if (contexto === "devocional") {
+    const textoYaArmado = (ta?.value || "").trim();
+
+    if (textoYaArmado) return textoYaArmado;
+
+    if (typeof window.armarTextoAudioDevocional === "function") {
+      const armado = String(window.armarTextoAudioDevocional() || "").trim();
+      if (armado) return armado;
+    }
+
+    if (typeof window.devArmarTextoAudio === "function") {
+      const armado = String(window.devArmarTextoAudio() || "").trim();
+      if (armado) return armado;
+    }
+
+    return "";
+  }
+
+  // ✅ BIBLIA:
+  // Acá sí tomamos el texto visible de la imagen.
+  return audio_getTextoDesdePreview().trim();
+}
+  
 function audioLimpiarEstadoViejoSiCambioTexto(textoNuevo = "") {
   const nuevo = String(textoNuevo || "").trim();
   const pendienteTexto = String(window.__pendingAudio?.texto || "").trim();
@@ -267,6 +313,7 @@ window.abrirModalAudio = () => {
 
   if (!modal || !ta) return;
 
+  const contexto = audioContextoActual();
   const textoActual = audioTextoBaseActual();
 
   audioLimpiarEstadoViejoSiCambioTexto(textoActual);
@@ -279,12 +326,22 @@ window.abrirModalAudio = () => {
     } catch (_) {}
   }
 
-  // ✅ Siempre sincronizamos el textarea con el texto actual de la imagen.
-  // Esto evita que quede pegado el audio/texto anterior hasta refrescar.
+  // ✅ Biblia: sincroniza desde previewTexto.
+  // ✅ Devocionales: conserva el texto armado que ya venía en textarea.
   __audioTextoOriginal = textoActual || "";
-  ta.value = __audioTextoOriginal;
 
-  if (estado) estado.textContent = "Preparando audio...";
+  if (textoActual) {
+    ta.value = textoActual;
+  } else if (contexto === "biblia") {
+    ta.value = "";
+  }
+
+  if (estado) {
+    estado.textContent = contexto === "devocional"
+      ? "Preparando audio devocional..."
+      : "Preparando audio de Biblia...";
+  }
+
   audioActualizarEstadoInicial();
 
   modal.style.display = "flex";
@@ -311,6 +368,7 @@ window.escucharPreviaAudio = async () => {
   const ta = document.getElementById("textoAudio");
   const estado = document.getElementById("audioEstado");
   const audio = document.getElementById("audioPreview");
+
   if (!ta || !audio) return;
 
   if (!audioPuedeGenerar()) {
@@ -325,19 +383,31 @@ window.escucharPreviaAudio = async () => {
     return;
   }
 
-const textoLimpio = audioPrepararTextoParaTTS(texto);
+  const contexto = audioContextoActual();
 
-  const esColabSeco = !audioEsAdmin() && audioEsColaborador();
+  // ✅ Biblia: Standard seco, sin arpa, sin Function, aunque sea admin.
+  const esBibliaSeco = contexto === "biblia";
 
-  const voiceName = esColabSeco
-    ? AUDIO_VOZ_COLAB
-    : (window.__AUDIO_VOICE_NAME || AUDIO_VOZ_ADMIN);
+  // ✅ Devocionales: Wavenet + arpa por Function.
+  const esDevocionalArpa = contexto === "devocional";
+
+  const textoLimpio = esDevocionalArpa
+    ? audioPrepararTextoParaTTS(texto)
+    : texto
+        .replace(/[•▪●■□◆◇▶►◼◻]/g, "")
+        .replace(/\s{2,}/g, " ")
+        .trim();
+
+  const voiceName = esBibliaSeco
+    ? AUDIO_VOZ_BIBLIA
+    : (window.__AUDIO_VOICE_NAME || AUDIO_VOZ_DEVOCIONAL);
 
   const cache = window.__audioCacheLocal || {};
 
   const puedeReutilizar =
     cache.texto === textoLimpio &&
     cache.voiceName === voiceName &&
+    cache.contexto === contexto &&
     cache.audioBase64;
 
   try {
@@ -361,29 +431,30 @@ const textoLimpio = audioPrepararTextoParaTTS(texto);
       return;
     }
 
-let restantesAntes = null;
+    let restantesAntes = null;
 
-if (esColabSeco) {
-  restantesAntes = await window.vaLeerRestantesUsoColaborador?.(
-    "audioBiblia",
-    AUDIO_LIMITE_COLAB_DIA
-  );
+    // ✅ Límite diario SOLO para colaboradores, no para admin.
+    if (!audioEsAdmin() && audioEsColaborador()) {
+      restantesAntes = await window.vaLeerRestantesUsoColaborador?.(
+        esBibliaSeco ? "audioBiblia" : "audioDevocional",
+        AUDIO_LIMITE_COLAB_DIA
+      );
 
-  if (Number(restantesAntes || 0) <= 0) {
-    if (estado) {
-      estado.textContent = `⚠️ Llegaste al límite diario de ${AUDIO_LIMITE_COLAB_DIA} audios. Podés volver a usarlo mañana.`;
+      if (Number(restantesAntes || 0) <= 0) {
+        if (estado) {
+          estado.textContent = `⚠️ Llegaste al límite diario de ${AUDIO_LIMITE_COLAB_DIA} audios. Podés volver a usarlo mañana.`;
+        }
+        return;
+      }
     }
-    return;
-  }
 
-  if (estado) {
-    estado.textContent = `🎧 Generando voz seca... Te quedan ${restantesAntes} audios hoy.`;
-  }
-} else if (estado) {
-  estado.textContent = "🎧 Generando previa real con arpa...";
-}
+    if (estado) {
+      estado.textContent = esBibliaSeco
+        ? "🎧 Generando voz Standard sin arpa..."
+        : "🎧 Generando previa devocional con arpa...";
+    }
 
-    const body = esColabSeco
+    const body = esBibliaSeco
       ? {
           action: "ttsSeco",
           texto: textoLimpio,
@@ -414,27 +485,34 @@ if (esColabSeco) {
 
     window.__audioBase64 = data.audioBase64;
 
-    if (esColabSeco) {
-  try {
-    const consumo = await window.vaConsumirUsoColaborador?.(
-      "audioBiblia",
-      AUDIO_LIMITE_COLAB_DIA
-    );
+    // ✅ Registrar uso solo después de que Google devolvió audio real.
+    if (!audioEsAdmin() && audioEsColaborador()) {
+      try {
+        const consumo = await window.vaConsumirUsoColaborador?.(
+          esBibliaSeco ? "audioBiblia" : "audioDevocional",
+          AUDIO_LIMITE_COLAB_DIA,
+          {
+            caracteres: textoLimpio.length,
+            contexto,
+            voiceName
+          }
+        );
 
-    if (estado) {
-      estado.textContent = `✅ Voz seca generada. Te quedan ${consumo?.restantes ?? 0} audios hoy.`;
+        if (estado) {
+          estado.textContent = `✅ Audio generado. Te quedan ${consumo?.restantes ?? 0} audios hoy.`;
+        }
+      } catch (limiteErr) {
+        if (estado) {
+          estado.textContent = "⚠️ " + (limiteErr?.message || "No pude registrar el uso diario.");
+        }
+        return;
+      }
     }
-  } catch (limiteErr) {
-    if (estado) {
-      estado.textContent = "⚠️ " + (limiteErr?.message || "No pude registrar el uso diario.");
-    }
-    return;
-  }
-}
 
     window.__audioCacheLocal = {
       texto: textoLimpio,
       voiceName,
+      contexto,
       audioBase64: data.audioBase64
     };
 
@@ -447,9 +525,9 @@ if (esColabSeco) {
     await audio.play();
 
     if (estado) {
-      estado.textContent = esColabSeco
-        ? "✅ Voz seca reproduciendo."
-        : "✅ Previa reproduciendo.";
+      estado.textContent = esBibliaSeco
+        ? "✅ Voz Standard reproduciendo."
+        : "✅ Previa devocional reproduciendo.";
     }
 
   } catch (e) {
