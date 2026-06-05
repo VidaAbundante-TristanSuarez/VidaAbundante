@@ -159,7 +159,7 @@ window.__FB_API = { ref, set, remove, onValue, get, push, runTransaction };
 function forzarSeccionActiva(seccion) {
   const todas = ["biblia", "iglesia", "panel", "compartidos"];
 
-  if (!todas.includes(seccion)) seccion = "iglesia";
+  if (!todas.includes(seccion)) seccion = "compartidos";
 
   window.__SECCION_ACTIVA = seccion;
 
@@ -1698,7 +1698,25 @@ const loginModal = document.getElementById("loginModal");
 
 // ✅ Muestra rápido la última pantalla guardada,
 // mientras Firebase/Biblia/R2 terminan de cargar de verdad.
-vaRestaurarSnapshotVisualRapido();
+// Si en teléfono no usamos caché visual, igual fijamos UNA pantalla inicial
+// para que no se vean varias secciones ni parezca que cambia solo.
+const vaSnapshotRapidoOk = vaRestaurarSnapshotVisualRapido();
+
+if (!vaSnapshotRapidoOk) {
+  let seccionTemprana = "";
+
+  if (vaEsLinkCompartidosDirecto()) {
+    seccionTemprana = "compartidos";
+  } else if (!vaHayLinkDirectoInterno()) {
+    seccionTemprana = vaEntradaVisitante()
+      ? vaSeccionInicialVisitante()
+      : vaSeccionInicialLogueado();
+  }
+
+  if (vaSeccionValidaApp(seccionTemprana)) {
+    forzarSeccionActiva(seccionTemprana);
+  }
+}
 
 // ================= 🔎 HELPERS FILTROS BIBLIA =================
 let filtroBibliaBackup = null;
