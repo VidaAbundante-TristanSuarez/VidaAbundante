@@ -1978,9 +1978,12 @@ function textShadowLegibleFinal(textHex, scale = 1, outlineHex = null){
 
 function applyTextStylesToOne(el, st){
   el.style.textTransform  = st.style.upper ? "uppercase" : "none";
-  el.style.fontWeight     = st.style.bold ? "900" : "500"; /* ✅ más fuerte */
+  el.style.fontWeight     = st.style.bold ? "900" : "500";
   el.style.fontStyle      = st.style.italic ? "italic" : "normal";
-  el.style.textDecoration = st.style.underline ? "underline" : "none";
+
+  // ✅ Subrayado eliminado: en imagen no estaba funcionando bien
+  // y nos libera espacio en los controles.
+  el.style.textDecoration = "none";
 }
 
 function hexToRgb(hex){
@@ -2826,15 +2829,12 @@ function dev2SyncPickrHost(hostId, hex){
 
   if (!host) return;
 
+  // ✅ Solo pintamos visualmente el botón.
+  // NO usamos host._pickr.setColor() porque dispara eventos internos
+  // y puede generar loop infinito con devRenderFase/dev2ActualizarPanelUI.
   host.style.setProperty("--pickr-color", color);
   host.style.background = color;
   host.style.backgroundColor = color;
-
-  try {
-    if (host._pickr && typeof host._pickr.setColor === "function") {
-      host._pickr.setColor(color);
-    }
-  } catch(e) {}
 }
 
 function dev2InputColorFondo(indice){
@@ -3014,6 +3014,56 @@ function dev2InterceptarHostsColorFondo(){
   });
 }
 
+function devOcultarSubrayadoDev(){
+  [1, 2].forEach(fase => {
+    const btn = $(`dev${fase}Under`);
+    if (btn) {
+      btn.style.display = "none";
+      btn.setAttribute("aria-hidden", "true");
+    }
+
+    const st = fase === 1 ? DEV.f1 : DEV.f2;
+    if (st?.style) st.style.underline = false;
+  });
+}
+
+function devCompactarFilaTextoFase1(){
+  const modal = $("modalDevFase1");
+  if (!modal) return;
+
+  const btnFuentes = $("dev1BtnFuentes");
+  const btnAa = $("dev1Upper");
+  const btnB = $("dev1Bold");
+  const btnI = $("dev1Italic");
+  const colorHost = $("dev1ColorHost");
+  const outlineHost = $("dev1OutlineColorHost");
+
+  if (!btnFuentes || !btnAa || !btnB || !btnI || !colorHost || !outlineHost) return;
+
+  let fila = $("dev1FilaTextoCompacta");
+
+  if (!fila) {
+    fila = document.createElement("div");
+    fila.id = "dev1FilaTextoCompacta";
+    fila.className = "dev-fila-texto-compacta";
+
+    const ref =
+      btnFuentes.closest(".dev-row") ||
+      btnFuentes.parentElement;
+
+    ref?.insertAdjacentElement("beforebegin", fila);
+  }
+
+  fila.appendChild(btnFuentes);
+  fila.appendChild(btnAa);
+  fila.appendChild(btnB);
+  fila.appendChild(btnI);
+  fila.appendChild(colorHost);
+  fila.appendChild(outlineHost);
+
+  devOcultarSubrayadoDev();
+}
+
 function dev2CompactarFilaTexto(){
   const modal = $("modalDevFase2");
   if (!modal) return;
@@ -3050,6 +3100,7 @@ function dev2CompactarFilaTexto(){
   fila.appendChild(btnMenos);
   fila.appendChild(inputTam);
   fila.appendChild(btnMas);
+   devOcultarSubrayadoDev();
 }
 
 function dev2ActualizarPanelUI(){
@@ -3195,10 +3246,11 @@ t.style.textShadow = textShadowLegibleFinal(st.color, sc, outline1);
 t.style.webkitTextStroke = `${(0.6 * sc).toFixed(2)}px ${outline1}`;
 t.style.paintOrder = "stroke fill";
 applyFase1WrapperLook(w, st, sc);
-     
-    applyTextStylesToOne(t, st);
-    devSyncStyleButtons(1);
-    return;
+
+applyTextStylesToOne(t, st);
+devSyncStyleButtons(1);
+devCompactarFilaTextoFase1();
+return;
   }
 
 if (fase === 2) {
@@ -3224,9 +3276,10 @@ if (fase === 2) {
   // base del preview
   // =========================
   p.style.position = "relative";
-  dev2AplicarFondoBase(p, st);
-  p.style.backgroundBlendMode = "normal";
-  dev2ActualizarPanelUI();
+dev2AplicarFondoBase(p, st);
+p.style.backgroundBlendMode = "normal";
+// ✅ No llamar dev2ActualizarPanelUI() desde el render.
+// El panel se actualiza cuando cambia una opción o al entrar a fase 2.
 
   // =========================
   // textura en capa separada
@@ -3908,6 +3961,7 @@ window.devCambiarTamano = (fase, delta) => {
 };
 
 window.devToggleStyle = (fase, key) => {
+     if (key === "underline") return;
   const st = (fase===1) ? DEV.f1 : DEV.f2;
   st.style[key] = !st.style[key];
 
