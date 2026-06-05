@@ -723,9 +723,11 @@ function vaEsLinkCompartidosDirecto() {
   try {
     const params = new URLSearchParams(location.search);
 
+    // ✅ Compartidos común, sin abrir publicación directa.
     return (
       params.get("ver") === "compartidos" &&
-      !!params.get("edicionRef")
+      !params.get("edicionRef") &&
+      !params.get("predicaRef")
     );
   } catch {
     return false;
@@ -735,10 +737,15 @@ function vaEsLinkCompartidosDirecto() {
 function vaHayLinkDirectoInterno() {
   try {
     const params = new URLSearchParams(location.search);
+    const path = String(location.pathname || "").toLowerCase();
 
-    // Links directos que NO debe pisar el arranque normal.
+    // ✅ Links directos que NO deben mostrar paseo previo.
     if (params.get("edicionRef")) return true;
+    if (params.get("predicaRef")) return true;
+
     if (params.get("ver") === "edicion") return true;
+    if (path.includes("/ediciones/") && params.get("ref")) return true;
+    if (path.includes("/predica/") && params.get("ref")) return true;
 
     return false;
   } catch {
