@@ -40,18 +40,26 @@ async function audioActualizarEstadoInicial() {
   const estado = document.getElementById("audioEstado");
   if (!estado) return;
 
+  const contexto = audioContextoActual();
+  const tipoUso = contexto === "devocional" ? "audioDevocional" : "audioBiblia";
+
   if (audioEsAdmin()) {
-    estado.textContent = "Listo para previsualizar.";
+    estado.textContent = contexto === "devocional"
+      ? "Listo para previsualizar audio devocional."
+      : "Listo para previsualizar audio de Biblia.";
     return;
   }
 
   if (audioEsColaborador()) {
     const restantes = await window.vaLeerRestantesUsoColaborador?.(
-      "audioBiblia",
+      tipoUso,
       AUDIO_LIMITE_COLAB_DIA
     );
 
-    estado.textContent = `Listo para previsualizar. Te quedan ${restantes ?? 0} audios reales hoy.`;
+    estado.textContent = contexto === "devocional"
+      ? `Listo para previsualizar. Te quedan ${restantes ?? 0} audios devocionales hoy.`
+      : `Listo para previsualizar. Te quedan ${restantes ?? 0} audios de Biblia hoy.`;
+
     return;
   }
 
@@ -276,12 +284,32 @@ function audioTextoBaseActual() {
 }
   
 function audioLimpiarEstadoViejoSiCambioTexto(textoNuevo = "") {
-  const nuevo = String(textoNuevo || "").trim();
-  const pendienteTexto = String(window.__pendingAudio?.texto || "").trim();
-  const cacheTexto = String(window.__audioCacheLocal?.texto || "").trim();
+  const nuevoOriginal = String(textoNuevo || "").trim();
+  const nuevoTTS = audioPrepararTextoParaTTS(nuevoOriginal);
 
-  const coincidePendiente = nuevo && pendienteTexto && nuevo === pendienteTexto;
-  const coincideCache = nuevo && cacheTexto && nuevo === cacheTexto;
+  const pendienteTexto = String(window.__pendingAudio?.texto || "").trim();
+  const pendienteTextoOriginal = String(window.__pendingAudio?.textoOriginal || "").trim();
+
+  const cacheTexto = String(window.__audioCacheLocal?.texto || "").trim();
+  const cacheTextoOriginal = String(window.__audioCacheLocal?.textoOriginal || "").trim();
+
+  const coincidePendiente =
+    nuevoOriginal &&
+    (
+      nuevoOriginal === pendienteTexto ||
+      nuevoTTS === pendienteTexto ||
+      nuevoOriginal === pendienteTextoOriginal ||
+      nuevoTTS === pendienteTextoOriginal
+    );
+
+  const coincideCache =
+    nuevoOriginal &&
+    (
+      nuevoOriginal === cacheTexto ||
+      nuevoTTS === cacheTexto ||
+      nuevoOriginal === cacheTextoOriginal ||
+      nuevoTTS === cacheTextoOriginal
+    );
 
   if (coincidePendiente || coincideCache) return;
 
@@ -290,7 +318,9 @@ function audioLimpiarEstadoViejoSiCambioTexto(textoNuevo = "") {
 
   window.__audioCacheLocal = {
     texto: "",
+    textoOriginal: "",
     voiceName: "",
+    contexto: "",
     audioBase64: ""
   };
 
@@ -391,12 +421,11 @@ window.escucharPreviaAudio = async () => {
   // ✅ Devocionales: Wavenet + arpa por Function.
   const esDevocionalArpa = contexto === "devocional";
 
-  const textoLimpio = esDevocionalArpa
-    ? audioPrepararTextoParaTTS(texto)
-    : texto
-        .replace(/[•▪●■□◆◇▶►◼◻]/g, "")
-        .replace(/\s{2,}/g, " ")
-        .trim();
+// ✅ SIEMPRE normalizamos referencias bíblicas antes de mandar a Google TTS.
+// Esto NO activa arpa en Biblia.
+// Biblia sigue usando action: "ttsSeco".
+// Devocionales sigue usando action: "tts".
+const textoLimpio = audioPrepararTextoParaTTS(texto);
 
   const voiceName = esBibliaSeco
     ? AUDIO_VOZ_BIBLIA
@@ -509,12 +538,13 @@ window.escucharPreviaAudio = async () => {
       }
     }
 
-    window.__audioCacheLocal = {
-      texto: textoLimpio,
-      voiceName,
-      contexto,
-      audioBase64: data.audioBase64
-    };
+window.__audioCacheLocal = {
+  texto: textoLimpio,
+  textoOriginal: texto,
+  voiceName,
+  contexto,
+  audioBase64: data.audioBase64
+};
 
     const bytes = Uint8Array.from(atob(data.audioBase64), c => c.charCodeAt(0));
     const blob = new Blob([bytes], { type: "audio/mpeg" });
@@ -554,12 +584,11 @@ window.escucharPreviaAudio = async () => {
       return;
     }
 
-const textoFinalAudio = audioPrepararTextoParaTTS
-  ? audioPrepararTextoParaTTS(texto)
-  : texto;
+const textoFinalAudio = audioPrepararTextoParaTTS(texto);
 
 window.__pendingAudio = {
   texto: textoFinalAudio,
+  textoOriginal: texto,
   audioBase64: window.__audioBase64,
   ts: Date.now()
 };
