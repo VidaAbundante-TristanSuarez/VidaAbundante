@@ -74,11 +74,16 @@ op: 0.35,
   f2: {
     // ✅ Fondo diseñado fase 2: mantiene fondo plano y suma degradado
     baseTipo: "plano",          // "plano" | "gradiente"
-    fondoColor: "#ffffff",      // color principal / primer color
-    gradienteColor2: "#d1eeff",
-    gradienteColor3: "#a6d0ff",
-    usarColor3: false,
-    gradienteForma: "vertical", // "vertical" | "horizontal" | "diagonal" | "radial"
+  fondoColor: "#ffffff",
+gradienteColor2: "#d1eeff",
+gradienteColor3: "#a6d0ff",
+
+// ✅ Fase 2: color 1 siempre visible.
+// Color 2 y 3 se agregan con +
+usarColor2: false,
+usarColor3: false,
+
+gradienteForma: "vertical",
     tabActiva: "fondo",         // "fondo" | "textura" | "adorno"
     texturaUrl: null,
     texturaOp: 0.22,
@@ -150,10 +155,11 @@ DEV.f1.opColor = "#000000";
   // ✅ limpiar fase 2 también
   DEV.f2.baseTipo = "plano";
   DEV.f2.fondoColor = "#ffffff";
-  DEV.f2.gradienteColor2 = "#d1eeff";
-  DEV.f2.gradienteColor3 = "#a6d0ff";
-  DEV.f2.usarColor3 = false;
-  DEV.f2.gradienteForma = "vertical";
+DEV.f2.gradienteColor2 = "#d1eeff";
+DEV.f2.gradienteColor3 = "#a6d0ff";
+DEV.f2.usarColor2 = false;
+DEV.f2.usarColor3 = false;
+DEV.f2.gradienteForma = "vertical";
   DEV.f2.tabActiva = "fondo";
   DEV.f2.texturaUrl = null;
   DEV.f2.texturaOp = 0.22;
@@ -2065,13 +2071,9 @@ function devEnsureModalCuentagotasF2(){
       </div>
 
       <div class="dev-cuentagotas-actions">
-        <button type="button" onclick="devAplicarCuentagotasF2('texto')">
-          Usar en texto
-        </button>
-
-        <button type="button" onclick="devAplicarCuentagotasF2('fondo')">
-          Usar en fondo
-        </button>
+   <button type="button" onclick="devAplicarCuentagotasF2('fondoActual')">
+  Usar este color
+</button>
 
         <button type="button" onclick="cerrarModal('modalDevCuentagotasF2')">
           Cancelar
@@ -2105,7 +2107,8 @@ function devCargarImagenCuentagotasF2(src){
   });
 }
 
-window.devAbrirCuentagotasF2 = async function(){
+window.devAbrirCuentagotasF2 = async function(indiceFondo = 1){
+     DEV_CUENTAGOTAS_F2.destinoFondo = Number(indiceFondo || 1);
   const src = DEV.f1?.fondoBlob || DEV.f1?.fondoUrl || "";
 
   if (!src) {
@@ -2237,6 +2240,14 @@ window.devAbrirCuentagotasF2 = async function(){
 window.devAplicarCuentagotasF2 = function(tipo){
   const hex = DEV_CUENTAGOTAS_F2.color || "#000000";
 
+  if (tipo === "fondoActual") {
+    const indice = Number(DEV_CUENTAGOTAS_F2.destinoFondo || 1);
+    dev2SetColorFondo(indice, hex);
+    cerrarModal("modalDevCuentagotasF2");
+    return;
+  }
+
+  // Compatibilidad por si quedó algún botón viejo en caché
   if (tipo === "texto") {
     DEV.f2.color = hex;
     DEV.f2.userChanged = true;
@@ -2251,15 +2262,7 @@ window.devAplicarCuentagotasF2 = function(tipo){
   }
 
   if (tipo === "fondo") {
-    DEV.f2.fondoColor = hex;
-
-    const inp = $("dev2Fondo");
-    if (inp) {
-      inp.value = hex;
-      inp.dispatchEvent(new Event("input", { bubbles:true }));
-    } else {
-      devRenderFase(2);
-    }
+    dev2SetColorFondo(1, hex);
   }
 
   cerrarModal("modalDevCuentagotasF2");
@@ -2774,15 +2777,27 @@ function dev2GradienteCSS(st = DEV.f2){
   const c1 = st.fondoColor || "#ffffff";
   const c2 = st.gradienteColor2 || "#d1eeff";
   const c3 = st.gradienteColor3 || "#a6d0ff";
-  const colores = st.usarColor3 ? `${c1}, ${c2}, ${c3}` : `${c1}, ${c2}`;
+
+  const colores = st.usarColor3
+    ? `${c1}, ${c2}, ${c3}`
+    : `${c1}, ${c2}`;
 
   switch (st.gradienteForma) {
     case "horizontal":
       return `linear-gradient(90deg, ${colores})`;
+
     case "diagonal":
       return `linear-gradient(135deg, ${colores})`;
+
     case "radial":
       return `radial-gradient(circle, ${colores})`;
+
+    // ✅ nuevo: efecto tipo rombo / cristal
+    case "rombo":
+      return st.usarColor3
+        ? `conic-gradient(from 45deg at 50% 50%, ${c1}, ${c2}, ${c3}, ${c2}, ${c1})`
+        : `conic-gradient(from 45deg at 50% 50%, ${c1}, ${c2}, ${c1}, ${c2}, ${c1})`;
+
     case "vertical":
     default:
       return `linear-gradient(180deg, ${colores})`;
@@ -2792,13 +2807,249 @@ function dev2GradienteCSS(st = DEV.f2){
 function dev2AplicarFondoBase(el, st = DEV.f2){
   if (!el) return;
 
+  const tieneMezcla = !!st.usarColor2;
+
   el.style.backgroundColor = st.fondoColor || "#ffffff";
-  el.style.backgroundImage = st.baseTipo === "gradiente"
+
+  el.style.backgroundImage = tieneMezcla
     ? dev2GradienteCSS(st)
     : "none";
+
   el.style.backgroundSize = "cover";
   el.style.backgroundPosition = "center";
   el.style.backgroundRepeat = "no-repeat";
+}
+
+function dev2SyncPickrHost(hostId, hex){
+  const host = $(hostId);
+  const color = devHexSeguro(hex) || "#ffffff";
+
+  if (!host) return;
+
+  host.style.setProperty("--pickr-color", color);
+  host.style.background = color;
+  host.style.backgroundColor = color;
+
+  try {
+    if (host._pickr && typeof host._pickr.setColor === "function") {
+      host._pickr.setColor(color);
+    }
+  } catch(e) {}
+}
+
+function dev2InputColorFondo(indice){
+  if (indice === 2) return $("dev2GradColor2");
+  if (indice === 3) return $("dev2GradColor3");
+  return $("dev2Fondo");
+}
+
+function dev2HostColorFondo(indice){
+  if (indice === 2) return $("dev2GradColor2Host");
+  if (indice === 3) return $("dev2GradColor3Host");
+  return $("dev2FondoHost");
+}
+
+function dev2SetColorFondo(indice, hex){
+  const color = devHexSeguro(hex) || "#ffffff";
+
+  if (indice === 2) {
+    DEV.f2.usarColor2 = true;
+    DEV.f2.gradienteColor2 = color;
+  } else if (indice === 3) {
+    DEV.f2.usarColor2 = true;
+    DEV.f2.usarColor3 = true;
+    DEV.f2.gradienteColor3 = color;
+  } else {
+    DEV.f2.fondoColor = color;
+  }
+
+  DEV.f2.userChanged = true;
+
+  const inp = dev2InputColorFondo(indice);
+  if (inp) inp.value = color;
+
+  const host =
+    indice === 2 ? "dev2GradColor2Host" :
+    indice === 3 ? "dev2GradColor3Host" :
+    "dev2FondoHost";
+
+  dev2SyncPickrHost(host, color);
+
+  dev2ActualizarPanelUI();
+  devRenderFase(2);
+}
+
+function dev2AsegurarBotonColor2(){
+  if ($("dev2BtnColor2")) return;
+
+  const host1 = $("dev2FondoHost");
+  if (!host1) return;
+
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.id = "dev2BtnColor2";
+  btn.className = "dev2-mas-color";
+  btn.title = "Agregar segundo color";
+  btn.innerHTML = `<i class="fa-solid fa-plus"></i>`;
+
+  btn.onclick = () => {
+    DEV.f2.usarColor2 = true;
+    DEV.f2.userChanged = true;
+    dev2ActualizarPanelUI();
+    devRenderFase(2);
+  };
+
+  host1.insertAdjacentElement("afterend", btn);
+}
+
+function dev2AsegurarOpcionRombo(){
+  const sel = $("dev2GradForma");
+  if (!sel) return;
+
+  const existe = Array.from(sel.options || []).some(o => o.value === "rombo");
+  if (existe) return;
+
+  const opt = document.createElement("option");
+  opt.value = "rombo";
+  opt.textContent = "Rombo";
+  sel.appendChild(opt);
+}
+
+function dev2AsegurarModalColorFondo(){
+  if ($("modalDevColorFondoOpciones")) return;
+
+  const div = document.createElement("div");
+  div.id = "modalDevColorFondoOpciones";
+  div.className = "modal-overlay";
+  div.setAttribute("aria-hidden", "true");
+
+  div.innerHTML = `
+    <div class="modal-contenido modal-dev-color-opciones" onclick="event.stopPropagation()">
+      <button
+        type="button"
+        class="cerrar-modal"
+        onclick="cerrarModal('modalDevColorFondoOpciones')"
+      >✕</button>
+
+      <h3>Color de fondo</h3>
+
+      <p>Elegí cómo querés tomar este color.</p>
+
+      <div class="dev-color-opciones-actions">
+        <button type="button" id="devColorOpcionImagen">
+          <i class="fa-solid fa-eye-dropper"></i>
+          Tomar color de imagen
+        </button>
+
+        <button type="button" id="devColorOpcionPaleta">
+          <i class="fa-solid fa-palette"></i>
+          Abrir paleta
+        </button>
+      </div>
+    </div>
+  `;
+
+  div.addEventListener("click", e => {
+    if (e.target === div) cerrarModal("modalDevColorFondoOpciones");
+  });
+
+  document.body.appendChild(div);
+}
+
+window.dev2AbrirOpcionesColorFondo = function(indice = 1){
+  indice = Number(indice || 1);
+
+  dev2AsegurarModalColorFondo();
+
+  const modal = $("modalDevColorFondoOpciones");
+  const btnImg = $("devColorOpcionImagen");
+  const btnPal = $("devColorOpcionPaleta");
+
+  if (!modal || !btnImg || !btnPal) return;
+
+  btnImg.onclick = () => {
+    cerrarModal("modalDevColorFondoOpciones");
+
+    DEV_CUENTAGOTAS_F2.destinoFondo = indice;
+    window.devAbrirCuentagotasF2(indice);
+  };
+
+  btnPal.onclick = () => {
+    cerrarModal("modalDevColorFondoOpciones");
+
+    const host = dev2HostColorFondo(indice);
+
+    try {
+      if (host?._pickr && typeof host._pickr.show === "function") {
+        host._pickr.show();
+      } else {
+        dev2InputColorFondo(indice)?.click();
+      }
+    } catch(e) {
+      dev2InputColorFondo(indice)?.click();
+    }
+  };
+
+  abrirModal("modalDevColorFondoOpciones");
+};
+
+function dev2InterceptarHostsColorFondo(){
+  [
+    ["dev2FondoHost", 1],
+    ["dev2GradColor2Host", 2],
+    ["dev2GradColor3Host", 3]
+  ].forEach(([id, indice]) => {
+    const host = $(id);
+    if (!host || host.dataset.devColorChoiceReady === "1") return;
+
+    host.dataset.devColorChoiceReady = "1";
+
+    host.addEventListener("click", e => {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+
+      window.dev2AbrirOpcionesColorFondo(indice);
+    }, true);
+  });
+}
+
+function dev2CompactarFilaTexto(){
+  const modal = $("modalDevFase2");
+  if (!modal) return;
+
+  const btnFuentes = $("dev2BtnFuentes");
+  const inputTam = $("dev2Tamano");
+
+  if (!btnFuentes || !inputTam) return;
+
+  const botones = Array.from(modal.querySelectorAll("button"));
+
+  const btnMenos = botones.find(b =>
+    /devCambiarTamano\s*\(\s*2\s*,\s*-1\s*\)/.test(b.getAttribute("onclick") || "")
+  );
+
+  const btnMas = botones.find(b =>
+    /devCambiarTamano\s*\(\s*2\s*,\s*1\s*\)/.test(b.getAttribute("onclick") || "")
+  );
+
+  if (!btnMenos || !btnMas) return;
+
+  let fila = $("dev2FilaFuenteTamano");
+
+  if (!fila) {
+    fila = document.createElement("div");
+    fila.id = "dev2FilaFuenteTamano";
+    fila.className = "dev2-fila-fuente-tamano";
+
+    const ref = btnFuentes.closest(".dev-row") || btnFuentes.parentElement;
+    ref?.insertAdjacentElement("beforebegin", fila);
+  }
+
+  fila.appendChild(btnFuentes);
+  fila.appendChild(btnMenos);
+  fila.appendChild(inputTam);
+  fila.appendChild(btnMas);
 }
 
 function dev2ActualizarPanelUI(){
@@ -2806,6 +3057,11 @@ function dev2ActualizarPanelUI(){
   const tab = ["fondo", "textura", "adorno"].includes(st.tabActiva)
     ? st.tabActiva
     : "fondo";
+
+  dev2AsegurarBotonColor2();
+  dev2AsegurarOpcionRombo();
+  dev2InterceptarHostsColorFondo();
+  dev2CompactarFilaTexto();
 
   ["fondo", "textura", "adorno"].forEach(nombre => {
     const btn = $(`dev2Tab${nombre.charAt(0).toUpperCase()}${nombre.slice(1)}`);
@@ -2815,21 +3071,74 @@ function dev2ActualizarPanelUI(){
     if (pane) pane.classList.toggle("activo", tab === nombre);
   });
 
-  const esGradiente = st.baseTipo === "gradiente";
-  $("dev2BtnPlano")?.classList.toggle("activo", !esGradiente);
-  $("dev2BtnGradiente")?.classList.toggle("activo", esGradiente);
+  // ✅ Ya no hay dos modos visibles. Internamente:
+  // 1 color = fondo plano, 2/3 colores = mezcla/degradado.
+  st.baseTipo = st.usarColor2 ? "gradiente" : "plano";
+
+  const btnPlano = $("dev2BtnPlano");
+  if (btnPlano) {
+    btnPlano.style.display = "none";
+    btnPlano.setAttribute("aria-hidden", "true");
+  }
+
+  const btnGrad = $("dev2BtnGradiente");
+  if (btnGrad) {
+    btnGrad.style.display = "inline-flex";
+    btnGrad.classList.add("activo");
+    btnGrad.innerHTML = `<i class="fa-solid fa-palette"></i>`;
+    btnGrad.title = "Color principal del fondo";
+    btnGrad.setAttribute("aria-label", "Color principal del fondo");
+
+    // ✅ el botón paleta abre las opciones del color 1
+    btnGrad.onclick = () => window.dev2AbrirOpcionesColorFondo(1);
+  }
 
   const extra = $("dev2GradExtra");
-  if (extra) extra.style.display = esGradiente ? "flex" : "none";
+  if (extra) {
+    extra.style.display = "inline-flex";
+  }
+
+  const host2 = $("dev2GradColor2Host");
+  if (host2) {
+    host2.style.display = st.usarColor2 ? "inline-flex" : "none";
+  }
+
+  const inp2 = $("dev2GradColor2");
+  if (inp2) {
+    inp2.style.display = "none";
+  }
+
+  const btnColor2 = $("dev2BtnColor2");
+  if (btnColor2) {
+    btnColor2.style.display = st.usarColor2 ? "none" : "inline-flex";
+    btnColor2.title = "Agregar segundo color";
+  }
 
   const color3Wrap = $("dev2Color3Wrap");
-  if (color3Wrap) color3Wrap.style.display = esGradiente && st.usarColor3 ? "inline-flex" : "none";
+  if (color3Wrap) {
+    color3Wrap.style.display = st.usarColor2 && st.usarColor3
+      ? "inline-flex"
+      : "none";
+  }
 
   const btnMas = $("dev2BtnColor3");
   if (btnMas) {
+    btnMas.style.display = st.usarColor2 ? "inline-flex" : "none";
+
     btnMas.classList.toggle("activo", !!st.usarColor3);
     btnMas.title = st.usarColor3 ? "Quitar tercer color" : "Agregar tercer color";
   }
+
+  const forma = $("dev2GradForma");
+  if (forma) {
+    forma.style.display = st.usarColor2 ? "inline-flex" : "none";
+
+    if (!forma.value) forma.value = st.gradienteForma || "vertical";
+  }
+
+  dev2SyncPickrHost("dev2FondoHost", st.fondoColor || "#ffffff");
+  dev2SyncPickrHost("dev2GradColor2Host", st.gradienteColor2 || "#d1eeff");
+  dev2SyncPickrHost("dev2GradColor3Host", st.gradienteColor3 || "#a6d0ff");
 }
 
 window.dev2MostrarTab = function(tab){
@@ -2845,7 +3154,12 @@ window.dev2ElegirBase = function(tipo){
 };
 
 window.dev2ToggleColor3 = function(){
-  DEV.f2.usarColor3 = !DEV.f2.usarColor3;
+  if (!DEV.f2.usarColor2) {
+    DEV.f2.usarColor2 = true;
+  } else {
+    DEV.f2.usarColor3 = !DEV.f2.usarColor3;
+  }
+
   DEV.f2.userChanged = true;
   dev2ActualizarPanelUI();
   devRenderFase(2);
@@ -3381,11 +3695,15 @@ window.devIrFase2 = () => {
   cerrarModal("modalDevFase1");
   abrirModal("modalDevFase2");
 
-  devEnsureBotonCuentagotasF2();
+  // ✅ Ya no mostramos botón grande debajo de la preview.
+// El cuentagotas se abre desde cada selector de color.
+$("devBtnCuentagotasF2")?.closest(".dev2-eyedropper-row")?.remove();
 
-  if (typeof window.initPickrEnHosts === "function") {
-    window.initPickrEnHosts("#dev2FondoHost, #dev2GradColor2Host, #dev2GradColor3Host, #dev2ColorHost");
-  }
+if (typeof window.initPickrEnHosts === "function") {
+  window.initPickrEnHosts(
+    "#dev2FondoHost, #dev2GradColor2Host, #dev2GradColor3Host, #dev2ColorHost, #dev2OutlineColorHost"
+  );
+}
 
   dev2ActualizarPanelUI();
 
@@ -3659,23 +3977,28 @@ function bindInputs(){
     });
   }
 
-  const gradColor2 = $("dev2GradColor2");
-  if (gradColor2) {
-    gradColor2.addEventListener("input", ()=>{
-      DEV.f2.gradienteColor2 = gradColor2.value || "#d1eeff";
-      DEV.f2.userChanged = true;
-      devRenderFase(2);
-    });
-  }
+const gradColor2 = $("dev2GradColor2");
+if (gradColor2) {
+  gradColor2.addEventListener("input", ()=>{
+    DEV.f2.usarColor2 = true;
+    DEV.f2.gradienteColor2 = gradColor2.value || "#d1eeff";
+    DEV.f2.userChanged = true;
+    dev2ActualizarPanelUI();
+    devRenderFase(2);
+  });
+}
 
-  const gradColor3 = $("dev2GradColor3");
-  if (gradColor3) {
-    gradColor3.addEventListener("input", ()=>{
-      DEV.f2.gradienteColor3 = gradColor3.value || "#a6d0ff";
-      DEV.f2.userChanged = true;
-      devRenderFase(2);
-    });
-  }
+const gradColor3 = $("dev2GradColor3");
+if (gradColor3) {
+  gradColor3.addEventListener("input", ()=>{
+    DEV.f2.usarColor2 = true;
+    DEV.f2.usarColor3 = true;
+    DEV.f2.gradienteColor3 = gradColor3.value || "#a6d0ff";
+    DEV.f2.userChanged = true;
+    dev2ActualizarPanelUI();
+    devRenderFase(2);
+  });
+}
 
   const gradForma = $("dev2GradForma");
   if (gradForma) {
