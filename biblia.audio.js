@@ -10,7 +10,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const AUDIO_WEBAPP_URL = "https://subir-imagen-r2.vidaabundante-tristansuarez.workers.dev";
   const AUDIO_R2_UPLOAD_URL = "https://subir-imagen-r2.vidaabundante-tristansuarez.workers.dev";
 
-const AUDIO_VOZ_BIBLIA_SECA = "es-US-Standard-B";
+ const AUDIO_VOZ_ADMIN = "es-US-Wavenet-B";
+const AUDIO_VOZ_COLAB = "es-US-Standard-B";
 const AUDIO_LIMITE_COLAB_DIA = 3;
 
 window.__audioCacheLocal = window.__audioCacheLocal || {
@@ -326,12 +327,11 @@ window.escucharPreviaAudio = async () => {
 
 const textoLimpio = audioPrepararTextoParaTTS(texto);
 
-const esColaboradorLimitado = !audioEsAdmin() && audioEsColaborador();
+  const esColabSeco = !audioEsAdmin() && audioEsColaborador();
 
-// ✅ Biblia Crear Imagen SIEMPRE usa voz seca.
-// No pasa por Firebase Functions ni por arpa.
-const usarVozSecaBiblia = true;
-const voiceName = AUDIO_VOZ_BIBLIA_SECA;
+  const voiceName = esColabSeco
+    ? AUDIO_VOZ_COLAB
+    : (window.__AUDIO_VOICE_NAME || AUDIO_VOZ_ADMIN);
 
   const cache = window.__audioCacheLocal || {};
 
@@ -363,7 +363,7 @@ const voiceName = AUDIO_VOZ_BIBLIA_SECA;
 
 let restantesAntes = null;
 
-if (esColaboradorLimitado) {
+if (esColabSeco) {
   restantesAntes = await window.vaLeerRestantesUsoColaborador?.(
     "audioBiblia",
     AUDIO_LIMITE_COLAB_DIA
@@ -380,15 +380,21 @@ if (esColaboradorLimitado) {
     estado.textContent = `🎧 Generando voz seca... Te quedan ${restantesAntes} audios hoy.`;
   }
 } else if (estado) {
-estado.textContent = "🎧 Generando voz seca...";
+  estado.textContent = "🎧 Generando previa real con arpa...";
 }
 
-   const body = {
-  action: "ttsSeco",
-  texto: textoLimpio,
-  voiceName,
-  languageCode: "es-US"
-};
+    const body = esColabSeco
+      ? {
+          action: "ttsSeco",
+          texto: textoLimpio,
+          voiceName,
+          languageCode: "es-US"
+        }
+      : {
+          action: "tts",
+          texto: textoLimpio,
+          voiceName
+        };
 
     const r = await fetch(AUDIO_WEBAPP_URL, {
       method: "POST",
@@ -408,7 +414,7 @@ estado.textContent = "🎧 Generando voz seca...";
 
     window.__audioBase64 = data.audioBase64;
 
-    if (esColaboradorLimitado) {
+    if (esColabSeco) {
   try {
     const consumo = await window.vaConsumirUsoColaborador?.(
       "audioBiblia",
@@ -441,7 +447,9 @@ estado.textContent = "🎧 Generando voz seca...";
     await audio.play();
 
     if (estado) {
-     estado.textContent = "✅ Voz seca reproduciendo.";
+      estado.textContent = esColabSeco
+        ? "✅ Voz seca reproduciendo."
+        : "✅ Previa reproduciendo.";
     }
 
   } catch (e) {
