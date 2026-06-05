@@ -46,6 +46,27 @@ let edFiltroLibros = true;
 let edBusquedaTexto = "";
 let edBuscadorAbierto = false;
 
+function edEsLinkDirectoPublico() {
+  try {
+    const params = new URLSearchParams(location.search);
+    const path = String(location.pathname || "").toLowerCase();
+
+    return (
+      !!params.get("edicionRef") ||
+      (params.get("ver") === "edicion" && !!params.get("id")) ||
+      (path.includes("/ediciones/") && !!params.get("ref"))
+    );
+  } catch (_) {
+    return false;
+  }
+}
+
+// ✅ Oculta la app apenas carga el archivo, antes de abrir el visor.
+// Así no aparece Compartidos ni Recursos “de paseo”.
+if (edEsLinkDirectoPublico()) {
+  document.body.classList.add("ed-link-directo");
+}
+
 function ed$(id) {
   return document.getElementById(id);
 }
@@ -3223,26 +3244,24 @@ async function edIdDesdeLinkPublico() {
 }
 
 /* ================= LINK PÚBLICO ================= */
-
 async function abrirEdicionDesdeURL() {
+  if (!edEsLinkDirectoPublico()) return;
+
+  document.body.classList.add("ed-link-directo");
+
   const data = await edIdDesdeLinkPublico();
   const id = data.id;
   const refPublica = data.refPublica;
 
-  if (!id) return;
+  if (!id) {
+    document.body.classList.remove("ed-link-directo");
+    return;
+  }
 
-  /*
-    Este indicador sirve para que, al cerrar la edición,
-    la persona quede en Compartidos y no vuelva a Recursos.
-  */
+  // ✅ Al cerrar, vuelve a Compartidos.
   window.__ED_ABIERTA_DESDE_LINK_COMPARTIDOS = true;
 
-  /*
-    Ya no usamos el modo que ocultaba toda la app como link directo.
-    Ahora la sección real de fondo será Compartidos.
-  */
-  document.body.classList.remove("ed-link-directo");
-
+  // ✅ Si vino desde /ediciones/?ref=..., dejamos URL canónica.
   if (refPublica) {
     try {
       history.replaceState(
@@ -3255,17 +3274,14 @@ async function abrirEdicionDesdeURL() {
 
   await edEsperarDB();
 
-  if (typeof window.irA === "function") {
-    window.irA("compartidos");
-  }
-
-  if (typeof window.mostrarCompartidos === "function") {
-    await window.mostrarCompartidos();
-  }
-
-  setTimeout(() => {
-    abrirPresentacionEdicion(id);
-  }, 250);
+  // ✅ Abrimos la edición directamente, sin renderizar feed antes.
+  await abrirPresentacionEdicion(id);
 }
 
-setTimeout(abrirEdicionDesdeURL, 100);
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", () => {
+    setTimeout(abrirEdicionDesdeURL, 60);
+  }, { once: true });
+} else {
+  setTimeout(abrirEdicionDesdeURL, 60);
+}
