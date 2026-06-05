@@ -328,6 +328,26 @@ window.compCerrarMedia = function compCerrarMedia() {
   if (modal) modal.style.display = "none";
 };
 
+function compLimpiarCompartidosTop() {
+  if (compPromosTimer) {
+    clearInterval(compPromosTimer);
+    compPromosTimer = null;
+  }
+
+  const hero = comp$("compHero");
+  const promos = comp$("compPromos");
+
+  if (hero) {
+    hero.innerHTML = "";
+    delete hero.dataset.rendered;
+  }
+
+  if (promos) {
+    promos.innerHTML = "";
+    delete promos.dataset.rendered;
+  }
+}
+
 window.mostrarCompartidos = async () => {
   let cont = comp$("compartidosApp");
 
@@ -374,7 +394,9 @@ window.mostrarCompartidos = async () => {
   }
 
   compAsegurarVisor();
-  renderCompartidosTop();
+
+  // ✅ Mientras carga, no mostramos banner ni promos vacías.
+  compLimpiarCompartidosTop();
 
   iniciarEscuchaCompartidos();
   iniciarEscuchaCompartidosStats();
@@ -385,64 +407,81 @@ window.mostrarCompartidos = async () => {
   iniciarEscuchaCompartidosOraciones();
   iniciarEscuchaOracionesPublicacionesCompartidos();
   iniciarEscuchaCompartidosOcultos();
+
+  renderCompartidos();
 };
 
 function renderCompartidosTop() {
   const hero = comp$("compHero");
   const promos = comp$("compPromos");
 
-  if (hero) {
+  if (hero && hero.dataset.rendered !== "1") {
+    hero.dataset.rendered = "1";
+
     hero.innerHTML = `
       <div class="comp-hero-card">
-        <img src="${compEscape(COMP_BANNER_URL)}" alt="Horarios Vida Abundante" loading="lazy">
+        <img
+          src="${compEscape(COMP_BANNER_URL)}"
+          alt=""
+          title="Horarios Vida Abundante"
+          loading="eager"
+          decoding="async"
+          onerror="if(this.parentElement){this.parentElement.remove();}"
+        >
       </div>
     `;
   }
 
-  if (promos) {
+  if (!promos || promos.dataset.rendered === "1") return;
 
-        // ✅ En iPhone evitamos cargar carrusel/promos arriba del feed.
-    // Reduce memoria al entrar desde Safari/WhatsApp.
-    if (compEsIOS()) {
-      promos.innerHTML = "";
-      return;
-    }
-    
-    promos.innerHTML = `
-      <div
-        class="comp-promos-viewport"
-        id="compPromosViewport"
-        onpointerdown="compPausarPromos()"
-        ontouchstart="compPausarPromos()"
-      >
-        <div class="comp-promos-slider">
-          <div class="comp-promos-page">
-            ${COMP_PROMOS.slice(0, 3).map((src, i) => `
-              <img
-                src="${compEscape(src)}"
-                alt="Promo ${i + 1}"
-                loading="lazy"
-                onclick="compAbrirMedia('${compJs(src)}', 'imagen', 'Promo ${i + 1}')"
-              >
-            `).join("")}
-          </div>
+  promos.dataset.rendered = "1";
 
-          <div class="comp-promos-page">
-            ${COMP_PROMOS.slice(3, 6).map((src, i) => `
-              <img
-                src="${compEscape(src)}"
-                alt="Promo ${i + 4}"
-                loading="lazy"
-                onclick="compAbrirMedia('${compJs(src)}', 'imagen', 'Promo ${i + 4}')"
-              >
-            `).join("")}
-          </div>
+  // ✅ En iPhone evitamos cargar carrusel/promos arriba del feed.
+  if (compEsIOS()) {
+    promos.innerHTML = "";
+    return;
+  }
+
+  promos.innerHTML = `
+    <div
+      class="comp-promos-viewport"
+      id="compPromosViewport"
+      onpointerdown="compPausarPromos()"
+      ontouchstart="compPausarPromos()"
+    >
+      <div class="comp-promos-slider">
+        <div class="comp-promos-page">
+          ${COMP_PROMOS.slice(0, 3).map((src, i) => `
+            <img
+              src="${compEscape(src)}"
+              alt=""
+              title="Promo ${i + 1}"
+              loading="eager"
+              decoding="async"
+              onerror="this.remove()"
+              onclick="compAbrirMedia('${compJs(src)}', 'imagen', 'Promo ${i + 1}')"
+            >
+          `).join("")}
+        </div>
+
+        <div class="comp-promos-page">
+          ${COMP_PROMOS.slice(3, 6).map((src, i) => `
+            <img
+              src="${compEscape(src)}"
+              alt=""
+              title="Promo ${i + 4}"
+              loading="lazy"
+              decoding="async"
+              onerror="this.remove()"
+              onclick="compAbrirMedia('${compJs(src)}', 'imagen', 'Promo ${i + 4}')"
+            >
+          `).join("")}
         </div>
       </div>
-    `;
+    </div>
+  `;
 
-    setTimeout(compIniciarPromosAuto, 100);
-  }
+  setTimeout(compIniciarPromosAuto, 100);
 }
 
 function compIniciarPromosAuto() {
@@ -3320,6 +3359,22 @@ window.renderCompartidos = function renderCompartidos() {
   const lista = comp$("compLista");
   if (!lista) return;
 
+  // ✅ Primero esperamos a que las fuentes principales respondan.
+  // Así no se ve el feed a medias, ni promos vacías, ni cards fantasmas.
+  if (compEstaCargandoFeed()) {
+    compLimpiarCompartidosTop();
+
+    if (!lista.querySelector(".comp-loading-feed")) {
+      lista.innerHTML = compLoaderHTML();
+    }
+
+    compProgramarRepintadoCarga();
+    return;
+  }
+
+  // ✅ Recién cuando la carga base terminó, mostramos banner/promos.
+  renderCompartidosTop();
+
   const itemsTodos = compUnificarItems();
 
   // ✅ iPhone/Safari: pintar por tandas.
@@ -3370,18 +3425,12 @@ window.renderCompartidos = function renderCompartidos() {
       compObservarNotasParaCompartir();
     }
 
-compOptimizarImagenesFeed();
+    compOptimizarImagenesFeed();
 
-if (typeof window.edActivarMiniGalerias === "function") {
-  window.edActivarMiniGalerias(lista);
-}
+    if (typeof window.edActivarMiniGalerias === "function") {
+      window.edActivarMiniGalerias(lista);
+    }
 
-return;
-  }
-
-  if (compEstaCargandoFeed()) {
-    lista.innerHTML = compLoaderHTML();
-    compProgramarRepintadoCarga();
     return;
   }
 
@@ -3392,12 +3441,24 @@ return;
   `;
 };
 
-// ✅ Iniciar Compartidos lo antes posible.
-// Si Firebase todavía no está listo, mostrarCompartidos espera con compEsperarDB().
+// ✅ Compartidos ya NO se inicia solo en cualquier pantalla.
+// Se inicia cuando realmente estamos en Compartidos.
+window.cargarCompartidos = function cargarCompartidos() {
+  return window.mostrarCompartidos();
+};
+
+window.iniciarCompartidos = function iniciarCompartidos() {
+  return window.mostrarCompartidos();
+};
+
+function compIniciarCompartidosSiVisible() {
+  if (document.body.classList.contains("en-compartidos")) {
+    window.mostrarCompartidos();
+  }
+}
+
 if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", () => {
-    mostrarCompartidos();
-  }, { once: true });
+  document.addEventListener("DOMContentLoaded", compIniciarCompartidosSiVisible, { once: true });
 } else {
-  mostrarCompartidos();
+  compIniciarCompartidosSiVisible();
 }
