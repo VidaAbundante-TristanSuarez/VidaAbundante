@@ -421,15 +421,12 @@ async function subidosCrearFileDesdeInfo(info) {
 }
 
 function subidosMarcarArchivoAccionListo(id, listo) {
-  const idStr = String(id || "");
+  const btnD = document.querySelector(`[data-subidos-download="${id}"]`);
+  const btnS = document.querySelector(`[data-subidos-share="${id}"]`);
 
-  const botones = [...document.querySelectorAll("[data-subidos-download], [data-subidos-share]")]
-    .filter(btn =>
-      String(btn.dataset.subidosDownload || "") === idStr ||
-      String(btn.dataset.subidosShare || "") === idStr
-    );
+  [btnD, btnS].forEach(btn => {
+    if (!btn) return;
 
-  botones.forEach(btn => {
     btn.disabled = !listo;
     btn.style.opacity = listo ? "1" : ".45";
     btn.style.cursor = listo ? "pointer" : "wait";
@@ -4269,74 +4266,6 @@ window.subidosMoverVisorArchivo = function subidosMoverVisorArchivo(btn, dir) {
   subidosMoverCarrilCircular(carril, dir, ".subidos-visor-archivo-slide");
 };
 
-function subidosHtmlAccionesVisorArchivo(it) {
-  if (!it?.id) return "";
-
-  const idJs = subidosJs(it.id || "");
-  const archivos = subidosArchivosItem(it);
-
-  if (!archivos.length) return "";
-
-  return `
-    <div class="subidos-visor-actions" style="
-      display:flex;
-      justify-content:center;
-      align-items:center;
-      gap:10px;
-      flex-wrap:wrap;
-      margin-top:12px;
-    ">
-      <button
-        type="button"
-        data-subidos-download="${escaparHtml(it.id)}"
-        onclick="descargarSubido('${idJs}', this)"
-        title="Preparando archivo..."
-        disabled
-        style="
-          border:none;
-          width:42px;
-          height:42px;
-          border-radius:999px;
-          background:var(--ui-azul-claro, #bcdcff);
-          color:#000;
-          display:inline-flex;
-          align-items:center;
-          justify-content:center;
-          cursor:wait;
-          font-weight:900;
-          opacity:.45;
-        "
-      >
-        <i class="fa-solid fa-download"></i>
-      </button>
-
-      <button
-        type="button"
-        data-subidos-share="${escaparHtml(it.id)}"
-        onclick="compartirSubido('${idJs}', this)"
-        title="Preparando archivo..."
-        disabled
-        style="
-          border:none;
-          width:42px;
-          height:42px;
-          border-radius:999px;
-          background:var(--ui-azul-claro, #bcdcff);
-          color:#000;
-          display:inline-flex;
-          align-items:center;
-          justify-content:center;
-          cursor:wait;
-          font-weight:900;
-          opacity:.45;
-        "
-      >
-        <i class="fa-solid fa-share-nodes"></i>
-      </button>
-    </div>
-  `;
-}
-
 window.abrirSubidosVisorArchivo = function abrirSubidosVisorArchivo(id, indiceInicial = 0) {
   const it = obtenerSubidoPorId(id);
   const archivos = subidosArchivosItem(it);
@@ -4352,17 +4281,10 @@ window.abrirSubidosVisorArchivo = function abrirSubidosVisorArchivo(id, indiceIn
     "Vista previa"
   ).trim();
 
-abrirModalSubidosVisor(
-  titulo,
-  `
-    ${subidosHtmlArchivosAbiertos(it, idx)}
-    ${subidosHtmlAccionesVisorArchivo(it)}
-  `
-);
-
-setTimeout(() => {
-  subidosPrepararArchivoAccion(id);
-}, 120);
+  abrirModalSubidosVisor(
+    titulo,
+    subidosHtmlArchivosAbiertos(it, idx)
+  );
 
   setTimeout(() => {
     const body = document.getElementById("subidosVisorBody");
@@ -5116,148 +5038,6 @@ window.abrirSubidoDesdeCalendario = function abrirSubidoDesdeCalendario(id) {
   }, 1800);
 };
 
-function subidosEsCancelacionShare(e) {
-  const msg = String(e?.message || "").toLowerCase();
-
-  return (
-    e?.name === "AbortError" ||
-    msg.includes("share canceled") ||
-    msg.includes("sharing canceled") ||
-    msg.includes("cancelled by user") ||
-    msg.includes("canceled by user")
-  );
-}
-
-async function subidosCopiarTextoSeguro(texto = "") {
-  const limpio = String(texto || "").trim();
-  if (!limpio) return false;
-
-  try {
-    if (navigator.clipboard && window.isSecureContext) {
-      await navigator.clipboard.writeText(limpio);
-      return true;
-    }
-  } catch (_) {}
-
-  try {
-    const ta = document.createElement("textarea");
-    ta.value = limpio;
-    ta.style.position = "fixed";
-    ta.style.left = "-9999px";
-    ta.style.top = "0";
-    document.body.appendChild(ta);
-    ta.focus();
-    ta.select();
-
-    const ok = document.execCommand("copy");
-    ta.remove();
-
-    return ok;
-  } catch (_) {
-    return false;
-  }
-}
-
-async function subidosCompartirPredicaComoLink(it, id) {
-  const link = subidosLinkDetalle(id);
-  const titulo = it?.descripcion || it?.predicaTitulo || "Prédica";
-
-  if (navigator.share) {
-    await navigator.share({
-      title: titulo,
-      text: titulo,
-      url: link
-    });
-    return;
-  }
-
-  const copiado = await subidosCopiarTextoSeguro(link);
-
-  if (copiado) {
-    subidosAvisoProceso("Link de la prédica copiado ✅");
-    return;
-  }
-
-  prompt("Copiá este link:", link);
-}
-
-async function subidosCompartirArchivoReal(file, titulo = "Archivo") {
-  if (!file) throw new Error("No se pudo preparar el archivo.");
-
-  if (!navigator.share) {
-    subidosDescargarFileReal(file);
-    throw new Error("Este navegador no permite compartir archivos. Descargué el archivo para compartirlo manualmente.");
-  }
-
-  if (!navigator.canShare || !navigator.canShare({ files: [file] })) {
-    subidosDescargarFileReal(file);
-    throw new Error("Este navegador no acepta compartir este tipo de archivo. Descargué el archivo para compartirlo manualmente.");
-  }
-
-  await navigator.share({
-    title: titulo,
-    files: [file]
-  });
-}
-
-function subidosCacheKeyArchivo(id, indice = 0) {
-  return `${String(id || "")}::archivo::${Number(indice || 0)}`;
-}
-
-function subidosFileCacheadoPorIndice(id, it, indice = 0) {
-  const info = subidosInfoArchivoPorIndice(it, indice);
-  if (!info?.url) return null;
-
-  const idx = Number(indice || 0);
-  const keys = idx === 0
-    ? [String(id || ""), subidosCacheKeyArchivo(id, idx)]
-    : [subidosCacheKeyArchivo(id, idx)];
-
-  for (const key of keys) {
-    const cache = subidosFileCache.get(key);
-
-    if (cache?.url === info.url && cache?.file) {
-      return cache.file;
-    }
-  }
-
-  return null;
-}
-
-async function subidosPrepararFileCachePorIndice(id, it, indice = 0) {
-  const info = subidosInfoArchivoPorIndice(it, indice);
-
-  if (!info?.url) {
-    throw new Error("No se encontró el archivo actual.");
-  }
-
-  const idx = Number(indice || 0);
-  const key = subidosCacheKeyArchivo(id, idx);
-
-  const cacheActual = subidosFileCache.get(key);
-
-  if (cacheActual?.url === info.url && cacheActual?.file) {
-    return cacheActual.file;
-  }
-
-  const file = await subidosCrearFileDesdeInfo(info);
-
-  subidosFileCache.set(key, {
-    url: info.url,
-    file
-  });
-
-  // compatibilidad con el cache viejo del archivo principal
-  if (idx === 0) {
-    subidosFileCache.set(String(id || ""), {
-      url: info.url,
-      file
-    });
-  }
-
-  return file;
-}
-
 window.compartirSubido = async function compartirSubido(id, btn = null) {
   try {
     const it = obtenerSubidoPorId(id);
@@ -5267,77 +5047,61 @@ window.compartirSubido = async function compartirSubido(id, btn = null) {
       return;
     }
 
-    const titulo = it?.descripcion || it?.etiqueta || "Archivo";
-
-    // ✅ PRÉDICA: comparte LINK.
-    if (subidosEsPredicaConContenido(it)) {
-      subidosAvisoProceso("Preparando link de la prédica...", true);
-
-      await subidosCompartirPredicaComoLink(it, id);
-
-      subidosAvisoProceso("Listo ✅");
-      return;
-    }
-
-    // ✅ VIDEO: por ahora comparte link directo, para no cargar video pesado en memoria.
     if (subidosEsVideoItem(it)) {
       await subidosCompartirLinkVideo(it);
-      subidosAvisoProceso("Listo ✅");
+      subidosAvisoProceso("Link listo ✅");
       return;
     }
 
     const archivos = subidosArchivosItem(it);
-
-    if (!archivos.length) {
-      alert("Esta publicación no tiene archivo para compartir.");
-      return;
-    }
-
-    // ✅ NO PRÉDICA: SIEMPRE comparte SOLO el archivo actual.
-    // No abre modal de “todas o actual”, porque eso puede romper el permiso del navegador.
+    const cantidad = subidosEsPredicaConContenido(it) ? 1 : archivos.length;
     const actual = subidosIndiceActualDesdeBoton(id, btn);
+    const modo = subidosElegirTodoOActual("compartir", cantidad);
+    const titulo = it?.descripcion || it?.etiqueta || "Archivo";
 
-    let file = subidosFileCacheadoPorIndice(id, it, actual);
+    if (modo === "todo" && cantidad > 1) {
+      subidosAvisoProceso("Preparando todos los archivos...", true);
 
-    if (!file) {
-      subidosAvisoProceso("Preparando archivo actual...", true);
+      const indices = archivos.map((_, i) => i);
+      const files = await subidosCrearFilesDeItem(it, indices);
 
-      try {
-        await subidosPrepararFileCachePorIndice(id, it, actual);
-      } catch (prepErr) {
-        console.error("No pude preparar archivo actual:", prepErr);
-        subidosAvisoProceso("No se pudo preparar");
-        alert("No se pudo preparar el archivo para compartir.");
+      if (navigator.canShare?.({ files })) {
+        await navigator.share({
+          title: titulo,
+          text: titulo,
+          files
+        });
+
+        subidosAvisoProceso("Listo ✅");
         return;
       }
 
-      subidosAvisoProceso("Archivo listo ✅ Tocá compartir otra vez");
+      alert("Este dispositivo o navegador no permite compartir varios archivos juntos. Probá con Descargar todo.");
+      subidosAvisoProceso("No se pudo compartir todo");
       return;
     }
 
-    subidosAvisoProceso("Abriendo compartir...", true);
+    subidosAvisoProceso("Preparando archivo actual...", true);
 
-    await subidosCompartirArchivoReal(file, titulo);
+    const file = await subidosCrearFileDeItemPorIndice(it, actual);
+
+    await subidosCompartirFileObligatorio(
+      file,
+      titulo,
+      subidosLinkDetalle(id)
+    );
 
     subidosAvisoProceso("Listo ✅");
   } catch (e) {
     console.error("Error en compartir:", e);
 
-    if (subidosEsCancelacionShare(e)) {
+    if (e?.name === "AbortError") {
       subidosAvisoProceso("Acción cancelada");
       return;
     }
 
     subidosAvisoProceso("No se pudo compartir");
-
-    const msg = String(e?.message || "");
-
-    if (msg.includes("Descargué el archivo")) {
-      alert(msg);
-      return;
-    }
-
-    alert("No se pudo compartir.\n\n" + (msg || "Probá desde el celular o descargá el archivo."));
+    alert("No se pudo compartir.");
   }
 };
 
