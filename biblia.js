@@ -154,6 +154,26 @@ window.__FB = { db, auth };
 window.__AUTH = auth;
 window.__FB_API = { ref, set, remove, onValue, get, push, runTransaction };
 
+// ================= ✅ COMPARTIR: CANCELACIÓN NORMAL =================
+// Android / Chrome puede devolver "Share canceled" al cerrar el compartir.
+// Eso NO es error: no mostramos alert, no descargamos, no molestamos.
+window.vaShareCancelado = function vaShareCancelado(e) {
+  const texto = [
+    e?.name || "",
+    e?.message || "",
+    String(e || "")
+  ].join(" ").toLowerCase();
+
+  return (
+    texto.includes("aborterror") ||
+    texto.includes("share canceled") ||
+    texto.includes("share cancelled") ||
+    texto.includes("user aborted") ||
+    texto.includes("cancelado") ||
+    texto.includes("cancelada")
+  );
+};
+
 // ================= 🧯 CORTAFUEGOS REAL DE SECCIONES =================
 // Evita que Iglesia, Mi Panel y Compartidos queden visibles juntos.
 function forzarSeccionActiva(seccion) {
@@ -8778,6 +8798,10 @@ window.compartirImagenPanel = async (url, fileName = "imagen_vida_abundante.png"
     alert("Tu navegador no permite compartir archivo directo. Se descargó la imagen para compartirla manualmente.");
 
   } catch(e){
+    if (window.vaShareCancelado?.(e)) {
+      return;
+    }
+
     console.error(e);
     alert("No se pudo compartir la imagen.\n\nDetalle: " + (e?.message || e));
   }
