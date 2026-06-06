@@ -1915,6 +1915,52 @@ body.modo-marcador #bannerModoMarcador { display: block; }
   line-height: 1.25;
   font-size: 14px;
   margin-top: 10px;
+
+  max-height: 34dvh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+
+  padding-right: 6px;
+  box-sizing: border-box;
+}
+
+.marcador-preview-ref{
+  font-weight: 900;
+  margin-bottom: 8px;
+}
+
+.marcador-preview-textos{
+  display: grid;
+  gap: 6px;
+}
+
+.marcador-preview-versiculo{
+  white-space: normal;
+}
+
+/* ✅ Formulario de nota: scroll propio en celular */
+#formNuevoMarcador{
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding-right: 4px;
+}
+
+@media (max-width: 640px){
+  #modalMarcadores .modal-contenido{
+    width: 100vw;
+    max-height: 92dvh;
+    border-radius: 0;
+  }
+
+  #formNuevoMarcador{
+    max-height: calc(92dvh - 24px);
+  }
+
+  .preview-versiculos-marcador{
+    max-height: 30dvh;
+  }
 }
 
 /* ✅ Si está abierto modal marcadores, que nada (lista fuentes) quede arriba */
@@ -2448,9 +2494,12 @@ body.oscuro #wrapFiltrosBiblia.abierto .filtros{
 /* ================= MODAL MARCADORES: RESPONSIVE ================= */
 #modalMarcadores .modal-contenido{
   width: min(560px, 94vw);
-  max-height: min(82vh, 760px);
-  overflow: hidden;             /* evita scroll horizontal del modal */
+  max-height: min(92dvh, 760px);
+  overflow: hidden;
   border-radius: 16px;
+
+  display: flex;
+  flex-direction: column;
 }
 
 /* lista scrollea por dentro */
@@ -3240,11 +3289,12 @@ body.oscuro .subir-iglesia-btn:has(input:checked){
 }
 
 
-#wrapFiltrosBiblia .filtros{
-  display:none;
+#wrapFiltrosBiblia .filtros,
+body:not(.filtros-biblia-abiertos) #wrapFiltrosBiblia .filtros{
+  display:none !important;
 }
 
-#wrapFiltrosBiblia.abierto .filtros{
+body.filtros-biblia-abiertos #wrapFiltrosBiblia.abierto .filtros{
   display:grid;
   grid-template-columns: 1fr 54px;
   grid-template-areas:
