@@ -418,6 +418,165 @@ async function subidosObtenerFileDesdeInfo(info = {}, id = "") {
   return file;
 }
 
+function subidosEsImagenParaShare(info = {}) {
+  const n = subidosInfoShareNormalizada(info);
+  const tipo = String(n.mimeType || "").toLowerCase();
+
+  return (
+    tipo.startsWith("image/") ||
+    /\.(jpg|jpeg|png|webp|gif)$/i.test(String(n.fileName || "")) ||
+    /\.(jpg|jpeg|png|webp|gif)(\?|$)/i.test(String(n.url || ""))
+  );
+}
+
+function subidosNombreBaseSinExtension(nombre = "archivo") {
+  return subidosNombreLimpio(nombre || "archivo").replace(/\.[a-z0-9]{2,6}$/i, "");
+}
+
+function subidosCargarImagenDesdeBlob(blob) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+
+    const limpiar = () => {
+      setTimeout(() => URL.revokeObjectURL(url), 500);
+    };
+
+    img.onload = () => {
+      limpiar();
+      resolve(img);
+    };
+
+    img.onerror = () => {
+      limpiar();
+      reject(new Error("No pude preparar la imagen para compartir."));
+    };
+
+    img.src = url;
+  });
+}
+
+async function subidosCrearJpgLimpioParaShareDesdeInfo(info = {}, id = "") {
+  const normal = subidosInfoShareNormalizada(info);
+  if (!normal?.url) throw new Error("Falta URL del archivo.");
+
+  const cacheKey = `share-jpg-limpio::${normal.url}`;
+  const cache = subidosFileCache.get(cacheKey);
+
+  if (cache?.file) return cache.file;
+
+  const proxy = subidosProxyArchivoUrl(normal.url, normal.fileName, false);
+
+  const r = await fetch(proxy, {
+    cache: "no-store"
+  });
+
+  if (!r.ok) {
+    throw new Error("No pude preparar la imagen real.");
+  }
+
+  const blob = await r.blob();
+  const img = await subidosCargarImagenDesdeBlob(blob);
+
+  const maxLado = 2200;
+  const w0 = img.naturalWidth || img.width || 1200;
+  const h0 = img.naturalHeight || img.height || 1200;
+
+  const escala = Math.min(1, maxLado / Math.max(w0, h0));
+  const w = Math.max(1, Math.round(w0 * escala));
+  const h = Math.max(1, Math.round(h0 * escala));
+
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+
+  const ctx = canvas.getContext("2d", {
+    alpha: false
+  });
+
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, w, h);
+  ctx.drawImage(img, 0, 0, w, h);
+
+  const jpgBlob = await new Promise(resolve => {
+    canvas.toBlob(resolve, "image/jpeg", 0.94);
+  });
+
+  if (!jpgBlob) {
+    throw new Error("No pude convertir la imagen para compartir.");
+  }
+
+  const nombre = `${subidosNombreBaseSinExtension(normal.fileName || "imagen")}.jpg`;
+  const file = new File([jpgBlob], nombre, { type: "image/jpeg" });
+
+  subidosFileCache.set(cacheKey, {
+    url: normal.url,
+    file
+  });
+
+  if (id) {
+    subidosFileCache.set(`share-jpg-limpio-id::${id}`, {
+      url: normal.url,
+      file
+    });
+  }
+
+  return file;
+}
+
+async function subidosCrearFileShareComunDesdeInfo(info = {}, id = "") {
+  const normal = subidosInfoShareNormalizada(info);
+
+  // Primero intentamos archivo real.
+  const original = await subidosObtenerFileDesdeInfo(normal, id);
+
+  try {
+    if (
+      navigator.share &&
+      (!navigator.canShare || navigator.canShare({ files: [original] }))
+    ) {
+      return original;
+    }
+  } catch (e) {}
+
+  // Si el archivo real no sirve para Web Share y es imagen,
+  // lo convertimos a JPG limpio como archivo compartible.
+  if (subidosEsImagenParaShare(normal)) {
+    return await subidosCrearJpgLimpioParaShareDesdeInfo(normal, id);
+  }
+
+  return original;
+}
+
+async function subidosCompartirArchivoComunSinLink(info = {}, titulo = "Archivo", id = "") {
+  if (!navigator.share) {
+    throw new Error("Este navegador no permite compartir archivos desde la web.");
+  }
+
+  const file = await subidosCrearFileShareComunDesdeInfo(info, id);
+
+  let puede = false;
+
+  try {
+    puede = !!(
+      !navigator.canShare ||
+      navigator.canShare({ files: [file] })
+    );
+  } catch (e) {
+    puede = false;
+  }
+
+  if (!puede) {
+    throw new Error(`Este navegador no acepta compartir este archivo: ${file.name} / ${file.type}`);
+  }
+
+  // ✅ Sin text y sin url: archivo solamente.
+  await navigator.share({
+    title: titulo,
+    files: [file]
+  });
+}
+
 function subidosNombreSharePredica(it) {
   const fecha = it?.fechaEvento || "sin-fecha";
   const id = it?.id || "predica";
@@ -4536,24 +4695,6 @@ function subidosNombreArchivoParaCompartir(it) {
   return nombre || "archivo";
 }
 
-async function subidosFileDesdeUrl(it) {
-  if (!it?.url) throw new Error("No hay archivo para compartir.");
-
-  const nombre = subidosNombreArchivoParaCompartir(it);
-  const proxy = subidosProxyArchivoUrl(it.url, nombre, false);
-
-  const r = await fetch(proxy);
-  if (!r.ok) throw new Error("No pude leer el archivo desde descargarImagenR2.");
-
-  const blob = await r.blob();
-
-  return new File(
-    [blob],
-    nombre,
-    { type: it.mimeType || blob.type || "application/octet-stream" }
-  );
-}
-
 async function subidosCompartirFileObligatorio(file, titulo = "Archivo", texto = "") {
   if (!navigator.share) {
     throw new Error("Este navegador no permite compartir archivos desde la web.");
@@ -5306,10 +5447,7 @@ window.compartirSubido = async function compartirSubido(id, btn = null) {
         if (!info?.url) continue;
 
         const idCache = i === 0 ? id : "";
-        const file =
-          subidosLeerFileCachePorInfo(info, idCache) ||
-          await subidosObtenerFileDesdeInfo(info, idCache);
-
+        const file = await subidosCrearFileShareComunDesdeInfo(info, idCache);
         files.push(file);
       }
 
@@ -5350,15 +5488,14 @@ window.compartirSubido = async function compartirSubido(id, btn = null) {
 
     const idCache = Number(actual || 0) === 0 ? id : "";
 
-    const file =
-      subidosLeerFileCachePorInfo(info, idCache) ||
-      await subidosObtenerFileDesdeInfo(info, idCache);
-
-    // ✅ Sin texto y sin URL: solo archivo.
-    await subidosCompartirFileObligatorio(
-      file,
+    // ✅ Etiquetas comunes:
+    // comparte archivo solamente, sin link.
+    // Si es imagen y el navegador rechaza el archivo original,
+    // se prepara un JPG limpio como hacemos con prédica.
+    await subidosCompartirArchivoComunSinLink(
+      info,
       titulo,
-      ""
+      idCache
     );
 
     subidosAvisoProceso("Listo ✅");
