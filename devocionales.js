@@ -6570,9 +6570,13 @@ window.devCompartirImagenItem = async function(url, fileName = "devocional.png")
 
     alert("Tu navegador no permite compartir archivo directo. Se descargó la imagen para compartirla manualmente.");
 
-  } catch(e){
+  } catch (e) {
+    if (window.vaShareCancelado?.(e)) {
+      return;
+    }
+
     console.error(e);
-    alert("❌ No se pudo compartir.\n\nDetalle: " + (e?.message || e));
+    alert("No pude compartir el devocional.");
   } finally {
     devBusyHide();
   }
