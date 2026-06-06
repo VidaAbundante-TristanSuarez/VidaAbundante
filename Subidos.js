@@ -5607,8 +5607,8 @@ window.compartirSubido = async function compartirSubido(id, btn = null) {
     const esPredica = subidosEsPredicaConContenido(it);
 
     // =========================================================
-    // ✅ PRÉDICA: NO CAMBIAMOS LA IDEA.
-    // Sigue compartiendo el PNG preparado + link de prédica.
+    // ✅ PRÉDICA: NO SE TOCA
+    // Sigue igual: PNG preparado + link de prédica.
     // =========================================================
     if (esPredica) {
       const titulo = it?.descripcion || it?.etiqueta || "Archivo";
@@ -5628,13 +5628,11 @@ window.compartirSubido = async function compartirSubido(id, btn = null) {
       return;
     }
 
-       // =========================================================
-    // ✅ OTRAS ETIQUETAS: SOLO ARCHIVO, SIN LINK.
-    // IMPORTANTE:
-    // No abrimos modal de "actual/todas".
-    // No hacemos fetch acá.
-    // No convertimos acá.
-    // Compartimos el archivo actual ya preparado en cache.
+    // =========================================================
+    // ✅ OTRAS ETIQUETAS: SOLO ARCHIVO, SIN LINK
+    // No abrimos modal.
+    // No preparamos nada en el toque.
+    // Usa solo el archivo ya cacheado/preparado.
     // =========================================================
     const archivos = subidosArchivosItem(it);
     const cantidad = archivos.length;
@@ -5674,42 +5672,6 @@ window.compartirSubido = async function compartirSubido(id, btn = null) {
     );
 
     subidosAvisoProceso("Listo ✅");
-        puedeCompartirTodos = false;
-      }
-
-      if (!puedeCompartirTodos) {
-        alert("Este dispositivo o navegador no permite compartir varios archivos juntos. Probá con Descargar todo.");
-        subidosAvisoProceso("No se pudo compartir todo");
-        return;
-      }
-
-      await navigator.share({
-        title: titulo,
-        files
-      });
-
-      subidosAvisoProceso("Listo ✅");
-      return;
-    }
-
-    subidosAvisoProceso("Preparando archivo actual...", true);
-
-   const info = subidosInfoShareArchivoPorIndice(it, actual);
-    if (!info?.url) throw new Error("No se encontró el archivo actual.");
-
-    const idCache = Number(actual || 0) === 0 ? id : "";
-
-    // ✅ Etiquetas comunes:
-    // comparte archivo solamente, sin link.
-    // Si es imagen y el navegador rechaza el archivo original,
-    // se prepara un JPG limpio como hacemos con prédica.
-    await subidosCompartirArchivoComunSinLink(
-      info,
-      titulo,
-      idCache
-    );
-
-    subidosAvisoProceso("Listo ✅");
   } catch (e) {
     console.error("Error en compartir:", e);
 
@@ -5718,15 +5680,9 @@ window.compartirSubido = async function compartirSubido(id, btn = null) {
       return;
     }
 
-    const msg = String(e?.message || "");
-
     subidosAvisoProceso("No se pudo compartir");
 
-    if (msg.includes("acepta compartir este tipo")) {
-      alert("No se pudo compartir este tipo de archivo desde este navegador.");
-    } else {
- alert("No se pudo compartir.\n\n" + (e?.message || e?.name || e));
-    }
+    alert("No se pudo compartir.\n\n" + (e?.message || e?.name || e));
   }
 };
 
