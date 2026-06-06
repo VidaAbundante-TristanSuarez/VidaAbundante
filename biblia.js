@@ -2020,12 +2020,22 @@ function actualizarBotonRetornoFiltrosBiblia() {
   if (!btn) return;
 
   const actual = obtenerEstadoLecturaParaRetornoFiltros();
+
+  const hayMarcaGuardada = !!filtroBibliaRetorno;
+
   const puedeVolver =
-    !!filtroBibliaRetorno &&
+    hayMarcaGuardada &&
     !filtrosBibliaMismoLugar(filtroBibliaRetorno, actual);
 
+  // ✅ si estoy en otro lugar: vuelve
+  // ✅ si estoy en el mismo lugar: sigue siendo paperclip para actualizar la marca
   btn.dataset.modo = puedeVolver ? "volver" : "guardar";
-  btn.classList.toggle("activo", puedeVolver);
+
+  // ✅ activo cuando existe una marca guardada, aunque todavía sea paperclip
+  btn.classList.toggle("activo", hayMarcaGuardada);
+
+  btn.classList.toggle("modo-guardado", hayMarcaGuardada && !puedeVolver);
+  btn.classList.toggle("modo-volver", puedeVolver);
 
   btn.innerHTML = puedeVolver
     ? `<i class="fa-solid fa-reply"></i>`
@@ -2033,7 +2043,9 @@ function actualizarBotonRetornoFiltrosBiblia() {
 
   btn.title = puedeVolver
     ? "Volver al punto guardado"
-    : "Guardar este punto de lectura";
+    : hayMarcaGuardada
+      ? "Punto guardado. Tocar para actualizarlo"
+      : "Guardar este punto de lectura";
 }
 
 function guardarPuntoRetornoFiltrosBiblia() {
