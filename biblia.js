@@ -1906,7 +1906,14 @@ let filtroBibliaBackup = null;
 
 // ================= 🔁 RETORNO RÁPIDO DESDE FILTROS BIBLIA =================
 const LS_FILTRO_BIBLIA_RETORNO = "va_biblia_filtro_retorno_v1";
-let filtroBibliaRetorno = leerRetornoFiltrosBiblia();
+
+/* ✅ La marca empieza vacía cada vez que abrís la app.
+   Así el botón NO arranca activo apenas abrís filtros. */
+let filtroBibliaRetorno = null;
+
+try {
+  localStorage.removeItem(LS_FILTRO_BIBLIA_RETORNO);
+} catch (e) {}
 
 function leerRetornoFiltrosBiblia() {
   try {
@@ -1928,13 +1935,9 @@ function leerRetornoFiltrosBiblia() {
 }
 
 function guardarRetornoFiltrosBibliaLocal(data) {
+  // ✅ Solo memoria viva de la app, no localStorage.
+  // Así se activa cuando tocás el clip, pero no queda pegado al reiniciar.
   filtroBibliaRetorno = data;
-
-  try {
-    localStorage.setItem(LS_FILTRO_BIBLIA_RETORNO, JSON.stringify(data));
-  } catch (e) {
-    console.warn("No pude guardar retorno rápido Biblia:", e);
-  }
 }
 
 function borrarRetornoFiltrosBiblia() {
@@ -2062,7 +2065,7 @@ function guardarPuntoRetornoFiltrosBiblia() {
 }
 
 function volverPuntoRetornoFiltrosBiblia() {
-  const destino = filtroBibliaRetorno || leerRetornoFiltrosBiblia();
+const destino = filtroBibliaRetorno;
 
   if (!destino || !destino.libro) {
     if (typeof mostrarToast === "function") {
