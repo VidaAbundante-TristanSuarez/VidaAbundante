@@ -3225,43 +3225,31 @@ body.oscuro .subir-iglesia-btn:has(input:checked){
   display:none !important;
 }
 
-/* ✅ El contenedor del título es la referencia del desplegable */
-#wrapFiltrosBiblia{
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  flex: 0 0 auto;
-  overflow: visible;
-}
-
 /* ✅ Filtros Biblia: cerrados por defecto */
 #wrapFiltrosBiblia .filtros{
   display:none !important;
 }
 
-/* ✅ Filtros Biblia: abiertos debajo del botón/título */
+/* ✅ Filtros Biblia: posición anterior dentro de la barra */
 #wrapFiltrosBiblia.abierto .filtros{
   display:grid !important;
-  grid-template-columns: 1fr 54px;
-  grid-template-areas:
-    "buscar buscar"
-    "libro  cap";
+  grid-template-columns: 1fr 74px;
   align-items:center;
-  gap: 6px;
+  gap: 8px;
 
   position:absolute;
-  left: 0;
-  top: calc(100% + 6px);
-  transform: none;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
 
-  width: min(285px, calc(100vw - 24px));
-  padding: 8px;
+  width: min(320px, calc(100% - 150px));
+  padding: 8px 10px;
 
   background: #e9f6ff;
   border: 1px solid rgba(0,0,0,.10);
   border-radius: 14px;
   box-shadow: 0 10px 24px rgba(0,0,0,.22);
-  z-index: 9999;
+  z-index: 20;
   box-sizing: border-box;
 }
 
@@ -3271,37 +3259,20 @@ body.oscuro #wrapFiltrosBiblia.abierto .filtros{
   box-shadow: 0 10px 24px rgba(0,0,0,.45);
 }
 
+#wrapFiltrosBiblia .filtros select,
 #buscarLibroBiblia{
-  grid-area: buscar;
-  height: 32px;
-  padding: 0 12px;
-  font-size: 13px;
-  font-family: "Lora", serif;
-  border-radius: 999px;
-  border: 1px solid rgba(0,0,0,.14);
-  outline: none;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-#libro{
-  grid-area: libro;
-}
-
-#capitulo{
-  grid-area: cap;
-}
-
-#wrapFiltrosBiblia .filtros select{
-  height: 32px;
+  height: 34px;
   padding: 0 10px;
-  font-size: 13px;
-  font-family: "Lora", serif;
+  font-size: 14px;
   border-radius: 999px;
   min-width: 0;
-  width: 100%;
-  max-width: 100%;
   box-sizing: border-box;
+}
+
+#buscarLibroBiblia{
+  width: 100%;
+  border: 1px solid rgba(0,0,0,.14);
+  outline: none;
 }
 
 #wrapFiltrosBiblia .filtros #libro{
@@ -3309,7 +3280,7 @@ body.oscuro #wrapFiltrosBiblia.abierto .filtros{
 }
 
 #wrapFiltrosBiblia .filtros #capitulo{
-  width: 100%;
+  width: 74px;
   text-align: center;
 }
 
@@ -3321,12 +3292,20 @@ body.oscuro #buscarLibroBiblia{
 
 @media (max-width: 640px){
   #wrapFiltrosBiblia.abierto .filtros{
-    left: 0;
-    top: calc(100% + 6px);
-    width: min(285px, calc(100vw - 18px));
-    grid-template-columns: 1fr 54px;
+    width: min(270px, calc(100% - 130px));
+    grid-template-columns: 1fr 64px;
     gap: 6px;
-    padding: 8px;
+    padding: 6px 8px;
+  }
+
+  #wrapFiltrosBiblia .filtros select,
+  #buscarLibroBiblia{
+    height: 32px;
+    font-size: 13px;
+  }
+
+  #wrapFiltrosBiblia .filtros #capitulo{
+    width: 64px;
   }
 }
 
