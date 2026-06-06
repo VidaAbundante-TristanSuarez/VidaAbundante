@@ -3374,23 +3374,27 @@ function compRenderSubido(item) {
           </div>
         </div>
 
-        <div class="comp-archivo-abierta-wrap">
-          ${archivoHTML || `<div class="comp-post-empty">No pude cargar el archivo.</div>`}
-        </div>
+<div
+  class="comp-archivo-abierta-wrap"
+  onclick="
+    if (!event.target.closest('img, video, .subidos-archivo-img, .subidos-archivo-media, .subidos-visor-img')) return;
+    abrirSubidosVisorArchivo('${compJs(subidoId)}', 0);
+  "
+  title="Tocar la imagen para abrir"
+  role="button"
+>
+  ${archivoHTML || `<div class="comp-post-empty">No pude cargar el archivo.</div>`}
+</div>
 
-        <div class="comp-post-actions">
-          <button type="button" onclick="abrirSubidosVisorArchivo('${compJs(subidoId)}', 0)" title="Abrir archivo">
-            <i class="fa-solid fa-up-right-and-down-left-from-center"></i>
-          </button>
+<div class="comp-post-actions">
+  <button type="button" onclick="compartirSubido('${compJs(subidoId)}')" title="Compartir">
+    <i class="fa-solid fa-share-nodes"></i>
+  </button>
 
-          <button type="button" onclick="compartirSubido('${compJs(subidoId)}')" title="Compartir">
-            <i class="fa-solid fa-share-nodes"></i>
-          </button>
-
-          <button type="button" onclick="descargarSubido('${compJs(subidoId)}')" title="Descargar">
-            <i class="fa-solid fa-download"></i>
-          </button>
-        </div>
+  <button type="button" onclick="descargarSubido('${compJs(subidoId)}')" title="Descargar">
+    <i class="fa-solid fa-download"></i>
+  </button>
+</div>
 
         ${compDeleteBtn(item)}
       </article>
