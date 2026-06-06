@@ -3246,31 +3246,33 @@ body.oscuro .subir-iglesia-btn:has(input:checked){
 
 #wrapFiltrosBiblia.abierto .filtros {
   display: grid;
-  grid-template-columns: 1fr 54px;
+  grid-template-columns: 1fr 48px;
   grid-template-areas:
     "buscar buscar"
     "libro cap";
   align-items: center;
-
-  /* ✅ 2px menos entre input/filtros */
-  gap: 6px;
+  gap: 5px;
 
   position: absolute;
-  top: 50%;
+
+  /* ✅ ahora baja y no tapa arriba */
+  top: calc(100% + 7px);
   right: 0;
-  transform: translateY(-50%);
+  transform: none;
 
-  width: min(320px, calc(100vw - 150px));
+  /* ✅ más angosto */
+  width: min(280px, calc(100vw - 110px));
 
-  /* ✅ 2px menos en el contorno general, pero deja aire para el botón */
-  padding: 6px 15px 6px 8px;
+  /* ✅ deja espacio real al botón redondo */
+  padding: 7px 42px 7px 8px;
 
   background: #e9f6ff;
   border: 1px solid rgba(0, 0, 0, .10);
   border-radius: 14px;
   box-shadow: 0 10px 24px rgba(0, 0, 0, .22);
-  z-index: 30;
+  z-index: 999;
   box-sizing: border-box;
+  overflow: visible;
 }
 
 body.oscuro #wrapFiltrosBiblia.abierto .filtros{
@@ -3352,24 +3354,37 @@ body.oscuro #buscarLibroBiblia{
 #filtrosBiblia .btn-aplicar-filtros {
   position: absolute;
   top: 50%;
-  right: 4px;
+  right: 7px;
   transform: translateY(-50%);
 
-  /* ✅ más grande para que sea bien redondo */
-  width: 17px;
-  height: 17px;
+  /* ✅ botón circular tipo barra de acciones */
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  min-height: 28px;
 
   display: flex;
   align-items: center;
   justify-content: center;
 
   border-radius: 50%;
-  background: var(--azul-hover);
-  color: #000;
+  border: 1px solid rgba(28, 111, 203, .22);
+  background: #e9f8ff;
+  color: #0d4f78;
+
+  box-shadow:
+    0 3px 10px rgba(0, 0, 0, .10),
+    inset 0 1px 0 rgba(255, 255, 255, .85);
+
   cursor: pointer;
-  z-index: 3;
+  z-index: 5;
   user-select: none;
-  overflow: visible;
+  overflow: hidden;
+}
+
+#filtrosBiblia .btn-aplicar-filtros:hover {
+  background: #d9f2ff;
+  border-color: rgba(28, 111, 203, .35);
 }
 
 #filtrosBiblia .btn-aplicar-filtros i{
