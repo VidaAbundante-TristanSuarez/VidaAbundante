@@ -526,25 +526,29 @@ async function subidosCrearJpgLimpioParaShareDesdeInfo(info = {}, id = "") {
 
 async function subidosCrearFileShareComunDesdeInfo(info = {}, id = "") {
   const normal = subidosInfoShareNormalizada(info);
+  if (!normal?.url) throw new Error("Falta URL del archivo.");
 
-  // Primero intentamos archivo real.
-  const original = await subidosObtenerFileDesdeInfo(normal, id);
+  const original = await subidosCrearFileDesdeInfo(normal);
 
   try {
     if (
       navigator.share &&
       (!navigator.canShare || navigator.canShare({ files: [original] }))
     ) {
+      subidosGuardarFileCachePorInfo(normal, original, id);
       return original;
     }
   } catch (e) {}
 
-  // Si el archivo real no sirve para Web Share y es imagen,
-  // lo convertimos a JPG limpio como archivo compartible.
   if (subidosEsImagenParaShare(normal)) {
-    return await subidosCrearJpgLimpioParaShareDesdeInfo(normal, id);
+    const jpg = await subidosCrearJpgLimpioParaShareDesdeInfo(normal, id);
+
+    subidosGuardarFileCachePorInfo(normal, jpg, id);
+
+    return jpg;
   }
 
+  subidosGuardarFileCachePorInfo(normal, original, id);
   return original;
 }
 
@@ -1027,7 +1031,9 @@ async function subidosPrepararArchivoAccion(id) {
       const idCache = i === 0 ? id : "";
 
       try {
-        const file = await subidosObtenerFileDesdeInfo(info, idCache);
+       const file = esPredica
+  ? await subidosObtenerFileDesdeInfo(info, idCache)
+  : await subidosCrearFileShareComunDesdeInfo(info, idCache);
         if (i === 0) principalFile = file;
       } catch (e) {
         console.warn("No pude preparar archivo:", id, i, e);
