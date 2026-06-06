@@ -8677,21 +8677,38 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  if (tituloBiblia && !tituloBiblia.__readyFiltrosBiblia) {
-    tituloBiblia.__readyFiltrosBiblia = true;
+if (tituloBiblia && !tituloBiblia.__readyFiltrosBiblia) {
+  tituloBiblia.__readyFiltrosBiblia = true;
 
-    tituloBiblia.setAttribute("role", "button");
-    tituloBiblia.setAttribute("tabindex", "0");
-    tituloBiblia.setAttribute("aria-label", "Abrir filtros de Biblia");
+  // ✅ El HTML ya trae onclick="toggleFiltrosBiblia()".
+  // Lo quitamos para que no haga doble toggle: abrir y cerrar en el mismo toque.
+  tituloBiblia.removeAttribute("onclick");
+  tituloBiblia.onclick = null;
 
-    tituloBiblia.addEventListener("click", dispararFiltrosBiblia);
+  tituloBiblia.setAttribute("role", "button");
+  tituloBiblia.setAttribute("tabindex", "0");
+  tituloBiblia.setAttribute("aria-label", "Abrir filtros de Biblia");
 
-    tituloBiblia.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" || e.key === " ") {
-        dispararFiltrosBiblia(e);
+  tituloBiblia.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (typeof window.toggleFiltrosBiblia === "function") {
+      window.toggleFiltrosBiblia();
+    }
+  });
+
+  tituloBiblia.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (typeof window.toggleFiltrosBiblia === "function") {
+        window.toggleFiltrosBiblia();
       }
-    });
-  }
+    }
+  });
+}
 
 const inputBuscarLibro = document.getElementById("buscarLibroBiblia");
 const selectLibro = document.getElementById("libro");
