@@ -3289,13 +3289,16 @@ body.oscuro .subir-iglesia-btn:has(input:checked){
 }
 
 
-#wrapFiltrosBiblia .filtros,
+#wrapFiltrosBiblia .filtros{
+  display:none;
+}
+
 body:not(.filtros-biblia-abiertos) #wrapFiltrosBiblia .filtros{
   display:none !important;
 }
 
 body.filtros-biblia-abiertos #wrapFiltrosBiblia.abierto .filtros{
-  display:grid;
+  display:grid !important;
   grid-template-columns: 1fr 54px;
   grid-template-areas:
     "buscar buscar"
