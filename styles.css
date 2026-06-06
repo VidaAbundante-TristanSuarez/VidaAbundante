@@ -4869,4 +4869,66 @@ body.oscuro #modalPersonalizar #btnModoFondoBiblia{
   text-align: right;
 }
 
+/* =========================================================
+   FILTROS BIBLIA - PC
+   En celular queda igual. En PC se abre entre Mi Panel
+   y los botones de capítulo anterior/siguiente.
+========================================================= */
+@media (min-width: 769px) {
+
+  #wrapFiltrosBiblia.abierto .filtros {
+    position: fixed;
+
+    /* ✅ sube el panel al espacio libre entre las barras */
+    top: 86px;
+
+    /* ✅ deja aire antes de los botones redondos de capítulo */
+    right: 102px;
+    left: auto;
+    transform: none;
+
+    /* ✅ más angosto y prolijo */
+    width: min(350px, calc(100vw - 520px));
+    min-width: 280px;
+
+    display: grid;
+    grid-template-columns: 1fr 52px;
+    grid-template-areas:
+      "buscar buscar"
+      "libro cap";
+    align-items: center;
+    gap: 5px;
+
+    /* ✅ espacio para el botón circular de aplicar */
+    padding: 7px 44px 7px 8px;
+
+    background: #e9f6ff;
+    border: 1px solid rgba(0, 0, 0, .10);
+    border-radius: 14px;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, .22);
+    z-index: 9999;
+    box-sizing: border-box;
+    overflow: visible;
+  }
+
+  #filtrosBiblia .btn-aplicar-filtros {
+    right: 8px;
+
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    min-height: 30px;
+
+    border-radius: 50%;
+    border: 1px solid rgba(28, 111, 203, .22);
+    background: #e9f8ff;
+    color: #0d4f78;
+
+    box-shadow:
+      0 3px 10px rgba(0, 0, 0, .10),
+      inset 0 1px 0 rgba(255, 255, 255, .85);
+  }
+
+}
+
 </style> 
