@@ -385,6 +385,10 @@ window.compCompartirUrl = async function compCompartirUrl(url, fileName = "image
     alert("Link copiado.");
 
   } catch (e) {
+    if (window.vaShareCancelado?.(e)) {
+      return;
+    }
+
     console.error(e);
     alert("No pude compartir el archivo.");
   }
