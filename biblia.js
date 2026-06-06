@@ -1934,6 +1934,7 @@ function abrirFiltrosBiblia() {
   };
 
   wrap.classList.add("abierto");
+  document.body.classList.add("filtros-biblia-abiertos");
   if (btn) btn.classList.add("activo");
 
    if (libroSel) {
@@ -1966,6 +1967,7 @@ function cerrarFiltrosBiblia(cancelar = false) {
   }
 
   wrap.classList.remove("abierto");
+  document.body.classList.remove("filtros-biblia-abiertos");
   if (btn) {
     btn.classList.remove("activo");
     btn.blur();
@@ -2044,7 +2046,8 @@ function bibliaRestaurarUIAlVolver() {
   modoMarcador = !!bk.modoMarcador;
   seleccionImagen = { ...(bk.seleccionImagen || {}) };
   seleccionImagenOrden = [...(bk.seleccionImagenOrden || [])];
-seleccionMarcadorOrden = [...(bk.seleccionMarcadorOrden || [])];
+  seleccionMarcador = { ...(bk.seleccionMarcador || {}) };
+  seleccionMarcadorOrden = [...(bk.seleccionMarcadorOrden || [])];
   userSetFontSize = !!bk.userSetFontSize;
 
   // restaurar clases visuales
@@ -5633,12 +5636,7 @@ function renderPreviewVersiculosMarcador() {
   const form = document.getElementById("formNuevoMarcador");
   const formVisible = form && getComputedStyle(form).display !== "none";
 
-  if (!formVisible) {
-    box.innerHTML = "";
-    return;
-  }
-
-  if (creandoNotaLibre) {
+  if (!formVisible || creandoNotaLibre) {
     box.innerHTML = "";
     return;
   }
@@ -5672,20 +5670,20 @@ function renderPreviewVersiculosMarcador() {
     const txt = vv ? getTextoVersiculo(vv) : "";
 
     return `
-      <div>
-        <span style="opacity:.75">
-          ${marcadorEscapeHTML(it.Libro)} ${it.Capitulo}:${it.Versiculo}
-        </span>
+      <div class="marcador-preview-versiculo">
         ${marcadorEscapeHTML(txt)}
       </div>
     `;
   }).join("");
 
   box.innerHTML = `
-    <div style="font-weight:900; margin-bottom:6px;">
+    <div class="marcador-preview-ref">
       ${marcadorEscapeHTML(refCompleta)}
     </div>
-    ${partes}
+
+    <div class="marcador-preview-textos">
+      ${partes}
+    </div>
   `;
 }
 
