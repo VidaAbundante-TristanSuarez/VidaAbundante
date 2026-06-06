@@ -1904,6 +1904,215 @@ if (!vaSnapshotRapidoOk) {
 // ================= 🔎 HELPERS FILTROS BIBLIA =================
 let filtroBibliaBackup = null;
 
+// ================= 🔁 RETORNO RÁPIDO DESDE FILTROS BIBLIA =================
+const LS_FILTRO_BIBLIA_RETORNO = "va_biblia_filtro_retorno_v1";
+let filtroBibliaRetorno = leerRetornoFiltrosBiblia();
+
+function leerRetornoFiltrosBiblia() {
+  try {
+    const raw = localStorage.getItem(LS_FILTRO_BIBLIA_RETORNO);
+    const data = raw ? JSON.parse(raw) : null;
+
+    if (!data || !data.libro || !data.capitulo) return null;
+
+    return {
+      version: data.version === "NTV" ? "NTV" : "RV1960",
+      libro: String(data.libro || ""),
+      capitulo: Number(data.capitulo || 1),
+      scroll: Number(data.scroll || 0),
+      ts: Number(data.ts || Date.now())
+    };
+  } catch (e) {
+    return null;
+  }
+}
+
+function guardarRetornoFiltrosBibliaLocal(data) {
+  filtroBibliaRetorno = data;
+
+  try {
+    localStorage.setItem(LS_FILTRO_BIBLIA_RETORNO, JSON.stringify(data));
+  } catch (e) {
+    console.warn("No pude guardar retorno rápido Biblia:", e);
+  }
+}
+
+function borrarRetornoFiltrosBiblia() {
+  filtroBibliaRetorno = null;
+
+  try {
+    localStorage.removeItem(LS_FILTRO_BIBLIA_RETORNO);
+  } catch (e) {}
+}
+
+function obtenerEstadoLecturaParaRetornoFiltros() {
+  const bk = filtroBibliaBackup || {};
+
+  return {
+    version: bk.version || versionActual || "RV1960",
+    libro: bk.libro || libroSel?.value || "",
+    capitulo: Number(bk.capitulo || capSel?.value || 1),
+    scroll: Number.isFinite(Number(bk.scroll))
+      ? Number(bk.scroll)
+      : (window.scrollY || document.documentElement.scrollTop || 0),
+    ts: Date.now()
+  };
+}
+
+function filtrosBibliaMismoLugar(a, b) {
+  if (!a || !b) return false;
+
+  const mismoCapitulo =
+    String(a.version || "RV1960") === String(b.version || "RV1960") &&
+    String(a.libro || "") === String(b.libro || "") &&
+    Number(a.capitulo || 0) === Number(b.capitulo || 0);
+
+  if (!mismoCapitulo) return false;
+
+  // ✅ Si es el mismo capítulo pero otro scroll, igual permite volver.
+  return Math.abs(Number(a.scroll || 0) - Number(b.scroll || 0)) < 40;
+}
+
+function asegurarBotonRetornoFiltrosBiblia() {
+  const filtros = document.getElementById("filtrosBiblia");
+  if (!filtros) return null;
+
+  let btn = document.getElementById("btnRetornoFiltrosBiblia");
+
+  if (!btn) {
+    btn = document.createElement("button");
+    btn.type = "button";
+    btn.id = "btnRetornoFiltrosBiblia";
+    btn.className = "btn-retorno-filtros";
+    btn.setAttribute("aria-label", "Guardar o volver al punto de lectura");
+
+    const btnAplicar = document.getElementById("btnAplicarFiltrosBiblia");
+
+    if (btnAplicar && btnAplicar.parentElement === filtros) {
+      filtros.insertBefore(btn, btnAplicar);
+    } else {
+      filtros.appendChild(btn);
+    }
+  }
+
+  if (!btn.dataset.ready) {
+    btn.dataset.ready = "1";
+
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (btn.dataset.modo === "volver") {
+        volverPuntoRetornoFiltrosBiblia();
+      } else {
+        guardarPuntoRetornoFiltrosBiblia();
+      }
+    });
+  }
+
+  actualizarBotonRetornoFiltrosBiblia();
+
+  return btn;
+}
+
+function actualizarBotonRetornoFiltrosBiblia() {
+  const btn = document.getElementById("btnRetornoFiltrosBiblia");
+  if (!btn) return;
+
+  const actual = obtenerEstadoLecturaParaRetornoFiltros();
+  const puedeVolver =
+    !!filtroBibliaRetorno &&
+    !filtrosBibliaMismoLugar(filtroBibliaRetorno, actual);
+
+  btn.dataset.modo = puedeVolver ? "volver" : "guardar";
+  btn.classList.toggle("activo", puedeVolver);
+
+  btn.innerHTML = puedeVolver
+    ? `<i class="fa-solid fa-reply"></i>`
+    : `<i class="fa-solid fa-paperclip"></i>`;
+
+  btn.title = puedeVolver
+    ? "Volver al punto guardado"
+    : "Guardar este punto de lectura";
+}
+
+function guardarPuntoRetornoFiltrosBiblia() {
+  const estado = obtenerEstadoLecturaParaRetornoFiltros();
+
+  if (!estado.libro) return;
+
+  guardarRetornoFiltrosBibliaLocal(estado);
+  actualizarBotonRetornoFiltrosBiblia();
+
+  if (typeof mostrarToast === "function") {
+    mostrarToast("📎 Punto de lectura guardado");
+  }
+}
+
+function volverPuntoRetornoFiltrosBiblia() {
+  const destino = filtroBibliaRetorno || leerRetornoFiltrosBiblia();
+
+  if (!destino || !destino.libro) {
+    if (typeof mostrarToast === "function") {
+      mostrarToast("No hay punto guardado");
+    }
+    return;
+  }
+
+  // ✅ restaurar versión
+  if (destino.version === "NTV" && bibliaDataNTV.length) {
+    versionActual = "NTV";
+    bibliaData = bibliaDataNTV;
+  } else {
+    versionActual = "RV1960";
+    bibliaData = bibliaDataRV;
+  }
+
+  const libros = [...new Set(bibliaData.map(v => v.Libro))];
+
+  if (!libros.includes(destino.libro)) {
+    if (typeof mostrarToast === "function") {
+      mostrarToast("No encontré ese libro en esta versión");
+    }
+    return;
+  }
+
+  libroSel.value = destino.libro;
+  reconstruirCapitulosParaLibro(destino.libro, destino.capitulo);
+  capSel.value = String(destino.capitulo);
+
+  mostrarTexto({
+    irArriba: false,
+    guardar: true
+  });
+
+  cerrarFiltrosBiblia(false);
+
+  const y = Math.max(0, Number(destino.scroll || 0));
+
+  requestAnimationFrame(() => {
+    window.scrollTo({
+      top: y,
+      behavior: "auto"
+    });
+
+    setTimeout(() => {
+      window.scrollTo({
+        top: y,
+        behavior: "auto"
+      });
+
+      guardarEstadoBiblia();
+    }, 80);
+  });
+
+  borrarRetornoFiltrosBiblia();
+
+  if (typeof mostrarToast === "function") {
+    mostrarToast("↩️ Volviste al punto guardado");
+  }
+}
+
 function normalizarTextoFiltro(s) {
   return String(s || "")
     .normalize("NFD")
@@ -1944,10 +2153,15 @@ function abrirFiltrosBiblia() {
   if (!wrap) return;
 
   filtroBibliaBackup = {
+    version: versionActual || "RV1960",
     libro: libroSel?.value || "",
     capitulo: Number(capSel?.value || 1),
+    scroll: window.scrollY || document.documentElement.scrollTop || 0,
     input: document.getElementById("buscarLibroBiblia")?.value || ""
   };
+
+  asegurarBotonRetornoFiltrosBiblia();
+  actualizarBotonRetornoFiltrosBiblia();
 
   wrap.classList.add("abierto");
 if (btn) btn.classList.add("activo");
