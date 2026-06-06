@@ -3244,27 +3244,31 @@ body.oscuro .subir-iglesia-btn:has(input:checked){
   display:none;
 }
 
-#wrapFiltrosBiblia.abierto .filtros{
-  display:grid;
+#wrapFiltrosBiblia.abierto .filtros {
+  display: grid;
   grid-template-columns: 1fr 54px;
   grid-template-areas:
     "buscar buscar"
-    "libro  cap";
-  align-items:center;
+    "libro cap";
+  align-items: center;
+
+  /* ✅ 2px menos entre input/filtros */
   gap: 6px;
 
-  position:absolute;
-  right: 0;
+  position: absolute;
   top: 50%;
+  right: 0;
   transform: translateY(-50%);
 
-  width: min(285px, calc(100vw - 150px));
-  padding: 8px 18px 8px 8px;
+  width: min(320px, calc(100vw - 150px));
+
+  /* ✅ 2px menos en el contorno general, pero deja aire para el botón */
+  padding: 6px 15px 6px 8px;
 
   background: #e9f6ff;
-  border: 1px solid rgba(0,0,0,.10);
+  border: 1px solid rgba(0, 0, 0, .10);
   border-radius: 14px;
-  box-shadow: 0 10px 24px rgba(0,0,0,.22);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, .22);
   z-index: 30;
   box-sizing: border-box;
 }
@@ -3345,26 +3349,27 @@ body.oscuro #buscarLibroBiblia{
   padding-right: 18px; /* reserva justa para la pastilla azul */
 }
 
-#filtrosBiblia .btn-aplicar-filtros{
+#filtrosBiblia .btn-aplicar-filtros {
   position: absolute;
   top: 50%;
-  right: 3px;
+  right: 4px;
   transform: translateY(-50%);
 
-  width: 12px;          /* ✅ achica SOLO la parte azul */
-  height: 30px;
+  /* ✅ más grande para que sea bien redondo */
+  width: 17px;
+  height: 17px;
 
   display: flex;
   align-items: center;
   justify-content: center;
 
-  border-radius: 8px;
-  background: var(--ui-azul-hover);
+  border-radius: 50%;
+  background: var(--azul-hover);
   color: #000;
   cursor: pointer;
   z-index: 3;
   user-select: none;
-  overflow: visible;    /* ✅ deja que la flecha no se recorte */
+  overflow: visible;
 }
 
 #filtrosBiblia .btn-aplicar-filtros i{
