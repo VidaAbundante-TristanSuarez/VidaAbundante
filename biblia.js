@@ -366,6 +366,7 @@ async function guardarResaltadoresUsuario() {
 // ================= MARCADORES (NUEVO LIMPIO) =================
 let modoMarcador = false;
 let seleccionMarcador = {};         // {idVersiculo:true}
+let seleccionMarcadorOrden = [];    // ✅ respeta el orden real en que marcás
 let marcadores = {};                // cache firebase
 
 let panelRecursosGuardados = {};
@@ -538,6 +539,147 @@ function referenciaImagenEnOrden(items = []) {
 
     return `${libroGrupo.Libro} ${partes.join(" y ")}`;
   }).join("; ");
+}
+
+// ================= ORDEN REAL PARA MARCADORES / NOTAS =================
+// Copia la lógica de Crear Imagen Biblia:
+// no ordena alfabéticamente, respeta el orden en que tocás los versículos.
+
+function marcadorEscapeHTML(v = "") {
+  return String(v ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+function limpiarSeleccionMarcadorCompleta() {
+  seleccionMarcador = {};
+  seleccionMarcadorOrden = [];
+}
+
+function marcarMarcadorEnOrden(id) {
+  id = String(id || "").trim();
+  if (!id) return;
+
+  if (seleccionMarcador[id]) {
+    delete seleccionMarcador[id];
+    seleccionMarcadorOrden = seleccionMarcadorOrden.filter(x => x !== id);
+    return;
+  }
+
+  seleccionMarcador[id] = true;
+
+  if (!seleccionMarcadorOrden.includes(id)) {
+    seleccionMarcadorOrden.push(id);
+  }
+}
+
+function getIdsMarcadorEnOrden() {
+  const vivos = new Set(Object.keys(seleccionMarcador || {}));
+
+  seleccionMarcadorOrden = (seleccionMarcadorOrden || [])
+    .filter(id => vivos.has(id));
+
+  // respaldo por si alguna selección vieja quedó sin orden
+  Object.keys(seleccionMarcador || {}).forEach(id => {
+    if (!seleccionMarcadorOrden.includes(id)) {
+      seleccionMarcadorOrden.push(id);
+    }
+  });
+
+  return [...seleccionMarcadorOrden];
+}
+
+function marcadorItemDesdeId(id) {
+  const partes = String(id || "").split("_");
+  const Versiculo = Number(partes.pop());
+  const Capitulo = Number(partes.pop());
+  const Libro = partes.join("_");
+
+  if (!Libro || !Number.isFinite(Capitulo) || !Number.isFinite(Versiculo)) {
+    return null;
+  }
+
+  return {
+    id,
+    Libro,
+    Capitulo,
+    Versiculo
+  };
+}
+
+function getItemsMarcadorEnOrden() {
+  return getIdsMarcadorEnOrden()
+    .map(marcadorItemDesdeId)
+    .filter(Boolean);
+}
+
+function itemsMarcadorDesdeData(m = {}) {
+  const detalle = Array.isArray(m?.versiculosDetalle)
+    ? m.versiculosDetalle.map(it => ({
+        id: it.id || `${it.libro || it.Libro}_${it.capitulo || it.Capitulo}_${it.versiculo || it.Versiculo}`,
+        Libro: it.Libro || it.libro || "",
+        Capitulo: Number(it.Capitulo || it.capitulo || 0),
+        Versiculo: Number(it.Versiculo || it.versiculo || 0)
+      })).filter(it => it.Libro && it.Capitulo && it.Versiculo)
+    : [];
+
+  if (detalle.length) return detalle;
+
+  const orden = Array.isArray(m?.seleccionOrden)
+    ? m.seleccionOrden.map(marcadorItemDesdeId).filter(Boolean)
+    : [];
+
+  if (orden.length) return orden;
+
+  const libro = String(m?.libro || "").trim();
+  const capitulo = Number(m?.capitulo || 0);
+  const versiculos = Array.isArray(m?.versiculos)
+    ? m.versiculos.map(Number).filter(n => !isNaN(n))
+    : [];
+
+  if (!libro || !capitulo || !versiculos.length) return [];
+
+  return versiculos.map(n => ({
+    id: `${libro}_${capitulo}_${n}`,
+    Libro: libro,
+    Capitulo: capitulo,
+    Versiculo: n
+  }));
+}
+
+function getItemsMarcadorParaForm(base = null) {
+  if (base) return itemsMarcadorDesdeData(base);
+  return getItemsMarcadorEnOrden();
+}
+
+function referenciaMarcadorEnOrden(items = []) {
+  return referenciaImagenEnOrden(items);
+}
+
+function textoVersiculosMarcadorPlano(items = []) {
+  const textos = [];
+
+  items.forEach(it => {
+    const vv = bibliaData.find(x =>
+      x.Libro === it.Libro &&
+      Number(x.Capitulo) === Number(it.Capitulo) &&
+      Number(x.Versiculo) === Number(it.Versiculo)
+    );
+
+    const txt = vv ? getTextoVersiculo(vv) : "";
+    if (txt) textos.push(txt);
+  });
+
+  return textos.join(" ").trim();
+}
+
+function marcadorContieneVersiculo(m, libro, capitulo, versiculo) {
+  return itemsMarcadorDesdeData(m).some(it =>
+    it.Libro === libro &&
+    Number(it.Capitulo) === Number(capitulo) &&
+    Number(it.Versiculo) === Number(versiculo)
+  );
 }
 
 // ================= FONDO DISEÑADO: CREAR IMAGEN BIBLIA =================
@@ -1662,7 +1804,7 @@ onValue(ref(db, "panelEdiciones/" + uid), s => {
     notasBibliaPluma = window.notasBibliaPluma;
     notasABCIndex = window.notasABCIndex;
 
-    Object.entries(marcadores || {}).forEach(([idMarcador, m]) => {
+Object.entries(marcadores || {}).forEach(([idMarcador, m]) => {
       const tieneNota = !!(m?.nota && String(m.nota).trim());
       if (!tieneNota) return;
 
@@ -1672,20 +1814,18 @@ onValue(ref(db, "panelEdiciones/" + uid), s => {
         return;
       }
 
-      const libro = m?.libro;
-      const cap = Number(m?.capitulo);
-      const vers = Array.isArray(m?.versiculos) ? m.versiculos : [];
+      const itemsMarcador = itemsMarcadorDesdeData(m);
+      if (!itemsMarcador.length) return;
 
-      if (!libro || !cap || !vers.length) return;
-
-      const nums = vers.map(vn => Number(vn)).filter(n => !isNaN(n));
-      nums.forEach(n => {
-        notasBibliaIndex[`${libro}_${cap}_${n}`] = true;
+      itemsMarcador.forEach(it => {
+        notasBibliaIndex[`${it.Libro}_${it.Capitulo}_${it.Versiculo}`] = true;
       });
 
-      const last = Math.max(...nums);
-      if (isFinite(last)) {
-        const idVersiculo = `${libro}_${cap}_${last}`;
+      // ✅ la pluma va en el último marcado según TU orden real
+      const last = itemsMarcador[itemsMarcador.length - 1];
+
+      if (last) {
+        const idVersiculo = `${last.Libro}_${last.Capitulo}_${last.Versiculo}`;
         notasBibliaPluma[idVersiculo] = idMarcador;
       }
     });
@@ -1863,7 +2003,8 @@ function bibliaBackupUI() {
     modoMarcador: !!modoMarcador,
     seleccionImagen: { ...(seleccionImagen || {}) },
     seleccionImagenOrden: [...(seleccionImagenOrden || [])],
-    seleccionMarcador: { ...(seleccionMarcador || {}) },
+seleccionMarcador: { ...(seleccionMarcador || {}) },
+seleccionMarcadorOrden: [...(seleccionMarcadorOrden || [])],
     userSetFontSize: !!userSetFontSize
   };
 }
@@ -1903,7 +2044,7 @@ function bibliaRestaurarUIAlVolver() {
   modoMarcador = !!bk.modoMarcador;
   seleccionImagen = { ...(bk.seleccionImagen || {}) };
   seleccionImagenOrden = [...(bk.seleccionImagenOrden || [])];
-  seleccionMarcador = { ...(bk.seleccionMarcador || {}) };
+seleccionMarcadorOrden = [...(bk.seleccionMarcadorOrden || [])];
   userSetFontSize = !!bk.userSetFontSize;
 
   // restaurar clases visuales
@@ -2687,8 +2828,7 @@ function toggleVersiculo(id, num) {
       return;
     }
 
-    if (seleccionMarcador[id]) delete seleccionMarcador[id];
-    else seleccionMarcador[id] = true;
+marcarMarcadorEnOrden(id);
 
     mostrarTexto();
     refrescarBotonGuardarMarcador();
@@ -2734,17 +2874,16 @@ marcarImagenEnOrden(id);
 // ======================= ⭐ Obtener Marcador Keep Para Versiculo  ====
 function obtenerMarcadorKeepParaVersiculo(libro, capitulo, versiculo) {
   const items = Object.values(marcadores || {});
+
   for (const m of items) {
     if (m?.origen === "abc") continue;
     if (!m?.keep) continue;
-    if (m?.libro !== libro) continue;
-    if (Number(m?.capitulo) !== Number(capitulo)) continue;
 
-    const vers = Array.isArray(m?.versiculos) ? m.versiculos.map(Number) : [];
-    if (vers.includes(Number(versiculo))) {
+    if (marcadorContieneVersiculo(m, libro, capitulo, versiculo)) {
       return m;
     }
   }
+
   return null;
 }
 
@@ -2759,9 +2898,12 @@ function pintarVersiculo(v) {
 
 const coincideUltimoMarcador = (
   !!ultimoMarcadorAplicado &&
-  ultimoMarcadorAplicado.libro === v.Libro &&
-  Number(ultimoMarcadorAplicado.capitulo) === Number(v.Capitulo) &&
-  (ultimoMarcadorAplicado.versiculos || []).map(Number).includes(Number(v.Versiculo))
+  marcadorContieneVersiculo(
+    ultimoMarcadorAplicado,
+    v.Libro,
+    v.Capitulo,
+    v.Versiculo
+  )
 );
 
 const aplicado = coincideUltimoMarcador || !!marcadorKeepDelVersiculo;
@@ -5222,8 +5364,8 @@ window.toggleModoMarcador = () => {
 
   modoMarcador = !modoMarcador;
 
-  if (!modoMarcador) {
-    seleccionMarcador = {};
+if (!modoMarcador) {
+    limpiarSeleccionMarcadorCompleta();
   }
 
   document.body.classList.toggle("modo-marcador", modoMarcador);
@@ -5490,55 +5632,61 @@ function renderPreviewVersiculosMarcador() {
 
   const form = document.getElementById("formNuevoMarcador");
   const formVisible = form && getComputedStyle(form).display !== "none";
+
   if (!formVisible) {
     box.innerHTML = "";
     return;
   }
 
   if (creandoNotaLibre) {
-  box.innerHTML = "";
-  return;
-}
+    box.innerHTML = "";
+    return;
+  }
 
-  // ✅ si estoy en contexto ABC, no renderices preview bíblica
-  const ctx = window.getMarcadorCtx ? window.getMarcadorCtx() : { origen: "biblia" };
+  const ctx = window.getMarcadorCtx
+    ? window.getMarcadorCtx()
+    : { origen: "biblia" };
+
   if (ctx.origen === "abc") {
     box.innerHTML = "";
     return;
   }
 
-  // ✅ prioridad 1: si estoy editando, usar base original
   const base = window.__editMarcadorBase || null;
-  let versiculos = [];
-  let libro = "";
-  let cap = 0;
+  const items = getItemsMarcadorParaForm(base);
 
-  if (base && Array.isArray(base.versiculos) && base.versiculos.length) {
-    versiculos = base.versiculos.map(Number).filter(n => !isNaN(n));
-    libro = base.libro || libroSel.value;
-    cap = Number(base.capitulo || capSel.value || 0);
-  } else {
-    // ✅ prioridad 2: selección actual
-    const ids = Object.keys(seleccionMarcador || {});
-    if (ids.length === 0) {
-      box.innerHTML = "";
-      return;
-    }
-
-    versiculos = ids.map(id => Number(id.split("_")[2])).filter(n => !isNaN(n));
-    libro = libroSel.value;
-    cap = Number(capSel.value);
+  if (!items.length) {
+    box.innerHTML = "";
+    return;
   }
 
-  versiculos.sort((a,b) => a - b);
+  const refCompleta = referenciaMarcadorEnOrden(items);
 
-  const partes = versiculos.map(n => {
-    const vv = bibliaData.find(x => x.Libro === libro && x.Capitulo == cap && x.Versiculo == n);
-   const txt = vv ? getTextoVersiculo(vv) : "";
-    return `<div><span style="opacity:.75">${n}</span> ${txt}</div>`;
+  const partes = items.map(it => {
+    const vv = bibliaData.find(x =>
+      x.Libro === it.Libro &&
+      Number(x.Capitulo) === Number(it.Capitulo) &&
+      Number(x.Versiculo) === Number(it.Versiculo)
+    );
+
+    const txt = vv ? getTextoVersiculo(vv) : "";
+
+    return `
+      <div>
+        <span style="opacity:.75">
+          ${marcadorEscapeHTML(it.Libro)} ${it.Capitulo}:${it.Versiculo}
+        </span>
+        ${marcadorEscapeHTML(txt)}
+      </div>
+    `;
   }).join("");
 
-  box.innerHTML = partes;
+  box.innerHTML = `
+    <div style="font-weight:900; margin-bottom:6px;">
+      ${marcadorEscapeHTML(refCompleta)}
+    </div>
+    ${partes}
+  `;
 }
 
 // ================= ✨ Abrir Form Nuevo Marcador 📌=================
@@ -5554,23 +5702,17 @@ window.abrirFormNuevoMarcador = () => {
   if (!lista || !form || !info) return;
 
   const base = window.__editMarcadorBase || null;
-  const versBase = Array.isArray(base?.versiculos) ? base.versiculos.map(Number).filter(n => !isNaN(n)) : [];
-  const esLibre = creandoNotaLibre || (!!base && versBase.length === 0);
+  const items = getItemsMarcadorParaForm(base);
+  const esLibre = creandoNotaLibre || (!!base && !items.length);
 
   if (esLibre) {
     info.textContent = `🗒 Nota (sin versículo) · ${new Date().toLocaleDateString("es-AR")}`;
+
     if (chkKeep) chkKeep.checked = !!(base?.destacada || base?.keep);
     if (txtKeep) txtKeep.textContent = "⭐ Destacar nota";
-  } else {
-    const ids = Object.keys(seleccionMarcador || {});
-    const nums = versBase.length
-      ? versBase.slice().sort((a,b)=>a-b)
-      : ids.map(id => Number(id.split("_")[2])).filter(n => !isNaN(n)).sort((a,b)=>a-b);
 
-    const libro = base?.libro || libroSel.value;
-    const capitulo = Number(base?.capitulo || capSel.value || 0);
-    const rango = formatearVersiculosComoRango(nums);
-    const refTxt = `${libro} ${capitulo}:${rango}`;
+  } else {
+    const refTxt = referenciaMarcadorEnOrden(items);
 
     const hoy = new Date().toLocaleDateString("es-AR", {
       day: "2-digit",
@@ -5579,23 +5721,26 @@ window.abrirFormNuevoMarcador = () => {
     });
 
     info.textContent = `📌 ${refTxt} · ${hoy}`;
+
     if (chkKeep) chkKeep.checked = !!base?.keep;
     if (txtKeep) txtKeep.textContent = "📌 Mantener resaltado";
   }
 
-if (!window.__editMarcadorId) {
-  document.getElementById("marcadorTitulo").value = "";
-  document.getElementById("marcadorNota").value = "";
+  if (!window.__editMarcadorId) {
+    const inputTitulo = document.getElementById("marcadorTitulo");
+    const inputNota = document.getElementById("marcadorNota");
 
-  // ✅ color visible + real
-  syncMarcadorColorUI(colorActual || "#fff3b0");
+    if (inputTitulo) inputTitulo.value = "";
+    if (inputNota) inputNota.value = "";
 
-  // ✅ por default tildado también en nota libre
-  if (chkKeep) chkKeep.checked = true;
-}
+    syncMarcadorColorUI(colorActual || "#fff3b0");
+
+    if (chkKeep) chkKeep.checked = true;
+  }
 
   lista.style.display = "none";
   form.style.display = "block";
+
   renderPreviewVersiculosMarcador();
 };
 
@@ -5675,75 +5820,108 @@ async function guardarNuevoMarcador() {
       return;
     }
 
-const titulo = (document.getElementById("marcadorTitulo")?.value || "").trim();
-const nota = (document.getElementById("marcadorNota")?.value || "").trim();
-const color = document.getElementById("marcadorColor")?.value || "#fff3b0";
-const keep = !!document.getElementById("marcadorKeep")?.checked;
-const destacada = creandoNotaLibre ? keep : false;
+    const titulo = (document.getElementById("marcadorTitulo")?.value || "").trim();
+    const nota = (document.getElementById("marcadorNota")?.value || "").trim();
+    const color = document.getElementById("marcadorColor")?.value || "#fff3b0";
+    const keep = !!document.getElementById("marcadorKeep")?.checked;
+    const destacada = creandoNotaLibre ? keep : false;
 
     if (!titulo) {
       mostrarToast("Poné un título 🙏");
       return;
     }
 
-const editId = window.__editMarcadorId || null;
-const base = window.__editMarcadorBase || null;
+    const editId = window.__editMarcadorId || null;
+    const base = window.__editMarcadorBase || null;
+    const esNotaLibre = !!creandoNotaLibre;
 
-const esNotaLibre = !!creandoNotaLibre;
+    const itemsMarcador = esNotaLibre
+      ? []
+      : getItemsMarcadorParaForm(base);
 
-const libro = esNotaLibre ? "" : (base?.libro || libroSel?.value || "");
-const capitulo = esNotaLibre ? 0 : Number(base?.capitulo ?? capSel?.value ?? 0);
-
-const versiculos = esNotaLibre
-  ? []
-  : ((base?.versiculos && Array.isArray(base.versiculos))
-      ? base.versiculos.map(Number).filter(n => !isNaN(n))
-      : Object.keys(seleccionMarcador || {})
-          .map(x => Number(x.split("_").pop()))
-          .filter(n => !isNaN(n)));
-
-    if (!creandoNotaLibre && versiculos.length === 0) {
+    if (!creandoNotaLibre && itemsMarcador.length === 0) {
       mostrarToast("Seleccioná al menos 1 versículo 📌");
       return;
     }
 
-const data = {
-  titulo,
-  nota,
-  color,
-  keep: creandoNotaLibre ? false : keep,
-  destacada,
-  libro,
-  capitulo,
-  versiculos,
-  fecha: Date.now()
-};
+    const primero = itemsMarcador[0] || null;
+
+    const libro = esNotaLibre ? "" : (primero?.Libro || "");
+    const capitulo = esNotaLibre ? 0 : Number(primero?.Capitulo || 0);
+
+    const versiculosDetalle = itemsMarcador.map(it => ({
+      libro: it.Libro,
+      capitulo: Number(it.Capitulo),
+      versiculo: Number(it.Versiculo)
+    }));
+
+    const seleccionOrdenFinal = itemsMarcador.map(it =>
+      it.id || `${it.Libro}_${it.Capitulo}_${it.Versiculo}`
+    );
+
+    // ✅ Compatibilidad con el sistema viejo:
+    // dejamos en versiculos solo los del primer libro/capítulo.
+    // La referencia completa queda en ref y el orden real en versiculosDetalle.
+    const versiculos = itemsMarcador
+      .filter(it =>
+        it.Libro === libro &&
+        Number(it.Capitulo) === Number(capitulo)
+      )
+      .map(it => Number(it.Versiculo))
+      .filter(n => !isNaN(n));
+
+    const refCompleta = esNotaLibre
+      ? ""
+      : referenciaMarcadorEnOrden(itemsMarcador);
+
+    const textoVersiculoCompleto = esNotaLibre
+      ? ""
+      : textoVersiculosMarcadorPlano(itemsMarcador);
+
+    const data = {
+      titulo,
+      nota,
+      color,
+      keep: creandoNotaLibre ? false : keep,
+      destacada,
+
+      // compatibilidad vieja
+      libro,
+      capitulo,
+      versiculos,
+
+      // ✅ nuevo sistema ordenado
+      versiculosDetalle,
+      seleccionOrden: seleccionOrdenFinal,
+      ref: refCompleta,
+      textoVersiculo: textoVersiculoCompleto,
+
+      fecha: Date.now()
+    };
 
     const id = editId || (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()));
     const ruta = `marcadores/${uid}/${id}`;
 
     await set(ref(db, ruta), data);
 
-    seleccionMarcador = {};
+    limpiarSeleccionMarcadorCompleta();
     creandoNotaLibre = false;
     ultimoMarcadorAplicado = data.keep ? data : null;
 
     window.__editMarcadorId = null;
     window.__editMarcadorBase = null;
 
-    // ✅ cerrar SIEMPRE prolijo
     cerrarMarcadores();
 
     mostrarToast(editId ? "✅ Marcador actualizado" : "✅ Marcador guardado");
     mostrarTexto();
     refrescarBotonGuardarMarcador();
 
-    // ✅ salir completamente del modo marcador
     if (typeof salirModoMarcadorLimpio === "function") {
       salirModoMarcadorLimpio();
     } else {
       modoMarcador = false;
-      seleccionMarcador = {};
+      limpiarSeleccionMarcadorCompleta();
       document.body.classList.remove("modo-marcador");
 
       const btnPin = document.getElementById("btnModoMarcadorBarra");
@@ -5777,9 +5955,14 @@ window.abrirMarcador = (idMarcador) => {
   const m = (marcadores || {})[idMarcador];
   if (!m) return;
 
-  libroSel.value = m.libro;
+  const items = itemsMarcadorDesdeData(m);
+  const primero = items[0];
+
+  if (!primero) return;
+
+  libroSel.value = primero.Libro;
   cargarCapitulos();
-  capSel.value = m.capitulo;
+  capSel.value = primero.Capitulo;
   mostrarTexto();
 
   ultimoMarcadorAplicado = m.keep ? m : null;
@@ -5787,15 +5970,12 @@ window.abrirMarcador = (idMarcador) => {
   cerrarMarcadores();
   setTimeout(mostrarTexto, 50);
 
-  // ✅ scroll al primer versículo del marcador
-  const primero = (m.versiculos || [])[0];
-  if (primero) {
-    const idV = `${m.libro}_${m.capitulo}_${primero}`;
-    setTimeout(() => {
-      const el = document.querySelector(`.versiculo[data-id="${idV}"]`);
-      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-    }, 120);
-  }
+  const idV = `${primero.Libro}_${primero.Capitulo}_${primero.Versiculo}`;
+
+  setTimeout(() => {
+    const el = document.querySelector(`.versiculo[data-id="${CSS.escape(idV)}"]`);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, 120);
 };
 
 // ================= ✨ Refrescar Botones Marcador (✅ y 📁) 📌=================
@@ -5997,9 +6177,20 @@ function renderPanelMarcadores() {
         textoABC = String(m?.abcTexto || "").trim();
       }
 
-      if (m.libro && m.capitulo && (m.versiculos || []).length) {
-        const partes = (m.versiculos || []).map(n => {
-          const vv = bibliaData.find(x => x.Libro === m.libro && x.Capitulo == m.capitulo && x.Versiculo == n);
+const textoGuardado = String(m.textoVersiculo || m.textoBiblico || "").trim();
+
+      if (textoGuardado) {
+        textoVers = textoGuardado;
+      } else {
+        const items = itemsMarcadorDesdeData(m);
+
+        const partes = items.map(it => {
+          const vv = bibliaData.find(x =>
+            x.Libro === it.Libro &&
+            Number(x.Capitulo) === Number(it.Capitulo) &&
+            Number(x.Versiculo) === Number(it.Versiculo)
+          );
+
           return vv ? getTextoVersiculo(vv) : "";
         }).filter(Boolean);
 
@@ -7550,23 +7741,13 @@ function notaShareTextoVersiculoMarcador(m = {}) {
     return String(m.abcTexto || "").trim();
   }
 
-  if (!m.libro || !m.capitulo || !(m.versiculos || []).length) {
-    return "";
-  }
+  const guardado = String(m.textoVersiculo || m.textoBiblico || "").trim();
+  if (guardado) return guardado;
 
-  return (m.versiculos || [])
-    .map(n => {
-      const vv = bibliaData.find(x =>
-        x.Libro === m.libro &&
-        Number(x.Capitulo) === Number(m.capitulo) &&
-        Number(x.Versiculo) === Number(n)
-      );
+  const items = itemsMarcadorDesdeData(m);
+  if (!items.length) return "";
 
-      return vv ? getTextoVersiculo(vv) : "";
-    })
-    .filter(Boolean)
-    .join(" ")
-    .trim();
+  return textoVersiculosMarcadorPlano(items);
 }
 
 function notaShareReferenciaMarcador(m = {}) {
