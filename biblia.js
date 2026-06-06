@@ -1934,8 +1934,7 @@ function abrirFiltrosBiblia() {
   };
 
   wrap.classList.add("abierto");
-  document.body.classList.add("filtros-biblia-abiertos");
-  if (btn) btn.classList.add("activo");
+if (btn) btn.classList.add("activo");
 
    if (libroSel) {
     Array.from(libroSel.options).forEach(opt => {
@@ -1966,9 +1965,8 @@ function cerrarFiltrosBiblia(cancelar = false) {
     }
   }
 
-  wrap.classList.remove("abierto");
-  document.body.classList.remove("filtros-biblia-abiertos");
-  if (btn) {
+wrap.classList.remove("abierto");
+if (btn) {
     btn.classList.remove("activo");
     btn.blur();
   }
