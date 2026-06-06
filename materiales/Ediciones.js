@@ -2863,10 +2863,12 @@ window.edCompartirImagenActualEdicion = async function edCompartirImagenActualEd
     );
 
   } catch (e) {
-    if (e?.name !== "AbortError") {
-      console.error("No pude compartir la imagen actual:", e);
-      alert("No pude compartir la imagen actual.");
+    if (window.vaShareCancelado?.(e)) {
+      return;
     }
+
+    console.error("No pude compartir la imagen actual:", e);
+    alert("No pude compartir la imagen actual.");
 
   } finally {
     if (boton) boton.disabled = false;
@@ -3194,8 +3196,13 @@ const resultado = await edCompartirPublicacionLink({
         alert("Link copiado para compartir.");
       }
     }
-  } catch (err) {
-    console.warn("Compartir cancelado o falló:", err);
+  } catch (e) {
+    if (window.vaShareCancelado?.(e)) {
+      return;
+    }
+
+    console.error(e);
+    alert("No pude compartir la edición.");
   }
 };
 
