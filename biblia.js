@@ -4596,7 +4596,11 @@ async function compartirImagenFinal() {
           alert("Tu dispositivo/navegador no permite compartir directo. La imagen se descargó para compartirla manualmente.");
         }
       } catch (e) {
-        console.warn("Share cancelado o falló:", e);
+        if (window.vaShareCancelado?.(e)) {
+          return;
+        }
+
+        console.warn("Share falló:", e);
         await descargarImagenFinal();
       }
     }, "image/png");
@@ -7890,10 +7894,10 @@ window.notaCompartirComoImagen = async function(datos = {}, claveBase = "nota", 
     return false;
 
   } catch (e) {
-    if (e?.name === "AbortError") {
+    if (window.vaShareCancelado?.(e)) {
       return false;
     }
-
+    
     if (e?.name === "InvalidStateError") {
       if (typeof mostrarToast === "function") {
         mostrarToast("⏳ Cerrá el compartir anterior antes de volver a intentar.");
