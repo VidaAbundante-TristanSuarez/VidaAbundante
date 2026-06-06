@@ -421,12 +421,15 @@ async function subidosCrearFileDesdeInfo(info) {
 }
 
 function subidosMarcarArchivoAccionListo(id, listo) {
-  const btnD = document.querySelector(`[data-subidos-download="${id}"]`);
-  const btnS = document.querySelector(`[data-subidos-share="${id}"]`);
+  const idStr = String(id || "");
 
-  [btnD, btnS].forEach(btn => {
-    if (!btn) return;
+  const botones = [...document.querySelectorAll("[data-subidos-download], [data-subidos-share]")]
+    .filter(btn =>
+      String(btn.dataset.subidosDownload || "") === idStr ||
+      String(btn.dataset.subidosShare || "") === idStr
+    );
 
+  botones.forEach(btn => {
     btn.disabled = !listo;
     btn.style.opacity = listo ? "1" : ".45";
     btn.style.cursor = listo ? "pointer" : "wait";
@@ -4266,6 +4269,70 @@ window.subidosMoverVisorArchivo = function subidosMoverVisorArchivo(btn, dir) {
   subidosMoverCarrilCircular(carril, dir, ".subidos-visor-archivo-slide");
 };
 
+function subidosHtmlAccionesVisorArchivo(it) {
+  if (!it?.id) return "";
+
+  const idJs = subidosJs(it.id || "");
+  const archivos = subidosArchivosItem(it);
+
+  if (!archivos.length) return "";
+
+  return `
+    <div class="subidos-visor-actions" style="
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:12px;
+    ">
+      <button
+        type="button"
+        data-subidos-download="${escaparHtml(it.id)}"
+        onclick="descargarSubido('${idJs}', this)"
+        title="Descargar archivo actual"
+        style="
+          border:none;
+          width:42px;
+          height:42px;
+          border-radius:999px;
+          background:var(--ui-azul-claro, #bcdcff);
+          color:#000;
+          display:inline-flex;
+          align-items:center;
+          justify-content:center;
+          cursor:pointer;
+          font-weight:900;
+        "
+      >
+        <i class="fa-solid fa-download"></i>
+      </button>
+
+      <button
+        type="button"
+        data-subidos-share="${escaparHtml(it.id)}"
+        onclick="compartirSubido('${idJs}', this)"
+        title="Compartir archivo actual"
+        style="
+          border:none;
+          width:42px;
+          height:42px;
+          border-radius:999px;
+          background:var(--ui-azul-claro, #bcdcff);
+          color:#000;
+          display:inline-flex;
+          align-items:center;
+          justify-content:center;
+          cursor:pointer;
+          font-weight:900;
+        "
+      >
+        <i class="fa-solid fa-share-nodes"></i>
+      </button>
+    </div>
+  `;
+}
+
 window.abrirSubidosVisorArchivo = function abrirSubidosVisorArchivo(id, indiceInicial = 0) {
   const it = obtenerSubidoPorId(id);
   const archivos = subidosArchivosItem(it);
@@ -4281,10 +4348,17 @@ window.abrirSubidosVisorArchivo = function abrirSubidosVisorArchivo(id, indiceIn
     "Vista previa"
   ).trim();
 
-  abrirModalSubidosVisor(
-    titulo,
-    subidosHtmlArchivosAbiertos(it, idx)
-  );
+abrirModalSubidosVisor(
+  titulo,
+  `
+    ${subidosHtmlArchivosAbiertos(it, idx)}
+    ${subidosHtmlAccionesVisorArchivo(it)}
+  `
+);
+
+setTimeout(() => {
+  subidosPrepararArchivoAccion(id);
+}, 120);
 
   setTimeout(() => {
     const body = document.getElementById("subidosVisorBody");
@@ -5038,6 +5112,86 @@ window.abrirSubidoDesdeCalendario = function abrirSubidoDesdeCalendario(id) {
   }, 1800);
 };
 
+function subidosEsCancelacionShare(e) {
+  return (
+    e?.name === "AbortError" ||
+    e?.name === "NotAllowedError" ||
+    String(e?.message || "").toLowerCase().includes("cancel")
+  );
+}
+
+async function subidosCopiarTextoSeguro(texto = "") {
+  const limpio = String(texto || "").trim();
+  if (!limpio) return false;
+
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(limpio);
+      return true;
+    }
+  } catch (_) {}
+
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = limpio;
+    ta.style.position = "fixed";
+    ta.style.left = "-9999px";
+    ta.style.top = "0";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+
+    const ok = document.execCommand("copy");
+    ta.remove();
+
+    return ok;
+  } catch (_) {
+    return false;
+  }
+}
+
+async function subidosCompartirPredicaComoLink(it, id) {
+  const link = subidosLinkDetalle(id);
+  const titulo = it?.descripcion || it?.predicaTitulo || "Prédica";
+
+  if (navigator.share) {
+    await navigator.share({
+      title: titulo,
+      text: titulo,
+      url: link
+    });
+    return;
+  }
+
+  const copiado = await subidosCopiarTextoSeguro(link);
+
+  if (copiado) {
+    subidosAvisoProceso("Link de la prédica copiado ✅");
+    return;
+  }
+
+  prompt("Copiá este link:", link);
+}
+
+async function subidosCompartirArchivoReal(file, titulo = "Archivo") {
+  if (!file) throw new Error("No se pudo preparar el archivo.");
+
+  if (!navigator.share) {
+    subidosDescargarFileReal(file);
+    throw new Error("Este navegador no permite compartir archivos. Descargué el archivo para compartirlo manualmente.");
+  }
+
+  if (!navigator.canShare || !navigator.canShare({ files: [file] })) {
+    subidosDescargarFileReal(file);
+    throw new Error("Este navegador no acepta compartir este tipo de archivo. Descargué el archivo para compartirlo manualmente.");
+  }
+
+  await navigator.share({
+    title: titulo,
+    files: [file]
+  });
+}
+
 window.compartirSubido = async function compartirSubido(id, btn = null) {
   try {
     const it = obtenerSubidoPorId(id);
@@ -5047,28 +5201,46 @@ window.compartirSubido = async function compartirSubido(id, btn = null) {
       return;
     }
 
-    if (subidosEsVideoItem(it)) {
-      await subidosCompartirLinkVideo(it);
-      subidosAvisoProceso("Link listo ✅");
+    const titulo = it?.descripcion || it?.etiqueta || "Archivo";
+
+    // ✅ PRÉDICA: se comparte LINK, no archivo.
+    if (subidosEsPredicaConContenido(it)) {
+      subidosAvisoProceso("Preparando link de la prédica...", true);
+
+      await subidosCompartirPredicaComoLink(it, id);
+
+      subidosAvisoProceso("Listo ✅");
       return;
     }
 
     const archivos = subidosArchivosItem(it);
-    const cantidad = subidosEsPredicaConContenido(it) ? 1 : archivos.length;
-    const actual = subidosIndiceActualDesdeBoton(id, btn);
-    const modo = subidosElegirTodoOActual("compartir", cantidad);
-    const titulo = it?.descripcion || it?.etiqueta || "Archivo";
+    const cantidad = archivos.length;
 
+    if (!cantidad) {
+      alert("Esta publicación no tiene archivo para compartir.");
+      return;
+    }
+
+    const actual = subidosIndiceActualDesdeBoton(id, btn);
+
+    // ✅ ACÁ ESTABA EL ERROR: faltaba await.
+    const modo = await subidosElegirTodoOActual("compartir", cantidad);
+
+    if (modo === "cancelar") {
+      subidosAvisoProceso("Acción cancelada");
+      return;
+    }
+
+    // ✅ No prédica con varios archivos: permitir compartir todos si el dispositivo lo acepta.
     if (modo === "todo" && cantidad > 1) {
       subidosAvisoProceso("Preparando todos los archivos...", true);
 
       const indices = archivos.map((_, i) => i);
       const files = await subidosCrearFilesDeItem(it, indices);
 
-      if (navigator.canShare?.({ files })) {
+      if (navigator.share && navigator.canShare?.({ files })) {
         await navigator.share({
           title: titulo,
-          text: titulo,
           files
         });
 
@@ -5076,31 +5248,41 @@ window.compartirSubido = async function compartirSubido(id, btn = null) {
         return;
       }
 
-      alert("Este dispositivo o navegador no permite compartir varios archivos juntos. Probá con Descargar todo.");
-      subidosAvisoProceso("No se pudo compartir todo");
+      for (const file of files) {
+        subidosDescargarFileReal(file);
+        await new Promise(resolve => setTimeout(resolve, 350));
+      }
+
+      subidosAvisoProceso("No se pudo compartir todo, pero descargué los archivos");
+      alert("Este dispositivo o navegador no permite compartir varios archivos juntos. Los descargué para que puedas compartirlos manualmente.");
       return;
     }
 
+    // ✅ No prédica: se comparte SOLO el archivo actual.
     subidosAvisoProceso("Preparando archivo actual...", true);
 
     const file = await subidosCrearFileDeItemPorIndice(it, actual);
 
-    await subidosCompartirFileObligatorio(
-      file,
-      titulo,
-      subidosLinkDetalle(id)
-    );
+    await subidosCompartirArchivoReal(file, titulo);
 
     subidosAvisoProceso("Listo ✅");
   } catch (e) {
     console.error("Error en compartir:", e);
 
-    if (e?.name === "AbortError") {
+    if (subidosEsCancelacionShare(e)) {
       subidosAvisoProceso("Acción cancelada");
       return;
     }
 
     subidosAvisoProceso("No se pudo compartir");
+
+    const msg = String(e?.message || "");
+
+    if (msg.includes("Descargué el archivo")) {
+      alert(msg);
+      return;
+    }
+
     alert("No se pudo compartir.");
   }
 };
