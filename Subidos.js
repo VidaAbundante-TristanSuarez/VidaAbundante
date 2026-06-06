@@ -5692,7 +5692,7 @@ window.compartirSubido = async function compartirSubido(id, btn = null) {
 
     subidosAvisoProceso("Preparando archivo actual...", true);
 
-    const info = subidosInfoArchivoPorIndice(it, actual);
+   const info = subidosInfoShareArchivoPorIndice(it, actual);
     if (!info?.url) throw new Error("No se encontró el archivo actual.");
 
     const idCache = Number(actual || 0) === 0 ? id : "";
@@ -5723,7 +5723,7 @@ window.compartirSubido = async function compartirSubido(id, btn = null) {
     if (msg.includes("acepta compartir este tipo")) {
       alert("No se pudo compartir este tipo de archivo desde este navegador.");
     } else {
-      alert("No se pudo compartir.");
+ alert("No se pudo compartir.\n\n" + (e?.message || e?.name || e));
     }
   }
 };
