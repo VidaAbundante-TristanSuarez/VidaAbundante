@@ -767,58 +767,10 @@ function subidosInfoArchivoAccion(it) {
 function subidosInfoArchivoPorIndice(it, indice = 0) {
   if (!it) return null;
 
-  if (subidosEsPredicaConContenido(it)) {
-    return subidosInfoArchivoAccion(it);
-  }
-
-  function subidosInfoShareArchivoPorIndice(it, indice = 0) {
-  if (!it) return null;
-
   // ✅ PRÉDICA NO SE TOCA
   if (subidosEsPredicaConContenido(it)) {
     return subidosInfoArchivoAccion(it);
   }
-
-  const archivos = subidosArchivosItem(it);
-  const idx = Math.max(0, Math.min(Number(indice || 0), archivos.length - 1));
-  const a = archivos[idx];
-
-  if (!a) return null;
-
-  // ✅ Primero intenta usar el archivo preparado para compartir
-  if (a.shareUrl) {
-    return subidosInfoShareNormalizada({
-      url: a.shareUrl,
-      fileName: a.shareFileName || a.fileName || `archivo_${idx + 1}`,
-      mimeType: a.shareMimeType || a.mimeType || "application/octet-stream"
-    });
-  }
-
-  // ✅ Compatibilidad: si es el primer archivo y existe shareUrl raíz
-  if (idx === 0 && it.shareUrl) {
-    return subidosInfoShareNormalizada({
-      url: it.shareUrl,
-      fileName: it.shareFileName || a.fileName || it.fileName || `archivo_${idx + 1}`,
-      mimeType: it.shareMimeType || a.mimeType || it.mimeType || "application/octet-stream"
-    });
-  }
-
-  // Fallback al original
-  if (a.url) {
-    return subidosInfoShareNormalizada({
-      url: a.url,
-      fileName: a.fileName || it.fileName || `archivo_${idx + 1}`,
-      mimeType:
-        a.mimeType ||
-        a.contentType ||
-        it.mimeType ||
-        subidosMimeDesdeNombreUrl(a.fileName || it.fileName || "", a.url) ||
-        "application/octet-stream"
-    });
-  }
-
-  return null;
-}
 
   const archivos = subidosArchivosItem(it);
   const idx = Math.max(0, Math.min(Number(indice || 0), archivos.length - 1));
@@ -836,6 +788,55 @@ function subidosInfoArchivoPorIndice(it, indice = 0) {
       subidosMimeDesdeNombreUrl(a.fileName || it.fileName || "", a.url) ||
       "application/octet-stream"
   });
+}
+
+function subidosInfoShareArchivoPorIndice(it, indice = 0) {
+  if (!it) return null;
+
+  // ✅ PRÉDICA NO SE TOCA
+  if (subidosEsPredicaConContenido(it)) {
+    return subidosInfoArchivoAccion(it);
+  }
+
+  const archivos = subidosArchivosItem(it);
+  const idx = Math.max(0, Math.min(Number(indice || 0), archivos.length - 1));
+  const a = archivos[idx];
+
+  if (!a) return null;
+
+  // ✅ Primero usa el archivo ya preparado para compartir
+  if (a.shareUrl) {
+    return subidosInfoShareNormalizada({
+      url: a.shareUrl,
+      fileName: a.shareFileName || a.fileName || `archivo_${idx + 1}`,
+      mimeType: a.shareMimeType || a.mimeType || "application/octet-stream"
+    });
+  }
+
+  // ✅ Compatibilidad: primer archivo con shareUrl raíz
+  if (idx === 0 && it.shareUrl) {
+    return subidosInfoShareNormalizada({
+      url: it.shareUrl,
+      fileName: it.shareFileName || a.fileName || it.fileName || `archivo_${idx + 1}`,
+      mimeType: it.shareMimeType || a.mimeType || it.mimeType || "application/octet-stream"
+    });
+  }
+
+  // Fallback al archivo original
+  if (a.url) {
+    return subidosInfoShareNormalizada({
+      url: a.url,
+      fileName: a.fileName || it.fileName || `archivo_${idx + 1}`,
+      mimeType:
+        a.mimeType ||
+        a.contentType ||
+        it.mimeType ||
+        subidosMimeDesdeNombreUrl(a.fileName || it.fileName || "", a.url) ||
+        "application/octet-stream"
+    });
+  }
+
+  return null;
 }
 
 function subidosIndiceActualDesdeBoton(id, btn) {
@@ -5651,7 +5652,7 @@ window.compartirSubido = async function compartirSubido(id, btn = null) {
       const files = [];
 
       for (let i = 0; i < cantidad; i++) {
-    const info = subidosInfoShareArchivoPorIndice(it, actual);
+        const info = subidosInfoShareArchivoPorIndice(it, i);
         if (!info?.url) continue;
 
         const idCache = i === 0 ? id : "";
