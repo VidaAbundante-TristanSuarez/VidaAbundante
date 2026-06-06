@@ -3391,14 +3391,26 @@ body.oscuro #buscarLibroBiblia{
 
 #filtrosBiblia .btn-aplicar-filtros:hover,
 #filtrosBiblia .btn-retorno-filtros:hover {
-  background: #d9f2ff;
-  border-color: rgba(28, 111, 203, .35);
+  background: var(--ui-azul-hover) !important;
+  border-color: rgba(28, 111, 203, .45);
 }
 
-#filtrosBiblia .btn-retorno-filtros.activo {
-  background: #d1eeff;
-  color: #0b4368;
-  border-color: rgba(28, 111, 203, .38);
+#filtrosBiblia .btn-retorno-filtros.activo,
+#filtrosBiblia .btn-retorno-filtros.modo-guardado,
+#filtrosBiblia .btn-retorno-filtros.modo-volver {
+  background: var(--ui-azul-hover) !important;
+  color: #000 !important;
+  border-color: rgba(28, 111, 203, .45) !important;
+
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .85),
+    0 3px 10px rgba(0, 0, 0, .12) !important;
+}
+
+#filtrosBiblia .btn-retorno-filtros.activo i,
+#filtrosBiblia .btn-retorno-filtros.modo-guardado i,
+#filtrosBiblia .btn-retorno-filtros.modo-volver i {
+  color: #000 !important;
 }
 
 #filtrosBiblia .btn-aplicar-filtros:hover {
