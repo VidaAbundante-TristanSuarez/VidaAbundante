@@ -3254,17 +3254,14 @@ body.oscuro .subir-iglesia-btn:has(input:checked){
   gap: 5px;
 
   position: absolute;
-
-  /* ✅ ahora baja y no tapa arriba */
   top: calc(100% + 7px);
   right: 0;
   transform: none;
 
-  /* ✅ más angosto */
-  width: min(280px, calc(100vw - 110px));
+  width: min(272px, calc(100vw - 110px));
 
-  /* ✅ deja espacio real al botón redondo */
-  padding: 7px 42px 7px 8px;
+  /* ✅ espacio para la columna de botones */
+  padding: 7px 44px 7px 8px;
 
   background: #e9f6ff;
   border: 1px solid rgba(0, 0, 0, .10);
@@ -3351,24 +3348,24 @@ body.oscuro #buscarLibroBiblia{
   padding-right: 18px; /* reserva justa para la pastilla azul */
 }
 
-#filtrosBiblia .btn-aplicar-filtros {
+#filtrosBiblia .btn-aplicar-filtros,
+#filtrosBiblia .btn-retorno-filtros {
   position: absolute;
-  top: 50%;
   right: 7px;
-  transform: translateY(-50%);
 
-  /* ✅ botón circular tipo barra de acciones */
   width: 28px;
   height: 28px;
   min-width: 28px;
   min-height: 28px;
 
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
 
+  padding: 0;
   border-radius: 50%;
   border: 1px solid rgba(28, 111, 203, .22);
+
   background: #e9f8ff;
   color: #0d4f78;
 
@@ -3380,6 +3377,28 @@ body.oscuro #buscarLibroBiblia{
   z-index: 5;
   user-select: none;
   overflow: hidden;
+}
+
+#filtrosBiblia .btn-retorno-filtros {
+  top: 7px;
+}
+
+#filtrosBiblia .btn-aplicar-filtros {
+  top: auto;
+  bottom: 7px;
+  transform: none;
+}
+
+#filtrosBiblia .btn-aplicar-filtros:hover,
+#filtrosBiblia .btn-retorno-filtros:hover {
+  background: #d9f2ff;
+  border-color: rgba(28, 111, 203, .35);
+}
+
+#filtrosBiblia .btn-retorno-filtros.activo {
+  background: #d1eeff;
+  color: #0b4368;
+  border-color: rgba(28, 111, 203, .38);
 }
 
 #filtrosBiblia .btn-aplicar-filtros:hover {
