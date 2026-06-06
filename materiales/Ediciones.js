@@ -3129,20 +3129,35 @@ window.compartirEdicion = async (id, destino = "redes") => {
     const ts = Date.now();
 
     try {
-      await set(compRef, {
-        tipo: "edicion",
-        edicionId: id,
-        titulo,
-        rama: edRamaEdicion(ed),
-        categoria: edRamaEdicion(ed),
-        tipoEdicion: edRamaEdicion(ed),
-        portadaUrl,
-        creadoPor: snap.val()?.creadoPor || window.__UID || "",
-        actualizadoPor: window.__UID || "",
-        ts,
-        publicadoEn: ts,
-        republicadoEn: yaEstaba ? ts : 0
-      });
+const anterior = snap.val() || {};
+
+await set(compRef, {
+  ...anterior,
+
+  tipo: "edicion",
+  edicionId: id,
+  titulo,
+  rama: edRamaEdicion(ed),
+  categoria: edRamaEdicion(ed),
+  tipoEdicion: edRamaEdicion(ed),
+  portadaUrl,
+
+  creadoPor: anterior.creadoPor || window.__UID || "",
+  actualizadoPor: window.__UID || "",
+
+  // ✅ mantiene la publicación original, solo cambia fecha/posición
+  fechaOriginal: Number(
+    anterior.fechaOriginal ||
+    anterior.fecha ||
+    anterior.publicadoEn ||
+    anterior.ts ||
+    0
+  ),
+  fecha: ts,
+  ts,
+  publicadoEn: ts,
+  republicadoEn: yaEstaba ? ts : 0
+});
 
       edicionesPublicadasCache[id] = true;
       renderEdiciones();
