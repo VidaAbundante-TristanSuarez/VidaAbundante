@@ -373,6 +373,7 @@ let panelRecursosGuardados = {};
 let panelEdicionesGuardadas = {};
 let panelImagenesGuardadas = {};
 let panelImagenesPublicadas = {};
+let panelImagenesCompartidosCache = {};
 let notasCompartidasPanel = {};
 
 // ================= ✅ INDICE DE NOTAS (para mostrar pluma) =================
@@ -1735,23 +1736,38 @@ onValue(ref(db, "panelImagenesPersonal/" + uid), s => {
   }
 });
 
-  onValue(ref(db, "compartidos/imagenes"), s => {
+onValue(ref(db, "compartidos/imagenes"), s => {
   const data = s.val() || {};
+
+  panelImagenesCompartidosCache = data;
   panelImagenesPublicadas = {};
 
   Object.entries(data).forEach(([compId, item]) => {
-    const panelId = item?.panelItemId || "";
+    if (!item || typeof item !== "object") return;
+
+    const info = {
+      compId,
+      path: `compartidos/imagenes/${compId}`,
+      item
+    };
+
+    const panelId = String(item?.panelItemId || "");
     if (panelId) {
-      panelImagenesPublicadas[panelId] = true;
+      panelImagenesPublicadas[panelId] = info;
+    }
+
+    const sourcePanelId = String(item?.sourcePanelItemId || "");
+    if (sourcePanelId) {
+      panelImagenesPublicadas[sourcePanelId] = info;
     }
   });
 
- if (
-  document.body.classList.contains("en-panel") &&
-  document.getElementById("panel-imagenes")?.offsetParent !== null
-) {
-  renderPanelImagenes(panelImagenesGuardadas || {});
-}
+  if (
+    document.body.classList.contains("en-panel") &&
+    document.getElementById("panel-imagenes")?.offsetParent !== null
+  ) {
+    renderPanelImagenes(panelImagenesGuardadas || {});
+  }
 });
 
 onValue(ref(db, "compartidos/notas"), s => {
@@ -6969,7 +6985,7 @@ panelImgRenderAddBoton();
       .replace(/\\/g, "\\\\")
       .replace(/'/g, "\\'");
 
-    const yaPublicado = !!panelImagenesPublicadas[it.id];
+const yaPublicado = !!panelBuscarPublicacionImagenPanel(it.id, it);
 
     const esDevocionalPanel = (
   String(it.tipoTexto || "").toLowerCase() === "devocional" ||
@@ -8947,6 +8963,73 @@ function normalizarUrlPanelParaDB(url) {
   return s;
 }
 
+function panelCompInfoDesdePath(path = "") {
+  const p = String(path || "").trim();
+  if (!p.includes("compartidos/imagenes/")) return null;
+
+  const compId = p.split("/").filter(Boolean).pop();
+  if (!compId) return null;
+
+  return {
+    compId,
+    path: `compartidos/imagenes/${compId}`,
+    item: panelImagenesCompartidosCache?.[compId] || null
+  };
+}
+
+function panelBuscarPublicacionImagenPanel(id, item = {}) {
+  const directa = panelImagenesPublicadas?.[id];
+  if (directa?.path) return directa;
+
+  const sourcePath = String(item.sourceCompPath || item.compPath || "").trim();
+  const desdePath = panelCompInfoDesdePath(sourcePath);
+  if (desdePath) return desdePath;
+
+  const sourceCompId = String(item.sourceCompId || item.compId || item._compId || "").trim();
+  if (sourceCompId) {
+    return {
+      compId: sourceCompId,
+      path: `compartidos/imagenes/${sourceCompId}`,
+      item: panelImagenesCompartidosCache?.[sourceCompId] || null
+    };
+  }
+
+  const sourceKey = String(item.sourceOracionesKey || item.sourceCompKey || item.publicacionKey || "").trim();
+  const url = normalizarUrlPanelParaDB(item.url || item.imagenUrl || "");
+  const vieneDeCompartidos = String(item.origen || "").toLowerCase() === "compartidos";
+
+  for (const [compId, pub] of Object.entries(panelImagenesCompartidosCache || {})) {
+    if (!pub || typeof pub !== "object") continue;
+
+    const pubKey = String(pub.sourceOracionesKey || pub.sourceCompKey || pub.publicacionKey || "").trim();
+
+    if (sourceKey && pubKey && sourceKey === pubKey) {
+      return {
+        compId,
+        path: `compartidos/imagenes/${compId}`,
+        item: pub
+      };
+    }
+
+    const pubUrl = normalizarUrlPanelParaDB(pub.url || pub.imagenUrl || "");
+
+    if (
+      vieneDeCompartidos &&
+      url &&
+      pubUrl &&
+      url === pubUrl
+    ) {
+      return {
+        compId,
+        path: `compartidos/imagenes/${compId}`,
+        item: pub
+      };
+    }
+  }
+
+  return null;
+}
+
 window.publicarImagenPanelEnCompartidos = async function(id) {
   try {
     if (!uid) {
@@ -8961,27 +9044,115 @@ window.publicarImagenPanelEnCompartidos = async function(id) {
       return;
     }
 
-    if (panelImagenesPublicadas[id]) {
-  mostrarToast("✅ Esta imagen ya está publicada en Compartidos");
-  return;
-}
-
     const ts = Date.now();
     const url = normalizarUrlPanelParaDB(item.url);
+    const existente = panelBuscarPublicacionImagenPanel(id, item);
 
+    // ✅ YA EXISTE EN COMPARTIDOS:
+    // no resubimos, solo cambiamos fecha para que vuelva arriba.
+    if (existente?.path) {
+      const ok = confirm(
+        "Esta imagen ya está en Compartidos.\n\n" +
+        "¿Volvemos a compartirla para que quede arriba?"
+      );
+
+      if (!ok) return;
+
+      const pubRef = ref(db, existente.path);
+      const snap = await get(pubRef);
+
+      if (snap.exists()) {
+        const anterior = snap.val() || {};
+
+        await set(pubRef, {
+          ...anterior,
+
+          tipo: "imagen",
+          url: anterior.url || url,
+          imagenUrl: anterior.imagenUrl || url,
+
+          // ✅ conserva la fecha original y refresca posición
+          fechaOriginal: Number(
+            anterior.fechaOriginal ||
+            anterior.fecha ||
+            item.fecha ||
+            0
+          ),
+          fecha: ts,
+          publicadoEn: ts,
+          ts,
+          republicadaEn: ts,
+
+          actualizadoPor: uid,
+
+          // ✅ conserva relación con Mi Panel si ya existía
+          panelItemId: anterior.panelItemId || (
+            String(item.origen || "").toLowerCase() === "compartidos" ? "" : id
+          ),
+
+          // ✅ claves de origen para conservar oraciones
+          sourceCompPath: anterior.sourceCompPath || item.sourceCompPath || "",
+          sourceCompId: anterior.sourceCompId || item.sourceCompId || "",
+          sourceCompKey: anterior.sourceCompKey || item.sourceCompKey || "",
+          sourceOracionesKey:
+            anterior.sourceOracionesKey ||
+            item.sourceOracionesKey ||
+            item.sourceCompKey ||
+            ""
+        });
+
+        panelImagenesPublicadas[id] = {
+          compId: existente.compId,
+          path: existente.path,
+          item: {
+            ...anterior,
+            fecha: ts,
+            publicadoEn: ts,
+            ts
+          }
+        };
+
+        if (
+          document.body.classList.contains("en-panel") &&
+          document.getElementById("panel-imagenes")?.offsetParent !== null
+        ) {
+          renderPanelImagenes(panelImagenesGuardadas || {});
+        }
+
+        mostrarToast("✅ La publicación volvió arriba en Compartidos");
+        return;
+      }
+    }
+
+    // ✅ PRIMERA VEZ:
+    // crea una sola publicación nueva.
     await set(ref(db, `compartidos/imagenes/${ts}`), {
       ...item,
       url,
+      imagenUrl: url,
+
       uid,
       publicadoPor: uid,
       tipo: item.tipo || "imagen",
       origen: item.origen || "panel",
+
       fecha: ts,
+      publicadoEn: ts,
+      ts,
       fechaOriginal: item.fecha || 0,
-      panelItemId: id
+
+      panelItemId: id,
+
+      // ✅ si esta imagen venía desde Compartidos,
+      // guardamos la clave original para que las oraciones sigan vinculadas.
+      sourceCompPath: item.sourceCompPath || "",
+      sourceCompId: item.sourceCompId || "",
+      sourceCompKey: item.sourceCompKey || "",
+      sourceOracionesKey: item.sourceOracionesKey || item.sourceCompKey || ""
     });
 
     mostrarToast("✅ Publicado en Compartidos");
+
   } catch (e) {
     console.error(e);
     alert("No se pudo publicar en Compartidos.");
