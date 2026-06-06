@@ -577,6 +577,137 @@ async function subidosCompartirArchivoComunSinLink(info = {}, titulo = "Archivo"
   });
 }
 
+async function subidosCrearShareComunDesdeBlob(blob, nombreBase = "imagen") {
+  const img = await subidosCargarImagenDesdeBlob(blob);
+
+  const maxLado = 2200;
+  const w0 = img.naturalWidth || img.width || 1200;
+  const h0 = img.naturalHeight || img.height || 1200;
+
+  const escala = Math.min(1, maxLado / Math.max(w0, h0));
+  const w = Math.max(1, Math.round(w0 * escala));
+  const h = Math.max(1, Math.round(h0 * escala));
+
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+
+  const ctx = canvas.getContext("2d", { alpha: false });
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, w, h);
+  ctx.drawImage(img, 0, 0, w, h);
+
+  const jpgBlob = await new Promise(resolve => {
+    canvas.toBlob(resolve, "image/jpeg", 0.94);
+  });
+
+  if (!jpgBlob) {
+    throw new Error("No se pudo preparar la imagen para compartir.");
+  }
+
+  const nombre = `${subidosNombreBaseSinExtension(nombreBase || "imagen")}.jpg`;
+
+  return new File([jpgBlob], nombre, {
+    type: "image/jpeg"
+  });
+}
+
+async function subidosCrearShareComunAlGuardarDesdeUrl(info = {}, estadoEl = null, idx = 0) {
+  const normal = subidosInfoShareNormalizada(info);
+
+  if (!normal?.url) return null;
+
+  // ✅ Si NO es imagen, no la transformamos.
+  // Se guarda como archivo compartible original.
+  if (!subidosEsImagenParaShare(normal)) {
+    return {
+      shareUrl: normal.url,
+      shareR2Key: info.r2Key || "",
+      shareMimeType: normal.mimeType || "application/octet-stream",
+      shareFileName: normal.fileName || `archivo_${idx + 1}`
+    };
+  }
+
+  if (estadoEl) {
+    estadoEl.textContent = `Preparando imagen ${idx + 1} para compartir...`;
+  }
+
+  const proxy = subidosProxyArchivoUrl(normal.url, normal.fileName, false);
+
+  const r = await fetch(proxy, {
+    cache: "no-store"
+  });
+
+  if (!r.ok) {
+    throw new Error("No pude leer la imagen para preparar el archivo de compartir.");
+  }
+
+  const blob = await r.blob();
+
+  const fileShare = await subidosCrearShareComunDesdeBlob(
+    blob,
+    normal.fileName || `imagen_${idx + 1}`
+  );
+
+  if (estadoEl) {
+    estadoEl.textContent = `Subiendo imagen preparada ${idx + 1}...`;
+  }
+
+  const subida = await subirArchivoAR2DesdeWeb(fileShare, "subidos-share");
+
+  if (!subida?.url) {
+    throw new Error("No se pudo subir la imagen preparada.");
+  }
+
+  return {
+    shareUrl: subida.url,
+    shareR2Key: subida.key || "",
+    shareMimeType: "image/jpeg",
+    shareFileName: fileShare.name
+  };
+}
+
+async function subidosPrepararSharesComunesAlGuardar(idFinal, datosBase, estadoEl = null) {
+  if (!idFinal || !datosBase) return null;
+
+  const archivosBase = Array.isArray(datosBase.archivos)
+    ? datosBase.archivos
+    : [];
+
+  if (!archivosBase.length) return null;
+
+  const archivosPreparados = [];
+
+  for (let i = 0; i < archivosBase.length; i++) {
+    const a = archivosBase[i];
+
+    // ✅ Si ya estaba preparado, lo respetamos.
+    if (a.shareUrl) {
+      archivosPreparados.push(a);
+      continue;
+    }
+
+    const share = await subidosCrearShareComunAlGuardarDesdeUrl(a, estadoEl, i);
+
+    archivosPreparados.push({
+      ...a,
+      ...(share || {})
+    });
+  }
+
+  const principal = archivosPreparados[0] || {};
+
+  return {
+    archivos: archivosPreparados,
+
+    // ✅ Compatibilidad raíz para el primer archivo
+    shareUrl: principal.shareUrl || datosBase.shareUrl || "",
+    shareR2Key: principal.shareR2Key || datosBase.shareR2Key || "",
+    shareMimeType: principal.shareMimeType || datosBase.shareMimeType || "",
+    shareFileName: principal.shareFileName || datosBase.shareFileName || ""
+  };
+}
+
 function subidosNombreSharePredica(it) {
   const fecha = it?.fechaEvento || "sin-fecha";
   const id = it?.id || "predica";
@@ -588,27 +719,46 @@ function subidosNombreSharePredica(it) {
 function subidosInfoArchivoAccion(it) {
   if (!it) return null;
 
-  // ✅ Prédica: usa la imagen PNG ya preparada y subida a R2
+  // ✅ PRÉDICA NO SE TOCA:
+  // usa la imagen PNG ya preparada y subida a R2.
   if (subidosEsPredicaConContenido(it)) {
     if (!it.shareUrl) return null;
 
-    return {
+    return subidosInfoShareNormalizada({
       url: it.shareUrl,
       fileName: it.shareFileName || subidosNombreSharePredica(it),
       mimeType: it.shareMimeType || "image/png"
-    };
+    });
   }
 
-  // ✅ Otras etiquetas: usa el primer archivo real.
-  // Si hay varios archivos, la card los muestra todos, pero compartir/descargar usa el principal.
+  // ✅ Otras etiquetas:
+  // usa archivo preparado si existe; si no, cae al archivo original.
   const principal = subidosArchivoPrincipal(it);
 
+  if (principal?.shareUrl || it.shareUrl) {
+    return subidosInfoShareNormalizada({
+      url: principal?.shareUrl || it.shareUrl,
+      fileName:
+        principal?.shareFileName ||
+        it.shareFileName ||
+        principal?.fileName ||
+        it.fileName ||
+        `archivo_${Date.now()}`,
+      mimeType:
+        principal?.shareMimeType ||
+        it.shareMimeType ||
+        principal?.mimeType ||
+        it.mimeType ||
+        "application/octet-stream"
+    });
+  }
+
   if (principal?.url) {
-    return {
+    return subidosInfoShareNormalizada({
       url: principal.url,
-      fileName: it.shareFileName || principal.fileName || it.fileName || `archivo_${Date.now()}`,
-      mimeType: it.shareMimeType || principal.mimeType || it.mimeType || "application/octet-stream"
-    };
+      fileName: principal.fileName || it.fileName || `archivo_${Date.now()}`,
+      mimeType: principal.mimeType || it.mimeType || "application/octet-stream"
+    });
   }
 
   return null;
@@ -620,6 +770,55 @@ function subidosInfoArchivoPorIndice(it, indice = 0) {
   if (subidosEsPredicaConContenido(it)) {
     return subidosInfoArchivoAccion(it);
   }
+
+  function subidosInfoShareArchivoPorIndice(it, indice = 0) {
+  if (!it) return null;
+
+  // ✅ PRÉDICA NO SE TOCA
+  if (subidosEsPredicaConContenido(it)) {
+    return subidosInfoArchivoAccion(it);
+  }
+
+  const archivos = subidosArchivosItem(it);
+  const idx = Math.max(0, Math.min(Number(indice || 0), archivos.length - 1));
+  const a = archivos[idx];
+
+  if (!a) return null;
+
+  // ✅ Primero intenta usar el archivo preparado para compartir
+  if (a.shareUrl) {
+    return subidosInfoShareNormalizada({
+      url: a.shareUrl,
+      fileName: a.shareFileName || a.fileName || `archivo_${idx + 1}`,
+      mimeType: a.shareMimeType || a.mimeType || "application/octet-stream"
+    });
+  }
+
+  // ✅ Compatibilidad: si es el primer archivo y existe shareUrl raíz
+  if (idx === 0 && it.shareUrl) {
+    return subidosInfoShareNormalizada({
+      url: it.shareUrl,
+      fileName: it.shareFileName || a.fileName || it.fileName || `archivo_${idx + 1}`,
+      mimeType: it.shareMimeType || a.mimeType || it.mimeType || "application/octet-stream"
+    });
+  }
+
+  // Fallback al original
+  if (a.url) {
+    return subidosInfoShareNormalizada({
+      url: a.url,
+      fileName: a.fileName || it.fileName || `archivo_${idx + 1}`,
+      mimeType:
+        a.mimeType ||
+        a.contentType ||
+        it.mimeType ||
+        subidosMimeDesdeNombreUrl(a.fileName || it.fileName || "", a.url) ||
+        "application/octet-stream"
+    });
+  }
+
+  return null;
+}
 
   const archivos = subidosArchivosItem(it);
   const idx = Math.max(0, Math.min(Number(indice || 0), archivos.length - 1));
@@ -776,11 +975,8 @@ async function subidosPrepararArchivoAccion(id) {
   if (!it) return null;
 
   const esPredica = subidosEsPredicaConContenido(it);
-
   const archivos = esPredica ? [] : subidosArchivosItem(it);
 
-  // ✅ Evita llenar memoria con videos enormes.
-  // Videos chicos pueden prepararse como archivo; videos grandes dependen del navegador.
   const LIMITE_AUTO_VIDEO = 28 * 1024 * 1024;
 
   const tieneVideoGrande = !esPredica && archivos.some(a =>
@@ -793,10 +989,12 @@ async function subidosPrepararArchivoAccion(id) {
     return null;
   }
 
+  // ✅ Prédica usa su info normal.
+  // ✅ Otras etiquetas usan la info preparada para compartir.
   const infos = esPredica
     ? [subidosInfoArchivoAccion(it)].filter(Boolean)
     : archivos
-        .map((_, i) => subidosInfoArchivoPorIndice(it, i))
+        .map((_, i) => subidosInfoShareArchivoPorIndice(it, i))
         .filter(info => info?.url);
 
   if (!infos.length) {
@@ -829,8 +1027,6 @@ async function subidosPrepararArchivoAccion(id) {
         if (i === 0) principalFile = file;
       } catch (e) {
         console.warn("No pude preparar archivo:", id, i, e);
-
-        // Si falla el principal, no habilitamos los botones.
         if (i === 0) throw e;
       }
     }
@@ -1971,7 +2167,13 @@ function subidosArchivosItem(it = {}) {
       mimeType: a.mimeType || a.contentType || "",
       fileName: a.fileName || `archivo_${i + 1}`,
       sizeBytes: Number(a.sizeBytes || 0),
-      subidaDirectaVideo: !!a.subidaDirectaVideo
+      subidaDirectaVideo: !!a.subidaDirectaVideo,
+
+      // ✅ preparado para compartir sin link
+      shareUrl: a.shareUrl || "",
+      shareR2Key: a.shareR2Key || "",
+      shareMimeType: a.shareMimeType || "",
+      shareFileName: a.shareFileName || ""
     }));
   }
 
@@ -1982,7 +2184,13 @@ function subidosArchivosItem(it = {}) {
       mimeType: it.mimeType || "",
       fileName: it.fileName || "archivo",
       sizeBytes: Number(it.sizeBytes || 0),
-      subidaDirectaVideo: !!it.subidaDirectaVideo
+      subidaDirectaVideo: !!it.subidaDirectaVideo,
+
+      // ✅ preparado para compartir sin link
+      shareUrl: it.shareUrl || "",
+      shareR2Key: it.shareR2Key || "",
+      shareMimeType: it.shareMimeType || "",
+      shareFileName: it.shareFileName || ""
     }];
   }
 
@@ -5443,7 +5651,7 @@ window.compartirSubido = async function compartirSubido(id, btn = null) {
       const files = [];
 
       for (let i = 0; i < cantidad; i++) {
-        const info = subidosInfoArchivoPorIndice(it, i);
+    const info = subidosInfoShareArchivoPorIndice(it, actual);
         if (!info?.url) continue;
 
         const idCache = i === 0 ? id : "";
@@ -5803,7 +6011,8 @@ predicaNotaFinal: esPredica ? datosPredica.notaFinalGeneral : "",
 
     await set(destinoRef, datosBase);
 
-    // ✅ si es prédica, genero PNG final una sola vez y lo guardo en R2
+    // ✅ PRÉDICA: NO SE TOCA.
+    // Sigue generando su PNG final una sola vez y lo guarda en R2.
     if (esPredica) {
       const share = await subidosCrearSharePredicaAlGuardar(idFinal, datosBase);
 
@@ -5811,6 +6020,27 @@ predicaNotaFinal: esPredica ? datosPredica.notaFinalGeneral : "",
         await set(destinoRef, {
           ...datosBase,
           ...share
+        });
+
+        subidosFileCache.delete(idFinal);
+        subidosFilePreparando.delete(idFinal);
+      }
+    }
+
+    // ✅ OTRAS ETIQUETAS:
+    // ahora también quedan preparadas al guardar/editar.
+    // Si son imágenes, se guarda un JPG limpio en subidos-share.
+    if (!esPredica && archivos.length) {
+      const shareComun = await subidosPrepararSharesComunesAlGuardar(
+        idFinal,
+        datosBase,
+        estado
+      );
+
+      if (shareComun?.shareUrl) {
+        await set(destinoRef, {
+          ...datosBase,
+          ...shareComun
         });
 
         subidosFileCache.delete(idFinal);
