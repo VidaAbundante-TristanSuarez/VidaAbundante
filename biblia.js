@@ -4609,6 +4609,8 @@ const refCompleta = (!modoImagenLibre && itemsSel.length)
     uid,
     publicadoPor: uid,
     tipo: "imagen",
+    panelItemId: String(asset.ts || ""),
+sourcePanelItemId: String(asset.ts || ""),
 libro: modoImagenLibre ? "" : (itemsSel[0]?.Libro || libroSel?.value || ""),
 capitulo: modoImagenLibre ? 0 : Number(itemsSel[0]?.Capitulo || capSel?.value || 0),
 versiculos: versiculosSel,
@@ -6993,7 +6995,8 @@ const yaPublicado = !!panelBuscarPublicacionImagenPanel(it.id, it);
   !!it.devocionalKey
 );
 
-const botonCompartidosHTML = esDevocionalPanel ? "" : `
+const vieneDeCompartidosPanel = panelImagenVieneDeCompartidos(it);
+const botonCompartidosHTML = (esDevocionalPanel || vieneDeCompartidosPanel) ? "" : `
   <button
     class="btn-primary btn-panel-compartidos ${yaPublicado ? "activo" : ""}"
     type="button"
@@ -8981,6 +8984,15 @@ function panelBuscarPublicacionImagenPanel(id, item = {}) {
   const directa = panelImagenesPublicadas?.[id];
   if (directa?.path) return directa;
 
+  const porMismoId = panelImagenesCompartidosCache?.[id];
+if (porMismoId) {
+  return {
+    compId: id,
+    path: `compartidos/imagenes/${id}`,
+    item: porMismoId
+  };
+}
+
   const sourcePath = String(item.sourceCompPath || item.compPath || "").trim();
   const desdePath = panelCompInfoDesdePath(sourcePath);
   if (desdePath) return desdePath;
@@ -9030,6 +9042,19 @@ function panelBuscarPublicacionImagenPanel(id, item = {}) {
   return null;
 }
 
+function panelImagenVieneDeCompartidos(item = {}) {
+  const origen = String(item.origen || "").trim().toLowerCase();
+
+  return (
+    origen === "compartidos" ||
+    origen.includes("compartidos") ||
+    !!item.sourceCompPath ||
+    !!item.sourceCompId ||
+    !!item.sourceCompKey ||
+    !!item.sourceOracionesKey
+  );
+}
+
 window.publicarImagenPanelEnCompartidos = async function(id) {
   try {
     if (!uid) {
@@ -9043,6 +9068,12 @@ window.publicarImagenPanelEnCompartidos = async function(id) {
       alert("No encuentro la imagen para publicar en Compartidos.");
       return;
     }
+
+    if (panelImagenVieneDeCompartidos(item)) {
+  mostrarToast("Esta imagen ya viene de Compartidos.");
+  renderPanelImagenes(panelImagenesGuardadas || {});
+  return;
+}
 
     const ts = Date.now();
     const url = normalizarUrlPanelParaDB(item.url);
