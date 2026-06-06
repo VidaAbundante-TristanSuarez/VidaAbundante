@@ -17,6 +17,10 @@ let compartidosCache = [];
 let compartidosStatsCache = {};
 let compartidosGuardadosCache = {};
 
+let compartidosImagenesGuardadasCache = {};
+let compartidosImagenesGuardadasEscuchaActiva = false;
+let compartidosImagenesGuardadasUid = null;
+
 let compartidosDescargadosCache = {};
 let compartidosDescargadosEscuchaActiva = false;
 let compartidosDescargadosUid = null;
@@ -552,8 +556,9 @@ window.mostrarCompartidos = async () => {
 
   iniciarEscuchaCompartidos();
   iniciarEscuchaCompartidosStats();
-  iniciarEscuchaCompartidosGuardados();
-  iniciarEscuchaCompartidosDescargados();
+iniciarEscuchaCompartidosGuardados();
+iniciarEscuchaCompartidosImagenesGuardadas();
+iniciarEscuchaCompartidosDescargados();
   iniciarEscuchaCompartidosDevocionales();
   iniciarEscuchaCompartidosSubidos();
   iniciarEscuchaCompartidosOraciones();
@@ -759,6 +764,35 @@ function iniciarEscuchaCompartidosGuardados() {
   });
 
   compartidosGuardadosEscuchaActiva = true;
+}
+
+function iniciarEscuchaCompartidosImagenesGuardadas() {
+  const uid = compUidActual();
+
+  if (!uid) {
+    compartidosImagenesGuardadasCache = {};
+    compartidosImagenesGuardadasUid = null;
+    compartidosImagenesGuardadasEscuchaActiva = false;
+    renderCompartidos();
+    return;
+  }
+
+  if (
+    compartidosImagenesGuardadasEscuchaActiva &&
+    compartidosImagenesGuardadasUid === uid
+  ) return;
+
+  const db = compDB();
+  if (!db) return;
+
+  compartidosImagenesGuardadasUid = uid;
+
+  onValue(ref(db, `panelImagenesPersonal/${uid}`), (snap) => {
+    compartidosImagenesGuardadasCache = snap.val() || {};
+    renderCompartidos();
+  });
+
+  compartidosImagenesGuardadasEscuchaActiva = true;
 }
 
 function iniciarEscuchaCompartidosDescargados() {
@@ -968,7 +1002,10 @@ function compOraSetColorVisual(color = "#fff4b8") {
 }
 
 function compOraBuscarItem(key) {
-  return compUnificarItems().find(item => compKeyItem(item) === key) || null;
+  return compUnificarItems().find(item =>
+    compKeyItem(item) === key ||
+    compKeyOracionesItem(item) === key
+  ) || null;
 }
 
 function compOraTituloItem(item = {}) {
@@ -1467,7 +1504,7 @@ window.compBorrarOracionPublicacion = async function compBorrarOracionPublicacio
 function compCantidadOracionesPublicacion(item = {}) {
   if (!item || item.tipo === "devocional") return 0;
 
-  const key = compKeyItem(item);
+ const key = compKeyOracionesItem(item);
   return Object.keys(compartidosOracionesPublicacionesCache?.[key] || {}).length;
 }
 
@@ -1475,7 +1512,7 @@ function compAccionesOracionPublicacion(item = {}) {
   // ✅ Devocionales conservan su sistema actual.
   if (!item || item.tipo === "devocional") return "";
 
-  const key = compKeyItem(item);
+const key = compKeyOracionesItem(item);
 
   return `
     <button
@@ -1494,7 +1531,7 @@ function compRenderOracionesPublicacionHTML(item = {}) {
   // ✅ Los devocionales ya tienen su propio render directo de oraciones.
   if (!item || item.tipo === "devocional") return "";
 
-  const key = compKeyItem(item);
+const key = compKeyOracionesItem(item);
   const uidActual = String(compUidActual() || "");
   const admin = compEsAdmin();
 
@@ -1676,6 +1713,88 @@ function compKeyItem(item) {
     item?._compId || "",
     item?.url || ""
   ].join("__").replace(/[.#$/\[\]]/g, "_");
+}
+
+function compKeyOracionesItem(item = {}) {
+  return String(
+    item?.sourceOracionesKey ||
+    item?.sourceCompKey ||
+    item?.publicacionKey ||
+    compKeyItem(item)
+  ).trim();
+}
+
+function compUrlClave(url = "") {
+  return String(url || "")
+    .trim()
+    .replace(/^https:\/(?!\/)/i, "https://")
+    .replace(/^http:\/(?!\/)/i, "http://");
+}
+
+function compCheckMiniHTML(activo = false) {
+  if (!activo) return "";
+
+  return `
+    <span
+      class="comp-check-mini"
+      style="
+        position:absolute;
+        left:72%;
+        bottom:-7px;
+        transform:translateX(-50%);
+        width:14px;
+        height:14px;
+        border-radius:999px;
+        background:#8dbdff;
+        color:#fff;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        box-shadow:0 0 0 2px #fff;
+        line-height:1;
+        pointer-events:none;
+        z-index:2;
+        font-size:9px;
+      "
+    >
+      <i class="fa-solid fa-check"></i>
+    </span>
+  `;
+}
+
+function compEstaImagenGuardada(key, item = {}) {
+  const url = compUrlClave(item.url || item.imagenUrl || "");
+  const sourcePath = compPathCompartido(item);
+  const sourceCompId = String(item._compId || "").trim();
+  const sourceKey = compKeyOracionesItem(item);
+
+  return Object.values(compartidosImagenesGuardadasCache || {}).some(g => {
+    if (!g || typeof g !== "object") return false;
+
+    if (key && String(g.sourceCompKey || "") === String(key)) return true;
+    if (sourceKey && String(g.sourceOracionesKey || "") === String(sourceKey)) return true;
+    if (sourcePath && String(g.sourceCompPath || "") === String(sourcePath)) return true;
+    if (sourceCompId && String(g.sourceCompId || "") === String(sourceCompId)) return true;
+
+    const gUrl = compUrlClave(g.originalUrl || g.url || "");
+    return !!url && !!gUrl && url === gUrl && String(g.origen || "") === "compartidos";
+  });
+}
+
+function compMarcarBotonesImagenGuardada(key) {
+  document.querySelectorAll("[data-comp-img-save]").forEach(btn => {
+    if (btn.dataset.compImgSave === key) {
+      btn.innerHTML = `
+        <i class="fa-solid fa-heart-circle-check"></i>
+        ${compCheckMiniHTML(true)}
+      `;
+      btn.classList.add("guardado", "activo");
+      btn.title = "Guardado en Mi Panel";
+      btn.setAttribute("aria-label", "Guardado en Mi Panel");
+      btn.style.position = "relative";
+      btn.style.overflow = "visible";
+    }
+  });
 }
 
 function compPathCompartido(item) {
@@ -2022,15 +2141,17 @@ window.compGuardarImagenCompartidaEnMiPanel = async function compGuardarImagenCo
   const uid = compUidActual();
 
   if (!db || !uid) {
-  if (typeof window.abrirLoginParaGuardarMiPanel === "function") {
-    window.abrirLoginParaGuardarMiPanel();
-  } else {
-    window.location.href = "login.html";
+    if (typeof window.abrirLoginParaGuardarMiPanel === "function") {
+      window.abrirLoginParaGuardarMiPanel();
+    } else {
+      window.location.href = "login.html";
+    }
+    return;
   }
-  return;
-}
 
-  const item = compUnificarItems().find(x => x.tipo === "imagen" && compImagenKey(x) === key);
+  const item = compUnificarItems().find(x =>
+    x.tipo === "imagen" && compImagenKey(x) === key
+  );
 
   if (!item) {
     alert("No encontré esa imagen.");
@@ -2044,35 +2165,62 @@ window.compGuardarImagenCompartidaEnMiPanel = async function compGuardarImagenCo
     return;
   }
 
+  if (compEstaImagenGuardada(key, item)) {
+    compMarcarBotonesImagenGuardada(key);
+
+    if (typeof mostrarToast === "function") {
+      mostrarToast("✅ Esta imagen ya está guardada en Mi Panel");
+    }
+
+    return;
+  }
+
   const ts = Date.now();
   const url = item.url || item.imagenUrl || "";
+  const sourceCompPath = compPathCompartido(item);
+  const sourceCompKey = compKeyItem(item);
+  const sourceOracionesKey = compKeyOracionesItem(item);
 
   try {
-await set(ref(db, `panelImagenesPersonal/${uid}/${ts}`), {
-  url,
-  fecha: ts,
-  uid,
-  tipo: "imagen",
-  libro: item.libro || "",
-  capitulo: Number(item.capitulo || 0),
-  versiculos: Array.isArray(item.versiculos) ? item.versiculos : [],
-  ref: compReferenciaItem(item),
-  origen: "compartidos",
-  tipoTexto: item.tipoTexto || "biblia",
-  textoLibre: item.textoLibre || item.texto || "",
+    await set(ref(db, `panelImagenesPersonal/${uid}/${ts}`), {
+      url,
+      originalUrl: url,
+      fecha: ts,
+      uid,
+      tipo: "imagen",
 
-  audioOk: !!(item.audioOk || item.audioGithubUrl || item.audioUrl || item.audio),
-  audioGithubUrl: item.audioGithubUrl || item.audioUrl || item.audio || "",
-  audioUrl: item.audioUrl || item.audioGithubUrl || item.audio || ""
-});
+      libro: item.libro || "",
+      capitulo: Number(item.capitulo || 0),
+      versiculos: Array.isArray(item.versiculos) ? item.versiculos : [],
+      ref: compReferenciaItem(item),
 
-    document.querySelectorAll("[data-comp-img-save]").forEach(btn => {
-      if (btn.dataset.compImgSave === key) {
-        btn.innerHTML = `<i class="fa-solid fa-heart-circle-check"></i>`;
-        btn.classList.add("guardado", "activo");
-        btn.title = "Guardado en Mi Panel";
-      }
+      origen: "compartidos",
+      tipoTexto: item.tipoTexto || "biblia",
+      textoLibre: item.textoLibre || item.texto || "",
+
+      audioOk: !!(item.audioOk || item.audioGithubUrl || item.audioUrl || item.audio),
+      audioGithubUrl: item.audioGithubUrl || item.audioUrl || item.audio || "",
+      audioUrl: item.audioUrl || item.audioGithubUrl || item.audio || "",
+
+      // ✅ clave de la publicación original de Compartidos
+      // para no republicar y para conservar oraciones
+      sourceCompPath,
+      sourceCompId: item._compId || "",
+      sourceGrupo: item._grupo || "",
+      sourceCompKey,
+      sourceOracionesKey
     });
+
+    compartidosImagenesGuardadasCache[ts] = {
+      sourceCompPath,
+      sourceCompId: item._compId || "",
+      sourceCompKey,
+      sourceOracionesKey,
+      originalUrl: url,
+      origen: "compartidos"
+    };
+
+    compMarcarBotonesImagenGuardada(key);
 
     if (typeof mostrarToast === "function") mostrarToast("💙 Guardado en Mi Panel");
     else alert("Guardado en Mi Panel.");
@@ -2144,19 +2292,22 @@ function compRenderImagen(item) {
   const tituloBase = compTituloImagen(item);
   const titulo = compEscape(tituloBase);
   const textoLibre = String(item.textoLibre || "").trim();
-  const key = compImagenKey(item);
+const key = compImagenKey(item);
+const guardada = compEstaImagenGuardada(key, item);
 
-  const guardarBtn = compEsPropia(item) ? "" : `
-    <button
-      class="btn-primary"
-      type="button"
-      data-comp-img-save="${compEscape(key)}"
-      onclick="compGuardarImagenCompartidaEnMiPanel('${compJs(key)}')"
-      aria-label="Guardar en Mi Panel"
-      title="Guardar en Mi Panel"
-    >
-      <i class="fa-solid fa-heart-circle-plus"></i>
-    </button>
+const guardarBtn = compEsPropia(item) ? "" : `
+<button
+  class="btn-primary ${guardada ? "guardado activo" : ""}"
+  type="button"
+  data-comp-img-save="${compEscape(key)}"
+  onclick="compGuardarImagenCompartidaEnMiPanel('${compJs(key)}')"
+  aria-label="${guardada ? "Guardado en Mi Panel" : "Guardar en Mi Panel"}"
+  title="${guardada ? "Guardado en Mi Panel" : "Guardar en Mi Panel"}"
+  style="position:relative; overflow:visible;"
+>
+  <i class="fa-solid ${guardada ? "fa-heart-circle-check" : "fa-heart-circle-plus"}"></i>
+  ${compCheckMiniHTML(guardada)}
+</button>
   `;
 
   if (typeof window.panelImagenRenderCardHTML !== "function") {
