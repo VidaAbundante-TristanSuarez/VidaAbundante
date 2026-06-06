@@ -266,6 +266,158 @@ function subidosNombreLimpio(nombre = "archivo") {
     .slice(0, 120) || "archivo";
 }
 
+function subidosMimeDesdeNombreUrl(nombre = "", url = "") {
+  const s = `${nombre || ""} ${url || ""}`.toLowerCase();
+
+  if (s.includes(".jpg") || s.includes(".jpeg")) return "image/jpeg";
+  if (s.includes(".png")) return "image/png";
+  if (s.includes(".webp")) return "image/webp";
+  if (s.includes(".gif")) return "image/gif";
+
+  if (s.includes(".pdf")) return "application/pdf";
+  if (s.includes(".txt")) return "text/plain";
+
+  if (s.includes(".mp3")) return "audio/mpeg";
+  if (s.includes(".wav")) return "audio/wav";
+  if (s.includes(".m4a")) return "audio/mp4";
+  if (s.includes(".ogg")) return "audio/ogg";
+
+  if (s.includes(".mp4")) return "video/mp4";
+  if (s.includes(".webm")) return "video/webm";
+  if (s.includes(".mov")) return "video/quicktime";
+
+  if (s.includes(".docx")) {
+    return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+  }
+
+  if (s.includes(".xlsx")) {
+    return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+  }
+
+  if (s.includes(".pptx")) {
+    return "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+  }
+
+  return "";
+}
+
+function subidosExtensionPorMime(tipo = "") {
+  const t = String(tipo || "").toLowerCase().split(";")[0].trim();
+
+  if (t === "image/jpeg") return "jpg";
+  if (t === "image/png") return "png";
+  if (t === "image/webp") return "webp";
+  if (t === "image/gif") return "gif";
+
+  if (t === "application/pdf") return "pdf";
+  if (t === "text/plain") return "txt";
+
+  if (t === "audio/mpeg") return "mp3";
+  if (t === "audio/wav") return "wav";
+  if (t === "audio/mp4") return "m4a";
+  if (t === "audio/ogg") return "ogg";
+
+  if (t === "video/mp4") return "mp4";
+  if (t === "video/webm") return "webm";
+  if (t === "video/quicktime") return "mov";
+
+  if (t === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") return "docx";
+  if (t === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") return "xlsx";
+  if (t === "application/vnd.openxmlformats-officedocument.presentationml.presentation") return "pptx";
+
+  return "";
+}
+
+function subidosNombreConExtension(nombre = "archivo", tipo = "", url = "") {
+  let limpio = subidosNombreLimpio(nombre || "archivo");
+
+  if (/\.[a-z0-9]{2,6}$/i.test(limpio)) {
+    return limpio;
+  }
+
+  const tipoInferido = tipo || subidosMimeDesdeNombreUrl(nombre, url);
+  const ext = subidosExtensionPorMime(tipoInferido);
+
+  return ext ? `${limpio}.${ext}` : limpio;
+}
+
+function subidosInfoShareNormalizada(info = {}) {
+  const url = String(info.url || "").trim();
+
+  const nombreBase = String(
+    info.fileName ||
+    info.nombre ||
+    `archivo_${Date.now()}`
+  ).trim();
+
+  const mimeGuardado = String(
+    info.mimeType ||
+    info.contentType ||
+    ""
+  ).split(";")[0].trim();
+
+  const mimeInferido = subidosMimeDesdeNombreUrl(nombreBase, url);
+
+  const mimeType =
+    mimeGuardado && mimeGuardado !== "application/octet-stream"
+      ? mimeGuardado
+      : (mimeInferido || mimeGuardado || "application/octet-stream");
+
+  return {
+    ...info,
+    url,
+    mimeType,
+    fileName: subidosNombreConExtension(nombreBase, mimeType, url)
+  };
+}
+
+function subidosCacheKeyArchivo(info = {}) {
+  return `archivo-url::${String(info?.url || "").trim()}`;
+}
+
+function subidosLeerFileCachePorInfo(info = {}, id = "") {
+  const normal = subidosInfoShareNormalizada(info);
+  if (!normal.url) return null;
+
+  const porUrl = subidosFileCache.get(subidosCacheKeyArchivo(normal));
+  if (porUrl?.url === normal.url && porUrl?.file) return porUrl.file;
+
+  if (id) {
+    const porId = subidosFileCache.get(String(id));
+    if (porId?.url === normal.url && porId?.file) return porId.file;
+  }
+
+  return null;
+}
+
+function subidosGuardarFileCachePorInfo(info = {}, file = null, id = "") {
+  const normal = subidosInfoShareNormalizada(info);
+  if (!normal.url || !file) return;
+
+  const data = {
+    url: normal.url,
+    file
+  };
+
+  subidosFileCache.set(subidosCacheKeyArchivo(normal), data);
+
+  if (id) {
+    subidosFileCache.set(String(id), data);
+  }
+}
+
+async function subidosObtenerFileDesdeInfo(info = {}, id = "") {
+  const normal = subidosInfoShareNormalizada(info);
+
+  const cache = subidosLeerFileCachePorInfo(normal, id);
+  if (cache) return cache;
+
+  const file = await subidosCrearFileDesdeInfo(normal);
+  subidosGuardarFileCachePorInfo(normal, file, id);
+
+  return file;
+}
+
 function subidosNombreSharePredica(it) {
   const fecha = it?.fechaEvento || "sin-fecha";
   const id = it?.id || "predica";
@@ -316,11 +468,16 @@ function subidosInfoArchivoPorIndice(it, indice = 0) {
 
   if (!a?.url) return null;
 
-  return {
+  return subidosInfoShareNormalizada({
     url: a.url,
-    fileName: a.fileName || `archivo_${idx + 1}`,
-    mimeType: a.mimeType || "application/octet-stream"
-  };
+    fileName: a.fileName || it.fileName || `archivo_${idx + 1}`,
+    mimeType:
+      a.mimeType ||
+      a.contentType ||
+      it.mimeType ||
+      subidosMimeDesdeNombreUrl(a.fileName || it.fileName || "", a.url) ||
+      "application/octet-stream"
+  });
 }
 
 function subidosIndiceActualDesdeBoton(id, btn) {
@@ -349,7 +506,9 @@ async function subidosCrearFileDeItemPorIndice(it, indice = 0) {
   const info = subidosInfoArchivoPorIndice(it, indice);
   if (!info?.url) throw new Error("No se encontró el archivo.");
 
-  return await subidosCrearFileDesdeInfo(info);
+  const idCache = Number(indice || 0) === 0 ? (it?.id || "") : "";
+
+  return await subidosObtenerFileDesdeInfo(info, idCache);
 }
 
 async function subidosCrearFilesDeItem(it, indices = []) {
@@ -404,20 +563,37 @@ function subidosElegirTodoOActual(accion, cantidad) {
 }
 
 async function subidosCrearFileDesdeInfo(info) {
-  if (!info?.url) throw new Error("Falta URL del archivo.");
+  const datos = subidosInfoShareNormalizada(info);
 
-  const nombre = subidosNombreLimpio(info.fileName || `archivo_${Date.now()}`);
+  if (!datos?.url) throw new Error("Falta URL del archivo.");
 
-  // ✅ Usa tu proxy para traer bytes reales, no abrir link
-  const proxy = subidosProxyArchivoUrl(info.url, nombre, false);
+  const proxy = subidosProxyArchivoUrl(datos.url, datos.fileName, false);
 
-  const r = await fetch(proxy);
-  if (!r.ok) throw new Error("No pude preparar el archivo real.");
+  const r = await fetch(proxy, {
+    cache: "no-store"
+  });
+
+  if (!r.ok) {
+    throw new Error("No pude preparar el archivo real.");
+  }
 
   const blob = await r.blob();
-  const tipo = info.mimeType || blob.type || "application/octet-stream";
 
-  return new File([blob], nombre, { type: tipo });
+  let tipo = datos.mimeType;
+
+  if (!tipo || tipo === "application/octet-stream") {
+    tipo =
+      subidosMimeDesdeNombreUrl(datos.fileName, datos.url) ||
+      blob.type ||
+      "application/octet-stream";
+  }
+
+  tipo = String(tipo || "application/octet-stream").split(";")[0].trim();
+
+  const nombre = subidosNombreConExtension(datos.fileName, tipo, datos.url);
+  const blobFinal = blob.type === tipo ? blob : blob.slice(0, blob.size, tipo);
+
+  return new File([blobFinal], nombre, { type: tipo });
 }
 
 function subidosMarcarArchivoAccionListo(id, listo) {
@@ -440,23 +616,41 @@ async function subidosPrepararArchivoAccion(id) {
   const it = obtenerSubidoPorId(id);
   if (!it) return null;
 
-  // ✅ Videos grandes: NO los bajamos en memoria.
-  // Compartir/descargar usa link directo para cuidar Functions y límites.
-  if (subidosEsVideoItem(it)) {
+  const esPredica = subidosEsPredicaConContenido(it);
+
+  const archivos = esPredica ? [] : subidosArchivosItem(it);
+
+  // ✅ Evita llenar memoria con videos enormes.
+  // Videos chicos pueden prepararse como archivo; videos grandes dependen del navegador.
+  const LIMITE_AUTO_VIDEO = 28 * 1024 * 1024;
+
+  const tieneVideoGrande = !esPredica && archivos.some(a =>
+    String(a?.mimeType || "").startsWith("video/") &&
+    Number(a?.sizeBytes || 0) > LIMITE_AUTO_VIDEO
+  );
+
+  if (tieneVideoGrande) {
     subidosMarcarArchivoAccionListo(id, true);
     return null;
-  }  
+  }
 
-  const info = subidosInfoArchivoAccion(it);
-  if (!info?.url) {
+  const infos = esPredica
+    ? [subidosInfoArchivoAccion(it)].filter(Boolean)
+    : archivos
+        .map((_, i) => subidosInfoArchivoPorIndice(it, i))
+        .filter(info => info?.url);
+
+  if (!infos.length) {
     subidosMarcarArchivoAccionListo(id, false);
     return null;
   }
 
-  const cacheActual = subidosFileCache.get(id);
-  if (cacheActual?.url === info.url && cacheActual?.file) {
+  const principal = infos[0];
+
+  const cachePrincipal = subidosLeerFileCachePorInfo(principal, id);
+  if (cachePrincipal) {
     subidosMarcarArchivoAccionListo(id, true);
-    return cacheActual.file;
+    return cachePrincipal;
   }
 
   if (subidosFilePreparando.has(id)) return null;
@@ -465,15 +659,25 @@ async function subidosPrepararArchivoAccion(id) {
   subidosMarcarArchivoAccionListo(id, false);
 
   try {
-    const file = await subidosCrearFileDesdeInfo(info);
+    let principalFile = null;
 
-    subidosFileCache.set(id, {
-      url: info.url,
-      file
-    });
+    for (let i = 0; i < infos.length; i++) {
+      const info = infos[i];
+      const idCache = i === 0 ? id : "";
+
+      try {
+        const file = await subidosObtenerFileDesdeInfo(info, idCache);
+        if (i === 0) principalFile = file;
+      } catch (e) {
+        console.warn("No pude preparar archivo:", id, i, e);
+
+        // Si falla el principal, no habilitamos los botones.
+        if (i === 0) throw e;
+      }
+    }
 
     subidosMarcarArchivoAccionListo(id, true);
-    return file;
+    return principalFile;
   } catch (e) {
     console.warn("No pude preparar archivo para acción:", id, e);
     subidosMarcarArchivoAccionListo(id, false);
@@ -5048,15 +5252,41 @@ window.compartirSubido = async function compartirSubido(id, btn = null) {
     }
 
     const esPredica = subidosEsPredicaConContenido(it);
-    const archivos = subidosArchivosItem(it);
-    const cantidad = esPredica ? 1 : archivos.length;
 
-    if (!esPredica && !cantidad) {
+    // =========================================================
+    // ✅ PRÉDICA: NO CAMBIAMOS LA IDEA.
+    // Sigue compartiendo el PNG preparado + link de prédica.
+    // =========================================================
+    if (esPredica) {
+      const titulo = it?.descripcion || it?.etiqueta || "Archivo";
+      const textoCompartir = subidosLinkDetalle(id);
+
+      subidosAvisoProceso("Preparando archivo actual...", true);
+
+      const file = await subidosCrearFileDeItemPorIndice(it, 0);
+
+      await subidosCompartirFileObligatorio(
+        file,
+        titulo,
+        textoCompartir
+      );
+
+      subidosAvisoProceso("Listo ✅");
+      return;
+    }
+
+    // =========================================================
+    // ✅ OTRAS ETIQUETAS: SOLO ARCHIVO REAL, SIN LINK.
+    // =========================================================
+    const archivos = subidosArchivosItem(it);
+    const cantidad = archivos.length;
+
+    if (!cantidad) {
       alert("Este subido no tiene archivo para compartir.");
       return;
     }
 
-    const actual = esPredica ? 0 : subidosIndiceActualDesdeBoton(id, btn);
+    const actual = subidosIndiceActualDesdeBoton(id, btn);
     const modo = await subidosElegirTodoOActual("compartir", cantidad);
 
     if (modo === "cancelar") {
@@ -5066,20 +5296,34 @@ window.compartirSubido = async function compartirSubido(id, btn = null) {
 
     const titulo = it?.descripcion || it?.etiqueta || "Archivo";
 
-    // ✅ SOLO prédica lleva link.
-    // ✅ Las demás etiquetas comparten únicamente el archivo real.
-    const textoCompartir = esPredica ? subidosLinkDetalle(id) : "";
-
-    if (modo === "todo" && !esPredica && cantidad > 1) {
+    if (modo === "todo" && cantidad > 1) {
       subidosAvisoProceso("Preparando todos los archivos...", true);
 
-      const indices = archivos.map((_, i) => i);
-      const files = await subidosCrearFilesDeItem(it, indices);
+      const files = [];
+
+      for (let i = 0; i < cantidad; i++) {
+        const info = subidosInfoArchivoPorIndice(it, i);
+        if (!info?.url) continue;
+
+        const idCache = i === 0 ? id : "";
+        const file =
+          subidosLeerFileCachePorInfo(info, idCache) ||
+          await subidosObtenerFileDesdeInfo(info, idCache);
+
+        files.push(file);
+      }
+
+      if (!files.length) {
+        throw new Error("No se pudo preparar ningún archivo para compartir.");
+      }
 
       let puedeCompartirTodos = false;
 
       try {
-        puedeCompartirTodos = !!(navigator.share && navigator.canShare?.({ files }));
+        puedeCompartirTodos = !!(
+          navigator.share &&
+          navigator.canShare?.({ files })
+        );
       } catch (e) {
         puedeCompartirTodos = false;
       }
@@ -5101,12 +5345,20 @@ window.compartirSubido = async function compartirSubido(id, btn = null) {
 
     subidosAvisoProceso("Preparando archivo actual...", true);
 
-    const file = await subidosCrearFileDeItemPorIndice(it, actual);
+    const info = subidosInfoArchivoPorIndice(it, actual);
+    if (!info?.url) throw new Error("No se encontró el archivo actual.");
 
+    const idCache = Number(actual || 0) === 0 ? id : "";
+
+    const file =
+      subidosLeerFileCachePorInfo(info, idCache) ||
+      await subidosObtenerFileDesdeInfo(info, idCache);
+
+    // ✅ Sin texto y sin URL: solo archivo.
     await subidosCompartirFileObligatorio(
       file,
       titulo,
-      textoCompartir
+      ""
     );
 
     subidosAvisoProceso("Listo ✅");
@@ -5118,8 +5370,15 @@ window.compartirSubido = async function compartirSubido(id, btn = null) {
       return;
     }
 
+    const msg = String(e?.message || "");
+
     subidosAvisoProceso("No se pudo compartir");
-    alert("No se pudo compartir.");
+
+    if (msg.includes("acepta compartir este tipo")) {
+      alert("No se pudo compartir este tipo de archivo desde este navegador.");
+    } else {
+      alert("No se pudo compartir.");
+    }
   }
 };
 
