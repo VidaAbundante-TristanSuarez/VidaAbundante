@@ -548,31 +548,34 @@ async function subidosCrearFileShareComunDesdeInfo(info = {}, id = "") {
   return original;
 }
 
-async function subidosCompartirArchivoComunSinLink(info = {}, titulo = "Archivo", id = "") {
+function subidosCompartirArchivoComunSinLink(info = {}, titulo = "Archivo", id = "") {
   if (!navigator.share) {
     throw new Error("Este navegador no permite compartir archivos desde la web.");
   }
 
-  const file = await subidosCrearFileShareComunDesdeInfo(info, id);
+  const normal = subidosInfoShareNormalizada(info);
 
-  let puede = false;
+  // ✅ CLAVE:
+  // No hacemos fetch acá.
+  // No convertimos imagen acá.
+  // No esperamos nada acá.
+  // Compartir debe abrirse con el toque del usuario.
+  const file = subidosLeerFileCachePorInfo(normal, id);
 
-  try {
-    puede = !!(
-      !navigator.canShare ||
-      navigator.canShare({ files: [file] })
-    );
-  } catch (e) {
-    puede = false;
+  if (!file) {
+    if (id) subidosPrepararArchivoAccion(id);
+
+    throw new Error("El archivo todavía no está listo para compartir. Esperá unos segundos y tocá compartir de nuevo.");
   }
 
-  if (!puede) {
+  if (navigator.canShare && !navigator.canShare({ files: [file] })) {
     throw new Error(`Este navegador no acepta compartir este archivo: ${file.name} / ${file.type}`);
   }
 
   // ✅ Sin text y sin url: archivo solamente.
-  await navigator.share({
-    title: titulo,
+  // ✅ Esto se ejecuta inmediatamente, sin await previo.
+  return navigator.share({
+    title: titulo || "Archivo",
     files: [file]
   });
 }
@@ -5625,8 +5628,13 @@ window.compartirSubido = async function compartirSubido(id, btn = null) {
       return;
     }
 
-    // =========================================================
-    // ✅ OTRAS ETIQUETAS: SOLO ARCHIVO REAL, SIN LINK.
+       // =========================================================
+    // ✅ OTRAS ETIQUETAS: SOLO ARCHIVO, SIN LINK.
+    // IMPORTANTE:
+    // No abrimos modal de "actual/todas".
+    // No hacemos fetch acá.
+    // No convertimos acá.
+    // Compartimos el archivo actual ya preparado en cache.
     // =========================================================
     const archivos = subidosArchivosItem(it);
     const cantidad = archivos.length;
@@ -5637,41 +5645,35 @@ window.compartirSubido = async function compartirSubido(id, btn = null) {
     }
 
     const actual = subidosIndiceActualDesdeBoton(id, btn);
-    const modo = await subidosElegirTodoOActual("compartir", cantidad);
+    const titulo = it?.descripcion || it?.etiqueta || "Archivo";
 
-    if (modo === "cancelar") {
-      subidosAvisoProceso("Acción cancelada");
+    const info = subidosInfoShareArchivoPorIndice(it, actual);
+
+    if (!info?.url) {
+      throw new Error("No se encontró el archivo actual.");
+    }
+
+    const idCache = Number(actual || 0) === 0 ? id : "";
+
+    const fileCacheado = subidosLeerFileCachePorInfo(info, idCache);
+
+    if (!fileCacheado) {
+      subidosAvisoProceso("Preparando archivo...", true);
+      subidosPrepararArchivoAccion(id);
+
+      alert("El archivo todavía se está preparando. Esperá unos segundos y tocá compartir de nuevo.");
       return;
     }
 
-    const titulo = it?.descripcion || it?.etiqueta || "Archivo";
+    subidosAvisoProceso("Abriendo compartir...", true);
 
-    if (modo === "todo" && cantidad > 1) {
-      subidosAvisoProceso("Preparando todos los archivos...", true);
+    await subidosCompartirArchivoComunSinLink(
+      info,
+      titulo,
+      idCache
+    );
 
-      const files = [];
-
-      for (let i = 0; i < cantidad; i++) {
-        const info = subidosInfoShareArchivoPorIndice(it, i);
-        if (!info?.url) continue;
-
-        const idCache = i === 0 ? id : "";
-        const file = await subidosCrearFileShareComunDesdeInfo(info, idCache);
-        files.push(file);
-      }
-
-      if (!files.length) {
-        throw new Error("No se pudo preparar ningún archivo para compartir.");
-      }
-
-      let puedeCompartirTodos = false;
-
-      try {
-        puedeCompartirTodos = !!(
-          navigator.share &&
-          navigator.canShare?.({ files })
-        );
-      } catch (e) {
+    subidosAvisoProceso("Listo ✅");
         puedeCompartirTodos = false;
       }
 
