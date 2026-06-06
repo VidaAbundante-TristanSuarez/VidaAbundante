@@ -3225,12 +3225,21 @@ body.oscuro .subir-iglesia-btn:has(input:checked){
   display:none !important;
 }
 
+/* ✅ El contenedor del título es la referencia del desplegable */
+#wrapFiltrosBiblia{
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  overflow: visible;
+}
+
 /* ✅ Filtros Biblia: cerrados por defecto */
 #wrapFiltrosBiblia .filtros{
   display:none !important;
 }
 
-/* ✅ Filtros Biblia: abiertos solo cuando el wrap tiene .abierto */
+/* ✅ Filtros Biblia: abiertos debajo del botón/título */
 #wrapFiltrosBiblia.abierto .filtros{
   display:grid !important;
   grid-template-columns: 1fr 54px;
@@ -3241,18 +3250,18 @@ body.oscuro .subir-iglesia-btn:has(input:checked){
   gap: 6px;
 
   position:absolute;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
+  left: 0;
+  top: calc(100% + 6px);
+  transform: none;
 
-  width: min(285px, calc(100vw - 150px));
-  padding: 8px 18px 8px 8px;
+  width: min(285px, calc(100vw - 24px));
+  padding: 8px;
 
   background: #e9f6ff;
   border: 1px solid rgba(0,0,0,.10);
   border-radius: 14px;
   box-shadow: 0 10px 24px rgba(0,0,0,.22);
-  z-index: 30;
+  z-index: 9999;
   box-sizing: border-box;
 }
 
@@ -3308,6 +3317,17 @@ body.oscuro #buscarLibroBiblia{
   background:#2a2a2a;
   color:#fff;
   border-color: rgba(255,255,255,.18);
+}
+
+@media (max-width: 640px){
+  #wrapFiltrosBiblia.abierto .filtros{
+    left: 0;
+    top: calc(100% + 6px);
+    width: min(285px, calc(100vw - 18px));
+    grid-template-columns: 1fr 54px;
+    gap: 6px;
+    padding: 8px;
+  }
 }
 
 /* ✅ FIX MOBILE: la paleta del resaltador no depende de la barra scrolleable */
