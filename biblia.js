@@ -8639,26 +8639,59 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ✅ NUEVO: botón 🔍 (si lo querés sin onclick en HTML)
+  // ✅ FILTROS BIBLIA: abre tocando el título "Génesis 1"
+  // El botón btnToggleFiltros está oculto por CSS, así que el disparador real es #titulo.
   const btnFiltros = document.getElementById("btnToggleFiltros");
-  if (btnFiltros) {
-    btnFiltros.type = "button";
-    btnFiltros.onclick = (e) => {
+  const tituloBiblia = document.getElementById("titulo");
+
+  function dispararFiltrosBiblia(e) {
+    if (e) {
+      // ✅ no abrir filtros si tocás RV1960 / NTV u otro botón interno del título
+      if (
+        e.target?.closest?.(".btn-version-inline") ||
+        e.target?.closest?.("button, a, input, select, textarea")
+      ) {
+        return;
+      }
+
       e.preventDefault();
       e.stopPropagation();
-      toggleFiltrosBiblia();
-    };
+    }
+
+    if (typeof window.toggleFiltrosBiblia === "function") {
+      window.toggleFiltrosBiblia();
+    }
   }
 
-  const tituloBiblia = document.getElementById("titulo");
-if (tituloBiblia) {
-  tituloBiblia.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" || e.key === " ") {
+  if (btnFiltros && !btnFiltros.__readyFiltrosBiblia) {
+    btnFiltros.__readyFiltrosBiblia = true;
+    btnFiltros.type = "button";
+
+    btnFiltros.addEventListener("click", (e) => {
       e.preventDefault();
       e.stopPropagation();
-      toggleFiltrosBiblia();
-    }
-  });
-}
+
+      if (typeof window.toggleFiltrosBiblia === "function") {
+        window.toggleFiltrosBiblia();
+      }
+    });
+  }
+
+  if (tituloBiblia && !tituloBiblia.__readyFiltrosBiblia) {
+    tituloBiblia.__readyFiltrosBiblia = true;
+
+    tituloBiblia.setAttribute("role", "button");
+    tituloBiblia.setAttribute("tabindex", "0");
+    tituloBiblia.setAttribute("aria-label", "Abrir filtros de Biblia");
+
+    tituloBiblia.addEventListener("click", dispararFiltrosBiblia);
+
+    tituloBiblia.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        dispararFiltrosBiblia(e);
+      }
+    });
+  }
 
 const inputBuscarLibro = document.getElementById("buscarLibroBiblia");
 const selectLibro = document.getElementById("libro");
