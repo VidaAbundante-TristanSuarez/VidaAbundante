@@ -5047,37 +5047,55 @@ window.compartirSubido = async function compartirSubido(id, btn = null) {
       return;
     }
 
-    if (subidosEsVideoItem(it)) {
-      await subidosCompartirLinkVideo(it);
-      subidosAvisoProceso("Link listo ✅");
+    const esPredica = subidosEsPredicaConContenido(it);
+    const archivos = subidosArchivosItem(it);
+    const cantidad = esPredica ? 1 : archivos.length;
+
+    if (!esPredica && !cantidad) {
+      alert("Este subido no tiene archivo para compartir.");
       return;
     }
 
-    const archivos = subidosArchivosItem(it);
-    const cantidad = subidosEsPredicaConContenido(it) ? 1 : archivos.length;
-    const actual = subidosIndiceActualDesdeBoton(id, btn);
-    const modo = subidosElegirTodoOActual("compartir", cantidad);
+    const actual = esPredica ? 0 : subidosIndiceActualDesdeBoton(id, btn);
+    const modo = await subidosElegirTodoOActual("compartir", cantidad);
+
+    if (modo === "cancelar") {
+      subidosAvisoProceso("Acción cancelada");
+      return;
+    }
+
     const titulo = it?.descripcion || it?.etiqueta || "Archivo";
 
-    if (modo === "todo" && cantidad > 1) {
+    // ✅ SOLO prédica lleva link.
+    // ✅ Las demás etiquetas comparten únicamente el archivo real.
+    const textoCompartir = esPredica ? subidosLinkDetalle(id) : "";
+
+    if (modo === "todo" && !esPredica && cantidad > 1) {
       subidosAvisoProceso("Preparando todos los archivos...", true);
 
       const indices = archivos.map((_, i) => i);
       const files = await subidosCrearFilesDeItem(it, indices);
 
-      if (navigator.canShare?.({ files })) {
-        await navigator.share({
-          title: titulo,
-          text: titulo,
-          files
-        });
+      let puedeCompartirTodos = false;
 
-        subidosAvisoProceso("Listo ✅");
+      try {
+        puedeCompartirTodos = !!(navigator.share && navigator.canShare?.({ files }));
+      } catch (e) {
+        puedeCompartirTodos = false;
+      }
+
+      if (!puedeCompartirTodos) {
+        alert("Este dispositivo o navegador no permite compartir varios archivos juntos. Probá con Descargar todo.");
+        subidosAvisoProceso("No se pudo compartir todo");
         return;
       }
 
-      alert("Este dispositivo o navegador no permite compartir varios archivos juntos. Probá con Descargar todo.");
-      subidosAvisoProceso("No se pudo compartir todo");
+      await navigator.share({
+        title: titulo,
+        files
+      });
+
+      subidosAvisoProceso("Listo ✅");
       return;
     }
 
@@ -5088,7 +5106,7 @@ window.compartirSubido = async function compartirSubido(id, btn = null) {
     await subidosCompartirFileObligatorio(
       file,
       titulo,
-      subidosLinkDetalle(id)
+      textoCompartir
     );
 
     subidosAvisoProceso("Listo ✅");
