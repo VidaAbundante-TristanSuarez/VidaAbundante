@@ -6078,49 +6078,25 @@ function initSubidosBotones() {
     });
   }
 
-if (btnAgregarEtiqueta) {
-  btnAgregarEtiqueta.onclick = () => {
-    if (!subidosEsAdmin) return;
-
-    const nueva = prompt("Nueva etiqueta:");
-    if (!nueva || !nueva.trim()) return;
-
-    const limpia = nueva.trim();
-
-    // ✅ Solo local. No escribir en subidosEtiquetas porque ese nodo da permission denied.
-    subidosEtiquetas = Array.from(
-      new Set([...(subidosEtiquetas || []), limpia])
-    ).sort((a, b) => a.localeCompare(b));
-
-    poblarEtiquetas();
-
-    if (selEtiqueta) {
-      selEtiqueta.value = limpia;
-      selEtiqueta.dispatchEvent(new Event("change", { bubbles: true }));
-    }
-  };
-}
+  if (btnAgregarEtiqueta) {
+    btnAgregarEtiqueta.onclick = () => {
       if (!subidosEsAdmin) return;
 
       const nueva = prompt("Nueva etiqueta:");
       if (!nueva || !nueva.trim()) return;
 
       const limpia = nueva.trim();
-      const lista = Array.from(new Set([...(subidosEtiquetas || []), limpia])).sort((a, b) => a.localeCompare(b));
 
-      try {
-        await set(ref(db, "subidosEtiquetas"), lista);
+      // ✅ Solo local. No escribir en subidosEtiquetas porque ese nodo da permission denied.
+      subidosEtiquetas = Array.from(
+        new Set([...(subidosEtiquetas || []), limpia])
+      ).sort((a, b) => a.localeCompare(b));
 
-        subidosEtiquetas = lista;
-poblarEtiquetas();
+      poblarEtiquetas();
 
-if (selEtiqueta) {
-  selEtiqueta.value = limpia;
-  selEtiqueta.dispatchEvent(new Event("change", { bubbles: true }));
-}
-      } catch (e) {
-        console.error(e);
-        alert("No se pudo guardar la etiqueta.");
+      if (selEtiqueta) {
+        selEtiqueta.value = limpia;
+        selEtiqueta.dispatchEvent(new Event("change", { bubbles: true }));
       }
     };
   }
