@@ -3830,6 +3830,7 @@ const fondosCategorias = {
 
   acuarelas: [
 "./img/fondos/Acuarelas/1a.jfif",
+    "./img/fondos/Acuarelas/1aa.png",
 "./img/fondos/Acuarelas/2a.jfif",
      "./img/fondos/Acuarelas/3a.jfif",
      "./img/fondos/Acuarelas/4a.jfif",
