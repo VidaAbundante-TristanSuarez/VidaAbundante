@@ -5615,10 +5615,7 @@ window.compartirSubido = async function compartirSubido(id, btn = null) {
 
     const esPredica = subidosEsPredicaConContenido(it);
 
-    // =========================================================
-    // ✅ PRÉDICA: NO SE TOCA
-    // Sigue igual: PNG preparado + link de prédica.
-    // =========================================================
+    // ✅ PRÉDICA: IGUAL QUE ESTABA
     if (esPredica) {
       const titulo = it?.descripcion || it?.etiqueta || "Archivo";
       const textoCompartir = subidosLinkDetalle(id);
@@ -5637,16 +5634,12 @@ window.compartirSubido = async function compartirSubido(id, btn = null) {
       return;
     }
 
-    // =========================================================
-    // ✅ OTRAS ETIQUETAS: SOLO ARCHIVO, SIN LINK
-    // No abrimos modal.
-    // No preparamos nada en el toque.
-    // Usa solo el archivo ya cacheado/preparado.
-    // =========================================================
+    // ✅ DEMÁS ETIQUETAS:
+    // mismo sistema base que prédica: usa archivo preparado shareUrl.
+    // diferencia: NO manda texto ni link.
     const archivos = subidosArchivosItem(it);
-    const cantidad = archivos.length;
 
-    if (!cantidad) {
+    if (!archivos.length) {
       alert("Este subido no tiene archivo para compartir.");
       return;
     }
@@ -5657,27 +5650,19 @@ window.compartirSubido = async function compartirSubido(id, btn = null) {
     const info = subidosInfoShareArchivoPorIndice(it, actual);
 
     if (!info?.url) {
-      throw new Error("No se encontró el archivo actual.");
+      throw new Error("No se encontró el archivo preparado para compartir.");
     }
+
+    subidosAvisoProceso("Preparando archivo actual...", true);
 
     const idCache = Number(actual || 0) === 0 ? id : "";
+    const file = await subidosObtenerFileDesdeInfo(info, idCache);
 
-    const fileCacheado = subidosLeerFileCachePorInfo(info, idCache);
-
-    if (!fileCacheado) {
-      subidosAvisoProceso("Preparando archivo...", true);
-      subidosPrepararArchivoAccion(id);
-
-      alert("El archivo todavía se está preparando. Esperá unos segundos y tocá compartir de nuevo.");
-      return;
-    }
-
-    subidosAvisoProceso("Abriendo compartir...", true);
-
-    await subidosCompartirArchivoComunSinLink(
-      info,
+    // ✅ SIN LINK
+    await subidosCompartirFileObligatorio(
+      file,
       titulo,
-      idCache
+      ""
     );
 
     subidosAvisoProceso("Listo ✅");
@@ -5864,14 +5849,20 @@ let datosPredica = {
 
     const ts = Date.now();
 
-    let archivos = subidosArchivosItem(actual).map(a => ({
-      url: a.url || "",
-      r2Key: a.r2Key || "",
-      mimeType: a.mimeType || "",
-      fileName: a.fileName || "archivo",
-      sizeBytes: Number(a.sizeBytes || 0),
-      subidaDirectaVideo: !!a.subidaDirectaVideo
-    }));
+let archivos = subidosArchivosItem(actual).map(a => ({
+  url: a.url || "",
+  r2Key: a.r2Key || "",
+  mimeType: a.mimeType || "",
+  fileName: a.fileName || "archivo",
+  sizeBytes: Number(a.sizeBytes || 0),
+  subidaDirectaVideo: !!a.subidaDirectaVideo,
+
+  // ✅ mantener archivo preparado igual que prédica
+  shareUrl: a.shareUrl || "",
+  shareR2Key: a.shareR2Key || "",
+  shareMimeType: a.shareMimeType || "",
+  shareFileName: a.shareFileName || ""
+}));
 
     let principalActual = archivos[0] || {};
 
@@ -5977,56 +5968,51 @@ predicaNotaFinal: esPredica ? datosPredica.notaFinalGeneral : "",
       ...datosCumpleanos
     };
 
-    await set(destinoRef, datosBase);
+// ✅ PRÉDICA: NO SE TOCA.
+// Sigue generando su PNG final y guardando shareUrl como hasta ahora.
+if (esPredica) {
+  await set(destinoRef, datosBase);
 
-    // ✅ PRÉDICA: NO SE TOCA.
-    // Sigue generando su PNG final una sola vez y lo guarda en R2.
-    if (esPredica) {
-      const share = await subidosCrearSharePredicaAlGuardar(idFinal, datosBase);
+  const share = await subidosCrearSharePredicaAlGuardar(idFinal, datosBase);
 
-      if (share?.shareUrl) {
-        await set(destinoRef, {
-          ...datosBase,
-          ...share
-        });
+  if (share?.shareUrl) {
+    await set(destinoRef, {
+      ...datosBase,
+      ...share
+    });
 
-        subidosFileCache.delete(idFinal);
-        subidosFilePreparando.delete(idFinal);
-      }
-    }
-
-    // ✅ OTRAS ETIQUETAS:
-    // ahora también quedan preparadas al guardar/editar.
-    // Si son imágenes, se guarda un JPG limpio en subidos-share.
-    if (!esPredica && archivos.length) {
-      const shareComun = await subidosPrepararSharesComunesAlGuardar(
-        idFinal,
-        datosBase,
-        estado
-      );
-
-      if (shareComun?.shareUrl) {
-        await set(destinoRef, {
-          ...datosBase,
-          ...shareComun
-        });
-
-        subidosFileCache.delete(idFinal);
-        subidosFilePreparando.delete(idFinal);
-      }
-    }
-
-const etiquetaNormalizada = etiqueta.trim();
-
-if (etiquetaNormalizada) {
-  const lista = Array.from(new Set([...(subidosEtiquetas || []), etiquetaNormalizada]));
-
-  try {
-    await set(ref(db, "subidosEtiquetas"), lista);
-  } catch (e) {
-    console.warn("No pude guardar subidosEtiquetas, pero el subido ya quedó guardado:", e);
+    subidosFileCache.delete(idFinal);
+    subidosFilePreparando.delete(idFinal);
   }
+} else {
+  // ✅ OTRAS ETIQUETAS:
+  // mismo concepto que prédica, pero SIN LINK:
+  // se prepara archivo en subidos-share y se guarda shareUrl/shareMimeType/shareFileName.
+  let datosFinal = datosBase;
+
+  if (archivos.length) {
+    const shareComun = await subidosPrepararSharesComunesAlGuardar(
+      idFinal,
+      datosBase,
+      estado
+    );
+
+    if (shareComun?.shareUrl) {
+      datosFinal = {
+        ...datosBase,
+        ...shareComun
+      };
+    }
+  }
+
+  await set(destinoRef, datosFinal);
+
+  subidosFileCache.delete(idFinal);
+  subidosFilePreparando.delete(idFinal);
 }
+
+// ⛔ NO guardar subidosEtiquetas acá.
+// Ese nodo está dando permission denied y no hace falta para guardar el subido.
 
     if (estado) estado.textContent = "✅ Guardado";
     cerrarModalSubidos();
@@ -6092,8 +6078,28 @@ function initSubidosBotones() {
     });
   }
 
-  if (btnAgregarEtiqueta) {
-    btnAgregarEtiqueta.onclick = async () => {
+if (btnAgregarEtiqueta) {
+  btnAgregarEtiqueta.onclick = () => {
+    if (!subidosEsAdmin) return;
+
+    const nueva = prompt("Nueva etiqueta:");
+    if (!nueva || !nueva.trim()) return;
+
+    const limpia = nueva.trim();
+
+    // ✅ Solo local. No escribir en subidosEtiquetas porque ese nodo da permission denied.
+    subidosEtiquetas = Array.from(
+      new Set([...(subidosEtiquetas || []), limpia])
+    ).sort((a, b) => a.localeCompare(b));
+
+    poblarEtiquetas();
+
+    if (selEtiqueta) {
+      selEtiqueta.value = limpia;
+      selEtiqueta.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+  };
+}
       if (!subidosEsAdmin) return;
 
       const nueva = prompt("Nueva etiqueta:");
