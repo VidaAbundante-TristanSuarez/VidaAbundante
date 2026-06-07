@@ -616,6 +616,13 @@ function getItemsMarcadorEnOrden() {
 }
 
 function itemsMarcadorDesdeData(m = {}) {
+  const orden = Array.isArray(m?.seleccionOrden)
+    ? m.seleccionOrden.map(marcadorItemDesdeId).filter(Boolean)
+    : [];
+
+  // ✅ si existe el orden real, manda el orden real
+  if (orden.length) return orden;
+
   const detalle = Array.isArray(m?.versiculosDetalle)
     ? m.versiculosDetalle.map(it => ({
         id: it.id || `${it.libro || it.Libro}_${it.capitulo || it.Capitulo}_${it.versiculo || it.Versiculo}`,
@@ -626,12 +633,6 @@ function itemsMarcadorDesdeData(m = {}) {
     : [];
 
   if (detalle.length) return detalle;
-
-  const orden = Array.isArray(m?.seleccionOrden)
-    ? m.seleccionOrden.map(marcadorItemDesdeId).filter(Boolean)
-    : [];
-
-  if (orden.length) return orden;
 
   const libro = String(m?.libro || "").trim();
   const capitulo = Number(m?.capitulo || 0);
@@ -673,6 +674,57 @@ function textoVersiculosMarcadorPlano(items = []) {
   });
 
   return textos.join(" ").trim();
+}
+
+function baseEdicionMarcadorCompleta(m = {}, idMarcador = "") {
+  const items = itemsMarcadorDesdeData(m);
+  const esNotaLibre = items.length === 0;
+
+  const primero = items[0] || null;
+  const libroBase = primero?.Libro || "";
+  const capBase = Number(primero?.Capitulo || 0);
+
+  const idsOrden = items.map(it =>
+    it.id || `${it.Libro}_${it.Capitulo}_${it.Versiculo}`
+  );
+
+  return {
+    ...m,
+    id: idMarcador || m.id || "",
+
+    libro: esNotaLibre ? "" : libroBase,
+    capitulo: esNotaLibre ? 0 : capBase,
+
+    // compatibilidad vieja: solo primer libro/capítulo
+    versiculos: esNotaLibre ? [] : items
+      .filter(it =>
+        it.Libro === libroBase &&
+        Number(it.Capitulo) === Number(capBase)
+      )
+      .map(it => Number(it.Versiculo))
+      .filter(n => !isNaN(n)),
+
+    // ✅ sistema nuevo completo
+    versiculosDetalle: esNotaLibre ? [] : items.map(it => ({
+      id: it.id || `${it.Libro}_${it.Capitulo}_${it.Versiculo}`,
+      libro: it.Libro,
+      capitulo: Number(it.Capitulo),
+      versiculo: Number(it.Versiculo)
+    })),
+
+    seleccionOrden: esNotaLibre ? [] : idsOrden,
+
+    ref: esNotaLibre
+      ? ""
+      : (String(m.ref || "").trim() || referenciaMarcadorEnOrden(items)),
+
+    textoVersiculo: esNotaLibre
+      ? ""
+      : (
+          String(m.textoVersiculo || m.textoBiblico || "").trim() ||
+          textoVersiculosMarcadorPlano(items)
+        )
+  };
 }
 
 function marcadorContieneVersiculo(m, libro, capitulo, versiculo) {
@@ -6092,11 +6144,16 @@ async function guardarNuevoMarcador() {
     const libro = esNotaLibre ? "" : (primero?.Libro || "");
     const capitulo = esNotaLibre ? 0 : Number(primero?.Capitulo || 0);
 
-    const versiculosDetalle = itemsMarcador.map(it => ({
-      libro: it.Libro,
-      capitulo: Number(it.Capitulo),
-      versiculo: Number(it.Versiculo)
-    }));
+const versiculosDetalle = itemsMarcador.map(it => {
+  const idItem = it.id || `${it.Libro}_${it.Capitulo}_${it.Versiculo}`;
+
+  return {
+    id: idItem,
+    libro: it.Libro,
+    capitulo: Number(it.Capitulo),
+    versiculo: Number(it.Versiculo)
+  };
+});
 
     const seleccionOrdenFinal = itemsMarcador.map(it =>
       it.id || `${it.Libro}_${it.Capitulo}_${it.Versiculo}`
@@ -6578,36 +6635,33 @@ window.editarMarcadorEnPanel = (idMarcador) => {
     return;
   }
 
-  const esNotaLibre = !((m.versiculos || []).length > 0);
+  const base = baseEdicionMarcadorCompleta(m, idMarcador);
+  const esNotaLibre = itemsMarcadorDesdeData(base).length === 0;
 
-  // ✅ primero marcar que estoy editando
   window.__editMarcadorId = idMarcador;
+  window.__editMarcadorBase = base;
   creandoNotaLibre = esNotaLibre;
 
-  // ✅ guardar base correcta ANTES de abrir el form
-  window.__editMarcadorBase = {
-    libro: esNotaLibre ? "" : (m.libro || ""),
-    capitulo: esNotaLibre ? 0 : Number(m.capitulo || 0),
-    versiculos: esNotaLibre ? [] : (m.versiculos || []).map(Number),
-    ref: esNotaLibre ? "" : (m.ref || ""),
-    destacada: !!m.destacada,
-    keep: !!m.keep
-  };
-
-  abrirMarcadores(); // abre modal
+  const modal = document.getElementById("modalMarcadores");
+  if (modal) {
+    modal.style.display = "flex";
+    modal.classList.add("abierto");
+    modal.setAttribute("aria-hidden", "false");
+  }
 
   setTimeout(() => {
     abrirFormNuevoMarcador();
 
     const inputTitulo = document.getElementById("marcadorTitulo");
     const inputNota = document.getElementById("marcadorNota");
-    const inputColor = document.getElementById("marcadorColor");
     const chkKeep = document.getElementById("marcadorKeep");
     const txtKeep = document.getElementById("txtMarcadorKeep");
 
     if (inputTitulo) inputTitulo.value = m.titulo || "";
     if (inputNota) inputNota.value = m.nota || "";
-    if (inputColor) inputColor.value = m.color || "#fff3b0";
+
+    syncMarcadorColorUI(m.color || "#fff3b0");
+
     if (chkKeep) chkKeep.checked = !!(m.destacada || m.keep);
 
     if (txtKeep) {
