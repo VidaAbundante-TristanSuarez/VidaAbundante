@@ -628,10 +628,6 @@ async function subidosCrearFileShareComunDesdeInfo(info = {}, id = "") {
 }
 
 function subidosCompartirArchivoComunSinLink(info = {}, titulo = "Archivo", id = "") {
-  if (!navigator.share) {
-    throw new Error("Este navegador no permite compartir archivos desde la web.");
-  }
-
   const normal = subidosInfoShareNormalizada(info);
   const file = subidosLeerFileCachePorInfo(normal, id);
 
@@ -640,20 +636,10 @@ function subidosCompartirArchivoComunSinLink(info = {}, titulo = "Archivo", id =
     throw new Error("El archivo todavía no está listo para compartir. Esperá unos segundos y tocá compartir de nuevo.");
   }
 
-  if (navigator.canShare && !navigator.canShare({ files: [file] })) {
-    throw new Error(`Este navegador no acepta compartir este archivo: ${file.name} / ${file.type}`);
-  }
-
+  // ✅ MISMO SISTEMA QUE PRÉDICA.
   // ✅ SIN LINK.
-  // ✅ Pero con texto/caption simple, porque en algunos Android
-  // compartir SOLO files da Permission denied.
-  const data = {
-    title: titulo || "Archivo",
-    text: titulo || "Archivo",
-    files: [file]
-  };
-
-  return navigator.share(data);
+  // ✅ SIN TEXT.
+  return subidosCompartirFileObligatorio(file, titulo || "Archivo", "");
 }
 
 async function subidosCrearShareComunDesdeBlob(blob, nombreBase = "imagen") {
@@ -676,18 +662,18 @@ async function subidosCrearShareComunDesdeBlob(blob, nombreBase = "imagen") {
   ctx.fillRect(0, 0, w, h);
   ctx.drawImage(img, 0, 0, w, h);
 
-  const jpgBlob = await new Promise(resolve => {
-    canvas.toBlob(resolve, "image/jpeg", 0.94);
+  const pngBlob = await new Promise(resolve => {
+    canvas.toBlob(resolve, "image/png");
   });
 
-  if (!jpgBlob) {
+  if (!pngBlob) {
     throw new Error("No se pudo preparar la imagen para compartir.");
   }
 
-  const nombre = `${subidosNombreBaseSinExtension(nombreBase || "imagen")}.jpg`;
+  const nombre = `${subidosNombreBaseSinExtension(nombreBase || "imagen")}.png`;
 
-  return new File([jpgBlob], nombre, {
-    type: "image/jpeg"
+  return new File([pngBlob], nombre, {
+    type: "image/png"
   });
 }
 
@@ -1128,9 +1114,7 @@ async function subidosPrepararArchivoAccion(id) {
       const idCache = i === 0 ? id : "";
 
       try {
-       const file = esPredica
-  ? await subidosObtenerFileDesdeInfo(info, idCache)
-  : await subidosCrearFileShareComunDesdeInfo(info, idCache);
+const file = await subidosObtenerFileDesdeInfo(info, idCache);
         if (i === 0) principalFile = file;
       } catch (e) {
         console.warn("No pude preparar archivo:", id, i, e);
@@ -5708,12 +5692,10 @@ window.compartirSubido = async function compartirSubido(id, btn = null) {
     }
 
     const esPredica = subidosEsPredicaConContenido(it);
+    const titulo = it?.descripcion || it?.etiqueta || "Archivo";
 
-    // ✅ PRÉDICA: archivo + link
+    // ✅ PRÉDICA: MISMO SISTEMA DE SIEMPRE, ARCHIVO + LINK.
     if (esPredica) {
-      const titulo = it?.descripcion || it?.etiqueta || "Archivo";
-      const textoCompartir = subidosLinkDetalle(id);
-
       const info = subidosInfoArchivoAccion(it);
       const file = subidosLeerFileCachePorInfo(info, id);
 
@@ -5726,13 +5708,13 @@ window.compartirSubido = async function compartirSubido(id, btn = null) {
       await subidosCompartirFileObligatorio(
         file,
         titulo,
-        textoCompartir
+        subidosLinkDetalle(id)
       );
 
       return;
     }
 
-    // ✅ DEMÁS ETIQUETAS: archivo solo, sin link
+    // ✅ DEMÁS ETIQUETAS: MISMO SISTEMA QUE PRÉDICA, PERO SIN LINK.
     const archivos = subidosArchivosItem(it);
 
     if (!archivos.length) {
@@ -5741,7 +5723,6 @@ window.compartirSubido = async function compartirSubido(id, btn = null) {
     }
 
     const actual = subidosIndiceActualDesdeBoton(id, btn);
-    const titulo = it?.descripcion || it?.etiqueta || "Archivo";
     const info = subidosInfoShareArchivoPorIndice(it, actual);
 
     if (!info?.url) {
@@ -5757,18 +5738,15 @@ window.compartirSubido = async function compartirSubido(id, btn = null) {
       return;
     }
 
-    // ✅ Sin link.
-    await subidosCompartirArchivoComunSinLink(
-      info,
+    await subidosCompartirFileObligatorio(
+      file,
       titulo,
-      idCache
+      ""
     );
   } catch (e) {
     console.error("Error en compartir:", e);
 
-    if (e?.name === "AbortError") {
-      return;
-    }
+    if (e?.name === "AbortError") return;
 
     alert("No se pudo compartir.\n\n" + (e?.message || e?.name || e));
   }
