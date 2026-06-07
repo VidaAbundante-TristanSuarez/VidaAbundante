@@ -528,6 +528,9 @@ async function subidosCrearFileShareComunDesdeInfo(info = {}, id = "") {
   const normal = subidosInfoShareNormalizada(info);
   if (!normal?.url) throw new Error("Falta URL del archivo.");
 
+  // Importante:
+  // NO usamos subidosObtenerFileDesdeInfo acá porque eso cachea el original
+  // antes de saber si Android lo acepta para compartir.
   const original = await subidosCrearFileDesdeInfo(normal);
 
   try {
@@ -540,11 +543,11 @@ async function subidosCrearFileShareComunDesdeInfo(info = {}, id = "") {
     }
   } catch (e) {}
 
+  // Si Android no acepta la imagen original, la convertimos a JPG limpio
+  // y guardamos ESE jpg en el cache normal que después usa compartir.
   if (subidosEsImagenParaShare(normal)) {
     const jpg = await subidosCrearJpgLimpioParaShareDesdeInfo(normal, id);
-
     subidosGuardarFileCachePorInfo(normal, jpg, id);
-
     return jpg;
   }
 
@@ -6013,12 +6016,17 @@ predicaNotaFinal: esPredica ? datosPredica.notaFinalGeneral : "",
       }
     }
 
-    const etiquetaNormalizada = etiqueta.trim();
+const etiquetaNormalizada = etiqueta.trim();
 
-    if (etiquetaNormalizada) {
-      const lista = Array.from(new Set([...(subidosEtiquetas || []), etiquetaNormalizada]));
-      await set(ref(db, "subidosEtiquetas"), lista);
-    }
+if (etiquetaNormalizada) {
+  const lista = Array.from(new Set([...(subidosEtiquetas || []), etiquetaNormalizada]));
+
+  try {
+    await set(ref(db, "subidosEtiquetas"), lista);
+  } catch (e) {
+    console.warn("No pude guardar subidosEtiquetas, pero el subido ya quedó guardado:", e);
+  }
+}
 
     if (estado) estado.textContent = "✅ Guardado";
     cerrarModalSubidos();
