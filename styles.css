@@ -4900,4 +4900,56 @@ body.oscuro #modalPersonalizar #btnModoFondoBiblia{
   text-align: right;
 }
 
+/* ✅ Modal notas/marcadores: scroll real en celular */
+#modalMarcadores {
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+  padding: 12px;
+}
+
+#modalMarcadores.abierto {
+  display: flex !important;
+}
+
+#modalMarcadores > div,
+#modalMarcadores .modal-card,
+#modalMarcadores .modal-content,
+#modalMarcadores .modal-box {
+  max-height: calc(100dvh - 24px) !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+#previewVersiculosMarcador {
+  max-height: 28dvh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-right: 4px;
+}
+
+@media (max-width: 760px) {
+  #modalMarcadores {
+    align-items: flex-start !important;
+    justify-content: center !important;
+    padding: 10px !important;
+  }
+
+  #modalMarcadores > div,
+  #modalMarcadores .modal-card,
+  #modalMarcadores .modal-content,
+  #modalMarcadores .modal-box {
+    width: min(94vw, 520px) !important;
+    max-height: calc(100dvh - 20px) !important;
+    margin: 10px auto !important;
+  }
+
+  #marcadorNota {
+    min-height: 120px;
+  }
+
+  #previewVersiculosMarcador {
+    max-height: 24dvh;
+  }
+}
+
 </style> 
