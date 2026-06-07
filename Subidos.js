@@ -5615,7 +5615,10 @@ window.compartirSubido = async function compartirSubido(id, btn = null) {
 
     const esPredica = subidosEsPredicaConContenido(it);
 
-    // ✅ PRÉDICA: IGUAL QUE ESTABA
+    // =========================================================
+    // ✅ PRÉDICA: NO SE TOCA
+    // Sigue igual: archivo + link.
+    // =========================================================
     if (esPredica) {
       const titulo = it?.descripcion || it?.etiqueta || "Archivo";
       const textoCompartir = subidosLinkDetalle(id);
@@ -5634,9 +5637,13 @@ window.compartirSubido = async function compartirSubido(id, btn = null) {
       return;
     }
 
+    // =========================================================
     // ✅ DEMÁS ETIQUETAS:
-    // mismo sistema base que prédica: usa archivo preparado shareUrl.
-    // diferencia: NO manda texto ni link.
+    // SIN LINK.
+    // NO preparar acá.
+    // NO fetch acá.
+    // NO await antes de navigator.share.
+    // =========================================================
     const archivos = subidosArchivosItem(it);
 
     if (!archivos.length) {
@@ -5650,19 +5657,30 @@ window.compartirSubido = async function compartirSubido(id, btn = null) {
     const info = subidosInfoShareArchivoPorIndice(it, actual);
 
     if (!info?.url) {
-      throw new Error("No se encontró el archivo preparado para compartir.");
+      throw new Error("No se encontró el archivo actual.");
     }
 
-    subidosAvisoProceso("Preparando archivo actual...", true);
-
     const idCache = Number(actual || 0) === 0 ? id : "";
-    const file = await subidosObtenerFileDesdeInfo(info, idCache);
 
-    // ✅ SIN LINK
-    await subidosCompartirFileObligatorio(
-      file,
+    const fileCacheado = subidosLeerFileCachePorInfo(info, idCache);
+
+    if (!fileCacheado) {
+      subidosAvisoProceso("Preparando archivo...", true);
+
+      // Esto prepara para el próximo toque, pero NO comparte todavía.
+      subidosPrepararArchivoAccion(id);
+
+      alert("El archivo se está preparando. Esperá unos segundos y tocá compartir otra vez.");
+      return;
+    }
+
+    subidosAvisoProceso("Abriendo compartir...", true);
+
+    // ✅ Esta función llama a navigator.share() directo, sin fetch previo.
+    await subidosCompartirArchivoComunSinLink(
+      info,
       titulo,
-      ""
+      idCache
     );
 
     subidosAvisoProceso("Listo ✅");
