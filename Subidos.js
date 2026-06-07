@@ -429,6 +429,78 @@ function subidosEsImagenParaShare(info = {}) {
   );
 }
 
+function subidosEsVideoParaShare(info = {}) {
+  const n = subidosInfoShareNormalizada(info);
+  const tipo = String(n.mimeType || "").toLowerCase();
+
+  return (
+    tipo.startsWith("video/") ||
+    /\.(mp4|webm|mov)(\?|$)/i.test(String(n.fileName || "")) ||
+    /\.(mp4|webm|mov)(\?|$)/i.test(String(n.url || ""))
+  );
+}
+
+function subidosShareUrlPreparada(url = "", r2Key = "") {
+  const u = String(url || "").toLowerCase();
+  const k = String(r2Key || "").toLowerCase();
+
+  return (
+    k.startsWith("subidos-share/") ||
+    u.includes("/subidos-share/")
+  );
+}
+
+function subidosTieneSharePreparado(a = {}) {
+  return !!(
+    a?.shareUrl &&
+    subidosShareUrlPreparada(a.shareUrl, a.shareR2Key)
+  );
+}
+
+async function subidosCrearShareComunAlGuardarDesdeFile(file, estadoEl = null, idx = 0) {
+  if (!file) return null;
+
+  // Videos grandes no los duplicamos en base64. Se comparten desde el original.
+  if (subidosEsVideoFile(file)) {
+    return null;
+  }
+
+  if (estadoEl) {
+    estadoEl.textContent = `Preparando archivo ${idx + 1} para compartir...`;
+  }
+
+  let fileShare = file;
+
+  // Para imágenes, igual que venimos intentando: JPG limpio compatible.
+  if (subidosEsImagenParaShare({
+    url: file.name || "",
+    fileName: file.name || `imagen_${idx + 1}`,
+    mimeType: file.type || ""
+  })) {
+    fileShare = await subidosCrearShareComunDesdeBlob(
+      file,
+      file.name || `imagen_${idx + 1}`
+    );
+  }
+
+  if (estadoEl) {
+    estadoEl.textContent = `Subiendo archivo preparado ${idx + 1}...`;
+  }
+
+  const subida = await subirArchivoAR2DesdeWeb(fileShare, "subidos-share");
+
+  if (!subida?.url) {
+    throw new Error("No se pudo subir el archivo preparado para compartir.");
+  }
+
+  return {
+    shareUrl: subida.url,
+    shareR2Key: subida.key || "",
+    shareMimeType: subida.contentType || fileShare.type || "application/octet-stream",
+    shareFileName: subida.fileName || fileShare.name || `archivo_${idx + 1}`
+  };
+}
+
 function subidosNombreBaseSinExtension(nombre = "archivo") {
   return subidosNombreLimpio(nombre || "archivo").replace(/\.[a-z0-9]{2,6}$/i, "");
 }
@@ -627,19 +699,28 @@ async function subidosCrearShareComunAlGuardarDesdeUrl(info = {}, estadoEl = nul
 
   if (!normal?.url) return null;
 
-  // ✅ Si NO es imagen, no la transformamos.
-  // Se guarda como archivo compartible original.
-  if (!subidosEsImagenParaShare(normal)) {
+  // Si ya está realmente en subidos-share, lo respetamos.
+  if (subidosTieneSharePreparado(info)) {
+    return {
+      shareUrl: info.shareUrl || "",
+      shareR2Key: info.shareR2Key || "",
+      shareMimeType: info.shareMimeType || normal.mimeType || "application/octet-stream",
+      shareFileName: info.shareFileName || normal.fileName || `archivo_${idx + 1}`
+    };
+  }
+
+  // Videos no los duplicamos. Se comparten desde el original.
+  if (subidosEsVideoParaShare(normal)) {
     return {
       shareUrl: normal.url,
       shareR2Key: info.r2Key || "",
-      shareMimeType: normal.mimeType || "application/octet-stream",
-      shareFileName: normal.fileName || `archivo_${idx + 1}`
+      shareMimeType: normal.mimeType || "video/mp4",
+      shareFileName: normal.fileName || `video_${idx + 1}.mp4`
     };
   }
 
   if (estadoEl) {
-    estadoEl.textContent = `Preparando imagen ${idx + 1} para compartir...`;
+    estadoEl.textContent = `Preparando archivo ${idx + 1} para compartir...`;
   }
 
   const proxy = subidosProxyArchivoUrl(normal.url, normal.fileName, false);
@@ -649,31 +730,48 @@ async function subidosCrearShareComunAlGuardarDesdeUrl(info = {}, estadoEl = nul
   });
 
   if (!r.ok) {
-    throw new Error("No pude leer la imagen para preparar el archivo de compartir.");
+    throw new Error("No pude leer el archivo para prepararlo.");
   }
 
   const blob = await r.blob();
 
-  const fileShare = await subidosCrearShareComunDesdeBlob(
-    blob,
-    normal.fileName || `imagen_${idx + 1}`
-  );
+  let fileShare;
+
+  if (subidosEsImagenParaShare(normal)) {
+    fileShare = await subidosCrearShareComunDesdeBlob(
+      blob,
+      normal.fileName || `imagen_${idx + 1}`
+    );
+  } else {
+    const tipo = normal.mimeType || blob.type || "application/octet-stream";
+    const nombre = subidosNombreConExtension(
+      normal.fileName || `archivo_${idx + 1}`,
+      tipo,
+      normal.url
+    );
+
+    fileShare = new File(
+      [blob.type === tipo ? blob : blob.slice(0, blob.size, tipo)],
+      nombre,
+      { type: tipo }
+    );
+  }
 
   if (estadoEl) {
-    estadoEl.textContent = `Subiendo imagen preparada ${idx + 1}...`;
+    estadoEl.textContent = `Subiendo archivo preparado ${idx + 1}...`;
   }
 
   const subida = await subirArchivoAR2DesdeWeb(fileShare, "subidos-share");
 
   if (!subida?.url) {
-    throw new Error("No se pudo subir la imagen preparada.");
+    throw new Error("No se pudo subir el archivo preparado.");
   }
 
   return {
     shareUrl: subida.url,
     shareR2Key: subida.key || "",
-    shareMimeType: "image/jpeg",
-    shareFileName: fileShare.name
+    shareMimeType: subida.contentType || fileShare.type || "application/octet-stream",
+    shareFileName: subida.fileName || fileShare.name || `archivo_${idx + 1}`
   };
 }
 
@@ -691,8 +789,7 @@ async function subidosPrepararSharesComunesAlGuardar(idFinal, datosBase, estadoE
   for (let i = 0; i < archivosBase.length; i++) {
     const a = archivosBase[i];
 
-    // ✅ Si ya estaba preparado, lo respetamos.
-    if (a.shareUrl) {
+    if (subidosTieneSharePreparado(a)) {
       archivosPreparados.push(a);
       continue;
     }
@@ -710,11 +807,11 @@ async function subidosPrepararSharesComunesAlGuardar(idFinal, datosBase, estadoE
   return {
     archivos: archivosPreparados,
 
-    // ✅ Compatibilidad raíz para el primer archivo
-    shareUrl: principal.shareUrl || datosBase.shareUrl || "",
-    shareR2Key: principal.shareR2Key || datosBase.shareR2Key || "",
-    shareMimeType: principal.shareMimeType || datosBase.shareMimeType || "",
-    shareFileName: principal.shareFileName || datosBase.shareFileName || ""
+    // ✅ OJO: sin fallback a datosBase.shareUrl, porque eso era el original.
+    shareUrl: principal.shareUrl || "",
+    shareR2Key: principal.shareR2Key || "",
+    shareMimeType: principal.shareMimeType || "",
+    shareFileName: principal.shareFileName || ""
   };
 }
 
@@ -5615,17 +5712,19 @@ window.compartirSubido = async function compartirSubido(id, btn = null) {
 
     const esPredica = subidosEsPredicaConContenido(it);
 
-    // =========================================================
-    // ✅ PRÉDICA: NO SE TOCA
-    // Sigue igual: archivo + link.
-    // =========================================================
+    // ✅ PRÉDICA: archivo + link
     if (esPredica) {
       const titulo = it?.descripcion || it?.etiqueta || "Archivo";
       const textoCompartir = subidosLinkDetalle(id);
 
-      subidosAvisoProceso("Preparando archivo actual...", true);
+      const info = subidosInfoArchivoAccion(it);
+      const file = subidosLeerFileCachePorInfo(info, id);
 
-      const file = await subidosCrearFileDeItemPorIndice(it, 0);
+      if (!file) {
+        subidosPrepararArchivoAccion(id);
+        alert("La prédica todavía se está preparando. Esperá unos segundos y tocá compartir otra vez.");
+        return;
+      }
 
       await subidosCompartirFileObligatorio(
         file,
@@ -5633,17 +5732,10 @@ window.compartirSubido = async function compartirSubido(id, btn = null) {
         textoCompartir
       );
 
-      subidosAvisoProceso("Listo ✅");
       return;
     }
 
-    // =========================================================
-    // ✅ DEMÁS ETIQUETAS:
-    // SIN LINK.
-    // NO preparar acá.
-    // NO fetch acá.
-    // NO await antes de navigator.share.
-    // =========================================================
+    // ✅ DEMÁS ETIQUETAS: archivo solo, sin link
     const archivos = subidosArchivosItem(it);
 
     if (!archivos.length) {
@@ -5653,46 +5745,33 @@ window.compartirSubido = async function compartirSubido(id, btn = null) {
 
     const actual = subidosIndiceActualDesdeBoton(id, btn);
     const titulo = it?.descripcion || it?.etiqueta || "Archivo";
-
     const info = subidosInfoShareArchivoPorIndice(it, actual);
 
     if (!info?.url) {
-      throw new Error("No se encontró el archivo actual.");
+      throw new Error("No se encontró el archivo preparado para compartir.");
     }
 
     const idCache = Number(actual || 0) === 0 ? id : "";
+    const file = subidosLeerFileCachePorInfo(info, idCache);
 
-    const fileCacheado = subidosLeerFileCachePorInfo(info, idCache);
-
-    if (!fileCacheado) {
-      subidosAvisoProceso("Preparando archivo...", true);
-
-      // Esto prepara para el próximo toque, pero NO comparte todavía.
+    if (!file) {
       subidosPrepararArchivoAccion(id);
-
-      alert("El archivo se está preparando. Esperá unos segundos y tocá compartir otra vez.");
+      alert("El archivo todavía se está preparando. Esperá unos segundos y tocá compartir otra vez.");
       return;
     }
 
-    subidosAvisoProceso("Abriendo compartir...", true);
-
-    // ✅ Esta función llama a navigator.share() directo, sin fetch previo.
+    // ✅ Sin link.
     await subidosCompartirArchivoComunSinLink(
       info,
       titulo,
       idCache
     );
-
-    subidosAvisoProceso("Listo ✅");
   } catch (e) {
     console.error("Error en compartir:", e);
 
     if (e?.name === "AbortError") {
-      subidosAvisoProceso("Acción cancelada");
       return;
     }
-
-    subidosAvisoProceso("No se pudo compartir");
 
     alert("No se pudo compartir.\n\n" + (e?.message || e?.name || e));
   }
@@ -5910,14 +5989,34 @@ let archivos = subidosArchivosItem(actual).map(a => ({
           ? await subirVideoR2DirectoSubidos(fileActual, estado)
           : await subirArchivoAR2DesdeWeb(fileActual, "subidos");
 
-        archivos.push({
-          url: subida?.url || "",
-          r2Key: subida?.key || "",
-          mimeType: subida?.contentType || fileActual?.type || "",
-          fileName: subida?.fileName || fileActual?.name || `archivo_${i + 1}`,
-          sizeBytes: Number(subida?.sizeBytes || fileActual?.size || 0),
-          subidaDirectaVideo: !!subida?.subidaDirectaVideo
-        });
+const archivoBase = {
+  url: subida?.url || "",
+  r2Key: subida?.key || "",
+  mimeType: subida?.contentType || fileActual?.type || "",
+  fileName: subida?.fileName || fileActual?.name || `archivo_${i + 1}`,
+  sizeBytes: Number(subida?.sizeBytes || fileActual?.size || 0),
+  subidaDirectaVideo: !!subida?.subidaDirectaVideo,
+
+  shareUrl: "",
+  shareR2Key: "",
+  shareMimeType: "",
+  shareFileName: ""
+};
+
+// ✅ NO-PRÉDICA: preparar al guardar, igual que prédica, pero sin link.
+if (!esPredica) {
+  const shareComunFile = await subidosCrearShareComunAlGuardarDesdeFile(
+    fileActual,
+    estado,
+    i
+  );
+
+  if (shareComunFile?.shareUrl) {
+    Object.assign(archivoBase, shareComunFile);
+  }
+}
+
+archivos.push(archivoBase);
       }
 
       const principal = archivos[0] || {};
@@ -5978,10 +6077,13 @@ predicaCitas: esPredica ? datosPredica.citas : [],
 predicaNotaFinal: esPredica ? datosPredica.notaFinalGeneral : "",
 
       // ✅ para acciones reales de archivo
-      shareUrl: !esPredica ? url : "",
-      shareR2Key: !esPredica ? r2Key : "",
-      shareMimeType: !esPredica ? mimeType : "",
-      shareFileName: !esPredica ? fileName : "",
+// ✅ No guardar el original como share.
+// El share real se pone abajo con subidosPrepararSharesComunesAlGuardar()
+// o con subidosCrearSharePredicaAlGuardar().
+shareUrl: "",
+shareR2Key: "",
+shareMimeType: "",
+shareFileName: "",
 
       ...datosCumpleanos
     };
