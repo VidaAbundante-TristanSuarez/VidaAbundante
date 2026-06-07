@@ -633,17 +633,10 @@ function subidosCompartirArchivoComunSinLink(info = {}, titulo = "Archivo", id =
   }
 
   const normal = subidosInfoShareNormalizada(info);
-
-  // ✅ CLAVE:
-  // No hacemos fetch acá.
-  // No convertimos imagen acá.
-  // No esperamos nada acá.
-  // Compartir debe abrirse con el toque del usuario.
   const file = subidosLeerFileCachePorInfo(normal, id);
 
   if (!file) {
     if (id) subidosPrepararArchivoAccion(id);
-
     throw new Error("El archivo todavía no está listo para compartir. Esperá unos segundos y tocá compartir de nuevo.");
   }
 
@@ -651,12 +644,16 @@ function subidosCompartirArchivoComunSinLink(info = {}, titulo = "Archivo", id =
     throw new Error(`Este navegador no acepta compartir este archivo: ${file.name} / ${file.type}`);
   }
 
-  // ✅ Sin text y sin url: archivo solamente.
-  // ✅ Esto se ejecuta inmediatamente, sin await previo.
-  return navigator.share({
+  // ✅ SIN LINK.
+  // ✅ Pero con texto/caption simple, porque en algunos Android
+  // compartir SOLO files da Permission denied.
+  const data = {
     title: titulo || "Archivo",
+    text: titulo || "Archivo",
     files: [file]
-  });
+  };
+
+  return navigator.share(data);
 }
 
 async function subidosCrearShareComunDesdeBlob(blob, nombreBase = "imagen") {
