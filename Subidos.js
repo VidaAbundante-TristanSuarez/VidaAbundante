@@ -5015,6 +5015,53 @@ async function subidosCompartirFileObligatorio(file, titulo = "Archivo", texto =
   await navigator.share(data);
 }
 
+function subidosFileFrescoParaShare(file, base = "vida-abundante") {
+  if (!file) return file;
+
+  const tipo = String(file.type || "application/octet-stream").split(";")[0].trim();
+  const ext =
+    subidosExtensionPorMime(tipo) ||
+    String(file.name || "").match(/\.([a-z0-9]{2,6})$/i)?.[1] ||
+    "bin";
+
+  // ✅ nombre simple, sin puntos raros, sin hora, sin caracteres del nombre original
+  const nombre = subidosNombreLimpio(`${base || "vida-abundante"}.${ext}`);
+
+  const blob = file.slice(0, file.size, tipo);
+
+  return new File([blob], nombre, {
+    type: tipo,
+    lastModified: Date.now()
+  });
+}
+
+async function subidosCompartirFileComunSinLinkObligatorio(file, titulo = "Archivo") {
+  if (!navigator.share) {
+    throw new Error("Este navegador no permite compartir archivos desde la web.");
+  }
+
+  if (!file) {
+    throw new Error("No se pudo preparar el archivo.");
+  }
+
+  // ✅ CLAVE:
+  // No compartimos el File cacheado tal cual.
+  // Creamos un File fresco en el toque, con nombre simple.
+  const fileFinal = subidosFileFrescoParaShare(file, "vida-abundante");
+
+  if (navigator.canShare && !navigator.canShare({ files: [fileFinal] })) {
+    throw new Error(`Este navegador no acepta compartir este archivo: ${fileFinal.name} / ${fileFinal.type}`);
+  }
+
+  // ✅ Solo archivo.
+  // ✅ Sin link.
+  // ✅ Sin text.
+  return navigator.share({
+    files: [fileFinal],
+    title: titulo || "Archivo"
+  });
+}
+
 const subidosAccionesEnCurso = new Set();
 
 function subidosAvisoProceso(texto, permanente = false) {
@@ -5577,7 +5624,7 @@ const tieneArchivo = archivosItem.length > 0;
               <button
                 type="button"
                 data-subidos-share="${escaparHtml(idReal)}"
-                onclick="compartirSubido('${idJs}', this)"
+                onclick="event.preventDefault(); event.stopPropagation(); compartirSubido('${idJs}', this)"
                 title="Preparando archivo..."
                 disabled
                 style="opacity:.45; cursor:wait;"
@@ -5738,11 +5785,10 @@ window.compartirSubido = async function compartirSubido(id, btn = null) {
       return;
     }
 
-    await subidosCompartirFileObligatorio(
-      file,
-      titulo,
-      ""
-    );
+await subidosCompartirFileComunSinLinkObligatorio(
+  file,
+  titulo
+);
   } catch (e) {
     console.error("Error en compartir:", e);
 
