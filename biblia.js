@@ -735,20 +735,28 @@ function marcadorContieneVersiculo(m, libro, capitulo, versiculo) {
   );
 }
 
-// ================= FONDO DISEÑADO: CREAR IMAGEN BIBLIA =================
-// El modo viejo de imágenes queda intacto. Este estado solo se usa con el toggle encendido.
-let modoFondoBiblia = "imagen"; // "imagen" | "diseno"
+// ================= FONDO / TEXTURA / ADORNO: CREAR IMAGEN BIBLIA =================
+// ✅ Unificado: ya no hay switch. Fondos, textura y adorno conviven siempre.
+let modoFondoBiblia = "diseno"; // queda fijo para permitir textura + adorno sobre imagen/color
 
 function bibliaNuevoEstadoFondoDiseno() {
   return {
-    baseTipo: "plano",           // "plano" | "gradiente"
+    // "imagen" = galería Paisajes/Acuarelas/Tarjetas
+    // "plano" = 1 color
+    // "gradiente" = 2 o 3 colores
+    baseTipo: "imagen",
+
     color1: "#ffffff",
     color2: "#d1eeff",
     color3: "#a6d0ff",
+    usarColor2: false,
     usarColor3: false,
-    gradienteForma: "vertical",  // "vertical" | "horizontal" | "diagonal" | "radial"
+
+    gradienteForma: "vertical", // "vertical" | "horizontal" | "diagonal" | "radial"
+
     texturaUrl: null,
     texturaOpacidad: 0.22,
+
     adornoUrl: null,
     adornoTamano: 70
   };
@@ -756,8 +764,25 @@ function bibliaNuevoEstadoFondoDiseno() {
 
 let fondoDisenoBiblia = bibliaNuevoEstadoFondoDiseno();
 
+// ✅ Copiado con criterio de Devocionales: lista explícita, así no pide archivos borrados.
 const BIBLIA_TEXTURAS_DISENO = [
   { nombre: "Sin textura", url: null },
+
+  ...Array.from({ length: 12 }, (_, i) => ({
+    nombre: `Textura C${i + 1}`,
+    url: `./img/texturas/c${i + 1}.png`
+  })),
+
+  ...Array.from({ length: 12 }, (_, i) => ({
+    nombre: `Textura C${i + 14}`,
+    url: `./img/texturas/c${i + 14}.png`
+  })),
+
+  ...Array.from({ length: 7 }, (_, i) => ({
+    nombre: `Textura ${i + 1}`,
+    url: `./img/texturas/${i + 1}.png`
+  })),
+
   ...Array.from({ length: 20 }, (_, i) => ({
     nombre: `Textura ${i + 1}`,
     url: `./img/texturas/TEXTURA${i + 1}.png`
@@ -766,10 +791,24 @@ const BIBLIA_TEXTURAS_DISENO = [
 
 const BIBLIA_ADORNOS_DISENO = [
   { nombre: "Sin adorno", url: null },
-  ...Array.from({ length: 18 }, (_, i) => ({
-    nombre: `Ornamento ${i + 1}`,
-    url: `./img/ornamentos/O${i + 1}.png`
+
+  { nombre: "Adorno A1", url: "./img/ornamentos/a11.png" },
+  { nombre: "Adorno A2", url: "./img/ornamentos/a22.png" },
+  { nombre: "Adorno A3", url: "./img/ornamentos/a33.png" },
+  { nombre: "Adorno A4", url: "./img/ornamentos/a44.png" },
+  { nombre: "Adorno A5", url: "./img/ornamentos/a55.png" },
+  { nombre: "Adorno A6", url: "./img/ornamentos/a66.png" },
+  { nombre: "Adorno A7", url: "./img/ornamentos/a77.png" },
+  { nombre: "Adorno A8", url: "./img/ornamentos/a88.png" },
+  { nombre: "Adorno A9", url: "./img/ornamentos/a99.png" },
+  { nombre: "Adorno A10", url: "./img/ornamentos/a100.png" },
+
+  // ✅ No pongo O6, O9 ni O11 porque son los típicos que te dan 404 si los borraste.
+  ...[1,2,3,4,5,7,8,10,12,13,14,15,16,17,18].map(n => ({
+    nombre: `Ornamento ${n}`,
+    url: `./img/ornamentos/O${n}.png`
   })),
+
   ...Array.from({ length: 13 }, (_, i) => ({
     nombre: `Adorno ${i + 1}`,
     url: `./img/ornamentos/adorno${i + 1}.png`
@@ -3917,8 +3956,83 @@ function cargarFondos() {
 
   cont.innerHTML = "";
 
+  bibliaAsegurarTabsFondoDiseno();
+
+  // ✅ Paleta antes del menú de tres puntitos
+  const paletaBtn = document.createElement("button");
+  paletaBtn.type = "button";
+  paletaBtn.id = "btnBibliaPaletaFondo";
+  paletaBtn.className = "biblia-fondo-palette-btn";
+  paletaBtn.innerHTML = `<i class="fa-solid fa-palette"></i>`;
+  paletaBtn.title = "Usar fondo plano o degradado";
+  paletaBtn.setAttribute("aria-label", "Usar fondo plano o degradado");
+  paletaBtn.onclick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    window.bibliaTogglePaletaFondo();
+  };
+  cont.appendChild(paletaBtn);
+
+  // ✅ Panel color/degradado. Se muestra al tocar paleta y oculta la galería.
+  const colorPanel = document.createElement("div");
+  colorPanel.id = "bibliaFondoColorPanel";
+  colorPanel.innerHTML = `
+    <input type="hidden" id="bibliaFondoColor1" value="${fondoDisenoBiblia.color1}" oninput="actualizarFondoDisenoBibliaDesdeUI()">
+    <button
+      type="button"
+      id="bibliaFondoColor1Host"
+      class="pickr-host biblia-color-host"
+      data-target="#bibliaFondoColor1"
+      title="Color de fondo"
+      aria-label="Color de fondo"
+    ></button>
+
+    <button
+      type="button"
+      id="btnBibliaColorAdd"
+      class="biblia-color-add"
+      onclick="bibliaAgregarColorFondo()"
+      title="Agregar color"
+      aria-label="Agregar color"
+    >
+      <i class="fa-solid fa-plus"></i>
+    </button>
+
+    <span id="bibliaColor2Wrap" class="biblia-color-extra">
+      <input type="hidden" id="bibliaFondoColor2" value="${fondoDisenoBiblia.color2}" oninput="actualizarFondoDisenoBibliaDesdeUI()">
+      <button
+        type="button"
+        id="bibliaFondoColor2Host"
+        class="pickr-host biblia-color-host"
+        data-target="#bibliaFondoColor2"
+        title="Segundo color"
+        aria-label="Segundo color"
+      ></button>
+    </span>
+
+    <span id="bibliaColor3Wrap" class="biblia-color-extra">
+      <input type="hidden" id="bibliaFondoColor3" value="${fondoDisenoBiblia.color3}" oninput="actualizarFondoDisenoBibliaDesdeUI()">
+      <button
+        type="button"
+        id="bibliaFondoColor3Host"
+        class="pickr-host biblia-color-host"
+        data-target="#bibliaFondoColor3"
+        title="Tercer color"
+        aria-label="Tercer color"
+      ></button>
+    </span>
+
+    <select id="bibliaGradienteForma" onchange="actualizarFondoDisenoBibliaDesdeUI()" title="Forma del degradado">
+      <option value="vertical">Vertical</option>
+      <option value="horizontal">Horizontal</option>
+      <option value="diagonal">Diagonal</option>
+      <option value="radial">Radial</option>
+    </select>
+  `;
+  cont.appendChild(colorPanel);
+
   const menuWrap = document.createElement("div");
-  menuWrap.className = "dev-f1-menu-wrap";
+  menuWrap.className = "dev-f1-menu-wrap biblia-galeria-control";
 
   const menuBtn = document.createElement("button");
   menuBtn.type = "button";
@@ -3948,21 +4062,38 @@ function cargarFondos() {
   menuBtn.onclick = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    menu.classList.toggle("abierto");
+
+    const abrir = !menu.classList.contains("abierto");
+
+    document.querySelectorAll(".dev-f1-menu.abierto").forEach(m => {
+      if (m !== menu) m.classList.remove("abierto");
+    });
+
+    if (abrir) {
+      const r = menuBtn.getBoundingClientRect();
+      const left = Math.max(8, Math.min(r.right + 6, window.innerWidth - 135));
+      const top = Math.max(8, Math.min(r.top, window.innerHeight - 150));
+
+      menu.style.left = `${left}px`;
+      menu.style.top = `${top}px`;
+      menu.classList.add("abierto");
+    } else {
+      menu.classList.remove("abierto");
+    }
   };
 
- if (!window.__fondosMenuOutsideClickBound) {
-  window.__fondosMenuOutsideClickBound = true;
+  if (!window.__fondosMenuOutsideClickBound) {
+    window.__fondosMenuOutsideClickBound = true;
 
-  document.addEventListener("click", (e) => {
-    document.querySelectorAll(".dev-f1-menu-wrap").forEach(wrap => {
-      const menu = wrap.querySelector(".dev-f1-menu");
-      if (menu && !wrap.contains(e.target)) {
-        menu.classList.remove("abierto");
-      }
+    document.addEventListener("click", (e) => {
+      document.querySelectorAll(".dev-f1-menu").forEach(menu => {
+        const wrap = menu.closest(".dev-f1-menu-wrap");
+        if (menu && wrap && !wrap.contains(e.target)) {
+          menu.classList.remove("abierto");
+        }
+      });
     });
-  });
-}
+  }
 
   menuWrap.appendChild(menuBtn);
   menuWrap.appendChild(menu);
@@ -3974,23 +4105,24 @@ function cargarFondos() {
     const finalUrl = baseUrl;
 
     const img = document.createElement("img");
+    img.className = "biblia-fondo-img";
     img.crossOrigin = "anonymous";
     img.referrerPolicy = "no-referrer";
     img.src = finalUrl;
-
-    img.style.width = "70px";
-    img.style.height = "70px";
-    img.style.objectFit = "cover";
-    img.style.borderRadius = "10px";
-    img.style.cursor = "pointer";
 
     img.onclick = async () => {
       try {
         if (fondoFinalBlobUrl) URL.revokeObjectURL(fondoFinalBlobUrl);
 
+        fondoDisenoBiblia.baseTipo = "imagen";
+
         fondoFinal = finalUrl;
         fondoFinalBlobUrl = await urlToBlobURL(finalUrl);
 
+        cont.querySelectorAll("img.biblia-fondo-img").forEach(x => x.classList.remove("activo"));
+        img.classList.add("activo");
+
+        bibliaSincronizarControlesFondoDiseno();
         actualizarPreview();
       } catch (e) {
         console.error(e);
@@ -4003,6 +4135,14 @@ function cargarFondos() {
 
     cont.appendChild(img);
   });
+
+  setTimeout(() => {
+    if (typeof initPickrEnHosts === "function") {
+      initPickrEnHosts("#bibliaFondoColor1Host, #bibliaFondoColor2Host, #bibliaFondoColor3Host");
+    }
+
+    bibliaSincronizarControlesFondoDiseno();
+  }, 0);
 }
 
 // ================= ⭐ URLTOBLOBURL =======================
@@ -4066,9 +4206,10 @@ function bibliaAplicarFondoAlPreview(previewImagen) {
   const adorno = document.getElementById("bibliaFondoAdornoLayer");
   const imgAdorno = document.getElementById("bibliaFondoAdornoImg");
 
-  if (modoFondoBiblia !== "diseno") {
-    bibliaLimpiarCapasFondoDiseno();
-
+  // ✅ Unificado:
+  // imagen = galería normal
+  // plano/gradiente = fondo de color
+  if (fondoDisenoBiblia.baseTipo === "imagen") {
     if (fondoUsable) {
       previewImagen.style.backgroundImage = `url("${fondoUsable}")`;
       previewImagen.style.backgroundColor = "transparent";
@@ -4076,16 +4217,15 @@ function bibliaAplicarFondoAlPreview(previewImagen) {
       previewImagen.style.backgroundImage = "none";
       previewImagen.style.backgroundColor = "#ffffff";
     }
-
-    return;
+  } else {
+    previewImagen.style.backgroundColor = fondoDisenoBiblia.color1 || "#ffffff";
+    previewImagen.style.backgroundImage =
+      fondoDisenoBiblia.baseTipo === "gradiente"
+        ? bibliaCssGradienteDiseno()
+        : "none";
   }
 
-  previewImagen.style.backgroundColor = fondoDisenoBiblia.color1 || "#ffffff";
-  previewImagen.style.backgroundImage =
-    fondoDisenoBiblia.baseTipo === "gradiente"
-      ? bibliaCssGradienteDiseno()
-      : "none";
-
+  // ✅ Textura siempre puede ir arriba de imagen o color
   if (textura) {
     if (fondoDisenoBiblia.texturaUrl) {
       textura.style.display = "block";
@@ -4100,6 +4240,7 @@ function bibliaAplicarFondoAlPreview(previewImagen) {
     }
   }
 
+  // ✅ Adorno siempre puede ir arriba de imagen o color
   if (adorno && imgAdorno) {
     if (fondoDisenoBiblia.adornoUrl) {
       adorno.style.display = "flex";
@@ -4127,6 +4268,21 @@ function bibliaSincronizarHostPickrFondo(idHost, color) {
   } catch (e) {}
 }
 
+function bibliaActualizarGaleriaFondoVisible() {
+  const cont = document.getElementById("personalizarFondos");
+  if (!cont) return;
+
+  const usandoColor = fondoDisenoBiblia.baseTipo !== "imagen";
+  cont.classList.toggle("biblia-fondo-color-activo", usandoColor);
+
+  const btnPaleta = document.getElementById("btnBibliaPaletaFondo");
+  if (btnPaleta) {
+    btnPaleta.classList.toggle("activo", usandoColor);
+    btnPaleta.title = usandoColor ? "Volver a galería de fondos" : "Usar fondo plano o degradado";
+    btnPaleta.setAttribute("aria-label", btnPaleta.title);
+  }
+}
+
 function bibliaSincronizarControlesFondoDiseno() {
   const color1 = document.getElementById("bibliaFondoColor1");
   const color2 = document.getElementById("bibliaFondoColor2");
@@ -4134,46 +4290,49 @@ function bibliaSincronizarControlesFondoDiseno() {
   const forma = document.getElementById("bibliaGradienteForma");
   const texturaOp = document.getElementById("bibliaTexturaOpacidad");
   const adornoTam = document.getElementById("bibliaAdornoTamano");
+
+  const color2Wrap = document.getElementById("bibliaColor2Wrap");
   const color3Wrap = document.getElementById("bibliaColor3Wrap");
-  const btnColor3 = document.getElementById("btnBibliaColor3");
-  const btnPlano = document.getElementById("btnBibliaPlano");
-  const btnGradiente = document.getElementById("btnBibliaGradiente");
+  const btnAdd = document.getElementById("btnBibliaColorAdd");
 
   if (color1) color1.value = fondoDisenoBiblia.color1;
   if (color2) color2.value = fondoDisenoBiblia.color2;
   if (color3) color3.value = fondoDisenoBiblia.color3;
 
-  // ✅ los tres colores usan el Pickr de la app y reflejan el estado actual
   bibliaSincronizarHostPickrFondo("bibliaFondoColor1Host", fondoDisenoBiblia.color1);
   bibliaSincronizarHostPickrFondo("bibliaFondoColor2Host", fondoDisenoBiblia.color2);
   bibliaSincronizarHostPickrFondo("bibliaFondoColor3Host", fondoDisenoBiblia.color3);
 
-  if (forma) forma.value = fondoDisenoBiblia.gradienteForma;
+  if (forma) {
+    forma.value = fondoDisenoBiblia.gradienteForma;
+    forma.style.display = fondoDisenoBiblia.usarColor2 ? "inline-flex" : "none";
+  }
+
   if (texturaOp) texturaOp.value = String(fondoDisenoBiblia.texturaOpacidad);
   if (adornoTam) adornoTam.value = String(fondoDisenoBiblia.adornoTamano);
 
+  if (color2Wrap) {
+    color2Wrap.style.display = fondoDisenoBiblia.usarColor2 ? "inline-flex" : "none";
+  }
+
   if (color3Wrap) {
-    const mostrarColor3 =
-      fondoDisenoBiblia.baseTipo === "gradiente" &&
-      fondoDisenoBiblia.usarColor3;
-
-    color3Wrap.style.display = mostrarColor3 ? "inline-flex" : "none";
+    color3Wrap.style.display = fondoDisenoBiblia.usarColor3 ? "inline-flex" : "none";
   }
 
-  if (btnColor3) {
-    btnColor3.innerHTML = fondoDisenoBiblia.usarColor3
-      ? '<i class="fa-solid fa-minus"></i>'
-      : '<i class="fa-solid fa-plus"></i>';
-    btnColor3.title = fondoDisenoBiblia.usarColor3 ? "Quitar tercer color" : "Agregar tercer color";
+  if (btnAdd) {
+    if (!fondoDisenoBiblia.usarColor2) {
+      btnAdd.innerHTML = '<i class="fa-solid fa-plus"></i>';
+      btnAdd.title = "Agregar segundo color";
+    } else if (!fondoDisenoBiblia.usarColor3) {
+      btnAdd.innerHTML = '<i class="fa-solid fa-plus"></i>';
+      btnAdd.title = "Agregar tercer color";
+    } else {
+      btnAdd.innerHTML = '<i class="fa-solid fa-minus"></i>';
+      btnAdd.title = "Volver a un solo color";
+    }
   }
 
-  if (btnPlano) btnPlano.classList.toggle("activo", fondoDisenoBiblia.baseTipo === "plano");
-  if (btnGradiente) btnGradiente.classList.toggle("activo", fondoDisenoBiblia.baseTipo === "gradiente");
-
-  const soloGradiente = document.querySelectorAll(".solo-gradiente-biblia");
-  soloGradiente.forEach(el => {
-    el.style.display = fondoDisenoBiblia.baseTipo === "gradiente" ? "" : "none";
-  });
+  bibliaActualizarGaleriaFondoVisible();
 }
 
 function bibliaRenderTexturasDiseno() {
@@ -4234,9 +4393,78 @@ function bibliaRenderAdornosDiseno() {
   });
 }
 
+function bibliaAsegurarTabsFondoDiseno() {
+  const fondosBox = document.getElementById("personalizarFondos");
+  if (!fondosBox) return null;
+
+  let box = document.getElementById("bibliaDisenoFondos");
+
+  if (!box) {
+    box = document.createElement("div");
+    box.id = "bibliaDisenoFondos";
+    fondosBox.insertAdjacentElement("beforebegin", box);
+  }
+
+  if (!box.dataset.unificado) {
+    box.dataset.unificado = "1";
+
+    box.innerHTML = `
+      <div class="biblia-diseno-tabs">
+        <button type="button" data-biblia-tab="fondo" onclick="mostrarTabFondoDisenoBiblia('fondo')">
+          Fondos
+        </button>
+        <button type="button" data-biblia-tab="textura" onclick="mostrarTabFondoDisenoBiblia('textura')">
+          Textura
+        </button>
+        <button type="button" data-biblia-tab="adorno" onclick="mostrarTabFondoDisenoBiblia('adorno')">
+          Adorno
+        </button>
+      </div>
+
+      <div id="bibliaPanelFondo" class="biblia-diseno-panel" data-biblia-panel="fondo"></div>
+
+      <div id="bibliaPanelTextura" class="biblia-diseno-panel" data-biblia-panel="textura">
+        <div id="bibliaTexturasCarril" class="biblia-recursos-carril"></div>
+        <div class="biblia-slider-row">
+          <input
+            id="bibliaTexturaOpacidad"
+            class="biblia-slider-mini"
+            type="range"
+            min="0"
+            max="1"
+            step="0.01"
+            value="0.22"
+            oninput="actualizarFondoDisenoBibliaDesdeUI()"
+          >
+        </div>
+      </div>
+
+      <div id="bibliaPanelAdorno" class="biblia-diseno-panel" data-biblia-panel="adorno">
+        <div id="bibliaAdornosCarril" class="biblia-recursos-carril"></div>
+        <div class="biblia-slider-row">
+          <input
+            id="bibliaAdornoTamano"
+            class="biblia-slider-mini"
+            type="range"
+            min="20"
+            max="100"
+            step="1"
+            value="70"
+            oninput="actualizarFondoDisenoBibliaDesdeUI()"
+          >
+        </div>
+      </div>
+    `;
+  }
+
+  return box;
+}
+
 window.mostrarTabFondoDisenoBiblia = function(tab = "fondo") {
   const permitidas = ["fondo", "textura", "adorno"];
   const elegida = permitidas.includes(tab) ? tab : "fondo";
+
+  bibliaAsegurarTabsFondoDiseno();
 
   document.querySelectorAll("#bibliaDisenoFondos [data-biblia-tab]").forEach(btn => {
     btn.classList.toggle("activo", btn.dataset.bibliaTab === elegida);
@@ -4245,16 +4473,66 @@ window.mostrarTabFondoDisenoBiblia = function(tab = "fondo") {
   document.querySelectorAll("#bibliaDisenoFondos [data-biblia-panel]").forEach(panel => {
     panel.classList.toggle("activo", panel.dataset.bibliaPanel === elegida);
   });
+
+  const galeria = document.getElementById("personalizarFondos");
+  if (galeria) {
+    galeria.style.display = elegida === "fondo" ? "flex" : "none";
+  }
+
+  if (elegida === "textura") bibliaRenderTexturasDiseno();
+  if (elegida === "adorno") bibliaRenderAdornosDiseno();
+
+  bibliaSincronizarControlesFondoDiseno();
 };
 
+window.bibliaTogglePaletaFondo = function() {
+  if (fondoDisenoBiblia.baseTipo === "imagen") {
+    fondoDisenoBiblia.baseTipo = fondoDisenoBiblia.usarColor2 ? "gradiente" : "plano";
+  } else {
+    fondoDisenoBiblia.baseTipo = "imagen";
+  }
+
+  bibliaSincronizarControlesFondoDiseno();
+  actualizarPreview();
+};
+
+window.bibliaAgregarColorFondo = function() {
+  if (!fondoDisenoBiblia.usarColor2) {
+    fondoDisenoBiblia.usarColor2 = true;
+    fondoDisenoBiblia.baseTipo = "gradiente";
+  } else if (!fondoDisenoBiblia.usarColor3) {
+    fondoDisenoBiblia.usarColor3 = true;
+    fondoDisenoBiblia.baseTipo = "gradiente";
+  } else {
+    fondoDisenoBiblia.usarColor2 = false;
+    fondoDisenoBiblia.usarColor3 = false;
+    fondoDisenoBiblia.baseTipo = "plano";
+  }
+
+  bibliaSincronizarControlesFondoDiseno();
+  actualizarPreview();
+};
+
+// compatibilidad por si quedó algún botón viejo llamando estas funciones
 window.setTipoBaseFondoBiblia = function(tipo) {
-  fondoDisenoBiblia.baseTipo = tipo === "gradiente" ? "gradiente" : "plano";
+  if (tipo === "gradiente") {
+    fondoDisenoBiblia.baseTipo = "gradiente";
+    fondoDisenoBiblia.usarColor2 = true;
+  } else if (tipo === "plano") {
+    fondoDisenoBiblia.baseTipo = "plano";
+  } else {
+    fondoDisenoBiblia.baseTipo = "imagen";
+  }
+
   bibliaSincronizarControlesFondoDiseno();
   actualizarPreview();
 };
 
 window.toggleTercerColorBiblia = function() {
+  fondoDisenoBiblia.usarColor2 = true;
   fondoDisenoBiblia.usarColor3 = !fondoDisenoBiblia.usarColor3;
+  fondoDisenoBiblia.baseTipo = "gradiente";
+
   bibliaSincronizarControlesFondoDiseno();
   actualizarPreview();
 };
@@ -4271,47 +4549,54 @@ window.actualizarFondoDisenoBibliaDesdeUI = function() {
   if (color2) fondoDisenoBiblia.color2 = color2.value || "#d1eeff";
   if (color3) fondoDisenoBiblia.color3 = color3.value || "#a6d0ff";
   if (forma) fondoDisenoBiblia.gradienteForma = forma.value || "vertical";
+
   if (texturaOp) fondoDisenoBiblia.texturaOpacidad = Number(texturaOp.value || 0);
   if (adornoTam) fondoDisenoBiblia.adornoTamano = Number(adornoTam.value || 70);
 
+  if (fondoDisenoBiblia.baseTipo !== "imagen") {
+    fondoDisenoBiblia.baseTipo = fondoDisenoBiblia.usarColor2 ? "gradiente" : "plano";
+  }
+
+  bibliaSincronizarControlesFondoDiseno();
   actualizarPreview();
 };
 
 function bibliaActualizarUIModoFondo() {
-  const esDiseno = modoFondoBiblia === "diseno";
+  modoFondoBiblia = "diseno";
+
   const modal = document.getElementById("modalPersonalizar");
   const btn = document.getElementById("btnModoFondoBiblia");
-  const galeria = document.getElementById("personalizarFondos");
-  const diseno = document.getElementById("bibliaDisenoFondos");
+  const diseno = bibliaAsegurarTabsFondoDiseno();
 
-  if (modal) modal.classList.toggle("fondo-diseno-activo", esDiseno);
+  if (modal) modal.classList.add("fondo-diseno-activo");
 
+  // ✅ switch eliminado visualmente
   if (btn) {
-    btn.classList.toggle("activo", esDiseno);
-    btn.innerHTML = esDiseno
-      ? '<i class="fa-solid fa-toggle-on"></i>'
-      : '<i class="fa-solid fa-toggle-off"></i>';
-    btn.title = esDiseno ? "Volver a fondos con imágenes" : "Usar fondo diseñado";
-    btn.setAttribute("aria-label", btn.title);
+    btn.style.display = "none";
+    btn.setAttribute("aria-hidden", "true");
   }
 
-  if (galeria) galeria.style.display = esDiseno ? "none" : "flex";
   if (diseno) {
-    diseno.style.display = esDiseno ? "flex" : "none";
-    diseno.setAttribute("aria-hidden", esDiseno ? "false" : "true");
+    diseno.style.display = "flex";
+    diseno.setAttribute("aria-hidden", "false");
   }
+
+  bibliaSincronizarControlesFondoDiseno();
 }
 
+// compatibilidad si alguna parte vieja llama el switch
 window.toggleModoFondoBiblia = function() {
-  modoFondoBiblia = modoFondoBiblia === "diseno" ? "imagen" : "diseno";
+  modoFondoBiblia = "diseno";
   bibliaActualizarUIModoFondo();
+  window.mostrarTabFondoDisenoBiblia("fondo");
   actualizarPreview();
 };
 
 function bibliaResetFondoDiseno() {
-  modoFondoBiblia = "imagen";
+  modoFondoBiblia = "diseno";
   fondoDisenoBiblia = bibliaNuevoEstadoFondoDiseno();
 
+  bibliaAsegurarTabsFondoDiseno();
   bibliaSincronizarControlesFondoDiseno();
   bibliaRenderTexturasDiseno();
   bibliaRenderAdornosDiseno();
