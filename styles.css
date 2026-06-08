@@ -4550,43 +4550,12 @@ body.oscuro .tema-toggle-fondo input:checked + label{
 }
 
 /* =========================================================
-   CREAR IMAGEN BIBLIA · MODO FONDO DISEÑADO
-   Se agrega sin modificar el modo actual de galería.
+   CREAR IMAGEN BIBLIA · FONDOS / TEXTURA / ADORNO UNIFICADO
    ========================================================= */
 
-/* Toggle enfrentado a la X */
+/* ✅ El switch ya no se usa */
 #modalPersonalizar #btnModoFondoBiblia{
-  position:absolute !important;
-  top:12px !important;
-  left:12px !important;
-  z-index:99999 !important;
-
-  width:42px !important;
-  min-width:42px !important;
-  height:34px !important;
-  padding:0 !important;
-
-  border:none !important;
-  border-radius:999px !important;
-  background:rgba(255,255,255,.88) !important;
-  color:#4f6fa8 !important;
-  box-shadow:0 3px 10px rgba(0,0,0,.16);
-}
-
-#modalPersonalizar #btnModoFondoBiblia i{
-  font-size:23px;
-  line-height:1;
-}
-
-#modalPersonalizar #btnModoFondoBiblia.activo{
-  background:var(--ui-azul-hover) !important;
-  color:#000 !important;
-}
-
-body.oscuro #modalPersonalizar #btnModoFondoBiblia{
-  background:rgba(0,0,0,.55) !important;
-  color:#d1eeff !important;
-  border:1px solid rgba(255,255,255,.25) !important;
+  display:none !important;
 }
 
 /* Capas dentro de la imagen: base -> textura -> adorno -> texto */
@@ -4624,34 +4593,32 @@ body.oscuro #modalPersonalizar #btnModoFondoBiblia{
   z-index:3;
 }
 
-/* Panel: ocupa el lugar de la galería vieja, no se acumula debajo */
+/* Tabs Fondos / Textura / Adorno */
 #bibliaDisenoFondos{
-  display:none;
+  display:flex;
   flex-direction:column;
   gap:5px;
   width:min(420px, 100%);
-  height:110px;
-  min-height:110px;
   margin:0 auto;
-  padding:4px 6px 5px;
-  overflow:hidden;
+  padding:4px 6px;
   border:1px solid rgba(0,0,0,.08);
   border-radius:12px;
   background:rgba(233,246,255,.75);
+  overflow:visible;
 }
 
 #bibliaDisenoFondos .biblia-diseno-tabs{
   display:flex;
   align-items:center;
   justify-content:center;
-  gap:5px;
-  flex:0 0 30px;
+  gap:6px;
+  width:100%;
 }
 
 #modalPersonalizar #bibliaDisenoFondos .biblia-diseno-tabs button{
-  height:28px;
+  height:30px;
   min-width:0;
-  padding:0 10px;
+  padding:0 12px;
   border-radius:999px;
   font-size:12px;
 }
@@ -4661,7 +4628,6 @@ body.oscuro #modalPersonalizar #btnModoFondoBiblia{
   align-items:center;
   width:100%;
   min-width:0;
-  min-height:64px;
   gap:6px;
 }
 
@@ -4669,53 +4635,133 @@ body.oscuro #modalPersonalizar #btnModoFondoBiblia{
   display:flex;
 }
 
-#bibliaPanelFondo .biblia-base-btns{
-  flex:0 0 auto;
-  display:flex;
-  gap:4px;
+/* Fondo usa la galería de siempre, así que este panel queda sin altura extra */
+#bibliaPanelFondo.activo{
+  display:none !important;
 }
 
-#modalPersonalizar #bibliaPanelFondo .biblia-base-btns button,
-#modalPersonalizar #btnBibliaColor3{
-  width:32px;
-  min-width:32px;
-  height:32px;
-  padding:0;
-}
-
-.biblia-diseno-ajustes{
-  min-width:0;
+/* Galería fondos */
+#personalizarFondos{
   display:flex;
   align-items:center;
-  gap:5px;
+  gap:8px;
+  width:min(420px, 100%);
+  margin:0 auto;
+  overflow-x:auto;
+  overflow-y:visible;
+  padding:3px 4px 6px;
+  scrollbar-width:thin;
+}
+
+#personalizarFondos::-webkit-scrollbar{
+  height:7px;
+}
+
+/* Paleta antes del menú */
+#modalPersonalizar .biblia-fondo-palette-btn,
+#personalizarFondos .dev-f1-menu-btn{
+  flex:0 0 34px !important;
+  width:34px !important;
+  min-width:34px !important;
+  height:52px !important;
+  padding:0 !important;
+  border-radius:12px !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+}
+
+#modalPersonalizar .biblia-fondo-palette-btn.activo{
+  background:var(--ui-azul-hover) !important;
+  color:#000 !important;
+}
+
+/* Menú Paisajes / Acuarelas / Tarjetas: fixed para que no quede cortado */
+#personalizarFondos .dev-f1-menu{
+  position:fixed;
+  display:none;
+  flex-direction:column;
+  gap:6px;
+  background:#fff;
+  border:1px solid #ddd;
+  border-radius:14px;
+  padding:8px;
+  box-shadow:0 10px 24px rgba(0,0,0,.14);
+  z-index:1000060;
+  min-width:118px;
+  width:max-content;
+}
+
+#personalizarFondos .dev-f1-menu.abierto{
+  display:flex;
+}
+
+#personalizarFondos .dev-f1-menu button{
+  min-height:28px;
+  height:28px;
+  border-radius:999px;
+  padding:0 12px;
+  font-size:12px;
+}
+
+/* Panel color/degradado */
+#bibliaFondoColorPanel{
+  display:none;
+  align-items:center;
+  gap:7px;
+  min-width:0;
+  width:100%;
   overflow-x:auto;
   overflow-y:hidden;
   scrollbar-width:none;
+  padding:2px 0;
 }
 
-.biblia-diseno-ajustes::-webkit-scrollbar,
-.biblia-recursos-carril::-webkit-scrollbar{
+#bibliaFondoColorPanel::-webkit-scrollbar{
   display:none;
 }
 
-/* ✅ Colores del fondo diseñado: mismo Pickr que usa el resto de la app */
+#personalizarFondos.biblia-fondo-color-activo #bibliaFondoColorPanel{
+  display:flex;
+}
+
+#personalizarFondos.biblia-fondo-color-activo .biblia-fondo-img,
+#personalizarFondos.biblia-fondo-color-activo .dev-f1-menu-wrap{
+  display:none !important;
+}
+
 #modalPersonalizar .biblia-color-host,
 #modalPersonalizar .biblia-color-host.pickr,
 #modalPersonalizar .biblia-color-host.pcr-button{
-  flex:0 0 32px;
-  width:32px;
-  min-width:32px;
-  height:32px;
-  min-height:32px;
-  padding:0;
-  border-radius:999px;
-  border:1px solid rgba(0,0,0,.15);
+  flex:0 0 36px !important;
+  width:36px !important;
+  min-width:36px !important;
+  height:36px !important;
+  min-height:36px !important;
+  padding:0 !important;
+  border-radius:999px !important;
+  border:1px solid rgba(0,0,0,.15) !important;
+}
+
+#modalPersonalizar .biblia-color-add{
+  flex:0 0 36px !important;
+  width:36px !important;
+  min-width:36px !important;
+  height:36px !important;
+  padding:0 !important;
+  border-radius:999px !important;
+}
+
+.biblia-color-extra{
+  display:none;
+  align-items:center;
+  flex:0 0 auto;
 }
 
 #bibliaGradienteForma{
-  height:32px;
-  min-width:86px;
-  padding:0 6px;
+  height:36px;
+  min-width:94px;
+  padding:0 7px;
   border:1px solid rgba(0,0,0,.15);
   border-radius:10px;
   font-size:12px;
@@ -4723,47 +4769,41 @@ body.oscuro #modalPersonalizar #btnModoFondoBiblia{
   color:#000;
 }
 
-.biblia-recursos-carril{
-  flex:0 0 44px;
-  width:100%;
-  max-width:100%;
-  min-width:0;
-  height:44px;
-  display:flex;
-  align-items:center;
-  gap:5px;
-  overflow-x:auto;
-  overflow-y:hidden;
-  scrollbar-width:none;
-}
-
-/* ✅ Texturas/Adornos: carril arriba y slider centrado debajo.
-   Así nunca empuja el contenido hacia la derecha ni genera scroll horizontal. */
+/* Carriles textura / adorno */
 #bibliaPanelTextura.activo,
 #bibliaPanelAdorno.activo{
   flex-direction:column;
   align-items:stretch;
   justify-content:center;
-  gap:3px;
+  gap:4px;
 }
 
-.biblia-slider-row{
-  flex:0 0 14px;
-  height:14px;
+.biblia-recursos-carril{
   width:100%;
+  max-width:100%;
+  min-width:0;
+  min-height:50px;
+  height:50px;
   display:flex;
-  justify-content:center;
   align-items:center;
-  overflow:hidden;
+  gap:6px;
+  overflow-x:auto;
+  overflow-y:hidden;
+  scrollbar-width:none;
 }
 
+.biblia-recursos-carril::-webkit-scrollbar{
+  display:none;
+}
+
+/* ✅ previews 10% más grandes aprox. */
 #modalPersonalizar .biblia-recurso-mini{
-  flex:0 0 44px;
-  width:44px;
-  min-width:44px;
-  height:44px;
+  flex:0 0 49px;
+  width:49px;
+  min-width:49px;
+  height:49px;
   padding:2px;
-  border-radius:9px;
+  border-radius:10px;
   overflow:hidden;
 }
 
@@ -4771,7 +4811,7 @@ body.oscuro #modalPersonalizar #btnModoFondoBiblia{
   width:100%;
   height:100%;
   object-fit:cover;
-  border-radius:7px;
+  border-radius:8px;
 }
 
 #modalPersonalizar .biblia-recurso-mini.activo{
@@ -4780,37 +4820,56 @@ body.oscuro #modalPersonalizar #btnModoFondoBiblia{
   background:var(--ui-azul-hover);
 }
 
+.biblia-slider-row{
+  height:16px;
+  width:100%;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  overflow:hidden;
+}
+
 .biblia-slider-mini{
   flex:0 0 auto;
-  width:min(170px, 55%);
-  max-width:170px;
-  height:14px;
+  width:min(180px, 58%);
+  max-width:180px;
+  height:16px;
   margin:0;
   accent-color:#4f6fa8;
 }
 
 @media (max-width:600px){
   #bibliaDisenoFondos{
-    height:106px;
-    min-height:106px;
     padding-left:5px;
     padding-right:5px;
   }
 
   #modalPersonalizar #bibliaDisenoFondos .biblia-diseno-tabs button{
-    padding:0 9px;
+    padding:0 10px;
+    font-size:12px;
+  }
+
+  #personalizarFondos{
+    gap:7px;
+    padding-left:3px;
+    padding-right:3px;
   }
 
   #modalPersonalizar .biblia-recurso-mini{
-    flex-basis:40px;
-    width:40px;
-    min-width:40px;
-    height:40px;
+    flex-basis:44px;
+    width:44px;
+    min-width:44px;
+    height:44px;
+  }
+
+  .biblia-recursos-carril{
+    min-height:46px;
+    height:46px;
   }
 
   .biblia-slider-mini{
-    width:min(154px, 52vw);
-    max-width:154px;
+    width:min(160px, 54vw);
+    max-width:160px;
   }
 }
 
