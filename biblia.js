@@ -758,7 +758,8 @@ function bibliaNuevoEstadoFondoDiseno() {
     texturaOpacidad: 0.22,
 
     adornoUrl: null,
-    adornoTamano: 70
+   adornoTamano: 70,
+adornoOpacidad: 1
   };
 }
 
@@ -4195,6 +4196,7 @@ function bibliaLimpiarCapasFondoDiseno() {
   if (imgAdorno) {
     imgAdorno.removeAttribute("src");
     imgAdorno.style.width = "";
+    imgAdorno.style.opacity = "";
   }
 }
 
@@ -4246,6 +4248,9 @@ function bibliaAplicarFondoAlPreview(previewImagen) {
       adorno.style.display = "flex";
       imgAdorno.src = fondoDisenoBiblia.adornoUrl;
       imgAdorno.style.width = `${Math.max(20, Math.min(100, Number(fondoDisenoBiblia.adornoTamano) || 70))}%`;
+      imgAdorno.style.opacity = String(
+  Math.max(0, Math.min(1, Number(fondoDisenoBiblia.adornoOpacidad ?? 1)))
+);
     } else {
       adorno.style.display = "none";
       imgAdorno.removeAttribute("src");
@@ -4290,6 +4295,7 @@ function bibliaSincronizarControlesFondoDiseno() {
   const forma = document.getElementById("bibliaGradienteForma");
   const texturaOp = document.getElementById("bibliaTexturaOpacidad");
   const adornoTam = document.getElementById("bibliaAdornoTamano");
+  const adornoOp = document.getElementById("bibliaAdornoOpacidad");
 
   const color2Wrap = document.getElementById("bibliaColor2Wrap");
   const color3Wrap = document.getElementById("bibliaColor3Wrap");
@@ -4310,6 +4316,7 @@ function bibliaSincronizarControlesFondoDiseno() {
 
   if (texturaOp) texturaOp.value = String(fondoDisenoBiblia.texturaOpacidad);
   if (adornoTam) adornoTam.value = String(fondoDisenoBiblia.adornoTamano);
+  if (adornoOp) adornoOp.value = String(fondoDisenoBiblia.adornoOpacidad ?? 1);
 
   if (color2Wrap) {
     color2Wrap.style.display = fondoDisenoBiblia.usarColor2 ? "inline-flex" : "none";
@@ -4439,21 +4446,39 @@ function bibliaAsegurarTabsFondoDiseno() {
         </div>
       </div>
 
-      <div id="bibliaPanelAdorno" class="biblia-diseno-panel" data-biblia-panel="adorno">
-        <div id="bibliaAdornosCarril" class="biblia-recursos-carril"></div>
-        <div class="biblia-slider-row">
-          <input
-            id="bibliaAdornoTamano"
-            class="biblia-slider-mini"
-            type="range"
-            min="20"
-            max="100"
-            step="1"
-            value="70"
-            oninput="actualizarFondoDisenoBibliaDesdeUI()"
-          >
-        </div>
-      </div>
+<div id="bibliaPanelAdorno" class="biblia-diseno-panel" data-biblia-panel="adorno">
+  <div id="bibliaAdornosCarril" class="biblia-recursos-carril"></div>
+
+  <div class="biblia-adorno-sliders">
+    <label class="biblia-slider-pack" title="Tamaño del adorno">
+      <i class="fa-solid fa-up-right-and-down-left-from-center"></i>
+      <input
+        id="bibliaAdornoTamano"
+        class="biblia-slider-mini"
+        type="range"
+        min="20"
+        max="100"
+        step="1"
+        value="70"
+        oninput="actualizarFondoDisenoBibliaDesdeUI()"
+      >
+    </label>
+
+    <label class="biblia-slider-pack" title="Opacidad del adorno">
+      <i class="fa-solid fa-circle-half-stroke"></i>
+      <input
+        id="bibliaAdornoOpacidad"
+        class="biblia-slider-mini"
+        type="range"
+        min="0"
+        max="1"
+        step="0.01"
+        value="1"
+        oninput="actualizarFondoDisenoBibliaDesdeUI()"
+      >
+    </label>
+  </div>
+</div>
     `;
   }
 
@@ -4544,6 +4569,7 @@ window.actualizarFondoDisenoBibliaDesdeUI = function() {
   const forma = document.getElementById("bibliaGradienteForma");
   const texturaOp = document.getElementById("bibliaTexturaOpacidad");
   const adornoTam = document.getElementById("bibliaAdornoTamano");
+  const adornoOp = document.getElementById("bibliaAdornoOpacidad");
 
   if (color1) fondoDisenoBiblia.color1 = color1.value || "#ffffff";
   if (color2) fondoDisenoBiblia.color2 = color2.value || "#d1eeff";
@@ -4552,6 +4578,7 @@ window.actualizarFondoDisenoBibliaDesdeUI = function() {
 
   if (texturaOp) fondoDisenoBiblia.texturaOpacidad = Number(texturaOp.value || 0);
   if (adornoTam) fondoDisenoBiblia.adornoTamano = Number(adornoTam.value || 70);
+  if (adornoOp) fondoDisenoBiblia.adornoOpacidad = Number(adornoOp.value ?? 1);
 
   if (fondoDisenoBiblia.baseTipo !== "imagen") {
     fondoDisenoBiblia.baseTipo = fondoDisenoBiblia.usarColor2 ? "gradiente" : "plano";
