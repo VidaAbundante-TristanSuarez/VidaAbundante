@@ -1293,6 +1293,7 @@ color: #000; /* 🔥 Modal SIEMPRE legible (no gris) */
   display: flex;
   flex-direction: column;
   overflow-y: hidden;
+  overflow-x: hidden !important;
   padding-bottom: 16px;
 }
 
