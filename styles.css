@@ -4691,6 +4691,7 @@ body.oscuro .tema-toggle-fondo input:checked + label{
     min-width:0 !important;
   width:fit-content !important;
   align-items:stretch !important;
+    transform: translateY(-5px) !important;
 }
 
 #personalizarFondos .dev-f1-menu.abierto{
