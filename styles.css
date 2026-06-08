@@ -4702,6 +4702,10 @@ body.oscuro .tema-toggle-fondo input:checked + label{
   border-radius:999px;
   padding:0 12px;
   font-size:12px;
+
+  width: max-content !important;
+  min-width: 0 !important;
+  align-self: flex-start !important;
 }
 
 /* Panel color/degradado */
