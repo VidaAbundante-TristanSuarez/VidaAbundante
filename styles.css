@@ -5122,4 +5122,36 @@ body.oscuro .tema-toggle-fondo input:checked + label{
   }
 }
 
+/* ✅ Biblia: mostrar barrita de scroll en Texturas y Adornos */
+#modalPersonalizar #bibliaPanelTextura .biblia-recursos-carril,
+#modalPersonalizar #bibliaPanelAdorno .biblia-recursos-carril{
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  scrollbar-width: thin !important;
+  padding-bottom: 4px !important;
+}
+
+/* Chrome / Android */
+#modalPersonalizar #bibliaPanelTextura .biblia-recursos-carril::-webkit-scrollbar,
+#modalPersonalizar #bibliaPanelAdorno .biblia-recursos-carril::-webkit-scrollbar{
+  height: 7px !important;
+}
+
+#modalPersonalizar #bibliaPanelTextura .biblia-recursos-carril::-webkit-scrollbar-track,
+#modalPersonalizar #bibliaPanelAdorno .biblia-recursos-carril::-webkit-scrollbar-track{
+  background: rgba(0,0,0,.10);
+  border-radius: 999px;
+}
+
+#modalPersonalizar #bibliaPanelTextura .biblia-recursos-carril::-webkit-scrollbar-thumb,
+#modalPersonalizar #bibliaPanelAdorno .biblia-recursos-carril::-webkit-scrollbar-thumb{
+  background: rgba(0,0,0,.28);
+  border-radius: 999px;
+}
+
+#modalPersonalizar #bibliaPanelTextura .biblia-recursos-carril::-webkit-scrollbar-thumb:active,
+#modalPersonalizar #bibliaPanelAdorno .biblia-recursos-carril::-webkit-scrollbar-thumb:active{
+  background: rgba(0,0,0,.38);
+}
+
 </style> 
