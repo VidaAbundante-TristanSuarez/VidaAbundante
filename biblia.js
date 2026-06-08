@@ -4491,6 +4491,12 @@ window.mostrarTabFondoDisenoBiblia = function(tab = "fondo") {
 
   bibliaAsegurarTabsFondoDiseno();
 
+  const boxDiseno = document.getElementById("bibliaDisenoFondos");
+if (boxDiseno) {
+  boxDiseno.classList.remove("tab-fondo", "tab-textura", "tab-adorno");
+  boxDiseno.classList.add("tab-" + elegida);
+}
+
   document.querySelectorAll("#bibliaDisenoFondos [data-biblia-tab]").forEach(btn => {
     btn.classList.toggle("activo", btn.dataset.bibliaTab === elegida);
   });
@@ -5754,6 +5760,7 @@ window.generarImagen = async () => {
   setFormatoImagen("post");
   cargarFondos();
   crearListaVisualFuentes();
+  bibliaCompactarControlesMobile();
 
   await new Promise(r => requestAnimationFrame(r));
 
@@ -8140,6 +8147,35 @@ window.toggleFormatoImagen = function() {
   const siguiente = formatoImagenActual === "post" ? "story" : "post";
   setFormatoImagen(siguiente);
 };
+
+function bibliaCompactarControlesMobile() {
+  const boxFormato = document.getElementById("boxFormato");
+  const rowA = document.getElementById("rowA");
+  const rowB = document.getElementById("rowB");
+
+  if (!boxFormato || !rowA || !rowB) return;
+
+  const esMobile = window.matchMedia("(max-width: 600px)").matches;
+
+  if (esMobile) {
+    // ✅ En celular: post/story vuelve al mismo renglón de opacidad + tamaño
+    if (boxFormato.parentElement !== rowB) {
+      rowB.insertBefore(boxFormato, rowB.firstChild);
+    }
+  } else {
+    // ✅ En PC: vuelve a su lugar original
+    if (boxFormato.parentElement !== rowA) {
+      rowA.insertBefore(boxFormato, rowA.firstChild);
+    }
+  }
+}
+
+if (!window.__bibliaCompactarControlesResize) {
+  window.__bibliaCompactarControlesResize = true;
+  window.addEventListener("resize", () => {
+    bibliaCompactarControlesMobile();
+  });
+}
 
 // ================= 🔺 CAMBIAR TAMAÑO (+/-) LIBRE ===========================
 window.cambiarTamanoPreview = (delta) => {
