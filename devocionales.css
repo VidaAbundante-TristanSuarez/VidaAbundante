@@ -350,7 +350,7 @@ button.activo,
 #modalDevFase1 .modal-contenido.modal-dev,
 #modalDevFase2 .modal-contenido.modal-dev,
 #modalDevFase3 .modal-contenido.modal-dev{
-  background:#fff;
+  background:#f5ffff;
   border-radius:18px;
   padding:12px;
   width: min(560px, 96vw);
