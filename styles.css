@@ -835,9 +835,20 @@ html, body {
   z-index: 2;
 }
 
-@media (max-width: 480px) {
+@media (max-width: 600px) {
   #previewImagen {
-    margin-bottom: 5px;
+    width:100%;
+    max-width:calc(100vw - 16px);
+    max-height:42dvh;
+    margin-bottom:4px;
+  }
+
+  #previewImagen.preview-story {
+    max-height:46dvh;
+  }
+
+  #previewTextoWrapper{
+    inset:32px 20px;
   }
 }
 
@@ -1297,36 +1308,51 @@ color: #000; /* 🔥 Modal SIEMPRE legible (no gris) */
 }
 
 @media (max-width: 600px) {
+  #modalPersonalizar.abierto{
+    display:flex !important;
+  }
+
   #modalPersonalizar {
-    width: 100vw;
-    height: 100dvh;
-    padding: max(8px, env(safe-area-inset-top)) 8px max(8px, env(safe-area-inset-bottom));
-    align-items: center;
-    justify-content: center;
-    overflow-y: auto;
-    overflow-x: hidden;
+    inset:0;
+    width:auto;
+    height:auto;
+    min-width:0;
+    max-width:none;
+
+    padding:8px;
+    box-sizing:border-box;
+
+    align-items:center;
+    justify-content:center;
+
+    overflow:hidden;
   }
 
   #modalPersonalizar .modal-contenido {
-    width: min(100%, 430px);
-    max-width: calc(100vw - 16px);
-    max-height: calc(100dvh - 16px);
-    margin: auto;
+    width:min(430px, calc(100vw - 16px));
+    max-width:calc(100vw - 16px);
+    max-height:calc(100dvh - 16px);
 
-    height: auto !important;
-    min-height: 0 !important;
+    margin:auto;
+    box-sizing:border-box;
 
-    border-radius: 18px;
-    overflow-y: auto;
-    overflow-x: hidden;
+    height:auto !important;
+    min-height:0 !important;
 
-    padding-bottom: max(12px, env(safe-area-inset-bottom));
+    border-radius:18px;
+    overflow:hidden;
+
+    padding-bottom:max(10px, env(safe-area-inset-bottom));
   }
 
   #modalPersonalizar.solo-imagen .modal-contenido {
-    height: auto !important;
-    min-height: 0 !important;
-    max-height: calc(100dvh - 16px) !important;
+    height:auto !important;
+    min-height:0 !important;
+    max-height:calc(100dvh - 16px) !important;
+  }
+
+  #modalPersonalizar *{
+    max-width:100%;
   }
 }
 
@@ -2130,6 +2156,83 @@ body.oscuro #modalAudio textarea{
   justify-content:center;
   gap:6px;         /* 👈 antes 10 */
   flex-wrap:nowrap;/* ✅ CLAVE: NO se parte en 2 filas */
+}
+
+@media (max-width:600px){
+  #rowA{
+    min-height:0;
+    height:auto;
+    margin:0;
+    gap:0;
+  }
+
+  #rowA:empty{
+    display:none !important;
+  }
+
+  #rowB{
+    width:100%;
+    max-width:100%;
+    min-width:0;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    gap:5px;
+    flex-wrap:nowrap;
+
+    overflow:hidden;
+    box-sizing:border-box;
+    padding:0 4px;
+  }
+
+  #boxFormato{
+    flex:0 0 auto;
+    display:flex;
+    gap:4px;
+  }
+
+  #boxControlesTexto{
+    flex:0 1 auto;
+    min-width:0;
+    gap:5px;
+  }
+
+  #modalPersonalizar #btnFormatoToggle{
+    width:34px !important;
+    min-width:34px !important;
+    height:34px !important;
+    padding:0 !important;
+  }
+
+  #modalPersonalizar #personalizarColorHost,
+  #modalPersonalizar #personalizarOutlineHost{
+    width:34px !important;
+    min-width:34px !important;
+    max-width:34px !important;
+    height:34px !important;
+    min-height:34px !important;
+    max-height:34px !important;
+  }
+
+  #modalPersonalizar #personalizarTamaño{
+    width:48px !important;
+    height:34px !important;
+    line-height:34px !important;
+  }
+
+  #modalPersonalizar .style-row button{
+    width:34px !important;
+    min-width:34px !important;
+    height:34px !important;
+    padding:0 !important;
+  }
+
+  #modalPersonalizar .opacidad-slider{
+    width:76px !important;
+    min-width:60px;
+  }
 }
 
 /* Ajustes de controles */
@@ -4886,15 +4989,30 @@ body.oscuro .tema-toggle-fondo input:checked + label{
 }
 
 @media (max-width:600px){
+  /* ✅ En Fondos no queda hueco vacío */
   #bibliaDisenoFondos{
+    width:100%;
+    max-width:100%;
+    min-height:0;
+    height:auto;
+    padding:4px 5px;
+    overflow:hidden;
+    box-sizing:border-box;
+  }
+
+  #bibliaDisenoFondos.tab-fondo{
+    height:auto !important;
+    min-height:0 !important;
+  }
+
+  #bibliaDisenoFondos.tab-textura,
+  #bibliaDisenoFondos.tab-adorno{
     height:116px;
     min-height:116px;
-    padding-left:5px;
-    padding-right:5px;
-    overflow:hidden;
   }
 
   #modalPersonalizar #bibliaDisenoFondos .biblia-diseno-tabs button{
+    height:30px;
     padding:0 9px;
   }
 
