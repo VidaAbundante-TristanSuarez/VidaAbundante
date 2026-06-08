@@ -4060,28 +4060,18 @@ function cargarFondos() {
     menu.appendChild(b);
   });
 
-  menuBtn.onclick = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
+menuBtn.onclick = (e) => {
+  e.preventDefault();
+  e.stopPropagation();
 
-    const abrir = !menu.classList.contains("abierto");
+  document.querySelectorAll(".dev-f1-menu.abierto").forEach(m => {
+    if (m !== menu) m.classList.remove("abierto");
+  });
 
-    document.querySelectorAll(".dev-f1-menu.abierto").forEach(m => {
-      if (m !== menu) m.classList.remove("abierto");
-    });
-
-    if (abrir) {
-      const r = menuBtn.getBoundingClientRect();
-      const left = Math.max(8, Math.min(r.right + 6, window.innerWidth - 135));
-      const top = Math.max(8, Math.min(r.top, window.innerHeight - 150));
-
-      menu.style.left = `${left}px`;
-      menu.style.top = `${top}px`;
-      menu.classList.add("abierto");
-    } else {
-      menu.classList.remove("abierto");
-    }
-  };
+  menu.style.left = "";
+  menu.style.top = "";
+  menu.classList.toggle("abierto");
+};
 
   if (!window.__fondosMenuOutsideClickBound) {
     window.__fondosMenuOutsideClickBound = true;
