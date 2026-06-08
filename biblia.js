@@ -4404,13 +4404,17 @@ function bibliaAsegurarTabsFondoDiseno() {
   const fondosBox = document.getElementById("personalizarFondos");
   if (!fondosBox) return null;
 
-  let box = document.getElementById("bibliaDisenoFondos");
+let box = document.getElementById("bibliaDisenoFondos");
 
-  if (!box) {
-    box = document.createElement("div");
-    box.id = "bibliaDisenoFondos";
-    fondosBox.insertAdjacentElement("beforebegin", box);
-  }
+if (!box) {
+  box = document.createElement("div");
+  box.id = "bibliaDisenoFondos";
+}
+
+/* ✅ Tabs siempre arriba / galería de fondos siempre abajo */
+if (fondosBox.parentNode && fondosBox.previousElementSibling !== box) {
+  fondosBox.parentNode.insertBefore(box, fondosBox);
+}
 
   if (!box.dataset.unificado) {
     box.dataset.unificado = "1";
