@@ -1283,7 +1283,7 @@ color: #000; /* 🔥 Modal SIEMPRE legible (no gris) */
 /* CONTENEDOR INTERNO DEL MODAL */
 #modalPersonalizar .modal-contenido {
   position: relative;
-  background: #fff;
+  background: #f5ffff;
   width: 100%;
   max-width: 420px;
   margin: auto;
