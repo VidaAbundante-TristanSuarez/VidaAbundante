@@ -3144,6 +3144,12 @@ function dev2AsegurarSlidersAdorno(){
 
   tam.classList.add("dev2-slider-mini");
 
+  const filaVieja =
+    tam.closest(".dev2-slider-row") ||
+    tam.closest(".dev-row") ||
+    tam.closest("label") ||
+    tam.parentElement;
+
   let box = $("dev2AdornoSliders");
 
   if (!box) {
@@ -3151,12 +3157,11 @@ function dev2AsegurarSlidersAdorno(){
     box.id = "dev2AdornoSliders";
     box.className = "dev2-adorno-sliders";
 
-    const ref =
-      tam.closest(".dev-row") ||
-      tam.closest("label") ||
-      tam.parentElement;
-
-    ref?.insertAdjacentElement("beforebegin", box);
+    if (filaVieja) {
+      filaVieja.insertAdjacentElement("beforebegin", box);
+    } else {
+      $("dev2PaneAdorno")?.appendChild(box);
+    }
   }
 
   let packTam = $("dev2AdornoPackTamano");
@@ -3195,6 +3200,16 @@ function dev2AsegurarSlidersAdorno(){
 
   if (!box.contains(packTam)) box.appendChild(packTam);
   if (!box.contains(packOp)) box.appendChild(packOp);
+
+  // ✅ Borra la fila vieja que quedó vacía con el ícono solo
+  document.querySelectorAll("#dev2PaneAdorno .dev2-slider-row").forEach(row => {
+    const tieneInput = row.querySelector("input");
+    const esFilaViejaAdorno = row.querySelector(".fa-up-right-and-down-left-from-center");
+
+    if (!tieneInput && esFilaViejaAdorno) {
+      row.remove();
+    }
+  });
 
   const leer = () => {
     DEV.f2.userChanged = true;
