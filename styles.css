@@ -1298,23 +1298,27 @@ color: #000; /* 🔥 Modal SIEMPRE legible (no gris) */
 
 @media (max-width: 600px) {
   #modalPersonalizar {
-    padding: 0;
-    align-items: flex-start;
-    justify-content: flex-start;
+    width: 100vw;
+    height: 100dvh;
+    padding: max(8px, env(safe-area-inset-top)) 8px max(8px, env(safe-area-inset-bottom));
+    align-items: center;
+    justify-content: center;
     overflow-y: auto;
+    overflow-x: hidden;
   }
 
   #modalPersonalizar .modal-contenido {
-    width: 100vw;
-    max-width: 100vw;
-    margin: 0;
+    width: min(100%, 430px);
+    max-width: calc(100vw - 16px);
+    max-height: calc(100dvh - 16px);
+    margin: auto;
 
     height: auto !important;
     min-height: 0 !important;
-    max-height: none !important;
 
-    border-radius: 0 0 18px 18px;
-    overflow: visible;
+    border-radius: 18px;
+    overflow-y: auto;
+    overflow-x: hidden;
 
     padding-bottom: max(12px, env(safe-area-inset-bottom));
   }
@@ -1322,7 +1326,7 @@ color: #000; /* 🔥 Modal SIEMPRE legible (no gris) */
   #modalPersonalizar.solo-imagen .modal-contenido {
     height: auto !important;
     min-height: 0 !important;
-    max-height: none !important;
+    max-height: calc(100dvh - 16px) !important;
   }
 }
 
@@ -4782,26 +4786,34 @@ body.oscuro .tema-toggle-fondo input:checked + label{
   width:100%;
   max-width:100%;
   min-width:0;
-  min-height:50px;
-  height:50px;
+  min-height:52px;
+  height:52px;
+
   display:flex;
   align-items:center;
   gap:6px;
+
   overflow-x:auto;
   overflow-y:hidden;
   scrollbar-width:none;
 }
 
-.biblia-recursos-carril::-webkit-scrollbar{
-  display:none;
+/* Texturas/Adornos: carril arriba y controles abajo */
+#bibliaPanelTextura.activo,
+#bibliaPanelAdorno.activo{
+  flex-direction:column;
+  align-items:stretch;
+  justify-content:center;
+  gap:4px;
 }
 
-/* ✅ previews 10% más grandes aprox. */
+/* ✅ previews 10% más altas y 20% más largas */
 #modalPersonalizar .biblia-recurso-mini{
-  flex:0 0 49px;
-  width:49px;
-  min-width:49px;
-  height:49px;
+  flex:0 0 53px;
+  width:53px;
+  min-width:53px;
+  height:48px;
+
   padding:2px;
   border-radius:10px;
   overflow:hidden;
@@ -4830,46 +4842,80 @@ body.oscuro .tema-toggle-fondo input:checked + label{
 }
 
 .biblia-slider-mini{
-  flex:0 0 auto;
-  width:min(180px, 58%);
-  max-width:180px;
+  flex:1 1 auto;
+  width:100%;
+  min-width:0;
+  max-width:150px;
   height:16px;
   margin:0;
   accent-color:#4f6fa8;
 }
 
+/* ✅ Adorno: tamaño izquierda / opacidad derecha */
+.biblia-adorno-sliders{
+  width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  min-width:0;
+  overflow:hidden;
+}
+
+#modalPersonalizar .biblia-slider-pack{
+  flex:1 1 0;
+  min-width:0;
+
+  display:flex !important;
+  flex-direction:row !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:5px;
+
+  margin:0;
+  padding:0;
+  font-size:12px;
+  color:#000;
+}
+
+#modalPersonalizar .biblia-slider-pack i{
+  flex:0 0 auto;
+  font-size:12px;
+  line-height:1;
+  opacity:.75;
+}
+
 @media (max-width:600px){
   #bibliaDisenoFondos{
+    height:116px;
+    min-height:116px;
     padding-left:5px;
     padding-right:5px;
+    overflow:hidden;
   }
 
   #modalPersonalizar #bibliaDisenoFondos .biblia-diseno-tabs button{
-    padding:0 10px;
-    font-size:12px;
-  }
-
-  #personalizarFondos{
-    gap:7px;
-    padding-left:3px;
-    padding-right:3px;
-  }
-
-  #modalPersonalizar .biblia-recurso-mini{
-    flex-basis:44px;
-    width:44px;
-    min-width:44px;
-    height:44px;
+    padding:0 9px;
   }
 
   .biblia-recursos-carril{
-    min-height:46px;
-    height:46px;
+    height:48px;
+    min-height:48px;
+  }
+
+  #modalPersonalizar .biblia-recurso-mini{
+    flex:0 0 48px;
+    width:48px;
+    min-width:48px;
+    height:44px;
+  }
+
+  .biblia-adorno-sliders{
+    gap:6px;
   }
 
   .biblia-slider-mini{
-    width:min(160px, 54vw);
-    max-width:160px;
+    max-width:128px;
   }
 }
 
