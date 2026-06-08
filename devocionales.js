@@ -93,9 +93,10 @@ outlineColor: "",
 op: 0.15,
     size: 26,
     userChanged: false,
-    adornoUrl: null,
-    adornoWidth: 70,
-    style: { upper:false, bold:false, italic:false, underline:false }
+adornoUrl: null,
+adornoWidth: 70,
+adornoOpacidad: 1,
+style: { upper:false, bold:false, italic:false, underline:false }
   },
 
   // audio gate
@@ -169,10 +170,10 @@ DEV.f2.outlineColor = "";
 DEV.f2.op = 0.15;
   DEV.f2.size = 26;
   DEV.f2.userChanged = false;
-  DEV.f2.adornoUrl = null;
-  DEV.f2.adornoWidth = 70;
-  DEV.f2.style = { upper:false, bold:false, italic:false, underline:false };
-
+DEV.f2.adornoUrl = null;
+DEV.f2.adornoWidth = 70;
+DEV.f2.adornoOpacidad = 1;
+DEV.f2.style = { upper:false, bold:false, italic:false, underline:false };
   DEV.audioOk = false;
   DEV.audioGithubUrl = "";
 
@@ -193,9 +194,10 @@ DEV.f2.op = 0.15;
   setVal("dev2GradColor3", "#a6d0ff");
   setVal("dev2Color", "#000000");
    setVal("dev2OutlineColor", "");
-  setVal("dev2TexturaOp", "0.22");
-  setVal("dev2AdornoTamano", "70");
-  setVal("dev2Tamano", "26");
+setVal("dev2TexturaOp", "0.22");
+setVal("dev2AdornoTamano", "70");
+setVal("dev2AdornoOpacidad", "1");
+setVal("dev2Tamano", "26");
 
   const formaGradiente = $("dev2GradForma");
   if (formaGradiente) formaGradiente.value = "vertical";
@@ -2690,8 +2692,9 @@ function buildFase2HTML(basePx, scale = 1){
 
   const fw  = DEV.f2.style.bold ? 700 : 400;
 
-  const adorno  = DEV.f2.adornoUrl;
-  const adornoW = Math.max(30, Math.min(95, Number(DEV.f2.adornoWidth || 70)));
+const adorno  = DEV.f2.adornoUrl;
+const adornoW = Math.max(30, Math.min(95, Number(DEV.f2.adornoWidth || 70)));
+const adornoOp = Math.max(0, Math.min(1, Number(DEV.f2.adornoOpacidad ?? 1)));
 
   // ✅ Estos valores ahora escalan igual en preview y en final
   const padTop = Math.max(1, Math.round(4 * scale));
@@ -2757,7 +2760,8 @@ function buildFase2HTML(basePx, scale = 1){
               max-height:${adornoMaxH}px;
               height:auto;
               object-fit:contain;
-              display:block;
+           display:block;
+opacity:${adornoOp};
             "
           />
         </div>
@@ -3134,16 +3138,93 @@ function dev2CompactarFilaTexto(){
    devOcultarSubrayadoDev();
 }
 
+function dev2AsegurarSlidersAdorno(){
+  const tam = $("dev2AdornoTamano");
+  if (!tam) return;
+
+  tam.classList.add("dev2-slider-mini");
+
+  let box = $("dev2AdornoSliders");
+
+  if (!box) {
+    box = document.createElement("div");
+    box.id = "dev2AdornoSliders";
+    box.className = "dev2-adorno-sliders";
+
+    const ref =
+      tam.closest(".dev-row") ||
+      tam.closest("label") ||
+      tam.parentElement;
+
+    ref?.insertAdjacentElement("beforebegin", box);
+  }
+
+  let packTam = $("dev2AdornoPackTamano");
+  if (!packTam) {
+    packTam = document.createElement("label");
+    packTam.id = "dev2AdornoPackTamano";
+    packTam.className = "dev2-slider-pack";
+    packTam.title = "Tamaño del adorno";
+    packTam.innerHTML = `<i class="fa-solid fa-up-right-and-down-left-from-center"></i>`;
+  }
+
+  let op = $("dev2AdornoOpacidad");
+  if (!op) {
+    op = document.createElement("input");
+    op.id = "dev2AdornoOpacidad";
+    op.type = "range";
+    op.min = "0";
+    op.max = "1";
+    op.step = "0.01";
+    op.value = String(DEV.f2.adornoOpacidad ?? 1);
+  }
+
+  op.classList.add("dev2-slider-mini");
+
+  let packOp = $("dev2AdornoPackOpacidad");
+  if (!packOp) {
+    packOp = document.createElement("label");
+    packOp.id = "dev2AdornoPackOpacidad";
+    packOp.className = "dev2-slider-pack";
+    packOp.title = "Opacidad del adorno";
+    packOp.innerHTML = `<i class="fa-solid fa-circle-half-stroke"></i>`;
+  }
+
+  if (!packTam.contains(tam)) packTam.appendChild(tam);
+  if (!packOp.contains(op)) packOp.appendChild(op);
+
+  if (!box.contains(packTam)) box.appendChild(packTam);
+  if (!box.contains(packOp)) box.appendChild(packOp);
+
+  const leer = () => {
+    DEV.f2.userChanged = true;
+    DEV.f2.adornoWidth = Number($("dev2AdornoTamano")?.value || 70);
+    DEV.f2.adornoOpacidad = Math.max(0, Math.min(1, Number($("dev2AdornoOpacidad")?.value ?? 1)));
+    requestAnimationFrame(()=> devRenderFase(2));
+  };
+
+  if (!tam.dataset.devAdornoReady) {
+    tam.dataset.devAdornoReady = "1";
+    tam.addEventListener("input", leer);
+  }
+
+  if (!op.dataset.devAdornoReady) {
+    op.dataset.devAdornoReady = "1";
+    op.addEventListener("input", leer);
+  }
+}
+
 function dev2ActualizarPanelUI(){
   const st = DEV.f2;
   const tab = ["fondo", "textura", "adorno"].includes(st.tabActiva)
     ? st.tabActiva
     : "fondo";
 
-  dev2AsegurarBotonColor2();
-  dev2AsegurarOpcionRombo();
-  dev2InterceptarHostsColorFondo();
-  dev2CompactarFilaTexto();
+dev2AsegurarBotonColor2();
+dev2AsegurarOpcionRombo();
+dev2InterceptarHostsColorFondo();
+dev2CompactarFilaTexto();
+dev2AsegurarSlidersAdorno();
 
   ["fondo", "textura", "adorno"].forEach(nombre => {
     const btn = $(`dev2Tab${nombre.charAt(0).toUpperCase()}${nombre.slice(1)}`);
@@ -4036,7 +4117,7 @@ function bindInputs(){
 // =========================
 // FASE 2: texto, textura y adorno
 // =========================
-["Tamano","Color","TexturaOp","AdornoTamano"].forEach(k=>{
+["Tamano","Color","TexturaOp","AdornoTamano","AdornoOpacidad"].forEach(k=>{
   const el = $(`dev2${k}`);
   if (!el) return;
 
@@ -4047,6 +4128,7 @@ function bindInputs(){
     DEV.f2.color = $("dev2Color")?.value || "#000000";
     DEV.f2.texturaOp = Number($("dev2TexturaOp")?.value || 0.22);
     DEV.f2.adornoWidth = Number($("dev2AdornoTamano")?.value || 70);
+    DEV.f2.adornoOpacidad = Math.max(0, Math.min(1, Number($("dev2AdornoOpacidad")?.value ?? 1)));
 
     requestAnimationFrame(()=> devRenderFase(2));
   });
