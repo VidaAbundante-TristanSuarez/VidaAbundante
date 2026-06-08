@@ -8151,22 +8151,13 @@ window.toggleFormatoImagen = function() {
 function bibliaCompactarControlesMobile() {
   const boxFormato = document.getElementById("boxFormato");
   const rowA = document.getElementById("rowA");
-  const rowB = document.getElementById("rowB");
 
-  if (!boxFormato || !rowA || !rowB) return;
+  if (!boxFormato || !rowA) return;
 
-  const esMobile = window.matchMedia("(max-width: 600px)").matches;
-
-  if (esMobile) {
-    // ✅ En celular: post/story vuelve al mismo renglón de opacidad + tamaño
-    if (boxFormato.parentElement !== rowB) {
-      rowB.insertBefore(boxFormato, rowB.firstChild);
-    }
-  } else {
-    // ✅ En PC: vuelve a su lugar original
-    if (boxFormato.parentElement !== rowA) {
-      rowA.insertBefore(boxFormato, rowA.firstChild);
-    }
+  // ✅ Post/Story SIEMPRE va en la fila de wrapper/opacidad/tamaño.
+  // No lo mandamos más a rowB porque rowB es Fuentes / Aa / B / I / U.
+  if (boxFormato.parentElement !== rowA) {
+    rowA.insertBefore(boxFormato, rowA.firstChild);
   }
 }
 
