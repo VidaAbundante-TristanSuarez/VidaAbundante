@@ -4812,9 +4812,9 @@ body.oscuro .tema-toggle-fondo input:checked + label{
 
 /* ✅ previews 10% más altas y 20% más largas */
 #modalPersonalizar .biblia-recurso-mini{
-  flex:0 0 53px;
-  width:53px;
-  min-width:53px;
+  flex:0 0 60px;
+  width:60px;
+  min-width:60px;
   height:48px;
 
   padding:2px;
@@ -4921,12 +4921,12 @@ body.oscuro .tema-toggle-fondo input:checked + label{
     min-height:48px;
   }
 
-  #modalPersonalizar .biblia-recurso-mini{
-    flex:0 0 48px;
-    width:48px;
-    min-width:48px;
-    height:44px;
-  }
+#modalPersonalizar .biblia-recurso-mini{
+  flex:0 0 56px;
+  width:56px;
+  min-width:56px;
+  height:44px;
+}
 
   .biblia-adorno-sliders{
     gap:6px;
