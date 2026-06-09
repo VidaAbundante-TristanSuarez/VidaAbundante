@@ -1,24 +1,24 @@
 /* =========================================================
    BIBLIA TTS - speechSynthesis local
-   Lee capítulo / pausa / tocar versículo continúa desde ahí
+   Lee capítulo / pausa segura móvil / tocar versículo continúa desde ahí
    No usa Firebase, no usa R2, no usa APIs pagas.
    ========================================================= */
 
 (() => {
   const TTS_LANG = "es-US";   // Latino USA automático
-  const TTS_RATE = 1.0;       // velocidad
-  const TTS_PITCH = 0.82;     // un poco más grave
+  const TTS_RATE = 1.0;
+  const TTS_PITCH = 0.82;
   const TTS_VOLUME = 1;
+
+  // En celular/PWA la pausa nativa suele fallar.
+  // Por eso hacemos pausa segura: cancelamos y retomamos desde el versículo actual.
+  const ES_MOVIL = /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent || "") || window.innerWidth <= 760;
 
   let versos = [];
   let indiceActual = 0;
   let estado = "detenido"; // detenido | leyendo | pausado
   let tokenLectura = 0;
   let keepAliveTimer = null;
-
-  function qs(sel) {
-    return document.querySelector(sel);
-  }
 
   function qsa(sel) {
     return Array.from(document.querySelectorAll(sel));
@@ -31,7 +31,26 @@
   function limpiarActivo() {
     qsa("#texto .versiculo.biblia-tts-versiculo-activo").forEach(el => {
       el.classList.remove("biblia-tts-versiculo-activo");
+      el.style.removeProperty("background");
+      el.style.removeProperty("outline");
+      el.style.removeProperty("border-radius");
     });
+  }
+
+  function marcarActivo(el) {
+    if (!el) return;
+
+    limpiarActivo();
+
+    el.classList.add("biblia-tts-versiculo-activo");
+
+    // Refuerzo para PWA/celular, donde a veces tarda en pintar la clase.
+    el.style.setProperty("background", "rgba(209, 238, 255, .88)", "important");
+    el.style.setProperty("outline", "2px solid #466966", "important");
+    el.style.setProperty("border-radius", "10px", "important");
+
+    // Fuerza repintado.
+    void el.offsetHeight;
   }
 
   function setBoton(tipo) {
@@ -69,7 +88,7 @@
           speechSynthesis.resume();
         }
       } catch {}
-    }, 7000);
+    }, 5000);
   }
 
   function detenerKeepAlive() {
@@ -83,11 +102,15 @@
     if (!el) return "";
 
     const txt = el.querySelector(".txt");
+
     if (txt) {
-      return (txt.innerText || txt.textContent || "").replace(/\s+/g, " ").trim();
+      return (txt.innerText || txt.textContent || "")
+        .replace(/\s+/g, " ")
+        .trim();
     }
 
     const clon = el.cloneNode(true);
+
     clon.querySelectorAll("button, i, svg, .icono-nota, .nota, .pluma, .acciones, .btn").forEach(n => n.remove());
 
     return (clon.innerText || clon.textContent || "")
@@ -131,7 +154,14 @@
       .replaceAll("Belsasar", "Belsasár")
       .replaceAll("Asuero", "Asuéro")
 
-      // Pequeños descansos para que no lea todo atropellado.
+      // Corrección específica que ya comprobaste con TTS.
+      .replace(/\bsepare\b/gi, "cepare")
+      .replace(/\bsepares\b/gi, "cepares")
+      .replace(/\bseparéis\b/gi, "ceparéis")
+      .replace(/\bseparare\b/gi, "ceparare")
+      .replace(/\bseparares\b/gi, "ceparares")
+
+      // Pequeñas pausas naturales.
       .replace(/;/g, "; ")
       .replace(/:/g, ": ")
       .replace(/\s+/g, " ")
@@ -140,6 +170,7 @@
 
   function hablar(texto, miToken, alTerminar) {
     const limpio = prepararTextoBibliaParaVoz(texto);
+
     if (!limpio) {
       if (typeof alTerminar === "function") alTerminar();
       return;
@@ -168,15 +199,24 @@
       if (e?.error === "interrupted") return;
 
       console.warn("Biblia TTS error:", e?.error || e);
-      detenerBibliaTTS(false);
+
+      estado = "pausado";
+      setBoton("pausado");
     };
 
     window.__bibliaTTSUtterance = u;
-    speechSynthesis.speak(u);
+
+    try {
+      speechSynthesis.speak(u);
+    } catch (e) {
+      console.warn("No se pudo iniciar Biblia TTS:", e);
+      estado = "pausado";
+      setBoton("pausado");
+    }
 
     setTimeout(() => {
       try { speechSynthesis.resume(); } catch {}
-    }, 120);
+    }, 80);
   }
 
   function leerActual(miToken) {
@@ -189,26 +229,29 @@
     }
 
     const v = versos[indiceActual];
+
     if (!v || !v.el) {
       indiceActual++;
       leerActual(miToken);
       return;
     }
 
-    limpiarActivo();
+    marcarActivo(v.el);
 
-    v.el.classList.add("biblia-tts-versiculo-activo");
-
-    try {
-      v.el.scrollIntoView({
-        behavior: "smooth",
-        block: "center"
-      });
-    } catch {}
+    requestAnimationFrame(() => {
+      try {
+        v.el.scrollIntoView({
+          behavior: ES_MOVIL ? "auto" : "smooth",
+          block: "center"
+        });
+      } catch {}
+    });
 
     hablar(v.texto, miToken, () => {
       indiceActual++;
-      setTimeout(() => leerActual(miToken), 160);
+
+      // Pausa mínima entre versículos.
+      setTimeout(() => leerActual(miToken), ES_MOVIL ? 20 : 60);
     });
   }
 
@@ -233,27 +276,46 @@
 
     setTimeout(() => {
       leerActual(miToken);
-    }, 180);
+    }, ES_MOVIL ? 80 : 140);
   }
 
   function pausarBibliaTTS() {
     if (estado !== "leyendo") return;
 
+    estado = "pausado";
+    setBoton("pausado");
+    detenerKeepAlive();
+
+    // En móvil/PWA esto es más estable que pause().
+    if (ES_MOVIL) {
+      try { speechSynthesis.cancel(); } catch {}
+      return;
+    }
+
     try {
       speechSynthesis.pause();
-      estado = "pausado";
-      setBoton("pausado");
-    } catch {}
+    } catch {
+      try { speechSynthesis.cancel(); } catch {}
+    }
   }
 
   function continuarBibliaTTS() {
     if (estado !== "pausado") return;
 
+    // En móvil retomamos desde el versículo actual.
+    if (ES_MOVIL) {
+      reproducirDesde(indiceActual);
+      return;
+    }
+
     try {
       speechSynthesis.resume();
       estado = "leyendo";
       setBoton("leyendo");
-    } catch {}
+      iniciarKeepAlive();
+    } catch {
+      reproducirDesde(indiceActual);
+    }
   }
 
   function detenerBibliaTTS(limpiar = true) {
