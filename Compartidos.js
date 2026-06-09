@@ -2066,6 +2066,7 @@ function compRangoVersiculos(nums = []) {
 
 function compReferenciaItem(item = {}) {
   const directo = String(
+    item.titulo ||
     item.ref ||
     item.referencia ||
     item.cita ||
