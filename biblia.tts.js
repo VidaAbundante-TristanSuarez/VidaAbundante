@@ -2,6 +2,7 @@
    BIBLIA TTS - speechSynthesis local
    PC: versículo por versículo
    Móvil/PWA: modo fluido para reducir silencios
+   Arpa suave constante, sin pausas inventadas.
    No usa Firebase, no usa R2, no usa APIs pagas.
    ========================================================= */
 
@@ -17,13 +18,11 @@
   const TTS_PITCH = ES_MOVIL ? 1.0 : 0.82;
   const TTS_VOLUME = 1;
 
-     /* ================= ARPA DE FONDO ================= */
+  /* ================= ARPA DE FONDO ================= */
   const BIBLIA_ARPA_URL = "./audio/arpa-biblia.mp3";
- const BIBLIA_ARPA_VOLUME_VOZ = ES_MOVIL ? 0.045 : 0.04;      // cuando habla
-const BIBLIA_ARPA_VOLUME_SILENCIO = ES_MOVIL ? 0.11 : 0.08;  // entre versículos
+  const BIBLIA_ARPA_VOLUME = ES_MOVIL ? 0.035 : 0.03;
 
   let bibliaArpaAudio = null;
-  let bibliaArpaFadeTimer = null;
 
   function getBibliaArpaAudio() {
     if (bibliaArpaAudio) return bibliaArpaAudio;
@@ -31,60 +30,31 @@ const BIBLIA_ARPA_VOLUME_SILENCIO = ES_MOVIL ? 0.11 : 0.08;  // entre versículo
     bibliaArpaAudio = new Audio(BIBLIA_ARPA_URL);
     bibliaArpaAudio.loop = true;
     bibliaArpaAudio.preload = "auto";
-    bibliaArpaAudio.volume = 0;
+    bibliaArpaAudio.volume = BIBLIA_ARPA_VOLUME;
 
     return bibliaArpaAudio;
   }
 
-function fadeArpaBiblia(volumenObjetivo, paso = 0.01, cada = 60) {
-  try {
-    const audio = getBibliaArpaAudio();
+  function iniciarArpaBiblia() {
+    try {
+      const audio = getBibliaArpaAudio();
+      audio.volume = BIBLIA_ARPA_VOLUME;
 
-    clearInterval(bibliaArpaFadeTimer);
+      const p = audio.play();
 
-    const p = audio.play();
-    if (p && typeof p.catch === "function") {
-      p.catch(() => {});
-    }
-
-    bibliaArpaFadeTimer = setInterval(() => {
-      const actual = Number(audio.volume || 0);
-
-      if (Math.abs(actual - volumenObjetivo) <= paso) {
-        audio.volume = volumenObjetivo;
-        clearInterval(bibliaArpaFadeTimer);
-        return;
+      if (p && typeof p.catch === "function") {
+        p.catch(() => {});
       }
-
-      audio.volume = actual < volumenObjetivo
-        ? Math.min(volumenObjetivo, actual + paso)
-        : Math.max(volumenObjetivo, actual - paso);
-
-    }, cada);
-
-  } catch (e) {
-    console.warn("No se pudo ajustar arpa Biblia:", e);
+    } catch (e) {
+      console.warn("No se pudo iniciar arpa Biblia:", e);
+    }
   }
-}
-
-function iniciarArpaBiblia() {
-  fadeArpaBiblia(BIBLIA_ARPA_VOLUME_VOZ, 0.008, 70);
-}
-
-function subirArpaEnSilencioBiblia() {
-  fadeArpaBiblia(BIBLIA_ARPA_VOLUME_SILENCIO, 0.012, 55);
-}
-
-function bajarArpaParaVozBiblia() {
-  fadeArpaBiblia(BIBLIA_ARPA_VOLUME_VOZ, 0.014, 45);
-}
 
   function pausarArpaBiblia() {
     try {
       const audio = bibliaArpaAudio;
       if (!audio) return;
 
-      clearInterval(bibliaArpaFadeTimer);
       audio.pause();
     } catch {}
   }
@@ -94,19 +64,9 @@ function bajarArpaParaVozBiblia() {
       const audio = bibliaArpaAudio;
       if (!audio) return;
 
-      clearInterval(bibliaArpaFadeTimer);
-
-      bibliaArpaFadeTimer = setInterval(() => {
-        audio.volume = Math.max(0, audio.volume - 0.015);
-
-        if (audio.volume <= 0.001) {
-          clearInterval(bibliaArpaFadeTimer);
-          audio.pause();
-          audio.currentTime = 0;
-          audio.volume = 0;
-        }
-      }, 70);
-
+      audio.pause();
+      audio.currentTime = 0;
+      audio.volume = BIBLIA_ARPA_VOLUME;
     } catch (e) {
       console.warn("No se pudo detener arpa Biblia:", e);
     }
@@ -220,6 +180,7 @@ function bajarArpaParaVozBiblia() {
   function numeroVersiculo(el, fallback) {
     const num = el?.querySelector(".num");
     const n = Number((num?.innerText || num?.textContent || "").trim());
+
     return Number.isFinite(n) && n > 0 ? n : fallback;
   }
 
@@ -294,26 +255,31 @@ function bajarArpaParaVozBiblia() {
 
     u.onerror = (e) => {
       if (miToken !== tokenLectura) return;
+
+      // "interrupted" aparece cuando nosotros mismos cancelamos una voz.
       if (e?.error === "interrupted") return;
 
       console.warn("Biblia TTS error:", e?.error || e);
+
       estado = "pausado";
       setBoton("pausado");
+      detenerKeepAlive();
+      pausarArpaBiblia();
     };
 
     window.__bibliaTTSUtterance = u;
 
     try {
       speechSynthesis.speak(u);
+      speechSynthesis.resume();
     } catch (e) {
       console.warn("No se pudo iniciar Biblia TTS:", e);
+
       estado = "pausado";
       setBoton("pausado");
+      detenerKeepAlive();
+      pausarArpaBiblia();
     }
-
-    setTimeout(() => {
-      try { speechSynthesis.resume(); } catch {}
-    }, 80);
   }
 
   function leerActualPC(miToken) {
@@ -344,12 +310,10 @@ function bajarArpaParaVozBiblia() {
       } catch {}
     });
 
-bajarArpaParaVozBiblia();
-
-hablarVersiculoPC(v.texto, miToken, () => {
-  indiceActual++;
-  leerActualPC(miToken);
-});
+    hablarVersiculoPC(v.texto, miToken, () => {
+      indiceActual++;
+      leerActualPC(miToken);
+    });
   }
 
   /* =========================================================
@@ -389,6 +353,7 @@ hablarVersiculoPC(v.texto, miToken, () => {
     if (!item) return;
 
     if (ultimoIndiceMarcado === indice) return;
+
     ultimoIndiceMarcado = indice;
     indiceActual = indice;
 
@@ -408,7 +373,6 @@ hablarVersiculoPC(v.texto, miToken, () => {
     if (!mapaFluido.length) return;
 
     const pos = Number(charIndex || 0);
-
     let elegido = mapaFluido[0];
 
     for (const item of mapaFluido) {
@@ -423,7 +387,6 @@ hablarVersiculoPC(v.texto, miToken, () => {
 
   function hablarFluidoMovil(indiceInicio, miToken) {
     const textoTotal = crearTextoFluidoDesde(indiceInicio);
-     bajarArpaParaVozBiblia();
 
     if (!textoTotal) {
       detenerBibliaTTS(true);
@@ -450,19 +413,17 @@ hablarVersiculoPC(v.texto, miToken, () => {
       }
     };
 
-u.onend = () => {
-  if (miToken !== tokenLectura) return;
-  if (estado !== "leyendo") return;
+    u.onend = () => {
+      if (miToken !== tokenLectura) return;
+      if (estado !== "leyendo") return;
 
-  subirArpaEnSilencioBiblia();
-
-  setTimeout(() => {
-    detenerBibliaTTS(true);
-  }, 450);
-};
+      detenerBibliaTTS(true);
+    };
 
     u.onerror = (e) => {
       if (miToken !== tokenLectura) return;
+
+      // "interrupted" aparece cuando nosotros mismos cancelamos una voz.
       if (e?.error === "interrupted") return;
 
       console.warn("Biblia TTS móvil fluido error:", e?.error || e);
@@ -470,22 +431,22 @@ u.onend = () => {
       estado = "pausado";
       setBoton("pausado");
       detenerKeepAlive();
+      pausarArpaBiblia();
     };
 
     window.__bibliaTTSUtterance = u;
 
     try {
       speechSynthesis.speak(u);
+      speechSynthesis.resume();
     } catch (e) {
       console.warn("No se pudo iniciar Biblia TTS móvil:", e);
+
       estado = "pausado";
       setBoton("pausado");
       detenerKeepAlive();
+      pausarArpaBiblia();
     }
-
-    setTimeout(() => {
-      try { speechSynthesis.resume(); } catch {}
-    }, 80);
   }
 
   /* =========================================================
@@ -507,18 +468,16 @@ u.onend = () => {
 
     try { speechSynthesis.cancel(); } catch {}
 
-estado = "leyendo";
-setBoton("leyendo");
-iniciarKeepAlive();
-iniciarArpaBiblia();
+    estado = "leyendo";
+    setBoton("leyendo");
+    iniciarKeepAlive();
+    iniciarArpaBiblia();
 
-    setTimeout(() => {
-      if (MODO_FLUIDO_MOVIL) {
-        hablarFluidoMovil(indiceActual, miToken);
-      } else {
-        leerActualPC(miToken);
-      }
-    }, ES_MOVIL ? 80 : 140);
+    if (MODO_FLUIDO_MOVIL) {
+      hablarFluidoMovil(indiceActual, miToken);
+    } else {
+      leerActualPC(miToken);
+    }
   }
 
   function pausarBibliaTTS() {
@@ -527,10 +486,8 @@ iniciarArpaBiblia();
     estado = "pausado";
     setBoton("pausado");
     detenerKeepAlive();
-     pausarArpaBiblia();
+    pausarArpaBiblia();
 
-    // En modo fluido móvil intentamos pausa real.
-    // Si Android no la respeta, el botón seguirá mostrando play pero dependerá del motor del celular.
     try {
       speechSynthesis.pause();
     } catch {
@@ -544,15 +501,10 @@ iniciarArpaBiblia();
     estado = "leyendo";
     setBoton("leyendo");
     iniciarKeepAlive();
-     iniciarArpaBiblia();
+    iniciarArpaBiblia();
 
     try {
       speechSynthesis.resume();
-
-      setTimeout(() => {
-        try { speechSynthesis.resume(); } catch {}
-      }, 120);
-
     } catch {
       reproducirDesde(indiceActual);
     }
@@ -562,7 +514,7 @@ iniciarArpaBiblia();
     tokenLectura++;
     estado = "detenido";
     detenerKeepAlive();
-     detenerArpaBiblia();
+    detenerArpaBiblia();
 
     try { speechSynthesis.cancel(); } catch {}
 
@@ -596,10 +548,13 @@ iniciarArpaBiblia();
     const el = e.target.closest?.("#texto .versiculo");
     if (!el) return;
 
+    // No molestar íconos internos como pluma/notas.
     if (e.target.closest("button, a, input, select, textarea, i, svg, .icono-nota, .btn")) return;
 
+    // En modo imagen o marcador, que siga funcionando la selección normal.
     if (estaEnModoSeleccion()) return;
 
+    // Si el resaltador está desbloqueado, dejamos que el click marque/desmarque.
     if (window.resaltadorBloqueado === false) return;
 
     e.preventDefault();
