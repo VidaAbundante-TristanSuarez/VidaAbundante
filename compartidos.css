@@ -2032,4 +2032,16 @@ body.comp-link-directo .comp-post {
   cursor: wait;
 }
 
+/* =========================================================
+   COMPARTIDOS: si la imagen ya trae su propio contenedor,
+   no repetimos título/descripcion afuera.
+   Oraciones quedan igual porque no usan .panel-img-meta.
+========================================================= */
+
+.comp-post.comp-post-imagen:has(.panel-img-meta) > .comp-post-head,
+.comp-post.comp-post-imagen:has(.panel-img-meta) > .comp-post-title,
+.comp-post.comp-post-imagen:has(.panel-img-meta) > .comp-post-meta{
+  display: none !important;
+}
+
 </style>
