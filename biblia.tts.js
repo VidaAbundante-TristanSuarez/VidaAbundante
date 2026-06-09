@@ -345,15 +345,10 @@ function bajarArpaParaVozBiblia() {
     });
 
 bajarArpaParaVozBiblia();
+
 hablarVersiculoPC(v.texto, miToken, () => {
   indiceActual++;
-
-  subirArpaEnSilencioBiblia();
-
-  setTimeout(() => {
-    bajarArpaParaVozBiblia();
-    leerActualPC(miToken);
-  }, 220);
+  leerActualPC(miToken);
 });
   }
 
