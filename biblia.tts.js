@@ -1,23 +1,30 @@
 /* =========================================================
    BIBLIA TTS - speechSynthesis local
-   Lee capítulo / pausa segura móvil / tocar versículo continúa desde ahí
+   PC: versículo por versículo
+   Móvil/PWA: modo fluido para reducir silencios
    No usa Firebase, no usa R2, no usa APIs pagas.
    ========================================================= */
 
 (() => {
-// En celular/PWA la voz depende del motor del teléfono.
-const ES_MOVIL = /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent || "") || window.innerWidth <= 760;
+  const ES_MOVIL =
+    /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent || "") ||
+    window.innerWidth <= 760;
 
-const TTS_LANG = "es-US";          // Latino USA automático
-const TTS_RATE = ES_MOVIL ? 1.08 : 1.0;
-const TTS_PITCH = ES_MOVIL ? 1.0 : 0.82;
-const TTS_VOLUME = 1;
+  const MODO_FLUIDO_MOVIL = ES_MOVIL;
+
+  const TTS_LANG = "es-US";
+  const TTS_RATE = ES_MOVIL ? 1.08 : 1.0;
+  const TTS_PITCH = ES_MOVIL ? 1.0 : 0.82;
+  const TTS_VOLUME = 1;
 
   let versos = [];
   let indiceActual = 0;
   let estado = "detenido"; // detenido | leyendo | pausado
   let tokenLectura = 0;
   let keepAliveTimer = null;
+
+  let mapaFluido = [];
+  let ultimoIndiceMarcado = -1;
 
   function qsa(sel) {
     return Array.from(document.querySelectorAll(sel));
@@ -42,13 +49,10 @@ const TTS_VOLUME = 1;
     limpiarActivo();
 
     el.classList.add("biblia-tts-versiculo-activo");
-
-    // Refuerzo para PWA/celular, donde a veces tarda en pintar la clase.
     el.style.setProperty("background", "rgba(209, 238, 255, .88)", "important");
     el.style.setProperty("outline", "2px solid #466966", "important");
     el.style.setProperty("border-radius", "10px", "important");
 
-    // Fuerza repintado.
     void el.offsetHeight;
   }
 
@@ -153,21 +157,24 @@ const TTS_VOLUME = 1;
       .replaceAll("Belsasar", "Belsasár")
       .replaceAll("Asuero", "Asuéro")
 
-      // Corrección específica que ya comprobaste con TTS.
+      // Corrección comprobada.
       .replace(/\bsepare\b/gi, "cepare")
       .replace(/\bsepares\b/gi, "cepares")
       .replace(/\bseparéis\b/gi, "ceparéis")
       .replace(/\bseparare\b/gi, "ceparare")
       .replace(/\bseparares\b/gi, "ceparares")
 
-      // Pequeñas pausas naturales.
       .replace(/;/g, "; ")
       .replace(/:/g, ": ")
       .replace(/\s+/g, " ")
       .trim();
   }
 
-  function hablar(texto, miToken, alTerminar) {
+  /* =========================================================
+     MODO PC: versículo por versículo
+     ========================================================= */
+
+  function hablarVersiculoPC(texto, miToken, alTerminar) {
     const limpio = prepararTextoBibliaParaVoz(texto);
 
     if (!limpio) {
@@ -177,7 +184,6 @@ const TTS_VOLUME = 1;
 
     const u = new SpeechSynthesisUtterance(limpio);
 
-    // IMPORTANTE:
     // No usamos u.voice porque en tus pruebas Chrome se trababa.
     u.lang = TTS_LANG;
     u.rate = TTS_RATE;
@@ -193,12 +199,9 @@ const TTS_VOLUME = 1;
 
     u.onerror = (e) => {
       if (miToken !== tokenLectura) return;
-
-      // "interrupted" aparece cuando nosotros mismos cancelamos una voz.
       if (e?.error === "interrupted") return;
 
       console.warn("Biblia TTS error:", e?.error || e);
-
       estado = "pausado";
       setBoton("pausado");
     };
@@ -218,7 +221,7 @@ const TTS_VOLUME = 1;
     }, 80);
   }
 
-  function leerActual(miToken) {
+  function leerActualPC(miToken) {
     if (miToken !== tokenLectura) return;
     if (estado !== "leyendo") return;
 
@@ -231,7 +234,7 @@ const TTS_VOLUME = 1;
 
     if (!v || !v.el) {
       indiceActual++;
-      leerActual(miToken);
+      leerActualPC(miToken);
       return;
     }
 
@@ -240,19 +243,152 @@ const TTS_VOLUME = 1;
     requestAnimationFrame(() => {
       try {
         v.el.scrollIntoView({
-          behavior: ES_MOVIL ? "auto" : "smooth",
+          behavior: "smooth",
           block: "center"
         });
       } catch {}
     });
 
-    hablar(v.texto, miToken, () => {
+    hablarVersiculoPC(v.texto, miToken, () => {
       indiceActual++;
-
-      // Pausa mínima entre versículos.
-      setTimeout(() => leerActual(miToken), ES_MOVIL ? 20 : 60);
+      setTimeout(() => leerActualPC(miToken), 60);
     });
   }
+
+  /* =========================================================
+     MODO MÓVIL FLUIDO: un solo texto continuo
+     ========================================================= */
+
+  function crearTextoFluidoDesde(indiceInicio) {
+    mapaFluido = [];
+    ultimoIndiceMarcado = -1;
+
+    let textoTotal = "";
+
+    for (let i = indiceInicio; i < versos.length; i++) {
+      const texto = prepararTextoBibliaParaVoz(versos[i].texto || "");
+      if (!texto) continue;
+
+      const separador = textoTotal ? " " : "";
+      textoTotal += separador;
+
+      const inicio = textoTotal.length;
+      textoTotal += texto;
+      const fin = textoTotal.length;
+
+      mapaFluido.push({
+        indice: i,
+        el: versos[i].el,
+        inicio,
+        fin
+      });
+    }
+
+    return textoTotal.trim();
+  }
+
+  function marcarFluidoPorIndice(indice) {
+    const item = mapaFluido.find(x => x.indice === indice);
+    if (!item) return;
+
+    if (ultimoIndiceMarcado === indice) return;
+    ultimoIndiceMarcado = indice;
+    indiceActual = indice;
+
+    marcarActivo(item.el);
+
+    requestAnimationFrame(() => {
+      try {
+        item.el.scrollIntoView({
+          behavior: "auto",
+          block: "center"
+        });
+      } catch {}
+    });
+  }
+
+  function marcarFluidoPorChar(charIndex) {
+    if (!mapaFluido.length) return;
+
+    const pos = Number(charIndex || 0);
+
+    let elegido = mapaFluido[0];
+
+    for (const item of mapaFluido) {
+      if (pos >= item.inicio) elegido = item;
+      if (pos < item.fin) break;
+    }
+
+    if (!elegido) return;
+
+    marcarFluidoPorIndice(elegido.indice);
+  }
+
+  function hablarFluidoMovil(indiceInicio, miToken) {
+    const textoTotal = crearTextoFluidoDesde(indiceInicio);
+
+    if (!textoTotal) {
+      detenerBibliaTTS(true);
+      return;
+    }
+
+    const primero = mapaFluido[0];
+    if (primero) marcarFluidoPorIndice(primero.indice);
+
+    const u = new SpeechSynthesisUtterance(textoTotal);
+
+    // No forzamos voz exacta.
+    u.lang = TTS_LANG;
+    u.rate = TTS_RATE;
+    u.pitch = TTS_PITCH;
+    u.volume = TTS_VOLUME;
+
+    u.onboundary = (ev) => {
+      if (miToken !== tokenLectura) return;
+      if (estado !== "leyendo") return;
+
+      if (typeof ev.charIndex === "number") {
+        marcarFluidoPorChar(ev.charIndex);
+      }
+    };
+
+    u.onend = () => {
+      if (miToken !== tokenLectura) return;
+      if (estado !== "leyendo") return;
+
+      detenerBibliaTTS(true);
+    };
+
+    u.onerror = (e) => {
+      if (miToken !== tokenLectura) return;
+      if (e?.error === "interrupted") return;
+
+      console.warn("Biblia TTS móvil fluido error:", e?.error || e);
+
+      estado = "pausado";
+      setBoton("pausado");
+      detenerKeepAlive();
+    };
+
+    window.__bibliaTTSUtterance = u;
+
+    try {
+      speechSynthesis.speak(u);
+    } catch (e) {
+      console.warn("No se pudo iniciar Biblia TTS móvil:", e);
+      estado = "pausado";
+      setBoton("pausado");
+      detenerKeepAlive();
+    }
+
+    setTimeout(() => {
+      try { speechSynthesis.resume(); } catch {}
+    }, 80);
+  }
+
+  /* =========================================================
+     CONTROL GENERAL
+     ========================================================= */
 
   function reproducirDesde(indice = 0) {
     versos = obtenerVersos();
@@ -274,7 +410,11 @@ const TTS_VOLUME = 1;
     iniciarKeepAlive();
 
     setTimeout(() => {
-      leerActual(miToken);
+      if (MODO_FLUIDO_MOVIL) {
+        hablarFluidoMovil(indiceActual, miToken);
+      } else {
+        leerActualPC(miToken);
+      }
     }, ES_MOVIL ? 80 : 140);
   }
 
@@ -285,12 +425,8 @@ const TTS_VOLUME = 1;
     setBoton("pausado");
     detenerKeepAlive();
 
-    // En móvil/PWA esto es más estable que pause().
-    if (ES_MOVIL) {
-      try { speechSynthesis.cancel(); } catch {}
-      return;
-    }
-
+    // En modo fluido móvil intentamos pausa real.
+    // Si Android no la respeta, el botón seguirá mostrando play pero dependerá del motor del celular.
     try {
       speechSynthesis.pause();
     } catch {
@@ -301,17 +437,17 @@ const TTS_VOLUME = 1;
   function continuarBibliaTTS() {
     if (estado !== "pausado") return;
 
-    // En móvil retomamos desde el versículo actual.
-    if (ES_MOVIL) {
-      reproducirDesde(indiceActual);
-      return;
-    }
+    estado = "leyendo";
+    setBoton("leyendo");
+    iniciarKeepAlive();
 
     try {
       speechSynthesis.resume();
-      estado = "leyendo";
-      setBoton("leyendo");
-      iniciarKeepAlive();
+
+      setTimeout(() => {
+        try { speechSynthesis.resume(); } catch {}
+      }, 120);
+
     } catch {
       reproducirDesde(indiceActual);
     }
@@ -354,13 +490,10 @@ const TTS_VOLUME = 1;
     const el = e.target.closest?.("#texto .versiculo");
     if (!el) return;
 
-    // No molestar íconos internos como pluma/notas.
     if (e.target.closest("button, a, input, select, textarea, i, svg, .icono-nota, .btn")) return;
 
-    // En modo imagen o marcador, que siga funcionando la selección normal.
     if (estaEnModoSeleccion()) return;
 
-    // Si el resaltador está desbloqueado, dejamos que el click marque/desmarque.
     if (window.resaltadorBloqueado === false) return;
 
     e.preventDefault();
