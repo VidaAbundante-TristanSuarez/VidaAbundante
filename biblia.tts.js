@@ -19,7 +19,8 @@
 
      /* ================= ARPA DE FONDO ================= */
   const BIBLIA_ARPA_URL = "./audio/arpa-biblia.mp3";
-  const BIBLIA_ARPA_VOLUME = ES_MOVIL ? 0.08 : 0.06;
+ const BIBLIA_ARPA_VOLUME_VOZ = ES_MOVIL ? 0.045 : 0.04;      // cuando habla
+const BIBLIA_ARPA_VOLUME_SILENCIO = ES_MOVIL ? 0.11 : 0.08;  // entre versículos
 
   let bibliaArpaAudio = null;
   let bibliaArpaFadeTimer = null;
@@ -35,29 +36,48 @@
     return bibliaArpaAudio;
   }
 
-  function iniciarArpaBiblia() {
-    try {
-      const audio = getBibliaArpaAudio();
+function fadeArpaBiblia(volumenObjetivo, paso = 0.01, cada = 60) {
+  try {
+    const audio = getBibliaArpaAudio();
 
-      clearInterval(bibliaArpaFadeTimer);
+    clearInterval(bibliaArpaFadeTimer);
 
-      const p = audio.play();
-      if (p && typeof p.catch === "function") {
-        p.catch(() => {});
+    const p = audio.play();
+    if (p && typeof p.catch === "function") {
+      p.catch(() => {});
+    }
+
+    bibliaArpaFadeTimer = setInterval(() => {
+      const actual = Number(audio.volume || 0);
+
+      if (Math.abs(actual - volumenObjetivo) <= paso) {
+        audio.volume = volumenObjetivo;
+        clearInterval(bibliaArpaFadeTimer);
+        return;
       }
 
-      bibliaArpaFadeTimer = setInterval(() => {
-        audio.volume = Math.min(BIBLIA_ARPA_VOLUME, audio.volume + 0.01);
+      audio.volume = actual < volumenObjetivo
+        ? Math.min(volumenObjetivo, actual + paso)
+        : Math.max(volumenObjetivo, actual - paso);
 
-        if (audio.volume >= BIBLIA_ARPA_VOLUME) {
-          clearInterval(bibliaArpaFadeTimer);
-        }
-      }, 80);
+    }, cada);
 
-    } catch (e) {
-      console.warn("No se pudo iniciar arpa Biblia:", e);
-    }
+  } catch (e) {
+    console.warn("No se pudo ajustar arpa Biblia:", e);
   }
+}
+
+function iniciarArpaBiblia() {
+  fadeArpaBiblia(BIBLIA_ARPA_VOLUME_VOZ, 0.008, 70);
+}
+
+function subirArpaEnSilencioBiblia() {
+  fadeArpaBiblia(BIBLIA_ARPA_VOLUME_SILENCIO, 0.012, 55);
+}
+
+function bajarArpaParaVozBiblia() {
+  fadeArpaBiblia(BIBLIA_ARPA_VOLUME_VOZ, 0.014, 45);
+}
 
   function pausarArpaBiblia() {
     try {
@@ -324,10 +344,17 @@
       } catch {}
     });
 
-    hablarVersiculoPC(v.texto, miToken, () => {
-      indiceActual++;
-      setTimeout(() => leerActualPC(miToken), 60);
-    });
+bajarArpaParaVozBiblia();
+hablarVersiculoPC(v.texto, miToken, () => {
+  indiceActual++;
+
+  subirArpaEnSilencioBiblia();
+
+  setTimeout(() => {
+    bajarArpaParaVozBiblia();
+    leerActualPC(miToken);
+  }, 220);
+});
   }
 
   /* =========================================================
@@ -401,6 +428,7 @@
 
   function hablarFluidoMovil(indiceInicio, miToken) {
     const textoTotal = crearTextoFluidoDesde(indiceInicio);
+     bajarArpaParaVozBiblia();
 
     if (!textoTotal) {
       detenerBibliaTTS(true);
@@ -427,12 +455,16 @@
       }
     };
 
-    u.onend = () => {
-      if (miToken !== tokenLectura) return;
-      if (estado !== "leyendo") return;
+u.onend = () => {
+  if (miToken !== tokenLectura) return;
+  if (estado !== "leyendo") return;
 
-      detenerBibliaTTS(true);
-    };
+  subirArpaEnSilencioBiblia();
+
+  setTimeout(() => {
+    detenerBibliaTTS(true);
+  }, 450);
+};
 
     u.onerror = (e) => {
       if (miToken !== tokenLectura) return;
