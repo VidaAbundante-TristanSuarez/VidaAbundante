@@ -5202,8 +5202,9 @@ body.oscuro #btnBibliaTTS.biblia-tts-activo{
 }
 
 /* versículo que está sonando */
+/* versículo que está sonando */
 #texto .versiculo.biblia-tts-versiculo-activo{
-  background: rgba(209, 238, 255, .82) !important;
+  background: rgba(209, 238, 255, .88) !important;
   color: #000 !important;
   outline: 2px solid #466966 !important;
   border-radius: 10px !important;
@@ -5214,5 +5215,6 @@ body.oscuro #btnBibliaTTS.biblia-tts-activo{
 #texto .versiculo.biblia-tts-versiculo-activo .txt{
   color: #000 !important;
 }
+
 
 </style> 
