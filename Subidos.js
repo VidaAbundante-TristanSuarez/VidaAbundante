@@ -96,7 +96,6 @@ const fondosCategorias = {
 };
 
 const fondosEtiquetas = {
-  paisajes: "Paisajes",
   acuarelas: "Acuarelas",
   tarjetas: "Tarjetas"
 };
