@@ -5,14 +5,13 @@
    ========================================================= */
 
 (() => {
-  const TTS_LANG = "es-US";   // Latino USA automático
-  const TTS_RATE = 1.0;
-  const TTS_PITCH = 0.82;
-  const TTS_VOLUME = 1;
+// En celular/PWA la voz depende del motor del teléfono.
+const ES_MOVIL = /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent || "") || window.innerWidth <= 760;
 
-  // En celular/PWA la pausa nativa suele fallar.
-  // Por eso hacemos pausa segura: cancelamos y retomamos desde el versículo actual.
-  const ES_MOVIL = /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent || "") || window.innerWidth <= 760;
+const TTS_LANG = "es-US";          // Latino USA automático
+const TTS_RATE = ES_MOVIL ? 1.08 : 1.0;
+const TTS_PITCH = ES_MOVIL ? 1.0 : 0.82;
+const TTS_VOLUME = 1;
 
   let versos = [];
   let indiceActual = 0;
