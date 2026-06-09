@@ -5154,4 +5154,65 @@ body.oscuro .tema-toggle-fondo input:checked + label{
   background: rgba(0,0,0,.38);
 }
 
+/* =========================================================
+   BIBLIA TTS - PLAY / PAUSA CAPÍTULO
+   ========================================================= */
+
+#btnBibliaTTS{
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  background: var(--ui-azul-claro);
+  color: #000;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0;
+}
+
+#btnBibliaTTS i{
+  font-size: 13px;
+  line-height: 1;
+  color: #000;
+}
+
+#btnBibliaTTS:hover{
+  background: var(--ui-azul-hover);
+  color: #000;
+}
+
+#btnBibliaTTS.biblia-tts-activo{
+  background: var(--ui-azul-hover);
+  box-shadow: inset 0 0 0 2px rgba(70,105,102,.35);
+}
+
+body.oscuro #btnBibliaTTS{
+  background: var(--ui-azul-claro);
+  color: #000;
+}
+
+body.oscuro #btnBibliaTTS:hover,
+body.oscuro #btnBibliaTTS.biblia-tts-activo{
+  background: var(--ui-azul-hover);
+  color: #000;
+}
+
+/* versículo que está sonando */
+#texto .versiculo.biblia-tts-versiculo-activo{
+  background: rgba(209, 238, 255, .82) !important;
+  color: #000 !important;
+  outline: 2px solid #466966 !important;
+  border-radius: 10px !important;
+  scroll-margin-top: 78px;
+}
+
+#texto .versiculo.biblia-tts-versiculo-activo .num,
+#texto .versiculo.biblia-tts-versiculo-activo .txt{
+  color: #000 !important;
+}
+
 </style> 
