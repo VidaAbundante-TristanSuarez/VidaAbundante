@@ -7579,7 +7579,17 @@ function panelImagenRenderCardHTML(it = {}, opciones = {}) {
   const mostrarDescargar = opciones.mostrarDescargar ?? true;
   const mostrarCompartir = opciones.mostrarCompartir ?? true;
   const mostrarEliminar = opciones.mostrarEliminar ?? true;
-  const mostrarEditarMeta = opciones.mostrarEditarMeta ?? false;
+const mostrarEditarMeta = opciones.mostrarEditarMeta ?? false;
+
+const vieneDeCompartidos = (typeof panelImagenVieneDeCompartidos === "function")
+  ? panelImagenVieneDeCompartidos(it)
+  : !!(
+      it.sourceCompartidosKey ||
+      it.compartidosKey ||
+      it.compartidosId ||
+      it.origen === "compartidos" ||
+      it.source === "compartidos"
+    );
 
   // ✅ para Compartidos después: podremos pasar otro delete,
   // que borre solo de Compartidos y NO de Mi Panel.
@@ -7670,7 +7680,7 @@ ${audioRaw ? `
 
 <div class="devBigActions">
 
-${mostrarEditarMeta ? `
+${mostrarEditarMeta && !vieneDeCompartidos ? `
   <button class="btn-primary" type="button"
     onclick="editarMetaImagenPanel('${itemId}')"
     aria-label="Editar datos"
