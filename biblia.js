@@ -554,29 +554,52 @@ function vaImgMetaCerrar(valor) {
   }
 
   const resolver = window.__VA_IMG_META_RESOLVE;
-  window.__VA_IMG_META_RESOLVE = null;
+  const cancelValue = window.__VA_IMG_META_CANCEL_VALUE || null;
 
-  if (resolver) resolver(valor);
+  window.__VA_IMG_META_RESOLVE = null;
+  window.__VA_IMG_META_CANCEL_VALUE = null;
+
+  // ✅ Si cancelás durante FINALIZAR, no cancela el proceso:
+  // termina igual, pero sin título/descripción.
+  if (resolver) resolver(valor === null ? cancelValue : valor);
 }
 
-function pedirDatosImagenMeta() {
+function pedirDatosImagenMeta(base = null, opciones = {}) {
   vaImgMetaCrearModal();
 
   const modal = document.getElementById("modalImagenMeta");
   const inputTitulo = document.getElementById("imagenMetaTitulo");
   const inputDesc = document.getElementById("imagenMetaDescripcion");
 
+  const b = base && typeof base === "object" ? base : {};
+  const colorInicial = vaImgMetaHex(b.color || b.colorFondo || "#fff3b0") || "#fff3b0";
+
   if (!modal || !inputTitulo || !inputDesc) {
     return Promise.resolve({
-      titulo: vaImgMetaTituloSugerido(),
-      descripcion: "",
-      color: "#fff3b0"
+      titulo: String(b.titulo || vaImgMetaTituloSugerido() || "").trim(),
+      descripcion: String(b.descripcion || "").trim(),
+      color: colorInicial
     });
   }
 
-  inputTitulo.value = vaImgMetaTituloSugerido();
-  inputDesc.value = "";
-  vaImgMetaSyncColor("#fff3b0");
+  inputTitulo.value = String(
+    b.titulo || (b.id ? "" : vaImgMetaTituloSugerido()) || ""
+  ).trim();
+
+  inputDesc.value = String(b.descripcion || "").trim();
+
+  vaImgMetaSyncColor(colorInicial);
+
+  // ✅ En finalizar imagen: Cancelar = seguir sin título/desc.
+  // ✅ En editar desde Mi Panel: Cancelar = no guardar cambios.
+  window.__VA_IMG_META_CANCEL_VALUE = opciones.cancelarFinaliza
+    ? {
+        titulo: "",
+        descripcion: "",
+        color: colorInicial,
+        __cancelado: true
+      }
+    : null;
 
   modal.style.display = "flex";
   modal.classList.add("abierto");
@@ -709,6 +732,21 @@ function referenciaImagenEnOrden(items = []) {
 
     return `${libroGrupo.Libro} ${partes.join(" y ")}`;
   }).join("; ");
+}
+
+function vaImgCerrarFlujoYVolverPanel() {
+  try {
+    salirModoImagen();
+  } catch (e) {
+    try { cerrarModalPersonalizar(); } catch (_) {}
+  }
+
+  setTimeout(() => {
+    try { window.irA?.("panel"); } catch(e) {}
+    try { window.mostrarPanel?.("imagenes"); } catch(e) {}
+    try { window.abrirPanelSubseccion?.("imagenes"); } catch(e) {}
+    try { renderPanelImagenes?.(panelImagenesGuardadas || {}); } catch(e) {}
+  }, 80);
 }
 
 // ================= ORDEN REAL PARA MARCADORES / NOTAS =================
@@ -6020,14 +6058,15 @@ window.finalizarEdicion = async (ev) => {
   }
 
 try {
-  const meta = await pedirDatosImagenMeta();
+const meta = await pedirDatosImagenMeta(null, { cancelarFinaliza: true });
 
-  if (!meta) {
-    return;
-  }
+imagenMetaActual = meta || {
+  titulo: "",
+  descripcion: "",
+  color: "#fff3b0"
+};
 
-  imagenMetaActual = meta;
-  window.__VA_IMG_META_ACTUAL = meta;
+window.__VA_IMG_META_ACTUAL = imagenMetaActual;
 
   try {
     await window.vaConsumirUsoColaborador?.(
@@ -6062,6 +6101,8 @@ try {
     // ✅ ahora sí: guarda imagen + toma window.__lastAudioUrl
     const ok = await withRenderLock(async () => {
       return await asegurarCanvasFinal({ subir: true });
+      vaImgCerrarFlujoYVolverPanel();
+mostrarToast?.("✅ Imagen guardada en Mi Panel");
     });
 
     if (!ok) throw new Error("No se pudo generar o guardar la imagen");
@@ -7538,6 +7579,7 @@ function panelImagenRenderCardHTML(it = {}, opciones = {}) {
   const mostrarDescargar = opciones.mostrarDescargar ?? true;
   const mostrarCompartir = opciones.mostrarCompartir ?? true;
   const mostrarEliminar = opciones.mostrarEliminar ?? true;
+  const mostrarEditarMeta = opciones.mostrarEditarMeta ?? false;
 
   // ✅ para Compartidos después: podremos pasar otro delete,
   // que borre solo de Compartidos y NO de Mi Panel.
@@ -7627,6 +7669,16 @@ ${audioRaw ? `
 ` : ``}
 
 <div class="devBigActions">
+
+${mostrarEditarMeta ? `
+  <button class="btn-primary" type="button"
+    onclick="editarMetaImagenPanel('${itemId}')"
+    aria-label="Editar datos"
+    title="Editar título y descripción">
+    <i class="fa-solid fa-pen"></i>
+  </button>
+` : ``}
+
         ${mostrarDescargar ? `
           <button class="btn-primary" type="button"
             onclick="panelImagenAccionCard('${cardKeyJs}', 'descargar')"
@@ -7856,6 +7908,7 @@ const botonCompartidosHTML = (esDevocionalPanel || vieneDeCompartidosPanel) ? ""
       mostrarDescargar: true,
       mostrarCompartir: true,
       mostrarEliminar: true,
+      mostrarEditarMeta: true,
 
       extraAcciones: botonCompartidosHTML
     });
@@ -10228,6 +10281,83 @@ function panelImagenVieneDeCompartidos(item = {}) {
   );
 }
 
+window.editarMetaImagenPanel = async function(id) {
+  try {
+    if (!uid) {
+      loginModal.style.display = "flex";
+      return;
+    }
+
+    const item = panelImagenesGuardadas?.[id];
+
+    if (!item) {
+      alert("No encuentro esta imagen.");
+      return;
+    }
+
+    if (panelImagenVieneDeCompartidos(item)) {
+      mostrarToast?.("Esta imagen viene de Compartidos. No la editamos desde acá.");
+      return;
+    }
+
+    const meta = await pedirDatosImagenMeta(
+      {
+        id,
+        titulo: item.titulo || "",
+        descripcion: item.descripcion || "",
+        color: item.color || item.colorFondo || "#fff3b0"
+      },
+      { cancelarFinaliza: false }
+    );
+
+    if (!meta) return;
+
+    const metaColor = vaImgMetaHex(meta.color || "#fff3b0") || "#fff3b0";
+    const ts = Date.now();
+
+    const actualizado = {
+      ...item,
+      titulo: String(meta.titulo || "").trim(),
+      descripcion: String(meta.descripcion || "").trim(),
+      color: metaColor,
+      colorFondo: metaColor,
+      actualizadoEn: ts
+    };
+
+    await set(ref(db, `panelImagenesPersonal/${uid}/${id}`), actualizado);
+
+    panelImagenesGuardadas[id] = actualizado;
+
+    // ✅ Si ya estaba en Compartidos, también actualiza el contenedor allá.
+    const existente = panelBuscarPublicacionImagenPanel(id, actualizado);
+
+    if (existente?.path && !actualizado.sourceOracionesKey) {
+      const pubRef = ref(db, existente.path);
+      const snap = await get(pubRef);
+      const anterior = snap.val() || {};
+
+      await set(pubRef, {
+        ...anterior,
+        titulo: actualizado.titulo,
+        descripcion: actualizado.descripcion,
+        color: metaColor,
+        colorFondo: metaColor,
+        actualizadoEn: ts
+      });
+    }
+
+    renderPanelImagenes(panelImagenesGuardadas || {});
+
+    try { window.renderCompartidos?.(); } catch(e) {}
+
+    mostrarToast?.("✅ Datos de la imagen actualizados");
+
+  } catch (e) {
+    console.error(e);
+    alert("No se pudieron editar los datos de la imagen.");
+  }
+};
+
 window.publicarImagenPanelEnCompartidos = async function(id) {
   try {
     if (!uid) {
@@ -10274,6 +10404,10 @@ window.publicarImagenPanelEnCompartidos = async function(id) {
           tipo: "imagen",
           url: anterior.url || url,
           imagenUrl: anterior.imagenUrl || url,
+          titulo: String(item.titulo || anterior.titulo || "").trim(),
+descripcion: String(item.descripcion || anterior.descripcion || "").trim(),
+color: vaImgMetaHex(item.color || item.colorFondo || anterior.color || anterior.colorFondo || "#fff3b0") || "#fff3b0",
+colorFondo: vaImgMetaHex(item.color || item.colorFondo || anterior.color || anterior.colorFondo || "#fff3b0") || "#fff3b0",
 
           // ✅ conserva la fecha original y refresca posición
           fechaOriginal: Number(
