@@ -420,6 +420,175 @@ let modoImagenLibre = false;        // true cuando el texto viene de un textarea
 let textoLibreImagen = "";          // texto escrito manualmente en Mi Panel
 let formatoImagenActual = "post"; // "post" | "story"
 
+let imagenMetaActual = null;
+window.__VA_IMG_META_ACTUAL = null;
+window.__VA_PANEL_IMG_ITEMS = window.__VA_PANEL_IMG_ITEMS || {};
+
+function vaImgMetaHex(color = "") {
+  const c = String(color || "").trim();
+  return /^#[0-9a-f]{6}$/i.test(c) ? c : "";
+}
+
+function vaImgMetaContraste(hex = "#ffffff") {
+  let h = vaImgMetaHex(hex) || "#ffffff";
+  h = h.replace("#", "");
+
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+
+  return lum > 160 ? "#000000" : "#ffffff";
+}
+
+function vaImgMetaTituloSugerido() {
+  if (modoImagenLibre || origenModalImagen === "panel") {
+    return "Imagen libre";
+  }
+
+  const items = getItemsImagenEnOrden();
+  const ref = items.length ? referenciaImagenEnOrden(items) : "";
+
+  return ref || "Imagen bíblica";
+}
+
+function vaImgMetaSyncColor(hex = "#fff3b0") {
+  const color = vaImgMetaHex(hex) || "#fff3b0";
+  const input = document.getElementById("imagenMetaColor");
+  const host = document.getElementById("imagenMetaColorHost");
+
+  if (input) input.value = color;
+
+  if (host) {
+    host.style.setProperty("--pickr-color", color);
+    host.style.background = color;
+
+    try {
+      if (host._pickr) host._pickr.setColor(color);
+    } catch (e) {}
+  }
+}
+
+function vaImgMetaCrearModal() {
+  if (document.getElementById("modalImagenMeta")) return;
+
+  document.body.insertAdjacentHTML("beforeend", `
+    <div id="modalImagenMeta" class="va-img-meta-modal" aria-hidden="true">
+      <div class="va-img-meta-card">
+        <button type="button" class="va-img-meta-close" id="btnImagenMetaCancelarTop">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+
+        <h3>Datos de la imagen</h3>
+        <p class="va-img-meta-sub">Esto se va a ver arriba de la imagen en Mi Panel y Compartidos.</p>
+
+        <label class="va-img-meta-label">
+          Título
+          <input id="imagenMetaTitulo" type="text" placeholder="Ej: Éxodo 15:2,13,18">
+        </label>
+
+        <label class="va-img-meta-label">
+          Descripción
+          <textarea id="imagenMetaDescripcion" placeholder="Escribí una descripción corta"></textarea>
+        </label>
+
+        <div class="va-img-meta-color-row">
+          <span>Color del contenedor</span>
+          <input type="hidden" id="imagenMetaColor" value="#fff3b0">
+          <button
+            type="button"
+            id="imagenMetaColorHost"
+            class="pickr-host"
+            data-target="#imagenMetaColor"
+            aria-label="Color del contenedor"
+          ></button>
+        </div>
+
+        <div class="va-img-meta-actions">
+          <button type="button" class="btn-ghost" id="btnImagenMetaCancelar">Cancelar</button>
+          <button type="button" class="btn-primary" id="btnImagenMetaGuardar">
+            <i class="fa-solid fa-circle-check"></i>
+            Guardar
+          </button>
+        </div>
+      </div>
+    </div>
+  `);
+
+  const cancelar = () => vaImgMetaCerrar(null);
+
+  document.getElementById("btnImagenMetaCancelar")?.addEventListener("click", cancelar);
+  document.getElementById("btnImagenMetaCancelarTop")?.addEventListener("click", cancelar);
+
+  document.getElementById("modalImagenMeta")?.addEventListener("click", (e) => {
+    if (e.target?.id === "modalImagenMeta") cancelar();
+  });
+
+  document.getElementById("btnImagenMetaGuardar")?.addEventListener("click", () => {
+    const titulo = String(document.getElementById("imagenMetaTitulo")?.value || "").trim();
+    const descripcion = String(document.getElementById("imagenMetaDescripcion")?.value || "").trim();
+    const color = vaImgMetaHex(document.getElementById("imagenMetaColor")?.value || "#fff3b0") || "#fff3b0";
+
+    if (!titulo) {
+      mostrarToast?.("Poné un título 🙏");
+      return;
+    }
+
+    vaImgMetaCerrar({ titulo, descripcion, color });
+  });
+
+  setTimeout(() => {
+    if (typeof initPickrEnHosts === "function") {
+      initPickrEnHosts("#imagenMetaColorHost");
+    }
+  }, 0);
+}
+
+function vaImgMetaCerrar(valor) {
+  const modal = document.getElementById("modalImagenMeta");
+
+  if (modal) {
+    modal.classList.remove("abierto");
+    modal.setAttribute("aria-hidden", "true");
+    modal.style.display = "none";
+  }
+
+  const resolver = window.__VA_IMG_META_RESOLVE;
+  window.__VA_IMG_META_RESOLVE = null;
+
+  if (resolver) resolver(valor);
+}
+
+function pedirDatosImagenMeta() {
+  vaImgMetaCrearModal();
+
+  const modal = document.getElementById("modalImagenMeta");
+  const inputTitulo = document.getElementById("imagenMetaTitulo");
+  const inputDesc = document.getElementById("imagenMetaDescripcion");
+
+  if (!modal || !inputTitulo || !inputDesc) {
+    return Promise.resolve({
+      titulo: vaImgMetaTituloSugerido(),
+      descripcion: "",
+      color: "#fff3b0"
+    });
+  }
+
+  inputTitulo.value = vaImgMetaTituloSugerido();
+  inputDesc.value = "";
+  vaImgMetaSyncColor("#fff3b0");
+
+  modal.style.display = "flex";
+  modal.classList.add("abierto");
+  modal.setAttribute("aria-hidden", "false");
+
+  setTimeout(() => inputTitulo.focus(), 80);
+
+  return new Promise(resolve => {
+    window.__VA_IMG_META_RESOLVE = resolve;
+  });
+}
+
 function limpiarSeleccionImagenCompleta() {
   seleccionImagen = {};
   seleccionImagenOrden = [];
@@ -5142,12 +5311,18 @@ const refCompleta = (!modoImagenLibre && itemsSel.length)
   : "";
 
   const dbPath = `panelImagenesPersonal/${uid}/${asset.ts}`;
+const metaImagen = asset.meta || window.__VA_IMG_META_ACTUAL || {};
+const metaColor = vaImgMetaHex(metaImagen.color || "#fff3b0") || "#fff3b0";
 
-await set(ref(db, dbPath), {
+  await set(ref(db, dbPath), {
   url: normalizarUrlGuardada(asset.url),
   fecha: asset.ts,
   uid,
   tipo: "imagen",
+    titulo: String(metaImagen.titulo || "").trim(),
+descripcion: String(metaImagen.descripcion || "").trim(),
+color: metaColor,
+colorFondo: metaColor,
 libro: modoImagenLibre ? "" : (itemsSel[0]?.Libro || libroSel?.value || ""),
 capitulo: modoImagenLibre ? 0 : Number(itemsSel[0]?.Capitulo || capSel?.value || 0),
 versiculos: versiculosSel,
@@ -5196,6 +5371,8 @@ const refCompleta = (!modoImagenLibre && itemsSel.length)
   : "";
 
   const dbPath = `compartidos/imagenes/${asset.ts}`;
+ const metaImagen = asset.meta || window.__VA_IMG_META_ACTUAL || {};
+const metaColor = vaImgMetaHex(metaImagen.color || "#fff3b0") || "#fff3b0";
 
   await set(ref(db, dbPath), {
     url: normalizarUrlGuardada(asset.url),
@@ -5203,6 +5380,10 @@ const refCompleta = (!modoImagenLibre && itemsSel.length)
     uid,
     publicadoPor: uid,
     tipo: "imagen",
+    titulo: String(metaImagen.titulo || "").trim(),
+descripcion: String(metaImagen.descripcion || "").trim(),
+color: metaColor,
+colorFondo: metaColor,
     panelItemId: String(asset.ts || ""),
 sourcePanelItemId: String(asset.ts || ""),
 libro: modoImagenLibre ? "" : (itemsSel[0]?.Libro || libroSel?.value || ""),
@@ -5234,6 +5415,10 @@ async function subirImagenBibliaUnaVezYGuardarDestinos() {
     asset.audioTexto = window.__lastAudioTexto || "";
   }
 
+asset.meta = {
+  ...(window.__VA_IMG_META_ACTUAL || imagenMetaActual || {})
+};
+  
   await guardarReferenciaImagenEnPanel(asset);
 
   const chk = document.getElementById("checkIglesia");
@@ -5821,7 +6006,6 @@ window.cancelarCrearImagen = () => {
 };
 
 // ================= ✅ FINALIZAR EDICIÓN (CONFIRMAR) =================
-// ================= ✅ FINALIZAR EDICIÓN (CONFIRMAR) =================
 window.finalizarEdicion = async (ev) => {
   if (window.__FINALIZANDO__) return;
   window.__FINALIZANDO__ = true;
@@ -5836,6 +6020,15 @@ window.finalizarEdicion = async (ev) => {
   }
 
 try {
+  const meta = await pedirDatosImagenMeta();
+
+  if (!meta) {
+    return;
+  }
+
+  imagenMetaActual = meta;
+  window.__VA_IMG_META_ACTUAL = meta;
+
   try {
     await window.vaConsumirUsoColaborador?.(
       "crearImagenBiblia",
@@ -5886,6 +6079,8 @@ try {
 
   } finally {
     window.__FINALIZANDO__ = false;
+  imagenMetaActual = null;
+window.__VA_IMG_META_ACTUAL = null;
 
     if (btn) {
       btn.disabled = false;
@@ -7350,6 +7545,19 @@ function panelImagenRenderCardHTML(it = {}, opciones = {}) {
 
   const extraAcciones = opciones.extraAcciones || "";
   const extraFinal = opciones.extraFinal || "";
+  const tituloMeta = String(it.titulo || "").trim();
+const descripcionMeta = String(it.descripcion || "").trim();
+const tieneMetaImagen = !!(tituloMeta || descripcionMeta);
+
+const colorMeta = vaImgMetaHex(it.color || it.colorFondo || "#fff3b0") || "#fff3b0";
+const textoMeta = vaImgMetaContraste(colorMeta);
+
+const metaHtml = tieneMetaImagen ? `
+  <div class="panel-img-meta" style="background:${panelImgAttr(colorMeta)}; color:${panelImgAttr(textoMeta)};">
+    ${tituloMeta ? `<div class="panel-img-meta-title">${panelImgHtml(tituloMeta)}</div>` : ``}
+    ${descripcionMeta ? `<div class="panel-img-meta-desc">${panelImgHtml(descripcionMeta)}</div>` : ``}
+  </div>
+` : ``;
 
   const urlRaw = panelImgNormalizarUrlRaw(it.url || it.shareUrl || "");
   const urlAttr = panelImgAttr(urlRaw);
@@ -7394,14 +7602,23 @@ const audioAttr = panelImgAttr(audioRaw);
     </button>
   ` : ``);
 
+  const cardKey = domId || `${idPrefix}${it.id || Date.now()}`;
+window.__VA_PANEL_IMG_ITEMS[cardKey] = {
+  ...it,
+  id: it.id || "",
+  url: urlRaw
+};
+const cardKeyJs = panelImgJs(cardKey);
+ 
   return `
     <div
       class="devBigCard"
       id="${panelImgAttr(domId)}"
       data-panel-img-card-id="${panelImgAttr(it.id || "")}"
-      style="position:relative;"
-    >
-     <img src="${urlAttr}" alt="Imagen generada" loading="lazy">
+style="position:relative; ${tieneMetaImagen ? `background:${panelImgAttr(colorMeta)};` : ``}"
+>
+ ${metaHtml}
+ <img src="${urlAttr}" alt="Imagen generada" loading="lazy">
 
 ${audioRaw ? `
   <div class="devBigAudioBox">
@@ -7412,7 +7629,7 @@ ${audioRaw ? `
 <div class="devBigActions">
         ${mostrarDescargar ? `
           <button class="btn-primary" type="button"
-            onclick="descargarImagenPanel('${urlJs}')"
+            onclick="panelImagenAccionCard('${cardKeyJs}', 'descargar')"
             aria-label="Descargar PNG"
             title="Descargar PNG">
             <i class="fa-solid fa-download"></i>
@@ -7421,7 +7638,7 @@ ${audioRaw ? `
 
         ${mostrarCompartir ? `
           <button class="btn-primary" type="button"
-            onclick="compartirImagenPanel('${urlJs}')"
+            onclick="panelImagenAccionCard('${cardKeyJs}', 'compartir')"
             aria-label="Compartir"
             title="Compartir">
             <i class="fa-solid fa-share-nodes"></i>
@@ -7523,6 +7740,9 @@ function renderPanelImagenes(data) {
   }
 
 function refBonitaPanel(it){
+  const tituloImg = String(it.titulo || "").trim();
+  if (tituloImg) return tituloImg;
+
   const cita = capitalizarCitaBonitaPanel(it.cita || "");
   const refDirecta = String(it.ref || "").trim();
 
@@ -9529,6 +9749,342 @@ async function fetchPanelImagenBlob(url, fileName = "imagen_vida_abundante.png")
 
   return blob;
 }
+
+function panelImagenTieneMeta(item = {}) {
+  return !!(
+    String(item.titulo || "").trim() ||
+    String(item.descripcion || "").trim()
+  );
+}
+
+function panelImagenSlug(txt = "imagen") {
+  return String(txt || "imagen")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\w\s-]/g, "")
+    .replace(/\s+/g, "_")
+    .slice(0, 60) || "imagen";
+}
+
+function panelImagenNombreArchivo(item = {}, tipo = "imagen") {
+  const base = panelImagenSlug(item.titulo || item.ref || "vida_abundante");
+  return panelNombreArchivoSeguro(`${tipo}_${base}.png`);
+}
+
+function panelImagenDescargarFile(file) {
+  const objUrl = URL.createObjectURL(file);
+
+  const a = document.createElement("a");
+  a.href = objUrl;
+  a.download = file.name || "imagen_vida_abundante.png";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+
+  setTimeout(() => URL.revokeObjectURL(objUrl), 2000);
+}
+
+function panelImagenCrearModalSalida() {
+  if (document.getElementById("modalImagenSalida")) return;
+
+  document.body.insertAdjacentHTML("beforeend", `
+    <div id="modalImagenSalida" class="va-img-salida-modal" aria-hidden="true">
+      <div class="va-img-salida-card">
+        <h3>¿Qué querés usar?</h3>
+        <p>Publicación incluye título, descripción y color. Imagen es solo el PNG original.</p>
+
+        <div class="va-img-salida-actions">
+          <button type="button" class="btn-primary" data-va-img-salida="publicacion">
+            <i class="fa-solid fa-newspaper"></i>
+            Publicación
+          </button>
+
+          <button type="button" class="btn-primary" data-va-img-salida="imagen">
+            <i class="fa-solid fa-image"></i>
+            Imagen
+          </button>
+
+          <button type="button" class="btn-ghost" data-va-img-salida="cancelar">
+            Cancelar
+          </button>
+        </div>
+      </div>
+    </div>
+  `);
+
+  document.getElementById("modalImagenSalida")?.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-va-img-salida]");
+
+    if (!btn && e.target?.id !== "modalImagenSalida") return;
+
+    const valor = btn?.dataset?.vaImgSalida || "cancelar";
+    panelImagenCerrarModalSalida(valor === "cancelar" ? null : valor);
+  });
+}
+
+function panelImagenCerrarModalSalida(valor) {
+  const modal = document.getElementById("modalImagenSalida");
+
+  if (modal) {
+    modal.classList.remove("abierto");
+    modal.setAttribute("aria-hidden", "true");
+    modal.style.display = "none";
+  }
+
+  const resolver = window.__VA_IMG_SALIDA_RESOLVE;
+  window.__VA_IMG_SALIDA_RESOLVE = null;
+
+  if (resolver) resolver(valor);
+}
+
+function panelImagenElegirSalida() {
+  panelImagenCrearModalSalida();
+
+  const modal = document.getElementById("modalImagenSalida");
+  if (!modal) return Promise.resolve("imagen");
+
+  modal.style.display = "flex";
+  modal.classList.add("abierto");
+  modal.setAttribute("aria-hidden", "false");
+
+  return new Promise(resolve => {
+    window.__VA_IMG_SALIDA_RESOLVE = resolve;
+  });
+}
+
+function panelCanvasRoundRect(ctx, x, y, w, h, r) {
+  r = Math.min(r, w / 2, h / 2);
+
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function panelCanvasWrapText(ctx, text, maxWidth) {
+  const lineas = [];
+  const partes = String(text || "").split(/\n/);
+
+  partes.forEach(parte => {
+    const palabras = parte.split(/\s+/).filter(Boolean);
+
+    if (!palabras.length) {
+      lineas.push("");
+      return;
+    }
+
+    let linea = "";
+
+    palabras.forEach(palabra => {
+      const prueba = linea ? `${linea} ${palabra}` : palabra;
+
+      if (ctx.measureText(prueba).width > maxWidth && linea) {
+        lineas.push(linea);
+        linea = palabra;
+      } else {
+        linea = prueba;
+      }
+    });
+
+    if (linea) lineas.push(linea);
+  });
+
+  return lineas;
+}
+
+async function panelImagenBlobToDrawable(blob) {
+  if (window.createImageBitmap) {
+    return await createImageBitmap(blob);
+  }
+
+  return await new Promise((resolve, reject) => {
+    const img = new Image();
+    const objUrl = URL.createObjectURL(blob);
+
+    img.onload = () => {
+      URL.revokeObjectURL(objUrl);
+      resolve(img);
+    };
+
+    img.onerror = () => {
+      URL.revokeObjectURL(objUrl);
+      reject(new Error("No pude preparar la imagen."));
+    };
+
+    img.src = objUrl;
+  });
+}
+
+async function panelImagenCrearPublicacionFile(item = {}) {
+  const url = item.url || item.imagenUrl || "";
+  if (!url) throw new Error("No hay imagen para preparar.");
+
+  const titulo = String(item.titulo || item.ref || "Vida Abundante").trim();
+  const descripcion = String(item.descripcion || "").trim();
+  const fondo = vaImgMetaHex(item.color || item.colorFondo || "#fff3b0") || "#fff3b0";
+  const textoColor = vaImgMetaContraste(fondo);
+
+  const imgBlob = await fetchPanelImagenBlob(url, panelImagenNombreArchivo(item, "imagen"));
+  const img = await panelImagenBlobToDrawable(imgBlob);
+
+  const W = 1080;
+  const outer = 40;
+  const cardX = outer;
+  const cardY = outer;
+  const cardW = W - outer * 2;
+  const pad = 58;
+  const innerW = cardW - pad * 2;
+
+  const canvasMedida = document.createElement("canvas");
+  const ctxM = canvasMedida.getContext("2d");
+
+  ctxM.font = "800 54px Arial";
+  const titleLines = panelCanvasWrapText(ctxM, titulo, innerW);
+
+  ctxM.font = "400 38px Arial";
+  const descLines = descripcion ? panelCanvasWrapText(ctxM, descripcion, innerW) : [];
+
+  const imgW0 = img.width || img.videoWidth || 1000;
+  const imgH0 = img.height || img.videoHeight || 1000;
+
+  let drawW = innerW;
+  let drawH = Math.round(imgH0 * (drawW / imgW0));
+
+  const maxImgH = 1650;
+  if (drawH > maxImgH) {
+    drawH = maxImgH;
+    drawW = Math.round(imgW0 * (drawH / imgH0));
+  }
+
+  const titleH = titleLines.length * 64;
+  const descH = descLines.length ? descLines.length * 48 + 18 : 0;
+  const imgTopGap = 24;
+
+  const cardH = pad + titleH + descH + imgTopGap + drawH + pad;
+  const H = cardH + outer * 2;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = W;
+  canvas.height = H;
+
+  const ctx = canvas.getContext("2d");
+
+  ctx.fillStyle = "#f4eef2";
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.fillStyle = fondo;
+  panelCanvasRoundRect(ctx, cardX, cardY, cardW, cardH, 46);
+  ctx.fill();
+
+  let y = cardY + pad;
+
+  ctx.fillStyle = textoColor;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+
+  ctx.font = "800 54px Arial";
+  titleLines.forEach(linea => {
+    ctx.fillText(linea, W / 2, y);
+    y += 64;
+  });
+
+  if (descLines.length) {
+    y += 8;
+    ctx.font = "400 38px Arial";
+
+    descLines.forEach(linea => {
+      ctx.fillText(linea, W / 2, y);
+      y += 48;
+    });
+  }
+
+  y += imgTopGap;
+
+  const imgX = Math.round((W - drawW) / 2);
+
+  ctx.save();
+  panelCanvasRoundRect(ctx, imgX, y, drawW, drawH, 28);
+  ctx.clip();
+  ctx.drawImage(img, imgX, y, drawW, drawH);
+  ctx.restore();
+
+  if (typeof img.close === "function") {
+    try { img.close(); } catch(e) {}
+  }
+
+  const outBlob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
+  if (!outBlob) throw new Error("No pude generar la publicación.");
+
+  return new File(
+    [outBlob],
+    panelImagenNombreArchivo(item, "publicacion"),
+    { type: "image/png" }
+  );
+}
+
+window.panelImagenAccionCard = async function(cardKey, accion = "descargar") {
+  const item = window.__VA_PANEL_IMG_ITEMS?.[cardKey];
+
+  if (!item || !(item.url || item.imagenUrl)) {
+    alert("No encuentro la imagen.");
+    return;
+  }
+
+  const url = item.url || item.imagenUrl || "";
+  const nombreImagen = panelImagenNombreArchivo(item, "imagen");
+
+  if (!panelImagenTieneMeta(item)) {
+    if (accion === "descargar") {
+      return descargarImagenPanel(url, nombreImagen);
+    }
+
+    return compartirImagenPanel(url, nombreImagen);
+  }
+
+  const salida = await panelImagenElegirSalida();
+  if (!salida) return;
+
+  if (salida === "imagen") {
+    if (accion === "descargar") {
+      return descargarImagenPanel(url, nombreImagen);
+    }
+
+    return compartirImagenPanel(url, nombreImagen);
+  }
+
+  try {
+    mostrarToast?.("⏳ Preparando publicación...");
+
+    const file = await panelImagenCrearPublicacionFile(item);
+
+    if (accion === "descargar") {
+      panelImagenDescargarFile(file);
+      mostrarToast?.("📥 Descargando publicación");
+      return;
+    }
+
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({
+        files: [file],
+        title: item.titulo || "Vida Abundante"
+      });
+      return;
+    }
+
+    panelImagenDescargarFile(file);
+    alert("Tu navegador no permite compartir directo. Se descargó la publicación para compartirla manualmente.");
+
+  } catch (e) {
+    if (window.vaShareCancelado?.(e)) return;
+
+    console.error(e);
+    alert("No se pudo preparar la publicación.\n\nDetalle: " + (e?.message || e));
+  }
+};
 
 window.descargarImagenPanel = async (url, fileName = "imagen_vida_abundante.png") => {
   try {
