@@ -2033,14 +2033,24 @@ body.comp-link-directo .comp-post {
 }
 
 /* =========================================================
-   COMPARTIDOS: si la imagen ya trae su propio contenedor,
-   no repetimos título/descripcion afuera.
-   Oraciones quedan igual porque no usan .panel-img-meta.
+   COMPARTIDOS: imágenes con contenedor propio
+   Oculta encabezado externo duplicado.
+   Oraciones quedan igual.
 ========================================================= */
 
-.comp-post.comp-post-imagen:has(.panel-img-meta) > .comp-post-head,
-.comp-post.comp-post-imagen:has(.panel-img-meta) > .comp-post-title,
-.comp-post.comp-post-imagen:has(.panel-img-meta) > .comp-post-meta{
+.comp-post.comp-img-meta-propia .comp-post-head,
+.comp-post.comp-img-meta-propia .comp-post-title,
+.comp-post.comp-img-meta-propia .comp-post-meta,
+.comp-post.comp-img-meta-propia .comp-post-subtitle,
+.comp-post.comp-img-meta-propia .comp-post-desc{
+  display: none !important;
+}
+
+.comp-post:has(.panel-img-meta) .comp-post-head,
+.comp-post:has(.panel-img-meta) .comp-post-title,
+.comp-post:has(.panel-img-meta) .comp-post-meta,
+.comp-post:has(.panel-img-meta) .comp-post-subtitle,
+.comp-post:has(.panel-img-meta) .comp-post-desc{
   display: none !important;
 }
 
