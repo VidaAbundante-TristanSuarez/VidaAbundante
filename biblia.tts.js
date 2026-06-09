@@ -17,6 +17,81 @@
   const TTS_PITCH = ES_MOVIL ? 1.0 : 0.82;
   const TTS_VOLUME = 1;
 
+     /* ================= ARPA DE FONDO ================= */
+  const BIBLIA_ARPA_URL = "./audio/arpa-biblia.mp3";
+  const BIBLIA_ARPA_VOLUME = ES_MOVIL ? 0.08 : 0.06;
+
+  let bibliaArpaAudio = null;
+  let bibliaArpaFadeTimer = null;
+
+  function getBibliaArpaAudio() {
+    if (bibliaArpaAudio) return bibliaArpaAudio;
+
+    bibliaArpaAudio = new Audio(BIBLIA_ARPA_URL);
+    bibliaArpaAudio.loop = true;
+    bibliaArpaAudio.preload = "auto";
+    bibliaArpaAudio.volume = 0;
+
+    return bibliaArpaAudio;
+  }
+
+  function iniciarArpaBiblia() {
+    try {
+      const audio = getBibliaArpaAudio();
+
+      clearInterval(bibliaArpaFadeTimer);
+
+      const p = audio.play();
+      if (p && typeof p.catch === "function") {
+        p.catch(() => {});
+      }
+
+      bibliaArpaFadeTimer = setInterval(() => {
+        audio.volume = Math.min(BIBLIA_ARPA_VOLUME, audio.volume + 0.01);
+
+        if (audio.volume >= BIBLIA_ARPA_VOLUME) {
+          clearInterval(bibliaArpaFadeTimer);
+        }
+      }, 80);
+
+    } catch (e) {
+      console.warn("No se pudo iniciar arpa Biblia:", e);
+    }
+  }
+
+  function pausarArpaBiblia() {
+    try {
+      const audio = bibliaArpaAudio;
+      if (!audio) return;
+
+      clearInterval(bibliaArpaFadeTimer);
+      audio.pause();
+    } catch {}
+  }
+
+  function detenerArpaBiblia() {
+    try {
+      const audio = bibliaArpaAudio;
+      if (!audio) return;
+
+      clearInterval(bibliaArpaFadeTimer);
+
+      bibliaArpaFadeTimer = setInterval(() => {
+        audio.volume = Math.max(0, audio.volume - 0.015);
+
+        if (audio.volume <= 0.001) {
+          clearInterval(bibliaArpaFadeTimer);
+          audio.pause();
+          audio.currentTime = 0;
+          audio.volume = 0;
+        }
+      }, 70);
+
+    } catch (e) {
+      console.warn("No se pudo detener arpa Biblia:", e);
+    }
+  }
+
   let versos = [];
   let indiceActual = 0;
   let estado = "detenido"; // detenido | leyendo | pausado
@@ -405,9 +480,10 @@
 
     try { speechSynthesis.cancel(); } catch {}
 
-    estado = "leyendo";
-    setBoton("leyendo");
-    iniciarKeepAlive();
+estado = "leyendo";
+setBoton("leyendo");
+iniciarKeepAlive();
+iniciarArpaBiblia();
 
     setTimeout(() => {
       if (MODO_FLUIDO_MOVIL) {
@@ -424,6 +500,7 @@
     estado = "pausado";
     setBoton("pausado");
     detenerKeepAlive();
+     pausarArpaBiblia();
 
     // En modo fluido móvil intentamos pausa real.
     // Si Android no la respeta, el botón seguirá mostrando play pero dependerá del motor del celular.
@@ -440,6 +517,7 @@
     estado = "leyendo";
     setBoton("leyendo");
     iniciarKeepAlive();
+     iniciarArpaBiblia();
 
     try {
       speechSynthesis.resume();
@@ -457,6 +535,7 @@
     tokenLectura++;
     estado = "detenido";
     detenerKeepAlive();
+     detenerArpaBiblia();
 
     try { speechSynthesis.cancel(); } catch {}
 
