@@ -114,9 +114,7 @@
 
     const clon = el.cloneNode(true);
 
-    clon
-      .querySelectorAll("button, i, svg, .icono-nota, .nota, .pluma, .acciones, .btn")
-      .forEach(n => n.remove());
+    clon.querySelectorAll("button, i, svg, .icono-nota, .nota, .pluma, .acciones, .btn").forEach(n => n.remove());
 
     return (clon.innerText || clon.textContent || "")
       .replace(/^\s*\d+\s*/, "")
@@ -127,7 +125,6 @@
   function numeroVersiculo(el, fallback) {
     const num = el?.querySelector(".num");
     const n = Number((num?.innerText || num?.textContent || "").trim());
-
     return Number.isFinite(n) && n > 0 ? n : fallback;
   }
 
@@ -220,9 +217,7 @@
     }
 
     setTimeout(() => {
-      try {
-        speechSynthesis.resume();
-      } catch {}
+      try { speechSynthesis.resume(); } catch {}
     }, 80);
   }
 
@@ -297,7 +292,6 @@
     if (!item) return;
 
     if (ultimoIndiceMarcado === indice) return;
-
     ultimoIndiceMarcado = indice;
     indiceActual = indice;
 
@@ -388,9 +382,7 @@
     }
 
     setTimeout(() => {
-      try {
-        speechSynthesis.resume();
-      } catch {}
+      try { speechSynthesis.resume(); } catch {}
     }, 80);
   }
 
@@ -411,9 +403,7 @@
     tokenLectura++;
     const miToken = tokenLectura;
 
-    try {
-      speechSynthesis.cancel();
-    } catch {}
+    try { speechSynthesis.cancel(); } catch {}
 
     estado = "leyendo";
     setBoton("leyendo");
@@ -440,9 +430,7 @@
     try {
       speechSynthesis.pause();
     } catch {
-      try {
-        speechSynthesis.cancel();
-      } catch {}
+      try { speechSynthesis.cancel(); } catch {}
     }
   }
 
@@ -457,9 +445,7 @@
       speechSynthesis.resume();
 
       setTimeout(() => {
-        try {
-          speechSynthesis.resume();
-        } catch {}
+        try { speechSynthesis.resume(); } catch {}
       }, 120);
 
     } catch {
@@ -472,9 +458,7 @@
     estado = "detenido";
     detenerKeepAlive();
 
-    try {
-      speechSynthesis.cancel();
-    } catch {}
+    try { speechSynthesis.cancel(); } catch {}
 
     if (limpiar) limpiarActivo();
 
