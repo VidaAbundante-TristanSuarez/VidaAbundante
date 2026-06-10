@@ -22,7 +22,7 @@
 
   const USAR_ARPA_BIBLIA = true;
   const BIBLIA_ARPA_URL = "./audio/arpa-biblia.mp3";
-const BIBLIA_ARPA_VOLUME = ES_MOVIL ? 0.055 : 0.06;
+const BIBLIA_ARPA_VOLUME = ES_MOVIL ? 0.075 : 0.06;
    
   let bibliaArpaAudio = null;
   let bibliaArpaFadeTimer = null;
@@ -168,7 +168,26 @@ const BIBLIA_ARPA_VOLUME = ES_MOVIL ? 0.055 : 0.06;
     } catch {}
   }
 
-  function programarRestaurarUltimoTTS() {
+  function obtenerIndiceUltimoGuardadoTTS() {
+    try {
+      const raw = localStorage.getItem(LS_BIBLIA_TTS_ULTIMO);
+      if (!raw) return null;
+
+      const data = JSON.parse(raw);
+      if (!data?.id) return null;
+
+      const lista = obtenerVersos();
+      const idx = lista.findIndex(v => v.id === data.id);
+
+      if (idx < 0) return null;
+
+      return idx;
+    } catch {
+      return null;
+    }
+  }
+   
+   function programarRestaurarUltimoTTS() {
     let intentos = 0;
 
     const timer = setInterval(() => {
@@ -536,7 +555,11 @@ const BIBLIA_ARPA_VOLUME = ES_MOVIL ? 0.055 : 0.06;
       return;
     }
 
-    reproducirDesde(0);
+    const idxGuardado = obtenerIndiceUltimoGuardadoTTS();
+
+    reproducirDesde(
+      Number.isFinite(idxGuardado) ? idxGuardado : 0
+    );
   }
 
   function estaEnModoSeleccion() {
