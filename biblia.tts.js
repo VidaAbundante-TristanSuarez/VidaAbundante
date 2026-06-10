@@ -1,7 +1,7 @@
 /* =========================================================
    BIBLIA TTS - speechSynthesis local
-   PC: versículo por versículo + arpa
-   Móvil/PWA: modo fluido SIN arpa
+   PC: versículo por versículo
+   Móvil/PWA: modo fluido para reducir silencios
    No usa Firebase, no usa R2, no usa APIs pagas.
    ========================================================= */
 
@@ -16,96 +16,6 @@
   const TTS_RATE = ES_MOVIL ? 1.08 : 1.0;
   const TTS_PITCH = ES_MOVIL ? 1.0 : 0.82;
   const TTS_VOLUME = 1;
-
-  /* =========================================================
-     ARPA DE FONDO
-     IMPORTANTE:
-     - PC: arpa activada.
-     - Celular/PWA: arpa desactivada para no afectar marcado ni reproducción.
-     ========================================================= */
-
-  const USAR_ARPA_BIBLIA = !ES_MOVIL;
-  const BIBLIA_ARPA_URL = "./audio/arpa-biblia.mp3";
-  const BIBLIA_ARPA_VOLUME = 0.06;
-
-  let bibliaArpaAudio = null;
-  let bibliaArpaFadeTimer = null;
-
-  function getBibliaArpaAudio() {
-    if (!USAR_ARPA_BIBLIA) return null;
-    if (bibliaArpaAudio) return bibliaArpaAudio;
-
-    bibliaArpaAudio = new Audio(BIBLIA_ARPA_URL);
-    bibliaArpaAudio.loop = true;
-    bibliaArpaAudio.preload = "auto";
-    bibliaArpaAudio.volume = 0;
-
-    return bibliaArpaAudio;
-  }
-
-  function iniciarArpaBiblia() {
-    if (!USAR_ARPA_BIBLIA) return;
-
-    try {
-      const audio = getBibliaArpaAudio();
-      if (!audio) return;
-
-      clearInterval(bibliaArpaFadeTimer);
-
-      const p = audio.play();
-      if (p && typeof p.catch === "function") {
-        p.catch(() => {});
-      }
-
-      bibliaArpaFadeTimer = setInterval(() => {
-        audio.volume = Math.min(BIBLIA_ARPA_VOLUME, audio.volume + 0.01);
-
-        if (audio.volume >= BIBLIA_ARPA_VOLUME) {
-          clearInterval(bibliaArpaFadeTimer);
-        }
-      }, 80);
-
-    } catch (e) {
-      console.warn("No se pudo iniciar arpa Biblia:", e);
-    }
-  }
-
-  function pausarArpaBiblia() {
-    if (!USAR_ARPA_BIBLIA) return;
-
-    try {
-      const audio = bibliaArpaAudio;
-      if (!audio) return;
-
-      clearInterval(bibliaArpaFadeTimer);
-      audio.pause();
-    } catch {}
-  }
-
-  function detenerArpaBiblia() {
-    if (!USAR_ARPA_BIBLIA) return;
-
-    try {
-      const audio = bibliaArpaAudio;
-      if (!audio) return;
-
-      clearInterval(bibliaArpaFadeTimer);
-
-      bibliaArpaFadeTimer = setInterval(() => {
-        audio.volume = Math.max(0, audio.volume - 0.015);
-
-        if (audio.volume <= 0.001) {
-          clearInterval(bibliaArpaFadeTimer);
-          audio.pause();
-          audio.currentTime = 0;
-          audio.volume = 0;
-        }
-      }, 70);
-
-    } catch (e) {
-      console.warn("No se pudo detener arpa Biblia:", e);
-    }
-  }
 
   let versos = [];
   let indiceActual = 0;
@@ -204,7 +114,9 @@
 
     const clon = el.cloneNode(true);
 
-    clon.querySelectorAll("button, i, svg, .icono-nota, .nota, .pluma, .acciones, .btn").forEach(n => n.remove());
+    clon
+      .querySelectorAll("button, i, svg, .icono-nota, .nota, .pluma, .acciones, .btn")
+      .forEach(n => n.remove());
 
     return (clon.innerText || clon.textContent || "")
       .replace(/^\s*\d+\s*/, "")
@@ -215,6 +127,7 @@
   function numeroVersiculo(el, fallback) {
     const num = el?.querySelector(".num");
     const n = Number((num?.innerText || num?.textContent || "").trim());
+
     return Number.isFinite(n) && n > 0 ? n : fallback;
   }
 
@@ -294,7 +207,6 @@
       console.warn("Biblia TTS error:", e?.error || e);
       estado = "pausado";
       setBoton("pausado");
-      pausarArpaBiblia();
     };
 
     window.__bibliaTTSUtterance = u;
@@ -305,11 +217,12 @@
       console.warn("No se pudo iniciar Biblia TTS:", e);
       estado = "pausado";
       setBoton("pausado");
-      pausarArpaBiblia();
     }
 
     setTimeout(() => {
-      try { speechSynthesis.resume(); } catch {}
+      try {
+        speechSynthesis.resume();
+      } catch {}
     }, 80);
   }
 
@@ -384,6 +297,7 @@
     if (!item) return;
 
     if (ultimoIndiceMarcado === indice) return;
+
     ultimoIndiceMarcado = indice;
     indiceActual = indice;
 
@@ -460,7 +374,6 @@
       estado = "pausado";
       setBoton("pausado");
       detenerKeepAlive();
-      pausarArpaBiblia();
     };
 
     window.__bibliaTTSUtterance = u;
@@ -472,11 +385,12 @@
       estado = "pausado";
       setBoton("pausado");
       detenerKeepAlive();
-      pausarArpaBiblia();
     }
 
     setTimeout(() => {
-      try { speechSynthesis.resume(); } catch {}
+      try {
+        speechSynthesis.resume();
+      } catch {}
     }, 80);
   }
 
@@ -497,14 +411,13 @@
     tokenLectura++;
     const miToken = tokenLectura;
 
-    try { speechSynthesis.cancel(); } catch {}
+    try {
+      speechSynthesis.cancel();
+    } catch {}
 
     estado = "leyendo";
     setBoton("leyendo");
     iniciarKeepAlive();
-
-    // ✅ Arpa solo en PC. En celular no se inicia.
-    iniciarArpaBiblia();
 
     setTimeout(() => {
       if (MODO_FLUIDO_MOVIL) {
@@ -521,14 +434,15 @@
     estado = "pausado";
     setBoton("pausado");
     detenerKeepAlive();
-    pausarArpaBiblia();
 
     // En modo fluido móvil intentamos pausa real.
-    // Si Android no la respeta, depende del motor del celular.
+    // Si Android no la respeta, el botón seguirá mostrando play pero dependerá del motor del celular.
     try {
       speechSynthesis.pause();
     } catch {
-      try { speechSynthesis.cancel(); } catch {}
+      try {
+        speechSynthesis.cancel();
+      } catch {}
     }
   }
 
@@ -539,14 +453,13 @@
     setBoton("leyendo");
     iniciarKeepAlive();
 
-    // ✅ Arpa solo vuelve en PC. En celular no hace nada.
-    iniciarArpaBiblia();
-
     try {
       speechSynthesis.resume();
 
       setTimeout(() => {
-        try { speechSynthesis.resume(); } catch {}
+        try {
+          speechSynthesis.resume();
+        } catch {}
       }, 120);
 
     } catch {
@@ -558,9 +471,10 @@
     tokenLectura++;
     estado = "detenido";
     detenerKeepAlive();
-    detenerArpaBiblia();
 
-    try { speechSynthesis.cancel(); } catch {}
+    try {
+      speechSynthesis.cancel();
+    } catch {}
 
     if (limpiar) limpiarActivo();
 
