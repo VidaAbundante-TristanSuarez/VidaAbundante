@@ -429,6 +429,7 @@ window.__VA_EDITANDO_PANEL_IMAGEN_ITEM = null;
 let imagenMetaActual = null;
 window.__VA_IMG_META_ACTUAL = null;
 window.__VA_PANEL_IMG_ITEMS = window.__VA_PANEL_IMG_ITEMS || {};
+window.__VA_EDITANDO_PANEL_IMAGEN_ID_FINAL = "";
 
 function vaToastDevSeguro(mensaje) {
   try {
@@ -464,14 +465,7 @@ function vaImgMetaContraste(hex = "#ffffff") {
 }
 
 function vaImgMetaTituloSugerido() {
-  if (modoImagenLibre || origenModalImagen === "panel") {
-    return "Imagen libre";
-  }
-
-  const items = getItemsImagenEnOrden();
-  const ref = items.length ? referenciaImagenEnOrden(items) : "";
-
-  return ref || "Imagen bíblica";
+  return "";
 }
 
 function vaImgMetaSyncColor(hex = "#fff3b0") {
@@ -506,7 +500,7 @@ function vaImgMetaCrearModal() {
 
         <label class="va-img-meta-label">
           Título
-          <input id="imagenMetaTitulo" type="text" placeholder="Ej: Éxodo 15:2,13,18">
+      <input id="imagenMetaTitulo" type="text" placeholder="Título">
         </label>
 
         <label class="va-img-meta-label">
@@ -542,8 +536,25 @@ function vaImgMetaCrearModal() {
   document.getElementById("btnImagenMetaCancelar")?.addEventListener("click", cancelar);
   document.getElementById("btnImagenMetaCancelarTop")?.addEventListener("click", cancelar);
 
-  document.getElementById("modalImagenMeta")?.addEventListener("click", (e) => {
-    if (e.target?.id === "modalImagenMeta") cancelar();
+  const modalMetaEl = document.getElementById("modalImagenMeta");
+  const cardMetaEl = modalMetaEl?.querySelector(".va-img-meta-card");
+
+  // ✅ No cerrar por click raro / selección de texto / arrastre del mouse.
+  // Solo cierran los botones Cancelar o X.
+  cardMetaEl?.addEventListener("mousedown", (e) => {
+    e.stopPropagation();
+  });
+
+  cardMetaEl?.addEventListener("click", (e) => {
+    e.stopPropagation();
+  });
+
+  modalMetaEl?.addEventListener("click", (e) => {
+    if (e.target?.id === "modalImagenMeta") {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
   });
 
 document.getElementById("btnImagenMetaGuardar")?.addEventListener("click", () => {
@@ -552,11 +563,6 @@ document.getElementById("btnImagenMetaGuardar")?.addEventListener("click", () =>
   const titulo = String(document.getElementById("imagenMetaTitulo")?.value || "").trim();
   const descripcion = String(document.getElementById("imagenMetaDescripcion")?.value || "").trim();
   const color = vaImgMetaHex(document.getElementById("imagenMetaColor")?.value || "#fff3b0") || "#fff3b0";
-
-  if (!titulo) {
-    mostrarToast?.("Poné un título 🙏");
-    return;
-  }
 
   if (btnGuardar) {
     btnGuardar.disabled = true;
@@ -568,6 +574,7 @@ document.getElementById("btnImagenMetaGuardar")?.addEventListener("click", () =>
     btnGuardar.style.cursor = "wait";
   }
 
+  // ✅ título puede quedar vacío
   vaImgMetaCerrar({ titulo, descripcion, color });
 });
 
@@ -627,12 +634,7 @@ function pedirDatosImagenMeta(base = null, opciones = {}) {
   // ✅ En finalizar imagen: Cancelar = seguir sin título/desc.
   // ✅ En editar desde Mi Panel: Cancelar = no guardar cambios.
 window.__VA_IMG_META_CANCEL_VALUE = opciones.cancelarFinaliza
-  ? {
-      titulo: String(b.titulo || "").trim(),
-      descripcion: String(b.descripcion || "").trim(),
-      color: colorInicial,
-      __cancelado: true
-    }
+  ? { __cancelado: true }
   : null;
 
     const btnGuardarMeta = document.getElementById("btnImagenMetaGuardar");
@@ -5535,6 +5537,7 @@ async function guardarReferenciaImagenEnPanel(asset) {
 
   // ✅ Si estamos editando una imagen ya existente, NO crear otra.
   const editandoId = String(
+    window.__VA_EDITANDO_PANEL_IMAGEN_ID_FINAL ||
     window.__VA_EDITANDO_PANEL_IMAGEN_ID ||
     panelImagenEditandoId ||
     ""
@@ -5797,6 +5800,7 @@ asset.meta = {
 };
 
 const editandoId = String(
+  window.__VA_EDITANDO_PANEL_IMAGEN_ID_FINAL ||
   window.__VA_EDITANDO_PANEL_IMAGEN_ID ||
   panelImagenEditandoId ||
   ""
@@ -6423,10 +6427,20 @@ window.finalizarEdicion = async (ev) => {
 
   const btn = ev?.currentTarget;
 
+  const editandoIdFinal = String(
+    window.__VA_EDITANDO_PANEL_IMAGEN_ID ||
+    panelImagenEditandoId ||
+    ""
+  ).trim();
+
+  window.__VA_EDITANDO_PANEL_IMAGEN_ID_FINAL = editandoIdFinal;
+
   const destinoFinal =
-    panelImagenEditandoId || origenModalImagen === "panel"
+    editandoIdFinal || origenModalImagen === "panel"
       ? "panel"
       : "biblia";
+
+  let metaCancelado = false;
 
   if (btn) {
     btn.disabled = true;
@@ -6439,6 +6453,13 @@ window.finalizarEdicion = async (ev) => {
     const metaBase = window.__VA_EDITANDO_PANEL_IMAGEN_ITEM || null;
 
     const meta = await pedirDatosImagenMeta(metaBase, { cancelarFinaliza: true });
+
+    // ✅ Si tocás Cancelar o X, NO guarda, NO publica, NO crea imagen nueva.
+    // Queda el modal de edición abierto para seguir trabajando.
+    if (meta?.__cancelado) {
+      metaCancelado = true;
+      return;
+    }
 
     imagenMetaActual = meta || {
       titulo: "",
@@ -6459,10 +6480,10 @@ window.finalizarEdicion = async (ev) => {
     }
 
     mostrarToast?.("Guardando...");
-  vaToastDevSeguro("⏳ Guardando imagen...");
+    vaToastDevSeguro("⏳ Guardando imagen...");
 
     if (window.__pendingAudio?.audioBase64) {
-vaToastDevSeguro("⏳ Subiendo audio...");
+      vaToastDevSeguro("⏳ Subiendo audio...");
 
       try {
         await window.subirPendingAudioAFirebase({ subirIglesia: false });
@@ -6480,7 +6501,7 @@ vaToastDevSeguro("⏳ Subiendo audio...");
 
     if (!ok) throw new Error("No se pudo generar o guardar la imagen");
 
-   vaToastDevSeguro("✅ Imagen guardada");
+    vaToastDevSeguro("✅ Imagen guardada");
     mostrarToast?.("✅ Imagen guardada");
 
     resetModalPersonalizar();
@@ -6501,11 +6522,16 @@ vaToastDevSeguro("⏳ Subiendo audio...");
     imagenMetaActual = null;
     window.__VA_IMG_META_ACTUAL = null;
 
-    panelImagenEditandoId = null;
-    panelImagenEditandoItem = null;
+    // ✅ Si se canceló el modal de título, NO limpiamos la edición.
+    // Así podés tocar Finalizar otra vez sin que se cree una nueva.
+    if (!metaCancelado) {
+      panelImagenEditandoId = null;
+      panelImagenEditandoItem = null;
 
-    window.__VA_EDITANDO_PANEL_IMAGEN_ID = null;
-    window.__VA_EDITANDO_PANEL_IMAGEN_ITEM = null;
+      window.__VA_EDITANDO_PANEL_IMAGEN_ID = null;
+      window.__VA_EDITANDO_PANEL_IMAGEN_ITEM = null;
+      window.__VA_EDITANDO_PANEL_IMAGEN_ID_FINAL = "";
+    }
 
     if (btn) {
       btn.disabled = false;
