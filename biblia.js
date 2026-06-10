@@ -530,18 +530,30 @@ function vaImgMetaCrearModal() {
     if (e.target?.id === "modalImagenMeta") cancelar();
   });
 
-  document.getElementById("btnImagenMetaGuardar")?.addEventListener("click", () => {
-    const titulo = String(document.getElementById("imagenMetaTitulo")?.value || "").trim();
-    const descripcion = String(document.getElementById("imagenMetaDescripcion")?.value || "").trim();
-    const color = vaImgMetaHex(document.getElementById("imagenMetaColor")?.value || "#fff3b0") || "#fff3b0";
+document.getElementById("btnImagenMetaGuardar")?.addEventListener("click", () => {
+  const btnGuardar = document.getElementById("btnImagenMetaGuardar");
 
-    if (!titulo) {
-      mostrarToast?.("Poné un título 🙏");
-      return;
-    }
+  const titulo = String(document.getElementById("imagenMetaTitulo")?.value || "").trim();
+  const descripcion = String(document.getElementById("imagenMetaDescripcion")?.value || "").trim();
+  const color = vaImgMetaHex(document.getElementById("imagenMetaColor")?.value || "#fff3b0") || "#fff3b0";
 
-    vaImgMetaCerrar({ titulo, descripcion, color });
-  });
+  if (!titulo) {
+    mostrarToast?.("Poné un título 🙏");
+    return;
+  }
+
+  if (btnGuardar) {
+    btnGuardar.disabled = true;
+    btnGuardar.innerHTML = `
+      <i class="fa-solid fa-spinner fa-spin"></i>
+      Guardando...
+    `;
+    btnGuardar.style.opacity = "0.75";
+    btnGuardar.style.cursor = "wait";
+  }
+
+  vaImgMetaCerrar({ titulo, descripcion, color });
+});
 
   setTimeout(() => {
     if (typeof initPickrEnHosts === "function") {
@@ -606,6 +618,17 @@ window.__VA_IMG_META_CANCEL_VALUE = opciones.cancelarFinaliza
       __cancelado: true
     }
   : null;
+
+    const btnGuardarMeta = document.getElementById("btnImagenMetaGuardar");
+  if (btnGuardarMeta) {
+    btnGuardarMeta.disabled = false;
+    btnGuardarMeta.innerHTML = `
+      <i class="fa-solid fa-circle-check"></i>
+      Guardar
+    `;
+    btnGuardarMeta.style.opacity = "";
+    btnGuardarMeta.style.cursor = "";
+  }
 
   modal.style.display = "flex";
   modal.classList.add("abierto");
@@ -751,8 +774,125 @@ function vaImgCerrarFlujoYVolverPanel() {
     try { window.irA?.("panel"); } catch(e) {}
     try { window.mostrarPanel?.("imagenes"); } catch(e) {}
     try { window.abrirPanelSubseccion?.("imagenes"); } catch(e) {}
-    try { renderPanelImagenes?.(panelImagenesGuardadas || {}); } catch(e) {}
+
+    try {
+      renderPanelImagenes?.(panelImagenesGuardadas || {});
+    } catch(e) {}
   }, 80);
+
+  // ✅ segundo repintado para ganarle a Firebase / animaciones / móvil
+  setTimeout(() => {
+    try {
+      renderPanelImagenes?.(panelImagenesGuardadas || {});
+    } catch(e) {}
+  }, 350);
+}
+
+function vaPanelImagenEsTextoLibre(item = {}) {
+  return (
+    item?.tipoTexto === "libre" ||
+    (!!String(item?.textoLibre || "").trim() && item?.tipoTexto !== "biblia")
+  );
+}
+
+function vaPanelImagenEsBiblia(item = {}) {
+  return (
+    item?.tipoTexto === "biblia" ||
+    Array.isArray(item?.versiculos) && item.versiculos.length > 0 ||
+    !!String(item?.ref || "").trim()
+  );
+}
+
+function vaPanelRestaurarSeleccionBibliaImagen(item = {}) {
+  limpiarSeleccionImagenCompleta();
+
+  const versiculos = Array.isArray(item?.versiculos) ? item.versiculos : [];
+
+  versiculos.forEach(v => {
+    const libro = String(v?.libro || v?.Libro || "").trim();
+    const capitulo = Number(v?.capitulo || v?.Capitulo || 0);
+    const versiculo = Number(v?.versiculo || v?.Versiculo || 0);
+
+    if (!libro || !capitulo || !versiculo) return;
+
+    const id = `${libro}_${capitulo}_${versiculo}`;
+    seleccionImagen[id] = true;
+
+    if (!seleccionImagenOrden.includes(id)) {
+      seleccionImagenOrden.push(id);
+    }
+  });
+}
+
+function vaCapturarEstadoEdicionImagen() {
+  return {
+    formato: formatoImagenActual || "post",
+
+    fondoFinal: fondoFinal || "",
+    fondoDisenoBiblia: JSON.parse(JSON.stringify(fondoDisenoBiblia || {})),
+
+    fuenteActual: fuenteActual || "Roboto, sans-serif",
+    textStyle: { ...(textStyle || {}) },
+
+    tamanoTexto: Number(document.getElementById("personalizarTamaño")?.value || 0),
+    colorTexto: document.getElementById("personalizarColor")?.value || "#000000",
+    colorContorno: document.getElementById("personalizarOutlineColor")?.value || "",
+    opacidad: document.getElementById("personalizarOpacidad")?.value || "0.35",
+    colorOpacidad: document.getElementById("colorOpacidadBiblia")?.value || "#000000"
+  };
+}
+
+function vaRestaurarEstadoEdicionImagen(item = {}) {
+  const estado = item?.estadoEdicion || {};
+
+  if (estado.fondoDisenoBiblia && typeof estado.fondoDisenoBiblia === "object") {
+    fondoDisenoBiblia = {
+      ...bibliaNuevoEstadoFondoDiseno(),
+      ...estado.fondoDisenoBiblia
+    };
+  }
+
+  if (estado.fuenteActual) {
+    fuenteActual = estado.fuenteActual;
+  }
+
+  if (estado.textStyle && typeof estado.textStyle === "object") {
+    textStyle = {
+      upper: !!estado.textStyle.upper,
+      bold: !!estado.textStyle.bold,
+      italic: !!estado.textStyle.italic,
+      underline: !!estado.textStyle.underline
+    };
+  }
+
+  const sizeInput = document.getElementById("personalizarTamaño");
+  if (sizeInput && estado.tamanoTexto) {
+    sizeInput.value = String(estado.tamanoTexto);
+    userSetFontSize = true;
+  }
+
+  const colorInput = document.getElementById("personalizarColor");
+  if (colorInput && estado.colorTexto) {
+    colorInput.value = estado.colorTexto;
+  }
+
+  const opInput = document.getElementById("personalizarOpacidad");
+  if (opInput && estado.opacidad) {
+    opInput.value = estado.opacidad;
+  }
+
+  const colorOp = document.getElementById("colorOpacidadBiblia");
+  if (colorOp && estado.colorOpacidad) {
+    colorOp.value = estado.colorOpacidad;
+  }
+
+  const outline = asegurarColorContornoBiblia?.();
+  if (outline && estado.colorContorno) {
+    outline.value = estado.colorContorno;
+    outline.dataset.manual = "1";
+  }
+
+  bibliaSincronizarControlesFondoDiseno?.();
 }
 
 // ================= ORDEN REAL PARA MARCADORES / NOTAS =================
@@ -2029,13 +2169,16 @@ onValue(ref(db, "marcados/" + uid), s => {
   // ✅ Cargar imágenes del panel (personal)
 onValue(ref(db, "panelImagenesPersonal/" + uid), s => {
   const data = s.val() || {};
-  panelImagenesGuardadas = data;
 
-  // ✅ En celulares no renderizamos Mi Panel si no está visible.
-  // Esto evita cargar muchas imágenes al iniciar Biblia/Compartidos.
+  panelImagenesGuardadas = data;
+  window.__VA_PANEL_IMG_ITEMS = data;
+
+  const panelImagenes = document.getElementById("panel-imagenes");
+
   if (
     document.body.classList.contains("en-panel") &&
-    document.getElementById("panel-imagenes")?.offsetParent !== null
+    panelImagenes &&
+    panelImagenes.offsetParent !== null
   ) {
     renderPanelImagenes(data);
   }
@@ -5358,7 +5501,7 @@ const refCompleta = (!modoImagenLibre && itemsSel.length)
 const metaImagen = asset.meta || window.__VA_IMG_META_ACTUAL || {};
 const metaColor = vaImgMetaHex(metaImagen.color || "#fff3b0") || "#fff3b0";
 
-  await set(ref(db, dbPath), {
+  const nuevoItem = {
   url: normalizarUrlGuardada(asset.url),
   fecha: asset.ts,
   uid,
@@ -5375,11 +5518,22 @@ ref: refCompleta,
   tipoTexto: modoImagenLibre ? "libre" : "biblia",
  textoLibre: modoImagenLibre ? (textoLibreImagen || "") : "",
 
+estadoEdicion: vaCapturarEstadoEdicionImagen(),
+
 audioOk: !!(asset.audioOk || asset.audioGithubUrl || asset.audioUrl || asset.audio),
 audioGithubUrl: asset.audioGithubUrl || asset.audioUrl || asset.audio || "",
 audioUrl: asset.audioUrl || asset.audioGithubUrl || asset.audio || "",
 audioTexto: asset.audioTexto || ""
-});
+};
+
+await set(ref(db, dbPath), nuevoItem);
+
+panelImagenesGuardadas[String(asset.ts)] = nuevoItem;
+window.__VA_PANEL_IMG_ITEMS = panelImagenesGuardadas;
+
+try {
+  renderPanelImagenes?.(panelImagenesGuardadas || {});
+} catch(e) {}
 }
 
 // ================= 🌍 GUARDAR REFERENCIA EN COMPARTIDOS =================
@@ -5458,6 +5612,9 @@ async function actualizarImagenEditadaEnPanel(asset, id) {
     ? normalizarUrlGuardada(asset.url)
     : normalizarUrlPanelParaDB(asset.url);
 
+  const esLibre = vaPanelImagenEsTextoLibre(anterior);
+  const esBiblia = vaPanelImagenEsBiblia(anterior) && !esLibre;
+
   const actualizado = {
     ...anterior,
 
@@ -5475,12 +5632,29 @@ async function actualizarImagenEditadaEnPanel(asset, id) {
     actualizadoEn: asset.ts || Date.now(),
 
     tipo: anterior.tipo || "imagen",
-    origen: anterior.origen || "panel"
+
+    // ✅ NO convertimos todo a texto libre.
+    // Si nació Biblia, sigue Biblia.
+    // Si nació texto libre, sigue texto libre.
+    origen: anterior.origen || (esLibre ? "panel" : "biblia"),
+    tipoTexto: esLibre ? "libre" : "biblia",
+
+    textoLibre: esLibre
+      ? String(textoLibreImagen || anterior.textoLibre || "").trim()
+      : "",
+
+    libro: esBiblia ? (anterior.libro || "") : "",
+    capitulo: esBiblia ? Number(anterior.capitulo || 0) : 0,
+    versiculos: esBiblia ? (Array.isArray(anterior.versiculos) ? anterior.versiculos : []) : [],
+    ref: esBiblia ? String(anterior.ref || "").trim() : "",
+
+    estadoEdicion: vaCapturarEstadoEdicionImagen()
   };
 
   await set(ref(db, `panelImagenesPersonal/${uid}/${id}`), actualizado);
 
   panelImagenesGuardadas[id] = actualizado;
+  window.__VA_PANEL_IMG_ITEMS = panelImagenesGuardadas;
 
   const existente = panelBuscarPublicacionImagenPanel(id, actualizado);
 
@@ -5502,9 +5676,21 @@ async function actualizarImagenEditadaEnPanel(asset, id) {
 
       formato: formatoImagenActual,
       actualizadoEn: Date.now(),
-      editadoEn: Date.now()
+      editadoEn: Date.now(),
+
+      tipoTexto: actualizado.tipoTexto,
+      textoLibre: actualizado.textoLibre,
+      libro: actualizado.libro,
+      capitulo: actualizado.capitulo,
+      versiculos: actualizado.versiculos,
+      ref: actualizado.ref,
+      estadoEdicion: actualizado.estadoEdicion
     });
   }
+
+  try {
+    renderPanelImagenes?.(panelImagenesGuardadas || {});
+  } catch(e) {}
 
   return actualizado;
 }
@@ -6154,44 +6340,46 @@ window.finalizarEdicion = async (ev) => {
 
   const btn = ev?.currentTarget;
 
+  const destinoFinal =
+    panelImagenEditandoId || origenModalImagen === "panel"
+      ? "panel"
+      : "biblia";
+
   if (btn) {
     btn.disabled = true;
-    btn.innerHTML = `<i class="fa-solid fa-circle-check"></i>`;
+    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i>`;
     btn.style.opacity = "0.65";
     btn.style.cursor = "wait";
   }
 
-try {
-const metaBase = window.__VA_EDITANDO_PANEL_IMAGEN_ITEM || null;
-
-const meta = await pedirDatosImagenMeta(metaBase, { cancelarFinaliza: true });
-imagenMetaActual = meta || {
-  titulo: "",
-  descripcion: "",
-  color: "#fff3b0"
-};
-
-window.__VA_IMG_META_ACTUAL = imagenMetaActual;
-
   try {
-    await window.vaConsumirUsoColaborador?.(
-      "crearImagenBiblia",
-      VA_LIMITE_COLAB_IMAGENES_DIA
-    );
-  } catch (limiteErr) {
-    alert(limiteErr?.message || "No podés crear más imágenes por hoy.");
-    return;
-  }
+    const metaBase = window.__VA_EDITANDO_PANEL_IMAGEN_ITEM || null;
 
-  if (typeof devToast === "function") {
-    devToast("⏳ Guardando imagen.");
-  }
+    const meta = await pedirDatosImagenMeta(metaBase, { cancelarFinaliza: true });
 
-    // ✅ CLAVE: si hay audio confirmado, subirlo ANTES de guardar la imagen
+    imagenMetaActual = meta || {
+      titulo: "",
+      descripcion: "",
+      color: "#fff3b0"
+    };
+
+    window.__VA_IMG_META_ACTUAL = imagenMetaActual;
+
+    try {
+      await window.vaConsumirUsoColaborador?.(
+        "crearImagenBiblia",
+        VA_LIMITE_COLAB_IMAGENES_DIA
+      );
+    } catch (limiteErr) {
+      alert(limiteErr?.message || "No podés crear más imágenes por hoy.");
+      return;
+    }
+
+    mostrarToast?.("Guardando...");
+    devToast?.("⏳ Guardando imagen...");
+
     if (window.__pendingAudio?.audioBase64) {
-      if (typeof devToast === "function") {
-        devToast("⏳ Subiendo audio...");
-      }
+      devToast?.("⏳ Subiendo audio...");
 
       try {
         await window.subirPendingAudioAFirebase({ subirIglesia: false });
@@ -6203,21 +6391,22 @@ window.__VA_IMG_META_ACTUAL = imagenMetaActual;
       }
     }
 
-    // ✅ ahora sí: guarda imagen + toma window.__lastAudioUrl
     const ok = await withRenderLock(async () => {
       return await asegurarCanvasFinal({ subir: true });
-      vaImgCerrarFlujoYVolverPanel();
-mostrarToast?.("✅ Imagen guardada en Mi Panel");
     });
 
     if (!ok) throw new Error("No se pudo generar o guardar la imagen");
 
-    if (typeof devToast === "function") {
-      devToast("✅ Imagen guardada");
-    }
+    devToast?.("✅ Imagen guardada");
+    mostrarToast?.("✅ Imagen guardada");
 
     resetModalPersonalizar();
-    salirModoImagen();
+
+    if (destinoFinal === "panel") {
+      vaImgCerrarFlujoYVolverPanel();
+    } else {
+      salirModoImagen();
+    }
 
   } catch (e) {
     console.error(e);
@@ -6225,14 +6414,15 @@ mostrarToast?.("✅ Imagen guardada en Mi Panel");
 
   } finally {
     window.__FINALIZANDO__ = false;
-  imagenMetaActual = null;
-window.__VA_IMG_META_ACTUAL = null;
 
-  panelImagenEditandoId = null;
-panelImagenEditandoItem = null;
+    imagenMetaActual = null;
+    window.__VA_IMG_META_ACTUAL = null;
 
-window.__VA_EDITANDO_PANEL_IMAGEN_ID = null;
-window.__VA_EDITANDO_PANEL_IMAGEN_ITEM = null;
+    panelImagenEditandoId = null;
+    panelImagenEditandoItem = null;
+
+    window.__VA_EDITANDO_PANEL_IMAGEN_ID = null;
+    window.__VA_EDITANDO_PANEL_IMAGEN_ITEM = null;
 
     if (btn) {
       btn.disabled = false;
@@ -10528,6 +10718,10 @@ window.editarImagenPanel = async function(id) {
       return;
     }
 
+    const esLibre = vaPanelImagenEsTextoLibre(item);
+    const esBiblia = vaPanelImagenEsBiblia(item) && !esLibre;
+    const tieneEstadoEdicion = !!item.estadoEdicion;
+
     panelImagenEditandoId = id;
     panelImagenEditandoItem = item;
 
@@ -10539,9 +10733,13 @@ window.editarImagenPanel = async function(id) {
 
     resetModalPersonalizar();
 
-    origenModalImagen = "panel";
-    modoImagenLibre = true;
-    textoLibreImagen = "";
+    origenModalImagen = esLibre ? "panel" : "biblia";
+    modoImagenLibre = !!esLibre;
+    textoLibreImagen = esLibre ? String(item.textoLibre || "").trim() : "";
+
+    if (esBiblia) {
+      vaPanelRestaurarSeleccionBibliaImagen(item);
+    }
 
     modoImagen = true;
     document.body.classList.add("modo-imagen");
@@ -10551,8 +10749,9 @@ window.editarImagenPanel = async function(id) {
 
     abrirModalPersonalizar();
     asegurarCajaTextoLibrePanel();
+
     setFormatoImagen(
-      String(item.formato || item.formatoImagen || "").toLowerCase() === "story"
+      String(item.formato || item.formatoImagen || item.estadoEdicion?.formato || "").toLowerCase() === "story"
         ? "story"
         : "post"
     );
@@ -10569,10 +10768,30 @@ window.editarImagenPanel = async function(id) {
     }
 
     fondoDisenoBiblia.baseTipo = "imagen";
-    fondoFinal = item.url;
-    fondoFinalBlobUrl = await vaPanelImagenABlobUrlSeguro(item.url);
 
-    vaPanelSetTextoEditorImagen("");
+    // ✅ Si la imagen fue creada con este cambio, restauramos la receta real.
+    // ✅ Si es vieja y no tiene receta, usamos la imagen ya hecha como base plana.
+    if (tieneEstadoEdicion) {
+      vaRestaurarEstadoEdicionImagen(item);
+
+      const fondoGuardado = String(item.estadoEdicion?.fondoFinal || "").trim();
+
+      if (fondoGuardado) {
+        fondoFinal = fondoGuardado;
+        try {
+          fondoFinalBlobUrl = await vaPanelImagenABlobUrlSeguro(fondoGuardado);
+        } catch(e) {
+          fondoFinalBlobUrl = null;
+        }
+      }
+    } else {
+      fondoFinal = item.url;
+      fondoFinalBlobUrl = await vaPanelImagenABlobUrlSeguro(item.url);
+    }
+
+    if (esLibre) {
+      vaPanelSetTextoEditorImagen(textoLibreImagen || "ESCRIBÍ\nAQUÍ TU\nTEXTO");
+    }
 
     const chk = document.getElementById("checkIglesia");
     if (chk) {
