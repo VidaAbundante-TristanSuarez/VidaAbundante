@@ -22,8 +22,8 @@
 
   const USAR_ARPA_BIBLIA = true;
   const BIBLIA_ARPA_URL = "./audio/arpa-biblia.mp3";
-  const BIBLIA_ARPA_VOLUME = ES_MOVIL ? 0.045 : 0.06;
-
+const BIBLIA_ARPA_VOLUME = ES_MOVIL ? 0.055 : 0.06;
+   
   let bibliaArpaAudio = null;
   let bibliaArpaFadeTimer = null;
 
@@ -116,6 +116,76 @@
   let tokenLectura = 0;
   let keepAliveTimer = null;
 
+     const LS_BIBLIA_TTS_ULTIMO = "va_biblia_tts_ultimo_v1";
+
+  function guardarUltimoVersiculoTTS(v) {
+    try {
+      if (!v || !v.id) return;
+
+      localStorage.setItem(LS_BIBLIA_TTS_ULTIMO, JSON.stringify({
+        id: v.id,
+        num: v.num || 0,
+        ts: Date.now()
+      }));
+    } catch {}
+  }
+
+  function limpiarUltimoGuardadoVisual() {
+    qsa("#texto .versiculo.biblia-tts-ultimo-guardado").forEach(el => {
+      el.classList.remove("biblia-tts-ultimo-guardado");
+    });
+  }
+
+  function restaurarUltimoVersiculoTTS(opts = {}) {
+    try {
+      if (estado === "leyendo") return;
+
+      const raw = localStorage.getItem(LS_BIBLIA_TTS_ULTIMO);
+      if (!raw) return;
+
+      const data = JSON.parse(raw);
+      if (!data?.id) return;
+
+      const el = qsa("#texto .versiculo").find(x => x.dataset.id === data.id);
+      if (!el) return;
+
+      limpiarUltimoGuardadoVisual();
+
+      if (!el.classList.contains("biblia-tts-versiculo-activo")) {
+        el.classList.add("biblia-tts-ultimo-guardado");
+      }
+
+      if (opts.scroll) {
+        setTimeout(() => {
+          try {
+            el.scrollIntoView({
+              behavior: "smooth",
+              block: "center"
+            });
+          } catch {}
+        }, 150);
+      }
+    } catch {}
+  }
+
+  function programarRestaurarUltimoTTS() {
+    let intentos = 0;
+
+    const timer = setInterval(() => {
+      intentos++;
+
+      restaurarUltimoVersiculoTTS({
+        scroll: intentos === 2
+      });
+
+      const hayVersos = qsa("#texto .versiculo").length > 0;
+
+      if (hayVersos || intentos >= 15) {
+        clearInterval(timer);
+      }
+    }, 300);
+  }
+
   function qsa(sel) {
     return Array.from(document.querySelectorAll(sel));
   }
@@ -137,6 +207,7 @@
     if (!el) return;
 
     limpiarActivo();
+    limpiarUltimoGuardadoVisual();
 
     el.classList.add("biblia-tts-versiculo-activo");
     el.style.setProperty("background", "rgba(209, 238, 255, .88)", "important");
@@ -345,7 +416,8 @@
       return;
     }
 
-    marcarActivo(v.el);
+    guardarUltimoVersiculoTTS(v);
+     marcarActivo(v.el);
 
     requestAnimationFrame(() => {
       try {
@@ -445,7 +517,10 @@
       speechSynthesis.cancel();
     } catch {}
 
-    if (limpiar) limpiarActivo();
+    if (limpiar) {
+      limpiarActivo();
+      restaurarUltimoVersiculoTTS({ scroll: false });
+    }
 
     setBoton("detenido");
   }
@@ -530,6 +605,10 @@
     document.addEventListener("visibilitychange", () => {
       if (document.hidden) {
         detenerBibliaTTS(true);
+      } else {
+        setTimeout(() => {
+          restaurarUltimoVersiculoTTS({ scroll: false });
+        }, 300);
       }
     });
 
@@ -539,6 +618,7 @@
 
     window.detenerBibliaTTS = detenerBibliaTTS;
     window.reproducirBibliaDesdeInicio = () => reproducirDesde(0);
+         programarRestaurarUltimoTTS();
   }
 
   if (document.readyState === "loading") {
