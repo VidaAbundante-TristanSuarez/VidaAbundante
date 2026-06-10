@@ -1,8 +1,7 @@
 /* =========================================================
    BIBLIA TTS - speechSynthesis local
-   PC: versículo por versículo
-   Móvil/PWA: modo fluido para reducir silencios
-   Arpa de fondo suave
+   PC: versículo por versículo + arpa
+   Móvil/PWA: modo fluido SIN arpa
    No usa Firebase, no usa R2, no usa APIs pagas.
    ========================================================= */
 
@@ -18,14 +17,22 @@
   const TTS_PITCH = ES_MOVIL ? 1.0 : 0.82;
   const TTS_VOLUME = 1;
 
-  /* ================= ARPA DE FONDO ================= */
+  /* =========================================================
+     ARPA DE FONDO
+     IMPORTANTE:
+     - PC: arpa activada.
+     - Celular/PWA: arpa desactivada para no afectar marcado ni reproducción.
+     ========================================================= */
+
+  const USAR_ARPA_BIBLIA = !ES_MOVIL;
   const BIBLIA_ARPA_URL = "./audio/arpa-biblia.mp3";
-  const BIBLIA_ARPA_VOLUME = ES_MOVIL ? 0.08 : 0.06;
+  const BIBLIA_ARPA_VOLUME = 0.06;
 
   let bibliaArpaAudio = null;
   let bibliaArpaFadeTimer = null;
 
   function getBibliaArpaAudio() {
+    if (!USAR_ARPA_BIBLIA) return null;
     if (bibliaArpaAudio) return bibliaArpaAudio;
 
     bibliaArpaAudio = new Audio(BIBLIA_ARPA_URL);
@@ -37,8 +44,11 @@
   }
 
   function iniciarArpaBiblia() {
+    if (!USAR_ARPA_BIBLIA) return;
+
     try {
       const audio = getBibliaArpaAudio();
+      if (!audio) return;
 
       clearInterval(bibliaArpaFadeTimer);
 
@@ -61,6 +71,8 @@
   }
 
   function pausarArpaBiblia() {
+    if (!USAR_ARPA_BIBLIA) return;
+
     try {
       const audio = bibliaArpaAudio;
       if (!audio) return;
@@ -71,6 +83,8 @@
   }
 
   function detenerArpaBiblia() {
+    if (!USAR_ARPA_BIBLIA) return;
+
     try {
       const audio = bibliaArpaAudio;
       if (!audio) return;
@@ -488,6 +502,8 @@
     estado = "leyendo";
     setBoton("leyendo");
     iniciarKeepAlive();
+
+    // ✅ Arpa solo en PC. En celular no se inicia.
     iniciarArpaBiblia();
 
     setTimeout(() => {
@@ -522,6 +538,8 @@
     estado = "leyendo";
     setBoton("leyendo");
     iniciarKeepAlive();
+
+    // ✅ Arpa solo vuelve en PC. En celular no hace nada.
     iniciarArpaBiblia();
 
     try {
