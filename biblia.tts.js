@@ -12,11 +12,67 @@
 
   const MODO_FLUIDO_MOVIL = ES_MOVIL;
 
-  const TTS_LANG = "es-US";
-  const TTS_RATE = ES_MOVIL ? 1.08 : 1.0;
-  const TTS_PITCH = ES_MOVIL ? 1.0 : 0.82;
+  // Voz local del navegador.
+  // En celular bajamos velocidad y pitch para que no suene tan chillona.
+  const TTS_LANG = ES_MOVIL ? "es-ES" : "es-US";
+  const TTS_RATE = ES_MOVIL ? 0.96 : 1.0;
+  const TTS_PITCH = ES_MOVIL ? 0.72 : 0.82;
   const TTS_VOLUME = 1;
 
+  let vocesBibliaTTS = [];
+
+  function cargarVocesBibliaTTS() {
+    try {
+      vocesBibliaTTS = speechSynthesis.getVoices() || [];
+    } catch {
+      vocesBibliaTTS = [];
+    }
+  }
+
+  function elegirVozBibliaTTS() {
+    try {
+      const voces = vocesBibliaTTS.length ? vocesBibliaTTS : (speechSynthesis.getVoices() || []);
+      const vocesEs = voces.filter(v => /^es/i.test(v.lang || ""));
+
+      if (!vocesEs.length) return null;
+
+      const textoVoz = (v) => `${v.name || ""} ${v.lang || ""}`.toLowerCase();
+
+      return (
+        vocesEs.find(v => /pablo|helena|sabina|laura|diego|dalia|jorge/.test(textoVoz(v))) ||
+        vocesEs.find(v => /google.*español|google.*spanish/.test(textoVoz(v))) ||
+        vocesEs.find(v => (v.lang || "").toLowerCase() === "es-es") ||
+        vocesEs.find(v => (v.lang || "").toLowerCase() === "es-mx") ||
+        vocesEs.find(v => (v.lang || "").toLowerCase() === "es-us") ||
+        vocesEs[0]
+      );
+    } catch {
+      return null;
+    }
+  }
+
+  function aplicarAjustesVozBiblia(u) {
+    u.lang = TTS_LANG;
+    u.rate = TTS_RATE;
+    u.pitch = TTS_PITCH;
+    u.volume = TTS_VOLUME;
+
+    // Solo forzamos voz en celular para mejorar la voz horrible.
+    // En PC lo dejamos estable como estaba.
+    if (ES_MOVIL) {
+      const voz = elegirVozBibliaTTS();
+      if (voz) {
+        u.voice = voz;
+        u.lang = voz.lang || TTS_LANG;
+      }
+    }
+  }
+
+  cargarVocesBibliaTTS();
+
+  try {
+    speechSynthesis.onvoiceschanged = cargarVocesBibliaTTS;
+  } catch {}
      /* ================= ARPA DE FONDO ================= */
   const BIBLIA_ARPA_URL = "./audio/arpa-biblia.mp3";
   const BIBLIA_ARPA_VOLUME = ES_MOVIL ? 0.08 : 0.06;
@@ -100,6 +156,11 @@
 
   let mapaFluido = [];
   let ultimoIndiceMarcado = -1;
+
+  // Fallback para Android: si onboundary no avanza,
+  // marcamos el versículo por tiempo aproximado.
+  let marcadorFluidoTimer = null;
+  let fluidoBoundaryReal = false;
 
   function qsa(sel) {
     return Array.from(document.querySelectorAll(sel));
@@ -259,11 +320,7 @@
 
     const u = new SpeechSynthesisUtterance(limpio);
 
-    // No usamos u.voice porque en tus pruebas Chrome se trababa.
-    u.lang = TTS_LANG;
-    u.rate = TTS_RATE;
-    u.pitch = TTS_PITCH;
-    u.volume = TTS_VOLUME;
+    aplicarAjustesVozBiblia(u);
 
     u.onend = () => {
       if (miToken !== tokenLectura) return;
@@ -399,6 +456,40 @@
     marcarFluidoPorIndice(elegido.indice);
   }
 
+  function detenerMarcadorFluidoFallback() {
+    if (marcadorFluidoTimer) {
+      clearInterval(marcadorFluidoTimer);
+      marcadorFluidoTimer = null;
+    }
+  }
+
+  function iniciarMarcadorFluidoFallback(miToken, indiceBase = indiceActual) {
+    detenerMarcadorFluidoFallback();
+
+    const itemBase = mapaFluido.find(x => x.indice === indiceBase) || mapaFluido[0];
+    const charBase = itemBase ? itemBase.inicio : 0;
+    const inicioMs = Date.now();
+
+    // Si marca adelantado o atrasado, solo tocá este número:
+    // más alto = avanza más rápido; más bajo = avanza más lento.
+    const charsPorSegundo = 11.8;
+
+    marcadorFluidoTimer = setInterval(() => {
+      if (miToken !== tokenLectura || estado !== "leyendo") {
+        detenerMarcadorFluidoFallback();
+        return;
+      }
+
+      // Si el celular sí manda boundaries reales, no usamos el cálculo aproximado.
+      if (fluidoBoundaryReal) return;
+
+      const segundos = (Date.now() - inicioMs) / 1000;
+      const charEstimado = charBase + Math.floor(segundos * charsPorSegundo * TTS_RATE);
+
+      marcarFluidoPorChar(charEstimado);
+    }, 650);
+  }
+   
   function hablarFluidoMovil(indiceInicio, miToken) {
     const textoTotal = crearTextoFluidoDesde(indiceInicio);
 
@@ -410,19 +501,19 @@
     const primero = mapaFluido[0];
     if (primero) marcarFluidoPorIndice(primero.indice);
 
+    fluidoBoundaryReal = false;
+    iniciarMarcadorFluidoFallback(miToken, indiceInicio);
+
     const u = new SpeechSynthesisUtterance(textoTotal);
 
-    // No forzamos voz exacta.
-    u.lang = TTS_LANG;
-    u.rate = TTS_RATE;
-    u.pitch = TTS_PITCH;
-    u.volume = TTS_VOLUME;
+    aplicarAjustesVozBiblia(u);
 
     u.onboundary = (ev) => {
       if (miToken !== tokenLectura) return;
       if (estado !== "leyendo") return;
 
       if (typeof ev.charIndex === "number") {
+        if (ev.charIndex > 0) fluidoBoundaryReal = true;
         marcarFluidoPorChar(ev.charIndex);
       }
     };
@@ -431,6 +522,7 @@
       if (miToken !== tokenLectura) return;
       if (estado !== "leyendo") return;
 
+      detenerMarcadorFluidoFallback();
       detenerBibliaTTS(true);
     };
 
@@ -443,6 +535,7 @@
       estado = "pausado";
       setBoton("pausado");
       detenerKeepAlive();
+      detenerMarcadorFluidoFallback();
     };
 
     window.__bibliaTTSUtterance = u;
@@ -500,7 +593,8 @@ iniciarArpaBiblia();
     estado = "pausado";
     setBoton("pausado");
     detenerKeepAlive();
-     pausarArpaBiblia();
+    detenerMarcadorFluidoFallback();
+    pausarArpaBiblia();
 
     // En modo fluido móvil intentamos pausa real.
     // Si Android no la respeta, el botón seguirá mostrando play pero dependerá del motor del celular.
@@ -519,6 +613,10 @@ iniciarArpaBiblia();
     iniciarKeepAlive();
      iniciarArpaBiblia();
 
+         if (MODO_FLUIDO_MOVIL) {
+      iniciarMarcadorFluidoFallback(tokenLectura, indiceActual);
+    }
+
     try {
       speechSynthesis.resume();
 
@@ -535,7 +633,8 @@ iniciarArpaBiblia();
     tokenLectura++;
     estado = "detenido";
     detenerKeepAlive();
-     detenerArpaBiblia();
+    detenerMarcadorFluidoFallback();
+    detenerArpaBiblia();
 
     try { speechSynthesis.cancel(); } catch {}
 
