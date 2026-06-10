@@ -420,245 +420,6 @@ let modoImagenLibre = false;        // true cuando el texto viene de un textarea
 let textoLibreImagen = "";          // texto escrito manualmente en Mi Panel
 let formatoImagenActual = "post"; // "post" | "story"
 
-let panelImagenEditandoId = null;
-let panelImagenEditandoItem = null;
-
-window.__VA_EDITANDO_PANEL_IMAGEN_ID = null;
-window.__VA_EDITANDO_PANEL_IMAGEN_ITEM = null;
-
-let imagenMetaActual = null;
-window.__VA_IMG_META_ACTUAL = null;
-window.__VA_PANEL_IMG_ITEMS = window.__VA_PANEL_IMG_ITEMS || {};
-window.__VA_EDITANDO_PANEL_IMAGEN_ID_FINAL = "";
-
-function vaToastDevSeguro(mensaje) {
-  try {
-    if (typeof window.devToast === "function") {
-      window.devToast(mensaje);
-      return;
-    }
-  } catch (e) {}
-
-  try {
-    if (typeof devToast === "function") {
-      devToast(mensaje);
-      return;
-    }
-  } catch (e) {}
-}
-
-function vaImgMetaHex(color = "") {
-  const c = String(color || "").trim();
-  return /^#[0-9a-f]{6}$/i.test(c) ? c : "";
-}
-
-function vaImgMetaContraste(hex = "#ffffff") {
-  let h = vaImgMetaHex(hex) || "#ffffff";
-  h = h.replace("#", "");
-
-  const r = parseInt(h.slice(0, 2), 16);
-  const g = parseInt(h.slice(2, 4), 16);
-  const b = parseInt(h.slice(4, 6), 16);
-  const lum = 0.299 * r + 0.587 * g + 0.114 * b;
-
-  return lum > 160 ? "#000000" : "#ffffff";
-}
-
-function vaImgMetaTituloSugerido() {
-  return "";
-}
-
-function vaImgMetaSyncColor(hex = "#fff3b0") {
-  const color = vaImgMetaHex(hex) || "#fff3b0";
-  const input = document.getElementById("imagenMetaColor");
-  const host = document.getElementById("imagenMetaColorHost");
-
-  if (input) input.value = color;
-
-  if (host) {
-    host.style.setProperty("--pickr-color", color);
-    host.style.background = color;
-
-    try {
-      if (host._pickr) host._pickr.setColor(color);
-    } catch (e) {}
-  }
-}
-
-function vaImgMetaCrearModal() {
-  if (document.getElementById("modalImagenMeta")) return;
-
-  document.body.insertAdjacentHTML("beforeend", `
-    <div id="modalImagenMeta" class="va-img-meta-modal" aria-hidden="true">
-      <div class="va-img-meta-card">
-        <button type="button" class="va-img-meta-close" id="btnImagenMetaCancelarTop">
-          <i class="fa-solid fa-xmark"></i>
-        </button>
-
-        <h3>Datos de la imagen</h3>
-        <p class="va-img-meta-sub">Esto se va a ver arriba de la imagen en Mi Panel y Compartidos.</p>
-
-        <label class="va-img-meta-label">
-          Título
-      <input id="imagenMetaTitulo" type="text" placeholder="Título">
-        </label>
-
-        <label class="va-img-meta-label">
-          Descripción
-          <textarea id="imagenMetaDescripcion" placeholder="Escribí una descripción corta"></textarea>
-        </label>
-
-        <div class="va-img-meta-color-row">
-          <span>Color del contenedor</span>
-          <input type="hidden" id="imagenMetaColor" value="#fff3b0">
-          <button
-            type="button"
-            id="imagenMetaColorHost"
-            class="pickr-host"
-            data-target="#imagenMetaColor"
-            aria-label="Color del contenedor"
-          ></button>
-        </div>
-
-        <div class="va-img-meta-actions">
-          <button type="button" class="btn-ghost" id="btnImagenMetaCancelar">Cancelar</button>
-          <button type="button" class="btn-primary" id="btnImagenMetaGuardar">
-            <i class="fa-solid fa-circle-check"></i>
-            Guardar
-          </button>
-        </div>
-      </div>
-    </div>
-  `);
-
-  const cancelar = () => vaImgMetaCerrar(null);
-
-  document.getElementById("btnImagenMetaCancelar")?.addEventListener("click", cancelar);
-  document.getElementById("btnImagenMetaCancelarTop")?.addEventListener("click", cancelar);
-
-  const modalMetaEl = document.getElementById("modalImagenMeta");
-  const cardMetaEl = modalMetaEl?.querySelector(".va-img-meta-card");
-
-  // ✅ No cerrar por click raro / selección de texto / arrastre del mouse.
-  // Solo cierran los botones Cancelar o X.
-  cardMetaEl?.addEventListener("mousedown", (e) => {
-    e.stopPropagation();
-  });
-
-  cardMetaEl?.addEventListener("click", (e) => {
-    e.stopPropagation();
-  });
-
-  modalMetaEl?.addEventListener("click", (e) => {
-    if (e.target?.id === "modalImagenMeta") {
-      e.preventDefault();
-      e.stopPropagation();
-      return;
-    }
-  });
-
-document.getElementById("btnImagenMetaGuardar")?.addEventListener("click", () => {
-  const btnGuardar = document.getElementById("btnImagenMetaGuardar");
-
-  const titulo = String(document.getElementById("imagenMetaTitulo")?.value || "").trim();
-  const descripcion = String(document.getElementById("imagenMetaDescripcion")?.value || "").trim();
-  const color = vaImgMetaHex(document.getElementById("imagenMetaColor")?.value || "#fff3b0") || "#fff3b0";
-
-  if (btnGuardar) {
-    btnGuardar.disabled = true;
-    btnGuardar.innerHTML = `
-      <i class="fa-solid fa-spinner fa-spin"></i>
-      Guardando...
-    `;
-    btnGuardar.style.opacity = "0.75";
-    btnGuardar.style.cursor = "wait";
-  }
-
-  // ✅ título puede quedar vacío
-  vaImgMetaCerrar({ titulo, descripcion, color });
-});
-
-  setTimeout(() => {
-    if (typeof initPickrEnHosts === "function") {
-      initPickrEnHosts("#imagenMetaColorHost");
-    }
-  }, 0);
-}
-
-function vaImgMetaCerrar(valor) {
-  const modal = document.getElementById("modalImagenMeta");
-
-  if (modal) {
-    modal.classList.remove("abierto");
-    modal.setAttribute("aria-hidden", "true");
-    modal.style.display = "none";
-  }
-
-  const resolver = window.__VA_IMG_META_RESOLVE;
-  const cancelValue = window.__VA_IMG_META_CANCEL_VALUE || null;
-
-  window.__VA_IMG_META_RESOLVE = null;
-  window.__VA_IMG_META_CANCEL_VALUE = null;
-
-  // ✅ Si cancelás durante FINALIZAR, no cancela el proceso:
-  // termina igual, pero sin título/descripción.
-  if (resolver) resolver(valor === null ? cancelValue : valor);
-}
-
-function pedirDatosImagenMeta(base = null, opciones = {}) {
-  vaImgMetaCrearModal();
-
-  const modal = document.getElementById("modalImagenMeta");
-  const inputTitulo = document.getElementById("imagenMetaTitulo");
-  const inputDesc = document.getElementById("imagenMetaDescripcion");
-
-  const b = base && typeof base === "object" ? base : {};
-  const colorInicial = vaImgMetaHex(b.color || b.colorFondo || "#fff3b0") || "#fff3b0";
-
-  if (!modal || !inputTitulo || !inputDesc) {
-    return Promise.resolve({
-      titulo: String(b.titulo || vaImgMetaTituloSugerido() || "").trim(),
-      descripcion: String(b.descripcion || "").trim(),
-      color: colorInicial
-    });
-  }
-
-  inputTitulo.value = String(
-    b.titulo || (b.id ? "" : vaImgMetaTituloSugerido()) || ""
-  ).trim();
-
-  inputDesc.value = String(b.descripcion || "").trim();
-
-  vaImgMetaSyncColor(colorInicial);
-
-  // ✅ En finalizar imagen: Cancelar = seguir sin título/desc.
-  // ✅ En editar desde Mi Panel: Cancelar = no guardar cambios.
-window.__VA_IMG_META_CANCEL_VALUE = opciones.cancelarFinaliza
-  ? { __cancelado: true }
-  : null;
-
-    const btnGuardarMeta = document.getElementById("btnImagenMetaGuardar");
-  if (btnGuardarMeta) {
-    btnGuardarMeta.disabled = false;
-    btnGuardarMeta.innerHTML = `
-      <i class="fa-solid fa-circle-check"></i>
-      Guardar
-    `;
-    btnGuardarMeta.style.opacity = "";
-    btnGuardarMeta.style.cursor = "";
-  }
-
-  modal.style.display = "flex";
-  modal.classList.add("abierto");
-  modal.setAttribute("aria-hidden", "false");
-
-  setTimeout(() => inputTitulo.focus(), 80);
-
-  return new Promise(resolve => {
-    window.__VA_IMG_META_RESOLVE = resolve;
-  });
-}
-
 function limpiarSeleccionImagenCompleta() {
   seleccionImagen = {};
   seleccionImagenOrden = [];
@@ -779,138 +540,6 @@ function referenciaImagenEnOrden(items = []) {
 
     return `${libroGrupo.Libro} ${partes.join(" y ")}`;
   }).join("; ");
-}
-
-function vaImgCerrarFlujoYVolverPanel() {
-  try {
-    salirModoImagen();
-  } catch (e) {
-    try { cerrarModalPersonalizar(); } catch (_) {}
-  }
-
-  setTimeout(() => {
-    try { window.irA?.("panel"); } catch(e) {}
-    try { window.mostrarPanel?.("imagenes"); } catch(e) {}
-    try { window.abrirPanelSubseccion?.("imagenes"); } catch(e) {}
-
-    try {
-      renderPanelImagenes?.(panelImagenesGuardadas || {});
-    } catch(e) {}
-  }, 80);
-
-  // ✅ segundo repintado para ganarle a Firebase / animaciones / móvil
-  setTimeout(() => {
-    try {
-      renderPanelImagenes?.(panelImagenesGuardadas || {});
-    } catch(e) {}
-  }, 350);
-}
-
-function vaPanelImagenEsTextoLibre(item = {}) {
-  return (
-    item?.tipoTexto === "libre" ||
-    (!!String(item?.textoLibre || "").trim() && item?.tipoTexto !== "biblia")
-  );
-}
-
-function vaPanelImagenEsBiblia(item = {}) {
-  return (
-    item?.tipoTexto === "biblia" ||
-    Array.isArray(item?.versiculos) && item.versiculos.length > 0 ||
-    !!String(item?.ref || "").trim()
-  );
-}
-
-function vaPanelRestaurarSeleccionBibliaImagen(item = {}) {
-  limpiarSeleccionImagenCompleta();
-
-  const versiculos = Array.isArray(item?.versiculos) ? item.versiculos : [];
-
-  versiculos.forEach(v => {
-    const libro = String(v?.libro || v?.Libro || "").trim();
-    const capitulo = Number(v?.capitulo || v?.Capitulo || 0);
-    const versiculo = Number(v?.versiculo || v?.Versiculo || 0);
-
-    if (!libro || !capitulo || !versiculo) return;
-
-    const id = `${libro}_${capitulo}_${versiculo}`;
-    seleccionImagen[id] = true;
-
-    if (!seleccionImagenOrden.includes(id)) {
-      seleccionImagenOrden.push(id);
-    }
-  });
-}
-
-function vaCapturarEstadoEdicionImagen() {
-  return {
-    formato: formatoImagenActual || "post",
-
-    fondoFinal: fondoFinal || "",
-    fondoDisenoBiblia: JSON.parse(JSON.stringify(fondoDisenoBiblia || {})),
-
-    fuenteActual: fuenteActual || "Roboto, sans-serif",
-    textStyle: { ...(textStyle || {}) },
-
-    tamanoTexto: Number(document.getElementById("personalizarTamaño")?.value || 0),
-    colorTexto: document.getElementById("personalizarColor")?.value || "#000000",
-    colorContorno: document.getElementById("personalizarOutlineColor")?.value || "",
-    opacidad: document.getElementById("personalizarOpacidad")?.value || "0.35",
-    colorOpacidad: document.getElementById("colorOpacidadBiblia")?.value || "#000000"
-  };
-}
-
-function vaRestaurarEstadoEdicionImagen(item = {}) {
-  const estado = item?.estadoEdicion || {};
-
-  if (estado.fondoDisenoBiblia && typeof estado.fondoDisenoBiblia === "object") {
-    fondoDisenoBiblia = {
-      ...bibliaNuevoEstadoFondoDiseno(),
-      ...estado.fondoDisenoBiblia
-    };
-  }
-
-  if (estado.fuenteActual) {
-    fuenteActual = estado.fuenteActual;
-  }
-
-  if (estado.textStyle && typeof estado.textStyle === "object") {
-    textStyle = {
-      upper: !!estado.textStyle.upper,
-      bold: !!estado.textStyle.bold,
-      italic: !!estado.textStyle.italic,
-      underline: !!estado.textStyle.underline
-    };
-  }
-
-  const sizeInput = document.getElementById("personalizarTamaño");
-  if (sizeInput && estado.tamanoTexto) {
-    sizeInput.value = String(estado.tamanoTexto);
-    userSetFontSize = true;
-  }
-
-  const colorInput = document.getElementById("personalizarColor");
-  if (colorInput && estado.colorTexto) {
-    colorInput.value = estado.colorTexto;
-  }
-
-  const opInput = document.getElementById("personalizarOpacidad");
-  if (opInput && estado.opacidad) {
-    opInput.value = estado.opacidad;
-  }
-
-  const colorOp = document.getElementById("colorOpacidadBiblia");
-  if (colorOp && estado.colorOpacidad) {
-    colorOp.value = estado.colorOpacidad;
-  }
-
-  const outline = asegurarColorContornoBiblia?.();
-  if (outline && estado.colorContorno) {
-    outline.value = estado.colorContorno;
-    outline.dataset.manual = "1";
-  }
-
-  bibliaSincronizarControlesFondoDiseno?.();
 }
 
 // ================= ORDEN REAL PARA MARCADORES / NOTAS =================
@@ -2187,16 +1816,13 @@ onValue(ref(db, "marcados/" + uid), s => {
   // ✅ Cargar imágenes del panel (personal)
 onValue(ref(db, "panelImagenesPersonal/" + uid), s => {
   const data = s.val() || {};
-
   panelImagenesGuardadas = data;
-  window.__VA_PANEL_IMG_ITEMS = data;
 
-  const panelImagenes = document.getElementById("panel-imagenes");
-
+  // ✅ En celulares no renderizamos Mi Panel si no está visible.
+  // Esto evita cargar muchas imágenes al iniciar Biblia/Compartidos.
   if (
     document.body.classList.contains("en-panel") &&
-    panelImagenes &&
-    panelImagenes.offsetParent !== null
+    document.getElementById("panel-imagenes")?.offsetParent !== null
   ) {
     renderPanelImagenes(data);
   }
@@ -2872,68 +2498,20 @@ function cargarCapitulos(opts = {}) {
 // ================= ⭐ MOSTRAR TOAST ==============================
 function mostrarToast(msg, ms = 2200) {
   let t = document.getElementById("toast");
-
   if (!t) {
     t = document.createElement("div");
     t.id = "toast";
     t.className = "toast";
     document.body.appendChild(t);
   }
-
   t.textContent = msg;
-
-  const modalImg = document.getElementById("modalPersonalizar");
-  const modalMeta = document.getElementById("modalImagenMeta");
-
-  const modalActivo =
-    (modalMeta && modalMeta.style.display !== "none" && modalMeta.classList.contains("abierto"))
-    ? modalMeta
-    : (modalImg && modalImg.style.display !== "none" && modalImg.classList.contains("abierto"))
-      ? modalImg
-      : null;
-
-  // ✅ siempre por delante de los modales
-  t.style.position = "fixed";
-  t.style.left = "50%";
-  t.style.zIndex = "999999";
   t.style.display = "block";
-  t.style.opacity = "0";
-
-  if (modalActivo) {
-    const card =
-      modalActivo.querySelector(".modal-contenido") ||
-      modalActivo.querySelector(".modal-card") ||
-      modalActivo.querySelector(".va-img-meta-card") ||
-      modalActivo.firstElementChild;
-
-    if (card) {
-      const r = card.getBoundingClientRect();
-      const top = Math.max(18, r.top - 52);
-
-      t.style.top = `${top}px`;
-      t.style.bottom = "auto";
-      t.style.transform = "translateX(-50%)";
-    } else {
-      t.style.top = "24px";
-      t.style.bottom = "auto";
-      t.style.transform = "translateX(-50%)";
-    }
-  } else {
-    t.style.top = "24px";
-    t.style.bottom = "auto";
-    t.style.transform = "translateX(-50%)";
-  }
-
-  requestAnimationFrame(() => {
-    t.style.opacity = "1";
-  });
+  requestAnimationFrame(() => (t.style.opacity = "1"));
 
   clearTimeout(t._tm);
   t._tm = setTimeout(() => {
     t.style.opacity = "0";
-    setTimeout(() => {
-      t.style.display = "none";
-    }, 250);
+    setTimeout(() => (t.style.display = "none"), 250);
   }, ms);
 }
 
@@ -5535,19 +5113,6 @@ async function subirImagenBibliaBaseUnaVez() {
 async function guardarReferenciaImagenEnPanel(asset) {
   if (!uid || !asset) return;
 
-  // ✅ Si estamos editando una imagen ya existente, NO crear otra.
-  const editandoId = String(
-    window.__VA_EDITANDO_PANEL_IMAGEN_ID_FINAL ||
-    window.__VA_EDITANDO_PANEL_IMAGEN_ID ||
-    panelImagenEditandoId ||
-    ""
-  ).trim();
-
-  if (editandoId) {
-    await actualizarImagenEditadaEnPanel(asset, editandoId);
-    return;
-  }
-
   function normalizarUrlGuardada(url){
     let s = String(url || "").trim();
     if (!s) return "";
@@ -5577,18 +5142,12 @@ const refCompleta = (!modoImagenLibre && itemsSel.length)
   : "";
 
   const dbPath = `panelImagenesPersonal/${uid}/${asset.ts}`;
-const metaImagen = asset.meta || window.__VA_IMG_META_ACTUAL || {};
-const metaColor = vaImgMetaHex(metaImagen.color || "#fff3b0") || "#fff3b0";
 
-  const nuevoItem = {
+await set(ref(db, dbPath), {
   url: normalizarUrlGuardada(asset.url),
   fecha: asset.ts,
   uid,
   tipo: "imagen",
-    titulo: String(metaImagen.titulo || "").trim(),
-descripcion: String(metaImagen.descripcion || "").trim(),
-color: metaColor,
-colorFondo: metaColor,
 libro: modoImagenLibre ? "" : (itemsSel[0]?.Libro || libroSel?.value || ""),
 capitulo: modoImagenLibre ? 0 : Number(itemsSel[0]?.Capitulo || capSel?.value || 0),
 versiculos: versiculosSel,
@@ -5597,22 +5156,11 @@ ref: refCompleta,
   tipoTexto: modoImagenLibre ? "libre" : "biblia",
  textoLibre: modoImagenLibre ? (textoLibreImagen || "") : "",
 
-estadoEdicion: vaCapturarEstadoEdicionImagen(),
-
 audioOk: !!(asset.audioOk || asset.audioGithubUrl || asset.audioUrl || asset.audio),
 audioGithubUrl: asset.audioGithubUrl || asset.audioUrl || asset.audio || "",
 audioUrl: asset.audioUrl || asset.audioGithubUrl || asset.audio || "",
 audioTexto: asset.audioTexto || ""
-};
-
-await set(ref(db, dbPath), nuevoItem);
-
-panelImagenesGuardadas[String(asset.ts)] = nuevoItem;
-window.__VA_PANEL_IMG_ITEMS = panelImagenesGuardadas;
-
-try {
-  renderPanelImagenes?.(panelImagenesGuardadas || {});
-} catch(e) {}
+});
 }
 
 // ================= 🌍 GUARDAR REFERENCIA EN COMPARTIDOS =================
@@ -5648,8 +5196,6 @@ const refCompleta = (!modoImagenLibre && itemsSel.length)
   : "";
 
   const dbPath = `compartidos/imagenes/${asset.ts}`;
- const metaImagen = asset.meta || window.__VA_IMG_META_ACTUAL || {};
-const metaColor = vaImgMetaHex(metaImagen.color || "#fff3b0") || "#fff3b0";
 
   await set(ref(db, dbPath), {
     url: normalizarUrlGuardada(asset.url),
@@ -5657,10 +5203,6 @@ const metaColor = vaImgMetaHex(metaImagen.color || "#fff3b0") || "#fff3b0";
     uid,
     publicadoPor: uid,
     tipo: "imagen",
-    titulo: String(metaImagen.titulo || "").trim(),
-descripcion: String(metaImagen.descripcion || "").trim(),
-color: metaColor,
-colorFondo: metaColor,
     panelItemId: String(asset.ts || ""),
 sourcePanelItemId: String(asset.ts || ""),
 libro: modoImagenLibre ? "" : (itemsSel[0]?.Libro || libroSel?.value || ""),
@@ -5678,109 +5220,6 @@ audioTexto: asset.audioTexto || ""
   });
 }
 
-async function actualizarImagenEditadaEnPanel(asset, id) {
-  const anterior =
-    window.__VA_EDITANDO_PANEL_IMAGEN_ITEM ||
-    panelImagenesGuardadas?.[id] ||
-    {};
-
-  const metaImagen = asset.meta || window.__VA_IMG_META_ACTUAL || {};
-  const metaColor = vaImgMetaHex(metaImagen.color || anterior.color || anterior.colorFondo || "#fff3b0") || "#fff3b0";
-
-  const urlFinal = typeof normalizarUrlGuardada === "function"
-    ? normalizarUrlGuardada(asset.url)
-    : normalizarUrlPanelParaDB(asset.url);
-    const ahoraEdicion = Number(asset.ts || Date.now());
-
-  const esLibre = vaPanelImagenEsTextoLibre(anterior);
-  const esBiblia = vaPanelImagenEsBiblia(anterior) && !esLibre;
-
-  const actualizado = {
-    ...anterior,
-
-    id,
-    fecha: ahoraEdicion,
-    url: urlFinal,
-    imagenUrl: urlFinal,
-
-    titulo: String(metaImagen.titulo ?? anterior.titulo ?? "").trim(),
-    descripcion: String(metaImagen.descripcion ?? anterior.descripcion ?? "").trim(),
-    color: metaColor,
-    colorFondo: metaColor,
-
-    formato: formatoImagenActual,
-    editadoEn: ahoraEdicion,
-    actualizadoEn: ahoraEdicion,
-
-    tipo: anterior.tipo || "imagen",
-
-    // ✅ NO convertimos todo a texto libre.
-    // Si nació Biblia, sigue Biblia.
-    // Si nació texto libre, sigue texto libre.
-    origen: anterior.origen || (esLibre ? "panel" : "biblia"),
-    tipoTexto: esLibre ? "libre" : "biblia",
-
-    textoLibre: esLibre
-      ? String(textoLibreImagen || anterior.textoLibre || "").trim()
-      : "",
-
-    libro: esBiblia ? (anterior.libro || "") : "",
-    capitulo: esBiblia ? Number(anterior.capitulo || 0) : 0,
-    versiculos: esBiblia ? (Array.isArray(anterior.versiculos) ? anterior.versiculos : []) : [],
-    ref: esBiblia ? String(anterior.ref || "").trim() : "",
-
-    estadoEdicion: vaCapturarEstadoEdicionImagen()
-  };
-
-  // ✅ No guardamos "id" dentro del objeto.
-  // El id real es la clave de Firebase.
-  delete actualizado.id;
-
-  await set(ref(db, `panelImagenesPersonal/${uid}/${id}`), actualizado);
-
-  panelImagenesGuardadas[id] = actualizado;
-  window.__VA_PANEL_IMG_ITEMS = panelImagenesGuardadas;
-
-  const existente = panelBuscarPublicacionImagenPanel(id, actualizado);
-
-  if (existente?.path && !panelImagenVieneDeCompartidos(actualizado)) {
-    const pubRef = ref(db, existente.path);
-    const snap = await get(pubRef);
-    const pubAnterior = snap.val() || {};
-
-    await set(pubRef, {
-      ...pubAnterior,
-
-      url: urlFinal,
-      imagenUrl: urlFinal,
-
-      titulo: actualizado.titulo,
-      descripcion: actualizado.descripcion,
-      color: metaColor,
-      colorFondo: metaColor,
-
-      formato: formatoImagenActual,
-      fecha: ahoraEdicion,
-      actualizadoEn: ahoraEdicion,
-      editadoEn: ahoraEdicion,
-
-      tipoTexto: actualizado.tipoTexto,
-      textoLibre: actualizado.textoLibre,
-      libro: actualizado.libro,
-      capitulo: actualizado.capitulo,
-      versiculos: actualizado.versiculos,
-      ref: actualizado.ref,
-      estadoEdicion: actualizado.estadoEdicion
-    });
-  }
-
-  try {
-    renderPanelImagenes?.(panelImagenesGuardadas || {});
-  } catch(e) {}
-
-  return actualizado;
-}
-
 // ================= ✅ SUBIR UNA VEZ Y REPARTIR REFERENCIAS =================
 async function subirImagenBibliaUnaVezYGuardarDestinos() {
   const asset = await subirImagenBibliaBaseUnaVez();
@@ -5795,40 +5234,10 @@ async function subirImagenBibliaUnaVezYGuardarDestinos() {
     asset.audioTexto = window.__lastAudioTexto || "";
   }
 
-asset.meta = {
-  ...(window.__VA_IMG_META_ACTUAL || imagenMetaActual || {})
-};
-  
-asset.meta = {
-  ...(window.__VA_IMG_META_ACTUAL || imagenMetaActual || {})
-};
+  await guardarReferenciaImagenEnPanel(asset);
 
-const editandoId = String(
-  window.__VA_EDITANDO_PANEL_IMAGEN_ID_FINAL ||
-  window.__VA_EDITANDO_PANEL_IMAGEN_ID ||
-  panelImagenEditandoId ||
-  ""
-).trim();
-
-if (editandoId) {
-  const actualizado = await actualizarImagenEditadaEnPanel(asset, editandoId);
-
-  // ✅ Al EDITAR no creamos una publicación nueva automáticamente.
-  // Si ya estaba publicada, actualizarImagenEditadaEnPanel ya actualizó la existente.
-  // Si no estaba publicada, la publicás después desde el botón de Compartidos del panel.
-
-  window.__lastAudioUrl = "";
-  window.__lastAudioTs = 0;
-  window.__lastAudioTexto = "";
-
-  console.log("✅ Imagen editada y actualizada");
-  return true;
-}
-
-await guardarReferenciaImagenEnPanel(asset);
-
-const chk = document.getElementById("checkIglesia");
-if (chk && chk.checked) {
+  const chk = document.getElementById("checkIglesia");
+  if (chk && chk.checked) {
     try {
       await guardarReferenciaImagenEnCompartidos(asset);
     } catch (e) {
@@ -6316,23 +5725,6 @@ function cerrarModalPersonalizar() {
   m.classList.remove("abierto");
 }
 
-function vaReacomodarPreviewImagen() {
-  const repintar = () => {
-    try {
-      actualizarPreview();
-      invalidarRenderFinal?.();
-    } catch(e) {}
-  };
-
-  requestAnimationFrame(repintar);
-  setTimeout(repintar, 80);
-  setTimeout(repintar, 250);
-
-  try {
-    document.fonts?.ready?.then(repintar).catch(() => {});
-  } catch(e) {}
-}
-
 // ================= 🔺 GENERAR IMAGEN ===============================
 window.generarImagen = async () => {
   if (!usuarioPuedeCrearImagen()) {
@@ -6366,7 +5758,7 @@ window.generarImagen = async () => {
 
   await new Promise(r => requestAnimationFrame(r));
 
-  vaReacomodarPreviewImagen();
+  actualizarPreview();
 };
 
 // ================= 🔺 FUNCIÓN NUEVA PARA ABRIR EL MODAL DESDE MI PANEL ============
@@ -6426,131 +5818,67 @@ window.cancelarCrearImagen = () => {
     // ✅ limpiar modo visual del modal
   const modal = document.getElementById("modalPersonalizar");
   if (modal) modal.classList.remove("solo-imagen", "modo-devocional");
-
-  panelImagenEditandoId = null;
-panelImagenEditandoItem = null;
-
-window.__VA_EDITANDO_PANEL_IMAGEN_ID = null;
-window.__VA_EDITANDO_PANEL_IMAGEN_ITEM = null;
-
 };
 
-// ================= ✅ FINALIZAR EDICIÓN / CREAR IMAGEN =================
+// ================= ✅ FINALIZAR EDICIÓN (CONFIRMAR) =================
+// ================= ✅ FINALIZAR EDICIÓN (CONFIRMAR) =================
 window.finalizarEdicion = async (ev) => {
   if (window.__FINALIZANDO__) return;
   window.__FINALIZANDO__ = true;
 
   const btn = ev?.currentTarget;
 
-  const editandoIdFinal = String(
-    window.__VA_EDITANDO_PANEL_IMAGEN_ID ||
-    panelImagenEditandoId ||
-    ""
-  ).trim();
-
-  const destinoFinal = editandoIdFinal ? "panel" : origenModalImagen;
-
   if (btn) {
     btn.disabled = true;
-    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i>`;
+    btn.innerHTML = `<i class="fa-solid fa-circle-check"></i>`;
     btn.style.opacity = "0.65";
     btn.style.cursor = "wait";
   }
 
+try {
   try {
-    // ✅ 1) Primero generamos el canvas mientras el modal de edición sigue abierto.
-    // NO subimos todavía, así evitamos que el flujo viejo cree duplicados.
-    const okRender = await withRenderLock(async () => {
-      return await asegurarCanvasFinal({ subir: false });
+    await window.vaConsumirUsoColaborador?.(
+      "crearImagenBiblia",
+      VA_LIMITE_COLAB_IMAGENES_DIA
+    );
+  } catch (limiteErr) {
+    alert(limiteErr?.message || "No podés crear más imágenes por hoy.");
+    return;
+  }
+
+  if (typeof devToast === "function") {
+    devToast("⏳ Guardando imagen.");
+  }
+
+    // ✅ CLAVE: si hay audio confirmado, subirlo ANTES de guardar la imagen
+    if (window.__pendingAudio?.audioBase64) {
+      if (typeof devToast === "function") {
+        devToast("⏳ Subiendo audio...");
+      }
+
+      try {
+        await window.subirPendingAudioAFirebase({ subirIglesia: false });
+        console.log("✅ Audio subido y listo para unir a la imagen:", window.__lastAudioUrl);
+      } catch (e) {
+        console.error("❌ Error subiendo audio:", e);
+        alert("No se pudo subir el audio. Probá generar la previa otra vez.");
+        return;
+      }
+    }
+
+    // ✅ ahora sí: guarda imagen + toma window.__lastAudioUrl
+    const ok = await withRenderLock(async () => {
+      return await asegurarCanvasFinal({ subir: true });
     });
 
-    if (!okRender) {
-      throw new Error("No se pudo preparar la imagen.");
+    if (!ok) throw new Error("No se pudo generar o guardar la imagen");
+
+    if (typeof devToast === "function") {
+      devToast("✅ Imagen guardada");
     }
-
-    // ✅ 2) Ahora pedimos título/descripción.
-    const metaBase = editandoIdFinal
-      ? (window.__VA_EDITANDO_PANEL_IMAGEN_ITEM || panelImagenesGuardadas?.[editandoIdFinal] || null)
-      : null;
-
-    const meta = await pedirDatosImagenMeta(metaBase, { cancelarFinaliza: true });
-
-    if (meta?.__cancelado) {
-      return;
-    }
-
-    imagenMetaActual = meta || {
-      titulo: "",
-      descripcion: "",
-      color: "#fff3b0"
-    };
-
-    window.__VA_IMG_META_ACTUAL = imagenMetaActual;
-
-    // ✅ 3) APENAS tocás guardar título/descripción, cerramos AMBOS modales.
-    try { vaImgMetaCerrar?.(imagenMetaActual); } catch(e) {}
-
-    try {
-      cerrarModalPersonalizar();
-    } catch(e) {
-      const m = document.getElementById("modalPersonalizar");
-      if (m) {
-        m.style.display = "none";
-        m.classList.remove("abierto");
-      }
-    }
-
-    mostrarToast?.("Guardando...");
-
-    // ✅ 4) Recién ahora subimos el canvas ya preparado.
-    const asset = await subirImagenBibliaBaseUnaVez();
-
-    if (!asset || !asset.url) {
-      throw new Error("No se pudo subir la imagen.");
-    }
-
-    asset.meta = {
-      ...(window.__VA_IMG_META_ACTUAL || imagenMetaActual || {})
-    };
-
-    const audioUrlFinal = String(window.__lastAudioUrl || "").trim();
-
-    if (audioUrlFinal) {
-      asset.audioOk = true;
-      asset.audioGithubUrl = audioUrlFinal;
-      asset.audioUrl = audioUrlFinal;
-      asset.audioTexto = window.__lastAudioTexto || "";
-    }
-
-    // ✅ 5) Si está editando, ACTUALIZA ESA MISMA imagen. No crea otra.
-    if (editandoIdFinal) {
-      await actualizarImagenEditadaEnPanel(asset, editandoIdFinal);
-      mostrarToast?.("✅ Imagen actualizada");
-    } else {
-      await guardarReferenciaImagenEnPanel(asset);
-
-      const chk = document.getElementById("checkIglesia");
-      if (chk && chk.checked) {
-        await guardarReferenciaImagenEnCompartidos(asset);
-      }
-
-      mostrarToast?.("✅ Imagen guardada");
-    }
-
-    // ✅ 6) Refrescamos desde Firebase y volvemos al lugar correcto.
-    try {
-      const snap = await get(ref(db, `panelImagenesPersonal/${uid}`));
-      panelImagenesGuardadas = snap.val() || {};
-      window.__VA_PANEL_IMG_ITEMS = panelImagenesGuardadas;
-    } catch(e) {}
 
     resetModalPersonalizar();
-
-    if (destinoFinal === "panel") {
-      vaImgCerrarFlujoYVolverPanel();
-    } else {
-      salirModoImagen();
-    }
+    salirModoImagen();
 
   } catch (e) {
     console.error(e);
@@ -6558,16 +5886,6 @@ window.finalizarEdicion = async (ev) => {
 
   } finally {
     window.__FINALIZANDO__ = false;
-
-    imagenMetaActual = null;
-    window.__VA_IMG_META_ACTUAL = null;
-
-    panelImagenEditandoId = null;
-    panelImagenEditandoItem = null;
-
-    window.__VA_EDITANDO_PANEL_IMAGEN_ID = null;
-    window.__VA_EDITANDO_PANEL_IMAGEN_ITEM = null;
-    window.__VA_EDITANDO_PANEL_IMAGEN_ID_FINAL = "";
 
     if (btn) {
       btn.disabled = false;
@@ -8025,17 +7343,6 @@ function panelImagenRenderCardHTML(it = {}, opciones = {}) {
   const mostrarDescargar = opciones.mostrarDescargar ?? true;
   const mostrarCompartir = opciones.mostrarCompartir ?? true;
   const mostrarEliminar = opciones.mostrarEliminar ?? true;
-const mostrarEditarMeta = opciones.mostrarEditarMeta ?? false;
-
-const vieneDeCompartidos = (typeof panelImagenVieneDeCompartidos === "function")
-  ? panelImagenVieneDeCompartidos(it)
-  : !!(
-      it.sourceCompartidosKey ||
-      it.compartidosKey ||
-      it.compartidosId ||
-      it.origen === "compartidos" ||
-      it.source === "compartidos"
-    );
 
   // ✅ para Compartidos después: podremos pasar otro delete,
   // que borre solo de Compartidos y NO de Mi Panel.
@@ -8043,19 +7350,6 @@ const vieneDeCompartidos = (typeof panelImagenVieneDeCompartidos === "function")
 
   const extraAcciones = opciones.extraAcciones || "";
   const extraFinal = opciones.extraFinal || "";
-  const tituloMeta = String(it.titulo || "").trim();
-const descripcionMeta = String(it.descripcion || "").trim();
-const tieneMetaImagen = !!(tituloMeta || descripcionMeta);
-
-const colorMeta = vaImgMetaHex(it.color || it.colorFondo || "#fff3b0") || "#fff3b0";
-const textoMeta = vaImgMetaContraste(colorMeta);
-
-const metaHtml = tieneMetaImagen ? `
-  <div class="panel-img-meta" style="background:${panelImgAttr(colorMeta)}; color:${panelImgAttr(textoMeta)};">
-    ${tituloMeta ? `<div class="panel-img-meta-title">${panelImgHtml(tituloMeta)}</div>` : ``}
-    ${descripcionMeta ? `<div class="panel-img-meta-desc">${panelImgHtml(descripcionMeta)}</div>` : ``}
-  </div>
-` : ``;
 
   const urlRaw = panelImgNormalizarUrlRaw(it.url || it.shareUrl || "");
   const urlAttr = panelImgAttr(urlRaw);
@@ -8100,23 +7394,14 @@ const audioAttr = panelImgAttr(audioRaw);
     </button>
   ` : ``);
 
-  const cardKey = domId || `${idPrefix}${it.id || Date.now()}`;
-window.__VA_PANEL_IMG_ITEMS[cardKey] = {
-  ...it,
-  id: it.id || "",
-  url: urlRaw
-};
-const cardKeyJs = panelImgJs(cardKey);
- 
   return `
     <div
       class="devBigCard"
       id="${panelImgAttr(domId)}"
       data-panel-img-card-id="${panelImgAttr(it.id || "")}"
-style="position:relative; ${tieneMetaImagen ? `background:${panelImgAttr(colorMeta)};` : ``}"
->
- ${metaHtml}
- <img src="${urlAttr}" alt="Imagen generada" loading="lazy">
+      style="position:relative;"
+    >
+     <img src="${urlAttr}" alt="Imagen generada" loading="lazy">
 
 ${audioRaw ? `
   <div class="devBigAudioBox">
@@ -8125,22 +7410,9 @@ ${audioRaw ? `
 ` : ``}
 
 <div class="devBigActions">
-
-${mostrarEditarMeta && !vieneDeCompartidos ? `
-  <button
-    class="btn-primary"
-    type="button"
-    onclick="editarImagenPanel('${itemId}')"
-    aria-label="Editar imagen"
-    title="Editar imagen"
-  >
-    <i class="fa-solid fa-pen-to-square" style="color:#000;"></i>
-  </button>
-` : ``}
-
         ${mostrarDescargar ? `
           <button class="btn-primary" type="button"
-            onclick="panelImagenAccionCard('${cardKeyJs}', 'descargar')"
+            onclick="descargarImagenPanel('${urlJs}')"
             aria-label="Descargar PNG"
             title="Descargar PNG">
             <i class="fa-solid fa-download"></i>
@@ -8149,7 +7421,7 @@ ${mostrarEditarMeta && !vieneDeCompartidos ? `
 
         ${mostrarCompartir ? `
           <button class="btn-primary" type="button"
-            onclick="panelImagenAccionCard('${cardKeyJs}', 'compartir')"
+            onclick="compartirImagenPanel('${urlJs}')"
             aria-label="Compartir"
             title="Compartir">
             <i class="fa-solid fa-share-nodes"></i>
@@ -8201,10 +7473,7 @@ function renderPanelImagenes(data) {
   if (grid) grid.innerHTML = "";
 
   const items = Object.entries(data || {})
-    // ✅ IMPORTANTE:
-    // la clave real de Firebase SIEMPRE manda.
-    // Si el objeto trae un id viejo adentro, NO puede pisar la clave real.
-    .map(([id, obj]) => ({ ...(obj || {}), id }))
+    .map(([id, obj]) => ({ id, ...(obj || {}) }))
     .sort((a, b) => (b.fecha || 0) - (a.fecha || 0));
 
   function esc(txt = "") {
@@ -8254,9 +7523,6 @@ function renderPanelImagenes(data) {
   }
 
 function refBonitaPanel(it){
-  const tituloImg = String(it.titulo || "").trim();
-  if (tituloImg) return tituloImg;
-
   const cita = capitalizarCitaBonitaPanel(it.cita || "");
   const refDirecta = String(it.ref || "").trim();
 
@@ -8370,7 +7636,6 @@ const botonCompartidosHTML = (esDevocionalPanel || vieneDeCompartidosPanel) ? ""
       mostrarDescargar: true,
       mostrarCompartir: true,
       mostrarEliminar: true,
-      mostrarEditarMeta: true,
 
       extraAcciones: botonCompartidosHTML
     });
@@ -10265,342 +9530,6 @@ async function fetchPanelImagenBlob(url, fileName = "imagen_vida_abundante.png")
   return blob;
 }
 
-function panelImagenTieneMeta(item = {}) {
-  return !!(
-    String(item.titulo || "").trim() ||
-    String(item.descripcion || "").trim()
-  );
-}
-
-function panelImagenSlug(txt = "imagen") {
-  return String(txt || "imagen")
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^\w\s-]/g, "")
-    .replace(/\s+/g, "_")
-    .slice(0, 60) || "imagen";
-}
-
-function panelImagenNombreArchivo(item = {}, tipo = "imagen") {
-  const base = panelImagenSlug(item.titulo || item.ref || "vida_abundante");
-  return panelNombreArchivoSeguro(`${tipo}_${base}.png`);
-}
-
-function panelImagenDescargarFile(file) {
-  const objUrl = URL.createObjectURL(file);
-
-  const a = document.createElement("a");
-  a.href = objUrl;
-  a.download = file.name || "imagen_vida_abundante.png";
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-
-  setTimeout(() => URL.revokeObjectURL(objUrl), 2000);
-}
-
-function panelImagenCrearModalSalida() {
-  if (document.getElementById("modalImagenSalida")) return;
-
-  document.body.insertAdjacentHTML("beforeend", `
-    <div id="modalImagenSalida" class="va-img-salida-modal" aria-hidden="true">
-      <div class="va-img-salida-card">
-        <h3>¿Qué querés usar?</h3>
-        <p>Publicación incluye título, descripción y color. Imagen es solo el PNG original.</p>
-
-        <div class="va-img-salida-actions">
-          <button type="button" class="btn-primary" data-va-img-salida="publicacion">
-            <i class="fa-solid fa-newspaper"></i>
-            Publicación
-          </button>
-
-          <button type="button" class="btn-primary" data-va-img-salida="imagen">
-            <i class="fa-solid fa-image"></i>
-            Imagen
-          </button>
-
-          <button type="button" class="btn-ghost" data-va-img-salida="cancelar">
-            Cancelar
-          </button>
-        </div>
-      </div>
-    </div>
-  `);
-
-  document.getElementById("modalImagenSalida")?.addEventListener("click", (e) => {
-    const btn = e.target.closest("[data-va-img-salida]");
-
-    if (!btn && e.target?.id !== "modalImagenSalida") return;
-
-    const valor = btn?.dataset?.vaImgSalida || "cancelar";
-    panelImagenCerrarModalSalida(valor === "cancelar" ? null : valor);
-  });
-}
-
-function panelImagenCerrarModalSalida(valor) {
-  const modal = document.getElementById("modalImagenSalida");
-
-  if (modal) {
-    modal.classList.remove("abierto");
-    modal.setAttribute("aria-hidden", "true");
-    modal.style.display = "none";
-  }
-
-  const resolver = window.__VA_IMG_SALIDA_RESOLVE;
-  window.__VA_IMG_SALIDA_RESOLVE = null;
-
-  if (resolver) resolver(valor);
-}
-
-function panelImagenElegirSalida() {
-  panelImagenCrearModalSalida();
-
-  const modal = document.getElementById("modalImagenSalida");
-  if (!modal) return Promise.resolve("imagen");
-
-  modal.style.display = "flex";
-  modal.classList.add("abierto");
-  modal.setAttribute("aria-hidden", "false");
-
-  return new Promise(resolve => {
-    window.__VA_IMG_SALIDA_RESOLVE = resolve;
-  });
-}
-
-function panelCanvasRoundRect(ctx, x, y, w, h, r) {
-  r = Math.min(r, w / 2, h / 2);
-
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.arcTo(x + w, y, x + w, y + h, r);
-  ctx.arcTo(x + w, y + h, x, y + h, r);
-  ctx.arcTo(x, y + h, x, y, r);
-  ctx.arcTo(x, y, x + w, y, r);
-  ctx.closePath();
-}
-
-function panelCanvasWrapText(ctx, text, maxWidth) {
-  const lineas = [];
-  const partes = String(text || "").split(/\n/);
-
-  partes.forEach(parte => {
-    const palabras = parte.split(/\s+/).filter(Boolean);
-
-    if (!palabras.length) {
-      lineas.push("");
-      return;
-    }
-
-    let linea = "";
-
-    palabras.forEach(palabra => {
-      const prueba = linea ? `${linea} ${palabra}` : palabra;
-
-      if (ctx.measureText(prueba).width > maxWidth && linea) {
-        lineas.push(linea);
-        linea = palabra;
-      } else {
-        linea = prueba;
-      }
-    });
-
-    if (linea) lineas.push(linea);
-  });
-
-  return lineas;
-}
-
-async function panelImagenBlobToDrawable(blob) {
-  if (window.createImageBitmap) {
-    return await createImageBitmap(blob);
-  }
-
-  return await new Promise((resolve, reject) => {
-    const img = new Image();
-    const objUrl = URL.createObjectURL(blob);
-
-    img.onload = () => {
-      URL.revokeObjectURL(objUrl);
-      resolve(img);
-    };
-
-    img.onerror = () => {
-      URL.revokeObjectURL(objUrl);
-      reject(new Error("No pude preparar la imagen."));
-    };
-
-    img.src = objUrl;
-  });
-}
-
-async function panelImagenCrearPublicacionFile(item = {}) {
-  const url = item.url || item.imagenUrl || "";
-  if (!url) throw new Error("No hay imagen para preparar.");
-
-  const titulo = String(item.titulo || item.ref || "Vida Abundante").trim();
-  const descripcion = String(item.descripcion || "").trim();
-  const fondo = vaImgMetaHex(item.color || item.colorFondo || "#fff3b0") || "#fff3b0";
-  const textoColor = vaImgMetaContraste(fondo);
-
-  const imgBlob = await fetchPanelImagenBlob(url, panelImagenNombreArchivo(item, "imagen"));
-  const img = await panelImagenBlobToDrawable(imgBlob);
-
-  const W = 1080;
-  const outer = 40;
-  const cardX = outer;
-  const cardY = outer;
-  const cardW = W - outer * 2;
-  const pad = 58;
-  const innerW = cardW - pad * 2;
-
-  const canvasMedida = document.createElement("canvas");
-  const ctxM = canvasMedida.getContext("2d");
-
-  ctxM.font = "800 54px Arial";
-  const titleLines = panelCanvasWrapText(ctxM, titulo, innerW);
-
-  ctxM.font = "400 38px Arial";
-  const descLines = descripcion ? panelCanvasWrapText(ctxM, descripcion, innerW) : [];
-
-  const imgW0 = img.width || img.videoWidth || 1000;
-  const imgH0 = img.height || img.videoHeight || 1000;
-
-  let drawW = innerW;
-  let drawH = Math.round(imgH0 * (drawW / imgW0));
-
-  const maxImgH = 1650;
-  if (drawH > maxImgH) {
-    drawH = maxImgH;
-    drawW = Math.round(imgW0 * (drawH / imgH0));
-  }
-
-  const titleH = titleLines.length * 64;
-  const descH = descLines.length ? descLines.length * 48 + 18 : 0;
-  const imgTopGap = 24;
-
-  const cardH = pad + titleH + descH + imgTopGap + drawH + pad;
-  const H = cardH + outer * 2;
-
-  const canvas = document.createElement("canvas");
-  canvas.width = W;
-  canvas.height = H;
-
-  const ctx = canvas.getContext("2d");
-
-  ctx.fillStyle = "#f4eef2";
-  ctx.fillRect(0, 0, W, H);
-
-  ctx.fillStyle = fondo;
-  panelCanvasRoundRect(ctx, cardX, cardY, cardW, cardH, 46);
-  ctx.fill();
-
-  let y = cardY + pad;
-
-  ctx.fillStyle = textoColor;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "top";
-
-  ctx.font = "800 54px Arial";
-  titleLines.forEach(linea => {
-    ctx.fillText(linea, W / 2, y);
-    y += 64;
-  });
-
-  if (descLines.length) {
-    y += 8;
-    ctx.font = "400 38px Arial";
-
-    descLines.forEach(linea => {
-      ctx.fillText(linea, W / 2, y);
-      y += 48;
-    });
-  }
-
-  y += imgTopGap;
-
-  const imgX = Math.round((W - drawW) / 2);
-
-  ctx.save();
-  panelCanvasRoundRect(ctx, imgX, y, drawW, drawH, 28);
-  ctx.clip();
-  ctx.drawImage(img, imgX, y, drawW, drawH);
-  ctx.restore();
-
-  if (typeof img.close === "function") {
-    try { img.close(); } catch(e) {}
-  }
-
-  const outBlob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
-  if (!outBlob) throw new Error("No pude generar la publicación.");
-
-  return new File(
-    [outBlob],
-    panelImagenNombreArchivo(item, "publicacion"),
-    { type: "image/png" }
-  );
-}
-
-window.panelImagenAccionCard = async function(cardKey, accion = "descargar") {
-  const item = window.__VA_PANEL_IMG_ITEMS?.[cardKey];
-
-  if (!item || !(item.url || item.imagenUrl)) {
-    alert("No encuentro la imagen.");
-    return;
-  }
-
-  const url = item.url || item.imagenUrl || "";
-  const nombreImagen = panelImagenNombreArchivo(item, "imagen");
-
-  if (!panelImagenTieneMeta(item)) {
-    if (accion === "descargar") {
-      return descargarImagenPanel(url, nombreImagen);
-    }
-
-    return compartirImagenPanel(url, nombreImagen);
-  }
-
-  const salida = await panelImagenElegirSalida();
-  if (!salida) return;
-
-  if (salida === "imagen") {
-    if (accion === "descargar") {
-      return descargarImagenPanel(url, nombreImagen);
-    }
-
-    return compartirImagenPanel(url, nombreImagen);
-  }
-
-  try {
-    mostrarToast?.("⏳ Preparando publicación...");
-
-    const file = await panelImagenCrearPublicacionFile(item);
-
-    if (accion === "descargar") {
-      panelImagenDescargarFile(file);
-      mostrarToast?.("📥 Descargando publicación");
-      return;
-    }
-
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share({
-        files: [file],
-        title: item.titulo || "Vida Abundante"
-      });
-      return;
-    }
-
-    panelImagenDescargarFile(file);
-    alert("Tu navegador no permite compartir directo. Se descargó la publicación para compartirla manualmente.");
-
-  } catch (e) {
-    if (window.vaShareCancelado?.(e)) return;
-
-    console.error(e);
-    alert("No se pudo preparar la publicación.\n\nDetalle: " + (e?.message || e));
-  }
-};
-
 window.descargarImagenPanel = async (url, fileName = "imagen_vida_abundante.png") => {
   try {
     if (!url) {
@@ -10743,114 +9672,7 @@ function panelImagenVieneDeCompartidos(item = {}) {
   );
 }
 
-window.editarMetaImagenPanel = async function(id) {
-  try {
-    if (!uid) {
-      loginModal.style.display = "flex";
-      return;
-    }
-
-    const item = panelImagenesGuardadas?.[id];
-
-    if (!item) {
-      alert("No encuentro esta imagen.");
-      return;
-    }
-
-    if (panelImagenVieneDeCompartidos(item)) {
-      mostrarToast?.("Esta imagen viene de Compartidos. No la editamos desde acá.");
-      return;
-    }
-
-    const meta = await pedirDatosImagenMeta(
-      {
-        id,
-        titulo: item.titulo || "",
-        descripcion: item.descripcion || "",
-        color: item.color || item.colorFondo || "#fff3b0"
-      },
-      { cancelarFinaliza: false }
-    );
-
-    if (!meta) return;
-
-    const metaColor = vaImgMetaHex(meta.color || "#fff3b0") || "#fff3b0";
-    const ts = Date.now();
-
-    const actualizado = {
-      ...item,
-      titulo: String(meta.titulo || "").trim(),
-      descripcion: String(meta.descripcion || "").trim(),
-      color: metaColor,
-      colorFondo: metaColor,
-      actualizadoEn: ts
-    };
-
-    await set(ref(db, `panelImagenesPersonal/${uid}/${id}`), actualizado);
-
-    panelImagenesGuardadas[id] = actualizado;
-
-    // ✅ Si ya estaba en Compartidos, también actualiza el contenedor allá.
-    const existente = panelBuscarPublicacionImagenPanel(id, actualizado);
-
-    if (existente?.path && !actualizado.sourceOracionesKey) {
-      const pubRef = ref(db, existente.path);
-      const snap = await get(pubRef);
-      const anterior = snap.val() || {};
-
-      await set(pubRef, {
-        ...anterior,
-        titulo: actualizado.titulo,
-        descripcion: actualizado.descripcion,
-        color: metaColor,
-        colorFondo: metaColor,
-        actualizadoEn: ts
-      });
-    }
-
-    renderPanelImagenes(panelImagenesGuardadas || {});
-
-    try { window.renderCompartidos?.(); } catch(e) {}
-
-    mostrarToast?.("✅ Datos de la imagen actualizados");
-
-  } catch (e) {
-    console.error(e);
-    alert("No se pudieron editar los datos de la imagen.");
-  }
-};
-
-async function vaPanelImagenABlobUrlSeguro(url) {
-  const limpio = panelImgNormalizarUrlRaw(url || "");
-
-  if (!limpio) {
-    throw new Error("No hay imagen para editar.");
-  }
-
-  if (typeof urlToBlobURL === "function") {
-    return await urlToBlobURL(limpio);
-  }
-
-  const blob = await fetchPanelImagenBlob(limpio, "imagen_base.png");
-  return URL.createObjectURL(blob);
-}
-
-function vaPanelSetTextoEditorImagen(txt = "") {
-  textoLibreImagen = String(txt || "");
-
-  const t1 = document.getElementById("previewTexto");
-  const t2 = document.getElementById("previewTextoBack");
-
-  [t1, t2].forEach(el => {
-    if (!el) return;
-    el.textContent = textoLibreImagen;
-    el.style.display = "flex";
-  });
-
-  invalidarRenderFinal?.();
-}
-
-window.editarImagenPanel = async function(id) {
+window.publicarImagenPanelEnCompartidos = async function(id) {
   try {
     if (!uid) {
       loginModal.style.display = "flex";
@@ -10860,198 +9682,128 @@ window.editarImagenPanel = async function(id) {
     const item = panelImagenesGuardadas?.[id];
 
     if (!item || !item.url) {
-      alert("No encuentro esta imagen para editar.");
-      return;
-    }
-
-    if (panelImagenVieneDeCompartidos(item)) {
-      mostrarToast?.("Esta imagen viene de Compartidos. No se edita desde acá.");
-      return;
-    }
-
-    const esLibre = vaPanelImagenEsTextoLibre(item);
-    const esBiblia = vaPanelImagenEsBiblia(item) && !esLibre;
-    const tieneEstadoEdicion = !!item.estadoEdicion;
-
-    panelImagenEditandoId = id;
-    panelImagenEditandoItem = item;
-
-    window.__VA_EDITANDO_PANEL_IMAGEN_ID = id;
-    window.__VA_EDITANDO_PANEL_IMAGEN_ITEM = item;
-
-    const modal = document.getElementById("modalPersonalizar");
-    if (!modal) return;
-
-    resetModalPersonalizar();
-
-    origenModalImagen = esLibre ? "panel" : "biblia";
-    modoImagenLibre = !!esLibre;
-    textoLibreImagen = esLibre ? String(item.textoLibre || "").trim() : "";
-
-    if (esBiblia) {
-      vaPanelRestaurarSeleccionBibliaImagen(item);
-    }
-
-    modoImagen = true;
-    document.body.classList.add("modo-imagen");
-
-    modal.classList.add("solo-imagen");
-    modal.classList.remove("modo-devocional");
-
-    abrirModalPersonalizar();
-    asegurarCajaTextoLibrePanel();
-
-    setFormatoImagen(
-      String(item.formato || item.formatoImagen || item.estadoEdicion?.formato || "").toLowerCase() === "story"
-        ? "story"
-        : "post"
-    );
-
-    cargarFondos();
-    crearListaVisualFuentes();
-    bibliaCompactarControlesMobile?.();
-
-    await new Promise(r => requestAnimationFrame(r));
-
-    if (fondoFinalBlobUrl) {
-      URL.revokeObjectURL(fondoFinalBlobUrl);
-      fondoFinalBlobUrl = null;
-    }
-
-    fondoDisenoBiblia.baseTipo = "imagen";
-
-    // ✅ Si la imagen fue creada con este cambio, restauramos la receta real.
-    // ✅ Si es vieja y no tiene receta, usamos la imagen ya hecha como base plana.
-    if (tieneEstadoEdicion) {
-      vaRestaurarEstadoEdicionImagen(item);
-
-      const fondoGuardado = String(item.estadoEdicion?.fondoFinal || "").trim();
-
-      if (fondoGuardado) {
-        fondoFinal = fondoGuardado;
-        try {
-          fondoFinalBlobUrl = await vaPanelImagenABlobUrlSeguro(fondoGuardado);
-        } catch(e) {
-          fondoFinalBlobUrl = null;
-        }
-      }
-    } else {
-      fondoFinal = item.url;
-      fondoFinalBlobUrl = await vaPanelImagenABlobUrlSeguro(item.url);
-    }
-
-    if (esLibre) {
-      vaPanelSetTextoEditorImagen(textoLibreImagen || "ESCRIBÍ\nAQUÍ TU\nTEXTO");
-    }
-
-    const chk = document.getElementById("checkIglesia");
-    if (chk) {
-      chk.checked = !!panelBuscarPublicacionImagenPanel(id, item);
-    }
-
-    vaReacomodarPreviewImagen();
-
-    mostrarToast?.("Editá la imagen y tocá finalizar.");
-
-  } catch (e) {
-    console.error(e);
-    alert("No se pudo abrir la imagen para editar.\n\nDetalle: " + (e?.message || e));
-  }
-};
-
-// alias por si quedó algún botón viejo apuntando al nombre anterior
-window.editarMetaImagenPanel = window.editarImagenPanel;
-
-window.publicarImagenPanelEnCompartidos = async function(id) {
-  try {
-    if (!uid) {
-      loginModal.style.display = "flex";
-      return;
-    }
-
-    id = String(id || "").trim();
-
-    const item = panelImagenesGuardadas?.[id];
-
-    if (!id || !item || !item.url) {
       alert("No encuentro la imagen para publicar en Compartidos.");
       return;
     }
 
     if (panelImagenVieneDeCompartidos(item)) {
-      mostrarToast?.("Esta imagen ya viene de Compartidos.");
-      renderPanelImagenes(panelImagenesGuardadas || {});
-      return;
-    }
+  mostrarToast("Esta imagen ya viene de Compartidos.");
+  renderPanelImagenes(panelImagenesGuardadas || {});
+  return;
+}
 
     const ts = Date.now();
     const url = normalizarUrlPanelParaDB(item.url);
+    const existente = panelBuscarPublicacionImagenPanel(id, item);
 
-    // ✅ CLAVE FIJA: una imagen del panel = una sola publicación.
-    // Antes usaba Date.now() como clave y eso permitía duplicar.
-    const compId = `panel_${String(id).replace(/[.#$/[\]]/g, "_")}`;
+    // ✅ YA EXISTE EN COMPARTIDOS:
+    // no resubimos, solo cambiamos fecha para que vuelva arriba.
+    if (existente?.path) {
+      const ok = confirm(
+        "Esta imagen ya está en Compartidos.\n\n" +
+        "¿Volvemos a compartirla para que quede arriba?"
+      );
 
-    const pubRef = ref(db, `compartidos/imagenes/${compId}`);
-    const snap = await get(pubRef);
-    const anterior = snap.val() || {};
+      if (!ok) return;
 
-    const itemParaPublicar = { ...item };
-    delete itemParaPublicar.id;
+      const pubRef = ref(db, existente.path);
+      const snap = await get(pubRef);
 
-    await set(pubRef, {
-      ...anterior,
-      ...itemParaPublicar,
+      if (snap.exists()) {
+        const anterior = snap.val() || {};
 
+        await set(pubRef, {
+          ...anterior,
+
+          tipo: "imagen",
+          url: anterior.url || url,
+          imagenUrl: anterior.imagenUrl || url,
+
+          // ✅ conserva la fecha original y refresca posición
+          fechaOriginal: Number(
+            anterior.fechaOriginal ||
+            anterior.fecha ||
+            item.fecha ||
+            0
+          ),
+          fecha: ts,
+          publicadoEn: ts,
+          ts,
+          republicadaEn: ts,
+
+          actualizadoPor: uid,
+
+          // ✅ conserva relación con Mi Panel si ya existía
+          panelItemId: anterior.panelItemId || (
+            String(item.origen || "").toLowerCase() === "compartidos" ? "" : id
+          ),
+
+          // ✅ claves de origen para conservar oraciones
+          sourceCompPath: anterior.sourceCompPath || item.sourceCompPath || "",
+          sourceCompId: anterior.sourceCompId || item.sourceCompId || "",
+          sourceCompKey: anterior.sourceCompKey || item.sourceCompKey || "",
+          sourceOracionesKey:
+            anterior.sourceOracionesKey ||
+            item.sourceOracionesKey ||
+            item.sourceCompKey ||
+            ""
+        });
+
+        panelImagenesPublicadas[id] = {
+          compId: existente.compId,
+          path: existente.path,
+          item: {
+            ...anterior,
+            fecha: ts,
+            publicadoEn: ts,
+            ts
+          }
+        };
+
+        if (
+          document.body.classList.contains("en-panel") &&
+          document.getElementById("panel-imagenes")?.offsetParent !== null
+        ) {
+          renderPanelImagenes(panelImagenesGuardadas || {});
+        }
+
+        mostrarToast("✅ La publicación volvió arriba en Compartidos");
+        return;
+      }
+    }
+
+    // ✅ PRIMERA VEZ:
+    // crea una sola publicación nueva.
+    await set(ref(db, `compartidos/imagenes/${ts}`), {
+      ...item,
       url,
       imagenUrl: url,
 
       uid,
       publicadoPor: uid,
       tipo: item.tipo || "imagen",
-      origen: "panel",
+      origen: item.origen || "panel",
 
-      // ✅ actualiza fecha para subir arriba, pero NO crea otra publicación.
       fecha: ts,
       publicadoEn: ts,
       ts,
-      republicadaEn: snap.exists() ? ts : 0,
-      fechaOriginal: Number(anterior.fechaOriginal || item.fecha || ts),
+      fechaOriginal: item.fecha || 0,
 
       panelItemId: id,
-      sourcePanelItemId: id,
 
-      titulo: String(item.titulo || anterior.titulo || "").trim(),
-      descripcion: String(item.descripcion || anterior.descripcion || "").trim(),
-      color: vaImgMetaHex(item.color || item.colorFondo || anterior.color || anterior.colorFondo || "#fff3b0") || "#fff3b0",
-      colorFondo: vaImgMetaHex(item.color || item.colorFondo || anterior.color || anterior.colorFondo || "#fff3b0") || "#fff3b0"
+      // ✅ si esta imagen venía desde Compartidos,
+      // guardamos la clave original para que las oraciones sigan vinculadas.
+      sourceCompPath: item.sourceCompPath || "",
+      sourceCompId: item.sourceCompId || "",
+      sourceCompKey: item.sourceCompKey || "",
+      sourceOracionesKey: item.sourceOracionesKey || item.sourceCompKey || ""
     });
 
-    panelImagenesPublicadas[id] = {
-      compId,
-      path: `compartidos/imagenes/${compId}`,
-      item: {
-        ...itemParaPublicar,
-        url,
-        imagenUrl: url,
-        fecha: ts,
-        publicadoEn: ts,
-        ts,
-        panelItemId: id,
-        sourcePanelItemId: id
-      }
-    };
-
-    renderPanelImagenes(panelImagenesGuardadas || {});
-
-    mostrarToast?.(
-      snap.exists()
-        ? "✅ Publicación actualizada en Compartidos"
-        : "✅ Publicado en Compartidos"
-    );
+    mostrarToast("✅ Publicado en Compartidos");
 
   } catch (e) {
     console.error(e);
-    alert("No se pudo publicar en Compartidos.\n\nDetalle: " + (e?.message || e));
+    alert("No se pudo publicar en Compartidos.");
   }
 };
 
@@ -11106,49 +9858,19 @@ window.compartirImagenPanel = async (url, fileName = "imagen_vida_abundante.png"
 };
 
 window.eliminarImagenPanel = async (id) => {
-  id = String(id || "").trim();
-
-  if (!id) {
-    alert("No encuentro el ID de esta imagen.");
-    return;
-  }
-
   if (!confirm("¿Eliminar esta imagen de Mi Panel?")) return;
 
   try {
-    const uidActual = window.__UID || uid;
+    const uid = window.__UID;
 
-    if (!uidActual) {
-      loginModal.style.display = "flex";
-      return;
-    }
-
-    const imgRef = ref(db, `panelImagenesPersonal/${uidActual}/${id}`);
-
-    // ✅ borrado real
-    await remove(imgRef);
-
-    // ✅ verificamos de Firebase, no solo local
-    const check = await get(imgRef);
-
-    if (check.exists()) {
-      alert("La imagen no se pudo borrar de Firebase. Probá de nuevo.");
-      return;
-    }
-
-    delete panelImagenesGuardadas[id];
-
-    const snap = await get(ref(db, `panelImagenesPersonal/${uidActual}`));
-    panelImagenesGuardadas = snap.val() || {};
-    window.__VA_PANEL_IMG_ITEMS = panelImagenesGuardadas;
-
-    renderPanelImagenes(panelImagenesGuardadas || {});
-
-    mostrarToast?.("Imagen eliminada");
+    // ✅ solo borra la referencia del panel
+    // ❌ NO borra el archivo de Storage
+    // porque puede estar compartido también en "Compartidos"
+    await remove(ref(db, `panelImagenesPersonal/${uid}/${id}`));
 
   } catch (e) {
     console.error(e);
-    alert("No se pudo eliminar la imagen.\n\nDetalle: " + (e?.message || e));
+    alert("No se pudo eliminar la imagen");
   }
 };
 
@@ -12243,64 +10965,3 @@ slider.addEventListener("input", () => {
 });
   }
 });
-
-function vaFixCompartidosImagenesConMeta() {
-  try {
-    document.querySelectorAll(".comp-post").forEach(post => {
-      const tieneContenedorImagen = !!post.querySelector(".panel-img-meta");
-
-      if (!tieneContenedorImagen) return;
-
-      // ✅ No tocar oraciones
-      const esOracion =
-        post.classList.contains("comp-post-oracion") ||
-        post.dataset.compOracionKey ||
-        post.getAttribute("data-comp-oracion-key");
-
-      if (esOracion) return;
-
-      post.classList.add("comp-img-meta-propia");
-
-      const selectores = [
-        ":scope > .comp-post-head",
-        ":scope > .comp-post-title",
-        ":scope > .comp-post-meta",
-        ":scope > .comp-post-subtitle",
-        ":scope > .comp-post-desc"
-      ];
-
-      selectores.forEach(sel => {
-        post.querySelectorAll(sel).forEach(el => {
-          el.style.setProperty("display", "none", "important");
-        });
-      });
-
-      // respaldo por si el head está envuelto en otro div
-      const head = post.querySelector(".comp-post-head");
-      if (head && !head.closest(".devBigCard")) {
-        head.style.setProperty("display", "none", "important");
-      }
-    });
-  } catch (e) {
-    console.warn("No pude limpiar encabezados duplicados:", e);
-  }
-}
-
-window.vaFixCompartidosImagenesConMeta = vaFixCompartidosImagenesConMeta;
-
-if (!window.__VA_FIX_COMP_IMG_META_OBSERVER) {
-  window.__VA_FIX_COMP_IMG_META_OBSERVER = true;
-
-  const obs = new MutationObserver(() => {
-    if (document.body.classList.contains("en-compartidos")) {
-      vaFixCompartidosImagenesConMeta();
-    }
-  });
-
-  obs.observe(document.body, {
-    childList: true,
-    subtree: true
-  });
-
-  document.addEventListener("DOMContentLoaded", vaFixCompartidosImagenesConMeta);
-}
