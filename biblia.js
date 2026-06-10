@@ -525,7 +525,13 @@ function vaImgMetaCrearModal() {
     </div>
   `);
 
-  const omitir = () => {
+  const modal = document.getElementById("modalImagenMeta");
+  const card = modal?.querySelector(".va-img-meta-card");
+
+  const omitir = (e) => {
+    e?.preventDefault?.();
+    e?.stopPropagation?.();
+
     const color = vaImgMetaHex(document.getElementById("imagenMetaColor")?.value || "#fff3b0") || "#fff3b0";
 
     vaImgMetaCerrar({
@@ -539,16 +545,30 @@ function vaImgMetaCrearModal() {
   document.getElementById("btnImagenMetaCancelar")?.addEventListener("click", omitir);
   document.getElementById("btnImagenMetaCancelarTop")?.addEventListener("click", omitir);
 
-  document.getElementById("modalImagenMeta")?.addEventListener("click", (e) => {
-    if (e.target?.id === "modalImagenMeta") omitir();
+  // ✅ FIX: tocar afuera NO guarda ni omite.
+  // Antes esto podía cerrar el modal cuando intentabas seleccionar texto con el mouse.
+  modal?.addEventListener("click", (e) => {
+    if (e.target?.id === "modalImagenMeta") {
+      e.preventDefault();
+      e.stopPropagation();
+    }
   });
 
-  document.getElementById("btnImagenMetaGuardar")?.addEventListener("click", () => {
+  card?.addEventListener("click", (e) => {
+    e.stopPropagation();
+  });
+
+  document.getElementById("btnImagenMetaGuardar")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const btn = e.currentTarget;
+    if (btn) btn.disabled = true;
+
     const titulo = String(document.getElementById("imagenMetaTitulo")?.value || "").trim();
     const descripcion = String(document.getElementById("imagenMetaDescripcion")?.value || "").trim();
     const color = vaImgMetaHex(document.getElementById("imagenMetaColor")?.value || "#fff3b0") || "#fff3b0";
 
-    // ✅ Ya NO obligamos título.
     vaImgMetaCerrar({ titulo, descripcion, color });
   });
 
@@ -4930,6 +4950,226 @@ function bibliaResetFondoDiseno() {
   bibliaLimpiarCapasFondoDiseno();
 }
 
+// ================= ✅ FIX IMÁGENES: ESTADO / GUARDANDO / PREVIEW ESTABLE =================
+
+function vaImgPausa(ms = 0) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function vaImgEsperarFuentesCorto() {
+  try {
+    if (document.fonts?.ready) {
+      await Promise.race([
+        document.fonts.ready,
+        vaImgPausa(700)
+      ]);
+    }
+  } catch (e) {}
+}
+
+async function vaImgRecalcularPreviewDespuesAbrir() {
+  try { bibliaCompactarControlesMobile?.(); } catch (e) {}
+
+  await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  await vaImgEsperarFuentesCorto();
+
+  try { actualizarPreview(); } catch (e) {}
+
+  try {
+    if (typeof bibliaEsperarRecursosDiseno === "function") {
+      await bibliaEsperarRecursosDiseno();
+    }
+  } catch (e) {}
+
+  await vaImgPausa(80);
+
+  try { actualizarPreview(); } catch (e) {}
+  await new Promise(resolve => requestAnimationFrame(resolve));
+
+  try { invalidarRenderFinal?.(); } catch (e) {}
+}
+
+function vaImgMostrarGuardando(texto = "Guardando imagen...") {
+  let overlay = document.getElementById("vaImgGuardandoOverlay");
+
+  if (!overlay) {
+    overlay = document.createElement("div");
+    overlay.id = "vaImgGuardandoOverlay";
+    overlay.className = "va-img-guardando-overlay";
+    overlay.setAttribute("aria-hidden", "true");
+    overlay.innerHTML = `
+      <div class="va-img-guardando-card">
+        <div class="va-img-spinner"></div>
+        <div class="va-img-guardando-text">Guardando imagen...</div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+  }
+
+  const txt = overlay.querySelector(".va-img-guardando-text");
+  if (txt) txt.textContent = texto;
+
+  overlay.style.display = "flex";
+  overlay.setAttribute("aria-hidden", "false");
+}
+
+function vaImgOcultarGuardando() {
+  const overlay = document.getElementById("vaImgGuardandoOverlay");
+  if (!overlay) return;
+
+  overlay.style.display = "none";
+  overlay.setAttribute("aria-hidden", "true");
+}
+
+function vaImgSetInputValue(id, valor) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (valor === undefined || valor === null || valor === "") return;
+  el.value = String(valor);
+}
+
+function vaImgCapturarEstadoDisenoActual() {
+  const sizeInput = document.getElementById("personalizarTamaño");
+  const colorInput = document.getElementById("personalizarColor");
+  const opInput = document.getElementById("personalizarOpacidad");
+  const opColorInput = document.getElementById("colorOpacidadBiblia");
+  const outlineInput = document.getElementById("personalizarOutlineColor");
+
+  return {
+    version: 1,
+
+    formato: formatoImagenActual || "post",
+    fondoCategoriaActual: fondoCategoriaActual || "paisajes",
+
+    modoFondoBiblia: "diseno",
+    fondoFinal: String(fondoFinal || ""),
+
+    fondoDisenoBiblia: {
+      ...fondoDisenoBiblia
+    },
+
+    fuenteActual: fuenteActual || "Roboto, sans-serif",
+
+    textStyle: {
+      upper: !!textStyle?.upper,
+      bold: !!textStyle?.bold,
+      italic: !!textStyle?.italic,
+      underline: !!textStyle?.underline
+    },
+
+    userSetFontSize: !!userSetFontSize,
+
+    controles: {
+      tamano: sizeInput ? String(sizeInput.value || "") : "",
+      colorTexto: colorInput ? String(colorInput.value || "#000000") : "#000000",
+      opacidad: opInput ? String(opInput.value || "0.35") : "0.35",
+      colorOpacidad: opColorInput ? String(opColorInput.value || "#000000") : "#000000",
+      outlineColor: outlineInput ? String(outlineInput.value || "") : "",
+      outlineManual: outlineInput ? outlineInput.dataset.manual === "1" : false
+    }
+  };
+}
+
+function vaImgSyncBotonesEstilo() {
+  const mapa = [
+    ["btnUpper", !!textStyle?.upper],
+    ["btnBold", !!textStyle?.bold],
+    ["btnItalic", !!textStyle?.italic],
+    ["btnUnderline", !!textStyle?.underline]
+  ];
+
+  mapa.forEach(([id, activo]) => {
+    const b = document.getElementById(id);
+    if (b) b.classList.toggle("activo", activo);
+  });
+}
+
+async function vaImgAplicarEstadoDisenoGuardado(item = {}) {
+  const estado =
+    item.disenoImagen ||
+    item.estadoDisenoImagen ||
+    item.diseno ||
+    null;
+
+  if (!estado || typeof estado !== "object") {
+    setFormatoImagen("post");
+    return false;
+  }
+
+  const fdGuardado = estado.fondoDisenoBiblia && typeof estado.fondoDisenoBiblia === "object"
+    ? estado.fondoDisenoBiblia
+    : {};
+
+  fondoCategoriaActual = String(estado.fondoCategoriaActual || fondoCategoriaActual || "paisajes");
+
+  modoFondoBiblia = "diseno";
+  fondoDisenoBiblia = {
+    ...bibliaNuevoEstadoFondoDiseno(),
+    ...fdGuardado
+  };
+
+  if (!["imagen", "plano", "gradiente"].includes(fondoDisenoBiblia.baseTipo)) {
+    fondoDisenoBiblia.baseTipo = "imagen";
+  }
+
+  if (fondoFinalBlobUrl) {
+    URL.revokeObjectURL(fondoFinalBlobUrl);
+    fondoFinalBlobUrl = null;
+  }
+
+  fondoFinal = String(estado.fondoFinal || "").trim();
+
+  if (fondoFinal) {
+    try {
+      fondoFinalBlobUrl = await urlToBlobURL(fondoFinal);
+    } catch (e) {
+      console.warn("No pude restaurar fondo como blob, uso la URL directa:", e);
+      fondoFinalBlobUrl = null;
+    }
+  }
+
+  fuenteActual = String(estado.fuenteActual || "Roboto, sans-serif");
+
+  textStyle = {
+    upper: !!estado.textStyle?.upper,
+    bold: !!estado.textStyle?.bold,
+    italic: !!estado.textStyle?.italic,
+    underline: !!estado.textStyle?.underline
+  };
+
+  const controles = estado.controles || {};
+
+  vaImgSetInputValue("personalizarTamaño", controles.tamano);
+  vaImgSetInputValue("personalizarColor", controles.colorTexto || "#000000");
+  vaImgSetInputValue("personalizarOpacidad", controles.opacidad || "0.35");
+  vaImgSetInputValue("colorOpacidadBiblia", controles.colorOpacidad || "#000000");
+
+  userSetFontSize = !!(estado.userSetFontSize || controles.tamano);
+
+  try {
+    const outline = asegurarColorContornoBiblia?.();
+    if (outline && controles.outlineColor) {
+      outline.value = controles.outlineColor;
+      outline.dataset.manual = controles.outlineManual ? "1" : "0";
+      bibliaSetHostColorVisual?.("personalizarOutlineHost", controles.outlineColor);
+    }
+  } catch (e) {}
+
+  vaImgSyncBotonesEstilo();
+
+  try { cargarFondos(); } catch (e) {}
+  try { bibliaActualizarUIModoFondo(); } catch (e) {}
+  try { bibliaSincronizarControlesFondoDiseno(); } catch (e) {}
+  try { bibliaRenderTexturasDiseno(); } catch (e) {}
+  try { bibliaRenderAdornosDiseno(); } catch (e) {}
+
+  setFormatoImagen(estado.formato === "story" ? "story" : "post");
+
+  await vaImgRecalcularPreviewDespuesAbrir();
+
+  return true;
+}
+
 function bibliaPrecargarRecurso(url) {
   if (!url) return Promise.resolve();
 
@@ -5484,6 +5724,9 @@ async function guardarReferenciaImagenEnPanel(asset) {
     tipoTexto: modoImagenLibre ? "libre" : "biblia",
     textoLibre: modoImagenLibre ? (textoLibreImagen || "") : "",
 
+    // ✅ Guarda fondo, textura, adorno, tamaño, fuente y colores.
+    disenoImagen: vaImgCapturarEstadoDisenoActual(),
+
     audioOk: !!audioFinal,
     audioGithubUrl: audioFinal,
     audioUrl: audioFinal,
@@ -5600,6 +5843,9 @@ async function guardarReferenciaImagenEnCompartidos(asset) {
     origen: itemPanel.origen || origenModalImagen,
     tipoTexto: modoImagenLibre ? "libre" : "biblia",
     textoLibre: modoImagenLibre ? (textoLibreImagen || "") : "",
+
+    // ✅ Si se publica, también conserva los datos de edición.
+    disenoImagen: vaImgCapturarEstadoDisenoActual(),
 
     audioOk: !!audioFinal,
     audioGithubUrl: audioFinal,
@@ -6168,9 +6414,7 @@ window.generarImagen = async () => {
   crearListaVisualFuentes();
   bibliaCompactarControlesMobile();
 
-  await new Promise(r => requestAnimationFrame(r));
-
-  actualizarPreview();
+  await vaImgRecalcularPreviewDespuesAbrir();
 };
 
 // ================= 🔺 FUNCIÓN NUEVA PARA ABRIR EL MODAL DESDE MI PANEL ============
@@ -6200,11 +6444,9 @@ window.abrirCrearImagenLibrePanel = async () => {
   cargarFondos();
   crearListaVisualFuentes();
 
-  await new Promise(r => requestAnimationFrame(r));
-
   textoLibreImagen = "ESCRIBÍ\nAQUÍ TU\nTEXTO";
 
-  actualizarPreview();
+  await vaImgRecalcularPreviewDespuesAbrir();
 
   requestAnimationFrame(() => {
     const previewTexto = document.getElementById("previewTexto");
@@ -6244,6 +6486,7 @@ window.finalizarEdicion = async (ev) => {
 
   const btn = ev?.currentTarget;
   const editandoAhora = !!window.__VA_IMG_EDITANDO;
+  let guardadoOK = false;
 
   if (btn) {
     btn.disabled = true;
@@ -6279,9 +6522,13 @@ window.finalizarEdicion = async (ev) => {
       }
     }
 
+    vaImgMostrarGuardando(editandoAhora ? "Guardando edición..." : "Guardando imagen...");
+
     if (typeof devToast === "function") {
       devToast(editandoAhora ? "⏳ Guardando edición." : "⏳ Guardando imagen.");
     }
+
+    await vaImgRecalcularPreviewDespuesAbrir();
 
     // ✅ si hay audio confirmado, subirlo antes de guardar la imagen
     if (window.__pendingAudio?.audioBase64) {
@@ -6305,6 +6552,8 @@ window.finalizarEdicion = async (ev) => {
 
     if (!ok) throw new Error("No se pudo generar o guardar la imagen");
 
+    guardadoOK = true;
+
     if (typeof devToast === "function") {
       devToast(editandoAhora ? "✅ Imagen editada" : "✅ Imagen guardada");
     }
@@ -6319,8 +6568,14 @@ window.finalizarEdicion = async (ev) => {
     alert("❌ Error al guardar\n\n" + (e?.message || e));
 
   } finally {
+    vaImgOcultarGuardando();
+
     window.__FINALIZANDO__ = false;
-    window.__VA_IMG_EDITANDO = null;
+
+    if (guardadoOK) {
+      window.__VA_IMG_EDITANDO = null;
+    }
+
     imagenMetaActual = null;
     window.__VA_IMG_META_ACTUAL = null;
 
@@ -10563,14 +10818,18 @@ window.editarImagenPanel = async function(id) {
 
     abrirModalPersonalizar();
     asegurarCajaTextoLibrePanel();
-    setFormatoImagen("post");
-    cargarFondos();
     crearListaVisualFuentes();
     bibliaCompactarControlesMobile?.();
 
-    await new Promise(r => requestAnimationFrame(r));
+    // ✅ Restaura fondo/textura/adorno/tamaño/fuente/colores si la imagen ya lo tiene guardado.
+    const pudoRestaurarDiseno = await vaImgAplicarEstadoDisenoGuardado(item);
 
-    actualizarPreview();
+    // ✅ Si es imagen vieja sin datos de diseño, abre igual pero no inventa adornos.
+    if (!pudoRestaurarDiseno) {
+      cargarFondos();
+      setFormatoImagen("post");
+      await vaImgRecalcularPreviewDespuesAbrir();
+    }
 
     // ✅ Solo texto libre se puede editar.
     // ✅ Biblia queda bloqueada: no se toca el texto del versículo.
