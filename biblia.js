@@ -6435,7 +6435,7 @@ window.__VA_EDITANDO_PANEL_IMAGEN_ITEM = null;
 
 };
 
-// ================= ✅ FINALIZAR EDICIÓN (CONFIRMAR) =================
+// ================= ✅ FINALIZAR EDICIÓN / CREAR IMAGEN =================
 window.finalizarEdicion = async (ev) => {
   if (window.__FINALIZANDO__) return;
   window.__FINALIZANDO__ = true;
@@ -6448,14 +6448,7 @@ window.finalizarEdicion = async (ev) => {
     ""
   ).trim();
 
-  window.__VA_EDITANDO_PANEL_IMAGEN_ID_FINAL = editandoIdFinal;
-
-  const destinoFinal =
-    editandoIdFinal || origenModalImagen === "panel"
-      ? "panel"
-      : "biblia";
-
-  let metaCancelado = false;
+  const destinoFinal = editandoIdFinal ? "panel" : origenModalImagen;
 
   if (btn) {
     btn.disabled = true;
@@ -6465,14 +6458,24 @@ window.finalizarEdicion = async (ev) => {
   }
 
   try {
-    const metaBase = window.__VA_EDITANDO_PANEL_IMAGEN_ITEM || null;
+    // ✅ 1) Primero generamos el canvas mientras el modal de edición sigue abierto.
+    // NO subimos todavía, así evitamos que el flujo viejo cree duplicados.
+    const okRender = await withRenderLock(async () => {
+      return await asegurarCanvasFinal({ subir: false });
+    });
+
+    if (!okRender) {
+      throw new Error("No se pudo preparar la imagen.");
+    }
+
+    // ✅ 2) Ahora pedimos título/descripción.
+    const metaBase = editandoIdFinal
+      ? (window.__VA_EDITANDO_PANEL_IMAGEN_ITEM || panelImagenesGuardadas?.[editandoIdFinal] || null)
+      : null;
 
     const meta = await pedirDatosImagenMeta(metaBase, { cancelarFinaliza: true });
 
-    // ✅ Si tocás Cancelar o X, NO guarda, NO publica, NO crea imagen nueva.
-    // Queda el modal de edición abierto para seguir trabajando.
     if (meta?.__cancelado) {
-      metaCancelado = true;
       return;
     }
 
@@ -6484,40 +6487,62 @@ window.finalizarEdicion = async (ev) => {
 
     window.__VA_IMG_META_ACTUAL = imagenMetaActual;
 
+    // ✅ 3) APENAS tocás guardar título/descripción, cerramos AMBOS modales.
+    try { vaImgMetaCerrar?.(imagenMetaActual); } catch(e) {}
+
     try {
-      await window.vaConsumirUsoColaborador?.(
-        "crearImagenBiblia",
-        VA_LIMITE_COLAB_IMAGENES_DIA
-      );
-    } catch (limiteErr) {
-      alert(limiteErr?.message || "No podés crear más imágenes por hoy.");
-      return;
-    }
-
-    mostrarToast?.("Guardando...");
-    vaToastDevSeguro("⏳ Guardando imagen...");
-
-    if (window.__pendingAudio?.audioBase64) {
-      vaToastDevSeguro("⏳ Subiendo audio...");
-
-      try {
-        await window.subirPendingAudioAFirebase({ subirIglesia: false });
-        console.log("✅ Audio subido y listo para unir a la imagen:", window.__lastAudioUrl);
-      } catch (e) {
-        console.error("❌ Error subiendo audio:", e);
-        alert("No se pudo subir el audio. Probá generar la previa otra vez.");
-        return;
+      cerrarModalPersonalizar();
+    } catch(e) {
+      const m = document.getElementById("modalPersonalizar");
+      if (m) {
+        m.style.display = "none";
+        m.classList.remove("abierto");
       }
     }
 
-    const ok = await withRenderLock(async () => {
-      return await asegurarCanvasFinal({ subir: true });
-    });
+    mostrarToast?.("Guardando...");
 
-    if (!ok) throw new Error("No se pudo generar o guardar la imagen");
+    // ✅ 4) Recién ahora subimos el canvas ya preparado.
+    const asset = await subirImagenBibliaBaseUnaVez();
 
-    vaToastDevSeguro("✅ Imagen guardada");
-    mostrarToast?.("✅ Imagen guardada");
+    if (!asset || !asset.url) {
+      throw new Error("No se pudo subir la imagen.");
+    }
+
+    asset.meta = {
+      ...(window.__VA_IMG_META_ACTUAL || imagenMetaActual || {})
+    };
+
+    const audioUrlFinal = String(window.__lastAudioUrl || "").trim();
+
+    if (audioUrlFinal) {
+      asset.audioOk = true;
+      asset.audioGithubUrl = audioUrlFinal;
+      asset.audioUrl = audioUrlFinal;
+      asset.audioTexto = window.__lastAudioTexto || "";
+    }
+
+    // ✅ 5) Si está editando, ACTUALIZA ESA MISMA imagen. No crea otra.
+    if (editandoIdFinal) {
+      await actualizarImagenEditadaEnPanel(asset, editandoIdFinal);
+      mostrarToast?.("✅ Imagen actualizada");
+    } else {
+      await guardarReferenciaImagenEnPanel(asset);
+
+      const chk = document.getElementById("checkIglesia");
+      if (chk && chk.checked) {
+        await guardarReferenciaImagenEnCompartidos(asset);
+      }
+
+      mostrarToast?.("✅ Imagen guardada");
+    }
+
+    // ✅ 6) Refrescamos desde Firebase y volvemos al lugar correcto.
+    try {
+      const snap = await get(ref(db, `panelImagenesPersonal/${uid}`));
+      panelImagenesGuardadas = snap.val() || {};
+      window.__VA_PANEL_IMG_ITEMS = panelImagenesGuardadas;
+    } catch(e) {}
 
     resetModalPersonalizar();
 
@@ -6537,16 +6562,12 @@ window.finalizarEdicion = async (ev) => {
     imagenMetaActual = null;
     window.__VA_IMG_META_ACTUAL = null;
 
-    // ✅ Si se canceló el modal de título, NO limpiamos la edición.
-    // Así podés tocar Finalizar otra vez sin que se cree una nueva.
-    if (!metaCancelado) {
-      panelImagenEditandoId = null;
-      panelImagenEditandoItem = null;
+    panelImagenEditandoId = null;
+    panelImagenEditandoItem = null;
 
-      window.__VA_EDITANDO_PANEL_IMAGEN_ID = null;
-      window.__VA_EDITANDO_PANEL_IMAGEN_ITEM = null;
-      window.__VA_EDITANDO_PANEL_IMAGEN_ID_FINAL = "";
-    }
+    window.__VA_EDITANDO_PANEL_IMAGEN_ID = null;
+    window.__VA_EDITANDO_PANEL_IMAGEN_ITEM = null;
+    window.__VA_EDITANDO_PANEL_IMAGEN_ID_FINAL = "";
 
     if (btn) {
       btn.disabled = false;
@@ -10948,138 +10969,89 @@ window.publicarImagenPanelEnCompartidos = async function(id) {
       return;
     }
 
+    id = String(id || "").trim();
+
     const item = panelImagenesGuardadas?.[id];
 
-    if (!item || !item.url) {
+    if (!id || !item || !item.url) {
       alert("No encuentro la imagen para publicar en Compartidos.");
       return;
     }
 
     if (panelImagenVieneDeCompartidos(item)) {
-  mostrarToast("Esta imagen ya viene de Compartidos.");
-  renderPanelImagenes(panelImagenesGuardadas || {});
-  return;
-}
+      mostrarToast?.("Esta imagen ya viene de Compartidos.");
+      renderPanelImagenes(panelImagenesGuardadas || {});
+      return;
+    }
 
     const ts = Date.now();
     const url = normalizarUrlPanelParaDB(item.url);
-    const existente = panelBuscarPublicacionImagenPanel(id, item);
 
-    // ✅ YA EXISTE EN COMPARTIDOS:
-    // no resubimos, solo cambiamos fecha para que vuelva arriba.
-    if (existente?.path) {
-      const ok = confirm(
-        "Esta imagen ya está en Compartidos.\n\n" +
-        "¿Volvemos a compartirla para que quede arriba?"
-      );
+    // ✅ CLAVE FIJA: una imagen del panel = una sola publicación.
+    // Antes usaba Date.now() como clave y eso permitía duplicar.
+    const compId = `panel_${String(id).replace(/[.#$/[\]]/g, "_")}`;
 
-      if (!ok) return;
+    const pubRef = ref(db, `compartidos/imagenes/${compId}`);
+    const snap = await get(pubRef);
+    const anterior = snap.val() || {};
 
-      const pubRef = ref(db, existente.path);
-      const snap = await get(pubRef);
-
-      if (snap.exists()) {
-        const anterior = snap.val() || {};
-
-        await set(pubRef, {
-          ...anterior,
-
-          tipo: "imagen",
-          url: anterior.url || url,
-          imagenUrl: anterior.imagenUrl || url,
-          titulo: String(item.titulo || anterior.titulo || "").trim(),
-descripcion: String(item.descripcion || anterior.descripcion || "").trim(),
-color: vaImgMetaHex(item.color || item.colorFondo || anterior.color || anterior.colorFondo || "#fff3b0") || "#fff3b0",
-colorFondo: vaImgMetaHex(item.color || item.colorFondo || anterior.color || anterior.colorFondo || "#fff3b0") || "#fff3b0",
-
-          // ✅ conserva la fecha original y refresca posición
-          fechaOriginal: Number(
-            anterior.fechaOriginal ||
-            anterior.fecha ||
-            item.fecha ||
-            0
-          ),
-          fecha: ts,
-          publicadoEn: ts,
-          ts,
-          republicadaEn: ts,
-
-          actualizadoPor: uid,
-
-          // ✅ conserva relación con Mi Panel si ya existía
-          panelItemId: anterior.panelItemId || (
-            String(item.origen || "").toLowerCase() === "compartidos" ? "" : id
-          ),
-
-          // ✅ claves de origen para conservar oraciones
-          sourceCompPath: anterior.sourceCompPath || item.sourceCompPath || "",
-          sourceCompId: anterior.sourceCompId || item.sourceCompId || "",
-          sourceCompKey: anterior.sourceCompKey || item.sourceCompKey || "",
-          sourceOracionesKey:
-            anterior.sourceOracionesKey ||
-            item.sourceOracionesKey ||
-            item.sourceCompKey ||
-            ""
-        });
-
-        panelImagenesPublicadas[id] = {
-          compId: existente.compId,
-          path: existente.path,
-          item: {
-            ...anterior,
-            fecha: ts,
-            publicadoEn: ts,
-            ts
-          }
-        };
-
-        if (
-          document.body.classList.contains("en-panel") &&
-          document.getElementById("panel-imagenes")?.offsetParent !== null
-        ) {
-          renderPanelImagenes(panelImagenesGuardadas || {});
-        }
-
-        mostrarToast("✅ La publicación volvió arriba en Compartidos");
-        return;
-      }
-    }
-
-    // ✅ PRIMERA VEZ:
-    // crea una sola publicación nueva.
     const itemParaPublicar = { ...item };
     delete itemParaPublicar.id;
 
-    await set(ref(db, `compartidos/imagenes/${ts}`), {
+    await set(pubRef, {
+      ...anterior,
       ...itemParaPublicar,
+
       url,
       imagenUrl: url,
 
       uid,
       publicadoPor: uid,
       tipo: item.tipo || "imagen",
-      origen: item.origen || "panel",
+      origen: "panel",
 
+      // ✅ actualiza fecha para subir arriba, pero NO crea otra publicación.
       fecha: ts,
       publicadoEn: ts,
       ts,
-      fechaOriginal: item.fecha || 0,
+      republicadaEn: snap.exists() ? ts : 0,
+      fechaOriginal: Number(anterior.fechaOriginal || item.fecha || ts),
 
       panelItemId: id,
+      sourcePanelItemId: id,
 
-      // ✅ si esta imagen venía desde Compartidos,
-      // guardamos la clave original para que las oraciones sigan vinculadas.
-      sourceCompPath: item.sourceCompPath || "",
-      sourceCompId: item.sourceCompId || "",
-      sourceCompKey: item.sourceCompKey || "",
-      sourceOracionesKey: item.sourceOracionesKey || item.sourceCompKey || ""
+      titulo: String(item.titulo || anterior.titulo || "").trim(),
+      descripcion: String(item.descripcion || anterior.descripcion || "").trim(),
+      color: vaImgMetaHex(item.color || item.colorFondo || anterior.color || anterior.colorFondo || "#fff3b0") || "#fff3b0",
+      colorFondo: vaImgMetaHex(item.color || item.colorFondo || anterior.color || anterior.colorFondo || "#fff3b0") || "#fff3b0"
     });
 
-    mostrarToast("✅ Publicado en Compartidos");
+    panelImagenesPublicadas[id] = {
+      compId,
+      path: `compartidos/imagenes/${compId}`,
+      item: {
+        ...itemParaPublicar,
+        url,
+        imagenUrl: url,
+        fecha: ts,
+        publicadoEn: ts,
+        ts,
+        panelItemId: id,
+        sourcePanelItemId: id
+      }
+    };
+
+    renderPanelImagenes(panelImagenesGuardadas || {});
+
+    mostrarToast?.(
+      snap.exists()
+        ? "✅ Publicación actualizada en Compartidos"
+        : "✅ Publicado en Compartidos"
+    );
 
   } catch (e) {
     console.error(e);
-    alert("No se pudo publicar en Compartidos.");
+    alert("No se pudo publicar en Compartidos.\n\nDetalle: " + (e?.message || e));
   }
 };
 
@@ -11134,25 +11106,49 @@ window.compartirImagenPanel = async (url, fileName = "imagen_vida_abundante.png"
 };
 
 window.eliminarImagenPanel = async (id) => {
+  id = String(id || "").trim();
+
+  if (!id) {
+    alert("No encuentro el ID de esta imagen.");
+    return;
+  }
+
   if (!confirm("¿Eliminar esta imagen de Mi Panel?")) return;
 
   try {
-    const uid = window.__UID;
+    const uidActual = window.__UID || uid;
 
-    // ✅ solo borra la referencia del panel
-    // ❌ NO borra el archivo de Storage
-    // porque puede estar compartido también en "Compartidos"
-    await remove(ref(db, `panelImagenesPersonal/${uid}/${id}`));
+    if (!uidActual) {
+      loginModal.style.display = "flex";
+      return;
+    }
+
+    const imgRef = ref(db, `panelImagenesPersonal/${uidActual}/${id}`);
+
+    // ✅ borrado real
+    await remove(imgRef);
+
+    // ✅ verificamos de Firebase, no solo local
+    const check = await get(imgRef);
+
+    if (check.exists()) {
+      alert("La imagen no se pudo borrar de Firebase. Probá de nuevo.");
+      return;
+    }
+
     delete panelImagenesGuardadas[id];
 
-    try {
-      renderPanelImagenes(panelImagenesGuardadas || {});
-    } catch(e) {}
+    const snap = await get(ref(db, `panelImagenesPersonal/${uidActual}`));
+    panelImagenesGuardadas = snap.val() || {};
+    window.__VA_PANEL_IMG_ITEMS = panelImagenesGuardadas;
+
+    renderPanelImagenes(panelImagenesGuardadas || {});
 
     mostrarToast?.("Imagen eliminada");
+
   } catch (e) {
     console.error(e);
-    alert("No se pudo eliminar la imagen");
+    alert("No se pudo eliminar la imagen.\n\nDetalle: " + (e?.message || e));
   }
 };
 
