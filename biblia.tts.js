@@ -351,6 +351,14 @@ const BIBLIA_ARPA_VOLUME = ES_MOVIL ? 0.075 : 0.06;
       .replace(/\bseparare\b/gi, "ceparare")
       .replace(/\bseparares\b/gi, "ceparares")
 
+       // Corrección de J fuerte en móvil: evita que "Júntense" suene como "Yúntense".
+.replace(/\bJúntense\b/g, "Júntensen")
+.replace(/\bjúntense\b/g, "júntensen")
+.replace(/\bJunténse\b/g, "Junténsen")
+.replace(/\bjunténse\b/g, "junténsen")
+.replace(/\bJuntense\b/g, "Juntensen")
+.replace(/\bjuntense\b/g, "juntensen")
+       
       .replace(/;/g, "; ")
       .replace(/:/g, ": ")
       .replace(/\s+/g, " ")
