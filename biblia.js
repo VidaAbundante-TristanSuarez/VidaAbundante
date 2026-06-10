@@ -424,6 +424,12 @@ let imagenMetaActual = null;
 window.__VA_IMG_META_ACTUAL = null;
 window.__VA_PANEL_IMG_ITEMS = window.__VA_PANEL_IMG_ITEMS || {};
 
+// ✅ EDICIÓN DE IMÁGENES DEL PANEL
+// null = imagen nueva
+// { id, item } = estoy editando una imagen existente
+window.__VA_IMG_EDITANDO = null;
+window.__VA_ULTIMA_IMG_PANEL_ID = "";
+
 function vaImgMetaHex(color = "") {
   const c = String(color || "").trim();
   return /^#[0-9a-f]{6}$/i.test(c) ? c : "";
@@ -470,7 +476,9 @@ function vaImgMetaSyncColor(hex = "#fff3b0") {
 }
 
 function vaImgMetaCrearModal() {
-  if (document.getElementById("modalImagenMeta")) return;
+  // ✅ recreamos limpio para que no queden listeners viejos
+  const viejo = document.getElementById("modalImagenMeta");
+  if (viejo) viejo.remove();
 
   document.body.insertAdjacentHTML("beforeend", `
     <div id="modalImagenMeta" class="va-img-meta-modal" aria-hidden="true">
@@ -480,16 +488,18 @@ function vaImgMetaCrearModal() {
         </button>
 
         <h3>Datos de la imagen</h3>
-        <p class="va-img-meta-sub">Esto se va a ver arriba de la imagen en Mi Panel y Compartidos.</p>
+        <p class="va-img-meta-sub">
+          Podés agregar título y descripción, o tocar Omitir para guardar solo la imagen.
+        </p>
 
         <label class="va-img-meta-label">
           Título
-          <input id="imagenMetaTitulo" type="text" placeholder="Ej: Éxodo 15:2,13,18">
+          <input id="imagenMetaTitulo" type="text" placeholder="Título opcional">
         </label>
 
         <label class="va-img-meta-label">
           Descripción
-          <textarea id="imagenMetaDescripcion" placeholder="Escribí una descripción corta"></textarea>
+          <textarea id="imagenMetaDescripcion" placeholder="Descripción opcional"></textarea>
         </label>
 
         <div class="va-img-meta-color-row">
@@ -505,7 +515,7 @@ function vaImgMetaCrearModal() {
         </div>
 
         <div class="va-img-meta-actions">
-          <button type="button" class="btn-ghost" id="btnImagenMetaCancelar">Cancelar</button>
+          <button type="button" class="btn-ghost" id="btnImagenMetaCancelar">Omitir</button>
           <button type="button" class="btn-primary" id="btnImagenMetaGuardar">
             <i class="fa-solid fa-circle-check"></i>
             Guardar
@@ -515,13 +525,22 @@ function vaImgMetaCrearModal() {
     </div>
   `);
 
-  const cancelar = () => vaImgMetaCerrar(null);
+  const omitir = () => {
+    const color = vaImgMetaHex(document.getElementById("imagenMetaColor")?.value || "#fff3b0") || "#fff3b0";
 
-  document.getElementById("btnImagenMetaCancelar")?.addEventListener("click", cancelar);
-  document.getElementById("btnImagenMetaCancelarTop")?.addEventListener("click", cancelar);
+    vaImgMetaCerrar({
+      titulo: "",
+      descripcion: "",
+      color,
+      omitido: true
+    });
+  };
+
+  document.getElementById("btnImagenMetaCancelar")?.addEventListener("click", omitir);
+  document.getElementById("btnImagenMetaCancelarTop")?.addEventListener("click", omitir);
 
   document.getElementById("modalImagenMeta")?.addEventListener("click", (e) => {
-    if (e.target?.id === "modalImagenMeta") cancelar();
+    if (e.target?.id === "modalImagenMeta") omitir();
   });
 
   document.getElementById("btnImagenMetaGuardar")?.addEventListener("click", () => {
@@ -529,11 +548,7 @@ function vaImgMetaCrearModal() {
     const descripcion = String(document.getElementById("imagenMetaDescripcion")?.value || "").trim();
     const color = vaImgMetaHex(document.getElementById("imagenMetaColor")?.value || "#fff3b0") || "#fff3b0";
 
-    if (!titulo) {
-      mostrarToast?.("Poné un título 🙏");
-      return;
-    }
-
+    // ✅ Ya NO obligamos título.
     vaImgMetaCerrar({ titulo, descripcion, color });
   });
 
@@ -559,24 +574,31 @@ function vaImgMetaCerrar(valor) {
   if (resolver) resolver(valor);
 }
 
-function pedirDatosImagenMeta() {
+function pedirDatosImagenMeta(base = {}) {
   vaImgMetaCrearModal();
 
   const modal = document.getElementById("modalImagenMeta");
   const inputTitulo = document.getElementById("imagenMetaTitulo");
   const inputDesc = document.getElementById("imagenMetaDescripcion");
 
+  const tituloBase = String(base?.titulo || "").trim();
+  const descBase = String(base?.descripcion || "").trim();
+  const colorBase = vaImgMetaHex(base?.color || base?.colorFondo || "#fff3b0") || "#fff3b0";
+
   if (!modal || !inputTitulo || !inputDesc) {
     return Promise.resolve({
-      titulo: vaImgMetaTituloSugerido(),
-      descripcion: "",
-      color: "#fff3b0"
+      titulo: tituloBase,
+      descripcion: descBase,
+      color: colorBase
     });
   }
 
-  inputTitulo.value = vaImgMetaTituloSugerido();
-  inputDesc.value = "";
-  vaImgMetaSyncColor("#fff3b0");
+  // ✅ No sugerimos título.
+  // Nueva imagen: queda vacío.
+  // Edición: trae lo que ya tenía.
+  inputTitulo.value = tituloBase;
+  inputDesc.value = descBase;
+  vaImgMetaSyncColor(colorBase);
 
   modal.style.display = "flex";
   modal.classList.add("abierto");
@@ -709,6 +731,113 @@ function referenciaImagenEnOrden(items = []) {
 
     return `${libroGrupo.Libro} ${partes.join(" y ")}`;
   }).join("; ");
+}
+
+// ================= ✅ HELPERS EDICIÓN IMÁGENES PANEL =================
+
+function vaImgNormalizarUrlGuardada(url) {
+  let s = String(url || "").trim();
+  if (!s) return "";
+
+  if (/^https?:\/\//i.test(s)) return s;
+
+  if (/^(?:\.\/|\/)?pub-[a-z0-9-]+\.r2\.dev\//i.test(s)) {
+    return "https://" + s.replace(/^(?:\.\/|\/)+/, "");
+  }
+
+  s = s.replace(/^https:\//i, "https://");
+  s = s.replace(/^http:\//i, "http://");
+
+  return s;
+}
+
+function vaImgItemsDesdePanelItem(item = {}) {
+  const out = [];
+
+  function add(libro, capitulo, versiculo) {
+    const Libro = String(libro || "").trim();
+    const Capitulo = Number(capitulo || 0);
+    const Versiculo = Number(versiculo || 0);
+
+    if (!Libro || !Number.isFinite(Capitulo) || !Number.isFinite(Versiculo)) return;
+
+    const id = `${Libro}_${Capitulo}_${Versiculo}`;
+
+    if (!out.some(x => x.id === id)) {
+      out.push({ id, Libro, Capitulo, Versiculo });
+    }
+  }
+
+  if (Array.isArray(item?.versiculosDetalle)) {
+    item.versiculosDetalle.forEach(v => {
+      add(
+        v?.Libro || v?.libro || item.libro,
+        v?.Capitulo || v?.capitulo || item.capitulo,
+        v?.Versiculo || v?.versiculo
+      );
+    });
+  }
+
+  if (Array.isArray(item?.versiculos)) {
+    item.versiculos.forEach(v => {
+      if (v && typeof v === "object") {
+        add(
+          v.Libro || v.libro || item.libro,
+          v.Capitulo || v.capitulo || item.capitulo,
+          v.Versiculo || v.versiculo
+        );
+      } else {
+        add(item.libro, item.capitulo, v);
+      }
+    });
+  }
+
+  return out;
+}
+
+function vaImgCargarSeleccionBibliaDesdePanelItem(item = {}) {
+  limpiarSeleccionImagenCompleta();
+
+  const items = vaImgItemsDesdePanelItem(item);
+
+  items.forEach(it => {
+    seleccionImagen[it.id] = true;
+    if (!seleccionImagenOrden.includes(it.id)) {
+      seleccionImagenOrden.push(it.id);
+    }
+  });
+
+  return items;
+}
+
+function vaImgAbrirPanelImagenesDespuesGuardar() {
+  try {
+    if (typeof renderPanelImagenes === "function") {
+      renderPanelImagenes(panelImagenesGuardadas || {});
+    }
+  } catch (e) {}
+
+  try {
+    if (typeof window.irA === "function") {
+      window.irA("panel");
+    } else if (typeof forzarSeccionActiva === "function") {
+      forzarSeccionActiva("panel");
+    }
+  } catch (e) {}
+
+  setTimeout(() => {
+    try {
+      if (typeof window.mostrarSeccion === "function") {
+        window.mostrarSeccion("imagenes");
+      }
+    } catch (e) {}
+
+    try {
+      if (typeof renderPanelImagenes === "function") {
+        renderPanelImagenes(panelImagenesGuardadas || {});
+      }
+    } catch (e) {}
+  }, 100);
 }
 
 // ================= ORDEN REAL PARA MARCADORES / NOTAS =================
@@ -5280,131 +5409,232 @@ async function subirImagenBibliaBaseUnaVez() {
 
 // ================= 📌 GUARDAR REFERENCIA EN MI PANEL =================
 async function guardarReferenciaImagenEnPanel(asset) {
-  if (!uid || !asset) return;
+  if (!uid || !asset) return "";
 
-  function normalizarUrlGuardada(url){
-    let s = String(url || "").trim();
-    if (!s) return "";
+  const editando = window.__VA_IMG_EDITANDO || null;
+  const idEditando = String(editando?.id || "").trim();
+  const itemAnterior = idEditando
+    ? (editando?.item || panelImagenesGuardadas?.[idEditando] || {})
+    : {};
 
-    if (/^https?:\/\//i.test(s)) return s;
+  const panelId = idEditando || String(asset.ts || Date.now());
+  const dbPath = `panelImagenesPersonal/${uid}/${panelId}`;
 
-    if (/^(?:\.\/|\/)?pub-[a-z0-9-]+\.r2\.dev\//i.test(s)) {
-      return "https://" + s.replace(/^(?:\.\/|\/)+/, "");
-    }
+  const itemsSel = modoImagenLibre ? [] : getItemsImagenEnOrden();
 
-    s = s.replace(/^https:\//i, "https://");
-    s = s.replace(/^http:\//i, "http://");
+  const versiculosSel = itemsSel.map(it => ({
+    libro: it.Libro,
+    capitulo: it.Capitulo,
+    versiculo: it.Versiculo
+  }));
 
-    return s;
-  }
+  const refCompleta = (!modoImagenLibre && itemsSel.length)
+    ? referenciaImagenEnOrden(itemsSel)
+    : "";
 
-const itemsSel = modoImagenLibre ? [] : getItemsImagenEnOrden();
+  const metaImagen = asset.meta || window.__VA_IMG_META_ACTUAL || {};
+  const metaColor = vaImgMetaHex(metaImagen.color || "#fff3b0") || "#fff3b0";
 
-const versiculosSel = itemsSel.map(it => ({
-  libro: it.Libro,
-  capitulo: it.Capitulo,
-  versiculo: it.Versiculo
-}));
+  const ahora = Number(asset.ts || Date.now());
+  const fechaOriginal = Number(
+    itemAnterior.fechaOriginal ||
+    itemAnterior.creadoEn ||
+    itemAnterior.fecha ||
+    ahora
+  );
 
-const refCompleta = (!modoImagenLibre && itemsSel.length)
-  ? referenciaImagenEnOrden(itemsSel)
-  : "";
+  const audioFinal =
+    asset.audioGithubUrl ||
+    asset.audioUrl ||
+    asset.audio ||
+    itemAnterior.audioGithubUrl ||
+    itemAnterior.audioUrl ||
+    itemAnterior.audio ||
+    "";
 
-  const dbPath = `panelImagenesPersonal/${uid}/${asset.ts}`;
-const metaImagen = asset.meta || window.__VA_IMG_META_ACTUAL || {};
-const metaColor = vaImgMetaHex(metaImagen.color || "#fff3b0") || "#fff3b0";
+  const nuevoItem = {
+    ...itemAnterior,
 
-  await set(ref(db, dbPath), {
-  url: normalizarUrlGuardada(asset.url),
-  fecha: asset.ts,
-  uid,
-  tipo: "imagen",
+    url: vaImgNormalizarUrlGuardada(asset.url),
+    imagenUrl: vaImgNormalizarUrlGuardada(asset.url),
+
+    // ✅ En edición NO cambia la clave, pero sí cambia la fecha.
+    // Así vuelve arriba en Mi Panel.
+    fecha: ahora,
+    ts: ahora,
+    uid,
+
+    fechaOriginal,
+    creadoEn: fechaOriginal,
+    editadoEn: idEditando ? ahora : (itemAnterior.editadoEn || 0),
+
+    tipo: "imagen",
+
     titulo: String(metaImagen.titulo || "").trim(),
-descripcion: String(metaImagen.descripcion || "").trim(),
-color: metaColor,
-colorFondo: metaColor,
-libro: modoImagenLibre ? "" : (itemsSel[0]?.Libro || libroSel?.value || ""),
-capitulo: modoImagenLibre ? 0 : Number(itemsSel[0]?.Capitulo || capSel?.value || 0),
-versiculos: versiculosSel,
-ref: refCompleta,
-  origen: origenModalImagen,
-  tipoTexto: modoImagenLibre ? "libre" : "biblia",
- textoLibre: modoImagenLibre ? (textoLibreImagen || "") : "",
+    descripcion: String(metaImagen.descripcion || "").trim(),
+    color: metaColor,
+    colorFondo: metaColor,
 
-audioOk: !!(asset.audioOk || asset.audioGithubUrl || asset.audioUrl || asset.audio),
-audioGithubUrl: asset.audioGithubUrl || asset.audioUrl || asset.audio || "",
-audioUrl: asset.audioUrl || asset.audioGithubUrl || asset.audio || "",
-audioTexto: asset.audioTexto || ""
-});
+    libro: modoImagenLibre ? "" : (itemsSel[0]?.Libro || itemAnterior.libro || libroSel?.value || ""),
+    capitulo: modoImagenLibre ? 0 : Number(itemsSel[0]?.Capitulo || itemAnterior.capitulo || capSel?.value || 0),
+    versiculos: versiculosSel,
+    ref: refCompleta,
+
+    origen: idEditando ? (itemAnterior.origen || origenModalImagen) : origenModalImagen,
+    tipoTexto: modoImagenLibre ? "libre" : "biblia",
+    textoLibre: modoImagenLibre ? (textoLibreImagen || "") : "",
+
+    audioOk: !!audioFinal,
+    audioGithubUrl: audioFinal,
+    audioUrl: audioFinal,
+    audioTexto: asset.audioTexto || itemAnterior.audioTexto || "",
+
+    storagePath: asset.storagePath || itemAnterior.storagePath || "",
+
+    sourceCompPath: itemAnterior.sourceCompPath || "",
+    sourceCompId: itemAnterior.sourceCompId || "",
+    sourceCompKey: itemAnterior.sourceCompKey || "",
+    sourceOracionesKey: itemAnterior.sourceOracionesKey || ""
+  };
+
+  await set(ref(db, dbPath), nuevoItem);
+
+  panelImagenesGuardadas = {
+    ...(panelImagenesGuardadas || {}),
+    [panelId]: nuevoItem
+  };
+
+  window.__VA_ULTIMA_IMG_PANEL_ID = panelId;
+  asset.panelItemId = panelId;
+
+  return panelId;
 }
 
 // ================= 🌍 GUARDAR REFERENCIA EN COMPARTIDOS =================
 async function guardarReferenciaImagenEnCompartidos(asset) {
-  if (!uid || !asset) return;
+  if (!uid || !asset) return "";
 
-  function normalizarUrlGuardada(url){
-    let s = String(url || "").trim();
-    if (!s) return "";
+  const panelId = String(asset.panelItemId || window.__VA_IMG_EDITANDO?.id || asset.ts || Date.now());
+  const itemPanel = panelImagenesGuardadas?.[panelId] || window.__VA_IMG_EDITANDO?.item || {};
 
-    if (/^https?:\/\//i.test(s)) return s;
+  const existente = panelBuscarPublicacionImagenPanel(panelId, itemPanel);
+  const compId = String(existente?.compId || asset.ts || Date.now());
+  const dbPath = existente?.path || `compartidos/imagenes/${compId}`;
 
-    if (/^(?:\.\/|\/)?pub-[a-z0-9-]+\.r2\.dev\//i.test(s)) {
-      return "https://" + s.replace(/^(?:\.\/|\/)+/, "");
-    }
+  const anterior = existente?.item || {};
+  const ahora = Number(asset.ts || Date.now());
 
-    s = s.replace(/^https:\//i, "https://");
-    s = s.replace(/^http:\//i, "http://");
+  const itemsSel = modoImagenLibre ? [] : getItemsImagenEnOrden();
 
-    return s;
-  }
+  const versiculosSel = itemsSel.map(it => ({
+    libro: it.Libro,
+    capitulo: it.Capitulo,
+    versiculo: it.Versiculo
+  }));
 
-const itemsSel = modoImagenLibre ? [] : getItemsImagenEnOrden();
+  const refCompleta = (!modoImagenLibre && itemsSel.length)
+    ? referenciaImagenEnOrden(itemsSel)
+    : "";
 
-const versiculosSel = itemsSel.map(it => ({
-  libro: it.Libro,
-  capitulo: it.Capitulo,
-  versiculo: it.Versiculo
-}));
+  const metaImagen = asset.meta || window.__VA_IMG_META_ACTUAL || {};
+  const metaColor = vaImgMetaHex(metaImagen.color || itemPanel.color || itemPanel.colorFondo || "#fff3b0") || "#fff3b0";
 
-const refCompleta = (!modoImagenLibre && itemsSel.length)
-  ? referenciaImagenEnOrden(itemsSel)
-  : "";
+  const urlFinal = vaImgNormalizarUrlGuardada(asset.url);
 
-  const dbPath = `compartidos/imagenes/${asset.ts}`;
-const metaImagen = asset.meta || window.__VA_IMG_META_ACTUAL || {};
-const metaColor = vaImgMetaHex(metaImagen.color || "#fff3b0") || "#fff3b0";
-  
-  await set(ref(db, dbPath), {
-    url: normalizarUrlGuardada(asset.url),
-    fecha: asset.ts,
+  const fechaOriginal = Number(
+    anterior.fechaOriginal ||
+    anterior.creadoEn ||
+    anterior.fecha ||
+    itemPanel.fechaOriginal ||
+    itemPanel.creadoEn ||
+    itemPanel.fecha ||
+    ahora
+  );
+
+  const audioFinal =
+    asset.audioGithubUrl ||
+    asset.audioUrl ||
+    asset.audio ||
+    itemPanel.audioGithubUrl ||
+    itemPanel.audioUrl ||
+    itemPanel.audio ||
+    anterior.audioGithubUrl ||
+    anterior.audioUrl ||
+    anterior.audio ||
+    "";
+
+  const nuevoCompartido = {
+    ...anterior,
+    ...itemPanel,
+
+    url: urlFinal,
+    imagenUrl: urlFinal,
+
     uid,
     publicadoPor: uid,
     tipo: "imagen",
-    titulo: String(metaImagen.titulo || "").trim(),
-descripcion: String(metaImagen.descripcion || "").trim(),
-color: metaColor,
-colorFondo: metaColor,
-    panelItemId: String(asset.ts || ""),
-sourcePanelItemId: String(asset.ts || ""),
-libro: modoImagenLibre ? "" : (itemsSel[0]?.Libro || libroSel?.value || ""),
-capitulo: modoImagenLibre ? 0 : Number(itemsSel[0]?.Capitulo || capSel?.value || 0),
-versiculos: versiculosSel,
-ref: refCompleta,
-    origen: origenModalImagen,
-    tipoTexto: modoImagenLibre ? "libre" : "biblia",
-  textoLibre: modoImagenLibre ? (textoLibreImagen || "") : "",
 
-audioOk: !!(asset.audioOk || asset.audioGithubUrl || asset.audioUrl || asset.audio),
-audioGithubUrl: asset.audioGithubUrl || asset.audioUrl || asset.audio || "",
-audioUrl: asset.audioUrl || asset.audioGithubUrl || asset.audio || "",
-audioTexto: asset.audioTexto || ""
-  });
+    titulo: String(metaImagen.titulo || "").trim(),
+    descripcion: String(metaImagen.descripcion || "").trim(),
+    color: metaColor,
+    colorFondo: metaColor,
+
+    fechaOriginal,
+    creadoEn: fechaOriginal,
+
+    // ✅ si edito y publico, la publicación también sube arriba
+    fecha: ahora,
+    publicadoEn: ahora,
+    ts: ahora,
+    editadoEn: window.__VA_IMG_EDITANDO ? ahora : (anterior.editadoEn || 0),
+    actualizadoPor: uid,
+
+    panelItemId: panelId,
+    sourcePanelItemId: panelId,
+
+    libro: modoImagenLibre ? "" : (itemsSel[0]?.Libro || itemPanel.libro || ""),
+    capitulo: modoImagenLibre ? 0 : Number(itemsSel[0]?.Capitulo || itemPanel.capitulo || 0),
+    versiculos: versiculosSel,
+    ref: refCompleta,
+
+    origen: itemPanel.origen || origenModalImagen,
+    tipoTexto: modoImagenLibre ? "libre" : "biblia",
+    textoLibre: modoImagenLibre ? (textoLibreImagen || "") : "",
+
+    audioOk: !!audioFinal,
+    audioGithubUrl: audioFinal,
+    audioUrl: audioFinal,
+    audioTexto: asset.audioTexto || itemPanel.audioTexto || anterior.audioTexto || "",
+
+    sourceCompPath: anterior.sourceCompPath || itemPanel.sourceCompPath || "",
+    sourceCompId: anterior.sourceCompId || itemPanel.sourceCompId || "",
+    sourceCompKey: anterior.sourceCompKey || itemPanel.sourceCompKey || "",
+    sourceOracionesKey:
+      anterior.sourceOracionesKey ||
+      itemPanel.sourceOracionesKey ||
+      itemPanel.sourceCompKey ||
+      ""
+  };
+
+  await set(ref(db, dbPath), nuevoCompartido);
+
+  panelImagenesPublicadas[panelId] = {
+    compId,
+    path: dbPath,
+    item: nuevoCompartido
+  };
+
+  return compId;
 }
 
 // ================= ✅ SUBIR UNA VEZ Y REPARTIR REFERENCIAS =================
 async function subirImagenBibliaUnaVezYGuardarDestinos() {
   const asset = await subirImagenBibliaBaseUnaVez();
   if (!asset) return false;
+
+  asset.meta = {
+    ...(window.__VA_IMG_META_ACTUAL || imagenMetaActual || {})
+  };
 
   const audioUrlFinal = String(window.__lastAudioUrl || "").trim();
 
@@ -5415,12 +5645,10 @@ async function subirImagenBibliaUnaVezYGuardarDestinos() {
     asset.audioTexto = window.__lastAudioTexto || "";
   }
 
-  await guardarReferenciaImagenEnPanel(asset);
-  asset.meta = {
-  ...(window.__VA_IMG_META_ACTUAL || imagenMetaActual || {})
-};
+  const panelId = await guardarReferenciaImagenEnPanel(asset);
 
   const chk = document.getElementById("checkIglesia");
+
   if (chk && chk.checked) {
     try {
       await guardarReferenciaImagenEnCompartidos(asset);
@@ -5434,7 +5662,7 @@ async function subirImagenBibliaUnaVezYGuardarDestinos() {
   window.__lastAudioTs = 0;
   window.__lastAudioTexto = "";
 
-  console.log("✅ Imagen subida una sola vez y referenciada en destinos");
+  console.log("✅ Imagen guardada sin duplicar. Panel ID:", panelId);
   return true;
 }
 
@@ -5955,6 +6183,8 @@ window.abrirCrearImagenLibrePanel = async () => {
   const modal = document.getElementById("modalPersonalizar");
   if (!modal) return;
 
+  window.__VA_IMG_EDITANDO = null;
+
   resetModalPersonalizar();
 
   origenModalImagen = "panel";
@@ -5992,24 +6222,28 @@ window.abrirCrearImagenLibrePanel = async () => {
   });
 };
 
-// ================= 🔺 CANCELAR CREAR IMAGEN ===============================
+// ================= 🔺 CANCELAR CREAR / EDITAR IMAGEN ===============================
 window.cancelarCrearImagen = () => {
+  window.__VA_IMG_EDITANDO = null;
+
   // 1️⃣ resetear mientras el modal está visible
   resetModalPersonalizar();
 
-  // 2️⃣ salir del modo imagen (cierra modal + vuelve a biblia)
+  // 2️⃣ salir del modo imagen
   salirModoImagen();
-    // ✅ limpiar modo visual del modal
+
+  // ✅ limpiar modo visual del modal
   const modal = document.getElementById("modalPersonalizar");
   if (modal) modal.classList.remove("solo-imagen", "modo-devocional");
 };
 
-// ================= ✅ FINALIZAR EDICIÓN (CONFIRMAR) =================
+// ================= ✅ FINALIZAR EDICIÓN / CREACIÓN =================
 window.finalizarEdicion = async (ev) => {
   if (window.__FINALIZANDO__) return;
   window.__FINALIZANDO__ = true;
 
   const btn = ev?.currentTarget;
+  const editandoAhora = !!window.__VA_IMG_EDITANDO;
 
   if (btn) {
     btn.disabled = true;
@@ -6018,31 +6252,38 @@ window.finalizarEdicion = async (ev) => {
     btn.style.cursor = "wait";
   }
 
-try {
-  const meta = await pedirDatosImagenMeta();
-
-  if (!meta) {
-    return;
-  }
-
-  imagenMetaActual = meta;
-  window.__VA_IMG_META_ACTUAL = meta;
-
   try {
-    await window.vaConsumirUsoColaborador?.(
-      "crearImagenBiblia",
-      VA_LIMITE_COLAB_IMAGENES_DIA
-    );
-  } catch (limiteErr) {
-    alert(limiteErr?.message || "No podés crear más imágenes por hoy.");
-    return;
-  }
+    // ✅ Nueva imagen: modal vacío.
+    // ✅ Edición: trae título/desc/color anteriores.
+    const meta = await pedirDatosImagenMeta(window.__VA_IMG_EDITANDO?.item || {});
 
-  if (typeof devToast === "function") {
-    devToast("⏳ Guardando imagen.");
-  }
+    imagenMetaActual = meta || {
+      titulo: "",
+      descripcion: "",
+      color: "#fff3b0"
+    };
 
-    // ✅ CLAVE: si hay audio confirmado, subirlo ANTES de guardar la imagen
+    window.__VA_IMG_META_ACTUAL = imagenMetaActual;
+
+    // ✅ Crear consume límite.
+    // ✅ Editar NO consume límite diario porque no es una imagen nueva del panel.
+    if (!editandoAhora) {
+      try {
+        await window.vaConsumirUsoColaborador?.(
+          "crearImagenBiblia",
+          VA_LIMITE_COLAB_IMAGENES_DIA
+        );
+      } catch (limiteErr) {
+        alert(limiteErr?.message || "No podés crear más imágenes por hoy.");
+        return;
+      }
+    }
+
+    if (typeof devToast === "function") {
+      devToast(editandoAhora ? "⏳ Guardando edición." : "⏳ Guardando imagen.");
+    }
+
+    // ✅ si hay audio confirmado, subirlo antes de guardar la imagen
     if (window.__pendingAudio?.audioBase64) {
       if (typeof devToast === "function") {
         devToast("⏳ Subiendo audio...");
@@ -6058,7 +6299,6 @@ try {
       }
     }
 
-    // ✅ ahora sí: guarda imagen + toma window.__lastAudioUrl
     const ok = await withRenderLock(async () => {
       return await asegurarCanvasFinal({ subir: true });
     });
@@ -6066,11 +6306,13 @@ try {
     if (!ok) throw new Error("No se pudo generar o guardar la imagen");
 
     if (typeof devToast === "function") {
-      devToast("✅ Imagen guardada");
+      devToast(editandoAhora ? "✅ Imagen editada" : "✅ Imagen guardada");
     }
 
+    // ✅ cerrar modal de datos + cerrar modal editor + volver a Mi Panel Imágenes
     resetModalPersonalizar();
     salirModoImagen();
+    vaImgAbrirPanelImagenesDespuesGuardar();
 
   } catch (e) {
     console.error(e);
@@ -6078,8 +6320,9 @@ try {
 
   } finally {
     window.__FINALIZANDO__ = false;
-  imagenMetaActual = null;
-window.__VA_IMG_META_ACTUAL = null;
+    window.__VA_IMG_EDITANDO = null;
+    imagenMetaActual = null;
+    window.__VA_IMG_META_ACTUAL = null;
 
     if (btn) {
       btn.disabled = false;
@@ -7798,57 +8041,81 @@ panelImgRenderAddBoton();
   }).join("");
 
   // feed grande abajo
+  // feed grande abajo
   feed.innerHTML = items.map(it => {
     const idJs = String(it.id || "")
       .replace(/\\/g, "\\\\")
       .replace(/'/g, "\\'");
 
-const yaPublicado = !!panelBuscarPublicacionImagenPanel(it.id, it);
+    const yaPublicado = !!panelBuscarPublicacionImagenPanel(it.id, it);
 
     const esDevocionalPanel = (
-  String(it.tipoTexto || "").toLowerCase() === "devocional" ||
-  String(it.origen || "").toLowerCase().includes("devocional") ||
-  !!it.devocionalKey
-);
+      String(it.tipoTexto || "").toLowerCase() === "devocional" ||
+      String(it.origen || "").toLowerCase().includes("devocional") ||
+      !!it.devocionalKey
+    );
 
-const vieneDeCompartidosPanel = panelImagenVieneDeCompartidos(it);
-const botonCompartidosHTML = (esDevocionalPanel || vieneDeCompartidosPanel) ? "" : `
-  <button
-    class="btn-primary btn-panel-compartidos ${yaPublicado ? "activo" : ""}"
-    type="button"
-    onclick="publicarImagenPanelEnCompartidos('${idJs}')"
-    aria-label="Publicar en Compartidos"
-    title="${yaPublicado ? "Ya publicado en Compartidos" : "Publicar en Compartidos"}"
-    style="position:relative; overflow:visible;"
-  >
-    <i class="fa-solid fa-icons"></i>
+    const vieneDeCompartidosPanel = panelImagenVieneDeCompartidos(it);
 
-    ${yaPublicado ? `
-      <span
-        style="
-          position:absolute;
-          left:72%;
-          bottom:-7px;
-          transform:translateX(-50%);
-          width:14px;
-          height:14px;
-          border-radius:999px;
-          background:#8dbdff;
-          color:#fff;
-          display:flex;
-          align-items:center;
-          justify-content:center;
-          box-shadow:0 0 0 2px #fff;
-          line-height:1;
-          pointer-events:none;
-          z-index:2;
-        "
+    const puedeEditarImagenPanel = (
+      !esDevocionalPanel &&
+      !vieneDeCompartidosPanel &&
+      (
+        String(it.tipoTexto || "").toLowerCase() === "libre" ||
+        String(it.tipoTexto || "").toLowerCase() === "biblia" ||
+        vaImgItemsDesdePanelItem(it).length > 0
+      )
+    );
+
+    const botonEditarHTML = puedeEditarImagenPanel ? `
+      <button
+        class="btn-primary"
+        type="button"
+        onclick="editarImagenPanel('${idJs}')"
+        aria-label="Editar imagen"
+        title="Editar imagen"
       >
-        <i class="fa-solid fa-check" style="font-size:8px; line-height:1;"></i>
-      </span>
-    ` : ``}
-  </button>
-`;
+        <i class="fa-solid fa-pen-to-square"></i>
+      </button>
+    ` : ``;
+
+    const botonCompartidosHTML = (esDevocionalPanel || vieneDeCompartidosPanel) ? "" : `
+      <button
+        class="btn-primary btn-panel-compartidos ${yaPublicado ? "activo" : ""}"
+        type="button"
+        onclick="publicarImagenPanelEnCompartidos('${idJs}')"
+        aria-label="Publicar en Compartidos"
+        title="${yaPublicado ? "Ya publicado en Compartidos" : "Publicar en Compartidos"}"
+        style="position:relative; overflow:visible;"
+      >
+        <i class="fa-solid fa-icons"></i>
+
+        ${yaPublicado ? `
+          <span
+            style="
+              position:absolute;
+              left:72%;
+              bottom:-7px;
+              transform:translateX(-50%);
+              width:14px;
+              height:14px;
+              border-radius:999px;
+              background:#8dbdff;
+              color:#fff;
+              display:flex;
+              align-items:center;
+              justify-content:center;
+              box-shadow:0 0 0 2px #fff;
+              line-height:1;
+              pointer-events:none;
+              z-index:2;
+            "
+          >
+            <i class="fa-solid fa-check" style="font-size:8px; line-height:1;"></i>
+          </span>
+        ` : ``}
+      </button>
+    `;
 
     return panelImagenRenderCardHTML(it, {
       idPrefix: "panelImgBig_",
@@ -7856,7 +8123,7 @@ const botonCompartidosHTML = (esDevocionalPanel || vieneDeCompartidosPanel) ? ""
       mostrarCompartir: true,
       mostrarEliminar: true,
 
-      extraAcciones: botonCompartidosHTML
+      extraAcciones: botonEditarHTML + botonCompartidosHTML
     });
   }).join("");
 }
@@ -10226,6 +10493,109 @@ function panelImagenVieneDeCompartidos(item = {}) {
     !!item.sourceOracionesKey
   );
 }
+
+// ================= ✏️ EDITAR IMAGEN DESDE MI PANEL =================
+window.editarImagenPanel = async function(id) {
+  try {
+    if (!uid) {
+      loginModal.style.display = "flex";
+      return;
+    }
+
+    if (!usuarioPuedeCrearImagen()) {
+      alert("Solo administradores o colaboradores pueden editar imágenes.");
+      return;
+    }
+
+    id = String(id || "").trim();
+
+    const item = panelImagenesGuardadas?.[id];
+
+    if (!id || !item) {
+      alert("No encuentro esta imagen en Mi Panel.");
+      return;
+    }
+
+    if (panelImagenVieneDeCompartidos(item)) {
+      alert("Esta imagen viene de Compartidos. Para no modificar publicaciones ajenas, no se edita desde acá.");
+      return;
+    }
+
+    const modal = document.getElementById("modalPersonalizar");
+    if (!modal) return;
+
+    const tipoTexto = String(item.tipoTexto || "").toLowerCase();
+    const itemsBiblia = vaImgItemsDesdePanelItem(item);
+    const esLibre = tipoTexto === "libre" || (!!String(item.textoLibre || "").trim() && !itemsBiblia.length);
+    const esBiblia = !esLibre && (tipoTexto === "biblia" || itemsBiblia.length);
+
+    if (!esLibre && !esBiblia) {
+      alert("Esta imagen no tiene datos de texto para editarla.");
+      return;
+    }
+
+    resetModalPersonalizar();
+
+    window.__VA_IMG_EDITANDO = {
+      id,
+      item: { ...item }
+    };
+
+    origenModalImagen = esLibre ? "panel" : "biblia";
+    modoImagenLibre = !!esLibre;
+
+    if (esLibre) {
+      textoLibreImagen = String(item.textoLibre || "").trim() || "ESCRIBÍ\nAQUÍ TU\nTEXTO";
+    } else {
+      textoLibreImagen = "";
+
+      const cargados = vaImgCargarSeleccionBibliaDesdePanelItem(item);
+
+      if (!cargados.length) {
+        alert("No encuentro los versículos originales para editar esta imagen.");
+        window.__VA_IMG_EDITANDO = null;
+        return;
+      }
+    }
+
+    modal.classList.add("solo-imagen");
+    modal.classList.remove("modo-devocional");
+
+    abrirModalPersonalizar();
+    asegurarCajaTextoLibrePanel();
+    setFormatoImagen("post");
+    cargarFondos();
+    crearListaVisualFuentes();
+    bibliaCompactarControlesMobile?.();
+
+    await new Promise(r => requestAnimationFrame(r));
+
+    actualizarPreview();
+
+    // ✅ Solo texto libre se puede editar.
+    // ✅ Biblia queda bloqueada: no se toca el texto del versículo.
+    if (esLibre) {
+      requestAnimationFrame(() => {
+        const previewTexto = document.getElementById("previewTexto");
+        if (!previewTexto) return;
+
+        previewTexto.focus();
+
+        try {
+          const sel = window.getSelection();
+          const range = document.createRange();
+          range.selectNodeContents(previewTexto);
+          sel.removeAllRanges();
+          sel.addRange(range);
+        } catch (e) {}
+      });
+    }
+
+  } catch (e) {
+    console.error(e);
+    alert("No se pudo abrir la edición de la imagen.");
+  }
+};
 
 window.publicarImagenPanelEnCompartidos = async function(id) {
   try {
