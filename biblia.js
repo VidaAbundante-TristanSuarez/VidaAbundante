@@ -420,6 +420,12 @@ let modoImagenLibre = false;        // true cuando el texto viene de un textarea
 let textoLibreImagen = "";          // texto escrito manualmente en Mi Panel
 let formatoImagenActual = "post"; // "post" | "story"
 
+let panelImagenEditandoId = null;
+let panelImagenEditandoItem = null;
+
+window.__VA_EDITANDO_PANEL_IMAGEN_ID = null;
+window.__VA_EDITANDO_PANEL_IMAGEN_ITEM = null;
+
 let imagenMetaActual = null;
 window.__VA_IMG_META_ACTUAL = null;
 window.__VA_PANEL_IMG_ITEMS = window.__VA_PANEL_IMG_ITEMS || {};
@@ -592,14 +598,14 @@ function pedirDatosImagenMeta(base = null, opciones = {}) {
 
   // ✅ En finalizar imagen: Cancelar = seguir sin título/desc.
   // ✅ En editar desde Mi Panel: Cancelar = no guardar cambios.
-  window.__VA_IMG_META_CANCEL_VALUE = opciones.cancelarFinaliza
-    ? {
-        titulo: "",
-        descripcion: "",
-        color: colorInicial,
-        __cancelado: true
-      }
-    : null;
+window.__VA_IMG_META_CANCEL_VALUE = opciones.cancelarFinaliza
+  ? {
+      titulo: String(b.titulo || "").trim(),
+      descripcion: String(b.descripcion || "").trim(),
+      color: colorInicial,
+      __cancelado: true
+    }
+  : null;
 
   modal.style.display = "flex";
   modal.classList.add("abierto");
@@ -5439,6 +5445,70 @@ audioTexto: asset.audioTexto || ""
   });
 }
 
+async function actualizarImagenEditadaEnPanel(asset, id) {
+  const anterior =
+    window.__VA_EDITANDO_PANEL_IMAGEN_ITEM ||
+    panelImagenesGuardadas?.[id] ||
+    {};
+
+  const metaImagen = asset.meta || window.__VA_IMG_META_ACTUAL || {};
+  const metaColor = vaImgMetaHex(metaImagen.color || anterior.color || anterior.colorFondo || "#fff3b0") || "#fff3b0";
+
+  const urlFinal = typeof normalizarUrlGuardada === "function"
+    ? normalizarUrlGuardada(asset.url)
+    : normalizarUrlPanelParaDB(asset.url);
+
+  const actualizado = {
+    ...anterior,
+
+    id,
+    url: urlFinal,
+    imagenUrl: urlFinal,
+
+    titulo: String(metaImagen.titulo ?? anterior.titulo ?? "").trim(),
+    descripcion: String(metaImagen.descripcion ?? anterior.descripcion ?? "").trim(),
+    color: metaColor,
+    colorFondo: metaColor,
+
+    formato: formatoImagenActual,
+    editadoEn: asset.ts || Date.now(),
+    actualizadoEn: asset.ts || Date.now(),
+
+    tipo: anterior.tipo || "imagen",
+    origen: anterior.origen || "panel"
+  };
+
+  await set(ref(db, `panelImagenesPersonal/${uid}/${id}`), actualizado);
+
+  panelImagenesGuardadas[id] = actualizado;
+
+  const existente = panelBuscarPublicacionImagenPanel(id, actualizado);
+
+  if (existente?.path && !panelImagenVieneDeCompartidos(actualizado)) {
+    const pubRef = ref(db, existente.path);
+    const snap = await get(pubRef);
+    const pubAnterior = snap.val() || {};
+
+    await set(pubRef, {
+      ...pubAnterior,
+
+      url: urlFinal,
+      imagenUrl: urlFinal,
+
+      titulo: actualizado.titulo,
+      descripcion: actualizado.descripcion,
+      color: metaColor,
+      colorFondo: metaColor,
+
+      formato: formatoImagenActual,
+      actualizadoEn: Date.now(),
+      editadoEn: Date.now()
+    });
+  }
+
+  return actualizado;
+}
+
 // ================= ✅ SUBIR UNA VEZ Y REPARTIR REFERENCIAS =================
 async function subirImagenBibliaUnaVezYGuardarDestinos() {
   const asset = await subirImagenBibliaBaseUnaVez();
@@ -5457,10 +5527,37 @@ asset.meta = {
   ...(window.__VA_IMG_META_ACTUAL || imagenMetaActual || {})
 };
   
-  await guardarReferenciaImagenEnPanel(asset);
+asset.meta = {
+  ...(window.__VA_IMG_META_ACTUAL || imagenMetaActual || {})
+};
+
+const editandoId = String(window.__VA_EDITANDO_PANEL_IMAGEN_ID || "").trim();
+
+if (editandoId) {
+  const actualizado = await actualizarImagenEditadaEnPanel(asset, editandoId);
 
   const chk = document.getElementById("checkIglesia");
+
   if (chk && chk.checked) {
+    const yaExiste = panelBuscarPublicacionImagenPanel(editandoId, actualizado);
+
+    if (!yaExiste?.path) {
+      await publicarImagenPanelEnCompartidos(editandoId);
+    }
+  }
+
+  window.__lastAudioUrl = "";
+  window.__lastAudioTs = 0;
+  window.__lastAudioTexto = "";
+
+  console.log("✅ Imagen editada y actualizada");
+  return true;
+}
+
+await guardarReferenciaImagenEnPanel(asset);
+
+const chk = document.getElementById("checkIglesia");
+if (chk && chk.checked) {
     try {
       await guardarReferenciaImagenEnCompartidos(asset);
     } catch (e) {
@@ -6041,6 +6138,13 @@ window.cancelarCrearImagen = () => {
     // ✅ limpiar modo visual del modal
   const modal = document.getElementById("modalPersonalizar");
   if (modal) modal.classList.remove("solo-imagen", "modo-devocional");
+
+  panelImagenEditandoId = null;
+panelImagenEditandoItem = null;
+
+window.__VA_EDITANDO_PANEL_IMAGEN_ID = null;
+window.__VA_EDITANDO_PANEL_IMAGEN_ITEM = null;
+
 };
 
 // ================= ✅ FINALIZAR EDICIÓN (CONFIRMAR) =================
@@ -6058,8 +6162,9 @@ window.finalizarEdicion = async (ev) => {
   }
 
 try {
-const meta = await pedirDatosImagenMeta(null, { cancelarFinaliza: true });
+const metaBase = window.__VA_EDITANDO_PANEL_IMAGEN_ITEM || null;
 
+const meta = await pedirDatosImagenMeta(metaBase, { cancelarFinaliza: true });
 imagenMetaActual = meta || {
   titulo: "",
   descripcion: "",
@@ -6122,6 +6227,12 @@ mostrarToast?.("✅ Imagen guardada en Mi Panel");
     window.__FINALIZANDO__ = false;
   imagenMetaActual = null;
 window.__VA_IMG_META_ACTUAL = null;
+
+  panelImagenEditandoId = null;
+panelImagenEditandoItem = null;
+
+window.__VA_EDITANDO_PANEL_IMAGEN_ID = null;
+window.__VA_EDITANDO_PANEL_IMAGEN_ITEM = null;
 
     if (btn) {
       btn.disabled = false;
@@ -7682,9 +7793,9 @@ ${audioRaw ? `
 
 ${mostrarEditarMeta && !vieneDeCompartidos ? `
   <button class="btn-primary" type="button"
-    onclick="editarMetaImagenPanel('${itemId}')"
+   onclick="editarImagenPanel('${itemId}')"
     aria-label="Editar datos"
-    title="Editar título y descripción">
+   title="Editar imagen"
     <i class="fa-solid fa-pen"></i>
   </button>
 ` : ``}
@@ -10368,6 +10479,120 @@ window.editarMetaImagenPanel = async function(id) {
   }
 };
 
+async function vaPanelImagenABlobUrlSeguro(url) {
+  const limpio = panelImgNormalizarUrlRaw(url || "");
+
+  if (!limpio) {
+    throw new Error("No hay imagen para editar.");
+  }
+
+  if (typeof urlToBlobURL === "function") {
+    return await urlToBlobURL(limpio);
+  }
+
+  const blob = await fetchPanelImagenBlob(limpio, "imagen_base.png");
+  return URL.createObjectURL(blob);
+}
+
+function vaPanelSetTextoEditorImagen(txt = "") {
+  textoLibreImagen = String(txt || "");
+
+  const t1 = document.getElementById("previewTexto");
+  const t2 = document.getElementById("previewTextoBack");
+
+  [t1, t2].forEach(el => {
+    if (!el) return;
+    el.textContent = textoLibreImagen;
+    el.style.display = "flex";
+  });
+
+  invalidarRenderFinal?.();
+}
+
+window.editarImagenPanel = async function(id) {
+  try {
+    if (!uid) {
+      loginModal.style.display = "flex";
+      return;
+    }
+
+    const item = panelImagenesGuardadas?.[id];
+
+    if (!item || !item.url) {
+      alert("No encuentro esta imagen para editar.");
+      return;
+    }
+
+    if (panelImagenVieneDeCompartidos(item)) {
+      mostrarToast?.("Esta imagen viene de Compartidos. No se edita desde acá.");
+      return;
+    }
+
+    panelImagenEditandoId = id;
+    panelImagenEditandoItem = item;
+
+    window.__VA_EDITANDO_PANEL_IMAGEN_ID = id;
+    window.__VA_EDITANDO_PANEL_IMAGEN_ITEM = item;
+
+    const modal = document.getElementById("modalPersonalizar");
+    if (!modal) return;
+
+    resetModalPersonalizar();
+
+    origenModalImagen = "panel";
+    modoImagenLibre = true;
+    textoLibreImagen = "";
+
+    modoImagen = true;
+    document.body.classList.add("modo-imagen");
+
+    modal.classList.add("solo-imagen");
+    modal.classList.remove("modo-devocional");
+
+    abrirModalPersonalizar();
+    asegurarCajaTextoLibrePanel();
+    setFormatoImagen(
+      String(item.formato || item.formatoImagen || "").toLowerCase() === "story"
+        ? "story"
+        : "post"
+    );
+
+    cargarFondos();
+    crearListaVisualFuentes();
+    bibliaCompactarControlesMobile?.();
+
+    await new Promise(r => requestAnimationFrame(r));
+
+    if (fondoFinalBlobUrl) {
+      URL.revokeObjectURL(fondoFinalBlobUrl);
+      fondoFinalBlobUrl = null;
+    }
+
+    fondoDisenoBiblia.baseTipo = "imagen";
+    fondoFinal = item.url;
+    fondoFinalBlobUrl = await vaPanelImagenABlobUrlSeguro(item.url);
+
+    vaPanelSetTextoEditorImagen("");
+
+    const chk = document.getElementById("checkIglesia");
+    if (chk) {
+      chk.checked = !!panelBuscarPublicacionImagenPanel(id, item);
+    }
+
+    actualizarPreview();
+    invalidarRenderFinal?.();
+
+    mostrarToast?.("Editá la imagen y tocá finalizar.");
+
+  } catch (e) {
+    console.error(e);
+    alert("No se pudo abrir la imagen para editar.\n\nDetalle: " + (e?.message || e));
+  }
+};
+
+// alias por si quedó algún botón viejo apuntando al nombre anterior
+window.editarMetaImagenPanel = window.editarImagenPanel;
+
 window.publicarImagenPanelEnCompartidos = async function(id) {
   try {
     if (!uid) {
@@ -11665,3 +11890,64 @@ slider.addEventListener("input", () => {
 });
   }
 });
+
+function vaFixCompartidosImagenesConMeta() {
+  try {
+    document.querySelectorAll(".comp-post").forEach(post => {
+      const tieneContenedorImagen = !!post.querySelector(".panel-img-meta");
+
+      if (!tieneContenedorImagen) return;
+
+      // ✅ No tocar oraciones
+      const esOracion =
+        post.classList.contains("comp-post-oracion") ||
+        post.dataset.compOracionKey ||
+        post.getAttribute("data-comp-oracion-key");
+
+      if (esOracion) return;
+
+      post.classList.add("comp-img-meta-propia");
+
+      const selectores = [
+        ":scope > .comp-post-head",
+        ":scope > .comp-post-title",
+        ":scope > .comp-post-meta",
+        ":scope > .comp-post-subtitle",
+        ":scope > .comp-post-desc"
+      ];
+
+      selectores.forEach(sel => {
+        post.querySelectorAll(sel).forEach(el => {
+          el.style.setProperty("display", "none", "important");
+        });
+      });
+
+      // respaldo por si el head está envuelto en otro div
+      const head = post.querySelector(".comp-post-head");
+      if (head && !head.closest(".devBigCard")) {
+        head.style.setProperty("display", "none", "important");
+      }
+    });
+  } catch (e) {
+    console.warn("No pude limpiar encabezados duplicados:", e);
+  }
+}
+
+window.vaFixCompartidosImagenesConMeta = vaFixCompartidosImagenesConMeta;
+
+if (!window.__VA_FIX_COMP_IMG_META_OBSERVER) {
+  window.__VA_FIX_COMP_IMG_META_OBSERVER = true;
+
+  const obs = new MutationObserver(() => {
+    if (document.body.classList.contains("en-compartidos")) {
+      vaFixCompartidosImagenesConMeta();
+    }
+  });
+
+  obs.observe(document.body, {
+    childList: true,
+    subtree: true
+  });
+
+  document.addEventListener("DOMContentLoaded", vaFixCompartidosImagenesConMeta);
+}
