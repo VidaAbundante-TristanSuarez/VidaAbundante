@@ -5230,4 +5230,163 @@ body.oscuro #btnBibliaTTS.biblia-tts-activo{
   color: #000 !important;
 }
 
+/* =========================================================
+   IMÁGENES: título / descripción / color
+========================================================= */
+
+.panel-img-meta{
+  padding: 14px 16px 10px;
+  text-align: center;
+  border-bottom: 1px solid rgba(0,0,0,.08);
+}
+
+.panel-img-meta-title{
+  font-weight: 900;
+  font-size: 18px;
+  line-height: 1.15;
+  margin-bottom: 4px;
+}
+
+.panel-img-meta-desc{
+  font-size: 13px;
+  line-height: 1.35;
+  font-weight: 600;
+  opacity: .90;
+  white-space: pre-wrap;
+}
+
+/* Modal datos imagen */
+
+.va-img-meta-modal,
+.va-img-salida-modal{
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 14px;
+  background: rgba(0,0,0,.38);
+  box-sizing: border-box;
+}
+
+.va-img-meta-modal.abierto,
+.va-img-salida-modal.abierto{
+  display: flex;
+}
+
+.va-img-meta-card,
+.va-img-salida-card{
+  position: relative;
+  width: min(360px, 94vw);
+  max-height: 88vh;
+  overflow: auto;
+  background: #fff;
+  color: #000;
+  border-radius: 18px;
+  padding: 18px;
+  box-shadow: 0 18px 45px rgba(0,0,0,.28);
+  box-sizing: border-box;
+}
+
+body.oscuro .va-img-meta-card,
+body.oscuro .va-img-salida-card{
+  background: #1e1e1e;
+  color: #fff;
+}
+
+.va-img-meta-card h3,
+.va-img-salida-card h3{
+  margin: 0 0 5px;
+  text-align: center;
+  font-size: 18px;
+}
+
+.va-img-meta-sub,
+.va-img-salida-card p{
+  margin: 0 0 14px;
+  font-size: 12px;
+  line-height: 1.35;
+  text-align: center;
+  opacity: .78;
+}
+
+.va-img-meta-close{
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  border: none;
+  background: var(--ui-azul-claro);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.va-img-meta-label{
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  margin-bottom: 10px;
+}
+
+.va-img-meta-label input,
+.va-img-meta-label textarea{
+  width: 100%;
+  margin-top: 4px;
+  border-radius: 12px;
+  border: 1px solid rgba(0,0,0,.18);
+  padding: 10px;
+  font-size: 14px;
+  box-sizing: border-box;
+  background: #fff;
+  color: #000;
+}
+
+.va-img-meta-label textarea{
+  height: 86px;
+  resize: vertical;
+}
+
+body.oscuro .va-img-meta-label input,
+body.oscuro .va-img-meta-label textarea{
+  background: #111;
+  color: #fff;
+  border-color: rgba(255,255,255,.22);
+}
+
+.va-img-meta-color-row{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 8px 0 14px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+#imagenMetaColorHost{
+  width: 38px !important;
+  height: 38px !important;
+  min-width: 38px !important;
+  min-height: 38px !important;
+  border-radius: 999px !important;
+}
+
+.va-img-meta-actions,
+.va-img-salida-actions{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+
+.va-img-salida-actions button{
+  border-radius: 999px;
+  min-height: 36px;
+}
+
 </style> 
