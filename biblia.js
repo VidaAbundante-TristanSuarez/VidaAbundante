@@ -430,6 +430,22 @@ let imagenMetaActual = null;
 window.__VA_IMG_META_ACTUAL = null;
 window.__VA_PANEL_IMG_ITEMS = window.__VA_PANEL_IMG_ITEMS || {};
 
+function vaToastDevSeguro(mensaje) {
+  try {
+    if (typeof window.devToast === "function") {
+      window.devToast(mensaje);
+      return;
+    }
+  } catch (e) {}
+
+  try {
+    if (typeof devToast === "function") {
+      devToast(mensaje);
+      return;
+    }
+  } catch (e) {}
+}
+
 function vaImgMetaHex(color = "") {
   const c = String(color || "").trim();
   return /^#[0-9a-f]{6}$/i.test(c) ? c : "";
@@ -6376,10 +6392,10 @@ window.finalizarEdicion = async (ev) => {
     }
 
     mostrarToast?.("Guardando...");
-    devToast?.("⏳ Guardando imagen...");
+  vaToastDevSeguro("⏳ Guardando imagen...");
 
     if (window.__pendingAudio?.audioBase64) {
-      devToast?.("⏳ Subiendo audio...");
+vaToastDevSeguro("⏳ Subiendo audio...");
 
       try {
         await window.subirPendingAudioAFirebase({ subirIglesia: false });
@@ -6397,7 +6413,7 @@ window.finalizarEdicion = async (ev) => {
 
     if (!ok) throw new Error("No se pudo generar o guardar la imagen");
 
-    devToast?.("✅ Imagen guardada");
+   vaToastDevSeguro("✅ Imagen guardada");
     mostrarToast?.("✅ Imagen guardada");
 
     resetModalPersonalizar();
