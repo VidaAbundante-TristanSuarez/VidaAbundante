@@ -5216,6 +5216,20 @@ body.oscuro #btnBibliaTTS.biblia-tts-activo{
   color: #000 !important;
 }
 
+/* último versículo leído guardado */
+#texto .versiculo.biblia-tts-ultimo-guardado:not(.biblia-tts-versiculo-activo){
+  background: rgba(209, 238, 255, .45) !important;
+  color: #000 !important;
+  outline: 2px dashed #466966 !important;
+  border-radius: 10px !important;
+  scroll-margin-top: 78px;
+}
+
+#texto .versiculo.biblia-tts-ultimo-guardado:not(.biblia-tts-versiculo-activo) .num,
+#texto .versiculo.biblia-tts-ultimo-guardado:not(.biblia-tts-versiculo-activo) .txt{
+  color: #000 !important;
+}
+
 /* =========================================================
    IMÁGENES: título / descripción / color
 ========================================================= */
