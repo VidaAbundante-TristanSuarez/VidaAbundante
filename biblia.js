@@ -2870,20 +2870,68 @@ function cargarCapitulos(opts = {}) {
 // ================= ⭐ MOSTRAR TOAST ==============================
 function mostrarToast(msg, ms = 2200) {
   let t = document.getElementById("toast");
+
   if (!t) {
     t = document.createElement("div");
     t.id = "toast";
     t.className = "toast";
     document.body.appendChild(t);
   }
+
   t.textContent = msg;
+
+  const modalImg = document.getElementById("modalPersonalizar");
+  const modalMeta = document.getElementById("modalImagenMeta");
+
+  const modalActivo =
+    (modalMeta && modalMeta.style.display !== "none" && modalMeta.classList.contains("abierto"))
+    ? modalMeta
+    : (modalImg && modalImg.style.display !== "none" && modalImg.classList.contains("abierto"))
+      ? modalImg
+      : null;
+
+  // ✅ siempre por delante de los modales
+  t.style.position = "fixed";
+  t.style.left = "50%";
+  t.style.zIndex = "999999";
   t.style.display = "block";
-  requestAnimationFrame(() => (t.style.opacity = "1"));
+  t.style.opacity = "0";
+
+  if (modalActivo) {
+    const card =
+      modalActivo.querySelector(".modal-contenido") ||
+      modalActivo.querySelector(".modal-card") ||
+      modalActivo.querySelector(".va-img-meta-card") ||
+      modalActivo.firstElementChild;
+
+    if (card) {
+      const r = card.getBoundingClientRect();
+      const top = Math.max(18, r.top - 52);
+
+      t.style.top = `${top}px`;
+      t.style.bottom = "auto";
+      t.style.transform = "translateX(-50%)";
+    } else {
+      t.style.top = "24px";
+      t.style.bottom = "auto";
+      t.style.transform = "translateX(-50%)";
+    }
+  } else {
+    t.style.top = "24px";
+    t.style.bottom = "auto";
+    t.style.transform = "translateX(-50%)";
+  }
+
+  requestAnimationFrame(() => {
+    t.style.opacity = "1";
+  });
 
   clearTimeout(t._tm);
   t._tm = setTimeout(() => {
     t.style.opacity = "0";
-    setTimeout(() => (t.style.display = "none"), 250);
+    setTimeout(() => {
+      t.style.display = "none";
+    }, 250);
   }, ms);
 }
 
@@ -5485,6 +5533,18 @@ async function subirImagenBibliaBaseUnaVez() {
 async function guardarReferenciaImagenEnPanel(asset) {
   if (!uid || !asset) return;
 
+  // ✅ Si estamos editando una imagen ya existente, NO crear otra.
+  const editandoId = String(
+    window.__VA_EDITANDO_PANEL_IMAGEN_ID ||
+    panelImagenEditandoId ||
+    ""
+  ).trim();
+
+  if (editandoId) {
+    await actualizarImagenEditadaEnPanel(asset, editandoId);
+    return;
+  }
+
   function normalizarUrlGuardada(url){
     let s = String(url || "").trim();
     if (!s) return "";
@@ -5627,6 +5687,7 @@ async function actualizarImagenEditadaEnPanel(asset, id) {
   const urlFinal = typeof normalizarUrlGuardada === "function"
     ? normalizarUrlGuardada(asset.url)
     : normalizarUrlPanelParaDB(asset.url);
+    const ahoraEdicion = Number(asset.ts || Date.now());
 
   const esLibre = vaPanelImagenEsTextoLibre(anterior);
   const esBiblia = vaPanelImagenEsBiblia(anterior) && !esLibre;
@@ -5635,6 +5696,7 @@ async function actualizarImagenEditadaEnPanel(asset, id) {
     ...anterior,
 
     id,
+    fecha: ahoraEdicion,
     url: urlFinal,
     imagenUrl: urlFinal,
 
@@ -5644,8 +5706,8 @@ async function actualizarImagenEditadaEnPanel(asset, id) {
     colorFondo: metaColor,
 
     formato: formatoImagenActual,
-    editadoEn: asset.ts || Date.now(),
-    actualizadoEn: asset.ts || Date.now(),
+    editadoEn: ahoraEdicion,
+    actualizadoEn: ahoraEdicion,
 
     tipo: anterior.tipo || "imagen",
 
@@ -5691,8 +5753,9 @@ async function actualizarImagenEditadaEnPanel(asset, id) {
       colorFondo: metaColor,
 
       formato: formatoImagenActual,
-      actualizadoEn: Date.now(),
-      editadoEn: Date.now(),
+      fecha: ahoraEdicion,
+      actualizadoEn: ahoraEdicion,
+      editadoEn: ahoraEdicion,
 
       tipoTexto: actualizado.tipoTexto,
       textoLibre: actualizado.textoLibre,
@@ -5733,7 +5796,11 @@ asset.meta = {
   ...(window.__VA_IMG_META_ACTUAL || imagenMetaActual || {})
 };
 
-const editandoId = String(window.__VA_EDITANDO_PANEL_IMAGEN_ID || "").trim();
+const editandoId = String(
+  window.__VA_EDITANDO_PANEL_IMAGEN_ID ||
+  panelImagenEditandoId ||
+  ""
+).trim();
 
 if (editandoId) {
   const actualizado = await actualizarImagenEditadaEnPanel(asset, editandoId);
@@ -7998,11 +8065,14 @@ ${audioRaw ? `
 <div class="devBigActions">
 
 ${mostrarEditarMeta && !vieneDeCompartidos ? `
-  <button class="btn-primary" type="button"
-   onclick="editarImagenPanel('${itemId}')"
-    aria-label="Editar datos"
-   title="Editar imagen"
-    <i class="fa-solid fa-pen"></i>
+  <button
+    class="btn-primary"
+    type="button"
+    onclick="editarImagenPanel('${itemId}')"
+    aria-label="Editar imagen"
+    title="Editar imagen"
+  >
+    <i class="fa-solid fa-pen-to-square" style="color:#000;"></i>
   </button>
 ` : ``}
 
