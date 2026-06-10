@@ -5732,6 +5732,10 @@ async function actualizarImagenEditadaEnPanel(asset, id) {
     estadoEdicion: vaCapturarEstadoEdicionImagen()
   };
 
+  // ✅ No guardamos "id" dentro del objeto.
+  // El id real es la clave de Firebase.
+  delete actualizado.id;
+
   await set(ref(db, `panelImagenesPersonal/${uid}/${id}`), actualizado);
 
   panelImagenesGuardadas[id] = actualizado;
@@ -5809,15 +5813,9 @@ const editandoId = String(
 if (editandoId) {
   const actualizado = await actualizarImagenEditadaEnPanel(asset, editandoId);
 
-  const chk = document.getElementById("checkIglesia");
-
-  if (chk && chk.checked) {
-    const yaExiste = panelBuscarPublicacionImagenPanel(editandoId, actualizado);
-
-    if (!yaExiste?.path) {
-      await publicarImagenPanelEnCompartidos(editandoId);
-    }
-  }
+  // ✅ Al EDITAR no creamos una publicación nueva automáticamente.
+  // Si ya estaba publicada, actualizarImagenEditadaEnPanel ya actualizó la existente.
+  // Si no estaba publicada, la publicás después desde el botón de Compartidos del panel.
 
   window.__lastAudioUrl = "";
   window.__lastAudioTs = 0;
@@ -6318,6 +6316,23 @@ function cerrarModalPersonalizar() {
   m.classList.remove("abierto");
 }
 
+function vaReacomodarPreviewImagen() {
+  const repintar = () => {
+    try {
+      actualizarPreview();
+      invalidarRenderFinal?.();
+    } catch(e) {}
+  };
+
+  requestAnimationFrame(repintar);
+  setTimeout(repintar, 80);
+  setTimeout(repintar, 250);
+
+  try {
+    document.fonts?.ready?.then(repintar).catch(() => {});
+  } catch(e) {}
+}
+
 // ================= 🔺 GENERAR IMAGEN ===============================
 window.generarImagen = async () => {
   if (!usuarioPuedeCrearImagen()) {
@@ -6351,7 +6366,7 @@ window.generarImagen = async () => {
 
   await new Promise(r => requestAnimationFrame(r));
 
-  actualizarPreview();
+  vaReacomodarPreviewImagen();
 };
 
 // ================= 🔺 FUNCIÓN NUEVA PARA ABRIR EL MODAL DESDE MI PANEL ============
@@ -8165,7 +8180,10 @@ function renderPanelImagenes(data) {
   if (grid) grid.innerHTML = "";
 
   const items = Object.entries(data || {})
-    .map(([id, obj]) => ({ id, ...(obj || {}) }))
+    // ✅ IMPORTANTE:
+    // la clave real de Firebase SIEMPRE manda.
+    // Si el objeto trae un id viejo adentro, NO puede pisar la clave real.
+    .map(([id, obj]) => ({ ...(obj || {}), id }))
     .sort((a, b) => (b.fecha || 0) - (a.fecha || 0));
 
   function esc(txt = "") {
@@ -10910,8 +10928,7 @@ window.editarImagenPanel = async function(id) {
       chk.checked = !!panelBuscarPublicacionImagenPanel(id, item);
     }
 
-    actualizarPreview();
-    invalidarRenderFinal?.();
+    vaReacomodarPreviewImagen();
 
     mostrarToast?.("Editá la imagen y tocá finalizar.");
 
@@ -11030,8 +11047,11 @@ colorFondo: vaImgMetaHex(item.color || item.colorFondo || anterior.color || ante
 
     // ✅ PRIMERA VEZ:
     // crea una sola publicación nueva.
+    const itemParaPublicar = { ...item };
+    delete itemParaPublicar.id;
+
     await set(ref(db, `compartidos/imagenes/${ts}`), {
-      ...item,
+      ...itemParaPublicar,
       url,
       imagenUrl: url,
 
@@ -11123,7 +11143,13 @@ window.eliminarImagenPanel = async (id) => {
     // ❌ NO borra el archivo de Storage
     // porque puede estar compartido también en "Compartidos"
     await remove(ref(db, `panelImagenesPersonal/${uid}/${id}`));
+    delete panelImagenesGuardadas[id];
 
+    try {
+      renderPanelImagenes(panelImagenesGuardadas || {});
+    } catch(e) {}
+
+    mostrarToast?.("Imagen eliminada");
   } catch (e) {
     console.error(e);
     alert("No se pudo eliminar la imagen");
