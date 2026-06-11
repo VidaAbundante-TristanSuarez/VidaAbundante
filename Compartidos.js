@@ -1826,10 +1826,33 @@ window.compBorrarSoloCompartidos = async function compBorrarSoloCompartidos(key,
   if (!ok) return;
 
   try {
-    if (path) {
-      await remove(ref(db, path));
+    const pathLimpio = String(path || "").trim();
+
+    // ✅ Si es una imagen publicada desde Mi Panel:
+    // path viene como compartidos/imagenes/ID
+    const esImagenCompartida = pathLimpio.startsWith("compartidos/imagenes/");
+    const compIdImagen = esImagenCompartida
+      ? pathLimpio.split("/").pop()
+      : "";
+
+    if (pathLimpio) {
+      await remove(ref(db, pathLimpio));
     } else {
       await set(ref(db, `compartidosOcultos/${key}`), true);
+    }
+
+    // ✅ Esto quita al instante el check y el botón activo
+    // en Mi Panel > Imágenes, solo cuando lo borrado fue imagen.
+    if (
+      compIdImagen &&
+      typeof window.panelImagenQuitarEstadoPublicado === "function"
+    ) {
+      window.panelImagenQuitarEstadoPublicado(compIdImagen);
+    }
+
+    // ✅ Refrescamos Compartidos también.
+    if (typeof renderCompartidos === "function") {
+      renderCompartidos();
     }
 
     alert("Quitado de Compartidos.");
