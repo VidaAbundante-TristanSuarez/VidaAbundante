@@ -8302,7 +8302,7 @@ panelImgRenderAddBoton();
       .replace(/\\/g, "\\\\")
       .replace(/'/g, "\\'");
 
-    const yaPublicado = !!panelBuscarPublicacionImagenPanel(it.id, it);
+ const yaPublicado = panelImagenPublicadaActiva(it.id, it);
 
     const esDevocionalPanel = (
       String(it.tipoTexto || "").toLowerCase() === "devocional" ||
@@ -10741,6 +10741,73 @@ if (porMismoId) {
   }
 
   return null;
+}
+
+function panelImagenPublicadaActiva(id, item = {}) {
+  const info = panelBuscarPublicacionImagenPanel(id, item);
+
+  if (!info?.compId) return false;
+
+  const compId = String(info.compId || "").trim();
+
+  // ✅ Importante:
+  // si la publicación ya no existe en compartidos/imagenes,
+  // NO debe quedar activo ni con check en Mi Panel.
+  return !!panelImagenesCompartidosCache?.[compId];
+}
+
+function panelImagenRefrescarPanelSiVisible() {
+  try {
+    if (
+      document.body.classList.contains("en-panel") &&
+      document.getElementById("panel-imagenes")?.offsetParent !== null &&
+      typeof renderPanelImagenes === "function"
+    ) {
+      renderPanelImagenes(panelImagenesGuardadas || {});
+    }
+  } catch (e) {
+    console.warn("No pude refrescar Mi Panel Imágenes:", e);
+  }
+}
+
+function panelImagenQuitarEstadoPublicado(compId = "", panelId = "") {
+  compId = String(compId || "").trim();
+  panelId = String(panelId || "").trim();
+
+  const pub = compId ? (panelImagenesCompartidosCache?.[compId] || {}) : {};
+
+  const idsPanel = new Set(
+    [
+      panelId,
+      pub.panelItemId,
+      pub.sourcePanelItemId
+    ]
+      .map(x => String(x || "").trim())
+      .filter(Boolean)
+  );
+
+  if (compId && panelImagenesCompartidosCache) {
+    delete panelImagenesCompartidosCache[compId];
+  }
+
+  Object.keys(panelImagenesPublicadas || {}).forEach(pid => {
+    const info = panelImagenesPublicadas[pid];
+
+    const mismoComp =
+      compId &&
+      (
+        String(info?.compId || "") === compId ||
+        String(info?.path || "") === `compartidos/imagenes/${compId}`
+      );
+
+    const mismoPanel = idsPanel.has(String(pid || ""));
+
+    if (mismoComp || mismoPanel) {
+      delete panelImagenesPublicadas[pid];
+    }
+  });
+
+  panelImagenRefrescarPanelSiVisible();
 }
 
 function panelImagenVieneDeCompartidos(item = {}) {
