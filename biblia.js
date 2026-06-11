@@ -10810,6 +10810,8 @@ function panelImagenQuitarEstadoPublicado(compId = "", panelId = "") {
   panelImagenRefrescarPanelSiVisible();
 }
 
+window.panelImagenQuitarEstadoPublicado = panelImagenQuitarEstadoPublicado;
+
 function panelImagenVieneDeCompartidos(item = {}) {
   const origen = String(item.origen || "").trim().toLowerCase();
 
