@@ -10453,10 +10453,13 @@ async function panelImagenCrearPublicacionFile(item = {}) {
   const img = await panelImagenBlobToDrawable(imgBlob);
 
   const W = 1080;
-  const outer = 40;
-  const cardX = outer;
-  const cardY = outer;
-  const cardW = W - outer * 2;
+
+  // ✅ Sin borde vacío externo en la publicación descargada
+  const outer = 0;
+  const cardX = 0;
+  const cardY = 0;
+  const cardW = W;
+
   const pad = 58;
   const innerW = cardW - pad * 2;
 
@@ -10486,7 +10489,9 @@ async function panelImagenCrearPublicacionFile(item = {}) {
   const imgTopGap = 24;
 
   const cardH = pad + titleH + descH + imgTopGap + drawH + pad;
-  const H = cardH + outer * 2;
+
+  // ✅ La altura ya no suma borde externo
+  const H = cardH;
 
   const canvas = document.createElement("canvas");
   canvas.width = W;
@@ -10494,7 +10499,9 @@ async function panelImagenCrearPublicacionFile(item = {}) {
 
   const ctx = canvas.getContext("2d");
 
-  ctx.fillStyle = "#f4eef2";
+  // ✅ Pintamos todo el PNG con el color del contenedor.
+  // Así no queda borde blanco/rosado afuera.
+  ctx.fillStyle = fondo;
   ctx.fillRect(0, 0, W, H);
 
   ctx.fillStyle = fondo;
