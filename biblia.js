@@ -2172,9 +2172,13 @@ onValue(ref(db, "compartidos/imagenes"), s => {
     }
   });
 
-  if (
-    document.body.classList.contains("en-panel") &&
-    document.getElementById("panel-imagenes")?.offsetParent !== null
+  // ✅ Antes solo repintaba si Mi Panel estaba visible.
+  // Ahora repinta también si está oculto, para no dejar check viejo.
+  if (typeof panelImagenRefrescarPanelSiVisible === "function") {
+    panelImagenRefrescarPanelSiVisible();
+  } else if (
+    typeof renderPanelImagenes === "function" &&
+    document.getElementById("panelImgFeed")
   ) {
     renderPanelImagenes(panelImagenesGuardadas || {});
   }
@@ -10757,17 +10761,27 @@ function panelImagenPublicadaActiva(id, item = {}) {
 }
 
 function panelImagenRefrescarPanelSiVisible() {
-  try {
-    if (
-      document.body.classList.contains("en-panel") &&
-      document.getElementById("panel-imagenes")?.offsetParent !== null &&
-      typeof renderPanelImagenes === "function"
-    ) {
-      renderPanelImagenes(panelImagenesGuardadas || {});
+  const repintar = () => {
+    try {
+      // ✅ aunque Mi Panel esté oculto, si el HTML existe lo repintamos igual.
+      // Así cuando volvés a Mi Panel ya no queda el check viejo.
+      if (
+        typeof renderPanelImagenes === "function" &&
+        document.getElementById("panelImgFeed")
+      ) {
+        renderPanelImagenes(panelImagenesGuardadas || {});
+      }
+    } catch (e) {
+      console.warn("No pude refrescar Mi Panel Imágenes:", e);
     }
-  } catch (e) {
-    console.warn("No pude refrescar Mi Panel Imágenes:", e);
-  }
+  };
+
+  repintar();
+
+  // ✅ Reintentos cortos porque Firebase puede actualizar el listener unos ms después.
+  setTimeout(repintar, 80);
+  setTimeout(repintar, 300);
+  setTimeout(repintar, 800);
 }
 
 function panelImagenQuitarEstadoPublicado(compId = "", panelId = "") {
