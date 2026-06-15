@@ -1895,6 +1895,7 @@ function abcUIEnABC(){
 // ✅ Hooks ABC
 // -------------------------
 window.__abcOnEnter = () => {
+  document.body.classList.add("en-abc");
   resaltadorBloqueado = true;
   window.resaltadorBloqueado = true;
 
@@ -1930,8 +1931,9 @@ window.__abcOnEnter = () => {
 };
 
 window.__abcOnExit = () => {
+    document.body.classList.remove("en-abc");
     window.__abcEditMarcadorId = null;
- window.setMarcadorCtx("biblia");
+    window.setMarcadorCtx("biblia");
   
   try { abcResetModoMarcador(); } catch(e){}
   abcPortalBarraOff();
