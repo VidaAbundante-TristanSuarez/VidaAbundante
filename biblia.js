@@ -11200,6 +11200,7 @@ function obtenerContenedorScrollActivo() {
     document.querySelector("body.en-compartidos #seccion-compartidos"),
 
     document.querySelector("body.en-iglesia #iglesia-devocionales"),
+    document.querySelector("body.en-iglesia #iglesia-abc"),
     document.querySelector("body.en-iglesia #iglesia-subidos"),
     document.querySelector("body.en-iglesia #seccion-iglesia"),
 
@@ -11270,6 +11271,7 @@ function puedeMostrarse() {
   "seccion-biblia",
   "seccion-compartidos",
   "iglesia-devocionales",
+  "iglesia-abc",
   "iglesia-subidos",
   "panel-imagenes",
   "panel-marcadores",
