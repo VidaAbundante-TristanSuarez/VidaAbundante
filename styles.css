@@ -2921,11 +2921,13 @@ body.oscuro #btnScrollTopGlobal{
 
 /* ✅ En Biblia también se usa el botón global.
    Cuando la barra de acciones está visible, lo subimos para que no la tape. */
-body.en-biblia #btnScrollTopGlobal{
+body.en-biblia #btnScrollTopGlobal,
+body.en-abc #btnScrollTopGlobal{
   display: inline-flex !important;
 }
 
-body.en-biblia:not(.barra-oculta) #btnScrollTopGlobal{
+body.en-biblia:not(.barra-oculta) #btnScrollTopGlobal,
+body.en-abc:not(.barra-oculta) #btnScrollTopGlobal{
   bottom: max(62px, calc(env(safe-area-inset-bottom) + 62px));
 }
 
@@ -2940,9 +2942,10 @@ body.en-biblia:not(.barra-oculta) #btnScrollTopGlobal{
     min-height: 34px;
   }
 
-  body.en-biblia:not(.barra-oculta) #btnScrollTopGlobal{
-    bottom: max(58px, calc(env(safe-area-inset-bottom) + 58px));
-  }
+body.en-biblia:not(.barra-oculta) #btnScrollTopGlobal,
+body.en-abc:not(.barra-oculta) #btnScrollTopGlobal{
+  bottom: max(58px, calc(env(safe-area-inset-bottom) + 58px));
+}
 }
 
 /* ===== BIBLIA: selector de galerías EXACTO como devocionales ===== */
