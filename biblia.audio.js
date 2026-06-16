@@ -110,6 +110,7 @@ async function audioActualizarEstadoInicial() {
   if (especiales[n]) return especiales[n];
 
   const decenas = {
+    30: "treinta",
     40: "cuarenta",
     50: "cincuenta",
     60: "sesenta",
