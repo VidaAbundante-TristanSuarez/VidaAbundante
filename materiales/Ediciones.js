@@ -541,12 +541,15 @@ window.mostrarEdiciones = async () => {
 
             <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
               <b>Páginas / cards</b>
+            </div>
+
+            <div id="edPaginasEditor"></div>
+
+            <div style="display:flex; justify-content:flex-end; align-items:center; gap:10px; flex-wrap:wrap;">
               <button class="ed-pill-btn" type="button" onclick="edAgregarPagina()">
                 <i class="fa-solid fa-circle-plus"></i> Agregar página
               </button>
             </div>
-
-            <div id="edPaginasEditor"></div>
 
             <div id="edEstado"></div>
 
@@ -1955,29 +1958,30 @@ function edMiniPaginasHTML(id, contexto = "ediciones") {
 
   if (!ed) return "";
 
+  const portadaManual = String(ed?.portadaUrl || "").trim();
   const paginas = edPaginasImagenes(ed);
 
-  if (!paginas.length) {
-    const portada = edPortadaEdicion(ed);
+  let items = paginas;
 
-    return portada ? `
-      <div
-        class="ed-mini-galeria ed-mini-galeria--${edEscape(contexto)}"
-        data-ed-id="${edEscape(id)}"
-        data-contexto="${edEscape(contexto)}"
-      >
-        <div id="edMiniTrack_${edEscape(contexto)}_${edEscape(id)}" class="ed-mini-paginas">
-          <div class="ed-mini-page">
-            <img
-              src="${edEscape(portada)}"
-              alt="${edEscape(ed.titulo || "Edición")}"
-              loading="lazy"
-              onclick="abrirPresentacionEdicion('${edEscape(id)}')"
-            >
-          </div>
-        </div>
-      </div>
-    ` : `<div class="ed-mini-empty">Sin imagen</div>`;
+  // ✅ Si tiene portada cargada, la mostramos primero.
+  // Si esa portada es igual a la primera página, no la duplica.
+  if (portadaManual) {
+    const portadaItem = {
+      id: "__portada",
+      imagenUrl: portadaManual,
+      mediaUrl: portadaManual,
+      mediaType: "image/*",
+      orden: -1
+    };
+
+    items = [
+      portadaItem,
+      ...paginas.filter(p => edMediaUrlPagina(p) !== portadaManual)
+    ];
+  }
+
+  if (!items.length) {
+    return `<div class="ed-mini-empty">Sin imagen</div>`;
   }
 
   return `
@@ -1987,7 +1991,7 @@ function edMiniPaginasHTML(id, contexto = "ediciones") {
       data-contexto="${edEscape(contexto)}"
     >
 
-      ${paginas.length > 1 ? `
+      ${items.length > 1 ? `
         <button
           type="button"
           class="ed-mini-nav ed-mini-prev ed-mini-nav-oculta"
@@ -2003,7 +2007,7 @@ function edMiniPaginasHTML(id, contexto = "ediciones") {
         id="edMiniTrack_${edEscape(contexto)}_${edEscape(id)}"
         class="ed-mini-paginas"
       >
-        ${paginas.map((p, i) => {
+        ${items.map((p, i) => {
           const url = edMediaUrlPagina(p);
 
           return `
@@ -2019,7 +2023,7 @@ function edMiniPaginasHTML(id, contexto = "ediciones") {
         }).join("")}
       </div>
 
-      ${paginas.length > 1 ? `
+      ${items.length > 1 ? `
         <button
           type="button"
           class="ed-mini-nav ed-mini-next ed-mini-nav-oculta"
