@@ -1761,7 +1761,7 @@ function edElegirDescargaPNG(total = 1) {
     modal.className = "modal-overlay abierto";
     modal.setAttribute("aria-hidden", "false");
 
-    modal.style.cssText = `
+modal.style.cssText = `
       position: fixed !important;
       inset: 0 !important;
       z-index: 2147483000 !important;
@@ -1863,7 +1863,7 @@ function edElegirDescargaPNG(total = 1) {
       </div>
     `;
 
-    document.body.appendChild(modal);
+    edMontarModalEdiciones(modal);
 
     const cerrar = valor => {
       modal.remove();
@@ -2696,6 +2696,51 @@ function edShareBloquearBotonesModal(bloquear = false, texto = "Preparando...") 
   if (sub && bloquear) sub.textContent = texto;
 }
 
+function edMontarModalEdiciones(modal) {
+  if (!modal) return;
+
+  const visor = document.getElementById("edViewer");
+
+  const fullscreen =
+    document.fullscreenElement ||
+    document.webkitFullscreenElement ||
+    document.msFullscreenElement;
+
+  const visorEstaAbierto =
+    visor &&
+    visor.classList.contains("ed-open");
+
+  // ✅ Si #edViewer está en pantalla completa real,
+  // el modal debe ser hijo de #edViewer o Chrome lo deja invisible detrás.
+  if (
+    visor &&
+    (
+      fullscreen === visor ||
+      visorEstaAbierto
+    )
+  ) {
+    visor.appendChild(modal);
+  } else {
+    document.body.appendChild(modal);
+  }
+
+  modal.style.setProperty("position", "fixed", "important");
+  modal.style.setProperty("inset", "0", "important");
+  modal.style.setProperty("z-index", "2147483000", "important");
+  modal.style.setProperty("display", "flex", "important");
+  modal.style.setProperty("align-items", "center", "important");
+  modal.style.setProperty("justify-content", "center", "important");
+  modal.style.setProperty("background", "rgba(0,0,0,.55)", "important");
+  modal.style.setProperty("padding", "14px", "important");
+  modal.style.setProperty("box-sizing", "border-box", "important");
+
+  const card = modal.querySelector(".modal-card");
+  if (card) {
+    card.style.setProperty("position", "relative", "important");
+    card.style.setProperty("z-index", "2147483001", "important");
+  }
+}
+
 function edAsegurarModalCompartirEdicion() {
   let modal = document.getElementById("edShareChoiceModal");
 
@@ -2729,29 +2774,11 @@ function edAsegurarModalCompartirEdicion() {
         </div>
       </div>
     `;
-
-    document.body.appendChild(modal);
   }
 
-  // ✅ Lo mandamos al final del body para que quede arriba del visor.
-  document.body.appendChild(modal);
+  edMontarModalEdiciones(modal);
 
-  // ✅ Más alto que #edViewer.
-  modal.style.setProperty("position", "fixed", "important");
-  modal.style.setProperty("inset", "0", "important");
-  modal.style.setProperty("z-index", "2147483000", "important");
   modal.style.setProperty("display", "none", "important");
-  modal.style.setProperty("align-items", "center", "important");
-  modal.style.setProperty("justify-content", "center", "important");
-  modal.style.setProperty("background", "rgba(0,0,0,.55)", "important");
-  modal.style.setProperty("padding", "14px", "important");
-  modal.style.setProperty("box-sizing", "border-box", "important");
-
-  const card = modal.querySelector(".modal-card");
-  if (card) {
-    card.style.setProperty("position", "relative", "important");
-    card.style.setProperty("z-index", "2147483001", "important");
-  }
 }
 
 function edElegirTipoCompartirEdicion() {
@@ -2766,6 +2793,9 @@ function edElegirTipoCompartirEdicion() {
     return Promise.resolve("");
   }
 
+  // ✅ Importante: si el visor está abierto, mete el modal dentro del visor.
+  edMontarModalEdiciones(modal);
+
   return new Promise(resolve => {
     let cerrado = false;
 
@@ -2775,21 +2805,21 @@ function edElegirTipoCompartirEdicion() {
 
       if (!valor) {
         modal.classList.remove("abierto", "ed-share-busy");
-        modal.style.display = "none";
+        modal.style.setProperty("display", "none", "important");
       }
 
       resolve(valor);
     };
 
     btnImagen.onclick = () => {
-      edShareBloquearBotonesModal(true, "Preparando la imagen para compartir...");
-      edShareSetTrabajando("Preparando imagen...");
+      edShareBloquearBotonesModal(true, "Preparando la imagen para compartir.");
+      edShareSetTrabajando("Preparando imagen.");
       cerrar("imagen");
     };
 
     btnPublicacion.onclick = () => {
-      edShareBloquearBotonesModal(true, "Preparando el link de la publicación...");
-      edShareSetTrabajando("Preparando publicación...");
+      edShareBloquearBotonesModal(true, "Preparando el link de la publicación.");
+      edShareSetTrabajando("Preparando publicación.");
       cerrar("publicacion");
     };
 
@@ -2807,18 +2837,9 @@ function edElegirTipoCompartirEdicion() {
     if (titulo) titulo.textContent = "Compartir edición";
     if (sub) sub.textContent = "Elegí qué querés compartir.";
 
-// ✅ Si el visor está abierto, igual este modal queda por encima.
-document.body.appendChild(modal);
-
-modal.style.setProperty("display", "flex", "important");
-modal.style.setProperty("z-index", "2147483000", "important");
-
-const card = modal.querySelector(".modal-card");
-if (card) {
-  card.style.setProperty("z-index", "2147483001", "important");
-}
-
-modal.classList.add("abierto");
+    modal.classList.add("abierto");
+    modal.style.setProperty("display", "flex", "important");
+    modal.style.setProperty("z-index", "2147483000", "important");
   });
 }
 
