@@ -1460,4 +1460,21 @@ body.oscuro .ed-check-mini {
   }
 }
 
+/* =========================================================
+   EDICIONES - MODALES SOBRE EL VISOR FULLSCREEN
+   Corrige que Compartir / Descargar queden detrás de la edición abierta
+========================================================= */
+
+#edShareChoiceModal,
+#edDescargaPngModal {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 1000005 !important;
+}
+
+#edShareChoiceModal .modal-card,
+#edDescargaPngModal .modal-card {
+  z-index: 1000006 !important;
+}
+
 </style> 
