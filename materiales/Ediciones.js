@@ -1762,15 +1762,15 @@ function edElegirDescargaPNG(total = 1) {
     modal.setAttribute("aria-hidden", "false");
 
     modal.style.cssText = `
-      position: fixed;
-      inset: 0;
-      z-index: 999999;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: rgba(0,0,0,.45);
-      padding: 14px;
-      box-sizing: border-box;
+      position: fixed !important;
+      inset: 0 !important;
+      z-index: 2147483000 !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      background: rgba(0,0,0,.55) !important;
+      padding: 14px !important;
+      box-sizing: border-box !important;
     `;
 
     modal.innerHTML = `
@@ -1784,6 +1784,7 @@ function edElegirDescargaPNG(total = 1) {
           padding: 18px;
           box-shadow: 0 16px 50px rgba(0,0,0,.28);
           position: relative;
+                    z-index: 2147483001;
           box-sizing: border-box;
         "
       >
@@ -2696,39 +2697,61 @@ function edShareBloquearBotonesModal(bloquear = false, texto = "Preparando...") 
 }
 
 function edAsegurarModalCompartirEdicion() {
-  if (document.getElementById("edShareChoiceModal")) return;
+  let modal = document.getElementById("edShareChoiceModal");
 
-  const modal = document.createElement("div");
-  modal.id = "edShareChoiceModal";
-  modal.className = "modal-overlay";
+  if (!modal) {
+    modal = document.createElement("div");
+    modal.id = "edShareChoiceModal";
+    modal.className = "modal-overlay";
 
-  modal.innerHTML = `
-    <div class="modal-card modal-card-sm" onclick="event.stopPropagation()">
-      <h3 class="modal-title">Compartir edición</h3>
+    modal.innerHTML = `
+      <div class="modal-card modal-card-sm" onclick="event.stopPropagation()">
+        <h3 class="modal-title">Compartir edición</h3>
 
-      <p class="modal-sub">
-        Elegí qué querés compartir.
-      </p>
+        <p class="modal-sub">
+          Elegí qué querés compartir.
+        </p>
 
-      <div class="modal-actions">
-        <button type="button" id="edShareChoiceImagen" class="btn-primary">
-          <i class="fa-solid fa-image"></i>
-          Imagen
-        </button>
+        <div class="modal-actions">
+          <button type="button" id="edShareChoiceImagen" class="btn-primary">
+            <i class="fa-solid fa-image"></i>
+            Imagen
+          </button>
 
-        <button type="button" id="edShareChoicePublicacion" class="btn-primary">
-          <i class="fa-solid fa-link"></i>
-          Publicación
-        </button>
+          <button type="button" id="edShareChoicePublicacion" class="btn-primary">
+            <i class="fa-solid fa-link"></i>
+            Publicación
+          </button>
 
-        <button type="button" id="edShareChoiceCancelar" class="btn-ghost">
-          Cancelar
-        </button>
+          <button type="button" id="edShareChoiceCancelar" class="btn-ghost">
+            Cancelar
+          </button>
+        </div>
       </div>
-    </div>
-  `;
+    `;
 
+    document.body.appendChild(modal);
+  }
+
+  // ✅ Lo mandamos al final del body para que quede arriba del visor.
   document.body.appendChild(modal);
+
+  // ✅ Más alto que #edViewer.
+  modal.style.setProperty("position", "fixed", "important");
+  modal.style.setProperty("inset", "0", "important");
+  modal.style.setProperty("z-index", "2147483000", "important");
+  modal.style.setProperty("display", "none", "important");
+  modal.style.setProperty("align-items", "center", "important");
+  modal.style.setProperty("justify-content", "center", "important");
+  modal.style.setProperty("background", "rgba(0,0,0,.55)", "important");
+  modal.style.setProperty("padding", "14px", "important");
+  modal.style.setProperty("box-sizing", "border-box", "important");
+
+  const card = modal.querySelector(".modal-card");
+  if (card) {
+    card.style.setProperty("position", "relative", "important");
+    card.style.setProperty("z-index", "2147483001", "important");
+  }
 }
 
 function edElegirTipoCompartirEdicion() {
@@ -2784,8 +2807,18 @@ function edElegirTipoCompartirEdicion() {
     if (titulo) titulo.textContent = "Compartir edición";
     if (sub) sub.textContent = "Elegí qué querés compartir.";
 
-    modal.style.display = "flex";
-    modal.classList.add("abierto");
+// ✅ Si el visor está abierto, igual este modal queda por encima.
+document.body.appendChild(modal);
+
+modal.style.setProperty("display", "flex", "important");
+modal.style.setProperty("z-index", "2147483000", "important");
+
+const card = modal.querySelector(".modal-card");
+if (card) {
+  card.style.setProperty("z-index", "2147483001", "important");
+}
+
+modal.classList.add("abierto");
   });
 }
 
