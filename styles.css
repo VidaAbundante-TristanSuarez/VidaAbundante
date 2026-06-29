@@ -5457,4 +5457,71 @@ body.oscuro .va-img-spinner{
   user-select: text;
 }
 
+/* =========================================================
+   VIDA·ABUNDANTE UNIFICADO
+========================================================= */
+
+.vida-abundante-head{
+  width: min(760px, calc(100% - 8px));
+  margin: 0 auto 8px;
+
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.vida-mode-btn{
+  border: none;
+  border-radius: 999px;
+  padding: 8px 13px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+
+  background: var(--ui-azul-claro);
+  color: #000;
+
+  font-weight: 900;
+  font-size: 14px;
+  line-height: 1;
+
+  box-shadow: 0 5px 14px rgba(0,0,0,.12);
+  cursor: pointer;
+}
+
+.vida-mode-btn:hover{
+  background: var(--ui-azul-hover);
+  color: #000;
+}
+
+.vida-mode-btn i{
+  color: #000;
+  font-size: 15px;
+}
+
+.vida-mode-btn--church{
+  background: var(--ui-azul-claro);
+}
+
+.vida-mode-btn--heart{
+  background: #ffdce8;
+}
+
+body.oscuro .vida-mode-btn{
+  background: var(--ui-azul-hover);
+  color: #000;
+}
+
+body.oscuro .vida-mode-btn i{
+  color: #000;
+}
+
+.panel-tabs-personal{
+  width: min(760px, calc(100% - 8px));
+  margin-left: auto;
+  margin-right: auto;
+}
+
 </style> 
