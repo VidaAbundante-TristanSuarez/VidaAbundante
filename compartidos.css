@@ -42,9 +42,21 @@ body.en-compartidos #panel-tabs{
 .comp-hero-card img{
   display: block;
   width: 100%;
-  height: auto;
-  transform: scale(1.03);
+
+  /* ✅ banner 30% más bajo aprox. */
+  height: clamp(125px, 24vw, 185px);
+
+  object-fit: cover;
+  object-position: center;
+
+  transform: none !important;
   transform-origin: center;
+}
+
+@media (max-width: 600px){
+  .comp-hero-card img{
+    height: clamp(105px, 30vw, 145px);
+  }
 }
 
 /* ================= PROMOS ================= */
@@ -2030,6 +2042,80 @@ body.comp-link-directo .comp-post {
 
 #edShareChoiceModal.ed-share-busy .modal-card {
   cursor: wait;
+}
+
+/* =========================================================
+   COMPARTIDOS - FILTROS VIDA·ABUNDANTE
+========================================================= */
+
+.comp-filtros{
+  margin: 10px 0 14px;
+  padding: 7px;
+
+  display: flex;
+  gap: 7px;
+
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+
+  border-radius: 18px;
+  background: rgba(255,255,255,.76);
+  border: 1px solid rgba(255,255,255,.55);
+  box-shadow: 0 5px 16px rgba(0,0,0,.10);
+}
+
+.comp-filtros::-webkit-scrollbar{
+  display: none;
+}
+
+.comp-filtros button{
+  flex: 0 0 auto;
+
+  border: none;
+  border-radius: 999px;
+  padding: 8px 11px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+
+  background: rgba(255,255,255,.92);
+  color: #000;
+
+  font-weight: 900;
+  font-size: 13px;
+  line-height: 1;
+
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.comp-filtros button i{
+  font-size: 14px;
+  color: #000;
+}
+
+.comp-filtros button:hover,
+.comp-filtros button.activo{
+  background: var(--ui-azul-hover, #a6d0ff);
+  color: #000;
+}
+
+body.oscuro .comp-filtros{
+  background: rgba(255,255,255,.18);
+  border-color: rgba(255,255,255,.12);
+}
+
+body.oscuro .comp-filtros button{
+  background: rgba(255,255,255,.88);
+  color: #000;
+}
+
+body.oscuro .comp-filtros button.activo{
+  background: var(--ui-azul-hover, #a6d0ff);
+  color: #000;
 }
 
 </style>
