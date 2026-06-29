@@ -52,6 +52,96 @@ let compartidosOcultosCache = {};
 let compartidosOcultosEscuchaActiva = false;
 let compPromosTimer = null;
 
+let compFiltroActual = (() => {
+  try {
+    return localStorage.getItem("vaCompFiltroActual") || "todo";
+  } catch (e) {
+    return "todo";
+  }
+})();
+
+const COMP_FILTROS = [
+  {
+    id: "devocionales",
+    label: "Devocionales",
+    icon: "fa-solid fa-calendar-days",
+    tipos: ["devocional"]
+  },
+  {
+    id: "imagenes",
+    label: "Imágenes",
+    icon: "fa-solid fa-image",
+    tipos: ["imagen"]
+  },
+  {
+    id: "notas",
+    label: "Notas",
+    icon: "fa-solid fa-bookmark",
+    tipos: ["nota"]
+  },
+  {
+    id: "agenda",
+    label: "Agenda",
+    icon: "fa-solid fa-calendar-check",
+    tipos: ["subido"]
+  },
+  {
+    id: "todo",
+    label: "Todo",
+    icon: "fa-solid fa-splotch",
+    tipos: []
+  }
+];
+
+function compFiltroValido(id) {
+  return COMP_FILTROS.some(f => f.id === id) ? id : "todo";
+}
+
+function compRenderFiltrosHTML() {
+  compFiltroActual = compFiltroValido(compFiltroActual);
+
+  return `
+    <div id="compFiltros" class="comp-filtros">
+      ${COMP_FILTROS.map(f => `
+        <button
+          type="button"
+          class="${f.id === compFiltroActual ? "activo" : ""}"
+          onclick="compCambiarFiltroCompartidos('${compJs(f.id)}')"
+        >
+          <i class="${compEscape(f.icon)}"></i>
+          <span>${compEscape(f.label)}</span>
+        </button>
+      `).join("")}
+    </div>
+  `;
+}
+
+function compFiltrarItems(items = []) {
+  compFiltroActual = compFiltroValido(compFiltroActual);
+
+  if (compFiltroActual === "todo") return items;
+
+  const filtro = COMP_FILTROS.find(f => f.id === compFiltroActual);
+  const tipos = filtro?.tipos || [];
+
+  return items.filter(item => tipos.includes(item?.tipo || ""));
+}
+
+window.compCambiarFiltroCompartidos = function compCambiarFiltroCompartidos(filtro) {
+  compFiltroActual = compFiltroValido(filtro);
+
+  try {
+    localStorage.setItem("vaCompFiltroActual", compFiltroActual);
+  } catch (e) {}
+
+  const lista = comp$("compLista");
+  if (lista) {
+    lista.innerHTML = compLoaderHTML();
+  }
+
+  renderCompartidos();
+};
+
 let compBaseListo = false;
 let compDevocionalesListo = false;
 let compSubidosListo = false;
@@ -593,9 +683,10 @@ function renderCompartidosTop() {
 
   promos.dataset.rendered = "1";
 
-  // ✅ En iPhone evitamos cargar carrusel/promos arriba del feed.
+  // ✅ En iPhone evitamos cargar carrusel/promos pesado,
+  // pero igual dejamos los filtros.
   if (compEsIOS()) {
-    promos.innerHTML = "";
+    promos.innerHTML = compRenderFiltrosHTML();
     return;
   }
 
@@ -636,6 +727,8 @@ function renderCompartidosTop() {
         </div>
       </div>
     </div>
+
+    ${compRenderFiltrosHTML()}
   `;
 
   setTimeout(compIniciarPromosAuto, 100);
@@ -3713,7 +3806,7 @@ window.renderCompartidos = function renderCompartidos() {
   // ✅ Recién cuando la carga base terminó, mostramos banner/promos.
   renderCompartidosTop();
 
-  const itemsTodos = compUnificarItems();
+  const itemsTodos = compFiltrarItems(compUnificarItems());
 
   // ✅ iPhone/Safari: pintar por tandas.
   // PC/Android siguen viendo todo como antes.
