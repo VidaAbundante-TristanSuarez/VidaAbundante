@@ -71,29 +71,19 @@
 <div id="menu">
 
   <!-- Menú sesión -->
-<!-- Botón menú sesión -->
-<button type="button" id="btnMenuSesion" class="nav-btn menu-sesion-btn" onclick="toggleMenuSesion()">
-  <i class="fa-solid fa-ellipsis-vertical"></i>
-</button>
-
- <button class="nav-btn solo-icono-movil" onclick="irA('compartidos')">
-  <i class="fa-solid fa-icons"></i>
-  <span class="text">Compartidos</span>
-</button>
-
-  <button class="nav-btn" onclick="irA('iglesia')">
-    <i class="fa-solid fa-church"></i>
-    <span class="text">Iglesia</span>
+  <button type="button" id="btnMenuSesion" class="nav-btn menu-sesion-btn" onclick="toggleMenuSesion()">
+    <i class="fa-solid fa-ellipsis-vertical"></i>
   </button>
 
- <button class="nav-btn" onclick="irA('biblia')">
+  <!-- Nueva sección unificada -->
+  <button id="btnNavVida" class="nav-btn" onclick="irA('compartidos')">
+    <i id="vidaNavIcon" class="fa-solid fa-church"></i>
+    <span class="text">Vida·Abundante</span>
+  </button>
+
+  <button class="nav-btn" onclick="irA('biblia')">
     <i class="fa-solid fa-book-bible"></i>
     <span class="text">Biblia</span>
-  </button>
-
-  <button class="nav-btn" onclick="irA('panel')">
-    <i class="fa-solid fa-user"></i>
-    <span class="text">Mi Panel</span>
   </button>
 
 </div>
@@ -466,11 +456,19 @@
 <div id="seccion-panel" class="seccion" style="display:none">
   <div id="fondoPanel"></div>
 
-  <!-- Tabs Mi Panel -->
-  <div class="panel-tabs">
+  <!-- Vida·Abundante: modo personal -->
+  <div class="vida-abundante-head">
+    <button type="button" class="vida-mode-btn vida-mode-btn--heart" onclick="irA('compartidos')">
+      <i class="fa-solid fa-heart"></i>
+      <span>Vida·Abundante</span>
+    </button>
+  </div>
+
+  <!-- Mis guardados y creaciones -->
+  <div class="panel-tabs panel-tabs-personal">
     <button type="button" onclick="mostrarSeccion('imagenes')">
       <i class="fa-solid fa-image"></i>
-      <span>Imagenes</span>
+      <span>Imágenes</span>
     </button>
 
     <button type="button" onclick="mostrarSeccion('marcadores')">
@@ -478,17 +476,10 @@
       <span>Notas</span>
     </button>
 
-    <button onclick="mostrarSeccion('compartidos')" class="solo-icono-movil">
-  <i class="fa-solid fa-icons"></i> Compartidos
-</button>
-
-   <button onclick="mostrarSeccion('abc')" class="solo-icono-movil">
-  <i class="fa-solid fa-font"></i> ABC
-</button>
-
-    <button onclick="mostrarSeccion('recursos')" class="solo-icono-movil">
-  <i class="fa-solid fa-shield-heart"></i> Recursos
-</button>
+    <button type="button" onclick="mostrarSeccion('compartidos')" class="solo-icono-movil">
+      <i class="fa-solid fa-heart-circle-check"></i>
+      <span>Guardados</span>
+    </button>
   </div>
 
   <!-- MI PANEL - IMAGENES -->
@@ -536,14 +527,15 @@
   <div id="panel-recursos" class="panel-seccion" style="display:none"></div>
 </div>
    
-<!-- ================= COMPARTIDOS ================= -->
+<!-- ================= VIDA·ABUNDANTE / COMPARTIDO ================= -->
 <div id="seccion-compartidos" class="seccion" style="display:block">
   <div id="fondoCompartidos"></div>
 
-  <div class="panel-tabs">
-    <button type="button" class="activo">
-      <i class="fa-solid fa-icons"></i>
-      <span class="text">Compartidos</span>
+  <!-- Vida·Abundante: modo iglesia -->
+  <div class="vida-abundante-head">
+    <button type="button" class="vida-mode-btn vida-mode-btn--church" onclick="irA('panel')">
+      <i class="fa-solid fa-church"></i>
+      <span>Vida·Abundante</span>
     </button>
   </div>
 
@@ -569,6 +561,17 @@
 </p>
 
     <div class="opciones-sesion-actions">
+
+      <button type="button" id="btnOpcionABC" onclick="cerrarLogin(); irA('iglesia'); setTimeout(() => mostrarIglesiaSub('abc'), 100);">
+        <i class="fa-solid fa-font"></i>
+        <span>ABC</span>
+      </button>
+
+      <button type="button" id="btnOpcionRecursos" onclick="cerrarLogin(); irA('iglesia'); setTimeout(() => mostrarIglesiaSub('recursos'), 100);" style="display:none;">
+        <i class="fa-solid fa-shield-heart"></i>
+        <span>Recursos</span>
+      </button>
+
       <button type="button" id="btnOpcionLogin" onclick="window.location.href='login.html'">
         <i class="fa-brands fa-google"></i>
         <span>Ir a iniciar sesión</span>
