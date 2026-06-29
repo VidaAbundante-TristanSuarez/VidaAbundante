@@ -44,10 +44,21 @@ window.toggleMenuSesion = function(){
   const btnLogout = document.getElementById("btnOpcionLogout");
   const titulo = document.getElementById("opcionesSesionTitulo");
   const texto = document.getElementById("opcionesSesionTexto");
+  const btnABC = document.getElementById("btnOpcionABC");
+  const btnRecursos = document.getElementById("btnOpcionRecursos");
 
   if (!modal || !btnLogin || !btnLogout || !titulo || !texto) return;
 
   const user = auth.currentUser;
+
+    if (btnABC) {
+    btnABC.style.display = "inline-flex";
+  }
+
+  if (btnRecursos) {
+    const puedeVerRecursos = !!window.__ES_ADMIN || !!window.__ES_COLABORADOR;
+    btnRecursos.style.display = puedeVerRecursos ? "inline-flex" : "none";
+  }
 
   if (user) {
     titulo.textContent = "Sesión iniciada";
@@ -176,6 +187,30 @@ window.vaShareCancelado = function vaShareCancelado(e) {
 
 // ================= 🧯 CORTAFUEGOS REAL DE SECCIONES =================
 // Evita que Iglesia, Mi Panel y Compartidos queden visibles juntos.
+function actualizarNavVida(seccion) {
+  const btnVida = document.getElementById("btnNavVida");
+  const iconVida = document.getElementById("vidaNavIcon");
+
+  const esVida =
+    seccion === "compartidos" ||
+    seccion === "panel" ||
+    seccion === "iglesia";
+
+  if (btnVida) {
+    btnVida.classList.toggle("activo", esVida);
+  }
+
+  if (iconVida) {
+    iconVida.className = seccion === "panel"
+      ? "fa-solid fa-heart"
+      : "fa-solid fa-church";
+  }
+}
+
+window.actualizarNavVida = actualizarNavVida;
+
+// ================= 🧯 CORTAFUEGOS REAL DE SECCIONES =================
+// Evita que Iglesia, Mi Panel y Compartidos queden visibles juntos.
 function forzarSeccionActiva(seccion) {
   const todas = ["biblia", "iglesia", "panel", "compartidos"];
 
@@ -203,10 +238,11 @@ function forzarSeccionActiva(seccion) {
     );
   });
 
-  if (seccion === "panel" && !uid) {
-  setTimeout(mostrarPanelVisitante, 0);
-}
+  actualizarNavVida(seccion);
 
+  if (seccion === "panel" && !uid) {
+    setTimeout(mostrarPanelVisitante, 0);
+  }
 }
 
 window.forzarSeccionActiva = forzarSeccionActiva;
@@ -1950,6 +1986,11 @@ window.actualizarPermisosUI = function () {
   const btnTabRecursos = document.getElementById("btnTabRecursos");
   if (btnTabRecursos) {
     btnTabRecursos.style.display = puedeVerRecursos ? "inline-flex" : "none";
+  }
+
+    const btnOpcionRecursos = document.getElementById("btnOpcionRecursos");
+  if (btnOpcionRecursos) {
+    btnOpcionRecursos.style.display = puedeVerRecursos ? "inline-flex" : "none";
   }
 
   // ✅ Permisos dentro de Recursos: solo admin
@@ -6273,6 +6314,10 @@ window.irA = (seccion) => {
   const btnActivo = document.querySelector(`#menu .nav-btn[onclick="irA('${seccion}')"]`);
   if (btnActivo) btnActivo.classList.add("activo");
 
+  try {
+    actualizarNavVida(seccion);
+  } catch (e) {}
+
   // ✅ iniciales internos SOLO de la sección abierta
   if (seccion === "iglesia") {
     const estado = leerEstadoBiblia() || {};
@@ -8749,7 +8794,7 @@ window.mostrarSeccion = (tipo) => {
     forzarSeccionActiva("panel");
   }
 
-  const permitidas = ["imagenes", "marcadores", "compartidos", "abc", "recursos"];
+  const permitidas = ["imagenes", "marcadores", "compartidos"];
   if (!permitidas.includes(tipo)) tipo = "imagenes";
 
   permitidas.forEach(s => {
