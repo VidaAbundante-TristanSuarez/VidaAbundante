@@ -1821,22 +1821,34 @@ body.en-compartidos .comp-action-count{
 }
 
 /* =========================================================
-   COMPARTIDOS - PRÉDICA ABIERTA COMPRIMIDA
-   Cerrada: muestra todo hasta la introducción.
-   Abierta: muestra la prédica completa.
+   COMPARTIDOS - PRÉDICA ABIERTA / COMPACTA
 ========================================================= */
 
 body.en-compartidos .comp-predica-abierta-wrap{
   cursor: pointer;
+  overflow: hidden;
 }
 
-/* ✅ Cuando está cerrada, oculta todo lo que viene después del bloque de introducción */
+/* ✅ Cerrada: no dejamos que aparezca el cajón gigante vacío */
 body.en-compartidos .comp-post--predica-abierta:not(.comp-predica-expandida)
-.comp-predica-intro-wrap ~ *{
-  display: none !important;
+.comp-predica-abierta-wrap{
+  max-height: 360px;
 }
 
-/* ✅ Respaldo para la estructura real que viene desde Subidos */
+/* ✅ Si la prédica viene desde Subidos con marco grande, también la comprimimos */
+body.en-compartidos .comp-post--predica-abierta:not(.comp-predica-expandida)
+.subidos-visor-marco,
+body.en-compartidos .comp-post--predica-abierta:not(.comp-predica-expandida)
+.subidos-visor-contenido,
+body.en-compartidos .comp-post--predica-abierta:not(.comp-predica-expandida)
+.subidos-visor-predica{
+  max-height: 330px !important;
+  overflow: hidden !important;
+}
+
+/* ✅ Oculta bloques posteriores mientras está cerrada */
+body.en-compartidos .comp-post--predica-abierta:not(.comp-predica-expandida)
+.comp-predica-intro-wrap ~ *,
 body.en-compartidos .comp-post--predica-abierta:not(.comp-predica-expandida)
 .subidos-visor-bloques,
 body.en-compartidos .comp-post--predica-abierta:not(.comp-predica-expandida)
@@ -1844,8 +1856,20 @@ body.en-compartidos .comp-post--predica-abierta:not(.comp-predica-expandida)
   display: none !important;
 }
 
-/* ✅ La introducción queda en una línea flexible:
-   texto a la izquierda, icono al final a la derecha */
+/* ✅ Al abrir, vuelve a verse completa */
+body.en-compartidos .comp-post--predica-abierta.comp-predica-expandida
+.comp-predica-abierta-wrap,
+body.en-compartidos .comp-post--predica-abierta.comp-predica-expandida
+.subidos-visor-marco,
+body.en-compartidos .comp-post--predica-abierta.comp-predica-expandida
+.subidos-visor-contenido,
+body.en-compartidos .comp-post--predica-abierta.comp-predica-expandida
+.subidos-visor-predica{
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+/* ✅ La introducción queda prolija */
 body.en-compartidos .comp-predica-intro-preparada{
   display: flex !important;
   align-items: flex-end !important;
@@ -1858,7 +1882,7 @@ body.en-compartidos .comp-predica-intro-text{
   white-space: inherit;
 }
 
-/* ✅ Icono de desplegar en la misma línea final de la introducción */
+/* ✅ Botón desplegar */
 body.en-compartidos .comp-predica-desplegar{
   border: none;
   cursor: pointer;
@@ -1887,15 +1911,24 @@ body.en-compartidos .comp-predica-desplegar:hover{
   color: #000;
 }
 
-/* ✅ Cuando la prédica está abierta, no hace falta mostrar el icono */
 body.en-compartidos .comp-post--predica-abierta.comp-predica-expandida
 .comp-predica-desplegar{
   display: none !important;
 }
 
 @media (max-width: 700px){
-  body.en-compartidos .comp-predica-intro-preparada{
-    gap: 7px !important;
+  body.en-compartidos .comp-post--predica-abierta:not(.comp-predica-expandida)
+  .comp-predica-abierta-wrap{
+    max-height: 315px;
+  }
+
+  body.en-compartidos .comp-post--predica-abierta:not(.comp-predica-expandida)
+  .subidos-visor-marco,
+  body.en-compartidos .comp-post--predica-abierta:not(.comp-predica-expandida)
+  .subidos-visor-contenido,
+  body.en-compartidos .comp-post--predica-abierta:not(.comp-predica-expandida)
+  .subidos-visor-predica{
+    max-height: 295px !important;
   }
 
   body.en-compartidos .comp-predica-desplegar{
@@ -1903,7 +1936,6 @@ body.en-compartidos .comp-post--predica-abierta.comp-predica-expandida
     height: 32px;
     min-width: 32px;
     min-height: 32px;
-    margin-bottom: 0;
   }
 }
 
