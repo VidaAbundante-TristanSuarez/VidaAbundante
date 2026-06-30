@@ -56,12 +56,13 @@ body.oscuro #header {
  }   
     
 /* Contenedor de botones del menú (flex horizontal)*/
-  #menu {
+#menu {
   display: flex;
+  align-items: center;   /* ✅ centra verticalmente todos los botones */
   gap: 6px;
   flex-wrap: nowrap;
   overflow-x: auto;
-  }
+}
 
 /* ICONOS SECCIONES */
 /* Estilo para los botones de navegación .nav-btn*/
@@ -3600,18 +3601,36 @@ body.oscuro .panel-marcadores-bar .pm-left .muted{
 
 /* ================= BOTÓN MENÚ SESIÓN (...) ================= */
 
+/* ✅ Botón de menú (...) alineado con Vida·Abundante y Biblia */
 #btnMenuSesion.menu-sesion-btn{
   width: 34px;
   min-width: 34px;
   height: 34px;
+  min-height: 34px;
+
   padding: 0 !important;
-  justify-content: center;
+  margin: 0 !important;
+
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  line-height: 1 !important;
   flex: 0 0 auto;
+  align-self: center;
 }
 
-#btnMenuSesion i{
-  font-size: 15px;
-  line-height: 1;
+#btnMenuSesion.menu-sesion-btn i{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 16px;
+  height: 16px;
+
+  line-height: 1 !important;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
 /* ================= MODAL OPCIONES SESIÓN ================= */
