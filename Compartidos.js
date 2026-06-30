@@ -62,6 +62,12 @@ let compFiltroActual = (() => {
 
 const COMP_FILTROS = [
   {
+    id: "todo",
+    label: "Todo",
+    icon: "fa-solid fa-splotch",
+    tipos: []
+  },
+  {
     id: "devocionales",
     label: "Devocionales",
     icon: "fa-solid fa-calendar-days",
@@ -84,12 +90,6 @@ const COMP_FILTROS = [
     label: "Agenda",
     icon: "fa-solid fa-calendar-check",
     tipos: ["subido"]
-  },
-  {
-    id: "todo",
-    label: "Todo",
-    icon: "fa-solid fa-splotch",
-    tipos: []
   }
 ];
 
