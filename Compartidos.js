@@ -97,6 +97,12 @@ function compFiltroValido(id) {
   return COMP_FILTROS.some(f => f.id === id) ? id : "todo";
 }
 
+function compActualizarFiltroActivoUI() {
+  document.querySelectorAll("#compFiltros button[data-comp-filtro]").forEach(btn => {
+    btn.classList.toggle("activo", btn.dataset.compFiltro === compFiltroActual);
+  });
+}
+
 function compRenderFiltrosHTML() {
   compFiltroActual = compFiltroValido(compFiltroActual);
 
@@ -105,8 +111,9 @@ function compRenderFiltrosHTML() {
       ${COMP_FILTROS.map(f => `
         <button
           type="button"
+          data-comp-filtro="${compEscape(f.id)}"
           class="${f.id === compFiltroActual ? "activo" : ""}"
-          onclick="compCambiarFiltroCompartidos('${compJs(f.id)}')"
+          onclick="compCambiarFiltroCompartidos('${compJs(f.id)}', this)"
         >
           <i class="${compEscape(f.icon)}"></i>
           <span>${compEscape(f.label)}</span>
@@ -127,18 +134,18 @@ function compFiltrarItems(items = []) {
   return items.filter(item => tipos.includes(item?.tipo || ""));
 }
 
-window.compCambiarFiltroCompartidos = function compCambiarFiltroCompartidos(filtro) {
+window.compCambiarFiltroCompartidos = function compCambiarFiltroCompartidos(filtro, btn = null) {
   compFiltroActual = compFiltroValido(filtro);
 
   try {
     localStorage.setItem("vaCompFiltroActual", compFiltroActual);
   } catch (e) {}
 
-  const lista = comp$("compLista");
-  if (lista) {
-    lista.innerHTML = compLoaderHTML();
+  if (btn && typeof btn.blur === "function") {
+    btn.blur();
   }
 
+  compActualizarFiltroActivoUI();
   renderCompartidos();
 };
 
