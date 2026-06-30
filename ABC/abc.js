@@ -167,42 +167,69 @@ body.oscuro #abcStickyBar{
   border-radius: 999px;
 }
 
-/* ✅ audio debajo de la galería */
+/* ✅ audio debajo de la galería + botón PDF al costado */
 #abcAudioBar{
   background: transparent;
   padding: 8px 0 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 #abcAudio{
-  width:100%;
-  margin:0;
-  display:block;
-  border-radius:16px;
+  width: 70%;
+  max-width: calc(100% - 54px);
+  min-width: 0;
+  margin: 0;
+  display: block;
+  border-radius: 16px;
+  flex: 1 1 auto;
 }
 
-/* ✅ aire para las acciones de ABC debajo del sticky */
-#abcAcciones{
-  display:flex;
-  gap:8px;
-  justify-content:center;
-  align-items:center;
-  flex-wrap:wrap;
-  margin: 10px 0 16px;
-  padding: 10px 0 12px;
+#abcBtnPDF{
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+
+  background: var(--ui-azul-claro, #bcdcff);
+  color: #000;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  font-weight: 900;
+  box-shadow: 0 4px 12px rgba(0,0,0,.10);
 }
 
-#abcAcciones button{
-  border:none;
-  cursor:pointer;
-  border-radius:999px;
-  width:40px;
-  height:40px;
-  background:var(--ui-azul-claro, #bcdcff);
-  color:#000;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  font-weight:900;
+#abcBtnPDF:hover{
+  background: var(--ui-azul-hover, #a6d0ff);
+  color: #000;
+}
+
+#abcBtnPDF i{
+  font-size: 17px;
+  color: #000;
+}
+
+@media (max-width: 640px){
+  #abcAudioBar{
+    gap: 7px;
+  }
+
+  #abcBtnPDF{
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    min-height: 42px;
+  }
 }
 
         #abcContenido{
@@ -332,13 +359,21 @@ body.oscuro .abc-block .icono-nota{
       <div id="abcIndice" aria-label="Índice ABC"></div>
     </div>
 
-    <!-- ✅ Audio debajo del índice -->
+    <!-- ✅ Audio debajo del índice + PDF -->
     <div id="abcAudioBar">
       <audio id="abcAudio" controls preload="metadata"></audio>
+
+      <button
+        type="button"
+        id="abcBtnPDF"
+        onclick="abrirOpcionesPDFABC()"
+        title="Descargar PDF"
+        aria-label="Descargar PDF"
+      >
+        <i class="fa-solid fa-file-pdf"></i>
+      </button>
     </div>
   </div>
-
-  <div id="abcAcciones"></div>
 
   <div id="abcContenido"></div>
 
@@ -442,7 +477,6 @@ abcMarcarSeleccionUI();
 // ✅ 4) recién después escuchá resaltados (Firebase)
 abcEscucharResaltados();
 abcGuardarProgreso();
-renderABCAcciones();
     
   } catch (e) {
     cont.innerHTML = `
@@ -455,112 +489,6 @@ renderABCAcciones();
     console.error(e);
   }
 }
-
-/* ================= ABC - ACCIONES EXTRA ================= */
-
-function renderABCAcciones() {
-  const cont = document.getElementById("abcAcciones");
-  if (!cont) return;
-
-  const tema = ABC_TEMAS[abcIndex];
-  if (!tema) return;
-
-  cont.innerHTML = `
-    <button type="button" onclick="guardarABCEnMiPanel(${abcIndex})" title="Guardar en Mi Panel">
-      <i class="fa-solid fa-heart-circle-plus"></i>
-    </button>
-
-    <button type="button" onclick="abrirOpcionesPDFABC(${abcIndex})" title="Descargar PDF">
-      <i class="fa-solid fa-file-pdf"></i>
-    </button>
-
-    ${window.__ES_ADMIN ? `
-      <button type="button" onclick="publicarABCEnCompartidos(${abcIndex})" title="Publicar en Compartidos">
-        <i class="fa-solid fa-icons"></i>
-      </button>
-    ` : ``}
-  `;
-}
-
-window.guardarABCEnMiPanel = async (index) => {
-  const uid = window.__UID || null;
-
-  if (!uid) {
-    const modal = document.getElementById("loginModal");
-    if (modal) {
-      modal.style.display = "flex";
-      modal.setAttribute("aria-hidden", "false");
-      return;
-    }
-
-    alert("Iniciá sesión para guardar en Mi Panel.");
-    return;
-  }
-
-  const tema = ABC_TEMAS[index];
-  if (!tema) return;
-
-  const db = window.__FB?.db;
-  const api = window.__FB_API || {};
-
-  if (!db || !api.ref || !api.set) {
-    alert("Firebase no está listo.");
-    return;
-  }
-
-  try {
-    await api.set(api.ref(db, `panelRecursos/${uid}/abc_${index}`), {
-      tipo: "abc",
-      recursoTipo: "abc",
-      temaIndex: index,
-      titulo: tema.titulo,
-      html: tema.html,
-      audio: tema.audio,
-      ts: Date.now()
-    });
-
-    alert("ABC guardado en Mi Panel.");
-  } catch (err) {
-    console.error(err);
-    alert("No pude guardar el ABC.");
-  }
-};
-
-window.publicarABCEnCompartidos = async (index) => {
-  if (!window.__ES_ADMIN) {
-    alert("Solo los administradores pueden publicar recursos.");
-    return;
-  }
-
-  const tema = ABC_TEMAS[index];
-  if (!tema) return;
-
-  const db = window.__FB?.db;
-  const api = window.__FB_API || {};
-
-  if (!db || !api.ref || !api.set) {
-    alert("Firebase no está listo.");
-    return;
-  }
-
-  try {
-    await api.set(api.ref(db, `compartidos/abc_${index}`), {
-      tipo: "abc",
-      recursoTipo: "abc",
-      temaIndex: index,
-      titulo: tema.titulo,
-      html: tema.html,
-      audio: tema.audio,
-      creadoPor: window.__UID || "",
-      ts: Date.now()
-    });
-
-    alert("ABC publicado en Compartidos.");
-  } catch (err) {
-    console.error(err);
-    alert("No pude publicar el ABC.");
-  }
-};
 
 /* ================= ABC - PDF PRECARGADO ================= */
 
