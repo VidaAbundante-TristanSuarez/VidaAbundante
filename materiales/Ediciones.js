@@ -379,6 +379,34 @@ function edPaginasArray(edicion) {
     .sort((a, b) => Number(a.orden || 0) - Number(b.orden || 0));
 }
 
+function edPaginasArrayConPortada(edicion) {
+  const paginas = edPaginasArray(edicion);
+  const portadaUrl = String(edicion?.portadaUrl || "").trim();
+
+  if (!portadaUrl) return paginas;
+
+  const primeraUrl = paginas.length ? edMediaUrlPagina(paginas[0]) : "";
+
+  // ✅ Si la portada es exactamente la misma que la primera página,
+  // no la duplicamos.
+  if (primeraUrl && primeraUrl === portadaUrl) {
+    return paginas;
+  }
+
+  const portadaPagina = {
+    id: "portada",
+    orden: -1,
+    imagenUrl: portadaUrl,
+    mediaUrl: portadaUrl,
+    mediaType: "image/*",
+    audioEsUrl: "",
+    audioEnUrl: "",
+    esPortada: true
+  };
+
+  return [portadaPagina, ...paginas];
+}
+
 function edTieneAudio(edicion) {
   return edPaginasArray(edicion).some(p => p.audioEsUrl || p.audioEnUrl);
 }
@@ -2196,7 +2224,7 @@ window.abrirPresentacionEdicion = async (id) => {
     return;
   }
 
-  const paginas = edPaginasArray(ed);
+const paginas = edPaginasArrayConPortada(ed);
 
   if (!paginas.length) {
     alert("Esta edición no tiene páginas.");
