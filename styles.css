@@ -3717,6 +3717,8 @@ body.oscuro .panel-marcadores-bar .pm-left .muted{
   color: #263238;
 }
 
+/* ================= MODAL SESIÓN: ACCESOS PRINCIPALES ================= */
+
 #loginModal .opciones-sesion-actions{
   display: flex;
   flex-direction: column;
@@ -3744,9 +3746,79 @@ body.oscuro .panel-marcadores-bar .pm-left .muted{
   cursor: pointer;
 }
 
+/* ================= MODAL SESIÓN: PIE ================= */
+
+#loginModal .opciones-sesion-footer{
+  margin-top: 18px;
+  padding-top: 14px;
+
+  border-top: 1px solid rgba(0,0,0,.10);
+
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+#loginModal .opciones-sesion-footer button{
+  width: 100%;
+  min-height: 58px;
+  border: none;
+  border-radius: 18px;
+  padding: 8px 6px;
+
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+
+  background: rgba(255,255,255,.88);
+  color: #000;
+
+  font-weight: 900;
+  font-size: 11px;
+  line-height: 1.05;
+
+  box-shadow: 0 7px 16px rgba(0,0,0,.10);
+  cursor: pointer;
+}
+
+#loginModal .opciones-sesion-footer button i{
+  font-size: 16px;
+  color: #000;
+}
+
+#loginModal .opciones-sesion-footer button:hover{
+  background: var(--ui-azul-hover);
+  color: #000;
+}
+
+/* ✅ Cerrar sesión separado y rojo */
 #loginModal #btnOpcionLogout{
   background: #ffe3e3;
   color: #8a0000;
+}
+
+#loginModal #btnOpcionLogout i{
+  color: #8a0000;
+}
+
+#loginModal #btnOpcionLogout:hover{
+  background: #ffd0d0;
+}
+
+/* ✅ Ingresar con Google cuando no hay sesión */
+#loginModal #btnOpcionLogin{
+  background: #eef6ff;
+}
+
+body.oscuro #loginModal .opciones-sesion-footer{
+  border-top-color: rgba(255,255,255,.16);
+}
+
+body.oscuro #loginModal .opciones-sesion-footer button{
+  background: rgba(255,255,255,.90);
+  color: #000;
 }
 
 body.oscuro #loginModal .opciones-sesion-card{
