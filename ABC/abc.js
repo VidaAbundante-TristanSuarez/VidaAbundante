@@ -264,27 +264,67 @@ body.oscuro #abcContenido a{ color:#1c6fcb; }
   height: auto !important;
 }
 
-/* ✅ INTRO como imagen */
+/* ✅ INTRO como imagen: grande, sin corte y sin barra de acciones */
+body.abc-intro-activa #accionesBiblia,
+body.abc-intro-activa #btnMostrarBarra{
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* ✅ El contenedor de la intro NO debe comportarse como hoja HTML */
+#abcContenido.abc-contenido-intro{
+  padding: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  overflow: visible !important;
+}
+
+/* ✅ Wrapper de la imagen */
 .abc-intro-imagen-wrap{
   width: 100%;
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  background: #fff;
+  background: transparent;
+  overflow: visible;
 }
 
+/* ✅ PC / tablet */
 .abc-intro-imagen{
   width: 100%;
-  max-width: 820px;
+  max-width: 980px;
   height: auto;
   display: block;
   border-radius: 10px;
 }
 
+/* ✅ Celular: usa casi todo el ancho real de pantalla */
 @media (max-width: 640px){
+  body.abc-intro-activa #abcWrap{
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 8px 0 18px !important;
+  }
+
+  body.abc-intro-activa #abcStickyBar{
+    margin-bottom: 8px !important;
+  }
+
+  #abcContenido.abc-contenido-intro{
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
   .abc-intro-imagen{
-    max-width: 100%;
-    border-radius: 0;
+    width: calc(100vw - 8px) !important;
+    max-width: none !important;
+    height: auto !important;
+    border-radius: 0 !important;
+
+    margin-left: 50%;
+    transform: translateX(-50%);
   }
 }
 
@@ -468,10 +508,24 @@ async function cargarABCTema(desdeIndice = false) {
   const cont = document.getElementById("abcContenido");
   if (!cont) return;
 
+  const esIntroImagen = !!tema.imagen;
+
+  // ✅ Clase global: permite ocultar barra inferior SOLO en intro
+  document.body.classList.toggle("abc-intro-activa", esIntroImagen);
+
+  // ✅ Limpieza del contenedor
+  cont.classList.remove("abc-contenido-intro");
   cont.innerHTML = `<div style="opacity:.75; text-align:center; padding:10px;">Cargando…</div>`;
 
-    // ✅ Si el tema tiene imagen, mostramos imagen y NO cargamos HTML
-  if (tema.imagen) {
+  // ✅ Si el tema tiene imagen, mostramos imagen y NO cargamos HTML
+  if (esIntroImagen) {
+    cont.classList.add("abc-contenido-intro");
+
+    // ✅ La intro no usa marcador, resaltador, tamaño de letra ni lista
+    try {
+      abcResetModoMarcador();
+    } catch (e) {}
+
     cont.innerHTML = `
       <div id="abcDoc" class="abc-intro-imagen-wrap">
         <img
@@ -485,16 +539,8 @@ async function cargarABCTema(desdeIndice = false) {
     `;
 
     abcGuardarProgreso();
-
-    try {
-      abcAplicarFontSize();
-    } catch (e) {}
-
     return;
   }
-  
-  try {
-    const r = await fetch(encodeURI(tema.html), { cache: "no-store" });
     if (!r.ok) throw new Error("No se pudo abrir el HTML");
 
    const raw = await r.text();
@@ -1906,6 +1952,7 @@ window.__abcOnEnter = () => {
 };
 
 window.__abcOnExit = () => {
+    document.body.classList.remove("abc-intro-activa");
     document.body.classList.remove("en-abc");
     window.__abcEditMarcadorId = null;
     window.setMarcadorCtx("biblia");
