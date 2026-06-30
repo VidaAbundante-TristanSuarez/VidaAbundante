@@ -42,37 +42,35 @@ window.toggleMenuSesion = function(){
   const modal = document.getElementById("loginModal");
   const btnLogin = document.getElementById("btnOpcionLogin");
   const btnLogout = document.getElementById("btnOpcionLogout");
-  const titulo = document.getElementById("opcionesSesionTitulo");
-  const texto = document.getElementById("opcionesSesionTexto");
+  const btnDevocionales = document.getElementById("btnOpcionDevocionales");
+  const btnAgenda = document.getElementById("btnOpcionAgenda");
   const btnABC = document.getElementById("btnOpcionABC");
   const btnRecursos = document.getElementById("btnOpcionRecursos");
+  const titulo = document.getElementById("opcionesSesionTitulo");
+  const texto = document.getElementById("opcionesSesionTexto");
 
   if (!modal || !btnLogin || !btnLogout || !titulo || !texto) return;
 
   const user = auth.currentUser;
+  const puedeVerRecursos = !!window.__ES_ADMIN || !!window.__ES_COLABORADOR;
 
-    if (btnABC) {
-    btnABC.style.display = "inline-flex";
-  }
-
-  if (btnRecursos) {
-    const puedeVerRecursos = !!window.__ES_ADMIN || !!window.__ES_COLABORADOR;
-    btnRecursos.style.display = puedeVerRecursos ? "inline-flex" : "none";
-  }
+  if (btnDevocionales) btnDevocionales.style.display = "inline-flex";
+  if (btnAgenda) btnAgenda.style.display = "inline-flex";
+  if (btnABC) btnABC.style.display = "inline-flex";
+  if (btnRecursos) btnRecursos.style.display = puedeVerRecursos ? "inline-flex" : "none";
 
   if (user) {
-    titulo.textContent = "Sesión iniciada";
-    texto.textContent = "Puede cerrar sesión y volver a ingresar cuando lo necesite.";
+    titulo.textContent = "Vida Abundante";
+    texto.textContent = "Accesos rápidos y opciones de sesión.";
     btnLogin.style.display = "none";
     btnLogout.style.display = "inline-flex";
   } else {
     titulo.textContent = "Vida Abundante App";
-    texto.textContent = "Puede ingresar con Google para guardar sus preferencias.";
+    texto.textContent = "Podés navegar como visitante o ingresar con Google para guardar tus preferencias.";
     btnLogin.style.display = "inline-flex";
     btnLogout.style.display = "none";
   }
 
-  // ✅ abre siempre, aunque alguna función vieja haya dejado display:none
   modal.style.display = "flex";
   modal.classList.add("abierto");
   modal.setAttribute("aria-hidden", "false");
@@ -134,6 +132,73 @@ window.cerrarLogin = function(){
   // ✅ cerramos limpio, pero toggleMenuSesion lo vuelve a flex cuando haga falta
   modal.style.display = "none";
 };
+
+window.vaAbrirIglesiaDesdeMenu = function(sub = "devocionales") {
+  try {
+    cerrarLogin();
+  } catch (e) {}
+
+  const elegido = ["devocionales", "subidos", "abc", "recursos"].includes(sub)
+    ? sub
+    : "devocionales";
+
+  try {
+    irA("iglesia");
+  } catch (e) {
+    try { forzarSeccionActiva("iglesia"); } catch (_) {}
+  }
+
+  setTimeout(() => {
+    try {
+      forzarSeccionActiva("iglesia");
+      mostrarIglesiaSub(elegido);
+      window.scrollTo({ top: 0, behavior: "auto" });
+    } catch (e) {
+      console.warn("No pude abrir Iglesia:", e);
+    }
+  }, 120);
+};
+
+window.vaToggleVidaAbundante = function() {
+  const estoyEnCompartidos = document.body.classList.contains("en-compartidos");
+  const estoyEnPanel = document.body.classList.contains("en-panel");
+
+  if (estoyEnCompartidos) {
+    irA("panel");
+    return;
+  }
+
+  if (estoyEnPanel) {
+    irA("compartidos");
+    return;
+  }
+
+  irA("compartidos");
+};
+
+function actualizarNavVida(seccion) {
+  const btnVida = document.getElementById("btnNavVida");
+  const iconVida = document.getElementById("vidaNavIcon");
+
+  if (!btnVida || !iconVida) return;
+
+  const esVida =
+    seccion === "compartidos" ||
+    seccion === "panel" ||
+    seccion === "iglesia";
+
+  const esPersonal = seccion === "panel";
+
+  btnVida.classList.toggle("activo", esVida);
+  btnVida.classList.toggle("modo-iglesia", !esPersonal);
+  btnVida.classList.toggle("modo-personal", esPersonal);
+
+  iconVida.className = esPersonal
+    ? "fa-solid fa-heart"
+    : "fa-solid fa-church";
+}
+
+window.actualizarNavVida = actualizarNavVida;
 
 window.cerrarSesionDesdeMenu = async function(){
   try {
@@ -238,7 +303,9 @@ function forzarSeccionActiva(seccion) {
     );
   });
 
-  actualizarNavVida(seccion);
+  try {
+    actualizarNavVida(seccion);
+  } catch (e) {}
 
   if (seccion === "panel" && !uid) {
     setTimeout(mostrarPanelVisitante, 0);
