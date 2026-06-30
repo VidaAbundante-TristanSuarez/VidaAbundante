@@ -1477,4 +1477,96 @@ body.oscuro .ed-check-mini {
   z-index: 1000006 !important;
 }
 
+/* =========================================================
+   EDICIONES - SUBIR IMÁGENES EN SERIE
+========================================================= */
+
+.ed-pages-head{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.ed-serie-actions{
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ed-serie-btn{
+  min-width: 190px;
+}
+
+.ed-add-page-row{
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.ed-page-grid-serie{
+  grid-template-columns: 1fr !important;
+}
+
+.ed-serie-file-name{
+  min-height: 42px;
+  border-radius: 14px;
+  padding: 9px 10px;
+
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  background: rgba(255,255,255,.78);
+  border: 1px solid rgba(0,0,0,.10);
+
+  font-weight: 900;
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.ed-serie-file-name i{
+  color: #000;
+}
+
+.ed-existing-preview-serie{
+  max-width: 160px;
+  width: 160px;
+  height: auto;
+  object-fit: contain;
+  margin-bottom: 10px;
+}
+
+@media (max-width: 700px){
+  .ed-pages-head{
+    align-items: stretch;
+  }
+
+  .ed-pages-head > b{
+    width: 100%;
+  }
+
+  .ed-serie-actions,
+  .ed-serie-btn,
+  .ed-add-page-row,
+  .ed-add-page-row .ed-pill-btn{
+    width: 100%;
+  }
+
+  .ed-serie-btn,
+  .ed-add-page-row .ed-pill-btn{
+    justify-content: center;
+  }
+
+  .ed-existing-preview-serie{
+    width: 125px;
+    max-width: 125px;
+  }
+}
+
 </style> 
