@@ -35,6 +35,111 @@ const R2_DOWNLOAD_URL = R2_WORKER_URL;
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
+// ================= PWA: INSTALAR / COMPARTIR APP =================
+let vaInstallPromptPendiente = null;
+
+function vaAppEstaInstalada() {
+  return (
+    window.matchMedia?.("(display-mode: standalone)")?.matches ||
+    window.navigator.standalone === true
+  );
+}
+
+function vaUrlApp() {
+  return "https://vidaabundante-tristansuarez.github.io/VidaAbundante/";
+}
+
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  vaInstallPromptPendiente = e;
+
+  if (typeof window.vaActualizarBotonInstalarApp === "function") {
+    window.vaActualizarBotonInstalarApp();
+  }
+});
+
+window.addEventListener("appinstalled", () => {
+  vaInstallPromptPendiente = null;
+
+  if (typeof window.vaActualizarBotonInstalarApp === "function") {
+    window.vaActualizarBotonInstalarApp();
+  }
+});
+
+window.vaActualizarBotonInstalarApp = function() {
+  const btn = document.getElementById("btnOpcionInstalarApp");
+  if (!btn) return;
+
+  if (vaAppEstaInstalada()) {
+    btn.style.display = "none";
+    return;
+  }
+
+  btn.style.display = "inline-flex";
+};
+
+window.vaCompartirApp = async function() {
+  const url = vaUrlApp();
+  const texto = "Vida Abundante App";
+
+  try {
+    if (navigator.share) {
+      await navigator.share({
+        title: "Vida Abundante",
+        text: texto,
+        url
+      });
+      return;
+    }
+
+    await navigator.clipboard.writeText(url);
+    alert("Link de la app copiado.");
+  } catch (e) {
+    if (window.vaShareCancelado?.(e)) return;
+
+    try {
+      await navigator.clipboard.writeText(url);
+      alert("Link de la app copiado.");
+    } catch (_) {
+      prompt("Copiá este link para compartir la app:", url);
+    }
+  }
+};
+
+window.vaInstalarAppDesdeMenu = async function() {
+  try {
+    if (vaAppEstaInstalada()) {
+      alert("La app ya está instalada en este dispositivo.");
+      vaActualizarBotonInstalarApp();
+      return;
+    }
+
+    if (vaInstallPromptPendiente) {
+      vaInstallPromptPendiente.prompt();
+
+      try {
+        await vaInstallPromptPendiente.userChoice;
+      } catch (e) {}
+
+      vaInstallPromptPendiente = null;
+      vaActualizarBotonInstalarApp();
+      return;
+    }
+
+    const esIOS = /iphone|ipad|ipod/i.test(navigator.userAgent || "");
+
+    if (esIOS) {
+      alert("Para instalar en iPhone: tocá Compartir y luego “Agregar a pantalla de inicio”.");
+      return;
+    }
+
+    alert("Si no aparece el cartel de instalación, abrí el menú de Chrome y tocá “Instalar app” o “Agregar a pantalla principal”.");
+  } catch (e) {
+    console.warn("No pude iniciar instalación:", e);
+    alert("No pude abrir la instalación automática. Probá desde el menú del navegador: “Instalar app”.");
+  }
+};
+
 // ================= MENÚ SESIÓN (...) =================
 // ================= OPCIONES SESIÓN DESDE BOTÓN (...) =================
 
@@ -58,6 +163,10 @@ window.toggleMenuSesion = function(){
   if (btnAgenda) btnAgenda.style.display = "inline-flex";
   if (btnABC) btnABC.style.display = "inline-flex";
   if (btnRecursos) btnRecursos.style.display = puedeVerRecursos ? "inline-flex" : "none";
+
+    if (typeof window.vaActualizarBotonInstalarApp === "function") {
+    window.vaActualizarBotonInstalarApp();
+  }
 
   if (user) {
     titulo.textContent = "Vida Abundante";
