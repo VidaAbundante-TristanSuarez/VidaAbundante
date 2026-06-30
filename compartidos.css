@@ -699,11 +699,11 @@ body.en-compartidos #compLista .comp-post{
   box-sizing: border-box;
 }
 
-/* Banner: más ancho, NO más alto */
+/* Banner: más ancho y 30% más bajo */
 body.en-compartidos #compHero{
   width: 100%;
   max-width: 900px;
-  margin: 0 auto 10px;
+  margin: 0 auto 8px;
 }
 
 body.en-compartidos #compHero:empty,
@@ -713,31 +713,34 @@ body.en-compartidos #compPromos:empty{
 }
 
 body.en-compartidos .comp-hero-card{
-  height: clamp(118px, 18vw, 185px);
-  border-radius: 20px;
-  overflow: hidden;
-}
-
-/* ✅ Banner principal Compartidos: no recortar */
-body.en-compartidos .comp-hero-card {
   width: 100%;
-  aspect-ratio: 3 / 1;
+  aspect-ratio: 4.3 / 1;
   height: auto !important;
   max-height: none !important;
+
   overflow: hidden;
   border-radius: 18px;
   background: transparent;
 }
 
-body.en-compartidos .comp-hero-card img {
+body.en-compartidos .comp-hero-card img{
   width: 100%;
-  height: 100%;
+  height: 100% !important;
+
   display: block;
-  object-fit: contain;
+  object-fit: cover !important;
   object-position: center center;
+
   transform: none !important;
   opacity: 1 !important;
   background-color: transparent;
+}
+
+@media (max-width: 700px){
+  body.en-compartidos .comp-hero-card{
+    aspect-ratio: 4.15 / 1;
+    border-radius: 17px;
+  }
 }
 
 /* Promos: 3 por vista, sin cortar extremos */
@@ -2081,7 +2084,7 @@ body.comp-link-directo .comp-post {
   justify-content: center;
   gap: 6px;
 
-  background: rgba(255,255,255,.92);
+  background: rgba(255,255,255,.94);
   color: #000;
 
   font-weight: 900;
@@ -2097,10 +2100,29 @@ body.comp-link-directo .comp-post {
   color: #000;
 }
 
-.comp-filtros button:hover,
 .comp-filtros button.activo{
-  background: var(--ui-azul-hover, #a6d0ff);
-  color: #000;
+  background: var(--ui-azul-hover, #a6d0ff) !important;
+  color: #000 !important;
+}
+
+/* ✅ evita que en celular quede pegado el hover del botón tocado */
+@media (hover: none) and (pointer: coarse){
+  .comp-filtros button:hover{
+    background: rgba(255,255,255,.94) !important;
+    color: #000 !important;
+  }
+
+  .comp-filtros button.activo{
+    background: var(--ui-azul-hover, #a6d0ff) !important;
+    color: #000 !important;
+  }
+}
+
+@media (hover: hover) and (pointer: fine){
+  .comp-filtros button:hover{
+    background: var(--ui-azul-hover, #a6d0ff);
+    color: #000;
+  }
 }
 
 body.oscuro .comp-filtros{
@@ -2114,8 +2136,8 @@ body.oscuro .comp-filtros button{
 }
 
 body.oscuro .comp-filtros button.activo{
-  background: var(--ui-azul-hover, #a6d0ff);
-  color: #000;
+  background: var(--ui-azul-hover, #a6d0ff) !important;
+  color: #000 !important;
 }
 
 </style>
