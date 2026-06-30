@@ -75,9 +75,14 @@
     <i class="fa-solid fa-ellipsis-vertical"></i>
   </button>
 
-  <!-- Nueva sección unificada -->
-  <button id="btnNavVida" class="nav-btn" onclick="irA('compartidos')">
-    <i id="vidaNavIcon" class="fa-solid fa-church"></i>
+  <!-- Vida·Abundante unificado -->
+  <button id="btnNavVida" type="button" class="nav-btn nav-vida-btn" onclick="vaToggleVidaAbundante()">
+    <span id="vidaSwitch" class="vida-switch" aria-hidden="true">
+      <span id="vidaSwitchThumb" class="vida-switch-thumb">
+        <i id="vidaNavIcon" class="fa-solid fa-church"></i>
+      </span>
+    </span>
+
     <span class="text">Vida·Abundante</span>
   </button>
 
@@ -250,29 +255,6 @@
 <!-- ================= IGLESIA ================= -->
 <div id="seccion-iglesia" class="seccion" style="display:none">
  <div id="fondoIglesia"></div>
-
-  <!-- Sub menú dentro de Iglesia -->
-<div class="panel-tabs" style="margin-bottom:12px;">
-  <button type="button" onclick="mostrarIglesiaSub('devocionales')">
-    <i class="fa-solid fa-calendar-days"></i>
-    <span>Devocionales</span>
-  </button>
-
-  <button type="button" onclick="mostrarIglesiaSub('subidos')">
-    <i class="fa-solid fa-calendar-check"></i>
-    <span>Agenda</span>
-  </button>
-
-   <button type="button" onclick="mostrarIglesiaSub('abc')">
-    <i class="fa-solid fa-font"></i>
-    <span>ABC</span>
-  </button>
-
- <button id="btnTabRecursos" type="button" class="solo-icono-movil" onclick="mostrarIglesiaSub('recursos')">
-  <i class="fa-solid fa-shield-heart"></i>
-  <span>Recursos</span>
-</button>
-</div>
 
   <!-- ✅ SUB-SECCIÓN: DEVOCIONALES (VISIBLE por default) -->
   <div id="iglesia-devocionales">
@@ -456,14 +438,6 @@
 <div id="seccion-panel" class="seccion" style="display:none">
   <div id="fondoPanel"></div>
 
-  <!-- Vida·Abundante: modo personal -->
-  <div class="vida-abundante-head">
-    <button type="button" class="vida-mode-btn vida-mode-btn--heart" onclick="irA('compartidos')">
-      <i class="fa-solid fa-heart"></i>
-      <span>Vida·Abundante</span>
-    </button>
-  </div>
-
   <!-- Mis guardados y creaciones -->
   <div class="panel-tabs panel-tabs-personal">
     <button type="button" onclick="mostrarSeccion('imagenes')">
@@ -528,16 +502,9 @@
 </div>
    
 <!-- ================= VIDA·ABUNDANTE / COMPARTIDO ================= -->
+<!-- ================= COMPARTIDOS ================= -->
 <div id="seccion-compartidos" class="seccion" style="display:block">
   <div id="fondoCompartidos"></div>
-
-  <!-- Vida·Abundante: modo iglesia -->
-  <div class="vida-abundante-head">
-    <button type="button" class="vida-mode-btn vida-mode-btn--church" onclick="irA('panel')">
-      <i class="fa-solid fa-church"></i>
-      <span>Vida·Abundante</span>
-    </button>
-  </div>
 
   <div id="compartidosApp"></div>
 </div>
@@ -562,12 +529,22 @@
 
     <div class="opciones-sesion-actions">
 
-      <button type="button" id="btnOpcionABC" onclick="cerrarLogin(); irA('iglesia'); setTimeout(() => mostrarIglesiaSub('abc'), 100);">
+      <button type="button" id="btnOpcionDevocionales" onclick="vaAbrirIglesiaDesdeMenu('devocionales')">
+        <i class="fa-solid fa-calendar-days"></i>
+        <span>Devocionales</span>
+      </button>
+
+      <button type="button" id="btnOpcionAgenda" onclick="vaAbrirIglesiaDesdeMenu('subidos')">
+        <i class="fa-solid fa-calendar-check"></i>
+        <span>Agenda</span>
+      </button>
+
+      <button type="button" id="btnOpcionABC" onclick="vaAbrirIglesiaDesdeMenu('abc')">
         <i class="fa-solid fa-font"></i>
         <span>ABC</span>
       </button>
 
-      <button type="button" id="btnOpcionRecursos" onclick="cerrarLogin(); irA('iglesia'); setTimeout(() => mostrarIglesiaSub('recursos'), 100);" style="display:none;">
+      <button type="button" id="btnOpcionRecursos" onclick="vaAbrirIglesiaDesdeMenu('recursos')" style="display:none;">
         <i class="fa-solid fa-shield-heart"></i>
         <span>Recursos</span>
       </button>
