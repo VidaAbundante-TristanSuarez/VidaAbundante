@@ -1,12 +1,12 @@
 // ================= ABC - MÓDULO =================
 
 const ABC_TEMAS = [
-  {
-    titulo: "🤍",
-    html: "ABC/INTRO.html",
-    pdf: "ABC/pdf/1 INTRO.pdf",
-    audio: "https://github.com/VidaAbundante-TristanSuarez/vida-abundante-audios/releases/download/v1/INTRO.mp3"
-  },
+{
+  titulo: "🤍",
+  imagen: "ABC/img/intro-cuadernillo.png",
+  pdf: "ABC/pdf/1 INTRO.pdf",
+  audio: "https://github.com/VidaAbundante-TristanSuarez/vida-abundante-audios/releases/download/v1/INTRO.mp3"
+},
   {
     titulo: "Salvación",
     html: "ABC/1 Salvación.html",
@@ -264,6 +264,30 @@ body.oscuro #abcContenido a{ color:#1c6fcb; }
   height: auto !important;
 }
 
+/* ✅ INTRO como imagen */
+.abc-intro-imagen-wrap{
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  background: #fff;
+}
+
+.abc-intro-imagen{
+  width: 100%;
+  max-width: 820px;
+  height: auto;
+  display: block;
+  border-radius: 10px;
+}
+
+@media (max-width: 640px){
+  .abc-intro-imagen{
+    max-width: 100%;
+    border-radius: 0;
+  }
+}
+
 /* tablas: si se pasan, scroll horizontal dentro */
 #abcDoc table{
   display: block;
@@ -446,6 +470,29 @@ async function cargarABCTema(desdeIndice = false) {
 
   cont.innerHTML = `<div style="opacity:.75; text-align:center; padding:10px;">Cargando…</div>`;
 
+    // ✅ Si el tema tiene imagen, mostramos imagen y NO cargamos HTML
+  if (tema.imagen) {
+    cont.innerHTML = `
+      <div id="abcDoc" class="abc-intro-imagen-wrap">
+        <img
+          class="abc-intro-imagen"
+          src="${tema.imagen}"
+          alt="Introducción ABC"
+          loading="eager"
+          decoding="async"
+        >
+      </div>
+    `;
+
+    abcGuardarProgreso();
+
+    try {
+      abcAplicarFontSize();
+    } catch (e) {}
+
+    return;
+  }
+  
   try {
     const r = await fetch(encodeURI(tema.html), { cache: "no-store" });
     if (!r.ok) throw new Error("No se pudo abrir el HTML");
