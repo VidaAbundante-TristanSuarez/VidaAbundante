@@ -527,38 +527,53 @@
   Puede ingresar con Google para guardar sus preferencias, personalizaciones y contenido en Mi Panel.
 </p>
 
-    <div class="opciones-sesion-actions">
+<div class="opciones-sesion-actions">
 
-      <button type="button" id="btnOpcionDevocionales" onclick="vaAbrirIglesiaDesdeMenu('devocionales')">
-        <i class="fa-solid fa-calendar-days"></i>
-        <span>Devocionales</span>
-      </button>
+  <button type="button" id="btnOpcionDevocionales" onclick="vaAbrirIglesiaDesdeMenu('devocionales')">
+    <i class="fa-solid fa-calendar-days"></i>
+    <span>Devocionales</span>
+  </button>
 
-      <button type="button" id="btnOpcionAgenda" onclick="vaAbrirIglesiaDesdeMenu('subidos')">
-        <i class="fa-solid fa-calendar-check"></i>
-        <span>Agenda</span>
-      </button>
+  <button type="button" id="btnOpcionAgenda" onclick="vaAbrirIglesiaDesdeMenu('subidos')">
+    <i class="fa-solid fa-calendar-check"></i>
+    <span>Agenda</span>
+  </button>
 
-      <button type="button" id="btnOpcionABC" onclick="vaAbrirIglesiaDesdeMenu('abc')">
-        <i class="fa-solid fa-font"></i>
-        <span>ABC</span>
-      </button>
+  <button type="button" id="btnOpcionABC" onclick="vaAbrirIglesiaDesdeMenu('abc')">
+    <i class="fa-solid fa-font"></i>
+    <span>ABC</span>
+  </button>
 
-      <button type="button" id="btnOpcionRecursos" onclick="vaAbrirIglesiaDesdeMenu('recursos')" style="display:none;">
-        <i class="fa-solid fa-shield-heart"></i>
-        <span>Recursos</span>
-      </button>
+  <button type="button" id="btnOpcionRecursos" onclick="vaAbrirIglesiaDesdeMenu('recursos')" style="display:none;">
+    <i class="fa-solid fa-shield-heart"></i>
+    <span>Recursos</span>
+  </button>
 
-      <button type="button" id="btnOpcionLogin" onclick="window.location.href='login.html'">
-        <i class="fa-brands fa-google"></i>
-        <span>Ir a iniciar sesión</span>
-      </button>
+</div>
 
-      <button type="button" id="btnOpcionLogout" onclick="cerrarSesionDesdeMenu()">
-        <i class="fa-solid fa-right-from-bracket"></i>
-        <span>Cerrar sesión</span>
-      </button>
-    </div>
+<div class="opciones-sesion-footer">
+
+  <button type="button" id="btnOpcionCompartirApp" onclick="vaCompartirApp()">
+    <i class="fa-solid fa-share-nodes"></i>
+    <span>Compartir</span>
+  </button>
+
+  <button type="button" id="btnOpcionInstalarApp" onclick="vaInstalarAppDesdeMenu()">
+    <i class="fa-solid fa-mobile-screen-button"></i>
+    <span>Instalar</span>
+  </button>
+
+  <button type="button" id="btnOpcionLogin" onclick="window.location.href='login.html'">
+    <i class="fa-brands fa-google"></i>
+    <span>Ingresar</span>
+  </button>
+
+  <button type="button" id="btnOpcionLogout" onclick="cerrarSesionDesdeMenu()">
+    <i class="fa-solid fa-right-from-bracket"></i>
+    <span>Salir</span>
+  </button>
+
+</div>
 
   </div>
 </div>
