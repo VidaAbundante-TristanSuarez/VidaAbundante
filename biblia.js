@@ -251,31 +251,7 @@ window.vaShareCancelado = function vaShareCancelado(e) {
 };
 
 // ================= 🧯 CORTAFUEGOS REAL DE SECCIONES =================
-// Evita que Iglesia, Mi Panel y Compartidos queden visibles juntos.
-function actualizarNavVida(seccion) {
-  const btnVida = document.getElementById("btnNavVida");
-  const iconVida = document.getElementById("vidaNavIcon");
-
-  const esVida =
-    seccion === "compartidos" ||
-    seccion === "panel" ||
-    seccion === "iglesia";
-
-  if (btnVida) {
-    btnVida.classList.toggle("activo", esVida);
-  }
-
-  if (iconVida) {
-    iconVida.className = seccion === "panel"
-      ? "fa-solid fa-heart"
-      : "fa-solid fa-church";
-  }
-}
-
-window.actualizarNavVida = actualizarNavVida;
-
-// ================= 🧯 CORTAFUEGOS REAL DE SECCIONES =================
-// Evita que Iglesia, Mi Panel y Compartidos queden visibles juntos.
+// Evita que Biblia, Iglesia, Mi Panel y Compartidos queden visibles juntos.
 function forzarSeccionActiva(seccion) {
   const todas = ["biblia", "iglesia", "panel", "compartidos"];
 
