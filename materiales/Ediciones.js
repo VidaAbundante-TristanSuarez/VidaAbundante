@@ -539,17 +539,33 @@ window.mostrarEdiciones = async () => {
               </div>
             </div>
 
-            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
-              <b>Páginas / cards</b>
-            </div>
+<div class="ed-pages-head">
+  <b>Páginas / cards</b>
+
+  <div class="ed-serie-actions">
+    <input
+      id="edSerieImagenesInput"
+      type="file"
+      accept="image/*"
+      multiple
+      hidden
+      onchange="edAgregarImagenesSerie(this)"
+    >
+
+    <label for="edSerieImagenesInput" class="ed-pill-btn ed-serie-btn">
+      <i class="fa-solid fa-images"></i>
+      Subir imágenes en serie
+    </label>
+  </div>
+</div>
 
             <div id="edPaginasEditor"></div>
 
-            <div style="display:flex; justify-content:flex-end; align-items:center; gap:10px; flex-wrap:wrap;">
-              <button class="ed-pill-btn" type="button" onclick="edAgregarPagina()">
-                <i class="fa-solid fa-circle-plus"></i> Agregar página
-              </button>
-            </div>
+<div class="ed-add-page-row">
+  <button class="ed-pill-btn" type="button" onclick="edAgregarPagina()">
+    <i class="fa-solid fa-circle-plus"></i> Agregar página
+  </button>
+</div>
 
             <div id="edEstado"></div>
 
@@ -1017,6 +1033,9 @@ window.abrirNuevaEdicion = () => {
   if (tituloModal) tituloModal.textContent = "Nueva edición";
   if (form) form.reset();
 
+    const serieInput = ed$("edSerieImagenesInput");
+  if (serieInput) serieInput.value = "";
+  
   const selectRama = ed$("edRama");
 if (selectRama) selectRama.value = "flyers";
   
@@ -1095,6 +1114,9 @@ window.edAgregarPagina = (data = {}) => {
   const esVideo = edPaginaEsVideo(data);
   const mediaType = edMediaTypePagina(data);
 
+  const archivoSerie = data.__file || null;
+  const esSoloImagenSerie = !!archivoSerie;
+
   const div = document.createElement("div");
   div.className = "ed-page-editor";
   div.dataset.pageId = id;
@@ -1128,29 +1150,126 @@ window.edAgregarPagina = (data = {}) => {
         : `<img class="ed-existing-preview" src="${edEscape(mediaUrl)}" alt="Imagen actual">`
     ) : ``}
 
-    <div class="ed-page-grid">
+    <div class="ed-page-grid ${esSoloImagenSerie ? "ed-page-grid-serie" : ""}">
       <div class="ed-field">
-        <label>Imagen A4 / video</label>
-        <input class="edInputMedia" type="file" accept="image/*,video/mp4,video/webm,video/quicktime">
+        <label>${esSoloImagenSerie ? "Imagen seleccionada" : "Imagen A4 / video"}</label>
+
+        <input
+          class="edInputMedia"
+          type="file"
+          accept="${esSoloImagenSerie ? "image/*" : "image/*,video/mp4,video/webm,video/quicktime"}"
+          ${esSoloImagenSerie ? "style='display:none;'" : ""}
+        >
+
+        ${esSoloImagenSerie ? `
+          <div class="ed-serie-file-name">
+            <i class="fa-solid fa-image"></i>
+            <span>${edEscape(archivoSerie.name || "Imagen")}</span>
+          </div>
+        ` : ``}
+
         ${mediaUrl ? `<div style="font-size:12px; opacity:.7;">Ya tiene ${esVideo ? "video" : "imagen"}. Elegí otro archivo solo si querés reemplazarlo.</div>` : ``}
       </div>
 
-      <div class="ed-field">
-        <label>Audio español</label>
-        <input class="edInputAudioEs" type="file" accept="audio/*">
-        ${data.audioEsUrl ? `<div style="font-size:12px; opacity:.7;">Ya tiene audio español.</div>` : ``}
-      </div>
+      ${esSoloImagenSerie ? `` : `
+        <div class="ed-field">
+          <label>Audio español</label>
+          <input class="edInputAudioEs" type="file" accept="audio/*">
+          ${data.audioEsUrl ? `<div style="font-size:12px; opacity:.7;">Ya tiene audio español.</div>` : ``}
+        </div>
 
-      <div class="ed-field">
-        <label>Audio inglés</label>
-        <input class="edInputAudioEn" type="file" accept="audio/*">
-        ${data.audioEnUrl ? `<div style="font-size:12px; opacity:.7;">Ya tiene audio inglés.</div>` : ``}
-      </div>
+        <div class="ed-field">
+          <label>Audio inglés</label>
+          <input class="edInputAudioEn" type="file" accept="audio/*">
+          ${data.audioEnUrl ? `<div style="font-size:12px; opacity:.7;">Ya tiene audio inglés.</div>` : ``}
+        </div>
+      `}
     </div>
   `;
 
   wrap.appendChild(div);
+
+  if (archivoSerie) {
+    div.__edMediaFile = archivoSerie;
+    div.dataset.mediaType = archivoSerie.type || "image/*";
+
+    const previewUrl = URL.createObjectURL(archivoSerie);
+    div.__edLocalPreviewUrl = previewUrl;
+
+    const grid = div.querySelector(".ed-page-grid");
+    if (grid) {
+      grid.insertAdjacentHTML("beforebegin", `
+        <img
+          class="ed-existing-preview ed-existing-preview-serie"
+          src="${previewUrl}"
+          alt="Vista previa"
+        >
+      `);
+    }
+  }
+
   edRenumerarPaginas();
+};
+
+function edFilaPaginaVacia(row) {
+  if (!row) return false;
+
+  const tieneMediaGuardada =
+    row.dataset.mediaUrl ||
+    row.dataset.imagenUrl ||
+    row.dataset.videoUrl;
+
+  const tieneArchivo =
+    row.__edMediaFile ||
+    row.querySelector(".edInputMedia")?.files?.[0];
+
+  const tieneAudio =
+    row.querySelector(".edInputAudioEs")?.files?.[0] ||
+    row.querySelector(".edInputAudioEn")?.files?.[0] ||
+    row.dataset.audioEsUrl ||
+    row.dataset.audioEnUrl;
+
+  return !tieneMediaGuardada && !tieneArchivo && !tieneAudio;
+}
+
+window.edAgregarImagenesSerie = function(input) {
+  const archivos = Array.from(input?.files || [])
+    .filter(file => String(file?.type || "").startsWith("image/"));
+
+  if (!archivos.length) {
+    alert("Elegí una o más imágenes.");
+    if (input) input.value = "";
+    return;
+  }
+
+  const wrap = ed$("edPaginasEditor");
+  if (!wrap) return;
+
+  // ✅ Si estaba la Página 1 vacía de arranque, la quitamos para no dejar basura.
+  Array.from(wrap.querySelectorAll(".ed-page-editor")).forEach(row => {
+    if (edFilaPaginaVacia(row)) row.remove();
+  });
+
+  // ✅ Orden prolijo por nombre: 01, 02, 03...
+  archivos.sort((a, b) =>
+    String(a.name || "").localeCompare(String(b.name || ""), "es", {
+      numeric: true,
+      sensitivity: "base"
+    })
+  );
+
+  archivos.forEach(file => {
+    edAgregarPagina({
+      __file: file
+    });
+  });
+
+  edRenumerarPaginas();
+
+  edSetEstado(`✅ Se agregaron ${archivos.length} imágenes en serie.`);
+
+  // permite volver a elegir los mismos archivos si te equivocaste
+  if (input) input.value = "";
 };
 
 window.edQuitarPagina = (btn) => {
@@ -1241,10 +1360,11 @@ const portadaFile = ed$("edPortadaFile")?.files?.[0] || null;
       let audioEsUrl = row.dataset.audioEsUrl || "";
       let audioEnUrl = row.dataset.audioEnUrl || "";
 
-      const mediaFile =
-        row.querySelector(".edInputMedia")?.files?.[0] ||
-        row.querySelector(".edInputImagen")?.files?.[0] ||
-        null;
+const mediaFile =
+  row.__edMediaFile ||
+  row.querySelector(".edInputMedia")?.files?.[0] ||
+  row.querySelector(".edInputImagen")?.files?.[0] ||
+  null;
 
       const esFile = row.querySelector(".edInputAudioEs")?.files?.[0] || null;
       const enFile = row.querySelector(".edInputAudioEn")?.files?.[0] || null;
