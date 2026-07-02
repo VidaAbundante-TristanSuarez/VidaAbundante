@@ -300,31 +300,47 @@ body.abc-intro-activa #btnMostrarBarra{
   border-radius: 10px;
 }
 
-/* ✅ Celular: usa casi todo el ancho real de pantalla */
+/* ✅ Celular: intro centrada, legible y SIN recorte */
 @media (max-width: 640px){
   body.abc-intro-activa #abcWrap{
+    width: 100% !important;
     max-width: 100% !important;
-    margin: 0 !important;
-    padding: 8px 0 18px !important;
+    margin: 0 auto !important;
+    padding: 8px 8px 18px !important;
+    overflow-x: hidden !important;
   }
 
   body.abc-intro-activa #abcStickyBar{
-    margin-bottom: 8px !important;
+    margin: 0 8px 8px !important;
   }
 
   #abcContenido.abc-contenido-intro{
-    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 auto !important;
     padding: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .abc-intro-imagen-wrap{
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: flex-start !important;
+    overflow: hidden !important;
   }
 
   .abc-intro-imagen{
-    width: calc(100vw - 8px) !important;
-    max-width: none !important;
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
     height: auto !important;
-    border-radius: 0 !important;
-
-    margin-left: 50%;
-    transform: translateX(-50%);
+    margin: 0 auto !important;
+    transform: none !important;
+    border-radius: 10px !important;
   }
 }
 
