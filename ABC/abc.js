@@ -264,7 +264,7 @@ body.oscuro #abcContenido a{ color:#1c6fcb; }
   height: auto !important;
 }
 
-/* ✅ INTRO como imagen: legible, centrada, sin scroll horizontal y recortando solo laterales */
+/* ✅ INTRO como imagen: legible, estable, sin scroll horizontal y recortando solo laterales */
 body.abc-intro-activa #accionesBiblia,
 body.abc-intro-activa #btnMostrarBarra{
   display: none !important;
@@ -273,7 +273,8 @@ body.abc-intro-activa #btnMostrarBarra{
 }
 
 /* ✅ La intro no debe comportarse como hoja HTML normal */
-#abcContenido.abc-contenido-intro{
+#abcContenido.abc-contenido-intro,
+#abcContenido.abc-es-intro{
   padding: 0 !important;
   border: none !important;
   border-radius: 0 !important;
@@ -283,7 +284,8 @@ body.abc-intro-activa #btnMostrarBarra{
 }
 
 /* ✅ Wrapper general de la imagen */
-.abc-intro-imagen-wrap{
+#abcContenido.abc-contenido-intro .abc-intro-imagen-wrap,
+#abcContenido.abc-es-intro .abc-intro-imagen-wrap{
   width: 100%;
   max-width: 100%;
   height: auto !important;
@@ -295,8 +297,9 @@ body.abc-intro-activa #btnMostrarBarra{
   box-sizing: border-box;
 }
 
-/* ✅ PC: más grande, recorta apenas laterales, no corta abajo */
-.abc-intro-imagen{
+/* ✅ PC: un poco más grande, recorta laterales, no corta abajo */
+#abcContenido.abc-contenido-intro .abc-intro-imagen,
+#abcContenido.abc-es-intro .abc-intro-imagen{
   display: block;
   width: 112%;
   max-width: none !important;
@@ -306,7 +309,7 @@ body.abc-intro-activa #btnMostrarBarra{
   border-radius: 10px;
 }
 
-/* ✅ Celular: letra más legible perdiendo laterales, sin scroll horizontal */
+/* ✅ Celular: letra más legible, pierde laterales, sin scroll horizontal */
 @media (max-width: 640px){
   html,
   body{
@@ -315,28 +318,25 @@ body.abc-intro-activa #btnMostrarBarra{
     overflow-x: hidden !important;
   }
 
-  body.abc-intro-activa #seccion-iglesia,
-  body.abc-intro-activa #iglesia-abc,
-  body.abc-intro-activa #abcApp{
+  #abcApp.abc-es-intro,
+  #abcWrap.abc-es-intro,
+  #abcContenido.abc-es-intro,
+  #abcContenido.abc-contenido-intro{
     width: 100% !important;
     max-width: 100% !important;
     overflow-x: hidden !important;
     box-sizing: border-box !important;
   }
 
-  body.abc-intro-activa #abcWrap{
-    width: 100% !important;
-    max-width: 100% !important;
-    margin: 0 !important;
+  #abcWrap.abc-es-intro{
+    margin: 0 auto !important;
     padding: 8px 0 26px !important;
-    overflow-x: hidden !important;
-    box-sizing: border-box !important;
   }
 
-  /* ✅ Índice/audio centrado, sin achicarlo exagerado */
-  body.abc-intro-activa #abcStickyBar{
-    width: calc(100% - 24px) !important;
-    max-width: 980px !important;
+  /* ✅ No achicamos el bloque índice/audio: vuelve al ancho normal */
+  #abcWrap.abc-es-intro #abcStickyBar{
+    width: 100% !important;
+    max-width: 100% !important;
     margin: 0 auto 14px auto !important;
     padding: 10px 10px 12px !important;
     box-sizing: border-box !important;
@@ -344,21 +344,20 @@ body.abc-intro-activa #btnMostrarBarra{
     overflow: hidden !important;
   }
 
-  body.abc-intro-activa #abcTop{
+  #abcWrap.abc-es-intro #abcTop{
     padding: 8px 0 10px !important;
   }
 
-  body.abc-intro-activa #abcContenido.abc-contenido-intro{
-    width: 100% !important;
-    max-width: 100% !important;
+  #abcContenido.abc-contenido-intro,
+  #abcContenido.abc-es-intro{
     margin: 0 !important;
     padding: 0 !important;
     overflow: visible !important;
     height: auto !important;
-    box-sizing: border-box !important;
   }
 
-  body.abc-intro-activa .abc-intro-imagen-wrap{
+  #abcContenido.abc-contenido-intro .abc-intro-imagen-wrap,
+  #abcContenido.abc-es-intro .abc-intro-imagen-wrap{
     width: 100vw !important;
     max-width: 100vw !important;
     margin-left: 50% !important;
@@ -370,12 +369,13 @@ body.abc-intro-activa #btnMostrarBarra{
   }
 
   /*
-    ✅ Acá está el zoom real.
-    132vw = más legible, pierde laterales.
-    Si todavía querés más grande: 138vw.
+    ✅ Zoom real de la intro.
+    132vw = más legible.
+    Si querés más grande: 138vw.
     Si pierde demasiado lateral: 124vw.
   */
-  body.abc-intro-activa .abc-intro-imagen{
+  #abcContenido.abc-contenido-intro .abc-intro-imagen,
+  #abcContenido.abc-es-intro .abc-intro-imagen{
     display: block !important;
     width: 132vw !important;
     max-width: none !important;
@@ -387,20 +387,20 @@ body.abc-intro-activa #btnMostrarBarra{
   }
 
   /* ✅ Resto de temas ABC en celular: ancho completo, sin márgenes laterales */
-  body:not(.abc-intro-activa) #abcWrap{
+  #abcWrap:not(.abc-es-intro){
     max-width: 100% !important;
     margin: 0 !important;
     padding: 8px 0 16px !important;
     box-sizing: border-box !important;
   }
 
-  body:not(.abc-intro-activa) #abcStickyBar{
+  #abcWrap:not(.abc-es-intro) #abcStickyBar{
     padding-left: 10px !important;
     padding-right: 10px !important;
     box-sizing: border-box !important;
   }
 
-  body:not(.abc-intro-activa) #abcContenido{
+  #abcContenido:not(.abc-es-intro):not(.abc-contenido-intro){
     border-radius: 0 !important;
     border-left: 0 !important;
     border-right: 0 !important;
@@ -560,6 +560,21 @@ function refrescarUIIndice() {
 
 }
 
+function abcSetIntroActiva(esIntro){
+  const activo = !!esIntro;
+
+  document.body.classList.toggle("abc-intro-activa", activo);
+
+  const app = document.getElementById("abcApp");
+  const wrap = document.getElementById("abcWrap");
+  const cont = document.getElementById("abcContenido");
+
+  [app, wrap, cont].forEach(el => {
+    if (!el) return;
+    el.classList.toggle("abc-es-intro", activo);
+  });
+}
+
 async function cargarABCTema(desdeIndice = false) {
   const tema = ABC_TEMAS[abcIndex];
   if (!tema) return;
@@ -577,7 +592,7 @@ async function cargarABCTema(desdeIndice = false) {
   const esIntroImagen = !!tema.imagen;
 
   // ✅ Clase global: permite ocultar barra inferior SOLO en intro
-  document.body.classList.toggle("abc-intro-activa", esIntroImagen);
+abcSetIntroActiva(esIntroImagen);
 
   // ✅ Limpieza del contenedor
   cont.classList.remove("abc-contenido-intro");
@@ -592,20 +607,34 @@ async function cargarABCTema(desdeIndice = false) {
       abcResetModoMarcador();
     } catch (e) {}
 
-    cont.innerHTML = `
-      <div id="abcDoc" class="abc-intro-imagen-wrap">
-        <img
-          class="abc-intro-imagen"
-          src="${tema.imagen}"
-          alt="Introducción ABC"
-          loading="eager"
-          decoding="async"
-        >
-      </div>
-    `;
+cont.innerHTML = `
+  <div id="abcDoc" class="abc-intro-imagen-wrap">
+    <img
+      class="abc-intro-imagen"
+      src="${tema.imagen}"
+      alt="Introducción ABC"
+      loading="eager"
+      decoding="async"
+    >
+  </div>
+`;
 
-    abcGuardarProgreso();
-    return;
+// ✅ Blindaje: si "Restaurando donde estabas..." toca clases,
+// volvemos a marcar la intro sin cambiar de lugar ni tocar el reproductor.
+abcSetIntroActiva(true);
+
+setTimeout(() => {
+  const sigueIntro = document.querySelector("#abcContenido.abc-contenido-intro .abc-intro-imagen");
+  if (sigueIntro) abcSetIntroActiva(true);
+}, 800);
+
+setTimeout(() => {
+  const sigueIntro = document.querySelector("#abcContenido.abc-contenido-intro .abc-intro-imagen");
+  if (sigueIntro) abcSetIntroActiva(true);
+}, 1800);
+
+abcGuardarProgreso();
+return;
   }
 
   try {
