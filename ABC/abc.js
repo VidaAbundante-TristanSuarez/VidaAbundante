@@ -300,29 +300,61 @@ body.abc-intro-activa #btnMostrarBarra{
   border-radius: 10px;
 }
 
-/* ✅ Celular: intro centrada, legible y SIN recorte */
+/* ✅ Celular ABC: sin scroll horizontal, barra centrada y sin tocar márgenes de más */
 @media (max-width: 640px){
+  html,
+  body{
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+  }
+
+  body.abc-intro-activa #seccion-iglesia,
+  body.abc-intro-activa #iglesia-abc,
+  body.abc-intro-activa #abcApp{
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+    box-sizing: border-box !important;
+  }
+
   body.abc-intro-activa #abcWrap{
     width: 100% !important;
     max-width: 100% !important;
     margin: 0 auto !important;
-    padding: 8px 8px 18px !important;
+    padding: 8px 0 16px !important;
     overflow-x: hidden !important;
+    box-sizing: border-box !important;
   }
 
+  /* ✅ Devolvemos el bloque índice/audio a ancho normal, sin margen extra */
   body.abc-intro-activa #abcStickyBar{
-    margin: 0 8px 8px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 0 14px 0 !important;
+    padding: 10px 10px 12px !important;
+    box-sizing: border-box !important;
+    border-radius: 16px !important;
+    overflow: hidden !important;
   }
 
-  #abcContenido.abc-contenido-intro{
+  body.abc-intro-activa #abcTop{
+    padding: 8px 0 10px !important;
+  }
+
+  body.abc-intro-activa #abcContenido.abc-contenido-intro{
     width: 100% !important;
     max-width: 100% !important;
     margin: 0 auto !important;
     padding: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: transparent !important;
     overflow: hidden !important;
+    box-sizing: border-box !important;
   }
 
-  .abc-intro-imagen-wrap{
+  body.abc-intro-activa .abc-intro-imagen-wrap{
     width: 100% !important;
     max-width: 100% !important;
     margin: 0 auto !important;
@@ -331,38 +363,52 @@ body.abc-intro-activa #btnMostrarBarra{
     justify-content: center !important;
     align-items: flex-start !important;
     overflow: hidden !important;
+    box-sizing: border-box !important;
   }
 
-  .abc-intro-imagen{
+  /*
+    ✅ Imagen más grande SIN generar scroll horizontal.
+    Si todavía la querés más grande, cambiá 1.10 por 1.12.
+  */
+  body.abc-intro-activa .abc-intro-imagen{
     display: block !important;
-    width: 100% !important;
-    max-width: 100% !important;
+    width: 110vw !important;
+    max-width: none !important;
     height: auto !important;
     margin: 0 auto !important;
     transform: none !important;
-    border-radius: 10px !important;
+    border-radius: 0 !important;
+  }
+
+  /* ✅ Resto de temas ABC en celular: ancho completo, sin márgenes laterales */
+  body:not(.abc-intro-activa) #abcWrap{
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 8px 0 16px !important;
+    box-sizing: border-box !important;
+  }
+
+  body:not(.abc-intro-activa) #abcStickyBar{
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+    box-sizing: border-box !important;
+  }
+
+  body:not(.abc-intro-activa) #abcContenido{
+    border-radius: 0 !important;
+    border-left: 0 !important;
+    border-right: 0 !important;
+    padding: 10px !important;
+    box-sizing: border-box !important;
   }
 }
 
-/* tablas: si se pasan, scroll horizontal dentro */
+/* tablas: si se pasan, scroll horizontal SOLO dentro de la tabla */
 #abcDoc table{
   display: block;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
 }
-
-/* ✅ CEL: full width, sin márgenes laterales */
-@media (max-width: 640px){
-  #abcWrap{ max-width: 100%; margin: 0; padding: 8px 0 16px; }
-  #abcStickyBar{ padding-left:10px; padding-right:10px; }
-
-  #abcContenido{
-    border-radius: 0;
-    border-left: 0;
-    border-right: 0;
-    padding: 10px; /* podés bajarlo a 8 si querés más full */
-  }
-  }
 
 /* ✅ BLOQUES ABC: el bloque es el párrafo / li / etc */
 .abc-block{
