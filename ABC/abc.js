@@ -264,7 +264,7 @@ body.oscuro #abcContenido a{ color:#1c6fcb; }
   height: auto !important;
 }
 
-/* ✅ INTRO como imagen: grande, sin corte y sin barra de acciones */
+/* ✅ INTRO como imagen: legible, centrada, sin scroll horizontal y recortando solo laterales */
 body.abc-intro-activa #accionesBiblia,
 body.abc-intro-activa #btnMostrarBarra{
   display: none !important;
@@ -272,35 +272,41 @@ body.abc-intro-activa #btnMostrarBarra{
   pointer-events: none !important;
 }
 
-/* ✅ El contenedor de la intro NO debe comportarse como hoja HTML */
+/* ✅ La intro no debe comportarse como hoja HTML normal */
 #abcContenido.abc-contenido-intro{
   padding: 0 !important;
   border: none !important;
   border-radius: 0 !important;
   background: transparent !important;
   overflow: visible !important;
+  height: auto !important;
 }
 
-/* ✅ Wrapper de la imagen */
+/* ✅ Wrapper general de la imagen */
 .abc-intro-imagen-wrap{
   width: 100%;
+  max-width: 100%;
+  height: auto !important;
   display: flex;
   justify-content: center;
   align-items: flex-start;
   background: transparent;
-  overflow: visible;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
-/* ✅ PC / tablet */
+/* ✅ PC: más grande, recorta apenas laterales, no corta abajo */
 .abc-intro-imagen{
-  width: 100%;
-  max-width: 980px;
-  height: auto;
   display: block;
+  width: 112%;
+  max-width: none !important;
+  height: auto !important;
+  flex: 0 0 auto;
+  margin: 0 auto;
   border-radius: 10px;
 }
 
-/* ✅ Celular ABC: sin scroll horizontal, barra centrada y sin tocar márgenes de más */
+/* ✅ Celular: letra más legible perdiendo laterales, sin scroll horizontal */
 @media (max-width: 640px){
   html,
   body{
@@ -321,17 +327,17 @@ body.abc-intro-activa #btnMostrarBarra{
   body.abc-intro-activa #abcWrap{
     width: 100% !important;
     max-width: 100% !important;
-    margin: 0 auto !important;
-    padding: 8px 0 16px !important;
+    margin: 0 !important;
+    padding: 8px 0 26px !important;
     overflow-x: hidden !important;
     box-sizing: border-box !important;
   }
 
-  /* ✅ Devolvemos el bloque índice/audio a ancho normal, sin margen extra */
+  /* ✅ Índice/audio centrado, sin achicarlo exagerado */
   body.abc-intro-activa #abcStickyBar{
-    width: 100% !important;
-    max-width: 100% !important;
-    margin: 0 0 14px 0 !important;
+    width: calc(100% - 24px) !important;
+    max-width: 980px !important;
+    margin: 0 auto 14px auto !important;
     padding: 10px 10px 12px !important;
     box-sizing: border-box !important;
     border-radius: 16px !important;
@@ -345,39 +351,39 @@ body.abc-intro-activa #btnMostrarBarra{
   body.abc-intro-activa #abcContenido.abc-contenido-intro{
     width: 100% !important;
     max-width: 100% !important;
-    margin: 0 auto !important;
+    margin: 0 !important;
     padding: 0 !important;
-    border: none !important;
-    border-radius: 0 !important;
-    background: transparent !important;
-    overflow: hidden !important;
+    overflow: visible !important;
+    height: auto !important;
     box-sizing: border-box !important;
   }
 
   body.abc-intro-activa .abc-intro-imagen-wrap{
-    width: 100% !important;
-    max-width: 100% !important;
-    margin: 0 auto !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+    margin-left: 50% !important;
+    transform: translateX(-50%) !important;
     padding: 0 !important;
-    display: flex !important;
-    justify-content: center !important;
-    align-items: flex-start !important;
     overflow: hidden !important;
+    height: auto !important;
     box-sizing: border-box !important;
   }
 
   /*
-    ✅ Imagen más grande SIN generar scroll horizontal.
-    Si todavía la querés más grande, cambiá 1.10 por 1.12.
+    ✅ Acá está el zoom real.
+    132vw = más legible, pierde laterales.
+    Si todavía querés más grande: 138vw.
+    Si pierde demasiado lateral: 124vw.
   */
   body.abc-intro-activa .abc-intro-imagen{
     display: block !important;
-    width: 110vw !important;
+    width: 132vw !important;
     max-width: none !important;
     height: auto !important;
-    margin: 0 auto !important;
-    transform: none !important;
+    flex: 0 0 auto !important;
+    margin: 0 !important;
     border-radius: 0 !important;
+    transform: none !important;
   }
 
   /* ✅ Resto de temas ABC en celular: ancho completo, sin márgenes laterales */
@@ -403,7 +409,7 @@ body.abc-intro-activa #btnMostrarBarra{
   }
 }
 
-/* tablas: si se pasan, scroll horizontal SOLO dentro de la tabla */
+/* ✅ Tablas: si se pasan, el scroll horizontal queda SOLO dentro de la tabla */
 #abcDoc table{
   display: block;
   overflow-x: auto;
