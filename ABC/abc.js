@@ -500,9 +500,7 @@ async function cargarABCTema(desdeIndice = false) {
 
   const audio = document.getElementById("abcAudio");
   if (audio) {
-    audio.src = tema.audio;
-    // si tocó un botón del índice, generalmente quiere escuchar/leer ya.
-    // no auto-play por respeto a navegador; pero dejamos listo.
+    audio.src = tema.audio || "";
   }
 
   const cont = document.getElementById("abcContenido");
@@ -541,42 +539,57 @@ async function cargarABCTema(desdeIndice = false) {
     abcGuardarProgreso();
     return;
   }
-    if (!r.ok) throw new Error("No se pudo abrir el HTML");
 
-   const raw = await r.text();
-const parsed = new DOMParser().parseFromString(raw, "text/html");
+  try {
+    if (!tema.html) {
+      throw new Error("Este tema no tiene archivo HTML configurado");
+    }
 
-// ✅ preserva estilos del Word
-const headExtras = [
-  ...Array.from(parsed.querySelectorAll('link[rel="stylesheet"]')).map(l => l.outerHTML),
-  ...Array.from(parsed.querySelectorAll("style")).map(s => s.outerHTML)
-].join("\n");
+    const r = await fetch(tema.html, { cache: "no-store" });
 
-const bodyHTML = parsed.body ? parsed.body.innerHTML : raw;
+    if (!r.ok) {
+      throw new Error("No se pudo abrir el HTML");
+    }
 
-cont.innerHTML = `
-  ${headExtras}
-  <div id="abcDoc">${bodyHTML}</div>
-`;
+    const raw = await r.text();
+    const parsed = new DOMParser().parseFromString(raw, "text/html");
 
-abcPrepararBloques();
-abcAplicarFontSize();
-// ✅ 1) cargá marcadores ANTES de armar bloqueados/plumas
-await abcAsegurarMarcadoresCargados();
-// ✅ 2) armá bloqueados inmediatamente (sin esperar Firebase)
-abcRebuildBloqueadosKeep();
-// ✅ 3) ahora sí pintá plumas/estado visual
-abcMarcarSeleccionUI();
-// ✅ 4) recién después escuchá resaltados (Firebase)
-abcEscucharResaltados();
-abcGuardarProgreso();
-    
+    // ✅ preserva estilos del Word
+    const headExtras = [
+      ...Array.from(parsed.querySelectorAll('link[rel="stylesheet"]')).map(l => l.outerHTML),
+      ...Array.from(parsed.querySelectorAll("style")).map(s => s.outerHTML)
+    ].join("\n");
+
+    const bodyHTML = parsed.body ? parsed.body.innerHTML : raw;
+
+    cont.innerHTML = `
+      ${headExtras}
+      <div id="abcDoc">${bodyHTML}</div>
+    `;
+
+    abcPrepararBloques();
+    abcAplicarFontSize();
+
+    // ✅ 1) cargá marcadores ANTES de armar bloqueados/plumas
+    await abcAsegurarMarcadoresCargados();
+
+    // ✅ 2) armá bloqueados inmediatamente
+    abcRebuildBloqueadosKeep();
+
+    // ✅ 3) pintá plumas / selección
+    abcMarcarSeleccionUI();
+
+    // ✅ 4) escuchá resaltados
+    abcEscucharResaltados();
+
+    abcGuardarProgreso();
+
   } catch (e) {
     cont.innerHTML = `
       <div style="padding:12px; border-radius:12px; background:rgba(217,83,79,.12); color:inherit;">
         ❌ No pude cargar el contenido de este tema.<br>
         Revisá si existe el archivo:<br>
-        <code style="font-size:12px;">${tema.html}</code>
+        <code style="font-size:12px;">${tema.html || "sin archivo HTML"}</code>
       </div>
     `;
     console.error(e);
