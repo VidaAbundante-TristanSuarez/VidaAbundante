@@ -544,20 +544,29 @@ function construirIndiceABC() {
 }
 
 function refrescarUIIndice() {
-  // botones índice
   const idx = document.getElementById("abcIndice");
-  if (idx) {
-    Array.from(idx.querySelectorAll("button")).forEach((b, i) => {
-      b.classList.toggle("activo", i === abcIndex);
+  if (!idx) return;
+
+  const botones = Array.from(idx.querySelectorAll("button"));
+
+  botones.forEach((b, i) => {
+    b.classList.toggle("activo", i === abcIndex);
+  });
+
+  const act = botones[abcIndex];
+
+  // ✅ IMPORTANTE:
+  // NO usamos scrollIntoView porque puede mover la pantalla verticalmente sola.
+  // Solo movemos el scroll horizontal del índice.
+  if (act) {
+    requestAnimationFrame(() => {
+      const left = act.offsetLeft - ((idx.clientWidth - act.offsetWidth) / 2);
+      idx.scrollTo({
+        left: Math.max(0, left),
+        behavior: "auto"
+      });
     });
-
-    // mantener visible el activo
-    const act = idx.querySelectorAll("button")[abcIndex];
-    if (act && act.scrollIntoView) {
-      act.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
-    }
   }
-
 }
 
 function abcSetIntroActiva(esIntro){
@@ -573,6 +582,67 @@ function abcSetIntroActiva(esIntro){
     if (!el) return;
     el.classList.toggle("abc-es-intro", activo);
   });
+
+  if (activo) {
+    requestAnimationFrame(abcAplicarIntroEstable);
+  }
+}
+
+function abcAplicarIntroEstable(){
+  const cont = document.getElementById("abcContenido");
+  const wrap = document.querySelector("#abcContenido .abc-intro-imagen-wrap");
+  const img  = document.querySelector("#abcContenido .abc-intro-imagen");
+
+  if (!cont || !wrap || !img) return;
+
+  const esCel = window.matchMedia("(max-width: 640px)").matches;
+
+  cont.classList.add("abc-contenido-intro", "abc-es-intro");
+
+  // ✅ Contenedor de la intro
+  cont.style.setProperty("padding", "0", "important");
+  cont.style.setProperty("border", "none", "important");
+  cont.style.setProperty("border-radius", "0", "important");
+  cont.style.setProperty("background", "transparent", "important");
+  cont.style.setProperty("overflow", "visible", "important");
+  cont.style.setProperty("height", "auto", "important");
+
+  // ✅ Wrapper: corta laterales sin crear scroll horizontal
+  wrap.style.setProperty("display", "flex", "important");
+  wrap.style.setProperty("justify-content", "center", "important");
+  wrap.style.setProperty("align-items", "flex-start", "important");
+  wrap.style.setProperty("padding", "0", "important");
+  wrap.style.setProperty("height", "auto", "important");
+  wrap.style.setProperty("overflow", "hidden", "important");
+  wrap.style.setProperty("box-sizing", "border-box", "important");
+
+  if (esCel) {
+    wrap.style.setProperty("width", "100vw", "important");
+    wrap.style.setProperty("max-width", "100vw", "important");
+    wrap.style.setProperty("margin-left", "50%", "important");
+    wrap.style.setProperty("transform", "translateX(-50%)", "important");
+  } else {
+    wrap.style.setProperty("width", "100%", "important");
+    wrap.style.setProperty("max-width", "100%", "important");
+    wrap.style.setProperty("margin-left", "0", "important");
+    wrap.style.setProperty("transform", "none", "important");
+  }
+
+  // ✅ Imagen: en celular más grande, pierde laterales y NO genera scroll
+  img.style.setProperty("display", "block", "important");
+  img.style.setProperty("max-width", "none", "important");
+  img.style.setProperty("height", "auto", "important");
+  img.style.setProperty("flex", "0 0 auto", "important");
+  img.style.setProperty("margin", "0", "important");
+  img.style.setProperty("transform", "none", "important");
+
+  if (esCel) {
+    img.style.setProperty("width", "132vw", "important");
+    img.style.setProperty("border-radius", "0", "important");
+  } else {
+    img.style.setProperty("width", "112%", "important");
+    img.style.setProperty("border-radius", "10px", "important");
+  }
 }
 
 async function cargarABCTema(desdeIndice = false) {
@@ -619,19 +689,28 @@ cont.innerHTML = `
   </div>
 `;
 
-// ✅ Blindaje: si "Restaurando donde estabas..." toca clases,
-// volvemos a marcar la intro sin cambiar de lugar ni tocar el reproductor.
+// ✅ Aplicamos el tamaño directo en el elemento, no solo por CSS.
 abcSetIntroActiva(true);
+abcAplicarIntroEstable();
 
-setTimeout(() => {
-  const sigueIntro = document.querySelector("#abcContenido.abc-contenido-intro .abc-intro-imagen");
-  if (sigueIntro) abcSetIntroActiva(true);
-}, 800);
+const imgIntro = cont.querySelector(".abc-intro-imagen");
+if (imgIntro) {
+  imgIntro.addEventListener("load", () => {
+    abcSetIntroActiva(true);
+    abcAplicarIntroEstable();
+  }, { once: true });
+}
 
-setTimeout(() => {
-  const sigueIntro = document.querySelector("#abcContenido.abc-contenido-intro .abc-intro-imagen");
-  if (sigueIntro) abcSetIntroActiva(true);
-}, 1800);
+// ✅ Blindaje contra cualquier restauración tardía de la app.
+[100, 500, 1200, 2500, 4000].forEach(ms => {
+  setTimeout(() => {
+    const sigueIntro = document.querySelector("#abcContenido .abc-intro-imagen");
+    if (sigueIntro) {
+      abcSetIntroActiva(true);
+      abcAplicarIntroEstable();
+    }
+  }, ms);
+});
 
 abcGuardarProgreso();
 return;
