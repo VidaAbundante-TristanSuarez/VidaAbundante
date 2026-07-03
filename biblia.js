@@ -285,6 +285,9 @@ window.toggleMenuSesion = function(){
   modal.style.display = "flex";
   modal.classList.add("abierto");
   modal.setAttribute("aria-hidden", "false");
+
+  vaAjustarMenuSesionInstalada();
+};
 };
 
 window.abrirLoginParaGuardarMiPanel = function () {
