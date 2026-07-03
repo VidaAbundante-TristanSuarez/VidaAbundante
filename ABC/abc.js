@@ -710,6 +710,62 @@ function refrescarUIIndice() {
 function abcLimpiarIntroViejaYFijarSticky() {
   document.body.classList.remove("abc-intro-activa");
 
+  if (!document.getElementById("abcStickyMobileFixFinal")) {
+    const st = document.createElement("style");
+    st.id = "abcStickyMobileFixFinal";
+    st.textContent = `
+      @media (max-width: 640px){
+        body.en-abc #abcApp,
+        body.en-abc #iglesia-abc,
+        body.en-abc #seccion-iglesia,
+        body.en-abc #abcWrap{
+          overflow: visible !important;
+          overflow-x: visible !important;
+          overflow-y: visible !important;
+          height: auto !important;
+          max-height: none !important;
+        }
+
+        body.en-abc #abcWrap:not(.abc-es-intro){
+          max-width: 100% !important;
+          margin: 0 auto !important;
+          padding: calc(var(--abc-sticky-h, 130px) + 12px) 10px 18px !important;
+          box-sizing: border-box !important;
+          overflow: visible !important;
+        }
+
+        body.en-abc #abcStickyBar{
+          position: fixed !important;
+          top: env(safe-area-inset-top, 0px) !important;
+          left: 10px !important;
+          right: 10px !important;
+          width: auto !important;
+          max-width: none !important;
+          z-index: 999999 !important;
+
+          margin: 0 !important;
+          border-radius: 18px !important;
+          overflow: hidden !important;
+          box-sizing: border-box !important;
+        }
+
+        body.en-abc #abcContenido:not(.abc-es-intro):not(.abc-contenido-intro){
+          border-radius: 18px !important;
+          border: 1px solid rgba(0,0,0,.10) !important;
+          padding: 14px !important;
+          margin: 0 !important;
+          overflow: hidden !important;
+          box-sizing: border-box !important;
+        }
+
+        body.en-abc #abcContenido:not(.abc-es-intro):not(.abc-contenido-intro)::before{
+          border-radius: inherit !important;
+        }
+      }
+    `;
+    document.head.appendChild(st);
+  }
+
   const app = document.getElementById("abcApp");
   const iglesiaABC = document.getElementById("iglesia-abc");
   const seccionIglesia = document.getElementById("seccion-iglesia");
@@ -724,11 +780,15 @@ function abcLimpiarIntroViejaYFijarSticky() {
     el.style.removeProperty("overflow-x");
     el.style.removeProperty("overflow-y");
     el.style.removeProperty("height");
+    el.style.removeProperty("max-height");
+  });
 
+  [app, iglesiaABC, seccionIglesia, wrap].filter(Boolean).forEach(el => {
     el.style.setProperty("overflow", "visible", "important");
     el.style.setProperty("overflow-x", "visible", "important");
     el.style.setProperty("overflow-y", "visible", "important");
     el.style.setProperty("height", "auto", "important");
+    el.style.setProperty("max-height", "none", "important");
   });
 
   if (wrap) {
@@ -744,12 +804,44 @@ function abcLimpiarIntroViejaYFijarSticky() {
     cont.style.removeProperty("width");
     cont.style.removeProperty("max-width");
     cont.style.removeProperty("transform");
+
+    cont.style.setProperty("border-radius", "18px", "important");
+    cont.style.setProperty("overflow", "hidden", "important");
   }
 
   if (sticky) {
-    sticky.style.setProperty("position", "sticky", "important");
-    sticky.style.setProperty("top", "0", "important");
-    sticky.style.setProperty("z-index", "99999", "important");
+    sticky.style.setProperty("z-index", "999999", "important");
+
+    const medir = () => {
+      const esCel = window.matchMedia("(max-width: 640px)").matches;
+
+      if (!esCel) {
+        document.documentElement.style.removeProperty("--abc-sticky-h");
+        sticky.style.setProperty("position", "sticky", "important");
+        sticky.style.setProperty("top", "0", "important");
+        return;
+      }
+
+      sticky.style.setProperty("position", "fixed", "important");
+      sticky.style.setProperty("top", "env(safe-area-inset-top, 0px)", "important");
+      sticky.style.setProperty("left", "10px", "important");
+      sticky.style.setProperty("right", "10px", "important");
+      sticky.style.setProperty("width", "auto", "important");
+
+      const h = Math.ceil(sticky.getBoundingClientRect().height || 130);
+      document.documentElement.style.setProperty("--abc-sticky-h", `${h}px`);
+    };
+
+    medir();
+    setTimeout(medir, 80);
+    setTimeout(medir, 350);
+    setTimeout(medir, 900);
+
+    if (!window.__abcStickyMobileResizeReady) {
+      window.__abcStickyMobileResizeReady = true;
+      window.addEventListener("resize", medir);
+      window.addEventListener("orientationchange", () => setTimeout(medir, 300));
+    }
   }
 }
 
