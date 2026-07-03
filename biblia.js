@@ -1723,14 +1723,21 @@ function vaSelectorCacheActual(seccion) {
     return "#texto";
   }
 
-  if (seccion === "iglesia") {
-    return vaSelectorVisible([
-      "#iglesia-devocionales",
-      "#iglesia-abc",
-      "#iglesia-subidos",
-      "#iglesia-recursos"
-    ]) || "#seccion-iglesia";
-  }
+if (seccion === "iglesia") {
+  const sel = vaSelectorVisible([
+    "#iglesia-devocionales",
+    "#iglesia-abc",
+    "#iglesia-subidos",
+    "#iglesia-recursos"
+  ]) || "#seccion-iglesia";
+
+  // ✅ ABC se arma con JS propio.
+  // No guardamos/restauramos su HTML porque pisa estilos nuevos
+  // y causa el problema de "se ve bien y vuelve atrás".
+  if (sel === "#iglesia-abc") return "";
+
+  return sel;
+}
 
   if (seccion === "panel") {
     return vaSelectorVisible([
@@ -1779,6 +1786,13 @@ if (vaEsMovil()) {
 
     const selector = vaSelectorCacheActual(seccion);
     const el = selector ? document.querySelector(selector) : null;
+
+    // ✅ Nunca guardar HTML visual de ABC.
+// ABC debe cargarse fresco desde abc.js, no desde localStorage.
+if (seccion === "iglesia" && selector === "#iglesia-abc") {
+  localStorage.removeItem(VA_UI_SNAPSHOT_KEY);
+  return;
+}
 
         // ✅ Por seguridad, nunca guardar HTML visual de Recursos.
     // Así no puede reaparecer al iniciar antes de validar permisos.
@@ -1876,6 +1890,13 @@ if (vaEsMovil()) {
   const snap = vaLeerSnapshotVisual();
   if (!snap) return false;
   if (vaHayLinkDirectoInterno()) return false;
+
+  // ✅ Nunca restaurar HTML viejo de ABC.
+// Si quedó guardado de antes, lo borramos y dejamos que abc.js lo dibuje limpio.
+if (snap.seccion === "iglesia" && snap.selector === "#iglesia-abc") {
+  localStorage.removeItem(VA_UI_SNAPSHOT_KEY);
+  return false;
+}
 
     // ✅ Si quedó una caché vieja de Recursos, no mostrarla nunca.
   if (snap.seccion === "iglesia" && snap.selector === "#iglesia-recursos") {
