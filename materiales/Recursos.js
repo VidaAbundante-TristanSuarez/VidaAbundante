@@ -923,6 +923,348 @@ function hFechaCumple(v) {
   return s;
 }
 
+function hMailKey(v = "") {
+  return String(v || "").trim().toLowerCase();
+}
+
+function hCrearPedidoId() {
+  return (
+    "p_" +
+    Date.now().toString(36) +
+    "_" +
+    Math.random().toString(36).slice(2, 10)
+  );
+}
+
+function hFechaHoraArgentina(ts = Date.now()) {
+  try {
+    return new Intl.DateTimeFormat("es-AR", {
+      timeZone: "America/Argentina/Buenos_Aires",
+      dateStyle: "short",
+      timeStyle: "medium"
+    }).format(new Date(Number(ts) || Date.now()));
+  } catch {
+    return new Date(Number(ts) || Date.now()).toLocaleString();
+  }
+}
+
+function hFechaYMDDesdeTs(ts = Date.now()) {
+  const d = new Date(Number(ts) || Date.now());
+
+  const partes = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Argentina/Buenos_Aires",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).formatToParts(d);
+
+  const y = partes.find(p => p.type === "year")?.value || "";
+  const m = partes.find(p => p.type === "month")?.value || "";
+  const dia = partes.find(p => p.type === "day")?.value || "";
+
+  return `${y}-${m}-${dia}`;
+}
+
+function hFechaDesdeTextoLegacyPedido(txt = "") {
+  const s = String(txt || "");
+  const m = s.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+
+  if (!m) return "sin-fecha";
+
+  const dia = String(m[1]).padStart(2, "0");
+  const mes = String(m[2]).padStart(2, "0");
+  const anio = String(m[3]);
+
+  return `${anio}-${mes}-${dia}`;
+}
+
+function hPedidoFechaBonita(key = "") {
+  if (!key || key === "sin-fecha") return "Sin fecha";
+
+  const partes = String(key).split("-");
+  if (partes.length === 3) {
+    const [y, m, d] = partes;
+    return `${d}/${m}/${y}`;
+  }
+
+  return key;
+}
+
+function hNormalizarPedidoOracionItem(p, idFallback = "") {
+  const texto = typeof p === "string"
+    ? hValor(p)
+    : hValor(p?.texto || p?.pedido || p?.detalle || "");
+
+  if (!texto) return null;
+
+  const ts = Number(p?.ts || p?.creadoEn || p?.fechaTs || 0) || 0;
+
+  return {
+    id: hValor(p?.id || idFallback || hCrearPedidoId()),
+    texto,
+    fecha: hValor(p?.fecha) || (ts ? hFechaYMDDesdeTs(ts) : "sin-fecha"),
+    fechaTexto: hValor(p?.fechaTexto) || (ts ? hFechaHoraArgentina(ts) : ""),
+    ts,
+    origen: hValor(p?.origen || ""),
+    mail: hValor(p?.mail || ""),
+    uid: hValor(p?.uid || "")
+  };
+}
+
+function hNormalizarPedidosOracionLista(lista) {
+  const out = [];
+
+  if (Array.isArray(lista)) {
+    lista.forEach((p, i) => {
+      const item = hNormalizarPedidoOracionItem(p, p?.id || `pedido_${i}`);
+      if (item) out.push(item);
+    });
+  } else if (lista && typeof lista === "object") {
+    Object.entries(lista).forEach(([id, p]) => {
+      const item = hNormalizarPedidoOracionItem(p, id);
+      if (item) out.push(item);
+    });
+  }
+
+  out.sort((a, b) => Number(b.ts || 0) - Number(a.ts || 0));
+  return out;
+}
+
+function hPedidosDeHermano(h = {}) {
+  const pedidos = Array.isArray(h.pedidosOracionLista)
+    ? [...h.pedidosOracionLista]
+    : hNormalizarPedidosOracionLista(h.pedidosOracionLista);
+
+  const legado = hValor(h.pedidosOracion);
+
+  if (legado) {
+    pedidos.push({
+      id: "legacy",
+      texto: legado,
+      fecha: hFechaDesdeTextoLegacyPedido(legado),
+      fechaTexto: "",
+      ts: 0,
+      origen: "legacy"
+    });
+  }
+
+  return pedidos;
+}
+
+function hTextoPedidosBusqueda(h = {}) {
+  return hPedidosDeHermano(h).map(p => p.texto).join(" ");
+}
+
+function hRenderPedidosOracion(h = {}) {
+  const pedidos = hPedidosDeHermano(h);
+
+  if (!pedidos.length) return "—";
+
+  const grupos = [];
+  const mapa = {};
+
+  pedidos.forEach(p => {
+    const key = p.fecha || "sin-fecha";
+
+    if (!mapa[key]) {
+      mapa[key] = {
+        fecha: key,
+        items: []
+      };
+      grupos.push(mapa[key]);
+    }
+
+    mapa[key].items.push(p);
+  });
+
+  return `
+    <div class="pedidos-oracion-wrap">
+      ${grupos.map(g => `
+        <details class="pedido-fecha-grupo">
+          <summary>
+            <span>📅 ${hEscape(hPedidoFechaBonita(g.fecha))}</span>
+            <b>${g.items.length}</b>
+          </summary>
+
+          <div class="pedido-fecha-items">
+            ${g.items.map(p => `
+              <label class="pedido-oracion-item">
+                <input
+                  type="checkbox"
+                  class="pedido-check"
+                  data-hermano-id="${hEscape(h.id)}"
+                  data-pedido-id="${hEscape(p.id)}"
+                  onchange="hActualizarPedidosSeleccionados()"
+                  onclick="event.stopPropagation()"
+                >
+
+                <span class="pedido-oracion-texto">
+                  ${hEscape(p.texto)}
+                </span>
+
+                ${p.fechaTexto ? `
+                  <small>${hEscape(p.fechaTexto)}</small>
+                ` : ``}
+              </label>
+            `).join("")}
+          </div>
+        </details>
+      `).join("")}
+    </div>
+  `;
+}
+
+function hGetPedidosSeleccionados() {
+  const checks = Array.from(document.querySelectorAll("#hermanosLista .pedido-check:checked"));
+  const out = [];
+
+  checks.forEach(ch => {
+    const hermanoId = ch.dataset.hermanoId || "";
+    const pedidoId = ch.dataset.pedidoId || "";
+
+    const hermano = hermanosCache.find(x => x.id === hermanoId);
+    if (!hermano) return;
+
+    const pedido = hPedidosDeHermano(hermano).find(p => p.id === pedidoId);
+    if (!pedido) return;
+
+    out.push({
+      hermano,
+      pedido
+    });
+  });
+
+  return out;
+}
+
+function hTextoPedidosSeleccionados() {
+  const items = hGetPedidosSeleccionados();
+
+  const lineas = [
+    "Pedidos de oración",
+    ""
+  ];
+
+  items.forEach(({ hermano, pedido }) => {
+    const nombre = `${hermano.nombre || ""} ${hermano.apellido || ""}`.trim() || "Sin nombre";
+
+    lineas.push(`📅 ${hPedidoFechaBonita(pedido.fecha)} — ${nombre}`);
+    lineas.push(pedido.texto);
+    lineas.push("");
+  });
+
+  return lineas.join("\n").trim();
+}
+
+window.hActualizarPedidosSeleccionados = () => {
+  const total = hGetPedidosSeleccionados().length;
+  const btnImprimir = document.getElementById("btnImprimirPedidosSeleccionados");
+  const btnEnviar = document.getElementById("btnEnviarPedidosSeleccionados");
+
+  if (btnImprimir) btnImprimir.textContent = total ? `🖨️ Imprimir (${total})` : "🖨️ Imprimir";
+  if (btnEnviar) btnEnviar.textContent = total ? `📤 Enviar (${total})` : "📤 Enviar";
+};
+
+window.hMarcarPedidosVisibles = (marcar = true) => {
+  document.querySelectorAll("#hermanosLista .pedido-check").forEach(ch => {
+    ch.checked = !!marcar;
+  });
+
+  hActualizarPedidosSeleccionados();
+};
+
+window.hImprimirPedidosSeleccionados = () => {
+  const items = hGetPedidosSeleccionados();
+
+  if (!items.length) {
+    alert("Marcá al menos un pedido de oración.");
+    return;
+  }
+
+  const html = `
+    <!doctype html>
+    <html lang="es">
+    <head>
+      <meta charset="utf-8">
+      <title>Pedidos de oración</title>
+      <style>
+        body{
+          font-family:Arial, sans-serif;
+          color:#000;
+          padding:24px;
+          line-height:1.45;
+        }
+
+        h1{
+          margin:0 0 18px;
+          font-size:24px;
+        }
+
+        .pedido-print{
+          border:1px solid #ddd;
+          border-radius:12px;
+          padding:12px 14px;
+          margin-bottom:12px;
+          break-inside:avoid;
+        }
+
+        .pedido-print h2{
+          font-size:16px;
+          margin:0 0 8px;
+        }
+
+        .pedido-print p{
+          white-space:pre-wrap;
+          margin:0;
+        }
+      </style>
+    </head>
+    <body>
+      <h1>Pedidos de oración</h1>
+
+      ${items.map(({ hermano, pedido }) => {
+        const nombre = `${hermano.nombre || ""} ${hermano.apellido || ""}`.trim() || "Sin nombre";
+
+        return `
+          <div class="pedido-print">
+            <h2>${hEscape(hPedidoFechaBonita(pedido.fecha))} — ${hEscape(nombre)}</h2>
+            <p>${hEscape(pedido.texto)}</p>
+          </div>
+        `;
+      }).join("")}
+
+      <script>
+        window.onload = () => {
+          window.print();
+        };
+      <\/script>
+    </body>
+    </html>
+  `;
+
+  const w = window.open("", "_blank");
+  if (!w) {
+    alert("El navegador bloqueó la ventana de impresión.");
+    return;
+  }
+
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
+};
+
+window.hEnviarPedidosSeleccionados = () => {
+  const texto = hTextoPedidosSeleccionados();
+
+  if (!texto) {
+    alert("Marcá al menos un pedido de oración.");
+    return;
+  }
+
+  const url = `https://wa.me/?text=${encodeURIComponent(texto)}`;
+  window.open(url, "_blank");
+};
+
 function hNormalizarRegistro(data = {}) {
   return {
     nombre: hValor(data.nombre),
@@ -930,7 +1272,13 @@ function hNormalizarRegistro(data = {}) {
     direccion: hValor(data.direccion),
     telefono: hValor(data.telefono),
     cumpleanos: hValor(data.cumpleanos),
+
+    // texto viejo, se conserva para no perder nada
     pedidosOracion: hValor(data.pedidosOracion),
+
+    // sistema nuevo: pedidos separados, agrupables por fecha
+    pedidosOracionLista: hNormalizarPedidosOracionLista(data.pedidosOracionLista),
+
     notas: hValor(data.notas),
     mail: hValor(data.mail),
     tokenPedido: data.tokenPedido || "",
@@ -1134,6 +1482,92 @@ window.mostrarHermanos = async () => {
           line-height:1.45;
           white-space:pre-wrap;
           word-break:break-word;
+        }
+
+        .hermanosBtnAccion{
+          border:none;
+          cursor:pointer;
+          border-radius:999px;
+          padding:10px 14px;
+          background: var(--ui-azul-claro, #bcdcff);
+          color:#000;
+          font-weight:700;
+        }
+
+        .hermanosBtnAccion.secundario{
+          background:#fff;
+          border:1px solid rgba(0,0,0,.10);
+        }
+
+        .pedidos-oracion-wrap{
+          display:grid;
+          gap:8px;
+        }
+
+        .pedido-fecha-grupo{
+          background:#fff;
+          border:1px solid rgba(0,0,0,.08);
+          border-radius:12px;
+          overflow:hidden;
+        }
+
+        .pedido-fecha-grupo summary{
+          cursor:pointer;
+          list-style:none;
+          padding:9px 10px;
+          display:flex;
+          align-items:center;
+          justify-content:space-between;
+          gap:10px;
+          font-weight:800;
+          background:rgba(188,220,255,.45);
+        }
+
+        .pedido-fecha-grupo summary::-webkit-details-marker{
+          display:none;
+        }
+
+        .pedido-fecha-grupo summary::after{
+          content:"⌄";
+          font-weight:900;
+          transition:transform .18s ease;
+        }
+
+        .pedido-fecha-grupo[open] summary::after{
+          transform:rotate(180deg);
+        }
+
+        .pedido-fecha-items{
+          display:grid;
+          gap:8px;
+          padding:10px;
+        }
+
+        .pedido-oracion-item{
+          display:grid;
+          grid-template-columns:auto 1fr;
+          gap:8px 10px;
+          align-items:start;
+          padding:8px;
+          border-radius:10px;
+          background:rgba(0,0,0,.035);
+          cursor:pointer;
+        }
+
+        .pedido-oracion-item input{
+          margin-top:3px;
+        }
+
+        .pedido-oracion-texto{
+          white-space:pre-wrap;
+          word-break:break-word;
+        }
+
+        .pedido-oracion-item small{
+          grid-column:2;
+          opacity:.7;
+          font-size:12px;
+          margin-top:-4px;
         }
 
         .hermano-acciones{
@@ -1348,6 +1782,22 @@ ${window.__ES_ADMIN ? `
     ➕ Nuevo registro
   </button>
 ` : ``}
+
+<button class="hermanosBtnAccion secundario" type="button" onclick="hMarcarPedidosVisibles(true)">
+  ☑️ Marcar todas
+</button>
+
+<button class="hermanosBtnAccion secundario" type="button" onclick="hMarcarPedidosVisibles(false)">
+  ⬜ Desmarcar
+</button>
+
+<button id="btnImprimirPedidosSeleccionados" class="hermanosBtnAccion" type="button" onclick="hImprimirPedidosSeleccionados()">
+  🖨️ Imprimir
+</button>
+
+<button id="btnEnviarPedidosSeleccionados" class="hermanosBtnAccion" type="button" onclick="hEnviarPedidosSeleccionados()">
+  📤 Enviar
+</button>
           </div>
         </div>
 
@@ -1484,6 +1934,7 @@ window.renderHermanosLista = () => {
           h.mail,
           h.direccion,
           h.pedidosOracion,
+          hTextoPedidosBusqueda(h),
           h.notas
         ].join(" ").toLowerCase();
         return bag.includes(q);
@@ -1542,7 +1993,7 @@ window.renderHermanosLista = () => {
 
           <div class="hermano-campo hermano-campo-pedidos">
             <div class="hermano-campo-label">Pedidos de oración</div>
-            <div class="hermano-campo-valor">${hEscape(h.pedidosOracion || "—")}</div>
+<div class="hermano-campo-valor">${hRenderPedidosOracion(h)}</div>
           </div>
 
           <div class="hermano-campo hermano-campo-telefono">
@@ -1667,6 +2118,7 @@ cumpleanos: document.getElementById("hermanoCumpleanos")?.value,
 mail: document.getElementById("hermanoMail")?.value,
 direccion: document.getElementById("hermanoDireccion")?.value,
 pedidosOracion: document.getElementById("hermanoPedidos")?.value,
+pedidosOracionLista: actualEditando?.pedidosOracionLista || [],
 notas: document.getElementById("hermanoNotas")?.value,
 tokenPedido: actualEditando?.tokenPedido || hCrearTokenPedido(),
 creadoPor: window.__UID || "",
@@ -1905,6 +2357,409 @@ window.enviarHermanoPorWhatsApp = async (id) => {
 
   const url = `https://wa.me/${numero}?text=${encodeURIComponent(texto)}`;
   window.open(url, "_blank");
+};
+
+// ================= 🙏 PEDIDO DE ORACIÓN DESDE LA APP =================
+
+function hSepararNombreApellido(display = "") {
+  const partes = String(display || "").trim().split(/\s+/).filter(Boolean);
+
+  return {
+    nombre: partes.shift() || "",
+    apellido: partes.join(" ")
+  };
+}
+
+async function hBuscarHermanoPorMail(mail = "") {
+  const buscado = hMailKey(mail);
+  if (!buscado) return null;
+
+  let encontrado = hermanosCache.find(h => hMailKey(h.mail) === buscado);
+  if (encontrado) return encontrado;
+
+  const db = window.__FB?.db;
+  if (!db) return null;
+
+  try {
+    const snap = await get(ref(db, "hermanos"));
+    const val = snap.val() || {};
+
+    const lista = Object.entries(val).map(([id, item]) => ({
+      id,
+      ...hNormalizarRegistro(item)
+    }));
+
+    encontrado = lista.find(h => hMailKey(h.mail) === buscado);
+    return encontrado || null;
+  } catch (e) {
+    console.warn("No pude buscar hermano por mail:", e);
+    return null;
+  }
+}
+
+window.abrirPedidoOracionUsuario = async () => {
+  const viejo = document.getElementById("modalPedidoOracionUsuario");
+  if (viejo) viejo.remove();
+
+  const styleViejo = document.getElementById("modalPedidoOracionUsuarioStyle");
+  if (styleViejo) styleViejo.remove();
+
+  const user = window.__FB?.auth?.currentUser || window.__AUTH?.currentUser || null;
+  const nombreSplit = hSepararNombreApellido(user?.displayName || "");
+
+  const modal = document.createElement("div");
+  modal.id = "modalPedidoOracionUsuario";
+
+  modal.innerHTML = `
+    <div class="pedido-usuario-box">
+      <button type="button" class="pedido-usuario-x" onclick="cerrarPedidoOracionUsuario()">×</button>
+
+      <div class="pedido-usuario-icono">🙏</div>
+
+      <h2>Pedido de oración</h2>
+
+      <p>
+        Escribí tu pedido. Si tu mail ya está cargado en Contactos,
+        se agrega a tu ficha. Si no existe, se crea una ficha nueva.
+      </p>
+
+      <input id="pedidoUsuarioHermanoId" type="hidden">
+
+      <label>
+        Mail
+        <input id="pedidoUsuarioMail" type="email" value="${hEscape(user?.email || "")}" placeholder="tu mail" required>
+      </label>
+
+      <div class="pedido-usuario-grid">
+        <label>
+          Nombre
+          <input id="pedidoUsuarioNombre" type="text" value="${hEscape(nombreSplit.nombre)}" placeholder="Nombre">
+        </label>
+
+        <label>
+          Apellido
+          <input id="pedidoUsuarioApellido" type="text" value="${hEscape(nombreSplit.apellido)}" placeholder="Apellido">
+        </label>
+      </div>
+
+      <label>
+        Teléfono opcional
+        <input id="pedidoUsuarioTelefono" type="text" placeholder="Teléfono">
+      </label>
+
+      <label>
+        Pedido de oración
+        <textarea id="pedidoUsuarioTexto" placeholder="Escribí aquí tu pedido de oración..." required></textarea>
+      </label>
+
+      <button type="button" id="btnGuardarPedidoUsuario" onclick="guardarPedidoOracionUsuario()">
+        Guardar pedido
+      </button>
+
+      <div id="pedidoUsuarioEstado"></div>
+    </div>
+  `;
+
+  const style = document.createElement("style");
+  style.id = "modalPedidoOracionUsuarioStyle";
+  style.textContent = `
+    #modalPedidoOracionUsuario{
+      position:fixed;
+      inset:0;
+      z-index:999999;
+      background:rgba(0,0,0,.45);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:16px;
+    }
+
+    .pedido-usuario-box{
+      position:relative;
+      width:min(520px, 96vw);
+      max-height:92vh;
+      overflow:auto;
+      background:#fff;
+      color:#000;
+      border-radius:24px;
+      padding:20px;
+      box-shadow:0 22px 70px rgba(0,0,0,.30);
+      display:grid;
+      gap:12px;
+    }
+
+    .pedido-usuario-x{
+      position:absolute;
+      top:10px;
+      right:12px;
+      width:34px;
+      height:34px;
+      border:none;
+      border-radius:999px;
+      background:rgba(0,0,0,.06);
+      cursor:pointer;
+      font-size:24px;
+      line-height:1;
+    }
+
+    .pedido-usuario-icono{
+      width:56px;
+      height:56px;
+      border-radius:999px;
+      background:var(--ui-azul-claro, #bcdcff);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      margin:0 auto;
+      font-size:30px;
+    }
+
+    .pedido-usuario-box h2{
+      text-align:center;
+      margin:0;
+      font-size:24px;
+      font-weight:900;
+    }
+
+    .pedido-usuario-box p{
+      text-align:center;
+      margin:0;
+      line-height:1.45;
+      font-size:14px;
+      opacity:.82;
+    }
+
+    .pedido-usuario-box label{
+      display:grid;
+      gap:6px;
+      font-size:13px;
+      font-weight:800;
+    }
+
+    .pedido-usuario-box input,
+    .pedido-usuario-box textarea{
+      width:100%;
+      border:1px solid rgba(0,0,0,.16);
+      border-radius:14px;
+      padding:11px 12px;
+      font-family:inherit;
+      font-size:15px;
+      outline:none;
+      box-sizing:border-box;
+      background:#fff;
+      color:#000;
+    }
+
+    .pedido-usuario-box textarea{
+      min-height:140px;
+      resize:vertical;
+    }
+
+    .pedido-usuario-grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+    }
+
+    #btnGuardarPedidoUsuario{
+      border:none;
+      border-radius:999px;
+      padding:12px 16px;
+      background:var(--ui-azul-hover, #1c6fcb);
+      color:#fff;
+      font-weight:900;
+      cursor:pointer;
+      font-size:15px;
+    }
+
+    #btnGuardarPedidoUsuario:disabled{
+      opacity:.65;
+      cursor:wait;
+    }
+
+    #pedidoUsuarioEstado{
+      text-align:center;
+      font-size:14px;
+      font-weight:800;
+      min-height:20px;
+    }
+
+    @media(max-width:640px){
+      .pedido-usuario-grid{
+        grid-template-columns:1fr;
+      }
+    }
+  `;
+
+  document.head.appendChild(style);
+  document.body.appendChild(modal);
+
+  const mailInput = document.getElementById("pedidoUsuarioMail");
+  if (mailInput) {
+    mailInput.addEventListener("blur", hCompletarPedidoUsuarioPorMail);
+  }
+
+  setTimeout(hCompletarPedidoUsuarioPorMail, 80);
+};
+
+window.cerrarPedidoOracionUsuario = () => {
+  document.getElementById("modalPedidoOracionUsuario")?.remove();
+  document.getElementById("modalPedidoOracionUsuarioStyle")?.remove();
+};
+
+async function hCompletarPedidoUsuarioPorMail() {
+  const mail = hValor(document.getElementById("pedidoUsuarioMail")?.value);
+  const estado = document.getElementById("pedidoUsuarioEstado");
+  const hidden = document.getElementById("pedidoUsuarioHermanoId");
+
+  if (!mail) return;
+
+  const h = await hBuscarHermanoPorMail(mail);
+
+  if (!h) {
+    if (hidden) hidden.value = "";
+    if (estado) estado.textContent = "No encontré ficha con ese mail. Se creará una nueva.";
+    return;
+  }
+
+  if (hidden) hidden.value = h.id || "";
+
+  const nombre = document.getElementById("pedidoUsuarioNombre");
+  const apellido = document.getElementById("pedidoUsuarioApellido");
+  const telefono = document.getElementById("pedidoUsuarioTelefono");
+
+  if (nombre && !hValor(nombre.value)) nombre.value = h.nombre || "";
+  if (apellido && !hValor(apellido.value)) apellido.value = h.apellido || "";
+  if (telefono && !hValor(telefono.value)) telefono.value = h.telefono || "";
+
+  if (estado) {
+    const nombreCompleto = `${h.nombre || ""} ${h.apellido || ""}`.trim();
+    estado.textContent = `Encontré tu ficha${nombreCompleto ? `: ${nombreCompleto}` : ""}.`;
+  }
+}
+
+window.guardarPedidoOracionUsuario = async () => {
+  const db = window.__FB?.db;
+  if (!db) {
+    alert("Firebase no está listo.");
+    return;
+  }
+
+  const btn = document.getElementById("btnGuardarPedidoUsuario");
+  const estado = document.getElementById("pedidoUsuarioEstado");
+
+  const mail = hValor(document.getElementById("pedidoUsuarioMail")?.value).toLowerCase();
+  const nombre = hValor(document.getElementById("pedidoUsuarioNombre")?.value);
+  const apellido = hValor(document.getElementById("pedidoUsuarioApellido")?.value);
+  const telefono = hValor(document.getElementById("pedidoUsuarioTelefono")?.value);
+  const pedido = hValor(document.getElementById("pedidoUsuarioTexto")?.value);
+
+  if (!mail) {
+    if (estado) estado.textContent = "Completá tu mail.";
+    return;
+  }
+
+  if (!pedido) {
+    if (estado) estado.textContent = "Escribí tu pedido de oración.";
+    return;
+  }
+
+  try {
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = "Guardando...";
+    }
+
+    if (estado) estado.textContent = "";
+
+    let hermano = await hBuscarHermanoPorMail(mail);
+
+    if (!hermano && !nombre) {
+      if (estado) estado.textContent = "Como no encontré una ficha con ese mail, escribí al menos tu nombre.";
+      return;
+    }
+
+    const pedidoId = hCrearPedidoId();
+    const ahora = Date.now();
+
+    const pedidoObj = {
+      id: pedidoId,
+      texto: pedido,
+      fecha: hFechaYMDArgentina(),
+      fechaTexto: hFechaHoraArgentina(ahora),
+      ts: ahora,
+      origen: "app",
+      mail,
+      uid: window.__UID || ""
+    };
+
+    if (hermano) {
+      await set(ref(db, `hermanos/${hermano.id}/pedidosOracionLista/${pedidoId}`), pedidoObj);
+
+      const updates = [];
+
+      if (!hValor(hermano.mail)) {
+        updates.push(set(ref(db, `hermanos/${hermano.id}/mail`), mail));
+      }
+
+      if (!hValor(hermano.nombre) && nombre) {
+        updates.push(set(ref(db, `hermanos/${hermano.id}/nombre`), nombre));
+      }
+
+      if (!hValor(hermano.apellido) && apellido) {
+        updates.push(set(ref(db, `hermanos/${hermano.id}/apellido`), apellido));
+      }
+
+      if (!hValor(hermano.telefono) && telefono) {
+        updates.push(set(ref(db, `hermanos/${hermano.id}/telefono`), telefono));
+      }
+
+      await Promise.all(updates);
+    } else {
+      const nuevoRef = push(ref(db, "hermanos"));
+
+      await set(nuevoRef, {
+        nombre,
+        apellido,
+        direccion: "",
+        telefono,
+        cumpleanos: "",
+        pedidosOracion: "",
+        pedidosOracionLista: {
+          [pedidoId]: pedidoObj
+        },
+        notas: "",
+        mail,
+        tokenPedido: hCrearTokenPedido(),
+        creadoPor: window.__UID || "",
+        ts: ahora
+      });
+    }
+
+    if (estado) estado.textContent = "Pedido guardado. Dios te bendiga 🙏";
+
+    const txt = document.getElementById("pedidoUsuarioTexto");
+    if (txt) txt.value = "";
+
+    setTimeout(() => {
+      cerrarPedidoOracionUsuario();
+
+      try {
+        if (typeof renderHermanosLista === "function") {
+          renderHermanosLista();
+        }
+      } catch(e) {}
+    }, 1200);
+
+  } catch (e) {
+    console.error(e);
+    if (estado) estado.textContent = "No pude guardar el pedido. Revisá permisos o conexión.";
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = "Guardar pedido";
+    }
+  }
 };
 
 // ================= PERMISOS - MÓDULO =================
