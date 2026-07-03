@@ -292,7 +292,8 @@ body.abc-intro-activa #btnMostrarBarra{
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  background: transparent;
+  background: #ffffff !important;
+  padding: 0 0 12px 0 !important;
   overflow-x: hidden !important;
   overflow-y: visible !important;
   box-sizing: border-box;
@@ -357,18 +358,19 @@ body.abc-intro-activa #btnMostrarBarra{
     height: auto !important;
   }
 
-  #abcContenido.abc-contenido-intro .abc-intro-imagen-wrap,
-  #abcContenido.abc-es-intro .abc-intro-imagen-wrap{
-    width: 100vw !important;
-    max-width: 100vw !important;
-    margin-left: 50% !important;
-    transform: translateX(-50%) !important;
-    padding: 0 !important;
-    overflow-x: hidden !important;
-    overflow-y: visible !important;
-    height: auto !important;
-    box-sizing: border-box !important;
-  }
+#abcContenido.abc-contenido-intro .abc-intro-imagen-wrap,
+#abcContenido.abc-es-intro .abc-intro-imagen-wrap{
+  width: 100vw !important;
+  max-width: 100vw !important;
+  margin-left: 50% !important;
+  transform: translateX(-50%) !important;
+  padding: 0 0 14px 0 !important;
+  background: #ffffff !important;
+  overflow-x: hidden !important;
+  overflow-y: visible !important;
+  height: auto !important;
+  box-sizing: border-box !important;
+}
 
   /*
     ✅ Zoom ajustado:
@@ -640,7 +642,10 @@ function abcAplicarIntroEstable(){
   wrap.style.setProperty("display", "flex", "important");
   wrap.style.setProperty("justify-content", "center", "important");
   wrap.style.setProperty("align-items", "flex-start", "important");
-  wrap.style.setProperty("padding", "0", "important");
+// ✅ margen blanco REAL al final de la hoja de intro
+wrap.style.setProperty("padding", esCel ? "0 0 14px 0" : "0 0 12px 0", "important");
+wrap.style.setProperty("background", "#ffffff", "important");
+wrap.style.setProperty("border-radius", esCel ? "0" : "10px", "important");
   wrap.style.setProperty("height", "auto", "important");
   wrap.style.setProperty("overflow-x", "hidden", "important");
   wrap.style.setProperty("overflow-y", "visible", "important");
@@ -662,7 +667,7 @@ function abcAplicarIntroEstable(){
   img.style.setProperty("max-width", "none", "important");
   img.style.setProperty("height", "auto", "important");
   img.style.setProperty("flex", "0 0 auto", "important");
-img.style.setProperty("margin", "0 auto 240px auto", "important");
+img.style.setProperty("margin", "0 auto 0 auto", "important");
   img.style.setProperty("transform", "none", "important");
 
   if (esCel) {
