@@ -264,7 +264,7 @@ body.oscuro #abcContenido a{ color:#1c6fcb; }
   height: auto !important;
 }
 
-/* ✅ INTRO como imagen: legible, estable, sin scroll horizontal y recortando solo laterales */
+/* ✅ INTRO como imagen: legible, estable, sin scroll horizontal y sin corte vertical */
 body.abc-intro-activa #accionesBiblia,
 body.abc-intro-activa #btnMostrarBarra{
   display: none !important;
@@ -272,18 +272,18 @@ body.abc-intro-activa #btnMostrarBarra{
   pointer-events: none !important;
 }
 
-/* ✅ La intro no debe comportarse como hoja HTML normal */
 #abcContenido.abc-contenido-intro,
 #abcContenido.abc-es-intro{
   padding: 0 !important;
   border: none !important;
   border-radius: 0 !important;
   background: transparent !important;
-  overflow: visible !important;
+  overflow-x: hidden !important;
+  overflow-y: visible !important;
   height: auto !important;
+  box-sizing: border-box !important;
 }
 
-/* ✅ Wrapper general de la imagen */
 #abcContenido.abc-contenido-intro .abc-intro-imagen-wrap,
 #abcContenido.abc-es-intro .abc-intro-imagen-wrap{
   width: 100%;
@@ -293,15 +293,15 @@ body.abc-intro-activa #btnMostrarBarra{
   justify-content: center;
   align-items: flex-start;
   background: transparent;
-  overflow: hidden;
+  overflow-x: hidden !important;
+  overflow-y: visible !important;
   box-sizing: border-box;
 }
 
-/* ✅ PC: un poco más grande, recorta laterales, no corta abajo */
 #abcContenido.abc-contenido-intro .abc-intro-imagen,
 #abcContenido.abc-es-intro .abc-intro-imagen{
   display: block;
-  width: 112%;
+  width: 106%;
   max-width: none !important;
   height: auto !important;
   flex: 0 0 auto;
@@ -309,7 +309,6 @@ body.abc-intro-activa #btnMostrarBarra{
   border-radius: 10px;
 }
 
-/* ✅ Celular: letra más legible, pierde laterales, sin scroll horizontal */
 @media (max-width: 640px){
   html,
   body{
@@ -325,15 +324,16 @@ body.abc-intro-activa #btnMostrarBarra{
     width: 100% !important;
     max-width: 100% !important;
     overflow-x: hidden !important;
+    overflow-y: visible !important;
     box-sizing: border-box !important;
   }
 
   #abcWrap.abc-es-intro{
     margin: 0 auto !important;
-    padding: 8px 0 26px !important;
+    padding: 8px 0 90px !important;
+    height: auto !important;
   }
 
-  /* ✅ No achicamos el bloque índice/audio: vuelve al ancho normal */
   #abcWrap.abc-es-intro #abcStickyBar{
     width: 100% !important;
     max-width: 100% !important;
@@ -352,7 +352,8 @@ body.abc-intro-activa #btnMostrarBarra{
   #abcContenido.abc-es-intro{
     margin: 0 !important;
     padding: 0 !important;
-    overflow: visible !important;
+    overflow-x: hidden !important;
+    overflow-y: visible !important;
     height: auto !important;
   }
 
@@ -363,30 +364,30 @@ body.abc-intro-activa #btnMostrarBarra{
     margin-left: 50% !important;
     transform: translateX(-50%) !important;
     padding: 0 !important;
-    overflow: hidden !important;
+    overflow-x: hidden !important;
+    overflow-y: visible !important;
     height: auto !important;
     box-sizing: border-box !important;
   }
 
   /*
-    ✅ Zoom real de la intro.
-    132vw = más legible.
-    Si querés más grande: 138vw.
-    Si pierde demasiado lateral: 124vw.
+    ✅ Zoom ajustado:
+    124vw = legible, pero sin cortar letras por los laterales.
+    Si luego queda MUY chico: probá 126vw.
+    Si todavía corta una letra: bajá a 122vw.
   */
   #abcContenido.abc-contenido-intro .abc-intro-imagen,
   #abcContenido.abc-es-intro .abc-intro-imagen{
     display: block !important;
-    width: 132vw !important;
+    width: 124vw !important;
     max-width: none !important;
     height: auto !important;
     flex: 0 0 auto !important;
-    margin: 0 !important;
+    margin: 0 auto !important;
     border-radius: 0 !important;
     transform: none !important;
   }
 
-  /* ✅ Resto de temas ABC en celular: ancho completo, sin márgenes laterales */
   #abcWrap:not(.abc-es-intro){
     max-width: 100% !important;
     margin: 0 !important;
@@ -592,28 +593,40 @@ function abcAplicarIntroEstable(){
   const cont = document.getElementById("abcContenido");
   const wrap = document.querySelector("#abcContenido .abc-intro-imagen-wrap");
   const img  = document.querySelector("#abcContenido .abc-intro-imagen");
+  const abcWrap = document.getElementById("abcWrap");
 
   if (!cont || !wrap || !img) return;
 
   const esCel = window.matchMedia("(max-width: 640px)").matches;
 
   cont.classList.add("abc-contenido-intro", "abc-es-intro");
+  if (abcWrap) abcWrap.classList.add("abc-es-intro");
 
-  // ✅ Contenedor de la intro
+  // ✅ Contenedor de la intro: NO corta verticalmente
   cont.style.setProperty("padding", "0", "important");
   cont.style.setProperty("border", "none", "important");
   cont.style.setProperty("border-radius", "0", "important");
   cont.style.setProperty("background", "transparent", "important");
-  cont.style.setProperty("overflow", "visible", "important");
+  cont.style.setProperty("overflow-x", "hidden", "important");
+  cont.style.setProperty("overflow-y", "visible", "important");
   cont.style.setProperty("height", "auto", "important");
+  cont.style.setProperty("box-sizing", "border-box", "important");
 
-  // ✅ Wrapper: corta laterales sin crear scroll horizontal
+  if (abcWrap) {
+    abcWrap.style.setProperty("overflow-x", "hidden", "important");
+    abcWrap.style.setProperty("overflow-y", "visible", "important");
+    abcWrap.style.setProperty("height", "auto", "important");
+    abcWrap.style.setProperty("padding-bottom", esCel ? "90px" : "40px", "important");
+  }
+
+  // ✅ Wrapper: centra, NO corta abajo
   wrap.style.setProperty("display", "flex", "important");
   wrap.style.setProperty("justify-content", "center", "important");
   wrap.style.setProperty("align-items", "flex-start", "important");
   wrap.style.setProperty("padding", "0", "important");
   wrap.style.setProperty("height", "auto", "important");
-  wrap.style.setProperty("overflow", "hidden", "important");
+  wrap.style.setProperty("overflow-x", "hidden", "important");
+  wrap.style.setProperty("overflow-y", "visible", "important");
   wrap.style.setProperty("box-sizing", "border-box", "important");
 
   if (esCel) {
@@ -628,19 +641,21 @@ function abcAplicarIntroEstable(){
     wrap.style.setProperty("transform", "none", "important");
   }
 
-  // ✅ Imagen: en celular más grande, pierde laterales y NO genera scroll
+  // ✅ Imagen: zoom más prudente para no cortar letras
   img.style.setProperty("display", "block", "important");
   img.style.setProperty("max-width", "none", "important");
   img.style.setProperty("height", "auto", "important");
   img.style.setProperty("flex", "0 0 auto", "important");
-  img.style.setProperty("margin", "0", "important");
+  img.style.setProperty("margin", "0 auto", "important");
   img.style.setProperty("transform", "none", "important");
 
   if (esCel) {
-    img.style.setProperty("width", "132vw", "important");
+    // Antes 132vw: cortaba demasiado. 124vw recupera laterales.
+    img.style.setProperty("width", "124vw", "important");
     img.style.setProperty("border-radius", "0", "important");
   } else {
-    img.style.setProperty("width", "112%", "important");
+    // Antes 112%: demasiado para PC. 106% recorta suave.
+    img.style.setProperty("width", "106%", "important");
     img.style.setProperty("border-radius", "10px", "important");
   }
 }
