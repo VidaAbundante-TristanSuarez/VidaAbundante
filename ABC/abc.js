@@ -94,11 +94,12 @@ window.mostrarABC = async () => {
   padding: 10px 12px 18px;
   overflow: visible !important;
 }
-        #abcTop{
-          display:flex; align-items:center; gap:10px;
-          /* centra visualmente entre tabs y contenido */
-          padding: 8px 0 10px;
-        }
+#abcTop{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  padding: 2px 0 4px;
+}
 
         #abcIndice{
   flex:1;
@@ -118,11 +119,15 @@ window.mostrarABC = async () => {
 }
 
 #abcIndice button{
-  white-space: nowrap;     /* ✅ no partir en 2 líneas */
-  flex: 0 0 auto;          /* ✅ que no se achique raro */
+  white-space: nowrap;
+  flex: 0 0 auto;
   line-height: 1.05;
-  padding: 8px 10px;
+  padding: 8px 12px;
   border-radius: 999px;
+  border: 2px solid rgba(0,0,0,.82);
+  background:#fff;
+  color:#000;
+  font-weight:800;
 }
 
 /* ✅ scrollbar visible */
@@ -138,18 +143,18 @@ body.oscuro #abcIndice::-webkit-scrollbar-thumb{ background: rgba(255,255,255,.2
   top: 0 !important;
   z-index: 999 !important;
 
-  background: rgba(255,255,255,.92);
+  background: rgba(255,255,255,.76);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
 
-  padding: 10px 10px 12px;
-  margin-bottom: 14px;
+  padding: 8px 10px 10px;
+  margin-bottom: 10px;
 
-  border: 1px solid rgba(0,0,0,.08);
-  border-radius: 16px;
+  border: 1px solid rgba(0,0,0,.06);
+  border-radius: 18px;
   overflow: hidden;
 
-  box-shadow: 0 6px 16px rgba(0,0,0,.08);
+  box-shadow: 0 4px 10px rgba(0,0,0,.06);
 }
 
 body.oscuro #abcStickyBar{
@@ -182,12 +187,12 @@ body.oscuro #abcStickyBar{
 /* ✅ audio debajo de la galería + botón PDF al costado */
 #abcAudioBar{
   background: transparent;
-  padding: 8px 0 0;
+  padding: 4px 0 0;
 
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 #abcAudio{
@@ -729,14 +734,14 @@ function abcLimpiarIntroViejaYFijarSticky() {
         body.en-abc #abcWrap:not(.abc-es-intro){
           max-width: 100% !important;
           margin: 0 auto !important;
-          padding: calc(var(--abc-sticky-h, 130px) + 12px) 10px 18px !important;
+          padding: calc(var(--abc-top-offset, 82px) + var(--abc-sticky-h, 112px) + 8px) 10px 16px !important;
           box-sizing: border-box !important;
           overflow: visible !important;
         }
 
         body.en-abc #abcStickyBar{
           position: fixed !important;
-          top: env(safe-area-inset-top, 0px) !important;
+          top: var(--abc-top-offset, 82px) !important;
           left: 10px !important;
           right: 10px !important;
           width: auto !important;
@@ -747,12 +752,55 @@ function abcLimpiarIntroViejaYFijarSticky() {
           border-radius: 18px !important;
           overflow: hidden !important;
           box-sizing: border-box !important;
+
+          background: rgba(255,255,255,.76) !important;
+          backdrop-filter: blur(6px) !important;
+          -webkit-backdrop-filter: blur(6px) !important;
+
+          padding: 8px 10px 10px !important;
+          border: 1px solid rgba(0,0,0,.06) !important;
+          box-shadow: 0 4px 10px rgba(0,0,0,.06) !important;
+        }
+
+        body.en-abc #abcTop{
+          padding: 0 0 4px !important;
+          gap: 6px !important;
+        }
+
+        body.en-abc #abcIndice{
+          padding: 4px 0 2px !important;
+          gap: 6px !important;
+        }
+
+        body.en-abc #abcIndice button{
+          padding: 8px 12px !important;
+          font-weight: 800 !important;
+          border: 2px solid rgba(0,0,0,.82) !important;
+          border-radius: 999px !important;
+        }
+
+        body.en-abc #abcAudioBar{
+          padding: 4px 0 0 !important;
+          gap: 6px !important;
+        }
+
+        body.en-abc #abcAudio{
+          width: 100% !important;
+          max-width: calc(100% - 48px) !important;
+        }
+
+        body.en-abc #abcBtnPDF{
+          width: 40px !important;
+          height: 40px !important;
+          min-width: 40px !important;
+          min-height: 40px !important;
+          box-shadow: none !important;
         }
 
         body.en-abc #abcContenido:not(.abc-es-intro):not(.abc-contenido-intro){
-          border-radius: 18px !important;
+          border-radius: 22px !important;
           border: 1px solid rgba(0,0,0,.10) !important;
-          padding: 14px !important;
+          padding: 16px 14px !important;
           margin: 0 !important;
           overflow: hidden !important;
           box-sizing: border-box !important;
@@ -805,7 +853,7 @@ function abcLimpiarIntroViejaYFijarSticky() {
     cont.style.removeProperty("max-width");
     cont.style.removeProperty("transform");
 
-    cont.style.setProperty("border-radius", "18px", "important");
+    cont.style.setProperty("border-radius", "22px", "important");
     cont.style.setProperty("overflow", "hidden", "important");
   }
 
@@ -816,31 +864,43 @@ function abcLimpiarIntroViejaYFijarSticky() {
       const esCel = window.matchMedia("(max-width: 640px)").matches;
 
       if (!esCel) {
+        document.documentElement.style.removeProperty("--abc-top-offset");
         document.documentElement.style.removeProperty("--abc-sticky-h");
+
+        sticky.style.removeProperty("left");
+        sticky.style.removeProperty("right");
+        sticky.style.removeProperty("width");
+
         sticky.style.setProperty("position", "sticky", "important");
         sticky.style.setProperty("top", "0", "important");
         return;
       }
 
+      const header = document.getElementById("header");
+      const headerH = Math.ceil(header?.getBoundingClientRect().height || 74);
+      const topReal = headerH + 8;
+
+      document.documentElement.style.setProperty("--abc-top-offset", `${topReal}px`);
+
       sticky.style.setProperty("position", "fixed", "important");
-      sticky.style.setProperty("top", "env(safe-area-inset-top, 0px)", "important");
+      sticky.style.setProperty("top", `${topReal}px`, "important");
       sticky.style.setProperty("left", "10px", "important");
       sticky.style.setProperty("right", "10px", "important");
       sticky.style.setProperty("width", "auto", "important");
 
-      const h = Math.ceil(sticky.getBoundingClientRect().height || 130);
+      const h = Math.ceil(sticky.getBoundingClientRect().height || 112);
       document.documentElement.style.setProperty("--abc-sticky-h", `${h}px`);
     };
 
     medir();
     setTimeout(medir, 80);
-    setTimeout(medir, 350);
-    setTimeout(medir, 900);
+    setTimeout(medir, 250);
+    setTimeout(medir, 700);
 
     if (!window.__abcStickyMobileResizeReady) {
       window.__abcStickyMobileResizeReady = true;
       window.addEventListener("resize", medir);
-      window.addEventListener("orientationchange", () => setTimeout(medir, 300));
+      window.addEventListener("orientationchange", () => setTimeout(medir, 250));
     }
   }
 }
