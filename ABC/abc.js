@@ -3,7 +3,7 @@
 const ABC_TEMAS = [
 {
   titulo: "🤍",
-  imagen: "ABC/img/intro-cuadernillo.png",
+  html: "ABC/INTRO.html",
   pdf: "ABC/pdf/1 INTRO.pdf",
   audio: "https://github.com/VidaAbundante-TristanSuarez/vida-abundante-audios/releases/download/v1/INTRO.mp3"
 },
@@ -81,7 +81,19 @@ window.mostrarABC = async () => {
     cont.innerHTML = `
       <style>
         /* ===== ABC UI (local) ===== */
-        #abcWrap{ max-width: 980px; margin: 0 auto; padding: 10px 12px 18px; }
+      #abcApp,
+#iglesia-abc,
+#seccion-iglesia,
+#abcWrap{
+  overflow: visible !important;
+}
+
+#abcWrap{
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 10px 12px 18px;
+  overflow: visible !important;
+}
         #abcTop{
           display:flex; align-items:center; gap:10px;
           /* centra visualmente entre tabs y contenido */
@@ -122,9 +134,9 @@ body.oscuro #abcIndice::-webkit-scrollbar-thumb{ background: rgba(255,255,255,.2
 /* ================= ABC: GALERÍA + AUDIO STICKY ================= */
 
 #abcStickyBar{
-  position: sticky;
-  top: 0;
-  z-index: 70;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 999 !important;
 
   background: rgba(255,255,255,.92);
   backdrop-filter: blur(6px);
@@ -233,18 +245,39 @@ body.oscuro #abcStickyBar{
 }
 
         #abcContenido{
-          background: #fff;
+          position: relative;
+          isolation: isolate;
+          background: transparent !important;
           border: 1px solid rgba(0,0,0,.10);
           border-radius: 14px;
           padding: 14px;
           overflow:hidden;
         }
 
+        #abcContenido::before{
+          content:"";
+          position:absolute;
+          inset:0;
+          z-index:0;
+          pointer-events:none;
+          border-radius: inherit;
+          background:#ffffff;
+          opacity: var(--va-abc-box-opacity, .92);
+        }
+
+        #abcContenido > *{
+          position:relative;
+          z-index:1;
+        }
+
         /* ✅ En oscuro, el documento queda tipo "hoja" para que SIEMPRE sea legible */
 body.oscuro #abcContenido{
-  background: #ffffff;
+  background: transparent !important;
   color: #000000;
   border-color: rgba(0,0,0,.12);
+}
+body.oscuro #abcContenido::before{
+  background:#ffffff;
 }
 body.oscuro #abcContenido a{ color:#1c6fcb; }
 
@@ -529,6 +562,7 @@ body.oscuro .abc-block .icono-nota{
     `;
 
     construirIndiceABC();
+    abcInstalarSwipeCambioTema();
     abcIniciado = true;
 
     // ✅ IMPORTANTE: acá cargamos progreso y CORTAMOS para no cargar 2 veces
@@ -536,8 +570,96 @@ body.oscuro .abc-block .icono-nota{
     return;
 }
   // ✅ si ya estaba iniciado, recién acá cargamos tema normal
+  abcInstalarSwipeCambioTema();
   await cargarABCTema();
 };
+
+function abcEsZonaInteractivaSwipe(target) {
+  return !!target?.closest?.(
+    "button, input, textarea, select, a, audio, table, #abcIndice, #abcAudioBar, #abcBtnPDF"
+  );
+}
+
+function abcCambiarTemaSwipe(dir) {
+  const nuevo = Math.max(0, Math.min(ABC_TEMAS.length - 1, abcIndex + dir));
+
+  if (nuevo === abcIndex) return;
+
+  abcIndex = nuevo;
+  cargarABCTema(true);
+
+  setTimeout(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, 60);
+}
+
+function abcInstalarSwipeCambioTema() {
+  const host = document.getElementById("abcContenido");
+  if (!host || host.dataset.swipeReady === "1") return;
+
+  host.dataset.swipeReady = "1";
+
+  let startX = 0;
+  let startY = 0;
+  let startT = 0;
+  let ultimoWheel = 0;
+
+  host.addEventListener("touchstart", (e) => {
+    const t = e.touches?.[0];
+    if (!t) return;
+
+    if (abcEsZonaInteractivaSwipe(e.target)) return;
+
+    startX = t.clientX;
+    startY = t.clientY;
+    startT = Date.now();
+  }, { passive: true });
+
+  host.addEventListener("touchend", (e) => {
+    const t = e.changedTouches?.[0];
+    if (!t || !startT) return;
+
+    if (abcEsZonaInteractivaSwipe(e.target)) return;
+
+    const dx = t.clientX - startX;
+    const dy = t.clientY - startY;
+    const dt = Date.now() - startT;
+
+    startT = 0;
+
+    // ✅ swipe horizontal real: no confundir con scroll vertical
+    if (dt > 900) return;
+    if (Math.abs(dx) < 70) return;
+    if (Math.abs(dx) < Math.abs(dy) * 1.35) return;
+
+    if (dx < 0) {
+      abcCambiarTemaSwipe(1);   // izquierda = siguiente
+    } else {
+      abcCambiarTemaSwipe(-1);  // derecha = anterior
+    }
+  }, { passive: true });
+
+  // ✅ Trackpad / mouse con desplazamiento horizontal en PC
+  host.addEventListener("wheel", (e) => {
+    if (abcEsZonaInteractivaSwipe(e.target)) return;
+
+    const dx = e.deltaX || 0;
+    const dy = e.deltaY || 0;
+
+    if (Math.abs(dx) < 80) return;
+    if (Math.abs(dx) < Math.abs(dy) * 1.4) return;
+
+    const ahora = Date.now();
+    if (ahora - ultimoWheel < 700) return;
+    ultimoWheel = ahora;
+
+    if (dx > 0) {
+      abcCambiarTemaSwipe(1);
+    } else {
+      abcCambiarTemaSwipe(-1);
+    }
+  }, { passive: true });
+}
 
 function construirIndiceABC() {
   const idx = document.getElementById("abcIndice");
@@ -695,63 +817,11 @@ async function cargarABCTema(desdeIndice = false) {
   const cont = document.getElementById("abcContenido");
   if (!cont) return;
 
-  const esIntroImagen = !!tema.imagen;
+  // ✅ Ya no usamos intro como imagen.
+  abcSetIntroActiva(false);
 
-  // ✅ Clase global: permite ocultar barra inferior SOLO en intro
-abcSetIntroActiva(esIntroImagen);
-
-  // ✅ Limpieza del contenedor
-  cont.classList.remove("abc-contenido-intro");
+  cont.classList.remove("abc-contenido-intro", "abc-es-intro");
   cont.innerHTML = `<div style="opacity:.75; text-align:center; padding:10px;">Cargando…</div>`;
-
-  // ✅ Si el tema tiene imagen, mostramos imagen y NO cargamos HTML
-  if (esIntroImagen) {
-    cont.classList.add("abc-contenido-intro");
-
-    // ✅ La intro no usa marcador, resaltador, tamaño de letra ni lista
-    try {
-      abcResetModoMarcador();
-    } catch (e) {}
-
-cont.innerHTML = `
-  <div id="abcDoc" class="abc-intro-imagen-wrap">
-    <img
-      class="abc-intro-imagen"
-      src="${tema.imagen}"
-      alt="Introducción ABC"
-      loading="eager"
-      decoding="async"
-    >
-  </div>
-  <div class="abc-intro-final-spacer" aria-hidden="true"></div>
-`;
-
-// ✅ Aplicamos el tamaño directo en el elemento, no solo por CSS.
-abcSetIntroActiva(true);
-abcAplicarIntroEstable();
-
-const imgIntro = cont.querySelector(".abc-intro-imagen");
-if (imgIntro) {
-  imgIntro.addEventListener("load", () => {
-    abcSetIntroActiva(true);
-    abcAplicarIntroEstable();
-  }, { once: true });
-}
-
-// ✅ Blindaje contra cualquier restauración tardía de la app.
-[100, 500, 1200, 2500, 4000].forEach(ms => {
-  setTimeout(() => {
-    const sigueIntro = document.querySelector("#abcContenido .abc-intro-imagen");
-    if (sigueIntro) {
-      abcSetIntroActiva(true);
-      abcAplicarIntroEstable();
-    }
-  }, ms);
-});
-
-abcGuardarProgreso();
-return;
-  }
 
   try {
     if (!tema.html) {
