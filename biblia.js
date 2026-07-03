@@ -12119,17 +12119,32 @@ function aplicarEstadoVisualSeccion(seccion, estado) {
     capa.style.backgroundColor = valor;
   }
 
+  const abcContenido = document.getElementById("abcContenido");
+  const iglesiaABC = document.getElementById("iglesia-abc");
+  const abcVisible =
+    seccion === "iglesia" &&
+    abcContenido &&
+    iglesiaABC &&
+    iglesiaABC.style.display !== "none";
+
   // ✅ IMPORTANTE:
-  // En Biblia, el slider YA NO toca el fondo.
-  // Toca solamente el recuadro detrás de #texto.
+  // En Biblia, el slider toca el recuadro detrás de #texto.
+  // En ABC, el slider toca el recuadro detrás del HTML.
   if (seccion === "biblia") {
     capa.style.opacity = "1";
 
     if (textoBiblia) {
       textoBiblia.style.setProperty("--va-biblia-box-opacity", opacidad);
     }
+  } else if (abcVisible) {
+    capa.style.opacity = "1";
+    abcContenido.style.setProperty("--va-abc-box-opacity", opacidad);
   } else {
     capa.style.opacity = opacidad;
+
+    if (abcContenido) {
+      abcContenido.style.removeProperty("--va-abc-box-opacity");
+    }
   }
   
   // ✅ Reset de variables de texto
@@ -12310,11 +12325,15 @@ const inputTexto = document.getElementById("colorTextoApp");
 asegurarControlAmbitoTema();
 
   if (labelOpacidad) {
-  labelOpacidad.textContent =
-    fondoTemaDraft.seccion === "biblia"
-      ? "Opacidad del recuadro"
-      : "Opacidad del fondo";
-}
+    const estoyEnABC =
+      fondoTemaDraft.seccion === "iglesia" &&
+      document.body.classList.contains("en-abc");
+
+    labelOpacidad.textContent =
+      fondoTemaDraft.seccion === "biblia" || estoyEnABC
+        ? "Opacidad del recuadro"
+        : "Opacidad del fondo";
+  }
 
   if (slider) {
     slider.value = String(fondoTemaDraft.opacidad || "0.35");
