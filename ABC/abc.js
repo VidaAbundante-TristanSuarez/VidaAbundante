@@ -301,7 +301,7 @@ body.abc-intro-activa #btnMostrarBarra{
 #abcContenido.abc-contenido-intro .abc-intro-imagen,
 #abcContenido.abc-es-intro .abc-intro-imagen{
   display: block;
-  width: 102%;
+  width: 100%;
   max-width: none !important;
   height: auto !important;
   flex: 0 0 auto;
@@ -379,7 +379,7 @@ body.abc-intro-activa #btnMostrarBarra{
   #abcContenido.abc-contenido-intro .abc-intro-imagen,
   #abcContenido.abc-es-intro .abc-intro-imagen{
     display: block !important;
-    width: 118vw !important;
+width: 114vw !important;
     max-width: none !important;
     height: auto !important;
     flex: 0 0 auto !important;
@@ -413,13 +413,13 @@ body.abc-intro-activa #btnMostrarBarra{
 .abc-intro-final-spacer{
   display: block !important;
   width: 100% !important;
-  height: 120px !important;
+height: 240px !important;
   flex: 0 0 auto !important;
 }
 
 @media (max-width: 640px){
   .abc-intro-final-spacer{
-    height: 150px !important;
+height: 260px !important;
   }
 }
 
@@ -662,16 +662,16 @@ function abcAplicarIntroEstable(){
   img.style.setProperty("max-width", "none", "important");
   img.style.setProperty("height", "auto", "important");
   img.style.setProperty("flex", "0 0 auto", "important");
-  img.style.setProperty("margin", "0 auto 120px auto", "important");
+img.style.setProperty("margin", "0 auto 240px auto", "important");
   img.style.setProperty("transform", "none", "important");
 
   if (esCel) {
     // Antes 124vw: todavía cortaba una letra del título.
-    img.style.setProperty("width", "118vw", "important");
+  img.style.setProperty("width", "114vw", "important");
     img.style.setProperty("border-radius", "0", "important");
   } else {
     // Antes 106%: en PC quedaba muy al borde.
-    img.style.setProperty("width", "102%", "important");
+  img.style.setProperty("width", "100%", "important");
     img.style.setProperty("border-radius", "10px", "important");
   }
 }
