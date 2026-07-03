@@ -12142,7 +12142,9 @@ function aplicarEstadoVisualSeccion(seccion, estado) {
   } else {
     capa.style.opacity = opacidad;
 
-    if (abcContenido) {
+    // ✅ No borrar la opacidad del wrapper ABC cuando aplicarFondosGuardados()
+    // recorre Biblia / Panel / Compartidos después de Iglesia.
+    if (seccion === "iglesia" && abcContenido && !abcVisible) {
       abcContenido.style.removeProperty("--va-abc-box-opacity");
     }
   }
