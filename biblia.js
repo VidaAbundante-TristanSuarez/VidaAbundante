@@ -140,10 +140,112 @@ window.vaInstalarAppDesdeMenu = async function() {
   }
 };
 
+// ================= 🙏 BOTÓN PEDIDO DE ORACIÓN EN MENÚ =================
+function vaAsegurarExtrasMenuSesion() {
+  const modal = document.getElementById("loginModal");
+  if (!modal) return;
+
+  if (!document.getElementById("vaMenuSesionExtraStyle")) {
+    const st = document.createElement("style");
+    st.id = "vaMenuSesionExtraStyle";
+    st.textContent = `
+      #btnOpcionPedidoOracion{
+        background:linear-gradient(135deg, #fff3b0, var(--ui-azul-claro, #bcdcff)) !important;
+        color:#000 !important;
+        font-weight:900 !important;
+        box-shadow:0 6px 18px rgba(0,0,0,.10);
+      }
+
+      #btnOpcionPedidoOracion i{
+        color:#000 !important;
+      }
+
+      #loginModal .va-opciones-footer{
+        justify-content:center !important;
+      }
+
+      #loginModal.va-app-instalada #btnOpcionInstalarApp{
+        display:none !important;
+      }
+
+      #loginModal.va-app-instalada .va-opciones-footer{
+        display:flex !important;
+        justify-content:center !important;
+        align-items:center !important;
+        gap:10px !important;
+      }
+
+      #loginModal.va-app-instalada .va-opciones-footer > button{
+        flex:0 0 132px !important;
+        max-width:150px !important;
+      }
+    `;
+    document.head.appendChild(st);
+  }
+
+  const btnDevocionales = document.getElementById("btnOpcionDevocionales");
+
+  if (btnDevocionales && !document.getElementById("btnOpcionPedidoOracion")) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.id = "btnOpcionPedidoOracion";
+    btn.className = btnDevocionales.className || "";
+    btn.innerHTML = `
+      <i class="fa-solid fa-hands-praying"></i>
+      <span>Pedido de oración</span>
+    `;
+
+    btn.onclick = () => {
+      try { cerrarLogin(); } catch(e) {}
+
+      if (typeof window.abrirPedidoOracionUsuario === "function") {
+        window.abrirPedidoOracionUsuario();
+      } else {
+        alert("Todavía no cargó el formulario de pedido de oración. Cerrá y abrí la app nuevamente.");
+      }
+    };
+
+    btnDevocionales.parentElement.insertBefore(btn, btnDevocionales);
+  }
+
+  vaAjustarMenuSesionInstalada();
+}
+
+function vaAjustarMenuSesionInstalada() {
+  const modal = document.getElementById("loginModal");
+  if (!modal) return;
+
+  modal.classList.toggle("va-app-instalada", vaAppEstaInstalada());
+
+  const btnInstalar = document.getElementById("btnOpcionInstalarApp");
+  const btnSalir = document.getElementById("btnOpcionLogout");
+  const btnCompartir = modal.querySelector(`button[onclick*="vaCompartirApp"]`);
+
+  const footer =
+    btnInstalar?.parentElement ||
+    btnCompartir?.parentElement ||
+    btnSalir?.parentElement;
+
+  if (footer) {
+    footer.classList.add("va-opciones-footer");
+  }
+}
+
+const vaActualizarBotonInstalarAppOriginal = window.vaActualizarBotonInstalarApp;
+
+window.vaActualizarBotonInstalarApp = function() {
+  if (typeof vaActualizarBotonInstalarAppOriginal === "function") {
+    vaActualizarBotonInstalarAppOriginal();
+  }
+
+  vaAjustarMenuSesionInstalada();
+};
+
 // ================= MENÚ SESIÓN (...) =================
 // ================= OPCIONES SESIÓN DESDE BOTÓN (...) =================
 
 window.toggleMenuSesion = function(){
+    vaAsegurarExtrasMenuSesion();
   const modal = document.getElementById("loginModal");
   const btnLogin = document.getElementById("btnOpcionLogin");
   const btnLogout = document.getElementById("btnOpcionLogout");
@@ -229,6 +331,8 @@ window.abrirLoginParaGuardarMiPanel = function () {
   modal.style.display = "flex";
   modal.classList.add("abierto");
   modal.setAttribute("aria-hidden", "false");
+
+  vaAjustarMenuSesionInstalada();
 };
 
 window.cerrarLogin = function(){
