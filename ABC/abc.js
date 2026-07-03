@@ -301,7 +301,7 @@ body.abc-intro-activa #btnMostrarBarra{
 #abcContenido.abc-contenido-intro .abc-intro-imagen,
 #abcContenido.abc-es-intro .abc-intro-imagen{
   display: block;
-  width: 106%;
+  width: 102%;
   max-width: none !important;
   height: auto !important;
   flex: 0 0 auto;
@@ -379,7 +379,7 @@ body.abc-intro-activa #btnMostrarBarra{
   #abcContenido.abc-contenido-intro .abc-intro-imagen,
   #abcContenido.abc-es-intro .abc-intro-imagen{
     display: block !important;
-    width: 124vw !important;
+    width: 118vw !important;
     max-width: none !important;
     height: auto !important;
     flex: 0 0 auto !important;
@@ -407,6 +407,19 @@ body.abc-intro-activa #btnMostrarBarra{
     border-right: 0 !important;
     padding: 10px !important;
     box-sizing: border-box !important;
+  }
+}
+
+.abc-intro-final-spacer{
+  display: block !important;
+  width: 100% !important;
+  height: 120px !important;
+  flex: 0 0 auto !important;
+}
+
+@media (max-width: 640px){
+  .abc-intro-final-spacer{
+    height: 150px !important;
   }
 }
 
@@ -594,6 +607,7 @@ function abcAplicarIntroEstable(){
   const wrap = document.querySelector("#abcContenido .abc-intro-imagen-wrap");
   const img  = document.querySelector("#abcContenido .abc-intro-imagen");
   const abcWrap = document.getElementById("abcWrap");
+  const iglesiaABC = document.getElementById("iglesia-abc");
 
   if (!cont || !wrap || !img) return;
 
@@ -602,24 +616,27 @@ function abcAplicarIntroEstable(){
   cont.classList.add("abc-contenido-intro", "abc-es-intro");
   if (abcWrap) abcWrap.classList.add("abc-es-intro");
 
-  // ✅ Contenedor de la intro: NO corta verticalmente
+  [cont, abcWrap, iglesiaABC].forEach(el => {
+    if (!el) return;
+    el.style.setProperty("overflow-x", "hidden", "important");
+    el.style.setProperty("overflow-y", "visible", "important");
+    el.style.setProperty("height", "auto", "important");
+    el.style.setProperty("box-sizing", "border-box", "important");
+  });
+
   cont.style.setProperty("padding", "0", "important");
   cont.style.setProperty("border", "none", "important");
   cont.style.setProperty("border-radius", "0", "important");
   cont.style.setProperty("background", "transparent", "important");
-  cont.style.setProperty("overflow-x", "hidden", "important");
-  cont.style.setProperty("overflow-y", "visible", "important");
-  cont.style.setProperty("height", "auto", "important");
-  cont.style.setProperty("box-sizing", "border-box", "important");
 
   if (abcWrap) {
-    abcWrap.style.setProperty("overflow-x", "hidden", "important");
-    abcWrap.style.setProperty("overflow-y", "visible", "important");
-    abcWrap.style.setProperty("height", "auto", "important");
-    abcWrap.style.setProperty("padding-bottom", esCel ? "90px" : "40px", "important");
+    abcWrap.style.setProperty("padding-bottom", esCel ? "150px" : "110px", "important");
   }
 
-  // ✅ Wrapper: centra, NO corta abajo
+  if (iglesiaABC) {
+    iglesiaABC.style.setProperty("padding-bottom", esCel ? "150px" : "110px", "important");
+  }
+
   wrap.style.setProperty("display", "flex", "important");
   wrap.style.setProperty("justify-content", "center", "important");
   wrap.style.setProperty("align-items", "flex-start", "important");
@@ -641,21 +658,20 @@ function abcAplicarIntroEstable(){
     wrap.style.setProperty("transform", "none", "important");
   }
 
-  // ✅ Imagen: zoom más prudente para no cortar letras
   img.style.setProperty("display", "block", "important");
   img.style.setProperty("max-width", "none", "important");
   img.style.setProperty("height", "auto", "important");
   img.style.setProperty("flex", "0 0 auto", "important");
-  img.style.setProperty("margin", "0 auto", "important");
+  img.style.setProperty("margin", "0 auto 120px auto", "important");
   img.style.setProperty("transform", "none", "important");
 
   if (esCel) {
-    // Antes 132vw: cortaba demasiado. 124vw recupera laterales.
-    img.style.setProperty("width", "124vw", "important");
+    // Antes 124vw: todavía cortaba una letra del título.
+    img.style.setProperty("width", "118vw", "important");
     img.style.setProperty("border-radius", "0", "important");
   } else {
-    // Antes 112%: demasiado para PC. 106% recorta suave.
-    img.style.setProperty("width", "106%", "important");
+    // Antes 106%: en PC quedaba muy al borde.
+    img.style.setProperty("width", "102%", "important");
     img.style.setProperty("border-radius", "10px", "important");
   }
 }
@@ -702,6 +718,7 @@ cont.innerHTML = `
       decoding="async"
     >
   </div>
+  <div class="abc-intro-final-spacer" aria-hidden="true"></div>
 `;
 
 // ✅ Aplicamos el tamaño directo en el elemento, no solo por CSS.
