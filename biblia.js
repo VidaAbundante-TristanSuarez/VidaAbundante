@@ -288,7 +288,6 @@ window.toggleMenuSesion = function(){
 
   vaAjustarMenuSesionInstalada();
 };
-};
 
 window.abrirLoginParaGuardarMiPanel = function () {
   const modal = document.getElementById("loginModal");
