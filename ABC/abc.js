@@ -707,6 +707,52 @@ function refrescarUIIndice() {
   }
 }
 
+function abcLimpiarIntroViejaYFijarSticky() {
+  document.body.classList.remove("abc-intro-activa");
+
+  const app = document.getElementById("abcApp");
+  const iglesiaABC = document.getElementById("iglesia-abc");
+  const seccionIglesia = document.getElementById("seccion-iglesia");
+  const wrap = document.getElementById("abcWrap");
+  const cont = document.getElementById("abcContenido");
+  const sticky = document.getElementById("abcStickyBar");
+
+  [app, iglesiaABC, seccionIglesia, wrap, cont].filter(Boolean).forEach(el => {
+    el.classList.remove("abc-es-intro", "abc-contenido-intro");
+
+    el.style.removeProperty("overflow");
+    el.style.removeProperty("overflow-x");
+    el.style.removeProperty("overflow-y");
+    el.style.removeProperty("height");
+
+    el.style.setProperty("overflow", "visible", "important");
+    el.style.setProperty("overflow-x", "visible", "important");
+    el.style.setProperty("overflow-y", "visible", "important");
+    el.style.setProperty("height", "auto", "important");
+  });
+
+  if (wrap) {
+    wrap.style.removeProperty("padding-bottom");
+  }
+
+  if (iglesiaABC) {
+    iglesiaABC.style.removeProperty("padding-bottom");
+  }
+
+  if (cont) {
+    cont.style.removeProperty("margin");
+    cont.style.removeProperty("width");
+    cont.style.removeProperty("max-width");
+    cont.style.removeProperty("transform");
+  }
+
+  if (sticky) {
+    sticky.style.setProperty("position", "sticky", "important");
+    sticky.style.setProperty("top", "0", "important");
+    sticky.style.setProperty("z-index", "99999", "important");
+  }
+}
+
 function abcSetIntroActiva(esIntro){
   const activo = !!esIntro;
 
@@ -723,6 +769,8 @@ function abcSetIntroActiva(esIntro){
 
   if (activo) {
     requestAnimationFrame(abcAplicarIntroEstable);
+  } else {
+    abcLimpiarIntroViejaYFijarSticky();
   }
 }
 
@@ -819,6 +867,7 @@ async function cargarABCTema(desdeIndice = false) {
 
   // ✅ Ya no usamos intro como imagen.
   abcSetIntroActiva(false);
+    abcLimpiarIntroViejaYFijarSticky();
 
   cont.classList.remove("abc-contenido-intro", "abc-es-intro");
   cont.innerHTML = `<div style="opacity:.75; text-align:center; padding:10px;">Cargando…</div>`;
@@ -2212,6 +2261,7 @@ function abcUIEnABC(){
 // ✅ Hooks ABC
 // -------------------------
 window.__abcOnEnter = () => {
+    abcLimpiarIntroViejaYFijarSticky();
   document.body.classList.add("en-abc");
   resaltadorBloqueado = true;
   window.resaltadorBloqueado = true;
