@@ -138,6 +138,7 @@ body.oscuro #abcIndice::-webkit-scrollbar-thumb{ background: rgba(255,255,255,.2
 /* ================= ABC: GALERÍA + AUDIO STICKY ================= */
 
 #abcStickyBar{
+  position: -webkit-sticky !important;
   position: sticky !important;
   top: 0 !important;
   z-index: 9999 !important;
@@ -714,6 +715,7 @@ function refrescarUIIndice() {
 function abcLimpiarIntroViejaYFijarSticky() {
   document.body.classList.remove("abc-intro-activa");
 
+  // ✅ borrar TODO lo que dejaron los intentos anteriores
   document.getElementById("abcStickyMobileFixFinal")?.remove();
   document.getElementById("abcStickyPlaceholder")?.remove();
   document.getElementById("abcStickySentinel")?.remove();
@@ -722,6 +724,9 @@ function abcLimpiarIntroViejaYFijarSticky() {
   document.documentElement.style.removeProperty("--abc-sticky-top");
   document.documentElement.style.removeProperty("--abc-bar-h");
   document.documentElement.style.removeProperty("--abc-top-fijo");
+  document.documentElement.style.removeProperty("--abc-fijo-left");
+  document.documentElement.style.removeProperty("--abc-fijo-width");
+  document.documentElement.style.removeProperty("--abc-fijo-top");
 
   const st = document.createElement("style");
   st.id = "abcStickyMobileFixFinal";
@@ -746,8 +751,10 @@ function abcLimpiarIntroViejaYFijarSticky() {
     }
 
     body.en-abc #abcStickyBar{
-      position: relative !important;
-      top: auto !important;
+      position: -webkit-sticky !important;
+      position: sticky !important;
+      top: 0 !important;
+
       left: auto !important;
       right: auto !important;
       width: auto !important;
@@ -767,22 +774,6 @@ function abcLimpiarIntroViejaYFijarSticky() {
       padding: 7px 10px 8px !important;
       border: 1px solid rgba(0,0,0,.06) !important;
       box-shadow: 0 4px 10px rgba(0,0,0,.06) !important;
-    }
-
-    body.en-abc #abcStickyBar.abc-fijo-arriba{
-      position: fixed !important;
-      top: var(--abc-fijo-top, 0px) !important;
-      left: var(--abc-fijo-left, 8px) !important;
-      width: var(--abc-fijo-width, calc(100vw - 16px)) !important;
-      right: auto !important;
-      max-width: none !important;
-      margin: 0 !important;
-      z-index: 999999 !important;
-    }
-
-    body.en-abc #abcStickyPlaceholderReal{
-      display:none;
-      height:0;
     }
 
     body.en-abc #abcTop{
@@ -894,101 +885,10 @@ function abcLimpiarIntroViejaYFijarSticky() {
     sticky.style.removeProperty("top");
     sticky.style.removeProperty("margin");
 
-    sticky.style.setProperty("position", "relative", "important");
+    sticky.style.setProperty("position", "-webkit-sticky", "important");
+    sticky.style.setProperty("position", "sticky", "important");
+    sticky.style.setProperty("top", "0", "important");
     sticky.style.setProperty("z-index", "99999", "important");
-  }
-
-  abcInstalarPegadoABCDefinitivo();
-}
-
-function abcInstalarPegadoABCDefinitivo() {
-  const sticky = document.getElementById("abcStickyBar");
-  if (!sticky || !sticky.parentElement) return;
-
-  let placeholder = document.getElementById("abcStickyPlaceholderReal");
-
-  if (!placeholder) {
-    placeholder = document.createElement("div");
-    placeholder.id = "abcStickyPlaceholderReal";
-    placeholder.style.display = "none";
-    placeholder.style.height = "0px";
-    sticky.parentElement.insertBefore(placeholder, sticky);
-  }
-
-  let puntoPegado = 0;
-  let raf = null;
-
-  const calcular = () => {
-    sticky.classList.remove("abc-fijo-arriba");
-    placeholder.style.display = "none";
-    placeholder.style.height = "0px";
-
-    const r = sticky.getBoundingClientRect();
-    puntoPegado = window.scrollY + r.top;
-
-    const ancho = Math.round(r.width);
-    const left = Math.round(r.left);
-
-    document.documentElement.style.setProperty("--abc-fijo-left", `${left}px`);
-    document.documentElement.style.setProperty("--abc-fijo-width", `${ancho}px`);
-    document.documentElement.style.setProperty("--abc-fijo-top", "0px");
-  };
-
-  const aplicar = () => {
-    raf = null;
-
-    if (!document.body.classList.contains("en-abc")) {
-      sticky.classList.remove("abc-fijo-arriba");
-      placeholder.style.display = "none";
-      placeholder.style.height = "0px";
-      return;
-    }
-
-    if (window.scrollY >= puntoPegado) {
-      const h = Math.ceil(sticky.getBoundingClientRect().height || 120);
-      placeholder.style.display = "block";
-      placeholder.style.height = `${h + 10}px`;
-      sticky.classList.add("abc-fijo-arriba");
-    } else {
-      sticky.classList.remove("abc-fijo-arriba");
-      placeholder.style.display = "none";
-      placeholder.style.height = "0px";
-    }
-  };
-
-  const pedir = () => {
-    if (raf) return;
-    raf = requestAnimationFrame(aplicar);
-  };
-
-  calcular();
-  aplicar();
-
-  setTimeout(() => {
-    calcular();
-    aplicar();
-  }, 120);
-
-  setTimeout(() => {
-    calcular();
-    aplicar();
-  }, 450);
-
-  if (!window.__abcPegadoDefinitivoReady) {
-    window.__abcPegadoDefinitivoReady = true;
-
-    window.addEventListener("scroll", pedir, { passive: true });
-    window.addEventListener("resize", () => {
-      calcular();
-      aplicar();
-    });
-
-    window.addEventListener("orientationchange", () => {
-      setTimeout(() => {
-        calcular();
-        aplicar();
-      }, 300);
-    });
   }
 }
 
