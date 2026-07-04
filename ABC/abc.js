@@ -714,10 +714,8 @@ function refrescarUIIndice() {
 function abcLimpiarIntroViejaYFijarSticky() {
   document.body.classList.remove("abc-intro-activa");
 
-  // ✅ eliminar el sistema viejo que hacía saltar la barra
-  const viejoStyle = document.getElementById("abcStickyMobileFixFinal");
-  if (viejoStyle) viejoStyle.remove();
-
+  // ✅ borrar cualquier arreglo viejo de barra fija
+  document.getElementById("abcStickyMobileFixFinal")?.remove();
   document.getElementById("abcStickyPlaceholder")?.remove();
 
   const st = document.createElement("style");
@@ -737,21 +735,22 @@ function abcLimpiarIntroViejaYFijarSticky() {
     body.en-abc #abcWrap:not(.abc-es-intro){
       max-width: 980px !important;
       margin: 0 auto !important;
-      padding: calc(var(--abc-bar-h, 122px) + 12px) 8px 18px !important;
+      padding: 8px 8px 18px !important;
       box-sizing: border-box !important;
       overflow: visible !important;
     }
 
     body.en-abc #abcStickyBar{
-      position: fixed !important;
-      top: var(--abc-top-fijo, 0px) !important;
-      left: max(4px, calc((100vw - 980px) / 2 + 4px)) !important;
-      right: max(4px, calc((100vw - 980px) / 2 + 4px)) !important;
+      position: sticky !important;
+      top: var(--abc-sticky-top, 0px) !important;
+
+      left: auto !important;
+      right: auto !important;
       width: auto !important;
       max-width: none !important;
 
-      z-index: 999999 !important;
-      margin: 0 !important;
+      z-index: 99999 !important;
+      margin: 0 -4px 10px -4px !important;
 
       border-radius: 18px !important;
       overflow: hidden !important;
@@ -818,12 +817,12 @@ function abcLimpiarIntroViejaYFijarSticky() {
     @media (max-width: 640px){
       body.en-abc #abcWrap:not(.abc-es-intro){
         max-width: 100% !important;
-        padding: calc(var(--abc-bar-h, 122px) + 10px) 6px 16px !important;
+        padding: 8px 6px 16px !important;
       }
 
       body.en-abc #abcStickyBar{
-        left: 2px !important;
-        right: 2px !important;
+        margin-left: -4px !important;
+        margin-right: -4px !important;
       }
     }
   `;
@@ -865,38 +864,41 @@ function abcLimpiarIntroViejaYFijarSticky() {
   }
 
   if (sticky) {
+    // ✅ sacar TODOS los restos de fixed
     sticky.classList.remove("abc-bar-fija-real");
 
-    sticky.style.setProperty("position", "fixed", "important");
-    sticky.style.setProperty("z-index", "999999", "important");
-    sticky.style.setProperty("top", "var(--abc-top-fijo, 0px)", "important");
-    sticky.style.setProperty("left", "max(4px, calc((100vw - 980px) / 2 + 4px))", "important");
-    sticky.style.setProperty("right", "max(4px, calc((100vw - 980px) / 2 + 4px))", "important");
-    sticky.style.setProperty("width", "auto", "important");
+    sticky.style.removeProperty("position");
+    sticky.style.removeProperty("left");
+    sticky.style.removeProperty("right");
+    sticky.style.removeProperty("width");
+    sticky.style.removeProperty("max-width");
+    sticky.style.removeProperty("top");
+    sticky.style.removeProperty("margin");
+
+    sticky.style.setProperty("position", "sticky", "important");
+    sticky.style.setProperty("top", "var(--abc-sticky-top, 0px)", "important");
+    sticky.style.setProperty("z-index", "99999", "important");
   }
 
-  abcMedirBarraFijaSimple();
+  abcActualizarStickyTopABC();
 }
 
-function abcMedirBarraFijaSimple() {
-  const sticky = document.getElementById("abcStickyBar");
-  if (!sticky) return;
-
+function abcActualizarStickyTopABC() {
   const medir = () => {
-    const h = Math.ceil(sticky.getBoundingClientRect().height || 122);
-    document.documentElement.style.setProperty("--abc-bar-h", `${h}px`);
+    const header = document.getElementById("header");
+    const h = Math.ceil(header?.getBoundingClientRect?.().height || 0);
 
-    // Si alguna vez querés que quede debajo del header principal, acá se cambia.
-    // Por ahora queda arriba fijo, sin saltos.
-    document.documentElement.style.setProperty("--abc-top-fijo", "0px");
+    // Si el header está arriba, la barra ABC se pega debajo.
+    // Si no hay header, queda en top 0.
+    document.documentElement.style.setProperty("--abc-sticky-top", `${h}px`);
   };
 
   medir();
   setTimeout(medir, 80);
   setTimeout(medir, 300);
 
-  if (!window.__abcBarraFijaSimpleReady) {
-    window.__abcBarraFijaSimpleReady = true;
+  if (!window.__abcStickyTopReady) {
+    window.__abcStickyTopReady = true;
     window.addEventListener("resize", medir);
     window.addEventListener("orientationchange", () => setTimeout(medir, 250));
   }
@@ -2410,8 +2412,8 @@ function abcUIEnABC(){
 // ✅ Hooks ABC
 // -------------------------
 window.__abcOnEnter = () => {
-    abcLimpiarIntroViejaYFijarSticky();
   document.body.classList.add("en-abc");
+  abcLimpiarIntroViejaYFijarSticky();
   resaltadorBloqueado = true;
   window.resaltadorBloqueado = true;
 
