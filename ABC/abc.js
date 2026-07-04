@@ -714,120 +714,116 @@ function refrescarUIIndice() {
 function abcLimpiarIntroViejaYFijarSticky() {
   document.body.classList.remove("abc-intro-activa");
 
+  // ✅ eliminar el sistema viejo que hacía saltar la barra
   const viejoStyle = document.getElementById("abcStickyMobileFixFinal");
   if (viejoStyle) viejoStyle.remove();
+
+  document.getElementById("abcStickyPlaceholder")?.remove();
 
   const st = document.createElement("style");
   st.id = "abcStickyMobileFixFinal";
   st.textContent = `
-    @media (max-width: 640px){
-      body.en-abc #abcApp,
-      body.en-abc #iglesia-abc,
-      body.en-abc #seccion-iglesia,
-      body.en-abc #abcWrap{
-        overflow: visible !important;
-        overflow-x: visible !important;
-        overflow-y: visible !important;
-        height: auto !important;
-        max-height: none !important;
-      }
+    body.en-abc #abcApp,
+    body.en-abc #iglesia-abc,
+    body.en-abc #seccion-iglesia,
+    body.en-abc #abcWrap{
+      overflow: visible !important;
+      overflow-x: visible !important;
+      overflow-y: visible !important;
+      height: auto !important;
+      max-height: none !important;
+    }
 
+    body.en-abc #abcWrap:not(.abc-es-intro){
+      max-width: 980px !important;
+      margin: 0 auto !important;
+      padding: calc(var(--abc-bar-h, 122px) + 12px) 8px 18px !important;
+      box-sizing: border-box !important;
+      overflow: visible !important;
+    }
+
+    body.en-abc #abcStickyBar{
+      position: fixed !important;
+      top: var(--abc-top-fijo, 0px) !important;
+      left: max(4px, calc((100vw - 980px) / 2 + 4px)) !important;
+      right: max(4px, calc((100vw - 980px) / 2 + 4px)) !important;
+      width: auto !important;
+      max-width: none !important;
+
+      z-index: 999999 !important;
+      margin: 0 !important;
+
+      border-radius: 18px !important;
+      overflow: hidden !important;
+      box-sizing: border-box !important;
+
+      background: rgba(255,255,255,.72) !important;
+      backdrop-filter: blur(6px) !important;
+      -webkit-backdrop-filter: blur(6px) !important;
+
+      padding: 7px 10px 8px !important;
+      border: 1px solid rgba(0,0,0,.06) !important;
+      box-shadow: 0 4px 10px rgba(0,0,0,.06) !important;
+    }
+
+    body.en-abc #abcTop{
+      padding: 0 0 2px !important;
+      gap: 6px !important;
+    }
+
+    body.en-abc #abcIndice{
+      align-items: center !important;
+      padding: 3px 0 11px !important;
+      gap: 8px !important;
+    }
+
+    body.en-abc #abcIndice button{
+      padding: 8px 12px !important;
+      font-weight: 800 !important;
+      border: 2px solid rgba(0,0,0,.82) !important;
+      border-radius: 999px !important;
+    }
+
+    body.en-abc #abcAudioBar{
+      padding: 3px 0 0 !important;
+      gap: 6px !important;
+    }
+
+    body.en-abc #abcAudio{
+      width: 100% !important;
+      max-width: calc(100% - 48px) !important;
+    }
+
+    body.en-abc #abcBtnPDF{
+      width: 40px !important;
+      height: 40px !important;
+      min-width: 40px !important;
+      min-height: 40px !important;
+      box-shadow: none !important;
+    }
+
+    body.en-abc #abcContenido:not(.abc-es-intro):not(.abc-contenido-intro){
+      border-radius: 22px !important;
+      border: 1px solid rgba(0,0,0,.10) !important;
+      padding: 16px 14px !important;
+      margin: 0 !important;
+      overflow: hidden !important;
+      box-sizing: border-box !important;
+    }
+
+    body.en-abc #abcContenido:not(.abc-es-intro):not(.abc-contenido-intro)::before{
+      border-radius: inherit !important;
+    }
+
+    @media (max-width: 640px){
       body.en-abc #abcWrap:not(.abc-es-intro){
         max-width: 100% !important;
-        margin: 0 auto !important;
-        padding: 8px 6px 16px !important;
-        box-sizing: border-box !important;
-        overflow: visible !important;
+        padding: calc(var(--abc-bar-h, 122px) + 10px) 6px 16px !important;
       }
 
-      /* Estado normal: la barra queda en su lugar, debajo de las secciones */
       body.en-abc #abcStickyBar{
-        position: relative !important;
-        top: auto !important;
-        left: auto !important;
-        right: auto !important;
-        width: auto !important;
-        max-width: none !important;
-
-        margin: 0 -4px 10px -4px !important;
-
-        z-index: 9999 !important;
-        border-radius: 18px !important;
-        overflow: hidden !important;
-        box-sizing: border-box !important;
-
-        background: rgba(255,255,255,.72) !important;
-        backdrop-filter: blur(6px) !important;
-        -webkit-backdrop-filter: blur(6px) !important;
-
-        padding: 7px 10px 8px !important;
-        border: 1px solid rgba(0,0,0,.06) !important;
-        box-shadow: 0 4px 10px rgba(0,0,0,.06) !important;
-      }
-
-      /* Estado pegado real: la barra vive en body, no dentro del contenedor */
-      body.en-abc #abcStickyBar.abc-bar-fija-real{
-        position: fixed !important;
-        top: var(--abc-top-real, 0px) !important;
         left: 2px !important;
         right: 2px !important;
-        width: auto !important;
-        max-width: none !important;
-        margin: 0 !important;
-        z-index: 999999 !important;
-      }
-
-      body.en-abc #abcStickyPlaceholder{
-        display:none;
-      }
-
-      body.en-abc #abcTop{
-        padding: 0 0 2px !important;
-        gap: 6px !important;
-      }
-
-      body.en-abc #abcIndice{
-        align-items: center !important;
-        padding: 3px 0 11px !important;
-        gap: 8px !important;
-      }
-
-      body.en-abc #abcIndice button{
-        padding: 8px 12px !important;
-        font-weight: 800 !important;
-        border: 2px solid rgba(0,0,0,.82) !important;
-        border-radius: 999px !important;
-      }
-
-      body.en-abc #abcAudioBar{
-        padding: 3px 0 0 !important;
-        gap: 6px !important;
-      }
-
-      body.en-abc #abcAudio{
-        width: 100% !important;
-        max-width: calc(100% - 48px) !important;
-      }
-
-      body.en-abc #abcBtnPDF{
-        width: 40px !important;
-        height: 40px !important;
-        min-width: 40px !important;
-        min-height: 40px !important;
-        box-shadow: none !important;
-      }
-
-      body.en-abc #abcContenido:not(.abc-es-intro):not(.abc-contenido-intro){
-        border-radius: 22px !important;
-        border: 1px solid rgba(0,0,0,.10) !important;
-        padding: 16px 14px !important;
-        margin: 0 !important;
-        overflow: hidden !important;
-        box-sizing: border-box !important;
-      }
-
-      body.en-abc #abcContenido:not(.abc-es-intro):not(.abc-contenido-intro)::before{
-        border-radius: inherit !important;
       }
     }
   `;
@@ -858,15 +854,6 @@ function abcLimpiarIntroViejaYFijarSticky() {
     el.style.setProperty("max-height", "none", "important");
   });
 
-  if (wrap) {
-    wrap.style.removeProperty("padding-bottom");
-    wrap.style.removeProperty("padding-top");
-  }
-
-  if (iglesiaABC) {
-    iglesiaABC.style.removeProperty("padding-bottom");
-  }
-
   if (cont) {
     cont.style.removeProperty("margin");
     cont.style.removeProperty("width");
@@ -880,119 +867,38 @@ function abcLimpiarIntroViejaYFijarSticky() {
   if (sticky) {
     sticky.classList.remove("abc-bar-fija-real");
 
-    sticky.style.removeProperty("left");
-    sticky.style.removeProperty("right");
-    sticky.style.removeProperty("width");
-    sticky.style.removeProperty("max-width");
-    sticky.style.removeProperty("top");
-
-    sticky.style.setProperty("position", "relative", "important");
-    sticky.style.setProperty("z-index", "9999", "important");
+    sticky.style.setProperty("position", "fixed", "important");
+    sticky.style.setProperty("z-index", "999999", "important");
+    sticky.style.setProperty("top", "var(--abc-top-fijo, 0px)", "important");
+    sticky.style.setProperty("left", "max(4px, calc((100vw - 980px) / 2 + 4px))", "important");
+    sticky.style.setProperty("right", "max(4px, calc((100vw - 980px) / 2 + 4px))", "important");
+    sticky.style.setProperty("width", "auto", "important");
   }
 
-  abcInstalarPegadoRealABC();
+  abcMedirBarraFijaSimple();
 }
 
-function abcInstalarPegadoRealABC() {
+function abcMedirBarraFijaSimple() {
   const sticky = document.getElementById("abcStickyBar");
-  const wrap = document.getElementById("abcWrap");
-
-  if (!sticky || !wrap) return;
-
-  let placeholder = document.getElementById("abcStickyPlaceholder");
-
-  if (!placeholder) {
-    placeholder = document.createElement("div");
-    placeholder.id = "abcStickyPlaceholder";
-    placeholder.style.display = "none";
-    placeholder.style.height = "0px";
-    sticky.parentElement.insertBefore(placeholder, sticky);
-  }
-
-  if (!sticky.dataset.abcOriginalParentReady) {
-    sticky.dataset.abcOriginalParentReady = "1";
-    sticky.__abcOriginalParent = sticky.parentElement;
-    sticky.__abcOriginalNext = sticky.nextSibling;
-  }
-
-  const volverAlLugarOriginal = () => {
-    sticky.classList.remove("abc-bar-fija-real");
-
-    placeholder.style.display = "none";
-    placeholder.style.height = "0px";
-
-    sticky.style.removeProperty("left");
-    sticky.style.removeProperty("right");
-    sticky.style.removeProperty("width");
-    sticky.style.removeProperty("top");
-    sticky.style.setProperty("position", "relative", "important");
-
-    const parent = sticky.__abcOriginalParent || wrap;
-    const next = sticky.__abcOriginalNext || null;
-
-    if (sticky.parentElement !== parent) {
-      if (next && next.parentElement === parent) {
-        parent.insertBefore(sticky, next);
-      } else {
-        parent.insertBefore(sticky, placeholder.nextSibling);
-      }
-    }
-  };
-
-  const fijarEnPantalla = () => {
-    const h = Math.ceil(sticky.getBoundingClientRect().height || 112);
-
-    placeholder.style.display = "block";
-    placeholder.style.height = `${h + 10}px`;
-
-    if (sticky.parentElement !== document.body) {
-      document.body.appendChild(sticky);
-    }
-
-    sticky.classList.add("abc-bar-fija-real");
-    sticky.style.setProperty("position", "fixed", "important");
-    sticky.style.setProperty("top", "0", "important");
-    sticky.style.setProperty("left", "2px", "important");
-    sticky.style.setProperty("right", "2px", "important");
-    sticky.style.setProperty("width", "auto", "important");
-  };
+  if (!sticky) return;
 
   const medir = () => {
-    const esCel = window.matchMedia("(max-width: 640px)").matches;
-    const enABC = document.body.classList.contains("en-abc");
+    const h = Math.ceil(sticky.getBoundingClientRect().height || 122);
+    document.documentElement.style.setProperty("--abc-bar-h", `${h}px`);
 
-    if (!esCel || !enABC) {
-      volverAlLugarOriginal();
-      return;
-    }
-
-    const r = placeholder.getBoundingClientRect();
-
-    if (r.top <= 0) {
-      fijarEnPantalla();
-    } else {
-      volverAlLugarOriginal();
-    }
+    // Si alguna vez querés que quede debajo del header principal, acá se cambia.
+    // Por ahora queda arriba fijo, sin saltos.
+    document.documentElement.style.setProperty("--abc-top-fijo", "0px");
   };
 
   medir();
   setTimeout(medir, 80);
-  setTimeout(medir, 250);
-  setTimeout(medir, 700);
+  setTimeout(medir, 300);
 
-  if (!window.__abcPegadoRealReady) {
-    window.__abcPegadoRealReady = true;
-
-    window.addEventListener("scroll", medir, true);
-    document.addEventListener("scroll", medir, true);
+  if (!window.__abcBarraFijaSimpleReady) {
+    window.__abcBarraFijaSimpleReady = true;
     window.addEventListener("resize", medir);
     window.addEventListener("orientationchange", () => setTimeout(medir, 250));
-
-    setInterval(() => {
-      const enABC = document.body.classList.contains("en-abc");
-      const esCel = window.matchMedia("(max-width: 640px)").matches;
-      if (enABC && esCel) medir();
-    }, 350);
   }
 }
 
