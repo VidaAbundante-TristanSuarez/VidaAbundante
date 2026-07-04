@@ -714,9 +714,12 @@ function refrescarUIIndice() {
 function abcLimpiarIntroViejaYFijarSticky() {
   document.body.classList.remove("abc-intro-activa");
 
-  // ✅ borrar cualquier arreglo viejo de barra fija
+  // limpiar arreglos anteriores
   document.getElementById("abcStickyMobileFixFinal")?.remove();
   document.getElementById("abcStickyPlaceholder")?.remove();
+  document.getElementById("abcStickySentinel")?.remove();
+
+  document.documentElement.style.setProperty("--abc-sticky-top", "0px");
 
   const st = document.createElement("style");
   st.id = "abcStickyMobileFixFinal";
@@ -741,9 +744,8 @@ function abcLimpiarIntroViejaYFijarSticky() {
     }
 
     body.en-abc #abcStickyBar{
-      position: sticky !important;
-      top: var(--abc-sticky-top, 0px) !important;
-
+      position: relative !important;
+      top: auto !important;
       left: auto !important;
       right: auto !important;
       width: auto !important;
@@ -763,6 +765,22 @@ function abcLimpiarIntroViejaYFijarSticky() {
       padding: 7px 10px 8px !important;
       border: 1px solid rgba(0,0,0,.06) !important;
       box-shadow: 0 4px 10px rgba(0,0,0,.06) !important;
+    }
+
+    body.en-abc #abcStickyBar.abc-fijo-arriba{
+      position: fixed !important;
+      top: 0 !important;
+      left: max(4px, calc((100vw - 980px) / 2 + 4px)) !important;
+      right: max(4px, calc((100vw - 980px) / 2 + 4px)) !important;
+      width: auto !important;
+      max-width: none !important;
+      margin: 0 !important;
+      z-index: 999999 !important;
+    }
+
+    body.en-abc #abcStickyPlaceholderReal{
+      display: none;
+      height: 0;
     }
 
     body.en-abc #abcTop{
@@ -824,6 +842,12 @@ function abcLimpiarIntroViejaYFijarSticky() {
         margin-left: -4px !important;
         margin-right: -4px !important;
       }
+
+      body.en-abc #abcStickyBar.abc-fijo-arriba{
+        left: 2px !important;
+        right: 2px !important;
+        margin: 0 !important;
+      }
     }
   `;
   document.head.appendChild(st);
@@ -864,8 +888,7 @@ function abcLimpiarIntroViejaYFijarSticky() {
   }
 
   if (sticky) {
-    // ✅ sacar TODOS los restos de fixed
-    sticky.classList.remove("abc-bar-fija-real");
+    sticky.classList.remove("abc-fijo-arriba", "abc-bar-fija-real");
 
     sticky.style.removeProperty("position");
     sticky.style.removeProperty("left");
@@ -875,35 +898,80 @@ function abcLimpiarIntroViejaYFijarSticky() {
     sticky.style.removeProperty("top");
     sticky.style.removeProperty("margin");
 
-    sticky.style.setProperty("position", "sticky", "important");
-    sticky.style.setProperty("top", "var(--abc-sticky-top, 0px)", "important");
+    sticky.style.setProperty("position", "relative", "important");
     sticky.style.setProperty("z-index", "99999", "important");
   }
 
-  abcActualizarStickyTopABC();
+  abcInstalarPegadoArribaReal();
 }
 
-function abcActualizarStickyTopABC() {
-  const medir = () => {
-    const header = document.getElementById("header");
-    const h = Math.ceil(header?.getBoundingClientRect?.().height || 0);
+function abcInstalarPegadoArribaReal() {
+  const sticky = document.getElementById("abcStickyBar");
+  if (!sticky) return;
 
-    // Si el header está arriba, la barra ABC se pega debajo.
-    // Si no hay header, queda en top 0.
-    document.documentElement.style.setProperty("--abc-sticky-top", `${h}px`);
+  let sentinel = document.getElementById("abcStickySentinel");
+  if (!sentinel) {
+    sentinel = document.createElement("div");
+    sentinel.id = "abcStickySentinel";
+    sentinel.style.height = "1px";
+    sentinel.style.margin = "0";
+    sentinel.style.padding = "0";
+    sticky.parentElement.insertBefore(sentinel, sticky);
+  }
+
+  let placeholder = document.getElementById("abcStickyPlaceholderReal");
+  if (!placeholder) {
+    placeholder = document.createElement("div");
+    placeholder.id = "abcStickyPlaceholderReal";
+    placeholder.style.display = "none";
+    placeholder.style.height = "0px";
+    sticky.parentElement.insertBefore(placeholder, sticky);
+  }
+
+  let raf = null;
+
+  const aplicar = () => {
+    raf = null;
+
+    const enABC = document.body.classList.contains("en-abc");
+    if (!enABC) {
+      sticky.classList.remove("abc-fijo-arriba");
+      placeholder.style.display = "none";
+      placeholder.style.height = "0px";
+      return;
+    }
+
+    const limite = sentinel.getBoundingClientRect().top;
+
+    if (limite <= 0) {
+      const h = Math.ceil(sticky.getBoundingClientRect().height || 120);
+      placeholder.style.display = "block";
+      placeholder.style.height = `${h + 10}px`;
+      sticky.classList.add("abc-fijo-arriba");
+    } else {
+      sticky.classList.remove("abc-fijo-arriba");
+      placeholder.style.display = "none";
+      placeholder.style.height = "0px";
+    }
   };
 
-  medir();
-  setTimeout(medir, 80);
-  setTimeout(medir, 300);
+  const pedirAplicar = () => {
+    if (raf) return;
+    raf = requestAnimationFrame(aplicar);
+  };
 
-  if (!window.__abcStickyTopReady) {
-    window.__abcStickyTopReady = true;
-    window.addEventListener("resize", medir);
-    window.addEventListener("orientationchange", () => setTimeout(medir, 250));
+  pedirAplicar();
+  setTimeout(pedirAplicar, 80);
+  setTimeout(pedirAplicar, 300);
+
+  if (!window.__abcPegadoArribaRealReady) {
+    window.__abcPegadoArribaRealReady = true;
+    window.addEventListener("scroll", pedirAplicar, { passive: true });
+    document.addEventListener("scroll", pedirAplicar, { passive: true, capture: true });
+    window.addEventListener("resize", pedirAplicar);
+    window.addEventListener("orientationchange", () => setTimeout(pedirAplicar, 250));
   }
 }
-
 function abcSetIntroActiva(esIntro){
   const activo = !!esIntro;
 
