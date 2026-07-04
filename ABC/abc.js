@@ -735,12 +735,12 @@ function abcLimpiarIntroViejaYFijarSticky() {
       body.en-abc #abcWrap:not(.abc-es-intro){
         max-width: 100% !important;
         margin: 0 auto !important;
-        padding: 8px 10px 16px !important;
+        padding: 8px 6px 16px !important;
         box-sizing: border-box !important;
         overflow: visible !important;
       }
 
-      /* ✅ estado normal: queda en su lugar, debajo de las secciones */
+      /* Estado normal: la barra queda en su lugar, debajo de las secciones */
       body.en-abc #abcStickyBar{
         position: relative !important;
         top: auto !important;
@@ -749,8 +749,7 @@ function abcLimpiarIntroViejaYFijarSticky() {
         width: auto !important;
         max-width: none !important;
 
-        /* ✅ más estirada: menos margen lateral visual */
-        margin: 0 -6px 10px -6px !important;
+        margin: 0 -4px 10px -4px !important;
 
         z-index: 9999 !important;
         border-radius: 18px !important;
@@ -766,12 +765,12 @@ function abcLimpiarIntroViejaYFijarSticky() {
         box-shadow: 0 4px 10px rgba(0,0,0,.06) !important;
       }
 
-      /* ✅ cuando llegó arriba: se pega al principio de la pantalla */
+      /* Estado pegado real: la barra vive en body, no dentro del contenedor */
       body.en-abc #abcStickyBar.abc-bar-fija-real{
         position: fixed !important;
-        top: 0 !important;
-        left: 4px !important;
-        right: 4px !important;
+        top: var(--abc-top-real, 0px) !important;
+        left: 2px !important;
+        right: 2px !important;
         width: auto !important;
         max-width: none !important;
         margin: 0 !important;
@@ -896,7 +895,9 @@ function abcLimpiarIntroViejaYFijarSticky() {
 
 function abcInstalarPegadoRealABC() {
   const sticky = document.getElementById("abcStickyBar");
-  if (!sticky) return;
+  const wrap = document.getElementById("abcWrap");
+
+  if (!sticky || !wrap) return;
 
   let placeholder = document.getElementById("abcStickyPlaceholder");
 
@@ -904,51 +905,73 @@ function abcInstalarPegadoRealABC() {
     placeholder = document.createElement("div");
     placeholder.id = "abcStickyPlaceholder";
     placeholder.style.display = "none";
+    placeholder.style.height = "0px";
     sticky.parentElement.insertBefore(placeholder, sticky);
   }
+
+  if (!sticky.dataset.abcOriginalParentReady) {
+    sticky.dataset.abcOriginalParentReady = "1";
+    sticky.__abcOriginalParent = sticky.parentElement;
+    sticky.__abcOriginalNext = sticky.nextSibling;
+  }
+
+  const volverAlLugarOriginal = () => {
+    sticky.classList.remove("abc-bar-fija-real");
+
+    placeholder.style.display = "none";
+    placeholder.style.height = "0px";
+
+    sticky.style.removeProperty("left");
+    sticky.style.removeProperty("right");
+    sticky.style.removeProperty("width");
+    sticky.style.removeProperty("top");
+    sticky.style.setProperty("position", "relative", "important");
+
+    const parent = sticky.__abcOriginalParent || wrap;
+    const next = sticky.__abcOriginalNext || null;
+
+    if (sticky.parentElement !== parent) {
+      if (next && next.parentElement === parent) {
+        parent.insertBefore(sticky, next);
+      } else {
+        parent.insertBefore(sticky, placeholder.nextSibling);
+      }
+    }
+  };
+
+  const fijarEnPantalla = () => {
+    const h = Math.ceil(sticky.getBoundingClientRect().height || 112);
+
+    placeholder.style.display = "block";
+    placeholder.style.height = `${h + 10}px`;
+
+    if (sticky.parentElement !== document.body) {
+      document.body.appendChild(sticky);
+    }
+
+    sticky.classList.add("abc-bar-fija-real");
+    sticky.style.setProperty("position", "fixed", "important");
+    sticky.style.setProperty("top", "0", "important");
+    sticky.style.setProperty("left", "2px", "important");
+    sticky.style.setProperty("right", "2px", "important");
+    sticky.style.setProperty("width", "auto", "important");
+  };
 
   const medir = () => {
     const esCel = window.matchMedia("(max-width: 640px)").matches;
     const enABC = document.body.classList.contains("en-abc");
 
     if (!esCel || !enABC) {
-      sticky.classList.remove("abc-bar-fija-real");
-      placeholder.style.display = "none";
-      placeholder.style.height = "0px";
-
-      sticky.style.removeProperty("left");
-      sticky.style.removeProperty("right");
-      sticky.style.removeProperty("width");
-      sticky.style.removeProperty("top");
-      sticky.style.setProperty("position", "relative", "important");
+      volverAlLugarOriginal();
       return;
     }
 
-    const rect = placeholder.getBoundingClientRect();
+    const r = placeholder.getBoundingClientRect();
 
-    if (rect.top <= 0) {
-      const h = Math.ceil(sticky.getBoundingClientRect().height || 112);
-
-      placeholder.style.display = "block";
-      placeholder.style.height = `${h + 10}px`;
-
-      sticky.classList.add("abc-bar-fija-real");
-      sticky.style.setProperty("position", "fixed", "important");
-      sticky.style.setProperty("top", "0", "important");
-      sticky.style.setProperty("left", "4px", "important");
-      sticky.style.setProperty("right", "4px", "important");
-      sticky.style.setProperty("width", "auto", "important");
+    if (r.top <= 0) {
+      fijarEnPantalla();
     } else {
-      sticky.classList.remove("abc-bar-fija-real");
-
-      placeholder.style.display = "none";
-      placeholder.style.height = "0px";
-
-      sticky.style.removeProperty("left");
-      sticky.style.removeProperty("right");
-      sticky.style.removeProperty("width");
-      sticky.style.removeProperty("top");
-      sticky.style.setProperty("position", "relative", "important");
+      volverAlLugarOriginal();
     }
   };
 
@@ -961,8 +984,15 @@ function abcInstalarPegadoRealABC() {
     window.__abcPegadoRealReady = true;
 
     window.addEventListener("scroll", medir, true);
+    document.addEventListener("scroll", medir, true);
     window.addEventListener("resize", medir);
     window.addEventListener("orientationchange", () => setTimeout(medir, 250));
+
+    setInterval(() => {
+      const enABC = document.body.classList.contains("en-abc");
+      const esCel = window.matchMedia("(max-width: 640px)").matches;
+      if (enABC && esCel) medir();
+    }, 350);
   }
 }
 
