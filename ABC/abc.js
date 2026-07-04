@@ -98,22 +98,21 @@ window.mostrarABC = async () => {
   display:flex;
   align-items:center;
   gap:6px;
-  padding: 2px 0 4px;
+  padding: 0 0 2px;
 }
 
-        #abcIndice{
+#abcIndice{
   flex:1;
   display:flex;
+  align-items:center;
   gap:8px;
 
-  /* ✅ scrollbar normal siempre visible en PC */
   overflow-x: scroll;
   overflow-y: hidden;
 
-  padding: 6px 2px;
+  padding: 3px 2px 11px;
   -webkit-overflow-scrolling: touch;
 
-  /* ✅ nada de "mano / drag" */
   cursor: default;
   scroll-snap-type: none;
 }
@@ -141,13 +140,13 @@ body.oscuro #abcIndice::-webkit-scrollbar-thumb{ background: rgba(255,255,255,.2
 #abcStickyBar{
   position: sticky !important;
   top: 0 !important;
-  z-index: 999 !important;
+  z-index: 9999 !important;
 
-  background: rgba(255,255,255,.76);
+  background: rgba(255,255,255,.72);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
 
-  padding: 8px 10px 10px;
+  padding: 7px 10px 8px;
   margin-bottom: 10px;
 
   border: 1px solid rgba(0,0,0,.06);
@@ -715,104 +714,108 @@ function refrescarUIIndice() {
 function abcLimpiarIntroViejaYFijarSticky() {
   document.body.classList.remove("abc-intro-activa");
 
-  if (!document.getElementById("abcStickyMobileFixFinal")) {
-    const st = document.createElement("style");
-    st.id = "abcStickyMobileFixFinal";
-    st.textContent = `
-      @media (max-width: 640px){
-        body.en-abc #abcApp,
-        body.en-abc #iglesia-abc,
-        body.en-abc #seccion-iglesia,
-        body.en-abc #abcWrap{
-          overflow: visible !important;
-          overflow-x: visible !important;
-          overflow-y: visible !important;
-          height: auto !important;
-          max-height: none !important;
-        }
+  // ✅ Sacamos el fix viejo que usaba position: fixed.
+  // En celular debe ser sticky normal, NO flotante.
+  const viejoStyle = document.getElementById("abcStickyMobileFixFinal");
+  if (viejoStyle) viejoStyle.remove();
 
-        body.en-abc #abcWrap:not(.abc-es-intro){
-          max-width: 100% !important;
-          margin: 0 auto !important;
-          padding: calc(var(--abc-top-offset, 82px) + var(--abc-sticky-h, 112px) + 8px) 10px 16px !important;
-          box-sizing: border-box !important;
-          overflow: visible !important;
-        }
-
-        body.en-abc #abcStickyBar{
-          position: fixed !important;
-          top: var(--abc-top-offset, 82px) !important;
-          left: 10px !important;
-          right: 10px !important;
-          width: auto !important;
-          max-width: none !important;
-          z-index: 999999 !important;
-
-          margin: 0 !important;
-          border-radius: 18px !important;
-          overflow: hidden !important;
-          box-sizing: border-box !important;
-
-          background: rgba(255,255,255,.76) !important;
-          backdrop-filter: blur(6px) !important;
-          -webkit-backdrop-filter: blur(6px) !important;
-
-          padding: 8px 10px 10px !important;
-          border: 1px solid rgba(0,0,0,.06) !important;
-          box-shadow: 0 4px 10px rgba(0,0,0,.06) !important;
-        }
-
-        body.en-abc #abcTop{
-          padding: 0 0 4px !important;
-          gap: 6px !important;
-        }
-
-        body.en-abc #abcIndice{
-          padding: 4px 0 2px !important;
-          gap: 6px !important;
-        }
-
-        body.en-abc #abcIndice button{
-          padding: 8px 12px !important;
-          font-weight: 800 !important;
-          border: 2px solid rgba(0,0,0,.82) !important;
-          border-radius: 999px !important;
-        }
-
-        body.en-abc #abcAudioBar{
-          padding: 4px 0 0 !important;
-          gap: 6px !important;
-        }
-
-        body.en-abc #abcAudio{
-          width: 100% !important;
-          max-width: calc(100% - 48px) !important;
-        }
-
-        body.en-abc #abcBtnPDF{
-          width: 40px !important;
-          height: 40px !important;
-          min-width: 40px !important;
-          min-height: 40px !important;
-          box-shadow: none !important;
-        }
-
-        body.en-abc #abcContenido:not(.abc-es-intro):not(.abc-contenido-intro){
-          border-radius: 22px !important;
-          border: 1px solid rgba(0,0,0,.10) !important;
-          padding: 16px 14px !important;
-          margin: 0 !important;
-          overflow: hidden !important;
-          box-sizing: border-box !important;
-        }
-
-        body.en-abc #abcContenido:not(.abc-es-intro):not(.abc-contenido-intro)::before{
-          border-radius: inherit !important;
-        }
+  const st = document.createElement("style");
+  st.id = "abcStickyMobileFixFinal";
+  st.textContent = `
+    @media (max-width: 640px){
+      body.en-abc #abcApp,
+      body.en-abc #iglesia-abc,
+      body.en-abc #seccion-iglesia,
+      body.en-abc #abcWrap{
+        overflow: visible !important;
+        overflow-x: visible !important;
+        overflow-y: visible !important;
+        height: auto !important;
+        max-height: none !important;
       }
-    `;
-    document.head.appendChild(st);
-  }
+
+      body.en-abc #abcWrap:not(.abc-es-intro){
+        max-width: 100% !important;
+        margin: 0 auto !important;
+        padding: 8px 10px 16px !important;
+        box-sizing: border-box !important;
+        overflow: visible !important;
+      }
+
+      body.en-abc #abcStickyBar{
+        position: sticky !important;
+        top: 0 !important;
+        left: auto !important;
+        right: auto !important;
+        width: auto !important;
+        max-width: none !important;
+        z-index: 9999 !important;
+
+        margin: 0 0 10px 0 !important;
+        border-radius: 18px !important;
+        overflow: hidden !important;
+        box-sizing: border-box !important;
+
+        background: rgba(255,255,255,.72) !important;
+        backdrop-filter: blur(6px) !important;
+        -webkit-backdrop-filter: blur(6px) !important;
+
+        padding: 7px 10px 8px !important;
+        border: 1px solid rgba(0,0,0,.06) !important;
+        box-shadow: 0 4px 10px rgba(0,0,0,.06) !important;
+      }
+
+      body.en-abc #abcTop{
+        padding: 0 0 2px !important;
+        gap: 6px !important;
+      }
+
+      body.en-abc #abcIndice{
+        align-items: center !important;
+        padding: 3px 0 11px !important;
+        gap: 8px !important;
+      }
+
+      body.en-abc #abcIndice button{
+        padding: 8px 12px !important;
+        font-weight: 800 !important;
+        border: 2px solid rgba(0,0,0,.82) !important;
+        border-radius: 999px !important;
+      }
+
+      body.en-abc #abcAudioBar{
+        padding: 3px 0 0 !important;
+        gap: 6px !important;
+      }
+
+      body.en-abc #abcAudio{
+        width: 100% !important;
+        max-width: calc(100% - 48px) !important;
+      }
+
+      body.en-abc #abcBtnPDF{
+        width: 40px !important;
+        height: 40px !important;
+        min-width: 40px !important;
+        min-height: 40px !important;
+        box-shadow: none !important;
+      }
+
+      body.en-abc #abcContenido:not(.abc-es-intro):not(.abc-contenido-intro){
+        border-radius: 22px !important;
+        border: 1px solid rgba(0,0,0,.10) !important;
+        padding: 16px 14px !important;
+        margin: 0 !important;
+        overflow: hidden !important;
+        box-sizing: border-box !important;
+      }
+
+      body.en-abc #abcContenido:not(.abc-es-intro):not(.abc-contenido-intro)::before{
+        border-radius: inherit !important;
+      }
+    }
+  `;
+  document.head.appendChild(st);
 
   const app = document.getElementById("abcApp");
   const iglesiaABC = document.getElementById("iglesia-abc");
@@ -841,6 +844,7 @@ function abcLimpiarIntroViejaYFijarSticky() {
 
   if (wrap) {
     wrap.style.removeProperty("padding-bottom");
+    wrap.style.removeProperty("padding-top");
   }
 
   if (iglesiaABC) {
@@ -858,51 +862,18 @@ function abcLimpiarIntroViejaYFijarSticky() {
   }
 
   if (sticky) {
-    sticky.style.setProperty("z-index", "999999", "important");
+    sticky.style.removeProperty("left");
+    sticky.style.removeProperty("right");
+    sticky.style.removeProperty("width");
+    sticky.style.removeProperty("max-width");
 
-    const medir = () => {
-      const esCel = window.matchMedia("(max-width: 640px)").matches;
-
-      if (!esCel) {
-        document.documentElement.style.removeProperty("--abc-top-offset");
-        document.documentElement.style.removeProperty("--abc-sticky-h");
-
-        sticky.style.removeProperty("left");
-        sticky.style.removeProperty("right");
-        sticky.style.removeProperty("width");
-
-        sticky.style.setProperty("position", "sticky", "important");
-        sticky.style.setProperty("top", "0", "important");
-        return;
-      }
-
-      const header = document.getElementById("header");
-      const headerH = Math.ceil(header?.getBoundingClientRect().height || 74);
-      const topReal = headerH + 8;
-
-      document.documentElement.style.setProperty("--abc-top-offset", `${topReal}px`);
-
-      sticky.style.setProperty("position", "fixed", "important");
-      sticky.style.setProperty("top", `${topReal}px`, "important");
-      sticky.style.setProperty("left", "10px", "important");
-      sticky.style.setProperty("right", "10px", "important");
-      sticky.style.setProperty("width", "auto", "important");
-
-      const h = Math.ceil(sticky.getBoundingClientRect().height || 112);
-      document.documentElement.style.setProperty("--abc-sticky-h", `${h}px`);
-    };
-
-    medir();
-    setTimeout(medir, 80);
-    setTimeout(medir, 250);
-    setTimeout(medir, 700);
-
-    if (!window.__abcStickyMobileResizeReady) {
-      window.__abcStickyMobileResizeReady = true;
-      window.addEventListener("resize", medir);
-      window.addEventListener("orientationchange", () => setTimeout(medir, 250));
-    }
+    sticky.style.setProperty("position", "sticky", "important");
+    sticky.style.setProperty("top", "0", "important");
+    sticky.style.setProperty("z-index", "9999", "important");
   }
+
+  document.documentElement.style.removeProperty("--abc-top-offset");
+  document.documentElement.style.removeProperty("--abc-sticky-h");
 }
 
 function abcSetIntroActiva(esIntro){
