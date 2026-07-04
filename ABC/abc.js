@@ -714,12 +714,14 @@ function refrescarUIIndice() {
 function abcLimpiarIntroViejaYFijarSticky() {
   document.body.classList.remove("abc-intro-activa");
 
-  // limpiar arreglos anteriores
   document.getElementById("abcStickyMobileFixFinal")?.remove();
   document.getElementById("abcStickyPlaceholder")?.remove();
   document.getElementById("abcStickySentinel")?.remove();
+  document.getElementById("abcStickyPlaceholderReal")?.remove();
 
-  document.documentElement.style.setProperty("--abc-sticky-top", "0px");
+  document.documentElement.style.removeProperty("--abc-sticky-top");
+  document.documentElement.style.removeProperty("--abc-bar-h");
+  document.documentElement.style.removeProperty("--abc-top-fijo");
 
   const st = document.createElement("style");
   st.id = "abcStickyMobileFixFinal";
@@ -769,18 +771,18 @@ function abcLimpiarIntroViejaYFijarSticky() {
 
     body.en-abc #abcStickyBar.abc-fijo-arriba{
       position: fixed !important;
-      top: 0 !important;
-      left: max(4px, calc((100vw - 980px) / 2 + 4px)) !important;
-      right: max(4px, calc((100vw - 980px) / 2 + 4px)) !important;
-      width: auto !important;
+      top: var(--abc-fijo-top, 0px) !important;
+      left: var(--abc-fijo-left, 8px) !important;
+      width: var(--abc-fijo-width, calc(100vw - 16px)) !important;
+      right: auto !important;
       max-width: none !important;
       margin: 0 !important;
       z-index: 999999 !important;
     }
 
     body.en-abc #abcStickyPlaceholderReal{
-      display: none;
-      height: 0;
+      display:none;
+      height:0;
     }
 
     body.en-abc #abcTop{
@@ -842,12 +844,6 @@ function abcLimpiarIntroViejaYFijarSticky() {
         margin-left: -4px !important;
         margin-right: -4px !important;
       }
-
-      body.en-abc #abcStickyBar.abc-fijo-arriba{
-        left: 2px !important;
-        right: 2px !important;
-        margin: 0 !important;
-      }
     }
   `;
   document.head.appendChild(st);
@@ -902,24 +898,15 @@ function abcLimpiarIntroViejaYFijarSticky() {
     sticky.style.setProperty("z-index", "99999", "important");
   }
 
-  abcInstalarPegadoArribaReal();
+  abcInstalarPegadoABCDefinitivo();
 }
 
-function abcInstalarPegadoArribaReal() {
+function abcInstalarPegadoABCDefinitivo() {
   const sticky = document.getElementById("abcStickyBar");
-  if (!sticky) return;
-
-  let sentinel = document.getElementById("abcStickySentinel");
-  if (!sentinel) {
-    sentinel = document.createElement("div");
-    sentinel.id = "abcStickySentinel";
-    sentinel.style.height = "1px";
-    sentinel.style.margin = "0";
-    sentinel.style.padding = "0";
-    sticky.parentElement.insertBefore(sentinel, sticky);
-  }
+  if (!sticky || !sticky.parentElement) return;
 
   let placeholder = document.getElementById("abcStickyPlaceholderReal");
+
   if (!placeholder) {
     placeholder = document.createElement("div");
     placeholder.id = "abcStickyPlaceholderReal";
@@ -928,22 +915,36 @@ function abcInstalarPegadoArribaReal() {
     sticky.parentElement.insertBefore(placeholder, sticky);
   }
 
+  let puntoPegado = 0;
   let raf = null;
+
+  const calcular = () => {
+    sticky.classList.remove("abc-fijo-arriba");
+    placeholder.style.display = "none";
+    placeholder.style.height = "0px";
+
+    const r = sticky.getBoundingClientRect();
+    puntoPegado = window.scrollY + r.top;
+
+    const ancho = Math.round(r.width);
+    const left = Math.round(r.left);
+
+    document.documentElement.style.setProperty("--abc-fijo-left", `${left}px`);
+    document.documentElement.style.setProperty("--abc-fijo-width", `${ancho}px`);
+    document.documentElement.style.setProperty("--abc-fijo-top", "0px");
+  };
 
   const aplicar = () => {
     raf = null;
 
-    const enABC = document.body.classList.contains("en-abc");
-    if (!enABC) {
+    if (!document.body.classList.contains("en-abc")) {
       sticky.classList.remove("abc-fijo-arriba");
       placeholder.style.display = "none";
       placeholder.style.height = "0px";
       return;
     }
 
-    const limite = sentinel.getBoundingClientRect().top;
-
-    if (limite <= 0) {
+    if (window.scrollY >= puntoPegado) {
       const h = Math.ceil(sticky.getBoundingClientRect().height || 120);
       placeholder.style.display = "block";
       placeholder.style.height = `${h + 10}px`;
@@ -955,23 +956,42 @@ function abcInstalarPegadoArribaReal() {
     }
   };
 
-  const pedirAplicar = () => {
+  const pedir = () => {
     if (raf) return;
     raf = requestAnimationFrame(aplicar);
   };
 
-  pedirAplicar();
-  setTimeout(pedirAplicar, 80);
-  setTimeout(pedirAplicar, 300);
+  calcular();
+  aplicar();
 
-  if (!window.__abcPegadoArribaRealReady) {
-    window.__abcPegadoArribaRealReady = true;
-    window.addEventListener("scroll", pedirAplicar, { passive: true });
-    document.addEventListener("scroll", pedirAplicar, { passive: true, capture: true });
-    window.addEventListener("resize", pedirAplicar);
-    window.addEventListener("orientationchange", () => setTimeout(pedirAplicar, 250));
+  setTimeout(() => {
+    calcular();
+    aplicar();
+  }, 120);
+
+  setTimeout(() => {
+    calcular();
+    aplicar();
+  }, 450);
+
+  if (!window.__abcPegadoDefinitivoReady) {
+    window.__abcPegadoDefinitivoReady = true;
+
+    window.addEventListener("scroll", pedir, { passive: true });
+    window.addEventListener("resize", () => {
+      calcular();
+      aplicar();
+    });
+
+    window.addEventListener("orientationchange", () => {
+      setTimeout(() => {
+        calcular();
+        aplicar();
+      }, 300);
+    });
   }
 }
+
 function abcSetIntroActiva(esIntro){
   const activo = !!esIntro;
 
@@ -1086,7 +1106,6 @@ async function cargarABCTema(desdeIndice = false) {
 
   // ✅ Ya no usamos intro como imagen.
   abcSetIntroActiva(false);
-    abcLimpiarIntroViejaYFijarSticky();
 
   cont.classList.remove("abc-contenido-intro", "abc-es-intro");
   cont.innerHTML = `<div style="opacity:.75; text-align:center; padding:10px;">Cargando…</div>`;
