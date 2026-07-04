@@ -714,8 +714,6 @@ function refrescarUIIndice() {
 function abcLimpiarIntroViejaYFijarSticky() {
   document.body.classList.remove("abc-intro-activa");
 
-  // ✅ Sacamos el fix viejo que usaba position: fixed.
-  // En celular debe ser sticky normal, NO flotante.
   const viejoStyle = document.getElementById("abcStickyMobileFixFinal");
   if (viejoStyle) viejoStyle.remove();
 
@@ -742,16 +740,19 @@ function abcLimpiarIntroViejaYFijarSticky() {
         overflow: visible !important;
       }
 
+      /* ✅ estado normal: queda en su lugar, debajo de las secciones */
       body.en-abc #abcStickyBar{
-        position: sticky !important;
-        top: 0 !important;
+        position: relative !important;
+        top: auto !important;
         left: auto !important;
         right: auto !important;
         width: auto !important;
         max-width: none !important;
-        z-index: 9999 !important;
 
-        margin: 0 0 10px 0 !important;
+        /* ✅ más estirada: menos margen lateral visual */
+        margin: 0 -6px 10px -6px !important;
+
+        z-index: 9999 !important;
         border-radius: 18px !important;
         overflow: hidden !important;
         box-sizing: border-box !important;
@@ -763,6 +764,22 @@ function abcLimpiarIntroViejaYFijarSticky() {
         padding: 7px 10px 8px !important;
         border: 1px solid rgba(0,0,0,.06) !important;
         box-shadow: 0 4px 10px rgba(0,0,0,.06) !important;
+      }
+
+      /* ✅ cuando llegó arriba: se pega al principio de la pantalla */
+      body.en-abc #abcStickyBar.abc-bar-fija-real{
+        position: fixed !important;
+        top: 0 !important;
+        left: 4px !important;
+        right: 4px !important;
+        width: auto !important;
+        max-width: none !important;
+        margin: 0 !important;
+        z-index: 999999 !important;
+      }
+
+      body.en-abc #abcStickyPlaceholder{
+        display:none;
       }
 
       body.en-abc #abcTop{
@@ -862,18 +879,91 @@ function abcLimpiarIntroViejaYFijarSticky() {
   }
 
   if (sticky) {
+    sticky.classList.remove("abc-bar-fija-real");
+
     sticky.style.removeProperty("left");
     sticky.style.removeProperty("right");
     sticky.style.removeProperty("width");
     sticky.style.removeProperty("max-width");
+    sticky.style.removeProperty("top");
 
-    sticky.style.setProperty("position", "sticky", "important");
-    sticky.style.setProperty("top", "0", "important");
+    sticky.style.setProperty("position", "relative", "important");
     sticky.style.setProperty("z-index", "9999", "important");
   }
 
-  document.documentElement.style.removeProperty("--abc-top-offset");
-  document.documentElement.style.removeProperty("--abc-sticky-h");
+  abcInstalarPegadoRealABC();
+}
+
+function abcInstalarPegadoRealABC() {
+  const sticky = document.getElementById("abcStickyBar");
+  if (!sticky) return;
+
+  let placeholder = document.getElementById("abcStickyPlaceholder");
+
+  if (!placeholder) {
+    placeholder = document.createElement("div");
+    placeholder.id = "abcStickyPlaceholder";
+    placeholder.style.display = "none";
+    sticky.parentElement.insertBefore(placeholder, sticky);
+  }
+
+  const medir = () => {
+    const esCel = window.matchMedia("(max-width: 640px)").matches;
+    const enABC = document.body.classList.contains("en-abc");
+
+    if (!esCel || !enABC) {
+      sticky.classList.remove("abc-bar-fija-real");
+      placeholder.style.display = "none";
+      placeholder.style.height = "0px";
+
+      sticky.style.removeProperty("left");
+      sticky.style.removeProperty("right");
+      sticky.style.removeProperty("width");
+      sticky.style.removeProperty("top");
+      sticky.style.setProperty("position", "relative", "important");
+      return;
+    }
+
+    const rect = placeholder.getBoundingClientRect();
+
+    if (rect.top <= 0) {
+      const h = Math.ceil(sticky.getBoundingClientRect().height || 112);
+
+      placeholder.style.display = "block";
+      placeholder.style.height = `${h + 10}px`;
+
+      sticky.classList.add("abc-bar-fija-real");
+      sticky.style.setProperty("position", "fixed", "important");
+      sticky.style.setProperty("top", "0", "important");
+      sticky.style.setProperty("left", "4px", "important");
+      sticky.style.setProperty("right", "4px", "important");
+      sticky.style.setProperty("width", "auto", "important");
+    } else {
+      sticky.classList.remove("abc-bar-fija-real");
+
+      placeholder.style.display = "none";
+      placeholder.style.height = "0px";
+
+      sticky.style.removeProperty("left");
+      sticky.style.removeProperty("right");
+      sticky.style.removeProperty("width");
+      sticky.style.removeProperty("top");
+      sticky.style.setProperty("position", "relative", "important");
+    }
+  };
+
+  medir();
+  setTimeout(medir, 80);
+  setTimeout(medir, 250);
+  setTimeout(medir, 700);
+
+  if (!window.__abcPegadoRealReady) {
+    window.__abcPegadoRealReady = true;
+
+    window.addEventListener("scroll", medir, true);
+    window.addEventListener("resize", medir);
+    window.addEventListener("orientationchange", () => setTimeout(medir, 250));
+  }
 }
 
 function abcSetIntroActiva(esIntro){
