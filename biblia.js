@@ -7214,6 +7214,28 @@ window.cerrarMarcadores = () => {
   refrescarBotonGuardarMarcador();
 };
 
+function notaResumenVersiculoLista(m = {}, max = 92) {
+  let txt = "";
+
+  try {
+    if (typeof notaShareTextoVersiculoMarcador === "function") {
+      txt = notaShareTextoVersiculoMarcador(m);
+    }
+  } catch (e) {}
+
+  txt = String(txt || "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (!txt) return "";
+
+  return txt.length > max
+    ? txt.slice(0, max).trim() + " (...)"
+    : txt;
+}
+
+window.notaResumenVersiculoLista = notaResumenVersiculoLista;
+
 // ================= ✨ Render Lista Marcadores 📌=================
 function renderListaMarcadores() {
   const lista = document.getElementById("listaMarcadores");
@@ -7262,55 +7284,78 @@ const items = Object.entries(marcadores || {})
           : (m?.origen === "compartidos" || !!m?.sourceCompKey);
 
       const puedeEditarNota = !notaVieneDeCompartidos;
+      const resumen = marcadorEscapeHTML(notaResumenVersiculoLista(m, 92));
 
-      return `
+          return `
         <div
           class="card-marcador"
           style="
             display:flex;
-            justify-content:space-between;
-            gap:10px;
-            align-items:center;
+            flex-direction:column;
+            gap:6px;
             background:${fondoNota} !important;
             color:${colorTexto} !important;
             border:1px solid rgba(0,0,0,.10);
           "
         >
-          <div
-            style="
-              cursor:pointer;
-              flex:1;
-              font-size:13px;
-              font-weight:700;
-              white-space:nowrap;
-              overflow:hidden;
-              text-overflow:ellipsis;
-              color:${colorTexto} !important;
-            "
-            onclick="abrirMarcador('${m.id}')"
-            title="${linea}"
-          >
-            ${linea}
-          </div>
+          <div style="display:flex; justify-content:space-between; gap:10px; align-items:center;">
+            <div
+              style="
+                cursor:pointer;
+                flex:1;
+                min-width:0;
+                font-size:13px;
+                font-weight:800;
+                white-space:nowrap;
+                overflow:hidden;
+                text-overflow:ellipsis;
+                color:${colorTexto} !important;
+              "
+              onclick="abrirMarcador('${m.id}')"
+              title="${linea}"
+            >
+              ${linea}
+            </div>
 
-          <button
-            type="button"
-            class="pm-btn"
-            onclick="event.stopPropagation(); abrirVistaMarcadorDesdeLista('${m.id}', 'biblia')"
-            title="Ver nota"
-          >
-            <i class="fa-solid fa-rectangle-list"></i>
-          </button>
-
-          ${puedeEditarNota ? `
             <button
               type="button"
               class="pm-btn"
-              onclick="event.stopPropagation(); editarMarcadorDesdeLista('${m.id}')"
-              title="Editar"
+              onclick="event.stopPropagation(); abrirVistaMarcadorDesdeLista('${m.id}', 'biblia')"
+              title="Ver nota"
             >
-              <i class="fa-solid fa-pen-to-square"></i>
+              <i class="fa-solid fa-rectangle-list"></i>
             </button>
+
+            ${puedeEditarNota ? `
+              <button
+                type="button"
+                class="pm-btn"
+                onclick="event.stopPropagation(); editarMarcadorDesdeLista('${m.id}')"
+                title="Editar"
+              >
+                <i class="fa-solid fa-pen-to-square"></i>
+              </button>
+            ` : ``}
+          </div>
+
+          ${resumen ? `
+            <div
+              onclick="abrirMarcador('${m.id}')"
+              style="
+                cursor:pointer;
+                font-size:12px;
+                font-weight:600;
+                line-height:1.25;
+                opacity:.82;
+                color:${colorTexto} !important;
+                display:-webkit-box;
+                -webkit-line-clamp:2;
+                -webkit-box-orient:vertical;
+                overflow:hidden;
+              "
+            >
+              ${resumen}
+            </div>
           ` : ``}
         </div>
       `;
