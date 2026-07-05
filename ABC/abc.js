@@ -874,22 +874,56 @@ function abcLimpiarIntroViejaYFijarSticky() {
     cont.style.setProperty("overflow", "hidden", "important");
   }
 
-  if (sticky) {
-    sticky.classList.remove("abc-fijo-arriba", "abc-bar-fija-real");
+  function ajustarABCStickyBar() {
+    const wrapActual = document.getElementById("abcWrap");
+    const stickyActual = document.getElementById("abcStickyBar");
+    if (!stickyActual) return;
 
-    sticky.style.removeProperty("position");
-    sticky.style.removeProperty("left");
-    sticky.style.removeProperty("right");
-    sticky.style.removeProperty("width");
-    sticky.style.removeProperty("max-width");
-    sticky.style.removeProperty("top");
-    sticky.style.removeProperty("margin");
+    const esCel = window.matchMedia("(max-width: 640px)").matches;
 
-    sticky.style.setProperty("position", "-webkit-sticky", "important");
-    sticky.style.setProperty("position", "sticky", "important");
-    sticky.style.setProperty("top", "0", "important");
-    sticky.style.setProperty("z-index", "99999", "important");
+    stickyActual.classList.remove("abc-fijo-arriba", "abc-bar-fija-real");
+
+    stickyActual.style.removeProperty("position");
+    stickyActual.style.removeProperty("left");
+    stickyActual.style.removeProperty("right");
+    stickyActual.style.removeProperty("width");
+    stickyActual.style.removeProperty("max-width");
+    stickyActual.style.removeProperty("top");
+    stickyActual.style.removeProperty("margin");
+    stickyActual.style.removeProperty("bottom");
+
+    if (esCel) {
+      stickyActual.style.setProperty("position", "fixed", "important");
+      stickyActual.style.setProperty("top", "0", "important");
+      stickyActual.style.setProperty("left", "0", "important");
+      stickyActual.style.setProperty("right", "0", "important");
+      stickyActual.style.setProperty("width", "100%", "important");
+      stickyActual.style.setProperty("max-width", "100%", "important");
+      stickyActual.style.setProperty("margin", "0", "important");
+      stickyActual.style.setProperty("z-index", "99999", "important");
+      stickyActual.style.setProperty("border-radius", "0 0 18px 18px", "important");
+
+      const alto = Math.ceil(stickyActual.getBoundingClientRect().height || 120);
+
+      if (wrapActual) {
+        wrapActual.style.setProperty("padding-top", (alto + 12) + "px", "important");
+      }
+
+    } else {
+      stickyActual.style.setProperty("position", "-webkit-sticky", "important");
+      stickyActual.style.setProperty("position", "sticky", "important");
+      stickyActual.style.setProperty("top", "0", "important");
+      stickyActual.style.setProperty("z-index", "99999", "important");
+
+      if (wrapActual) {
+        wrapActual.style.removeProperty("padding-top");
+      }
+    }
   }
+
+  ajustarABCStickyBar();
+  requestAnimationFrame(ajustarABCStickyBar);
+  setTimeout(ajustarABCStickyBar, 250);
 }
 
 function abcSetIntroActiva(esIntro){
@@ -1695,14 +1729,21 @@ function abcHabilitarCheckUI(){
   const btnCheck = document.getElementById("btnGuardarMarcador");
   if (!btnCheck) return;
 
+  // ✅ Si ya no estamos en ABC, ABC no toca más el botón.
+  if (!document.body.classList.contains("en-abc")) return;
+
   const habil = abcModoMarcador && abcSeleccionados && abcSeleccionados.size > 0;
 
-  // 🚫 IMPORTANTE: NO usar disabled (si no, el onclick no corre)
   btnCheck.disabled = false;
 
-  // solo look & feel
+  btnCheck.innerHTML = `
+    <i class="fa-solid fa-circle-check"></i>
+    <span>Abrir Nota</span>
+  `;
+
+  btnCheck.setAttribute("aria-label", "Abrir nota");
   btnCheck.style.opacity = habil ? "1" : ".55";
-  btnCheck.title = habil ? "Guardar nota" : "Seleccioná al menos 1 bloque (📌)";
+  btnCheck.title = habil ? "Abrir nota" : "Seleccioná al menos 1 bloque";
 }
 
 // -------------------------
@@ -2357,6 +2398,7 @@ function abcRestoreBarBiblia() {
     crear.style.visibility = window.__abcBarBackup.style.crear.visibility || "";
     crear.style.pointerEvents = window.__abcBarBackup.style.crear.pointerEvents || "";
   }
+  window.__abcBarBackup.saved = false;
 }
 
 // -------------------------
