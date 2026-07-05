@@ -879,45 +879,25 @@ function abcLimpiarIntroViejaYFijarSticky() {
     const stickyActual = document.getElementById("abcStickyBar");
     if (!stickyActual) return;
 
-    const esCel = window.matchMedia("(max-width: 640px)").matches;
-
+    // ✅ No usamos fixed en celular.
+    // fixed era lo que escondía el índice atrás del header y creaba el espacio vacío.
     stickyActual.classList.remove("abc-fijo-arriba", "abc-bar-fija-real");
 
-    stickyActual.style.removeProperty("position");
     stickyActual.style.removeProperty("left");
     stickyActual.style.removeProperty("right");
     stickyActual.style.removeProperty("width");
     stickyActual.style.removeProperty("max-width");
-    stickyActual.style.removeProperty("top");
-    stickyActual.style.removeProperty("margin");
     stickyActual.style.removeProperty("bottom");
 
-    if (esCel) {
-      stickyActual.style.setProperty("position", "fixed", "important");
-      stickyActual.style.setProperty("top", "0", "important");
-      stickyActual.style.setProperty("left", "0", "important");
-      stickyActual.style.setProperty("right", "0", "important");
-      stickyActual.style.setProperty("width", "100%", "important");
-      stickyActual.style.setProperty("max-width", "100%", "important");
-      stickyActual.style.setProperty("margin", "0", "important");
-      stickyActual.style.setProperty("z-index", "99999", "important");
-      stickyActual.style.setProperty("border-radius", "0 0 18px 18px", "important");
+    stickyActual.style.setProperty("position", "sticky", "important");
+    stickyActual.style.setProperty("top", "0", "important");
+    stickyActual.style.setProperty("z-index", "99999", "important");
+    stickyActual.style.setProperty("margin", "0 -4px 10px -4px", "important");
+    stickyActual.style.setProperty("border-radius", "18px", "important");
 
-      const alto = Math.ceil(stickyActual.getBoundingClientRect().height || 120);
-
-      if (wrapActual) {
-        wrapActual.style.setProperty("padding-top", (alto + 12) + "px", "important");
-      }
-
-    } else {
-      stickyActual.style.setProperty("position", "-webkit-sticky", "important");
-      stickyActual.style.setProperty("position", "sticky", "important");
-      stickyActual.style.setProperty("top", "0", "important");
-      stickyActual.style.setProperty("z-index", "99999", "important");
-
-      if (wrapActual) {
-        wrapActual.style.removeProperty("padding-top");
-      }
+    // ✅ Quitamos el padding artificial que generaba el hueco.
+    if (wrapActual) {
+      wrapActual.style.removeProperty("padding-top");
     }
   }
 
@@ -2042,7 +2022,25 @@ async function abcAbrirListaNotasABC(){
           <div style="font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" onclick="abcIrANota('${m.id}')">
             ${linea}
           </div>
-          <button type="button" class="pm-btn" onclick="abcEditarNota('${m.id}')" title="Editar">✏️</button>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <button
+              type="button"
+              class="pm-btn"
+              onclick="abrirVistaMarcadorDesdeLista('${m.id}', 'abc')"
+              title="Ver nota"
+            >
+              <i class="fa-solid fa-rectangle-list"></i>
+            </button>
+
+            <button
+              type="button"
+              class="pm-btn"
+              onclick="abcEditarNota('${m.id}')"
+              title="Editar"
+            >
+              <i class="fa-solid fa-pen-to-square"></i>
+            </button>
+          </div>
         </div>
       `;
     }).join("");
@@ -2053,6 +2051,8 @@ async function abcAbrirListaNotasABC(){
   modal.classList.add("abierto");
   modal.setAttribute("aria-hidden","false");
 }
+
+window.abcAbrirListaNotasABC = abcAbrirListaNotasABC;
 
 window.abcIrANota = async (id) => {
   const m = (window.marcadores || {})[id];
