@@ -472,6 +472,16 @@ function forzarSeccionActiva(seccion) {
 
   if (!todas.includes(seccion)) seccion = "compartidos";
 
+  // ✅ Si venimos de ABC y vamos a Biblia/Panel/Compartidos,
+  // primero apagamos ABC para que no deje handlers ni estilos pegados.
+  if (document.body.classList.contains("en-abc") && seccion !== "iglesia") {
+    try {
+      window.__abcOnExit?.();
+    } catch (e) {
+      console.warn("No pude apagar ABC al cambiar de sección:", e);
+    }
+  }
+
   window.__SECCION_ACTIVA = seccion;
 
   document.body.classList.remove(
@@ -497,6 +507,20 @@ function forzarSeccionActiva(seccion) {
   try {
     actualizarNavVida(seccion);
   } catch (e) {}
+
+  if (seccion === "biblia") {
+    try { window.setMarcadorCtx?.("biblia"); } catch(e) {}
+
+    requestAnimationFrame(() => {
+      try {
+        if (typeof aplicarUIAccionesPorModo === "function") aplicarUIAccionesPorModo();
+      } catch(e) {}
+
+      try {
+        if (typeof refrescarBotonGuardarMarcador === "function") refrescarBotonGuardarMarcador();
+      } catch(e) {}
+    });
+  }
 
   if (seccion === "panel" && !uid) {
     setTimeout(mostrarPanelVisitante, 0);
@@ -7010,7 +7034,13 @@ if (!modoMarcador) {
 
   // banner fijo marcador
   const banner = document.getElementById("bannerModoMarcador");
-  if (banner) banner.style.display = modoMarcador ? "block" : "none";
+  if (banner) {
+    banner.innerHTML = `
+      <i class="fa-solid fa-circle-check"></i>
+      Seleccioná versículos para abrir una nota
+    `;
+    banner.style.display = modoMarcador ? "block" : "none";
+  }
 
   // ✅ ocultar/mostrar acciones según modo
   aplicarUIAccionesPorModo();
@@ -7614,19 +7644,27 @@ window.abrirMarcador = (idMarcador) => {
 
 // ================= ✨ Refrescar Botones Marcador (✅ y 📁) 📌=================
 function refrescarBotonGuardarMarcador() {
-  const btnGuardar = document.getElementById("btnGuardarMarcador");   // ✅
-  const btnLista = document.getElementById("btnListaMarcadores");     // list
+  const btnGuardar = document.getElementById("btnGuardarMarcador");
+  const btnLista = document.getElementById("btnListaMarcadores");
+
   if (!btnGuardar) return;
 
-  const haySeleccion = Object.keys(seleccionMarcador || {}).length > 0;
+  const haySeleccion = getIdsMarcadorEnOrden().length > 0;
 
-  // ✅ aparece solo en modo marcador + hay selección
+  btnGuardar.innerHTML = `
+    <i class="fa-solid fa-circle-check"></i>
+    <span>Abrir Nota</span>
+  `;
+
+  btnGuardar.setAttribute("aria-label", "Abrir nota");
+
   btnGuardar.style.display = (modoMarcador && haySeleccion) ? "inline-flex" : "none";
   btnGuardar.disabled = !haySeleccion;
   btnGuardar.style.opacity = haySeleccion ? "1" : "0.4";
 
-  // ✅ lista solo visible cuando NO estás en modo marcador
-  if (btnLista) btnLista.style.display = modoMarcador ? "none" : "inline-flex";
+  if (btnLista) {
+    btnLista.style.display = modoMarcador ? "none" : "inline-flex";
+  }
 
   aplicarUIAccionesPorModo();
 }
