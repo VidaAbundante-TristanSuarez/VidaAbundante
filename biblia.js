@@ -3060,7 +3060,10 @@ function bibliaRestaurarUIAlVolver() {
   if (bImg) bImg.style.display = modoImagen ? "block" : "none";
 
   const bMar = document.getElementById("bannerModoMarcador");
-  if (bMar) bMar.style.display = modoMarcador ? "block" : "none";
+  if (bMar) {
+    ubicarBannerModoMarcadorDebajoTitulo();
+    bMar.style.display = modoMarcador ? "block" : "none";
+  }
 
   // botón 📌 activo o no
   const btnPin = document.getElementById("btnModoMarcadorBarra");
@@ -7011,6 +7014,18 @@ window.logout = () => {
 
 // ================= 🔺 MARCADOR ===================
 // ================= 📌 BOTÓN 1: MODO MARCADOR 📌 =================
+function ubicarBannerModoMarcadorDebajoTitulo() {
+  const banner = document.getElementById("bannerModoMarcador");
+  const barra = document.getElementById("barraTituloBiblia");
+
+  if (!banner || !barra || !barra.parentNode) return;
+
+  // Lo mueve debajo de la barra Génesis 1 / RV1960 / NTV
+  if (banner.previousElementSibling !== barra) {
+    barra.insertAdjacentElement("afterend", banner);
+  }
+}
+
 window.toggleModoMarcador = () => {
   if (!uid) {
     loginModal.style.display = "flex";
@@ -7033,12 +7048,16 @@ if (!modoMarcador) {
   if (btn) btn.classList.toggle("activo", modoMarcador);
 
   // banner fijo marcador
+  // banner marcador debajo de la barra libro/capítulo
   const banner = document.getElementById("bannerModoMarcador");
   if (banner) {
+    ubicarBannerModoMarcadorDebajoTitulo();
+
     banner.innerHTML = `
       <i class="fa-solid fa-circle-check"></i>
       Seleccioná versículos para abrir una nota
     `;
+
     banner.style.display = modoMarcador ? "block" : "none";
   }
 
@@ -7274,11 +7293,20 @@ const items = Object.entries(marcadores || {})
             ${linea}
           </div>
 
+          <button
+            type="button"
+            class="pm-btn"
+            onclick="event.stopPropagation(); abrirVistaMarcadorDesdeLista('${m.id}', 'biblia')"
+            title="Ver nota"
+          >
+            <i class="fa-solid fa-rectangle-list"></i>
+          </button>
+
           ${puedeEditarNota ? `
             <button
               type="button"
               class="pm-btn"
-              onclick="editarMarcadorDesdeLista('${m.id}')"
+              onclick="event.stopPropagation(); editarMarcadorDesdeLista('${m.id}')"
               title="Editar"
             >
               <i class="fa-solid fa-pen-to-square"></i>
@@ -7288,6 +7316,135 @@ const items = Object.entries(marcadores || {})
       `;
     }).join("");
 }
+
+window.volverListaMarcadoresDesdeVista = function(origenLista = "biblia") {
+  const lista = document.getElementById("listaMarcadores");
+  const form = document.getElementById("formNuevoMarcador");
+
+  if (form) form.style.display = "none";
+  if (lista) lista.style.display = "block";
+
+  if (origenLista === "abc" && typeof window.abcAbrirListaNotasABC === "function") {
+    window.abcAbrirListaNotasABC();
+    return;
+  }
+
+  renderListaMarcadores();
+};
+
+window.descargarVistaMarcadorDesdeLista = async function(idMarcador, boton = null) {
+  const m = (marcadores || {})[idMarcador];
+  if (!m) return;
+
+  if (typeof notaShareDatosDesdeMarcador !== "function" || typeof window.notaDescargarComoImagen !== "function") {
+    mostrarToast?.("No está lista la descarga de notas.");
+    return;
+  }
+
+  const datos = notaShareDatosDesdeMarcador(m);
+  await window.notaDescargarComoImagen(datos, `nota_${idMarcador}`, boton);
+};
+
+window.abrirVistaMarcadorDesdeLista = function(idMarcador, origenLista = "biblia") {
+  const m = (marcadores || window.marcadores || {})[idMarcador];
+  if (!m) return;
+
+  const modal = document.getElementById("modalMarcadores");
+  const lista = document.getElementById("listaMarcadores");
+  const form = document.getElementById("formNuevoMarcador");
+
+  if (!modal || !lista) return;
+
+  if (form) form.style.display = "none";
+  lista.style.display = "block";
+
+  modal.style.display = "flex";
+  modal.classList.add("abierto");
+  modal.setAttribute("aria-hidden", "false");
+
+  const datos = notaShareDatosDesdeMarcador(m);
+
+  const fondoNota = String(datos.fondo || "#fff3b0").trim();
+  const colorTexto = (typeof colorContraste === "function")
+    ? colorContraste(fondoNota)
+    : "#000";
+
+  const titulo = marcadorEscapeHTML(datos.titulo || "Nota");
+  const metaBase = datos.meta || "";
+  const temaABC = m?.origen === "abc" && m?.abc?.temaTitulo
+    ? `ABC · ${m.abc.temaTitulo}`
+    : "";
+
+  const meta = marcadorEscapeHTML([temaABC, metaBase].filter(Boolean).join(" · "));
+  const versiculo = marcadorEscapeHTML(datos.versiculo || "");
+  const nota = marcadorEscapeHTML(datos.texto || "");
+
+  const notaVieneDeCompartidos =
+    (typeof notaPanelVieneDeCompartidos === "function")
+      ? notaPanelVieneDeCompartidos(m)
+      : (m?.origen === "compartidos" || !!m?.sourceCompKey);
+
+  const puedeEditarNota = !notaVieneDeCompartidos;
+
+  lista.innerHTML = `
+    <div class="nota-vista-lista">
+      <div class="nota-vista-top">
+        <button
+          type="button"
+          class="pm-btn"
+          onclick="volverListaMarcadoresDesdeVista('${origenLista}')"
+          title="Volver"
+        >
+          <i class="fa-solid fa-arrow-left"></i>
+        </button>
+
+        <div class="nota-vista-titulo">
+          <b>${titulo}</b>
+          ${meta ? `<span>${meta}</span>` : ``}
+        </div>
+      </div>
+
+      <div
+        class="nota-vista-card"
+        style="background:${fondoNota} !important; color:${colorTexto} !important;"
+      >
+        ${versiculo ? `<div class="nota-vista-versiculo">${versiculo}</div>` : ``}
+        ${nota ? `<div class="nota-vista-texto">${nota}</div>` : `<div class="nota-vista-texto muted">Esta nota no tiene texto escrito.</div>`}
+      </div>
+
+      <div class="nota-vista-acciones">
+        <button
+          type="button"
+          class="pm-btn"
+          onclick="descargarVistaMarcadorDesdeLista('${idMarcador}', this)"
+          title="Descargar imagen"
+        >
+          <i class="fa-solid fa-download"></i>
+        </button>
+
+        <button
+          type="button"
+          class="pm-btn"
+          onclick="abrirCompartirMarcador('${idMarcador}')"
+          title="Compartir"
+        >
+          <i class="fa-solid fa-share-nodes"></i>
+        </button>
+
+        ${puedeEditarNota ? `
+          <button
+            type="button"
+            class="pm-btn"
+            onclick="editarMarcadorDesdeLista('${idMarcador}')"
+            title="Editar"
+          >
+            <i class="fa-solid fa-pen-to-square"></i>
+          </button>
+        ` : ``}
+      </div>
+    </div>
+  `;
+};
 
 // ================= ✨ RENDER PREVIEW VERSICULOS MARCADOR 📌=================
 function renderPreviewVersiculosMarcador() {
