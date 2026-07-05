@@ -91,14 +91,14 @@ window.mostrarABC = async () => {
 #abcWrap{
   max-width: 980px;
   margin: 0 auto;
-  padding: 10px 12px 18px;
+  padding: 8px 12px 18px;
   overflow: visible !important;
 }
 #abcTop{
   display:flex;
   align-items:center;
   gap:6px;
-  padding: 0 0 2px;
+  padding: 0;
 }
 
 #abcIndice{
@@ -110,7 +110,7 @@ window.mostrarABC = async () => {
   overflow-x: scroll;
   overflow-y: hidden;
 
-  padding: 3px 2px 11px;
+ padding: 2px 2px 7px;
   -webkit-overflow-scrolling: touch;
 
   cursor: default;
@@ -147,8 +147,8 @@ body.oscuro #abcIndice::-webkit-scrollbar-thumb{ background: rgba(255,255,255,.2
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
 
-  padding: 7px 10px 8px;
-  margin-bottom: 10px;
+padding: 5px 10px 5px;
+margin-bottom: 8px;
 
   border: 1px solid rgba(0,0,0,.06);
   border-radius: 18px;
@@ -187,7 +187,7 @@ body.oscuro #abcStickyBar{
 /* ✅ audio debajo de la galería + botón PDF al costado */
 #abcAudioBar{
   background: transparent;
-  padding: 4px 0 0;
+  padding: 3px 0 0;
 
   display: flex;
   align-items: center;
@@ -877,27 +877,96 @@ function abcLimpiarIntroViejaYFijarSticky() {
   function ajustarABCStickyBar() {
     const wrapActual = document.getElementById("abcWrap");
     const stickyActual = document.getElementById("abcStickyBar");
-    if (!stickyActual) return;
+    const header = document.getElementById("header");
 
-    // ✅ No usamos fixed en celular.
-    // fixed era lo que escondía el índice atrás del header y creaba el espacio vacío.
-    stickyActual.classList.remove("abc-fijo-arriba", "abc-bar-fija-real");
+    if (!wrapActual || !stickyActual) return;
 
-    stickyActual.style.removeProperty("left");
-    stickyActual.style.removeProperty("right");
-    stickyActual.style.removeProperty("width");
-    stickyActual.style.removeProperty("max-width");
-    stickyActual.style.removeProperty("bottom");
+    let spacer = document.getElementById("abcStickySpacer");
 
-    stickyActual.style.setProperty("position", "sticky", "important");
-    stickyActual.style.setProperty("top", "0", "important");
-    stickyActual.style.setProperty("z-index", "99999", "important");
-    stickyActual.style.setProperty("margin", "0 -4px 10px -4px", "important");
-    stickyActual.style.setProperty("border-radius", "18px", "important");
+    if (!spacer) {
+      spacer = document.createElement("div");
+      spacer.id = "abcStickySpacer";
+      spacer.style.display = "none";
+      stickyActual.parentNode.insertBefore(spacer, stickyActual);
+    }
 
-    // ✅ Quitamos el padding artificial que generaba el hueco.
-    if (wrapActual) {
-      wrapActual.style.removeProperty("padding-top");
+    function limpiarFixed() {
+      stickyActual.classList.remove("abc-sticky-fixed");
+
+      stickyActual.style.removeProperty("position");
+      stickyActual.style.removeProperty("top");
+      stickyActual.style.removeProperty("left");
+      stickyActual.style.removeProperty("right");
+      stickyActual.style.removeProperty("width");
+      stickyActual.style.removeProperty("max-width");
+      stickyActual.style.removeProperty("bottom");
+
+      stickyActual.style.setProperty("position", "-webkit-sticky", "important");
+      stickyActual.style.setProperty("position", "sticky", "important");
+      stickyActual.style.setProperty("top", "0", "important");
+      stickyActual.style.setProperty("z-index", "99999", "important");
+      stickyActual.style.setProperty("margin", "0 0 8px 0", "important");
+      stickyActual.style.setProperty("border-radius", "18px", "important");
+
+      spacer.style.display = "none";
+      spacer.style.height = "0px";
+    }
+
+    function actualizarStickyMobileABC() {
+      const esCel = window.matchMedia("(max-width: 640px)").matches;
+
+      if (!esCel) {
+        limpiarFixed();
+        return;
+      }
+
+      const headerBottom = header
+        ? Math.max(0, Math.round(header.getBoundingClientRect().bottom))
+        : 0;
+
+      const limite = headerBottom + 1;
+
+      const referenciaTop = stickyActual.classList.contains("abc-sticky-fixed")
+        ? spacer.getBoundingClientRect().top
+        : stickyActual.getBoundingClientRect().top;
+
+      const debeFijarse = referenciaTop <= limite;
+
+      if (!debeFijarse) {
+        limpiarFixed();
+        return;
+      }
+
+      const wrapRect = wrapActual.getBoundingClientRect();
+      const alto = Math.ceil(stickyActual.getBoundingClientRect().height || stickyActual.offsetHeight || 110);
+
+      spacer.style.display = "block";
+      spacer.style.height = (alto + 8) + "px";
+
+      stickyActual.classList.add("abc-sticky-fixed");
+
+      stickyActual.style.setProperty("position", "fixed", "important");
+      stickyActual.style.setProperty("top", headerBottom + "px", "important");
+      stickyActual.style.setProperty("left", Math.max(0, Math.round(wrapRect.left)) + "px", "important");
+      stickyActual.style.setProperty("width", Math.round(wrapRect.width) + "px", "important");
+      stickyActual.style.setProperty("max-width", "100vw", "important");
+      stickyActual.style.setProperty("z-index", "99999", "important");
+      stickyActual.style.setProperty("margin", "0", "important");
+      stickyActual.style.setProperty("border-radius", "0 0 18px 18px", "important");
+    }
+
+    actualizarStickyMobileABC();
+    requestAnimationFrame(actualizarStickyMobileABC);
+    setTimeout(actualizarStickyMobileABC, 250);
+
+    if (stickyActual.dataset.stickyMobileReady !== "1") {
+      stickyActual.dataset.stickyMobileReady = "1";
+
+      window.addEventListener("scroll", actualizarStickyMobileABC, { passive: true });
+      window.addEventListener("resize", actualizarStickyMobileABC, { passive: true });
+      window.addEventListener("orientationchange", () => {
+        setTimeout(actualizarStickyMobileABC, 300);
+      }, { passive: true });
     }
   }
 
@@ -2016,31 +2085,79 @@ async function abcAbrirListaNotasABC(){
       const titulo = (m.titulo || "Nota ABC").replace(/</g,"&lt;").replace(/>/g,"&gt;");
       const temaTxt = m?.abc?.temaTitulo ? ` · ${m.abc.temaTitulo}` : "";
       const linea = `${titulo}${temaTxt} · ${fechaTxt}`;
+            const resumenRaw = String(m.abcTexto || "")
+        .replace(/\s+/g, " ")
+        .trim();
+
+      const resumen = resumenRaw.length > 92
+        ? resumenRaw.slice(0, 92).trim() + " (...)"
+        : resumenRaw;
 
       return `
-        <div class="card-marcador" style="cursor:pointer; display:flex; justify-content:space-between; gap:10px; align-items:center;">
-          <div style="font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" onclick="abcIrANota('${m.id}')">
-            ${linea}
-          </div>
-          <div style="display:flex; gap:8px; align-items:center;">
-            <button
-              type="button"
-              class="pm-btn"
-              onclick="abrirVistaMarcadorDesdeLista('${m.id}', 'abc')"
-              title="Ver nota"
+        <div
+          class="card-marcador"
+          style="
+            cursor:pointer;
+            display:flex;
+            flex-direction:column;
+            gap:6px;
+          "
+        >
+          <div style="display:flex; justify-content:space-between; gap:10px; align-items:center;">
+            <div
+              style="
+                flex:1;
+                min-width:0;
+                font-size:13px;
+                font-weight:800;
+                white-space:nowrap;
+                overflow:hidden;
+                text-overflow:ellipsis;
+              "
+              onclick="abcIrANota('${m.id}')"
+              title="${linea}"
             >
-              <i class="fa-solid fa-rectangle-list"></i>
-            </button>
+              ${linea}
+            </div>
 
-            <button
-              type="button"
-              class="pm-btn"
-              onclick="abcEditarNota('${m.id}')"
-              title="Editar"
-            >
-              <i class="fa-solid fa-pen-to-square"></i>
-            </button>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <button
+                type="button"
+                class="pm-btn"
+                onclick="event.stopPropagation(); abrirVistaMarcadorDesdeLista('${m.id}', 'abc')"
+                title="Ver nota"
+              >
+                <i class="fa-solid fa-rectangle-list"></i>
+              </button>
+
+              <button
+                type="button"
+                class="pm-btn"
+                onclick="event.stopPropagation(); abcEditarNota('${m.id}')"
+                title="Editar"
+              >
+                <i class="fa-solid fa-pen-to-square"></i>
+              </button>
+            </div>
           </div>
+
+          ${resumen ? `
+            <div
+              onclick="abcIrANota('${m.id}')"
+              style="
+                font-size:12px;
+                font-weight:600;
+                line-height:1.25;
+                opacity:.78;
+                display:-webkit-box;
+                -webkit-line-clamp:2;
+                -webkit-box-orient:vertical;
+                overflow:hidden;
+              "
+            >
+              ${resumen.replace(/</g,"&lt;").replace(/>/g,"&gt;")}
+            </div>
+          ` : ``}
         </div>
       `;
     }).join("");
