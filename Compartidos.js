@@ -52,6 +52,9 @@ let compartidosOcultosCache = {};
 let compartidosOcultosEscuchaActiva = false;
 let compPromosTimer = null;
 
+let compartidosEdicionesCache = [];
+let compartidosEdicionesEscuchaActiva = false;
+
 let compFiltroActual = (() => {
   try {
     return localStorage.getItem("vaCompFiltroActual") || "todo";
@@ -138,22 +141,20 @@ function compNormalizarCategoriaEdicion(v = "") {
 }
 
 function compCategoriaEdicion(item = {}) {
-  const cache = window.__EDICIONES_CACHE || [];
   const edicionId = String(item?.edicionId || "").trim();
+
+  const cache = [
+    ...(Array.isArray(window.__EDICIONES_CACHE) ? window.__EDICIONES_CACHE : []),
+    ...(Array.isArray(compartidosEdicionesCache) ? compartidosEdicionesCache : [])
+  ];
 
   const ed = edicionId
     ? cache.find(x => String(x?.id || "") === edicionId)
     : null;
 
-  const directa = compNormalizarCategoriaEdicion(
-    item.rama ||
-    item.categoria ||
-    item.tipoEdicion ||
-    ""
-  );
-
-  if (directa) return directa;
-
+  // ✅ PRIMERO usamos la edición real actual.
+  // Así si cambiaste de Libros a Actividades en Recursos,
+  // Compartidos también lo respeta.
   const desdeEdicion = compNormalizarCategoriaEdicion(
     ed?.rama ||
     ed?.categoria ||
@@ -162,6 +163,16 @@ function compCategoriaEdicion(item = {}) {
   );
 
   if (desdeEdicion) return desdeEdicion;
+
+  // ✅ Respaldo: categoría guardada en la publicación.
+  const directa = compNormalizarCategoriaEdicion(
+    item.rama ||
+    item.categoria ||
+    item.tipoEdicion ||
+    ""
+  );
+
+  if (directa) return directa;
 
   if (edicionId) {
     try {
@@ -207,8 +218,6 @@ function compRenderSubFiltrosEdicionesHTML() {
 
   return `
     <div id="compSubFiltrosEdiciones" class="comp-subfiltros-ediciones">
-      <span class="comp-subfiltros-label">Buscar:</span>
-
       ${COMP_EDICIONES_SUBFILTROS.map(f => `
         <button
           type="button"
@@ -814,8 +823,9 @@ window.mostrarCompartidos = async () => {
   // ✅ Mientras carga, no mostramos banner ni promos vacías.
   compLimpiarCompartidosTop();
 
-  iniciarEscuchaCompartidos();
-  iniciarEscuchaCompartidosStats();
+iniciarEscuchaCompartidos();
+iniciarEscuchaCompartidosStats();
+iniciarEscuchaCompartidosEdiciones();
 iniciarEscuchaCompartidosGuardados();
 iniciarEscuchaCompartidosImagenesGuardadas();
 iniciarEscuchaCompartidosDescargados();
@@ -1000,6 +1010,45 @@ function iniciarEscuchaCompartidosStats() {
   });
 
   compartidosStatsEscuchaActiva = true;
+}
+
+function iniciarEscuchaCompartidosEdiciones() {
+  if (compartidosEdicionesEscuchaActiva) return;
+
+  const db = compDB();
+  if (!db) return;
+
+  onValue(ref(db, "ediciones"), (snap) => {
+    const val = snap.val() || {};
+
+    compartidosEdicionesCache = Object.entries(val)
+      .map(([id, item]) => ({
+        id,
+        ...(item || {})
+      }));
+
+    const actual = Array.isArray(window.__EDICIONES_CACHE)
+      ? window.__EDICIONES_CACHE
+      : [];
+
+    const mapa = new Map();
+
+    actual.forEach(item => {
+      if (item?.id) mapa.set(String(item.id), item);
+    });
+
+    compartidosEdicionesCache.forEach(item => {
+      if (item?.id) mapa.set(String(item.id), item);
+    });
+
+    window.__EDICIONES_CACHE = Array.from(mapa.values());
+
+    renderCompartidos();
+  }, (err) => {
+    console.error("Error leyendo ediciones para Compartidos:", err);
+  });
+
+  compartidosEdicionesEscuchaActiva = true;
 }
 
 function iniciarEscuchaCompartidosGuardados() {
