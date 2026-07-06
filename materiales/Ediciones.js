@@ -594,6 +594,19 @@ Elegí si es flyer, libro o video.
       <i class="fa-solid fa-images"></i>
       Subir imágenes en serie
     </label>
+
+    <input
+      id="edPDFInput"
+      type="file"
+      accept="application/pdf,.pdf"
+      hidden
+      onchange="edAgregarPDF(this)"
+    >
+
+    <label for="edPDFInput" class="ed-pill-btn ed-serie-btn">
+      <i class="fa-solid fa-file-pdf"></i>
+      Subir PDF
+    </label>
   </div>
 </div>
 
@@ -606,14 +619,15 @@ Elegí si es flyer, libro o video.
 </div>
 
             <div id="edEstado"></div>
-
-            <div class="ed-form-actions">
-              <button class="ed-secondary" type="button" onclick="cerrarEditorEdicion()">Cancelar</button>
-              <button id="edBtnGuardar" class="ed-primary" type="submit">
-                Guardar edición
-              </button>
-            </div>
           </form>
+
+          <div class="ed-form-actions">
+            <button class="ed-secondary" type="button" onclick="cerrarEditorEdicion()">Cancelar</button>
+
+            <button id="edBtnGuardar" class="ed-primary" type="submit" form="edForm">
+              Guardar edición
+            </button>
+          </div>
         </div>
       </div>
     `;
@@ -1178,10 +1192,33 @@ window.edAgregarPagina = (data = {}) => {
 
   div.innerHTML = `
     <div class="ed-page-head">
-      <b>Página ${numero}</b>
-      <button type="button" onclick="edQuitarPagina(this)">
-        <i class="fa-solid fa-trash"></i>
-      </button>
+      <div class="ed-page-title-wrap">
+        <span class="ed-drag-handle" title="Arrastrar para ordenar">
+          <i class="fa-solid fa-grip-vertical"></i>
+        </span>
+
+        <b>Página ${numero}</b>
+
+        <span class="ed-portada-badge" style="display:none;">
+          <i class="fa-solid fa-star"></i>
+          Portada
+        </span>
+      </div>
+
+      <div class="ed-page-head-actions">
+        <button
+          type="button"
+          class="ed-portada-btn"
+          onclick="edDefinirPortadaRow(this.closest('.ed-page-editor'))"
+          title="Usar esta página como portada"
+        >
+          <i class="fa-solid fa-star"></i>
+        </button>
+
+        <button type="button" onclick="edQuitarPagina(this)" title="Quitar página">
+          <i class="fa-solid fa-trash"></i>
+        </button>
+      </div>
     </div>
 
     ${mediaUrl ? (
@@ -1312,6 +1349,103 @@ window.edAgregarImagenesSerie = function(input) {
   if (input) input.value = "";
 };
 
+async function edCargarPdfJs() {
+  if (window.pdfjsLib) return window.pdfjsLib;
+
+  await new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+    s.onload = resolve;
+    s.onerror = reject;
+    document.head.appendChild(s);
+  });
+
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+  return window.pdfjsLib;
+}
+
+async function edPdfPageToFile(pdf, pageNumber, baseName = "pdf") {
+  const page = await pdf.getPage(pageNumber);
+
+  const viewportBase = page.getViewport({ scale: 1 });
+  const escala = Math.min(2.2, Math.max(1.4, 1600 / viewportBase.width));
+  const viewport = page.getViewport({ scale: escala });
+
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+
+  canvas.width = Math.ceil(viewport.width);
+  canvas.height = Math.ceil(viewport.height);
+
+  await page.render({
+    canvasContext: ctx,
+    viewport
+  }).promise;
+
+  const blob = await new Promise(resolve => {
+    canvas.toBlob(resolve, "image/png", 0.95);
+  });
+
+  return new File(
+    [blob],
+    `${baseName}_pagina_${String(pageNumber).padStart(2, "0")}.png`,
+    { type: "image/png" }
+  );
+}
+
+window.edAgregarPDF = async function(input) {
+  const file = input?.files?.[0] || null;
+
+  if (!file) return;
+
+  if (!String(file.type || "").includes("pdf") && !String(file.name || "").toLowerCase().endsWith(".pdf")) {
+    alert("Elegí un archivo PDF.");
+    if (input) input.value = "";
+    return;
+  }
+
+  const wrap = ed$("edPaginasEditor");
+  if (!wrap) return;
+
+  try {
+    edSetEstado("Leyendo PDF...");
+
+    Array.from(wrap.querySelectorAll(".ed-page-editor")).forEach(row => {
+      if (edFilaPaginaVacia(row)) row.remove();
+    });
+
+    const pdfjsLib = await edCargarPdfJs();
+    const buffer = await file.arrayBuffer();
+
+    const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+
+    const baseName = edSafeName(file.name || "pdf").replace(/\.pdf$/i, "");
+
+    for (let i = 1; i <= pdf.numPages; i++) {
+      edSetEstado(`Convirtiendo PDF: página ${i} de ${pdf.numPages}...`);
+
+      const imgFile = await edPdfPageToFile(pdf, i, baseName);
+
+      edAgregarPagina({
+        __file: imgFile
+      });
+
+      await new Promise(r => setTimeout(r, 20));
+    }
+
+    edRenumerarPaginas();
+    edSetEstado(`✅ PDF cargado: ${pdf.numPages} páginas.`);
+
+  } catch (err) {
+    console.error(err);
+    alert("No pude convertir el PDF. Probá con otro archivo o con imágenes.");
+  } finally {
+    if (input) input.value = "";
+  }
+};
+
 window.edQuitarPagina = (btn) => {
   const row = btn.closest(".ed-page-editor");
   if (row) row.remove();
@@ -1320,10 +1454,165 @@ window.edQuitarPagina = (btn) => {
 
 function edRenumerarPaginas() {
   const rows = Array.from(document.querySelectorAll("#edPaginasEditor .ed-page-editor"));
+
   rows.forEach((row, i) => {
     const b = row.querySelector(".ed-page-head b");
     if (b) b.textContent = `Página ${i + 1}`;
+
+    row.dataset.ordenActual = String(i);
   });
+
+  edActualizarPortadaVisual();
+  edActivarOrdenPaginas();
+}
+
+window.edDefinirPortadaRow = function(row) {
+  if (!row) return;
+
+  document.querySelectorAll("#edPaginasEditor .ed-page-editor").forEach(r => {
+    r.dataset.portadaElegida = "";
+  });
+
+  row.dataset.portadaElegida = "1";
+
+  edActualizarPortadaVisual();
+  edSetEstado("✅ Esta página quedó marcada como portada.");
+};
+
+function edActualizarPortadaVisual() {
+  document.querySelectorAll("#edPaginasEditor .ed-page-editor").forEach(row => {
+    const activa = row.dataset.portadaElegida === "1";
+
+    row.classList.toggle("ed-page-portada", activa);
+
+    const badge = row.querySelector(".ed-portada-badge");
+    if (badge) badge.style.display = activa ? "inline-flex" : "none";
+  });
+}
+
+function edActivarOrdenPaginas() {
+  const wrap = ed$("edPaginasEditor");
+  if (!wrap || wrap.dataset.ordenActivo === "1") return;
+
+  wrap.dataset.ordenActivo = "1";
+
+  let rowActiva = null;
+  let yInicial = 0;
+  let offsetY = 0;
+  let moviendo = false;
+  let placeholder = null;
+  let portadaTimer = null;
+
+  function limpiarPortadaTimer() {
+    if (portadaTimer) {
+      clearTimeout(portadaTimer);
+      portadaTimer = null;
+    }
+  }
+
+  function finalizarDrag() {
+    limpiarPortadaTimer();
+
+    if (!rowActiva) return;
+
+    rowActiva.classList.remove("ed-page-dragging");
+    rowActiva.style.position = "";
+    rowActiva.style.zIndex = "";
+    rowActiva.style.left = "";
+    rowActiva.style.top = "";
+    rowActiva.style.width = "";
+    rowActiva.style.pointerEvents = "";
+    rowActiva.style.transform = "";
+
+    if (placeholder && placeholder.parentNode) {
+      placeholder.parentNode.insertBefore(rowActiva, placeholder);
+      placeholder.remove();
+    }
+
+    placeholder = null;
+    rowActiva = null;
+    moviendo = false;
+
+    edRenumerarPaginas();
+  }
+
+  function rowDespuesDeY(y) {
+    const rows = [...wrap.querySelectorAll(".ed-page-editor:not(.ed-page-dragging)")];
+
+    return rows.find(row => {
+      const box = row.getBoundingClientRect();
+      return y < box.top + box.height / 2;
+    }) || null;
+  }
+
+  wrap.addEventListener("pointerdown", (e) => {
+    const row = e.target.closest(".ed-page-editor");
+    if (!row) return;
+
+    if (e.target.closest("button, input, select, textarea, audio, video")) return;
+
+    rowActiva = row;
+    yInicial = e.clientY;
+
+    const box = row.getBoundingClientRect();
+    offsetY = e.clientY - box.top;
+
+    // ✅ Mantener apretado sin mover = definir portada.
+    portadaTimer = setTimeout(() => {
+      if (!rowActiva || moviendo) return;
+      edDefinirPortadaRow(rowActiva);
+      rowActiva = null;
+    }, 750);
+  });
+
+  wrap.addEventListener("pointermove", (e) => {
+    if (!rowActiva) return;
+
+    const distancia = Math.abs(e.clientY - yInicial);
+
+    if (!moviendo && distancia < 8) return;
+
+    limpiarPortadaTimer();
+
+    if (!moviendo) {
+      moviendo = true;
+
+      const box = rowActiva.getBoundingClientRect();
+
+      placeholder = document.createElement("div");
+      placeholder.className = "ed-page-placeholder";
+      placeholder.style.height = `${box.height}px`;
+
+      rowActiva.parentNode.insertBefore(placeholder, rowActiva.nextSibling);
+
+      rowActiva.classList.add("ed-page-dragging");
+      rowActiva.style.width = `${box.width}px`;
+      rowActiva.style.position = "fixed";
+      rowActiva.style.zIndex = "999999";
+      rowActiva.style.left = `${box.left}px`;
+      rowActiva.style.top = `${box.top}px`;
+      rowActiva.style.pointerEvents = "none";
+
+      try {
+        rowActiva.setPointerCapture?.(e.pointerId);
+      } catch (_) {}
+    }
+
+    e.preventDefault();
+
+    rowActiva.style.top = `${e.clientY - offsetY}px`;
+
+    const despues = rowDespuesDeY(e.clientY);
+
+    if (despues) {
+      wrap.insertBefore(placeholder, despues);
+    } else {
+      wrap.appendChild(placeholder);
+    }
+  });
+
+  wrap.addEventListener("pointerup", finalizarDrag);
+  wrap.addEventListener("pointercancel", finalizarDrag);
 }
 
 window.cerrarEditorEdicion = () => {
@@ -1383,6 +1672,7 @@ const portadaFile = ed$("edPortadaFile")?.files?.[0] || null;
     edSetEstado("Preparando archivos...");
 
     const paginasObj = {};
+let portadaDesdePagina = "";
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
@@ -1483,13 +1773,19 @@ const mediaFile =
         audioEnUrl,
         actualizado: Date.now()
       };
+
+            if (row.dataset.portadaElegida === "1" && !edPaginaEsVideo({ mediaType, videoUrl, mediaUrl })) {
+        portadaDesdePagina = imagenUrl || mediaUrl || "";
+      }
     }
 
-    let portadaUrl = existente?.portadaUrl || "";
+     let portadaUrl = portadaDesdePagina || existente?.portadaUrl || "";
 
     if (portadaFile) {
       edSetEstado("Subiendo portada...");
       portadaUrl = await subirArchivoEdicionR2(portadaFile, `ediciones/${edId}/portada`);
+    } else if (portadaDesdePagina) {
+      portadaUrl = portadaDesdePagina;
     }
 
        if (!portadaUrl) {
@@ -2247,7 +2543,13 @@ window.abrirPresentacionEdicion = async (id) => {
     return;
   }
 
-const paginas = edPaginasArrayConPortada(ed);
+  const esCategoriaVideos = edRamaEdicion(ed) === "videos";
+
+  // ✅ En Videos NO metemos la portada como primera página.
+  // Si metemos la portada, el video se reproduce atrás pero se sigue viendo la portada.
+  const paginas = esCategoriaVideos
+    ? edPaginasArray(ed)
+    : edPaginasArrayConPortada(ed);
 
   if (!paginas.length) {
     alert("Esta edición no tiene páginas.");
@@ -2256,8 +2558,8 @@ const paginas = edPaginasArrayConPortada(ed);
 
   const tieneVideo = paginas.some(p => edPaginaEsVideo(p));
 
-    const indiceInicial =
-    edRamaEdicion(ed) === "videos"
+  const indiceInicial =
+    esCategoriaVideos && tieneVideo
       ? Math.max(0, paginas.findIndex(p => edPaginaEsVideo(p)))
       : 0;
 
@@ -2274,20 +2576,21 @@ const paginas = edPaginasArrayConPortada(ed);
       <div class="ed-view-title">${edEscape(ed.titulo || "Edición")}</div>
 
       <div class="ed-view-actions">
-      <button type="button" onclick="guardarEdicionEnMiPanel('${ed.id}')" title="Guardar en Mi Panel">
-  <i class="fa-solid fa-heart-circle-plus"></i>
-</button>
-               ${!tieneVideo ? `
+        <button type="button" onclick="guardarEdicionEnMiPanel('${ed.id}')" title="Guardar en Mi Panel">
+          <i class="fa-solid fa-heart-circle-plus"></i>
+        </button>
+
+        ${!tieneVideo ? `
           <button type="button" onclick="descargarEdicionPDF('${ed.id}')" title="Descargar PDF">
             <i class="fa-solid fa-file-pdf"></i>
           </button>
         ` : ``}
 
-${!tieneVideo ? `
-  <button type="button" onclick="descargarEdicionPNGs('${ed.id}', this, 'visor')" title="Descargar PNG">
-    <i class="fa-solid fa-download"></i>
-  </button>
-` : ``}
+        ${!tieneVideo ? `
+          <button type="button" onclick="descargarEdicionPNGs('${ed.id}', this, 'visor')" title="Descargar PNG">
+            <i class="fa-solid fa-download"></i>
+          </button>
+        ` : ``}
 
         <button type="button" onclick="edAbrirOpcionesCompartirEdicion('${ed.id}', 'visor', this)" title="Compartir imagen o publicación">
           <i class="fa-solid fa-share-nodes"></i>
@@ -2327,10 +2630,22 @@ ${!tieneVideo ? `
           <div class="ed-slide-inner">
             <div class="ed-slide-img-wrap">
               ${
-  edPaginaEsVideo(p)
-    ? `<video class="ed-slide-video" src="${edEscape(edMediaUrlPagina(p))}" controls playsinline preload="metadata"></video>`
-    : `<img class="ed-slide-img" src="${edEscape(edMediaUrlPagina(p))}" alt="Página ${i + 1}" loading="lazy">`
-}
+                edPaginaEsVideo(p)
+                  ? `<video
+                      class="ed-slide-video"
+                      src="${edEscape(edMediaUrlPagina(p))}"
+                      controls
+                      playsinline
+                      preload="auto"
+                      ${i === indiceInicial ? "autoplay" : ""}
+                    ></video>`
+                  : `<img
+                      class="ed-slide-img"
+                      src="${edEscape(edMediaUrlPagina(p))}"
+                      alt="Página ${i + 1}"
+                      loading="lazy"
+                    >`
+              }
             </div>
 
             ${(p.audioEsUrl || p.audioEnUrl) ? `
@@ -2361,9 +2676,10 @@ ${!tieneVideo ? `
   viewer.classList.add("ed-open");
   document.body.style.overflow = "hidden";
 
-  // ✅ Solo en la categoría Videos: abre directo en el primer video.
-  if (indiceInicial > 0) {
-    requestAnimationFrame(() => {
+  requestAnimationFrame(() => {
+    edIrASlide(indiceInicial, "auto");
+
+    setTimeout(() => {
       edIrASlide(indiceInicial, "auto");
 
       const slide = viewer.querySelectorAll(".ed-slide")[indiceInicial];
@@ -2375,8 +2691,8 @@ ${!tieneVideo ? `
           video.play().catch(() => {});
         } catch (e) {}
       }
-    });
-  }
+    }, 80);
+  });
 
   edIntentarPantallaCompleta(viewer);
 };
