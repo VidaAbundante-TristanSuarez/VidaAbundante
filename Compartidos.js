@@ -3970,9 +3970,55 @@ ${compActionButton({
   `;
 }
 
+function compEdicionRecursoComoItem(ed = {}) {
+  const id = String(ed?.id || "").trim();
+  if (!id) return null;
+
+  const categoria = compNormalizarCategoriaEdicion(
+    ed.rama ||
+    ed.categoria ||
+    ed.tipoEdicion ||
+    "flyers"
+  ) || "flyers";
+
+  return {
+    ...ed,
+
+    // ✅ Lo tratamos como publicación de Compartidos,
+    // pero sale directamente desde Recursos > Ediciones.
+    id: `ed_recurso_${id}`,
+    _compId: `ed_recurso_${id}`,
+    _desdeRecursos: true,
+
+    tipo: "edicion",
+    edicionId: id,
+
+    titulo: ed.titulo || "Edición",
+    portadaUrl: ed.portadaUrl || "",
+    rama: categoria,
+    categoria,
+    tipoEdicion: categoria,
+
+    publicadoEn: Number(ed.actualizado || ed.ts || 0),
+    ts: Number(ed.ts || ed.actualizado || 0)
+  };
+}
+
 function compUnificarItems() {
+  // ✅ Ediciones SIEMPRE salen de Recursos > Ediciones.
+  // Así los filtros de Compartidos usan la misma fuente que Recursos.
+  const edicionesDesdeRecursos = (compartidosEdicionesCache || [])
+    .map(compEdicionRecursoComoItem)
+    .filter(Boolean);
+
+  // ✅ Sacamos las ediciones viejas de compartidosCache para que no dupliquen
+  // ni arrastren categorías antiguas.
+  const compartidosSinEdiciones = (compartidosCache || [])
+    .filter(item => item?.tipo !== "edicion");
+
   const todos = [
-    ...(compartidosCache || []),
+    ...edicionesDesdeRecursos,
+    ...compartidosSinEdiciones,
     ...(compartidosDevocionalesCache || []).map(x => ({ ...x, _auto: "devocional" })),
     ...(compartidosSubidosCache || []).map(x => ({ ...x, _auto: "subido" }))
   ];
@@ -3980,23 +4026,28 @@ function compUnificarItems() {
   const vistos = new Set();
 
   return todos
-    .filter(item => ["edicion", "rh", "imagen", "nota", "devocional", "subido"].includes(item?.tipo || ""))
+    .filter(item =>
+      ["edicion", "rh", "imagen", "nota", "devocional", "subido"].includes(item?.tipo || "")
+    )
     .filter(item => {
-      // ✅ Si una edición fue vuelta a publicar, NO la dejamos atrapada por ocultos viejos.
+      // ✅ Las ediciones de Recursos no quedan atrapadas por ocultos viejos.
       if (item?.tipo === "edicion") return true;
 
       return !compartidosOcultosCache?.[compKeyItem(item)];
     })
     .filter(item => {
-      const key = [
-        item.tipo,
-        item.edicionId,
-        item._subidoId,
-        item.uidOwner,
-        item.tsKey,
-        item._compId,
-        item.url
-      ].join("|");
+      // ✅ Para ediciones, el duplicado se controla por edicionId.
+      const key = item?.tipo === "edicion"
+        ? `edicion|${item.edicionId || item.id || ""}`
+        : [
+            item.tipo,
+            item.edicionId,
+            item._subidoId,
+            item.uidOwner,
+            item.tsKey,
+            item._compId,
+            item.url
+          ].join("|");
 
       if (vistos.has(key)) return false;
       vistos.add(key);
