@@ -2241,4 +2241,13 @@ body.oscuro .comp-filtros button.activo{
   }
 }
 
+/* ✅ Compartidos: subfiltros sin texto "Buscar:" */
+.comp-subfiltros-label{
+  display: none !important;
+}
+
+.comp-subfiltros-ediciones{
+  justify-content: flex-start;
+}
+
 </style>
