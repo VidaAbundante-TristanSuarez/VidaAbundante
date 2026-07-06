@@ -142,15 +142,16 @@ function compCategoriaEdicion(item = {}) {
     ? cache.find(x => String(x?.id || "") === edicionId)
     : null;
 
-  return compNormalizarCategoriaEdicion(
+  const cruda =
     item.rama ||
     item.categoria ||
     item.tipoEdicion ||
     ed?.rama ||
     ed?.categoria ||
     ed?.tipoEdicion ||
-    "flyers"
-  );
+    "";
+
+  return cruda ? compNormalizarCategoriaEdicion(cruda) : "";
 }
 
 function compSubFiltroEdicionesValido(id) {
@@ -234,7 +235,20 @@ function compFiltrarItems(items = []) {
   if (compFiltroActual === "ediciones" && compSubFiltroEdicionesActual !== "todo") {
     salida = salida.filter(item => {
       if (item?.tipo !== "edicion") return false;
-      return compCategoriaEdicion(item) === compSubFiltroEdicionesActual;
+
+      const categoria = compCategoriaEdicion(item);
+
+      // Si es una publicación vieja sin categoría guardada,
+      // intentamos cargar la edición original y mientras tanto no la ocultamos.
+      if (!categoria && item?.edicionId) {
+        try {
+          compAsegurarEdicionMini(item.edicionId);
+        } catch (e) {}
+
+        return true;
+      }
+
+      return categoria === compSubFiltroEdicionesActual;
     });
   }
 
@@ -252,6 +266,11 @@ window.compCambiarFiltroCompartidos = function compCambiarFiltroCompartidos(filt
     btn.blur();
   }
 
+  const promos = comp$("compPromos");
+  if (promos) {
+    delete promos.dataset.rendered;
+  }
+
   compActualizarFiltroActivoUI();
   renderCompartidos();
 };
@@ -265,6 +284,11 @@ window.compCambiarSubFiltroEdiciones = function compCambiarSubFiltroEdiciones(fi
 
   if (btn && typeof btn.blur === "function") {
     btn.blur();
+  }
+
+  const promos = comp$("compPromos");
+  if (promos) {
+    delete promos.dataset.rendered;
   }
 
   compActualizarFiltroActivoUI();
