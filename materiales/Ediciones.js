@@ -528,26 +528,9 @@ window.mostrarEdiciones = async () => {
           </div>
         </div>
 
-              <div id="edFiltros" class="ed-filtros-buscador">
-          <div class="ed-filtros-linea">
-            <label class="ed-filtros-title" for="edFiltroCategoriaSelect">
-              <i class="fa-solid fa-filter"></i>
-              <span>Buscar:</span>
-            </label>
-
-            <select
-              id="edFiltroCategoriaSelect"
-              class="ed-filter-select"
-              onchange="edCambiarFiltroCategoria(this.value)"
-            >
-              ${ED_CATEGORIAS.map(c => `
-                <option value="${edEscape(c.id)}">${edEscape(c.label)}</option>
-              `).join("")}
-            </select>
-          </div>
-
+        <div id="edFiltros" class="ed-filtros-buscador">
           <div class="ed-filtros-actions ed-subfiltros-actions">
-            ${ED_CATEGORIAS.filter(c => c.id !== "todo").map(c => `
+            ${ED_CATEGORIAS.map(c => `
               <button
                 type="button"
                 class="ed-filter-pill"
