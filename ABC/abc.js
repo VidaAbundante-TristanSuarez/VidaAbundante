@@ -353,7 +353,15 @@ body.abc-intro-activa #btnMostrarBarra{
   body{
     width: 100% !important;
     max-width: 100% !important;
-    overflow-x: hidden !important;
+  }
+
+  html,
+  body.en-abc{
+    overflow-x: clip !important;
+  }
+
+  body.en-abc{
+    overflow-y: auto !important;
   }
 
   #abcApp.abc-es-intro,
@@ -715,12 +723,14 @@ function refrescarUIIndice() {
 function abcLimpiarIntroViejaYFijarSticky() {
   document.body.classList.remove("abc-intro-activa");
 
-  // ✅ borrar TODO lo que dejaron intentos anteriores
-  document.getElementById("abcStickyMobileFixFinal")?.remove();
-  document.getElementById("abcStickyPlaceholder")?.remove();
-  document.getElementById("abcStickySentinel")?.remove();
-  document.getElementById("abcStickyPlaceholderReal")?.remove();
-  document.getElementById("abcStickySpacer")?.remove();
+  // ✅ limpiar restos de intentos anteriores
+  [
+    "abcStickyMobileFixFinal",
+    "abcStickyPlaceholder",
+    "abcStickySentinel",
+    "abcStickyPlaceholderReal",
+    "abcStickySpacer"
+  ].forEach(id => document.getElementById(id)?.remove());
 
   document.documentElement.style.removeProperty("--abc-sticky-top");
   document.documentElement.style.removeProperty("--abc-bar-h");
@@ -728,6 +738,13 @@ function abcLimpiarIntroViejaYFijarSticky() {
   document.documentElement.style.removeProperty("--abc-fijo-left");
   document.documentElement.style.removeProperty("--abc-fijo-width");
   document.documentElement.style.removeProperty("--abc-fijo-top");
+
+  // ✅ CLAVE MOBILE:
+  // hidden rompe sticky en Chrome celular.
+  // clip evita scroll horizontal sin romper sticky.
+  document.documentElement.style.setProperty("overflow-x", "clip", "important");
+  document.body.style.setProperty("overflow-x", "clip", "important");
+  document.body.style.setProperty("overflow-y", "auto", "important");
 
   const st = document.createElement("style");
   st.id = "abcStickyMobileFixFinal";
@@ -746,7 +763,10 @@ function abcLimpiarIntroViejaYFijarSticky() {
     body.en-abc #abcWrap:not(.abc-es-intro){
       max-width: 980px !important;
       margin: 0 auto !important;
-      padding: 6px 8px 16px !important;
+
+      /* ✅ mismo aire arriba y abajo de la barra */
+      padding: 4px 8px 16px !important;
+
       box-sizing: border-box !important;
       overflow: visible !important;
     }
@@ -760,9 +780,13 @@ function abcLimpiarIntroViejaYFijarSticky() {
       right: auto !important;
       width: auto !important;
       max-width: none !important;
+      bottom: auto !important;
+      transform: none !important;
 
       z-index: 99999 !important;
-      margin: 0 0 6px 0 !important;
+
+      /* ✅ mismo aire abajo que arriba */
+      margin: 0 0 4px 0 !important;
 
       border-radius: 18px !important;
       overflow: hidden !important;
@@ -786,13 +810,8 @@ function abcLimpiarIntroViejaYFijarSticky() {
       align-items: center !important;
       padding: 2px 0 6px !important;
       gap: 8px !important;
-    }
-
-    body.en-abc #abcIndice button{
-      padding: 8px 12px !important;
-      font-weight: 800 !important;
-      border: 2px solid rgba(0,0,0,.82) !important;
-      border-radius: 999px !important;
+      overflow-x: auto !important;
+      overflow-y: hidden !important;
     }
 
     body.en-abc #abcAudioBar{
@@ -829,11 +848,12 @@ function abcLimpiarIntroViejaYFijarSticky() {
     @media (max-width: 640px){
       body.en-abc #abcWrap:not(.abc-es-intro){
         max-width: 100% !important;
-        padding: 6px 6px 16px !important;
+        padding: 4px 6px 16px !important;
       }
 
       body.en-abc #abcStickyBar{
-        margin: 0 0 6px 0 !important;
+        top: 0 !important;
+        margin: 0 0 4px 0 !important;
         padding: 5px 10px !important;
         border-radius: 18px !important;
       }
@@ -883,7 +903,6 @@ function abcLimpiarIntroViejaYFijarSticky() {
       "abc-sticky-fixed"
     );
 
-    sticky.style.removeProperty("position");
     sticky.style.removeProperty("left");
     sticky.style.removeProperty("right");
     sticky.style.removeProperty("width");
@@ -895,7 +914,7 @@ function abcLimpiarIntroViejaYFijarSticky() {
     sticky.style.setProperty("position", "sticky", "important");
     sticky.style.setProperty("top", "0", "important");
     sticky.style.setProperty("z-index", "99999", "important");
-    sticky.style.setProperty("margin", "0 0 6px 0", "important");
+    sticky.style.setProperty("margin", "0 0 4px 0", "important");
   }
 
   if (wrap) {
@@ -2525,6 +2544,12 @@ window.__abcOnEnter = () => {
 window.__abcOnExit = () => {
     document.body.classList.remove("abc-intro-activa");
     document.body.classList.remove("en-abc");
+
+document.documentElement.style.removeProperty("overflow-x");
+document.body.style.removeProperty("overflow-x");
+document.body.style.removeProperty("overflow-y");
+document.getElementById("abcStickyMobileFixFinal")?.remove();
+  
     window.__abcEditMarcadorId = null;
     window.setMarcadorCtx("biblia");
   
