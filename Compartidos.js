@@ -80,6 +80,12 @@ const COMP_FILTROS = [
     tipos: ["imagen"]
   },
   {
+    id: "ediciones",
+    label: "Ediciones",
+    icon: "fa-solid fa-wand-magic-sparkles",
+    tipos: ["edicion"]
+  },
+  {
     id: "notas",
     label: "Notas",
     icon: "fa-solid fa-bookmark",
