@@ -723,16 +723,22 @@ function refrescarUIIndice() {
 function abcLimpiarIntroViejaYFijarSticky() {
   document.body.classList.remove("abc-intro-activa");
 
+  // ✅ apagar cualquier fallback/listener anterior
+  if (typeof window.__abcStickyMobileCleanup === "function") {
+    try { window.__abcStickyMobileCleanup(); } catch(e) {}
+  }
+  window.__abcStickyMobileCleanup = null;
+  window.__abcAjustarBarraFija = null;
+
   // ✅ limpiar restos de todos los intentos anteriores
   [
     "abcStickyMobileFixFinal",
     "abcStickyPlaceholder",
     "abcStickySentinel",
     "abcStickyPlaceholderReal",
-    "abcStickySpacer"
+    "abcStickySpacer",
+    "abcStickyMobileSpacer"
   ].forEach(id => document.getElementById(id)?.remove());
-
-  window.__abcAjustarBarraFija = null;
 
   document.documentElement.style.removeProperty("--abc-sticky-top");
   document.documentElement.style.removeProperty("--abc-bar-h");
@@ -740,6 +746,9 @@ function abcLimpiarIntroViejaYFijarSticky() {
   document.documentElement.style.removeProperty("--abc-fijo-left");
   document.documentElement.style.removeProperty("--abc-fijo-width");
   document.documentElement.style.removeProperty("--abc-fijo-top");
+  document.documentElement.style.removeProperty("--abc-mobile-top");
+  document.documentElement.style.removeProperty("--abc-mobile-left");
+  document.documentElement.style.removeProperty("--abc-mobile-width");
 
   document.documentElement.style.removeProperty("overflow-x");
   document.body.style.removeProperty("overflow-x");
@@ -757,15 +766,24 @@ function abcLimpiarIntroViejaYFijarSticky() {
       overflow-y: visible !important;
       height: auto !important;
       max-height: none !important;
+      box-sizing: border-box !important;
+    }
+
+    /* ✅ Este era el aire de arriba: la sección general trae padding.
+       Lo dejamos en 2px para que coincida con el espacio de abajo. */
+    body.en-abc #seccion-iglesia{
+      padding-top: 2px !important;
+    }
+
+    body.en-abc #iglesia-abc{
+      margin-top: 0 !important;
+      padding-top: 0 !important;
     }
 
     body.en-abc #abcWrap:not(.abc-es-intro){
       max-width: 980px !important;
       margin: 0 auto !important;
-
-      /* ✅ 2px arriba de la barra */
-      padding: 2px 8px 16px !important;
-
+      padding: 0 8px 16px !important;
       box-sizing: border-box !important;
       overflow: visible !important;
     }
@@ -844,16 +862,45 @@ function abcLimpiarIntroViejaYFijarSticky() {
       border-radius: inherit !important;
     }
 
+    #abcStickyMobileSpacer{
+      display:none;
+      height:0;
+      margin:0;
+      padding:0;
+      pointer-events:none;
+    }
+
     @media (max-width: 640px){
+      body.en-abc #seccion-iglesia{
+        padding-top: 2px !important;
+        padding-left: 6px !important;
+        padding-right: 6px !important;
+      }
+
       body.en-abc #abcWrap:not(.abc-es-intro){
         max-width: 100% !important;
-        padding: 2px 6px 16px !important;
+        padding: 0 0 16px !important;
       }
 
       body.en-abc #abcStickyBar{
         margin: 0 0 2px 0 !important;
         padding: 5px 10px !important;
         border-radius: 18px !important;
+      }
+
+      /* ✅ Fallback SOLO celular:
+         se activa recién cuando la barra llega arriba. */
+      body.en-abc #abcStickyBar.abc-mobile-fixed{
+        position: fixed !important;
+        top: var(--abc-mobile-top, 2px) !important;
+        left: var(--abc-mobile-left, 0px) !important;
+        width: var(--abc-mobile-width, 100vw) !important;
+        max-width: var(--abc-mobile-width, 100vw) !important;
+        right: auto !important;
+        bottom: auto !important;
+        transform: none !important;
+        margin: 0 !important;
+        z-index: 99999 !important;
       }
     }
   `;
@@ -884,11 +931,21 @@ function abcLimpiarIntroViejaYFijarSticky() {
     el.style.setProperty("max-height", "none", "important");
   });
 
+  if (seccionIglesia) {
+    seccionIglesia.style.setProperty("padding-top", "2px", "important");
+  }
+
+  if (iglesiaABC) {
+    iglesiaABC.style.setProperty("margin-top", "0", "important");
+    iglesiaABC.style.setProperty("padding-top", "0", "important");
+  }
+
   if (sticky) {
     sticky.classList.remove(
       "abc-fijo-arriba",
       "abc-bar-fija-real",
-      "abc-sticky-fixed"
+      "abc-sticky-fixed",
+      "abc-mobile-fixed"
     );
 
     sticky.style.removeProperty("position");
@@ -923,6 +980,131 @@ function abcLimpiarIntroViejaYFijarSticky() {
   if (wrap) {
     wrap.style.removeProperty("padding-top");
   }
+
+  // =====================================================
+  // ✅ FALLBACK MOBILE: simula sticky solo cuando llega arriba
+  // =====================================================
+  function instalarStickyMobileABC() {
+    const bar = document.getElementById("abcStickyBar");
+    const wrapActual = document.getElementById("abcWrap");
+    if (!bar || !wrapActual) return;
+
+    let spacer = document.getElementById("abcStickyMobileSpacer");
+    if (!spacer) {
+      spacer = document.createElement("div");
+      spacer.id = "abcStickyMobileSpacer";
+      bar.parentNode.insertBefore(spacer, bar);
+    }
+
+    let baseY = 0;
+    let raf = 0;
+
+    const esCel = () => window.matchMedia("(max-width: 640px)").matches;
+
+    function topObjetivo() {
+      const header = document.getElementById("header");
+      const bottom = header
+        ? Math.max(0, Math.round(header.getBoundingClientRect().bottom))
+        : 0;
+
+      return bottom + 2;
+    }
+
+    function limpiarFijo() {
+      bar.classList.remove("abc-mobile-fixed");
+      spacer.style.display = "none";
+      spacer.style.height = "0px";
+
+      document.documentElement.style.removeProperty("--abc-mobile-top");
+      document.documentElement.style.removeProperty("--abc-mobile-left");
+      document.documentElement.style.removeProperty("--abc-mobile-width");
+    }
+
+    function medirBase() {
+      if (!document.body.classList.contains("en-abc")) return;
+
+      limpiarFijo();
+
+      const scrollY = window.scrollY || document.documentElement.scrollTop || 0;
+      baseY = Math.round(bar.getBoundingClientRect().top + scrollY);
+
+      actualizar();
+    }
+
+    function actualizarAhora() {
+      if (!document.body.classList.contains("en-abc")) {
+        limpiarFijo();
+        return;
+      }
+
+      if (!esCel()) {
+        limpiarFijo();
+        return;
+      }
+
+      const scrollY = window.scrollY || document.documentElement.scrollTop || 0;
+      const top = topObjetivo();
+
+      if (!baseY) {
+        baseY = Math.round(bar.getBoundingClientRect().top + scrollY);
+      }
+
+      const debeFijar = scrollY >= (baseY - top);
+
+      if (!debeFijar) {
+        limpiarFijo();
+        return;
+      }
+
+      const rect = wrapActual.getBoundingClientRect();
+      const left = Math.max(0, Math.round(rect.left));
+      const width = Math.min(Math.round(rect.width), window.innerWidth);
+      const alto = Math.ceil(bar.getBoundingClientRect().height || bar.offsetHeight || 112);
+
+      spacer.style.display = "block";
+      spacer.style.height = (alto + 2) + "px";
+
+      document.documentElement.style.setProperty("--abc-mobile-top", top + "px");
+      document.documentElement.style.setProperty("--abc-mobile-left", left + "px");
+      document.documentElement.style.setProperty("--abc-mobile-width", width + "px");
+
+      bar.classList.add("abc-mobile-fixed");
+    }
+
+    function actualizar() {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(actualizarAhora);
+    }
+
+    const onScroll = actualizar;
+    const onResize = () => {
+      baseY = 0;
+      limpiarFijo();
+      setTimeout(medirBase, 80);
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onResize, { passive: true });
+    window.addEventListener("orientationchange", onResize, { passive: true });
+
+    window.__abcStickyMobileCleanup = function() {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("orientationchange", onResize);
+
+      cancelAnimationFrame(raf);
+      limpiarFijo();
+
+      const sp = document.getElementById("abcStickyMobileSpacer");
+      if (sp) sp.remove();
+    };
+
+    medirBase();
+    requestAnimationFrame(medirBase);
+    setTimeout(medirBase, 250);
+  }
+
+  instalarStickyMobileABC();
 }
 
 function abcSetIntroActiva(esIntro){
@@ -2548,6 +2730,11 @@ window.__abcOnEnter = () => {
 window.__abcOnExit = () => {
     document.body.classList.remove("abc-intro-activa");
     document.body.classList.remove("en-abc");
+
+  if (typeof window.__abcStickyMobileCleanup === "function") {
+  try { window.__abcStickyMobileCleanup(); } catch(e) {}
+}
+window.__abcStickyMobileCleanup = null;
 
 document.documentElement.style.removeProperty("overflow-x");
 document.body.style.removeProperty("overflow-x");
