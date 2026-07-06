@@ -1569,4 +1569,104 @@ body.oscuro .ed-check-mini {
   }
 }
 
+/* ================= EDICIONES - BUSCAR / CATEGORÍAS ================= */
+
+#edFiltros.ed-filtros-buscador{
+  display: grid;
+  gap: 8px;
+  align-items: stretch;
+  justify-content: stretch;
+}
+
+.ed-filtros-linea{
+  display: grid;
+  grid-template-columns: auto minmax(0, 230px);
+  align-items: center;
+  justify-content: start;
+  gap: 8px;
+}
+
+#edFiltroCategoriaSelect{
+  width: 100%;
+  min-width: 0;
+
+  border: 1px solid rgba(0,0,0,.10);
+  border-radius: 999px;
+
+  padding: 8px 12px;
+
+  background: rgba(255,255,255,.82);
+  color: #111;
+
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 900;
+
+  outline: none;
+}
+
+.ed-subfiltros-actions{
+  justify-content: flex-start !important;
+  flex-wrap: nowrap !important;
+
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+
+  gap: 6px !important;
+  padding-bottom: 1px;
+}
+
+.ed-subfiltros-actions::-webkit-scrollbar{
+  display: none;
+}
+
+.ed-subfiltros-actions .ed-filter-pill{
+  flex: 0 0 auto;
+
+  height: 27px;
+  padding: 0 10px;
+
+  font-size: 11px;
+  opacity: .62;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ed-subfiltros-actions .ed-filter-pill.ed-filter-active{
+  background: var(--ui-azul-claro, #bcdcff);
+  color: #000;
+  opacity: 1;
+}
+
+body.oscuro #edFiltroCategoriaSelect{
+  background: rgba(255,255,255,.10);
+  color: #fff;
+  border-color: rgba(255,255,255,.16);
+}
+
+@media (max-width: 700px){
+  #edFiltros.ed-filtros-buscador{
+    padding: 8px;
+    gap: 7px;
+  }
+
+  .ed-filtros-linea{
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  #edFiltroCategoriaSelect{
+    padding: 7px 10px;
+    font-size: 12px;
+  }
+
+  .ed-subfiltros-actions .ed-filter-pill{
+    height: 25px;
+    padding: 0 9px;
+    font-size: 10.5px;
+  }
+}
+
 </style> 
