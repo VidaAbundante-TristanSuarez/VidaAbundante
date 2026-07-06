@@ -978,10 +978,12 @@ function devUpdateAudioManualUI(){
   const info = $("devAudioManualInfo");
 
   if (info) {
-    if (DEV.audioManualBlob) {
-      info.textContent = `✅ Audio cargado: ${DEV.audioManualName || "audio finalizado"}`;
+    if (DEV.audioManualBlob && DEV.audioManualName) {
+      info.textContent = `✅ Audio cargado: ${DEV.audioManualName}`;
     } else if (DEV.audioOk && DEV.requiereAudio) {
       info.textContent = "✅ Audio confirmado";
+    } else if (!DEV.requiereAudio) {
+      info.textContent = "Audio no requerido";
     } else {
       info.textContent = "Sin audio cargado";
     }
@@ -1001,9 +1003,9 @@ function devUpdateAudioManualUI(){
     btnUp.style.display = DEV.finalizadaMode ? "inline-flex" : "none";
   }
 
-  // ✅ solo visible si hay audio manual cargado
+  // ✅ visible si hay audio cargado/confirmado
   if (btnDel) {
-    btnDel.style.display = DEV.audioManualBlob ? "inline-flex" : "none";
+    btnDel.style.display = (DEV.audioManualBlob || DEV.audioOk) ? "inline-flex" : "none";
   }
 }
 
@@ -3811,11 +3813,8 @@ window.devIrFase1Desde0 = async () => {
     imgF.src = "";
   }
 
-  // reset audio solo si NO venimos con audio manual cargado
-  if (!DEV.audioManualBlob) {
-    DEV.audioOk = false;
-  }
-
+  // ✅ No resetear audio al volver desde Fase 0.
+  // Si el usuario ya dio "Correcto", el audio debe seguir confirmado.
   devSetFinalButtons(DEV.requiereAudio ? !!DEV.audioOk : true);
 
   cerrarModal("modalDevFase0");
@@ -3916,7 +3915,8 @@ window.devIrFase3 = async () => {
   cerrarModal("modalDevFase2");
   abrirModal("modalDevFase3");
 
-    DEV.audioOk = false;
+  // ✅ NO resetear el audio acá.
+  // Si ya tocaste "Correcto", debe seguir confirmado aunque vuelvas a editar fases.
   devEnsureFase3Opciones();
 
      const btnFinal = $("devBtnFinalizar");
@@ -3925,7 +3925,7 @@ window.devIrFase3 = async () => {
     btnFinal.title = "Publicar y compartir";
   }
    
-  devSetFinalButtons(DEV.requiereAudio ? false : true);
+  devSetFinalButtons(DEV.requiereAudio ? !!DEV.audioOk : true);
 
   devSetLoadingFase3(true, "⏳ Generando…");
 
@@ -4271,19 +4271,44 @@ window.devAbrirAudio = () => {
 function hookAudioCorrecto(){
   if (typeof window.finalizarYSubirAudio !== "function") return;
 
+  // ✅ evita enganchar el hook dos veces
+  if (window.finalizarYSubirAudio.__devHooked) return;
+
   const original = window.finalizarYSubirAudio;
-  window.finalizarYSubirAudio = async function(...args){
+
+  const wrapped = async function(...args){
     const r = await original.apply(this, args);
 
-    // ✅ si estoy en fase 3, habilito botones
+    // ✅ si estoy en fase 3, guardo el audio confirmado
     const m3 = $("modalDevFase3");
     const visible = m3 && m3.classList.contains("abierto");
+
     if (visible) {
+      try {
+        const pack = await audioElementToBase64();
+
+        if (pack?.blob && pack?.base64) {
+          DEV.audioManualBlob = pack.blob;
+          DEV.audioManualBase64 = pack.base64;
+
+          // ✅ nombre vacío para que arriba diga "Audio confirmado"
+          // y no "Audio cargado: audio finalizado"
+          DEV.audioManualName = "";
+        }
+      } catch(e) {
+        console.warn("No pude guardar copia del audio confirmado, pero lo marco como OK:", e);
+      }
+
       DEV.audioOk = true;
       devSetFinalButtons(true);
+      devUpdateAudioManualUI();
     }
+
     return r;
   };
+
+  wrapped.__devHooked = true;
+  window.finalizarYSubirAudio = wrapped;
 }
 
 async function devDescargarAudioSiExiste(){
