@@ -715,11 +715,12 @@ function refrescarUIIndice() {
 function abcLimpiarIntroViejaYFijarSticky() {
   document.body.classList.remove("abc-intro-activa");
 
-  // ✅ borrar TODO lo que dejaron los intentos anteriores
+  // ✅ borrar TODO lo que dejaron intentos anteriores
   document.getElementById("abcStickyMobileFixFinal")?.remove();
   document.getElementById("abcStickyPlaceholder")?.remove();
   document.getElementById("abcStickySentinel")?.remove();
   document.getElementById("abcStickyPlaceholderReal")?.remove();
+  document.getElementById("abcStickySpacer")?.remove();
 
   document.documentElement.style.removeProperty("--abc-sticky-top");
   document.documentElement.style.removeProperty("--abc-bar-h");
@@ -745,7 +746,7 @@ function abcLimpiarIntroViejaYFijarSticky() {
     body.en-abc #abcWrap:not(.abc-es-intro){
       max-width: 980px !important;
       margin: 0 auto !important;
-      padding: 8px 8px 18px !important;
+      padding: 6px 8px 16px !important;
       box-sizing: border-box !important;
       overflow: visible !important;
     }
@@ -761,7 +762,7 @@ function abcLimpiarIntroViejaYFijarSticky() {
       max-width: none !important;
 
       z-index: 99999 !important;
-      margin: 0 -4px 10px -4px !important;
+      margin: 0 0 6px 0 !important;
 
       border-radius: 18px !important;
       overflow: hidden !important;
@@ -771,19 +772,19 @@ function abcLimpiarIntroViejaYFijarSticky() {
       backdrop-filter: blur(6px) !important;
       -webkit-backdrop-filter: blur(6px) !important;
 
-      padding: 7px 10px 8px !important;
+      padding: 5px 10px !important;
       border: 1px solid rgba(0,0,0,.06) !important;
       box-shadow: 0 4px 10px rgba(0,0,0,.06) !important;
     }
 
     body.en-abc #abcTop{
-      padding: 0 0 2px !important;
+      padding: 0 !important;
       gap: 6px !important;
     }
 
     body.en-abc #abcIndice{
       align-items: center !important;
-      padding: 3px 0 11px !important;
+      padding: 2px 0 6px !important;
       gap: 8px !important;
     }
 
@@ -795,7 +796,7 @@ function abcLimpiarIntroViejaYFijarSticky() {
     }
 
     body.en-abc #abcAudioBar{
-      padding: 3px 0 0 !important;
+      padding: 2px 0 0 !important;
       gap: 6px !important;
     }
 
@@ -828,12 +829,13 @@ function abcLimpiarIntroViejaYFijarSticky() {
     @media (max-width: 640px){
       body.en-abc #abcWrap:not(.abc-es-intro){
         max-width: 100% !important;
-        padding: 8px 6px 16px !important;
+        padding: 6px 6px 16px !important;
       }
 
       body.en-abc #abcStickyBar{
-        margin-left: -4px !important;
-        margin-right: -4px !important;
+        margin: 0 0 6px 0 !important;
+        padding: 5px 10px !important;
+        border-radius: 18px !important;
       }
     }
   `;
@@ -874,105 +876,31 @@ function abcLimpiarIntroViejaYFijarSticky() {
     cont.style.setProperty("overflow", "hidden", "important");
   }
 
-  function ajustarABCStickyBar() {
-    const wrapActual = document.getElementById("abcWrap");
-    const stickyActual = document.getElementById("abcStickyBar");
-    const header = document.getElementById("header");
+  if (sticky) {
+    sticky.classList.remove(
+      "abc-fijo-arriba",
+      "abc-bar-fija-real",
+      "abc-sticky-fixed"
+    );
 
-    if (!wrapActual || !stickyActual) return;
+    sticky.style.removeProperty("position");
+    sticky.style.removeProperty("left");
+    sticky.style.removeProperty("right");
+    sticky.style.removeProperty("width");
+    sticky.style.removeProperty("max-width");
+    sticky.style.removeProperty("bottom");
+    sticky.style.removeProperty("transform");
 
-    let spacer = document.getElementById("abcStickySpacer");
-
-    if (!spacer) {
-      spacer = document.createElement("div");
-      spacer.id = "abcStickySpacer";
-      spacer.style.display = "none";
-      stickyActual.parentNode.insertBefore(spacer, stickyActual);
-    }
-
-    function limpiarFixed() {
-      stickyActual.classList.remove("abc-sticky-fixed");
-
-      stickyActual.style.removeProperty("position");
-      stickyActual.style.removeProperty("top");
-      stickyActual.style.removeProperty("left");
-      stickyActual.style.removeProperty("right");
-      stickyActual.style.removeProperty("width");
-      stickyActual.style.removeProperty("max-width");
-      stickyActual.style.removeProperty("bottom");
-
-      stickyActual.style.setProperty("position", "-webkit-sticky", "important");
-      stickyActual.style.setProperty("position", "sticky", "important");
-      stickyActual.style.setProperty("top", "0", "important");
-      stickyActual.style.setProperty("z-index", "99999", "important");
-      stickyActual.style.setProperty("margin", "0 0 8px 0", "important");
-      stickyActual.style.setProperty("border-radius", "18px", "important");
-
-      spacer.style.display = "none";
-      spacer.style.height = "0px";
-    }
-
-    function actualizarStickyMobileABC() {
-      const esCel = window.matchMedia("(max-width: 640px)").matches;
-
-      if (!esCel) {
-        limpiarFixed();
-        return;
-      }
-
-      const headerBottom = header
-        ? Math.max(0, Math.round(header.getBoundingClientRect().bottom))
-        : 0;
-
-      const limite = headerBottom + 1;
-
-      const referenciaTop = stickyActual.classList.contains("abc-sticky-fixed")
-        ? spacer.getBoundingClientRect().top
-        : stickyActual.getBoundingClientRect().top;
-
-      const debeFijarse = referenciaTop <= limite;
-
-      if (!debeFijarse) {
-        limpiarFixed();
-        return;
-      }
-
-      const wrapRect = wrapActual.getBoundingClientRect();
-      const alto = Math.ceil(stickyActual.getBoundingClientRect().height || stickyActual.offsetHeight || 110);
-
-      spacer.style.display = "block";
-      spacer.style.height = (alto + 8) + "px";
-
-      stickyActual.classList.add("abc-sticky-fixed");
-
-      stickyActual.style.setProperty("position", "fixed", "important");
-      stickyActual.style.setProperty("top", headerBottom + "px", "important");
-      stickyActual.style.setProperty("left", Math.max(0, Math.round(wrapRect.left)) + "px", "important");
-      stickyActual.style.setProperty("width", Math.round(wrapRect.width) + "px", "important");
-      stickyActual.style.setProperty("max-width", "100vw", "important");
-      stickyActual.style.setProperty("z-index", "99999", "important");
-      stickyActual.style.setProperty("margin", "0", "important");
-      stickyActual.style.setProperty("border-radius", "0 0 18px 18px", "important");
-    }
-
-    actualizarStickyMobileABC();
-    requestAnimationFrame(actualizarStickyMobileABC);
-    setTimeout(actualizarStickyMobileABC, 250);
-
-    if (stickyActual.dataset.stickyMobileReady !== "1") {
-      stickyActual.dataset.stickyMobileReady = "1";
-
-      window.addEventListener("scroll", actualizarStickyMobileABC, { passive: true });
-      window.addEventListener("resize", actualizarStickyMobileABC, { passive: true });
-      window.addEventListener("orientationchange", () => {
-        setTimeout(actualizarStickyMobileABC, 300);
-      }, { passive: true });
-    }
+    sticky.style.setProperty("position", "-webkit-sticky", "important");
+    sticky.style.setProperty("position", "sticky", "important");
+    sticky.style.setProperty("top", "0", "important");
+    sticky.style.setProperty("z-index", "99999", "important");
+    sticky.style.setProperty("margin", "0 0 6px 0", "important");
   }
 
-  ajustarABCStickyBar();
-  requestAnimationFrame(ajustarABCStickyBar);
-  setTimeout(ajustarABCStickyBar, 250);
+  if (wrap) {
+    wrap.style.removeProperty("padding-top");
+  }
 }
 
 function abcSetIntroActiva(esIntro){
