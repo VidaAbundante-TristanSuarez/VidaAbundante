@@ -732,6 +732,8 @@ function abcLimpiarIntroViejaYFijarSticky() {
     "abcStickySpacer"
   ].forEach(id => document.getElementById(id)?.remove());
 
+  window.__abcAjustarBarraFija = null;
+
   document.documentElement.style.removeProperty("--abc-sticky-top");
   document.documentElement.style.removeProperty("--abc-bar-h");
   document.documentElement.style.removeProperty("--abc-top-fijo");
@@ -739,14 +741,13 @@ function abcLimpiarIntroViejaYFijarSticky() {
   document.documentElement.style.removeProperty("--abc-fijo-width");
   document.documentElement.style.removeProperty("--abc-fijo-top");
 
+  document.documentElement.style.removeProperty("overflow-x");
+  document.body.style.removeProperty("overflow-x");
+  document.body.style.removeProperty("overflow-y");
+
   const st = document.createElement("style");
   st.id = "abcStickyMobileFixFinal";
   st.textContent = `
-    html,
-    body{
-      overflow-x: clip !important;
-    }
-
     body.en-abc #abcApp,
     body.en-abc #iglesia-abc,
     body.en-abc #seccion-iglesia,
@@ -761,18 +762,32 @@ function abcLimpiarIntroViejaYFijarSticky() {
     body.en-abc #abcWrap:not(.abc-es-intro){
       max-width: 980px !important;
       margin: 0 auto !important;
-      padding: 0 8px 16px !important;
+
+      /* ✅ 2px arriba de la barra */
+      padding: 2px 8px 16px !important;
+
       box-sizing: border-box !important;
       overflow: visible !important;
     }
 
     body.en-abc #abcStickyBar{
-      position: fixed !important;
+      position: -webkit-sticky !important;
+      position: sticky !important;
+      top: 0 !important;
+
+      left: auto !important;
+      right: auto !important;
+      width: auto !important;
+      max-width: none !important;
+      bottom: auto !important;
+      transform: none !important;
+
       z-index: 99999 !important;
 
-      margin: 0 !important;
-      padding: 5px 10px !important;
+      /* ✅ 2px abajo de la barra */
+      margin: 0 0 2px 0 !important;
 
+      padding: 5px 10px !important;
       border-radius: 18px !important;
       overflow: hidden !important;
       box-sizing: border-box !important;
@@ -820,6 +835,7 @@ function abcLimpiarIntroViejaYFijarSticky() {
       border-radius: 22px !important;
       border: 1px solid rgba(0,0,0,.10) !important;
       padding: 16px 14px !important;
+      margin: 0 !important;
       overflow: hidden !important;
       box-sizing: border-box !important;
     }
@@ -831,10 +847,12 @@ function abcLimpiarIntroViejaYFijarSticky() {
     @media (max-width: 640px){
       body.en-abc #abcWrap:not(.abc-es-intro){
         max-width: 100% !important;
-        padding: 0 6px 16px !important;
+        padding: 2px 6px 16px !important;
       }
 
       body.en-abc #abcStickyBar{
+        margin: 0 0 2px 0 !important;
+        padding: 5px 10px !important;
         border-radius: 18px !important;
       }
     }
@@ -866,68 +884,44 @@ function abcLimpiarIntroViejaYFijarSticky() {
     el.style.setProperty("max-height", "none", "important");
   });
 
-  function ajustarBarraABCFija() {
-    if (!document.body.classList.contains("en-abc")) return;
-
-    const header = document.getElementById("header");
-    const wrapActual = document.getElementById("abcWrap");
-    const stickyActual = document.getElementById("abcStickyBar");
-    const contenidoActual = document.getElementById("abcContenido");
-
-    if (!wrapActual || !stickyActual || !contenidoActual) return;
-
-    const gap = 2;
-
-    const headerRect = header ? header.getBoundingClientRect() : null;
-    const headerBottom = headerRect ? Math.max(0, Math.round(headerRect.bottom)) : 0;
-
-    const wrapRect = wrapActual.getBoundingClientRect();
-
-    const left = Math.max(0, Math.round(wrapRect.left));
-    const width = Math.min(Math.round(wrapRect.width), window.innerWidth);
-
-    stickyActual.style.setProperty("position", "fixed", "important");
-    stickyActual.style.setProperty("top", (headerBottom + gap) + "px", "important");
-    stickyActual.style.setProperty("left", left + "px", "important");
-    stickyActual.style.setProperty("width", width + "px", "important");
-    stickyActual.style.setProperty("max-width", width + "px", "important");
-    stickyActual.style.setProperty("right", "auto", "important");
-    stickyActual.style.setProperty("bottom", "auto", "important");
-    stickyActual.style.setProperty("transform", "none", "important");
-    stickyActual.style.setProperty("margin", "0", "important");
-
-    const altoBarra = Math.ceil(
-      stickyActual.getBoundingClientRect().height ||
-      stickyActual.offsetHeight ||
-      110
+  if (sticky) {
+    sticky.classList.remove(
+      "abc-fijo-arriba",
+      "abc-bar-fija-real",
+      "abc-sticky-fixed"
     );
 
-    const contenidoTopDeseado = headerBottom + gap + altoBarra + gap;
-    const margenContenido = Math.max(
-      0,
-      Math.round(contenidoTopDeseado - wrapRect.top)
-    );
+    sticky.style.removeProperty("position");
+    sticky.style.removeProperty("top");
+    sticky.style.removeProperty("left");
+    sticky.style.removeProperty("right");
+    sticky.style.removeProperty("width");
+    sticky.style.removeProperty("max-width");
+    sticky.style.removeProperty("bottom");
+    sticky.style.removeProperty("transform");
+    sticky.style.removeProperty("margin");
 
-    contenidoActual.style.setProperty("margin-top", margenContenido + "px", "important");
+    sticky.style.setProperty("position", "-webkit-sticky", "important");
+    sticky.style.setProperty("position", "sticky", "important");
+    sticky.style.setProperty("top", "0", "important");
+    sticky.style.setProperty("z-index", "99999", "important");
+    sticky.style.setProperty("margin", "0 0 2px 0", "important");
   }
 
-  window.__abcAjustarBarraFija = ajustarBarraABCFija;
+  if (cont) {
+    cont.style.removeProperty("margin-top");
+    cont.style.removeProperty("margin");
+    cont.style.removeProperty("width");
+    cont.style.removeProperty("max-width");
+    cont.style.removeProperty("transform");
 
-  ajustarBarraABCFija();
-  requestAnimationFrame(ajustarBarraABCFija);
-  setTimeout(ajustarBarraABCFija, 150);
-  setTimeout(ajustarBarraABCFija, 500);
+    cont.style.setProperty("margin", "0", "important");
+    cont.style.setProperty("border-radius", "22px", "important");
+    cont.style.setProperty("overflow", "hidden", "important");
+  }
 
-  if (!window.__abcBarraFijaListenersReady) {
-    window.__abcBarraFijaListenersReady = true;
-
-    window.addEventListener("resize", () => {
-      requestAnimationFrame(() => window.__abcAjustarBarraFija?.());
-    }, { passive: true });
-
-    window.addEventListener("orientationchange", () => {
-      setTimeout(() => window.__abcAjustarBarraFija?.(), 300);
-    }, { passive: true });
+  if (wrap) {
+    wrap.style.removeProperty("padding-top");
   }
 }
 
@@ -1093,8 +1087,6 @@ async function cargarABCTema(desdeIndice = false) {
 
     abcGuardarProgreso();
 
-requestAnimationFrame(() => window.__abcAjustarBarraFija?.());
-setTimeout(() => window.__abcAjustarBarraFija?.(), 200);
 
   } catch (e) {
     cont.innerHTML = `
@@ -2561,8 +2553,9 @@ document.documentElement.style.removeProperty("overflow-x");
 document.body.style.removeProperty("overflow-x");
 document.body.style.removeProperty("overflow-y");
 document.getElementById("abcStickyMobileFixFinal")?.remove();
+window.__abcAjustarBarraFija = null;
 
-  const abcStickySalir = document.getElementById("abcStickyBar");
+const abcStickySalir = document.getElementById("abcStickyBar");
 const abcContenidoSalir = document.getElementById("abcContenido");
 
 if (abcStickySalir) {
