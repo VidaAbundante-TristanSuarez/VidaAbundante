@@ -60,6 +60,14 @@ let compFiltroActual = (() => {
   }
 })();
 
+let compSubFiltroEdicionesActual = (() => {
+  try {
+    return localStorage.getItem("vaCompSubFiltroEdiciones") || "todo";
+  } catch (e) {
+    return "todo";
+  }
+})();
+
 const COMP_FILTROS = [
   {
     id: "todo",
@@ -99,6 +107,58 @@ const COMP_FILTROS = [
   }
 ];
 
+const COMP_EDICIONES_SUBFILTROS = [
+  { id: "todo", label: "Todo" },
+  { id: "flyers", label: "Flyers" },
+  { id: "libros", label: "Libros" },
+  { id: "videos", label: "Videos" },
+  { id: "agendas", label: "Agendas" },
+  { id: "actividades", label: "Actividades" },
+  { id: "anuncios", label: "Anuncios" }
+];
+
+function compNormalizarCategoriaEdicion(v = "") {
+  const s = String(v || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+
+  if (["libro", "libros"].includes(s)) return "libros";
+  if (["video", "videos"].includes(s)) return "videos";
+  if (["agenda", "agendas"].includes(s)) return "agendas";
+  if (["actividad", "actividades"].includes(s)) return "actividades";
+  if (["anuncio", "anuncios"].includes(s)) return "anuncios";
+  if (["flyer", "flyers", "volante", "volantes"].includes(s)) return "flyers";
+
+  return "flyers";
+}
+
+function compCategoriaEdicion(item = {}) {
+  const cache = window.__EDICIONES_CACHE || [];
+  const edicionId = String(item?.edicionId || "").trim();
+
+  const ed = edicionId
+    ? cache.find(x => String(x?.id || "") === edicionId)
+    : null;
+
+  return compNormalizarCategoriaEdicion(
+    item.rama ||
+    item.categoria ||
+    item.tipoEdicion ||
+    ed?.rama ||
+    ed?.categoria ||
+    ed?.tipoEdicion ||
+    "flyers"
+  );
+}
+
+function compSubFiltroEdicionesValido(id) {
+  return COMP_EDICIONES_SUBFILTROS.some(f => f.id === id) ? id : "todo";
+}
+
+compSubFiltroEdicionesActual = compSubFiltroEdicionesValido(compSubFiltroEdicionesActual);
+
 function compFiltroValido(id) {
   return COMP_FILTROS.some(f => f.id === id) ? id : "todo";
 }
@@ -107,6 +167,33 @@ function compActualizarFiltroActivoUI() {
   document.querySelectorAll("#compFiltros button[data-comp-filtro]").forEach(btn => {
     btn.classList.toggle("activo", btn.dataset.compFiltro === compFiltroActual);
   });
+
+  document.querySelectorAll("#compSubFiltrosEdiciones button[data-comp-ed-sub]").forEach(btn => {
+    btn.classList.toggle("activo", btn.dataset.compEdSub === compSubFiltroEdicionesActual);
+  });
+}
+
+function compRenderSubFiltrosEdicionesHTML() {
+  if (compFiltroActual !== "ediciones") return "";
+
+  compSubFiltroEdicionesActual = compSubFiltroEdicionesValido(compSubFiltroEdicionesActual);
+
+  return `
+    <div id="compSubFiltrosEdiciones" class="comp-subfiltros-ediciones">
+      <span class="comp-subfiltros-label">Buscar:</span>
+
+      ${COMP_EDICIONES_SUBFILTROS.map(f => `
+        <button
+          type="button"
+          data-comp-ed-sub="${compEscape(f.id)}"
+          class="${f.id === compSubFiltroEdicionesActual ? "activo" : ""}"
+          onclick="compCambiarSubFiltroEdiciones('${compJs(f.id)}', this)"
+        >
+          ${compEscape(f.label)}
+        </button>
+      `).join("")}
+    </div>
+  `;
 }
 
 function compRenderFiltrosHTML() {
@@ -126,18 +213,32 @@ function compRenderFiltrosHTML() {
         </button>
       `).join("")}
     </div>
+
+    ${compRenderSubFiltrosEdicionesHTML()}
   `;
 }
 
 function compFiltrarItems(items = []) {
   compFiltroActual = compFiltroValido(compFiltroActual);
+  compSubFiltroEdicionesActual = compSubFiltroEdicionesValido(compSubFiltroEdicionesActual);
 
-  if (compFiltroActual === "todo") return items;
+  let salida = items;
 
-  const filtro = COMP_FILTROS.find(f => f.id === compFiltroActual);
-  const tipos = filtro?.tipos || [];
+  if (compFiltroActual !== "todo") {
+    const filtro = COMP_FILTROS.find(f => f.id === compFiltroActual);
+    const tipos = filtro?.tipos || [];
 
-  return items.filter(item => tipos.includes(item?.tipo || ""));
+    salida = salida.filter(item => tipos.includes(item?.tipo || ""));
+  }
+
+  if (compFiltroActual === "ediciones" && compSubFiltroEdicionesActual !== "todo") {
+    salida = salida.filter(item => {
+      if (item?.tipo !== "edicion") return false;
+      return compCategoriaEdicion(item) === compSubFiltroEdicionesActual;
+    });
+  }
+
+  return salida;
 }
 
 window.compCambiarFiltroCompartidos = function compCambiarFiltroCompartidos(filtro, btn = null) {
@@ -145,6 +246,21 @@ window.compCambiarFiltroCompartidos = function compCambiarFiltroCompartidos(filt
 
   try {
     localStorage.setItem("vaCompFiltroActual", compFiltroActual);
+  } catch (e) {}
+
+  if (btn && typeof btn.blur === "function") {
+    btn.blur();
+  }
+
+  compActualizarFiltroActivoUI();
+  renderCompartidos();
+};
+
+window.compCambiarSubFiltroEdiciones = function compCambiarSubFiltroEdiciones(filtro, btn = null) {
+  compSubFiltroEdicionesActual = compSubFiltroEdicionesValido(filtro);
+
+  try {
+    localStorage.setItem("vaCompSubFiltroEdiciones", compSubFiltroEdicionesActual);
   } catch (e) {}
 
   if (btn && typeof btn.blur === "function") {
