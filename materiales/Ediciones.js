@@ -962,7 +962,7 @@ function renderEdiciones() {
       ? (
           portada
             ? `<img src="${edEscape(portada)}" alt="${titulo}" loading="lazy" onclick="abrirPresentacionEdicion('${ed.id}')">`
-            : `<span><i class="fa-solid fa-video"></i><br>Edición con video</span>`
+            : `<span onclick="abrirPresentacionEdicion('${ed.id}')" role="button"><i class="fa-solid fa-video"></i><br>Edición con video</span>`
         )
       : edMiniPaginasHTML(ed.id, "ediciones")
   }
@@ -1866,7 +1866,18 @@ window.edActivarMiniGalerias = function edActivarMiniGalerias(root = document) {
       }, { passive: true });
 
       // PC: rueda vertical sobre la imagen mueve horizontal.
-      track.addEventListener("wheel", e => {
+track.addEventListener("wheel", e => {
+        const esCompartidos =
+          contexto === "compartidos" ||
+          !!track.closest?.("#compLista") ||
+          document.body.classList.contains("en-compartidos");
+
+        // ✅ En Compartidos, la rueda vertical baja la página.
+        // No la convertimos en scroll horizontal.
+        if (esCompartidos && Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+          return;
+        }
+
         if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
 
         e.preventDefault();
@@ -2268,6 +2279,11 @@ const paginas = edPaginasArrayConPortada(ed);
 
   const tieneVideo = paginas.some(p => edPaginaEsVideo(p));
 
+    const indiceInicial =
+    edRamaEdicion(ed) === "videos"
+      ? Math.max(0, paginas.findIndex(p => edPaginaEsVideo(p)))
+      : 0;
+
   let viewer = ed$("edViewer");
 
   if (!viewer) {
@@ -2367,6 +2383,24 @@ ${!tieneVideo ? `
 
   viewer.classList.add("ed-open");
   document.body.style.overflow = "hidden";
+
+  // ✅ Solo en la categoría Videos: abre directo en el primer video.
+  if (indiceInicial > 0) {
+    requestAnimationFrame(() => {
+      edIrASlide(indiceInicial, "auto");
+
+      const slide = viewer.querySelectorAll(".ed-slide")[indiceInicial];
+      const video = slide?.querySelector("video");
+
+      if (video) {
+        try {
+          video.currentTime = 0;
+          video.play().catch(() => {});
+        } catch (e) {}
+      }
+    });
+  }
+
   edIntentarPantallaCompleta(viewer);
 };
 
