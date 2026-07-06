@@ -1669,4 +1669,26 @@ body.oscuro #edFiltroCategoriaSelect{
   }
 }
 
+/* ✅ Ediciones: solo barra horizontal de filtros */
+#edFiltros.ed-filtros-buscador{
+  display: block !important;
+  padding: 8px 10px !important;
+}
+
+#edFiltros .ed-filtros-linea{
+  display: none !important;
+}
+
+.ed-subfiltros-actions{
+  justify-content: flex-start !important;
+  flex-wrap: nowrap !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  scrollbar-width: none !important;
+}
+
+.ed-subfiltros-actions::-webkit-scrollbar{
+  display: none !important;
+}
+
 </style> 
