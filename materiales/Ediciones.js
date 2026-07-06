@@ -56,10 +56,7 @@ const ED_CATEGORIAS = [
   { id: "todo", label: "Todo" },
   { id: "flyers", label: "Flyers" },
   { id: "libros", label: "Libros" },
-  { id: "videos", label: "Videos" },
-  { id: "agendas", label: "Agendas" },
-  { id: "actividades", label: "Actividades" },
-  { id: "anuncios", label: "Anuncios" }
+  { id: "videos", label: "Videos" }
 ];
 
 function edCategoriaValida(id) {
@@ -257,9 +254,6 @@ function edNormalizarRama(v = "") {
 
   if (["libro", "libros"].includes(s)) return "libros";
   if (["video", "videos"].includes(s)) return "videos";
-  if (["agenda", "agendas"].includes(s)) return "agendas";
-  if (["actividad", "actividades"].includes(s)) return "actividades";
-  if (["anuncio", "anuncios"].includes(s)) return "anuncios";
   if (["flyer", "flyers", "volante", "volantes"].includes(s)) return "flyers";
 
   return "flyers";
@@ -570,7 +564,7 @@ window.mostrarEdiciones = async () => {
   </select>
 
   <div style="font-size:12px; opacity:.75;">
-    Elegí si es flyer, libro, video, agenda, actividad o anuncio.
+Elegí si es flyer, libro o video.
   </div>
 </div>
 
