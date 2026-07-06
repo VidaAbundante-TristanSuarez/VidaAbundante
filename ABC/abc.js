@@ -737,7 +737,8 @@ function abcLimpiarIntroViejaYFijarSticky() {
     "abcStickySentinel",
     "abcStickyPlaceholderReal",
     "abcStickySpacer",
-    "abcStickyMobileSpacer"
+"abcStickyMobileSpacer",
+"abcStickyMobileSentinel"
   ].forEach(id => document.getElementById(id)?.remove());
 
   document.documentElement.style.removeProperty("--abc-sticky-top");
@@ -984,125 +985,187 @@ function abcLimpiarIntroViejaYFijarSticky() {
   // =====================================================
   // ✅ FALLBACK MOBILE: simula sticky solo cuando llega arriba
   // =====================================================
-  function instalarStickyMobileABC() {
-    const bar = document.getElementById("abcStickyBar");
-    const wrapActual = document.getElementById("abcWrap");
-    if (!bar || !wrapActual) return;
+function instalarStickyMobileABC() {
+  const bar = document.getElementById("abcStickyBar");
+  const wrapActual = document.getElementById("abcWrap");
+  if (!bar || !wrapActual) return;
 
-    let spacer = document.getElementById("abcStickyMobileSpacer");
-    if (!spacer) {
-      spacer = document.createElement("div");
-      spacer.id = "abcStickyMobileSpacer";
-      bar.parentNode.insertBefore(spacer, bar);
-    }
-
-    let baseY = 0;
-    let raf = 0;
-
-    const esCel = () => window.matchMedia("(max-width: 640px)").matches;
-
-    function topObjetivo() {
-      const header = document.getElementById("header");
-      const bottom = header
-        ? Math.max(0, Math.round(header.getBoundingClientRect().bottom))
-        : 0;
-
-      return bottom + 2;
-    }
-
-    function limpiarFijo() {
-      bar.classList.remove("abc-mobile-fixed");
-      spacer.style.display = "none";
-      spacer.style.height = "0px";
-
-      document.documentElement.style.removeProperty("--abc-mobile-top");
-      document.documentElement.style.removeProperty("--abc-mobile-left");
-      document.documentElement.style.removeProperty("--abc-mobile-width");
-    }
-
-    function medirBase() {
-      if (!document.body.classList.contains("en-abc")) return;
-
-      limpiarFijo();
-
-      const scrollY = window.scrollY || document.documentElement.scrollTop || 0;
-      baseY = Math.round(bar.getBoundingClientRect().top + scrollY);
-
-      actualizar();
-    }
-
-    function actualizarAhora() {
-      if (!document.body.classList.contains("en-abc")) {
-        limpiarFijo();
-        return;
-      }
-
-      if (!esCel()) {
-        limpiarFijo();
-        return;
-      }
-
-      const scrollY = window.scrollY || document.documentElement.scrollTop || 0;
-      const top = topObjetivo();
-
-      if (!baseY) {
-        baseY = Math.round(bar.getBoundingClientRect().top + scrollY);
-      }
-
-      const debeFijar = scrollY >= (baseY - top);
-
-      if (!debeFijar) {
-        limpiarFijo();
-        return;
-      }
-
-      const rect = wrapActual.getBoundingClientRect();
-      const left = Math.max(0, Math.round(rect.left));
-      const width = Math.min(Math.round(rect.width), window.innerWidth);
-      const alto = Math.ceil(bar.getBoundingClientRect().height || bar.offsetHeight || 112);
-
-      spacer.style.display = "block";
-      spacer.style.height = (alto + 2) + "px";
-
-      document.documentElement.style.setProperty("--abc-mobile-top", top + "px");
-      document.documentElement.style.setProperty("--abc-mobile-left", left + "px");
-      document.documentElement.style.setProperty("--abc-mobile-width", width + "px");
-
-      bar.classList.add("abc-mobile-fixed");
-    }
-
-    function actualizar() {
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(actualizarAhora);
-    }
-
-    const onScroll = actualizar;
-    const onResize = () => {
-      baseY = 0;
-      limpiarFijo();
-      setTimeout(medirBase, 80);
-    };
-
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onResize, { passive: true });
-    window.addEventListener("orientationchange", onResize, { passive: true });
-
-    window.__abcStickyMobileCleanup = function() {
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onResize);
-      window.removeEventListener("orientationchange", onResize);
-
-      cancelAnimationFrame(raf);
-      limpiarFijo();
-
-      const sp = document.getElementById("abcStickyMobileSpacer");
-      if (sp) sp.remove();
-    };
-
-    medirBase();
-    requestAnimationFrame(medirBase);
-    setTimeout(medirBase, 250);
+  let sentinel = document.getElementById("abcStickyMobileSentinel");
+  if (!sentinel) {
+    sentinel = document.createElement("div");
+    sentinel.id = "abcStickyMobileSentinel";
+    bar.parentNode.insertBefore(sentinel, bar);
   }
+
+  let spacer = document.getElementById("abcStickyMobileSpacer");
+  if (!spacer) {
+    spacer = document.createElement("div");
+    spacer.id = "abcStickyMobileSpacer";
+    sentinel.insertAdjacentElement("afterend", spacer);
+  }
+
+  // asegurar orden: sentinel -> spacer -> barra
+  if (sentinel.nextElementSibling !== spacer) {
+    sentinel.insertAdjacentElement("afterend", spacer);
+  }
+  if (spacer.nextElementSibling !== bar) {
+    spacer.insertAdjacentElement("afterend", bar);
+  }
+
+  sentinel.style.cssText = `
+    display:block;
+    height:0;
+    margin:0;
+    padding:0;
+    pointer-events:none;
+  `;
+
+  spacer.style.cssText = `
+    display:none;
+    height:0;
+    margin:0;
+    padding:0;
+    pointer-events:none;
+  `;
+
+  let raf = 0;
+
+  const esCel = () => window.matchMedia("(max-width: 640px)").matches;
+
+  function topObjetivo() {
+    const header = document.getElementById("header");
+    const bottom = header
+      ? Math.max(0, Math.round(header.getBoundingClientRect().bottom))
+      : 0;
+
+    return bottom + 2;
+  }
+
+  function limpiarFijo() {
+    bar.classList.remove("abc-mobile-fixed");
+
+    spacer.style.display = "none";
+    spacer.style.height = "0px";
+
+    document.documentElement.style.removeProperty("--abc-mobile-top");
+    document.documentElement.style.removeProperty("--abc-mobile-left");
+    document.documentElement.style.removeProperty("--abc-mobile-width");
+
+    bar.style.removeProperty("position");
+    bar.style.removeProperty("top");
+    bar.style.removeProperty("left");
+    bar.style.removeProperty("right");
+    bar.style.removeProperty("width");
+    bar.style.removeProperty("max-width");
+    bar.style.removeProperty("bottom");
+    bar.style.removeProperty("transform");
+    bar.style.removeProperty("margin");
+
+    bar.style.setProperty("position", "-webkit-sticky", "important");
+    bar.style.setProperty("position", "sticky", "important");
+    bar.style.setProperty("top", "0", "important");
+    bar.style.setProperty("z-index", "99999", "important");
+    bar.style.setProperty("margin", "0 0 2px 0", "important");
+  }
+
+  function aplicarFijo() {
+    const top = topObjetivo();
+    const rect = wrapActual.getBoundingClientRect();
+
+    const left = Math.max(0, Math.round(rect.left));
+    const width = Math.max(
+      100,
+      Math.min(Math.round(rect.width), window.innerWidth - left)
+    );
+
+    const alto = Math.ceil(bar.offsetHeight || bar.getBoundingClientRect().height || 112);
+
+    spacer.style.display = "block";
+    spacer.style.height = (alto + 2) + "px";
+
+    document.documentElement.style.setProperty("--abc-mobile-top", top + "px");
+    document.documentElement.style.setProperty("--abc-mobile-left", left + "px");
+    document.documentElement.style.setProperty("--abc-mobile-width", width + "px");
+
+    bar.classList.add("abc-mobile-fixed");
+
+    bar.style.setProperty("position", "fixed", "important");
+    bar.style.setProperty("top", top + "px", "important");
+    bar.style.setProperty("left", left + "px", "important");
+    bar.style.setProperty("width", width + "px", "important");
+    bar.style.setProperty("max-width", width + "px", "important");
+    bar.style.setProperty("right", "auto", "important");
+    bar.style.setProperty("bottom", "auto", "important");
+    bar.style.setProperty("transform", "none", "important");
+    bar.style.setProperty("margin", "0", "important");
+    bar.style.setProperty("z-index", "99999", "important");
+  }
+
+  function actualizarAhora() {
+    if (!document.body.classList.contains("en-abc")) {
+      limpiarFijo();
+      return;
+    }
+
+    if (!esCel()) {
+      limpiarFijo();
+      return;
+    }
+
+    const top = topObjetivo();
+    const sentinelTop = Math.round(sentinel.getBoundingClientRect().top);
+
+    // ✅ No usamos window.scrollY.
+    // Esto detecta el scroll real aunque lo esté haciendo un contenedor interno.
+    const debeFijar = sentinelTop <= top;
+
+    if (!debeFijar) {
+      limpiarFijo();
+      return;
+    }
+
+    aplicarFijo();
+  }
+
+  function actualizar() {
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(actualizarAhora);
+  }
+
+  const onScroll = actualizar;
+  const onResize = () => {
+    limpiarFijo();
+    setTimeout(actualizar, 80);
+  };
+
+  // ✅ Captura scroll de window y también de contenedores internos.
+  window.addEventListener("scroll", onScroll, { passive: true });
+  document.addEventListener("scroll", onScroll, true);
+  document.addEventListener("touchmove", onScroll, { passive: true, capture: true });
+
+  window.addEventListener("resize", onResize, { passive: true });
+  window.addEventListener("orientationchange", onResize, { passive: true });
+
+  window.__abcStickyMobileCleanup = function() {
+    window.removeEventListener("scroll", onScroll);
+    document.removeEventListener("scroll", onScroll, true);
+    document.removeEventListener("touchmove", onScroll, true);
+
+    window.removeEventListener("resize", onResize);
+    window.removeEventListener("orientationchange", onResize);
+
+    cancelAnimationFrame(raf);
+    limpiarFijo();
+
+    document.getElementById("abcStickyMobileSpacer")?.remove();
+    document.getElementById("abcStickyMobileSentinel")?.remove();
+  };
+
+  limpiarFijo();
+  actualizar();
+  requestAnimationFrame(actualizar);
+  setTimeout(actualizar, 250);
+}
 
   instalarStickyMobileABC();
 }
@@ -2740,6 +2803,8 @@ document.documentElement.style.removeProperty("overflow-x");
 document.body.style.removeProperty("overflow-x");
 document.body.style.removeProperty("overflow-y");
 document.getElementById("abcStickyMobileFixFinal")?.remove();
+  document.getElementById("abcStickyMobileSpacer")?.remove();
+document.getElementById("abcStickyMobileSentinel")?.remove();
 window.__abcAjustarBarraFija = null;
 
 const abcStickySalir = document.getElementById("abcStickyBar");
