@@ -114,10 +114,7 @@ const COMP_EDICIONES_SUBFILTROS = [
   { id: "todo", label: "Todo" },
   { id: "flyers", label: "Flyers" },
   { id: "libros", label: "Libros" },
-  { id: "videos", label: "Videos" },
-  { id: "agendas", label: "Agendas" },
-  { id: "actividades", label: "Actividades" },
-  { id: "anuncios", label: "Anuncios" }
+  { id: "videos", label: "Videos" }
 ];
 
 function compNormalizarCategoriaEdicion(v = "") {
@@ -132,11 +129,10 @@ function compNormalizarCategoriaEdicion(v = "") {
 
   if (["libro", "libros"].includes(s)) return "libros";
   if (["video", "videos"].includes(s)) return "videos";
-  if (["agenda", "agendas"].includes(s)) return "agendas";
-  if (["actividad", "actividades"].includes(s)) return "actividades";
-  if (["anuncio", "anuncios"].includes(s)) return "anuncios";
   if (["flyer", "flyers", "volante", "volantes"].includes(s)) return "flyers";
 
+  // ✅ Las categorías que quitamos NO rompen Compartidos.
+  // Siguen apareciendo en Todo, pero no entran en Flyers/Libros/Videos.
   return "";
 }
 
@@ -3985,7 +3981,12 @@ function compUnificarItems() {
 
   return todos
     .filter(item => ["edicion", "rh", "imagen", "nota", "devocional", "subido"].includes(item?.tipo || ""))
-    .filter(item => !compartidosOcultosCache?.[compKeyItem(item)])
+    .filter(item => {
+      // ✅ Si una edición fue vuelta a publicar, NO la dejamos atrapada por ocultos viejos.
+      if (item?.tipo === "edicion") return true;
+
+      return !compartidosOcultosCache?.[compKeyItem(item)];
+    })
     .filter(item => {
       const key = [
         item.tipo,
