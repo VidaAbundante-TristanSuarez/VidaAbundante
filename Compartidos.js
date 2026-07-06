@@ -118,7 +118,10 @@ const COMP_EDICIONES_SUBFILTROS = [
 ];
 
 function compNormalizarCategoriaEdicion(v = "") {
-  const s = String(v || "")
+  const raw = String(v || "").trim();
+  if (!raw) return "";
+
+  const s = raw
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .trim()
@@ -131,7 +134,7 @@ function compNormalizarCategoriaEdicion(v = "") {
   if (["anuncio", "anuncios"].includes(s)) return "anuncios";
   if (["flyer", "flyers", "volante", "volantes"].includes(s)) return "flyers";
 
-  return "flyers";
+  return "";
 }
 
 function compCategoriaEdicion(item = {}) {
@@ -142,16 +145,39 @@ function compCategoriaEdicion(item = {}) {
     ? cache.find(x => String(x?.id || "") === edicionId)
     : null;
 
-  const cruda =
+  const directa = compNormalizarCategoriaEdicion(
     item.rama ||
     item.categoria ||
     item.tipoEdicion ||
+    ""
+  );
+
+  if (directa) return directa;
+
+  const desdeEdicion = compNormalizarCategoriaEdicion(
     ed?.rama ||
     ed?.categoria ||
     ed?.tipoEdicion ||
-    "";
+    ""
+  );
 
-  return cruda ? compNormalizarCategoriaEdicion(cruda) : "";
+  if (desdeEdicion) return desdeEdicion;
+
+  if (edicionId) {
+    try {
+      compAsegurarEdicionMini(edicionId);
+    } catch (e) {}
+  }
+
+  return "";
+}
+
+function compLabelCategoriaEdicion(item = {}) {
+  const id = typeof item === "string"
+    ? compNormalizarCategoriaEdicion(item)
+    : compCategoriaEdicion(item);
+
+  return COMP_EDICIONES_SUBFILTROS.find(f => f.id === id)?.label || "";
 }
 
 function compSubFiltroEdicionesValido(id) {
@@ -238,17 +264,8 @@ function compFiltrarItems(items = []) {
 
       const categoria = compCategoriaEdicion(item);
 
-      // Si es una publicación vieja sin categoría guardada,
-      // intentamos cargar la edición original y mientras tanto no la ocultamos.
-      if (!categoria && item?.edicionId) {
-        try {
-          compAsegurarEdicionMini(item.edicionId);
-        } catch (e) {}
-
-        return true;
-      }
-
-      return categoria === compSubFiltroEdicionesActual;
+      // ✅ Si todavía no sabemos la categoría, NO lo mostramos en un subfiltro.
+      return categoria && categoria === compSubFiltroEdicionesActual;
     });
   }
 
@@ -3826,6 +3843,12 @@ function compRenderEdicion(item) {
   const guardada = compEstaGuardada(edicionId);
   const descargada = compEstaDescargada(edicionId);
 
+  const categoriaEdicion = compCategoriaEdicion(item);
+const categoriaLabel = compLabelCategoriaEdicion(item);
+const metaEdicion = categoriaLabel
+  ? `Edición compartida · ${compEscape(categoriaLabel)}`
+  : "Edición compartida";
+
   const miniPaginas =
     typeof window.edMiniPaginasHTML === "function"
       ? window.edMiniPaginasHTML(edicionId, "compartidos")
@@ -3844,7 +3867,7 @@ function compRenderEdicion(item) {
 
         <div>
           <div class="comp-post-title">${titulo}</div>
-          <div class="comp-post-meta">Edición compartida</div>
+     <div class="comp-post-meta">${metaEdicion}</div>
         </div>
       </div>
 
