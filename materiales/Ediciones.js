@@ -41,10 +41,32 @@ let edicionesDescargadasEscuchaActiva = false;
 let edicionesPublicadasCache = {};
 let edicionesPublicadasEscuchaActiva = false;
 
-let edFiltroFlyers = true;
-let edFiltroLibros = true;
+let edFiltroCategoria = (() => {
+  try {
+    return localStorage.getItem("vaEdFiltroCategoria") || "todo";
+  } catch (e) {
+    return "todo";
+  }
+})();
+
 let edBusquedaTexto = "";
 let edBuscadorAbierto = false;
+
+const ED_CATEGORIAS = [
+  { id: "todo", label: "Todo" },
+  { id: "flyers", label: "Flyers" },
+  { id: "libros", label: "Libros" },
+  { id: "videos", label: "Videos" },
+  { id: "agendas", label: "Agendas" },
+  { id: "actividades", label: "Actividades" },
+  { id: "anuncios", label: "Anuncios" }
+];
+
+function edCategoriaValida(id) {
+  return ED_CATEGORIAS.some(c => c.id === id) ? id : "todo";
+}
+
+edFiltroCategoria = edCategoriaValida(edFiltroCategoria);
 
 function edEsLinkDirectoPublico() {
   try {
@@ -96,18 +118,19 @@ function edNormalizarTexto(txt = "") {
 }
 
 function edActualizarControlesEdiciones() {
-  const btnFlyers = ed$("edFiltroFlyersBtn");
-  const btnLibros = ed$("edFiltroLibrosBtn");
+  const selectCategoria = ed$("edFiltroCategoriaSelect");
   const boxBuscar = ed$("edBuscadorBox");
   const inputBuscar = ed$("edBuscarInput");
 
-  if (btnFlyers) {
-    btnFlyers.classList.toggle("ed-filter-active", edFiltroFlyers);
+  edFiltroCategoria = edCategoriaValida(edFiltroCategoria);
+
+  if (selectCategoria && selectCategoria.value !== edFiltroCategoria) {
+    selectCategoria.value = edFiltroCategoria;
   }
 
-  if (btnLibros) {
-    btnLibros.classList.toggle("ed-filter-active", edFiltroLibros);
-  }
+  document.querySelectorAll("#edFiltros button[data-ed-cat]").forEach(btn => {
+    btn.classList.toggle("ed-filter-active", btn.dataset.edCat === edFiltroCategoria);
+  });
 
   if (boxBuscar) {
     boxBuscar.style.display = edBuscadorAbierto ? "block" : "none";
@@ -118,22 +141,19 @@ function edActualizarControlesEdiciones() {
   }
 }
 
-window.edToggleFiltroEdicion = (tipo) => {
-  if (tipo === "flyers") {
-    edFiltroFlyers = !edFiltroFlyers;
-  }
+window.edCambiarFiltroCategoria = (categoria = "todo") => {
+  edFiltroCategoria = edCategoriaValida(categoria);
 
-  if (tipo === "libros") {
-    edFiltroLibros = !edFiltroLibros;
-  }
-
-  // Evita que queden los 2 apagados y la galería parezca vacía por error.
-  if (!edFiltroFlyers && !edFiltroLibros) {
-    edFiltroFlyers = true;
-    edFiltroLibros = true;
-  }
+  try {
+    localStorage.setItem("vaEdFiltroCategoria", edFiltroCategoria);
+  } catch (e) {}
 
   renderEdiciones();
+};
+
+// ✅ Compatibilidad por si quedó algún botón viejo llamando a esta función.
+window.edToggleFiltroEdicion = (tipo) => {
+  edCambiarFiltroCategoria(tipo);
 };
 
 window.edToggleBuscadorEdiciones = () => {
@@ -235,7 +255,13 @@ function edNormalizarRama(v = "") {
     .trim()
     .toLowerCase();
 
-  if (s === "libro" || s === "libros") return "libros";
+  if (["libro", "libros"].includes(s)) return "libros";
+  if (["video", "videos"].includes(s)) return "videos";
+  if (["agenda", "agendas"].includes(s)) return "agendas";
+  if (["actividad", "actividades"].includes(s)) return "actividades";
+  if (["anuncio", "anuncios"].includes(s)) return "anuncios";
+  if (["flyer", "flyers", "volante", "volantes"].includes(s)) return "flyers";
+
   return "flyers";
 }
 
@@ -249,7 +275,8 @@ function edRamaEdicion(edicion = {}) {
 }
 
 function edTituloRama(rama = "") {
-  return edNormalizarRama(rama) === "libros" ? "Libros" : "Flyers";
+  const id = edNormalizarRama(rama);
+  return ED_CATEGORIAS.find(c => c.id === id)?.label || "Flyers";
 }
 
 function edKey(prefix = "p") {
@@ -501,30 +528,35 @@ window.mostrarEdiciones = async () => {
           </div>
         </div>
 
-        <div id="edFiltros">
-          <div class="ed-filtros-title">
-            <i class="fa-solid fa-filter"></i>
-            <span>Filtros</span>
+              <div id="edFiltros" class="ed-filtros-buscador">
+          <div class="ed-filtros-linea">
+            <label class="ed-filtros-title" for="edFiltroCategoriaSelect">
+              <i class="fa-solid fa-filter"></i>
+              <span>Buscar:</span>
+            </label>
+
+            <select
+              id="edFiltroCategoriaSelect"
+              class="ed-filter-select"
+              onchange="edCambiarFiltroCategoria(this.value)"
+            >
+              ${ED_CATEGORIAS.map(c => `
+                <option value="${edEscape(c.id)}">${edEscape(c.label)}</option>
+              `).join("")}
+            </select>
           </div>
 
-          <div class="ed-filtros-actions">
-            <button
-              id="edFiltroFlyersBtn"
-              type="button"
-              class="ed-filter-pill ed-filter-active"
-              onclick="edToggleFiltroEdicion('flyers')"
-            >
-              Flyers
-            </button>
-
-            <button
-              id="edFiltroLibrosBtn"
-              type="button"
-              class="ed-filter-pill ed-filter-active"
-              onclick="edToggleFiltroEdicion('libros')"
-            >
-              Libros
-            </button>
+          <div class="ed-filtros-actions ed-subfiltros-actions">
+            ${ED_CATEGORIAS.filter(c => c.id !== "todo").map(c => `
+              <button
+                type="button"
+                class="ed-filter-pill"
+                data-ed-cat="${edEscape(c.id)}"
+                onclick="edCambiarFiltroCategoria('${edEscape(c.id)}')"
+              >
+                ${edEscape(c.label)}
+              </button>
+            `).join("")}
           </div>
         </div>
 
@@ -546,15 +578,16 @@ window.mostrarEdiciones = async () => {
 </div>
 
 <div class="ed-field">
-  <label for="edRama">Rama</label>
+  <label for="edRama">Tipo de edición</label>
 
   <select id="edRama">
-    <option value="flyers">Flyers</option>
-    <option value="libros">Libros</option>
+    ${ED_CATEGORIAS.filter(c => c.id !== "todo").map(c => `
+      <option value="${edEscape(c.id)}">${edEscape(c.label)}</option>
+    `).join("")}
   </select>
 
   <div style="font-size:12px; opacity:.75;">
-    Elegí si esta edición pertenece a Flyers o Libros.
+    Elegí si es flyer, libro, video, agenda, actividad o anuncio.
   </div>
 </div>
 
@@ -877,19 +910,21 @@ function renderEdiciones() {
   }
 
   const busqueda = edNormalizarTexto(edBusquedaTexto);
+  const filtroCategoria = edCategoriaValida(edFiltroCategoria);
 
   const items = edicionesCache.filter(ed => {
-    const rama = edRamaEdicion(ed);
+    const categoria = edRamaEdicion(ed);
 
-    if (rama === "flyers" && !edFiltroFlyers) return false;
-    if (rama === "libros" && !edFiltroLibros) return false;
+    if (filtroCategoria !== "todo" && categoria !== filtroCategoria) {
+      return false;
+    }
 
     if (busqueda) {
       const texto = edNormalizarTexto([
         ed.titulo || "",
         ed.refPublica || "",
-        edRamaEdicion(ed),
-        edTituloRama(edRamaEdicion(ed))
+        categoria,
+        edTituloRama(categoria)
       ].join(" "));
 
       if (!texto.includes(busqueda)) return false;
