@@ -7241,27 +7241,38 @@ function renderListaMarcadores() {
   const lista = document.getElementById("listaMarcadores");
   if (!lista) return;
 
-const items = Object.entries(marcadores || {})
-  .map(([id, m]) => ({ ...m, id }))
-  .filter(m => m?.origen !== "abc")   // ✅ NO mezclar ABC en lista Biblia
-  .sort((a, b) => (b.fecha || 0) - (a.fecha || 0));
+  const items = Object.entries(marcadores || {})
+    .map(([id, m]) => ({ ...(m || {}), id }))
+    .filter(m => m?.origen !== "abc")
+    .sort((a, b) => (b.fecha || 0) - (a.fecha || 0));
 
-  // CTA Guardar (solo si está en modo marcador y hay selección)
   let header = "";
-  if (modoMarcador && Object.keys(seleccionMarcador).length > 0) {
+
+  if (modoMarcador && Object.keys(seleccionMarcador || {}).length > 0) {
     header = `
-      <div class="card-marcador" style="background:#fff3b0;">
-        <b>Guardar nuevo marcador</b><br>
-        <button type="button" onclick="abrirFormNuevoMarcador()"
-          style="margin-top:8px; border:none; border-radius:999px; padding:8px 12px; cursor:pointer; background:#4f6fa8; color:#fff;">
-          Continuar
-        </button>
+      <div class="card-marcador nota-lista-card nota-lista-card-cta">
+        <div class="nota-lista-contenido">
+          <div class="nota-lista-titulo">Guardar nuevo marcador</div>
+          <div class="nota-lista-resumen">Abrí el formulario para guardar la nota con los versículos seleccionados.</div>
+        </div>
+
+        <div class="nota-lista-botones">
+          <button
+            type="button"
+            class="pm-btn"
+            onclick="abrirFormNuevoMarcador()"
+            title="Continuar"
+          >
+            <i class="fa-solid fa-circle-check"></i>
+          </button>
+        </div>
       </div>
     `;
   }
 
   if (items.length === 0) {
     lista.innerHTML = header + `<p class="muted">Todavía no guardaste marcadores.</p>`;
+    lista.scrollLeft = 0;
     return;
   }
 
@@ -7270,8 +7281,9 @@ const items = Object.entries(marcadores || {})
     items.map(m => {
       const fechaTxt = m.fecha ? new Date(m.fecha).toLocaleDateString("es-AR") : "";
       const refTxt = m.ref || (m.libro && m.capitulo ? `${m.libro} ${m.capitulo}` : "Nota");
-      const titulo = (m.titulo || "Marcador").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-      const linea = `${refTxt} - ${fechaTxt} - ${titulo}`;
+      const tituloTxt = m.titulo || "Marcador";
+
+      const linea = marcadorEscapeHTML(`${refTxt} - ${fechaTxt} - ${tituloTxt}`);
 
       const fondoNota = m.color || "#fff3b0";
       const colorTexto = (typeof colorContraste === "function")
@@ -7284,39 +7296,25 @@ const items = Object.entries(marcadores || {})
           : (m?.origen === "compartidos" || !!m?.sourceCompKey);
 
       const puedeEditarNota = !notaVieneDeCompartidos;
-      const resumen = marcadorEscapeHTML(notaResumenVersiculoLista(m, 92));
+      const resumen = marcadorEscapeHTML(notaResumenVersiculoLista(m, 110));
 
-          return `
+      return `
         <div
-          class="card-marcador"
-          style="
-            display:flex;
-            flex-direction:column;
-            gap:6px;
-            background:${fondoNota} !important;
-            color:${colorTexto} !important;
-            border:1px solid rgba(0,0,0,.10);
-          "
+          class="card-marcador nota-lista-card"
+          style="--nota-bg:${fondoNota}; --nota-color:${colorTexto};"
         >
-          <div style="display:flex; justify-content:space-between; gap:10px; align-items:center;">
-            <div
-              style="
-                cursor:pointer;
-                flex:1;
-                min-width:0;
-                font-size:13px;
-                font-weight:800;
-                white-space:nowrap;
-                overflow:hidden;
-                text-overflow:ellipsis;
-                color:${colorTexto} !important;
-              "
-              onclick="abrirMarcador('${m.id}')"
-              title="${linea}"
-            >
-              ${linea}
-            </div>
+          <div
+            class="nota-lista-contenido"
+            onclick="abrirMarcador('${m.id}')"
+          >
+            <div class="nota-lista-titulo">${linea}</div>
 
+            ${resumen ? `
+              <div class="nota-lista-resumen">${resumen}</div>
+            ` : ``}
+          </div>
+
+          <div class="nota-lista-botones">
             <button
               type="button"
               class="pm-btn"
@@ -7337,29 +7335,11 @@ const items = Object.entries(marcadores || {})
               </button>
             ` : ``}
           </div>
-
-          ${resumen ? `
-            <div
-              onclick="abrirMarcador('${m.id}')"
-              style="
-                cursor:pointer;
-                font-size:12px;
-                font-weight:600;
-                line-height:1.25;
-                opacity:.82;
-                color:${colorTexto} !important;
-                display:-webkit-box;
-                -webkit-line-clamp:2;
-                -webkit-box-orient:vertical;
-                overflow:hidden;
-              "
-            >
-              ${resumen}
-            </div>
-          ` : ``}
         </div>
       `;
     }).join("");
+
+  lista.scrollLeft = 0;
 }
 
 window.volverListaMarcadoresDesdeVista = function(origenLista = "biblia") {
