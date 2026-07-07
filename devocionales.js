@@ -1892,11 +1892,15 @@ function textShadowLegible(textHex, outlineHex = null){
   const oc = devHexSeguro(outlineHex) || outlineColor(textHex || "#000000");
 
   return `
-    -1px 0 ${oc},
-     1px 0 ${oc},
-     0 -1px ${oc},
-     0  1px ${oc},
-     0 0 2px ${oc}
+    -1.6px 0 ${oc},
+     1.6px 0 ${oc},
+     0 -1.6px ${oc},
+     0  1.6px ${oc},
+    -1.1px -1.1px ${oc},
+     1.1px -1.1px ${oc},
+    -1.1px  1.1px ${oc},
+     1.1px  1.1px ${oc},
+     0 0 3px ${oc}
   `;
 }
 
@@ -2823,6 +2827,76 @@ function ensureDev2TextureLayer(container){
   return layer;
 }
 
+function devSvgRomboDifuminadoDataUrl(c1, c2, c3, usar3 = false){
+  c1 = devHexSeguro(c1) || "#ffffff";
+  c2 = devHexSeguro(c2) || "#d1eeff";
+  c3 = usar3 ? (devHexSeguro(c3) || "#a6d0ff") : c2;
+
+  const svg = `
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 840" preserveAspectRatio="none">
+    <defs>
+      <filter id="blurGrande" x="-30%" y="-30%" width="160%" height="160%">
+        <feGaussianBlur stdDeviation="58"/>
+      </filter>
+
+      <filter id="blurMedio" x="-25%" y="-25%" width="150%" height="150%">
+        <feGaussianBlur stdDeviation="34"/>
+      </filter>
+
+      <linearGradient id="base" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="${c1}"/>
+        <stop offset="52%" stop-color="${c1}"/>
+        <stop offset="100%" stop-color="${c3}" stop-opacity="0.28"/>
+      </linearGradient>
+
+      <linearGradient id="romboGrad" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="${c2}" stop-opacity="0.10"/>
+        <stop offset="42%" stop-color="${c2}" stop-opacity="0.72"/>
+        <stop offset="64%" stop-color="${c3}" stop-opacity="${usar3 ? "0.62" : "0.32"}"/>
+        <stop offset="100%" stop-color="${c2}" stop-opacity="0.08"/>
+      </linearGradient>
+    </defs>
+
+    <rect width="1080" height="840" fill="url(#base)"/>
+
+    <!-- halo grande con forma de rombo -->
+    <polygon
+      points="540,-80 1180,420 540,920 -100,420"
+      fill="${c2}"
+      opacity="0.16"
+      filter="url(#blurGrande)"
+    />
+
+    <!-- rombo principal -->
+    <polygon
+      points="540,45 1015,420 540,795 65,420"
+      fill="url(#romboGrad)"
+      opacity="0.82"
+      filter="url(#blurMedio)"
+    />
+
+    <!-- rombo interno más suave -->
+    <polygon
+      points="540,155 875,420 540,685 205,420"
+      fill="${c3}"
+      opacity="${usar3 ? "0.30" : "0.14"}"
+      filter="url(#blurMedio)"
+    />
+
+    <!-- luz central -->
+    <ellipse
+      cx="540"
+      cy="420"
+      rx="215"
+      ry="145"
+      fill="${c1}"
+      opacity="0.18"
+      filter="url(#blurGrande)"
+    />
+  </svg>`;
+
+  return `url("data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}")`;
+}
 
 // ================= FASE 2: FONDO DISEÑADO COMPACTO =================
 // Fase 2 ya era el bloque diseñado del devocional: no agregamos toggle.
@@ -2848,14 +2922,9 @@ function dev2GradienteCSS(st = DEV.f2){
     case "radial":
       return `radial-gradient(circle at center, ${colores})`;
 
-    // ✅ rombo más suave: no pinwheel raro
+    // ✅ rombo real tipo 🔷, difuminado y sin forma de X
     case "rombo":
-      return [
-        `linear-gradient(45deg, transparent 0%, transparent 39%, ${devRgba(c2, .42)} 50%, transparent 61%, transparent 100%)`,
-        `linear-gradient(135deg, transparent 0%, transparent 39%, ${devRgba(c3, .36)} 50%, transparent 61%, transparent 100%)`,
-        `radial-gradient(ellipse at center, ${devRgba(c2, .28)} 0%, transparent 66%)`,
-        `linear-gradient(180deg, ${c1} 0%, ${devRgba(c3, .55)} 100%)`
-      ].join(",");
+      return devSvgRomboDifuminadoDataUrl(c1, c2, c3, !!st.usarColor3);
 
     // ✅ nuevo: difuminado tipo manchas suaves
     // ✅ manchas más difuminadas, amplias y parejas
@@ -2887,8 +2956,12 @@ function dev2AplicarFondoBase(el, st = DEV.f2){
     : "none";
 
   if (tieneMezcla && st.gradienteForma === "manchas") {
-    // ✅ agranda las manchas para que no se vean duras ni separadas
+    // ✅ manchas más grandes, suaves y parejas
     el.style.backgroundSize = "125% 125%, 125% 125%, 130% 130%, 130% 130%, 135% 135%, cover";
+    el.style.backgroundPosition = "center";
+  } else if (tieneMezcla && st.gradienteForma === "rombo") {
+    // ✅ el SVG ya trae el rombo entero
+    el.style.backgroundSize = "100% 100%";
     el.style.backgroundPosition = "center";
   } else {
     el.style.backgroundSize = "cover";
@@ -3420,8 +3493,10 @@ t.style.color = st.color;
 
 const outline1 = devGetOutlineColor(1, st.color);
 
-t.style.textShadow = textShadowLegibleFinal(st.color, sc, outline1);
-t.style.webkitTextStroke = `${(0.6 * sc).toFixed(2)}px ${outline1}`;
+const outlineScale1 = Math.max(0.55, sc * 1.25);
+
+t.style.textShadow = textShadowLegibleFinal(st.color, outlineScale1, outline1);
+t.style.webkitTextStroke = `${Math.max(0.35, 0.78 * sc).toFixed(2)}px ${outline1}`;
 t.style.paintOrder = "stroke fill";
 applyFase1WrapperLook(w, st, sc);
 
@@ -3494,8 +3569,10 @@ t.style.color = st.color;
 
 const outline2 = devGetOutlineColor(2, st.color);
 
-t.style.textShadow = textShadowLegible(st.color, outline2);
-t.style.webkitTextStroke = `0.35px ${outline2}`;
+const outlineScale2 = Math.max(0.55, sc2 * 1.25);
+
+t.style.textShadow = textShadowLegibleFinal(st.color, outlineScale2, outline2);
+t.style.webkitTextStroke = `${Math.max(0.38, 0.72 * sc2).toFixed(2)}px ${outline2}`;
 t.style.paintOrder = "stroke fill";
 
   applyTextStylesToOne(t, st);
@@ -3694,11 +3771,11 @@ applyFase1WrapperLook(wrap, st, 1);
     texto.style.color = st.color;
     applyTextStylesToOne(texto, st);
 
-const outlineFinalF1 = 1.9;
+const outlineFinalF1 = 2.15;
 const outlineF1 = devHexSeguro(st.outlineColor) || devGetOutlineColor(1, st.color);
 
 texto.style.textShadow = textShadowLegibleFinal(st.color, outlineFinalF1, outlineF1);
-texto.style.webkitTextStroke = `${(0.6 * outlineFinalF1).toFixed(2)}px ${outlineF1}`;
+texto.style.webkitTextStroke = `${(0.72 * outlineFinalF1).toFixed(2)}px ${outlineF1}`;
 texto.style.paintOrder = "stroke fill";
 texto.innerHTML = buildFase1HTML(st.size, 1);
 
@@ -3752,8 +3829,8 @@ texto.innerHTML = buildFase1HTML(st.size, 1);
 
     const outlineF2 = devHexSeguro(st.outlineColor) || devGetOutlineColor(2, st.color);
 
-    texto.style.textShadow = textShadowLegibleFinal(st.color, 1, outlineF2);
-    texto.style.webkitTextStroke = "0.5px " + outlineF2;
+texto.style.textShadow = textShadowLegibleFinal(st.color, 1.25, outlineF2);
+texto.style.webkitTextStroke = "0.75px " + outlineF2;
     texto.style.paintOrder = "stroke fill";
     texto.innerHTML = buildFase2HTML(st.size, 1);
     wrap.appendChild(texto);
