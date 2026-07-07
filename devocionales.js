@@ -90,6 +90,7 @@ gradienteForma: "vertical",
     fuente: "Roboto",
 color: "#000000",
 outlineColor: "",
+textoSigueF1: true,
 op: 0.15,
     size: 26,
     userChanged: false,
@@ -167,6 +168,7 @@ DEV.f2.gradienteForma = "vertical";
   DEV.f2.fuente = "Roboto";
 DEV.f2.color = "#000000";
 DEV.f2.outlineColor = "";
+DEV.f2.textoSigueF1 = true;
 DEV.f2.op = 0.15;
   DEV.f2.size = 26;
   DEV.f2.userChanged = false;
@@ -1953,6 +1955,17 @@ function devAsegurarControlContorno(fase) {
       input.dataset.manual = "1";
       st.outlineColor = devHexSeguro(input.value) || "";
 
+      if (fase === 1) {
+        // ✅ si cambio borde en Fase 1, se copia a Fase 2
+        devF2HeredarTextoDesdeF1SiCorresponde();
+      }
+
+      if (fase === 2) {
+        // ✅ si el usuario toca manualmente el borde en Fase 2,
+        // deja de seguir automáticamente a Fase 1
+        DEV.f2.textoSigueF1 = false;
+      }
+
       devSetHostColorVisual(`dev${fase}OutlineColorHost`, st.outlineColor || outlineColor(st.color));
       devRenderFase(fase);
     });
@@ -2845,13 +2858,15 @@ function dev2GradienteCSS(st = DEV.f2){
       ].join(",");
 
     // ✅ nuevo: difuminado tipo manchas suaves
+    // ✅ manchas más difuminadas, amplias y parejas
     case "manchas":
       return [
-        `radial-gradient(circle at 18% 20%, ${devRgba(c2, .72)} 0%, ${devRgba(c2, .38)} 22%, transparent 49%)`,
-        `radial-gradient(circle at 82% 18%, ${devRgba(c3, .62)} 0%, ${devRgba(c3, .30)} 20%, transparent 48%)`,
-        `radial-gradient(circle at 32% 78%, ${devRgba(c3, .52)} 0%, ${devRgba(c3, .24)} 22%, transparent 52%)`,
-        `radial-gradient(circle at 76% 82%, ${devRgba(c2, .45)} 0%, ${devRgba(c2, .20)} 24%, transparent 54%)`,
-        `linear-gradient(180deg, ${devRgba(c1, .96)} 0%, ${c1} 100%)`
+        `radial-gradient(ellipse 82% 62% at 22% 24%, ${devRgba(c2, .32)} 0%, ${devRgba(c2, .22)} 30%, ${devRgba(c2, .10)} 54%, transparent 78%)`,
+        `radial-gradient(ellipse 82% 62% at 78% 24%, ${devRgba(c3, .30)} 0%, ${devRgba(c3, .20)} 31%, ${devRgba(c3, .09)} 55%, transparent 79%)`,
+        `radial-gradient(ellipse 86% 64% at 24% 76%, ${devRgba(c3, .28)} 0%, ${devRgba(c3, .18)} 32%, ${devRgba(c3, .08)} 56%, transparent 80%)`,
+        `radial-gradient(ellipse 86% 64% at 76% 76%, ${devRgba(c2, .28)} 0%, ${devRgba(c2, .18)} 32%, ${devRgba(c2, .08)} 56%, transparent 80%)`,
+        `radial-gradient(ellipse 90% 70% at 50% 50%, ${devRgba(c2, .14)} 0%, ${devRgba(c3, .10)} 38%, transparent 74%)`,
+        `linear-gradient(180deg, ${c1} 0%, ${devRgba(c1, .96)} 48%, ${c1} 100%)`
       ].join(",");
 
     case "vertical":
@@ -2871,8 +2886,15 @@ function dev2AplicarFondoBase(el, st = DEV.f2){
     ? dev2GradienteCSS(st)
     : "none";
 
-  el.style.backgroundSize = "cover";
-  el.style.backgroundPosition = "center";
+  if (tieneMezcla && st.gradienteForma === "manchas") {
+    // ✅ agranda las manchas para que no se vean duras ni separadas
+    el.style.backgroundSize = "125% 125%, 125% 125%, 130% 130%, 130% 130%, 135% 135%, cover";
+    el.style.backgroundPosition = "center";
+  } else {
+    el.style.backgroundSize = "cover";
+    el.style.backgroundPosition = "center";
+  }
+
   el.style.backgroundRepeat = "no-repeat";
 }
 
@@ -3936,44 +3958,42 @@ window.devVolverFase0 = () => {
 };
 
 function devF2HeredarTextoDesdeF1SiCorresponde(){
-  // ✅ Solo sugerimos si el usuario todavía NO tocó Fase 2.
-  // Si ya cambió algo en Fase 2, respetamos su edición.
-  if (DEV.f2.userChanged) return;
+  // ✅ Fase 2 sigue el color/borde de Fase 1,
+  // incluso si ya cambiaste fondo, textura, tamaño o adorno.
+  // Solo deja de seguir si tocás manualmente el color/borde de texto en Fase 2.
+  if (DEV.f2.textoSigueF1 === false) return;
 
   const colorF1 = devHexSeguro(DEV.f1.color) || "#000000";
 
-  // asegura que Fase 1 tenga su contorno actualizado
-  const contornoCalculadoF1 = devGetOutlineColor(1, colorF1);
+  const inputF1 = devAsegurarControlContorno(1);
+  const contornoF1 = devGetOutlineColor(1, colorF1);
 
-  const inputF1 = $("dev1OutlineColor");
   const contornoManualF1 =
     inputF1?.dataset?.manual === "1"
       ? devHexSeguro(inputF1.value || DEV.f1.outlineColor)
       : "";
 
-  const contornoF1 =
+  const finalOutline =
     contornoManualF1 ||
     devHexSeguro(DEV.f1.outlineColor) ||
-    contornoCalculadoF1 ||
+    contornoF1 ||
     outlineColor(colorF1);
 
   DEV.f2.color = colorF1;
-  DEV.f2.outlineColor = contornoF1;
+  DEV.f2.outlineColor = finalOutline;
+  DEV.f2.textoSigueF1 = true;
 
   const color2 = $("dev2Color");
   if (color2) color2.value = colorF1;
 
   const outline2 = devAsegurarControlContorno(2);
   if (outline2) {
-    outline2.value = contornoF1;
-
-    // Si el borde de Fase 1 era manual, lo copiamos como manual.
-    // Si era automático, queda automático también.
+    outline2.value = finalOutline;
     outline2.dataset.manual = contornoManualF1 ? "1" : "0";
   }
 
   devSetHostColorVisual("dev2ColorHost", colorF1);
-  devSetHostColorVisual("dev2OutlineColorHost", contornoF1);
+  devSetHostColorVisual("dev2OutlineColorHost", finalOutline);
 }
 
 window.devIrFase2 = () => {
@@ -4220,25 +4240,30 @@ function bindInputs(){
   // =========================
   // FASE 1 (imagen) - opacidad / tamaño / color
   // =========================
-  ["Opacidad","Tamano","Color","OpColor"].forEach(k=>{
-    const el = $(`dev1${k}`);
-    if (!el) return;
+["Opacidad","Tamano","Color","OpColor"].forEach(k=>{
+  const el = $(`dev1${k}`);
+  if (!el) return;
 
-    el.addEventListener("input", ()=>{
-      // opacidad y color siempre desde los inputs
-      DEV.f1.op = Number($("dev1Opacidad")?.value || 0.35);
-      DEV.f1.color = $("dev1Color")?.value || "#000000";
-      DEV.f1.opColor = $("dev1OpColor")?.value || "#000000";
+  el.addEventListener("input", ()=>{
+    // opacidad y color siempre desde los inputs
+    DEV.f1.op = Number($("dev1Opacidad")?.value || 0.35);
+    DEV.f1.color = $("dev1Color")?.value || "#000000";
+    DEV.f1.opColor = $("dev1OpColor")?.value || "#000000";
+    DEV.f1.size = Number($("dev1Tamano")?.value || 30);
 
-            DEV.f1.size = Number($("dev1Tamano")?.value || 30);
+    if (k === "Tamano") {
+      DEV.f1.userChanged = true;
+    }
 
-      if (k === "Tamano") {
-        DEV.f1.userChanged = true;
-      }
+    // ✅ si cambia el color de texto en Fase 1,
+    // Fase 2 se actualiza también aunque ya exista imagen final.
+    if (k === "Color") {
+      devF2HeredarTextoDesdeF1SiCorresponde();
+    }
 
-      devRenderFase(1);
-    });
+    devRenderFase(1);
   });
+});
 
 // =========================
 // FASE 2: texto, textura y adorno
@@ -4255,6 +4280,12 @@ function bindInputs(){
     DEV.f2.texturaOp = Number($("dev2TexturaOp")?.value || 0.22);
     DEV.f2.adornoWidth = Number($("dev2AdornoTamano")?.value || 70);
     DEV.f2.adornoOpacidad = Math.max(0, Math.min(1, Number($("dev2AdornoOpacidad")?.value ?? 1)));
+
+    // ✅ solo si tocás color de texto en Fase 2,
+    // Fase 2 deja de copiar el color/borde de Fase 1.
+    if (k === "Color") {
+      DEV.f2.textoSigueF1 = false;
+    }
 
     requestAnimationFrame(()=> devRenderFase(2));
   });
@@ -5202,8 +5233,9 @@ if (btnCrear) {
     DEV.p1 = p1;
     DEV.p2 = p2;
     DEV.audioText = audioText;
-    DEV.f2.userChanged = false; // ✅ nuevo devocional => permitir sugerencia inicial
-    DEV.f1.userChanged = false; // ✅ nuevo devocional => permitir sugerencia inicial fase 1
+DEV.f2.userChanged = false; // ✅ nuevo devocional => permitir sugerencia inicial
+DEV.f2.textoSigueF1 = true; // ✅ Fase 2 vuelve a seguir color/borde de Fase 1
+DEV.f1.userChanged = false; // ✅ nuevo devocional => permitir sugerencia inicial fase 1
      
     // reset gate audio
     DEV.audioOk = false;
