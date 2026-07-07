@@ -145,43 +145,90 @@ function vaAsegurarExtrasMenuSesion() {
   const modal = document.getElementById("loginModal");
   if (!modal) return;
 
-  if (!document.getElementById("vaMenuSesionExtraStyle")) {
-    const st = document.createElement("style");
-    st.id = "vaMenuSesionExtraStyle";
-    st.textContent = `
-      #btnOpcionPedidoOracion{
-        background:linear-gradient(135deg, #fff3b0, var(--ui-azul-claro, #bcdcff)) !important;
-        color:#000 !important;
-        font-weight:900 !important;
-        box-shadow:0 6px 18px rgba(0,0,0,.10);
+if (!document.getElementById("vaMenuSesionExtraStyle")) {
+  const st = document.createElement("style");
+  st.id = "vaMenuSesionExtraStyle";
+  st.textContent = `
+    #btnOpcionPedidoOracion{
+      grid-column:1 / -1 !important;
+      min-height:38px !important;
+      width:100% !important;
+      background:linear-gradient(135deg, #fff3b0, var(--ui-azul-claro, #bcdcff)) !important;
+      color:#000 !important;
+      font-weight:900 !important;
+      box-shadow:0 6px 18px rgba(0,0,0,.10);
+    }
+
+    #btnOpcionPedidoOracion i{
+      color:#000 !important;
+    }
+
+    #loginModal .opciones-sesion-actions{
+      display:grid !important;
+      grid-template-columns:1fr 1fr !important;
+      gap:10px !important;
+      width:100% !important;
+    }
+
+    #loginModal .opciones-sesion-actions > button{
+      width:100% !important;
+      min-width:0 !important;
+      max-width:none !important;
+      min-height:38px !important;
+      height:38px !important;
+      padding:0 12px !important;
+      border-radius:999px !important;
+
+      display:inline-flex !important;
+      align-items:center !important;
+      justify-content:center !important;
+      gap:8px !important;
+
+      white-space:nowrap !important;
+      font-weight:900 !important;
+      box-sizing:border-box !important;
+    }
+
+    #btnOpcionDevocionales,
+    #btnOpcionAgenda,
+    #btnOpcionABC,
+    #btnOpcionRecursos{
+      grid-column:auto !important;
+    }
+
+    #loginModal .va-opciones-footer{
+      justify-content:center !important;
+    }
+
+    #loginModal.va-app-instalada #btnOpcionInstalarApp{
+      display:none !important;
+    }
+
+    #loginModal.va-app-instalada .va-opciones-footer{
+      display:flex !important;
+      justify-content:center !important;
+      align-items:center !important;
+      gap:10px !important;
+    }
+
+    #loginModal.va-app-instalada .va-opciones-footer > button{
+      flex:0 0 132px !important;
+      max-width:150px !important;
+    }
+
+    @media(max-width:420px){
+      #loginModal .opciones-sesion-actions{
+        gap:8px !important;
       }
 
-      #btnOpcionPedidoOracion i{
-        color:#000 !important;
+      #loginModal .opciones-sesion-actions > button{
+        font-size:13px !important;
+        padding:0 9px !important;
       }
-
-      #loginModal .va-opciones-footer{
-        justify-content:center !important;
-      }
-
-      #loginModal.va-app-instalada #btnOpcionInstalarApp{
-        display:none !important;
-      }
-
-      #loginModal.va-app-instalada .va-opciones-footer{
-        display:flex !important;
-        justify-content:center !important;
-        align-items:center !important;
-        gap:10px !important;
-      }
-
-      #loginModal.va-app-instalada .va-opciones-footer > button{
-        flex:0 0 132px !important;
-        max-width:150px !important;
-      }
-    `;
-    document.head.appendChild(st);
-  }
+    }
+  `;
+  document.head.appendChild(st);
+}
 
   const btnDevocionales = document.getElementById("btnOpcionDevocionales");
 
@@ -2430,20 +2477,25 @@ window.actualizarPermisosUI = function () {
   const wrapRecursos = document.getElementById("iglesia-recursos");
   const recursosPermisos = document.getElementById("recursos-permisos");
 
-  // ✅ Si usuario común quedó en Recursos por estado guardado, lo sacamos
-  if (wrapRecursos && !puedeVerRecursos) {
-    wrapRecursos.style.display = "none";
+// ✅ Si usuario común quedó en Recursos por estado guardado, lo sacamos.
+// Ya NO lo mandamos a Devocionales: va a Compartidos.
+if (wrapRecursos && !puedeVerRecursos) {
+  wrapRecursos.style.display = "none";
 
-    if (document.body.classList.contains("en-iglesia")) {
-      setTimeout(() => {
-        try {
-          window.mostrarIglesiaSub?.("devocionales");
-        } catch (e) {
-          console.warn(e);
+  if (document.body.classList.contains("en-iglesia")) {
+    setTimeout(() => {
+      try {
+        if (typeof window.irA === "function") {
+          window.irA("compartidos");
+        } else if (typeof window.forzarSeccionActiva === "function") {
+          window.forzarSeccionActiva("compartidos");
         }
-      }, 0);
-    }
+      } catch (e) {
+        console.warn(e);
+      }
+    }, 0);
   }
+}
 
   // ✅ Si colaborador estaba en Permisos, lo mandamos a Ediciones
   if (
@@ -2754,6 +2806,40 @@ Object.entries(marcadores || {}).forEach(([idMarcador, m]) => {
 }, 1200);
 
 });
+
+// ================= 💾 GUARDADO RÁPIDO AL SALIR / BLOQUEAR =================
+// Android puede matar la PWA al bloquear pantalla o dejarla en segundo plano.
+// Guardamos el estado apenas la app pierde visibilidad para que al volver abra mejor.
+function vaGuardarEstadoAntesDeSuspender() {
+  try {
+    if (typeof guardarEstadoBiblia === "function") {
+      guardarEstadoBiblia({
+        seccion: window.__SECCION_ACTIVA || obtenerSeccionActual?.() || "compartidos",
+        subIglesia: window.__IGLESIA_SUB_ACTIVA || "",
+        subRecursos: window.__RECURSOS_SUB_ACTIVA || "",
+        scrollY: window.scrollY || document.documentElement.scrollTop || 0,
+        ts: Date.now()
+      });
+    }
+  } catch (e) {
+    console.warn("No pude guardar estado antes de suspender:", e);
+  }
+
+  try {
+    if (typeof vaGuardarSnapshotVisual === "function") {
+      vaGuardarSnapshotVisual();
+    }
+  } catch (e) {}
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") {
+    vaGuardarEstadoAntesDeSuspender();
+  }
+});
+
+window.addEventListener("pagehide", vaGuardarEstadoAntesDeSuspender);
+window.addEventListener("beforeunload", vaGuardarEstadoAntesDeSuspender);
 
 // ================= DOM (script al final del body)  =================
 const libroSel = document.getElementById("libro");
