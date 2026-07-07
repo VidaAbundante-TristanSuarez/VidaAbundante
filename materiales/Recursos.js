@@ -1160,8 +1160,10 @@ function hTextoPedidosSeleccionados() {
 
   items.forEach(({ hermano, pedido }) => {
     const nombre = `${hermano.nombre || ""} ${hermano.apellido || ""}`.trim() || "Sin nombre";
+    const telefono = hValor(hermano.telefono || "Sin teléfono");
 
-    lineas.push(`📅 ${hPedidoFechaBonita(pedido.fecha)} — ${nombre}`);
+    lineas.push(`${hPedidoFechaBonita(pedido.fecha)} — ${nombre}`);
+    lineas.push(`Teléfono: ${telefono}`);
     lineas.push(pedido.texto);
     lineas.push("");
   });
@@ -1169,10 +1171,41 @@ function hTextoPedidosSeleccionados() {
   return lineas.join("\n").trim();
 }
 
+function hGetPedidosVisiblesChecks() {
+  return Array.from(document.querySelectorAll("#hermanosLista .pedido-check"));
+}
+
+function hTodasOracionesVisiblesMarcadas() {
+  const checks = hGetPedidosVisiblesChecks();
+  return checks.length > 0 && checks.every(ch => ch.checked);
+}
+
+function hRefrescarBotonMarcarOraciones() {
+  const btn = document.getElementById("btnToggleMarcarPedidos");
+  if (!btn) return;
+
+  const todasMarcadas = hTodasOracionesVisiblesMarcadas();
+  const total = hGetPedidosSeleccionados().length;
+
+  btn.classList.toggle("activo", todasMarcadas);
+
+  btn.innerHTML = todasMarcadas
+    ? `
+      <i class="fa-solid fa-square-check"></i>
+      <span>Oraciones marcadas${total ? ` (${total})` : ""}</span>
+    `
+    : `
+      <i class="fa-regular fa-square-full"></i>
+      <span>Marcar Oraciones</span>
+    `;
+}
+
 window.hActualizarPedidosSeleccionados = () => {
   const total = hGetPedidosSeleccionados().length;
   const btnImprimir = document.getElementById("btnImprimirPedidosSeleccionados");
   const btnEnviar = document.getElementById("btnEnviarPedidosSeleccionados");
+
+  hRefrescarBotonMarcarOraciones();
 
   if (btnImprimir) {
     btnImprimir.innerHTML = `
@@ -1189,8 +1222,18 @@ window.hActualizarPedidosSeleccionados = () => {
   }
 };
 
+window.hToggleMarcarPedidosVisibles = () => {
+  const marcar = !hTodasOracionesVisiblesMarcadas();
+
+  hGetPedidosVisiblesChecks().forEach(ch => {
+    ch.checked = marcar;
+  });
+
+  hActualizarPedidosSeleccionados();
+};
+
 window.hMarcarPedidosVisibles = (marcar = true) => {
-  document.querySelectorAll("#hermanosLista .pedido-check").forEach(ch => {
+  hGetPedidosVisiblesChecks().forEach(ch => {
     ch.checked = !!marcar;
   });
 
@@ -1248,10 +1291,14 @@ window.hImprimirPedidosSeleccionados = () => {
 
       ${items.map(({ hermano, pedido }) => {
         const nombre = `${hermano.nombre || ""} ${hermano.apellido || ""}`.trim() || "Sin nombre";
+        const telefono = hValor(hermano.telefono || "Sin teléfono");
 
         return `
           <div class="pedido-print">
             <h2>${hEscape(hPedidoFechaBonita(pedido.fecha))} — ${hEscape(nombre)}</h2>
+            <div style="font-weight:700; margin-bottom:8px;">
+              Teléfono: ${hEscape(telefono)}
+            </div>
             <p>${hEscape(pedido.texto)}</p>
           </div>
         `;
@@ -1355,7 +1402,7 @@ window.mostrarHermanos = async () => {
         #hermanosActions{
           width:100%;
           display:grid;
-          grid-template-columns: minmax(180px, 1fr) auto auto auto auto auto;
+          grid-template-columns: minmax(180px, 1fr) auto auto auto auto;
           gap:8px;
           align-items:center;
         }
@@ -1407,7 +1454,7 @@ window.mostrarHermanos = async () => {
           background:#fff;
           border:1px solid rgba(0,0,0,.10);
           border-radius:16px;
-          padding:14px;
+          padding:10px;
           overflow:hidden;
           box-shadow: 0 2px 10px rgba(0,0,0,.04);
         }
@@ -1484,7 +1531,7 @@ window.mostrarHermanos = async () => {
 
 .hermano-detalle{
   display:none;
-  margin-top:12px;
+  margin-top:8px;
 }
 
 .hermano-card.abierta .hermano-detalle{
@@ -1530,7 +1577,7 @@ window.mostrarHermanos = async () => {
         .hermano-campo{
           background: rgba(0,0,0,.03);
           border-radius:12px;
-          padding:10px 12px;
+          padding:8px 10px;
         }
 
         .hermano-campo-label{
@@ -1562,26 +1609,32 @@ window.mostrarHermanos = async () => {
           border:1px solid rgba(0,0,0,.10);
         }
 
+          #btnToggleMarcarPedidos.activo{
+          background: var(--ui-azul-hover, #a6d0ff);
+          border-color: rgba(0,0,0,.12);
+        }
+
         .pedidos-oracion-wrap{
           display:grid;
-          gap:8px;
+          gap:4px;
         }
 
         .pedido-fecha-grupo{
           background:#fff;
           border:1px solid rgba(0,0,0,.08);
-          border-radius:12px;
+          border-radius:10px;
           overflow:hidden;
         }
 
         .pedido-fecha-grupo summary{
           cursor:pointer;
           list-style:none;
-          padding:9px 10px;
+          padding:6px 8px;
+          min-height:34px;
           display:grid;
           grid-template-columns: 1fr auto auto;
           align-items:center;
-          gap:10px;
+          gap:8px;
           font-weight:900;
           background:rgba(188,220,255,.45);
         }
@@ -1593,17 +1646,17 @@ window.mostrarHermanos = async () => {
         .pedido-fecha-info{
           display:inline-flex;
           align-items:center;
-          gap:8px;
+          gap:7px;
           min-width:0;
         }
 
         .pedido-fecha-info i{
           color:#000;
-          font-size:14px;
+          font-size:13px;
         }
 
         .pedido-fecha-cantidad{
-          min-width:28px;
+          min-width:24px;
           text-align:center;
           font-weight:900;
         }
@@ -1619,19 +1672,18 @@ window.mostrarHermanos = async () => {
 
         .pedido-fecha-items{
           display:grid;
-          gap:8px;
-          padding:10px;
+          gap:6px;
+          padding:6px 5px 7px;
         }
 
         .pedido-oracion-item{
-          display:grid;
-          grid-template-columns: 22px 1fr;
-          gap:8px 10px;
-          align-items:start;
-          padding:10px;
+          position:relative;
+          display:block;
+          padding:8px 34px 8px 5px;
           border-radius:10px;
           background:rgba(0,0,0,.035);
           cursor:pointer;
+          min-height:34px;
         }
 
         .pedido-oracion-item .pedido-check{
@@ -1641,13 +1693,19 @@ window.mostrarHermanos = async () => {
         }
 
         .pedido-check-fake{
+          position:absolute;
+          top:7px;
+          right:8px;
+
           width:22px;
           height:22px;
+
           display:inline-flex;
           align-items:center;
           justify-content:center;
+
           color:#000;
-          margin-top:1px;
+          margin:0;
         }
 
         .pedido-check-fake .icon-checked{
@@ -1663,21 +1721,29 @@ window.mostrarHermanos = async () => {
         }
 
         .pedido-oracion-body{
+          display:block;
           min-width:0;
-          display:grid;
-          gap:5px;
+          margin:0;
+          padding:0;
         }
 
-        .pedido-oracion-texto{
-          white-space:pre-wrap;
-          word-break:break-word;
-          line-height:1.35;
-        }
-
-        .pedido-oracion-item small{
+        .pedido-oracion-body small{
+          display:block;
           opacity:.7;
           font-size:12px;
           line-height:1.2;
+          margin:0 0 4px 0;
+          text-align:left;
+        }
+
+        .pedido-oracion-texto{
+          display:block;
+          white-space:pre-wrap;
+          word-break:break-word;
+          line-height:1.32;
+          text-align:left;
+          margin:0;
+          padding:0;
         }
 
         .hermano-acciones{
@@ -1913,14 +1979,15 @@ ${window.__ES_ADMIN ? `
   </button>
 ` : ``}
 
-<button class="hermanosBtnAccion secundario" type="button" onclick="hMarcarPedidosVisibles(true)" title="Marcar todas">
-  <i class="fa-solid fa-square-check"></i>
-  <span>Marcar</span>
-</button>
-
-<button class="hermanosBtnAccion secundario" type="button" onclick="hMarcarPedidosVisibles(false)" title="Desmarcar">
+<button
+  id="btnToggleMarcarPedidos"
+  class="hermanosBtnAccion secundario"
+  type="button"
+  onclick="hToggleMarcarPedidosVisibles()"
+  title="Marcar Oraciones"
+>
   <i class="fa-regular fa-square-full"></i>
-  <span>Desmarcar</span>
+  <span>Marcar Oraciones</span>
 </button>
 
 <button id="btnImprimirPedidosSeleccionados" class="hermanosBtnAccion" type="button" onclick="hImprimirPedidosSeleccionados()" title="Imprimir">
