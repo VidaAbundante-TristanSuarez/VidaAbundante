@@ -1082,8 +1082,14 @@ function hRenderPedidosOracion(h = {}) {
       ${grupos.map(g => `
         <details class="pedido-fecha-grupo">
           <summary>
-            <span>📅 ${hEscape(hPedidoFechaBonita(g.fecha))}</span>
-            <b>${g.items.length}</b>
+            <span class="pedido-fecha-info">
+              <i class="fa-solid fa-person-praying"></i>
+              <span>${hEscape(hPedidoFechaBonita(g.fecha))}</span>
+            </span>
+
+            <span class="pedido-fecha-cantidad">${g.items.length}</span>
+
+            <i class="fa-solid fa-caret-down pedido-caret"></i>
           </summary>
 
           <div class="pedido-fecha-items">
@@ -1098,13 +1104,20 @@ function hRenderPedidosOracion(h = {}) {
                   onclick="event.stopPropagation()"
                 >
 
-                <span class="pedido-oracion-texto">
-                  ${hEscape(p.texto)}
+                <span class="pedido-check-fake" aria-hidden="true">
+                  <i class="fa-regular fa-square-full icon-unchecked"></i>
+                  <i class="fa-solid fa-square-check icon-checked"></i>
                 </span>
 
-                ${p.fechaTexto ? `
-                  <small>${hEscape(p.fechaTexto)}</small>
-                ` : ``}
+                <span class="pedido-oracion-body">
+                  ${p.fechaTexto ? `
+                    <small>${hEscape(p.fechaTexto)}</small>
+                  ` : ``}
+
+                  <span class="pedido-oracion-texto">
+                    ${hEscape(p.texto)}
+                  </span>
+                </span>
               </label>
             `).join("")}
           </div>
@@ -1161,8 +1174,19 @@ window.hActualizarPedidosSeleccionados = () => {
   const btnImprimir = document.getElementById("btnImprimirPedidosSeleccionados");
   const btnEnviar = document.getElementById("btnEnviarPedidosSeleccionados");
 
-  if (btnImprimir) btnImprimir.textContent = total ? `🖨️ Imprimir (${total})` : "🖨️ Imprimir";
-  if (btnEnviar) btnEnviar.textContent = total ? `📤 Enviar (${total})` : "📤 Enviar";
+  if (btnImprimir) {
+    btnImprimir.innerHTML = `
+      <i class="fa-solid fa-print"></i>
+      <span>Imprimir${total ? ` (${total})` : ""}</span>
+    `;
+  }
+
+  if (btnEnviar) {
+    btnEnviar.innerHTML = `
+      <i class="fa-solid fa-share-nodes"></i>
+      <span>Compartir${total ? ` (${total})` : ""}</span>
+    `;
+  }
 };
 
 window.hMarcarPedidosVisibles = (marcar = true) => {
@@ -1329,10 +1353,28 @@ window.mostrarHermanos = async () => {
         }
 
         #hermanosActions{
-          display:flex;
+          width:100%;
+          display:grid;
+          grid-template-columns: minmax(180px, 1fr) auto auto auto auto auto;
           gap:8px;
-          flex-wrap:wrap;
           align-items:center;
+        }
+
+        .hermanosBtnAccion,
+        #hermanosBtnNuevo{
+          min-height:38px;
+          display:inline-flex;
+          align-items:center;
+          justify-content:center;
+          gap:7px;
+          white-space:nowrap;
+        }
+
+        .hermanosBtnAccion i,
+        #hermanosBtnNuevo i{
+          color:#000;
+          font-size:14px;
+          line-height:1;
         }
 
         #hermanosBuscar{
@@ -1449,21 +1491,42 @@ window.mostrarHermanos = async () => {
   display:block;
 }
         
-.hermano-grid{
-          display:grid;
-          grid-template-columns: repeat(2, minmax(0,1fr));
-          grid-template-areas:
-            "direccion cumple"
-            "pedidos telefono"
-            "notas notas";
-          gap:10px 14px;
-        }
+.hermano-nombre-linea{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+}
 
-        .hermano-campo-direccion{ grid-area: direccion; }
-        .hermano-campo-cumple{ grid-area: cumple; }
-        .hermano-campo-telefono{ grid-area: telefono; }
-        .hermano-campo-pedidos{ grid-area: pedidos; }
-        .hermano-campo-notas{ grid-area: notas; }
+.hermano-cumple-mini{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:3px 8px;
+  border-radius:999px;
+  background:rgba(188,220,255,.55);
+  font-size:12px;
+  font-weight:900;
+}
+
+.hermano-datos-linea{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap:10px;
+  margin-bottom:10px;
+}
+
+.hermano-grid{
+  display:grid;
+  grid-template-columns: 1fr;
+  grid-template-areas:
+    "pedidos"
+    "notas";
+  gap:10px;
+}
+
+.hermano-campo-pedidos{ grid-area: pedidos; }
+.hermano-campo-notas{ grid-area: notas; }
         .hermano-campo{
           background: rgba(0,0,0,.03);
           border-radius:12px;
@@ -1515,11 +1578,11 @@ window.mostrarHermanos = async () => {
           cursor:pointer;
           list-style:none;
           padding:9px 10px;
-          display:flex;
+          display:grid;
+          grid-template-columns: 1fr auto auto;
           align-items:center;
-          justify-content:space-between;
           gap:10px;
-          font-weight:800;
+          font-weight:900;
           background:rgba(188,220,255,.45);
         }
 
@@ -1527,13 +1590,30 @@ window.mostrarHermanos = async () => {
           display:none;
         }
 
-        .pedido-fecha-grupo summary::after{
-          content:"⌄";
+        .pedido-fecha-info{
+          display:inline-flex;
+          align-items:center;
+          gap:8px;
+          min-width:0;
+        }
+
+        .pedido-fecha-info i{
+          color:#000;
+          font-size:14px;
+        }
+
+        .pedido-fecha-cantidad{
+          min-width:28px;
+          text-align:center;
           font-weight:900;
+        }
+
+        .pedido-caret{
+          color:#000;
           transition:transform .18s ease;
         }
 
-        .pedido-fecha-grupo[open] summary::after{
+        .pedido-fecha-grupo[open] .pedido-caret{
           transform:rotate(180deg);
         }
 
@@ -1545,29 +1625,59 @@ window.mostrarHermanos = async () => {
 
         .pedido-oracion-item{
           display:grid;
-          grid-template-columns:auto 1fr;
+          grid-template-columns: 22px 1fr;
           gap:8px 10px;
           align-items:start;
-          padding:8px;
+          padding:10px;
           border-radius:10px;
           background:rgba(0,0,0,.035);
           cursor:pointer;
         }
 
-        .pedido-oracion-item input{
-          margin-top:3px;
+        .pedido-oracion-item .pedido-check{
+          position:absolute;
+          opacity:0;
+          pointer-events:none;
+        }
+
+        .pedido-check-fake{
+          width:22px;
+          height:22px;
+          display:inline-flex;
+          align-items:center;
+          justify-content:center;
+          color:#000;
+          margin-top:1px;
+        }
+
+        .pedido-check-fake .icon-checked{
+          display:none;
+        }
+
+        .pedido-oracion-item .pedido-check:checked + .pedido-check-fake .icon-unchecked{
+          display:none;
+        }
+
+        .pedido-oracion-item .pedido-check:checked + .pedido-check-fake .icon-checked{
+          display:inline-block;
+        }
+
+        .pedido-oracion-body{
+          min-width:0;
+          display:grid;
+          gap:5px;
         }
 
         .pedido-oracion-texto{
           white-space:pre-wrap;
           word-break:break-word;
+          line-height:1.35;
         }
 
         .pedido-oracion-item small{
-          grid-column:2;
           opacity:.7;
           font-size:12px;
-          margin-top:-4px;
+          line-height:1.2;
         }
 
         .hermano-acciones{
@@ -1728,8 +1838,26 @@ window.mostrarHermanos = async () => {
 
           #hermanosActions{
             width:100%;
-            flex-direction:column;
-            align-items:stretch;
+            display:grid;
+            grid-template-columns: 1fr 44px 44px 44px 44px;
+            gap:8px;
+            align-items:center;
+          }
+
+          #hermanosBuscar{
+            grid-column:1 / -1;
+          }
+
+          .hermanosBtnAccion,
+          #hermanosBtnNuevo{
+            width:100%;
+            min-width:0;
+            padding:10px 8px;
+          }
+
+          .hermanosBtnAccion span,
+          #hermanosBtnNuevo span{
+            display:none;
           }
 
           #hermanosBuscar{
@@ -1746,11 +1874,12 @@ window.mostrarHermanos = async () => {
             grid-template-columns: 1fr;
           }
 
+          .hermano-datos-linea{
+            grid-template-columns:1fr;
+          }
+
           .hermano-grid{
             grid-template-areas:
-              "direccion"
-              "cumple"
-              "telefono"
               "pedidos"
               "notas";
           }
@@ -1778,25 +1907,30 @@ window.mostrarHermanos = async () => {
               oninput="renderHermanosLista()"
             />
 ${window.__ES_ADMIN ? `
-  <button id="hermanosBtnNuevo" type="button" onclick="abrirNuevoHermano()">
-    ➕ Nuevo registro
+  <button id="hermanosBtnNuevo" type="button" onclick="abrirNuevoHermano()" title="Agregar contacto">
+    <i class="fa-solid fa-plus"></i>
+    <span>Agregar contacto</span>
   </button>
 ` : ``}
 
-<button class="hermanosBtnAccion secundario" type="button" onclick="hMarcarPedidosVisibles(true)">
-  ☑️ Marcar todas
+<button class="hermanosBtnAccion secundario" type="button" onclick="hMarcarPedidosVisibles(true)" title="Marcar todas">
+  <i class="fa-solid fa-square-check"></i>
+  <span>Marcar</span>
 </button>
 
-<button class="hermanosBtnAccion secundario" type="button" onclick="hMarcarPedidosVisibles(false)">
-  ⬜ Desmarcar
+<button class="hermanosBtnAccion secundario" type="button" onclick="hMarcarPedidosVisibles(false)" title="Desmarcar">
+  <i class="fa-regular fa-square-full"></i>
+  <span>Desmarcar</span>
 </button>
 
-<button id="btnImprimirPedidosSeleccionados" class="hermanosBtnAccion" type="button" onclick="hImprimirPedidosSeleccionados()">
-  🖨️ Imprimir
+<button id="btnImprimirPedidosSeleccionados" class="hermanosBtnAccion" type="button" onclick="hImprimirPedidosSeleccionados()" title="Imprimir">
+  <i class="fa-solid fa-print"></i>
+  <span>Imprimir</span>
 </button>
 
-<button id="btnEnviarPedidosSeleccionados" class="hermanosBtnAccion" type="button" onclick="hEnviarPedidosSeleccionados()">
-  📤 Enviar
+<button id="btnEnviarPedidosSeleccionados" class="hermanosBtnAccion" type="button" onclick="hEnviarPedidosSeleccionados()" title="Compartir">
+  <i class="fa-solid fa-share-nodes"></i>
+  <span>Compartir</span>
 </button>
           </div>
         </div>
@@ -1937,6 +2071,7 @@ window.renderHermanosLista = () => {
           hTextoPedidosBusqueda(h),
           h.notas
         ].join(" ").toLowerCase();
+
         return bag.includes(q);
       });
 
@@ -1947,75 +2082,73 @@ window.renderHermanosLista = () => {
   if (!filtrados.length) {
     lista.innerHTML = `
       <div id="hermanosVacio">
-        ${q ? "No encontré resultados para esa búsqueda." : "Todavía no hay hermanos cargados."}
+        ${q ? "No encontré resultados para esa búsqueda." : "Todavía no hay contactos cargados."}
       </div>
     `;
     return;
   }
 
   lista.innerHTML = filtrados.map(h => {
-  const nombreCompleto = `${h.nombre || ""} ${h.apellido || ""}`.trim() || "Sin nombre";
+    const nombreCompleto = `${h.nombre || ""} ${h.apellido || ""}`.trim() || "Sin nombre";
+    const cumple = hFechaCumple(h.cumpleanos);
 
-  return `
-    <div class="hermano-card" id="hermanoCard_${h.id}">
-      
-      <button type="button" class="hermano-resumen" onclick="toggleHermanoCard('${h.id}')">
-        <div class="hermano-resumen-info">
-          <div class="hermano-nombre">${hEscape(nombreCompleto)}</div>
-          <div class="hermano-resumen-tel">
-            <i class="fa-brands fa-whatsapp"></i>
-            ${hEscape(h.telefono || "Sin teléfono")}
-          </div>
-        </div>
+    return `
+      <div class="hermano-card" id="hermanoCard_${h.id}">
+        
+        <button type="button" class="hermano-resumen" onclick="toggleHermanoCard('${h.id}')">
+          <div class="hermano-resumen-info">
+            <div class="hermano-nombre-linea">
+              <span class="hermano-nombre">${hEscape(nombreCompleto)}</span>
+              ${cumple ? `<span class="hermano-cumple-mini">${hEscape(cumple)}</span>` : ``}
+            </div>
 
-        <div class="hermano-resumen-icono">
-          <i class="fa-solid fa-chevron-down"></i>
-        </div>
-      </button>
-
-      <div class="hermano-detalle">
-        <div class="hermano-top">
-          <div>
-            <div class="hermano-mail">${h.mail ? hEscape(h.mail) : "Sin mail"}</div>
-          </div>
-        </div>
-
-        <div class="hermano-grid">
-          <div class="hermano-campo hermano-campo-direccion">
-            <div class="hermano-campo-label">Dirección</div>
-            <div class="hermano-campo-valor">${hEscape(h.direccion || "—")}</div>
+            <div class="hermano-resumen-tel">
+              <i class="fa-brands fa-whatsapp"></i>
+              ${hEscape(h.telefono || "Sin teléfono")}
+            </div>
           </div>
 
-          <div class="hermano-campo hermano-campo-cumple">
-            <div class="hermano-campo-label">Cumpleaños</div>
-            <div class="hermano-campo-valor">${hEscape(hFechaCumple(h.cumpleanos) || "—")}</div>
+          <div class="hermano-resumen-icono">
+            <i class="fa-solid fa-caret-down"></i>
+          </div>
+        </button>
+
+        <div class="hermano-detalle">
+          <div class="hermano-datos-linea">
+            <div class="hermano-campo">
+              <div class="hermano-campo-label">Mail</div>
+              <div class="hermano-campo-valor">${h.mail ? hEscape(h.mail) : "Sin mail"}</div>
+            </div>
+
+            <div class="hermano-campo">
+              <div class="hermano-campo-label">Dirección</div>
+              <div class="hermano-campo-valor">${hEscape(h.direccion || "—")}</div>
+            </div>
           </div>
 
-          <div class="hermano-campo hermano-campo-pedidos">
-            <div class="hermano-campo-label">Pedidos de oración</div>
-<div class="hermano-campo-valor">${hRenderPedidosOracion(h)}</div>
+          <div class="hermano-grid">
+            <div class="hermano-campo hermano-campo-pedidos">
+              <div class="hermano-campo-label">Pedidos de oración</div>
+              <div class="hermano-campo-valor">${hRenderPedidosOracion(h)}</div>
+            </div>
+
+            <div class="hermano-campo hermano-campo-notas">
+              <div class="hermano-campo-label">Notas</div>
+              <div class="hermano-campo-valor">${hEscape(h.notas || "—")}</div>
+            </div>
           </div>
 
-          <div class="hermano-campo hermano-campo-telefono">
-            <div class="hermano-campo-label">Teléfono</div>
-            <div class="hermano-campo-valor">${hEscape(h.telefono || "—")}</div>
+          <div class="hermano-acciones">
+            ${window.__ES_ADMIN ? `<button type="button" onclick="editarHermano('${h.id}')">Editar</button>` : ``}
+            <button type="button" onclick="enviarHermanoPorWhatsApp('${h.id}')">WhatsApp</button>
+            ${window.__ES_ADMIN ? `<button type="button" onclick="borrarHermano('${h.id}')">Borrar</button>` : ``}
           </div>
-
-          <div class="hermano-campo hermano-campo-notas">
-            <div class="hermano-campo-label">Notas</div>
-            <div class="hermano-campo-valor">${hEscape(h.notas || "—")}</div>
-          </div>
-        </div>
-
-        <div class="hermano-acciones">
-          ${window.__ES_ADMIN ? `<button type="button" onclick="editarHermano('${h.id}')">Editar</button>` : ``}
-          <button type="button" onclick="enviarHermanoPorWhatsApp('${h.id}')">WhatsApp</button>
-          ${window.__ES_ADMIN ? `<button type="button" onclick="borrarHermano('${h.id}')">Borrar</button>` : ``}
         </div>
       </div>
-    </div>
-  `;
-}).join("");
+    `;
+  }).join("");
+
+  hActualizarPedidosSeleccionados();
 };
 
 window.toggleHermanoCard = (id) => {
@@ -2414,16 +2547,22 @@ window.abrirPedidoOracionUsuario = async () => {
     <div class="pedido-usuario-box">
       <button type="button" class="pedido-usuario-x" onclick="cerrarPedidoOracionUsuario()">×</button>
 
-      <div class="pedido-usuario-icono">🙏</div>
+      <div class="pedido-usuario-icono">
+        <i class="fa-solid fa-person-praying"></i>
+      </div>
 
       <h2>Pedido de oración</h2>
 
       <p>
-        Escribí tu pedido. Si tu mail ya está cargado en Contactos,
-        se agrega a tu ficha. Si no existe, se crea una ficha nueva.
+        Primero escribí tu pedido. Después completá tus datos para poder guardarlo correctamente.
       </p>
 
       <input id="pedidoUsuarioHermanoId" type="hidden">
+
+      <label>
+        Pedido de oración
+        <textarea id="pedidoUsuarioTexto" placeholder="Escribí aquí tu pedido de oración..." required></textarea>
+      </label>
 
       <label>
         Mail
@@ -2445,11 +2584,6 @@ window.abrirPedidoOracionUsuario = async () => {
       <label>
         Teléfono opcional
         <input id="pedidoUsuarioTelefono" type="text" placeholder="Teléfono">
-      </label>
-
-      <label>
-        Pedido de oración
-        <textarea id="pedidoUsuarioTexto" placeholder="Escribí aquí tu pedido de oración..." required></textarea>
       </label>
 
       <button type="button" id="btnGuardarPedidoUsuario" onclick="guardarPedidoOracionUsuario()">
@@ -2507,11 +2641,12 @@ window.abrirPedidoOracionUsuario = async () => {
       height:56px;
       border-radius:999px;
       background:var(--ui-azul-claro, #bcdcff);
+      color:#000;
       display:flex;
       align-items:center;
       justify-content:center;
       margin:0 auto;
-      font-size:30px;
+      font-size:26px;
     }
 
     .pedido-usuario-box h2{
@@ -2551,7 +2686,7 @@ window.abrirPedidoOracionUsuario = async () => {
     }
 
     .pedido-usuario-box textarea{
-      min-height:140px;
+      min-height:170px;
       resize:vertical;
     }
 
@@ -2605,6 +2740,186 @@ window.abrirPedidoOracionUsuario = async () => {
 window.cerrarPedidoOracionUsuario = () => {
   document.getElementById("modalPedidoOracionUsuario")?.remove();
   document.getElementById("modalPedidoOracionUsuarioStyle")?.remove();
+};
+
+window.cerrarMisPedidosOracionUsuario = () => {
+  document.getElementById("modalMisPedidosOracionUsuario")?.remove();
+  document.getElementById("modalMisPedidosOracionUsuarioStyle")?.remove();
+};
+
+window.abrirMisPedidosOracionUsuario = async () => {
+  const viejo = document.getElementById("modalMisPedidosOracionUsuario");
+  if (viejo) viejo.remove();
+
+  const styleViejo = document.getElementById("modalMisPedidosOracionUsuarioStyle");
+  if (styleViejo) styleViejo.remove();
+
+  const user = window.__FB?.auth?.currentUser || window.__AUTH?.currentUser || null;
+  const mail = hValor(user?.email || "").toLowerCase();
+
+  const modal = document.createElement("div");
+  modal.id = "modalMisPedidosOracionUsuario";
+
+  const style = document.createElement("style");
+  style.id = "modalMisPedidosOracionUsuarioStyle";
+  style.textContent = `
+    #modalMisPedidosOracionUsuario{
+      position:fixed;
+      inset:0;
+      z-index:999999;
+      background:rgba(0,0,0,.45);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:16px;
+    }
+
+    .mis-pedidos-box{
+      position:relative;
+      width:min(560px, 96vw);
+      max-height:92vh;
+      overflow:auto;
+      background:#fff;
+      color:#000;
+      border-radius:24px;
+      padding:20px;
+      box-shadow:0 22px 70px rgba(0,0,0,.30);
+      display:grid;
+      gap:12px;
+    }
+
+    .mis-pedidos-x{
+      position:absolute;
+      top:10px;
+      right:12px;
+      width:34px;
+      height:34px;
+      border:none;
+      border-radius:999px;
+      background:rgba(0,0,0,.06);
+      cursor:pointer;
+      font-size:24px;
+      line-height:1;
+    }
+
+    .mis-pedidos-box h2{
+      text-align:center;
+      margin:0;
+      font-size:24px;
+      font-weight:900;
+    }
+
+    .mis-pedidos-sub{
+      text-align:center;
+      opacity:.75;
+      margin:0;
+      line-height:1.4;
+    }
+
+    .mis-pedido-item{
+      border:1px solid rgba(0,0,0,.10);
+      border-radius:16px;
+      padding:12px;
+      background:rgba(188,220,255,.22);
+      display:grid;
+      gap:6px;
+    }
+
+    .mis-pedido-fecha{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      font-weight:900;
+    }
+
+    .mis-pedido-texto{
+      white-space:pre-wrap;
+      line-height:1.4;
+    }
+
+    .mis-pedidos-actions{
+      display:flex;
+      justify-content:center;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    .mis-pedidos-actions button{
+      border:none;
+      border-radius:999px;
+      padding:10px 14px;
+      background:var(--ui-azul-claro, #bcdcff);
+      color:#000;
+      font-weight:900;
+      cursor:pointer;
+    }
+  `;
+
+  document.head.appendChild(style);
+  document.body.appendChild(modal);
+
+  if (!mail) {
+    modal.innerHTML = `
+      <div class="mis-pedidos-box">
+        <button type="button" class="mis-pedidos-x" onclick="cerrarMisPedidosOracionUsuario()">×</button>
+        <h2>Mis pedidos de oración</h2>
+        <p class="mis-pedidos-sub">Para ver tus pedidos necesitás iniciar sesión con mail.</p>
+
+        <div class="mis-pedidos-actions">
+          <button type="button" onclick="cerrarMisPedidosOracionUsuario(); abrirPedidoOracionUsuario();">
+            Hacer pedido
+          </button>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  modal.innerHTML = `
+    <div class="mis-pedidos-box">
+      <button type="button" class="mis-pedidos-x" onclick="cerrarMisPedidosOracionUsuario()">×</button>
+      <h2>Mis pedidos de oración</h2>
+      <p class="mis-pedidos-sub">Buscando pedidos guardados con ${hEscape(mail)}...</p>
+    </div>
+  `;
+
+  const hermano = await hBuscarHermanoPorMail(mail);
+  const pedidos = hermano ? hPedidosDeHermano(hermano) : [];
+
+  const box = modal.querySelector(".mis-pedidos-box");
+  if (!box) return;
+
+  box.innerHTML = `
+    <button type="button" class="mis-pedidos-x" onclick="cerrarMisPedidosOracionUsuario()">×</button>
+    <h2>Mis pedidos de oración</h2>
+
+    <p class="mis-pedidos-sub">
+      ${pedidos.length
+        ? `Encontré ${pedidos.length} pedido${pedidos.length === 1 ? "" : "s"} asociado${pedidos.length === 1 ? "" : "s"} a tu mail.`
+        : `No encontré pedidos asociados a tu mail.`}
+    </p>
+
+    ${pedidos.length ? `
+      ${pedidos.map(p => `
+        <div class="mis-pedido-item">
+          <div class="mis-pedido-fecha">
+            <i class="fa-solid fa-person-praying"></i>
+            <span>${hEscape(hPedidoFechaBonita(p.fecha))}</span>
+          </div>
+
+          ${p.fechaTexto ? `<small>${hEscape(p.fechaTexto)}</small>` : ``}
+
+          <div class="mis-pedido-texto">${hEscape(p.texto)}</div>
+        </div>
+      `).join("")}
+    ` : ``}
+
+    <div class="mis-pedidos-actions">
+      <button type="button" onclick="cerrarMisPedidosOracionUsuario(); abrirPedidoOracionUsuario();">
+        Hacer nuevo pedido
+      </button>
+    </div>
+  `;
 };
 
 async function hCompletarPedidoUsuarioPorMail() {
