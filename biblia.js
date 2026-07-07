@@ -195,10 +195,12 @@ function vaAsegurarExtrasMenuSesion() {
       <span>Pedido de oración</span>
     `;
 
-    btn.onclick = () => {
+btn.onclick = () => {
       try { cerrarLogin(); } catch(e) {}
 
-      if (typeof window.abrirPedidoOracionUsuario === "function") {
+      if (typeof window.vaAbrirAccesoPedidoOracion === "function") {
+        window.vaAbrirAccesoPedidoOracion();
+      } else if (typeof window.abrirPedidoOracionUsuario === "function") {
         window.abrirPedidoOracionUsuario();
       } else {
         alert("Todavía no cargó el formulario de pedido de oración. Cerrá y abrí la app nuevamente.");
@@ -210,6 +212,129 @@ function vaAsegurarExtrasMenuSesion() {
 
   vaAjustarMenuSesionInstalada();
 }
+
+window.vaCerrarAccesoPedidoOracion = function() {
+  document.getElementById("modalAccesoPedidoOracion")?.remove();
+  document.getElementById("modalAccesoPedidoOracionStyle")?.remove();
+};
+
+window.vaAbrirAccesoPedidoOracion = function() {
+  window.vaCerrarAccesoPedidoOracion?.();
+
+  const modal = document.createElement("div");
+  modal.id = "modalAccesoPedidoOracion";
+
+  modal.innerHTML = `
+    <div class="va-pedido-acceso-box">
+      <button type="button" class="va-pedido-acceso-x" onclick="vaCerrarAccesoPedidoOracion()">×</button>
+
+      <div class="va-pedido-acceso-icon">
+        <i class="fa-solid fa-person-praying"></i>
+      </div>
+
+      <h2>Pedidos de oración</h2>
+
+      <p>Elegí qué querés hacer.</p>
+
+      <button type="button" onclick="vaCerrarAccesoPedidoOracion(); abrirPedidoOracionUsuario();">
+        <i class="fa-solid fa-plus"></i>
+        <span>Hacer un pedido</span>
+      </button>
+
+      <button type="button" onclick="vaCerrarAccesoPedidoOracion(); abrirMisPedidosOracionUsuario();">
+        <i class="fa-solid fa-rectangle-list"></i>
+        <span>Ver mis pedidos</span>
+      </button>
+    </div>
+  `;
+
+  const style = document.createElement("style");
+  style.id = "modalAccesoPedidoOracionStyle";
+  style.textContent = `
+    #modalAccesoPedidoOracion{
+      position:fixed;
+      inset:0;
+      z-index:999999;
+      background:rgba(0,0,0,.45);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:16px;
+    }
+
+    .va-pedido-acceso-box{
+      position:relative;
+      width:min(380px, 94vw);
+      background:#fff;
+      color:#000;
+      border-radius:24px;
+      padding:20px;
+      box-shadow:0 22px 70px rgba(0,0,0,.30);
+      display:grid;
+      gap:12px;
+      text-align:center;
+    }
+
+    .va-pedido-acceso-x{
+      position:absolute;
+      top:10px;
+      right:12px;
+      width:34px;
+      height:34px;
+      border:none;
+      border-radius:999px;
+      background:rgba(0,0,0,.06);
+      cursor:pointer;
+      font-size:24px;
+      line-height:1;
+    }
+
+    .va-pedido-acceso-icon{
+      width:56px;
+      height:56px;
+      border-radius:999px;
+      background:var(--ui-azul-claro, #bcdcff);
+      color:#000;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      margin:0 auto;
+      font-size:26px;
+    }
+
+    .va-pedido-acceso-box h2{
+      margin:0;
+      font-size:22px;
+      font-weight:900;
+    }
+
+    .va-pedido-acceso-box p{
+      margin:0;
+      opacity:.75;
+    }
+
+    .va-pedido-acceso-box button:not(.va-pedido-acceso-x){
+      border:none;
+      border-radius:999px;
+      padding:12px 14px;
+      background:var(--ui-azul-claro, #bcdcff);
+      color:#000;
+      font-weight:900;
+      cursor:pointer;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+    }
+
+    .va-pedido-acceso-box button:not(.va-pedido-acceso-x):hover{
+      background:var(--ui-azul-hover, #a6d0ff);
+    }
+  `;
+
+  document.head.appendChild(style);
+  document.body.appendChild(modal);
+};
 
 function vaAjustarMenuSesionInstalada() {
   const modal = document.getElementById("loginModal");
