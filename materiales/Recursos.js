@@ -61,8 +61,8 @@ window.mostrarRecursosSub = async (sub = "ediciones") => {
   const puedeVerRecursos = esAdmin || esColab;
 
   // ✅ Recursos solo admin o colaborador.
-  // Si por algún estado viejo se intenta abrir sin permiso,
-  // volvemos a Devocionales en silencio.
+// Si por algún estado viejo se intenta abrir sin permiso,
+// volvemos a Compartidos/Todo.
 if (!puedeVerRecursos) {
   try {
     if (typeof window.irA === "function") {
