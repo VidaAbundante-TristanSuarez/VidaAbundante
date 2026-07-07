@@ -63,13 +63,19 @@ window.mostrarRecursosSub = async (sub = "ediciones") => {
   // ✅ Recursos solo admin o colaborador.
   // Si por algún estado viejo se intenta abrir sin permiso,
   // volvemos a Devocionales en silencio.
-  if (!puedeVerRecursos) {
-    try {
-      window.mostrarIglesiaSub?.("devocionales");
-    } catch (e) {}
-
-    return;
+if (!puedeVerRecursos) {
+  try {
+    if (typeof window.irA === "function") {
+      window.irA("compartidos");
+    } else if (typeof window.forzarSeccionActiva === "function") {
+      window.forzarSeccionActiva("compartidos");
+    }
+  } catch (e) {
+    console.warn("No pude mandar a Compartidos:", e);
   }
+
+  return;
+}
 
   const permitidas = ["rh", "talleres", "hermanos", "permisos", "ediciones"];
   if (!permitidas.includes(sub)) sub = "ediciones";
