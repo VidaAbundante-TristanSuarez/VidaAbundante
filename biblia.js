@@ -6961,13 +6961,12 @@ if (subir) {
 window.irA = (seccion) => {
   const todas = ["biblia", "iglesia", "panel", "compartidos"];
 
-  // ✅ Si algo manda una sección rara, no abrimos Iglesia por error:
-  // abrimos Compartidos, como vos pediste para primera entrada / fallback.
+  // ✅ Si algo manda una sección rara, abrimos Compartidos.
   if (!todas.includes(seccion)) seccion = "compartidos";
 
   // ✅ guardamos la sección apenas se toca el menú o se cambia pantalla.
   // Esto ayuda a volver donde estabas si Android mata la app.
- try {
+  try {
     guardarEstadoBiblia({ seccion });
     setTimeout(vaGuardarSnapshotVisual, 120);
   } catch (e) {
@@ -6996,21 +6995,66 @@ window.irA = (seccion) => {
       estado.subIglesia ||
       "devocionales";
 
-    // ✅ Por seguridad Recursos nunca se reabre automáticamente.
-    // Aunque el usuario haya quedado allí, al volver a Iglesia inicia en Devocionales.
+    // ✅ CORRECCIÓN IMPORTANTE:
+    // Antes acá se cambiaba "recursos" por "devocionales".
+    // Ahora, si la app quedó guardada en Recursos y todavía no sabemos permisos
+    // o el usuario no tiene permiso, vamos a Compartidos/Todo.
     if (subIglesiaGuardada === "recursos") {
-      subIglesiaGuardada = "devocionales";
+      const puedeVerRecursos = !!window.__ES_ADMIN || !!window.__ES_COLABORADOR;
 
-      window.__IGLESIA_SUB_ACTIVA = "devocionales";
-      window.__RECURSOS_SUB_ACTIVA = "";
+      if (!puedeVerRecursos) {
+        window.__IGLESIA_SUB_ACTIVA = "";
+        window.__RECURSOS_SUB_ACTIVA = "";
 
-      try {
-        guardarEstadoBiblia({
-          seccion: "iglesia",
-          subIglesia: "devocionales",
-          subRecursos: ""
+        try {
+          guardarEstadoBiblia({
+            seccion: "compartidos",
+            subIglesia: "",
+            subRecursos: ""
+          });
+        } catch (e) {}
+
+        try {
+          localStorage.removeItem(VA_UI_SNAPSHOT_KEY);
+        } catch (e) {}
+
+        try {
+          forzarSeccionActiva("compartidos");
+        } catch (e) {}
+
+        try {
+          window.cargarCompartidos?.();
+        } catch (e) {}
+
+        try {
+          window.renderCompartidos?.();
+        } catch (e) {}
+
+        try {
+          window.iniciarCompartidos?.();
+        } catch (e) {}
+
+        try {
+          window.mostrarCompartidosSub?.("todo");
+        } catch (e) {}
+
+        try {
+          window.mostrarCompartidos?.("todo");
+        } catch (e) {}
+
+        requestAnimationFrame(() => {
+          try { forzarSeccionActiva("compartidos"); } catch(e) {}
+          try { window.scrollTo({ top: 0, behavior: "auto" }); } catch(e) {}
         });
-      } catch (e) {}
+
+        setTimeout(() => {
+          try { forzarSeccionActiva("compartidos"); } catch(e) {}
+          try { window.mostrarCompartidosSub?.("todo"); } catch(e) {}
+          try { window.mostrarCompartidos?.("todo"); } catch(e) {}
+        }, 120);
+
+        return;
+      }
     }
 
     try {
@@ -7034,6 +7078,8 @@ window.irA = (seccion) => {
     try { window.cargarCompartidos?.(); } catch(e) {}
     try { window.renderCompartidos?.(); } catch(e) {}
     try { window.iniciarCompartidos?.(); } catch(e) {}
+    try { window.mostrarCompartidosSub?.("todo"); } catch(e) {}
+    try { window.mostrarCompartidos?.("todo"); } catch(e) {}
 
     requestAnimationFrame(() => forzarSeccionActiva("compartidos"));
     setTimeout(() => forzarSeccionActiva("compartidos"), 80);
