@@ -2815,9 +2815,11 @@ function ensureDev2TextureLayer(container){
 // Fase 2 ya era el bloque diseñado del devocional: no agregamos toggle.
 // Conservamos fondo plano/textura/adorno y sumamos degradado sin mezclar Fase 1.
 function dev2GradienteCSS(st = DEV.f2){
-  const c1 = st.fondoColor || "#ffffff";
-  const c2 = st.gradienteColor2 || "#d1eeff";
-  const c3 = st.gradienteColor3 || "#a6d0ff";
+  const c1 = devHexSeguro(st.fondoColor) || "#ffffff";
+  const c2 = devHexSeguro(st.gradienteColor2) || "#d1eeff";
+  const c3 = st.usarColor3
+    ? (devHexSeguro(st.gradienteColor3) || "#a6d0ff")
+    : c2;
 
   const colores = st.usarColor3
     ? `${c1}, ${c2}, ${c3}`
@@ -2831,13 +2833,26 @@ function dev2GradienteCSS(st = DEV.f2){
       return `linear-gradient(135deg, ${colores})`;
 
     case "radial":
-      return `radial-gradient(circle, ${colores})`;
+      return `radial-gradient(circle at center, ${colores})`;
 
-    // ✅ nuevo: efecto tipo rombo / cristal
+    // ✅ rombo más suave: no pinwheel raro
     case "rombo":
-      return st.usarColor3
-        ? `conic-gradient(from 45deg at 50% 50%, ${c1}, ${c2}, ${c3}, ${c2}, ${c1})`
-        : `conic-gradient(from 45deg at 50% 50%, ${c1}, ${c2}, ${c1}, ${c2}, ${c1})`;
+      return [
+        `linear-gradient(45deg, transparent 0%, transparent 39%, ${devRgba(c2, .42)} 50%, transparent 61%, transparent 100%)`,
+        `linear-gradient(135deg, transparent 0%, transparent 39%, ${devRgba(c3, .36)} 50%, transparent 61%, transparent 100%)`,
+        `radial-gradient(ellipse at center, ${devRgba(c2, .28)} 0%, transparent 66%)`,
+        `linear-gradient(180deg, ${c1} 0%, ${devRgba(c3, .55)} 100%)`
+      ].join(",");
+
+    // ✅ nuevo: difuminado tipo manchas suaves
+    case "manchas":
+      return [
+        `radial-gradient(circle at 18% 20%, ${devRgba(c2, .72)} 0%, ${devRgba(c2, .38)} 22%, transparent 49%)`,
+        `radial-gradient(circle at 82% 18%, ${devRgba(c3, .62)} 0%, ${devRgba(c3, .30)} 20%, transparent 48%)`,
+        `radial-gradient(circle at 32% 78%, ${devRgba(c3, .52)} 0%, ${devRgba(c3, .24)} 22%, transparent 52%)`,
+        `radial-gradient(circle at 76% 82%, ${devRgba(c2, .45)} 0%, ${devRgba(c2, .20)} 24%, transparent 54%)`,
+        `linear-gradient(180deg, ${devRgba(c1, .96)} 0%, ${c1} 100%)`
+      ].join(",");
 
     case "vertical":
     default:
@@ -2944,13 +2959,24 @@ function dev2AsegurarOpcionRombo(){
   const sel = $("dev2GradForma");
   if (!sel) return;
 
-  const existe = Array.from(sel.options || []).some(o => o.value === "rombo");
-  if (existe) return;
+  const extras = [
+    { value: "rombo", text: "Rombo suave" },
+    { value: "manchas", text: "Manchas" }
+  ];
 
-  const opt = document.createElement("option");
-  opt.value = "rombo";
-  opt.textContent = "Rombo";
-  sel.appendChild(opt);
+  extras.forEach(item => {
+    const existe = Array.from(sel.options || []).some(o => o.value === item.value);
+    if (existe) {
+      const opt = Array.from(sel.options || []).find(o => o.value === item.value);
+      if (opt) opt.textContent = item.text;
+      return;
+    }
+
+    const opt = document.createElement("option");
+    opt.value = item.value;
+    opt.textContent = item.text;
+    sel.appendChild(opt);
+  });
 }
 
 function dev2AsegurarModalColorFondo(){
@@ -3515,6 +3541,40 @@ function devSetFinalButtons(enabled){
   setFinalCanvasDisabled(!enabled);
 }
 
+function devRgba(hex, alpha = 1){
+  const { r, g, b } = hexToRgb(hex || "#ffffff");
+  const a = Math.max(0, Math.min(1, Number(alpha)));
+  return `rgba(${r}, ${g}, ${b}, ${a})`;
+}
+
+function devDibujarUnionSuaveFinal(ctx, W, y){
+  const c1 = devHexSeguro(DEV.f2?.fondoColor) || "#ffffff";
+  const c2 = devHexSeguro(DEV.f2?.gradienteColor2) || c1;
+
+  // banda suave que tapa el corte seco
+  const alto = 72;
+
+  const g = ctx.createLinearGradient(0, y - alto, 0, y + 28);
+  g.addColorStop(0.00, devRgba(c1, 0));
+  g.addColorStop(0.45, devRgba(c1, 0.45));
+  g.addColorStop(0.68, devRgba(c1, 0.88));
+  g.addColorStop(1.00, devRgba(c1, 0));
+
+  ctx.save();
+  ctx.fillStyle = g;
+  ctx.fillRect(0, y - alto, W, alto + 34);
+
+  // detalle finito para que parezca separación intencional, no corte
+  const linea = ctx.createLinearGradient(0, y - 4, 0, y + 18);
+  linea.addColorStop(0.00, "rgba(0,0,0,0)");
+  linea.addColorStop(0.45, "rgba(0,0,0,0.08)");
+  linea.addColorStop(1.00, devRgba(c2, 0.10));
+
+  ctx.fillStyle = linea;
+  ctx.fillRect(0, y - 6, W, 26);
+  ctx.restore();
+}
+
 async function renderFinalCanvasCaptureReal(){
   const cFinal = $("devCanvasFinal");
   if (!cFinal) return null;
@@ -3613,9 +3673,10 @@ applyFase1WrapperLook(wrap, st, 1);
     applyTextStylesToOne(texto, st);
 
 const outlineFinalF1 = 1.9;
+const outlineF1 = devHexSeguro(st.outlineColor) || devGetOutlineColor(1, st.color);
 
-texto.style.textShadow = textShadowLegibleFinal(st.color, outlineFinalF1);
-texto.style.webkitTextStroke = `${(0.6 * outlineFinalF1).toFixed(2)}px ` + outlineColor(st.color);
+texto.style.textShadow = textShadowLegibleFinal(st.color, outlineFinalF1, outlineF1);
+texto.style.webkitTextStroke = `${(0.6 * outlineFinalF1).toFixed(2)}px ${outlineF1}`;
 texto.style.paintOrder = "stroke fill";
 texto.innerHTML = buildFase1HTML(st.size, 1);
 
@@ -3667,8 +3728,10 @@ texto.innerHTML = buildFase1HTML(st.size, 1);
     texto.style.color = st.color;
     applyTextStylesToOne(texto, st);
 
-    texto.style.textShadow = textShadowLegibleFinal(st.color);
-    texto.style.webkitTextStroke = "0.5px " + outlineColor(st.color);
+    const outlineF2 = devHexSeguro(st.outlineColor) || devGetOutlineColor(2, st.color);
+
+    texto.style.textShadow = textShadowLegibleFinal(st.color, 1, outlineF2);
+    texto.style.webkitTextStroke = "0.5px " + outlineF2;
     texto.style.paintOrder = "stroke fill";
     texto.innerHTML = buildFase2HTML(st.size, 1);
     wrap.appendChild(texto);
@@ -3690,6 +3753,9 @@ texto.innerHTML = buildFase1HTML(st.size, 1);
 
   ctx.drawImage(cap1, 0, 0, W, H1);
   ctx.drawImage(cap2, 0, H1, W, H2);
+
+  // ✅ unión suave entre imagen superior y bloque inferior
+  devDibujarUnionSuaveFinal(ctx, W, H1);
 
   const rounded = makeRoundedCanvas(cFinal, 52);
 
@@ -3869,11 +3935,55 @@ window.devVolverFase0 = () => {
   abrirModal("modalDevFase0");
 };
 
+function devF2HeredarTextoDesdeF1SiCorresponde(){
+  // ✅ Solo sugerimos si el usuario todavía NO tocó Fase 2.
+  // Si ya cambió algo en Fase 2, respetamos su edición.
+  if (DEV.f2.userChanged) return;
+
+  const colorF1 = devHexSeguro(DEV.f1.color) || "#000000";
+
+  // asegura que Fase 1 tenga su contorno actualizado
+  const contornoCalculadoF1 = devGetOutlineColor(1, colorF1);
+
+  const inputF1 = $("dev1OutlineColor");
+  const contornoManualF1 =
+    inputF1?.dataset?.manual === "1"
+      ? devHexSeguro(inputF1.value || DEV.f1.outlineColor)
+      : "";
+
+  const contornoF1 =
+    contornoManualF1 ||
+    devHexSeguro(DEV.f1.outlineColor) ||
+    contornoCalculadoF1 ||
+    outlineColor(colorF1);
+
+  DEV.f2.color = colorF1;
+  DEV.f2.outlineColor = contornoF1;
+
+  const color2 = $("dev2Color");
+  if (color2) color2.value = colorF1;
+
+  const outline2 = devAsegurarControlContorno(2);
+  if (outline2) {
+    outline2.value = contornoF1;
+
+    // Si el borde de Fase 1 era manual, lo copiamos como manual.
+    // Si era automático, queda automático también.
+    outline2.dataset.manual = contornoManualF1 ? "1" : "0";
+  }
+
+  devSetHostColorVisual("dev2ColorHost", colorF1);
+  devSetHostColorVisual("dev2OutlineColorHost", contornoF1);
+}
+
 window.devIrFase2 = () => {
   devRenderFase(1);
 
   cerrarModal("modalDevFase1");
   abrirModal("modalDevFase2");
+
+  // ✅ Fase 2 arranca sugerida con el mismo color/borde de Fase 1
+  devF2HeredarTextoDesdeF1SiCorresponde();
 
   // ✅ Ya no mostramos botón grande debajo de la preview.
 // El cuentagotas se abre desde cada selector de color.
