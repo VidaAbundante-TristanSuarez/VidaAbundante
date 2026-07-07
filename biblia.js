@@ -525,6 +525,42 @@ window.vaAbrirIglesiaDesdeMenu = function(sub = "devocionales") {
     cerrarLogin();
   } catch (e) {}
 
+    if (sub === "recursos") {
+    const puedeVerRecursos = !!window.__ES_ADMIN || !!window.__ES_COLABORADOR;
+
+    if (!puedeVerRecursos) {
+      try {
+        window.__IGLESIA_SUB_ACTIVA = "";
+        window.__RECURSOS_SUB_ACTIVA = "";
+
+        if (typeof guardarEstadoBiblia === "function") {
+          guardarEstadoBiblia({
+            seccion: "compartidos",
+            subIglesia: "",
+            subRecursos: ""
+          });
+        }
+
+        if (typeof window.irA === "function") {
+          window.irA("compartidos");
+        } else if (typeof window.forzarSeccionActiva === "function") {
+          window.forzarSeccionActiva("compartidos");
+        }
+
+        setTimeout(() => {
+          try { window.mostrarCompartidosSub?.("todo"); } catch(e) {}
+          try { window.mostrarCompartidos?.("todo"); } catch(e) {}
+          try { window.scrollTo({ top: 0, behavior: "auto" }); } catch(e) {}
+        }, 0);
+
+      } catch (e) {
+        console.warn("No pude abrir Compartidos:", e);
+      }
+
+      return;
+    }
+  }
+
   const elegido = ["devocionales", "subidos", "abc", "recursos"].includes(sub)
     ? sub
     : "devocionales";
@@ -11017,12 +11053,42 @@ window.mostrarIglesiaSub = (sub) => {
   const permitidas = ["devocionales", "abc", "subidos", "recursos"];
   if (!permitidas.includes(sub)) sub = "devocionales";
 
-    // ✅ Usuarios comunes no pueden abrir Recursos
+  // ✅ Usuarios comunes no pueden abrir Recursos.
+  // Si todavía no sabemos permisos o no tiene permiso, NO mandamos a Devocionales:
+  // mandamos a Compartidos.
   if (sub === "recursos") {
     const puedeVerRecursos = !!window.__ES_ADMIN || !!window.__ES_COLABORADOR;
 
     if (!puedeVerRecursos) {
-      sub = "devocionales";
+      try {
+        window.__IGLESIA_SUB_ACTIVA = "";
+        window.__RECURSOS_SUB_ACTIVA = "";
+
+        if (typeof guardarEstadoBiblia === "function") {
+          guardarEstadoBiblia({
+            seccion: "compartidos",
+            subIglesia: "",
+            subRecursos: ""
+          });
+        }
+
+        if (typeof window.irA === "function") {
+          window.irA("compartidos");
+        } else if (typeof window.forzarSeccionActiva === "function") {
+          window.forzarSeccionActiva("compartidos");
+        }
+
+        setTimeout(() => {
+          try { window.mostrarCompartidosSub?.("todo"); } catch(e) {}
+          try { window.mostrarCompartidos?.("todo"); } catch(e) {}
+          try { window.scrollTo({ top: 0, behavior: "auto" }); } catch(e) {}
+        }, 0);
+
+      } catch (e) {
+        console.warn("No pude mandar a Compartidos:", e);
+      }
+
+      return;
     }
   }
 
