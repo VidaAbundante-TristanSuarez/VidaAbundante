@@ -1078,52 +1078,35 @@ function hRenderPedidosOracion(h = {}) {
   });
 
   return `
-    <div class="pedidos-oracion-wrap">
-      ${grupos.map(g => `
-        <details class="pedido-fecha-grupo">
-          <summary>
-            <span class="pedido-fecha-info">
-              <i class="fa-solid fa-person-praying"></i>
-              <span>${hEscape(hPedidoFechaBonita(g.fecha))}</span>
+    <div class="pedidos-oracion-wrap">${grupos.map(g => `
+      <details class="pedido-fecha-grupo">
+        <summary>
+          <span class="pedido-fecha-info">
+            <i class="fa-solid fa-person-praying"></i>
+            <span>${hEscape(hPedidoFechaBonita(g.fecha))}</span>
+          </span>
+          <span class="pedido-fecha-cantidad">${g.items.length}</span>
+          <i class="fa-solid fa-caret-down pedido-caret"></i>
+        </summary>
+        <div class="pedido-fecha-items">${g.items.map(p => `
+          <label class="pedido-oracion-item">
+            <input
+              type="checkbox"
+              class="pedido-check"
+              data-hermano-id="${hEscape(h.id)}"
+              data-pedido-id="${hEscape(p.id)}"
+              onchange="hActualizarPedidosSeleccionados()"
+              onclick="event.stopPropagation()"
+            >
+            <span class="pedido-check-fake" aria-hidden="true">
+              <i class="fa-regular fa-square-full icon-unchecked"></i>
+              <i class="fa-solid fa-square-check icon-checked"></i>
             </span>
-
-            <span class="pedido-fecha-cantidad">${g.items.length}</span>
-
-            <i class="fa-solid fa-caret-down pedido-caret"></i>
-          </summary>
-
-          <div class="pedido-fecha-items">
-            ${g.items.map(p => `
-              <label class="pedido-oracion-item">
-                <input
-                  type="checkbox"
-                  class="pedido-check"
-                  data-hermano-id="${hEscape(h.id)}"
-                  data-pedido-id="${hEscape(p.id)}"
-                  onchange="hActualizarPedidosSeleccionados()"
-                  onclick="event.stopPropagation()"
-                >
-
-                <span class="pedido-check-fake" aria-hidden="true">
-                  <i class="fa-regular fa-square-full icon-unchecked"></i>
-                  <i class="fa-solid fa-square-check icon-checked"></i>
-                </span>
-
-                <span class="pedido-oracion-body">
-                  ${p.fechaTexto ? `
-                    <small>${hEscape(p.fechaTexto)}</small>
-                  ` : ``}
-
-                  <span class="pedido-oracion-texto">
-                    ${hEscape(p.texto)}
-                  </span>
-                </span>
-              </label>
-            `).join("")}
-          </div>
-        </details>
-      `).join("")}
-    </div>
+            <span class="pedido-oracion-body">${p.fechaTexto ? `<small>${hEscape(p.fechaTexto)}</small>` : ``}<span class="pedido-oracion-texto">${hEscape(p.texto)}</span></span>
+          </label>
+        `).join("")}</div>
+      </details>
+    `).join("")}</div>
   `;
 }
 
@@ -1185,14 +1168,13 @@ function hRefrescarBotonMarcarOraciones() {
   if (!btn) return;
 
   const todasMarcadas = hTodasOracionesVisiblesMarcadas();
-  const total = hGetPedidosSeleccionados().length;
 
   btn.classList.toggle("activo", todasMarcadas);
 
   btn.innerHTML = todasMarcadas
     ? `
       <i class="fa-solid fa-square-check"></i>
-      <span>Oraciones marcadas${total ? ` (${total})` : ""}</span>
+      <span>Oraciones marcadas</span>
     `
     : `
       <i class="fa-regular fa-square-full"></i>
@@ -1401,10 +1383,13 @@ window.mostrarHermanos = async () => {
 
         #hermanosActions{
           width:100%;
+          max-width:100%;
+          min-width:0;
           display:grid;
-          grid-template-columns: minmax(180px, 1fr) auto auto auto auto;
+          grid-template-columns: minmax(0, 1fr) auto auto auto auto;
           gap:8px;
           align-items:center;
+          overflow:hidden;
         }
 
         .hermanosBtnAccion,
@@ -1415,6 +1400,24 @@ window.mostrarHermanos = async () => {
           justify-content:center;
           gap:7px;
           white-space:nowrap;
+          min-width:0;
+          box-sizing:border-box;
+        }
+
+        #hermanosBtnNuevo{
+          width:160px;
+        }
+
+        #btnToggleMarcarPedidos{
+          width:178px;
+        }
+
+        #btnImprimirPedidosSeleccionados{
+          width:110px;
+        }
+
+        #btnEnviarPedidosSeleccionados{
+          width:118px;
         }
 
         .hermanosBtnAccion i,
@@ -1425,14 +1428,15 @@ window.mostrarHermanos = async () => {
         }
 
         #hermanosBuscar{
-          min-width: 240px;
-          max-width: 320px;
-          width: 100%;
+          min-width:0;
+          max-width:none;
+          width:100%;
           border:1px solid rgba(0,0,0,.14);
           border-radius:999px;
           padding:10px 14px;
           outline:none;
           font-size:14px;
+          box-sizing:border-box;
         }
 
         #hermanosBtnNuevo{
@@ -1559,8 +1563,8 @@ window.mostrarHermanos = async () => {
 .hermano-datos-linea{
   display:grid;
   grid-template-columns: 1fr 1fr;
-  gap:10px;
-  margin-bottom:10px;
+  gap:8px;
+  margin-bottom:8px;
 }
 
 .hermano-grid{
@@ -1569,7 +1573,7 @@ window.mostrarHermanos = async () => {
   grid-template-areas:
     "pedidos"
     "notas";
-  gap:10px;
+  gap:8px;
 }
 
 .hermano-campo-pedidos{ grid-area: pedidos; }
@@ -1589,9 +1593,26 @@ window.mostrarHermanos = async () => {
 
         .hermano-campo-valor{
           font-size:14px;
-          line-height:1.45;
-          white-space:pre-wrap;
+          line-height:1.35;
+          white-space:normal;
           word-break:break-word;
+        }
+
+        .hermano-campo-notas .hermano-campo-valor{
+          white-space:pre-wrap;
+        }
+
+        .hermano-campo-pedidos{
+          padding:6px 8px;
+        }
+
+        .hermano-campo-pedidos .hermano-campo-label{
+          margin-bottom:6px;
+        }
+
+        .hermano-campo-pedidos .hermano-campo-valor{
+          white-space:normal !important;
+          line-height:1.25;
         }
 
         .hermanosBtnAccion{
@@ -1617,6 +1638,8 @@ window.mostrarHermanos = async () => {
         .pedidos-oracion-wrap{
           display:grid;
           gap:4px;
+          margin:0;
+          padding:0;
         }
 
         .pedido-fecha-grupo{
@@ -1624,17 +1647,18 @@ window.mostrarHermanos = async () => {
           border:1px solid rgba(0,0,0,.08);
           border-radius:10px;
           overflow:hidden;
+          margin:0;
         }
 
         .pedido-fecha-grupo summary{
           cursor:pointer;
           list-style:none;
-          padding:6px 8px;
-          min-height:34px;
+          padding:5px 8px;
+          min-height:32px;
           display:grid;
-          grid-template-columns: 1fr auto auto;
+          grid-template-columns: minmax(0, 1fr) auto auto;
           align-items:center;
-          gap:8px;
+          gap:7px;
           font-weight:900;
           background:rgba(188,220,255,.45);
         }
@@ -1656,7 +1680,7 @@ window.mostrarHermanos = async () => {
         }
 
         .pedido-fecha-cantidad{
-          min-width:24px;
+          min-width:22px;
           text-align:center;
           font-weight:900;
         }
@@ -1672,18 +1696,20 @@ window.mostrarHermanos = async () => {
 
         .pedido-fecha-items{
           display:grid;
-          gap:6px;
-          padding:6px 5px 7px;
+          gap:5px;
+          padding:6px 5px;
+          margin:0;
         }
 
         .pedido-oracion-item{
           position:relative;
           display:block;
-          padding:8px 34px 8px 5px;
+          padding:7px 32px 7px 5px;
           border-radius:10px;
           background:rgba(0,0,0,.035);
           cursor:pointer;
-          min-height:34px;
+          min-height:0;
+          margin:0;
         }
 
         .pedido-oracion-item .pedido-check{
@@ -1696,16 +1722,14 @@ window.mostrarHermanos = async () => {
           position:absolute;
           top:7px;
           right:8px;
-
-          width:22px;
-          height:22px;
-
+          width:20px;
+          height:20px;
           display:inline-flex;
           align-items:center;
           justify-content:center;
-
           color:#000;
           margin:0;
+          line-height:1;
         }
 
         .pedido-check-fake .icon-checked{
@@ -1731,8 +1755,9 @@ window.mostrarHermanos = async () => {
           display:block;
           opacity:.7;
           font-size:12px;
-          line-height:1.2;
+          line-height:1.15;
           margin:0 0 4px 0;
+          padding:0;
           text-align:left;
         }
 
@@ -1740,7 +1765,7 @@ window.mostrarHermanos = async () => {
           display:block;
           white-space:pre-wrap;
           word-break:break-word;
-          line-height:1.32;
+          line-height:1.28;
           text-align:left;
           margin:0;
           padding:0;
@@ -1904,35 +1929,48 @@ window.mostrarHermanos = async () => {
 
           #hermanosActions{
             width:100%;
+            max-width:100%;
+            min-width:0;
             display:grid;
-            grid-template-columns: 1fr 44px 44px 44px 44px;
+            grid-template-columns: minmax(0, 1fr) 54px 54px 54px 54px;
             gap:8px;
             align-items:center;
+            overflow:hidden;
           }
 
           #hermanosBuscar{
             grid-column:1 / -1;
+            width:100%;
+            min-width:0;
+            max-width:100%;
+            box-sizing:border-box;
           }
 
           .hermanosBtnAccion,
           #hermanosBtnNuevo{
             width:100%;
             min-width:0;
-            padding:10px 8px;
+            max-width:100%;
+            height:54px;
+            min-height:54px;
+            padding:0;
+            border-radius:999px;
+            box-sizing:border-box;
+          }
+
+          #hermanosBtnNuevo{
+            width:100%;
+          }
+
+          #btnToggleMarcarPedidos,
+          #btnImprimirPedidosSeleccionados,
+          #btnEnviarPedidosSeleccionados{
+            width:54px;
           }
 
           .hermanosBtnAccion span,
           #hermanosBtnNuevo span{
             display:none;
-          }
-
-          #hermanosBuscar{
-            min-width:0;
-            max-width:none;
-          }
-
-          #hermanosBtnNuevo{
-            width:100%;
           }
 
          .hermano-grid,
