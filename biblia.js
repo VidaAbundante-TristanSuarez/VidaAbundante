@@ -1560,7 +1560,7 @@ function bibliaNuevoEstadoFondoDiseno() {
     usarColor2: false,
     usarColor3: false,
 
-    gradienteForma: "vertical", // "vertical" | "horizontal" | "diagonal" | "radial"
+   gradienteForma: "vertical", // "vertical" | "horizontal" | "diagonal" | "radial" | "rombo" | "manchas"
 
     texturaUrl: null,
     texturaOpacidad: 0.22,
@@ -4903,12 +4903,14 @@ function cargarFondos() {
       ></button>
     </span>
 
-    <select id="bibliaGradienteForma" onchange="actualizarFondoDisenoBibliaDesdeUI()" title="Forma del degradado">
-      <option value="vertical">Vertical</option>
-      <option value="horizontal">Horizontal</option>
-      <option value="diagonal">Diagonal</option>
-      <option value="radial">Radial</option>
-    </select>
+<select id="bibliaGradienteForma" onchange="actualizarFondoDisenoBibliaDesdeUI()" title="Forma del degradado">
+  <option value="vertical">Vertical</option>
+  <option value="horizontal">Horizontal</option>
+  <option value="diagonal">Diagonal</option>
+  <option value="radial">Radial</option>
+  <option value="rombo">Rombo suave</option>
+  <option value="manchas">Manchas</option>
+</select>
   `;
   cont.appendChild(colorPanel);
 
@@ -5024,29 +5026,127 @@ async function urlToBlobURL(url) {
   return URL.createObjectURL(blob);
 }
 
+function bibliaRgba(hex, alpha = 1){
+  const h = (bibliaHexSeguro(hex) || "#ffffff").replace("#", "");
+
+  const r = parseInt(h.slice(0, 2), 16) || 0;
+  const g = parseInt(h.slice(2, 4), 16) || 0;
+  const b = parseInt(h.slice(4, 6), 16) || 0;
+  const a = Math.max(0, Math.min(1, Number(alpha)));
+
+  return `rgba(${r}, ${g}, ${b}, ${a})`;
+}
+
+function bibliaSvgRomboDifuminadoDataUrl(c1, c2, c3, usar3 = false){
+  c1 = bibliaHexSeguro(c1) || "#ffffff";
+  c2 = bibliaHexSeguro(c2) || "#d1eeff";
+  c3 = usar3 ? (bibliaHexSeguro(c3) || "#a6d0ff") : c2;
+
+  const svg = `
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1080" preserveAspectRatio="none">
+    <defs>
+      <filter id="blurGrande" x="-30%" y="-30%" width="160%" height="160%">
+        <feGaussianBlur stdDeviation="70"/>
+      </filter>
+
+      <filter id="blurMedio" x="-25%" y="-25%" width="150%" height="150%">
+        <feGaussianBlur stdDeviation="42"/>
+      </filter>
+
+      <linearGradient id="base" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="${c1}"/>
+        <stop offset="52%" stop-color="${c1}"/>
+        <stop offset="100%" stop-color="${c3}" stop-opacity="0.26"/>
+      </linearGradient>
+
+      <linearGradient id="romboGrad" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="${c2}" stop-opacity="0.10"/>
+        <stop offset="42%" stop-color="${c2}" stop-opacity="0.72"/>
+        <stop offset="64%" stop-color="${c3}" stop-opacity="${usar3 ? "0.62" : "0.32"}"/>
+        <stop offset="100%" stop-color="${c2}" stop-opacity="0.08"/>
+      </linearGradient>
+    </defs>
+
+    <rect width="1080" height="1080" fill="url(#base)"/>
+
+    <polygon
+      points="540,-80 1210,540 540,1160 -130,540"
+      fill="${c2}"
+      opacity="0.16"
+      filter="url(#blurGrande)"
+    />
+
+    <polygon
+      points="540,70 1010,540 540,1010 70,540"
+      fill="url(#romboGrad)"
+      opacity="0.82"
+      filter="url(#blurMedio)"
+    />
+
+    <polygon
+      points="540,210 870,540 540,870 210,540"
+      fill="${c3}"
+      opacity="${usar3 ? "0.30" : "0.14"}"
+      filter="url(#blurMedio)"
+    />
+
+    <ellipse
+      cx="540"
+      cy="540"
+      rx="250"
+      ry="170"
+      fill="${c1}"
+      opacity="0.18"
+      filter="url(#blurGrande)"
+    />
+  </svg>`;
+
+  return `url("data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}")`;
+}
+
 // ================= FONDO DISEÑADO BIBLIA =======================
 function bibliaCssGradienteDiseno() {
-  const colores = [
-    fondoDisenoBiblia.color1 || "#ffffff",
-    fondoDisenoBiblia.color2 || "#d1eeff"
-  ];
+  const c1 = bibliaHexSeguro(fondoDisenoBiblia.color1) || "#ffffff";
+  const c2 = bibliaHexSeguro(fondoDisenoBiblia.color2) || "#d1eeff";
+  const c3 = fondoDisenoBiblia.usarColor3
+    ? (bibliaHexSeguro(fondoDisenoBiblia.color3) || "#a6d0ff")
+    : c2;
 
-  if (fondoDisenoBiblia.usarColor3) {
-    colores.push(fondoDisenoBiblia.color3 || "#a6d0ff");
-  }
-
-  const lista = colores.join(", ");
+  const colores = fondoDisenoBiblia.usarColor3
+    ? `${c1}, ${c2}, ${c3}`
+    : `${c1}, ${c2}`;
 
   switch (fondoDisenoBiblia.gradienteForma) {
     case "horizontal":
-      return `linear-gradient(90deg, ${lista})`;
+      return `linear-gradient(90deg, ${colores})`;
+
     case "diagonal":
-      return `linear-gradient(135deg, ${lista})`;
+      return `linear-gradient(135deg, ${colores})`;
+
     case "radial":
-      return `radial-gradient(circle at center, ${lista})`;
+      return `radial-gradient(circle at center, ${colores})`;
+
+    case "rombo":
+      return bibliaSvgRomboDifuminadoDataUrl(
+        c1,
+        c2,
+        c3,
+        !!fondoDisenoBiblia.usarColor3
+      );
+
+    case "manchas":
+      return [
+        `radial-gradient(ellipse 82% 62% at 22% 24%, ${bibliaRgba(c2, .32)} 0%, ${bibliaRgba(c2, .22)} 30%, ${bibliaRgba(c2, .10)} 54%, transparent 78%)`,
+        `radial-gradient(ellipse 82% 62% at 78% 24%, ${bibliaRgba(c3, .30)} 0%, ${bibliaRgba(c3, .20)} 31%, ${bibliaRgba(c3, .09)} 55%, transparent 79%)`,
+        `radial-gradient(ellipse 86% 64% at 24% 76%, ${bibliaRgba(c3, .28)} 0%, ${bibliaRgba(c3, .18)} 32%, ${bibliaRgba(c3, .08)} 56%, transparent 80%)`,
+        `radial-gradient(ellipse 86% 64% at 76% 76%, ${bibliaRgba(c2, .28)} 0%, ${bibliaRgba(c2, .18)} 32%, ${bibliaRgba(c2, .08)} 56%, transparent 80%)`,
+        `radial-gradient(ellipse 90% 70% at 50% 50%, ${bibliaRgba(c2, .14)} 0%, ${bibliaRgba(c3, .10)} 38%, transparent 74%)`,
+        `linear-gradient(180deg, ${c1} 0%, ${bibliaRgba(c1, .96)} 48%, ${c1} 100%)`
+      ].join(",");
+
     case "vertical":
     default:
-      return `linear-gradient(180deg, ${lista})`;
+      return `linear-gradient(180deg, ${colores})`;
   }
 }
 
@@ -5091,10 +5191,26 @@ function bibliaAplicarFondoAlPreview(previewImagen) {
     }
   } else {
     previewImagen.style.backgroundColor = fondoDisenoBiblia.color1 || "#ffffff";
-    previewImagen.style.backgroundImage =
-      fondoDisenoBiblia.baseTipo === "gradiente"
-        ? bibliaCssGradienteDiseno()
-        : "none";
+
+    if (fondoDisenoBiblia.baseTipo === "gradiente") {
+      previewImagen.style.backgroundImage = bibliaCssGradienteDiseno();
+
+      if (fondoDisenoBiblia.gradienteForma === "manchas") {
+        previewImagen.style.backgroundSize = "125% 125%, 125% 125%, 130% 130%, 130% 130%, 135% 135%, cover";
+      } else if (fondoDisenoBiblia.gradienteForma === "rombo") {
+        previewImagen.style.backgroundSize = "100% 100%";
+      } else {
+        previewImagen.style.backgroundSize = "cover";
+      }
+
+      previewImagen.style.backgroundPosition = "center";
+      previewImagen.style.backgroundRepeat = "no-repeat";
+    } else {
+      previewImagen.style.backgroundImage = "none";
+      previewImagen.style.backgroundSize = "cover";
+      previewImagen.style.backgroundPosition = "center";
+      previewImagen.style.backgroundRepeat = "no-repeat";
+    }
   }
 
   // ✅ Textura siempre puede ir arriba de imagen o color
