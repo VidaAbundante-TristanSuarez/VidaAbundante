@@ -1462,19 +1462,67 @@ body.oscuro .ed-check-mini {
 
 /* =========================================================
    EDICIONES - MODALES SOBRE EL VISOR FULLSCREEN
-   Corrige que Compartir / Descargar queden detrás de la edición abierta
+   Compartir / Descargar siempre por encima
 ========================================================= */
 
 #edShareChoiceModal,
 #edDescargaPngModal {
   position: fixed !important;
   inset: 0 !important;
-  z-index: 1000005 !important;
+  z-index: 2147483000 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  isolation: isolate;
 }
 
 #edShareChoiceModal .modal-card,
 #edDescargaPngModal .modal-card {
-  z-index: 1000006 !important;
+  position: relative !important;
+  z-index: 2147483001 !important;
+  pointer-events: auto !important;
+}
+
+#edShareChoiceModal button,
+#edDescargaPngModal button {
+  pointer-events: auto !important;
+}
+
+#edShareWorkingAviso {
+  position: fixed;
+  left: 50%;
+  bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  z-index: 2147483002;
+  display: none;
+  align-items: center;
+  gap: 8px;
+  max-width: calc(100vw - 28px);
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: rgba(0,0,0,.82);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 900;
+  box-shadow: 0 10px 30px rgba(0,0,0,.28);
+}
+
+.ed-share-working-spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  border: 2px solid rgba(255,255,255,.35);
+  border-top-color: #fff;
+  animation: edShareSpin .8s linear infinite;
+}
+
+@keyframes edShareSpin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* =========================================================
