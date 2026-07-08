@@ -3060,13 +3060,73 @@ function edCargarScript(src) {
   });
 }
 
+function edBuildR2ProxyUrl(url) {
+  try {
+    const u = new URL(R2_PROXY_URL_EDICIONES);
+    u.searchParams.set("url", url);
+    u.searchParams.set("nombre", "edicion");
+    return u.toString();
+  } catch (_) {
+    return url;
+  }
+}
+
+async function edFetchBlobEdicion(url, mensajeError = "No pude leer el archivo.") {
+  if (!url) throw new Error("Falta URL.");
+
+  const original = String(url || "").trim();
+
+  if (original.startsWith("data:")) {
+    const r = await fetch(original);
+    return await r.blob();
+  }
+
+  const intentos = [];
+
+  // ✅ Primero intenta la URL real.
+  intentos.push(original);
+
+  // ✅ Si falla por CORS, intenta el proxy R2.
+  const proxy = edBuildR2ProxyUrl(original);
+  if (proxy && proxy !== original) {
+    intentos.push(proxy);
+  }
+
+  let ultimoError = null;
+
+  for (const intento of intentos) {
+    try {
+      const r = await fetch(intento, {
+        mode: "cors",
+        cache: "no-store"
+      });
+
+      if (!r.ok) {
+        throw new Error(`HTTP ${r.status}`);
+      }
+
+      const blob = await r.blob();
+
+      if (!blob || blob.size === 0) {
+        throw new Error("Blob vacío.");
+      }
+
+      return blob;
+
+    } catch (err) {
+      ultimoError = err;
+      console.warn("No pude leer archivo desde:", intento, err);
+    }
+  }
+
+  throw ultimoError || new Error(mensajeError);
+}
+
 async function edUrlToDataUrl(url) {
-  const proxy = edBuildR2ProxyUrl(url);
-
-  const r = await fetch(proxy, { mode: "cors" });
-  if (!r.ok) throw new Error("No pude leer imagen para PDF");
-
-  const blob = await r.blob();
+  const blob = await edFetchBlobEdicion(
+    url,
+    "No pude leer imagen para PDF."
+  );
 
   return await new Promise((resolve, reject) => {
     const fr = new FileReader();
@@ -3076,24 +3136,20 @@ async function edUrlToDataUrl(url) {
   });
 }
 
-function edBuildR2ProxyUrl(url) {
-  const u = new URL(R2_PROXY_URL_EDICIONES);
-  u.searchParams.set("url", url);
-  u.searchParams.set("nombre", "edicion");
-  return u.toString();
-}
-
 async function edCrearFileDesdeUrl(url, nombre = "edicion.png") {
   if (!url) throw new Error("Falta URL de imagen.");
 
-  const proxy = edBuildR2ProxyUrl(url);
+  const blob = await edFetchBlobEdicion(
+    url,
+    "No pude preparar la imagen para compartir."
+  );
 
-  const r = await fetch(proxy, { mode: "cors" });
-  if (!r.ok) throw new Error("No pude preparar la imagen para compartir.");
+  let tipo = blob.type || "image/png";
 
-  const blob = await r.blob();
+  if (!tipo.startsWith("image/")) {
+    tipo = "image/png";
+  }
 
-  const tipo = blob.type || "image/png";
   const extension = tipo.includes("jpeg") || tipo.includes("jpg")
     ? ".jpg"
     : tipo.includes("webp")
@@ -3216,22 +3272,18 @@ function edMontarModalEdiciones(modal) {
     document.webkitFullscreenElement ||
     document.msFullscreenElement;
 
-  const visorEstaAbierto =
-    visor &&
-    visor.classList.contains("ed-open");
+  /*
+    ✅ Solo metemos el modal dentro del visor si el visor está en pantalla completa REAL.
+    Si el visor está abierto normal, lo dejamos en body con z-index alto.
+    Esto evita que Compartir / Descargar queden atrapados o detrás.
+  */
+  const host =
+    visor && fullscreen === visor
+      ? visor
+      : document.body;
 
-  // ✅ Si #edViewer está en pantalla completa real,
-  // el modal debe ser hijo de #edViewer o Chrome lo deja invisible detrás.
-  if (
-    visor &&
-    (
-      fullscreen === visor ||
-      visorEstaAbierto
-    )
-  ) {
-    visor.appendChild(modal);
-  } else {
-    document.body.appendChild(modal);
+  if (modal.parentElement !== host) {
+    host.appendChild(modal);
   }
 
   modal.style.setProperty("position", "fixed", "important");
@@ -3243,12 +3295,38 @@ function edMontarModalEdiciones(modal) {
   modal.style.setProperty("background", "rgba(0,0,0,.55)", "important");
   modal.style.setProperty("padding", "14px", "important");
   modal.style.setProperty("box-sizing", "border-box", "important");
+  modal.style.setProperty("pointer-events", "auto", "important");
+  modal.style.setProperty("visibility", "visible", "important");
+  modal.style.setProperty("opacity", "1", "important");
 
   const card = modal.querySelector(".modal-card");
+
   if (card) {
     card.style.setProperty("position", "relative", "important");
     card.style.setProperty("z-index", "2147483001", "important");
+    card.style.setProperty("width", "min(390px, calc(100vw - 32px))", "important");
+    card.style.setProperty("max-height", "calc(100dvh - 40px)", "important");
+    card.style.setProperty("overflow", "auto", "important");
+    card.style.setProperty("box-sizing", "border-box", "important");
+    card.style.setProperty("background", "rgba(255,255,255,.98)", "important");
+    card.style.setProperty("color", "#000", "important");
+    card.style.setProperty("border-radius", "20px", "important");
+    card.style.setProperty("padding", "18px", "important");
+    card.style.setProperty("box-shadow", "0 16px 50px rgba(0,0,0,.28)", "important");
   }
+
+  const actions = modal.querySelector(".modal-actions");
+
+  if (actions) {
+    actions.style.setProperty("display", "grid", "important");
+    actions.style.setProperty("gap", "10px", "important");
+  }
+
+  modal.querySelectorAll("button").forEach(btn => {
+    btn.style.setProperty("min-height", "44px", "important");
+    btn.style.setProperty("cursor", "pointer", "important");
+    btn.style.setProperty("pointer-events", "auto", "important");
+  });
 }
 
 function edAsegurarModalCompartirEdicion() {
