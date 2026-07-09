@@ -2027,6 +2027,24 @@ function edPaginasImagenes(edicion = {}) {
     .filter(p => edMediaUrlPagina(p));
 }
 
+/*
+  ✅ Esta es la lista REAL que se ve en pantalla para acciones.
+  Antes la galería podía mostrar portada + páginas,
+  pero compartir/descargar usaba solo páginas.
+  Eso desfasaba el índice y compartía/descargaba otra imagen.
+*/
+function edPaginasImagenesVisuales(edicion = {}) {
+  const esCategoriaVideos = edRamaEdicion(edicion) === "videos";
+
+  const paginas = esCategoriaVideos
+    ? edPaginasArray(edicion)
+    : edPaginasArrayConPortada(edicion);
+
+  return paginas
+    .filter(p => !edPaginaEsVideo(p))
+    .filter(p => edMediaUrlPagina(p));
+}
+
 async function edBlobPngDesdeUrl(url) {
   const dataUrl = await edUrlToDataUrl(url);
 
@@ -2171,7 +2189,7 @@ window.descargarPaginaEdicionPNG = async function descargarPaginaEdicionPNG(id, 
     return;
   }
 
-  const paginas = edPaginasImagenes(ed);
+ const paginas = opts.paginasVisuales || edPaginasImagenesVisuales(ed);
   const pagina = paginas[Number(index || 0)];
 
   if (!pagina) {
@@ -2363,7 +2381,7 @@ window.descargarEdicionPNGs = async function descargarEdicionPNGs(id, boton = nu
     return;
   }
 
-  const paginas = edPaginasImagenes(ed);
+const paginas = edPaginasImagenesVisuales(ed);
 
   if (!paginas.length) {
     alert("Esta edición no tiene imágenes para descargar.");
@@ -2392,18 +2410,20 @@ const descargarTodas = eleccion === "todas";
 
     if (descargarTodas) {
       for (let i = 0; i < paginas.length; i++) {
-        await descargarPaginaEdicionPNG(id, i, null, {
-          marcar: false,
-          silencioso: true
-        });
+await descargarPaginaEdicionPNG(id, i, null, {
+  marcar: false,
+  silencioso: true,
+  paginasVisuales: paginas
+});
 
         await new Promise(r => setTimeout(r, 350));
       }
     } else {
-      await descargarPaginaEdicionPNG(id, indiceActual, null, {
-        marcar: false,
-        silencioso: true
-      });
+await descargarPaginaEdicionPNG(id, indiceActual, null, {
+  marcar: false,
+  silencioso: true,
+  paginasVisuales: paginas
+});
     }
 
     await edMarcarDescargada(id);
@@ -2426,27 +2446,9 @@ function edMiniPaginasHTML(id, contexto = "ediciones") {
 
   if (!ed) return "";
 
-  const portadaManual = String(ed?.portadaUrl || "").trim();
-  const paginas = edPaginasImagenes(ed);
-
-  let items = paginas;
-
-  // ✅ Si tiene portada cargada, la mostramos primero.
-  // Si esa portada es igual a la primera página, no la duplica.
-  if (portadaManual) {
-    const portadaItem = {
-      id: "__portada",
-      imagenUrl: portadaManual,
-      mediaUrl: portadaManual,
-      mediaType: "image/*",
-      orden: -1
-    };
-
-    items = [
-      portadaItem,
-      ...paginas.filter(p => edMediaUrlPagina(p) !== portadaManual)
-    ];
-  }
+  // ✅ Usamos la misma lista que compartir/descargar.
+  // Así la imagen visible y la imagen descargada/compartida coinciden.
+  const items = edPaginasImagenesVisuales(ed);
 
   if (!items.length) {
     return `<div class="ed-mini-empty">Sin imagen</div>`;
@@ -3457,7 +3459,7 @@ window.edCompartirImagenActualEdicion = async function edCompartirImagenActualEd
     return;
   }
 
-  const paginas = edPaginasImagenes(ed);
+const paginas = edPaginasImagenesVisuales(ed);
 
   if (!paginas.length) {
     alert("Esta edición no tiene imágenes para compartir.");
