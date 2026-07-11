@@ -10420,34 +10420,96 @@ function notaShareCrearNodo(datos = {}) {
   const stage = document.createElement("div");
   stage.className = "nota-share-stage";
 
-  // ✅ Nunca ponemos acá directamente la URL de R2.
-  // El fondo real se aplica después mediante Blob seguro.
+  /*
+    Medimos la cantidad total de texto.
+
+    Nota normal:
+    mantiene el formato actual.
+
+    Nota larga:
+    se genera más ancha para que no quede como una tira.
+
+    Nota extremadamente larga:
+    aumenta todavía más el ancho y ajusta el texto.
+  */
+  const cantidadCaracteres = [
+    datos.titulo || "",
+    datos.meta || "",
+    datos.versiculo || "",
+    datos.texto || ""
+  ].join("\n").length;
+
+  if (cantidadCaracteres >= 7000) {
+    stage.classList.add(
+      "nota-share-stage--muy-larga"
+    );
+
+  } else if (cantidadCaracteres >= 3000) {
+    stage.classList.add(
+      "nota-share-stage--larga"
+    );
+  }
+
+  /*
+    Nunca ponemos acá directamente la URL de R2.
+    El fondo real se aplica después mediante Blob seguro.
+  */
   stage.style.backgroundImage =
     "linear-gradient(145deg, rgba(255,214,232,.82), rgba(209,238,255,.82))";
 
   const card = document.createElement("div");
   card.className = "nota-share-card";
-  card.style.setProperty("--nota-share-fondo", datos.fondo || "#fff3b0");
+
+  card.style.setProperty(
+    "--nota-share-fondo",
+    datos.fondo || "#fff3b0"
+  );
+
   card.style.setProperty(
     "--nota-share-texto",
-    notaShareColorContraste(datos.fondo || "#fff3b0")
+    notaShareColorContraste(
+      datos.fondo || "#fff3b0"
+    )
   );
 
   const agregar = (clase, texto) => {
-    const limpio = String(texto || "").trim();
+    const limpio = String(
+      texto || ""
+    ).trim();
+
     if (!limpio) return;
 
     const div = document.createElement("div");
     div.className = clase;
     div.textContent = limpio;
+
     card.appendChild(div);
   };
 
-  agregar("nota-share-title", datos.titulo);
-  agregar("nota-share-meta", datos.meta);
-  agregar("nota-share-verse", datos.versiculo);
-  agregar("nota-share-text", datos.texto);
-  agregar("nota-share-firma", "Vida Abundante");
+  agregar(
+    "nota-share-title",
+    datos.titulo
+  );
+
+  agregar(
+    "nota-share-meta",
+    datos.meta
+  );
+
+  agregar(
+    "nota-share-verse",
+    datos.versiculo
+  );
+
+  agregar(
+    "nota-share-text",
+    datos.texto
+  );
+
+  agregar(
+    "nota-share-firma",
+    "Vida Abundante"
+  );
 
   stage.appendChild(card);
   document.body.appendChild(stage);
@@ -10502,8 +10564,19 @@ async function notaShareGenerarArchivo(datos = {}) {
       await document.fonts.ready;
     }
 
+const escalaCaptura =
+      stage.classList.contains(
+        "nota-share-stage--muy-larga"
+      )
+        ? 1.4
+        : stage.classList.contains(
+            "nota-share-stage--larga"
+          )
+          ? 1.65
+          : 2;
+
     const canvas = await html2canvas(stage, {
-      scale: 2,
+      scale: escalaCaptura,
       useCORS: true,
       allowTaint: false,
       logging: false,
