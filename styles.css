@@ -6197,4 +6197,51 @@ body.oscuro .nav-vida-btn.activo{
   pointer-events: auto !important;
 }
 
+/* =========================================================
+   AJUSTE FINAL: FUENTE DE NOTAS LARGAS +0.5PX
+========================================================= */
+
+/* Nota larga */
+.nota-share-stage--larga .nota-share-title{
+  font-size: 27.5px !important;
+}
+
+.nota-share-stage--larga .nota-share-meta{
+  font-size: 18.5px !important;
+}
+
+.nota-share-stage--larga .nota-share-verse{
+  font-size: 23.5px !important;
+}
+
+.nota-share-stage--larga .nota-share-text{
+  font-size: 22.5px !important;
+}
+
+.nota-share-stage--larga .nota-share-firma{
+  font-size: 15.5px !important;
+}
+
+
+/* Nota extremadamente larga */
+.nota-share-stage--muy-larga .nota-share-title{
+  font-size: 26.5px !important;
+}
+
+.nota-share-stage--muy-larga .nota-share-meta{
+  font-size: 17.5px !important;
+}
+
+.nota-share-stage--muy-larga .nota-share-verse{
+  font-size: 22.5px !important;
+}
+
+.nota-share-stage--muy-larga .nota-share-text{
+  font-size: 21.5px !important;
+}
+
+.nota-share-stage--muy-larga .nota-share-firma{
+  font-size: 14.5px !important;
+}
+
 </style> 
