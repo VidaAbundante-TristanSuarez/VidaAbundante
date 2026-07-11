@@ -3881,27 +3881,144 @@ async function compAsegurarEdicionMini(edicionId) {
 }
 
 function compRenderEdicion(item) {
-  const titulo = compEscape(item.titulo || "Edición");
-  const portada = item.portadaUrl || "";
-  const edicionId = item.edicionId;
+  const edicionId = String(item.edicionId || "").trim();
+
+  /*
+    Buscamos la edición real y actual.
+    Así usamos la portada que actualmente tiene en Recursos,
+    aunque la publicación de Compartidos sea más antigua.
+  */
+  const cacheEdiciones = [
+    ...(Array.isArray(window.__EDICIONES_CACHE)
+      ? window.__EDICIONES_CACHE
+      : []),
+
+    ...(Array.isArray(compartidosEdicionesCache)
+      ? compartidosEdicionesCache
+      : [])
+  ];
+
+  const edicionReal =
+    cacheEdiciones.find(
+      ed => String(ed?.id || "") === edicionId
+    ) || null;
+
+  /*
+    Si todavía no cargó la edición completa,
+    la pedimos y Compartidos se vuelve a dibujar al recibirla.
+  */
+  if (!edicionReal && edicionId) {
+    compAsegurarEdicionMini(edicionId);
+  }
+
+  const tituloTexto =
+    item.titulo ||
+    edicionReal?.titulo ||
+    "Edición";
+
+  const titulo = compEscape(tituloTexto);
+
+  const portada = String(
+    edicionReal?.portadaUrl ||
+    item.portadaUrl ||
+    ""
+  ).trim();
+
+  /*
+    Revisamos tanto la categoría como las páginas reales
+    para saber si esta edición contiene video.
+  */
+  const paginasRaw = Array.isArray(edicionReal?.paginas)
+    ? edicionReal.paginas
+    : Object.values(edicionReal?.paginas || {});
+
+  const categoriaEdicion = compCategoriaEdicion(item);
+
+  const esVideo =
+    categoriaEdicion === "videos" ||
+    paginasRaw.some(p => {
+      const tipo = String(
+        p?.mediaType ||
+        p?.mimeType ||
+        ""
+      ).toLowerCase();
+
+      return (
+        tipo.startsWith("video/") ||
+        !!p?.videoUrl
+      );
+    });
+
   const st = compStats(edicionId);
   const guardada = compEstaGuardada(edicionId);
   const descargada = compEstaDescargada(edicionId);
 
-  const categoriaEdicion = compCategoriaEdicion(item);
-const categoriaLabel = compLabelCategoriaEdicion(item);
-const metaEdicion = categoriaLabel
-  ? `Edición compartida · ${compEscape(categoriaLabel)}`
-  : "Edición compartida";
+  const categoriaLabel = compLabelCategoriaEdicion(item);
 
+  const metaEdicion = categoriaLabel
+    ? `Edición compartida · ${compEscape(categoriaLabel)}`
+    : "Edición compartida";
+
+  /*
+    Las ediciones normales muestran sus páginas.
+    Los videos muestran solamente su portada.
+  */
   const miniPaginas =
+    !esVideo &&
     typeof window.edMiniPaginasHTML === "function"
-      ? window.edMiniPaginasHTML(edicionId, "compartidos")
+      ? window.edMiniPaginasHTML(
+          edicionId,
+          "compartidos"
+        )
       : "";
 
-  if (!miniPaginas && edicionId) {
-  compAsegurarEdicionMini(edicionId);
-}
+  if (!esVideo && !miniPaginas && edicionId) {
+    compAsegurarEdicionMini(edicionId);
+  }
+
+  const contenidoMedia = esVideo
+    ? (
+        portada
+          ? `
+            <img
+              src="${compEscape(portada)}"
+              alt="${titulo}"
+              loading="lazy"
+              onclick="abrirPresentacionEdicion('${compJs(edicionId)}')"
+            >
+          `
+          : `
+            <div
+              class="comp-post-empty"
+              role="button"
+              onclick="abrirPresentacionEdicion('${compJs(edicionId)}')"
+            >
+              <i class="fa-solid fa-circle-play"></i>
+              <br>
+              Abrir video
+            </div>
+          `
+      )
+    : (
+        miniPaginas
+          ? miniPaginas
+          : (
+              portada
+                ? `
+                  <img
+                    src="${compEscape(portada)}"
+                    alt="${titulo}"
+                    loading="lazy"
+                    onclick="abrirPresentacionEdicion('${compJs(edicionId)}')"
+                  >
+                `
+                : `
+                  <div class="comp-post-empty">
+                    Sin portada
+                  </div>
+                `
+            )
+      );
 
   return `
     <article class="comp-post">
@@ -3911,55 +4028,90 @@ const metaEdicion = categoriaLabel
         </div>
 
         <div>
-          <div class="comp-post-title">${titulo}</div>
-     <div class="comp-post-meta">${metaEdicion}</div>
+          <div class="comp-post-title">
+            ${titulo}
+          </div>
+
+          <div class="comp-post-meta">
+            ${metaEdicion}
+          </div>
         </div>
       </div>
 
       <div
         class="comp-post-media comp-post-media--edicion-scroll"
         role="region"
-        title="Deslizá para ver las imágenes"
+        title="${
+          esVideo
+            ? "Tocá para abrir el video"
+            : "Deslizá para ver las imágenes"
+        }"
       >
-        ${
-          miniPaginas
-            ? miniPaginas
-            : (
-                portada
-                  ? `<img src="${compEscape(portada)}" alt="${titulo}" loading="lazy" onclick="abrirPresentacionEdicion('${compJs(edicionId)}')">`
-                  : `<div class="comp-post-empty">Sin portada</div>`
-              )
-        }
+        ${contenidoMedia}
       </div>
 
       <div class="comp-post-actions">
+
         ${compActionButton({
-          title: guardada ? "Guardado en Mi Panel" : "Guardar en Mi Panel",
-          onclick: `guardarEdicionEnMiPanel('${compJs(edicionId)}')`,
-          icon: guardada ? "fa-solid fa-heart-circle-check" : "fa-solid fa-heart-circle-plus",
+          title: guardada
+            ? "Guardado en Mi Panel"
+            : "Guardar en Mi Panel",
+
+          onclick:
+            `guardarEdicionEnMiPanel('${compJs(edicionId)}')`,
+
+          icon: guardada
+            ? "fa-solid fa-heart-circle-check"
+            : "fa-solid fa-heart-circle-plus",
+
           count: st.guardados,
           saved: guardada
         })}
 
-        ${compActionButton({
-          title: descargada ? "PDF descargado" : "Descargar PDF",
-          onclick: `descargarEdicionPDF('${compJs(edicionId)}')`,
-          icon: descargada ? "fa-solid fa-file-circle-check" : "fa-solid fa-file-pdf",
-          count: st.descargas,
-          saved: descargada
-        })}
+        ${
+          !esVideo
+            ? compActionButton({
+                title: descargada
+                  ? "PDF descargado"
+                  : "Descargar PDF",
 
-${compActionButton({
-  title: "Descargar PNG",
-  onclick: `descargarEdicionPNGs('${compJs(edicionId)}', this, 'compartidos')`,
-  icon: "fa-solid fa-download",
-  count: st.descargas,
-  saved: descargada
-})}
+                onclick:
+                  `descargarEdicionPDF('${compJs(edicionId)}')`,
+
+                icon: descargada
+                  ? "fa-solid fa-file-circle-check"
+                  : "fa-solid fa-file-pdf",
+
+                count: st.descargas,
+                saved: descargada
+              })
+            : ""
+        }
+
+        ${
+          !esVideo
+            ? compActionButton({
+                title: "Descargar PNG",
+
+                onclick:
+                  `descargarEdicionPNGs('${compJs(edicionId)}', this, 'compartidos')`,
+
+                icon: "fa-solid fa-download",
+                count: st.descargas,
+                saved: descargada
+              })
+            : ""
+        }
 
         ${compActionButton({
-          title: "Compartir imagen o publicación",
-          onclick: `edAbrirOpcionesCompartirEdicion('${compJs(edicionId)}', 'compartidos', this)`,
+          title: esVideo
+            ? "Compartir publicación"
+            : "Compartir imagen o publicación",
+
+          onclick: esVideo
+            ? `compartirEdicion('${compJs(edicionId)}', 'redes')`
+            : `edAbrirOpcionesCompartirEdicion('${compJs(edicionId)}', 'compartidos', this)`,
+
           icon: "fa-solid fa-share-nodes",
           count: st.compartidos
         })}
