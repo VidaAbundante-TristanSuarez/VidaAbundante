@@ -2711,6 +2711,144 @@ body.oscuro #wrapFiltrosBiblia.abierto .filtros{
   }
 }
 
+/* ================= BUSCADOR MODAL MARCADORES ================= */
+
+#modalMarcadores #marcadoresCabeceraIzquierda{
+  flex: 1 1 auto;
+  min-width: 0;
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#modalMarcadores .marcadores-cabecera-titulo{
+  flex: 0 0 auto;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1;
+  color: inherit;
+  white-space: nowrap;
+}
+
+#modalMarcadores .marcadores-cabecera-titulo i{
+  font-size: 15px;
+  line-height: 1;
+  color: inherit;
+}
+
+#modalMarcadores .marcadores-busqueda-wrap{
+  flex: 0 1 150px;
+  width: min(150px, 35vw);
+  min-width: 76px;
+  height: 30px;
+
+  padding: 0 9px;
+
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  border: 1px solid rgba(0,0,0,.10);
+  border-radius: 999px;
+
+  background: rgba(255,255,255,.62);
+  color: #000;
+
+  box-shadow:
+    inset 0 1px 2px rgba(0,0,0,.04);
+
+  overflow: hidden;
+}
+
+#modalMarcadores .marcadores-busqueda-wrap i{
+  flex: 0 0 auto;
+
+  font-size: 12px;
+  line-height: 1;
+  opacity: .58;
+}
+
+#modalMarcadores #buscarMarcadoresLibro{
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  height: 28px;
+
+  padding: 0;
+
+  border: none;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+
+  background: transparent;
+  color: #000;
+
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+#modalMarcadores #buscarMarcadoresLibro::placeholder{
+  color: rgba(0,0,0,.48);
+  opacity: 1;
+}
+
+#modalMarcadores #buscarMarcadoresLibro::-webkit-search-cancel-button{
+  cursor: pointer;
+  opacity: .55;
+}
+
+body.oscuro #modalMarcadores .marcadores-busqueda-wrap{
+  background: rgba(255,255,255,.10);
+  border-color: rgba(255,255,255,.16);
+  color: #fff;
+}
+
+body.oscuro #modalMarcadores #buscarMarcadoresLibro{
+  color: #fff;
+}
+
+body.oscuro #modalMarcadores #buscarMarcadoresLibro::placeholder{
+  color: rgba(255,255,255,.58);
+}
+
+@media (max-width: 480px){
+  #modalMarcadores #marcadoresCabeceraIzquierda{
+    gap: 7px;
+  }
+
+  #modalMarcadores .marcadores-cabecera-titulo{
+    gap: 5px;
+    font-size: 14px;
+  }
+
+  #modalMarcadores .marcadores-cabecera-titulo i{
+    font-size: 13px;
+  }
+
+  #modalMarcadores .marcadores-busqueda-wrap{
+    flex-basis: 112px;
+    width: min(112px, 31vw);
+    min-width: 72px;
+    height: 29px;
+    padding: 0 7px;
+    gap: 5px;
+  }
+
+  #modalMarcadores #buscarMarcadoresLibro{
+    height: 27px;
+    font-size: 11px;
+  }
+}
+
 /* ================= MI PANEL IMAGENES ================= */
 
 /* Contenedor principal igual criterio que Devocionales */
