@@ -5982,4 +5982,162 @@ body.oscuro .nav-vida-btn.activo{
   }
 }
 
+/* =========================================================
+   AJUSTE FINAL: MARCADORES CASI A PANTALLA COMPLETA EN CELULAR
+========================================================= */
+
+@media (max-width: 760px){
+
+  #modalMarcadores{
+    padding: 4px !important;
+    overflow: hidden !important;
+
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  #modalMarcadores .modal-contenido{
+    width: calc(100vw - 8px) !important;
+    max-width: calc(100vw - 8px) !important;
+
+    height: calc(100vh - 8px) !important;
+    height: calc(100dvh - 8px) !important;
+
+    max-height: calc(100vh - 8px) !important;
+    max-height: calc(100dvh - 8px) !important;
+
+    margin: 0 !important;
+    border-radius: 18px !important;
+
+    display: flex !important;
+    flex-direction: column !important;
+
+    overflow: hidden !important;
+  }
+
+  /* Cabecera con Marcadores, lupa y cerrar */
+  #modalMarcadores .modal-contenido > div:first-child{
+    flex: 0 0 auto !important;
+  }
+
+  /* La lista ocupa todo el espacio restante */
+  #modalMarcadores #listaMarcadores{
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+
+    padding-bottom:
+      calc(14px + env(safe-area-inset-bottom)) !important;
+
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* El formulario también puede aprovechar la pantalla completa */
+  #modalMarcadores #formNuevoMarcador{
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+
+    padding-bottom:
+      calc(14px + env(safe-area-inset-bottom)) !important;
+
+    -webkit-overflow-scrolling: touch;
+  }
+
+  #modalMarcadores .nota-vista-lista{
+    min-height: 100%;
+    padding-bottom: 8px;
+  }
+}
+
+
+/* =========================================================
+   CAPTURA DE NOTAS LARGAS
+   Las notas cortas conservan el diseño actual.
+========================================================= */
+
+/* Notas largas */
+.nota-share-stage.nota-share-stage--larga{
+  width: 900px;
+  padding: 28px;
+}
+
+.nota-share-stage--larga .nota-share-card{
+  padding: 28px 30px 32px;
+}
+
+.nota-share-stage--larga .nota-share-title{
+  font-size: 27px;
+  line-height: 1.16;
+}
+
+.nota-share-stage--larga .nota-share-meta{
+  font-size: 18px;
+  line-height: 1.22;
+  margin-bottom: 18px;
+}
+
+.nota-share-stage--larga .nota-share-verse{
+  font-size: 23px;
+  line-height: 1.30;
+  margin-bottom: 17px;
+}
+
+.nota-share-stage--larga .nota-share-text{
+  font-size: 22px;
+  line-height: 1.42;
+}
+
+.nota-share-stage--larga .nota-share-firma{
+  margin-top: 20px;
+  padding-top: 11px;
+  font-size: 15px;
+}
+
+
+/* Notas extremadamente largas */
+.nota-share-stage.nota-share-stage--muy-larga{
+  width: 1080px;
+  padding: 30px;
+}
+
+.nota-share-stage--muy-larga .nota-share-card{
+  padding: 30px 34px 34px;
+  border-radius: 32px;
+}
+
+.nota-share-stage--muy-larga .nota-share-title{
+  font-size: 26px;
+  line-height: 1.14;
+}
+
+.nota-share-stage--muy-larga .nota-share-meta{
+  font-size: 17px;
+  line-height: 1.20;
+  margin-bottom: 16px;
+}
+
+.nota-share-stage--muy-larga .nota-share-verse{
+  font-size: 22px;
+  line-height: 1.27;
+  margin-bottom: 16px;
+}
+
+.nota-share-stage--muy-larga .nota-share-text{
+  font-size: 21px;
+  line-height: 1.37;
+}
+
+.nota-share-stage--muy-larga .nota-share-firma{
+  margin-top: 18px;
+  padding-top: 10px;
+  font-size: 14px;
+}
+
 </style> 
