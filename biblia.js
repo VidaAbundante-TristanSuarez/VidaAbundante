@@ -7478,35 +7478,195 @@ if (!modoMarcador) {
   renderPreviewVersiculosMarcador(); // por si está abierto el form
 };
 
-// ================= 📁 BOTÓN 2: LISTA MARCADORES 📌=================
-// ================= 📁 BOTÓN: ABRIR MODAL MARCADORES =================
+// ================= 🔖 LISTA Y BUSCADOR DE MARCADORES =================
+
+let busquedaMarcadoresLibro = "";
+
+function marcadoresNormalizarBusqueda(valor = "") {
+  return String(valor || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+}
+
+function prepararCabeceraBuscadorMarcadores() {
+  const modal = document.getElementById("modalMarcadores");
+  if (!modal) return;
+
+  const card = modal.querySelector(
+    ".modal-card, .modal-contenido, .modal-content, .modal-box"
+  );
+
+  if (!card) return;
+
+  /*
+    Buscamos la cabecera que contiene el título Marcadores.
+    De esta manera no hace falta modificar el HTML.
+  */
+  const cabecera = Array.from(card.children).find(el => {
+    if (!(el instanceof HTMLElement)) return false;
+
+    if (
+      el.id === "listaMarcadores" ||
+      el.id === "formNuevoMarcador"
+    ) {
+      return false;
+    }
+
+    return marcadoresNormalizarBusqueda(
+      el.textContent
+    ).includes("marcadores");
+  });
+
+  if (!cabecera) return;
+
+  let bloque = document.getElementById(
+    "marcadoresCabeceraIzquierda"
+  );
+
+  if (!bloque) {
+    /*
+      Buscamos el título anterior que contiene
+      el emoji de carpeta y la palabra Marcadores.
+    */
+    const tituloViejo = Array.from(
+      cabecera.querySelectorAll(
+        "b, strong, h1, h2, h3, span, div"
+      )
+    ).find(el => {
+      if (el.querySelector("button")) return false;
+
+      return marcadoresNormalizarBusqueda(
+        el.textContent
+      ).includes("marcadores");
+    });
+
+    bloque = document.createElement("div");
+    bloque.id = "marcadoresCabeceraIzquierda";
+
+    bloque.innerHTML = `
+      <div class="marcadores-cabecera-titulo">
+        <i class="fa-classic fa-solid fa-bookmark"></i>
+        <span>Marcadores</span>
+      </div>
+
+      <label
+        class="marcadores-busqueda-wrap"
+        title="Buscar por libro"
+      >
+        <i class="fa-classic fa-solid fa-magnifying-glass"></i>
+
+        <input
+          id="buscarMarcadoresLibro"
+          type="search"
+          placeholder="Libro..."
+          autocomplete="off"
+          aria-label="Buscar notas por libro"
+          oninput="filtrarMarcadoresPorLibro(this.value)"
+        >
+      </label>
+    `;
+
+    if (tituloViejo) {
+      tituloViejo.replaceWith(bloque);
+
+    } else {
+      /*
+        Respaldo por si el título está escrito
+        directamente dentro de la cabecera.
+      */
+      Array.from(cabecera.childNodes).forEach(node => {
+        if (
+          node.nodeType === Node.TEXT_NODE &&
+          marcadoresNormalizarBusqueda(
+            node.textContent
+          ).includes("marcadores")
+        ) {
+          node.remove();
+        }
+      });
+
+      const botonCerrar =
+        cabecera.querySelector("button");
+
+      cabecera.insertBefore(
+        bloque,
+        botonCerrar || null
+      );
+    }
+  }
+
+  const input = document.getElementById(
+    "buscarMarcadoresLibro"
+  );
+
+  if (
+    input &&
+    input.value !== busquedaMarcadoresLibro
+  ) {
+    input.value = busquedaMarcadoresLibro;
+  }
+}
+
+window.filtrarMarcadoresPorLibro = function(valor = "") {
+  busquedaMarcadoresLibro = String(valor || "");
+  renderListaMarcadores();
+};
+
+// ================= 🔖 ABRIR MODAL MARCADORES =================
+
 window.abrirMarcadores = () => {
   if (!uid) {
     loginModal.style.display = "flex";
     return;
   }
 
-  const modal = document.getElementById("modalMarcadores");
-  const lista = document.getElementById("listaMarcadores");
-  const form = document.getElementById("formNuevoMarcador");
+  const modal = document.getElementById(
+    "modalMarcadores"
+  );
+
+  const lista = document.getElementById(
+    "listaMarcadores"
+  );
+
+  const form = document.getElementById(
+    "formNuevoMarcador"
+  );
+
   if (!modal || !lista || !form) return;
 
-  const abierto = getComputedStyle(modal).display !== "none";
+  const abierto =
+    getComputedStyle(modal).display !== "none";
 
-  // ✅ si ya está abierto, cerrar prolijo
   if (abierto) {
     cerrarMarcadores();
     return;
   }
 
-  // ✅ IMPORTANTÍSIMO: limpiar display inline que lo deja muerto después de guardar
+  /*
+    Cada vez que se abre nuevamente el modal,
+    comenzamos sin filtro.
+  */
+  busquedaMarcadoresLibro = "";
+
+  prepararCabeceraBuscadorMarcadores();
+
+  const inputBuscar = document.getElementById(
+    "buscarMarcadoresLibro"
+  );
+
+  if (inputBuscar) {
+    inputBuscar.value = "";
+  }
+
   modal.style.display = "flex";
 
-  // ✅ por defecto abrir lista
   form.style.display = "none";
   lista.style.display = "block";
 
   renderListaMarcadores();
+
   modal.classList.add("abierto");
   modal.setAttribute("aria-hidden", "false");
 };
@@ -7647,22 +7807,73 @@ window.notaResumenVersiculoLista = notaResumenVersiculoLista;
 
 // ================= ✨ Render Lista Marcadores 📌=================
 function renderListaMarcadores() {
-  const lista = document.getElementById("listaMarcadores");
+  const lista = document.getElementById(
+    "listaMarcadores"
+  );
+
   if (!lista) return;
 
-  const items = Object.entries(marcadores || {})
-    .map(([id, m]) => ({ ...(m || {}), id }))
+  /*
+    Primero reunimos todas las notas de Biblia.
+    Las notas de ABC continúan usando su propia lista.
+  */
+  const todosItems = Object.entries(
+    marcadores || {}
+  )
+    .map(([id, m]) => ({
+      ...(m || {}),
+      id
+    }))
     .filter(m => m?.origen !== "abc")
-    .sort((a, b) => (b.fecha || 0) - (a.fecha || 0));
+    .sort(
+      (a, b) =>
+        Number(b.fecha || 0) -
+        Number(a.fecha || 0)
+    );
+
+  const busqueda = marcadoresNormalizarBusqueda(
+    busquedaMarcadoresLibro
+  );
+
+  /*
+    Solo se revisan el libro y la referencia.
+
+    No se buscan coincidencias dentro del título
+    ni dentro del contenido de la nota.
+  */
+  const items = busqueda
+    ? todosItems.filter(m => {
+        const libroYReferencia =
+          marcadoresNormalizarBusqueda(
+            `${m.libro || ""} ${m.ref || ""}`
+          );
+
+        return libroYReferencia.includes(
+          busqueda
+        );
+      })
+    : todosItems;
 
   let header = "";
 
-  if (modoMarcador && Object.keys(seleccionMarcador || {}).length > 0) {
+  if (
+    modoMarcador &&
+    Object.keys(
+      seleccionMarcador || {}
+    ).length > 0
+  ) {
     header = `
-      <div class="card-marcador nota-lista-card nota-lista-card-cta">
+      <div
+        class="card-marcador nota-lista-card nota-lista-card-cta"
+      >
         <div class="nota-lista-contenido">
-          <div class="nota-lista-titulo">Guardar nuevo marcador</div>
-          <div class="nota-lista-resumen">Abrí el formulario para guardar la nota con los versículos seleccionados.</div>
+          <div class="nota-lista-titulo">
+            Guardar nuevo marcador
+          </div>
+
+          <div class="nota-lista-resumen">
+            Abrí el formulario para guardar la nota con los versículos seleccionados.
+          </div>
         </div>
 
         <div class="nota-lista-botones">
@@ -7679,8 +7890,30 @@ function renderListaMarcadores() {
     `;
   }
 
+  if (todosItems.length === 0) {
+    lista.innerHTML =
+      header +
+      `
+        <p class="muted">
+          Todavía no guardaste marcadores.
+        </p>
+      `;
+
+    lista.scrollTop = 0;
+    lista.scrollLeft = 0;
+    return;
+  }
+
   if (items.length === 0) {
-    lista.innerHTML = header + `<p class="muted">Todavía no guardaste marcadores.</p>`;
+    lista.innerHTML =
+      header +
+      `
+        <p class="muted">
+          No encontré notas de ese libro.
+        </p>
+      `;
+
+    lista.scrollTop = 0;
     lista.scrollLeft = 0;
     return;
   }
@@ -7688,66 +7921,124 @@ function renderListaMarcadores() {
   lista.innerHTML =
     header +
     items.map(m => {
-      const fechaTxt = m.fecha ? new Date(m.fecha).toLocaleDateString("es-AR") : "";
-      const refTxt = m.ref || (m.libro && m.capitulo ? `${m.libro} ${m.capitulo}` : "Nota");
-      const tituloTxt = m.titulo || "Marcador";
+      const refTxt =
+        m.ref ||
+        (
+          m.libro && m.capitulo
+            ? `${m.libro} ${m.capitulo}`
+            : "Nota"
+        );
 
-      const linea = marcadorEscapeHTML(`${refTxt} - ${fechaTxt} - ${tituloTxt}`);
+      const tituloTxt =
+        m.titulo || "Marcador";
 
-      const fondoNota = m.color || "#fff3b0";
-      const colorTexto = (typeof colorContraste === "function")
-        ? colorContraste(fondoNota)
-        : "#000";
+      /*
+        Acá quitamos completamente la fecha.
+
+        Antes se mostraba:
+        referencia - fecha - título
+
+        Ahora se muestra:
+        referencia - título
+      */
+      const linea = marcadorEscapeHTML(
+        [refTxt, tituloTxt]
+          .filter(Boolean)
+          .join(" - ")
+      );
+
+      const fondoNota =
+        m.color || "#fff3b0";
+
+      const colorTexto =
+        typeof colorContraste === "function"
+          ? colorContraste(fondoNota)
+          : "#000";
 
       const notaVieneDeCompartidos =
-        (typeof notaPanelVieneDeCompartidos === "function")
+        typeof notaPanelVieneDeCompartidos ===
+        "function"
           ? notaPanelVieneDeCompartidos(m)
-          : (m?.origen === "compartidos" || !!m?.sourceCompKey);
+          : (
+              m?.origen === "compartidos" ||
+              !!m?.sourceCompKey
+            );
 
-      const puedeEditarNota = !notaVieneDeCompartidos;
-      const resumen = marcadorEscapeHTML(notaResumenVersiculoLista(m, 110));
+      const puedeEditarNota =
+        !notaVieneDeCompartidos;
+
+      const resumen = marcadorEscapeHTML(
+        notaResumenVersiculoLista(m, 110)
+      );
 
       return `
         <div
           class="card-marcador nota-lista-card"
-          style="--nota-bg:${fondoNota}; --nota-color:${colorTexto};"
+          style="
+            --nota-bg:${fondoNota};
+            --nota-color:${colorTexto};
+          "
         >
           <div
             class="nota-lista-contenido"
             onclick="abrirMarcador('${m.id}')"
           >
-            <div class="nota-lista-titulo">${linea}</div>
+            <div class="nota-lista-titulo">
+              ${linea}
+            </div>
 
-            ${resumen ? `
-              <div class="nota-lista-resumen">${resumen}</div>
-            ` : ``}
+            ${
+              resumen
+                ? `
+                  <div class="nota-lista-resumen">
+                    ${resumen}
+                  </div>
+                `
+                : ``
+            }
           </div>
 
           <div class="nota-lista-botones">
             <button
               type="button"
               class="pm-btn"
-              onclick="event.stopPropagation(); abrirVistaMarcadorDesdeLista('${m.id}', 'biblia')"
+              onclick="
+                event.stopPropagation();
+                abrirVistaMarcadorDesdeLista(
+                  '${m.id}',
+                  'biblia'
+                );
+              "
               title="Ver nota"
             >
               <i class="fa-solid fa-rectangle-list"></i>
             </button>
 
-            ${puedeEditarNota ? `
-              <button
-                type="button"
-                class="pm-btn"
-                onclick="event.stopPropagation(); editarMarcadorDesdeLista('${m.id}')"
-                title="Editar"
-              >
-                <i class="fa-solid fa-pen-to-square"></i>
-              </button>
-            ` : ``}
+            ${
+              puedeEditarNota
+                ? `
+                  <button
+                    type="button"
+                    class="pm-btn"
+                    onclick="
+                      event.stopPropagation();
+                      editarMarcadorDesdeLista(
+                        '${m.id}'
+                      );
+                    "
+                    title="Editar"
+                  >
+                    <i class="fa-solid fa-pen-to-square"></i>
+                  </button>
+                `
+                : ``
+            }
           </div>
         </div>
       `;
     }).join("");
 
+  lista.scrollTop = 0;
   lista.scrollLeft = 0;
 }
 
