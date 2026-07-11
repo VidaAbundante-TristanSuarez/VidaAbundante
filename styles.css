@@ -6140,4 +6140,61 @@ body.oscuro .nav-vida-btn.activo{
   font-size: 14px;
 }
 
+/* =========================================================
+   AJUSTE FINAL: NOTAS MÁS ANCHAS + COMPARTIR POR DELANTE
+========================================================= */
+
+/*
+  Aprovecha más los laterales en las notas largas.
+  Al ser más anchas, el texto ocupa menos renglones
+  y la imagen queda menos exageradamente vertical.
+*/
+
+/* Nota larga */
+.nota-share-stage.nota-share-stage--larga{
+  width: 1080px !important;
+  padding: 20px !important;
+}
+
+.nota-share-stage--larga .nota-share-card{
+  padding: 26px 28px 30px !important;
+  border-radius: 28px !important;
+}
+
+
+/* Nota extremadamente larga */
+.nota-share-stage.nota-share-stage--muy-larga{
+  width: 1320px !important;
+  padding: 22px !important;
+}
+
+.nota-share-stage--muy-larga .nota-share-card{
+  padding: 28px 30px 32px !important;
+  border-radius: 30px !important;
+}
+
+
+/*
+  El modal Marcadores tiene z-index 3000.
+  Por eso Compartir, que usaba 2000, quedaba detrás.
+  Lo ponemos por encima de todo.
+*/
+
+#modalCompartirMarcador{
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 2147483000 !important;
+  pointer-events: auto !important;
+}
+
+#modalCompartirMarcador.abierto{
+  display: flex !important;
+}
+
+#modalCompartirMarcador .modal-card{
+  position: relative !important;
+  z-index: 2147483001 !important;
+  pointer-events: auto !important;
+}
+
 </style> 
