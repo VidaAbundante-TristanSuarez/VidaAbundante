@@ -6056,101 +6056,10 @@ body.oscuro .nav-vida-btn.activo{
   }
 }
 
-
 /* =========================================================
-   CAPTURA DE NOTAS LARGAS
-   Las notas cortas conservan el diseño actual.
+   NOTAS LARGAS: DISEÑO FINAL LIMPIO
 ========================================================= */
-
-/* Notas largas */
-.nota-share-stage.nota-share-stage--larga{
-  width: 900px;
-  padding: 28px;
-}
-
-.nota-share-stage--larga .nota-share-card{
-  padding: 28px 30px 32px;
-}
-
-.nota-share-stage--larga .nota-share-title{
-  font-size: 27px;
-  line-height: 1.16;
-}
-
-.nota-share-stage--larga .nota-share-meta{
-  font-size: 18px;
-  line-height: 1.22;
-  margin-bottom: 18px;
-}
-
-.nota-share-stage--larga .nota-share-verse{
-  font-size: 23px;
-  line-height: 1.30;
-  margin-bottom: 17px;
-}
-
-.nota-share-stage--larga .nota-share-text{
-  font-size: 22px;
-  line-height: 1.42;
-}
-
-.nota-share-stage--larga .nota-share-firma{
-  margin-top: 20px;
-  padding-top: 11px;
-  font-size: 15px;
-}
-
-
-/* Notas extremadamente largas */
-.nota-share-stage.nota-share-stage--muy-larga{
-  width: 1080px;
-  padding: 30px;
-}
-
-.nota-share-stage--muy-larga .nota-share-card{
-  padding: 30px 34px 34px;
-  border-radius: 32px;
-}
-
-.nota-share-stage--muy-larga .nota-share-title{
-  font-size: 26px;
-  line-height: 1.14;
-}
-
-.nota-share-stage--muy-larga .nota-share-meta{
-  font-size: 17px;
-  line-height: 1.20;
-  margin-bottom: 16px;
-}
-
-.nota-share-stage--muy-larga .nota-share-verse{
-  font-size: 22px;
-  line-height: 1.27;
-  margin-bottom: 16px;
-}
-
-.nota-share-stage--muy-larga .nota-share-text{
-  font-size: 21px;
-  line-height: 1.37;
-}
-
-.nota-share-stage--muy-larga .nota-share-firma{
-  margin-top: 18px;
-  padding-top: 10px;
-  font-size: 14px;
-}
-
-/* =========================================================
-   AJUSTE FINAL: NOTAS MÁS ANCHAS + COMPARTIR POR DELANTE
-========================================================= */
-
-/*
-  Aprovecha más los laterales en las notas largas.
-  Al ser más anchas, el texto ocupa menos renglones
-  y la imagen queda menos exageradamente vertical.
-*/
-
-/* Nota larga */
+/* ================= NOTA LARGA ================= */
 .nota-share-stage.nota-share-stage--larga{
   width: 1080px !important;
   padding: 20px !important;
@@ -6161,8 +6070,35 @@ body.oscuro .nav-vida-btn.activo{
   border-radius: 28px !important;
 }
 
+.nota-share-stage--larga .nota-share-title{
+  font-size: 28px !important;
+  line-height: 1.16;
+}
 
-/* Nota extremadamente larga */
+.nota-share-stage--larga .nota-share-meta{
+  font-size: 19px !important;
+  line-height: 1.22;
+  margin-bottom: 18px;
+}
+
+.nota-share-stage--larga .nota-share-verse{
+  font-size: 24px !important;
+  line-height: 1.30;
+  margin-bottom: 17px;
+}
+
+.nota-share-stage--larga .nota-share-text{
+  font-size: 23px !important;
+  line-height: 1.42;
+}
+
+.nota-share-stage--larga .nota-share-firma{
+  margin-top: 20px;
+  padding-top: 11px;
+  font-size: 16px !important;
+}
+
+/* ================= NOTA EXTREMADAMENTE LARGA ================= */
 .nota-share-stage.nota-share-stage--muy-larga{
   width: 1320px !important;
   padding: 22px !important;
@@ -6173,12 +6109,37 @@ body.oscuro .nav-vida-btn.activo{
   border-radius: 30px !important;
 }
 
+.nota-share-stage--muy-larga .nota-share-title{
+  font-size: 27px !important;
+  line-height: 1.14;
+}
 
-/*
-  El modal Marcadores tiene z-index 3000.
-  Por eso Compartir, que usaba 2000, quedaba detrás.
-  Lo ponemos por encima de todo.
-*/
+.nota-share-stage--muy-larga .nota-share-meta{
+  font-size: 18px !important;
+  line-height: 1.20;
+  margin-bottom: 16px;
+}
+
+.nota-share-stage--muy-larga .nota-share-verse{
+  font-size: 23px !important;
+  line-height: 1.27;
+  margin-bottom: 16px;
+}
+
+.nota-share-stage--muy-larga .nota-share-text{
+  font-size: 22px !important;
+  line-height: 1.37;
+}
+
+.nota-share-stage--muy-larga .nota-share-firma{
+  margin-top: 18px;
+  padding-top: 10px;
+  font-size: 15px !important;
+}
+
+/* =========================================================
+   MODAL COMPARTIR SIEMPRE POR DELANTE
+========================================================= */
 
 #modalCompartirMarcador{
   position: fixed !important;
@@ -6195,53 +6156,6 @@ body.oscuro .nav-vida-btn.activo{
   position: relative !important;
   z-index: 2147483001 !important;
   pointer-events: auto !important;
-}
-
-/* =========================================================
-   AJUSTE FINAL: FUENTE DE NOTAS LARGAS +0.5PX
-========================================================= */
-
-/* Nota larga */
-.nota-share-stage--larga .nota-share-title{
-  font-size: 27.5px !important;
-}
-
-.nota-share-stage--larga .nota-share-meta{
-  font-size: 18.5px !important;
-}
-
-.nota-share-stage--larga .nota-share-verse{
-  font-size: 23.5px !important;
-}
-
-.nota-share-stage--larga .nota-share-text{
-  font-size: 22.5px !important;
-}
-
-.nota-share-stage--larga .nota-share-firma{
-  font-size: 15.5px !important;
-}
-
-
-/* Nota extremadamente larga */
-.nota-share-stage--muy-larga .nota-share-title{
-  font-size: 26.5px !important;
-}
-
-.nota-share-stage--muy-larga .nota-share-meta{
-  font-size: 17.5px !important;
-}
-
-.nota-share-stage--muy-larga .nota-share-verse{
-  font-size: 22.5px !important;
-}
-
-.nota-share-stage--muy-larga .nota-share-text{
-  font-size: 21.5px !important;
-}
-
-.nota-share-stage--muy-larga .nota-share-firma{
-  font-size: 14.5px !important;
 }
 
 </style> 
