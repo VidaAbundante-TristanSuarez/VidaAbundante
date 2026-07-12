@@ -43,7 +43,15 @@ let vaLoginAndroidEnCurso = false;
 function vaEsAndroidAPK() {
   const ua = navigator.userAgent || "";
 
+  let esPorUrl = false;
+
+  try {
+    const params = new URLSearchParams(window.location.search || "");
+    esPorUrl = params.get("apk") === "1" || params.get("android") === "1";
+  } catch (e) {}
+
   return (
+    esPorUrl ||
     !!window.__VIDA_ANDROID_APK__ ||
     /VidaAbundanteAndroidApp/i.test(ua) ||
     localStorage.getItem("vida_abundante_android_apk") === "1"
@@ -2045,7 +2053,15 @@ function vaTextoInstalarApp() {
 }
 
 function vaMostrarConsejoInstalarApp() {
-  if (vaEsAndroidAPK()) return;
+  if (vaEsAndroidAPK()) {
+    try {
+      localStorage.setItem(VA_TIP_APP_KEY, "1");
+      localStorage.setItem("vida_abundante_android_apk", "1");
+      document.getElementById("vaTipInstalarApp")?.remove();
+    } catch (e) {}
+    return;
+  }
+
   if (vaEsStandalone()) return;
   if (localStorage.getItem(VA_TIP_APP_KEY) === "1") return;
   if (document.getElementById("vaTipInstalarApp")) return;
