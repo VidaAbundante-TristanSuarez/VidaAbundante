@@ -38,8 +38,18 @@ const auth = getAuth(app);
 // ================= PWA: INSTALAR / COMPARTIR APP =================
 let vaInstallPromptPendiente = null;
 
+function vaEsAndroidAPK() {
+  const ua = navigator.userAgent || "";
+
+  return (
+    /VidaAbundanteAndroidApp/i.test(ua) ||
+    localStorage.getItem("vida_abundante_android_apk") === "1"
+  );
+}
+
 function vaAppEstaInstalada() {
   return (
+    vaEsAndroidAPK() ||
     window.matchMedia?.("(display-mode: standalone)")?.matches ||
     window.navigator.standalone === true
   );
@@ -1919,7 +1929,7 @@ if (typeof window.irA === "function") {
 
 // ✅ En links directos no mostramos cartel de instalar app.
 // En iPhone puede molestar y sumar carga visual justo al abrir desde WhatsApp.
-if (!vaHayLinkDirectoInterno()) {
+if (!vaHayLinkDirectoInterno() && !vaEsAndroidAPK()) {
   vaMostrarConsejoInstalarApp();
 }
     } catch (e) {
@@ -1958,6 +1968,7 @@ function vaTextoInstalarApp() {
 }
 
 function vaMostrarConsejoInstalarApp() {
+  if (vaEsAndroidAPK()) return;
   if (vaEsStandalone()) return;
   if (localStorage.getItem(VA_TIP_APP_KEY) === "1") return;
   if (document.getElementById("vaTipInstalarApp")) return;
