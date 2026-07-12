@@ -120,15 +120,6 @@ vaConsumirLoginAndroidPendiente();
 // ================= PWA: INSTALAR / COMPARTIR APP =================
 let vaInstallPromptPendiente = null;
 
-function vaEsAndroidAPK() {
-  const ua = navigator.userAgent || "";
-
-  return (
-    /VidaAbundanteAndroidApp/i.test(ua) ||
-    localStorage.getItem("vida_abundante_android_apk") === "1"
-  );
-}
-
 function vaAppEstaInstalada() {
   return (
     vaEsAndroidAPK() ||
