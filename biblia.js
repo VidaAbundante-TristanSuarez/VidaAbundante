@@ -3,7 +3,9 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebas
 import {
   getAuth,
   onAuthStateChanged,
-  signOut
+  signOut,
+  GoogleAuthProvider,
+  signInWithCredential
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 import {
@@ -34,6 +36,86 @@ const R2_DOWNLOAD_URL = R2_WORKER_URL;
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+
+const VA_ANDROID_ID_TOKEN_KEY = "__VA_ANDROID_ID_TOKEN__";
+let vaLoginAndroidEnCurso = false;
+
+function vaEsAndroidAPK() {
+  const ua = navigator.userAgent || "";
+
+  return (
+    !!window.__VIDA_ANDROID_APK__ ||
+    /VidaAbundanteAndroidApp/i.test(ua) ||
+    localStorage.getItem("vida_abundante_android_apk") === "1"
+  );
+}
+
+window.vaEsAndroidAPK = vaEsAndroidAPK;
+
+window.vaIniciarSesionGoogle = function() {
+  try {
+    if (
+      vaEsAndroidAPK() &&
+      window.AndroidVida &&
+      typeof window.AndroidVida.loginGoogle === "function"
+    ) {
+      window.AndroidVida.loginGoogle();
+      return;
+    }
+  } catch (e) {}
+
+  window.location.href = "login.html";
+};
+
+window.vaLoginAndroidError = function(mensaje = "") {
+  alert("No pude iniciar sesión con Google: " + (mensaje || "intentá nuevamente."));
+};
+
+async function vaConsumirLoginAndroidPendiente() {
+  const idToken = localStorage.getItem(VA_ANDROID_ID_TOKEN_KEY) || "";
+
+  if (!idToken) return false;
+
+  vaLoginAndroidEnCurso = true;
+
+  try {
+    const credential = GoogleAuthProvider.credential(idToken);
+
+    await signInWithCredential(auth, credential);
+
+    localStorage.removeItem(VA_ANDROID_ID_TOKEN_KEY);
+    localStorage.removeItem("VA_VISITANTE_OK");
+    localStorage.setItem("vida_abundante_android_apk", "1");
+
+    vaLoginAndroidEnCurso = false;
+
+    const params = new URLSearchParams(location.search);
+
+    if (params.get("loginOk") !== "1") {
+      window.location.replace("/VidaAbundante/?loginOk=1");
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Error login Android APK:", error);
+
+    vaLoginAndroidEnCurso = false;
+    localStorage.removeItem(VA_ANDROID_ID_TOKEN_KEY);
+
+    alert("No pude iniciar sesión desde la app. Probá nuevamente.");
+
+    return false;
+  }
+}
+
+window.vaLoginAndroidConGoogle = async function(idToken = "") {
+  if (!idToken) return;
+
+  localStorage.setItem(VA_ANDROID_ID_TOKEN_KEY, idToken);
+  await vaConsumirLoginAndroidPendiente();
+};
+
+vaConsumirLoginAndroidPendiente();
 
 // ================= PWA: INSTALAR / COMPARTIR APP =================
 let vaInstallPromptPendiente = null;
@@ -440,6 +522,10 @@ window.toggleMenuSesion = function(){
 
   if (!modal || !btnLogin || !btnLogout || !titulo || !texto) return;
 
+    btnLogin.onclick = () => {
+    window.vaIniciarSesionGoogle();
+  };
+
   const user = auth.currentUser;
   const puedeVerRecursos = !!window.__ES_ADMIN || !!window.__ES_COLABORADOR;
 
@@ -475,7 +561,7 @@ window.abrirLoginParaGuardarMiPanel = function () {
   const modal = document.getElementById("loginModal");
 
   if (!modal) {
-    window.location.href = "login.html";
+    window.vaIniciarSesionGoogle();
     return;
   }
 
@@ -504,7 +590,7 @@ window.abrirLoginParaGuardarMiPanel = function () {
       <span>Iniciar sesión con Google</span>
     `;
     btnLogin.onclick = () => {
-      window.location.href = "login.html";
+      window.vaIniciarSesionGoogle();
     };
   }
 
@@ -2583,6 +2669,10 @@ onAuthStateChanged(auth, async user => {
   window.__UID = uid;
 
 if (!uid) {
+  if (vaLoginAndroidEnCurso || localStorage.getItem(VA_ANDROID_ID_TOKEN_KEY)) {
+    return;
+  }
+
   const puedeEntrarComoVisitante = vaEntradaVisitante();
 
   // ✅ Primer ingreso real sin login y sin elegir visitante:
