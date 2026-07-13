@@ -6158,4 +6158,97 @@ body.oscuro .nav-vida-btn.activo{
   pointer-events: auto !important;
 }
 
+
+/* =========================================================
+   AUDIO PUBLICADO EN NOTAS
+========================================================= */
+
+.nota-audio-publicado{
+  width:100%;
+  margin:12px 0 4px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.nota-audio-publicado audio{
+  display:block;
+  width:min(100%, 460px);
+  min-height:42px;
+}
+
+/* =========================================================
+   AUDIO DENTRO DE EDITAR NOTA
+========================================================= */
+
+.va-nota-audio-edicion{
+  width:100%;
+  display:none;
+  flex-direction:column;
+  gap:10px;
+
+  margin:12px 0;
+  padding:12px;
+
+  border:1px solid rgba(0,0,0,.10);
+  border-radius:16px;
+
+  background:
+    rgba(209,238,255,.58);
+
+  box-sizing:border-box;
+}
+
+.va-nota-audio-edicion-titulo{
+  font-size:13px;
+  font-weight:800;
+  text-align:center;
+}
+
+.va-nota-audio-sin-audio{
+  font-size:13px;
+  text-align:center;
+  opacity:.75;
+}
+
+.va-nota-audio-edicion audio{
+  display:block;
+  width:100%;
+  min-height:42px;
+}
+
+.va-nota-audio-edicion-botones{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+.va-nota-audio-edicion-botones button{
+  min-height:38px;
+  padding:0 14px;
+
+  border:none;
+  border-radius:999px;
+
+  background:
+    var(--ui-azul-claro, #d1eeff);
+
+  color:#000;
+  font-weight:800;
+  cursor:pointer;
+
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+}
+
+.va-nota-audio-edicion-botones
+.va-audio-quitar{
+  background:#ffd9d9;
+  color:#8a1111;
+}
+
 </style> 
