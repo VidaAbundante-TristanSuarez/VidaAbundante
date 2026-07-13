@@ -240,7 +240,15 @@ function edFondosConstruirLista(categoria = "", incluirOcultos = false) {
     }));
 
   return [...itemsBase, ...itemsNuevos]
-    .filter(item => item.url && (incluirOcultos || item.activo))
+    .filter(item => {
+      if (!item.url) return false;
+
+      // Vista normal: solamente activos.
+      // Vista "Quitados": solamente elementos quitados.
+      return incluirOcultos
+        ? !item.activo
+        : item.activo;
+    })
     .sort((a, b) => {
       // Los fondos agregados desde el administrador aparecen primero.
       if (a.nuevo !== b.nuevo) {
@@ -341,7 +349,7 @@ function edFondosCardHTML(categoria, item) {
   const nombre = edEscape(item.nombre || "Fondo");
 
   return `
-    <article class="ed-fondo-card ${oculto ? "ed-fondo-card-oculto" : ""}">
+    <article class="ed-fondo-card ed-fondo-card-${edEscape(categoria)} ${oculto ? "ed-fondo-card-oculto" : ""}">
       <button
         type="button"
         class="ed-fondo-thumb"
@@ -419,24 +427,30 @@ function edRenderGestorFondos() {
   }
 
   const secciones = ED_FONDOS_CATEGORIAS.map(({ id, label }) => {
-    const items = edFondosConstruirLista(id, edFondosMostrarOcultos);
-    const activos = items.filter(item => item.activo).length;
+    const items = edFondosConstruirLista(
+      id,
+      edFondosMostrarOcultos
+    );
 
-    const resumenActivos =
-      id === "texturas"
-        ? `${activos} texturas activas`
-        : id === "adornos"
-          ? `${activos} adornos activos`
-          : `${activos} fondos activos`;
+    const cantidad = items.length;
 
-    return `
-      <section class="ed-fondos-seccion">
-        <div class="ed-fondos-seccion-head">
-          <div>
-            <h4>${edEscape(label)}</h4>
-            <span>${edEscape(resumenActivos)}</span>
-          </div>
+    let resumen;
 
+    if (edFondosMostrarOcultos) {
+      resumen =
+        cantidad === 1
+          ? "1 elemento quitado"
+          : `${cantidad} elementos quitados`;
+    } else if (id === "texturas") {
+      resumen = `${cantidad} texturas activas`;
+    } else if (id === "adornos") {
+      resumen = `${cantidad} adornos activos`;
+    } else {
+      resumen = `${cantidad} fondos activos`;
+    }
+
+    const controlesAgregar = !edFondosMostrarOcultos
+      ? `
           <div class="ed-fondos-seccion-actions">
             <input
               id="edFondosInput_${id}"
@@ -450,36 +464,66 @@ function edRenderGestorFondos() {
             <label
               for="edFondosInput_${id}"
               class="ed-fondos-agregar"
-              title="Agregar fondos a ${edEscape(label)}"
+              title="Agregar elementos a ${edEscape(label)}"
             >
               <i class="fa-solid fa-circle-plus"></i>
               Agregar
             </label>
           </div>
+        `
+      : "";
+
+    const mensajeVacio = edFondosMostrarOcultos
+      ? "No hay elementos quitados en esta galería."
+      : "No hay elementos activos en esta galería.";
+
+    return `
+      <section class="ed-fondos-seccion">
+        <div class="ed-fondos-seccion-head">
+          <div>
+            <h4>${edEscape(label)}</h4>
+            <span>${edEscape(resumen)}</span>
+          </div>
+
+          ${controlesAgregar}
         </div>
 
         <div class="ed-fondos-galeria">
           ${
             items.length
-              ? items.map(item => edFondosCardHTML(id, item)).join("")
-              : `<div class="ed-fondos-vacio">No hay fondos en esta galería.</div>`
+              ? items
+                  .map(item => edFondosCardHTML(id, item))
+                  .join("")
+              : `
+                  <div class="ed-fondos-vacio">
+                    ${edEscape(mensajeVacio)}
+                  </div>
+                `
           }
         </div>
       </section>
     `;
   }).join("");
 
-    lista.innerHTML = `
+  const tituloPie = edFondosMostrarOcultos
+    ? "Elementos quitados"
+    : "Fondos";
+
+  const textoPie = edFondosMostrarOcultos
+    ? "Aquí aparecen solamente los fondos, texturas y adornos que quitaste. Podés restaurarlos con la flecha."
+    : "Desde aquí administrás fondos, texturas y adornos usados en Devocionales y en Biblia → Crear imagen.";
+
+  lista.innerHTML = `
     <div id="edFondosAdmin">
 
       ${secciones}
 
       <div class="ed-fondos-admin-head">
         <div>
-          <h3>Fondos</h3>
+          <h3>${edEscape(tituloPie)}</h3>
 
           <p>
-            Desde aquí administrás fondos, texturas y adornos usados en Devocionales y en Biblia → Crear imagen.
+            ${edEscape(textoPie)}
           </p>
         </div>
 
@@ -488,9 +532,17 @@ function edRenderGestorFondos() {
           class="ed-fondos-ocultos-btn ${edFondosMostrarOcultos ? "activo" : ""}"
           onclick="edFondosToggleOcultos()"
         >
-          <i class="fa-solid fa-eye${edFondosMostrarOcultos ? "-slash" : ""}"></i>
+          <i class="fa-solid ${
+            edFondosMostrarOcultos
+              ? "fa-arrow-left"
+              : "fa-eye"
+          }"></i>
 
-          ${edFondosMostrarOcultos ? "Ocultar quitados" : "Ver quitados"}
+          ${
+            edFondosMostrarOcultos
+              ? "Volver a activos"
+              : "Ver quitados"
+          }
         </button>
       </div>
 
