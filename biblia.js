@@ -8975,6 +8975,96 @@ window.abrirAudioNota = function(
   window.abrirModalAudio();
 };
 
+// =========================================================
+// AUDIO DE NOTAS: GUARDAR, REGENERAR, QUITAR Y SINCRONIZAR
+// =========================================================
+
+function vaAudioUrlAttr(url = "") {
+  return String(url || "")
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+/*
+  Actualiza solamente los campos del audio en la publicación
+  que ya existe en Compartidos, sin cambiar la fecha ni moverla.
+*/
+async function vaSincronizarAudioNotaCompartida(
+  idMarcador,
+  audio = null
+) {
+  const publicada =
+    typeof notaPanelPublicacionCompartida === "function"
+      ? notaPanelPublicacionCompartida(idMarcador)
+      : null;
+
+  const compId = String(
+    publicada?.compId || ""
+  ).trim();
+
+  if (!compId) return;
+
+  const base =
+    `compartidos/notas/${compId}`;
+
+  /*
+    Quitar audio de Compartidos.
+  */
+  if (!audio?.url) {
+    const campos = [
+      "audioUrl",
+      "audioGithubUrl",
+      "audio",
+      "audioTexto",
+      "audioFecha",
+      "audioOk"
+    ];
+
+    await Promise.all(
+      campos.map(campo =>
+        remove(
+          ref(db, `${base}/${campo}`)
+        ).catch(() => null)
+      )
+    );
+
+    return;
+  }
+
+  const ahora = Number(
+    audio.fecha || Date.now()
+  );
+
+  await Promise.all([
+    set(
+      ref(db, `${base}/audioUrl`),
+      String(audio.url)
+    ),
+
+    set(
+      ref(db, `${base}/audioGithubUrl`),
+      String(audio.url)
+    ),
+
+    set(
+      ref(db, `${base}/audioTexto`),
+      String(audio.texto || "")
+    ),
+
+    set(
+      ref(db, `${base}/audioFecha`),
+      ahora
+    ),
+
+    set(
+      ref(db, `${base}/audioOk`),
+      true
+    )
+  ]);
+}
+
 window.vaGuardarAudioNota =
   async function({
     id = "",
@@ -8987,14 +9077,20 @@ window.vaGuardarAudioNota =
       );
     }
 
-    if (!id || !url) {
+    const idLimpio =
+      String(id || "").trim();
+
+    const urlLimpia =
+      String(url || "").trim();
+
+    if (!idLimpio || !urlLimpia) {
       throw new Error(
         "Faltan los datos del audio."
       );
     }
 
     const actual =
-      (marcadores || {})[id];
+      (marcadores || {})[idLimpio];
 
     if (!actual) {
       throw new Error(
@@ -9002,55 +9098,548 @@ window.vaGuardarAudioNota =
       );
     }
 
+    const ahora = Date.now();
+
+    /*
+      Guardamos solamente los campos del audio.
+      Así no pisamos el resto de la nota.
+    */
+    await Promise.all([
+      set(
+        ref(
+          db,
+          `marcadores/${uid}/${idLimpio}/audioUrl`
+        ),
+        urlLimpia
+      ),
+
+      set(
+        ref(
+          db,
+          `marcadores/${uid}/${idLimpio}/audioGithubUrl`
+        ),
+        urlLimpia
+      ),
+
+      set(
+        ref(
+          db,
+          `marcadores/${uid}/${idLimpio}/audioTexto`
+        ),
+        String(texto || "").trim()
+      ),
+
+      set(
+        ref(
+          db,
+          `marcadores/${uid}/${idLimpio}/audioFecha`
+        ),
+        ahora
+      ),
+
+      set(
+        ref(
+          db,
+          `marcadores/${uid}/${idLimpio}/audioOk`
+        ),
+        true
+      )
+    ]);
+
     const actualizado = {
       ...actual,
 
-      audioUrl: String(url).trim(),
-      audioTexto: String(texto).trim(),
-      audioFecha: Date.now()
+      audioUrl: urlLimpia,
+      audioGithubUrl: urlLimpia,
+      audioTexto:
+        String(texto || "").trim(),
+
+      audioFecha: ahora,
+      audioOk: true
     };
 
-    await set(
-      ref(
-        db,
-        `marcadores/${uid}/${id}`
-      ),
-      actualizado
-    );
+    /*
+      Actualizamos la memoria local inmediatamente.
+    */
+    marcadores[idLimpio] = actualizado;
 
     /*
-      Actualizamos también la memoria local
-      sin esperar nuevamente a Firebase.
+      Si estaba editando esta nota, conservamos
+      también el audio en la base de edición.
     */
-    marcadores[id] = actualizado;
+    if (
+      window.__editMarcadorId === idLimpio
+    ) {
+      window.__editMarcadorBase = {
+        ...(window.__editMarcadorBase || actual),
+        audioUrl: urlLimpia,
+        audioGithubUrl: urlLimpia,
+        audioTexto:
+          String(texto || "").trim(),
+        audioFecha: ahora,
+        audioOk: true
+      };
+    }
+
+    /*
+      Si la nota ya estaba publicada,
+      actualizamos también su audio.
+    */
+    try {
+      await vaSincronizarAudioNotaCompartida(
+        idLimpio,
+        {
+          url: urlLimpia,
+          texto,
+          fecha: ahora
+        }
+      );
+    } catch (errorCompartidos) {
+      console.warn(
+        "El audio se guardó en la nota, pero no pude sincronizar Compartidos:",
+        errorCompartidos
+      );
+    }
+
+    const form =
+      document.getElementById(
+        "formNuevoMarcador"
+      );
+
+    const sigueEditando =
+      window.__editMarcadorId === idLimpio &&
+      form &&
+      getComputedStyle(form).display !==
+        "none";
+
+    /*
+      Si estaba dentro del editor, no lo sacamos
+      de la edición. Solamente refrescamos el bloque.
+    */
+    if (sigueEditando) {
+      window
+        .vaActualizarControlesAudioEdicionNota
+        ?.(idLimpio);
+    } else {
+      const modal =
+        document.getElementById(
+          "modalMarcadores"
+        );
+
+      if (
+        modal?.classList.contains(
+          "abierto"
+        )
+      ) {
+        window
+          .abrirVistaMarcadorDesdeLista
+          ?.(
+            idLimpio,
+            actualizado?.origen === "abc"
+              ? "abc"
+              : "biblia"
+          );
+      }
+    }
+
+    if (
+      typeof renderPanelMarcadores ===
+      "function"
+    ) {
+      renderPanelMarcadores();
+    }
 
     mostrarToast?.(
       "✅ Audio guardado en la nota"
     );
 
-    const origenLista =
-      window.__AUDIO_NOTA_ORIGEN_LISTA ||
-      (
-        actualizado?.origen === "abc"
-          ? "abc"
-          : "biblia"
-      );
+    return actualizado;
+  };
 
-    /*
-      Refrescamos la vista de la nota.
-    */
-    if (
-      document
-        .getElementById("modalMarcadores")
-        ?.classList.contains("abierto")
-    ) {
-      window.abrirVistaMarcadorDesdeLista?.(
-        id,
-        origenLista
+/*
+  Quitar el audio de la nota y también
+  de su publicación en Compartidos.
+*/
+window.vaQuitarAudioNota =
+  async function(idMarcador) {
+    const idLimpio =
+      String(idMarcador || "").trim();
+
+    const actual =
+      (marcadores || {})[idLimpio];
+
+    if (!uid || !actual) {
+      mostrarToast?.(
+        "No encontré esta nota."
       );
+      return;
     }
 
-    return actualizado;
+    const confirmar = confirm(
+      "¿Quitar el audio de esta nota?"
+    );
+
+    if (!confirmar) return;
+
+    const campos = [
+      "audioUrl",
+      "audioGithubUrl",
+      "audio",
+      "audioTexto",
+      "audioFecha",
+      "audioOk"
+    ];
+
+    try {
+      await Promise.all(
+        campos.map(campo =>
+          remove(
+            ref(
+              db,
+              `marcadores/${uid}/${idLimpio}/${campo}`
+            )
+          ).catch(() => null)
+        )
+      );
+
+      const actualizado = {
+        ...actual,
+        audioUrl: "",
+        audioGithubUrl: "",
+        audio: "",
+        audioTexto: "",
+        audioFecha: 0,
+        audioOk: false
+      };
+
+      marcadores[idLimpio] =
+        actualizado;
+
+      if (
+        window.__editMarcadorId ===
+        idLimpio
+      ) {
+        window.__editMarcadorBase = {
+          ...(window.__editMarcadorBase ||
+            actual),
+
+          audioUrl: "",
+          audioGithubUrl: "",
+          audio: "",
+          audioTexto: "",
+          audioFecha: 0,
+          audioOk: false
+        };
+      }
+
+      try {
+        await vaSincronizarAudioNotaCompartida(
+          idLimpio,
+          null
+        );
+      } catch (errorCompartidos) {
+        console.warn(
+          "No pude quitar el audio de Compartidos:",
+          errorCompartidos
+        );
+      }
+
+      const form =
+        document.getElementById(
+          "formNuevoMarcador"
+        );
+
+      const sigueEditando =
+        window.__editMarcadorId ===
+          idLimpio &&
+        form &&
+        getComputedStyle(form).display !==
+          "none";
+
+      if (sigueEditando) {
+        window
+          .vaActualizarControlesAudioEdicionNota
+          ?.(idLimpio);
+      } else {
+        const modal =
+          document.getElementById(
+            "modalMarcadores"
+          );
+
+        if (
+          modal?.classList.contains(
+            "abierto"
+          )
+        ) {
+          window
+            .abrirVistaMarcadorDesdeLista
+            ?.(
+              idLimpio,
+              actualizado?.origen ===
+                "abc"
+                ? "abc"
+                : "biblia"
+            );
+        }
+      }
+
+      if (
+        typeof renderPanelMarcadores ===
+        "function"
+      ) {
+        renderPanelMarcadores();
+      }
+
+      mostrarToast?.(
+        "🗑 Audio quitado de la nota"
+      );
+
+    } catch (error) {
+      console.error(
+        "No pude quitar el audio:",
+        error
+      );
+
+      alert(
+        "No pude quitar el audio."
+      );
+    }
+  };
+
+/*
+  Regenera el audio usando lo que actualmente
+  está escrito en los campos del editor.
+*/
+window.abrirAudioNotaDesdeEditor =
+  function(idMarcador) {
+    const idLimpio =
+      String(idMarcador || "").trim();
+
+    const m =
+      (marcadores || {})[idLimpio];
+
+    if (!m) {
+      mostrarToast?.(
+        "No encontré esta nota."
+      );
+      return;
+    }
+
+    const tituloActual =
+      document
+        .getElementById("marcadorTitulo")
+        ?.value
+        ?.trim() || m.titulo || "";
+
+    const notaActual =
+      document
+        .getElementById("marcadorNota")
+        ?.value ?? m.nota ?? "";
+
+    const temporal = {
+      ...m,
+      titulo: tituloActual,
+      nota: notaActual
+    };
+
+    let textoAudio = "";
+
+    if (
+      typeof notaAudioArmarTexto ===
+      "function"
+    ) {
+      textoAudio =
+        notaAudioArmarTexto(temporal);
+    } else {
+      const datos =
+        notaShareDatosDesdeMarcador(
+          temporal
+        );
+
+      textoAudio = [
+        datos.titulo || "",
+        datos.referencia || "",
+        datos.versiculo || "",
+        datos.texto || ""
+      ]
+        .map(x => String(x || "").trim())
+        .filter(Boolean)
+        .join("\n\n");
+    }
+
+    if (!textoAudio) {
+      mostrarToast?.(
+        "La nota no tiene texto para crear el audio."
+      );
+      return;
+    }
+
+    window.__AUDIO_ORIGEN = "nota";
+    window.__AUDIO_NOTA_ID = idLimpio;
+    window.__AUDIO_NOTA_TEXTO =
+      textoAudio;
+
+    window.__AUDIO_NOTA_URL =
+      String(
+        m.audioUrl ||
+        m.audioGithubUrl ||
+        m.audio ||
+        ""
+      ).trim();
+
+    window.__AUDIO_NOTA_ORIGEN_LISTA =
+      m?.origen === "abc"
+        ? "abc"
+        : "biblia";
+
+    if (
+      typeof window.abrirModalAudio !==
+      "function"
+    ) {
+      mostrarToast?.(
+        "Todavía no cargó el sistema de audio."
+      );
+      return;
+    }
+
+    window.abrirModalAudio();
+  };
+
+/*
+  Bloque que aparecerá dentro de Editar nota.
+*/
+window.vaActualizarControlesAudioEdicionNota =
+  function(idMarcador = "") {
+    const form =
+      document.getElementById(
+        "formNuevoMarcador"
+      );
+
+    if (!form) return;
+
+    let box =
+      document.getElementById(
+        "vaNotaAudioEdicion"
+      );
+
+    if (!idMarcador) {
+      if (box) {
+        box.innerHTML = "";
+        box.style.display = "none";
+      }
+      return;
+    }
+
+    const m =
+      (marcadores || {})[idMarcador] ||
+      window.__editMarcadorBase;
+
+    if (!m) return;
+
+    if (!box) {
+      box =
+        document.createElement("div");
+
+      box.id = "vaNotaAudioEdicion";
+      box.className =
+        "va-nota-audio-edicion";
+
+      const btnGuardar =
+        document.getElementById(
+          "btnGuardarNuevoMarcador"
+        );
+
+      const filaGuardar =
+        btnGuardar?.parentElement;
+
+      if (
+        filaGuardar?.parentElement
+      ) {
+        filaGuardar.parentElement
+          .insertBefore(
+            box,
+            filaGuardar
+          );
+      } else {
+        form.appendChild(box);
+      }
+    }
+
+    const audioUrl =
+      String(
+        m.audioUrl ||
+        m.audioGithubUrl ||
+        m.audio ||
+        ""
+      ).trim();
+
+    const puedeCrearAudio =
+      !!window.__ES_ADMIN ||
+      !!window.__ES_COLABORADOR;
+
+    box.style.display = "flex";
+
+    box.innerHTML = `
+      ${
+        audioUrl
+          ? `
+            <div class="va-nota-audio-edicion-titulo">
+              Audio actual de la nota
+            </div>
+
+            <audio
+              controls
+              preload="metadata"
+              src="${vaAudioUrlAttr(audioUrl)}"
+            ></audio>
+          `
+          : `
+            <div class="va-nota-audio-sin-audio">
+              Esta nota todavía no tiene audio.
+            </div>
+          `
+      }
+
+      <div class="va-nota-audio-edicion-botones">
+
+        ${
+          puedeCrearAudio
+            ? `
+              <button
+                type="button"
+                onclick="abrirAudioNotaDesdeEditor('${idMarcador}')"
+              >
+                <i class="fa-solid fa-headphones"></i>
+
+                <span>
+                  ${
+                    audioUrl
+                      ? "Regenerar audio"
+                      : "Crear audio"
+                  }
+                </span>
+              </button>
+            `
+            : ``
+        }
+
+        ${
+          audioUrl
+            ? `
+              <button
+                type="button"
+                class="va-audio-quitar"
+                onclick="vaQuitarAudioNota('${idMarcador}')"
+              >
+                <i class="fa-solid fa-trash"></i>
+                <span>Quitar audio</span>
+              </button>
+            `
+            : ``
+        }
+
+      </div>
+    `;
   };
 
 window.descargarVistaMarcadorDesdeLista = async function(idMarcador, boton = null) {
@@ -9100,6 +9689,14 @@ window.abrirVistaMarcadorDesdeLista = function(idMarcador, origenLista = "biblia
   const versiculo = marcadorEscapeHTML(datos.versiculo || "");
   const nota = marcadorEscapeHTML(datos.texto || "");
 
+  const audioUrl =
+  String(
+    m.audioUrl ||
+    m.audioGithubUrl ||
+    m.audio ||
+    ""
+  ).trim();
+
   const notaVieneDeCompartidos =
     (typeof notaPanelVieneDeCompartidos === "function")
       ? notaPanelVieneDeCompartidos(m)
@@ -9136,6 +9733,20 @@ window.abrirVistaMarcadorDesdeLista = function(idMarcador, origenLista = "biblia
         ${versiculo ? `<div class="nota-vista-versiculo">${versiculo}</div>` : ``}
         ${nota ? `<div class="nota-vista-texto">${nota}</div>` : `<div class="nota-vista-texto muted">Esta nota no tiene texto escrito.</div>`}
       </div>
+
+      ${
+        audioUrl
+          ? `
+            <div class="nota-audio-publicado">
+              <audio
+                controls
+                preload="metadata"
+                src="${vaAudioUrlAttr(audioUrl)}"
+              ></audio>
+            </div>
+          `
+          : ``
+      }
 
       <div class="nota-vista-acciones">
 
@@ -9298,7 +9909,13 @@ window.abrirFormNuevoMarcador = () => {
   lista.style.display = "none";
   form.style.display = "block";
 
-  renderPreviewVersiculosMarcador();
+renderPreviewVersiculosMarcador();
+
+window
+  .vaActualizarControlesAudioEdicionNota
+  ?.(
+    window.__editMarcadorId || ""
+  );
 };
 
 // ================= ❌ Cancelar Nuevo Marcador 📌=================
@@ -9440,6 +10057,23 @@ const versiculosDetalle = itemsMarcador.map(it => {
       ? ""
       : textoVersiculosMarcadorPlano(itemsMarcador);
 
+const audioAnterior =
+  editId
+    ? (
+        (marcadores || {})[editId] ||
+        base ||
+        {}
+      )
+    : {};
+
+const audioUrlAnterior =
+  String(
+    audioAnterior.audioUrl ||
+    audioAnterior.audioGithubUrl ||
+    audioAnterior.audio ||
+    ""
+  ).trim();
+    
     const data = {
       titulo,
       nota,
@@ -9456,9 +10090,26 @@ const versiculosDetalle = itemsMarcador.map(it => {
       versiculosDetalle,
       seleccionOrden: seleccionOrdenFinal,
       ref: refCompleta,
-      textoVersiculo: textoVersiculoCompleto,
+textoVersiculo: textoVersiculoCompleto,
 
-      fecha: Date.now()
+// Conserva el audio cuando se edita la nota.
+audioUrl: audioUrlAnterior,
+audioGithubUrl: audioUrlAnterior,
+audio: audioUrlAnterior,
+
+audioTexto:
+  String(
+    audioAnterior.audioTexto || ""
+  ).trim(),
+
+audioFecha:
+  Number(
+    audioAnterior.audioFecha || 0
+  ),
+
+audioOk: !!audioUrlAnterior,
+
+fecha: Date.now()
     };
 
     const id = editId || (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()));
@@ -9780,6 +10431,14 @@ const notaEstaPublicadaEnCompartidos =
 
       const puedeEditarNota = !notaVieneDeCompartidos;
 
+      const audioUrl =
+  String(
+    m.audioUrl ||
+    m.audioGithubUrl ||
+    m.audio ||
+    ""
+  ).trim();
+
       return `
         <div class="card-marcador" style="${bgDestacada ? `background:${bgDestacada} !important; color:${colorTextoDestacada} !important; border:1px solid rgba(0,0,0,.10);` : ""}">
           <div style="display:flex; justify-content:space-between; gap:10px; align-items:center;">
@@ -9826,8 +10485,22 @@ const notaEstaPublicadaEnCompartidos =
 
           ${textoVers ? `<div class="nota preview-versiculos-marcador" style="margin-top:8px;">${textoVers}</div>` : ""}
           ${(!textoVers && textoABC) ? `<div class="nota preview-versiculos-marcador" style="margin-top:8px;">${textoABC}</div>` : ""}
-          ${m.nota ? `<div class="nota">${m.nota}</div>` : ""}
-        </div>
+${m.nota ? `<div class="nota">${m.nota}</div>` : ""}
+
+${
+  audioUrl
+    ? `
+      <div class="nota-audio-publicado">
+        <audio
+          controls
+          preload="metadata"
+          src="${vaAudioUrlAttr(audioUrl)}"
+        ></audio>
+      </div>
+    `
+    : ``
+}
+</div>
       `;
     }).join("") : `<p style="opacity:.75">Todavía no tenés notas para este filtro.</p>`}
   `;
