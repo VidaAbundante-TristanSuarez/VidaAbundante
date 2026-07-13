@@ -1628,10 +1628,57 @@ if (!window.__DEV_FONDOS_EVENTO_ACTIVO) {
 window.vaFondosRegistrarBase?.(fondosCategorias);
 
 
+// ================= 🛡️ RECURSOS VISUALES SIN CORS =======================
+function devUrlRecursoSeguro(url, nombre = "recurso.png") {
+  const original = String(url || "").trim();
+  if (!original) return "";
+
+  if (/^(blob:|data:)/i.test(original)) {
+    return original;
+  }
+
+  try {
+    const absoluta = new URL(original, window.location.href);
+    const worker = new URL(R2_WORKER_URL);
+
+    if (absoluta.origin === window.location.origin) {
+      return original;
+    }
+
+    if (absoluta.origin === worker.origin) {
+      return original;
+    }
+
+    worker.searchParams.set("url", absoluta.href);
+    worker.searchParams.set("nombre", String(nombre || "recurso.png"));
+    worker.searchParams.set("descargar", "0");
+
+    return worker.toString();
+  } catch (_) {
+    return original;
+  }
+}
+
 async function urlToBlobURL(url){
-  const res = await fetch(url, { mode:"cors", cache:"no-store" });
-  if (!res.ok) throw new Error("Fondo no disponible (CORS/404)");
+  const urlSegura = devUrlRecursoSeguro(
+    url,
+    "fondo_devocional.png"
+  );
+
+  const res = await fetch(urlSegura, {
+    cache: "no-store"
+  });
+
+  if (!res.ok) {
+    throw new Error(`Fondo no disponible (HTTP ${res.status})`);
+  }
+
   const blob = await res.blob();
+
+  if (!blob || !blob.size) {
+    throw new Error("El fondo se recibió vacío.");
+  }
+
   return URL.createObjectURL(blob);
 }
 
@@ -1694,7 +1741,10 @@ function cargarFondosDev(){
     const im = document.createElement("img");
     im.crossOrigin = "anonymous";
     im.referrerPolicy = "no-referrer";
-    im.src = finalUrl;
+    im.src = devUrlRecursoSeguro(
+      finalUrl,
+      "fondo_devocional.png"
+    );
 
     im.onclick = async ()=>{
       try{
@@ -1851,7 +1901,11 @@ function cargarAdornosF2(){
     if (item.url) {
       b.textContent = "";
       const img = document.createElement("img");
-      img.src = item.url;
+      img.crossOrigin = "anonymous";
+      img.src = devUrlRecursoSeguro(
+        item.url,
+        "adorno_devocional.png"
+      );
       img.alt = item.nombre;
       img.className = "dev-adorno-thumb";
       img.onerror = () => {
@@ -2021,7 +2075,11 @@ function cargarTexturasF2(){
 
     if (item.url) {
       const img = document.createElement("img");
-      img.src = item.url;
+      img.crossOrigin = "anonymous";
+      img.src = devUrlRecursoSeguro(
+        item.url,
+        "textura_devocional.png"
+      );
       img.alt = item.nombre;
       img.className = "dev-textura-thumb";
       img.onerror = () => {
@@ -2385,9 +2443,14 @@ function devCargarImagenCuentagotasF2(src){
     img.crossOrigin = "anonymous";
 
     img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error("No pude cargar la imagen para tomar color."));
+    img.onerror = () => reject(
+      new Error("No pude cargar la imagen para tomar color.")
+    );
 
-    img.src = src;
+    img.src = devUrlRecursoSeguro(
+      src,
+      "fondo_cuentagotas.png"
+    );
   });
 }
 
@@ -3024,7 +3087,10 @@ const adornoOp = Math.max(0, Math.min(1, Number(DEV.f2.adornoOpacidad ?? 1)));
           pointer-events:none;
         ">
           <img
-            src="${adorno}"
+            src="${devUrlRecursoSeguro(
+              adorno,
+              "adorno_devocional.png"
+            )}"
             alt="adorno"
             style="
               width:${adornoW}%;
@@ -3802,6 +3868,10 @@ const texturasActivas = devF2TexturasSeleccionadas();
 if (texturasActivas.length) {
   layer.style.display = "block";
   layer.style.backgroundImage = texturasActivas
+    .map(url => devUrlRecursoSeguro(
+      url,
+      "textura_devocional.png"
+    ))
     .map(url => `url("${url}")`)
     .join(", ");
   layer.style.backgroundSize = texturasActivas
@@ -4073,6 +4143,10 @@ texto.innerHTML = buildFase1HTML(st.size, 1);
       textureLayer.style.position = "absolute";
       textureLayer.style.inset = "0";
       textureLayer.style.backgroundImage = texturasActivas
+        .map(url => devUrlRecursoSeguro(
+          url,
+          "textura_devocional.png"
+        ))
         .map(url => `url("${url}")`)
         .join(", ");
       textureLayer.style.backgroundSize = texturasActivas
