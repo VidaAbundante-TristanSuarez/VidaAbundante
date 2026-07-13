@@ -3024,6 +3024,14 @@ window.compGuardarNotaCompartidaEnMiPanel = async function compGuardarNotaCompar
 
   const datos = compDatosImagenNota(item);
 
+  const audioUrl =
+  String(
+    item.audioUrl ||
+    item.audioGithubUrl ||
+    item.audio ||
+    ""
+  ).trim();
+
   const id = window.crypto?.randomUUID
     ? window.crypto.randomUUID()
     : String(Date.now());
@@ -3044,9 +3052,25 @@ window.compGuardarNotaCompartidaEnMiPanel = async function compGuardarNotaCompar
       capitulo: Number(item.capitulo || 0),
       versiculos: Array.isArray(item.versiculos) ? item.versiculos : [],
       ref: datos.referencia || "",
-      textoVersiculo: datos.versiculo || "",
+textoVersiculo: datos.versiculo || "",
 
-      origen: item.origen === "abc" ? "abc" : "compartidos",
+// También conserva el audio publicado.
+audioUrl,
+audioGithubUrl: audioUrl,
+audio: audioUrl,
+audioTexto:
+  String(item.audioTexto || "").trim(),
+
+audioFecha:
+  Number(
+    item.audioFecha ||
+    item.audioTs ||
+    0
+  ),
+
+audioOk: !!audioUrl,
+
+origen: item.origen === "abc" ? "abc" : "compartidos",
       abcTexto: item.abcTexto || datos.versiculo || "",
 
       fecha: Date.now(),
@@ -3152,6 +3176,14 @@ function compRenderNota(item) {
 
   const key = compKeyItem(item);
 
+  const audioUrl =
+  String(
+    item.audioUrl ||
+    item.audioGithubUrl ||
+    item.audio ||
+    ""
+  ).trim();
+
   const guardarBtn = compEsPropia(item) ? "" : `
     <button
       class="btn-primary"
@@ -3196,6 +3228,20 @@ function compRenderNota(item) {
           <div class="comp-post-note-block">${texto}</div>
         ` : ``}
       </div>
+
+      ${
+        audioUrl
+          ? `
+            <div class="nota-audio-publicado">
+              <audio
+                controls
+                preload="metadata"
+                src="${compEscape(audioUrl)}"
+              ></audio>
+            </div>
+          `
+          : ``
+      }
 
       <div class="comp-post-actions comp-post-actions--nota">
         <button
