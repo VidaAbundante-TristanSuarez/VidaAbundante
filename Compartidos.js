@@ -4005,6 +4005,58 @@ function compRenderEdicion(item) {
       );
 
   if (esSticker) {
+    const stickerPaginas = paginasRaw
+      .filter(p => {
+        const url = String(
+          p?.mediaUrl ||
+          p?.imagenUrl ||
+          p?.videoUrl ||
+          ""
+        ).trim();
+
+        const tipo = String(
+          p?.mediaType ||
+          p?.mimeType ||
+          ""
+        ).toLowerCase();
+
+        return (
+          url &&
+          !tipo.startsWith("video/") &&
+          !p?.videoUrl
+        );
+      })
+      .sort((a, b) => Number(a?.orden || 0) - Number(b?.orden || 0));
+
+    const stickersHTML = stickerPaginas.length
+      ? stickerPaginas.map((p, i) => {
+          const url = String(
+            p?.mediaUrl ||
+            p?.imagenUrl ||
+            ""
+          ).trim();
+
+          return `
+            <button
+              type="button"
+              class="comp-sticker-thumb"
+              onclick="abrirPresentacionEdicion('${compJs(edicionId)}')"
+              title="Ver sticker ${i + 1}"
+            >
+              <img
+                src="${compEscape(url)}"
+                alt="${titulo} ${i + 1}"
+                loading="lazy"
+              >
+            </button>
+          `;
+        }).join("")
+      : `
+        <div class="comp-sticker-pack-empty">
+          No encontré stickers para mostrar.
+        </div>
+      `;
+
     return `
       <article class="comp-post comp-post--stickers">
         <div class="comp-post-head">
@@ -4040,9 +4092,11 @@ function compRenderEdicion(item) {
         <div
           class="comp-post-media comp-post-media--stickers"
           role="region"
-          title="Deslizá para ver los stickers"
+          title="Deslizá para ver todos los stickers"
         >
-          ${contenidoMedia}
+          <div class="comp-sticker-pack-strip">
+            ${stickersHTML}
+          </div>
         </div>
 
         <div class="comp-post-actions comp-post-actions--stickers">
