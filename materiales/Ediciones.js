@@ -110,13 +110,17 @@ const ED_FONDOS_RUTA = "fondosGalerias";
 const ED_FONDOS_CATEGORIAS = [
   { id: "paisajes", label: "Paisajes" },
   { id: "acuarelas", label: "Acuarelas" },
-  { id: "tarjetas", label: "Tarjetas" }
+  { id: "tarjetas", label: "Tarjetas" },
+  { id: "texturas", label: "Texturas" },
+  { id: "adornos", label: "Adornos" }
 ];
 
 const edFondosBase = {
   paisajes: [],
   acuarelas: [],
-  tarjetas: []
+  tarjetas: [],
+  texturas: [],
+  adornos: []
 };
 
 let edFondosConfig = {};
@@ -418,12 +422,19 @@ function edRenderGestorFondos() {
     const items = edFondosConstruirLista(id, edFondosMostrarOcultos);
     const activos = items.filter(item => item.activo).length;
 
+    const resumenActivos =
+      id === "texturas"
+        ? `${activos} texturas activas`
+        : id === "adornos"
+          ? `${activos} adornos activos`
+          : `${activos} fondos activos`;
+
     return `
       <section class="ed-fondos-seccion">
         <div class="ed-fondos-seccion-head">
           <div>
             <h4>${edEscape(label)}</h4>
-            <span>${activos} fondos activos</span>
+            <span>${edEscape(resumenActivos)}</span>
           </div>
 
           <div class="ed-fondos-seccion-actions">
@@ -468,7 +479,7 @@ function edRenderGestorFondos() {
           <h3>Fondos</h3>
 
           <p>
-            Estos mismos fondos aparecen en Devocionales fase 1 y en Biblia → Crear imagen.
+            Desde aquí administrás fondos, texturas y adornos usados en Devocionales y en Biblia → Crear imagen.
           </p>
         </div>
 
