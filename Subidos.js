@@ -4785,15 +4785,26 @@ window.subidosRenderPredicaAbiertaHTML = function subidosRenderPredicaAbiertaHTM
   }
 };
 
-window.abrirSubidosVisorPredica = function abrirSubidosVisorPredica(id, abrirClave = "") {
-  const it = obtenerSubidoPorId(id);
-  if (!it) return;
+window.abrirSubidosVisorPredica =
+  function abrirSubidosVisorPredica(
+    id,
+    abrirClave = ""
+  ) {
+    const it =
+      obtenerSubidoPorId(id);
 
-  abrirModalSubidosVisor(
-    it.etiqueta || "Prédica",
-    htmlPredicaBibliaSubidoGrande(it, abrirClave)
-  );
-};
+    if (!it) return;
+
+    abrirModalSubidosVisor(
+      it.etiqueta || "Prédica",
+
+      htmlPredicaBibliaSubidoGrande(
+        it,
+        abrirClave
+      ) +
+      subidosHtmlAudioPredica(it)
+    );
+  };
 
 function subidosHtmlArchivoVisor(archivo, idx) {
   const url = String(archivo?.url || "").trim();
@@ -5548,9 +5559,14 @@ const tieneArchivo = archivosItem.length > 0;
         </div>
       ` : ``}
 
-      ${tienePredica ? bloquePredica : ``}
+${tienePredica ? bloquePredica : ``}
 
-      <div class="subidos-feed-actions">
+${tienePredica
+  ? subidosHtmlAudioPredica(it)
+  : ``
+}
+
+<div class="subidos-feed-actions">
         ${
           mostrarAcciones
             ? `
@@ -5820,6 +5836,303 @@ async function subidosCrearSharePredicaAlGuardar(id, datosBase) {
   }
 }
 
+// =========================================================
+// 🎧 AUDIO DE PRÉDICAS
+// =========================================================
+
+function subidosAudioUrlPredica(it = {}) {
+  return String(
+    it.audioUrl ||
+    it.audioGithubUrl ||
+    it.audio ||
+    ""
+  ).trim();
+}
+
+function subidosArmarTextoAudioPredica(it = {}) {
+  const citas =
+    typeof obtenerCitasPredicaSubido === "function"
+      ? obtenerCitasPredicaSubido(it)
+      : [];
+
+  const partes = [];
+
+  const agregar = valor => {
+    const limpio =
+      String(valor || "").trim();
+
+    if (limpio) {
+      partes.push(limpio);
+    }
+  };
+
+  /*
+    Primero lee el título.
+
+    Si no hay título específico de prédica,
+    usa la descripción como respaldo.
+  */
+  agregar(
+    it.predicaTitulo ||
+    it.tituloPredica ||
+    it.descripcion ||
+    "Prédica"
+  );
+
+  agregar(
+    it.predicaIntroduccion ||
+    it.introduccionPredica ||
+    ""
+  );
+
+  /*
+    Lee cada referencia, el texto bíblico
+    y el comentario correspondiente.
+  */
+  citas.forEach(cita => {
+    agregar(cita?.referencia || "");
+    agregar(cita?.texto || "");
+    agregar(
+      cita?.comentario ||
+      cita?.nota ||
+      ""
+    );
+  });
+
+  agregar(
+    it.predicaNotaFinal ||
+    it.notaFinalGeneral ||
+    ""
+  );
+
+  return partes
+    .join("\n\n")
+    .trim();
+}
+
+/*
+  Reproductor reutilizable.
+
+  Lo usaremos en:
+  - Subidos
+  - Visor de la prédica
+  - Compartidos
+*/
+function subidosHtmlAudioPredica(it = {}) {
+  const audioUrl =
+    subidosAudioUrlPredica(it);
+
+  if (!audioUrl) return "";
+
+  return `
+    <div
+      class="subidos-predica-audio"
+      onclick="event.stopPropagation()"
+      style="
+        margin:12px 0 4px;
+        padding:10px 12px;
+        border:1px solid rgba(0,0,0,.10);
+        border-radius:16px;
+        background:rgba(255,255,255,.90);
+        box-sizing:border-box;
+      "
+    >
+      <div
+        style="
+          display:flex;
+          align-items:center;
+          gap:8px;
+          margin-bottom:8px;
+          font-size:14px;
+          font-weight:800;
+        "
+      >
+        <i class="fa-solid fa-headphones"></i>
+        <span>Audio de la prédica</span>
+      </div>
+
+      <audio
+        controls
+        preload="metadata"
+        src="${escaparHtml(audioUrl)}"
+        style="
+          display:block;
+          width:100%;
+          max-width:100%;
+        "
+      ></audio>
+    </div>
+  `;
+}
+
+window.subidosHtmlAudioPredica =
+  subidosHtmlAudioPredica;
+
+/*
+  Abre el modal común de audio,
+  pero indicando que ahora pertenece
+  a una prédica.
+*/
+window.subidosAbrirAudioPredica =
+  function(idPredica = "", itemBase = null) {
+    const id =
+      String(idPredica || "").trim();
+
+    const base =
+      itemBase &&
+      typeof itemBase === "object"
+        ? itemBase
+        : obtenerSubidoPorId(id);
+
+    if (!id || !base) {
+      alert(
+        "No encontré la prédica para crear el audio."
+      );
+      return;
+    }
+
+    const item = {
+      ...base,
+      id
+    };
+
+    const texto =
+      subidosArmarTextoAudioPredica(item);
+
+    if (!texto) {
+      alert(
+        "La prédica no tiene texto para convertir en audio."
+      );
+      return;
+    }
+
+    window.__AUDIO_ORIGEN =
+      "predica";
+
+    window.__AUDIO_PREDICA_ID =
+      id;
+
+    window.__AUDIO_PREDICA_TEXTO =
+      texto;
+
+    window.__AUDIO_PREDICA_URL =
+      subidosAudioUrlPredica(item);
+
+    if (
+      typeof window.abrirModalAudio !==
+      "function"
+    ) {
+      alert(
+        "Todavía no cargó el sistema de audio."
+      );
+      return;
+    }
+
+    window.abrirModalAudio();
+  };
+
+/*
+  Guarda únicamente los campos de audio.
+
+  No modifica fecha, título, citas,
+  PNG ni posición de la prédica.
+*/
+window.subidosGuardarAudioPredica =
+  async function({
+    id = "",
+    url = "",
+    texto = ""
+  } = {}) {
+    const idLimpio =
+      String(id || "").trim();
+
+    const urlLimpia =
+      String(url || "").trim();
+
+    if (!idLimpio || !urlLimpia) {
+      throw new Error(
+        "Faltan los datos del audio de la prédica."
+      );
+    }
+
+    const ahora = Date.now();
+
+    const cambios = {
+      audioUrl: urlLimpia,
+      audioGithubUrl: urlLimpia,
+      audio: urlLimpia,
+
+      audioTexto:
+        String(texto || "").trim(),
+
+      audioFecha: ahora,
+      audioOk: true
+    };
+
+    const base =
+      `subidosIglesia/${idLimpio}`;
+
+    await Promise.all([
+      set(
+        ref(db, `${base}/audioUrl`),
+        cambios.audioUrl
+      ),
+
+      set(
+        ref(db, `${base}/audioGithubUrl`),
+        cambios.audioGithubUrl
+      ),
+
+      set(
+        ref(db, `${base}/audio`),
+        cambios.audio
+      ),
+
+      set(
+        ref(db, `${base}/audioTexto`),
+        cambios.audioTexto
+      ),
+
+      set(
+        ref(db, `${base}/audioFecha`),
+        cambios.audioFecha
+      ),
+
+      set(
+        ref(db, `${base}/audioOk`),
+        true
+      )
+    ]);
+
+    /*
+      Actualización inmediata de la memoria local,
+      sin esperar otra lectura de Firebase.
+    */
+    const indice =
+      subidosItems.findIndex(
+        item =>
+          String(item?.id || "") ===
+          idLimpio
+      );
+
+    if (indice >= 0) {
+      subidosItems[indice] = {
+        ...subidosItems[indice],
+        ...cambios
+      };
+    }
+
+    try {
+      renderFeed();
+    } catch (e) {}
+
+    try {
+      window.renderCompartidos?.();
+    } catch (e) {}
+
+    return cambios;
+  };
+
 async function guardarSubido() {
   if (subidosGuardando) return;
 
@@ -6009,10 +6322,22 @@ archivos.push(archivoBase);
       : "";
 
     // ✅ cuando guardo/edito, borro cache viejo para no compartir imagen anterior
-    subidosFileCache.delete(idFinal);
-    subidosFilePreparando.delete(idFinal);
+subidosFileCache.delete(idFinal);
+subidosFilePreparando.delete(idFinal);
 
-    const datosBase = {
+/*
+  Si estamos editando una prédica que ya tenía audio,
+  lo conservamos mientras se vuelve a guardar.
+*/
+const audioAnteriorUrl =
+  String(
+    actual.audioUrl ||
+    actual.audioGithubUrl ||
+    actual.audio ||
+    ""
+  ).trim();
+
+const datosBase = {
       fecha: actual.fecha || ts,
       fechaEdicion: subidosEditandoId ? ts : "",
       fechaEvento,
@@ -6041,6 +6366,24 @@ predicaIntroduccion: esPredica ? datosPredica.introduccion : "",
 predicaCitas: esPredica ? datosPredica.citas : [],
 predicaNotaFinal: esPredica ? datosPredica.notaFinalGeneral : "",
 
+        // ✅ Mantener el audio anterior al editar
+      audioUrl: audioAnteriorUrl,
+      audioGithubUrl: audioAnteriorUrl,
+      audio: audioAnteriorUrl,
+
+      audioTexto:
+        String(
+          actual.audioTexto || ""
+        ).trim(),
+
+      audioFecha:
+        Number(
+          actual.audioFecha || 0
+        ),
+
+      audioOk:
+        !!audioAnteriorUrl,
+
       // ✅ para acciones reales de archivo
 // ✅ No guardar el original como share.
 // El share real se pone abajo con subidosPrepararSharesComunesAlGuardar()
@@ -6053,34 +6396,60 @@ shareFileName: "",
       ...datosCumpleanos
     };
 
-// ✅ PRÉDICA: NO SE TOCA.
-// Sigue generando su PNG final y guardando shareUrl como hasta ahora.
-if (esPredica) {
-  await set(destinoRef, datosBase);
+// =========================================================
+// GUARDADO FINAL DEL SUBIDO
+// =========================================================
 
-  const share = await subidosCrearSharePredicaAlGuardar(idFinal, datosBase);
+let datosFinalGuardados =
+  datosBase;
+
+/*
+  PRÉDICA:
+  guarda los datos y después prepara su PNG.
+*/
+if (esPredica) {
+  await set(
+    destinoRef,
+    datosBase
+  );
+
+  const share =
+    await subidosCrearSharePredicaAlGuardar(
+      idFinal,
+      datosBase
+    );
 
   if (share?.shareUrl) {
-    await set(destinoRef, {
+    datosFinalGuardados = {
       ...datosBase,
       ...share
-    });
+    };
+
+    await set(
+      destinoRef,
+      datosFinalGuardados
+    );
 
     subidosFileCache.delete(idFinal);
     subidosFilePreparando.delete(idFinal);
   }
+
 } else {
-  // ✅ OTRAS ETIQUETAS:
-  // mismo concepto que prédica, pero SIN LINK:
-  // se prepara archivo en subidos-share y se guarda shareUrl/shareMimeType/shareFileName.
-  let datosFinal = datosBase;
+  /*
+    Otras etiquetas:
+    prepara el archivo para compartir
+    sin agregar link de publicación.
+  */
+  let datosFinal =
+    datosBase;
 
   if (archivos.length) {
-    const shareComun = await subidosPrepararSharesComunesAlGuardar(
-      idFinal,
-      datosBase,
-      estado
-    );
+    const shareComun =
+      await subidosPrepararSharesComunesAlGuardar(
+        idFinal,
+        datosBase,
+        estado
+      );
 
     if (shareComun?.shareUrl) {
       datosFinal = {
@@ -6090,7 +6459,13 @@ if (esPredica) {
     }
   }
 
-  await set(destinoRef, datosFinal);
+  datosFinalGuardados =
+    datosFinal;
+
+  await set(
+    destinoRef,
+    datosFinal
+  );
 
   subidosFileCache.delete(idFinal);
   subidosFilePreparando.delete(idFinal);
@@ -6099,8 +6474,29 @@ if (esPredica) {
 // ⛔ NO guardar subidosEtiquetas acá.
 // Ese nodo está dando permission denied y no hace falta para guardar el subido.
 
-    if (estado) estado.textContent = "✅ Guardado";
-    cerrarModalSubidos();
+if (estado) {
+  estado.textContent = "✅ Guardado";
+}
+
+cerrarModalSubidos();
+
+/*
+  Al terminar una prédica,
+  pasamos directamente al audio.
+*/
+if (esPredica) {
+  const predicaParaAudio = {
+    id: idFinal,
+    ...datosFinalGuardados
+  };
+
+  setTimeout(() => {
+    window.subidosAbrirAudioPredica?.(
+      idFinal,
+      predicaParaAudio
+    );
+  }, 220);
+}
   } catch (e) {
     console.error("Error guardando subido:", e);
 
