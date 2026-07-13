@@ -41,12 +41,23 @@ async function audioActualizarEstadoInicial() {
   if (!estado) return;
 
   const contexto = audioContextoActual();
-  const tipoUso = contexto === "devocional" ? "audioDevocional" : "audioBiblia";
+
+  const tipoUso =
+    contexto === "predica"
+      ? "audioPredica"
+      : contexto === "devocional"
+        ? "audioDevocional"
+        : "audioBiblia";
+
+  const mensajeListo =
+    contexto === "predica"
+      ? "Listo para previsualizar el audio de la prédica."
+      : contexto === "devocional"
+        ? "Listo para previsualizar el audio devocional."
+        : "Listo para previsualizar el audio de Biblia.";
 
   if (audioEsAdmin()) {
-    estado.textContent = contexto === "devocional"
-      ? "Listo para previsualizar audio devocional."
-      : "Listo para previsualizar audio de Biblia.";
+    estado.textContent = mensajeListo;
     return;
   }
 
@@ -56,19 +67,22 @@ async function audioActualizarEstadoInicial() {
       AUDIO_LIMITE_COLAB_DIA
     );
 
-    estado.textContent = contexto === "devocional"
-      ? `Listo para previsualizar. Te quedan ${restantes ?? 0} audios devocionales hoy.`
-      : `Listo para previsualizar. Te quedan ${restantes ?? 0} audios de Biblia hoy.`;
+    estado.textContent =
+      `${mensajeListo} Te quedan ${restantes ?? 0} audios hoy.`;
 
     return;
   }
 
   estado.textContent = "No tenés permiso para generar audio.";
 }
-  
+
   // ✅ Fonética (no pisa si ya existe)
   window.__FONETICA = window.__FONETICA || {};
   if (!window.__FONETICA["Joiada"]) window.__FONETICA["Joiada"] = "Joíada";
+
+  // Evita que la voz Wavenet pronuncie “Yeicob”.
+  if (!window.__FONETICA["Jacob"]) window.__FONETICA["Jacob"] = "Jacób";
+  if (!window.__FONETICA["jacob"]) window.__FONETICA["jacob"] = "jacób";
 
   function audioNumeroATexto(n) {
   n = Number(n);
@@ -236,7 +250,12 @@ function audioPrepararTextoParaTTS(txt = "") {
 function audioContextoActual() {
   const modalImagen = document.getElementById("modalPersonalizar");
 
-  // ✅ Devocionales usa el mismo modal, pero marcado como modo-devocional
+  // ✅ Prédicas: Wavenet + arpa
+  if (window.__AUDIO_ORIGEN === "predica") {
+    return "predica";
+  }
+
+  // ✅ Devocionales: Wavenet + arpa
   if (
     window.__AUDIO_ORIGEN === "devocional" ||
     window.__DEVOCIONAL_AUDIO_ACTIVO === true ||
@@ -245,7 +264,7 @@ function audioContextoActual() {
     return "devocional";
   }
 
-  // ✅ Por defecto: Biblia / Crear Imagen
+  // ✅ Biblia y notas: voz Standard seca
   return "biblia";
 }
 
@@ -257,6 +276,13 @@ function audio_getTextoDesdePreview() {
 function audioTextoBaseActual() {
   const contexto = audioContextoActual();
   const ta = document.getElementById("textoAudio");
+
+  // ✅ PRÉDICAS:
+  if (contexto === "predica") {
+    return String(
+      window.__AUDIO_PREDICA_TEXTO || ""
+    ).trim();
+  }
 
   // ✅ DEVOCIONALES:
   // Si devocionales ya armó el texto y lo puso en el textarea,
@@ -280,10 +306,9 @@ function audioTextoBaseActual() {
   }
 
   // ✅ BIBLIA:
-  // Acá sí tomamos el texto visible de la imagen.
   return audio_getTextoDesdePreview().trim();
 }
-  
+
 function audioLimpiarEstadoViejoSiCambioTexto(textoNuevo = "") {
   const nuevoOriginal = String(textoNuevo || "").trim();
   const nuevoTTS = audioPrepararTextoParaTTS(nuevoOriginal);
@@ -368,9 +393,12 @@ window.abrirModalAudio = () => {
   }
 
   if (estado) {
-    estado.textContent = contexto === "devocional"
-      ? "Preparando audio devocional..."
-      : "Preparando audio de Biblia...";
+    estado.textContent =
+      contexto === "predica"
+        ? "Preparando audio de la prédica..."
+        : contexto === "devocional"
+          ? "Preparando audio devocional..."
+          : "Preparando audio de Biblia...";
   }
 
   audioActualizarEstadoInicial();
@@ -403,7 +431,9 @@ window.escucharPreviaAudio = async () => {
   if (!ta || !audio) return;
 
   if (!audioPuedeGenerar()) {
-    if (estado) estado.textContent = "⚠️ Solo admin o colaborador puede generar audio.";
+    if (estado) {
+      estado.textContent = "⚠️ Solo admin o colaborador puede generar audio.";
+    }
     return;
   }
 
@@ -416,17 +446,21 @@ window.escucharPreviaAudio = async () => {
 
   const contexto = audioContextoActual();
 
-  // ✅ Biblia: Standard seco, sin arpa, sin Function, aunque sea admin.
+  // Biblia y notas usan Standard seca.
   const esBibliaSeco = contexto === "biblia";
 
-  // ✅ Devocionales: Wavenet + arpa por Function.
+  // Devocionales y prédicas usan Wavenet con arpa.
+  const esPredicaArpa = contexto === "predica";
   const esDevocionalArpa = contexto === "devocional";
 
-// ✅ SIEMPRE normalizamos referencias bíblicas antes de mandar a Google TTS.
-// Esto NO activa arpa en Biblia.
-// Biblia sigue usando action: "ttsSeco".
-// Devocionales sigue usando action: "tts".
-const textoLimpio = audioPrepararTextoParaTTS(texto);
+  const tipoUsoAudio =
+    esPredicaArpa
+      ? "audioPredica"
+      : esBibliaSeco
+        ? "audioBiblia"
+        : "audioDevocional";
+
+  const textoLimpio = audioPrepararTextoParaTTS(texto);
 
   const voiceName = esBibliaSeco
     ? AUDIO_VOZ_BIBLIA
@@ -446,8 +480,15 @@ const textoLimpio = audioPrepararTextoParaTTS(texto);
     if (puedeReutilizar) {
       window.__audioBase64 = cache.audioBase64;
 
-      const bytes = Uint8Array.from(atob(cache.audioBase64), c => c.charCodeAt(0));
-      const blob = new Blob([bytes], { type: "audio/mpeg" });
+      const bytes = Uint8Array.from(
+        atob(cache.audioBase64),
+        c => c.charCodeAt(0)
+      );
+
+      const blob = new Blob([bytes], {
+        type: "audio/mpeg"
+      });
+
       const localUrl = URL.createObjectURL(blob);
 
       audio.src = localUrl;
@@ -455,7 +496,8 @@ const textoLimpio = audioPrepararTextoParaTTS(texto);
       await audio.play();
 
       if (estado) {
-        estado.textContent = "✅ Reproduciendo audio ya generado. No se descontó otro uso.";
+        estado.textContent =
+          "✅ Reproduciendo audio ya generado. No se descontó otro uso.";
       }
 
       return;
@@ -463,25 +505,30 @@ const textoLimpio = audioPrepararTextoParaTTS(texto);
 
     let restantesAntes = null;
 
-    // ✅ Límite diario SOLO para colaboradores, no para admin.
+    // Límite diario solo para colaboradores.
     if (!audioEsAdmin() && audioEsColaborador()) {
-      restantesAntes = await window.vaLeerRestantesUsoColaborador?.(
-        esBibliaSeco ? "audioBiblia" : "audioDevocional",
-        AUDIO_LIMITE_COLAB_DIA
-      );
+      restantesAntes =
+        await window.vaLeerRestantesUsoColaborador?.(
+          tipoUsoAudio,
+          AUDIO_LIMITE_COLAB_DIA
+        );
 
       if (Number(restantesAntes || 0) <= 0) {
         if (estado) {
-          estado.textContent = `⚠️ Llegaste al límite diario de ${AUDIO_LIMITE_COLAB_DIA} audios. Podés volver a usarlo mañana.`;
+          estado.textContent =
+            `⚠️ Llegaste al límite diario de ${AUDIO_LIMITE_COLAB_DIA} audios. Podés volver a usarlo mañana.`;
         }
         return;
       }
     }
 
     if (estado) {
-      estado.textContent = esBibliaSeco
-        ? "🎧 Generando voz Standard sin arpa..."
-        : "🎧 Generando previa devocional con arpa...";
+      estado.textContent =
+        esBibliaSeco
+          ? "🎧 Generando voz Standard sin arpa..."
+          : esPredicaArpa
+            ? "🎧 Generando audio de la prédica con arpa..."
+            : "🎧 Generando previa devocional con arpa...";
     }
 
     const body = esBibliaSeco
@@ -499,7 +546,9 @@ const textoLimpio = audioPrepararTextoParaTTS(texto);
 
     const r = await fetch(AUDIO_WEBAPP_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json"
+      },
       body: JSON.stringify(body)
     });
 
@@ -515,40 +564,54 @@ const textoLimpio = audioPrepararTextoParaTTS(texto);
 
     window.__audioBase64 = data.audioBase64;
 
-    // ✅ Registrar uso solo después de que Google devolvió audio real.
+    // Registrar uso solo cuando el audio fue generado de verdad.
     if (!audioEsAdmin() && audioEsColaborador()) {
       try {
-        const consumo = await window.vaConsumirUsoColaborador?.(
-          esBibliaSeco ? "audioBiblia" : "audioDevocional",
-          AUDIO_LIMITE_COLAB_DIA,
-          {
-            caracteres: textoLimpio.length,
-            contexto,
-            voiceName
-          }
-        );
+        const consumo =
+          await window.vaConsumirUsoColaborador?.(
+            tipoUsoAudio,
+            AUDIO_LIMITE_COLAB_DIA,
+            {
+              caracteres: textoLimpio.length,
+              contexto,
+              voiceName
+            }
+          );
 
         if (estado) {
-          estado.textContent = `✅ Audio generado. Te quedan ${consumo?.restantes ?? 0} audios hoy.`;
+          estado.textContent =
+            `✅ Audio generado. Te quedan ${consumo?.restantes ?? 0} audios hoy.`;
         }
       } catch (limiteErr) {
         if (estado) {
-          estado.textContent = "⚠️ " + (limiteErr?.message || "No pude registrar el uso diario.");
+          estado.textContent =
+            "⚠️ " +
+            (
+              limiteErr?.message ||
+              "No pude registrar el uso diario."
+            );
         }
         return;
       }
     }
 
-window.__audioCacheLocal = {
-  texto: textoLimpio,
-  textoOriginal: texto,
-  voiceName,
-  contexto,
-  audioBase64: data.audioBase64
-};
+    window.__audioCacheLocal = {
+      texto: textoLimpio,
+      textoOriginal: texto,
+      voiceName,
+      contexto,
+      audioBase64: data.audioBase64
+    };
 
-    const bytes = Uint8Array.from(atob(data.audioBase64), c => c.charCodeAt(0));
-    const blob = new Blob([bytes], { type: "audio/mpeg" });
+    const bytes = Uint8Array.from(
+      atob(data.audioBase64),
+      c => c.charCodeAt(0)
+    );
+
+    const blob = new Blob([bytes], {
+      type: "audio/mpeg"
+    });
+
     const localUrl = URL.createObjectURL(blob);
 
     audio.src = localUrl;
@@ -556,15 +619,20 @@ window.__audioCacheLocal = {
     await audio.play();
 
     if (estado) {
-      estado.textContent = esBibliaSeco
-        ? "✅ Voz Standard reproduciendo."
-        : "✅ Previa devocional reproduciendo.";
+      estado.textContent =
+        esBibliaSeco
+          ? "✅ Voz Standard reproduciendo."
+          : esPredicaArpa
+            ? "✅ Audio de la prédica reproduciendo."
+            : "✅ Previa devocional reproduciendo.";
     }
 
   } catch (e) {
     console.error(e);
+
     if (estado) {
-      estado.textContent = "❌ No se pudo generar la previa real.";
+      estado.textContent =
+        "❌ No se pudo generar la previa real.";
     }
   }
 };
@@ -591,6 +659,7 @@ window.__pendingAudio = {
   texto: textoFinalAudio,
   textoOriginal: texto,
   audioBase64: window.__audioBase64,
+  contexto: audioContextoActual(),
   ts: Date.now()
 };
     if (estado) estado.textContent = "✅ Audio confirmado. Volvé a la imagen para finalizar.";
@@ -618,7 +687,22 @@ window.subirPendingAudioAFirebase = async ({ subirIglesia = false } = {}) => {
   if (!p?.audioBase64) throw new Error("No hay audio pendiente");
 
   const ts = p.ts || Date.now();
-  const fileName = `audio_biblia_${ts}.mp3`;
+  const contexto = String(
+    p.contexto ||
+    window.__AUDIO_ORIGEN ||
+    "biblia"
+  ).trim();
+
+  const prefijo =
+    contexto === "predica"
+      ? "audio_predica"
+      : contexto === "devocional"
+        ? "audio_devocional"
+        : contexto === "nota"
+          ? "audio_nota"
+          : "audio_biblia";
+
+  const fileName = `${prefijo}_${ts}.mp3`;
 
   const r = await fetch(AUDIO_R2_UPLOAD_URL, {
     method: "POST",
@@ -648,7 +732,7 @@ window.subirPendingAudioAFirebase = async ({ subirIglesia = false } = {}) => {
 
   window.__pendingAudio = null;
 
-  console.log("✅ Audio Biblia subido a R2:", url);
+  console.log("✅ Audio subido a R2:", url);
 
   return url;
 };
@@ -669,11 +753,15 @@ const vaAudioTextoBaseAnterior =
   usamos el texto preparado por biblia.js.
 */
 audioTextoBaseActual = function() {
-  if (
-    window.__AUDIO_ORIGEN === "nota"
-  ) {
+  if (window.__AUDIO_ORIGEN === "nota") {
     return String(
       window.__AUDIO_NOTA_TEXTO || ""
+    ).trim();
+  }
+
+  if (window.__AUDIO_ORIGEN === "predica") {
+    return String(
+      window.__AUDIO_PREDICA_TEXTO || ""
     ).trim();
   }
 
@@ -723,12 +811,64 @@ window.abrirModalAudio = function() {
 
   const esDevocional =
     origen === "devocional" ||
-    window.__DEVOCIONAL_AUDIO_ACTIVO ===
-      true ||
+    window.__DEVOCIONAL_AUDIO_ACTIVO === true ||
     modalImagen?.classList.contains(
       "modo-devocional"
     );
 
+  /*
+    PRÉDICA:
+    Wavenet con arpa y audio anterior si ya existe.
+  */
+  if (origen === "predica") {
+    vaAudioCambiarTituloModal(
+      "🎧 Audio de la prédica"
+    );
+
+    const audio =
+      document.getElementById(
+        "audioPreview"
+      );
+
+    const urlExistente =
+      String(
+        window.__AUDIO_PREDICA_URL || ""
+      ).trim();
+
+    if (audio && urlExistente) {
+      audio.src = urlExistente;
+      audio.load();
+    }
+
+    [0, 180, 550].forEach(ms => {
+      setTimeout(() => {
+        if (
+          window.__AUDIO_ORIGEN !== "predica"
+        ) {
+          return;
+        }
+
+        const estado =
+          document.getElementById(
+            "audioEstado"
+          );
+
+        if (!estado) return;
+
+        estado.textContent =
+          urlExistente
+            ? "Esta prédica ya tiene audio. Podés escucharlo o generar uno nuevo."
+            : "Listo para previsualizar el audio de la prédica.";
+      }, ms);
+    });
+
+    return;
+  }
+
+  /*
+    NOTA:
+    conserva la voz seca de Biblia.
+  */
   if (origen === "nota") {
     vaAudioCambiarTituloModal(
       "🎧 Audio de la nota"
@@ -744,25 +884,15 @@ window.abrirModalAudio = function() {
         window.__AUDIO_NOTA_URL || ""
       ).trim();
 
-    /*
-      Si ya había audio, lo mostramos
-      directamente en el reproductor.
-    */
     if (audio && urlExistente) {
       audio.src = urlExistente;
       audio.load();
     }
 
-    /*
-      La función original puede actualizar
-      el estado de manera asíncrona.
-      Lo corregimos con pequeños reintentos.
-    */
     [0, 180, 550].forEach(ms => {
       setTimeout(() => {
         if (
-          window.__AUDIO_ORIGEN !==
-          "nota"
+          window.__AUDIO_ORIGEN !== "nota"
         ) {
           return;
         }
@@ -796,40 +926,52 @@ window.abrirModalAudio = function() {
 };
 
 /*
-  Al cerrar un audio de nota,
-  limpiamos el contexto para que luego
-  Crear imagen vuelva a usar Biblia.
+  Al cerrar, limpiamos el contexto específico.
 */
 const vaCerrarModalAudioAnterior =
   window.cerrarModalAudio;
 
 window.cerrarModalAudio = function() {
-  const eraNota =
-    window.__AUDIO_ORIGEN === "nota";
+  const origenCerrado = String(
+    window.__AUDIO_ORIGEN || ""
+  );
 
   vaCerrarModalAudioAnterior?.();
 
-  if (eraNota) {
+  if (origenCerrado === "nota") {
     window.__AUDIO_ORIGEN = "";
     window.__AUDIO_NOTA_ID = "";
     window.__AUDIO_NOTA_TEXTO = "";
     window.__AUDIO_NOTA_URL = "";
-    window.__AUDIO_NOTA_ORIGEN_LISTA =
-      "";
+    window.__AUDIO_NOTA_ORIGEN_LISTA = "";
+  }
+
+  if (origenCerrado === "predica") {
+    window.__AUDIO_ORIGEN = "";
+    window.__AUDIO_PREDICA_ID = "";
+    window.__AUDIO_PREDICA_TEXTO = "";
+    window.__AUDIO_PREDICA_URL = "";
   }
 };
 
 /*
-  El botón Correcto guarda automáticamente
-  el audio dentro de la nota.
+  El botón Correcto:
+  - en notas, guarda el audio en la nota;
+  - en prédicas, guarda el audio en la prédica;
+  - en Biblia/Devocionales conserva el flujo original.
 */
 const vaFinalizarAudioAnterior =
   window.finalizarYSubirAudio;
 
 window.finalizarYSubirAudio =
   async function() {
+    const origen = String(
+      window.__AUDIO_ORIGEN || ""
+    );
+
     if (
-      window.__AUDIO_ORIGEN !== "nota"
+      origen !== "nota" &&
+      origen !== "predica"
     ) {
       return await vaFinalizarAudioAnterior?.();
     }
@@ -844,15 +986,16 @@ window.finalizarYSubirAudio =
         "textoAudio"
       );
 
-    const texto =
-      String(
-        textarea?.value || ""
-      ).trim();
+    const texto = String(
+      textarea?.value || ""
+    ).trim();
 
     if (!texto) {
       if (estado) {
         estado.textContent =
-          "⚠️ Escribí o pegá el texto del audio.";
+          origen === "predica"
+            ? "⚠️ La prédica no tiene texto para el audio."
+            : "⚠️ Escribí o pegá el texto del audio.";
       }
       return;
     }
@@ -865,10 +1008,96 @@ window.finalizarYSubirAudio =
       return;
     }
 
-    const idNota =
-      String(
-        window.__AUDIO_NOTA_ID || ""
+    const textoFinalAudio =
+      audioPrepararTextoParaTTS(texto);
+
+    /*
+      PRÉDICA
+    */
+    if (origen === "predica") {
+      const idPredica = String(
+        window.__AUDIO_PREDICA_ID || ""
       ).trim();
+
+      if (!idPredica) {
+        if (estado) {
+          estado.textContent =
+            "⚠️ No encontré la prédica.";
+        }
+        return;
+      }
+
+      window.__pendingAudio = {
+        texto: textoFinalAudio,
+        textoOriginal: texto,
+        audioBase64: window.__audioBase64,
+        contexto: "predica",
+        ts: Date.now()
+      };
+
+      try {
+        if (estado) {
+          estado.textContent =
+            "⏳ Guardando audio en la prédica...";
+        }
+
+        const url =
+          await window
+            .subirPendingAudioAFirebase({
+              subirIglesia: true
+            });
+
+        if (
+          typeof window.subidosGuardarAudioPredica !==
+          "function"
+        ) {
+          throw new Error(
+            "No está disponible el guardado de audio para prédicas."
+          );
+        }
+
+        await window.subidosGuardarAudioPredica({
+          id: idPredica,
+          url,
+          texto: textoFinalAudio
+        });
+
+        window.__AUDIO_PREDICA_URL = url;
+
+        if (estado) {
+          estado.textContent =
+            "✅ Audio guardado en la prédica.";
+        }
+
+        setTimeout(() => {
+          window.cerrarModalAudio?.();
+        }, 500);
+
+      } catch (error) {
+        console.error(
+          "Error guardando audio de prédica:",
+          error
+        );
+
+        if (estado) {
+          estado.textContent =
+            "❌ " +
+            (
+              error?.message ||
+              "No pude guardar el audio."
+            );
+        }
+      }
+
+      return;
+    }
+
+    /*
+      NOTA
+    */
+    const idNota = String(
+      window.__AUDIO_NOTA_ID || ""
+    ).trim();
 
     if (!idNota) {
       if (estado) {
@@ -878,14 +1107,10 @@ window.finalizarYSubirAudio =
       return;
     }
 
-    const textoFinalAudio =
-      audioPrepararTextoParaTTS(texto);
-
     window.__pendingAudio = {
       texto: textoFinalAudio,
       textoOriginal: texto,
-      audioBase64:
-        window.__audioBase64,
+      audioBase64: window.__audioBase64,
       contexto: "nota",
       ts: Date.now()
     };
@@ -896,10 +1121,6 @@ window.finalizarYSubirAudio =
           "⏳ Guardando audio en la nota...";
       }
 
-      /*
-        Utilizamos el mismo almacenamiento R2
-        que Crear imagen de Biblia.
-      */
       const url =
         await window
           .subirPendingAudioAFirebase({
