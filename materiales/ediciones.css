@@ -2400,51 +2400,136 @@ body.oscuro .ed-fondo-editor-field select{
 }
 
 /* =========================================================
-   STICKERS COMO PACKS - RECURSOS > EDICIONES Y COMPARTIDOS
+   STICKERS - PACKS COMO TIRAS HORIZONTALES
 ========================================================= */
 
-/* Recursos > Ediciones: cards más chicas cuando estoy en Stickers */
-.ed-lista-stickers .ed-galeria-track-stickers {
-  gap: 12px !important;
-  align-items: stretch !important;
+/* ===== Recursos > Ediciones ===== */
+
+.ed-lista-stickers-pack {
+  padding: 8px 0 24px !important;
 }
 
-.ed-lista-stickers .ed-card-stickers {
-  flex: 0 0 clamp(185px, 23vw, 235px) !important;
-  border-radius: 18px !important;
+.ed-sticker-packs-list {
+  display: grid !important;
+  gap: 14px !important;
+  width: min(980px, 100%) !important;
+  margin: 0 auto !important;
 }
 
-.ed-lista-stickers .ed-card-stickers .ed-card-cover {
-  width: calc(100% - 18px) !important;
-  margin: 9px auto 0 !important;
-  aspect-ratio: 1 / 1 !important;
-  border-radius: 16px !important;
-  background: #fff !important;
+.ed-sticker-pack-card {
+  background: rgba(255,255,255,.82) !important;
+  border: 1px solid rgba(0,0,0,.10) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 5px 18px rgba(0,0,0,.10) !important;
+  overflow: hidden !important;
+  color: #000 !important;
 }
 
-.ed-lista-stickers .ed-card-stickers .ed-card-body {
-  padding: 9px 10px 11px !important;
+.ed-sticker-pack-head {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  padding: 12px 13px 7px !important;
 }
 
-.ed-lista-stickers .ed-card-stickers .ed-card-title {
-  font-size: 14px !important;
-  margin-bottom: 6px !important;
-  line-height: 1.15 !important;
+.ed-sticker-pack-icon {
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: 999px !important;
+  background: var(--ui-azul-claro, #d1eeff) !important;
+  color: #000 !important;
+
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  flex: 0 0 auto !important;
 }
 
-.ed-lista-stickers .ed-card-stickers .ed-card-rama-label {
-  margin-bottom: 8px !important;
+.ed-sticker-pack-title {
+  font-size: 16px !important;
+  line-height: 1.1 !important;
+  font-weight: 900 !important;
+}
+
+.ed-sticker-pack-meta {
+  margin-top: 3px !important;
+  font-size: 11px !important;
+  line-height: 1.2 !important;
+  font-weight: 800 !important;
+  opacity: .70 !important;
+}
+
+.ed-sticker-mini-ok,
+.comp-sticker-mini-ok {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  margin-left: 6px !important;
   font-size: 10px !important;
-  padding: 4px 8px !important;
+  font-weight: 900 !important;
+  opacity: .9 !important;
 }
 
-.ed-lista-stickers .ed-card-stickers .ed-mini-page img {
-  padding: 6px !important;
+.ed-sticker-pack-strip {
+  display: flex !important;
+  gap: 10px !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+
+  padding: 8px 12px 10px !important;
+  scroll-snap-type: x proximity !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+.ed-sticker-pack-strip::-webkit-scrollbar,
+.comp-sticker-pack-strip::-webkit-scrollbar {
+  height: 7px !important;
+}
+
+.ed-sticker-pack-strip::-webkit-scrollbar-thumb,
+.comp-sticker-pack-strip::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,.20) !important;
+  border-radius: 999px !important;
+}
+
+.ed-sticker-thumb,
+.comp-sticker-thumb {
+  border: 1px solid rgba(0,0,0,.08) !important;
+  background: #fff !important;
+  border-radius: 17px !important;
+  padding: 7px !important;
+  cursor: pointer !important;
+
+  flex: 0 0 clamp(92px, 13vw, 128px) !important;
+  width: clamp(92px, 13vw, 128px) !important;
+  aspect-ratio: 1 / 1 !important;
+
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  scroll-snap-align: start !important;
+  overflow: hidden !important;
+}
+
+.ed-sticker-thumb img,
+.comp-sticker-thumb img {
+  width: 100% !important;
+  height: 100% !important;
   object-fit: contain !important;
+  display: block !important;
   background: #fff !important;
 }
 
-/* Botón verde para stickers */
+.ed-sticker-pack-actions {
+  display: grid !important;
+  grid-template-columns: 1fr auto auto auto !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 10px 12px 13px !important;
+}
+
 .ed-sticker-whatsapp-btn,
 .comp-sticker-whatsapp-btn {
   width: 100% !important;
@@ -2475,66 +2560,62 @@ body.oscuro .ed-fondo-editor-field select{
   font-size: 17px !important;
 }
 
-.ed-card-actions-stickers {
-  display: grid !important;
-  grid-template-columns: 1fr auto auto auto !important;
-  align-items: center !important;
-  gap: 7px !important;
-  width: 100% !important;
-}
+.ed-pack-mini-btn {
+  width: 36px !important;
+  height: 36px !important;
+  border: none !important;
+  border-radius: 999px !important;
+  background: var(--ui-azul-claro, #d1eeff) !important;
+  color: #000 !important;
+  cursor: pointer !important;
 
-.ed-card-actions-stickers .ed-sticker-whatsapp-btn {
-  grid-column: 1 / -1 !important;
-}
-
-.ed-sticker-added-mini,
-.comp-sticker-mini-ok {
   display: inline-flex !important;
   align-items: center !important;
-  gap: 4px !important;
-  margin-left: 6px !important;
-  font-size: 10px !important;
-  font-weight: 900 !important;
-  opacity: .85 !important;
+  justify-content: center !important;
 }
 
-/* Compartidos: card de stickers más baja */
+.ed-pack-mini-danger {
+  background: rgba(220,53,69,.16) !important;
+  color: #8a111d !important;
+}
+
+.ed-sticker-pack-empty,
+.comp-sticker-pack-empty {
+  padding: 20px !important;
+  font-weight: 800 !important;
+  opacity: .65 !important;
+}
+
+/* ===== Compartidos ===== */
+
 .comp-post--stickers {
   max-width: 720px !important;
   margin-left: auto !important;
   margin-right: auto !important;
 }
 
-.comp-post--stickers .comp-post-head {
-  margin-bottom: 8px !important;
-}
-
 .comp-post-media--stickers {
-  height: clamp(210px, 45vw, 330px) !important;
-  min-height: 210px !important;
-  max-height: 330px !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+
+  display: block !important;
   overflow: hidden !important;
+
+  padding: 0 !important;
   border-radius: 18px !important;
-  background: #fff !important;
+  background: rgba(255,255,255,.70) !important;
+}
+
+.comp-sticker-pack-strip {
   display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-}
+  gap: 10px !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
 
-.comp-post-media--stickers .ed-mini-galeria,
-.comp-post-media--stickers .ed-mini-paginas,
-.comp-post-media--stickers .ed-mini-page {
-  height: 100% !important;
-}
-
-.comp-post-media--stickers .ed-mini-page img,
-.comp-post-media--stickers > img {
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: contain !important;
-  padding: 8px !important;
-  background: #fff !important;
-  border-radius: 16px !important;
+  padding: 12px !important;
+  scroll-snap-type: x proximity !important;
+  -webkit-overflow-scrolling: touch !important;
 }
 
 .comp-post-actions--stickers {
@@ -2548,35 +2629,46 @@ body.oscuro .ed-fondo-editor-field select{
   max-width: 520px !important;
 }
 
-/* En celular, que no quede gigante */
+/* Celu */
 @media (max-width: 700px) {
-  .ed-lista-stickers .ed-card-stickers {
-    flex-basis: 68vw !important;
-    max-width: 230px !important;
+  .ed-sticker-packs-list {
+    gap: 12px !important;
   }
 
-  .comp-post-media--stickers {
-    height: 300px !important;
-    min-height: 300px !important;
-    max-height: 300px !important;
+  .ed-sticker-thumb,
+  .comp-sticker-thumb {
+    flex-basis: 92px !important;
+    width: 92px !important;
+    border-radius: 15px !important;
+    padding: 6px !important;
   }
 
+  .ed-sticker-pack-actions {
+    grid-template-columns: 1fr auto auto auto !important;
+  }
+
+  .ed-sticker-whatsapp-btn,
   .comp-sticker-whatsapp-btn {
-    min-height: 48px !important;
-    font-size: 14px !important;
+    min-height: 46px !important;
+    font-size: 13px !important;
   }
 }
 
 @media (max-width: 420px) {
-  .ed-lista-stickers .ed-card-stickers {
-    flex-basis: 62vw !important;
-    max-width: 215px !important;
+  .ed-sticker-thumb,
+  .comp-sticker-thumb {
+    flex-basis: 86px !important;
+    width: 86px !important;
   }
 
-  .comp-post-media--stickers {
-    height: 275px !important;
-    min-height: 275px !important;
-    max-height: 275px !important;
+  .ed-sticker-pack-head {
+    padding: 11px 11px 6px !important;
+  }
+
+  .ed-sticker-pack-strip,
+  .comp-sticker-pack-strip {
+    padding: 9px 10px 10px !important;
+    gap: 8px !important;
   }
 }
 
