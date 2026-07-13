@@ -238,10 +238,27 @@ function edFondosConstruirLista(categoria = "", incluirOcultos = false) {
   return [...itemsBase, ...itemsNuevos]
     .filter(item => item.url && (incluirOcultos || item.activo))
     .sort((a, b) => {
-      const orden = Number(a.orden || 0) - Number(b.orden || 0);
-      if (orden !== 0) return orden;
+      // Los fondos agregados desde el administrador aparecen primero.
+      if (a.nuevo !== b.nuevo) {
+        return a.nuevo ? -1 : 1;
+      }
 
-      return String(a.nombre || "").localeCompare(String(b.nombre || ""), "es");
+      // Entre los fondos nuevos, el último cargado aparece primero.
+      if (a.nuevo && b.nuevo) {
+        const ordenNuevo =
+          Number(b.orden || 0) - Number(a.orden || 0);
+
+        if (ordenNuevo !== 0) return ordenNuevo;
+      }
+
+      // Los fondos originales conservan su orden habitual.
+      const ordenOriginal =
+        Number(a.orden || 0) - Number(b.orden || 0);
+
+      if (ordenOriginal !== 0) return ordenOriginal;
+
+      return String(a.nombre || "")
+        .localeCompare(String(b.nombre || ""), "es");
     });
 }
 
