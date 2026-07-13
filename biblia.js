@@ -5108,6 +5108,10 @@ if (!window.__BIBLIA_FONDOS_EVENTO_ACTIVO) {
   window.__BIBLIA_FONDOS_EVENTO_ACTIVO = true;
 
   window.addEventListener("va-fondos-actualizados", () => {
+    // No recargamos todas las miniaturas ocultas mientras
+    // el editor de imagen está cerrado.
+    if (!bibliaModalImagenVisible()) return;
+
     if (document.getElementById("personalizarFondos")) {
       cargarFondos();
     }
@@ -5124,6 +5128,51 @@ if (!window.__BIBLIA_FONDOS_EVENTO_ACTIVO) {
 
 window.vaFondosRegistrarBase?.(bibliaRecursosBaseEdiciones);
 
+
+// ================= 🛡️ RECURSOS VISUALES SIN CORS =======================
+// Los recursos nuevos subidos desde Ediciones quedan alojados en R2.
+// Para leerlos desde canvas/html2canvas usamos el Worker como proxy.
+function bibliaUrlRecursoSeguro(url, nombre = "recurso.png") {
+  const original = String(url || "").trim();
+  if (!original) return "";
+
+  if (/^(blob:|data:)/i.test(original)) {
+    return original;
+  }
+
+  try {
+    const absoluta = new URL(original, window.location.href);
+    const worker = new URL(R2_DOWNLOAD_URL);
+
+    if (absoluta.origin === window.location.origin) {
+      return original;
+    }
+
+    if (absoluta.origin === worker.origin) {
+      return original;
+    }
+
+    worker.searchParams.set("url", absoluta.href);
+    worker.searchParams.set("nombre", String(nombre || "recurso.png"));
+    worker.searchParams.set("descargar", "0");
+
+    return worker.toString();
+  } catch (_) {
+    return original;
+  }
+}
+
+function bibliaModalImagenVisible() {
+  const modal = document.getElementById("modalPersonalizar");
+  if (!modal) return false;
+
+  const estilo = getComputedStyle(modal);
+
+  return (
+    estilo.display !== "none" &&
+    estilo.visibility !== "hidden"
+  );
+}
 
 // ================= ⭐ CARGAR FONDOS (CORS + URL FINAL) =======================
 function cargarFondos() {
@@ -5278,7 +5327,10 @@ menuBtn.onclick = (e) => {
     img.className = "biblia-fondo-img";
     img.crossOrigin = "anonymous";
     img.referrerPolicy = "no-referrer";
-    img.src = finalUrl;
+    img.src = bibliaUrlRecursoSeguro(
+      finalUrl,
+      "fondo_biblia.png"
+    );
 
     img.onclick = async () => {
       try {
@@ -5317,9 +5369,25 @@ menuBtn.onclick = (e) => {
 
 // ================= ⭐ URLTOBLOBURL =======================
 async function urlToBlobURL(url) {
-  const res = await fetch(url, { mode: "cors", cache: "no-store" });
-  if (!res.ok) throw new Error("Fondo no disponible (CORS o 404)");
+  const urlSegura = bibliaUrlRecursoSeguro(
+    url,
+    "fondo_biblia.png"
+  );
+
+  const res = await fetch(urlSegura, {
+    cache: "no-store"
+  });
+
+  if (!res.ok) {
+    throw new Error(`Fondo no disponible (HTTP ${res.status})`);
+  }
+
   const blob = await res.blob();
+
+  if (!blob || !blob.size) {
+    throw new Error("El fondo se recibió vacío.");
+  }
+
   return URL.createObjectURL(blob);
 }
 
@@ -5474,6 +5542,14 @@ function bibliaAplicarFondoAlPreview(previewImagen) {
   if (!previewImagen) return;
 
   const fondoUsable = fondoFinalBlobUrl || fondoFinal;
+
+  const fondoVisual = fondoUsable
+    ? bibliaUrlRecursoSeguro(
+        fondoUsable,
+        "fondo_biblia.png"
+      )
+    : "";
+
   const textura = document.getElementById("bibliaFondoTexturaLayer");
   const adorno = document.getElementById("bibliaFondoAdornoLayer");
   const imgAdorno = document.getElementById("bibliaFondoAdornoImg");
@@ -5482,8 +5558,8 @@ function bibliaAplicarFondoAlPreview(previewImagen) {
   // imagen = galería normal
   // plano/gradiente = fondo de color
   if (fondoDisenoBiblia.baseTipo === "imagen") {
-    if (fondoUsable) {
-      previewImagen.style.backgroundImage = `url("${fondoUsable}")`;
+    if (fondoVisual) {
+      previewImagen.style.backgroundImage = `url("${fondoVisual}")`;
       previewImagen.style.backgroundColor = "transparent";
     } else {
       previewImagen.style.backgroundImage = "none";
@@ -5520,6 +5596,10 @@ function bibliaAplicarFondoAlPreview(previewImagen) {
     if (texturasActivas.length) {
       textura.style.display = "block";
       textura.style.backgroundImage = texturasActivas
+        .map(url => bibliaUrlRecursoSeguro(
+          url,
+          "textura_biblia.png"
+        ))
         .map(url => `url("${url}")`)
         .join(", ");
       textura.style.backgroundSize = texturasActivas
@@ -5548,7 +5628,11 @@ function bibliaAplicarFondoAlPreview(previewImagen) {
   if (adorno && imgAdorno) {
     if (fondoDisenoBiblia.adornoUrl) {
       adorno.style.display = "flex";
-      imgAdorno.src = fondoDisenoBiblia.adornoUrl;
+      imgAdorno.crossOrigin = "anonymous";
+      imgAdorno.src = bibliaUrlRecursoSeguro(
+        fondoDisenoBiblia.adornoUrl,
+        "adorno_biblia.png"
+      );
       imgAdorno.style.width = `${Math.max(20, Math.min(100, Number(fondoDisenoBiblia.adornoTamano) || 70))}%`;
       imgAdorno.style.opacity = String(
   Math.max(0, Math.min(1, Number(fondoDisenoBiblia.adornoOpacidad ?? 1)))
@@ -5733,7 +5817,14 @@ function bibliaRenderTexturasDiseno() {
       : item.nombre;
 
     if (item.url) {
-      btn.innerHTML = `<img src="${item.url}" alt="${item.nombre}">`;
+      const miniatura = document.createElement("img");
+      miniatura.crossOrigin = "anonymous";
+      miniatura.src = bibliaUrlRecursoSeguro(
+        item.url,
+        "textura_biblia.png"
+      );
+      miniatura.alt = item.nombre;
+      btn.appendChild(miniatura);
     } else {
       btn.innerHTML = `<i class="fa-solid fa-ban"></i>`;
     }
@@ -5789,7 +5880,14 @@ function bibliaRenderAdornosDiseno() {
     btn.title = item.nombre;
 
     if (item.url) {
-      btn.innerHTML = `<img src="${item.url}" alt="${item.nombre}">`;
+      const miniatura = document.createElement("img");
+      miniatura.crossOrigin = "anonymous";
+      miniatura.src = bibliaUrlRecursoSeguro(
+        item.url,
+        "adorno_biblia.png"
+      );
+      miniatura.alt = item.nombre;
+      btn.appendChild(miniatura);
     } else {
       btn.innerHTML = `<i class="fa-solid fa-ban"></i>`;
     }
@@ -6280,7 +6378,10 @@ function bibliaPrecargarRecurso(url) {
     img.crossOrigin = "anonymous";
     img.onload = resolve;
     img.onerror = resolve;
-    img.src = url;
+    img.src = bibliaUrlRecursoSeguro(
+      url,
+      "recurso_biblia.png"
+    );
   });
 }
 
@@ -6508,9 +6609,14 @@ function bibliaCargarImagenCuentagotasWrapper(src) {
     img.crossOrigin = "anonymous";
 
     img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error("No pude cargar el fondo para tomar el color."));
+    img.onerror = () => reject(
+      new Error("No pude cargar el fondo para tomar el color.")
+    );
 
-    img.src = src;
+    img.src = bibliaUrlRecursoSeguro(
+      src,
+      "fondo_cuentagotas.png"
+    );
   });
 }
 
