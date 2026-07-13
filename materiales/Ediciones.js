@@ -619,7 +619,7 @@ window.edFondoAbrirEditor = function(categoria = "", id = "") {
         alt="${edEscape(item.nombre || "Fondo")}"
       >
 
-      <label class="ed-fondo-editor-field">
+          <label class="ed-fondo-editor-field">
         <span>Nombre del fondo</span>
 
         <input
@@ -629,6 +629,21 @@ window.edFondoAbrirEditor = function(categoria = "", id = "") {
           value="${edEscape(item.nombre || "Fondo")}"
           placeholder="Ej: Lago al atardecer"
         >
+      </label>
+
+      <label class="ed-fondo-editor-field">
+        <span>Galería</span>
+
+        <select id="edFondoEditorCategoria">
+          ${ED_FONDOS_CATEGORIAS.map(opcion => `
+            <option
+              value="${edEscape(opcion.id)}"
+              ${opcion.id === cat ? "selected" : ""}
+            >
+              ${edEscape(opcion.label)}
+            </option>
+          `).join("")}
+        </select>
       </label>
 
       <label class="ed-fondo-editor-field">
@@ -642,6 +657,7 @@ window.edFondoAbrirEditor = function(categoria = "", id = "") {
       </label>
 
       <div class="ed-fondo-editor-ayuda">
+        Podés cambiar el nombre, moverlo de galería o reemplazar la imagen.
         Si no elegís otra imagen, se conserva la actual.
       </div>
 
@@ -705,13 +721,33 @@ window.edFondoGuardarEdicion = async function(categoria = "", id = "") {
     return;
   }
 
-  const nombreInput = document.getElementById("edFondoEditorNombre");
-  const archivoInput = document.getElementById("edFondoEditorArchivo");
-  const estado = document.getElementById("edFondoEditorEstado");
-  const btn = document.getElementById("edFondoEditorGuardar");
+  const nombreInput =
+    document.getElementById("edFondoEditorNombre");
+
+  const categoriaInput =
+    document.getElementById("edFondoEditorCategoria");
+
+  const archivoInput =
+    document.getElementById("edFondoEditorArchivo");
+
+  const estado =
+    document.getElementById("edFondoEditorEstado");
+
+  const btn =
+    document.getElementById("edFondoEditorGuardar");
 
   const nombre = String(nombreInput?.value || "").trim();
   const file = archivoInput?.files?.[0] || null;
+
+  const catOrigen =
+    edFondosCategoriaValida(categoria);
+
+  const catDestino =
+    edFondosCategoriaValida(
+      categoriaInput?.value || catOrigen
+    );
+
+  const cambioCategoria = catDestino !== catOrigen;
 
   if (!nombre) {
     alert("Escribí un nombre para el fondo.");
@@ -739,48 +775,157 @@ window.edFondoGuardarEdicion = async function(categoria = "", id = "") {
   if (btn) btn.disabled = true;
 
   try {
-    const cat = edFondosCategoriaValida(categoria);
-    const actual = edFondosConfigCategoria(cat)?.[id] || {};
+    const actual =
+      edFondosConfigCategoria(catOrigen)?.[id] || {};
 
     let url = item.url;
 
+    /*
+      Solo subimos otra imagen cuando realmente
+      se seleccionó un archivo nuevo.
+
+      Cambiar de galería no vuelve a subir la imagen.
+    */
     if (file) {
-      if (estado) estado.textContent = "Subiendo la nueva imagen…";
+      if (estado) {
+        estado.textContent = "Subiendo la nueva imagen…";
+      }
 
       url = await subirArchivoEdicionR2(
         file,
-        `fondos/${cat}`
+        `fondos/${catDestino}`
       );
     }
 
-    if (estado) estado.textContent = "Guardando cambios…";
+    if (estado) {
+      estado.textContent = cambioCategoria
+        ? "Moviendo fondo de galería…"
+        : "Guardando cambios…";
+    }
 
-    await set(ref(db, `${ED_FONDOS_RUTA}/${cat}/${id}`), {
+    const ahora = Date.now();
+
+    const datosDestino = {
       ...actual,
       url,
       nombre,
       originalUrl: item.originalUrl || "",
       activo: true,
-      nuevo: !item.esBase,
-      orden: item.orden,
-      actualizado: Date.now(),
-      creado: Number(actual.creado || Date.now())
-    });
+      nuevo: cambioCategoria ? true : !item.esBase,
+      orden: cambioCategoria ? ahora : item.orden,
+      actualizado: ahora,
+      creado: Number(actual.creado || ahora)
+    };
 
-    edFondosSetEstado("Fondo editado correctamente.");
+    /*
+      MISMA GALERÍA:
+      solamente actualizamos nombre o imagen.
+    */
+    if (!cambioCategoria) {
+      await set(
+        ref(
+          db,
+          `${ED_FONDOS_RUTA}/${catOrigen}/${id}`
+        ),
+        datosDestino
+      );
+    }
+
+    /*
+      FONDO NUEVO CARGADO DESDE EL ADMINISTRADOR:
+      se crea en la galería correcta y se elimina
+      completamente de la galería anterior.
+
+      No queda activo, duplicado ni en "Ver quitados".
+    */
+    else if (!item.esBase) {
+      await set(
+        ref(
+          db,
+          `${ED_FONDOS_RUTA}/${catDestino}/${id}`
+        ),
+        datosDestino
+      );
+
+      await remove(
+        ref(
+          db,
+          `${ED_FONDOS_RUTA}/${catOrigen}/${id}`
+        )
+      );
+    }
+
+    /*
+      FONDO ORIGINAL QUE ESTÁ ESCRITO EN BIBLIA/DEVOCIONALES:
+      no podemos eliminarlo físicamente de su lista original.
+
+      Creamos una copia administrable en el destino
+      y ocultamos el original.
+    */
+    else {
+      const nuevoId =
+        `movido_${ahora}_${edFondosHash(
+          item.url + Math.random()
+        )}`;
+
+      await set(
+        ref(
+          db,
+          `${ED_FONDOS_RUTA}/${catDestino}/${nuevoId}`
+        ),
+        {
+          ...datosDestino,
+          nuevo: true,
+          originalUrl: ""
+        }
+      );
+
+      await set(
+        ref(
+          db,
+          `${ED_FONDOS_RUTA}/${catOrigen}/${id}`
+        ),
+        {
+          ...actual,
+          url: item.url,
+          nombre: item.nombre || "Fondo",
+          originalUrl: item.originalUrl || "",
+          activo: false,
+          nuevo: false,
+          orden: item.orden,
+          actualizado: ahora,
+          creado: Number(actual.creado || ahora)
+        }
+      );
+    }
+
+    edFondosSetEstado(
+      cambioCategoria
+        ? "Fondo movido correctamente."
+        : "Fondo editado correctamente."
+    );
+
     window.edFondoCerrarEditor();
-  } catch (error) {
-    console.error("Error editando fondo:", error);
 
-    if (estado) estado.textContent = "";
+  } catch (error) {
+    console.error("Error editando o moviendo fondo:", error);
+
+    if (estado) {
+      estado.textContent = "";
+    }
 
     alert(
       "No pude guardar los cambios del fondo.\n\n" +
       (error?.message || error)
     );
+
   } finally {
-    const btnActual = document.getElementById("edFondoEditorGuardar");
-    if (btnActual) btnActual.disabled = false;
+    const btnActual =
+      document.getElementById("edFondoEditorGuardar");
+
+    if (btnActual) {
+      btnActual.disabled = false;
+    }
   }
 };
 
