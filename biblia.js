@@ -8886,6 +8886,162 @@ window.volverListaMarcadoresDesdeVista = function(origenLista = "biblia") {
   renderListaMarcadores();
 };
 
+// =========================================================
+// 🎧 AUDIO PARA NOTAS DE BIBLIA
+// =========================================================
+
+function notaAudioArmarTexto(m = {}) {
+  const datos =
+    notaShareDatosDesdeMarcador(m);
+
+  return [
+    datos.titulo || "",
+    datos.referencia || "",
+    datos.versiculo || "",
+    datos.texto || ""
+  ]
+    .map(texto =>
+      String(texto || "").trim()
+    )
+    .filter(Boolean)
+    .join("\n\n")
+    .trim();
+}
+
+window.abrirAudioNota = function(
+  idMarcador
+) {
+  const m =
+    (marcadores || {})[idMarcador];
+
+  if (!m) {
+    mostrarToast?.(
+      "No encontré esta nota."
+    );
+    return;
+  }
+
+  const texto =
+    notaAudioArmarTexto(m);
+
+  if (!texto) {
+    mostrarToast?.(
+      "Esta nota no tiene texto para convertir en audio."
+    );
+    return;
+  }
+
+  /*
+    Indicamos a biblia.audio.js que esta vez
+    el audio viene desde una nota.
+  */
+  window.__AUDIO_ORIGEN = "nota";
+  window.__AUDIO_NOTA_ID = idMarcador;
+  window.__AUDIO_NOTA_TEXTO = texto;
+
+  /*
+    Si la nota ya tiene un audio guardado,
+    se carga en el reproductor.
+  */
+  window.__AUDIO_NOTA_URL =
+    String(m.audioUrl || "").trim();
+
+  window.__AUDIO_NOTA_ORIGEN_LISTA =
+    m?.origen === "abc"
+      ? "abc"
+      : "biblia";
+
+  if (
+    typeof window.abrirModalAudio !==
+    "function"
+  ) {
+    mostrarToast?.(
+      "Todavía no cargó el sistema de audio."
+    );
+    return;
+  }
+
+  window.abrirModalAudio();
+};
+
+window.vaGuardarAudioNota =
+  async function({
+    id = "",
+    url = "",
+    texto = ""
+  } = {}) {
+    if (!uid) {
+      throw new Error(
+        "Necesitás iniciar sesión."
+      );
+    }
+
+    if (!id || !url) {
+      throw new Error(
+        "Faltan los datos del audio."
+      );
+    }
+
+    const actual =
+      (marcadores || {})[id];
+
+    if (!actual) {
+      throw new Error(
+        "No encontré la nota."
+      );
+    }
+
+    const actualizado = {
+      ...actual,
+
+      audioUrl: String(url).trim(),
+      audioTexto: String(texto).trim(),
+      audioFecha: Date.now()
+    };
+
+    await set(
+      ref(
+        db,
+        `marcadores/${uid}/${id}`
+      ),
+      actualizado
+    );
+
+    /*
+      Actualizamos también la memoria local
+      sin esperar nuevamente a Firebase.
+    */
+    marcadores[id] = actualizado;
+
+    mostrarToast?.(
+      "✅ Audio guardado en la nota"
+    );
+
+    const origenLista =
+      window.__AUDIO_NOTA_ORIGEN_LISTA ||
+      (
+        actualizado?.origen === "abc"
+          ? "abc"
+          : "biblia"
+      );
+
+    /*
+      Refrescamos la vista de la nota.
+    */
+    if (
+      document
+        .getElementById("modalMarcadores")
+        ?.classList.contains("abierto")
+    ) {
+      window.abrirVistaMarcadorDesdeLista?.(
+        id,
+        origenLista
+      );
+    }
+
+    return actualizado;
+  };
+
 window.descargarVistaMarcadorDesdeLista = async function(idMarcador, boton = null) {
   const m = (marcadores || {})[idMarcador];
   if (!m) return;
@@ -8939,6 +9095,10 @@ window.abrirVistaMarcadorDesdeLista = function(idMarcador, origenLista = "biblia
       : (m?.origen === "compartidos" || !!m?.sourceCompKey);
 
   const puedeEditarNota = !notaVieneDeCompartidos;
+  const puedeUsarAudioNota =
+  !!window.__ES_ADMIN ||
+  !!window.__ES_COLABORADOR ||
+  !!m?.audioUrl;
 
   lista.innerHTML = `
     <div class="nota-vista-lista">
@@ -8967,6 +9127,22 @@ window.abrirVistaMarcadorDesdeLista = function(idMarcador, origenLista = "biblia
       </div>
 
       <div class="nota-vista-acciones">
+
+        ${puedeUsarAudioNota ? `
+          <button
+            type="button"
+            class="pm-btn"
+            onclick="abrirAudioNota('${idMarcador}')"
+            title="${
+              m?.audioUrl
+                ? "Escuchar o regenerar audio"
+                : "Crear audio"
+            }"
+          >
+            <i class="fa-solid fa-headphones"></i>
+          </button>
+        ` : ``}
+      
         <button
           type="button"
           class="pm-btn"
@@ -11261,23 +11437,55 @@ function notaShareCrearNodo(datos = {}) {
     Nota extremadamente larga:
     aumenta todavía más el ancho y ajusta el texto.
   */
-  const cantidadCaracteres = [
-    datos.titulo || "",
-    datos.meta || "",
-    datos.versiculo || "",
-    datos.texto || ""
-  ].join("\n").length;
+const textoTotalNota = [
+  datos.titulo || "",
+  datos.meta || "",
+  datos.versiculo || "",
+  datos.texto || ""
+]
+  .join("\n")
+  .trim();
 
-  if (cantidadCaracteres >= 7000) {
-    stage.classList.add(
-      "nota-share-stage--muy-larga"
-    );
+const cantidadCaracteres =
+  textoTotalNota.length;
 
-  } else if (cantidadCaracteres >= 3000) {
-    stage.classList.add(
-      "nota-share-stage--larga"
-    );
-  }
+const cantidadSaltos =
+  (
+    textoTotalNota.match(/\n/g) || []
+  ).length;
+
+/*
+  Los saltos y párrafos también aumentan
+  visualmente la altura de la nota.
+*/
+const puntajeVisual =
+  cantidadCaracteres +
+  cantidadSaltos * 90;
+
+/*
+  Antes:
+  - larga desde 3000
+  - muy larga desde 7000
+
+  Ahora detectamos antes las notas
+  que visualmente ocupan mucho espacio.
+*/
+if (
+  cantidadCaracteres >= 4200 ||
+  puntajeVisual >= 4700
+) {
+  stage.classList.add(
+    "nota-share-stage--muy-larga"
+  );
+
+} else if (
+  cantidadCaracteres >= 1400 ||
+  puntajeVisual >= 1750
+) {
+  stage.classList.add(
+    "nota-share-stage--larga"
+  );
+}
 
   /*
     Nunca ponemos acá directamente la URL de R2.
@@ -11934,54 +12142,190 @@ async function vaLeerRestantesUsoColaborador(tipo = "crearImagenBiblia", limite 
   }
 }
 
-async function vaConsumirUsoColaborador(tipo = "crearImagenBiblia", limite = 3) {
-  const uidActual = window.__UID || window.__FB?.auth?.currentUser?.uid || "";
+async function vaConsumirUsoColaborador(
+  tipo = "crearImagenBiblia",
+  limite = 3,
+  meta = {}
+) {
+  const uidActual =
+    window.__UID ||
+    window.__FB?.auth?.currentUser?.uid ||
+    "";
 
   if (vaEsAdminActual()) {
     return {
       ok: true,
       admin: true,
-      restantes: null
+      restantes: null,
+      restantesCaracteres: null
     };
   }
 
   if (!vaEsColaboradorActual()) {
-    throw new Error("Solo administradores o colaboradores pueden usar esta función.");
+    throw new Error(
+      "Solo administradores o colaboradores pueden usar esta función."
+    );
   }
 
   if (!uidActual) {
     throw new Error("Necesitás iniciar sesión.");
   }
 
+  const limiteAudios = Math.max(
+    1,
+    Number(limite || 3)
+  );
+
+  /*
+    Los audios tienen además un límite de caracteres.
+
+    Se comparte entre:
+    - Crear imagen de Biblia
+    - Audio de notas
+
+    Ambos usan el tipo audioBiblia.
+  */
+  const esTipoAudio =
+    String(tipo || "").startsWith("audio");
+
+  const limiteCaracteres =
+    esTipoAudio ? 15000 : 0;
+
+  const caracteresNuevos = Math.max(
+    0,
+    Math.floor(
+      Number(meta?.caracteres || 0)
+    )
+  );
+
   const path = vaPathUsoDiarioColaborador(tipo);
   const fecha = vaFechaArgentinaKey();
 
-  const res = await runTransaction(ref(db, path), actual => {
-    const data = actual || {};
-    const cantidad = Number(data.cantidad || 0);
+  const res = await runTransaction(
+    ref(db, path),
+    actual => {
+      const data = actual || {};
 
-    if (cantidad >= Number(limite || 3)) {
-      return;
+      const cantidadActual =
+        Number(data.cantidad || 0);
+
+      const caracteresActuales =
+        Number(data.caracteres || 0);
+
+      /*
+        Límite de cantidad de audios.
+      */
+      if (cantidadActual >= limiteAudios) {
+        return;
+      }
+
+      /*
+        Límite diario de caracteres.
+      */
+      if (
+        limiteCaracteres > 0 &&
+        caracteresActuales + caracteresNuevos >
+          limiteCaracteres
+      ) {
+        return;
+      }
+
+      return {
+        ...data,
+
+        cantidad: cantidadActual + 1,
+        limite: limiteAudios,
+
+        caracteres:
+          caracteresActuales +
+          caracteresNuevos,
+
+        limiteCaracteres,
+
+        fecha,
+        actualizadoEn: Date.now(),
+
+        ultimoUso: {
+          caracteres: caracteresNuevos,
+          contexto: String(
+            meta?.contexto || ""
+          ),
+          voiceName: String(
+            meta?.voiceName || ""
+          ),
+          fecha: Date.now()
+        }
+      };
     }
-
-    return {
-      cantidad: cantidad + 1,
-      limite: Number(limite || 3),
-      fecha,
-      actualizadoEn: Date.now()
-    };
-  });
+  );
 
   if (!res.committed) {
-    throw new Error(`Llegaste al límite diario de ${limite}. Podés volver a usarlo mañana.`);
+    const actual =
+      res.snapshot?.val() || {};
+
+    const cantidadActual =
+      Number(actual.cantidad || 0);
+
+    const caracteresActuales =
+      Number(actual.caracteres || 0);
+
+    if (
+      limiteCaracteres > 0 &&
+      caracteresActuales + caracteresNuevos >
+        limiteCaracteres
+    ) {
+      const disponibles = Math.max(
+        0,
+        limiteCaracteres -
+          caracteresActuales
+      );
+
+      throw new Error(
+        `Llegaste al límite diario de ${limiteCaracteres.toLocaleString(
+          "es-AR"
+        )} caracteres. Te quedan ${disponibles.toLocaleString(
+          "es-AR"
+        )} caracteres disponibles hoy.`
+      );
+    }
+
+    if (cantidadActual >= limiteAudios) {
+      throw new Error(
+        `Llegaste al límite diario de ${limiteAudios} audios. Podés volver a usarlo mañana.`
+      );
+    }
+
+    throw new Error(
+      "No pude registrar el uso diario."
+    );
   }
 
-  const cantidadFinal = Number(res.snapshot?.val()?.cantidad || 0);
+  const dataFinal =
+    res.snapshot?.val() || {};
+
+  const cantidadFinal =
+    Number(dataFinal.cantidad || 0);
+
+  const caracteresFinales =
+    Number(dataFinal.caracteres || 0);
 
   return {
     ok: true,
     admin: false,
-    restantes: Math.max(0, Number(limite || 3) - cantidadFinal)
+
+    restantes: Math.max(
+      0,
+      limiteAudios - cantidadFinal
+    ),
+
+    restantesCaracteres:
+      limiteCaracteres > 0
+        ? Math.max(
+            0,
+            limiteCaracteres -
+              caracteresFinales
+          )
+        : null
   };
 }
 
