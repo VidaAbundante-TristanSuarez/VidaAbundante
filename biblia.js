@@ -873,6 +873,77 @@ window.vaShareCancelado = function vaShareCancelado(e) {
   );
 };
 
+/* ================= ANDROID APK: COMPARTIR / DESCARGAR ARCHIVOS NATIVO ================= */
+
+function vaArchivoABase64(file) {
+  return new Promise((resolve, reject) => {
+    try {
+      const reader = new FileReader();
+
+      reader.onload = () => {
+        const data = String(reader.result || "");
+        resolve(data.includes(",") ? data.split(",").pop() : data);
+      };
+
+      reader.onerror = () => reject(reader.error || new Error("No pude leer el archivo."));
+      reader.readAsDataURL(file);
+
+    } catch (e) {
+      reject(e);
+    }
+  });
+}
+
+window.vaAndroidPuedeArchivos = function() {
+  return (
+    typeof window.vaEsAndroidAPK === "function" &&
+    window.vaEsAndroidAPK() &&
+    window.AndroidVida &&
+    typeof window.AndroidVida.compartirArchivoBase64 === "function" &&
+    typeof window.AndroidVida.descargarArchivoBase64 === "function"
+  );
+};
+
+window.vaAndroidCompartirFile = async function(file, titulo = "Vida Abundante") {
+  try {
+    if (!file || !window.vaAndroidPuedeArchivos()) return false;
+
+    const base64 = await vaArchivoABase64(file);
+
+    window.AndroidVida.compartirArchivoBase64(
+      file.name || "vida_abundante.png",
+      file.type || "application/octet-stream",
+      base64
+    );
+
+    return true;
+
+  } catch (e) {
+    console.warn("No pude compartir por Android nativo:", e);
+    return false;
+  }
+};
+
+window.vaAndroidDescargarFile = async function(file, nombre = "") {
+  try {
+    if (!file || !window.vaAndroidPuedeArchivos()) return false;
+
+    const base64 = await vaArchivoABase64(file);
+
+    window.AndroidVida.descargarArchivoBase64(
+      nombre || file.name || "vida_abundante.png",
+      file.type || "application/octet-stream",
+      base64
+    );
+
+    return true;
+
+  } catch (e) {
+    console.warn("No pude descargar por Android nativo:", e);
+    return false;
+  }
+};
+
 // ================= 🧯 CORTAFUEGOS REAL DE SECCIONES =================
 // Evita que Biblia, Iglesia, Mi Panel y Compartidos queden visibles juntos.
 function forzarSeccionActiva(seccion) {
@@ -14336,14 +14407,25 @@ window.compartirImagenPanel = async (url, fileName = "imagen_vida_abundante.png"
     fileName = panelNombreArchivoSeguro(fileName);
 
     if (typeof mostrarToast === "function") {
-      mostrarToast("⏳ Preparando para compartir...");
+      mostrarToast("⏳ Preparando para compartir.");
     }
 
-    // ✅ baja ARCHIVO REAL
     const blob = await fetchPanelImagenBlob(url, fileName);
     const file = new File([blob], fileName, { type: blob.type || "image/png" });
 
-    // ✅ comparte ARCHIVO REAL
+    /*
+      APK:
+      No usamos fallback de navegador.
+      Mandamos el archivo real al Android nativo.
+    */
+    if (await window.vaAndroidCompartirFile?.(file, "Vida Abundante")) {
+      return;
+    }
+
+    /*
+      PWA / navegador:
+      Se mantiene como estaba.
+    */
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
       await navigator.share({
         title: "Vida Abundante",
@@ -14352,7 +14434,15 @@ window.compartirImagenPanel = async (url, fileName = "imagen_vida_abundante.png"
       return;
     }
 
-    // fallback: descargar archivo real
+    /*
+      Fallback real:
+      En APK intenta guardar nativo.
+      En PWA/navegador usa descarga web.
+    */
+    if (await window.vaAndroidDescargarFile?.(file, fileName)) {
+      return;
+    }
+
     const objUrl = URL.createObjectURL(file);
 
     const a = document.createElement("a");
