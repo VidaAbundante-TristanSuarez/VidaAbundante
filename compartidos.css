@@ -2250,4 +2250,19 @@ body.oscuro .comp-filtros button.activo{
   justify-content: flex-start;
 }
 
+/* =========================================================
+   STICKERS - OCULTAR ORACIÓN / ACCIONES QUE NO VAN
+========================================================= */
+
+.ed-sticker-pack-card button[title*="oración"],
+.ed-sticker-pack-card button[title*="Oración"],
+.ed-sticker-pack-card button[onclick*="oracion"],
+.ed-sticker-pack-card button[onclick*="Oracion"],
+.comp-post--stickers button[title*="oración"],
+.comp-post--stickers button[title*="Oración"],
+.comp-post--stickers button[onclick*="oracion"],
+.comp-post--stickers button[onclick*="Oracion"] {
+  display: none !important;
+}
+
 </style>
