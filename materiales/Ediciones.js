@@ -1879,7 +1879,13 @@ function renderEdiciones() {
   const lista = ed$("edLista");
   if (!lista) return;
 
-  lista.classList.remove("ed-lista-ramas");
+  lista.classList.remove(
+    "ed-lista-ramas",
+    "ed-lista-galeria",
+    "ed-lista-stickers",
+    "ed-lista-stickers-pack"
+  );
+
   lista.classList.add("ed-lista-galeria");
 
   edActualizarControlesEdiciones();
@@ -1935,6 +1941,14 @@ function renderEdiciones() {
     return;
   }
 
+  function edStickerImagenesPack(ed = {}) {
+    const paginas = edPaginasImagenesVisuales(ed);
+
+    return paginas
+      .filter(p => !edPaginaEsVideo(p))
+      .filter(p => edMediaUrlPagina(p));
+  }
+
   function renderBotonAgregarStickers(ed) {
     return `
       <button
@@ -1949,23 +1963,130 @@ function renderEdiciones() {
     `;
   }
 
+  function renderStickerPack(ed) {
+    const titulo = edEscape(ed.titulo || "Pack de stickers");
+    const stickers = edStickerImagenesPack(ed);
+    const publicada = edEstaPublicadaEnCompartidos(ed.id);
+    const guardada = edEstaGuardada(ed.id);
+    const descargada = edEstaDescargada(ed.id);
+
+    return `
+      <article class="ed-sticker-pack-card">
+        <div class="ed-sticker-pack-head">
+          <div class="ed-sticker-pack-icon">
+            <i class="fa-solid fa-icons"></i>
+          </div>
+
+          <div class="ed-sticker-pack-info">
+            <div class="ed-sticker-pack-title">${titulo}</div>
+
+            <div class="ed-sticker-pack-meta">
+              ${stickers.length} stickers
+
+              ${descargada ? `
+                <span class="ed-sticker-mini-ok">
+                  <i class="fa-solid fa-circle-check"></i>
+                  agregado
+                </span>
+              ` : ``}
+
+              ${guardada ? `
+                <span class="ed-sticker-mini-ok">
+                  <i class="fa-solid fa-heart"></i>
+                  guardado
+                </span>
+              ` : ``}
+            </div>
+          </div>
+        </div>
+
+        <div class="ed-sticker-pack-strip" title="Deslizá para ver todos los stickers">
+          ${
+            stickers.length
+              ? stickers.map((p, i) => {
+                  const url = edMediaUrlPagina(p);
+
+                  return `
+                    <button
+                      type="button"
+                      class="ed-sticker-thumb"
+                      onclick="abrirPresentacionEdicion('${edEscape(ed.id)}')"
+                      title="Ver sticker ${i + 1}"
+                    >
+                      <img
+                        src="${edEscape(url)}"
+                        alt="${titulo} ${i + 1}"
+                        loading="lazy"
+                      >
+                    </button>
+                  `;
+                }).join("")
+              : `
+                <div class="ed-sticker-pack-empty">
+                  Este pack todavía no tiene stickers.
+                </div>
+              `
+          }
+        </div>
+
+        <div class="ed-sticker-pack-actions">
+          ${renderBotonAgregarStickers(ed)}
+
+          ${window.__ES_ADMIN ? `
+            <button
+              type="button"
+              class="ed-pack-mini-btn ed-btn-publicar ${publicada ? "ed-publicada" : ""}"
+              onclick="compartirEdicion('${ed.id}', 'compartidos')"
+              title="${publicada ? "Ya está en Compartidos. Tocar para volver a compartir" : "Enviar a Compartidos"}"
+            >
+              <span class="ed-publicar-wrap">
+                <i class="fa-solid fa-icons"></i>
+
+                ${publicada ? `
+                  <span class="ed-check-mini">
+                    <i class="fa-solid fa-check"></i>
+                  </span>
+                ` : ``}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              class="ed-pack-mini-btn"
+              onclick="editarEdicion('${ed.id}')"
+              title="Editar pack"
+            >
+              <i class="fa-solid fa-pen"></i>
+            </button>
+
+            <button
+              type="button"
+              class="ed-pack-mini-btn ed-pack-mini-danger"
+              onclick="borrarEdicion('${ed.id}')"
+              title="Borrar pack"
+            >
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          ` : ``}
+        </div>
+      </article>
+    `;
+  }
+
   function renderCardEdicion(ed) {
     const titulo = edEscape(ed.titulo || "Sin título");
     const portada = edPortadaEdicion(ed);
     const tieneVideo = edPaginasArray(ed).some(p => edPaginaEsVideo(p));
     const publicada = edEstaPublicadaEnCompartidos(ed.id);
-    const guardada = edEstaGuardada(ed.id);
-    const descargada = edEstaDescargada(ed.id);
     const rama = edRamaEdicion(ed);
-    const esSticker = rama === "stickers";
     const ramaTitulo = edTituloRama(rama);
 
     return `
-      <article class="ed-card ed-card-rama ed-card-galeria ${esSticker ? "ed-card-stickers" : ""}">
+      <article class="ed-card ed-card-rama ed-card-galeria">
         <div
           class="ed-card-cover ed-card-cover-scroll"
           role="region"
-          title="${esSticker ? "Deslizá para ver los stickers" : "Deslizá para ver las imágenes"}"
+          title="Deslizá para ver las imágenes"
         >
           ${
             tieneVideo
@@ -1983,134 +2104,91 @@ function renderEdiciones() {
 
           <div class="ed-card-rama-label">
             ${ramaTitulo}
-
-            ${esSticker && descargada ? `
-              <span class="ed-sticker-added-mini" title="Ya fue agregado o descargado antes">
-                <i class="fa-solid fa-circle-check"></i>
-              </span>
-            ` : ``}
-
-            ${esSticker && guardada ? `
-              <span class="ed-sticker-added-mini" title="Guardado en Mi Panel">
-                <i class="fa-solid fa-heart"></i>
-              </span>
-            ` : ``}
           </div>
 
-          ${
-            esSticker
-              ? `
-                <div class="ed-card-actions ed-card-actions-ediciones ed-card-actions-stickers">
-                  ${renderBotonAgregarStickers(ed)}
+          <div class="ed-card-actions ed-card-actions-ediciones">
+            ${window.__ES_ADMIN ? `
+              <button
+                type="button"
+                class="ed-btn-publicar ${publicada ? "ed-publicada" : ""}"
+                onclick="compartirEdicion('${ed.id}', 'compartidos')"
+                title="${publicada ? "Ya está en Compartidos. Tocar para volver a compartir" : "Enviar a Compartidos"}"
+              >
+                <span class="ed-publicar-wrap">
+                  <i class="fa-solid fa-icons"></i>
 
-                  ${window.__ES_ADMIN ? `
-                    <button
-                      type="button"
-                      class="ed-btn-publicar ${publicada ? "ed-publicada" : ""}"
-                      onclick="compartirEdicion('${ed.id}', 'compartidos')"
-                      title="${publicada ? "Ya está en Compartidos. Tocar para volver a compartir" : "Enviar a Compartidos"}"
-                    >
-                      <span class="ed-publicar-wrap">
-                        <i class="fa-solid fa-icons"></i>
-
-                        ${publicada ? `
-                          <span class="ed-check-mini">
-                            <i class="fa-solid fa-check"></i>
-                          </span>
-                        ` : ``}
-                      </span>
-                    </button>
-
-                    <button type="button" onclick="editarEdicion('${ed.id}')" title="Editar pack">
-                      <i class="fa-solid fa-pen"></i>
-                    </button>
-
-                    <button
-                      type="button"
-                      class="ed-danger ed-danger-mini"
-                      onclick="borrarEdicion('${ed.id}')"
-                      title="Borrar pack"
-                    >
-                      <i class="fa-solid fa-trash"></i>
-                    </button>
+                  ${publicada ? `
+                    <span class="ed-check-mini">
+                      <i class="fa-solid fa-check"></i>
+                    </span>
                   ` : ``}
-                </div>
-              `
-              : `
-                <div class="ed-card-actions ed-card-actions-ediciones">
-                  ${window.__ES_ADMIN ? `
-                    <button
-                      type="button"
-                      class="ed-btn-publicar ${publicada ? "ed-publicada" : ""}"
-                      onclick="compartirEdicion('${ed.id}', 'compartidos')"
-                      title="${publicada ? "Ya está en Compartidos. Tocar para volver a compartir" : "Enviar a Compartidos"}"
-                    >
-                      <span class="ed-publicar-wrap">
-                        <i class="fa-solid fa-icons"></i>
+                </span>
+              </button>
+            ` : ``}
 
-                        ${publicada ? `
-                          <span class="ed-check-mini">
-                            <i class="fa-solid fa-check"></i>
-                          </span>
-                        ` : ``}
-                      </span>
-                    </button>
-                  ` : ``}
+            ${!tieneVideo ? `
+              <button
+                type="button"
+                onclick="descargarEdicionPDF('${ed.id}')"
+                title="Descargar PDF"
+              >
+                <i class="fa-solid fa-file-pdf"></i>
+              </button>
+            ` : ``}
 
-                  ${!tieneVideo ? `
-                    <button
-                      type="button"
-                      onclick="descargarEdicionPDF('${ed.id}')"
-                      title="Descargar PDF"
-                    >
-                      <i class="fa-solid fa-file-pdf"></i>
-                    </button>
-                  ` : ``}
+            ${!tieneVideo ? `
+              <button
+                type="button"
+                onclick="descargarEdicionPNGs('${ed.id}', this, 'ediciones')"
+                title="Descargar PNG"
+              >
+                <i class="fa-solid fa-download"></i>
+              </button>
+            ` : ``}
 
-                  ${!tieneVideo ? `
-                    <button
-                      type="button"
-                      onclick="descargarEdicionPNGs('${ed.id}', this, 'ediciones')"
-                      title="Descargar PNG"
-                    >
-                      <i class="fa-solid fa-download"></i>
-                    </button>
-                  ` : ``}
+            <button
+              type="button"
+              onclick="edAbrirOpcionesCompartirEdicion('${ed.id}', 'ediciones', this)"
+              title="Compartir imagen o publicación"
+            >
+              <i class="fa-solid fa-share-nodes"></i>
+            </button>
 
-                  <button
-                    type="button"
-                    onclick="edAbrirOpcionesCompartirEdicion('${ed.id}', 'ediciones', this)"
-                    title="Compartir imagen o publicación"
-                  >
-                    <i class="fa-solid fa-share-nodes"></i>
-                  </button>
+            ${window.__ES_ADMIN ? `
+              <button type="button" onclick="editarEdicion('${ed.id}')" title="Editar">
+                <i class="fa-solid fa-pen"></i>
+              </button>
 
-                  ${window.__ES_ADMIN ? `
-                    <button type="button" onclick="editarEdicion('${ed.id}')" title="Editar">
-                      <i class="fa-solid fa-pen"></i>
-                    </button>
-
-                    <button
-                      type="button"
-                      class="ed-danger ed-danger-mini"
-                      onclick="borrarEdicion('${ed.id}')"
-                      title="Borrar"
-                    >
-                      <i class="fa-solid fa-trash"></i>
-                    </button>
-                  ` : ``}
-                </div>
-              `
-          }
+              <button
+                type="button"
+                class="ed-danger ed-danger-mini"
+                onclick="borrarEdicion('${ed.id}')"
+                title="Borrar"
+              >
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            ` : ``}
+          </div>
         </div>
       </article>
     `;
   }
 
-  lista.classList.toggle("ed-lista-stickers", viendoStickers);
+  if (viendoStickers) {
+    lista.classList.remove("ed-lista-galeria");
+    lista.classList.add("ed-lista-stickers-pack");
+
+    lista.innerHTML = `
+      <div class="ed-sticker-packs-list">
+        ${items.map(renderStickerPack).join("")}
+      </div>
+    `;
+
+    return;
+  }
 
   lista.innerHTML = `
-    <div class="ed-galeria-wrap ${viendoStickers ? "ed-galeria-wrap-stickers" : ""}">
+    <div class="ed-galeria-wrap">
 
       <button
         type="button"
@@ -2122,7 +2200,7 @@ function renderEdiciones() {
         <i class="fa-solid fa-chevron-left"></i>
       </button>
 
-      <div class="ed-galeria-track ${viendoStickers ? "ed-galeria-track-stickers" : ""}">
+      <div class="ed-galeria-track">
         ${items.map(renderCardEdicion).join("")}
       </div>
 
@@ -2142,27 +2220,6 @@ function renderEdiciones() {
   edActivarFlechasGaleria();
   edActivarMiniGalerias(lista);
 }
-
-/* ✅ Botón web/APK para stickers.
-   En la APK llama al puente AndroidVida.
-   En navegador común avisa que se necesita la app Android. */
-window.vaAgregarStickersWhatsAppDesdeWeb = function(packId = "", btn = null) {
-  try {
-    if (
-      window.AndroidVida &&
-      typeof window.AndroidVida.agregarStickersWhatsApp === "function"
-    ) {
-      try {
-        localStorage.setItem(`va_stickers_agregado_${packId || "pack"}`, "1");
-      } catch (_) {}
-
-      window.AndroidVida.agregarStickersWhatsApp();
-      return;
-    }
-  } catch (_) {}
-
-  alert("Para agregar este pack a WhatsApp, abrilo desde la app Android Vida Abundante.");
-};
 
 /* ================= EDITOR ================= */
 
