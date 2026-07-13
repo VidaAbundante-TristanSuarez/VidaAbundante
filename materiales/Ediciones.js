@@ -4056,6 +4056,17 @@ function edPaginasImagenesVisuales(edicion = {}) {
     .filter(p => edMediaUrlPagina(p));
 }
 
+function edPaginasCompartiblesVisuales(edicion = {}) {
+  const esCategoriaVideos = edRamaEdicion(edicion) === "videos";
+
+  const paginas = esCategoriaVideos
+    ? edPaginasArray(edicion)
+    : edPaginasArrayConPortada(edicion);
+
+  return paginas
+    .filter(p => edMediaUrlPagina(p));
+}
+
 async function edBlobPngDesdeUrl(url) {
   const dataUrl = await edUrlToDataUrl(url);
 
@@ -4115,6 +4126,11 @@ function edMimeDesdeNombreArchivo(nombre = "") {
   if (s.endsWith(".webp")) return "image/webp";
   if (s.endsWith(".gif")) return "image/gif";
 
+  if (s.endsWith(".mp4")) return "video/mp4";
+  if (s.endsWith(".webm")) return "video/webm";
+  if (s.endsWith(".mov")) return "video/quicktime";
+  if (s.endsWith(".m4v")) return "video/x-m4v";
+
   if (s.endsWith(".pdf")) return "application/pdf";
 
   return "";
@@ -4127,6 +4143,12 @@ function edExtensionPorMime(mime = "") {
   if (t === "image/png") return "png";
   if (t === "image/webp") return "webp";
   if (t === "image/gif") return "gif";
+
+  if (t === "video/mp4") return "mp4";
+  if (t === "video/webm") return "webm";
+  if (t === "video/quicktime") return "mov";
+  if (t === "video/x-m4v") return "m4v";
+
   if (t === "application/pdf") return "pdf";
 
   return "";
@@ -5307,6 +5329,32 @@ async function edCrearFileDesdeUrl(url, nombre = "edicion.png") {
   });
 }
 
+async function edCrearFileMediaDesdeUrl(url, nombre = "edicion", tipoSugerido = "") {
+  if (!url) throw new Error("Falta URL del archivo.");
+
+  const blob = await edFetchBlobEdicion(
+    url,
+    "No pude preparar el archivo para compartir."
+  );
+
+  const tipo = String(
+    blob.type ||
+    tipoSugerido ||
+    edMimeDesdeNombreArchivo(url) ||
+    edMimeDesdeNombreArchivo(nombre) ||
+    "application/octet-stream"
+  )
+    .split(";")[0]
+    .trim();
+
+  const extension = edExtensionPorMime(tipo) || "bin";
+  const limpio = edSafeName(nombre || "edicion").replace(/\.[^.]+$/, "");
+
+  return new File([blob], `${limpio}.${extension}`, {
+    type: tipo
+  });
+}
+
 async function edCompartirPublicacionLink({ titulo, url, portadaUrl = "" }) {
   const tituloLimpio = String(titulo || "Edición").trim() || "Edición";
   const textoFallback = `${tituloLimpio}\n${url}`;
@@ -5503,9 +5551,9 @@ function edAsegurarModalCompartirEdicion() {
         </p>
 
         <div class="modal-actions">
-          <button type="button" id="edShareChoiceImagen" class="btn-primary">
-            <i class="fa-solid fa-image"></i>
-            Imagen
+<button type="button" id="edShareChoiceImagen" class="btn-primary">
+            <i class="fa-solid fa-photo-film"></i>
+            Imagen / video
           </button>
 
           <button type="button" id="edShareChoicePublicacion" class="btn-primary">
@@ -5614,10 +5662,10 @@ window.edCompartirImagenActualEdicion = async function edCompartirImagenActualEd
     return;
   }
 
-const paginas = edPaginasImagenesVisuales(ed);
+  const paginas = edPaginasCompartiblesVisuales(ed);
 
   if (!paginas.length) {
-    alert("Esta edición no tiene imágenes para compartir.");
+    alert("Esta edición no tiene archivos para compartir.");
     return;
   }
 
@@ -5625,10 +5673,12 @@ const paginas = edPaginasImagenesVisuales(ed);
   const indiceRaw = Number(edIndiceCompartirActual(id, contexto) || 0);
   const indice = Math.max(0, Math.min(indiceRaw, paginas.length - 1));
   const pagina = paginas[indice] || paginas[0];
-  const imagenUrl = edMediaUrlPagina(pagina);
 
-  if (!imagenUrl) {
-    alert("No encontré la imagen actual.");
+  const mediaUrl = edMediaUrlPagina(pagina);
+  const esVideo = edPaginaEsVideo(pagina);
+
+  if (!mediaUrl) {
+    alert("No encontré el archivo actual.");
     return;
   }
 
@@ -5640,40 +5690,67 @@ const paginas = edPaginasImagenesVisuales(ed);
     if (icono) icono.className = "fa-solid fa-spinner fa-spin";
 
     if (typeof mostrarToast === "function") {
-      mostrarToast("⏳ Preparando imagen para compartir...");
+      mostrarToast(
+        esVideo
+          ? "⏳ Preparando video para compartir..."
+          : "⏳ Preparando imagen para compartir..."
+      );
     }
 
-const file = await edCrearFileDesdeUrl(
-  imagenUrl,
-  `${titulo}_${indice + 1}`
-);
+    const tipoSugerido =
+      edMediaTypePagina(pagina) ||
+      edMimeDesdeNombreArchivo(mediaUrl) ||
+      (esVideo ? "video/mp4" : "image/png");
 
-if (edPuedeCompartirAndroid()) {
-  await edAndroidCompartirBlob(
-    file,
-    file.name || `${titulo}_${indice + 1}.png`,
-    file.type || "image/png"
-  );
+    const file = esVideo
+      ? await edCrearFileMediaDesdeUrl(
+          mediaUrl,
+          `${titulo}_${indice + 1}`,
+          tipoSugerido
+        )
+      : await edCrearFileDesdeUrl(
+          mediaUrl,
+          `${titulo}_${indice + 1}`
+        );
 
-  await edIncrementarStat(id, "compartidos");
-  return;
-}
+    if (edPuedeCompartirAndroid()) {
+      await edAndroidCompartirBlob(
+        file,
+        file.name || `${titulo}_${indice + 1}`,
+        file.type || tipoSugerido
+      );
 
-if (navigator.share && navigator.canShare?.({ files: [file] })) {
-  await navigator.share({
-    title: titulo,
-    files: [file]
-  });
+      await edIncrementarStat(id, "compartidos");
+      return;
+    }
 
-  await edIncrementarStat(id, "compartidos");
-  return;
-}
+    if (navigator.share && navigator.canShare?.({ files: [file] })) {
+      await navigator.share({
+        title: titulo,
+        files: [file]
+      });
+
+      await edIncrementarStat(id, "compartidos");
+      return;
+    }
+
+    if (navigator.share && esVideo) {
+      await navigator.share({
+        title: titulo,
+        text: titulo,
+        url: mediaUrl
+      });
+
+      await edIncrementarStat(id, "compartidos");
+      return;
+    }
 
     edDescargarFileFallback(file);
 
     alert(
-      "Este navegador no permite compartir la imagen directamente.\n\n" +
-      "Se descargó la imagen para que puedas compartirla manualmente."
+      esVideo
+        ? "Este navegador no permite compartir el video directamente.\n\nSe descargó el video para que puedas compartirlo manualmente."
+        : "Este navegador no permite compartir la imagen directamente.\n\nSe descargó la imagen para que puedas compartirla manualmente."
     );
 
   } catch (e) {
@@ -5681,8 +5758,13 @@ if (navigator.share && navigator.canShare?.({ files: [file] })) {
       return;
     }
 
-    console.error("No pude compartir la imagen actual:", e);
-    alert("No pude compartir la imagen actual.");
+    console.error("No pude compartir el archivo actual:", e);
+
+    alert(
+      esVideo
+        ? "No pude compartir el video actual."
+        : "No pude compartir la imagen actual."
+    );
 
   } finally {
     if (boton) boton.disabled = false;
@@ -5709,8 +5791,8 @@ window.edAbrirOpcionesCompartirEdicion = async function edAbrirOpcionesCompartir
     if (boton) boton.disabled = true;
     if (icono) icono.className = "fa-solid fa-spinner fa-spin";
 
-    if (opcion === "imagen") {
-      edShareSetTrabajando("Preparando imagen...");
+if (opcion === "imagen") {
+      edShareSetTrabajando("Preparando archivo...");
       await edCompartirImagenActualEdicion(id, contexto, boton);
       return;
     }
