@@ -4103,7 +4103,7 @@ function compRenderEdicion(item) {
           <button
             type="button"
             class="comp-sticker-whatsapp-btn"
-            onclick="vaAgregarStickersWhatsAppDesdeWeb?.('${compJs(edicionId)}', this)"
+onclick="window.edAgregarStickersWhatsApp ? window.edAgregarStickersWhatsApp('${compJs(edicionId)}', this) : alert('Para agregar este pack a WhatsApp, abrilo desde la app Android instalada.')"
             title="Agregar stickers a WhatsApp"
           >
             <i class="fa-brands fa-whatsapp"></i>
