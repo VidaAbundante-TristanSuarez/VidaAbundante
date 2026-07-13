@@ -3706,16 +3706,26 @@ function compRenderSubido(item) {
           </div>
         </div>
 
-        <div
-          class="comp-predica-abierta-wrap"
-          onclick="compTogglePredicaCompartidos('${compJs(subidoId)}', event)"
-          title="Tocar para desplegar"
-          role="button"
-        >
-          ${predicaHTML || `<div class="comp-post-empty">No pude cargar la prédica.</div>`}
-        </div>
+      <div
+  class="comp-predica-abierta-wrap"
+  onclick="compTogglePredicaCompartidos('${compJs(subidoId)}', event)"
+  title="Tocar para desplegar"
+  role="button"
+>
+  ${predicaHTML || `<div class="comp-post-empty">No pude cargar la prédica.</div>`}
+</div>
 
-        <div class="comp-post-actions">
+${
+  typeof window.subidosHtmlAudioPredica ===
+  "function"
+    ? window.subidosHtmlAudioPredica({
+        ...item,
+        id: subidoId
+      })
+    : ``
+}
+
+<div class="comp-post-actions">
           <button type="button" onclick="compartirSubido('${compJs(subidoId)}', this)" title="Compartir">
             <i class="fa-solid fa-share-nodes"></i>
           </button>
