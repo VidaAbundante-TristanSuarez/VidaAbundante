@@ -85,7 +85,9 @@ usarColor3: false,
 
 gradienteForma: "vertical",
     tabActiva: "fondo",         // "fondo" | "textura" | "adorno"
-    texturaUrl: null,
+    // Varias texturas pueden quedar activas al mismo tiempo.
+    texturasUrls: [],
+    texturaUrl: null, // compatibilidad interna con el sistema anterior
     texturaOp: 0.22,
     fuente: "Roboto",
 color: "#000000",
@@ -163,6 +165,7 @@ DEV.f2.usarColor2 = false;
 DEV.f2.usarColor3 = false;
 DEV.f2.gradienteForma = "vertical";
   DEV.f2.tabActiva = "fondo";
+  DEV.f2.texturasUrls = [];
   DEV.f2.texturaUrl = null;
   DEV.f2.texturaOp = 0.22;
   DEV.f2.fuente = "Roboto";
@@ -1764,18 +1767,88 @@ const adornosF2 = [
   { nombre: "Adorno 13", url: "./img/ornamentos/adorno13.png" }
 ];
 
+function devF2TexturasSeleccionadas() {
+  const actuales = Array.isArray(DEV.f2?.texturasUrls)
+    ? DEV.f2.texturasUrls
+    : [];
+
+  const heredada = String(DEV.f2?.texturaUrl || "").trim();
+
+  return Array.from(
+    new Set([
+      ...actuales.map(url => String(url || "").trim()).filter(Boolean),
+      ...(heredada ? [heredada] : [])
+    ])
+  );
+}
+
+function devF2GuardarTexturas(urls = []) {
+  const limpias = Array.from(
+    new Set(
+      (Array.isArray(urls) ? urls : [])
+        .map(url => String(url || "").trim())
+        .filter(Boolean)
+    )
+  );
+
+  DEV.f2.texturasUrls = limpias;
+  DEV.f2.texturaUrl = limpias[0] || null;
+}
+
+function devRecursosF2Administrados(categoria, base, nombreVacio) {
+  const baseLimpia = (Array.isArray(base) ? base : [])
+    .filter(item => item && item.url)
+    .map(item => ({
+      nombre: String(item.nombre || "Recurso"),
+      url: String(item.url || "").trim()
+    }))
+    .filter(item => item.url);
+
+  const administrados =
+    typeof window.vaFondosObtenerItems === "function"
+      ? window.vaFondosObtenerItems(categoria, false)
+          .map(item => ({
+            nombre: String(item?.nombre || "Recurso"),
+            url: String(item?.url || "").trim()
+          }))
+          .filter(item => item.url)
+      : baseLimpia;
+
+  return [
+    { nombre: nombreVacio, url: null },
+    ...administrados
+  ];
+}
+
 function cargarAdornosF2(){
   const cont = $("dev2Adornos");
   if (!cont) return;
 
   cont.innerHTML = "";
 
-  adornosF2.forEach(item=>{
-        const b = document.createElement("button");
+  const items = devRecursosF2Administrados(
+    "adornos",
+    adornosF2,
+    "Sin adorno"
+  );
+
+  const adornosPermitidos = new Set(
+    items.map(item => String(item?.url || "").trim()).filter(Boolean)
+  );
+
+  if (
+    DEV.f2.adornoUrl &&
+    !adornosPermitidos.has(DEV.f2.adornoUrl)
+  ) {
+    DEV.f2.adornoUrl = null;
+  }
+
+  items.forEach(item=>{
+    const b = document.createElement("button");
     b.type = "button";
     b.className = "dev-adorno-btn";
 
-       if (item.url) {
+    if (item.url) {
       b.textContent = "";
       const img = document.createElement("img");
       img.src = item.url;
@@ -1791,11 +1864,11 @@ function cargarAdornosF2(){
       b.innerHTML = `<i class="fa-solid fa-genderless"></i>`;
     }
 
-    // marcar activo
     const activo = (DEV.f2.adornoUrl === item.url);
     b.classList.toggle("activo", activo);
+    b.title = item.nombre;
 
-        b.onclick = ()=>{
+    b.onclick = ()=>{
       DEV.f2.adornoUrl = item.url;
 
       cont.querySelectorAll("button").forEach(x=>x.classList.remove("activo"));
@@ -1872,13 +1945,75 @@ const texturasF2 = [
   { nombre: "Textura 20", url: "./img/texturas/TEXTURA20.png" }
 ];
 
+
+function devRegistrarRecursosDecorativosEdiciones() {
+  const recursos = {
+    texturas: texturasF2
+      .map(item => String(item?.url || "").trim())
+      .filter(Boolean),
+
+    adornos: adornosF2
+      .map(item => String(item?.url || "").trim())
+      .filter(Boolean)
+  };
+
+  window.__VA_FONDOS_BASE_PENDIENTE =
+    window.__VA_FONDOS_BASE_PENDIENTE || {};
+
+  Object.entries(recursos).forEach(([categoria, urls]) => {
+    const actuales = Array.isArray(window.__VA_FONDOS_BASE_PENDIENTE[categoria])
+      ? window.__VA_FONDOS_BASE_PENDIENTE[categoria]
+      : [];
+
+    window.__VA_FONDOS_BASE_PENDIENTE[categoria] = Array.from(
+      new Set([
+        ...actuales,
+        ...(Array.isArray(urls) ? urls : [])
+      ])
+    );
+  });
+
+  window.vaFondosRegistrarBase?.(recursos);
+}
+
+if (!window.__DEV_RECURSOS_DECORATIVOS_EVENTO_ACTIVO) {
+  window.__DEV_RECURSOS_DECORATIVOS_EVENTO_ACTIVO = true;
+
+  window.addEventListener("va-fondos-actualizados", () => {
+    if (document.getElementById("dev2Texturas")) {
+      cargarTexturasF2();
+    }
+
+    if (document.getElementById("dev2Adornos")) {
+      cargarAdornosF2();
+    }
+  });
+}
+
+devRegistrarRecursosDecorativosEdiciones();
+
 function cargarTexturasF2(){
   const cont = $("dev2Texturas");
   if (!cont) return;
 
   cont.innerHTML = "";
 
-  texturasF2.forEach(item=>{
+  const items = devRecursosF2Administrados(
+    "texturas",
+    texturasF2,
+    "Sin textura"
+  );
+
+  const permitidas = new Set(
+    items.map(item => String(item?.url || "").trim()).filter(Boolean)
+  );
+
+  const seleccionadas = devF2TexturasSeleccionadas()
+    .filter(url => permitidas.has(url));
+
+  devF2GuardarTexturas(seleccionadas);
+
+  items.forEach(item=>{
     const b = document.createElement("button");
     b.type = "button";
     b.className = "dev-textura-btn";
@@ -1899,12 +2034,29 @@ function cargarTexturasF2(){
       b.innerHTML = `<i class="fa-solid fa-genderless"></i>`;
     }
 
-    b.classList.toggle("activo", DEV.f2.texturaUrl === item.url);
+    const activo = item.url
+      ? seleccionadas.includes(item.url)
+      : seleccionadas.length === 0;
+
+    b.classList.toggle("activo", activo);
+    b.title = item.url
+      ? `${item.nombre} · tocar para agregar o quitar`
+      : item.nombre;
 
     b.onclick = ()=>{
-      DEV.f2.texturaUrl = item.url;
-      cont.querySelectorAll("button").forEach(x=>x.classList.remove("activo"));
-      b.classList.add("activo");
+      if (!item.url) {
+        devF2GuardarTexturas([]);
+      } else {
+        const actuales = devF2TexturasSeleccionadas();
+
+        const nuevas = actuales.includes(item.url)
+          ? actuales.filter(url => url !== item.url)
+          : [item.url, ...actuales];
+
+        devF2GuardarTexturas(nuevas);
+      }
+
+      cargarTexturasF2();
       devRenderFase(2);
     };
 
@@ -2091,7 +2243,9 @@ function hexToRgb(hex){
 const DEV_CUENTAGOTAS_F2 = {
   color: "#000000",
   ctx: null,
-  arrastrando: false
+  arrastrando: false,
+  destino: "fondoF2",
+  destinoFondo: 1
 };
 
 function devRgbToHex(r, g, b){
@@ -2128,6 +2282,44 @@ function devEnsureBotonCuentagotasF2(){
       window.devAbrirCuentagotasF2();
     });
   }
+}
+
+function devEnsureBotonCuentagotasWrapperF1(){
+  if ($("devBtnCuentagotasWrapperF1")) return;
+
+  const host =
+    $("dev1OpColorHost") ||
+    $("dev1OpColor");
+
+  if (!host?.parentElement) return;
+
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.id = "devBtnCuentagotasWrapperF1";
+  btn.title = "Tomar color del fondo para el wrapper";
+  btn.setAttribute("aria-label", btn.title);
+  btn.innerHTML = `<i class="fa-solid fa-eye-dropper"></i>`;
+
+  btn.style.width = "36px";
+  btn.style.height = "36px";
+  btn.style.minWidth = "36px";
+  btn.style.padding = "0";
+  btn.style.border = "none";
+  btn.style.borderRadius = "999px";
+  btn.style.background = "var(--ui-azul-claro, #d1eeff)";
+  btn.style.color = "#000";
+  btn.style.display = "inline-flex";
+  btn.style.alignItems = "center";
+  btn.style.justifyContent = "center";
+  btn.style.cursor = "pointer";
+  btn.style.marginLeft = "6px";
+  btn.style.verticalAlign = "middle";
+
+  btn.onclick = () => {
+    window.devAbrirCuentagotasF2(1, "wrapperF1");
+  };
+
+  host.insertAdjacentElement("afterend", btn);
 }
 
 function devEnsureModalCuentagotasF2(){
@@ -2199,8 +2391,11 @@ function devCargarImagenCuentagotasF2(src){
   });
 }
 
-window.devAbrirCuentagotasF2 = async function(indiceFondo = 1){
-     DEV_CUENTAGOTAS_F2.destinoFondo = Number(indiceFondo || 1);
+window.devAbrirCuentagotasF2 = async function(indiceFondo = 1, destino = "fondoF2"){
+  DEV_CUENTAGOTAS_F2.destinoFondo = Number(indiceFondo || 1);
+  DEV_CUENTAGOTAS_F2.destino =
+    destino === "wrapperF1" ? "wrapperF1" : "fondoF2";
+
   const src = DEV.f1?.fondoBlob || DEV.f1?.fondoUrl || "";
 
   if (!src) {
@@ -2331,6 +2526,26 @@ window.devAbrirCuentagotasF2 = async function(indiceFondo = 1){
 
 window.devAplicarCuentagotasF2 = function(tipo){
   const hex = DEV_CUENTAGOTAS_F2.color || "#000000";
+
+  if (
+    DEV_CUENTAGOTAS_F2.destino === "wrapperF1" ||
+    tipo === "wrapperF1"
+  ) {
+    DEV.f1.opColor = hex;
+
+    const inp = $("dev1OpColor");
+
+    if (inp) {
+      inp.value = hex;
+      inp.dispatchEvent(new Event("input", { bubbles:true }));
+      inp.dispatchEvent(new Event("change", { bubbles:true }));
+    }
+
+    devSetHostColorVisual("dev1OpColorHost", hex);
+    devRenderFase(1);
+    cerrarModal("modalDevCuentagotasF2");
+    return;
+  }
 
   if (tipo === "fondoActual") {
     const indice = Number(DEV_CUENTAGOTAS_F2.destinoFondo || 1);
@@ -3505,6 +3720,8 @@ window.dev2ToggleColor3 = function(){
 
 function devRenderFase(fase){
   if (fase === 1) {
+    devEnsureBotonCuentagotasWrapperF1();
+
     const p = $("dev1Preview");
     const w = $("dev1TextoWrapper");
     const t = $("dev1Texto");
@@ -3543,6 +3760,8 @@ return;
   }
 
 if (fase === 2) {
+  devEnsureBotonCuentagotasF2();
+
   const p = $("dev2Preview");
   const w = $("dev2TextoWrapper");
   const t = $("dev2Texto");
@@ -3578,15 +3797,31 @@ p.style.backgroundBlendMode = "normal";
   if (layer) {
     const op = Math.max(0, Math.min(1, Number(st.texturaOp ?? 0.22)));
 
-if (st.texturaUrl) {
+const texturasActivas = devF2TexturasSeleccionadas();
+
+if (texturasActivas.length) {
   layer.style.display = "block";
-  layer.style.backgroundImage = `url("${st.texturaUrl}")`;
+  layer.style.backgroundImage = texturasActivas
+    .map(url => `url("${url}")`)
+    .join(", ");
+  layer.style.backgroundSize = texturasActivas
+    .map(() => "cover")
+    .join(", ");
+  layer.style.backgroundPosition = texturasActivas
+    .map(() => "center")
+    .join(", ");
+  layer.style.backgroundRepeat = texturasActivas
+    .map(() => "no-repeat")
+    .join(", ");
   layer.style.opacity = String(op);
   layer.style.mixBlendMode = "normal";
   layer.style.filter = "none";
 } else {
   layer.style.display = "none";
   layer.style.backgroundImage = "none";
+  layer.style.backgroundSize = "";
+  layer.style.backgroundPosition = "";
+  layer.style.backgroundRepeat = "";
   layer.style.opacity = "0";
   layer.style.mixBlendMode = "normal";
   layer.style.filter = "none";
@@ -3831,14 +4066,24 @@ texto.innerHTML = buildFase1HTML(st.size, 1);
     node.style.borderRadius = "0";
     dev2AplicarFondoBase(node, st);
 
-    if (st.texturaUrl) {
+    const texturasActivas = devF2TexturasSeleccionadas();
+
+    if (texturasActivas.length) {
       const textureLayer = document.createElement("div");
       textureLayer.style.position = "absolute";
       textureLayer.style.inset = "0";
-      textureLayer.style.backgroundImage = `url("${st.texturaUrl}")`;
-      textureLayer.style.backgroundSize = "cover";
-      textureLayer.style.backgroundPosition = "center";
-      textureLayer.style.backgroundRepeat = "no-repeat";
+      textureLayer.style.backgroundImage = texturasActivas
+        .map(url => `url("${url}")`)
+        .join(", ");
+      textureLayer.style.backgroundSize = texturasActivas
+        .map(() => "cover")
+        .join(", ");
+      textureLayer.style.backgroundPosition = texturasActivas
+        .map(() => "center")
+        .join(", ");
+      textureLayer.style.backgroundRepeat = texturasActivas
+        .map(() => "no-repeat")
+        .join(", ");
       textureLayer.style.opacity = String(
         Math.max(0, Math.min(1, Number(st.texturaOp ?? 0.22)))
       );
