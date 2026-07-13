@@ -6650,3 +6650,106 @@ document.addEventListener("DOMContentLoaded", () => {
 window.addEventListener("hashchange", () => {
   subidosAbrirDesdeHash();
 });
+
+// =========================================================
+// BOTONES FIJOS DEL MODAL DE SUBIDOS
+// Guardar, Cancelar y estado siempre visibles.
+// =========================================================
+
+function subidosAsegurarFooterFijo() {
+  const modal =
+    document.getElementById("modalSubidos");
+
+  const card =
+    modal?.querySelector(".modal-card");
+
+  const btnGuardar =
+    document.getElementById(
+      "btnGuardarSubido"
+    );
+
+  const estado =
+    document.getElementById(
+      "subidosEstado"
+    );
+
+  const filaBotones =
+    btnGuardar?.parentElement;
+
+  /*
+    En tu HTML:
+    - primer hijo de modal-card = encabezado
+    - segundo hijo = contenido con scroll
+  */
+  const cuerpoScroll =
+    card?.children?.[1];
+
+  if (
+    !modal ||
+    !card ||
+    !btnGuardar ||
+    !filaBotones ||
+    !cuerpoScroll
+  ) {
+    return;
+  }
+
+  cuerpoScroll.classList.add(
+    "subidos-modal-scroll"
+  );
+
+  let footer =
+    document.getElementById(
+      "subidosFooterFijo"
+    );
+
+  if (!footer) {
+    footer =
+      document.createElement("div");
+
+    footer.id =
+      "subidosFooterFijo";
+
+    footer.className =
+      "subidos-modal-footer-fijo";
+
+    card.appendChild(footer);
+  }
+
+  /*
+    Movemos el estado y los botones
+    afuera de la zona que hace scroll.
+  */
+  if (
+    estado &&
+    estado.parentElement !== footer
+  ) {
+    footer.appendChild(estado);
+  }
+
+  if (
+    filaBotones.parentElement !== footer
+  ) {
+    footer.appendChild(
+      filaBotones
+    );
+  }
+
+  filaBotones.classList.add(
+    "subidos-modal-footer-botones"
+  );
+}
+
+/*
+  Lo hacemos inmediatamente y también
+  cuando termina de cargar la página.
+*/
+setTimeout(
+  subidosAsegurarFooterFijo,
+  0
+);
+
+window.addEventListener(
+  "load",
+  subidosAsegurarFooterFijo
+);
