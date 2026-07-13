@@ -247,6 +247,220 @@ function audioPrepararTextoParaTTS(txt = "") {
   return out;
 }
 
+// =========================================================
+// TEXTOS LARGOS: DIVIDIR SIN SUPERAR EL LÍMITE DE GOOGLE TTS
+// Google acepta como máximo 5000 bytes por solicitud.
+// Usamos 4300 bytes para dejar margen con tildes y signos.
+// =========================================================
+const AUDIO_TTS_MAX_BYTES = 4300;
+
+function audioCantidadBytes(texto = "") {
+  return new TextEncoder().encode(String(texto || "")).length;
+}
+
+function audioPartirUnidadPorBytes(unidad = "", maxBytes = AUDIO_TTS_MAX_BYTES) {
+  const palabras = String(unidad || "").trim().split(/\s+/).filter(Boolean);
+  const partes = [];
+  let actual = "";
+
+  palabras.forEach(palabra => {
+    const candidato = actual ? `${actual} ${palabra}` : palabra;
+
+    if (audioCantidadBytes(candidato) <= maxBytes) {
+      actual = candidato;
+      return;
+    }
+
+    if (actual) {
+      partes.push(actual);
+      actual = "";
+    }
+
+    /*
+      Caso muy raro: una sola “palabra” supera el límite.
+      La cortamos por caracteres sin romper Unicode.
+    */
+    if (audioCantidadBytes(palabra) > maxBytes) {
+      let trozo = "";
+
+      for (const caracter of palabra) {
+        const nuevo = trozo + caracter;
+
+        if (audioCantidadBytes(nuevo) > maxBytes) {
+          if (trozo) partes.push(trozo);
+          trozo = caracter;
+        } else {
+          trozo = nuevo;
+        }
+      }
+
+      if (trozo) actual = trozo;
+    } else {
+      actual = palabra;
+    }
+  });
+
+  if (actual) partes.push(actual);
+  return partes;
+}
+
+function audioPartirTextoPorBytes(texto = "", maxBytes = AUDIO_TTS_MAX_BYTES) {
+  const limpio = String(texto || "").trim();
+
+  if (!limpio) return [];
+  if (audioCantidadBytes(limpio) <= maxBytes) return [limpio];
+
+  /*
+    Primero intentamos respetar finales de oración.
+    Si una oración sola es demasiado larga, se divide por palabras.
+  */
+  const unidades =
+    limpio.match(/[^.!?;:\n]+[.!?;:\n]*/g) || [limpio];
+
+  const partes = [];
+  let actual = "";
+
+  unidades.forEach(unidadBruta => {
+    const unidad = String(unidadBruta || "").trim();
+    if (!unidad) return;
+
+    const subPartes =
+      audioCantidadBytes(unidad) > maxBytes
+        ? audioPartirUnidadPorBytes(unidad, maxBytes)
+        : [unidad];
+
+    subPartes.forEach(subParte => {
+      const candidato = actual ? `${actual} ${subParte}` : subParte;
+
+      if (audioCantidadBytes(candidato) <= maxBytes) {
+        actual = candidato;
+      } else {
+        if (actual) partes.push(actual);
+        actual = subParte;
+      }
+    });
+  });
+
+  if (actual) partes.push(actual);
+
+  return partes.filter(Boolean);
+}
+
+function audioBase64ABytes(base64 = "") {
+  const binario = atob(String(base64 || ""));
+  const bytes = new Uint8Array(binario.length);
+
+  for (let i = 0; i < binario.length; i++) {
+    bytes[i] = binario.charCodeAt(i);
+  }
+
+  return bytes;
+}
+
+function audioQuitarId3Inicial(bytes) {
+  if (
+    !bytes ||
+    bytes.length < 10 ||
+    bytes[0] !== 0x49 ||
+    bytes[1] !== 0x44 ||
+    bytes[2] !== 0x33
+  ) {
+    return bytes;
+  }
+
+  const tamano =
+    ((bytes[6] & 0x7f) << 21) |
+    ((bytes[7] & 0x7f) << 14) |
+    ((bytes[8] & 0x7f) << 7) |
+    (bytes[9] & 0x7f);
+
+  const inicioAudio = 10 + tamano;
+
+  return inicioAudio < bytes.length
+    ? bytes.slice(inicioAudio)
+    : bytes;
+}
+
+function audioBytesABase64(bytes) {
+  let binario = "";
+  const paso = 0x8000;
+
+  for (let i = 0; i < bytes.length; i += paso) {
+    const trozo = bytes.subarray(i, Math.min(i + paso, bytes.length));
+    binario += String.fromCharCode(...trozo);
+  }
+
+  return btoa(binario);
+}
+
+function audioUnirMp3Base64(listaBase64 = []) {
+  const partes = listaBase64
+    .filter(Boolean)
+    .map((base64, indice) => {
+      const bytes = audioBase64ABytes(base64);
+
+      /*
+        Conservamos la cabecera ID3 del primer archivo.
+        En los siguientes la quitamos para evitar cortes raros.
+      */
+      return indice === 0
+        ? bytes
+        : audioQuitarId3Inicial(bytes);
+    });
+
+  const total = partes.reduce((suma, bytes) => suma + bytes.length, 0);
+  const unido = new Uint8Array(total);
+
+  let offset = 0;
+
+  partes.forEach(bytes => {
+    unido.set(bytes, offset);
+    offset += bytes.length;
+  });
+
+  return audioBytesABase64(unido);
+}
+
+async function audioPedirParteTTS({
+  texto = "",
+  action = "ttsSeco",
+  voiceName = AUDIO_VOZ_BIBLIA
+} = {}) {
+  const body =
+    action === "tts"
+      ? {
+          action: "tts",
+          texto,
+          voiceName
+        }
+      : {
+          action: "ttsSeco",
+          texto,
+          voiceName,
+          languageCode: "es-US"
+        };
+
+  const r = await fetch(AUDIO_WEBAPP_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(body)
+  });
+
+  const data = await r.json().catch(() => ({}));
+
+  if (!r.ok) {
+    throw new Error(data?.error || "Error HTTP " + r.status);
+  }
+
+  if (!data.audioBase64) {
+    throw new Error("No devolvió audioBase64");
+  }
+
+  return data.audioBase64;
+}
+
 function audioContextoActual() {
   const modalImagen = document.getElementById("modalPersonalizar");
 
@@ -531,38 +745,50 @@ window.escucharPreviaAudio = async () => {
             : "🎧 Generando previa devocional con arpa...";
     }
 
-    const body = esBibliaSeco
-      ? {
-          action: "ttsSeco",
-          texto: textoLimpio,
-          voiceName,
-          languageCode: "es-US"
-        }
-      : {
-          action: "tts",
-          texto: textoLimpio,
-          voiceName
-        };
+    /*
+      Google TTS no acepta más de 5000 bytes por solicitud.
+      Las prédicas largas se dividen automáticamente.
 
-    const r = await fetch(AUDIO_WEBAPP_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(body)
-    });
+      - Biblia/notas: todas las partes se generan sin arpa.
+      - Devocional/prédica: la PRIMERA parte lleva arpa.
+      - Las siguientes partes usan la misma voz Wavenet, pero sin
+        repetir el arpa.
+    */
+    const partesTexto = audioPartirTextoPorBytes(textoLimpio);
+    const audiosPartes = [];
 
-    const data = await r.json().catch(() => ({}));
+    for (let i = 0; i < partesTexto.length; i++) {
+      if (estado && partesTexto.length > 1) {
+        estado.textContent =
+          `🎧 Generando parte ${i + 1} de ${partesTexto.length}...`;
+      }
 
-    if (!r.ok) {
-      throw new Error(data?.error || "Error HTTP " + r.status);
+      const action =
+        esBibliaSeco
+          ? "ttsSeco"
+          : i === 0
+            ? "tts"
+            : "ttsSeco";
+
+      const audioParte = await audioPedirParteTTS({
+        texto: partesTexto[i],
+        action,
+        voiceName
+      });
+
+      audiosPartes.push(audioParte);
     }
 
-    if (!data.audioBase64) {
-      throw new Error("No devolvió audioBase64");
-    }
+    const audioBase64Final =
+      audiosPartes.length === 1
+        ? audiosPartes[0]
+        : audioUnirMp3Base64(audiosPartes);
 
-    window.__audioBase64 = data.audioBase64;
+    const data = {
+      audioBase64: audioBase64Final
+    };
+
+    window.__audioBase64 = audioBase64Final;
 
     // Registrar uso solo cuando el audio fue generado de verdad.
     if (!audioEsAdmin() && audioEsColaborador()) {
@@ -631,8 +857,12 @@ window.escucharPreviaAudio = async () => {
     console.error(e);
 
     if (estado) {
+      const mensaje = String(e?.message || "");
+
       estado.textContent =
-        "❌ No se pudo generar la previa real.";
+        mensaje.includes("5000 bytes")
+          ? "❌ El texto sigue siendo demasiado largo para el servicio de voz."
+          : "❌ No se pudo generar la previa real.";
     }
   }
 };
