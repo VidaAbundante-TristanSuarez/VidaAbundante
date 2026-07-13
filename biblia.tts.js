@@ -612,49 +612,90 @@ const BIBLIA_ARPA_VOLUME = ES_MOVIL ? 0.075 : 0.06;
     }
   }
 
-  function initBibliaTTS() {
-    const btn = getBtn();
-    if (!btn) return;
+let bibliaTTSInitOK = false;
+let bibliaTTSInitIntentos = 0;
 
-    setBoton("detenido");
+function initBibliaTTS() {
+  if (bibliaTTSInitOK) return;
 
-    btn.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      togglePlayPausa();
-    });
+  const btn = getBtn();
 
-    document.addEventListener("click", clickVersiculo, true);
-    document.addEventListener("click", detenerAlCambiarCapituloOVersion, true);
+  /*
+    En la APK a veces Biblia termina de dibujarse después
+    de que este archivo ya cargó. Si el botón todavía no existe,
+    esperamos y volvemos a intentar.
+  */
+  if (!btn) {
+    bibliaTTSInitIntentos++;
 
-    document.addEventListener("change", (e) => {
-      if (e.target?.matches?.("#libro, #capitulo")) {
-        detenerBibliaTTS(true);
-      }
-    });
+    if (bibliaTTSInitIntentos <= 80) {
+      setTimeout(initBibliaTTS, 250);
+    }
 
-    document.addEventListener("visibilitychange", () => {
-      if (document.hidden) {
-        detenerBibliaTTS(true);
-      } else {
-        setTimeout(() => {
-          restaurarUltimoVersiculoTTS({ scroll: false });
-        }, 300);
-      }
-    });
-
-    window.addEventListener("beforeunload", () => {
-      detenerBibliaTTS(true);
-    });
-
-    window.detenerBibliaTTS = detenerBibliaTTS;
-    window.reproducirBibliaDesdeInicio = () => reproducirDesde(0);
-         programarRestaurarUltimoTTS();
+    return;
   }
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", initBibliaTTS);
-  } else {
+  bibliaTTSInitOK = true;
+
+  setBoton("detenido");
+
+  btn.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    togglePlayPausa();
+  });
+
+  document.addEventListener("click", clickVersiculo, true);
+  document.addEventListener("click", detenerAlCambiarCapituloOVersion, true);
+
+  document.addEventListener("change", (e) => {
+    if (e.target?.matches?.("#libro, #capitulo")) {
+      detenerBibliaTTS(true);
+    }
+  });
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+      detenerBibliaTTS(true);
+    } else {
+      setTimeout(() => {
+        restaurarUltimoVersiculoTTS({ scroll: false });
+      }, 300);
+    }
+  });
+
+  window.addEventListener("beforeunload", () => {
+    detenerBibliaTTS(true);
+  });
+
+  window.detenerBibliaTTS = detenerBibliaTTS;
+  window.reproducirBibliaDesdeInicio = () => reproducirDesde(0);
+
+  programarRestaurarUltimoTTS();
+}
+
+function arrancarInitBibliaTTS() {
+  setTimeout(initBibliaTTS, 0);
+  setTimeout(initBibliaTTS, 400);
+  setTimeout(initBibliaTTS, 1200);
+  setTimeout(initBibliaTTS, 2500);
+}
+
+/*
+  Si el usuario toca el botón muy rápido en APK,
+  este pointerdown engancha el lector antes del click real.
+*/
+document.addEventListener("pointerdown", () => {
+  if (!bibliaTTSInitOK) {
     initBibliaTTS();
   }
+}, true);
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", arrancarInitBibliaTTS);
+} else {
+  arrancarInitBibliaTTS();
+}
+
+window.addEventListener("load", arrancarInitBibliaTTS);
 })();
