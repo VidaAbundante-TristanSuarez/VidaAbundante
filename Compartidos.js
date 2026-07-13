@@ -601,11 +601,147 @@ async function compBlobDesdeUrl(url) {
   return { blob, tipo };
 }
 
+/* =========================================================
+   APK ANDROID: COMPARTIR / DESCARGAR DESDE COMPARTIDOS
+   ========================================================= */
+function compEsAPKAndroid(){
+  try {
+    return !!(
+      window.AndroidVida &&
+      (
+        typeof window.AndroidVida.compartirArchivoBase64 === "function" ||
+        typeof window.AndroidVida.descargarArchivoBase64 === "function"
+      )
+    );
+  } catch(e) {
+    return false;
+  }
+}
+
+function compPuedeDescargarAndroid(){
+  return !!(
+    window.AndroidVida &&
+    typeof window.AndroidVida.descargarArchivoBase64 === "function"
+  );
+}
+
+function compPuedeCompartirAndroid(){
+  return !!(
+    window.AndroidVida &&
+    typeof window.AndroidVida.compartirArchivoBase64 === "function"
+  );
+}
+
+function compMimeDesdeNombreArchivo(nombre = "") {
+  const s = String(nombre || "").toLowerCase();
+
+  if (s.endsWith(".jpg") || s.endsWith(".jpeg")) return "image/jpeg";
+  if (s.endsWith(".png")) return "image/png";
+  if (s.endsWith(".webp")) return "image/webp";
+  if (s.endsWith(".gif")) return "image/gif";
+
+  if (s.endsWith(".mp4")) return "video/mp4";
+  if (s.endsWith(".webm")) return "video/webm";
+  if (s.endsWith(".mov")) return "video/quicktime";
+
+  if (s.endsWith(".pdf")) return "application/pdf";
+
+  return "";
+}
+
+function compExtensionPorMime(mime = "") {
+  const t = String(mime || "").toLowerCase().split(";")[0].trim();
+
+  if (t === "image/jpeg") return "jpg";
+  if (t === "image/png") return "png";
+  if (t === "image/webp") return "webp";
+  if (t === "image/gif") return "gif";
+
+  if (t === "video/mp4") return "mp4";
+  if (t === "video/webm") return "webm";
+  if (t === "video/quicktime") return "mov";
+
+  if (t === "application/pdf") return "pdf";
+
+  return "";
+}
+
+function compNombreArchivoAndroid(nombre = "archivo", mime = "") {
+  let limpio = String(nombre || "archivo")
+    .trim()
+    .replace(/[\/\\:*?"<>|]/g, "_")
+    .replace(/\s+/g, "_")
+    .slice(0, 120) || "archivo";
+
+  if (/\.[a-z0-9]{2,6}$/i.test(limpio)) {
+    return limpio;
+  }
+
+  const ext = compExtensionPorMime(mime);
+  return ext ? `${limpio}.${ext}` : limpio;
+}
+
+function compBlobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      const res = String(reader.result || "");
+      resolve(res.includes(",") ? res.split(",")[1] : res);
+    };
+
+    reader.onerror = () => {
+      reject(new Error("No pude preparar el archivo para Android."));
+    };
+
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function compAndroidDescargarBlob(blob, fileName = "archivo", tipo = "") {
+  const mime =
+    String(tipo || blob?.type || compMimeDesdeNombreArchivo(fileName) || "application/octet-stream")
+      .split(";")[0]
+      .trim();
+
+  const nombre = compNombreArchivoAndroid(fileName, mime);
+  const blobFinal = blob.type === mime ? blob : blob.slice(0, blob.size, mime);
+  const base64 = await compBlobToBase64(blobFinal);
+
+  window.AndroidVida.descargarArchivoBase64(
+    nombre,
+    mime,
+    base64
+  );
+}
+
+async function compAndroidCompartirBlob(blob, fileName = "archivo", tipo = "") {
+  const mime =
+    String(tipo || blob?.type || compMimeDesdeNombreArchivo(fileName) || "application/octet-stream")
+      .split(";")[0]
+      .trim();
+
+  const nombre = compNombreArchivoAndroid(fileName, mime);
+  const blobFinal = blob.type === mime ? blob : blob.slice(0, blob.size, mime);
+  const base64 = await compBlobToBase64(blobFinal);
+
+  window.AndroidVida.compartirArchivoBase64(
+    nombre,
+    mime,
+    base64
+  );
+}
+
 window.compDescargarUrl = async function compDescargarUrl(url, fileName = "imagen.png") {
   try {
     if (!url) return;
 
-    const { blob } = await compBlobDesdeUrl(url);
+    const { blob, tipo } = await compBlobDesdeUrl(url);
+
+    if (compPuedeDescargarAndroid()) {
+      await compAndroidDescargarBlob(blob, fileName || "imagen.png", tipo);
+      return;
+    }
 
     const a = document.createElement("a");
     const objectUrl = URL.createObjectURL(blob);
@@ -622,8 +758,14 @@ window.compDescargarUrl = async function compDescargarUrl(url, fileName = "image
 
   } catch (e) {
     console.error(e);
-    alert("No pude descargar el archivo. Voy a abrirlo para que puedas guardarlo.");
-    window.open(url, "_blank");
+
+    if (!compEsAPKAndroid()) {
+      alert("No pude descargar el archivo. Voy a abrirlo para que puedas guardarlo.");
+      window.open(url, "_blank");
+      return;
+    }
+
+    alert("No pude descargar el archivo.");
   }
 };
 
@@ -632,9 +774,22 @@ window.compCompartirUrl = async function compCompartirUrl(url, fileName = "image
     if (!url) return;
 
     const { blob, tipo } = await compBlobDesdeUrl(url);
-    const file = new File([blob], fileName || "imagen.png", { type: tipo });
 
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    if (compPuedeCompartirAndroid()) {
+      await compAndroidCompartirBlob(blob, fileName || "imagen.png", tipo);
+      return;
+    }
+
+    const mime =
+      String(tipo || compMimeDesdeNombreArchivo(fileName) || "application/octet-stream")
+        .split(";")[0]
+        .trim();
+
+    const nombre = compNombreArchivoAndroid(fileName || "imagen.png", mime);
+    const blobFinal = blob.type === mime ? blob : blob.slice(0, blob.size, mime);
+    const file = new File([blobFinal], nombre, { type: mime });
+
+    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
       await navigator.share({
         files: [file],
         title: "Vida Abundante"
