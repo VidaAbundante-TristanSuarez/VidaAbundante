@@ -1,6 +1,80 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+
+ <script id="va-apk-boot-guard">
+(function(){
+  try {
+    var params = new URLSearchParams(location.search || "");
+    var ua = navigator.userAgent || "";
+
+    var esAPK =
+      params.get("apk") === "1" ||
+      params.get("android") === "1" ||
+      /VidaAbundanteAndroidApp/i.test(ua) ||
+      localStorage.getItem("vida_abundante_android_apk") === "1";
+
+    if (!esAPK) return;
+
+    window.__VIDA_ANDROID_APK__ = true;
+
+    localStorage.setItem("vida_abundante_android_apk", "1");
+    localStorage.setItem("vaPwaPromptOculto", "1");
+    localStorage.setItem("vaInstalarModalVisto", "1");
+    localStorage.setItem("vaAppInstalada", "1");
+    localStorage.setItem("vaTipInstalarAppVisto", "1");
+
+    document.documentElement.classList.add("vida-android-apk");
+
+    var st = document.createElement("style");
+    st.id = "va-apk-boot-style";
+    st.textContent = `
+      html.vida-android-apk #vaTipInstalarApp,
+      html.vida-android-apk #appInstallModal,
+      html.vida-android-apk #modalInstalarApp,
+      html.vida-android-apk #pwaInstallModal,
+      html.vida-android-apk .app-install-modal,
+      html.vida-android-apk .modal-instalar-app,
+      html.vida-android-apk .pwa-install-modal,
+      body.vida-android-apk #vaTipInstalarApp,
+      body.vida-android-apk #appInstallModal,
+      body.vida-android-apk #modalInstalarApp,
+      body.vida-android-apk #pwaInstallModal,
+      body.vida-android-apk .app-install-modal,
+      body.vida-android-apk .modal-instalar-app,
+      body.vida-android-apk .pwa-install-modal{
+        display:none!important;
+        visibility:hidden!important;
+        opacity:0!important;
+        pointer-events:none!important;
+      }
+    `;
+    document.head.appendChild(st);
+
+    document.addEventListener("DOMContentLoaded", function(){
+      try {
+        document.body.classList.add("vida-android-apk");
+
+        [
+          "#vaTipInstalarApp",
+          "#appInstallModal",
+          "#modalInstalarApp",
+          "#pwaInstallModal",
+          ".app-install-modal",
+          ".modal-instalar-app",
+          ".pwa-install-modal"
+        ].forEach(function(sel){
+          document.querySelectorAll(sel).forEach(function(el){
+            try { el.remove(); } catch(e) {}
+          });
+        });
+      } catch(e) {}
+    });
+
+  } catch(e) {}
+})();
+</script>
+ 
 <!-- ================= CONFIGURACIÓN BÁSICA ================= -->
 <meta charset="UTF-8" />
 <title>Vida Abundante</title>
