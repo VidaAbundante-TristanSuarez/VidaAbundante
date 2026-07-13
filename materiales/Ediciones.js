@@ -4118,6 +4118,20 @@ function edPuedeCompartirAndroid() {
   );
 }
 
+function edPuedeCompartirAndroidConTexto() {
+  return !!(
+    window.AndroidVida &&
+    typeof window.AndroidVida.compartirArchivoBase64ConTexto === "function"
+  );
+}
+
+function edPuedeCompartirTextoAndroid() {
+  return !!(
+    window.AndroidVida &&
+    typeof window.AndroidVida.compartirTexto === "function"
+  );
+}
+
 function edMimeDesdeNombreArchivo(nombre = "") {
   const s = String(nombre || "").toLowerCase();
 
@@ -4217,6 +4231,31 @@ async function edAndroidCompartirBlob(blob, fileName = "archivo", tipo = "") {
     nombre,
     mime,
     base64
+  );
+}
+
+async function edAndroidCompartirBlobConTexto(blob, fileName = "archivo", tipo = "", texto = "") {
+  const mime =
+    String(tipo || blob?.type || edMimeDesdeNombreArchivo(fileName) || "application/octet-stream")
+      .split(";")[0]
+      .trim();
+
+  const nombre = edNombreArchivoAndroid(fileName, mime);
+  const blobFinal = blob.type === mime ? blob : blob.slice(0, blob.size, mime);
+  const base64 = await edBlobToBase64(blobFinal);
+
+  window.AndroidVida.compartirArchivoBase64ConTexto(
+    nombre,
+    mime,
+    base64,
+    String(texto || "")
+  );
+}
+
+function edAndroidCompartirTexto(titulo = "Vida Abundante", texto = "") {
+  window.AndroidVida.compartirTexto(
+    String(titulo || "Vida Abundante"),
+    String(texto || "")
   );
 }
 
@@ -5359,8 +5398,46 @@ async function edCompartirPublicacionLink({ titulo, url, portadaUrl = "" }) {
   const tituloLimpio = String(titulo || "Edición").trim() || "Edición";
   const textoFallback = `${tituloLimpio}\n${url}`;
 
-  // ✅ WhatsApp / compartir móvil:
-  // mandamos portada como imagen adjunta + texto con link.
+  /*
+    APK Android:
+    acá hacemos lo mismo que la PWA:
+    portada como imagen + texto con link.
+  */
+  if (edPuedeCompartirAndroidConTexto() && portadaUrl) {
+    try {
+      const portadaFile = await edCrearFileDesdeUrl(
+        portadaUrl,
+        `${tituloLimpio}_portada.png`
+      );
+
+      await edAndroidCompartirBlobConTexto(
+        portadaFile,
+        portadaFile.name || `${tituloLimpio}_portada.png`,
+        portadaFile.type || "image/png",
+        textoFallback
+      );
+
+      return "archivo-link";
+
+    } catch (e) {
+      console.warn("No pude compartir portada + link en Android, pruebo solo link:", e);
+    }
+  }
+
+  /*
+    APK Android, respaldo:
+    si no hay portada o falló la portada, al menos abrimos
+    el modal nativo para compartir el link.
+  */
+  if (edPuedeCompartirTextoAndroid()) {
+    edAndroidCompartirTexto(tituloLimpio, textoFallback);
+    return "link";
+  }
+
+  /*
+    PWA / navegador:
+    comportamiento normal.
+  */
   if (navigator.share && portadaUrl) {
     try {
       const portadaFile = await edCrearFileDesdeUrl(
