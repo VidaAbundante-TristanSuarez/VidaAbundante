@@ -114,7 +114,8 @@ const COMP_EDICIONES_SUBFILTROS = [
   { id: "todo", label: "Todo" },
   { id: "flyers", label: "Flyers" },
   { id: "libros", label: "Libros" },
-  { id: "videos", label: "Videos" }
+  { id: "videos", label: "Videos" },
+  { id: "stickers", label: "Stickers" }
 ];
 
 function compNormalizarCategoriaEdicion(v = "") {
@@ -129,10 +130,9 @@ function compNormalizarCategoriaEdicion(v = "") {
 
   if (["libro", "libros"].includes(s)) return "libros";
   if (["video", "videos"].includes(s)) return "videos";
+  if (["sticker", "stickers", "stiker", "stikers", "pegatina", "pegatinas"].includes(s)) return "stickers";
   if (["flyer", "flyers", "volante", "volantes"].includes(s)) return "flyers";
 
-  // ✅ Las categorías que quitamos NO rompen Compartidos.
-  // Siguen apareciendo en Todo, pero no entran en Flyers/Libros/Videos.
   return "";
 }
 
