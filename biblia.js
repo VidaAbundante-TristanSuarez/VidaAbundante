@@ -2121,13 +2121,7 @@ if (typeof window.irA === "function") {
 
 // ✅ En links directos no mostramos cartel de instalar app.
 // En iPhone puede molestar y sumar carga visual justo al abrir desde WhatsApp.
-if (vaEsAndroidAPK()) {
-  try {
-    localStorage.setItem("vida_abundante_android_apk", "1");
-    localStorage.setItem("vaTipInstalarAppVisto", "1");
-    document.getElementById("vaTipInstalarApp")?.remove();
-  } catch (e) {}
-} else if (!vaHayLinkDirectoInterno()) {
+if (vaDebeMostrarConsejoInstalarApp()) {
   vaMostrarConsejoInstalarApp();
 }
     } catch (e) {
@@ -2165,33 +2159,39 @@ function vaTextoInstalarApp() {
   `;
 }
 
-function vaMostrarConsejoInstalarApp() {
+function vaDebeMostrarConsejoInstalarApp() {
   const esAPK =
     window.__VIDA_ANDROID_APK__ === true ||
     document.documentElement.classList.contains("vida-android-apk") ||
     document.body?.classList.contains("vida-android-apk") ||
     new URLSearchParams(location.search).get("apk") === "1" ||
+    new URLSearchParams(location.search).get("android") === "1" ||
+    /VidaAbundanteAndroidApp/i.test(navigator.userAgent || "") ||
     localStorage.getItem("vida_abundante_android_apk") === "1";
 
-  if (esAPK) {
-    return false;
-  }
-  
-  if (vaEsAndroidAPK()) {
-    try {
-      localStorage.setItem(VA_TIP_APP_KEY, "1");
-      localStorage.setItem("vida_abundante_android_apk", "1");
-      document.getElementById("vaTipInstalarApp")?.remove();
-    } catch (e) {}
-    return;
-  }
+  if (esAPK) return false;
 
-  if (vaEsStandalone()) return;
-  if (localStorage.getItem(VA_TIP_APP_KEY) === "1") return;
-  if (document.getElementById("vaTipInstalarApp")) return;
+  if (vaEsStandalone()) return false;
+
+  if (!vaEsMovil()) return false;
+
+  if (vaHayLinkDirectoInterno()) return false;
+
+  if (localStorage.getItem(VA_TIP_APP_KEY) === "1") return false;
+
+  if (document.getElementById("vaTipInstalarApp")) return false;
+
+  return true;
+}
+
+window.vaDebeMostrarConsejoInstalarApp = vaDebeMostrarConsejoInstalarApp;
+
+function vaMostrarConsejoInstalarApp() {
+  if (!vaDebeMostrarConsejoInstalarApp()) return false;
 
   const div = document.createElement("div");
   div.id = "vaTipInstalarApp";
+
   div.innerHTML = `
     <div class="va-tip-app-card">
       <div class="va-tip-app-icon">
@@ -2221,6 +2221,8 @@ function vaMostrarConsejoInstalarApp() {
     localStorage.setItem(VA_TIP_APP_KEY, "1");
     div.remove();
   });
+
+  return true;
 }
 
 function obtenerSeccionActual() {
