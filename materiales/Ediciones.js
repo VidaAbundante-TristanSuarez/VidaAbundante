@@ -407,8 +407,33 @@ setTimeout(() => {
 }, 0);
 
 function edFondosBuscarItem(categoria = "", id = "") {
-  return edFondosConstruirLista(categoria, true)
-    .find(item => item.id === id) || null;
+  /*
+    Primero busca entre los elementos activos.
+    Si no aparece, busca entre los quitados.
+
+    Así funciona para:
+    - abrir en grande;
+    - editar;
+    - quitar;
+    - restaurar;
+    - eliminar de la aplicación.
+  */
+
+  const activo = edFondosConstruirLista(
+    categoria,
+    false
+  ).find(item => item.id === id);
+
+  if (activo) {
+    return activo;
+  }
+
+  const quitado = edFondosConstruirLista(
+    categoria,
+    true
+  ).find(item => item.id === id);
+
+  return quitado || null;
 }
 
 function edFondosSetEstado(texto = "") {
