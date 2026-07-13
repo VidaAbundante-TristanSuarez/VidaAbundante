@@ -252,7 +252,7 @@ function audioPrepararTextoParaTTS(txt = "") {
 // Google acepta como máximo 5000 bytes por solicitud.
 // Usamos 4300 bytes para dejar margen con tildes y signos.
 // =========================================================
-const AUDIO_TTS_MAX_BYTES = 4300;
+const AUDIO_TTS_MAX_BYTES = 1800;
 
 function audioCantidadBytes(texto = "") {
   return new TextEncoder().encode(String(texto || "")).length;
@@ -424,7 +424,8 @@ function audioUnirMp3Base64(listaBase64 = []) {
 async function audioPedirParteTTS({
   texto = "",
   action = "ttsSeco",
-  voiceName = AUDIO_VOZ_BIBLIA
+  voiceName = AUDIO_VOZ_BIBLIA,
+  intento = 0
 } = {}) {
   const body =
     action === "tts"
@@ -451,11 +452,77 @@ async function audioPedirParteTTS({
   const data = await r.json().catch(() => ({}));
 
   if (!r.ok) {
-    throw new Error(data?.error || "Error HTTP " + r.status);
+    const mensaje = String(
+      data?.error ||
+      data?.detail ||
+      "Error HTTP " + r.status
+    );
+
+    /*
+      Seguridad extra:
+      la Function que agrega el arpa puede envolver el texto
+      con SSML u otros datos y superar el límite aunque la parte
+      original esté por debajo de 5000 bytes.
+
+      Si ocurre, dividimos esa parte nuevamente.
+      El arpa queda solo en el primer subfragmento.
+    */
+    const esErrorPorLargo =
+      /5000 bytes|longer than the limit|INVALID_ARGUMENT/i.test(
+        mensaje
+      );
+
+    if (
+      esErrorPorLargo &&
+      intento < 5 &&
+      audioCantidadBytes(texto) > 500
+    ) {
+      const limiteNuevo = Math.max(
+        500,
+        Math.floor(
+          audioCantidadBytes(texto) / 2
+        )
+      );
+
+      const subPartes =
+        audioPartirTextoPorBytes(
+          texto,
+          limiteNuevo
+        );
+
+      if (subPartes.length > 1) {
+        const audios = [];
+
+        for (let i = 0; i < subPartes.length; i++) {
+          const subAction =
+            i === 0
+              ? action
+              : "ttsSeco";
+
+          const audioParte =
+            await audioPedirParteTTS({
+              texto: subPartes[i],
+              action: subAction,
+              voiceName,
+              intento: intento + 1
+            });
+
+          audios.push(audioParte);
+        }
+
+        return audioUnirMp3Base64(
+          audios
+        );
+      }
+    }
+
+    throw new Error(mensaje);
   }
 
   if (!data.audioBase64) {
-    throw new Error("No devolvió audioBase64");
+    throw new Error(
+      "No devolvió audioBase64"
+    );
   }
 
   return data.audioBase64;
