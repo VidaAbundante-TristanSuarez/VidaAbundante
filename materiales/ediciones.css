@@ -2078,8 +2078,9 @@ body.oscuro #edFiltroCategoriaSelect{
 .ed-fondo-card-actions{
   display:flex;
   align-items:center;
-  justify-content:flex-end;
+  justify-content:center;
   gap:8px;
+  width:100%;
 }
 
 .ed-fondo-card-actions button{
