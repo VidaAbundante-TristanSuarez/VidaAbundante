@@ -4005,12 +4005,30 @@ function compRenderEdicion(item) {
       );
 
   if (esSticker) {
+    function compStickerUrlCanonica(url = "") {
+      try {
+        return new URL(String(url || "").trim(), location.href)
+          .href
+          .split("#")[0];
+      } catch (_) {
+        return String(url || "").trim().split("#")[0];
+      }
+    }
+
+    const portadaCanonica = compStickerUrlCanonica(
+      portada ||
+      edicionReal?.stickerTrayUrl ||
+      edicionReal?.portadaUrl ||
+      item.portadaUrl ||
+      ""
+    );
+
     const stickerPaginas = paginasRaw
       .filter(p => {
         const url = String(
           p?.mediaUrl ||
           p?.imagenUrl ||
-          p?.videoUrl ||
+          p?.url ||
           ""
         ).trim();
 
@@ -4020,11 +4038,47 @@ function compRenderEdicion(item) {
           ""
         ).toLowerCase();
 
-        return (
-          url &&
-          !tipo.startsWith("video/") &&
-          !p?.videoUrl
-        );
+        if (
+          !url ||
+          tipo.startsWith("video/") ||
+          p?.videoUrl
+        ) {
+          return false;
+        }
+
+        const canon = compStickerUrlCanonica(url);
+
+        if (portadaCanonica && canon === portadaCanonica) {
+          return false;
+        }
+
+        const texto = [
+          p?.fileName,
+          p?.nombre,
+          p?.name,
+          p?.titulo,
+          p?.originalName,
+          p?.mediaUrl,
+          p?.imagenUrl,
+          p?.url,
+          url
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+
+        if (
+          texto.includes("portada") ||
+          texto.includes("cover") ||
+          texto.includes("tray_icon") ||
+          texto.includes("tray-icon") ||
+          texto.includes("vista_previa") ||
+          texto.includes("preview")
+        ) {
+          return false;
+        }
+
+        return true;
       })
       .sort((a, b) => Number(a?.orden || 0) - Number(b?.orden || 0));
 
