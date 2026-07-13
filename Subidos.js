@@ -5849,50 +5849,98 @@ function subidosAudioUrlPredica(it = {}) {
   ).trim();
 }
 
-function subidosArmarTextoAudioPredica(it = {}) {
+function subidosFechaAudioPredica(fechaYMD = "") {
+  const valor = String(fechaYMD || "").trim();
+  const m = valor.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+  if (!m) return "";
+
+  const meses = [
+    "enero", "febrero", "marzo", "abril",
+    "mayo", "junio", "julio", "agosto",
+    "septiembre", "octubre", "noviembre", "diciembre"
+  ];
+
+  const anio = Number(m[1]);
+  const mes = Number(m[2]);
+  const dia = Number(m[3]);
+
+  if (!anio || mes < 1 || mes > 12 || dia < 1 || dia > 31) {
+    return "";
+  }
+
+  return `${dia} de ${meses[mes - 1]} de ${anio}`;
+}
+
+function subidosQuitarNumerosVersiculosAudio(texto = "") {
+  return String(texto || "")
+    .replace(/(^|\n)\s*\d{1,3}\s*[.)-]\s*/g, "$1")
+    .trim();
+}
+
+/*
+  La prédica se envía como segmentos para que Firebase pueda:
+  - usar la voz principal en fecha, citas y Biblia;
+  - usar otra voz masculina en introducciones y comentarios;
+  - unir todas las partes como un único MP3 válido;
+  - colocar el arpa una sola vez sobre el audio completo.
+*/
+function subidosArmarSegmentosAudioPredica(it = {}) {
   const citas =
     typeof obtenerCitasPredicaSubido === "function"
       ? obtenerCitasPredicaSubido(it)
       : [];
 
-  const partes = [];
+  const segmentos = [];
 
-  const agregar = valor => {
-    const limpio =
-      String(valor || "").trim();
+  const agregar = (tipo, valor) => {
+    const limpio = String(valor || "").trim();
+    if (!limpio) return;
 
-    if (limpio) {
-      partes.push(limpio);
-    }
+    segmentos.push({
+      tipo: tipo === "comentario" ? "comentario" : "biblia",
+      texto: tipo === "biblia"
+        ? subidosQuitarNumerosVersiculosAudio(limpio)
+        : limpio
+    });
   };
 
-  /*
-    Primero lee el título.
-
-    Si no hay título específico de prédica,
-    usa la descripción como respaldo.
-  */
-  agregar(
-    it.predicaTitulo ||
-    it.tituloPredica ||
-    it.descripcion ||
-    "Prédica"
+  const fechaLarga = subidosFechaAudioPredica(
+    it.fechaEvento || ""
   );
 
   agregar(
+    "biblia",
+    fechaLarga
+      ? `Prédica del ${fechaLarga}.`
+      : "Prédica."
+  );
+
+  const tituloPredica = String(
+    it.predicaTitulo ||
+    it.tituloPredica ||
+    ""
+  ).trim();
+
+  if (
+    tituloPredica &&
+    !/^pr[eé]dica$/i.test(tituloPredica)
+  ) {
+    agregar("biblia", tituloPredica);
+  }
+
+  agregar(
+    "comentario",
     it.predicaIntroduccion ||
     it.introduccionPredica ||
     ""
   );
 
-  /*
-    Lee cada referencia, el texto bíblico
-    y el comentario correspondiente.
-  */
   citas.forEach(cita => {
-    agregar(cita?.referencia || "");
-    agregar(cita?.texto || "");
+    agregar("biblia", cita?.referencia || "");
+    agregar("biblia", cita?.texto || "");
     agregar(
+      "comentario",
       cita?.comentario ||
       cita?.nota ||
       ""
@@ -5900,12 +5948,19 @@ function subidosArmarTextoAudioPredica(it = {}) {
   });
 
   agregar(
+    "comentario",
     it.predicaNotaFinal ||
     it.notaFinalGeneral ||
     ""
   );
 
-  return partes
+  return segmentos.filter(segmento => segmento.texto);
+}
+
+function subidosArmarTextoAudioPredica(it = {}) {
+  return subidosArmarSegmentosAudioPredica(it)
+    .map(segmento => segmento.texto)
+    .filter(Boolean)
     .join("\n\n")
     .trim();
 }
@@ -5996,8 +6051,14 @@ window.subidosAbrirAudioPredica =
       id
     };
 
-    const texto =
-      subidosArmarTextoAudioPredica(item);
+    const segmentos =
+      subidosArmarSegmentosAudioPredica(item);
+
+    const texto = segmentos
+      .map(segmento => segmento.texto)
+      .filter(Boolean)
+      .join("\n\n")
+      .trim();
 
     if (!texto) {
       alert(
@@ -6014,6 +6075,12 @@ window.subidosAbrirAudioPredica =
 
     window.__AUDIO_PREDICA_TEXTO =
       texto;
+
+    window.__AUDIO_PREDICA_SEGMENTOS =
+      segmentos;
+
+    window.__AUDIO_PREDICA_FECHA =
+      String(item.fechaEvento || "").trim();
 
     window.__AUDIO_PREDICA_URL =
       subidosAudioUrlPredica(item);
