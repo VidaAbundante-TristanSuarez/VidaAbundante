@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 
- <script id="va-apk-boot-guard">
+<script id="va-apk-boot-guard">
 (function(){
   try {
     var params = new URLSearchParams(location.search || "");
@@ -18,13 +18,27 @@
 
     window.__VIDA_ANDROID_APK__ = true;
 
+    /*
+      IMPORTANTE:
+      VA_TIP_APP_VISTO es la clave REAL que usa biblia.js.
+      Las otras quedan por compatibilidad, pero esta es la que faltaba.
+    */
     localStorage.setItem("vida_abundante_android_apk", "1");
+    localStorage.setItem("VA_TIP_APP_VISTO", "1");
     localStorage.setItem("vaPwaPromptOculto", "1");
     localStorage.setItem("vaInstalarModalVisto", "1");
     localStorage.setItem("vaAppInstalada", "1");
     localStorage.setItem("vaTipInstalarAppVisto", "1");
 
     document.documentElement.classList.add("vida-android-apk");
+
+    window.vaDebeMostrarConsejoInstalarApp = function(){
+      return false;
+    };
+
+    window.vaMostrarConsejoInstalarApp = function(){
+      return false;
+    };
 
     var st = document.createElement("style");
     st.id = "va-apk-boot-style";
@@ -50,6 +64,35 @@
       }
     `;
     document.head.appendChild(st);
+
+    /*
+      Limpieza una sola vez en APK:
+      si WebView registró service worker viejo, puede servir archivos viejos.
+      Esto se hace solo una vez por esta versión.
+    */
+    if (localStorage.getItem("va_apk_sw_clean_20260713_01") !== "1") {
+      localStorage.setItem("va_apk_sw_clean_20260713_01", "1");
+
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.getRegistrations()
+          .then(function(regs){
+            regs.forEach(function(reg){
+              try { reg.unregister(); } catch(e) {}
+            });
+          })
+          .catch(function(){});
+      }
+
+      if ("caches" in window) {
+        caches.keys()
+          .then(function(keys){
+            keys.forEach(function(key){
+              try { caches.delete(key); } catch(e) {}
+            });
+          })
+          .catch(function(){});
+      }
+    }
 
     document.addEventListener("DOMContentLoaded", function(){
       try {
@@ -1689,7 +1732,7 @@
 <!-- ================= SCRIPT PRINCIPAL ================= -->
 <!-- ⚠️ biblia.js CONTROLA TODO -->
 
-<script type="module" src="./biblia.js?v=20260705-notas-7"></script>
+<script type="module" src="./biblia.js?v=20260713-pwa-apk-tip-1"></script>
 <script type="module" src="biblia.audio.js?v=20260703-1"></script>
 <script type="module" src="biblia.tts.js?v=20260609-tts2"></script>
 <script type="module" src="devocionales.js?v=20260703-8"></script>
@@ -1701,21 +1744,37 @@
 <script src="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/pickr.min.js"></script> 
 
 <script>
-  if ("serviceWorker" in navigator) {
-    window.addEventListener("load", () => {
-      navigator.serviceWorker
-        .register("/VidaAbundante/service-worker.js?v=pwa-v5")
-        .catch(err => console.warn("SW error:", err));
-    });
+(function(){
+  function vaIndexEsAPK() {
+    try {
+      var params = new URLSearchParams(location.search || "");
+      var ua = navigator.userAgent || "";
+
+      return (
+        params.get("apk") === "1" ||
+        params.get("android") === "1" ||
+        /VidaAbundanteAndroidApp/i.test(ua) ||
+        localStorage.getItem("vida_abundante_android_apk") === "1"
+      );
+    } catch(e) {
+      return false;
+    }
   }
-</script>
 
- <script src="/VidaAbundante/pwa-install.js?v=pwa-v1"></script>
+  /* Service Worker: solo PWA / navegador, nunca APK */
+  try {
+    if (!vaIndexEsAPK() && "serviceWorker" in navigator) {
+      window.addEventListener("load", function(){
+        navigator.serviceWorker
+          .register("/VidaAbundante/service-worker.js?v=pwa-v5")
+          .catch(function(err){
+            console.warn("SW error:", err);
+          });
+      });
+    }
+  } catch(e) {}
 
-<script>
-  // ✅ Mantiene la pantalla despierta mientras la app está abierta y visible.
-  // No usa Firebase, no usa R2, no usa APIs pagas.
-
+  /* Wake Lock: mantiene la pantalla despierta si el navegador lo permite */
   let vidaWakeLock = null;
 
   async function activarVidaWakeLock() {
@@ -1726,7 +1785,7 @@
 
       vidaWakeLock = await navigator.wakeLock.request("screen");
 
-      vidaWakeLock.addEventListener("release", () => {
+      vidaWakeLock.addEventListener("release", function(){
         vidaWakeLock = null;
       });
 
@@ -1737,7 +1796,7 @@
     }
   }
 
-  document.addEventListener("visibilitychange", () => {
+  document.addEventListener("visibilitychange", function(){
     if (document.visibilityState === "visible") {
       activarVidaWakeLock();
     }
@@ -1746,10 +1805,9 @@
   window.addEventListener("focus", activarVidaWakeLock);
   window.addEventListener("load", activarVidaWakeLock);
 
-  // También intenta activarlo cuando el usuario toca la pantalla,
-  // porque algunos celulares lo permiten mejor después de una acción del usuario.
   document.addEventListener("click", activarVidaWakeLock, { passive: true });
   document.addEventListener("touchstart", activarVidaWakeLock, { passive: true });
+})();
 </script>
  
 </body>
