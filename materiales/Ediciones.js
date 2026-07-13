@@ -195,23 +195,49 @@ function edFondosConstruirLista(categoria = "", incluirOcultos = false) {
 
   const itemsBase = base.map((originalUrl, indice) => {
     const id = edFondosIdBase(originalUrl);
+
     idsBase.add(id);
 
-    const cfg = config[id] && typeof config[id] === "object"
-      ? config[id]
-      : {};
+    const cfg =
+      config[id] && typeof config[id] === "object"
+        ? config[id]
+        : {};
 
     const activo = cfg.activo !== false;
 
     return {
       id,
       categoria: cat,
-      url: String(cfg.url || originalUrl || "").trim(),
+      url: String(
+        cfg.url ||
+        originalUrl ||
+        ""
+      ).trim(),
+
       originalUrl,
-      nombre: String(cfg.nombre || edFondosNombreDesdeUrl(cfg.url || originalUrl)),
+
+      nombre: String(
+        cfg.nombre ||
+        edFondosNombreDesdeUrl(
+          cfg.url || originalUrl
+        )
+      ),
+
       activo,
+
+      /*
+        Cuando un recurso original se elimina
+        definitivamente, no puede borrarse de la lista
+        escrita dentro de Biblia/Devocionales.
+
+        Por eso lo marcamos como eliminado para que
+        no vuelva a aparecer.
+      */
+      eliminado: cfg.eliminado === true,
+
       esBase: true,
       nuevo: false,
+
       orden: Number.isFinite(Number(cfg.orden))
         ? Number(cfg.orden)
         : indice
@@ -220,20 +246,37 @@ function edFondosConstruirLista(categoria = "", incluirOcultos = false) {
 
   const itemsNuevos = Object.entries(config)
     .filter(([id, item]) => {
-      if (!item || typeof item !== "object") return false;
-      if (idsBase.has(id)) return false;
+      if (!item || typeof item !== "object") {
+        return false;
+      }
+
+      if (idsBase.has(id)) {
+        return false;
+      }
 
       return !!String(item.url || "").trim();
     })
     .map(([id, item], indice) => ({
       id,
       categoria: cat,
+
       url: String(item.url || "").trim(),
-      originalUrl: String(item.originalUrl || "").trim(),
-      nombre: String(item.nombre || edFondosNombreDesdeUrl(item.url)),
+
+      originalUrl: String(
+        item.originalUrl || ""
+      ).trim(),
+
+      nombre: String(
+        item.nombre ||
+        edFondosNombreDesdeUrl(item.url)
+      ),
+
       activo: item.activo !== false,
+      eliminado: item.eliminado === true,
+
       esBase: false,
       nuevo: true,
+
       orden: Number.isFinite(Number(item.orden))
         ? Number(item.orden)
         : 100000 + indice
@@ -241,36 +284,65 @@ function edFondosConstruirLista(categoria = "", incluirOcultos = false) {
 
   return [...itemsBase, ...itemsNuevos]
     .filter(item => {
-      if (!item.url) return false;
+      if (!item.url) {
+        return false;
+      }
 
-      // Vista normal: solamente activos.
-      // Vista "Quitados": solamente elementos quitados.
+      /*
+        Un elemento eliminado definitivamente
+        no aparece ni entre activos ni entre quitados.
+      */
+      if (item.eliminado) {
+        return false;
+      }
+
+      /*
+        false = solamente activos
+        true  = solamente quitados
+      */
       return incluirOcultos
         ? !item.activo
         : item.activo;
     })
     .sort((a, b) => {
-      // Los fondos agregados desde el administrador aparecen primero.
+      /*
+        Los elementos cargados desde Ediciones
+        aparecen antes que los originales.
+      */
       if (a.nuevo !== b.nuevo) {
         return a.nuevo ? -1 : 1;
       }
 
-      // Entre los fondos nuevos, el último cargado aparece primero.
+      /*
+        Entre los nuevos, el último cargado
+        aparece primero.
+      */
       if (a.nuevo && b.nuevo) {
         const ordenNuevo =
-          Number(b.orden || 0) - Number(a.orden || 0);
+          Number(b.orden || 0) -
+          Number(a.orden || 0);
 
-        if (ordenNuevo !== 0) return ordenNuevo;
+        if (ordenNuevo !== 0) {
+          return ordenNuevo;
+        }
       }
 
-      // Los fondos originales conservan su orden habitual.
+      /*
+        Los originales conservan su orden.
+      */
       const ordenOriginal =
-        Number(a.orden || 0) - Number(b.orden || 0);
+        Number(a.orden || 0) -
+        Number(b.orden || 0);
 
-      if (ordenOriginal !== 0) return ordenOriginal;
+      if (ordenOriginal !== 0) {
+        return ordenOriginal;
+      }
 
       return String(a.nombre || "")
-        .localeCompare(String(b.nombre || ""), "es");
+        .localeCompare(
+          String(b.nombre || ""),
+          "es"
+        );
     });
 }
 
@@ -346,14 +418,25 @@ function edFondosSetEstado(texto = "") {
 
 function edFondosCardHTML(categoria, item) {
   const oculto = !item.activo;
-  const nombre = edEscape(item.nombre || "Fondo");
+  const nombre = edEscape(
+    item.nombre || "Fondo"
+  );
 
   return `
-    <article class="ed-fondo-card ed-fondo-card-${edEscape(categoria)} ${oculto ? "ed-fondo-card-oculto" : ""}">
+    <article
+      class="
+        ed-fondo-card
+        ed-fondo-card-${edEscape(categoria)}
+        ${oculto ? "ed-fondo-card-oculto" : ""}
+      "
+    >
       <button
         type="button"
         class="ed-fondo-thumb"
-        onclick="edFondoAbrirDetalle('${categoria}', '${item.id}')"
+        onclick="edFondoAbrirDetalle(
+          '${categoria}',
+          '${item.id}'
+        )"
         title="Abrir para revisar calidad"
       >
         <img
@@ -366,11 +449,17 @@ function edFondosCardHTML(categoria, item) {
       </button>
 
       <div class="ed-fondo-card-body">
-        <div class="ed-fondo-card-name" title="${nombre}">
+        <div
+          class="ed-fondo-card-name"
+          title="${nombre}"
+        >
           ${nombre}
         </div>
 
-        <div class="ed-fondo-card-meta" data-ed-fondo-meta="${item.id}">
+        <div
+          class="ed-fondo-card-meta"
+          data-ed-fondo-meta="${item.id}"
+        >
           Cargando tamaño…
         </div>
 
@@ -380,17 +469,40 @@ function edFondosCardHTML(categoria, item) {
               ? `
                 <button
                   type="button"
-                  onclick="edFondoRestaurar('${categoria}', '${item.id}')"
-                  title="Restaurar fondo"
+                  onclick="edFondoRestaurar(
+                    '${categoria}',
+                    '${item.id}'
+                  )"
+                  title="Restaurar"
+                  aria-label="Restaurar"
                 >
                   <i class="fa-solid fa-rotate-left"></i>
+                </button>
+
+                <button
+                  type="button"
+                  class="
+                    ed-fondo-danger
+                    ed-fondo-danger-final
+                  "
+                  onclick="edFondoBorrarDefinitivo(
+                    '${categoria}',
+                    '${item.id}'
+                  )"
+                  title="Eliminar definitivamente"
+                  aria-label="Eliminar definitivamente"
+                >
+                  <i class="fa-solid fa-trash-can"></i>
                 </button>
               `
               : `
                 <button
                   type="button"
                   class="ed-fondo-edit-btn"
-                  onclick="edFondoAbrirEditor('${categoria}', '${item.id}')"
+                  onclick="edFondoAbrirEditor(
+                    '${categoria}',
+                    '${item.id}'
+                  )"
                   title="Editar nombre o imagen"
                 >
                   <i class="fa-solid fa-pen"></i>
@@ -400,8 +512,12 @@ function edFondosCardHTML(categoria, item) {
                 <button
                   type="button"
                   class="ed-fondo-danger"
-                  onclick="edFondoBorrar('${categoria}', '${item.id}')"
+                  onclick="edFondoBorrar(
+                    '${categoria}',
+                    '${item.id}'
+                  )"
                   title="Quitar de las galerías"
+                  aria-label="Quitar de las galerías"
                 >
                   <i class="fa-solid fa-trash"></i>
                 </button>
@@ -415,7 +531,10 @@ function edFondosCardHTML(categoria, item) {
 
 function edRenderGestorFondos() {
   const lista = ed$("edLista");
-  if (!lista) return;
+
+  if (!lista) {
+    return;
+  }
 
   if (!window.__ES_ADMIN) {
     lista.innerHTML = `
@@ -423,127 +542,205 @@ function edRenderGestorFondos() {
         Solo un administrador puede modificar los fondos.
       </div>
     `;
+
     return;
   }
 
-  const secciones = ED_FONDOS_CATEGORIAS.map(({ id, label }) => {
-    const items = edFondosConstruirLista(
-      id,
-      edFondosMostrarOcultos
-    );
+  /*
+    GALERÍAS ACTIVAS
 
-    const cantidad = items.length;
+    Estas siempre permanecen visibles.
+  */
+  const seccionesActivas =
+    ED_FONDOS_CATEGORIAS.map(
+      ({ id, label }) => {
+        const items =
+          edFondosConstruirLista(id, false);
 
-    let resumen;
+        const cantidad = items.length;
 
-    if (edFondosMostrarOcultos) {
-      resumen =
-        cantidad === 1
-          ? "1 elemento quitado"
-          : `${cantidad} elementos quitados`;
-    } else if (id === "texturas") {
-      resumen = `${cantidad} texturas activas`;
-    } else if (id === "adornos") {
-      resumen = `${cantidad} adornos activos`;
-    } else {
-      resumen = `${cantidad} fondos activos`;
-    }
+        let resumen;
 
-    const controlesAgregar = !edFondosMostrarOcultos
+        if (id === "texturas") {
+          resumen =
+            `${cantidad} texturas activas`;
+        } else if (id === "adornos") {
+          resumen =
+            `${cantidad} adornos activos`;
+        } else {
+          resumen =
+            `${cantidad} fondos activos`;
+        }
+
+        return `
+          <section class="ed-fondos-seccion">
+            <div class="ed-fondos-seccion-head">
+              <div>
+                <h4>${edEscape(label)}</h4>
+
+                <span>
+                  ${edEscape(resumen)}
+                </span>
+              </div>
+
+              <div class="ed-fondos-seccion-actions">
+                <input
+                  id="edFondosInput_${id}"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  hidden
+                  onchange="edFondosAgregar(
+                    '${id}',
+                    this
+                  )"
+                >
+
+                <label
+                  for="edFondosInput_${id}"
+                  class="ed-fondos-agregar"
+                  title="Agregar a ${edEscape(label)}"
+                >
+                  <i class="fa-solid fa-circle-plus"></i>
+                  Agregar
+                </label>
+              </div>
+            </div>
+
+            <div class="ed-fondos-galeria">
+              ${
+                items.length
+                  ? items
+                      .map(item =>
+                        edFondosCardHTML(id, item)
+                      )
+                      .join("")
+                  : `
+                      <div class="ed-fondos-vacio">
+                        No hay elementos activos.
+                      </div>
+                    `
+              }
+            </div>
+          </section>
+        `;
+      }
+    ).join("");
+
+  /*
+    ELEMENTOS QUITADOS
+
+    Solo mostramos categorías que realmente
+    tengan algo quitado.
+  */
+  let totalQuitados = 0;
+
+  const seccionesQuitadas =
+    ED_FONDOS_CATEGORIAS.map(
+      ({ id, label }) => {
+        const items =
+          edFondosConstruirLista(id, true);
+
+        if (!items.length) {
+          return "";
+        }
+
+        totalQuitados += items.length;
+
+        const textoCantidad =
+          items.length === 1
+            ? "1 elemento quitado"
+            : `${items.length} elementos quitados`;
+
+        return `
+          <section class="ed-fondos-seccion">
+            <div class="ed-fondos-seccion-head">
+              <div>
+                <h4>${edEscape(label)}</h4>
+
+                <span>
+                  ${edEscape(textoCantidad)}
+                </span>
+              </div>
+            </div>
+
+            <div class="ed-fondos-galeria">
+              ${items
+                .map(item =>
+                  edFondosCardHTML(id, item)
+                )
+                .join("")}
+            </div>
+          </section>
+        `;
+      }
+    ).join("");
+
+  const contenidoQuitados =
+    totalQuitados > 0
       ? `
-          <div class="ed-fondos-seccion-actions">
-            <input
-              id="edFondosInput_${id}"
-              type="file"
-              accept="image/*"
-              multiple
-              hidden
-              onchange="edFondosAgregar('${id}', this)"
-            >
-
-            <label
-              for="edFondosInput_${id}"
-              class="ed-fondos-agregar"
-              title="Agregar elementos a ${edEscape(label)}"
-            >
-              <i class="fa-solid fa-circle-plus"></i>
-              Agregar
-            </label>
+          <div class="ed-fondos-quitados-contenido">
+            ${seccionesQuitadas}
           </div>
         `
-      : "";
-
-    const mensajeVacio = edFondosMostrarOcultos
-      ? "No hay elementos quitados en esta galería."
-      : "No hay elementos activos en esta galería.";
-
-    return `
-      <section class="ed-fondos-seccion">
-        <div class="ed-fondos-seccion-head">
-          <div>
-            <h4>${edEscape(label)}</h4>
-            <span>${edEscape(resumen)}</span>
+      : `
+          <div class="ed-fondos-sin-quitados">
+            No hay elementos quitados.
           </div>
-
-          ${controlesAgregar}
-        </div>
-
-        <div class="ed-fondos-galeria">
-          ${
-            items.length
-              ? items
-                  .map(item => edFondosCardHTML(id, item))
-                  .join("")
-              : `
-                  <div class="ed-fondos-vacio">
-                    ${edEscape(mensajeVacio)}
-                  </div>
-                `
-          }
-        </div>
-      </section>
-    `;
-  }).join("");
-
-  const tituloPie = edFondosMostrarOcultos
-    ? "Elementos quitados"
-    : "Fondos";
-
-  const textoPie = edFondosMostrarOcultos
-    ? "Aquí aparecen solamente los fondos, texturas y adornos que quitaste. Podés restaurarlos con la flecha."
-    : "Desde aquí administrás fondos, texturas y adornos usados en Devocionales y en Biblia → Crear imagen.";
+        `;
 
   lista.innerHTML = `
     <div id="edFondosAdmin">
 
-      ${secciones}
+      ${seccionesActivas}
 
-      <div class="ed-fondos-admin-head">
-        <div>
-          <h3>${edEscape(tituloPie)}</h3>
+      <div class="ed-fondos-quitados-bloque">
 
-          <p>
-            ${edEscape(textoPie)}
-          </p>
+        <div
+          class="
+            ed-fondos-admin-head
+            ed-fondos-quitados-bar
+          "
+        >
+          <div>
+            <h3>Elementos quitados</h3>
+
+            <p>
+              Podés restaurarlos o eliminarlos
+              definitivamente de la aplicación.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            class="
+              ed-fondos-ocultos-btn
+              ${edFondosMostrarOcultos ? "activo" : ""}
+            "
+            onclick="edFondosToggleOcultos()"
+          >
+            <i
+              class="fa-solid ${
+                edFondosMostrarOcultos
+                  ? "fa-eye-slash"
+                  : "fa-eye"
+              }"
+            ></i>
+
+            ${
+              edFondosMostrarOcultos
+                ? "Ocultar quitados"
+                : `Ver quitados (${totalQuitados})`
+            }
+          </button>
         </div>
 
-        <button
-          type="button"
-          class="ed-fondos-ocultos-btn ${edFondosMostrarOcultos ? "activo" : ""}"
-          onclick="edFondosToggleOcultos()"
-        >
-          <i class="fa-solid ${
-            edFondosMostrarOcultos
-              ? "fa-arrow-left"
-              : "fa-eye"
-          }"></i>
+        ${
+          edFondosMostrarOcultos
+            ? contenidoQuitados
+            : ""
+        }
 
-          ${
-            edFondosMostrarOcultos
-              ? "Volver a activos"
-              : "Ver quitados"
-          }
-        </button>
       </div>
 
       <div id="edFondosEstado"></div>
@@ -1067,6 +1264,124 @@ window.edFondoRestaurar = async function(categoria = "", id = "") {
   } catch (error) {
     console.error("Error restaurando fondo:", error);
     alert("No pude restaurar el fondo.\n\n" + (error?.message || error));
+  }
+};
+
+window.edFondoBorrarDefinitivo =
+async function(categoria = "", id = "") {
+  const item =
+    edFondosBuscarItem(categoria, id);
+
+  if (!item) {
+    alert("No encontré ese elemento.");
+    return;
+  }
+
+  const db = edDB();
+
+  if (!db) {
+    alert("Firebase todavía no está listo.");
+    return;
+  }
+
+  const detalle = item.esBase
+    ? (
+        "Este elemento original dejará de aparecer " +
+        "por completo en la aplicación.\n\n" +
+        "El archivo original que está dentro de GitHub " +
+        "no se borrará físicamente."
+      )
+    : (
+        "Este elemento se eliminará por completo de " +
+        "Firebase y ya no podrá restaurarse desde aquí.\n\n" +
+        "El archivo guardado en R2 no se borrará " +
+        "físicamente con esta acción."
+      );
+
+  const confirmar = confirm(
+    "¿Eliminar definitivamente?\n\n" +
+    (item.nombre || "Elemento") +
+    "\n\n" +
+    detalle
+  );
+
+  if (!confirmar) {
+    return;
+  }
+
+  try {
+    const cat =
+      edFondosCategoriaValida(categoria);
+
+    const ruta =
+      `${ED_FONDOS_RUTA}/${cat}/${id}`;
+
+    const actual =
+      edFondosConfigCategoria(cat)?.[id] || {};
+
+    /*
+      ELEMENTO ORIGINAL
+
+      Como sigue escrito en la lista base de
+      Biblia o Devocionales, guardamos una marca
+      especial para que nunca vuelva a mostrarse.
+    */
+    if (item.esBase) {
+      await set(
+        ref(db, ruta),
+        {
+          ...actual,
+
+          url: item.url,
+
+          nombre:
+            item.nombre || "Elemento",
+
+          originalUrl:
+            item.originalUrl || "",
+
+          activo: false,
+          eliminado: true,
+          nuevo: false,
+
+          orden: item.orden,
+
+          actualizado: Date.now(),
+
+          creado: Number(
+            actual.creado ||
+            Date.now()
+          )
+        }
+      );
+    }
+
+    /*
+      ELEMENTO SUBIDO DESDE EDICIONES
+
+      Eliminamos directamente su registro
+      completo de Firebase.
+    */
+    else {
+      await remove(
+        ref(db, ruta)
+      );
+    }
+
+    edFondosSetEstado(
+      "Elemento eliminado definitivamente de la aplicación."
+    );
+
+  } catch (error) {
+    console.error(
+      "Error eliminando definitivamente:",
+      error
+    );
+
+    alert(
+      "No pude eliminar definitivamente el elemento.\n\n" +
+      (error?.message || error)
+    );
   }
 };
 
