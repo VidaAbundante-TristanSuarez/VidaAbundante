@@ -1794,7 +1794,9 @@ function bibliaNuevoEstadoFondoDiseno() {
 
    gradienteForma: "vertical", // "vertical" | "horizontal" | "diagonal" | "radial" | "rombo" | "manchas"
 
-    texturaUrl: null,
+    // Varias texturas pueden quedar activas al mismo tiempo.
+    texturasUrls: [],
+    texturaUrl: null, // compatibilidad con diseños guardados anteriormente
     texturaOpacidad: 0.22,
 
     adornoUrl: null,
@@ -5071,13 +5073,25 @@ let fondoCategoriaActual = "paisajes";
 
 
 /* =========================================================
-   FONDOS COMPARTIDOS CON EDICIONES
-   Ediciones.js administra altas, reemplazos y quitados.
+   RECURSOS COMPARTIDOS CON EDICIONES
+   Ediciones.js administra fondos, texturas y adornos.
 ========================================================= */
 window.__VA_FONDOS_BASE_PENDIENTE =
   window.__VA_FONDOS_BASE_PENDIENTE || {};
 
-Object.entries(fondosCategorias).forEach(([categoria, urls]) => {
+const bibliaRecursosBaseEdiciones = {
+  ...fondosCategorias,
+
+  texturas: BIBLIA_TEXTURAS_DISENO
+    .map(item => String(item?.url || "").trim())
+    .filter(Boolean),
+
+  adornos: BIBLIA_ADORNOS_DISENO
+    .map(item => String(item?.url || "").trim())
+    .filter(Boolean)
+};
+
+Object.entries(bibliaRecursosBaseEdiciones).forEach(([categoria, urls]) => {
   const actuales = Array.isArray(window.__VA_FONDOS_BASE_PENDIENTE[categoria])
     ? window.__VA_FONDOS_BASE_PENDIENTE[categoria]
     : [];
@@ -5097,10 +5111,18 @@ if (!window.__BIBLIA_FONDOS_EVENTO_ACTIVO) {
     if (document.getElementById("personalizarFondos")) {
       cargarFondos();
     }
+
+    if (document.getElementById("bibliaTexturasCarril")) {
+      bibliaRenderTexturasDiseno();
+    }
+
+    if (document.getElementById("bibliaAdornosCarril")) {
+      bibliaRenderAdornosDiseno();
+    }
   });
 }
 
-window.vaFondosRegistrarBase?.(fondosCategorias);
+window.vaFondosRegistrarBase?.(bibliaRecursosBaseEdiciones);
 
 
 // ================= ⭐ CARGAR FONDOS (CORS + URL FINAL) =======================
@@ -5433,6 +5455,9 @@ function bibliaLimpiarCapasFondoDiseno() {
   if (textura) {
     textura.style.display = "none";
     textura.style.backgroundImage = "none";
+    textura.style.backgroundSize = "";
+    textura.style.backgroundPosition = "";
+    textura.style.backgroundRepeat = "";
     textura.style.opacity = "0";
   }
 
@@ -5488,17 +5513,33 @@ function bibliaAplicarFondoAlPreview(previewImagen) {
     }
   }
 
-  // ✅ Textura siempre puede ir arriba de imagen o color
+  // ✅ Varias texturas pueden superponerse sobre imagen o color.
   if (textura) {
-    if (fondoDisenoBiblia.texturaUrl) {
+    const texturasActivas = bibliaTexturasSeleccionadas();
+
+    if (texturasActivas.length) {
       textura.style.display = "block";
-      textura.style.backgroundImage = `url("${fondoDisenoBiblia.texturaUrl}")`;
+      textura.style.backgroundImage = texturasActivas
+        .map(url => `url("${url}")`)
+        .join(", ");
+      textura.style.backgroundSize = texturasActivas
+        .map(() => "cover")
+        .join(", ");
+      textura.style.backgroundPosition = texturasActivas
+        .map(() => "center")
+        .join(", ");
+      textura.style.backgroundRepeat = texturasActivas
+        .map(() => "no-repeat")
+        .join(", ");
       textura.style.opacity = String(
         Math.max(0, Math.min(1, Number(fondoDisenoBiblia.texturaOpacidad) || 0))
       );
     } else {
       textura.style.display = "none";
       textura.style.backgroundImage = "none";
+      textura.style.backgroundSize = "";
+      textura.style.backgroundPosition = "";
+      textura.style.backgroundRepeat = "";
       textura.style.opacity = "0";
     }
   }
@@ -5603,18 +5644,93 @@ function bibliaSincronizarControlesFondoDiseno() {
   bibliaActualizarGaleriaFondoVisible();
 }
 
+function bibliaTexturasSeleccionadas() {
+  const actuales = Array.isArray(fondoDisenoBiblia?.texturasUrls)
+    ? fondoDisenoBiblia.texturasUrls
+    : [];
+
+  const heredada = String(fondoDisenoBiblia?.texturaUrl || "").trim();
+
+  return Array.from(
+    new Set([
+      ...actuales.map(url => String(url || "").trim()).filter(Boolean),
+      ...(heredada ? [heredada] : [])
+    ])
+  );
+}
+
+function bibliaGuardarTexturasSeleccionadas(urls = []) {
+  const limpias = Array.from(
+    new Set(
+      (Array.isArray(urls) ? urls : [])
+        .map(url => String(url || "").trim())
+        .filter(Boolean)
+    )
+  );
+
+  fondoDisenoBiblia.texturasUrls = limpias;
+  fondoDisenoBiblia.texturaUrl = limpias[0] || null;
+}
+
+function bibliaRecursosAdministrados(categoria, base, nombreVacio) {
+  const baseLimpia = (Array.isArray(base) ? base : [])
+    .filter(item => item && item.url)
+    .map(item => ({
+      nombre: String(item.nombre || "Recurso"),
+      url: String(item.url || "").trim()
+    }))
+    .filter(item => item.url);
+
+  const administrados =
+    typeof window.vaFondosObtenerItems === "function"
+      ? window.vaFondosObtenerItems(categoria, false)
+          .map(item => ({
+            nombre: String(item?.nombre || "Recurso"),
+            url: String(item?.url || "").trim()
+          }))
+          .filter(item => item.url)
+      : baseLimpia;
+
+  return [
+    { nombre: nombreVacio, url: null },
+    ...administrados
+  ];
+}
+
 function bibliaRenderTexturasDiseno() {
   const cont = document.getElementById("bibliaTexturasCarril");
   if (!cont) return;
 
   cont.innerHTML = "";
 
-  BIBLIA_TEXTURAS_DISENO.forEach(item => {
+  const items = bibliaRecursosAdministrados(
+    "texturas",
+    BIBLIA_TEXTURAS_DISENO,
+    "Sin textura"
+  );
+
+  const permitidas = new Set(
+    items.map(item => String(item?.url || "").trim()).filter(Boolean)
+  );
+
+  const seleccionadas = bibliaTexturasSeleccionadas()
+    .filter(url => permitidas.has(url));
+
+  bibliaGuardarTexturasSeleccionadas(seleccionadas);
+
+  items.forEach(item => {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "biblia-recurso-mini";
-    btn.classList.toggle("activo", fondoDisenoBiblia.texturaUrl === item.url);
-    btn.title = item.nombre;
+
+    const activo = item.url
+      ? seleccionadas.includes(item.url)
+      : seleccionadas.length === 0;
+
+    btn.classList.toggle("activo", activo);
+    btn.title = item.url
+      ? `${item.nombre} · tocar para agregar o quitar`
+      : item.nombre;
 
     if (item.url) {
       btn.innerHTML = `<img src="${item.url}" alt="${item.nombre}">`;
@@ -5623,7 +5739,17 @@ function bibliaRenderTexturasDiseno() {
     }
 
     btn.onclick = () => {
-      fondoDisenoBiblia.texturaUrl = item.url;
+      if (!item.url) {
+        bibliaGuardarTexturasSeleccionadas([]);
+      } else {
+        const actuales = bibliaTexturasSeleccionadas();
+        const nuevas = actuales.includes(item.url)
+          ? actuales.filter(url => url !== item.url)
+          : [item.url, ...actuales];
+
+        bibliaGuardarTexturasSeleccionadas(nuevas);
+      }
+
       bibliaRenderTexturasDiseno();
       actualizarPreview();
     };
@@ -5638,7 +5764,24 @@ function bibliaRenderAdornosDiseno() {
 
   cont.innerHTML = "";
 
-  BIBLIA_ADORNOS_DISENO.forEach(item => {
+  const items = bibliaRecursosAdministrados(
+    "adornos",
+    BIBLIA_ADORNOS_DISENO,
+    "Sin adorno"
+  );
+
+  const adornosPermitidos = new Set(
+    items.map(item => String(item?.url || "").trim()).filter(Boolean)
+  );
+
+  if (
+    fondoDisenoBiblia.adornoUrl &&
+    !adornosPermitidos.has(fondoDisenoBiblia.adornoUrl)
+  ) {
+    fondoDisenoBiblia.adornoUrl = null;
+  }
+
+  items.forEach(item => {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "biblia-recurso-mini";
@@ -6061,6 +6204,12 @@ async function vaImgAplicarEstadoDisenoGuardado(item = {}) {
     ...fdGuardado
   };
 
+  bibliaGuardarTexturasSeleccionadas(
+    Array.isArray(fdGuardado.texturasUrls)
+      ? fdGuardado.texturasUrls
+      : (fdGuardado.texturaUrl ? [fdGuardado.texturaUrl] : [])
+  );
+
   if (!["imagen", "plano", "gradiente"].includes(fondoDisenoBiblia.baseTipo)) {
     fondoDisenoBiblia.baseTipo = "imagen";
   }
@@ -6135,14 +6284,347 @@ function bibliaPrecargarRecurso(url) {
   });
 }
 
+
 async function bibliaEsperarRecursosDiseno() {
   if (modoFondoBiblia !== "diseno") return;
 
   await Promise.all([
-    bibliaPrecargarRecurso(fondoDisenoBiblia.texturaUrl),
+    ...bibliaTexturasSeleccionadas().map(url => bibliaPrecargarRecurso(url)),
     bibliaPrecargarRecurso(fondoDisenoBiblia.adornoUrl)
   ]);
 }
+
+// ================= CUENTAGOTAS PARA EL WRAPPER =================
+const BIBLIA_CUENTAGOTAS_WRAPPER = {
+  color: "#000000",
+  ctx: null,
+  arrastrando: false
+};
+
+function bibliaRgbToHex(r, g, b) {
+  const hx = n => Math.max(0, Math.min(255, Math.round(n)))
+    .toString(16)
+    .padStart(2, "0");
+
+  return `#${hx(r)}${hx(g)}${hx(b)}`;
+}
+
+function bibliaAsegurarBotonCuentagotasWrapper() {
+  if (document.getElementById("btnBibliaCuentagotasWrapper")) return;
+
+  const host =
+    document.getElementById("colorOpacidadBibliaHost") ||
+    document.getElementById("colorOpacidadBiblia");
+
+  if (!host?.parentElement) return;
+
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.id = "btnBibliaCuentagotasWrapper";
+  btn.title = "Tomar color del fondo para el wrapper";
+  btn.setAttribute("aria-label", btn.title);
+  btn.innerHTML = `<i class="fa-solid fa-eye-dropper"></i>`;
+
+  btn.style.width = "36px";
+  btn.style.height = "36px";
+  btn.style.minWidth = "36px";
+  btn.style.padding = "0";
+  btn.style.border = "none";
+  btn.style.borderRadius = "999px";
+  btn.style.background = "var(--ui-azul-claro, #d1eeff)";
+  btn.style.color = "#000";
+  btn.style.display = "inline-flex";
+  btn.style.alignItems = "center";
+  btn.style.justifyContent = "center";
+  btn.style.cursor = "pointer";
+  btn.style.marginLeft = "6px";
+  btn.style.verticalAlign = "middle";
+
+  btn.onclick = () => window.bibliaAbrirCuentagotasWrapper();
+
+  host.insertAdjacentElement("afterend", btn);
+}
+
+window.bibliaCerrarCuentagotasWrapper = function() {
+  document.getElementById("modalBibliaCuentagotasWrapper")?.remove();
+};
+
+function bibliaAsegurarModalCuentagotasWrapper() {
+  let modal = document.getElementById("modalBibliaCuentagotasWrapper");
+  if (modal) return modal;
+
+  modal = document.createElement("div");
+  modal.id = "modalBibliaCuentagotasWrapper";
+  modal.style.position = "fixed";
+  modal.style.inset = "0";
+  modal.style.zIndex = "9999999";
+  modal.style.background = "rgba(0,0,0,.58)";
+  modal.style.display = "flex";
+  modal.style.alignItems = "center";
+  modal.style.justifyContent = "center";
+  modal.style.padding = "12px";
+
+  modal.innerHTML = `
+    <div
+      style="
+        position:relative;
+        width:min(760px, 96vw);
+        max-height:94vh;
+        overflow:auto;
+        background:#fff;
+        color:#000;
+        border-radius:22px;
+        padding:16px;
+        box-shadow:0 24px 70px rgba(0,0,0,.35);
+        box-sizing:border-box;
+        text-align:center;
+      "
+      onclick="event.stopPropagation()"
+    >
+      <button
+        type="button"
+        onclick="bibliaCerrarCuentagotasWrapper()"
+        style="
+          position:absolute;
+          top:8px;
+          right:10px;
+          width:34px;
+          height:34px;
+          border:none;
+          border-radius:999px;
+          background:rgba(0,0,0,.08);
+          font-size:22px;
+          cursor:pointer;
+        "
+      >×</button>
+
+      <h3 style="margin:4px 38px 6px;">Color del wrapper</h3>
+
+      <p style="margin:0 0 12px; opacity:.72;">
+        Tocá o arrastrá sobre la imagen para elegir un color.
+      </p>
+
+      <canvas
+        id="bibliaCuentagotasWrapperCanvas"
+        style="
+          display:block;
+          width:100%;
+          max-height:68vh;
+          object-fit:contain;
+          border-radius:16px;
+          background:#eee;
+          touch-action:none;
+        "
+      ></canvas>
+
+      <div
+        style="
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          gap:10px;
+          margin-top:12px;
+          font-weight:900;
+        "
+      >
+        <span
+          id="bibliaCuentagotasWrapperMuestra"
+          style="
+            width:34px;
+            height:34px;
+            border-radius:999px;
+            border:1px solid rgba(0,0,0,.18);
+            background:#000;
+          "
+        ></span>
+
+        <span id="bibliaCuentagotasWrapperHex">#000000</span>
+      </div>
+
+      <div
+        style="
+          display:flex;
+          justify-content:center;
+          gap:10px;
+          margin-top:14px;
+          flex-wrap:wrap;
+        "
+      >
+        <button
+          type="button"
+          onclick="bibliaAplicarCuentagotasWrapper()"
+          style="
+            border:none;
+            border-radius:999px;
+            padding:10px 16px;
+            background:var(--ui-azul-claro, #d1eeff);
+            color:#000;
+            font-weight:900;
+            cursor:pointer;
+          "
+        >
+          Usar este color
+        </button>
+
+        <button
+          type="button"
+          onclick="bibliaCerrarCuentagotasWrapper()"
+          style="
+            border:none;
+            border-radius:999px;
+            padding:10px 16px;
+            background:#e9ecef;
+            color:#000;
+            font-weight:900;
+            cursor:pointer;
+          "
+        >
+          Cancelar
+        </button>
+      </div>
+    </div>
+  `;
+
+  modal.onclick = () => window.bibliaCerrarCuentagotasWrapper();
+  document.body.appendChild(modal);
+
+  return modal;
+}
+
+function bibliaSetColorCuentagotasWrapper(hex) {
+  const color = bibliaHexSeguro(hex) || "#000000";
+  BIBLIA_CUENTAGOTAS_WRAPPER.color = color;
+
+  const muestra = document.getElementById("bibliaCuentagotasWrapperMuestra");
+  const texto = document.getElementById("bibliaCuentagotasWrapperHex");
+
+  if (muestra) muestra.style.background = color;
+  if (texto) texto.textContent = color;
+}
+
+function bibliaCargarImagenCuentagotasWrapper(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error("No pude cargar el fondo para tomar el color."));
+
+    img.src = src;
+  });
+}
+
+window.bibliaAbrirCuentagotasWrapper = async function() {
+  const src = fondoFinalBlobUrl || fondoFinal || "";
+
+  if (!src) {
+    alert("Primero elegí una imagen de fondo.");
+    return;
+  }
+
+  bibliaAsegurarModalCuentagotasWrapper();
+
+  const canvas = document.getElementById("bibliaCuentagotasWrapperCanvas");
+  if (!canvas) return;
+
+  try {
+    const img = await bibliaCargarImagenCuentagotasWrapper(src);
+
+    const maxW = 1000;
+    const maxH = 1000;
+    const escala = Math.min(maxW / img.width, maxH / img.height, 1);
+
+    canvas.width = Math.max(1, Math.round(img.width * escala));
+    canvas.height = Math.max(1, Math.round(img.height * escala));
+
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    BIBLIA_CUENTAGOTAS_WRAPPER.ctx = ctx;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+    const actual =
+      document.getElementById("colorOpacidadBiblia")?.value ||
+      "#000000";
+
+    bibliaSetColorCuentagotasWrapper(actual);
+
+    const tomar = e => {
+      const rect = canvas.getBoundingClientRect();
+
+      const x = Math.max(
+        0,
+        Math.min(
+          canvas.width - 1,
+          Math.floor((e.clientX - rect.left) * (canvas.width / rect.width))
+        )
+      );
+
+      const y = Math.max(
+        0,
+        Math.min(
+          canvas.height - 1,
+          Math.floor((e.clientY - rect.top) * (canvas.height / rect.height))
+        )
+      );
+
+      const px = ctx.getImageData(x, y, 1, 1).data;
+      const hex = bibliaRgbToHex(px[0], px[1], px[2]);
+
+      bibliaSetColorCuentagotasWrapper(hex);
+    };
+
+    canvas.onpointerdown = e => {
+      e.preventDefault();
+      BIBLIA_CUENTAGOTAS_WRAPPER.arrastrando = true;
+      canvas.setPointerCapture?.(e.pointerId);
+      tomar(e);
+    };
+
+    canvas.onpointermove = e => {
+      if (!BIBLIA_CUENTAGOTAS_WRAPPER.arrastrando) return;
+      e.preventDefault();
+      tomar(e);
+    };
+
+    const terminar = e => {
+      if (!BIBLIA_CUENTAGOTAS_WRAPPER.arrastrando) return;
+      e.preventDefault();
+      tomar(e);
+      BIBLIA_CUENTAGOTAS_WRAPPER.arrastrando = false;
+      canvas.releasePointerCapture?.(e.pointerId);
+    };
+
+    canvas.onpointerup = terminar;
+    canvas.onpointercancel = () => {
+      BIBLIA_CUENTAGOTAS_WRAPPER.arrastrando = false;
+    };
+
+  } catch (error) {
+    console.error("Error en cuentagotas del wrapper:", error);
+    window.bibliaCerrarCuentagotasWrapper();
+
+    alert(
+      "No pude tomar el color de este fondo.\n\n" +
+      (error?.message || error)
+    );
+  }
+};
+
+window.bibliaAplicarCuentagotasWrapper = function() {
+  const hex = BIBLIA_CUENTAGOTAS_WRAPPER.color || "#000000";
+  const input = document.getElementById("colorOpacidadBiblia");
+
+  if (input) {
+    input.value = hex;
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+
+  bibliaSetHostColorVisual("colorOpacidadBibliaHost", hex);
+  actualizarPreview();
+  window.bibliaCerrarCuentagotasWrapper();
+};
 
 // ================= WRAPPER SUAVE PARA CREAR IMAGEN BIBLIA =================
 const BIBLIA_WRAPPER_CACHE = new Map();
@@ -6279,6 +6761,8 @@ function actualizarPreview() {
   const wrapper = document.getElementById("previewTextoWrapper");
 
   if (!previewImagen || !previewTexto || !previewTextoBack || !wrapper) return;
+
+  bibliaAsegurarBotonCuentagotasWrapper();
 
   // ================= Texto para preview (Biblia o libre) =================
   asegurarCajaTextoLibrePanel();
