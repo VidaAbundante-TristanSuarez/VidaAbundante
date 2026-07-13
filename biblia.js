@@ -3904,22 +3904,16 @@ function initResaltadorCompacto() {
 
   paleta.style.display = "none";
 
-  function pedirLoginResaltador() {
-    if (typeof window.toggleMenuSesion === "function") {
-      window.toggleMenuSesion();
-      return;
-    }
-
-    const modal = document.getElementById("loginModal");
-    if (modal) {
-      modal.style.display = "flex";
-      modal.classList.add("abierto");
-      modal.setAttribute("aria-hidden", "false");
-      return;
-    }
-
-    window.location.href = "login.html";
+function pedirLoginResaltador() {
+  if (
+    typeof window.abrirLoginParaGuardarMiPanel === "function"
+  ) {
+    window.abrirLoginParaGuardarMiPanel();
+    return;
   }
+
+  window.vaIniciarSesionGoogle();
+}
 
   function renderBotonActivo() {
     const conf = obtenerConfigResaltadorActual();
@@ -4287,7 +4281,7 @@ function toggleVersiculo(id, num) {
   // 📌 MODO MARCADOR (seleccionar versículos para guardar)
   if (modoMarcador) {
     if (!uid) {
-      loginModal.style.display = "flex";
+      window.abrirLoginParaGuardarMiPanel();
       return;
     }
 
@@ -4302,7 +4296,7 @@ marcarMarcadorEnOrden(id);
   // 🖼️ MODO IMAGEN
   if (modoImagen) {
     if (!uid) {
-      loginModal.style.display = "flex";
+      window.abrirLoginParaGuardarMiPanel();
       return;
     }
 
@@ -7345,7 +7339,7 @@ window.irA = (seccion) => {
 // ================= 🔺 MODO IMAGEN ===============================
 window.toggleModoImagen = () => {
   if (!uid) {
-    loginModal.style.display = "flex";
+    window.abrirLoginParaGuardarMiPanel();
     return;
   }
 
@@ -7429,7 +7423,7 @@ window.generarImagen = async () => {
 // ================= 🔺 FUNCIÓN NUEVA PARA ABRIR EL MODAL DESDE MI PANEL ============
 window.abrirCrearImagenLibrePanel = async () => {
   if (!uid) {
-    loginModal.style.display = "flex";
+    window.abrirLoginParaGuardarMiPanel();
     return;
   }
 
@@ -7682,7 +7676,7 @@ function ubicarBannerModoMarcadorDebajoTitulo() {
 
 window.toggleModoMarcador = () => {
   if (!uid) {
-    loginModal.style.display = "flex";
+    window.abrirLoginParaGuardarMiPanel();
     return;
   }
 
@@ -7863,7 +7857,7 @@ window.filtrarMarcadoresPorLibro = function(valor = "") {
 
 window.abrirMarcadores = () => {
   if (!uid) {
-    loginModal.style.display = "flex";
+    window.abrirLoginParaGuardarMiPanel();
     return;
   }
 
@@ -8602,7 +8596,7 @@ window.cancelarNuevoMarcador = () => {
 async function guardarNuevoMarcador() {
   try {
     if (!uid) {
-      loginModal.style.display = "flex";
+      window.abrirLoginParaGuardarMiPanel();
       return;
     }
 
@@ -8799,7 +8793,7 @@ function refrescarBotonGuardarMarcador() {
 // ================= ✨ Guardar Marcador Rapido 📌 (abre formulario directo)=================
 window.guardarMarcadorRapido = () => {
   if (!uid) {
-    loginModal.style.display = "flex";
+    window.abrirLoginParaGuardarMiPanel();
     return;
   }
   if (!modoMarcador) return;
@@ -12435,7 +12429,7 @@ function panelImagenVieneDeCompartidos(item = {}) {
 window.editarImagenPanel = async function(id) {
   try {
     if (!uid) {
-      loginModal.style.display = "flex";
+      window.abrirLoginParaGuardarMiPanel();
       return;
     }
 
@@ -12541,7 +12535,7 @@ window.editarImagenPanel = async function(id) {
 window.publicarImagenPanelEnCompartidos = async function(id) {
   try {
     if (!uid) {
-      loginModal.style.display = "flex";
+      window.abrirLoginParaGuardarMiPanel();
       return;
     }
 
