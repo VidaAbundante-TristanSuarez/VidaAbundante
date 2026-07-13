@@ -61,6 +61,8 @@ const ED_CATEGORIAS = [
 ];
 
 function edCategoriaValida(id) {
+  if (id === "fondos" && window.__ES_ADMIN) return "fondos";
+
   return ED_CATEGORIAS.some(c => c.id === id) ? id : "todo";
 }
 
@@ -95,6 +97,677 @@ function edDB() {
   return window.__FB?.db || null;
 }
 
+
+/* =========================================================
+   ADMINISTRADOR GLOBAL DE FONDOS
+   - Usa los fondos actuales como base.
+   - Guarda altas, reemplazos y ocultamientos en Firebase.
+   - Los archivos nuevos/reemplazados se suben a R2.
+========================================================= */
+
+const ED_FONDOS_RUTA = "fondosGalerias";
+
+const ED_FONDOS_CATEGORIAS = [
+  { id: "paisajes", label: "Paisajes" },
+  { id: "acuarelas", label: "Acuarelas" },
+  { id: "tarjetas", label: "Tarjetas" }
+];
+
+const edFondosBase = {
+  paisajes: [],
+  acuarelas: [],
+  tarjetas: []
+};
+
+let edFondosConfig = {};
+let edFondosEscuchaActiva = false;
+let edFondosMostrarOcultos = false;
+
+function edFondosCategoriaValida(categoria = "") {
+  const id = String(categoria || "").trim().toLowerCase();
+
+  return ED_FONDOS_CATEGORIAS.some(c => c.id === id)
+    ? id
+    : "paisajes";
+}
+
+function edFondosHash(texto = "") {
+  let hash = 2166136261;
+  const s = String(texto || "");
+
+  for (let i = 0; i < s.length; i++) {
+    hash ^= s.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+
+  return (hash >>> 0).toString(36);
+}
+
+function edFondosIdBase(url = "") {
+  return `base_${edFondosHash(url)}`;
+}
+
+function edFondosNombreDesdeUrl(url = "") {
+  try {
+    const limpio = String(url || "").split("?")[0].split("#")[0];
+    const ultimo = limpio.split("/").pop() || "Fondo";
+    return decodeURIComponent(ultimo);
+  } catch (_) {
+    return "Fondo";
+  }
+}
+
+function edFondosRegistrarBase(base = {}) {
+  ED_FONDOS_CATEGORIAS.forEach(({ id }) => {
+    const recibidos = Array.isArray(base?.[id]) ? base[id] : [];
+
+    const unicos = new Set([
+      ...(edFondosBase[id] || []),
+      ...recibidos.map(x => String(x || "").trim()).filter(Boolean)
+    ]);
+
+    edFondosBase[id] = Array.from(unicos);
+  });
+
+  edFondosNotificar();
+}
+
+window.vaFondosRegistrarBase = edFondosRegistrarBase;
+
+function edFondosConfigCategoria(categoria = "") {
+  const cat = edFondosCategoriaValida(categoria);
+  const val = edFondosConfig?.[cat];
+
+  return val && typeof val === "object"
+    ? val
+    : {};
+}
+
+function edFondosConstruirLista(categoria = "", incluirOcultos = false) {
+  const cat = edFondosCategoriaValida(categoria);
+  const base = edFondosBase[cat] || [];
+  const config = edFondosConfigCategoria(cat);
+  const idsBase = new Set();
+
+  const itemsBase = base.map((originalUrl, indice) => {
+    const id = edFondosIdBase(originalUrl);
+    idsBase.add(id);
+
+    const cfg = config[id] && typeof config[id] === "object"
+      ? config[id]
+      : {};
+
+    const activo = cfg.activo !== false;
+
+    return {
+      id,
+      categoria: cat,
+      url: String(cfg.url || originalUrl || "").trim(),
+      originalUrl,
+      nombre: String(cfg.nombre || edFondosNombreDesdeUrl(cfg.url || originalUrl)),
+      activo,
+      esBase: true,
+      nuevo: false,
+      orden: Number.isFinite(Number(cfg.orden))
+        ? Number(cfg.orden)
+        : indice
+    };
+  });
+
+  const itemsNuevos = Object.entries(config)
+    .filter(([id, item]) => {
+      if (!item || typeof item !== "object") return false;
+      if (idsBase.has(id)) return false;
+
+      return !!String(item.url || "").trim();
+    })
+    .map(([id, item], indice) => ({
+      id,
+      categoria: cat,
+      url: String(item.url || "").trim(),
+      originalUrl: String(item.originalUrl || "").trim(),
+      nombre: String(item.nombre || edFondosNombreDesdeUrl(item.url)),
+      activo: item.activo !== false,
+      esBase: false,
+      nuevo: true,
+      orden: Number.isFinite(Number(item.orden))
+        ? Number(item.orden)
+        : 100000 + indice
+    }));
+
+  return [...itemsBase, ...itemsNuevos]
+    .filter(item => item.url && (incluirOcultos || item.activo))
+    .sort((a, b) => {
+      const orden = Number(a.orden || 0) - Number(b.orden || 0);
+      if (orden !== 0) return orden;
+
+      return String(a.nombre || "").localeCompare(String(b.nombre || ""), "es");
+    });
+}
+
+window.vaFondosObtenerLista = function(categoria = "") {
+  return edFondosConstruirLista(categoria, false).map(item => item.url);
+};
+
+window.vaFondosObtenerItems = function(categoria = "", incluirOcultos = false) {
+  return edFondosConstruirLista(categoria, incluirOcultos);
+};
+
+function edFondosNotificar() {
+  try {
+    window.dispatchEvent(new CustomEvent("va-fondos-actualizados"));
+  } catch (_) {}
+
+  if (
+    typeof renderEdiciones === "function" &&
+    edFiltroCategoria === "fondos"
+  ) {
+    renderEdiciones();
+  }
+}
+
+function edFondosIniciarEscucha(intento = 0) {
+  if (edFondosEscuchaActiva) return;
+
+  const db = edDB();
+
+  if (!db) {
+    if (intento < 120) {
+      setTimeout(() => edFondosIniciarEscucha(intento + 1), 500);
+    }
+    return;
+  }
+
+  onValue(
+    ref(db, ED_FONDOS_RUTA),
+    (snap) => {
+      edFondosConfig = snap.val() || {};
+      edFondosNotificar();
+    },
+    (error) => {
+      console.warn("No pude leer los fondos administrables:", error);
+    }
+  );
+
+  edFondosEscuchaActiva = true;
+}
+
+function edFondosTomarPendientes() {
+  const pendientes = window.__VA_FONDOS_BASE_PENDIENTE;
+
+  if (pendientes && typeof pendientes === "object") {
+    edFondosRegistrarBase(pendientes);
+  }
+}
+
+setTimeout(() => {
+  edFondosTomarPendientes();
+  edFondosIniciarEscucha();
+}, 0);
+
+function edFondosBuscarItem(categoria = "", id = "") {
+  return edFondosConstruirLista(categoria, true)
+    .find(item => item.id === id) || null;
+}
+
+function edFondosSetEstado(texto = "") {
+  const el = ed$("edFondosEstado");
+  if (el) el.textContent = texto || "";
+}
+
+function edFondosCardHTML(categoria, item) {
+  const oculto = !item.activo;
+  const nombre = edEscape(item.nombre || "Fondo");
+
+  return `
+    <article class="ed-fondo-card ${oculto ? "ed-fondo-card-oculto" : ""}">
+      <button
+        type="button"
+        class="ed-fondo-thumb"
+        onclick="edFondoAbrirDetalle('${categoria}', '${item.id}')"
+        title="Abrir para revisar calidad"
+      >
+        <img
+          src="${edEscape(item.url)}"
+          alt="${nombre}"
+          loading="lazy"
+          data-ed-fondo-id="${item.id}"
+          onload="edFondoMarcarDimensiones(this)"
+        >
+      </button>
+
+      <div class="ed-fondo-card-body">
+        <div class="ed-fondo-card-name" title="${nombre}">
+          ${nombre}
+        </div>
+
+        <div class="ed-fondo-card-meta" data-ed-fondo-meta="${item.id}">
+          Cargando tamaño…
+        </div>
+
+        <div class="ed-fondo-card-actions">
+          <button
+            type="button"
+            onclick="edFondoAbrirDetalle('${categoria}', '${item.id}')"
+            title="Ver grande"
+          >
+            <i class="fa-solid fa-expand"></i>
+          </button>
+
+          ${
+            oculto
+              ? `
+                <button
+                  type="button"
+                  onclick="edFondoRestaurar('${categoria}', '${item.id}')"
+                  title="Restaurar fondo"
+                >
+                  <i class="fa-solid fa-rotate-left"></i>
+                </button>
+              `
+              : `
+                <button
+                  type="button"
+                  onclick="edFondoReemplazar('${categoria}', '${item.id}')"
+                  title="Cambiar imagen"
+                >
+                  <i class="fa-solid fa-arrows-rotate"></i>
+                </button>
+
+                <button
+                  type="button"
+                  class="ed-fondo-danger"
+                  onclick="edFondoBorrar('${categoria}', '${item.id}')"
+                  title="Quitar de las galerías"
+                >
+                  <i class="fa-solid fa-trash"></i>
+                </button>
+              `
+          }
+        </div>
+      </div>
+    </article>
+  `;
+}
+
+function edRenderGestorFondos() {
+  const lista = ed$("edLista");
+  if (!lista) return;
+
+  if (!window.__ES_ADMIN) {
+    lista.innerHTML = `
+      <div id="edVacio">
+        Solo un administrador puede modificar los fondos.
+      </div>
+    `;
+    return;
+  }
+
+  const secciones = ED_FONDOS_CATEGORIAS.map(({ id, label }) => {
+    const items = edFondosConstruirLista(id, edFondosMostrarOcultos);
+    const activos = items.filter(item => item.activo).length;
+
+    return `
+      <section class="ed-fondos-seccion">
+        <div class="ed-fondos-seccion-head">
+          <div>
+            <h4>${edEscape(label)}</h4>
+            <span>${activos} fondos activos</span>
+          </div>
+
+          <div class="ed-fondos-seccion-actions">
+            <input
+              id="edFondosInput_${id}"
+              type="file"
+              accept="image/*"
+              multiple
+              hidden
+              onchange="edFondosAgregar('${id}', this)"
+            >
+
+            <label
+              for="edFondosInput_${id}"
+              class="ed-fondos-agregar"
+              title="Agregar fondos a ${edEscape(label)}"
+            >
+              <i class="fa-solid fa-circle-plus"></i>
+              Agregar
+            </label>
+          </div>
+        </div>
+
+        <div class="ed-fondos-galeria">
+          ${
+            items.length
+              ? items.map(item => edFondosCardHTML(id, item)).join("")
+              : `<div class="ed-fondos-vacio">No hay fondos en esta galería.</div>`
+          }
+        </div>
+      </section>
+    `;
+  }).join("");
+
+  lista.innerHTML = `
+    <div id="edFondosAdmin">
+      <div class="ed-fondos-admin-head">
+        <div>
+          <h3>Fondos</h3>
+          <p>
+            Estos mismos fondos aparecen en Devocionales fase 1 y en Biblia → Crear imagen.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          class="ed-fondos-ocultos-btn ${edFondosMostrarOcultos ? "activo" : ""}"
+          onclick="edFondosToggleOcultos()"
+        >
+          <i class="fa-solid fa-eye${edFondosMostrarOcultos ? "-slash" : ""}"></i>
+          ${edFondosMostrarOcultos ? "Ocultar quitados" : "Ver quitados"}
+        </button>
+      </div>
+
+      <div id="edFondosEstado"></div>
+
+      ${secciones}
+    </div>
+  `;
+}
+
+window.edFondosToggleOcultos = function() {
+  edFondosMostrarOcultos = !edFondosMostrarOcultos;
+  renderEdiciones();
+};
+
+window.edFondoMarcarDimensiones = function(img) {
+  if (!img) return;
+
+  const id = img.dataset.edFondoId || "";
+  const meta = document.querySelector(`[data-ed-fondo-meta="${id}"]`);
+  if (!meta) return;
+
+  const w = Number(img.naturalWidth || 0);
+  const h = Number(img.naturalHeight || 0);
+
+  if (!w || !h) {
+    meta.textContent = "No pude leer el tamaño";
+    return;
+  }
+
+  const baja = Math.min(w, h) < 1200;
+
+  meta.textContent = `${w} × ${h}px${baja ? " · revisar calidad" : ""}`;
+  meta.classList.toggle("ed-fondo-meta-baja", baja);
+};
+
+window.edFondosAgregar = async function(categoria = "", input) {
+  const cat = edFondosCategoriaValida(categoria);
+  const files = Array.from(input?.files || []);
+
+  if (!files.length) return;
+
+  const db = edDB();
+
+  if (!db) {
+    alert("Firebase todavía no está listo.");
+    return;
+  }
+
+  const invalidos = files.filter(file => !String(file.type || "").startsWith("image/"));
+
+  if (invalidos.length) {
+    alert("Solo podés subir imágenes.");
+    input.value = "";
+    return;
+  }
+
+  const muyGrandes = files.filter(file => Number(file.size || 0) > 15 * 1024 * 1024);
+
+  if (muyGrandes.length) {
+    alert("Cada fondo debe pesar menos de 15 MB.");
+    input.value = "";
+    return;
+  }
+
+  try {
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+
+      edFondosSetEstado(`Subiendo fondo ${i + 1} de ${files.length}…`);
+
+      const url = await subirArchivoEdicionR2(file, `fondos/${cat}`);
+      const id = `nuevo_${Date.now()}_${edFondosHash(file.name + Math.random())}`;
+
+      await set(ref(db, `${ED_FONDOS_RUTA}/${cat}/${id}`), {
+        url,
+        nombre: file.name || "Fondo",
+        activo: true,
+        nuevo: true,
+        orden: Date.now() + i,
+        creado: Date.now(),
+        actualizado: Date.now()
+      });
+    }
+
+    edFondosSetEstado("Fondos agregados correctamente.");
+  } catch (error) {
+    console.error("Error agregando fondos:", error);
+    alert("No pude agregar los fondos.\n\n" + (error?.message || error));
+    edFondosSetEstado("");
+  } finally {
+    if (input) input.value = "";
+  }
+};
+
+window.edFondoReemplazar = function(categoria = "", id = "") {
+  const item = edFondosBuscarItem(categoria, id);
+
+  if (!item) {
+    alert("No encontré ese fondo.");
+    return;
+  }
+
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = "image/*";
+
+  input.onchange = async () => {
+    const file = input.files?.[0];
+    if (!file) return;
+
+    if (!String(file.type || "").startsWith("image/")) {
+      alert("Elegí una imagen.");
+      return;
+    }
+
+    if (Number(file.size || 0) > 15 * 1024 * 1024) {
+      alert("La imagen debe pesar menos de 15 MB.");
+      return;
+    }
+
+    const db = edDB();
+
+    if (!db) {
+      alert("Firebase todavía no está listo.");
+      return;
+    }
+
+    try {
+      edFondosSetEstado("Subiendo reemplazo…");
+
+      const url = await subirArchivoEdicionR2(
+        file,
+        `fondos/${edFondosCategoriaValida(categoria)}`
+      );
+
+      const cat = edFondosCategoriaValida(categoria);
+      const actual = edFondosConfigCategoria(cat)?.[id] || {};
+
+      await set(ref(db, `${ED_FONDOS_RUTA}/${cat}/${id}`), {
+        ...actual,
+        url,
+        nombre: file.name || item.nombre || "Fondo",
+        originalUrl: item.originalUrl || "",
+        activo: true,
+        nuevo: !item.esBase,
+        orden: item.orden,
+        actualizado: Date.now(),
+        creado: Number(actual.creado || Date.now())
+      });
+
+      edFondosSetEstado("Fondo reemplazado correctamente.");
+    } catch (error) {
+      console.error("Error reemplazando fondo:", error);
+      alert("No pude reemplazar el fondo.\n\n" + (error?.message || error));
+      edFondosSetEstado("");
+    }
+  };
+
+  input.click();
+};
+
+window.edFondoBorrar = async function(categoria = "", id = "") {
+  const item = edFondosBuscarItem(categoria, id);
+
+  if (!item) {
+    alert("No encontré ese fondo.");
+    return;
+  }
+
+  const ok = confirm(
+    `¿Quitar este fondo de las galerías?\n\n${item.nombre || "Fondo"}`
+  );
+
+  if (!ok) return;
+
+  const db = edDB();
+
+  if (!db) {
+    alert("Firebase todavía no está listo.");
+    return;
+  }
+
+  try {
+    const cat = edFondosCategoriaValida(categoria);
+    const actual = edFondosConfigCategoria(cat)?.[id] || {};
+
+    await set(ref(db, `${ED_FONDOS_RUTA}/${cat}/${id}`), {
+      ...actual,
+      url: item.url,
+      nombre: item.nombre || "Fondo",
+      originalUrl: item.originalUrl || "",
+      activo: false,
+      nuevo: !item.esBase,
+      orden: item.orden,
+      actualizado: Date.now(),
+      creado: Number(actual.creado || Date.now())
+    });
+  } catch (error) {
+    console.error("Error quitando fondo:", error);
+    alert("No pude quitar el fondo.\n\n" + (error?.message || error));
+  }
+};
+
+window.edFondoRestaurar = async function(categoria = "", id = "") {
+  const item = edFondosBuscarItem(categoria, id);
+
+  if (!item) {
+    alert("No encontré ese fondo.");
+    return;
+  }
+
+  const db = edDB();
+
+  if (!db) {
+    alert("Firebase todavía no está listo.");
+    return;
+  }
+
+  try {
+    const cat = edFondosCategoriaValida(categoria);
+    const actual = edFondosConfigCategoria(cat)?.[id] || {};
+
+    await set(ref(db, `${ED_FONDOS_RUTA}/${cat}/${id}`), {
+      ...actual,
+      url: item.url,
+      nombre: item.nombre || "Fondo",
+      originalUrl: item.originalUrl || "",
+      activo: true,
+      nuevo: !item.esBase,
+      orden: item.orden,
+      actualizado: Date.now(),
+      creado: Number(actual.creado || Date.now())
+    });
+  } catch (error) {
+    console.error("Error restaurando fondo:", error);
+    alert("No pude restaurar el fondo.\n\n" + (error?.message || error));
+  }
+};
+
+window.edFondoCerrarDetalle = function() {
+  document.getElementById("edFondoDetalleModal")?.remove();
+};
+
+window.edFondoAbrirDetalle = function(categoria = "", id = "") {
+  const item = edFondosBuscarItem(categoria, id);
+
+  if (!item) {
+    alert("No encontré ese fondo.");
+    return;
+  }
+
+  window.edFondoCerrarDetalle();
+
+  const modal = document.createElement("div");
+  modal.id = "edFondoDetalleModal";
+
+  modal.innerHTML = `
+    <div class="ed-fondo-detalle-box" onclick="event.stopPropagation()">
+      <button
+        type="button"
+        class="ed-fondo-detalle-x"
+        onclick="edFondoCerrarDetalle()"
+      >×</button>
+
+      <img
+        id="edFondoDetalleImg"
+        src="${edEscape(item.url)}"
+        alt="${edEscape(item.nombre || "Fondo")}"
+      >
+
+      <div class="ed-fondo-detalle-info">
+        <b>${edEscape(item.nombre || "Fondo")}</b>
+        <span id="edFondoDetalleMedidas">Cargando medidas…</span>
+      </div>
+    </div>
+  `;
+
+  modal.onclick = () => window.edFondoCerrarDetalle();
+
+  document.body.appendChild(modal);
+
+  const img = document.getElementById("edFondoDetalleImg");
+  const medidas = document.getElementById("edFondoDetalleMedidas");
+
+  if (img && medidas) {
+    const actualizarMedidas = () => {
+      const w = Number(img.naturalWidth || 0);
+      const h = Number(img.naturalHeight || 0);
+      const baja = Math.min(w, h) < 1200;
+
+      medidas.textContent = `${w} × ${h}px${baja ? " · puede verse borroso al ampliar" : " · buena resolución"}`;
+      medidas.classList.toggle("ed-fondo-meta-baja", baja);
+    };
+
+    img.onload = actualizarMedidas;
+
+    if (img.complete) {
+      actualizarMedidas();
+    }
+  }
+};
+
+
 function edEscape(v) {
   return String(v ?? "")
     .replace(/&/g, "&amp;")
@@ -119,8 +792,12 @@ function edActualizarControlesEdiciones() {
   const selectCategoria = ed$("edFiltroCategoriaSelect");
   const boxBuscar = ed$("edBuscadorBox");
   const inputBuscar = ed$("edBuscarInput");
+  const btnBuscar = document.querySelector("#edTop .ed-top-icon");
+  const btnNueva = ed$("edBtnNueva");
 
   edFiltroCategoria = edCategoriaValida(edFiltroCategoria);
+
+  const esFondos = edFiltroCategoria === "fondos";
 
   if (selectCategoria && selectCategoria.value !== edFiltroCategoria) {
     selectCategoria.value = edFiltroCategoria;
@@ -131,7 +808,15 @@ function edActualizarControlesEdiciones() {
   });
 
   if (boxBuscar) {
-    boxBuscar.style.display = edBuscadorAbierto ? "block" : "none";
+    boxBuscar.style.display = !esFondos && edBuscadorAbierto ? "block" : "none";
+  }
+
+  if (btnBuscar) {
+    btnBuscar.style.display = esFondos ? "none" : "inline-flex";
+  }
+
+  if (btnNueva) {
+    btnNueva.style.display = esFondos ? "none" : "inline-flex";
   }
 
   if (inputBuscar && inputBuscar.value !== edBusquedaTexto) {
@@ -526,7 +1211,10 @@ window.mostrarEdiciones = async () => {
 
         <div id="edFiltros" class="ed-filtros-buscador">
           <div class="ed-filtros-actions ed-subfiltros-actions">
-            ${ED_CATEGORIAS.map(c => `
+            ${[
+              ...ED_CATEGORIAS,
+              ...(window.__ES_ADMIN ? [{ id: "fondos", label: "Fondos" }] : [])
+            ].map(c => `
               <button
                 type="button"
                 class="ed-filter-pill"
@@ -892,6 +1580,14 @@ function renderEdiciones() {
   lista.classList.add("ed-lista-galeria");
 
   edActualizarControlesEdiciones();
+
+  if (edFiltroCategoria === "fondos") {
+    lista.classList.remove("ed-lista-galeria", "ed-lista-ramas");
+    lista.classList.add("ed-lista-fondos");
+
+    edRenderGestorFondos();
+    return;
+  }
 
   if (!edicionesCache.length) {
     lista.innerHTML = `
