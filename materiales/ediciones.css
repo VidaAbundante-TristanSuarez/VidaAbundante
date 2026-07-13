@@ -2399,4 +2399,185 @@ body.oscuro .ed-fondo-editor-field select{
   }
 }
 
+/* =========================================================
+   STICKERS COMO PACKS - RECURSOS > EDICIONES Y COMPARTIDOS
+========================================================= */
+
+/* Recursos > Ediciones: cards más chicas cuando estoy en Stickers */
+.ed-lista-stickers .ed-galeria-track-stickers {
+  gap: 12px !important;
+  align-items: stretch !important;
+}
+
+.ed-lista-stickers .ed-card-stickers {
+  flex: 0 0 clamp(185px, 23vw, 235px) !important;
+  border-radius: 18px !important;
+}
+
+.ed-lista-stickers .ed-card-stickers .ed-card-cover {
+  width: calc(100% - 18px) !important;
+  margin: 9px auto 0 !important;
+  aspect-ratio: 1 / 1 !important;
+  border-radius: 16px !important;
+  background: #fff !important;
+}
+
+.ed-lista-stickers .ed-card-stickers .ed-card-body {
+  padding: 9px 10px 11px !important;
+}
+
+.ed-lista-stickers .ed-card-stickers .ed-card-title {
+  font-size: 14px !important;
+  margin-bottom: 6px !important;
+  line-height: 1.15 !important;
+}
+
+.ed-lista-stickers .ed-card-stickers .ed-card-rama-label {
+  margin-bottom: 8px !important;
+  font-size: 10px !important;
+  padding: 4px 8px !important;
+}
+
+.ed-lista-stickers .ed-card-stickers .ed-mini-page img {
+  padding: 6px !important;
+  object-fit: contain !important;
+  background: #fff !important;
+}
+
+/* Botón verde para stickers */
+.ed-sticker-whatsapp-btn,
+.comp-sticker-whatsapp-btn {
+  width: 100% !important;
+  min-height: 44px !important;
+  border: none !important;
+  border-radius: 999px !important;
+  padding: 10px 14px !important;
+
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+
+  background: #25D366 !important;
+  color: #fff !important;
+
+  font-weight: 900 !important;
+  font-size: 13px !important;
+  line-height: 1.1 !important;
+  text-align: center !important;
+
+  box-shadow: 0 8px 20px rgba(0,0,0,.18) !important;
+  cursor: pointer !important;
+}
+
+.ed-sticker-whatsapp-btn i,
+.comp-sticker-whatsapp-btn i {
+  font-size: 17px !important;
+}
+
+.ed-card-actions-stickers {
+  display: grid !important;
+  grid-template-columns: 1fr auto auto auto !important;
+  align-items: center !important;
+  gap: 7px !important;
+  width: 100% !important;
+}
+
+.ed-card-actions-stickers .ed-sticker-whatsapp-btn {
+  grid-column: 1 / -1 !important;
+}
+
+.ed-sticker-added-mini,
+.comp-sticker-mini-ok {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  margin-left: 6px !important;
+  font-size: 10px !important;
+  font-weight: 900 !important;
+  opacity: .85 !important;
+}
+
+/* Compartidos: card de stickers más baja */
+.comp-post--stickers {
+  max-width: 720px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+.comp-post--stickers .comp-post-head {
+  margin-bottom: 8px !important;
+}
+
+.comp-post-media--stickers {
+  height: clamp(210px, 45vw, 330px) !important;
+  min-height: 210px !important;
+  max-height: 330px !important;
+  overflow: hidden !important;
+  border-radius: 18px !important;
+  background: #fff !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.comp-post-media--stickers .ed-mini-galeria,
+.comp-post-media--stickers .ed-mini-paginas,
+.comp-post-media--stickers .ed-mini-page {
+  height: 100% !important;
+}
+
+.comp-post-media--stickers .ed-mini-page img,
+.comp-post-media--stickers > img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+  padding: 8px !important;
+  background: #fff !important;
+  border-radius: 16px !important;
+}
+
+.comp-post-actions--stickers {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 12px 12px 14px !important;
+}
+
+.comp-post-actions--stickers .comp-sticker-whatsapp-btn {
+  max-width: 520px !important;
+}
+
+/* En celular, que no quede gigante */
+@media (max-width: 700px) {
+  .ed-lista-stickers .ed-card-stickers {
+    flex-basis: 68vw !important;
+    max-width: 230px !important;
+  }
+
+  .comp-post-media--stickers {
+    height: 300px !important;
+    min-height: 300px !important;
+    max-height: 300px !important;
+  }
+
+  .comp-sticker-whatsapp-btn {
+    min-height: 48px !important;
+    font-size: 14px !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .ed-lista-stickers .ed-card-stickers {
+    flex-basis: 62vw !important;
+    max-width: 215px !important;
+  }
+
+  .comp-post-media--stickers {
+    height: 275px !important;
+    min-height: 275px !important;
+    max-height: 275px !important;
+  }
+}
+
 </style> 
