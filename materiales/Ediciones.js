@@ -1166,6 +1166,36 @@ window.edLimpiarBusquedaEdiciones = () => {
   renderEdiciones();
 };
 
+/* ================= STICKERS APK / WHATSAPP ================= */
+
+window.edAgregarStickersWhatsApp = function(edicionId = "", boton = null) {
+  try {
+    const androidOk =
+      window.AndroidVida &&
+      typeof window.AndroidVida.agregarStickersWhatsapp === "function";
+
+    if (androidOk) {
+      if (boton) boton.disabled = true;
+
+      window.AndroidVida.agregarStickersWhatsapp();
+
+      setTimeout(() => {
+        if (boton) boton.disabled = false;
+      }, 1500);
+
+      return;
+    }
+
+    alert("Para agregar este pack a WhatsApp, abrilo desde la app Android instalada.");
+  } catch (e) {
+    console.error("No pude agregar stickers a WhatsApp:", e);
+
+    if (boton) boton.disabled = false;
+
+    alert("No pude abrir WhatsApp para agregar los stickers.");
+  }
+};
+
 /* ================= FLECHAS GALERÍA EDICIONES - PC ================= */
 
 function edActualizarFlechasGaleria() {
@@ -1954,7 +1984,7 @@ function renderEdiciones() {
       <button
         type="button"
         class="ed-sticker-whatsapp-btn"
-        onclick="vaAgregarStickersWhatsAppDesdeWeb?.('${edEscape(ed.id)}', this)"
+onclick="edAgregarStickersWhatsApp('${edEscape(ed.id)}', this)"
         title="Agregar stickers a WhatsApp"
       >
         <i class="fa-brands fa-whatsapp"></i>
