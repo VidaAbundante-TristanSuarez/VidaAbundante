@@ -652,4 +652,337 @@ window.subirPendingAudioAFirebase = async ({ subirIglesia = false } = {}) => {
 
   return url;
 };
+
+// =========================================================
+// 🎧 AUDIO DE NOTAS + TÍTULO DINÁMICO DEL MODAL
+// =========================================================
+
+/*
+  Conservamos la función original que toma
+  el texto desde Crear imagen o Devocionales.
+*/
+const vaAudioTextoBaseAnterior =
+  audioTextoBaseActual;
+
+/*
+  Cuando el audio viene desde una nota,
+  usamos el texto preparado por biblia.js.
+*/
+audioTextoBaseActual = function() {
+  if (
+    window.__AUDIO_ORIGEN === "nota"
+  ) {
+    return String(
+      window.__AUDIO_NOTA_TEXTO || ""
+    ).trim();
+  }
+
+  return vaAudioTextoBaseAnterior();
+};
+
+function vaAudioCambiarTituloModal(
+  texto = "🎧 Audio de Biblia"
+) {
+  const modal =
+    document.getElementById("modalAudio");
+
+  const card =
+    modal?.querySelector(".modal-card");
+
+  const cabecera =
+    card?.firstElementChild;
+
+  const titulo =
+    cabecera?.querySelector(
+      "b, strong, h2, h3"
+    );
+
+  if (titulo) {
+    titulo.textContent = texto;
+  }
+}
+
+/*
+  Modificamos la apertura sin borrar
+  el funcionamiento que ya tenías.
+*/
+const vaAbrirModalAudioAnterior =
+  window.abrirModalAudio;
+
+window.abrirModalAudio = function() {
+  const origen = String(
+    window.__AUDIO_ORIGEN || ""
+  );
+
+  vaAbrirModalAudioAnterior?.();
+
+  const modalImagen =
+    document.getElementById(
+      "modalPersonalizar"
+    );
+
+  const esDevocional =
+    origen === "devocional" ||
+    window.__DEVOCIONAL_AUDIO_ACTIVO ===
+      true ||
+    modalImagen?.classList.contains(
+      "modo-devocional"
+    );
+
+  if (origen === "nota") {
+    vaAudioCambiarTituloModal(
+      "🎧 Audio de la nota"
+    );
+
+    const audio =
+      document.getElementById(
+        "audioPreview"
+      );
+
+    const urlExistente =
+      String(
+        window.__AUDIO_NOTA_URL || ""
+      ).trim();
+
+    /*
+      Si ya había audio, lo mostramos
+      directamente en el reproductor.
+    */
+    if (audio && urlExistente) {
+      audio.src = urlExistente;
+      audio.load();
+    }
+
+    /*
+      La función original puede actualizar
+      el estado de manera asíncrona.
+      Lo corregimos con pequeños reintentos.
+    */
+    [0, 180, 550].forEach(ms => {
+      setTimeout(() => {
+        if (
+          window.__AUDIO_ORIGEN !==
+          "nota"
+        ) {
+          return;
+        }
+
+        const estado =
+          document.getElementById(
+            "audioEstado"
+          );
+
+        if (!estado) return;
+
+        estado.textContent =
+          urlExistente
+            ? "Esta nota ya tiene audio. Podés escucharlo o generar uno nuevo."
+            : "Listo para previsualizar el audio de la nota.";
+      }, ms);
+    });
+
+    return;
+  }
+
+  if (esDevocional) {
+    vaAudioCambiarTituloModal(
+      "🎧 Audio devocional"
+    );
+  } else {
+    vaAudioCambiarTituloModal(
+      "🎧 Audio de Biblia"
+    );
+  }
+};
+
+/*
+  Al cerrar un audio de nota,
+  limpiamos el contexto para que luego
+  Crear imagen vuelva a usar Biblia.
+*/
+const vaCerrarModalAudioAnterior =
+  window.cerrarModalAudio;
+
+window.cerrarModalAudio = function() {
+  const eraNota =
+    window.__AUDIO_ORIGEN === "nota";
+
+  vaCerrarModalAudioAnterior?.();
+
+  if (eraNota) {
+    window.__AUDIO_ORIGEN = "";
+    window.__AUDIO_NOTA_ID = "";
+    window.__AUDIO_NOTA_TEXTO = "";
+    window.__AUDIO_NOTA_URL = "";
+    window.__AUDIO_NOTA_ORIGEN_LISTA =
+      "";
+  }
+};
+
+/*
+  El botón Correcto guarda automáticamente
+  el audio dentro de la nota.
+*/
+const vaFinalizarAudioAnterior =
+  window.finalizarYSubirAudio;
+
+window.finalizarYSubirAudio =
+  async function() {
+    if (
+      window.__AUDIO_ORIGEN !== "nota"
+    ) {
+      return await vaFinalizarAudioAnterior?.();
+    }
+
+    const estado =
+      document.getElementById(
+        "audioEstado"
+      );
+
+    const textarea =
+      document.getElementById(
+        "textoAudio"
+      );
+
+    const texto =
+      String(
+        textarea?.value || ""
+      ).trim();
+
+    if (!texto) {
+      if (estado) {
+        estado.textContent =
+          "⚠️ Escribí o pegá el texto del audio.";
+      }
+      return;
+    }
+
+    if (!window.__audioBase64) {
+      if (estado) {
+        estado.textContent =
+          "⚠️ Primero tocá Escucha previa o Regenerar.";
+      }
+      return;
+    }
+
+    const idNota =
+      String(
+        window.__AUDIO_NOTA_ID || ""
+      ).trim();
+
+    if (!idNota) {
+      if (estado) {
+        estado.textContent =
+          "⚠️ No encontré la nota.";
+      }
+      return;
+    }
+
+    const textoFinalAudio =
+      audioPrepararTextoParaTTS(texto);
+
+    window.__pendingAudio = {
+      texto: textoFinalAudio,
+      textoOriginal: texto,
+      audioBase64:
+        window.__audioBase64,
+      contexto: "nota",
+      ts: Date.now()
+    };
+
+    try {
+      if (estado) {
+        estado.textContent =
+          "⏳ Guardando audio en la nota...";
+      }
+
+      /*
+        Utilizamos el mismo almacenamiento R2
+        que Crear imagen de Biblia.
+      */
+      const url =
+        await window
+          .subirPendingAudioAFirebase({
+            subirIglesia: false
+          });
+
+      if (
+        typeof window.vaGuardarAudioNota !==
+        "function"
+      ) {
+        throw new Error(
+          "No está disponible el guardado de audio para notas."
+        );
+      }
+
+      await window.vaGuardarAudioNota({
+        id: idNota,
+        url,
+        texto: textoFinalAudio
+      });
+
+      window.__AUDIO_NOTA_URL = url;
+
+      if (estado) {
+        estado.textContent =
+          "✅ Audio guardado en la nota.";
+      }
+
+      setTimeout(() => {
+        window.cerrarModalAudio?.();
+      }, 500);
+
+    } catch (error) {
+      console.error(
+        "Error guardando audio de nota:",
+        error
+      );
+
+      if (estado) {
+        estado.textContent =
+          "❌ " +
+          (
+            error?.message ||
+            "No pude guardar el audio."
+          );
+      }
+    }
+  };
+
+/*
+  El botón de audio de Crear imagen
+  debe indicar claramente que viene
+  desde Biblia y no desde una nota.
+*/
+const vaBtnAbrirAudio =
+  document.getElementById(
+    "btnAbrirAudio"
+  );
+
+if (vaBtnAbrirAudio) {
+  vaBtnAbrirAudio.onclick = event => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const modalImagen =
+      document.getElementById(
+        "modalPersonalizar"
+      );
+
+    const esDevocional =
+      window.__DEVOCIONAL_AUDIO_ACTIVO ===
+        true ||
+      modalImagen?.classList.contains(
+        "modo-devocional"
+      );
+
+    window.__AUDIO_ORIGEN =
+      esDevocional
+        ? "devocional"
+        : "biblia";
+
+    window.abrirModalAudio?.();
+  };
+}
+  
 });
