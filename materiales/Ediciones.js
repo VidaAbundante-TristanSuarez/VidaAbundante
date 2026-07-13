@@ -1168,10 +1168,92 @@ window.edLimpiarBusquedaEdiciones = () => {
 
 /* ================= STICKERS APK / WHATSAPP ================= */
 
-/* ================= STICKERS APK / WHATSAPP ================= */
-
 const ED_APK_DOWNLOAD_URL =
   "https://github.com/VidaAbundante-TristanSuarez/VidaAbundante/releases/latest";
+
+function edStickerPackIdSeguro(valor = "") {
+  let limpio = String(valor || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9_]+/g, "_")
+    .replace(/_+/g, "_")
+    .replace(/^_+|_+$/g, "");
+
+  if (!limpio) {
+    limpio = `vida_abundante_${Date.now()}`;
+  }
+
+  if (!/^[a-z]/.test(limpio)) {
+    limpio = `va_${limpio}`;
+  }
+
+  return limpio.slice(0, 80);
+}
+
+function edStickerImagenesParaPack(ed = {}) {
+  const paginas = edPaginasImagenesVisuales(ed);
+
+  return paginas
+    .filter(p => !edPaginaEsVideo(p))
+    .map((p, i) => ({
+      orden: Number(p.orden ?? i),
+      url: edMediaUrlPagina(p),
+      emojis: Array.isArray(p.emojis)
+        ? p.emojis
+        : ["🙏", "💙"]
+    }))
+    .filter(p => p.url)
+    .sort((a, b) => Number(a.orden || 0) - Number(b.orden || 0))
+    .slice(0, 30);
+}
+
+function edCrearPayloadStickerPack(ed = {}) {
+  const stickers = edStickerImagenesParaPack(ed);
+
+  const identifier = edStickerPackIdSeguro(
+    ed.stickerPackId ||
+    ed.packId ||
+    ed.refPublica ||
+    ed.id ||
+    ed.titulo ||
+    `vida_abundante_${Date.now()}`
+  );
+
+  const name = String(
+    ed.stickerPackName ||
+    ed.titulo ||
+    "Vida Abundante"
+  ).trim().slice(0, 50) || "Vida Abundante";
+
+  const portada =
+    String(
+      ed.stickerTrayUrl ||
+      ed.portadaUrl ||
+      stickers[0]?.url ||
+      ""
+    ).trim();
+
+  return {
+    identifier,
+    packId: identifier,
+    edicionId: ed.id || "",
+    name,
+    packName: name,
+    titulo: name,
+    publisher: "Iglesia Cristiana de la Vida Abundante",
+    portadaUrl: portada,
+    trayImageUrl: portada,
+    stickerVersion: Number(ed.stickerVersion || 1),
+    stickers: stickers.map((st, i) => ({
+      url: st.url,
+      imageUrl: st.url,
+      mediaUrl: st.url,
+      emojis: st.emojis || ["🙏", "💙"],
+      orden: i
+    }))
+  };
+}
 
 function edMostrarAvisoDescargarAPK() {
   const anterior = document.getElementById("edModalDescargarAPK");
@@ -1281,36 +1363,160 @@ function edMostrarAvisoDescargarAPK() {
   });
 }
 
-window.edAgregarStickersWhatsApp = function(edicionId = "", boton = null) {
-  try {
-    if (boton) boton.disabled = true;
+function edSetBotonStickerTrabajando(boton, trabajando = false, texto = "") {
+  if (!boton) return;
 
-    // ✅ Nombre correcto exacto como está en MainActivity.kt:
-    // AndroidVida.agregarStickersWhatsApp()
-    if (window.AndroidVida) {
-      try {
-        window.AndroidVida.agregarStickersWhatsApp();
+  boton.disabled = !!trabajando;
 
-        setTimeout(() => {
-          if (boton) boton.disabled = false;
-        }, 1500);
+  if (!boton.dataset.textoOriginal) {
+    boton.dataset.textoOriginal = boton.innerHTML;
+  }
 
-        return;
-      } catch (e) {
-        console.error("AndroidVida existe, pero falló agregarStickersWhatsApp:", e);
+  if (trabajando) {
+    boton.innerHTML = `
+      <i class="fa-solid fa-spinner fa-spin"></i>
+      <span>${edEscape(texto || "Preparando...")}</span>
+    `;
+  } else {
+    boton.innerHTML = boton.dataset.textoOriginal;
+  }
+}
+
+window.vaStickerPackEstadoAndroid = function(mensaje = "") {
+  const avisoId = "edStickerAndroidEstado";
+  let aviso = document.getElementById(avisoId);
+
+  if (!mensaje) {
+    aviso?.remove();
+    return;
+  }
+
+  if (!aviso) {
+    aviso = document.createElement("div");
+    aviso.id = avisoId;
+    aviso.style.cssText = `
+      position: fixed;
+      left: 50%;
+      bottom: 18px;
+      transform: translateX(-50%);
+      z-index: 2147483601;
+      background: rgba(0,0,0,.86);
+      color: #fff;
+      padding: 11px 15px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 800;
+      box-shadow: 0 8px 25px rgba(0,0,0,.25);
+    `;
+    document.body.appendChild(aviso);
+  }
+
+  aviso.textContent = mensaje;
+};
+
+window.vaStickerPackResultadoAndroid = function(ok = false, packId = "", error = "") {
+  const id = String(packId || "").trim();
+
+  if (ok && id) {
+    try {
+      localStorage.setItem(`vaStickerPackAgregado_${id}`, "1");
+
+      const edicionId = localStorage.getItem(`vaStickerPackEdicion_${id}`) || "";
+
+      if (edicionId) {
+        localStorage.setItem(`edicion_descargada_${edicionId}`, "1");
+
+        edMarcarDescargada(edicionId).catch(() => {});
+        edIncrementarStat(edicionId, "descargas").catch(() => {});
       }
+    } catch (_) {}
+
+    if (typeof mostrarToast === "function") {
+      mostrarToast("✅ Pack enviado a WhatsApp");
     }
 
-    if (boton) boton.disabled = false;
+    renderEdiciones();
 
+    if (typeof window.renderCompartidos === "function") {
+      window.renderCompartidos();
+    }
+
+    return;
+  }
+
+  if (!ok && error) {
+    alert("WhatsApp rechazó el pack:\n\n" + error);
+  }
+};
+
+window.edAgregarStickersWhatsApp = async function(edicionId = "", boton = null) {
+  try {
+    edSetBotonStickerTrabajando(boton, true, "Preparando...");
+
+    const ed = await obtenerEdicion(edicionId);
+
+    if (!ed) {
+      alert("No encontré este pack de stickers.");
+      edSetBotonStickerTrabajando(boton, false);
+      return;
+    }
+
+    if (edRamaEdicion(ed) !== "stickers") {
+      alert("Esta edición no está marcada como pack de stickers.");
+      edSetBotonStickerTrabajando(boton, false);
+      return;
+    }
+
+    const pack = edCrearPayloadStickerPack(ed);
+
+    if (!pack.stickers || pack.stickers.length < 3) {
+      alert("WhatsApp necesita mínimo 3 stickers en el pack.");
+      edSetBotonStickerTrabajando(boton, false);
+      return;
+    }
+
+    try {
+      localStorage.setItem(`vaStickerPackEdicion_${pack.identifier}`, ed.id || edicionId);
+    } catch (_) {}
+
+    if (
+      window.vaAndroidAgregarStickerPack &&
+      typeof window.vaAndroidAgregarStickerPack === "function"
+    ) {
+      const enviado = window.vaAndroidAgregarStickerPack(pack);
+
+      setTimeout(() => {
+        edSetBotonStickerTrabajando(boton, false);
+      }, 1800);
+
+      if (enviado !== false) return;
+    }
+
+    if (
+      window.AndroidVida &&
+      typeof window.AndroidVida.agregarStickerPackWhatsApp === "function"
+    ) {
+      window.AndroidVida.agregarStickerPackWhatsApp(JSON.stringify(pack));
+
+      setTimeout(() => {
+        edSetBotonStickerTrabajando(boton, false);
+      }, 1800);
+
+      return;
+    }
+
+    edSetBotonStickerTrabajando(boton, false);
     edMostrarAvisoDescargarAPK();
 
   } catch (e) {
-    console.error("No pude agregar stickers a WhatsApp:", e);
+    console.error("No pude preparar el pack de stickers:", e);
 
-    if (boton) boton.disabled = false;
+    edSetBotonStickerTrabajando(boton, false);
 
-    edMostrarAvisoDescargarAPK();
+    alert(
+      "No pude preparar este pack de stickers.\n\n" +
+      (e?.message || e)
+    );
   }
 };
 
@@ -3121,8 +3327,21 @@ const mediaFile =
       };
     }
 
+const stickerPackId =
+  rama === "stickers"
+    ? (
+        existente?.stickerPackId ||
+        edStickerPackIdSeguro(`va_stickers_${edId}`)
+      )
+    : (existente?.stickerPackId || "");
+
+const stickerVersion =
+  rama === "stickers"
+    ? Number(existente?.stickerVersion || 0) + 1
+    : Number(existente?.stickerVersion || 0);
+
 const data = {
-    titulo,
+  titulo,
   refPublica,
   rama,
   categoria: rama,
@@ -3132,7 +3351,15 @@ const data = {
   publicada: true,
   creadoPor: existente?.creadoPor || window.__UID || "",
   ts: existente?.ts || Date.now(),
-  actualizado: Date.now()
+  actualizado: Date.now(),
+
+  ...(rama === "stickers" ? {
+    stickerPackId,
+    stickerPackName: titulo,
+    stickerPublisher: "Iglesia Cristiana de la Vida Abundante",
+    stickerTrayUrl: portadaUrl,
+    stickerVersion
+  } : {})
 };
 
     edSetEstado("Guardando datos...");
