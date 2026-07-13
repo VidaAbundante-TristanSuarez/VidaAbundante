@@ -16,6 +16,9 @@ const AUDIO_VOZ_BIBLIA = "es-US-Standard-B";
 // ✅ Devocionales: Wavenet + arpa, pasando por Firebase Function
 const AUDIO_VOZ_DEVOCIONAL = "es-US-Wavenet-B";
 
+// ✅ Comentarios de prédica: segunda voz masculina, español de EE.UU.
+const AUDIO_VOZ_COMENTARIO_PREDICA = "es-US-Wavenet-C";
+
 const AUDIO_LIMITE_COLAB_DIA = 3;
 
 window.__audioCacheLocal = window.__audioCacheLocal || {
@@ -528,6 +531,52 @@ async function audioPedirParteTTS({
   return data.audioBase64;
 }
 
+/*
+  La prédica completa se genera en Firebase.
+  Allí se divide, alterna las dos voces, se recodifica como un
+  único MP3 válido y recién después se mezcla el arpa una sola vez.
+*/
+async function audioPedirPredicaCompletaTTS({
+  texto = "",
+  segmentos = []
+} = {}) {
+  const body = {
+    action: "ttsPredica",
+    texto: String(texto || "").trim(),
+    segmentos: Array.isArray(segmentos) ? segmentos : [],
+    voiceNameScripture: AUDIO_VOZ_DEVOCIONAL,
+    voiceNameComment: AUDIO_VOZ_COMENTARIO_PREDICA
+  };
+
+  const r = await fetch(AUDIO_WEBAPP_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(body)
+  });
+
+  const data = await r.json().catch(() => ({}));
+
+  if (!r.ok) {
+    throw new Error(
+      String(
+        data?.error ||
+        data?.detail ||
+        "Error HTTP " + r.status
+      )
+    );
+  }
+
+  if (!data.audioBase64) {
+    throw new Error(
+      "Firebase no devolvió el audio completo de la prédica."
+    );
+  }
+
+  return data.audioBase64;
+}
+
 function audioContextoActual() {
   const modalImagen = document.getElementById("modalPersonalizar");
 
@@ -812,44 +861,66 @@ window.escucharPreviaAudio = async () => {
             : "🎧 Generando previa devocional con arpa...";
     }
 
-    /*
-      Google TTS no acepta más de 5000 bytes por solicitud.
-      Las prédicas largas se dividen automáticamente.
+    let audioBase64Final = "";
 
-      - Biblia/notas: todas las partes se generan sin arpa.
-      - Devocional/prédica: la PRIMERA parte lleva arpa.
-      - Las siguientes partes usan la misma voz Wavenet, pero sin
-        repetir el arpa.
-    */
-    const partesTexto = audioPartirTextoPorBytes(textoLimpio);
-    const audiosPartes = [];
-
-    for (let i = 0; i < partesTexto.length; i++) {
-      if (estado && partesTexto.length > 1) {
+    if (esPredicaArpa) {
+      if (estado) {
         estado.textContent =
-          `🎧 Generando parte ${i + 1} de ${partesTexto.length}...`;
+          "🎧 Generando la prédica completa. Las citas y los comentarios usarán voces distintas...";
       }
 
-      const action =
-        esBibliaSeco
-          ? "ttsSeco"
-          : i === 0
-            ? "tts"
-            : "ttsSeco";
+      audioBase64Final =
+        await audioPedirPredicaCompletaTTS({
+          texto: textoLimpio,
+          segmentos:
+            window.__AUDIO_PREDICA_SEGMENTOS || []
+        });
 
-      const audioParte = await audioPedirParteTTS({
-        texto: partesTexto[i],
-        action,
-        voiceName
-      });
+    } else if (esDevocionalArpa) {
+      /*
+        El devocional completo también queda a cargo de Firebase.
+        Si alguna vez es largo, Firebase lo une correctamente antes
+        de devolverlo.
+      */
+      audioBase64Final =
+        await audioPedirParteTTS({
+          texto: textoLimpio,
+          action: "tts",
+          voiceName
+        });
 
-      audiosPartes.push(audioParte);
+    } else {
+      /*
+        Biblia y notas conservan la voz seca directa.
+        Normalmente son textos breves; si superan el límite se
+        dividen como antes.
+      */
+      const partesTexto =
+        audioPartirTextoPorBytes(textoLimpio);
+
+      const audiosPartes = [];
+
+      for (let i = 0; i < partesTexto.length; i++) {
+        if (estado && partesTexto.length > 1) {
+          estado.textContent =
+            `🎧 Generando parte ${i + 1} de ${partesTexto.length}...`;
+        }
+
+        const audioParte =
+          await audioPedirParteTTS({
+            texto: partesTexto[i],
+            action: "ttsSeco",
+            voiceName
+          });
+
+        audiosPartes.push(audioParte);
+      }
+
+      audioBase64Final =
+        audiosPartes.length === 1
+          ? audiosPartes[0]
+          : audioUnirMp3Base64(audiosPartes);
     }
-
-    const audioBase64Final =
-      audiosPartes.length === 1
-        ? audiosPartes[0]
-        : audioUnirMp3Base64(audiosPartes);
 
     const data = {
       audioBase64: audioBase64Final
@@ -1247,6 +1318,8 @@ window.cerrarModalAudio = function() {
     window.__AUDIO_ORIGEN = "";
     window.__AUDIO_PREDICA_ID = "";
     window.__AUDIO_PREDICA_TEXTO = "";
+    window.__AUDIO_PREDICA_SEGMENTOS = [];
+    window.__AUDIO_PREDICA_FECHA = "";
     window.__AUDIO_PREDICA_URL = "";
   }
 };
