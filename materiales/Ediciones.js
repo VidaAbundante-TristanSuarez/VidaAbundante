@@ -4089,7 +4089,125 @@ async function edBlobPngDesdeUrl(url) {
   });
 }
 
-function edDescargarBlob(blob, nombre = "imagen.png") {
+/* =========================================================
+   APK ANDROID: DESCARGAR / COMPARTIR ARCHIVOS DE EDICIONES
+========================================================= */
+
+function edPuedeDescargarAndroid() {
+  return !!(
+    window.AndroidVida &&
+    typeof window.AndroidVida.descargarArchivoBase64 === "function"
+  );
+}
+
+function edPuedeCompartirAndroid() {
+  return !!(
+    window.AndroidVida &&
+    typeof window.AndroidVida.compartirArchivoBase64 === "function"
+  );
+}
+
+function edMimeDesdeNombreArchivo(nombre = "") {
+  const s = String(nombre || "").toLowerCase();
+
+  if (s.endsWith(".jpg") || s.endsWith(".jpeg")) return "image/jpeg";
+  if (s.endsWith(".png")) return "image/png";
+  if (s.endsWith(".webp")) return "image/webp";
+  if (s.endsWith(".gif")) return "image/gif";
+
+  if (s.endsWith(".pdf")) return "application/pdf";
+
+  return "";
+}
+
+function edExtensionPorMime(mime = "") {
+  const t = String(mime || "").toLowerCase().split(";")[0].trim();
+
+  if (t === "image/jpeg") return "jpg";
+  if (t === "image/png") return "png";
+  if (t === "image/webp") return "webp";
+  if (t === "image/gif") return "gif";
+  if (t === "application/pdf") return "pdf";
+
+  return "";
+}
+
+function edNombreArchivoAndroid(nombre = "archivo", mime = "") {
+  let limpio = String(nombre || "archivo")
+    .trim()
+    .replace(/[\/\\:*?"<>|]/g, "_")
+    .replace(/\s+/g, "_")
+    .slice(0, 120) || "archivo";
+
+  if (/\.[a-z0-9]{2,6}$/i.test(limpio)) {
+    return limpio;
+  }
+
+  const ext = edExtensionPorMime(mime);
+  return ext ? `${limpio}.${ext}` : limpio;
+}
+
+function edBlobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      const res = String(reader.result || "");
+      resolve(res.includes(",") ? res.split(",")[1] : res);
+    };
+
+    reader.onerror = () => {
+      reject(new Error("No pude preparar el archivo para Android."));
+    };
+
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function edAndroidDescargarBlob(blob, fileName = "archivo", tipo = "") {
+  const mime =
+    String(tipo || blob?.type || edMimeDesdeNombreArchivo(fileName) || "application/octet-stream")
+      .split(";")[0]
+      .trim();
+
+  const nombre = edNombreArchivoAndroid(fileName, mime);
+  const blobFinal = blob.type === mime ? blob : blob.slice(0, blob.size, mime);
+  const base64 = await edBlobToBase64(blobFinal);
+
+  window.AndroidVida.descargarArchivoBase64(
+    nombre,
+    mime,
+    base64
+  );
+}
+
+async function edAndroidCompartirBlob(blob, fileName = "archivo", tipo = "") {
+  const mime =
+    String(tipo || blob?.type || edMimeDesdeNombreArchivo(fileName) || "application/octet-stream")
+      .split(";")[0]
+      .trim();
+
+  const nombre = edNombreArchivoAndroid(fileName, mime);
+  const blobFinal = blob.type === mime ? blob : blob.slice(0, blob.size, mime);
+  const base64 = await edBlobToBase64(blobFinal);
+
+  window.AndroidVida.compartirArchivoBase64(
+    nombre,
+    mime,
+    base64
+  );
+}
+
+async function edDescargarBlob(blob, nombre = "imagen.png") {
+  if (edPuedeDescargarAndroid()) {
+    await edAndroidDescargarBlob(
+      blob,
+      nombre,
+      blob?.type || edMimeDesdeNombreArchivo(nombre) || "image/png"
+    );
+    return;
+  }
+
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
 
@@ -4219,7 +4337,7 @@ window.descargarPaginaEdicionPNG = async function descargarPaginaEdicionPNG(id, 
     const base = edSafeName(ed.titulo || "edicion").replace(/\.[^.]+$/, "");
     const nombre = `${base}_pagina_${Number(index || 0) + 1}.png`;
 
-    edDescargarBlob(blob, nombre);
+  await edDescargarBlob(blob, nombre);
 
     if (opts.marcar !== false) {
       await edMarcarDescargada(id);
@@ -5030,8 +5148,21 @@ const dataUrl = await edUrlToDataUrl(edMediaUrlPagina(paginas[i]));
       pdf.addImage(dataUrl, tipo, x, y, fit.w, fit.h);
     }
 
-    const nombre = edSafeName(ed.titulo || "edicion").replace(/\.[^.]+$/, "");
-    pdf.save(`${nombre}.pdf`);
+const nombre = edSafeName(ed.titulo || "edicion").replace(/\.[^.]+$/, "");
+const nombrePdf = `${nombre}.pdf`;
+
+if (edPuedeDescargarAndroid()) {
+  const pdfBlob = pdf.output("blob");
+
+  await edAndroidDescargarBlob(
+    pdfBlob,
+    nombrePdf,
+    "application/pdf"
+  );
+} else {
+  pdf.save(nombrePdf);
+}
+
 await edMarcarDescargada(id);
 await edIncrementarStat(id, "descargas");
   } catch (err) {
@@ -5226,6 +5357,19 @@ async function edCompartirPublicacionLink({ titulo, url, portadaUrl = "" }) {
 }
 
 function edDescargarFileFallback(file) {
+  if (edPuedeDescargarAndroid()) {
+    edAndroidDescargarBlob(
+      file,
+      file.name || "edicion.png",
+      file.type || edMimeDesdeNombreArchivo(file.name || "edicion.png") || "image/png"
+    ).catch(err => {
+      console.error("No pude descargar archivo en Android:", err);
+      alert("No pude descargar el archivo.");
+    });
+
+    return;
+  }
+
   const objectUrl = URL.createObjectURL(file);
   const a = document.createElement("a");
 
@@ -5499,20 +5643,31 @@ const paginas = edPaginasImagenesVisuales(ed);
       mostrarToast("⏳ Preparando imagen para compartir...");
     }
 
-    const file = await edCrearFileDesdeUrl(
-      imagenUrl,
-      `${titulo}_${indice + 1}`
-    );
+const file = await edCrearFileDesdeUrl(
+  imagenUrl,
+  `${titulo}_${indice + 1}`
+);
 
-    if (navigator.share && navigator.canShare?.({ files: [file] })) {
-      await navigator.share({
-        title: titulo,
-        files: [file]
-      });
+if (edPuedeCompartirAndroid()) {
+  await edAndroidCompartirBlob(
+    file,
+    file.name || `${titulo}_${indice + 1}.png`,
+    file.type || "image/png"
+  );
 
-      await edIncrementarStat(id, "compartidos");
-      return;
-    }
+  await edIncrementarStat(id, "compartidos");
+  return;
+}
+
+if (navigator.share && navigator.canShare?.({ files: [file] })) {
+  await navigator.share({
+    title: titulo,
+    files: [file]
+  });
+
+  await edIncrementarStat(id, "compartidos");
+  return;
+}
 
     edDescargarFileFallback(file);
 
