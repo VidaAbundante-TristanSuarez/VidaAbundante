@@ -1168,31 +1168,149 @@ window.edLimpiarBusquedaEdiciones = () => {
 
 /* ================= STICKERS APK / WHATSAPP ================= */
 
+/* ================= STICKERS APK / WHATSAPP ================= */
+
+const ED_APK_DOWNLOAD_URL =
+  "https://github.com/VidaAbundante-TristanSuarez/VidaAbundante/releases/latest";
+
+function edMostrarAvisoDescargarAPK() {
+  const anterior = document.getElementById("edModalDescargarAPK");
+  if (anterior) anterior.remove();
+
+  const modal = document.createElement("div");
+  modal.id = "edModalDescargarAPK";
+  modal.className = "modal-overlay abierto";
+
+  modal.style.cssText = `
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 2147483600 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: rgba(0,0,0,.55) !important;
+    padding: 16px !important;
+    box-sizing: border-box !important;
+  `;
+
+  modal.innerHTML = `
+    <div style="
+      width: min(390px, calc(100vw - 32px));
+      background: rgba(255,255,255,.98);
+      color: #111;
+      border-radius: 22px;
+      padding: 22px;
+      box-shadow: 0 16px 50px rgba(0,0,0,.28);
+      box-sizing: border-box;
+      text-align: center;
+      font-family: Arial, sans-serif;
+    ">
+      <div style="
+        width: 64px;
+        height: 64px;
+        margin: 0 auto 12px;
+        border-radius: 999px;
+        background: #d1eeff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 30px;
+      ">
+        💬
+      </div>
+
+      <h3 style="margin: 0 0 10px; font-size: 24px; font-weight: 900;">
+        Stickers para WhatsApp
+      </h3>
+
+      <p style="margin: 0 0 18px; font-size: 15px; line-height: 1.45;">
+        Para agregar este pack a WhatsApp necesitás abrirlo desde la app Android instalada.
+      </p>
+
+      <button
+        type="button"
+        id="edBtnDescargarAPK"
+        style="
+          width: 100%;
+          min-height: 48px;
+          border: none;
+          border-radius: 999px;
+          background: #25D366;
+          color: white;
+          font-size: 16px;
+          font-weight: 900;
+          cursor: pointer;
+          margin-bottom: 10px;
+        "
+      >
+        Descargar app Android
+      </button>
+
+      <button
+        type="button"
+        id="edBtnCerrarAPK"
+        style="
+          width: 100%;
+          min-height: 44px;
+          border: none;
+          border-radius: 999px;
+          background: rgba(0,0,0,.08);
+          color: #111;
+          font-size: 15px;
+          font-weight: 800;
+          cursor: pointer;
+        "
+      >
+        Cerrar
+      </button>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  document.getElementById("edBtnDescargarAPK")?.addEventListener("click", () => {
+    window.open(ED_APK_DOWNLOAD_URL, "_blank");
+  });
+
+  document.getElementById("edBtnCerrarAPK")?.addEventListener("click", () => {
+    modal.remove();
+  });
+
+  modal.addEventListener("click", e => {
+    if (e.target === modal) modal.remove();
+  });
+}
+
 window.edAgregarStickersWhatsApp = function(edicionId = "", boton = null) {
   try {
-    const androidOk =
-      window.AndroidVida &&
-      typeof window.AndroidVida.agregarStickersWhatsapp === "function";
+    if (boton) boton.disabled = true;
 
-    if (androidOk) {
-      if (boton) boton.disabled = true;
+    // ✅ Nombre correcto exacto como está en MainActivity.kt:
+    // AndroidVida.agregarStickersWhatsApp()
+    if (window.AndroidVida) {
+      try {
+        window.AndroidVida.agregarStickersWhatsApp();
 
-      window.AndroidVida.agregarStickersWhatsapp();
+        setTimeout(() => {
+          if (boton) boton.disabled = false;
+        }, 1500);
 
-      setTimeout(() => {
-        if (boton) boton.disabled = false;
-      }, 1500);
-
-      return;
+        return;
+      } catch (e) {
+        console.error("AndroidVida existe, pero falló agregarStickersWhatsApp:", e);
+      }
     }
 
-    alert("Para agregar este pack a WhatsApp, abrilo desde la app Android instalada.");
+    if (boton) boton.disabled = false;
+
+    edMostrarAvisoDescargarAPK();
+
   } catch (e) {
     console.error("No pude agregar stickers a WhatsApp:", e);
 
     if (boton) boton.disabled = false;
 
-    alert("No pude abrir WhatsApp para agregar los stickers.");
+    edMostrarAvisoDescargarAPK();
   }
 };
 
