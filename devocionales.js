@@ -602,6 +602,57 @@ async function blobToBase64(blob){
   });
 }
 
+/* =========================================================
+   APK ANDROID: COMPARTIR / DESCARGAR CON PUENTE NATIVO
+   ========================================================= */
+function devEsAPKAndroid(){
+  try {
+    return !!(
+      window.AndroidVida &&
+      (
+        typeof window.AndroidVida.compartirArchivoBase64 === "function" ||
+        typeof window.AndroidVida.descargarArchivoBase64 === "function"
+      )
+    );
+  } catch(e) {
+    return false;
+  }
+}
+
+async function devCanvasABlobPNG(canvas){
+  if (!canvas) return null;
+
+  return await new Promise(resolve => {
+    canvas.toBlob(resolve, "image/png");
+  });
+}
+
+async function devAndroidDescargarBlob(blob, nombre = "devocional.png", mime = ""){
+  if (!blob) throw new Error("No hay archivo para descargar.");
+
+  const tipo = mime || blob.type || "image/png";
+  const base64 = await blobToBase64(blob);
+
+  window.AndroidVida.descargarArchivoBase64(
+    nombre || "devocional.png",
+    tipo,
+    base64
+  );
+}
+
+async function devAndroidCompartirBlob(blob, nombre = "devocional.png", mime = ""){
+  if (!blob) throw new Error("No hay archivo para compartir.");
+
+  const tipo = mime || blob.type || "image/png";
+  const base64 = await blobToBase64(blob);
+
+  window.AndroidVida.compartirArchivoBase64(
+    nombre || "devocional.png",
+    tipo,
+    base64
+  );
+}
+
 async function subirImagenAR2DesdeWeb(fileBase64, fileName, contentType = "image/png"){
   const r = await fetch(R2_UPLOAD_URL, {
     method: "POST",
@@ -4942,9 +4993,15 @@ async function devPrepararShareFinalDesdeCanvas(canvas){
 }
 
 async function devDescargarImagenSolo(canvas){
-  const blob = await new Promise(res => canvas.toBlob(res, "image/png"));
+  const blob = await devCanvasABlobPNG(canvas);
+
   if (!blob) {
     alert("❌ No se pudo preparar la imagen.");
+    return;
+  }
+
+  if (devEsAPKAndroid() && window.AndroidVida?.descargarArchivoBase64) {
+    await devAndroidDescargarBlob(blob, "devocional.png", "image/png");
     return;
   }
 
@@ -4969,7 +5026,12 @@ window.devCompartirFinal = async () => {
       return false;
     }
 
-    // ✅ Compartir real: SOLO funciona bien cuando viene de un toque directo del usuario
+    if (devEsAPKAndroid() && window.AndroidVida?.compartirArchivoBase64) {
+      const blob = file instanceof Blob ? file : await devCanvasABlobPNG(canvas);
+      await devAndroidCompartirBlob(blob, "devocional.png", "image/png");
+      return true;
+    }
+
     if (navigator.share && navigator.canShare?.({ files: [file] })) {
       await navigator.share({
         files: [file],
@@ -4978,8 +5040,6 @@ window.devCompartirFinal = async () => {
       return true;
     }
 
-    // ✅ Ya NO descarga automáticamente.
-    // Solo ofrece descargar si el navegador realmente no soporta compartir archivo.
     const descargar = confirm(
       "Este navegador no permite compartir la imagen directamente.\n\n¿Querés descargar el PNG para compartirlo manualmente?"
     );
@@ -4991,7 +5051,6 @@ window.devCompartirFinal = async () => {
     return false;
 
   } catch (e) {
-    // ✅ Si el usuario cancela compartir, NO descargamos nada.
     console.warn("Share cancelado o falló:", e);
     return false;
   }
@@ -7183,8 +7242,12 @@ window.devDescargarImagenItem = async function(url, fileName = "devocional.png")
 
     devBusyShow("⏳ Preparando descarga…");
 
-    // ✅ baja ARCHIVO REAL como blob
     const blob = await fetchDevocionalBlob(url, fileName);
+
+    if (devEsAPKAndroid() && window.AndroidVida?.descargarArchivoBase64) {
+      await devAndroidDescargarBlob(blob, fileName, blob.type || "image/png");
+      return;
+    }
 
     const objUrl = URL.createObjectURL(blob);
 
@@ -7262,20 +7325,22 @@ window.devCompartirImagenItem = async function(url, fileName = "devocional.png")
 
     let file = null;
 
-    // ✅ primero intento usar el archivo precalentado
     try {
       file = await window.devWarmShareImage?.(url, fileName);
     } catch(e) {
       file = null;
     }
 
-    // ✅ si no estaba precalentado, bajo el archivo real ahora
     if (!file) {
       const blob = await fetchDevocionalBlob(url, fileName);
       file = new File([blob], fileName, { type: blob.type || "image/png" });
     }
 
-    // ✅ compartir ARCHIVO REAL
+    if (devEsAPKAndroid() && window.AndroidVida?.compartirArchivoBase64) {
+      await devAndroidCompartirBlob(file, fileName, file.type || "image/png");
+      return;
+    }
+
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
       await navigator.share({
         title: "Devocional",
@@ -7284,7 +7349,6 @@ window.devCompartirImagenItem = async function(url, fileName = "devocional.png")
       return;
     }
 
-    // fallback: descargar archivo real
     const objUrl = URL.createObjectURL(file);
 
     const a = document.createElement("a");
