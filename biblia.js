@@ -7606,16 +7606,36 @@ async function descargarImagenFinal() {
     };
 
     try {
-      canvas.toBlob(blob => {
-        if (!blob) return descargarDesdeDataURL();
+      const blob = await new Promise(resolve => {
+        canvas.toBlob(resolve, "image/png");
+      });
 
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = nombreArchivo;
-        clickLink(link);
-        URL.revokeObjectURL(link.href);
-      }, "image/png");
+      if (!blob) {
+        descargarDesdeDataURL();
+        return;
+      }
+
+      const file = new File([blob], nombreArchivo, {
+        type: "image/png"
+      });
+
+      // ✅ APK Android: descarga nativa real
+      if (await window.vaAndroidDescargarFile?.(file, nombreArchivo)) {
+        return;
+      }
+
+      // ✅ PWA / navegador: descarga normal
+      const objUrl = URL.createObjectURL(file);
+
+      const link = document.createElement("a");
+      link.href = objUrl;
+      link.download = nombreArchivo;
+      clickLink(link);
+
+      setTimeout(() => URL.revokeObjectURL(objUrl), 2000);
+
     } catch (e) {
+      console.warn("Descarga falló, uso dataURL:", e);
       descargarDesdeDataURL();
     }
   });
@@ -7630,30 +7650,55 @@ async function compartirImagenFinal() {
     const ok = await asegurarCanvasFinal({ subir: false }); // ✅ NO SUBE
     if (!ok) return;
 
-    canvas.toBlob(async blob => {
-      if (!blob) {
-        await descargarImagenFinal();
+    const blob = await new Promise(resolve => {
+      canvas.toBlob(resolve, "image/png");
+    });
+
+    if (!blob) {
+      await descargarImagenFinal();
+      return;
+    }
+
+    const file = new File([blob], "versiculo.png", {
+      type: "image/png"
+    });
+
+    try {
+      // ✅ APK Android: compartir nativo real
+      if (await window.vaAndroidCompartirFile?.(file, "Versículo")) {
         return;
       }
 
-      const file = new File([blob], "versiculo.png", { type: "image/png" });
-
-      try {
-        if (navigator.share && navigator.canShare?.({ files: [file] })) {
-          await navigator.share({ files: [file], title: "Versículo" });
-        } else {
-          await descargarImagenFinal();
-          alert("Tu dispositivo/navegador no permite compartir directo. La imagen se descargó para compartirla manualmente.");
-        }
-      } catch (e) {
-        if (window.vaShareCancelado?.(e)) {
-          return;
-        }
-
-        console.warn("Share falló:", e);
-        await descargarImagenFinal();
+      // ✅ PWA / navegador
+      if (navigator.share && navigator.canShare?.({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: "Versículo"
+        });
+        return;
       }
-    }, "image/png");
+
+      // ✅ fallback
+      if (await window.vaAndroidDescargarFile?.(file, file.name)) {
+        return;
+      }
+
+      await descargarImagenFinal();
+      alert("Tu dispositivo/navegador no permite compartir directo. La imagen se descargó para compartirla manualmente.");
+
+    } catch (e) {
+      if (window.vaShareCancelado?.(e)) {
+        return;
+      }
+
+      console.warn("Share falló:", e);
+
+      if (await window.vaAndroidDescargarFile?.(file, file.name)) {
+        return;
+      }
+
+      await descargarImagenFinal();
+    }
   });
 }
 
@@ -12500,16 +12545,37 @@ function notaShareBusyHide() {
 }
 
 function notaShareDescargarArchivo(file) {
-  const objectUrl = URL.createObjectURL(file);
-  const a = document.createElement("a");
+  const descargarWeb = () => {
+    const objectUrl = URL.createObjectURL(file);
+    const a = document.createElement("a");
 
-  a.href = objectUrl;
-  a.download = file.name;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
+    a.href = objectUrl;
+    a.download = file.name || "nota_vida_abundante.png";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
 
-  setTimeout(() => URL.revokeObjectURL(objectUrl), 2000);
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 2000);
+  };
+
+  try {
+    // ✅ APK Android: descarga nativa real
+    if (
+      file &&
+      typeof window.vaAndroidDescargarFile === "function" &&
+      window.vaAndroidPuedeArchivos?.()
+    ) {
+      window.vaAndroidDescargarFile(file, file.name || "nota_vida_abundante.png")
+        .then(ok => {
+          if (!ok) descargarWeb();
+        })
+        .catch(() => descargarWeb());
+
+      return;
+    }
+  } catch (e) {}
+
+  descargarWeb();
 }
 
 window.notaDescargarComoImagen = async function(datos = {}, claveBase = "nota", boton = null) {
@@ -12575,6 +12641,11 @@ window.notaCompartirComoImagen = async function(datos = {}, claveBase = "nota", 
     notaShareBusyShow("Preparando para compartir…");
 
     const file = await window.notaPrepararComoImagen(datos, claveBase);
+
+        // ✅ APK Android: compartir nativo real
+    if (await window.vaAndroidCompartirFile?.(file, datos.titulo || "Nota - Vida Abundante")) {
+      return true;
+    }
 
     if (navigator.share && navigator.canShare?.({ files: [file] })) {
       notaShareBusyShow("Abriendo opciones para compartir…");
@@ -13614,16 +13685,37 @@ function panelImagenNombreArchivo(item = {}, tipo = "imagen") {
 }
 
 function panelImagenDescargarFile(file) {
-  const objUrl = URL.createObjectURL(file);
+  const descargarWeb = () => {
+    const objUrl = URL.createObjectURL(file);
 
-  const a = document.createElement("a");
-  a.href = objUrl;
-  a.download = file.name || "imagen_vida_abundante.png";
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
+    const a = document.createElement("a");
+    a.href = objUrl;
+    a.download = file.name || "imagen_vida_abundante.png";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
 
-  setTimeout(() => URL.revokeObjectURL(objUrl), 2000);
+    setTimeout(() => URL.revokeObjectURL(objUrl), 2000);
+  };
+
+  try {
+    // ✅ APK Android: descarga nativa real
+    if (
+      file &&
+      typeof window.vaAndroidDescargarFile === "function" &&
+      window.vaAndroidPuedeArchivos?.()
+    ) {
+      window.vaAndroidDescargarFile(file, file.name || "imagen_vida_abundante.png")
+        .then(ok => {
+          if (!ok) descargarWeb();
+        })
+        .catch(() => descargarWeb());
+
+      return;
+    }
+  } catch (e) {}
+
+  descargarWeb();
 }
 
 function panelImagenCrearModalSalida() {
@@ -13950,7 +14042,19 @@ window.descargarImagenPanel = async (url, fileName = "imagen_vida_abundante.png"
     // ✅ baja ARCHIVO REAL
     const blob = await fetchPanelImagenBlob(url, fileName);
 
-    const objUrl = URL.createObjectURL(blob);
+    const file = new File([blob], fileName, {
+      type: blob.type || "image/png"
+    });
+
+    // ✅ APK Android: descarga nativa real
+    if (await window.vaAndroidDescargarFile?.(file, fileName)) {
+      if (typeof mostrarToast === "function") {
+        mostrarToast("📥 Archivo guardado en Descargas / Vida Abundante");
+      }
+      return;
+    }
+
+    const objUrl = URL.createObjectURL(file);
 
     const a = document.createElement("a");
     a.href = objUrl;
