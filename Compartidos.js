@@ -3883,11 +3883,6 @@ async function compAsegurarEdicionMini(edicionId) {
 function compRenderEdicion(item) {
   const edicionId = String(item.edicionId || "").trim();
 
-  /*
-    Buscamos la edición real y actual.
-    Así usamos la portada que actualmente tiene en Recursos,
-    aunque la publicación de Compartidos sea más antigua.
-  */
   const cacheEdiciones = [
     ...(Array.isArray(window.__EDICIONES_CACHE)
       ? window.__EDICIONES_CACHE
@@ -3903,10 +3898,6 @@ function compRenderEdicion(item) {
       ed => String(ed?.id || "") === edicionId
     ) || null;
 
-  /*
-    Si todavía no cargó la edición completa,
-    la pedimos y Compartidos se vuelve a dibujar al recibirla.
-  */
   if (!edicionReal && edicionId) {
     compAsegurarEdicionMini(edicionId);
   }
@@ -3924,15 +3915,12 @@ function compRenderEdicion(item) {
     ""
   ).trim();
 
-  /*
-    Revisamos tanto la categoría como las páginas reales
-    para saber si esta edición contiene video.
-  */
   const paginasRaw = Array.isArray(edicionReal?.paginas)
     ? edicionReal.paginas
     : Object.values(edicionReal?.paginas || {});
 
   const categoriaEdicion = compCategoriaEdicion(item);
+  const esSticker = categoriaEdicion === "stickers";
 
   const esVideo =
     categoriaEdicion === "videos" ||
@@ -3959,10 +3947,6 @@ function compRenderEdicion(item) {
     ? `Edición compartida · ${compEscape(categoriaLabel)}`
     : "Edición compartida";
 
-  /*
-    Las ediciones normales muestran sus páginas.
-    Los videos muestran solamente su portada.
-  */
   const miniPaginas =
     !esVideo &&
     typeof window.edMiniPaginasHTML === "function"
@@ -4019,6 +4003,64 @@ function compRenderEdicion(item) {
                 `
             )
       );
+
+  if (esSticker) {
+    return `
+      <article class="comp-post comp-post--stickers">
+        <div class="comp-post-head">
+          <div class="comp-avatar comp-avatar--stickers">
+            <i class="fa-solid fa-icons"></i>
+          </div>
+
+          <div>
+            <div class="comp-post-title">
+              ${titulo}
+            </div>
+
+            <div class="comp-post-meta">
+              ${metaEdicion}
+
+              ${descargada ? `
+                <span class="comp-sticker-mini-ok">
+                  <i class="fa-solid fa-circle-check"></i>
+                  agregado
+                </span>
+              ` : ``}
+
+              ${guardada ? `
+                <span class="comp-sticker-mini-ok">
+                  <i class="fa-solid fa-heart"></i>
+                  guardado
+                </span>
+              ` : ``}
+            </div>
+          </div>
+        </div>
+
+        <div
+          class="comp-post-media comp-post-media--stickers"
+          role="region"
+          title="Deslizá para ver los stickers"
+        >
+          ${contenidoMedia}
+        </div>
+
+        <div class="comp-post-actions comp-post-actions--stickers">
+          <button
+            type="button"
+            class="comp-sticker-whatsapp-btn"
+            onclick="vaAgregarStickersWhatsAppDesdeWeb?.('${compJs(edicionId)}', this)"
+            title="Agregar stickers a WhatsApp"
+          >
+            <i class="fa-brands fa-whatsapp"></i>
+            <span>Agregar stickers a WhatsApp</span>
+          </button>
+
+          ${compDeleteBtn(item)}
+        </div>
+      </article>
+    `;
+  }
 
   return `
     <article class="comp-post">
