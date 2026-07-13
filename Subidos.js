@@ -197,6 +197,51 @@ let subidosEtiquetas = [];
 let subidosEditandoId = null;
 let subidosDeepLinkAbierto = false;
 
+/* =========================================================
+   APK ANDROID: COMPARTIR / DESCARGAR CON PUENTE NATIVO
+   ========================================================= */
+function subidosEsAPKAndroid(){
+  try {
+    return !!(
+      window.AndroidVida &&
+      (
+        typeof window.AndroidVida.compartirArchivoBase64 === "function" ||
+        typeof window.AndroidVida.descargarArchivoBase64 === "function"
+      )
+    );
+  } catch(e) {
+    return false;
+  }
+}
+
+async function subidosAndroidDescargarFile(file){
+  if (!file) throw new Error("No hay archivo para descargar.");
+
+  const nombre = file.name || `archivo_${Date.now()}`;
+  const mime = file.type || "application/octet-stream";
+  const base64 = await blobToBase64(file);
+
+  window.AndroidVida.descargarArchivoBase64(
+    nombre,
+    mime,
+    base64
+  );
+}
+
+async function subidosAndroidCompartirFile(file){
+  if (!file) throw new Error("No hay archivo para compartir.");
+
+  const nombre = file.name || `archivo_${Date.now()}`;
+  const mime = file.type || "application/octet-stream";
+  const base64 = await blobToBase64(file);
+
+  window.AndroidVida.compartirArchivoBase64(
+    nombre,
+    mime,
+    base64
+  );
+}
+
 /* ================= ARCHIVOS REALES PARA COMPARTIR/DESCARGAR ================= */
 
 const subidosFileCache = new Map();
@@ -1092,7 +1137,16 @@ function subidosPrepararArchivosDelFeed() {
   }, 500);
 }
 
-function subidosDescargarFileReal(file) {
+async function subidosDescargarFileReal(file) {
+  if (!file) {
+    throw new Error("No hay archivo para descargar.");
+  }
+
+  if (subidosEsAPKAndroid() && window.AndroidVida?.descargarArchivoBase64) {
+    await subidosAndroidDescargarFile(file);
+    return;
+  }
+
   const url = URL.createObjectURL(file);
 
   const a = document.createElement("a");
@@ -4935,6 +4989,31 @@ function subidosProxyArchivoUrl(url, nombre = "archivo", descargar = false) {
 async function descargarArchivoRemoto(url, nombre = "archivo") {
   if (!url) throw new Error("No hay URL para descargar.");
 
+  if (subidosEsAPKAndroid() && window.AndroidVida?.descargarArchivoBase64) {
+    const proxy = subidosProxyArchivoUrl(url, nombre, false);
+
+    const r = await fetch(proxy, {
+      cache: "no-store"
+    });
+
+    if (!r.ok) {
+      throw new Error("No pude preparar el archivo.");
+    }
+
+    const blob = await r.blob();
+    const tipo =
+      blob.type ||
+      subidosMimeDesdeNombreUrl(nombre, url) ||
+      "application/octet-stream";
+
+    const nombreFinal = subidosNombreConExtension(nombre || "archivo", tipo, url);
+    const blobFinal = blob.type === tipo ? blob : blob.slice(0, blob.size, tipo);
+    const file = new File([blobFinal], nombreFinal, { type: tipo });
+
+    await subidosAndroidDescargarFile(file);
+    return;
+  }
+
   const a = document.createElement("a");
   a.href = subidosProxyArchivoUrl(url, nombre, true);
   a.download = nombre || "archivo";
@@ -4950,6 +5029,16 @@ function subidosNombreArchivoParaCompartir(it) {
 }
 
 async function subidosCompartirFileObligatorio(file, titulo = "Archivo", texto = "") {
+  if (!file) {
+    throw new Error("No hay archivo para compartir.");
+  }
+
+  if (subidosEsAPKAndroid() && window.AndroidVida?.compartirArchivoBase64) {
+    const fileFinal = subidosFileFrescoParaShare(file, "vida-abundante");
+    await subidosAndroidCompartirFile(fileFinal);
+    return;
+  }
+
   if (!navigator.share) {
     throw new Error("Este navegador no permite compartir archivos desde la web.");
   }
@@ -4991,10 +5080,6 @@ function subidosFileFrescoParaShare(file, base = "vida-abundante") {
 }
 
 async function subidosCompartirFileComunSinLinkObligatorio(file, titulo = "Archivo") {
-  if (!navigator.share) {
-    throw new Error("Este navegador no permite compartir archivos desde la web.");
-  }
-
   if (!file) {
     throw new Error("No se pudo preparar el archivo.");
   }
@@ -5003,6 +5088,15 @@ async function subidosCompartirFileComunSinLinkObligatorio(file, titulo = "Archi
   // No compartimos el File cacheado tal cual.
   // Creamos un File fresco en el toque, con nombre simple.
   const fileFinal = subidosFileFrescoParaShare(file, "vida-abundante");
+
+  if (subidosEsAPKAndroid() && window.AndroidVida?.compartirArchivoBase64) {
+    await subidosAndroidCompartirFile(fileFinal);
+    return;
+  }
+
+  if (!navigator.share) {
+    throw new Error("Este navegador no permite compartir archivos desde la web.");
+  }
 
   if (navigator.canShare && !navigator.canShare({ files: [fileFinal] })) {
     throw new Error(`Este navegador no acepta compartir este archivo: ${fileFinal.name} / ${fileFinal.type}`);
@@ -5129,8 +5223,8 @@ if (modo === "cancelar") {
       subidosAvisoProceso("Preparando todos los archivos...", true);
 
       for (let i = 0; i < cantidad; i++) {
-        const file = await subidosCrearFileDeItemPorIndice(it, i);
-        subidosDescargarFileReal(file);
+const file = await subidosCrearFileDeItemPorIndice(it, i);
+await subidosDescargarFileReal(file);
 
         // pequeño respiro para que el navegador no bloquee descargas seguidas
         await new Promise(resolve => setTimeout(resolve, 350));
@@ -5142,8 +5236,8 @@ if (modo === "cancelar") {
 
     subidosAvisoProceso("Preparando archivo actual...", true);
 
-    const file = await subidosCrearFileDeItemPorIndice(it, actual);
-    subidosDescargarFileReal(file);
+const file = await subidosCrearFileDeItemPorIndice(it, actual);
+await subidosDescargarFileReal(file);
 
     subidosAvisoProceso("Descarga lista ✅");
   } catch (e) {
