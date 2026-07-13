@@ -1591,6 +1591,40 @@ const fondosEtiquetas = {
 
 let devF1CategoriaActual = "paisajes";
 
+
+/* =========================================================
+   FONDOS COMPARTIDOS CON EDICIONES
+   Ediciones.js administra altas, reemplazos y quitados.
+========================================================= */
+window.__VA_FONDOS_BASE_PENDIENTE =
+  window.__VA_FONDOS_BASE_PENDIENTE || {};
+
+Object.entries(fondosCategorias).forEach(([categoria, urls]) => {
+  const actuales = Array.isArray(window.__VA_FONDOS_BASE_PENDIENTE[categoria])
+    ? window.__VA_FONDOS_BASE_PENDIENTE[categoria]
+    : [];
+
+  window.__VA_FONDOS_BASE_PENDIENTE[categoria] = Array.from(
+    new Set([
+      ...actuales,
+      ...(Array.isArray(urls) ? urls : [])
+    ])
+  );
+});
+
+if (!window.__DEV_FONDOS_EVENTO_ACTIVO) {
+  window.__DEV_FONDOS_EVENTO_ACTIVO = true;
+
+  window.addEventListener("va-fondos-actualizados", () => {
+    if (document.getElementById("dev1Fondos")) {
+      cargarFondosDev();
+    }
+  });
+}
+
+window.vaFondosRegistrarBase?.(fondosCategorias);
+
+
 async function urlToBlobURL(url){
   const res = await fetch(url, { mode:"cors", cache:"no-store" });
   if (!res.ok) throw new Error("Fondo no disponible (CORS/404)");
@@ -1647,7 +1681,9 @@ function cargarFondosDev(){
   menuWrap.appendChild(menu);
   cont.appendChild(menuWrap);
 
-  const fondos = fondosCategorias[devF1CategoriaActual] || [];
+  const fondos = window.vaFondosObtenerLista
+    ? window.vaFondosObtenerLista(devF1CategoriaActual)
+    : (fondosCategorias[devF1CategoriaActual] || []);
 
   fondos.forEach(base=>{
   const finalUrl = base;
