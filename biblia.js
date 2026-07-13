@@ -10127,9 +10127,22 @@ fecha: Date.now()
     const id = editId || (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()));
     const ruta = `marcadores/${uid}/${id}`;
 
-    await set(ref(db, ruta), data);
+await set(
+  ref(db, ruta),
+  data
+);
 
-    limpiarSeleccionMarcadorCompleta();
+/*
+  La guardamos también en memoria inmediatamente,
+  porque el modal de audio la necesitará antes
+  de que Firebase vuelva a responder.
+*/
+marcadores[id] = {
+  id,
+  ...data
+};
+
+limpiarSeleccionMarcadorCompleta();
     creandoNotaLibre = false;
     ultimoMarcadorAplicado = data.keep ? data : null;
 
@@ -10159,6 +10172,22 @@ fecha: Date.now()
       refrescarBotonGuardarMarcador();
       renderPreviewVersiculosMarcador();
       mostrarTexto();
+    }
+
+    /*
+      Después de crear o editar una nota,
+      pasamos directamente al audio.
+
+      Solo se abre para quienes tienen permiso
+      para generar audios.
+    */
+    if (
+      window.__ES_ADMIN ||
+      window.__ES_COLABORADOR
+    ) {
+      setTimeout(() => {
+        window.abrirAudioNota?.(id);
+      }, 220);
     }
 
   } catch (e) {
