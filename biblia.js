@@ -307,6 +307,58 @@ if (!document.getElementById("vaMenuSesionExtraStyle")) {
       max-width:150px !important;
     }
 
+      /* =========================================
+       MODAL ABIERTO SOLO PARA PEDIR INICIO
+       DE SESIÓN
+    ========================================= */
+
+    #loginModal.va-solo-login .opciones-sesion-actions{
+      display:none !important;
+    }
+
+    #loginModal.va-solo-login .va-opciones-footer,
+    #loginModal.va-solo-login .opciones-sesion-footer{
+      display:flex !important;
+      justify-content:center !important;
+      align-items:center !important;
+      grid-template-columns:1fr !important;
+
+      margin-top:14px !important;
+      padding-top:0 !important;
+      border-top:none !important;
+    }
+
+    #loginModal.va-solo-login .va-opciones-footer > button,
+    #loginModal.va-solo-login .opciones-sesion-footer > button{
+      display:none !important;
+    }
+
+    #loginModal.va-solo-login #btnOpcionLogin{
+      display:inline-flex !important;
+      flex-direction:row !important;
+      align-items:center !important;
+      justify-content:center !important;
+
+      flex:1 1 100% !important;
+      width:min(100%, 320px) !important;
+      max-width:320px !important;
+      min-height:52px !important;
+
+      padding:0 18px !important;
+      gap:10px !important;
+      border-radius:999px !important;
+
+      background:var(--ui-azul-claro, #bcdcff) !important;
+      color:#000 !important;
+      font-size:14px !important;
+      font-weight:900 !important;
+    }
+
+    #loginModal.va-solo-login #btnOpcionLogin i{
+      font-size:18px !important;
+      color:#000 !important;
+    }
+    
     @media(max-width:420px){
       #loginModal .opciones-sesion-actions{
         gap:8px !important;
@@ -507,8 +559,9 @@ window.vaActualizarBotonInstalarApp = function() {
 // ================= MENÚ SESIÓN (...) =================
 // ================= OPCIONES SESIÓN DESDE BOTÓN (...) =================
 
-window.toggleMenuSesion = function(){
-    vaAsegurarExtrasMenuSesion();
+window.toggleMenuSesion = function() {
+  vaAsegurarExtrasMenuSesion();
+
   const modal = document.getElementById("loginModal");
   const btnLogin = document.getElementById("btnOpcionLogin");
   const btnLogout = document.getElementById("btnOpcionLogout");
@@ -516,35 +569,68 @@ window.toggleMenuSesion = function(){
   const btnAgenda = document.getElementById("btnOpcionAgenda");
   const btnABC = document.getElementById("btnOpcionABC");
   const btnRecursos = document.getElementById("btnOpcionRecursos");
+  const btnPedidoOracion = document.getElementById("btnOpcionPedidoOracion");
   const titulo = document.getElementById("opcionesSesionTitulo");
   const texto = document.getElementById("opcionesSesionTexto");
 
   if (!modal || !btnLogin || !btnLogout || !titulo || !texto) return;
 
-    btnLogin.onclick = () => {
+  /* Al abrir desde los tres puntos recuperamos el menú completo */
+  modal.classList.remove("va-solo-login");
+
+  btnLogin.innerHTML = `
+    <i class="fa-brands fa-google"></i>
+    <span>Ingresar</span>
+  `;
+
+  btnLogin.onclick = () => {
     window.vaIniciarSesionGoogle();
   };
 
   const user = auth.currentUser;
-  const puedeVerRecursos = !!window.__ES_ADMIN || !!window.__ES_COLABORADOR;
+  const puedeVerRecursos =
+    !!window.__ES_ADMIN ||
+    !!window.__ES_COLABORADOR;
 
-  if (btnDevocionales) btnDevocionales.style.display = "inline-flex";
-  if (btnAgenda) btnAgenda.style.display = "inline-flex";
-  if (btnABC) btnABC.style.display = "inline-flex";
-  if (btnRecursos) btnRecursos.style.display = puedeVerRecursos ? "inline-flex" : "none";
+  if (btnPedidoOracion) {
+    btnPedidoOracion.style.display = "inline-flex";
+  }
 
-    if (typeof window.vaActualizarBotonInstalarApp === "function") {
+  if (btnDevocionales) {
+    btnDevocionales.style.display = "inline-flex";
+  }
+
+  if (btnAgenda) {
+    btnAgenda.style.display = "inline-flex";
+  }
+
+  if (btnABC) {
+    btnABC.style.display = "inline-flex";
+  }
+
+  if (btnRecursos) {
+    btnRecursos.style.display =
+      puedeVerRecursos ? "inline-flex" : "none";
+  }
+
+  if (typeof window.vaActualizarBotonInstalarApp === "function") {
     window.vaActualizarBotonInstalarApp();
   }
 
   if (user) {
     titulo.textContent = "Vida Abundante";
-    texto.textContent = "Accesos rápidos y opciones de sesión.";
+
+    texto.textContent =
+      "Accesos rápidos y opciones de sesión.";
+
     btnLogin.style.display = "none";
     btnLogout.style.display = "inline-flex";
   } else {
     titulo.textContent = "Vida Abundante App";
-    texto.textContent = "Podés navegar como visitante o ingresar con Google para guardar tus preferencias.";
+
+    texto.textContent =
+      "Podés navegar como visitante o ingresar con Google para guardar tus preferencias.";
+
     btnLogin.style.display = "inline-flex";
     btnLogout.style.display = "none";
   }
@@ -556,7 +642,13 @@ window.toggleMenuSesion = function(){
   vaAjustarMenuSesionInstalada();
 };
 
-window.abrirLoginParaGuardarMiPanel = function () {
+window.abrirLoginParaGuardarMiPanel = function() {
+  /*
+    Carga el diseño nuevo aunque el usuario todavía
+    nunca haya abierto el menú de los tres puntos.
+  */
+  vaAsegurarExtrasMenuSesion();
+
   const modal = document.getElementById("loginModal");
 
   if (!modal) {
@@ -569,28 +661,37 @@ window.abrirLoginParaGuardarMiPanel = function () {
   const btnLogin = document.getElementById("btnOpcionLogin");
   const btnLogout = document.getElementById("btnOpcionLogout");
 
+  /*
+    Esta clase oculta todos los accesos del menú
+    y deja solamente el botón para ingresar.
+  */
+  modal.classList.add("va-solo-login");
+
   if (titulo) {
-    titulo.textContent = "Bendecido hermano";
+    titulo.textContent = "Iniciá sesión";
   }
 
   if (texto) {
     texto.innerHTML = `
-      Para guardar publicaciones, devocionales, notas e imágenes en
+      Para usar esta función y guardar tu contenido en
       <b>Mi Panel</b>, necesitás iniciar sesión con Google.
       <br><br>
-      Así vas a poder recuperar tus guardados cuando vuelvas a entrar.
+      Así vas a poder recuperar tus preferencias y guardados
+      cuando vuelvas a entrar.
     `;
   }
 
   if (btnLogin) {
-    btnLogin.style.display = "inline-flex";
     btnLogin.innerHTML = `
       <i class="fa-brands fa-google"></i>
       <span>Iniciar sesión con Google</span>
     `;
+
     btnLogin.onclick = () => {
       window.vaIniciarSesionGoogle();
     };
+
+    btnLogin.style.display = "inline-flex";
   }
 
   if (btnLogout) {
