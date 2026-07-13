@@ -6251,4 +6251,95 @@ body.oscuro .nav-vida-btn.activo{
   color:#8a1111;
 }
 
+/* =========================================================
+   MODAL SUBIDOS:
+   ENCABEZADO Y BOTONES FIJOS
+========================================================= */
+
+#modalSubidos .modal-card{
+  display:flex !important;
+  flex-direction:column !important;
+
+  max-height:92vh !important;
+  overflow:hidden !important;
+}
+
+/*
+  Solamente el formulario central se desplaza.
+*/
+#modalSubidos .subidos-modal-scroll{
+  flex:1 1 auto !important;
+  min-height:0 !important;
+
+  max-height:none !important;
+  overflow-x:hidden !important;
+  overflow-y:auto !important;
+
+  overscroll-behavior:contain;
+}
+
+/*
+  Pie siempre visible.
+*/
+#subidosFooterFijo{
+  flex:0 0 auto;
+
+  width:100%;
+  padding:
+    9px
+    14px
+    calc(
+      9px +
+      env(safe-area-inset-bottom)
+    );
+
+  background:
+    rgba(255,255,255,.98);
+
+  border-top:
+    1px solid
+    rgba(0,0,0,.12);
+
+  box-shadow:
+    0 -8px 22px
+    rgba(0,0,0,.08);
+
+  box-sizing:border-box;
+  z-index:50;
+}
+
+/*
+  Mensajes como Guardando,
+  Generando imagen, error, etc.
+*/
+#subidosFooterFijo #subidosEstado{
+  min-height:17px;
+  margin:0 0 6px;
+
+  font-size:12px;
+  line-height:1.25;
+  text-align:left;
+}
+
+/*
+  Cancelar y Guardar.
+*/
+#subidosFooterFijo
+.subidos-modal-footer-botones{
+  width:100%;
+
+  display:flex !important;
+  align-items:center !important;
+  justify-content:flex-end !important;
+
+  gap:10px !important;
+  margin:0 !important;
+}
+
+#subidosFooterFijo
+.subidos-modal-footer-botones
+button{
+  min-width:94px;
+}
+
 </style> 
