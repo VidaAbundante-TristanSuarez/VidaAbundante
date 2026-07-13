@@ -1028,7 +1028,7 @@ body.oscuro #edForm .ed-field select {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  margin: 0 0 12px;
+  margin: 18px 0 0;
   padding: 10px 12px;
   border-radius: 18px;
   background: rgba(255,255,255,.72);
@@ -2078,7 +2078,7 @@ body.oscuro #edFiltroCategoriaSelect{
 .ed-fondo-card-actions{
   display:flex;
   align-items:center;
-  justify-content:center;
+  justify-content:flex-end;
   gap:8px;
 }
 
@@ -2094,6 +2094,13 @@ body.oscuro #edFiltroCategoriaSelect{
   display:inline-flex;
   align-items:center;
   justify-content:center;
+}
+
+.ed-fondo-card-actions button.ed-fondo-edit-btn{
+  width:auto;
+  padding:0 12px;
+  gap:6px;
+  font-weight:900;
 }
 
 .ed-fondo-card-actions button.ed-fondo-danger{
@@ -2112,6 +2119,187 @@ body.oscuro #edFiltroCategoriaSelect{
   text-align:center;
   padding:16px;
   opacity:.7;
+}
+
+/* ================= EDITAR NOMBRE / IMAGEN DE FONDO ================= */
+
+#edFondoEditorModal{
+  position:fixed;
+  inset:0;
+  z-index:1000001;
+  padding:16px;
+  background:rgba(0,0,0,.62);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  backdrop-filter:blur(5px);
+  -webkit-backdrop-filter:blur(5px);
+}
+
+.ed-fondo-editor-box{
+  width:min(460px, 94vw);
+  max-height:92vh;
+  overflow:auto;
+  padding:16px;
+  border-radius:22px;
+  background:#fff;
+  color:#000;
+  box-shadow:0 24px 80px rgba(0,0,0,.38);
+  display:grid;
+  gap:13px;
+}
+
+.ed-fondo-editor-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+
+.ed-fondo-editor-head h3{
+  margin:0;
+  font-size:21px;
+  font-family:"Lora", Georgia, serif;
+  font-weight:900;
+}
+
+.ed-fondo-editor-x{
+  flex:0 0 34px;
+  width:34px;
+  height:34px;
+  padding:0;
+  border:none;
+  border-radius:999px;
+  background:rgba(0,0,0,.07);
+  color:#000;
+  font-size:24px;
+  line-height:1;
+  cursor:pointer;
+}
+
+.ed-fondo-editor-preview{
+  width:100%;
+  max-height:300px;
+  aspect-ratio:1 / 1;
+  object-fit:contain;
+  display:block;
+  border-radius:16px;
+  background:#f2f2f2;
+  border:1px solid rgba(0,0,0,.10);
+}
+
+.ed-fondo-editor-field{
+  display:grid;
+  gap:6px;
+  font-size:13px;
+  font-weight:900;
+}
+
+.ed-fondo-editor-field small{
+  font-weight:700;
+  opacity:.66;
+}
+
+.ed-fondo-editor-field input{
+  width:100%;
+  box-sizing:border-box;
+  border:1px solid rgba(0,0,0,.16);
+  border-radius:14px;
+  padding:10px 11px;
+  background:#fff;
+  color:#000;
+  font:inherit;
+}
+
+.ed-fondo-editor-field input[type="file"]::file-selector-button{
+  border:none;
+  border-radius:999px;
+  padding:8px 11px;
+  margin-right:8px;
+  background:var(--ui-azul-claro, #bcdcff);
+  color:#000;
+  font-weight:900;
+  cursor:pointer;
+}
+
+.ed-fondo-editor-ayuda{
+  font-size:12px;
+  line-height:1.35;
+  opacity:.68;
+}
+
+#edFondoEditorEstado{
+  min-height:18px;
+  text-align:center;
+  font-size:13px;
+  font-weight:800;
+}
+
+.ed-fondo-editor-actions{
+  display:flex;
+  justify-content:flex-end;
+  gap:9px;
+}
+
+.ed-fondo-editor-actions button{
+  min-height:38px;
+  border:none;
+  border-radius:999px;
+  padding:0 15px;
+  font-weight:900;
+  cursor:pointer;
+}
+
+.ed-fondo-editor-cancelar{
+  background:#e9ecef;
+  color:#000;
+}
+
+.ed-fondo-editor-guardar{
+  background:var(--ui-azul-claro, #bcdcff);
+  color:#000;
+}
+
+.ed-fondo-editor-guardar:disabled{
+  opacity:.58;
+  cursor:wait;
+}
+
+body.oscuro .ed-fondo-editor-box{
+  background:#181818;
+  color:#fff;
+  border:1px solid rgba(255,255,255,.13);
+}
+
+body.oscuro .ed-fondo-editor-x{
+  background:rgba(255,255,255,.10);
+  color:#fff;
+}
+
+body.oscuro .ed-fondo-editor-field input{
+  background:rgba(255,255,255,.08);
+  color:#fff;
+  border-color:rgba(255,255,255,.16);
+}
+
+@media (max-width:520px){
+  #edFondoEditorModal{
+    padding:10px;
+  }
+
+  .ed-fondo-editor-box{
+    width:100%;
+    padding:14px;
+  }
+
+  .ed-fondo-editor-actions{
+    justify-content:stretch;
+  }
+
+  .ed-fondo-editor-actions button{
+    flex:1 1 0;
+    padding:0 10px;
+  }
 }
 
 #edFondoDetalleModal{
