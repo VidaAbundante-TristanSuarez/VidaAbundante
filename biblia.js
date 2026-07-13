@@ -2156,6 +2156,17 @@ function vaTextoInstalarApp() {
 }
 
 function vaMostrarConsejoInstalarApp() {
+  const esAPK =
+    window.__VIDA_ANDROID_APK__ === true ||
+    document.documentElement.classList.contains("vida-android-apk") ||
+    document.body?.classList.contains("vida-android-apk") ||
+    new URLSearchParams(location.search).get("apk") === "1" ||
+    localStorage.getItem("vida_abundante_android_apk") === "1";
+
+  if (esAPK) {
+    return false;
+  }
+  
   if (vaEsAndroidAPK()) {
     try {
       localStorage.setItem(VA_TIP_APP_KEY, "1");
