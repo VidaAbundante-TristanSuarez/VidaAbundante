@@ -346,14 +346,6 @@ function edFondosCardHTML(categoria, item) {
         </div>
 
         <div class="ed-fondo-card-actions">
-          <button
-            type="button"
-            onclick="edFondoAbrirDetalle('${categoria}', '${item.id}')"
-            title="Ver grande"
-          >
-            <i class="fa-solid fa-expand"></i>
-          </button>
-
           ${
             oculto
               ? `
@@ -368,10 +360,12 @@ function edFondosCardHTML(categoria, item) {
               : `
                 <button
                   type="button"
-                  onclick="edFondoReemplazar('${categoria}', '${item.id}')"
-                  title="Cambiar imagen"
+                  class="ed-fondo-edit-btn"
+                  onclick="edFondoAbrirEditor('${categoria}', '${item.id}')"
+                  title="Editar nombre o imagen"
                 >
-                  <i class="fa-solid fa-arrows-rotate"></i>
+                  <i class="fa-solid fa-pen"></i>
+                  <span>Editar</span>
                 </button>
 
                 <button
@@ -559,7 +553,19 @@ window.edFondosAgregar = async function(categoria = "", input) {
   }
 };
 
-window.edFondoReemplazar = function(categoria = "", id = "") {
+window.edFondoCerrarEditor = function() {
+  const modal = document.getElementById("edFondoEditorModal");
+
+  if (modal?.dataset?.previewUrl) {
+    try {
+      URL.revokeObjectURL(modal.dataset.previewUrl);
+    } catch (_) {}
+  }
+
+  modal?.remove();
+};
+
+window.edFondoAbrirEditor = function(categoria = "", id = "") {
   const item = edFondosBuscarItem(categoria, id);
 
   if (!item) {
@@ -567,63 +573,195 @@ window.edFondoReemplazar = function(categoria = "", id = "") {
     return;
   }
 
-  const input = document.createElement("input");
-  input.type = "file";
-  input.accept = "image/*";
+  window.edFondoCerrarEditor();
 
-  input.onchange = async () => {
-    const file = input.files?.[0];
-    if (!file) return;
+  const cat = edFondosCategoriaValida(categoria);
+  const modal = document.createElement("div");
+  modal.id = "edFondoEditorModal";
 
-    if (!String(file.type || "").startsWith("image/")) {
-      alert("Elegí una imagen.");
-      return;
+  modal.innerHTML = `
+    <div class="ed-fondo-editor-box" onclick="event.stopPropagation()">
+      <div class="ed-fondo-editor-head">
+        <h3>Editar fondo</h3>
+
+        <button
+          type="button"
+          class="ed-fondo-editor-x"
+          onclick="edFondoCerrarEditor()"
+          aria-label="Cerrar"
+        >×</button>
+      </div>
+
+      <img
+        id="edFondoEditorPreview"
+        class="ed-fondo-editor-preview"
+        src="${edEscape(item.url)}"
+        alt="${edEscape(item.nombre || "Fondo")}"
+      >
+
+      <label class="ed-fondo-editor-field">
+        <span>Nombre del fondo</span>
+
+        <input
+          id="edFondoEditorNombre"
+          type="text"
+          maxlength="100"
+          value="${edEscape(item.nombre || "Fondo")}"
+          placeholder="Ej: Lago al atardecer"
+        >
+      </label>
+
+      <label class="ed-fondo-editor-field">
+        <span>Cambiar imagen <small>(opcional)</small></span>
+
+        <input
+          id="edFondoEditorArchivo"
+          type="file"
+          accept="image/*"
+        >
+      </label>
+
+      <div class="ed-fondo-editor-ayuda">
+        Si no elegís otra imagen, se conserva la actual.
+      </div>
+
+      <div id="edFondoEditorEstado"></div>
+
+      <div class="ed-fondo-editor-actions">
+        <button
+          type="button"
+          class="ed-fondo-editor-cancelar"
+          onclick="edFondoCerrarEditor()"
+        >
+          Cancelar
+        </button>
+
+        <button
+          id="edFondoEditorGuardar"
+          type="button"
+          class="ed-fondo-editor-guardar"
+          onclick="edFondoGuardarEdicion('${cat}', '${item.id}')"
+        >
+          Guardar cambios
+        </button>
+      </div>
+    </div>
+  `;
+
+  modal.onclick = () => window.edFondoCerrarEditor();
+  document.body.appendChild(modal);
+
+  const archivo = document.getElementById("edFondoEditorArchivo");
+  const preview = document.getElementById("edFondoEditorPreview");
+
+  archivo?.addEventListener("change", () => {
+    const file = archivo.files?.[0];
+    if (!file || !String(file.type || "").startsWith("image/")) return;
+
+    if (modal.dataset.previewUrl) {
+      try {
+        URL.revokeObjectURL(modal.dataset.previewUrl);
+      } catch (_) {}
     }
 
-    if (Number(file.size || 0) > 15 * 1024 * 1024) {
-      alert("La imagen debe pesar menos de 15 MB.");
-      return;
+    const previewUrl = URL.createObjectURL(file);
+    modal.dataset.previewUrl = previewUrl;
+
+    if (preview) {
+      preview.src = previewUrl;
     }
+  });
 
-    const db = edDB();
+  setTimeout(() => {
+    document.getElementById("edFondoEditorNombre")?.focus();
+  }, 0);
+};
 
-    if (!db) {
-      alert("Firebase todavía no está listo.");
-      return;
-    }
+window.edFondoGuardarEdicion = async function(categoria = "", id = "") {
+  const item = edFondosBuscarItem(categoria, id);
 
-    try {
-      edFondosSetEstado("Subiendo reemplazo…");
+  if (!item) {
+    alert("No encontré ese fondo.");
+    return;
+  }
 
-      const url = await subirArchivoEdicionR2(
+  const nombreInput = document.getElementById("edFondoEditorNombre");
+  const archivoInput = document.getElementById("edFondoEditorArchivo");
+  const estado = document.getElementById("edFondoEditorEstado");
+  const btn = document.getElementById("edFondoEditorGuardar");
+
+  const nombre = String(nombreInput?.value || "").trim();
+  const file = archivoInput?.files?.[0] || null;
+
+  if (!nombre) {
+    alert("Escribí un nombre para el fondo.");
+    nombreInput?.focus();
+    return;
+  }
+
+  if (file && !String(file.type || "").startsWith("image/")) {
+    alert("Elegí una imagen válida.");
+    return;
+  }
+
+  if (file && Number(file.size || 0) > 15 * 1024 * 1024) {
+    alert("La imagen debe pesar menos de 15 MB.");
+    return;
+  }
+
+  const db = edDB();
+
+  if (!db) {
+    alert("Firebase todavía no está listo.");
+    return;
+  }
+
+  if (btn) btn.disabled = true;
+
+  try {
+    const cat = edFondosCategoriaValida(categoria);
+    const actual = edFondosConfigCategoria(cat)?.[id] || {};
+
+    let url = item.url;
+
+    if (file) {
+      if (estado) estado.textContent = "Subiendo la nueva imagen…";
+
+      url = await subirArchivoEdicionR2(
         file,
-        `fondos/${edFondosCategoriaValida(categoria)}`
+        `fondos/${cat}`
       );
-
-      const cat = edFondosCategoriaValida(categoria);
-      const actual = edFondosConfigCategoria(cat)?.[id] || {};
-
-      await set(ref(db, `${ED_FONDOS_RUTA}/${cat}/${id}`), {
-        ...actual,
-        url,
-        nombre: file.name || item.nombre || "Fondo",
-        originalUrl: item.originalUrl || "",
-        activo: true,
-        nuevo: !item.esBase,
-        orden: item.orden,
-        actualizado: Date.now(),
-        creado: Number(actual.creado || Date.now())
-      });
-
-      edFondosSetEstado("Fondo reemplazado correctamente.");
-    } catch (error) {
-      console.error("Error reemplazando fondo:", error);
-      alert("No pude reemplazar el fondo.\n\n" + (error?.message || error));
-      edFondosSetEstado("");
     }
-  };
 
-  input.click();
+    if (estado) estado.textContent = "Guardando cambios…";
+
+    await set(ref(db, `${ED_FONDOS_RUTA}/${cat}/${id}`), {
+      ...actual,
+      url,
+      nombre,
+      originalUrl: item.originalUrl || "",
+      activo: true,
+      nuevo: !item.esBase,
+      orden: item.orden,
+      actualizado: Date.now(),
+      creado: Number(actual.creado || Date.now())
+    });
+
+    edFondosSetEstado("Fondo editado correctamente.");
+    window.edFondoCerrarEditor();
+  } catch (error) {
+    console.error("Error editando fondo:", error);
+
+    if (estado) estado.textContent = "";
+
+    alert(
+      "No pude guardar los cambios del fondo.\n\n" +
+      (error?.message || error)
+    );
+  } finally {
+    const btnActual = document.getElementById("edFondoEditorGuardar");
+    if (btnActual) btnActual.disabled = false;
+  }
 };
 
 window.edFondoBorrar = async function(categoria = "", id = "") {
@@ -1209,6 +1347,8 @@ window.mostrarEdiciones = async () => {
           </div>
         </div>
 
+        <div id="edLista"></div>
+
         <div id="edFiltros" class="ed-filtros-buscador">
           <div class="ed-filtros-actions ed-subfiltros-actions">
             ${[
@@ -1226,8 +1366,6 @@ window.mostrarEdiciones = async () => {
             `).join("")}
           </div>
         </div>
-
-        <div id="edLista"></div>
       </div>
 
       <div id="edModal" onclick="cerrarEditorEdicionFondo(event)">
