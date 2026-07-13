@@ -1254,19 +1254,87 @@ function edStickerPackIdSeguro(valor = "") {
   return limpio.slice(0, 80);
 }
 
-function edStickerImagenesParaPack(ed = {}) {
-  const paginas = edPaginasImagenesVisuales(ed);
+function edStickerUrlCanonica(url = "") {
+  try {
+    return new URL(String(url || "").trim(), location.href)
+      .href
+      .split("#")[0];
+  } catch (_) {
+    return String(url || "").trim().split("#")[0];
+  }
+}
 
-  return paginas
+function edStickerEsPortadaONoSticker(p = {}, url = "", portadaCanonica = "") {
+  const canon = edStickerUrlCanonica(url);
+
+  if (portadaCanonica && canon === portadaCanonica) {
+    return true;
+  }
+
+  const texto = [
+    p.fileName,
+    p.nombre,
+    p.name,
+    p.titulo,
+    p.originalName,
+    p.path,
+    p.mediaUrl,
+    p.imagenUrl,
+    p.url,
+    url
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+  return (
+    texto.includes("portada") ||
+    texto.includes("cover") ||
+    texto.includes("tray_icon") ||
+    texto.includes("tray-icon") ||
+    texto.includes("vista_previa") ||
+    texto.includes("preview")
+  );
+}
+
+function edStickerImagenesParaPack(ed = {}) {
+  const portadaCanonica = edStickerUrlCanonica(
+    ed.stickerTrayUrl ||
+    ed.portadaUrl ||
+    ""
+  );
+
+  const vistos = new Set();
+
+  return edPaginasImagenesVisuales(ed)
     .filter(p => !edPaginaEsVideo(p))
-    .map((p, i) => ({
-      orden: Number(p.orden ?? i),
-      url: edMediaUrlPagina(p),
-      emojis: Array.isArray(p.emojis)
-        ? p.emojis
-        : ["🙏", "💙"]
-    }))
-    .filter(p => p.url)
+    .map((p, i) => {
+      const url = edMediaUrlPagina(p);
+
+      return {
+        pagina: p,
+        orden: Number(p.orden ?? i),
+        url,
+        emojis: Array.isArray(p.emojis)
+          ? p.emojis
+          : ["🙏", "💙"]
+      };
+    })
+    .filter(item => item.url)
+    .filter(item => {
+      if (edStickerEsPortadaONoSticker(item.pagina, item.url, portadaCanonica)) {
+        return false;
+      }
+
+      const canon = edStickerUrlCanonica(item.url);
+
+      if (vistos.has(canon)) {
+        return false;
+      }
+
+      vistos.add(canon);
+      return true;
+    })
     .sort((a, b) => Number(a.orden || 0) - Number(b.orden || 0))
     .slice(0, 30);
 }
@@ -1289,13 +1357,21 @@ function edCrearPayloadStickerPack(ed = {}) {
     "Vida Abundante"
   ).trim().slice(0, 50) || "Vida Abundante";
 
-  const portada =
-    String(
-      ed.stickerTrayUrl ||
-      ed.portadaUrl ||
-      stickers[0]?.url ||
-      ""
-    ).trim();
+  /*
+    portadaWeb: solo para mostrar el pack en Ediciones/Compartidos.
+    trayReal: lo que Android usa como iconito chico de WhatsApp.
+    Así la portada resumen NO se manda como sticker ni como tray borroso.
+  */
+  const portadaWeb = String(
+    ed.stickerTrayUrl ||
+    ed.portadaUrl ||
+    ""
+  ).trim();
+
+  const trayReal =
+    stickers[0]?.url ||
+    portadaWeb ||
+    "";
 
   return {
     identifier,
@@ -1305,9 +1381,12 @@ function edCrearPayloadStickerPack(ed = {}) {
     packName: name,
     titulo: name,
     publisher: "Iglesia Cristiana de la Vida Abundante",
-    portadaUrl: portada,
-    trayImageUrl: portada,
+
+    portadaUrl: portadaWeb || trayReal,
+    trayImageUrl: trayReal,
+
     stickerVersion: Number(ed.stickerVersion || 1),
+
     stickers: stickers.map((st, i) => ({
       url: st.url,
       imageUrl: st.url,
@@ -2358,13 +2437,14 @@ function renderEdiciones() {
     return;
   }
 
-  function edStickerImagenesPack(ed = {}) {
-    const paginas = edPaginasImagenesVisuales(ed);
-
-    return paginas
-      .filter(p => !edPaginaEsVideo(p))
-      .filter(p => edMediaUrlPagina(p));
-  }
+function edStickerImagenesPack(ed = {}) {
+  return edStickerImagenesParaPack(ed).map(st => ({
+    mediaUrl: st.url,
+    imagenUrl: st.url,
+    url: st.url,
+    orden: st.orden
+  }));
+}
 
   function renderBotonAgregarStickers(ed) {
     return `
