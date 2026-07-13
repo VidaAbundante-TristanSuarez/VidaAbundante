@@ -1434,16 +1434,90 @@
         <button type="button" id="btnVerArchivoActualSubido" class="btn-ghost">Ver archivo actual</button>
       </div>
 
-      <label style="font-weight:700;">Fecha</label>
-      <input id="subidosFecha" type="date">
+<!-- FECHA + ETIQUETA EN EL MISMO RENGLÓN -->
+<div
+  style="
+    display:grid;
+    grid-template-columns:minmax(0,.72fr) minmax(0,1.28fr);
+    gap:10px;
+    align-items:end;
+    width:100%;
+  "
+>
+  <div
+    style="
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      min-width:0;
+    "
+  >
+    <label
+      for="subidosFecha"
+      style="font-weight:700;"
+    >
+      Fecha
+    </label>
 
-      <label style="font-weight:700;">Etiqueta</label>
-      <div style="display:flex; gap:8px; flex-wrap:wrap;">
-        <select id="subidosEtiqueta" style="flex:1; min-width:220px;">
-          <option value="">Seleccionar…</option>
-        </select>
-        <button type="button" id="btnAgregarEtiquetaSubidos" class="btn-ghost">+ Etiqueta</button>
-      </div>
+    <input
+      id="subidosFecha"
+      type="date"
+      style="
+        width:100%;
+        min-width:0;
+        box-sizing:border-box;
+      "
+    >
+  </div>
+
+  <div
+    style="
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      min-width:0;
+    "
+  >
+    <label
+      for="subidosEtiqueta"
+      style="font-weight:700;"
+    >
+      Etiqueta
+    </label>
+
+    <div
+      style="
+        display:grid;
+        grid-template-columns:minmax(0,1fr) auto;
+        gap:8px;
+        min-width:0;
+      "
+    >
+      <select
+        id="subidosEtiqueta"
+        style="
+          width:100%;
+          min-width:0;
+        "
+      >
+        <option value="">Seleccionar…</option>
+      </select>
+
+      <button
+        type="button"
+        id="btnAgregarEtiquetaSubidos"
+        class="btn-ghost"
+        style="
+          white-space:nowrap;
+          padding-left:12px;
+          padding-right:12px;
+        "
+      >
+        + Etiqueta
+      </button>
+    </div>
+  </div>
+</div>
 
       <!-- ✅ DESCRIPCIÓN DEBAJO DE ETIQUETA -->
       <label style="font-weight:700;">Descripción</label>
