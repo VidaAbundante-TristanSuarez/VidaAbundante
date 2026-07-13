@@ -2201,10 +2201,11 @@ body.oscuro #edFiltroCategoriaSelect{
   opacity:.66;
 }
 
-.ed-fondo-editor-field input{
+.ed-fondo-editor-field input,
+.ed-fondo-editor-field select{
   width:100%;
   box-sizing:border-box;
-  border:1px solid rgba(0,0,0,.16);
+  border:1px solid rgba(0,0,0,16);
   border-radius:14px;
   padding:10px 11px;
   background:#fff;
@@ -2277,10 +2278,11 @@ body.oscuro .ed-fondo-editor-x{
   color:#fff;
 }
 
-body.oscuro .ed-fondo-editor-field input{
-  background:rgba(255,255,255,.08);
+body.oscuro .ed-fondo-editor-field input,
+body.oscuro .ed-fondo-editor-field select{
+  background:rgba(255,255,255,08);
   color:#fff;
-  border-color:rgba(255,255,255,.16);
+  border-color:rgba(255,255,255,16);
 }
 
 @media (max-width:520px){
