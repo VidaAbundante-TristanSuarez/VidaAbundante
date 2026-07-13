@@ -441,11 +441,15 @@ function edRenderGestorFondos() {
     `;
   }).join("");
 
-  lista.innerHTML = `
+    lista.innerHTML = `
     <div id="edFondosAdmin">
+
+      ${secciones}
+
       <div class="ed-fondos-admin-head">
         <div>
           <h3>Fondos</h3>
+
           <p>
             Estos mismos fondos aparecen en Devocionales fase 1 y en Biblia → Crear imagen.
           </p>
@@ -457,13 +461,12 @@ function edRenderGestorFondos() {
           onclick="edFondosToggleOcultos()"
         >
           <i class="fa-solid fa-eye${edFondosMostrarOcultos ? "-slash" : ""}"></i>
+
           ${edFondosMostrarOcultos ? "Ocultar quitados" : "Ver quitados"}
         </button>
       </div>
 
       <div id="edFondosEstado"></div>
-
-      ${secciones}
     </div>
   `;
 }
@@ -1347,8 +1350,6 @@ window.mostrarEdiciones = async () => {
           </div>
         </div>
 
-        <div id="edLista"></div>
-
         <div id="edFiltros" class="ed-filtros-buscador">
           <div class="ed-filtros-actions ed-subfiltros-actions">
             ${[
@@ -1366,6 +1367,8 @@ window.mostrarEdiciones = async () => {
             `).join("")}
           </div>
         </div>
+
+        <div id="edLista"></div>
       </div>
 
       <div id="edModal" onclick="cerrarEditorEdicionFondo(event)">
