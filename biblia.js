@@ -100,7 +100,11 @@ async function vaConsumirLoginAndroidPendiente() {
     const params = new URLSearchParams(location.search);
 
     if (params.get("loginOk") !== "1") {
-      window.location.replace("/VidaAbundante/?loginOk=1");
+ window.location.replace(
+  vaEsAndroidAPK()
+    ? "/VidaAbundante/?apk=1&loginOk=1"
+    : "/VidaAbundante/?loginOk=1"
+);
     }
 
     return true;
@@ -2117,7 +2121,13 @@ if (typeof window.irA === "function") {
 
 // ✅ En links directos no mostramos cartel de instalar app.
 // En iPhone puede molestar y sumar carga visual justo al abrir desde WhatsApp.
-if (!vaHayLinkDirectoInterno() && !vaEsAndroidAPK()) {
+if (vaEsAndroidAPK()) {
+  try {
+    localStorage.setItem("vida_abundante_android_apk", "1");
+    localStorage.setItem("vaTipInstalarAppVisto", "1");
+    document.getElementById("vaTipInstalarApp")?.remove();
+  } catch (e) {}
+} else if (!vaHayLinkDirectoInterno()) {
   vaMostrarConsejoInstalarApp();
 }
     } catch (e) {
