@@ -648,15 +648,67 @@ function rhNombreDescarga(nombre = "RH") {
     .slice(0, 90) + ".pdf";
 }
 
-function rhDescargarArchivo(url, nombreArchivo) {
+function rhPuedeDescargarAndroid() {
+  return !!(
+    window.AndroidVida &&
+    typeof window.AndroidVida.descargarArchivoBase64 === "function"
+  );
+}
+
+function rhBlobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      const res = String(reader.result || "");
+      resolve(res.includes(",") ? res.split(",")[1] : res);
+    };
+
+    reader.onerror = () => {
+      reject(new Error("No pude preparar el PDF para Android."));
+    };
+
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function rhDescargarArchivo(url, nombreArchivo) {
   if (!url) {
     alert("No encontré el PDF para descargar.");
     return;
   }
 
+  const nombreFinal = nombreArchivo || "RH.pdf";
+
+  if (rhPuedeDescargarAndroid()) {
+    try {
+      const r = await fetch(encodeURI(url), {
+        cache: "no-store"
+      });
+
+      if (!r.ok) {
+        throw new Error("No pude leer el PDF.");
+      }
+
+      const blob = await r.blob();
+      const base64 = await rhBlobToBase64(blob);
+
+      window.AndroidVida.descargarArchivoBase64(
+        nombreFinal,
+        blob.type || "application/pdf",
+        base64
+      );
+
+      return;
+
+    } catch (e) {
+      console.warn("No pude descargar PDF RH con Android, uso descarga web:", e);
+    }
+  }
+
   const a = document.createElement("a");
   a.href = encodeURI(url);
-  a.download = nombreArchivo || "RH.pdf";
+  a.download = nombreFinal;
   a.rel = "noopener";
   document.body.appendChild(a);
   a.click();
@@ -795,7 +847,7 @@ window.cerrarOpcionesPDFRH = () => {
   if (style) style.remove();
 };
 
-window.descargarPDFRHActual = (index = rhIndex) => {
+window.descargarPDFRHActual = async (index = rhIndex) => {
   const tema = RH_TEMAS[index];
 
   if (!tema?.pdf) {
@@ -803,7 +855,12 @@ window.descargarPDFRHActual = (index = rhIndex) => {
     return;
   }
 
-  rhDescargarArchivo(tema.pdf, rhNombreDescarga(tema.titulo || "RH"));
+  await rhDescargarArchivo(tema.pdf, rhNombreDescarga(tema.titulo || "RH"));
+  cerrarOpcionesPDFRH();
+};
+
+window.descargarPDFRHCompleto = async () => {
+  await rhDescargarArchivo(RH_PDF_COMPLETO, "RH_COMPLETO.pdf");
   cerrarOpcionesPDFRH();
 };
 
