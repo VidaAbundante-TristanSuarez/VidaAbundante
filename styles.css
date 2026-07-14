@@ -6342,4 +6342,42 @@ button{
   min-width:94px;
 }
 
+/* ================= APK: MODAL SESIÓN CENTRADO ================= */
+
+body.vida-android-apk #loginModal .opciones-sesion-card{
+  width: min(92vw, 370px) !important;
+  max-width: 370px !important;
+  padding: 34px 22px 24px !important;
+  box-sizing: border-box !important;
+}
+
+body.vida-android-apk #loginModal .opciones-sesion-icono{
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+body.vida-android-apk #loginModal #opcionesSesionTitulo{
+  width: 100% !important;
+  display: block !important;
+  text-align: center !important;
+  margin: 10px auto 10px !important;
+  padding: 0 !important;
+  line-height: 1.12 !important;
+  font-size: 28px !important;
+  white-space: normal !important;
+}
+
+body.vida-android-apk #loginModal #opcionesSesionTexto{
+  width: 100% !important;
+  text-align: center !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+@media (max-width: 380px){
+  body.vida-android-apk #loginModal #opcionesSesionTitulo{
+    font-size: 26px !important;
+  }
+}
+
 </style> 
