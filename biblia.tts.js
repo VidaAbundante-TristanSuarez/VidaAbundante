@@ -22,7 +22,7 @@
 
   const USAR_ARPA_BIBLIA = true;
   const BIBLIA_ARPA_URL = "./audio/arpa-biblia.mp3";
-const BIBLIA_ARPA_VOLUME = ES_MOVIL ? 0.075 : 0.06;
+const BIBLIA_ARPA_VOLUME = ES_MOVIL ? 0.16 : 0.10;
    
   let bibliaArpaAudio = null;
   let bibliaArpaFadeTimer = null;
@@ -39,35 +39,88 @@ const BIBLIA_ARPA_VOLUME = ES_MOVIL ? 0.075 : 0.06;
     return bibliaArpaAudio;
   }
 
-  function iniciarArpaBiblia() {
-    if (!USAR_ARPA_BIBLIA) return;
+   function desbloquearArpaBibliaPorToque() {
+  if (!USAR_ARPA_BIBLIA) return;
 
-    try {
-      const audio = getBibliaArpaAudio();
-      if (!audio) return;
+  try {
+    const audio = getBibliaArpaAudio();
+    if (!audio) return;
 
+    audio.muted = true;
+    audio.volume = 0;
+
+    const p = audio.play();
+
+    if (p && typeof p.then === "function") {
+      p.then(() => {
+        try {
+          audio.muted = false;
+
+          if (estado !== "leyendo") {
+            audio.pause();
+            audio.currentTime = 0;
+            audio.volume = 0;
+          }
+        } catch {}
+      }).catch(() => {
+        try {
+          audio.muted = false;
+        } catch {}
+      });
+    } else {
+      audio.muted = false;
+    }
+
+  } catch (e) {
+    console.warn("No se pudo desbloquear arpa Biblia:", e);
+  }
+}
+
+function iniciarArpaBiblia() {
+  if (!USAR_ARPA_BIBLIA) return;
+
+  try {
+    const audio = getBibliaArpaAudio();
+    if (!audio) return;
+
+    clearInterval(bibliaArpaFadeTimer);
+
+    audio.muted = false;
+
+    if (audio.volume <= 0) {
+      audio.volume = 0.01;
+    }
+
+    const subirVolumen = () => {
       clearInterval(bibliaArpaFadeTimer);
 
-      const p = audio.play();
-
-      if (p && typeof p.catch === "function") {
-        p.catch(() => {
-          // Si el navegador no permite iniciar el arpa, no rompemos la voz.
-        });
-      }
-
       bibliaArpaFadeTimer = setInterval(() => {
-        audio.volume = Math.min(BIBLIA_ARPA_VOLUME, audio.volume + 0.01);
+        try {
+          audio.volume = Math.min(BIBLIA_ARPA_VOLUME, audio.volume + 0.012);
 
-        if (audio.volume >= BIBLIA_ARPA_VOLUME) {
+          if (audio.volume >= BIBLIA_ARPA_VOLUME) {
+            clearInterval(bibliaArpaFadeTimer);
+          }
+        } catch {
           clearInterval(bibliaArpaFadeTimer);
         }
-      }, 80);
+      }, 70);
+    };
 
-    } catch (e) {
-      console.warn("No se pudo iniciar arpa Biblia:", e);
+    const p = audio.play();
+
+    if (p && typeof p.then === "function") {
+      p.then(subirVolumen).catch((e) => {
+        console.warn("El navegador bloqueó el arpa Biblia:", e);
+      });
+    } else {
+      subirVolumen();
     }
+
+  } catch (e) {
+    console.warn("No se pudo iniciar arpa Biblia:", e);
   }
+}
 
   function pausarArpaBiblia() {
     if (!USAR_ARPA_BIBLIA) return;
@@ -385,15 +438,12 @@ const BIBLIA_ARPA_VOLUME = ES_MOVIL ? 0.075 : 0.06;
 const bibliaTTSNativoCallbacks = {};
 
 function bibliaTTSNativoDisponible() {
-  try {
-    return (
-      bibliaTTSEsAPK() &&
-      window.AndroidVida &&
-      typeof window.AndroidVida.hablarBibliaNativo === "function"
-    );
-  } catch {
-    return false;
-  }
+  /*
+    Desactivado a propósito:
+    la voz nativa Android funciona, pero suena más robótica.
+    Así usamos la misma voz linda de la PWA con speechSynthesis.
+  */
+  return false;
 }
 
 window.vaBibliaTTSEventoNativo = function(tipo, utteranceId, error) {
@@ -594,7 +644,8 @@ try {
     estado = "leyendo";
     setBoton("leyendo");
     iniciarKeepAlive();
-    iniciarArpaBiblia();
+  iniciarArpaBiblia();
+setTimeout(iniciarArpaBiblia, 250);
 
     setTimeout(() => {
       leerActual(miToken);
@@ -629,7 +680,8 @@ try {
     estado = "leyendo";
     setBoton("leyendo");
     iniciarKeepAlive();
-    iniciarArpaBiblia();
+iniciarArpaBiblia();
+setTimeout(iniciarArpaBiblia, 250);
 
 if (bibliaTTSNativoDisponible()) {
   reproducirDesde(indiceActual);
@@ -803,9 +855,16 @@ function arrancarInitBibliaTTS() {
   Si el usuario toca el botón muy rápido en APK,
   este pointerdown engancha el lector antes del click real.
 */
+let bibliaArpaDesbloqueada = false;
+
 document.addEventListener("pointerdown", () => {
   if (!bibliaTTSInitOK) {
     initBibliaTTS();
+  }
+
+  if (!bibliaArpaDesbloqueada) {
+    bibliaArpaDesbloqueada = true;
+    desbloquearArpaBibliaPorToque();
   }
 }, true);
 
