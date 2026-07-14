@@ -1572,7 +1572,7 @@ window.edLimpiarBusquedaEdiciones = () => {
 /* ================= STICKERS APK / WHATSAPP ================= */
 
 const ED_APK_DOWNLOAD_URL =
-  "https://github.com/VidaAbundante-TristanSuarez/VidaAbundante/releases/latest";
+  "https://github.com/VidaAbundante-TristanSuarez/VidaAbundante/releases/latest/download/VidaAbundanteApp.apk";
 
 function edStickerPackIdSeguro(valor = "") {
   let limpio = String(valor || "")
