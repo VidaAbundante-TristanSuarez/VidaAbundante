@@ -5278,13 +5278,26 @@ if (DEV.subirAudioGithub && subirGithub && !DEV.audioGithubUrl) {
         pack.blob.type.includes("mpeg") ? "mp3" :
         "mp3";
 
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(pack.blob);
-      a.download = `${baseName}.${ext}`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+      const audioName = `${baseName}.${ext}`;
+
+      if (devEsAPKAndroid() && window.AndroidVida?.descargarArchivoBase64) {
+        await devAndroidDescargarBlob(
+          pack.blob,
+          audioName,
+          pack.blob.type || "audio/mpeg"
+        );
+      } else {
+        const objUrl = URL.createObjectURL(pack.blob);
+
+        const a = document.createElement("a");
+        a.href = objUrl;
+        a.download = audioName;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+
+        setTimeout(() => URL.revokeObjectURL(objUrl), 2000);
+      }
     }
 
     DEV.audioOk = true;
@@ -7283,17 +7296,29 @@ window.devDescargarAudioItem = async function(audioUrl, baseName = "Audio_devoci
       blob.type.includes("ogg")  ? "ogg" :
       "mp3";
 
+    const fileName = `${baseName}.${ext}`;
+
+    if (devEsAPKAndroid() && window.AndroidVida?.descargarArchivoBase64) {
+      await devAndroidDescargarBlob(
+        blob,
+        fileName,
+        blob.type || "audio/mpeg"
+      );
+      return true;
+    }
+
     const objUrl = URL.createObjectURL(blob);
 
     const a = document.createElement("a");
     a.href = objUrl;
-    a.download = `${baseName}.${ext}`;
+    a.download = fileName;
     document.body.appendChild(a);
     a.click();
     a.remove();
 
     setTimeout(() => URL.revokeObjectURL(objUrl), 2000);
     return true;
+
   }catch(e){
     console.warn("No se pudo descargar audio:", e);
     return false;
