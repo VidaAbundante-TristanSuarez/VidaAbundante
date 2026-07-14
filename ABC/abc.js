@@ -1356,15 +1356,67 @@ function abcNombreDescarga(nombre = "ABC") {
     .slice(0, 90) + ".pdf";
 }
 
-function abcDescargarArchivo(url, nombreArchivo) {
+function abcPuedeDescargarAndroid() {
+  return !!(
+    window.AndroidVida &&
+    typeof window.AndroidVida.descargarArchivoBase64 === "function"
+  );
+}
+
+function abcBlobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      const res = String(reader.result || "");
+      resolve(res.includes(",") ? res.split(",")[1] : res);
+    };
+
+    reader.onerror = () => {
+      reject(new Error("No pude preparar el PDF para Android."));
+    };
+
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function abcDescargarArchivo(url, nombreArchivo) {
   if (!url) {
     alert("No encontré el PDF para descargar.");
     return;
   }
 
+  const nombreFinal = nombreArchivo || "ABC.pdf";
+
+  if (abcPuedeDescargarAndroid()) {
+    try {
+      const r = await fetch(encodeURI(url), {
+        cache: "no-store"
+      });
+
+      if (!r.ok) {
+        throw new Error("No pude leer el PDF.");
+      }
+
+      const blob = await r.blob();
+      const base64 = await abcBlobToBase64(blob);
+
+      window.AndroidVida.descargarArchivoBase64(
+        nombreFinal,
+        blob.type || "application/pdf",
+        base64
+      );
+
+      return;
+
+    } catch (e) {
+      console.warn("No pude descargar PDF ABC con Android, uso descarga web:", e);
+    }
+  }
+
   const a = document.createElement("a");
   a.href = encodeURI(url);
-  a.download = nombreArchivo || "ABC.pdf";
+  a.download = nombreFinal;
   a.rel = "noopener";
   document.body.appendChild(a);
   a.click();
@@ -1503,7 +1555,7 @@ window.cerrarOpcionesPDFABC = () => {
   if (style) style.remove();
 };
 
-window.descargarPDFABCActual = (index = abcIndex) => {
+window.descargarPDFABCActual = async (index = abcIndex) => {
   const tema = ABC_TEMAS[index];
 
   if (!tema?.pdf) {
@@ -1511,12 +1563,12 @@ window.descargarPDFABCActual = (index = abcIndex) => {
     return;
   }
 
-  abcDescargarArchivo(tema.pdf, abcNombreDescarga(tema.titulo || "ABC"));
+  await abcDescargarArchivo(tema.pdf, abcNombreDescarga(tema.titulo || "ABC"));
   cerrarOpcionesPDFABC();
 };
 
-window.descargarPDFABCCompleto = () => {
-  abcDescargarArchivo(ABC_PDF_COMPLETO, "ABC_COMPLETO.pdf");
+window.descargarPDFABCCompleto = async () => {
+  await abcDescargarArchivo(ABC_PDF_COMPLETO, "ABC_COMPLETO.pdf");
   cerrarOpcionesPDFABC();
 };
 
