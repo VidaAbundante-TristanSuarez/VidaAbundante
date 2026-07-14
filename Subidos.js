@@ -17,64 +17,34 @@ const R2_UPLOAD_URL = R2_WORKER_URL;
 const SUBIDOS_VIDEO_UPLOAD_URL = R2_WORKER_URL;
 const SUBIDOS_PROXY_URL = R2_WORKER_URL;
 
-const SUBIDOS_EXPORT_BG_URL = "./img/fondos/Paisajes/1.jpeg";
+const SUBIDOS_EXPORT_BG_URL = "./img/fondos/Tarjetas/1a.png";
 
-/* ✅ Pegamos tus fondos reales, separados por categoría */
+/*
+  ✅ Fondos de prédica:
+  Dejamos SOLO TARJETAS.
+  Primero intenta leer la carpeta real desde GitHub.
+  Si GitHub no responde, usa esta lista fija como respaldo.
+*/
+
+const SUBIDOS_TARJETAS_GITHUB_API =
+  "https://api.github.com/repos/VidaAbundante-TristanSuarez/VidaAbundante/contents/img/fondos/Tarjetas";
+
 const fondosCategorias = {
-   acuarelas: [
-"./img/fondos/Acuarelas/1a.png",
-"./img/fondos/Acuarelas/2a.png",
-     "./img/fondos/Acuarelas/3a.png",
-     "./img/fondos/Acuarelas/4a.png",
-     "./img/fondos/Acuarelas/5a.png",
-     "./img/fondos/Acuarelas/6a.png",
-     "./img/fondos/Acuarelas/7a.png",
-     "./img/fondos/Acuarelas/8a.png",
-     "./img/fondos/Acuarelas/9a.png",
-     "./img/fondos/Acuarelas/10a.png",
-     "./img/fondos/Acuarelas/11a.png",
-     "./img/fondos/Acuarelas/12a.png",
-     "./img/fondos/Acuarelas/13a.png",
-    "./img/fondos/Acuarelas/Untitled_Project_10_dzbofe_hudn3p.jpg",
-    "./img/fondos/Acuarelas/Untitled_Project_10_hgtbrz.jpg",
-    "./img/fondos/Acuarelas/Untitled_Project_1_gffwqd.jpg",
-    "./img/fondos/Acuarelas/Untitled_Project_2_vdks5w.jpg",
-    "./img/fondos/Acuarelas/Untitled_Project_3_crxvum.jpg",
-    "./img/fondos/Acuarelas/Untitled_Project_4_rplu10_avqvn9.jpg",
-    "./img/fondos/Acuarelas/Untitled_Project_4_xubjvd_wyhnzq.jpg",
-    "./img/fondos/Acuarelas/Untitled_Project_4_yp8i7h_vtja0u.jpg",
-    "./img/fondos/Acuarelas/Untitled_Project_6_ghlggy_ogar08.jpg",
-    "./img/fondos/Acuarelas/Untitled_Project_6_r3cqwb.jpg",
-    "./img/fondos/Acuarelas/Untitled_Project_6_wychbo.jpg",
-    "./img/fondos/Acuarelas/Untitled_Project_7_cf7yzv_ujyx6n.jpg",
-    "./img/fondos/Acuarelas/Untitled_Project_7_hnxuau_yhk6w7.jpg",
-    "./img/fondos/Acuarelas/Untitled_Project_8_h5y32e.jpg",
-    "./img/fondos/Acuarelas/Untitled_Project_9_b3tkxx_jgo6gs.jpg",
-    "./img/fondos/Acuarelas/Untitled_Project_9_zhryll.jpg",
-    "./img/fondos/Acuarelas/Untitled_Project_l02emm_gtylbq.jpg",
-    "./img/fondos/Acuarelas/Untitled_Project_wefjkh.jpg",
-    "./img/fondos/Acuarelas/casita_sxlvcf_s5lvth.jpg",
-    "./img/fondos/Acuarelas/floresfucsias_f17kul.jpg",
-    "./img/fondos/Acuarelas/lilamontañasflores_vayxei_ubvtpm.jpg",
-    "./img/fondos/Acuarelas/nubepasto_w0pg1i.jpg",
-    "./img/fondos/Acuarelas/rosabotes_bwnvws.jpg"
-  ],
-
   tarjetas: [
- "./img/fondos/Tarjetas/1a.png",
-     "./img/fondos/Tarjetas/2a.png",
-     "./img/fondos/Tarjetas/3a.png",
-     "./img/fondos/Tarjetas/4a.png",
-     "./img/fondos/Tarjetas/5a.png",
-     "./img/fondos/Tarjetas/6a.png",
-     "./img/fondos/Tarjetas/7a.png",
-     "./img/fondos/Tarjetas/8a.png",
-     "./img/fondos/Tarjetas/9a.png",
-     "./img/fondos/Tarjetas/10a.png",
-     "./img/fondos/Tarjetas/11a.png",
-     "./img/fondos/Tarjetas/12a.png",
-     "./img/fondos/Tarjetas/13a.png",
-      "./img/fondos/Tarjetas/14a.png",
+    "./img/fondos/Tarjetas/1a.png",
+    "./img/fondos/Tarjetas/2a.png",
+    "./img/fondos/Tarjetas/3a.png",
+    "./img/fondos/Tarjetas/4a.png",
+    "./img/fondos/Tarjetas/5a.png",
+    "./img/fondos/Tarjetas/6a.png",
+    "./img/fondos/Tarjetas/7a.png",
+    "./img/fondos/Tarjetas/8a.png",
+    "./img/fondos/Tarjetas/9a.png",
+    "./img/fondos/Tarjetas/10a.png",
+    "./img/fondos/Tarjetas/11a.png",
+    "./img/fondos/Tarjetas/12a.png",
+    "./img/fondos/Tarjetas/13a.png",
+    "./img/fondos/Tarjetas/14a.png",
     "./img/fondos/Tarjetas/Untitled_Project_12_oal95a.jpg",
     "./img/fondos/Tarjetas/Untitled_Project_1_arstzx_inkdoy.jpg",
     "./img/fondos/Tarjetas/Untitled_Project_2_wza5pr_rgvyrz.jpg",
@@ -96,9 +66,10 @@ const fondosCategorias = {
 };
 
 const fondosEtiquetas = {
-  acuarelas: "Acuarelas",
   tarjetas: "Tarjetas"
 };
+
+let subidosFondosTarjetasCache = null;
 
 function subidosFondoPredicaActual(it = null) {
   return String(
@@ -114,6 +85,117 @@ function subidosCssUrl(url = "") {
     .replace(/'/g, "\\'");
 }
 
+function subidosOrdenarFondosPorNombre(lista = []) {
+  return [...lista].sort((a, b) => {
+    return String(a).localeCompare(String(b), "es", {
+      numeric: true,
+      sensitivity: "base"
+    });
+  });
+}
+
+async function subidosLeerFondosTarjetasDesdeGithub() {
+  if (Array.isArray(subidosFondosTarjetasCache)) {
+    return subidosFondosTarjetasCache;
+  }
+
+  try {
+    const r = await fetch(SUBIDOS_TARJETAS_GITHUB_API, {
+      cache: "no-store"
+    });
+
+    if (!r.ok) {
+      throw new Error("GitHub no respondió la lista de fondos.");
+    }
+
+    const data = await r.json();
+
+    const fondos = (Array.isArray(data) ? data : [])
+      .filter(item => item && item.type === "file")
+      .filter(item => /\.(png|jpg|jpeg|webp)$/i.test(item.name || ""))
+      .map(item => `./${item.path}`);
+
+    if (!fondos.length) {
+      throw new Error("No encontré imágenes en img/fondos/Tarjetas.");
+    }
+
+    subidosFondosTarjetasCache = subidosOrdenarFondosPorNombre(fondos);
+    return subidosFondosTarjetasCache;
+
+  } catch (e) {
+    console.warn("Uso lista fija de fondos Tarjetas:", e);
+
+    subidosFondosTarjetasCache = subidosOrdenarFondosPorNombre(
+      fondosCategorias.tarjetas || []
+    );
+
+    return subidosFondosTarjetasCache;
+  }
+}
+
+function subidosRenderFondosPredica({
+  input,
+  galeria,
+  fondos,
+  actual
+}) {
+  const lista = subidosOrdenarFondosPorNombre(fondos || []);
+
+  const actualFinal =
+    lista.includes(actual)
+      ? actual
+      : (lista[0] || SUBIDOS_EXPORT_BG_URL);
+
+  input.value = actualFinal;
+
+  galeria.innerHTML = `
+    <div class="subidos-fondo-predica-cats">
+      <button
+        type="button"
+        class="subidos-fondo-predica-cat activo"
+        data-fondo-cat="tarjetas"
+      >
+        Tarjetas
+      </button>
+    </div>
+
+    <div class="subidos-fondo-predica-carril">
+      ${lista.map(url => {
+        const activo = url === input.value;
+
+        return `
+          <button
+            type="button"
+            class="subidos-fondo-predica-opcion ${activo ? "activo" : ""}"
+            data-fondo-url="${escaparHtml(url)}"
+            aria-label="Elegir fondo"
+            title="${escaparHtml(url.split("/").pop() || "Elegir fondo")}"
+          >
+            <span
+              class="subidos-fondo-predica-preview"
+              style="background-image:url('${subidosCssUrl(url)}');"
+            ></span>
+          </button>
+        `;
+      }).join("")}
+    </div>
+  `;
+
+  galeria.querySelectorAll("[data-fondo-url]").forEach(btn => {
+    btn.onclick = () => {
+      const url = btn.dataset.fondoUrl || SUBIDOS_EXPORT_BG_URL;
+      input.value = url;
+
+      subidosRenderFondosPredica({
+        input,
+        galeria,
+        fondos: lista,
+        actual: url
+      });
+    };
+  });
+}
+
 function subidosPoblarFondosPredica(valorActual = "", categoriaInicial = "") {
   const input = document.getElementById("subidosPredicaFondo");
   const galeria = document.getElementById("subidosPredicaFondosGaleria");
@@ -123,71 +205,32 @@ function subidosPoblarFondosPredica(valorActual = "", categoriaInicial = "") {
   const actual = String(valorActual || input.value || SUBIDOS_EXPORT_BG_URL).trim();
   input.value = actual;
 
-  const categorias = Object.keys(fondosCategorias || {});
-  let categoriaActual =
-    categoriaInicial ||
-    categorias.find(cat => (fondosCategorias[cat] || []).includes(actual)) ||
-    "paisajes";
+  galeria.innerHTML = `
+    <div style="font-size:12px; opacity:.75; padding:8px;">
+      Cargando fondos de tarjetas...
+    </div>
+  `;
 
-  const render = (cat) => {
-    categoriaActual = cat || "paisajes";
+  subidosLeerFondosTarjetasDesdeGithub()
+    .then(fondos => {
+      subidosRenderFondosPredica({
+        input,
+        galeria,
+        fondos,
+        actual
+      });
+    })
+    .catch(e => {
+      console.warn("No pude cargar fondos:", e);
 
-    const fondos = fondosCategorias[categoriaActual] || [];
-
-    galeria.innerHTML = `
-      <div class="subidos-fondo-predica-cats">
-        ${categorias.map(c => `
-          <button
-            type="button"
-            class="subidos-fondo-predica-cat ${c === categoriaActual ? "activo" : ""}"
-            data-fondo-cat="${escaparHtml(c)}"
-          >
-            ${escaparHtml(fondosEtiquetas[c] || c)}
-          </button>
-        `).join("")}
-      </div>
-
-      <div class="subidos-fondo-predica-carril">
-        ${fondos.map(url => {
-          const activo = url === input.value;
-
-          return `
-            <button
-              type="button"
-              class="subidos-fondo-predica-opcion ${activo ? "activo" : ""}"
-              data-fondo-url="${escaparHtml(url)}"
-              aria-label="Elegir fondo"
-              title="Elegir fondo"
-            >
-              <span
-                class="subidos-fondo-predica-preview"
-                style="background-image:url('${subidosCssUrl(url)}');"
-              ></span>
-            </button>
-          `;
-        }).join("")}
-      </div>
-    `;
-
-    galeria.querySelectorAll("[data-fondo-cat]").forEach(btn => {
-      btn.onclick = () => {
-        render(btn.dataset.fondoCat || "paisajes");
-      };
+      subidosRenderFondosPredica({
+        input,
+        galeria,
+        fondos: fondosCategorias.tarjetas || [],
+        actual
+      });
     });
-
-    galeria.querySelectorAll("[data-fondo-url]").forEach(btn => {
-      btn.onclick = () => {
-        const url = btn.dataset.fondoUrl || SUBIDOS_EXPORT_BG_URL;
-        input.value = url;
-        render(categoriaActual);
-      };
-    });
-  };
-
-  render(categoriaActual);
 }
-
-let subidosUID = null;
 let subidosEsAdmin = false;
 let subidosMesActual = new Date();
 let subidosItems = [];
