@@ -14,10 +14,15 @@
     /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent || "") ||
     window.innerWidth <= 760;
 
-  const TTS_LANG = "es-US";
-  const TTS_RATE = ES_MOVIL ? 1.05 : 0.98;
-  const TTS_PITCH = ES_MOVIL ? 0.96 : 0.86;
-  const TTS_VOLUME = 1;
+const TTS_LANG = "es-US";
+
+/*
+  No bajamos velocidad.
+  Solo acercamos el tono a algo más natural.
+*/
+const TTS_RATE = ES_MOVIL ? 1.05 : 0.98;
+const TTS_PITCH = ES_MOVIL ? 0.94 : 0.92;
+const TTS_VOLUME = 1;
 
   /* =========================================================
      ARPA DE FONDO
@@ -558,6 +563,65 @@
     );
   }
 
+   function elegirVozSuaveBiblia() {
+  try {
+    if (!speechSynthesisDisponible()) return null;
+
+    const voces = speechSynthesis.getVoices?.() || [];
+    if (!voces.length) return null;
+
+    const candidatas = voces.filter(v => {
+      const lang = String(v.lang || "").toLowerCase();
+      return lang.startsWith("es");
+    });
+
+    if (!candidatas.length) return null;
+
+    const prioridad = [
+      "google español de estados unidos",
+      "google us spanish",
+      "google español",
+      "microsoft sabina",
+      "microsoft helena",
+      "microsoft pablo",
+      "spanish latin",
+      "español latino",
+      "es-us",
+      "es-419",
+      "es-mx",
+      "es-ar",
+      "es-es"
+    ];
+
+    const ordenada = candidatas
+      .map(v => {
+        const nombre = `${v.name || ""} ${v.lang || ""}`.toLowerCase();
+
+        const puntos = prioridad.reduce((total, clave, i) => {
+          return nombre.includes(clave)
+            ? total + (100 - i)
+            : total;
+        }, 0);
+
+        return { voz: v, puntos };
+      })
+      .sort((a, b) => b.puntos - a.puntos);
+
+    return ordenada[0]?.voz || null;
+
+  } catch {
+    return null;
+  }
+}
+
+try {
+  if (speechSynthesisDisponible()) {
+    speechSynthesis.onvoiceschanged = () => {
+      elegirVozSuaveBiblia();
+    };
+  }
+} catch {}
+
   function hablarVersiculo(texto, miToken, alTerminar) {
     const limpio = prepararTextoBibliaParaVoz(texto);
 
@@ -603,10 +667,16 @@
 
     const u = new SpeechSynthesisUtterance(limpio);
 
-    u.lang = TTS_LANG;
-    u.rate = TTS_RATE;
-    u.pitch = TTS_PITCH;
-    u.volume = TTS_VOLUME;
+u.lang = TTS_LANG;
+u.rate = TTS_RATE;
+u.pitch = TTS_PITCH;
+u.volume = TTS_VOLUME;
+
+const vozSuave = elegirVozSuaveBiblia();
+if (vozSuave) {
+  u.voice = vozSuave;
+  u.lang = vozSuave.lang || TTS_LANG;
+}
 
     u.onstart = () => {
       comenzoWeb = true;
