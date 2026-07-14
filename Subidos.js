@@ -94,7 +94,38 @@ function subidosOrdenarFondosPorNombre(lista = []) {
   });
 }
 
+function subidosLeerFondosTarjetasDesdeEdiciones() {
+  try {
+    if (typeof window.vaFondosObtenerLista !== "function") {
+      return [];
+    }
+
+    return (window.vaFondosObtenerLista("tarjetas") || [])
+      .map(url => String(url || "").trim())
+      .filter(Boolean);
+  } catch (e) {
+    console.warn("No pude leer fondos desde Ediciones:", e);
+    return [];
+  }
+}
+
 async function subidosLeerFondosTarjetasDesdeGithub() {
+  /*
+    Primero usamos los fondos cargados desde:
+    Recursos > Ediciones > Fondos > Tarjetas.
+    Esos NO están en img/fondos/Tarjetas, están en Firebase/R2.
+  */
+  const desdeEdiciones = subidosLeerFondosTarjetasDesdeEdiciones();
+
+  if (desdeEdiciones.length) {
+    subidosFondosTarjetasCache = subidosOrdenarFondosPorNombre(desdeEdiciones);
+    return subidosFondosTarjetasCache;
+  }
+
+  /*
+    Si Ediciones todavía no cargó o no hay fondos nuevos,
+    usamos cache/lista fija como respaldo.
+  */
   if (Array.isArray(subidosFondosTarjetasCache)) {
     return subidosFondosTarjetasCache;
   }
@@ -231,6 +262,21 @@ function subidosPoblarFondosPredica(valorActual = "", categoriaInicial = "") {
       });
     });
 }
+
+window.addEventListener("va-fondos-actualizados", () => {
+  subidosFondosTarjetasCache = null;
+
+  const galeria = document.getElementById("subidosPredicaFondosGaleria");
+  if (!galeria) return;
+
+  const actual =
+    document.getElementById("subidosPredicaFondo")?.value ||
+    SUBIDOS_EXPORT_BG_URL;
+
+  subidosPoblarFondosPredica(actual);
+});
+
+let subidosUID = null;
 let subidosEsAdmin = false;
 let subidosMesActual = new Date();
 let subidosItems = [];
