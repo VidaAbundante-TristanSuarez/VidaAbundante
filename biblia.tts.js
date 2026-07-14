@@ -369,7 +369,107 @@ const BIBLIA_ARPA_VOLUME = ES_MOVIL ? 0.075 : 0.06;
      LECTURA VERSÍCULO POR VERSÍCULO
      ========================================================= */
 
-  function hablarVersiculo(texto, miToken, alTerminar) {
+   function bibliaTTSEsAPK() {
+  try {
+    return (
+      window.__VIDA_ANDROID_APK__ === true ||
+      /VidaAbundanteAndroidApp/i.test(navigator.userAgent || "") ||
+      new URLSearchParams(location.search || "").get("apk") === "1" ||
+      localStorage.getItem("vida_abundante_android_apk") === "1"
+    );
+  } catch {
+    return false;
+  }
+}
+
+const bibliaTTSNativoCallbacks = {};
+
+function bibliaTTSNativoDisponible() {
+  try {
+    return (
+      bibliaTTSEsAPK() &&
+      window.AndroidVida &&
+      typeof window.AndroidVida.hablarBibliaNativo === "function"
+    );
+  } catch {
+    return false;
+  }
+}
+
+window.vaBibliaTTSEventoNativo = function(tipo, utteranceId, error) {
+  try {
+    const id = String(utteranceId || "");
+    const cb = bibliaTTSNativoCallbacks[id];
+
+    if (!cb) return;
+
+    if (tipo === "start") {
+      return;
+    }
+
+    delete bibliaTTSNativoCallbacks[id];
+
+    if (cb.token !== tokenLectura) return;
+
+    if (tipo === "end") {
+      if (estado !== "leyendo") return;
+
+      if (typeof cb.alTerminar === "function") {
+        cb.alTerminar();
+      }
+
+      return;
+    }
+
+    if (tipo === "error") {
+      console.warn("Biblia TTS nativo error:", error || "");
+
+      estado = "pausado";
+      setBoton("pausado");
+      detenerKeepAlive();
+      pausarArpaBiblia();
+    }
+  } catch (e) {
+    console.warn("Error recibiendo TTS nativo:", e);
+  }
+};
+
+function hablarVersiculoNativo(limpio, miToken, alTerminar) {
+  if (!bibliaTTSNativoDisponible()) return false;
+
+  const id =
+    "biblia_" +
+    Date.now() +
+    "_" +
+    Math.random().toString(36).slice(2);
+
+  bibliaTTSNativoCallbacks[id] = {
+    token: miToken,
+    alTerminar
+  };
+
+  try {
+    window.AndroidVida.hablarBibliaNativo(limpio, id);
+    return true;
+  } catch (e) {
+    delete bibliaTTSNativoCallbacks[id];
+    console.warn("No pude usar TTS nativo:", e);
+    return false;
+  }
+}
+
+function detenerBibliaTTSNativo() {
+  try {
+    if (
+      window.AndroidVida &&
+      typeof window.AndroidVida.detenerBibliaNativo === "function"
+    ) {
+      window.AndroidVida.detenerBibliaNativo();
+    }
+  } catch {}
+}
+ 
+   function hablarVersiculo(texto, miToken, alTerminar) {
     const limpio = prepararTextoBibliaParaVoz(texto);
 
     if (!limpio) {
@@ -377,7 +477,11 @@ const BIBLIA_ARPA_VOLUME = ES_MOVIL ? 0.075 : 0.06;
       return;
     }
 
-    const u = new SpeechSynthesisUtterance(limpio);
+if (hablarVersiculoNativo(limpio, miToken, alTerminar)) {
+  return;
+}
+      
+      const u = new SpeechSynthesisUtterance(limpio);
 
     // No usamos u.voice porque en tus pruebas Chrome se trababa.
     u.lang = TTS_LANG;
@@ -481,9 +585,11 @@ const BIBLIA_ARPA_VOLUME = ES_MOVIL ? 0.075 : 0.06;
     tokenLectura++;
     const miToken = tokenLectura;
 
-    try {
-      speechSynthesis.cancel();
-    } catch {}
+detenerBibliaTTSNativo();
+
+try {
+  speechSynthesis.cancel();
+} catch {}
 
     estado = "leyendo";
     setBoton("leyendo");
@@ -503,13 +609,18 @@ const BIBLIA_ARPA_VOLUME = ES_MOVIL ? 0.075 : 0.06;
     detenerKeepAlive();
     pausarArpaBiblia();
 
-    try {
-      speechSynthesis.pause();
-    } catch {
-      try {
-        speechSynthesis.cancel();
-      } catch {}
-    }
+if (bibliaTTSNativoDisponible()) {
+  detenerBibliaTTSNativo();
+  return;
+}
+
+try {
+  speechSynthesis.pause();
+} catch {
+  try {
+    speechSynthesis.cancel();
+  } catch {}
+}
   }
 
   function continuarBibliaTTS() {
@@ -520,7 +631,12 @@ const BIBLIA_ARPA_VOLUME = ES_MOVIL ? 0.075 : 0.06;
     iniciarKeepAlive();
     iniciarArpaBiblia();
 
-    try {
+if (bibliaTTSNativoDisponible()) {
+  reproducirDesde(indiceActual);
+  return;
+}
+     
+     try {
       speechSynthesis.resume();
 
       setTimeout(() => {
@@ -540,9 +656,11 @@ const BIBLIA_ARPA_VOLUME = ES_MOVIL ? 0.075 : 0.06;
     detenerKeepAlive();
     detenerArpaBiblia();
 
-    try {
-      speechSynthesis.cancel();
-    } catch {}
+detenerBibliaTTSNativo();
+
+try {
+  speechSynthesis.cancel();
+} catch {}
 
     if (limpiar) {
       limpiarActivo();
