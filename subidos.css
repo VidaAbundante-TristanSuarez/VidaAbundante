@@ -2631,5 +2631,96 @@ button{
   padding-top:3px !important;
 }
 
+/* =====================================================
+   VIDEO: POSTER BONITO CON PLAY CHICO
+===================================================== */
+
+.subidos-video-poster{
+  position:relative;
+  width:100%;
+  height:100%;
+  border-radius:12px;
+  overflow:hidden;
+  background:linear-gradient(180deg, rgba(0,0,0,.08), rgba(0,0,0,.18));
+}
+
+.subidos-video-poster > img{
+  width:100% !important;
+  height:100% !important;
+  object-fit:cover !important;
+  display:block !important;
+  border-radius:12px !important;
+  background:transparent !important;
+}
+
+.subidos-video-poster--fallback{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.subidos-video-poster-fallback{
+  width:100%;
+  height:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:linear-gradient(180deg, rgba(0,0,0,.16), rgba(0,0,0,.28));
+  color:#fff;
+}
+
+.subidos-video-poster-fallback i{
+  font-size:34px;
+  opacity:.92;
+}
+
+.subidos-video-play--pretty{
+  position:absolute !important;
+  inset:auto !important;
+  right:10px !important;
+  bottom:10px !important;
+
+  width:42px !important;
+  height:42px !important;
+  border-radius:999px !important;
+
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+
+  background:rgba(255,255,255,.94) !important;
+  box-shadow:0 8px 18px rgba(0,0,0,.24) !important;
+  pointer-events:none !important;
+}
+
+.subidos-video-play--pretty i{
+  font-size:16px !important;
+  color:#111 !important;
+  transform:translateX(1px);
+  filter:none !important;
+}
+
+.subidos-feed-card .subidos-video-play--pretty{
+  width:38px !important;
+  height:38px !important;
+  right:8px !important;
+  bottom:8px !important;
+}
+
+.subidos-feed-card .subidos-video-play--pretty i{
+  font-size:15px !important;
+}
+
+.subidos-visor-archivo .subidos-video-play--pretty{
+  width:48px !important;
+  height:48px !important;
+  right:14px !important;
+  bottom:14px !important;
+}
+
+.subidos-visor-archivo .subidos-video-play--pretty i{
+  font-size:18px !important;
+}
+
 </style>
 
