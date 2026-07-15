@@ -563,51 +563,60 @@ const TTS_VOLUME = 1;
     );
   }
 
-   function elegirVozSuaveBiblia() {
+function elegirVozSuaveBiblia() {
   try {
     if (!speechSynthesisDisponible()) return null;
 
     const voces = speechSynthesis.getVoices?.() || [];
     if (!voces.length) return null;
 
-    const candidatas = voces.filter(v => {
-      const lang = String(v.lang || "").toLowerCase();
-      return lang.startsWith("es");
+    const normalizar = (valor) => {
+      return String(valor || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .trim();
+    };
+
+    /*
+      VOZ FIJA DE ESPAÑOL DE ESTADOS UNIDOS.
+
+      Primero busca específicamente la voz original de Google.
+      Si cambia el nombre según el dispositivo, acepta únicamente
+      otra voz cuyo idioma sea exactamente es-US.
+
+      Nunca acepta es-ES ni voces españolas de España.
+    */
+    const vozGoogleEstadosUnidos = voces.find((voz) => {
+      const nombre = normalizar(voz.name);
+      const idioma = normalizar(voz.lang).replace(/_/g, "-");
+
+      return (
+        idioma === "es-us" &&
+        (
+          nombre.includes("google espanol de estados unidos") ||
+          nombre.includes("google us spanish")
+        )
+      );
     });
 
-    if (!candidatas.length) return null;
+    if (vozGoogleEstadosUnidos) {
+      return vozGoogleEstadosUnidos;
+    }
 
-    const prioridad = [
-      "google español de estados unidos",
-      "google us spanish",
-      "google español",
-      "microsoft sabina",
-      "microsoft helena",
-      "microsoft pablo",
-      "spanish latin",
-      "español latino",
-      "es-us",
-      "es-419",
-      "es-mx",
-      "es-ar",
-      "es-es"
-    ];
+    const vozEstadosUnidos = voces.find((voz) => {
+      const nombre = normalizar(voz.name);
+      const idioma = normalizar(voz.lang).replace(/_/g, "-");
 
-    const ordenada = candidatas
-      .map(v => {
-        const nombre = `${v.name || ""} ${v.lang || ""}`.toLowerCase();
+      return (
+        idioma === "es-us" ||
+        nombre.includes("espanol de estados unidos") ||
+        nombre.includes("spanish united states") ||
+        nombre.includes("spanish (united states)")
+      );
+    });
 
-        const puntos = prioridad.reduce((total, clave, i) => {
-          return nombre.includes(clave)
-            ? total + (100 - i)
-            : total;
-        }, 0);
-
-        return { voz: v, puntos };
-      })
-      .sort((a, b) => b.puntos - a.puntos);
-
-    return ordenada[0]?.voz || null;
+    return vozEstadosUnidos || null;
 
   } catch {
     return null;
