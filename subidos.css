@@ -2571,49 +2571,64 @@ button{
 }
 
 /* =====================================================
-   AGENDA: AUDIO COMPACTO SOLO EN LA CARD DE GALERÍA
-   ===================================================== */
+   AUDIO DE PRÉDICA COMPACTO
+   GALERÍA + PRÉDICA ABIERTA + COMPARTIDOS
+===================================================== */
 
-/* Contenedor mucho más bajo */
-.subidos-feed-card.subidos-card-predica .subidos-predica-audio{
-  flex:0 0 auto !important;
+.subidos-predica-audio{
   width:100% !important;
+  max-width:100% !important;
 
-  margin:4px 0 2px !important;
-  padding:4px 5px !important;
+  margin:4px 0 6px !important;
+  padding:2px 4px !important;
 
+  border:1px solid rgba(0,0,0,.10) !important;
   border-radius:12px !important;
+  background:rgba(255,255,255,.88) !important;
+
   box-sizing:border-box !important;
+  overflow:hidden !important;
 }
 
-/* Quita el título "Audio de la prédica"
-   SOLO dentro de la card de la galería */
-.subidos-feed-card.subidos-card-predica
-.subidos-predica-audio > div{
-  display:none !important;
-}
-
-/* Reproductor más angosto y bajo */
-.subidos-feed-card.subidos-card-predica
+/* Reproductor 4 px más bajo: antes 38, ahora 34 */
 .subidos-predica-audio audio{
   display:block !important;
 
   width:100% !important;
   max-width:100% !important;
 
-  height:38px !important;
-  min-height:38px !important;
-  max-height:38px !important;
+  height:34px !important;
+  min-height:34px !important;
+  max-height:34px !important;
 
   margin:0 !important;
   padding:0 !important;
 }
 
-/* Menos aire entre el audio y los botones inferiores */
+/* Todavía más compacto dentro de la card de galería */
+.subidos-feed-card.subidos-card-predica
+.subidos-predica-audio{
+  flex:0 0 auto !important;
+
+  margin:2px 0 0 !important;
+  padding:1px 3px !important;
+
+  border-radius:10px !important;
+}
+
+/* Obliga a pisar la altura anterior de 38 px */
+.subidos-feed-card.subidos-card-predica
+.subidos-predica-audio audio{
+  height:34px !important;
+  min-height:34px !important;
+  max-height:34px !important;
+}
+
+/* Menos separación antes de los botones inferiores */
 .subidos-feed-card.subidos-card-predica
 .subidos-feed-actions{
   margin-top:0 !important;
-  padding-top:4px !important;
+  padding-top:3px !important;
 }
 
 </style>
