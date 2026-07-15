@@ -575,27 +575,71 @@ function elegirVozSuaveBiblia() {
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "")
         .toLowerCase()
+        .replace(/_/g, "-")
         .trim();
     };
 
     /*
-      VOZ FIJA DE ESPAÑOL DE ESTADOS UNIDOS.
-
-      Primero busca específicamente la voz original de Google.
-      Si cambia el nombre según el dispositivo, acepta únicamente
-      otra voz cuyo idioma sea exactamente es-US.
-
-      Nunca acepta es-ES ni voces españolas de España.
+      Solo aceptamos voces de español de Estados Unidos.
+      Nunca se selecciona voluntariamente una voz es-ES.
     */
-    const vozGoogleEstadosUnidos = voces.find((voz) => {
+    const vocesEstadosUnidos = voces.filter((voz) => {
+      const idioma = normalizar(voz.lang);
+      return idioma === "es-us";
+    });
+
+    if (!vocesEstadosUnidos.length) {
+      return null;
+    }
+
+    /*
+      speechSynthesis no informa directamente si una voz
+      es masculina o femenina. Por eso la reconocemos por
+      los nombres conocidos de voces masculinas es-US.
+    */
+    const nombresMasculinos = [
+      "alonso",
+      "standard-b",
+      "standard-c",
+      "wavenet-b",
+      "wavenet-c",
+      "neural2-b",
+      "neural2-c",
+      "studio-b",
+      "news-d",
+      "news-e",
+      "polyglot-1",
+      "male",
+      "masculino"
+    ];
+
+    const vozMasculina = vocesEstadosUnidos.find((voz) => {
+      const nombre = normalizar(
+        `${voz.name || ""} ${voz.voiceURI || ""}`
+      );
+
+      return nombresMasculinos.some((clave) =>
+        nombre.includes(clave)
+      );
+    });
+
+    if (vozMasculina) {
+      return vozMasculina;
+    }
+
+    /*
+      Si no hay una masculina identificable,
+      conserva la voz original Google Español de EE. UU.
+    */
+    const vozGoogleEstadosUnidos = vocesEstadosUnidos.find((voz) => {
       const nombre = normalizar(voz.name);
-      const idioma = normalizar(voz.lang).replace(/_/g, "-");
 
       return (
-        idioma === "es-us" &&
+        nombre.includes("google espanol de estados unidos") ||
+        nombre.includes("google us spanish") ||
         (
-          nombre.includes("google espanol de estados unidos") ||
-          nombre.includes("google us spanish")
+          nombre.includes("google") &&
+          nombre.includes("spanish")
         )
       );
     });
@@ -604,19 +648,11 @@ function elegirVozSuaveBiblia() {
       return vozGoogleEstadosUnidos;
     }
 
-    const vozEstadosUnidos = voces.find((voz) => {
-      const nombre = normalizar(voz.name);
-      const idioma = normalizar(voz.lang).replace(/_/g, "-");
-
-      return (
-        idioma === "es-us" ||
-        nombre.includes("espanol de estados unidos") ||
-        nombre.includes("spanish united states") ||
-        nombre.includes("spanish (united states)")
-      );
-    });
-
-    return vozEstadosUnidos || null;
+    /*
+      Último respaldo: cualquier voz que sea realmente es-US.
+      Nunca Pablo, Helena ni voces es-ES.
+    */
+    return vocesEstadosUnidos[0] || null;
 
   } catch {
     return null;
