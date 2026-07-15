@@ -4706,7 +4706,7 @@ function htmlArchivoGrandePredica(it) {
   const archivos = subidosArchivosItem(it);
   if (!archivos.length) return "";
 
-  // ✅ Si la prédica tiene varios archivos, usa el mismo carrusel grande que las demás etiquetas.
+  // Si la prédica tiene varios archivos, usa el carrusel grande común.
   if (archivos.length > 1) {
     return subidosHtmlArchivosAbiertos(it, 0);
   }
@@ -4717,17 +4717,6 @@ function htmlArchivoGrandePredica(it) {
 
   const nombre = escaparHtml(archivo.fileName || "archivo");
   const mime = String(archivo.mimeType || "");
-    const posterUrl = String(
-    archivo.posterUrl ||
-    archivo.thumbnailUrl ||
-    it.posterUrl ||
-    it.shareUrl ||
-    ""
-  ).trim();
-
-  const posterAttr = posterUrl
-    ? ` poster="${escaparHtml(posterUrl)}"`
-    : "";
 
   if (mime.startsWith("image/")) {
     return `
@@ -4751,18 +4740,18 @@ function htmlArchivoGrandePredica(it) {
       <button
         type="button"
         onclick="abrirSubidosVisorArchivo('${it.id}')"
-        class="subidos-predica-video-abierto"
+        style="width:100%; border:none; background:transparent; border-radius:16px; padding:0; overflow:hidden; cursor:pointer; position:relative;"
         title="Abrir video"
       >
         <video
           src="${url}"
-          ${posterAttr}
           muted
           playsinline
           preload="metadata"
+          style="display:block; width:100%; max-height:46vh; object-fit:contain; background:#000;"
         ></video>
 
-        <span class="subidos-video-play subidos-video-play-grande">
+        <span class="subidos-video-play">
           <i class="fa-solid fa-circle-play"></i>
         </span>
       </button>
@@ -5480,18 +5469,8 @@ function subidosHtmlBotonArchivoPreview(it, archivo, idx = 0) {
 
   if (mime.startsWith("image/")) {
     return `
-      <button
-        type="button"
-        onclick="${accionAbrir}"
-        class="subidos-media-link subidos-media-frame subidos-media-slide is-image"
-        title="Abrir"
-      >
-        <img
-          src="${url}"
-          alt="${nombre}"
-          loading="lazy"
-          decoding="async"
-        >
+      <button type="button" onclick="${accionAbrir}" class="subidos-media-link subidos-media-frame subidos-media-slide is-image" title="Abrir">
+        <img src="${url}" alt="${nombre}" loading="lazy" decoding="async">
       </button>
     `;
   }
@@ -5520,12 +5499,7 @@ function subidosHtmlBotonArchivoPreview(it, archivo, idx = 0) {
 
   if (mime.startsWith("audio/")) {
     return `
-      <button
-        type="button"
-        onclick="${accionAbrir}"
-        class="subidos-media-link subidos-media-frame subidos-media-slide is-audio"
-        title="Abrir"
-      >
+      <button type="button" onclick="${accionAbrir}" class="subidos-media-link subidos-media-frame subidos-media-slide is-audio" title="Abrir">
         <div class="subidos-file-open">
           <i class="fa-solid fa-headphones"></i>
           <span>${nombre}</span>
@@ -5536,12 +5510,7 @@ function subidosHtmlBotonArchivoPreview(it, archivo, idx = 0) {
   }
 
   return `
-    <button
-      type="button"
-      onclick="${accionAbrir}"
-      class="subidos-media-link subidos-media-frame subidos-media-slide is-file"
-      title="Abrir archivo"
-    >
+    <button type="button" onclick="${accionAbrir}" class="subidos-media-link subidos-media-frame subidos-media-slide is-file" title="Abrir">
       <div class="subidos-file-open">
         <i class="fa-solid fa-file-lines"></i>
         <span>${nombre}</span>
@@ -6504,6 +6473,26 @@ let datosPredica = {
 
     if (esPredica) {
       datosPredica = recogerDatosPredicaSubidos();
+
+      /*
+        Seguridad:
+        Si estamos editando una prédica que ya tenía cita,
+        NO permitimos que se pise con una lista vacía.
+      */
+      const citasAnteriores = obtenerCitasPredicaSubido(actual);
+
+      if (
+        (!Array.isArray(datosPredica.citas) || !datosPredica.citas.length) &&
+        citasAnteriores.length
+      ) {
+        datosPredica.citas = citasAnteriores;
+      }
+
+      if (!Array.isArray(datosPredica.citas) || !datosPredica.citas.length) {
+        throw new Error(
+          "La prédica quedó sin cita bíblica. Elegí libro, capítulo y versículo antes de guardar."
+        );
+      }
     }
 
     subidosGuardando = true;
