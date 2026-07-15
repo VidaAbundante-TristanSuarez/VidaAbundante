@@ -4717,6 +4717,17 @@ function htmlArchivoGrandePredica(it) {
 
   const nombre = escaparHtml(archivo.fileName || "archivo");
   const mime = String(archivo.mimeType || "");
+    const posterUrl = String(
+    archivo.posterUrl ||
+    archivo.thumbnailUrl ||
+    it.posterUrl ||
+    it.shareUrl ||
+    ""
+  ).trim();
+
+  const posterAttr = posterUrl
+    ? ` poster="${escaparHtml(posterUrl)}"`
+    : "";
 
   if (mime.startsWith("image/")) {
     return `
@@ -4740,16 +4751,20 @@ function htmlArchivoGrandePredica(it) {
       <button
         type="button"
         onclick="abrirSubidosVisorArchivo('${it.id}')"
-        style="width:100%; border:none; background:transparent; border-radius:16px; padding:0; overflow:hidden; cursor:pointer;"
+        class="subidos-predica-video-abierto"
         title="Abrir video"
       >
         <video
           src="${url}"
+          ${posterAttr}
           muted
           playsinline
           preload="metadata"
-          style="display:block; width:100%; max-height:46vh; object-fit:contain; background:#000;"
         ></video>
+
+        <span class="subidos-video-play subidos-video-play-grande">
+          <i class="fa-solid fa-circle-play"></i>
+        </span>
       </button>
     `;
   }
@@ -5459,6 +5474,18 @@ function subidosHtmlBotonArchivoPreview(it, archivo, idx = 0) {
 
   const idJs = subidosJs(it.id || "");
 
+  const posterUrl = String(
+    archivo.posterUrl ||
+    archivo.thumbnailUrl ||
+    it.posterUrl ||
+    it.shareUrl ||
+    ""
+  ).trim();
+
+  const posterAttr = posterUrl
+    ? ` poster="${escaparHtml(posterUrl)}"`
+    : "";
+
   const accionAbrir = subidosEsPredicaConContenido(it)
     ? `abrirSubidosVisorPredica('${idJs}', 'all')`
     : `abrirSubidosVisorArchivo('${idJs}', ${idx})`;
@@ -5473,8 +5500,19 @@ function subidosHtmlBotonArchivoPreview(it, archivo, idx = 0) {
 
   if (mime.startsWith("video/")) {
     return `
-      <button type="button" onclick="${accionAbrir}" class="subidos-media-link subidos-media-frame subidos-media-slide is-video subidos-video-frame" title="Abrir video">
-        <video src="${url}" muted playsinline preload="metadata"></video>
+      <button
+        type="button"
+        onclick="${accionAbrir}"
+        class="subidos-media-link subidos-media-frame subidos-media-slide is-video subidos-video-frame"
+        title="Abrir video"
+      >
+        <video
+          src="${url}"
+          ${posterAttr}
+          muted
+          playsinline
+          preload="metadata"
+        ></video>
 
         <span class="subidos-video-play">
           <i class="fa-solid fa-circle-play"></i>
