@@ -13512,7 +13512,33 @@ window.mostrarIglesiaSub = (sub) => {
     if (!puedeVerRecursos) {
       try {
         window.__IGLESIA_SUB_ACTIVA = "";
-        window.__RECURSOS_SUB_ACTIVA = "";
+window.__IGLESIA_SUB_ACTIVA = sub;
+
+/* =====================================================
+   TÍTULO SUPERIOR DE IGLESIA
+   Solo: Devocionales / Agenda / Recursos
+   ABC queda sin título.
+===================================================== */
+
+const tituloSubIglesia =
+  document.getElementById("vaTituloSubIglesia");
+
+if (tituloSubIglesia) {
+  const titulosSubIglesia = {
+    devocionales: "Devocionales",
+    subidos: "Agenda",
+    recursos: "Recursos"
+  };
+
+  const textoTitulo =
+    titulosSubIglesia[sub] || "";
+
+  tituloSubIglesia.textContent =
+    textoTitulo;
+
+  tituloSubIglesia.hidden =
+    !textoTitulo;
+}
 
         if (typeof guardarEstadoBiblia === "function") {
           guardarEstadoBiblia({
@@ -15849,149 +15875,4 @@ slider.addEventListener("input", () => {
 
   medirHeaderBiblia();
   actualizarHeaderBibliaPorScroll();
-})();
-
-// =========================================================
-// TÍTULO SUTIL DE LA SUBSECCIÓN DE IGLESIA
-// Devocionales / Agenda / Recursos
-// =========================================================
-
-(function vaInstalarTituloSubIglesia() {
-  if (window.__vaTituloSubIglesiaInstalado) return;
-
-  window.__vaTituloSubIglesiaInstalado = true;
-
-  function vaObtenerTabsPrincipalesIglesia() {
-    const seccion =
-      document.getElementById(
-        "seccion-iglesia"
-      );
-
-    if (!seccion) return null;
-
-    /*
-      Buscamos solamente la barra principal,
-      no las pestañas internas de Recursos.
-    */
-    return (
-      Array.from(seccion.children).find(
-        el =>
-          el.classList &&
-          el.classList.contains("panel-tabs")
-      ) ||
-      seccion.querySelector(".panel-tabs")
-    );
-  }
-
-  function vaAsegurarTituloSubIglesia() {
-    let titulo =
-      document.getElementById(
-        "vaTituloSubIglesia"
-      );
-
-    if (titulo) return titulo;
-
-    const tabs =
-      vaObtenerTabsPrincipalesIglesia();
-
-    if (!tabs) return null;
-
-    titulo =
-      document.createElement("div");
-
-    titulo.id =
-      "vaTituloSubIglesia";
-
-    titulo.hidden = true;
-
-    tabs.insertAdjacentElement(
-      "afterend",
-      titulo
-    );
-
-    return titulo;
-  }
-
-  function vaActualizarTituloSubIglesia(
-    sub = ""
-  ) {
-    const titulo =
-      vaAsegurarTituloSubIglesia();
-
-    if (!titulo) return;
-
-    const textos = {
-      devocionales: "Devocionales",
-      subidos: "Agenda",
-      recursos: "Recursos"
-    };
-
-    const texto =
-      textos[String(sub || "")] || "";
-
-    titulo.textContent = texto;
-    titulo.hidden = !texto;
-  }
-
-  /*
-    Conservamos tu mostrarIglesiaSub original
-    y solamente añadimos el título después.
-  */
-  const mostrarAnterior =
-    window.mostrarIglesiaSub;
-
-  if (
-    typeof mostrarAnterior === "function"
-  ) {
-    window.mostrarIglesiaSub =
-      function(
-        sub = "devocionales",
-        ...resto
-      ) {
-        const resultado =
-          mostrarAnterior.call(
-            this,
-            sub,
-            ...resto
-          );
-
-        if (
-          resultado &&
-          typeof resultado.finally === "function"
-        ) {
-          resultado.finally(() => {
-            vaActualizarTituloSubIglesia(
-              sub
-            );
-          });
-        } else {
-          vaActualizarTituloSubIglesia(
-            sub
-          );
-        }
-
-        return resultado;
-      };
-  }
-
-  function iniciarTituloSubIglesia() {
-    requestAnimationFrame(() => {
-      vaActualizarTituloSubIglesia(
-        window.__IGLESIA_SUB_ACTIVA ||
-        "devocionales"
-      );
-    });
-  }
-
-  if (
-    document.readyState === "loading"
-  ) {
-    document.addEventListener(
-      "DOMContentLoaded",
-      iniciarTituloSubIglesia,
-      { once:true }
-    );
-  } else {
-    iniciarTituloSubIglesia();
-  }
 })();
