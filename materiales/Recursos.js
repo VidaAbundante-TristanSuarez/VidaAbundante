@@ -255,15 +255,58 @@ body.oscuro #rhStickyBar{
 }
 
 #rhAudioBar{
-  background: transparent;
-  padding: 8px 0 0;
+  display:flex;
+  align-items:center;
+  gap:8px;
+
+  width:100%;
+  min-width:0;
+
+  background:transparent;
+  padding:8px 0 0;
 }
 
 #rhAudio{
-  width:100%;
+  flex:1 1 auto;
+  width:auto;
+  min-width:0;
+  max-width:100%;
+
   margin:0;
   display:block;
   border-radius:16px;
+}
+
+/* PDF al final del reproductor, igual que en ABC */
+#rhBtnPdf{
+  flex:0 0 40px;
+
+  width:40px;
+  min-width:40px;
+  height:40px;
+  min-height:40px;
+
+  padding:0;
+  border:none;
+  border-radius:999px;
+
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+
+  background:var(--ui-azul-claro, #bcdcff);
+  color:#000;
+
+  cursor:pointer;
+}
+
+#rhBtnPdf:hover{
+  background:var(--ui-azul-hover, #a6d0ff);
+}
+
+#rhBtnPdf i{
+  font-size:16px;
+  line-height:1;
 }
 
 /* ✅ aire para las acciones de RH */
@@ -359,9 +402,19 @@ body.oscuro #rhStickyBar{
     </div>
 
     <!-- ✅ Audio debajo del índice -->
-    <div id="rhAudioBar">
-      <audio id="rhAudio" controls preload="metadata"></audio>
-    </div>
+<div id="rhAudioBar">
+  <audio id="rhAudio" controls preload="metadata"></audio>
+
+  <button
+    id="rhBtnPdf"
+    type="button"
+    onclick="abrirOpcionesPDFRH()"
+    title="Descargar PDF"
+    aria-label="Descargar PDF"
+  >
+    <i class="fa-solid fa-file-pdf"></i>
+  </button>
+</div>
   </div>
 
   <div id="rhAcciones"></div>
@@ -537,21 +590,28 @@ function renderRHAcciones() {
   const tema = RH_TEMAS[rhIndex];
   if (!tema) return;
 
-  cont.innerHTML = `
-    <button type="button" onclick="guardarRHEnMiPanel(${rhIndex})" title="Guardar en Mi Panel">
-      <i class="fa-solid fa-heart-circle-plus"></i>
-    </button>
+  /*
+    El PDF ahora está al final del audio.
+    Quitamos Guardar en Mi Panel.
+    Acá queda únicamente Publicar en Compartidos.
+  */
+  if (window.__ES_ADMIN) {
+    cont.style.display = "flex";
 
-    <button type="button" onclick="abrirOpcionesPDFRH(${rhIndex})" title="Descargar PDF">
-      <i class="fa-solid fa-file-pdf"></i>
-    </button>
-
-    ${window.__ES_ADMIN ? `
-      <button type="button" onclick="publicarRHEnCompartidos(${rhIndex})" title="Publicar en Compartidos">
+    cont.innerHTML = `
+      <button
+        type="button"
+        onclick="publicarRHEnCompartidos(${rhIndex})"
+        title="Publicar en Compartidos"
+        aria-label="Publicar en Compartidos"
+      >
         <i class="fa-solid fa-icons"></i>
       </button>
-    ` : ``}
-  `;
+    `;
+  } else {
+    cont.style.display = "none";
+    cont.innerHTML = "";
+  }
 }
 
 window.guardarRHEnMiPanel = async (index) => {
