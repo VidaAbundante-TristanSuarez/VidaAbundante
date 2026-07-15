@@ -6289,4 +6289,312 @@ body.vida-android-apk #loginModal #opcionesSesionTexto{
   }
 }
 
+/* =========================================================
+   AJUSTES DE INTERFAZ - JULIO 2026
+========================================================= */
+
+/* =========================================================
+   BOTÓN BIBLIA: MISMO ALTO QUE VIDA·ABUNDANTE
+========================================================= */
+
+#btnNavBiblia{
+  height:38px !important;
+  min-height:38px !important;
+
+  padding:0 13px !important;
+  gap:6px !important;
+
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+
+  border-radius:999px !important;
+  font-size:13px !important;
+  line-height:1 !important;
+  white-space:nowrap !important;
+}
+
+#btnNavBiblia i{
+  font-size:16px !important;
+  line-height:1 !important;
+}
+
+
+/* =========================================================
+   BIBLIA:
+   HEADER SUPERIOR APARECE AL SUBIR Y SE OCULTA AL BAJAR
+========================================================= */
+
+body.en-biblia #header{
+  position:sticky !important;
+  top:0 !important;
+  z-index:1000 !important;
+
+  transform:translateY(0);
+  transition:
+    transform .22s ease,
+    box-shadow .22s ease;
+
+  will-change:transform;
+}
+
+/* Al bajar */
+body.en-biblia.va-header-biblia-oculto #header{
+  transform:translateY(calc(-100% - 3px));
+}
+
+/*
+  La barra del libro queda debajo del header cuando está visible.
+  Cuando el header se esconde, sube hasta arriba.
+*/
+body.en-biblia #barraTituloBiblia{
+  transition:top .20s ease;
+}
+
+body.en-biblia:not(.va-header-biblia-oculto)
+#barraTituloBiblia{
+  top:var(--va-header-biblia-alto, 0px);
+}
+
+body.en-biblia.va-header-biblia-oculto
+#barraTituloBiblia{
+  top:0;
+}
+
+
+/* =========================================================
+   TÍTULO SUTIL DE DEVOCIONALES / AGENDA / RECURSOS
+========================================================= */
+
+#vaTituloSubIglesia{
+  width:max-content;
+  max-width:calc(100% - 24px);
+
+  min-height:24px;
+  margin:1px auto 8px;
+  padding:4px 14px;
+
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.68);
+
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+
+  background:rgba(255,255,255,.56);
+  color:#263540;
+
+  font-family:"Lora", serif;
+  font-size:13px;
+  font-weight:800;
+  line-height:1;
+
+  letter-spacing:.15px;
+  text-align:center;
+
+  box-shadow:0 3px 10px rgba(0,0,0,.06);
+
+  backdrop-filter:blur(5px);
+  -webkit-backdrop-filter:blur(5px);
+}
+
+#vaTituloSubIglesia[hidden]{
+  display:none !important;
+}
+
+body.oscuro #vaTituloSubIglesia{
+  background:rgba(20,20,20,.72);
+  color:#fff;
+  border-color:rgba(255,255,255,.16);
+}
+
+
+/* =========================================================
+   CREAR IMAGEN:
+   PRIMERA FILA COMPACTA Y SIN SALTOS
+========================================================= */
+
+#modalPersonalizar #rowA{
+  width:100% !important;
+
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+
+  gap:5px !important;
+  padding:0 4px !important;
+
+  flex-wrap:nowrap !important;
+  overflow:visible !important;
+}
+
+#modalPersonalizar #boxFormato{
+  order:0 !important;
+  flex:0 0 auto !important;
+
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+
+  gap:0 !important;
+  margin:0 !important;
+}
+
+#modalPersonalizar #boxControlesTexto{
+  order:1 !important;
+  flex:0 1 auto !important;
+
+  min-width:0 !important;
+
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+
+  gap:5px !important;
+  margin:0 !important;
+  flex-wrap:nowrap !important;
+}
+
+
+/* Botón Post / Story */
+#modalPersonalizar #btnFormatoToggle{
+  flex:0 0 34px !important;
+
+  width:34px !important;
+  min-width:34px !important;
+  max-width:34px !important;
+
+  height:34px !important;
+  min-height:34px !important;
+  max-height:34px !important;
+
+  padding:0 !important;
+  border-radius:10px !important;
+}
+
+#modalPersonalizar #btnFormatoToggle i{
+  font-size:15px !important;
+  line-height:1 !important;
+}
+
+
+/* Color del wrapper: pequeño y redondo */
+#modalPersonalizar #colorOpacidadBibliaHost{
+  flex:0 0 34px !important;
+
+  width:34px !important;
+  min-width:34px !important;
+  max-width:34px !important;
+
+  height:34px !important;
+  min-height:34px !important;
+  max-height:34px !important;
+
+  padding:0 !important;
+  margin:0 !important;
+
+  border-radius:999px !important;
+  border:none !important;
+
+  box-shadow:
+    inset 0 0 0 1px rgba(0,0,0,.16),
+    0 1px 3px rgba(0,0,0,.10);
+}
+
+
+/* Slider del wrapper */
+#modalPersonalizar #personalizarOpacidad{
+  flex:1 1 88px !important;
+
+  width:auto !important;
+  min-width:62px !important;
+  max-width:105px !important;
+
+  margin:0 !important;
+}
+
+
+/* Botones menos y más: pequeños y redondos */
+#modalPersonalizar
+#boxControlesTexto
+> button[onclick*="cambiarTamanoPreview"]{
+  flex:0 0 32px !important;
+
+  width:32px !important;
+  min-width:32px !important;
+  max-width:32px !important;
+
+  height:32px !important;
+  min-height:32px !important;
+  max-height:32px !important;
+
+  padding:0 !important;
+  border-radius:999px !important;
+
+  font-size:18px !important;
+  font-weight:700 !important;
+  line-height:1 !important;
+}
+
+
+/* Número del tamaño */
+#modalPersonalizar #personalizarTamaño{
+  flex:0 0 48px !important;
+
+  width:48px !important;
+  min-width:48px !important;
+  max-width:48px !important;
+
+  height:34px !important;
+  min-height:34px !important;
+  max-height:34px !important;
+
+  padding:0 !important;
+  border-radius:10px !important;
+
+  font-size:13px !important;
+  line-height:34px !important;
+}
+
+
+/* Teléfonos muy angostos */
+@media (max-width:380px){
+
+  #modalPersonalizar #rowA{
+    gap:4px !important;
+    padding:0 2px !important;
+  }
+
+  #modalPersonalizar #boxControlesTexto{
+    gap:4px !important;
+  }
+
+  #modalPersonalizar #personalizarOpacidad{
+    min-width:54px !important;
+    max-width:78px !important;
+  }
+
+  #modalPersonalizar
+  #boxControlesTexto
+  > button[onclick*="cambiarTamanoPreview"]{
+    flex-basis:30px !important;
+
+    width:30px !important;
+    min-width:30px !important;
+    max-width:30px !important;
+
+    height:30px !important;
+    min-height:30px !important;
+    max-height:30px !important;
+  }
+
+  #modalPersonalizar #personalizarTamaño{
+    flex-basis:44px !important;
+
+    width:44px !important;
+    min-width:44px !important;
+    max-width:44px !important;
+  }
+}
+
 </style> 
