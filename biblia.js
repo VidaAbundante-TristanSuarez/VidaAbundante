@@ -15701,3 +15701,297 @@ slider.addEventListener("input", () => {
 });
   }
 });
+
+
+// =========================================================
+// BIBLIA:
+// HEADER SUPERIOR VISIBLE AL SUBIR, OCULTO AL BAJAR
+// =========================================================
+
+(function vaInstalarHeaderBibliaAuto() {
+  if (window.__vaHeaderBibliaAutoInstalado) return;
+
+  window.__vaHeaderBibliaAutoInstalado = true;
+
+  let ultimoY = Math.max(
+    0,
+    window.scrollY ||
+    document.documentElement.scrollTop ||
+    0
+  );
+
+  let acumulado = 0;
+  let raf = 0;
+
+  function medirHeaderBiblia() {
+    const header =
+      document.getElementById("header");
+
+    if (!header) return;
+
+    const alto = Math.ceil(
+      header.offsetHeight ||
+      header.getBoundingClientRect().height ||
+      0
+    );
+
+    document.documentElement.style.setProperty(
+      "--va-header-biblia-alto",
+      `${alto}px`
+    );
+  }
+
+  function actualizarHeaderBibliaPorScroll() {
+    raf = 0;
+
+    const y = Math.max(
+      0,
+      window.scrollY ||
+      document.documentElement.scrollTop ||
+      0
+    );
+
+    /*
+      Fuera de Biblia siempre queda visible.
+    */
+    if (
+      !document.body.classList.contains(
+        "en-biblia"
+      )
+    ) {
+      document.body.classList.remove(
+        "va-header-biblia-oculto"
+      );
+
+      ultimoY = y;
+      acumulado = 0;
+      return;
+    }
+
+    medirHeaderBiblia();
+
+    const delta = y - ultimoY;
+
+    /*
+      Cerca del comienzo siempre visible.
+    */
+    if (y <= 24) {
+      document.body.classList.remove(
+        "va-header-biblia-oculto"
+      );
+
+      acumulado = 0;
+      ultimoY = y;
+      return;
+    }
+
+    if (Math.abs(delta) >= 1) {
+      /*
+        Cuando cambia la dirección,
+        reiniciamos el movimiento acumulado.
+      */
+      if (
+        (delta > 0 && acumulado < 0) ||
+        (delta < 0 && acumulado > 0)
+      ) {
+        acumulado = 0;
+      }
+
+      acumulado += delta;
+
+      /*
+        Bajando: ocultar.
+      */
+      if (acumulado >= 14) {
+        document.body.classList.add(
+          "va-header-biblia-oculto"
+        );
+
+        acumulado = 0;
+      }
+
+      /*
+        Subiendo: mostrar.
+      */
+      if (acumulado <= -10) {
+        document.body.classList.remove(
+          "va-header-biblia-oculto"
+        );
+
+        acumulado = 0;
+      }
+    }
+
+    ultimoY = y;
+  }
+
+  function pedirActualizacionHeaderBiblia() {
+    if (raf) return;
+
+    raf = requestAnimationFrame(
+      actualizarHeaderBibliaPorScroll
+    );
+  }
+
+  window.addEventListener(
+    "scroll",
+    pedirActualizacionHeaderBiblia,
+    { passive:true }
+  );
+
+  window.addEventListener(
+    "resize",
+    () => {
+      medirHeaderBiblia();
+      pedirActualizacionHeaderBiblia();
+    }
+  );
+
+  medirHeaderBiblia();
+  actualizarHeaderBibliaPorScroll();
+})();
+
+// =========================================================
+// TÍTULO SUTIL DE LA SUBSECCIÓN DE IGLESIA
+// Devocionales / Agenda / Recursos
+// =========================================================
+
+(function vaInstalarTituloSubIglesia() {
+  if (window.__vaTituloSubIglesiaInstalado) return;
+
+  window.__vaTituloSubIglesiaInstalado = true;
+
+  function vaObtenerTabsPrincipalesIglesia() {
+    const seccion =
+      document.getElementById(
+        "seccion-iglesia"
+      );
+
+    if (!seccion) return null;
+
+    /*
+      Buscamos solamente la barra principal,
+      no las pestañas internas de Recursos.
+    */
+    return (
+      Array.from(seccion.children).find(
+        el =>
+          el.classList &&
+          el.classList.contains("panel-tabs")
+      ) ||
+      seccion.querySelector(".panel-tabs")
+    );
+  }
+
+  function vaAsegurarTituloSubIglesia() {
+    let titulo =
+      document.getElementById(
+        "vaTituloSubIglesia"
+      );
+
+    if (titulo) return titulo;
+
+    const tabs =
+      vaObtenerTabsPrincipalesIglesia();
+
+    if (!tabs) return null;
+
+    titulo =
+      document.createElement("div");
+
+    titulo.id =
+      "vaTituloSubIglesia";
+
+    titulo.hidden = true;
+
+    tabs.insertAdjacentElement(
+      "afterend",
+      titulo
+    );
+
+    return titulo;
+  }
+
+  function vaActualizarTituloSubIglesia(
+    sub = ""
+  ) {
+    const titulo =
+      vaAsegurarTituloSubIglesia();
+
+    if (!titulo) return;
+
+    const textos = {
+      devocionales: "Devocionales",
+      subidos: "Agenda",
+      recursos: "Recursos"
+    };
+
+    const texto =
+      textos[String(sub || "")] || "";
+
+    titulo.textContent = texto;
+    titulo.hidden = !texto;
+  }
+
+  /*
+    Conservamos tu mostrarIglesiaSub original
+    y solamente añadimos el título después.
+  */
+  const mostrarAnterior =
+    window.mostrarIglesiaSub;
+
+  if (
+    typeof mostrarAnterior === "function"
+  ) {
+    window.mostrarIglesiaSub =
+      function(
+        sub = "devocionales",
+        ...resto
+      ) {
+        const resultado =
+          mostrarAnterior.call(
+            this,
+            sub,
+            ...resto
+          );
+
+        if (
+          resultado &&
+          typeof resultado.finally === "function"
+        ) {
+          resultado.finally(() => {
+            vaActualizarTituloSubIglesia(
+              sub
+            );
+          });
+        } else {
+          vaActualizarTituloSubIglesia(
+            sub
+          );
+        }
+
+        return resultado;
+      };
+  }
+
+  function iniciarTituloSubIglesia() {
+    requestAnimationFrame(() => {
+      vaActualizarTituloSubIglesia(
+        window.__IGLESIA_SUB_ACTIVA ||
+        "devocionales"
+      );
+    });
+  }
+
+  if (
+    document.readyState === "loading"
+  ) {
+    document.addEventListener(
+      "DOMContentLoaded",
+      iniciarTituloSubIglesia,
+      { once:true }
+    );
+  } else {
+    iniciarTituloSubIglesia();
+  }
+})();
