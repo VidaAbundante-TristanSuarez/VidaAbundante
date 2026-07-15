@@ -5474,26 +5474,24 @@ function subidosHtmlBotonArchivoPreview(it, archivo, idx = 0) {
 
   const idJs = subidosJs(it.id || "");
 
-  const posterUrl = String(
-    archivo.posterUrl ||
-    archivo.thumbnailUrl ||
-    it.posterUrl ||
-    it.shareUrl ||
-    ""
-  ).trim();
-
-  const posterAttr = posterUrl
-    ? ` poster="${escaparHtml(posterUrl)}"`
-    : "";
-
   const accionAbrir = subidosEsPredicaConContenido(it)
     ? `abrirSubidosVisorPredica('${idJs}', 'all')`
     : `abrirSubidosVisorArchivo('${idJs}', ${idx})`;
 
   if (mime.startsWith("image/")) {
     return `
-      <button type="button" onclick="${accionAbrir}" class="subidos-media-link subidos-media-frame subidos-media-slide is-image" title="Abrir">
-        <img src="${url}" alt="${nombre}" loading="lazy" decoding="async">
+      <button
+        type="button"
+        onclick="${accionAbrir}"
+        class="subidos-media-link subidos-media-frame subidos-media-slide is-image"
+        title="Abrir"
+      >
+        <img
+          src="${url}"
+          alt="${nombre}"
+          loading="lazy"
+          decoding="async"
+        >
       </button>
     `;
   }
@@ -5508,7 +5506,6 @@ function subidosHtmlBotonArchivoPreview(it, archivo, idx = 0) {
       >
         <video
           src="${url}"
-          ${posterAttr}
           muted
           playsinline
           preload="metadata"
@@ -5523,7 +5520,12 @@ function subidosHtmlBotonArchivoPreview(it, archivo, idx = 0) {
 
   if (mime.startsWith("audio/")) {
     return `
-      <button type="button" onclick="${accionAbrir}" class="subidos-media-link subidos-media-frame subidos-media-slide is-audio" title="Abrir">
+      <button
+        type="button"
+        onclick="${accionAbrir}"
+        class="subidos-media-link subidos-media-frame subidos-media-slide is-audio"
+        title="Abrir"
+      >
         <div class="subidos-file-open">
           <i class="fa-solid fa-headphones"></i>
           <span>${nombre}</span>
@@ -5534,7 +5536,12 @@ function subidosHtmlBotonArchivoPreview(it, archivo, idx = 0) {
   }
 
   return `
-    <button type="button" onclick="${accionAbrir}" class="subidos-media-link subidos-media-frame subidos-media-slide is-file" title="Abrir">
+    <button
+      type="button"
+      onclick="${accionAbrir}"
+      class="subidos-media-link subidos-media-frame subidos-media-slide is-file"
+      title="Abrir archivo"
+    >
       <div class="subidos-file-open">
         <i class="fa-solid fa-file-lines"></i>
         <span>${nombre}</span>
