@@ -639,6 +639,28 @@ function audioTextoBaseActual() {
   return audio_getTextoDesdePreview().trim();
 }
 
+function audioResetAudioGeneradoActual() {
+  window.__audioBase64 = null;
+  window.__pendingAudio = null;
+
+  window.__audioCacheLocal = {
+    texto: "",
+    textoOriginal: "",
+    voiceName: "",
+    contexto: "",
+    audioBase64: ""
+  };
+
+  const audio = document.getElementById("audioPreview");
+  if (audio) {
+    try {
+      audio.pause();
+      audio.removeAttribute("src");
+      audio.load();
+    } catch (_) {}
+  }
+}
+
 function audioLimpiarEstadoViejoSiCambioTexto(textoNuevo = "") {
   const nuevoOriginal = String(textoNuevo || "").trim();
   const nuevoTTS = audioPrepararTextoParaTTS(nuevoOriginal);
@@ -669,25 +691,68 @@ function audioLimpiarEstadoViejoSiCambioTexto(textoNuevo = "") {
 
   if (coincidePendiente || coincideCache) return;
 
-  window.__audioBase64 = null;
-  window.__pendingAudio = null;
+  audioResetAudioGeneradoActual();
+}
 
-  window.__audioCacheLocal = {
-    texto: "",
-    textoOriginal: "",
-    voiceName: "",
-    contexto: "",
-    audioBase64: ""
-  };
+function audioPredicaTextoFueEditado(textoActual = "") {
+  if (audioContextoActual() !== "predica") return false;
 
-  const audio = document.getElementById("audioPreview");
-  if (audio) {
-    try {
-      audio.pause();
-      audio.removeAttribute("src");
-      audio.load();
-    } catch (_) {}
+  const actual = audioPrepararTextoParaTTS(
+    String(textoActual || "").trim()
+  );
+
+  const original = audioPrepararTextoParaTTS(
+    String(window.__AUDIO_PREDICA_TEXTO || "").trim()
+  );
+
+  if (!actual || !original) return false;
+
+  return actual !== original;
+}
+
+function audioSegmentosPredicaSeguros(textoActual = "", textoLimpio = "") {
+  const textoEditado = audioPredicaTextoFueEditado(textoActual);
+
+  /*
+    Si NO editaste el texto manualmente, usamos los segmentos originales:
+    cita / comentario / nota final con voces distintas.
+  */
+  if (
+    !textoEditado &&
+    Array.isArray(window.__AUDIO_PREDICA_SEGMENTOS) &&
+    window.__AUDIO_PREDICA_SEGMENTOS.length
+  ) {
+    return window.__AUDIO_PREDICA_SEGMENTOS;
   }
+
+  /*
+    Si SÍ editaste el texto en el modal, respetamos lo que escribiste.
+    En ese caso no usamos los segmentos viejos, porque ahí estaba el bug.
+  */
+  return [
+    {
+      tipo: "biblia",
+      texto: String(textoLimpio || textoActual || "").trim()
+    }
+  ].filter(s => s.texto);
+}
+
+function audioHookLimpiarCacheAlEditarTextarea(ta) {
+  if (!ta || ta.__audioClearCacheHooked) return;
+
+  ta.__audioClearCacheHooked = true;
+
+  ta.addEventListener("input", () => {
+    audioResetAudioGeneradoActual();
+
+    const estado = document.getElementById("audioEstado");
+    const contexto = audioContextoActual();
+
+    if (estado && contexto === "predica") {
+      estado.textContent =
+        "✏️ Texto modificado. Tocá escuchar previa para generar un audio nuevo.";
+    }
+  });
 }
 
   // ✅ Abrir modal
@@ -699,10 +764,11 @@ window.abrirModalAudio = () => {
 
   if (!modal || !ta) return;
 
-  const contexto = audioContextoActual();
-  const textoActual = audioTextoBaseActual();
+const contexto = audioContextoActual();
+const textoActual = audioTextoBaseActual();
 
-  audioLimpiarEstadoViejoSiCambioTexto(textoActual);
+audioHookLimpiarCacheAlEditarTextarea(ta);
+audioLimpiarEstadoViejoSiCambioTexto(textoActual);
 
   if (audio) {
     try {
@@ -767,14 +833,16 @@ window.escucharPreviaAudio = async () => {
     return;
   }
 
-  const texto = (ta.value || "").trim();
+const texto = (ta.value || "").trim();
 
-  if (!texto) {
-    if (estado) estado.textContent = "⚠️ No hay texto para previsualizar.";
-    return;
-  }
+if (!texto) {
+  if (estado) estado.textContent = "⚠️ No hay texto para previsualizar.";
+  return;
+}
 
-  const contexto = audioContextoActual();
+audioLimpiarEstadoViejoSiCambioTexto(texto);
+
+const contexto = audioContextoActual();
 
   // Biblia y notas usan Standard seca.
   const esBibliaSeco = contexto === "biblia";
@@ -869,12 +937,14 @@ window.escucharPreviaAudio = async () => {
           "🎧 Generando la prédica completa. Las citas y los comentarios usarán voces distintas...";
       }
 
-      audioBase64Final =
-        await audioPedirPredicaCompletaTTS({
-          texto: textoLimpio,
-          segmentos:
-            window.__AUDIO_PREDICA_SEGMENTOS || []
-        });
+audioBase64Final =
+  await audioPedirPredicaCompletaTTS({
+    texto: textoLimpio,
+    segmentos: audioSegmentosPredicaSeguros(
+      texto,
+      textoLimpio
+    )
+  });
 
     } else if (esDevocionalArpa) {
       /*
