@@ -232,7 +232,7 @@ function audioNormalizarReferenciasBiblicas(txt = "") {
 
 function audioPrepararTextoParaTTS(txt = "") {
   let out = String(txt || "")
-    .replace(/[•▪●■□◆◇▶►◼◻]/g, "")
+    .replace(/[*•▪●■□◆◇▶►◼◻]/g, "")
     .replace(/\s{2,}/g, " ")
     .trim();
 
@@ -694,15 +694,45 @@ function audioLimpiarEstadoViejoSiCambioTexto(textoNuevo = "") {
   audioResetAudioGeneradoActual();
 }
 
+function audioPredicaBloquesDesdeTexto(textoActual = "") {
+  const raw = String(textoActual || "")
+    .replace(/\r/g, "")
+    .trim();
+
+  if (!raw) return [];
+
+  const bloquesDobles = raw
+    .split(/\n\s*\n+/)
+    .map(x => String(x || "").trim())
+    .filter(Boolean);
+
+  if (bloquesDobles.length > 1) {
+    return bloquesDobles;
+  }
+
+  return raw
+    .split(/\n+/)
+    .map(x => String(x || "").trim())
+    .filter(Boolean);
+}
+
+function audioPredicaNormalizarParaComparar(txt = "") {
+  return audioPrepararTextoParaTTS(txt)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[*•▪●■□◆◇▶►◼◻]/g, "")
+    .replace(/[^\wáéíóúüñ\s]/gi, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
 function audioPredicaTextoFueEditado(textoActual = "") {
   if (audioContextoActual() !== "predica") return false;
 
-  const actual = audioPrepararTextoParaTTS(
-    String(textoActual || "").trim()
-  );
-
-  const original = audioPrepararTextoParaTTS(
-    String(window.__AUDIO_PREDICA_TEXTO || "").trim()
+  const actual = audioPredicaNormalizarParaComparar(textoActual);
+  const original = audioPredicaNormalizarParaComparar(
+    window.__AUDIO_PREDICA_TEXTO || ""
   );
 
   if (!actual || !original) return false;
@@ -711,30 +741,55 @@ function audioPredicaTextoFueEditado(textoActual = "") {
 }
 
 function audioSegmentosPredicaSeguros(textoActual = "", textoLimpio = "") {
-  const textoEditado = audioPredicaTextoFueEditado(textoActual);
+  const segmentosBase = Array.isArray(window.__AUDIO_PREDICA_SEGMENTOS)
+    ? window.__AUDIO_PREDICA_SEGMENTOS.filter(s => s && String(s.texto || "").trim())
+    : [];
 
   /*
-    Si NO editaste el texto manualmente, usamos los segmentos originales:
-    cita / comentario / nota final con voces distintas.
+    Si no hay segmentos, no queda otra que mandar un bloque único.
+    Pero en prédicas normales sí debería haber segmentos.
   */
-  if (
-    !textoEditado &&
-    Array.isArray(window.__AUDIO_PREDICA_SEGMENTOS) &&
-    window.__AUDIO_PREDICA_SEGMENTOS.length
-  ) {
-    return window.__AUDIO_PREDICA_SEGMENTOS;
+  if (!segmentosBase.length) {
+    return [
+      {
+        tipo: "biblia",
+        texto: String(textoLimpio || textoActual || "").trim()
+      }
+    ].filter(s => s.texto);
+  }
+
+  const bloquesEditados = audioPredicaBloquesDesdeTexto(textoActual);
+
+  /*
+    Caso ideal:
+    corregiste texto, acentos, asteriscos o viñetas,
+    pero mantuviste los bloques.
+    Entonces usamos tus textos corregidos,
+    pero conservamos el tipo de cada segmento:
+    biblia / comentario.
+  */
+  if (bloquesEditados.length === segmentosBase.length) {
+    return segmentosBase
+      .map((seg, i) => ({
+        tipo: seg.tipo === "comentario" ? "comentario" : "biblia",
+        texto:
+          audioPrepararTextoParaTTS(bloquesEditados[i]) ||
+          audioPrepararTextoParaTTS(seg.texto || "")
+      }))
+      .filter(s => s.texto);
   }
 
   /*
-    Si SÍ editaste el texto en el modal, respetamos lo que escribiste.
-    En ese caso no usamos los segmentos viejos, porque ahí estaba el bug.
+    Si la cantidad de bloques no coincide, NO lo convertimos
+    a una sola voz. Conservamos las dos voces usando los
+    segmentos originales limpiados.
   */
-  return [
-    {
-      tipo: "biblia",
-      texto: String(textoLimpio || textoActual || "").trim()
-    }
-  ].filter(s => s.texto);
+  return segmentosBase
+    .map(seg => ({
+      tipo: seg.tipo === "comentario" ? "comentario" : "biblia",
+      texto: audioPrepararTextoParaTTS(seg.texto || "")
+    }))
+    .filter(s => s.texto);
 }
 
 function audioHookLimpiarCacheAlEditarTextarea(ta) {
