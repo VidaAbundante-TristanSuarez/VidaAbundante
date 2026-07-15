@@ -2333,6 +2333,205 @@ function subidosEsVideoFile(file) {
   return !!file && String(file.type || "").startsWith("video/");
 }
 
+function subidosObtenerPreviewVideoInfo(it = {}, archivo = null, idx = 0) {
+  return {
+    url: String(
+      archivo?.videoPreviewUrl ||
+      (idx === 0 ? (it?.videoPreviewUrl || "") : "")
+    ).trim(),
+
+    r2Key: String(
+      archivo?.videoPreviewR2Key ||
+      (idx === 0 ? (it?.videoPreviewR2Key || "") : "")
+    ).trim(),
+
+    mimeType: String(
+      archivo?.videoPreviewMimeType ||
+      (idx === 0 ? (it?.videoPreviewMimeType || "") : "")
+    ).trim(),
+
+    fileName: String(
+      archivo?.videoPreviewFileName ||
+      (idx === 0 ? (it?.videoPreviewFileName || "") : "")
+    ).trim()
+  };
+}
+
+function subidosHtmlPosterVideo(previewUrl = "", alt = "Video") {
+  const src = String(previewUrl || "").trim();
+  const nombre = escaparHtml(alt || "Video");
+
+  if (src) {
+    return `
+      <div class="subidos-video-poster">
+        <img src="${src}" alt="${nombre}" loading="lazy" decoding="async">
+        <span class="subidos-video-play subidos-video-play--pretty">
+          <i class="fa-solid fa-play"></i>
+        </span>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="subidos-video-poster subidos-video-poster--fallback">
+      <div class="subidos-video-poster-fallback">
+        <i class="fa-solid fa-video"></i>
+      </div>
+
+      <span class="subidos-video-play subidos-video-play--pretty">
+        <i class="fa-solid fa-play"></i>
+      </span>
+    </div>
+  `;
+}
+
+function subidosEsperarEventoMedia(el, evento, timeoutMs = 12000) {
+  return new Promise((resolve, reject) => {
+    let listo = false;
+
+    const limpiar = () => {
+      el.removeEventListener(evento, ok);
+      el.removeEventListener("error", fail);
+      clearTimeout(timer);
+    };
+
+    const ok = () => {
+      if (listo) return;
+      listo = true;
+      limpiar();
+      resolve();
+    };
+
+    const fail = () => {
+      if (listo) return;
+      listo = true;
+      limpiar();
+      reject(new Error(`No llegó el evento ${evento}.`));
+    };
+
+    const timer = setTimeout(fail, timeoutMs);
+
+    el.addEventListener(evento, ok, { once: true });
+    el.addEventListener("error", fail, { once: true });
+  });
+}
+
+async function subidosGenerarBlobVistaPreviaVideo(file) {
+  if (!file) throw new Error("Falta el video para la vista previa.");
+
+  const objectUrl = URL.createObjectURL(file);
+  const video = document.createElement("video");
+
+  video.preload = "metadata";
+  video.muted = true;
+  video.playsInline = true;
+  video.src = objectUrl;
+
+  try {
+    video.load?.();
+    await subidosEsperarEventoMedia(video, "loadedmetadata");
+
+    if (video.readyState < 2) {
+      try {
+        await subidosEsperarEventoMedia(video, "loadeddata", 12000);
+      } catch (e) {}
+    }
+
+    const duration = Number(video.duration || 0);
+    let frameTime = 0;
+
+    if (Number.isFinite(duration) && duration > 0.6) {
+      frameTime = Math.min(1.2, Math.max(0.15, duration * 0.2));
+    }
+
+    if (frameTime > 0) {
+      try {
+        video.currentTime = frameTime;
+        await subidosEsperarEventoMedia(video, "seeked", 12000);
+      } catch (e) {}
+    }
+
+    const vw = video.videoWidth || 1280;
+    const vh = video.videoHeight || 720;
+
+    const maxLado = 1600;
+    const escala = Math.min(1, maxLado / Math.max(vw, vh));
+
+    const cw = Math.max(1, Math.round(vw * escala));
+    const ch = Math.max(1, Math.round(vh * escala));
+
+    const canvas = document.createElement("canvas");
+    canvas.width = cw;
+    canvas.height = ch;
+
+    const ctx = canvas.getContext("2d", { alpha: false });
+    ctx.fillStyle = "#111";
+    ctx.fillRect(0, 0, cw, ch);
+    ctx.drawImage(video, 0, 0, cw, ch);
+
+    const blob = await new Promise(resolve => {
+      canvas.toBlob(resolve, "image/jpeg", 0.92);
+    });
+
+    if (!blob) {
+      throw new Error("No se pudo crear la captura del video.");
+    }
+
+    return blob;
+  } finally {
+    try { URL.revokeObjectURL(objectUrl); } catch (e) {}
+  }
+}
+
+async function subidosCrearVistaPreviaVideoAlGuardar(file, estadoEl = null, idx = 0) {
+  try {
+    if (estadoEl) {
+      estadoEl.textContent = `Generando vista previa del video ${idx + 1}...`;
+    }
+
+    const blobPreview = await subidosGenerarBlobVistaPreviaVideo(file);
+
+    const nombre = `${subidosNombreBaseSinExtension(file.name || `video_${idx + 1}`)}_preview.jpg`;
+
+    const previewFile = new File(
+      [blobPreview],
+      nombre,
+      { type: "image/jpeg" }
+    );
+
+    if (estadoEl) {
+      estadoEl.textContent = `Subiendo vista previa del video ${idx + 1}...`;
+    }
+
+    const subida = await subirArchivoAR2DesdeWeb(previewFile, "subidos-previews");
+
+    if (!subida?.url) {
+      return {
+        videoPreviewUrl: "",
+        videoPreviewR2Key: "",
+        videoPreviewMimeType: "",
+        videoPreviewFileName: ""
+      };
+    }
+
+    return {
+      videoPreviewUrl: subida.url || "",
+      videoPreviewR2Key: subida.key || "",
+      videoPreviewMimeType: subida.contentType || "image/jpeg",
+      videoPreviewFileName: subida.fileName || nombre
+    };
+  } catch (e) {
+    console.warn("No pude generar la vista previa del video:", e);
+
+    return {
+      videoPreviewUrl: "",
+      videoPreviewR2Key: "",
+      videoPreviewMimeType: "",
+      videoPreviewFileName: ""
+    };
+  }
+}
+
 function subidosArchivosItem(it = {}) {
   const arr = Array.isArray(it.archivos)
     ? it.archivos.filter(a => a && String(a.url || "").trim())
@@ -2347,7 +2546,11 @@ function subidosArchivosItem(it = {}) {
       sizeBytes: Number(a.sizeBytes || 0),
       subidaDirectaVideo: !!a.subidaDirectaVideo,
 
-      // ✅ preparado para compartir sin link
+      videoPreviewUrl: a.videoPreviewUrl || "",
+      videoPreviewR2Key: a.videoPreviewR2Key || "",
+      videoPreviewMimeType: a.videoPreviewMimeType || "",
+      videoPreviewFileName: a.videoPreviewFileName || "",
+
       shareUrl: a.shareUrl || "",
       shareR2Key: a.shareR2Key || "",
       shareMimeType: a.shareMimeType || "",
@@ -2364,7 +2567,11 @@ function subidosArchivosItem(it = {}) {
       sizeBytes: Number(it.sizeBytes || 0),
       subidaDirectaVideo: !!it.subidaDirectaVideo,
 
-      // ✅ preparado para compartir sin link
+      videoPreviewUrl: it.videoPreviewUrl || "",
+      videoPreviewR2Key: it.videoPreviewR2Key || "",
+      videoPreviewMimeType: it.videoPreviewMimeType || "",
+      videoPreviewFileName: it.videoPreviewFileName || "",
+
       shareUrl: it.shareUrl || "",
       shareR2Key: it.shareR2Key || "",
       shareMimeType: it.shareMimeType || "",
@@ -3407,9 +3614,11 @@ function subidosFechaBonitaExport(ymd = "") {
 }
 
 function subidosArchivoExportHtml(it) {
-  const url = String(it?.url || "").trim();
-  const mime = String(it?.mimeType || "");
-  const nombre = escaparHtml(it?.fileName || "archivo");
+  const archivo = subidosArchivoPrincipal(it);
+  const url = String(archivo?.url || it?.url || "").trim();
+  const mime = String(archivo?.mimeType || it?.mimeType || "");
+  const nombre = escaparHtml(archivo?.fileName || it?.fileName || "archivo");
+  const preview = subidosObtenerPreviewVideoInfo(it, archivo, 0);
 
   if (!url) return "";
 
@@ -3422,6 +3631,40 @@ function subidosArchivoExportHtml(it) {
   }
 
   if (mime.startsWith("video/")) {
+    if (preview.url) {
+      return `
+        <div class="subidos-export-media" style="position:relative;">
+          <div style="position:relative; width:100%; height:100%; overflow:hidden; border-radius:22px;">
+            <img
+              src="${preview.url}"
+              alt="${nombre}"
+              style="width:100%; height:100%; object-fit:cover; display:block;"
+            >
+            <span
+              style="
+                position:absolute;
+                right:12px;
+                bottom:12px;
+                width:50px;
+                height:50px;
+                border-radius:999px;
+                display:flex;
+                align-items:center;
+                justify-content:center;
+                background:rgba(255,255,255,.95);
+                box-shadow:0 8px 18px rgba(0,0,0,.22);
+              "
+            >
+              <i
+                class="fa-solid fa-play"
+                style="font-size:18px; color:#111; transform:translateX(1px);"
+              ></i>
+            </span>
+          </div>
+        </div>
+      `;
+    }
+
     return `
       <div class="subidos-export-media subidos-export-media-placeholder">
         <i class="fa-solid fa-video"></i>
@@ -3612,6 +3855,8 @@ const otrasCitasHtml = otrasRefs.map(ref => `
   const tituloPredica = subidosTextoPlanoExport(it.predicaTitulo || it.tituloPredica || "");
 const fondoUrl = subidosFondoPredicaActual(it);
   const color = colorEtiquetaSubidos(it.etiqueta || "");
+  const archivoHeroHtml = subidosArchivoExportHtml(it);
+const tieneArchivoHero = !!String(archivoHeroHtml || "").trim();
 
  const textosClase = subidosClaseBalanceIntroNota(introduccion, notaFinal);
  const primeraClase = subidosClasePrimeraCitaExport(primeraTexto, primeraRef);
@@ -4077,10 +4322,10 @@ color:#111;
 
     <div class="subidos-export-divider"></div>
 
-    <div class="subidos-export-hero">
-      ${subidosArchivoExportHtml(it)}
+<div class="subidos-export-hero" ${tieneArchivoHero ? "" : `style="display:flex;"`}>
+  ${archivoHeroHtml}
 
-      <div class="subidos-export-brand-wrap">
+  <div class="subidos-export-brand-wrap" ${tieneArchivoHero ? "" : `style="width:100%;"`}>
         <div class="subidos-export-brand-box">
           <div class="subidos-export-iglesia">
             Iglesia Cristiana de<br>
@@ -4706,7 +4951,6 @@ function htmlArchivoGrandePredica(it) {
   const archivos = subidosArchivosItem(it);
   if (!archivos.length) return "";
 
-  // Si la prédica tiene varios archivos, usa el carrusel grande común.
   if (archivos.length > 1) {
     return subidosHtmlArchivosAbiertos(it, 0);
   }
@@ -4715,8 +4959,10 @@ function htmlArchivoGrandePredica(it) {
   const url = String(archivo.url || "").trim();
   if (!url) return "";
 
-  const nombre = escaparHtml(archivo.fileName || "archivo");
+  const nombrePlano = archivo.fileName || "archivo";
+  const nombre = escaparHtml(nombrePlano);
   const mime = String(archivo.mimeType || "");
+  const preview = subidosObtenerPreviewVideoInfo(it, archivo, 0);
 
   if (mime.startsWith("image/")) {
     return `
@@ -4740,20 +4986,11 @@ function htmlArchivoGrandePredica(it) {
       <button
         type="button"
         onclick="abrirSubidosVisorArchivo('${it.id}')"
+        class="subidos-video-frame"
         style="width:100%; border:none; background:transparent; border-radius:16px; padding:0; overflow:hidden; cursor:pointer; position:relative;"
         title="Abrir video"
       >
-        <video
-          src="${url}"
-          muted
-          playsinline
-          preload="metadata"
-          style="display:block; width:100%; max-height:46vh; object-fit:contain; background:#000;"
-        ></video>
-
-        <span class="subidos-video-play">
-          <i class="fa-solid fa-circle-play"></i>
-        </span>
+        ${subidosHtmlPosterVideo(preview.url, nombrePlano)}
       </button>
     `;
   }
@@ -5456,7 +5693,8 @@ if (fondoPredica) {
 };
 
 function subidosHtmlBotonArchivoPreview(it, archivo, idx = 0) {
-  const nombre = escaparHtml(archivo.fileName || "archivo");
+  const nombrePlano = archivo.fileName || "archivo";
+  const nombre = escaparHtml(nombrePlano);
   const mime = String(archivo.mimeType || "");
   const url = String(archivo.url || "").trim();
 
@@ -5477,6 +5715,8 @@ function subidosHtmlBotonArchivoPreview(it, archivo, idx = 0) {
   }
 
   if (mime.startsWith("video/")) {
+    const preview = subidosObtenerPreviewVideoInfo(it, archivo, idx);
+
     return `
       <button
         type="button"
@@ -5484,16 +5724,7 @@ function subidosHtmlBotonArchivoPreview(it, archivo, idx = 0) {
         class="subidos-media-link subidos-media-frame subidos-media-slide is-video subidos-video-frame"
         title="Abrir video"
       >
-        <video
-          src="${url}"
-          muted
-          playsinline
-          preload="metadata"
-        ></video>
-
-        <span class="subidos-video-play">
-          <i class="fa-solid fa-circle-play"></i>
-        </span>
+        ${subidosHtmlPosterVideo(preview.url, nombrePlano)}
       </button>
     `;
   }
@@ -5989,6 +6220,52 @@ function refrescarSubidos() {
 
   // ✅ prepara archivos reales en memoria para descargar/compartir
   subidosPrepararArchivosDelFeed();
+}
+
+function subidosFirmaVisualPredica(src = {}) {
+  const citas = Array.isArray(src.predicaCitas) && src.predicaCitas.length
+    ? src.predicaCitas
+    : obtenerCitasPredicaSubido(src);
+
+  const archivos = subidosArchivosItem(src).map(a => ({
+    url: String(a.url || "").trim(),
+    mimeType: String(a.mimeType || "").trim(),
+    fileName: String(a.fileName || "").trim(),
+    sizeBytes: Number(a.sizeBytes || 0),
+    videoPreviewUrl: String(a.videoPreviewUrl || "").trim()
+  }));
+
+  return JSON.stringify({
+    fechaEvento: String(src.fechaEvento || "").trim(),
+    etiqueta: String(src.etiqueta || "").trim(),
+    descripcion: String(src.descripcion || "").trim(),
+
+    predicaTitulo: String(src.predicaTitulo || src.tituloPredica || "").trim(),
+    predicaFondoUrl: String(src.predicaFondoUrl || "").trim(),
+    predicaIntroduccion: String(src.predicaIntroduccion || src.introduccionPredica || "").trim(),
+    predicaNotaFinal: String(src.predicaNotaFinal || src.notaFinalGeneral || "").trim(),
+
+    citas: (Array.isArray(citas) ? citas : []).map(c => ({
+      referencia: String(c?.referencia || "").trim(),
+      texto: String(c?.texto || "").trim(),
+      comentario: String(c?.comentario || c?.nota || "").trim()
+    })),
+
+    archivos
+  });
+}
+
+function subidosPredicaNecesitaRegenerarShare(actual = {}, nuevo = {}) {
+  const shareActual = String(actual.shareUrl || "").trim();
+  if (!shareActual) return true;
+
+  const firmaActual =
+    String(actual.shareFingerprintPredica || "").trim() ||
+    subidosFirmaVisualPredica(actual);
+
+  const firmaNueva = subidosFirmaVisualPredica(nuevo);
+
+  return firmaActual !== firmaNueva;
 }
 
 let subidosGuardando = false;
@@ -6547,7 +6824,11 @@ let archivos = subidosArchivosItem(actual).map(a => ({
   sizeBytes: Number(a.sizeBytes || 0),
   subidaDirectaVideo: !!a.subidaDirectaVideo,
 
-  // ✅ mantener archivo preparado igual que prédica
+  videoPreviewUrl: a.videoPreviewUrl || "",
+  videoPreviewR2Key: a.videoPreviewR2Key || "",
+  videoPreviewMimeType: a.videoPreviewMimeType || "",
+  videoPreviewFileName: a.videoPreviewFileName || "",
+
   shareUrl: a.shareUrl || "",
   shareR2Key: a.shareR2Key || "",
   shareMimeType: a.shareMimeType || "",
@@ -6556,12 +6837,17 @@ let archivos = subidosArchivosItem(actual).map(a => ({
 
     let principalActual = archivos[0] || {};
 
-    let url = principalActual.url || actual.url || "";
-    let r2Key = principalActual.r2Key || actual.r2Key || "";
-    let mimeType = principalActual.mimeType || actual.mimeType || "";
-    let fileName = principalActual.fileName || actual.fileName || "";
-    let sizeBytes = Number(principalActual.sizeBytes || actual.sizeBytes || 0);
-    let subidaDirectaVideo = !!(principalActual.subidaDirectaVideo || actual.subidaDirectaVideo);
+let url = principalActual.url || actual.url || "";
+let r2Key = principalActual.r2Key || actual.r2Key || "";
+let mimeType = principalActual.mimeType || actual.mimeType || "";
+let fileName = principalActual.fileName || actual.fileName || "";
+let sizeBytes = Number(principalActual.sizeBytes || actual.sizeBytes || 0);
+let subidaDirectaVideo = !!(principalActual.subidaDirectaVideo || actual.subidaDirectaVideo);
+
+let videoPreviewUrl = principalActual.videoPreviewUrl || actual.videoPreviewUrl || "";
+let videoPreviewR2Key = principalActual.videoPreviewR2Key || actual.videoPreviewR2Key || "";
+let videoPreviewMimeType = principalActual.videoPreviewMimeType || actual.videoPreviewMimeType || "";
+let videoPreviewFileName = principalActual.videoPreviewFileName || actual.videoPreviewFileName || "";
 
     if (files.length) {
       archivos = [];
@@ -6582,6 +6868,21 @@ let archivos = subidosArchivosItem(actual).map(a => ({
           ? await subirVideoR2DirectoSubidos(fileActual, estado)
           : await subirArchivoAR2DesdeWeb(fileActual, "subidos");
 
+let previewVideoData = {
+  videoPreviewUrl: "",
+  videoPreviewR2Key: "",
+  videoPreviewMimeType: "",
+  videoPreviewFileName: ""
+};
+
+if (esVideo) {
+  previewVideoData = await subidosCrearVistaPreviaVideoAlGuardar(
+    fileActual,
+    estado,
+    i
+  );
+}
+
 const archivoBase = {
   url: subida?.url || "",
   r2Key: subida?.key || "",
@@ -6589,6 +6890,8 @@ const archivoBase = {
   fileName: subida?.fileName || fileActual?.name || `archivo_${i + 1}`,
   sizeBytes: Number(subida?.sizeBytes || fileActual?.size || 0),
   subidaDirectaVideo: !!subida?.subidaDirectaVideo,
+
+  ...previewVideoData,
 
   shareUrl: "",
   shareR2Key: "",
@@ -6612,14 +6915,19 @@ if (!esPredica) {
 archivos.push(archivoBase);
       }
 
-      const principal = archivos[0] || {};
+const principal = archivos[0] || {};
 
-      url = principal.url || "";
-      r2Key = principal.r2Key || "";
-      mimeType = principal.mimeType || "";
-      fileName = principal.fileName || "";
-      sizeBytes = Number(principal.sizeBytes || 0);
-      subidaDirectaVideo = !!principal.subidaDirectaVideo;
+url = principal.url || "";
+r2Key = principal.r2Key || "";
+mimeType = principal.mimeType || "";
+fileName = principal.fileName || "";
+sizeBytes = Number(principal.sizeBytes || 0);
+subidaDirectaVideo = !!principal.subidaDirectaVideo;
+
+videoPreviewUrl = principal.videoPreviewUrl || "";
+videoPreviewR2Key = principal.videoPreviewR2Key || "";
+videoPreviewMimeType = principal.videoPreviewMimeType || "";
+videoPreviewFileName = principal.videoPreviewFileName || "";
     }
 
     const destinoRef = subidosEditandoId
@@ -6660,12 +6968,17 @@ const datosBase = {
       descripcion,
 
       // ✅ compatibilidad vieja: se sigue guardando el primer archivo como url principal
-      url,
-      r2Key,
-      mimeType,
-      fileName,
-      sizeBytes,
-      subidaDirectaVideo,
+url,
+r2Key,
+mimeType,
+fileName,
+sizeBytes,
+subidaDirectaVideo,
+
+videoPreviewUrl,
+videoPreviewR2Key,
+videoPreviewMimeType,
+videoPreviewFileName,
 
       // ✅ nuevo: todos los archivos de la misma card
       archivos,
@@ -6707,6 +7020,23 @@ shareUrl: "",
 shareR2Key: "",
 shareMimeType: "",
 shareFileName: "",
+shareFingerprintPredica: esPredica ? subidosFirmaVisualPredica({
+  ...actual,
+  fechaEvento,
+  etiqueta,
+  descripcion,
+  predicaTitulo: esPredica ? datosPredica.titulo : "",
+  predicaFondoUrl: esPredica ? datosPredica.fondoUrl : "",
+  predicaIntroduccion: esPredica ? datosPredica.introduccion : "",
+  predicaCitas: esPredica ? datosPredica.citas : [],
+  predicaNotaFinal: esPredica ? datosPredica.notaFinalGeneral : "",
+  archivos,
+  url,
+  mimeType,
+  fileName,
+  sizeBytes,
+  videoPreviewUrl
+}) : "",
 
       ...datosCumpleanos
     };
@@ -6748,25 +7078,49 @@ if (esPredica) {
     datosBase
   );
 
-  const share =
-    await subidosCrearSharePredicaAlGuardar(
-      idFinal,
-      datosBase
-    );
+  const necesitaRegenerarShare = subidosPredicaNecesitaRegenerarShare(
+    actual,
+    datosBase
+  );
 
-  if (share?.shareUrl) {
+  if (necesitaRegenerarShare) {
+    const share =
+      await subidosCrearSharePredicaAlGuardar(
+        idFinal,
+        datosBase
+      );
+
+    if (share?.shareUrl) {
+      datosFinalGuardados = {
+        ...datosBase,
+        ...share
+      };
+
+      await set(
+        destinoRef,
+        datosFinalGuardados
+      );
+
+      subidosFileCache.delete(idFinal);
+      subidosFilePreparando.delete(idFinal);
+    }
+  } else {
     datosFinalGuardados = {
       ...datosBase,
-      ...share
+      shareUrl: actual.shareUrl || "",
+      shareR2Key: actual.shareR2Key || "",
+      shareMimeType: actual.shareMimeType || "",
+      shareFileName: actual.shareFileName || "",
+      shareFingerprintPredica:
+        actual.shareFingerprintPredica ||
+        datosBase.shareFingerprintPredica ||
+        ""
     };
 
     await set(
       destinoRef,
       datosFinalGuardados
     );
-
-    subidosFileCache.delete(idFinal);
-    subidosFilePreparando.delete(idFinal);
   }
 
 } else {
