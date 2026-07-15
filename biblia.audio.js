@@ -746,50 +746,28 @@ function audioSegmentosPredicaSeguros(textoActual = "", textoLimpio = "") {
     : [];
 
   /*
-    Si no hay segmentos, no queda otra que mandar un bloque único.
-    Pero en prédicas normales sí debería haber segmentos.
+    PRÉDICA:
+    Volvemos al sistema seguro:
+    usar SIEMPRE los segmentos originales de Subidos.
+    Eso mantiene:
+    - audio completo
+    - dos voces
+    - orden correcto
   */
-  if (!segmentosBase.length) {
-    return [
-      {
-        tipo: "biblia",
-        texto: String(textoLimpio || textoActual || "").trim()
-      }
-    ].filter(s => s.texto);
-  }
-
-  const bloquesEditados = audioPredicaBloquesDesdeTexto(textoActual);
-
-  /*
-    Caso ideal:
-    corregiste texto, acentos, asteriscos o viñetas,
-    pero mantuviste los bloques.
-    Entonces usamos tus textos corregidos,
-    pero conservamos el tipo de cada segmento:
-    biblia / comentario.
-  */
-  if (bloquesEditados.length === segmentosBase.length) {
+  if (segmentosBase.length) {
     return segmentosBase
-      .map((seg, i) => ({
+      .map(seg => ({
         tipo: seg.tipo === "comentario" ? "comentario" : "biblia",
-        texto:
-          audioPrepararTextoParaTTS(bloquesEditados[i]) ||
-          audioPrepararTextoParaTTS(seg.texto || "")
+        texto: audioPrepararTextoParaTTS(seg.texto || "")
       }))
       .filter(s => s.texto);
   }
 
-  /*
-    Si la cantidad de bloques no coincide, NO lo convertimos
-    a una sola voz. Conservamos las dos voces usando los
-    segmentos originales limpiados.
-  */
-  return segmentosBase
-    .map(seg => ({
-      tipo: seg.tipo === "comentario" ? "comentario" : "biblia",
-      texto: audioPrepararTextoParaTTS(seg.texto || "")
-    }))
-    .filter(s => s.texto);
+  const texto = audioPrepararTextoParaTTS(textoLimpio || textoActual || "");
+
+  return texto
+    ? [{ tipo: "biblia", texto }]
+    : [];
 }
 
 function audioHookLimpiarCacheAlEditarTextarea(ta) {
@@ -992,13 +970,21 @@ const contexto = audioContextoActual();
           "🎧 Generando la prédica completa. Las citas y los comentarios usarán voces distintas...";
       }
 
+const segmentosPredica = audioSegmentosPredicaSeguros(
+  texto,
+  textoLimpio
+);
+
+const textoPredicaSeguro = segmentosPredica
+  .map(s => s.texto)
+  .filter(Boolean)
+  .join("\n\n")
+  .trim() || textoLimpio;
+
 audioBase64Final =
   await audioPedirPredicaCompletaTTS({
-    texto: textoLimpio,
-    segmentos: audioSegmentosPredicaSeguros(
-      texto,
-      textoLimpio
-    )
+    texto: textoPredicaSeguro,
+    segmentos: segmentosPredica
   });
 
     } else if (esDevocionalArpa) {
