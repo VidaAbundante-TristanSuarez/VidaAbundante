@@ -6364,20 +6364,24 @@ body.en-biblia.va-header-biblia-oculto
 
 /* =========================================================
    TÍTULO SUTIL DE DEVOCIONALES / AGENDA / RECURSOS
+   Debajo del header y antes de cualquier subsección
 ========================================================= */
 
 #vaTituloSubIglesia{
+  position:relative;
+  z-index:3;
+
   width:max-content;
-  max-width:calc(100% - 24px);
+  max-width:calc(100% - 20px);
 
   min-height:24px;
-  margin:1px auto 8px;
+  margin:0 auto 8px;
   padding:4px 14px;
 
   border-radius:999px;
   border:1px solid rgba(255,255,255,.68);
 
-  display:inline-flex;
+  display:flex;
   align-items:center;
   justify-content:center;
 
@@ -6407,7 +6411,6 @@ body.oscuro #vaTituloSubIglesia{
   color:#fff;
   border-color:rgba(255,255,255,.16);
 }
-
 
 /* =========================================================
    CREAR IMAGEN:
