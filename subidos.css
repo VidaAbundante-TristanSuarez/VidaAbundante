@@ -2570,5 +2570,51 @@ button{
   min-width:94px;
 }
 
+/* =====================================================
+   AGENDA: AUDIO COMPACTO SOLO EN LA CARD DE GALERÍA
+   ===================================================== */
+
+/* Contenedor mucho más bajo */
+.subidos-feed-card.subidos-card-predica .subidos-predica-audio{
+  flex:0 0 auto !important;
+  width:100% !important;
+
+  margin:4px 0 2px !important;
+  padding:4px 5px !important;
+
+  border-radius:12px !important;
+  box-sizing:border-box !important;
+}
+
+/* Quita el título "Audio de la prédica"
+   SOLO dentro de la card de la galería */
+.subidos-feed-card.subidos-card-predica
+.subidos-predica-audio > div{
+  display:none !important;
+}
+
+/* Reproductor más angosto y bajo */
+.subidos-feed-card.subidos-card-predica
+.subidos-predica-audio audio{
+  display:block !important;
+
+  width:100% !important;
+  max-width:100% !important;
+
+  height:38px !important;
+  min-height:38px !important;
+  max-height:38px !important;
+
+  margin:0 !important;
+  padding:0 !important;
+}
+
+/* Menos aire entre el audio y los botones inferiores */
+.subidos-feed-card.subidos-card-predica
+.subidos-feed-actions{
+  margin-top:0 !important;
+  padding-top:4px !important;
+}
+
 </style>
 
