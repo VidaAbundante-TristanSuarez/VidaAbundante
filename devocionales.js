@@ -5473,65 +5473,102 @@ window.devFinalizar = async () => {
     return;
   }
 
+  /*
+    Esta variable no modifica el proceso.
+    Solo permite saber en qué paso ocurrió un error.
+  */
+  let pasoPublicarDev = "inicio";
+
   try {
     const ts = Date.now(); // ✅ 1 solo TS para todo
 
     // ✅ si requiere audio, primero tiene que estar confirmado/cargado
     if (DEV.requiereAudio && !DEV.audioOk) {
-      throw new Error("Primero confirmá el audio, cargá un audio finalizado, o desactivá 'Requiere audio'.");
+      throw new Error(
+        "Primero confirmá el audio, cargá un audio finalizado, " +
+        "o desactivá 'Requiere audio'."
+      );
     }
 
-// ✅ preparar audio: subir a GitHub si corresponde Y descargar local
-if (DEV.requiereAudio) {
-  devBusyShow(
-    DEV.subirAudioGithub
-      ? "⏳ Subiendo y descargando audio…"
-      : "⏳ Descargando audio…"
-  );
+    // ✅ preparar audio: subir a GitHub si corresponde Y descargar local
+    if (DEV.requiereAudio) {
+      pasoPublicarDev = "audio_github_descarga";
 
-  await window.devDescargarFinal({
-    silent: true,
-    descargarLocal: true,
-    subirGithub: !!DEV.subirAudioGithub
-  });
+      devBusyShow(
+        DEV.subirAudioGithub
+          ? "⏳ Subiendo y descargando audio…"
+          : "⏳ Descargando audio…"
+      );
 
-  if (DEV.subirAudioGithub && !DEV.audioGithubUrl) {
-    throw new Error("El audio no quedó subido a GitHub. Revisá el audio o la Function de GitHub.");
-  }
-}
+      await window.devDescargarFinal({
+        silent: true,
+        descargarLocal: true,
+        subirGithub: !!DEV.subirAudioGithub
+      });
+
+      if (DEV.subirAudioGithub && !DEV.audioGithubUrl) {
+        throw new Error(
+          "El audio no quedó subido a GitHub. " +
+          "Revisá el audio o la Function de GitHub."
+        );
+      }
+    }
 
     // ✅ subir imagen/devocional
+    pasoPublicarDev = "imagen_r2";
     devBusyShow("⏳ Subiendo devocional…");
 
     const asset = await devSubirImagenBaseUnaVez(ts);
 
     // ✅ guardar en Iglesia
+    pasoPublicarDev = "firebase_iglesia";
     await devGuardarEnIglesia(asset);
 
     // ✅ guardar en Mi Panel solo si está tildado
     if (DEV.subirPanel) {
+      pasoPublicarDev = "firebase_mi_panel";
       await devGuardarEnMiPanel(asset);
     }
 
     // ✅ asegurar archivo listo para compartir
+    pasoPublicarDev = "preparar_compartir";
     devBusyShow("⏳ Preparando compartir…");
+
     await devAsegurarShareFinalListo();
 
     devBusyHide();
 
-    // ✅ MUY IMPORTANTE:
-    // Cerramos solo Fase 3, NO devCerrarTodo(),
-    // porque devCerrarTodo borra window.__devFinalCanvas y window.__devFinalFile.
+    /*
+      Cerramos solo Fase 3, NO devCerrarTodo(),
+      porque devCerrarTodo borra:
+      - window.__devFinalCanvas
+      - window.__devFinalFile
+    */
+    pasoPublicarDev = "cerrar_fase_3";
     cerrarModal("modalDevFase3");
 
     devToast("✅ Publicado. Elegí cómo compartir…");
 
-    // ✅ Ahora el modal ya no queda escondido detrás de Fase 3.
+    // ✅ abrir modal final de compartir
+    pasoPublicarDev = "abrir_modal_compartir";
     window.devAbrirModalCompartirPublicado();
 
+    pasoPublicarDev = "completado";
+
   } catch (e) {
-    console.error(e);
-    alert("❌ Error al publicar/compartir.\n\nDetalle: " + (e?.message || e));
+    console.error(
+      "Error publicando devocional.",
+      "Paso:",
+      pasoPublicarDev,
+      e
+    );
+
+    alert(
+      "❌ Error al publicar/compartir.\n\n" +
+      "Paso: " + pasoPublicarDev + "\n\n" +
+      "Detalle: " + (e?.message || e)
+    );
+
   } finally {
     DEV.publicando = false;
     btns.forEach(b => b.disabled = false);
