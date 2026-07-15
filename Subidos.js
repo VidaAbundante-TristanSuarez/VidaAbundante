@@ -317,12 +317,35 @@ async function subidosAndroidDescargarFile(file){
   );
 }
 
-async function subidosAndroidCompartirFile(file){
+async function subidosAndroidCompartirFile(file, texto = ""){
   if (!file) throw new Error("No hay archivo para compartir.");
 
   const nombre = file.name || `archivo_${Date.now()}`;
   const mime = file.type || "application/octet-stream";
   const base64 = await blobToBase64(file);
+  const textoFinal = String(texto || "").trim();
+
+  /*
+    PRÉDICAS:
+    comparte la imagen preparada + el enlace bonito.
+
+    OTROS ARCHIVOS:
+    siguen compartiéndose solamente como archivo.
+  */
+  if (
+    textoFinal &&
+    window.AndroidVida &&
+    typeof window.AndroidVida.compartirArchivoBase64ConTexto === "function"
+  ) {
+    window.AndroidVida.compartirArchivoBase64ConTexto(
+      nombre,
+      mime,
+      base64,
+      textoFinal
+    );
+
+    return;
+  }
 
   window.AndroidVida.compartirArchivoBase64(
     nombre,
@@ -5364,11 +5387,16 @@ async function subidosCompartirFileObligatorio(file, titulo = "Archivo", texto =
     throw new Error("No hay archivo para compartir.");
   }
 
-  if (subidosEsAPKAndroid() && window.AndroidVida?.compartirArchivoBase64) {
-    const fileFinal = subidosFileFrescoParaShare(file, "vida-abundante");
-    await subidosAndroidCompartirFile(fileFinal);
-    return;
-  }
+if (subidosEsAPKAndroid() && window.AndroidVida?.compartirArchivoBase64) {
+  const fileFinal = subidosFileFrescoParaShare(file, "vida-abundante");
+
+  await subidosAndroidCompartirFile(
+    fileFinal,
+    texto
+  );
+
+  return;
+}
 
   if (!navigator.share) {
     throw new Error("Este navegador no permite compartir archivos desde la web.");
