@@ -4887,6 +4887,8 @@ const descripcionPredica = String(
           </div>
         ` : ``}
 
+        ${subidosHtmlAudioPredica(it)}
+
         ${primeraBloque}
 
         ${introduccion ? `
@@ -4948,8 +4950,7 @@ window.abrirSubidosVisorPredica =
       htmlPredicaBibliaSubidoGrande(
         it,
         abrirClave
-      ) +
-      subidosHtmlAudioPredica(it)
+      )
     );
   };
 
@@ -6180,38 +6181,12 @@ function subidosHtmlAudioPredica(it = {}) {
     <div
       class="subidos-predica-audio"
       onclick="event.stopPropagation()"
-      style="
-        margin:12px 0 4px;
-        padding:10px 12px;
-        border:1px solid rgba(0,0,0,.10);
-        border-radius:16px;
-        background:rgba(255,255,255,.90);
-        box-sizing:border-box;
-      "
     >
-      <div
-        style="
-          display:flex;
-          align-items:center;
-          gap:8px;
-          margin-bottom:8px;
-          font-size:14px;
-          font-weight:800;
-        "
-      >
-        <i class="fa-solid fa-headphones"></i>
-        <span>Audio de la prédica</span>
-      </div>
-
       <audio
         controls
+        playsinline
         preload="metadata"
         src="${escaparHtml(audioUrl)}"
-        style="
-          display:block;
-          width:100%;
-          max-width:100%;
-        "
       ></audio>
     </div>
   `;
