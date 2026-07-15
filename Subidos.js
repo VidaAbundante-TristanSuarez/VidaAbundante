@@ -6471,29 +6471,85 @@ let datosPredica = {
   notaFinalGeneral: ""
 };
 
-    if (esPredica) {
-      datosPredica = recogerDatosPredicaSubidos();
+if (esPredica) {
+  const citasGuardadas = obtenerCitasPredicaSubido(actual);
 
-      /*
-        Seguridad:
-        Si estamos editando una prédica que ya tenía cita,
-        NO permitimos que se pise con una lista vacía.
-      */
-      const citasAnteriores = obtenerCitasPredicaSubido(actual);
+  try {
+    datosPredica = recogerDatosPredicaSubidos();
+  } catch (e) {
+    /*
+      Si al editar el formulario quedó roto/incompleto,
+      pero la prédica ya tenía citas guardadas,
+      NO dejamos que se borre.
+    */
+    if (subidosEditandoId && citasGuardadas.length) {
+      console.warn("Formulario de prédica incompleto. Mantengo citas guardadas:", e);
 
-      if (
-        (!Array.isArray(datosPredica.citas) || !datosPredica.citas.length) &&
-        citasAnteriores.length
-      ) {
-        datosPredica.citas = citasAnteriores;
-      }
-
-      if (!Array.isArray(datosPredica.citas) || !datosPredica.citas.length) {
-        throw new Error(
-          "La prédica quedó sin cita bíblica. Elegí libro, capítulo y versículo antes de guardar."
-        );
-      }
+      datosPredica = {
+        version: actual.predicaVersion || citasGuardadas[0]?.version || "RV1960",
+        titulo: actual.predicaTitulo || "",
+        fondoUrl: actual.predicaFondoUrl || SUBIDOS_EXPORT_BG_URL,
+        introduccion: actual.predicaIntroduccion || "",
+        citas: citasGuardadas,
+        notaFinalGeneral: actual.predicaNotaFinal || ""
+      };
+    } else {
+      throw e;
     }
+  }
+
+  const citasNuevas = Array.isArray(datosPredica.citas)
+    ? datosPredica.citas
+    : [];
+
+  /*
+    EMERGENCIA:
+    Si estoy editando una prédica y el formulario quedó sin citas,
+    conservamos las citas que ya estaban guardadas.
+  */
+  if (subidosEditandoId && !citasNuevas.length && citasGuardadas.length) {
+    datosPredica.citas = citasGuardadas;
+
+    datosPredica.version =
+      datosPredica.version ||
+      actual.predicaVersion ||
+      citasGuardadas[0]?.version ||
+      "RV1960";
+
+    datosPredica.titulo =
+      datosPredica.titulo ||
+      actual.predicaTitulo ||
+      "";
+
+    datosPredica.fondoUrl =
+      datosPredica.fondoUrl ||
+      actual.predicaFondoUrl ||
+      SUBIDOS_EXPORT_BG_URL;
+
+    datosPredica.introduccion =
+      datosPredica.introduccion ||
+      actual.predicaIntroduccion ||
+      "";
+
+    datosPredica.notaFinalGeneral =
+      datosPredica.notaFinalGeneral ||
+      actual.predicaNotaFinal ||
+      "";
+  }
+
+  /*
+    Si no hay citas nuevas NI guardadas,
+    frenamos el guardado para no destruir la publicación.
+  */
+  if (!Array.isArray(datosPredica.citas) || !datosPredica.citas.length) {
+    alert(
+      "⚠️ No guardé la prédica porque quedó sin cita bíblica.\n\n" +
+      "Para evitar borrar contenido, elegí la cita bíblica de nuevo antes de guardar."
+    );
+
+    return;
+  }
+}
 
     subidosGuardando = true;
     if (btnGuardar) btnGuardar.disabled = true;
@@ -6683,6 +6739,26 @@ shareFileName: "",
 // =========================================================
 // GUARDADO FINAL DEL SUBIDO
 // =========================================================
+
+/*
+  Backup automático antes de editar.
+  Si algo se pisa en el futuro, queda copia en:
+  subidosBackups/{id}/{timestamp}
+*/
+if (subidosEditandoId && actual && Object.keys(actual).length) {
+  try {
+    await set(
+      ref(db, `subidosBackups/${idFinal}/${Date.now()}`),
+      {
+        ...actual,
+        backupTs: Date.now(),
+        backupMotivo: "antes_de_editar_subido"
+      }
+    );
+  } catch (e) {
+    console.warn("No pude crear backup del subido antes de editar:", e);
+  }
+}
 
 let datosFinalGuardados =
   datosBase;
