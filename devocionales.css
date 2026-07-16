@@ -1870,72 +1870,456 @@ body.oscuro .devIndexBarBottom{
   }
 }
 
-/* ================= FILA COMPACTA TEXTO DEV FASE 1 ================= */
+/* =========================================================
+   DEVOCIONALES FASE 1
+   MISMA ESTÉTICA QUE CREAR IMAGEN DE BIBLIA
+========================================================= */
 
-#modalDevFase1 .dev-fila-texto-compacta{
+
+/* =========================================================
+   FILA 1
+   Color wrapper | cuentagotas | opacidad | − | tamaño | +
+========================================================= */
+
+#modalDevFase1 .dev1-controles-principales{
   width:min(460px, 94vw);
-  margin:8px auto 0;
+  max-width:100%;
 
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:8px;
-  flex-wrap:nowrap;
+  margin:6px auto 0 !important;
+  padding:0 3px;
+
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+
+  gap:5px !important;
+  flex-wrap:nowrap !important;
+
+  box-sizing:border-box;
 }
 
-#modalDevFase1 .dev-fila-texto-compacta #dev1BtnFuentes{
-  min-width:112px;
-  height:38px;
-  padding:0 12px;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
+
+/* El stepper deja de ser una caja independiente.
+   Sus tres elementos pasan a la fila principal. */
+#modalDevFase1
+.dev1-controles-principales
+.dev-stepper{
+  display:contents !important;
 }
 
-#modalDevFase1 .dev-fila-texto-compacta button:not(#dev1BtnFuentes),
-#modalDevFase1 .dev-fila-texto-compacta .pickr-host{
-  width:38px !important;
-  min-width:38px !important;
-  max-width:38px !important;
 
-  height:38px !important;
-  min-height:38px !important;
-  max-height:38px !important;
+/* Color del wrapper: círculo como en Biblia */
+#modalDevFase1 #dev1OpColorHost{
+  flex:0 0 34px !important;
 
-  padding:0 !important;
+  width:34px !important;
+  min-width:34px !important;
+  max-width:34px !important;
+
+  height:34px !important;
+  min-height:34px !important;
+  max-height:34px !important;
+
   margin:0 !important;
+  padding:0 !important;
+
+  border:none !important;
+  border-radius:999px !important;
 
   display:inline-flex !important;
   align-items:center !important;
   justify-content:center !important;
-  flex:0 0 38px !important;
+
+  box-shadow:
+    inset 0 0 0 1px rgba(0,0,0,.16),
+    0 1px 3px rgba(0,0,0,.10);
 }
 
-#modalDevFase1 #dev1Under,
-#modalDevFase2 #dev2Under{
+
+/* Aro interior del color del wrapper */
+#modalDevFase1 #dev1OpColorHost::before{
+  content:"";
+
+  width:16px;
+  height:16px;
+
+  border-radius:999px;
+  border:1px solid rgba(0,0,0,.20);
+}
+
+
+/* Cuentagotas que ya agrega Devocionales */
+#modalDevFase1
+.dev1-controles-principales
+> button:not(#dev1OpColorHost),
+
+#modalDevFase1
+.dev1-controles-principales
+button[onclick*="wrapperF1"]{
+  flex:0 0 34px !important;
+
+  width:34px !important;
+  min-width:34px !important;
+  max-width:34px !important;
+
+  height:34px !important;
+  min-height:34px !important;
+  max-height:34px !important;
+
+  margin:0 !important;
+  padding:0 !important;
+
+  border:none !important;
+  border-radius:999px !important;
+
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+
+  background:var(--ui-azul-claro) !important;
+  color:#000 !important;
+
+  box-shadow:none !important;
+}
+
+#modalDevFase1
+.dev1-controles-principales
+button[onclick*="wrapperF1"] i{
+  font-size:14px !important;
+  line-height:1 !important;
+}
+
+
+/* Slider de opacidad */
+#modalDevFase1 #dev1Opacidad{
+  flex:1 1 88px !important;
+
+  width:auto !important;
+  min-width:64px !important;
+  max-width:118px !important;
+
+  height:18px !important;
+
+  margin:0 !important;
+  padding:0 !important;
+}
+
+
+/* Botones menos y más */
+#modalDevFase1
+.dev1-controles-principales
+.dev-stepper > button{
+  flex:0 0 32px !important;
+
+  width:32px !important;
+  min-width:32px !important;
+  max-width:32px !important;
+
+  height:32px !important;
+  min-height:32px !important;
+  max-height:32px !important;
+
+  margin:0 !important;
+  padding:0 !important;
+
+  border:none !important;
+  border-radius:999px !important;
+
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+
+  background:var(--ui-azul-claro) !important;
+  color:#000 !important;
+
+  font-size:18px !important;
+  font-weight:700 !important;
+  line-height:1 !important;
+}
+
+
+/* Número de tamaño */
+#modalDevFase1 #dev1Tamano{
+  flex:0 0 48px !important;
+
+  width:48px !important;
+  min-width:48px !important;
+  max-width:48px !important;
+
+  height:34px !important;
+  min-height:34px !important;
+  max-height:34px !important;
+
+  margin:0 !important;
+  padding:0 !important;
+
+  border:1px solid rgba(0,0,0,.12) !important;
+  border-radius:10px !important;
+
+  background:#fff !important;
+  color:#000 !important;
+
+  text-align:center !important;
+  font-size:13px !important;
+  font-weight:800 !important;
+  line-height:34px !important;
+}
+
+
+/* =========================================================
+   FILA 2
+   Fuentes | Aa | B | I | color texto | color contorno
+========================================================= */
+
+#modalDevFase1 .dev-fila-texto-compacta{
+  width:min(460px, 94vw);
+  max-width:100%;
+
+  margin:5px auto 0 !important;
+  padding:0 3px;
+
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+
+  gap:5px !important;
+  flex-wrap:nowrap !important;
+
+  box-sizing:border-box;
+}
+
+#modalDevFase1
+.dev-fila-texto-compacta
+> div:first-child{
+  flex:0 0 auto;
+  min-width:0;
+}
+
+
+/* Botón Fuentes como el de Biblia */
+#modalDevFase1
+.dev-fila-texto-compacta
+#dev1BtnFuentes{
+  width:86px !important;
+  min-width:86px !important;
+  max-width:86px !important;
+
+  height:34px !important;
+  min-height:34px !important;
+  max-height:34px !important;
+
+  margin:0 !important;
+  padding:0 8px !important;
+
+  border:none !important;
+  border-radius:10px !important;
+
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+
+  gap:4px !important;
+
+  background:var(--ui-azul-claro) !important;
+  color:#000 !important;
+
+  font-size:12px !important;
+  font-weight:800 !important;
+  line-height:1 !important;
+  white-space:nowrap !important;
+}
+
+
+/* Contenedor Aa / B / I / colores */
+#modalDevFase1
+.dev-fila-texto-compacta
+.style-row{
+  flex:0 0 auto;
+
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+
+  gap:5px !important;
+  flex-wrap:nowrap !important;
+
+  margin:0 !important;
+  padding:0 !important;
+}
+
+
+/* Aa, B e I */
+#modalDevFase1
+.dev-fila-texto-compacta
+.style-row > button:not(.pickr-host){
+  flex:0 0 34px !important;
+
+  width:34px !important;
+  min-width:34px !important;
+  max-width:34px !important;
+
+  height:34px !important;
+  min-height:34px !important;
+  max-height:34px !important;
+
+  margin:0 !important;
+  padding:0 !important;
+
+  border:none !important;
+  border-radius:10px !important;
+
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+
+  background:var(--ui-azul-claro) !important;
+  color:#000 !important;
+
+  font-size:14px !important;
+  font-weight:700 !important;
+  line-height:1 !important;
+
+  box-shadow:none !important;
+}
+
+
+/* Estado activo como Biblia */
+#modalDevFase1
+.dev-fila-texto-compacta
+.style-row > button.activo:not(.pickr-host){
+  background:var(--ui-azul-hover) !important;
+  color:#fff !important;
+
+  box-shadow:
+    0 3px 10px rgba(0,0,0,.14) !important;
+}
+
+
+/* Ocultamos subrayado: quedan Aa, B e I */
+#modalDevFase1 #dev1Under{
   display:none !important;
 }
 
-@media (max-width:520px){
+
+/* Color del texto: cuadrado */
+#modalDevFase1 #dev1ColorHost{
+  flex:0 0 34px !important;
+
+  width:34px !important;
+  min-width:34px !important;
+  max-width:34px !important;
+
+  height:34px !important;
+  min-height:34px !important;
+  max-height:34px !important;
+
+  margin:0 !important;
+  padding:0 !important;
+
+  border:none !important;
+  border-radius:10px !important;
+
+  box-shadow:
+    inset 0 0 0 1px rgba(0,0,0,.16),
+    0 1px 3px rgba(0,0,0,.10);
+}
+
+
+/* Color del contorno: círculo */
+#modalDevFase1 #dev1OutlineColorHost{
+  flex:0 0 34px !important;
+
+  width:34px !important;
+  min-width:34px !important;
+  max-width:34px !important;
+
+  height:34px !important;
+  min-height:34px !important;
+  max-height:34px !important;
+
+  margin:0 !important;
+  padding:0 !important;
+
+  border:none !important;
+  border-radius:999px !important;
+
+  box-shadow:
+    inset 0 0 0 1px rgba(0,0,0,.16),
+    0 1px 3px rgba(0,0,0,.10);
+}
+
+
+/* =========================================================
+   TELÉFONOS MUY ANGOSTOS
+========================================================= */
+
+@media (max-width:380px){
+
+  #modalDevFase1 .dev1-controles-principales,
   #modalDevFase1 .dev-fila-texto-compacta{
-    gap:6px;
+    gap:4px !important;
+    padding-left:1px !important;
+    padding-right:1px !important;
   }
 
-  #modalDevFase1 .dev-fila-texto-compacta #dev1BtnFuentes{
-    min-width:104px;
+  #modalDevFase1 #dev1Opacidad{
+    min-width:50px !important;
+    max-width:78px !important;
   }
 
-  #modalDevFase1 .dev-fila-texto-compacta button:not(#dev1BtnFuentes),
-  #modalDevFase1 .dev-fila-texto-compacta .pickr-host{
-    width:36px !important;
-    min-width:36px !important;
-    max-width:36px !important;
+  #modalDevFase1
+  .dev1-controles-principales
+  .dev-stepper > button{
+    flex-basis:30px !important;
 
-    height:36px !important;
-    min-height:36px !important;
-    max-height:36px !important;
+    width:30px !important;
+    min-width:30px !important;
+    max-width:30px !important;
 
-    flex-basis:36px !important;
+    height:30px !important;
+    min-height:30px !important;
+    max-height:30px !important;
+  }
+
+  #modalDevFase1 #dev1Tamano{
+    flex-basis:44px !important;
+
+    width:44px !important;
+    min-width:44px !important;
+    max-width:44px !important;
+  }
+
+  #modalDevFase1
+  .dev-fila-texto-compacta
+  #dev1BtnFuentes{
+    width:80px !important;
+    min-width:80px !important;
+    max-width:80px !important;
+
+    padding:0 5px !important;
+    font-size:11px !important;
+  }
+
+  #modalDevFase1
+  .dev-fila-texto-compacta
+  .style-row{
+    gap:4px !important;
+  }
+
+  #modalDevFase1
+  .dev-fila-texto-compacta
+  .style-row > button:not(.pickr-host),
+  #modalDevFase1 #dev1ColorHost,
+  #modalDevFase1 #dev1OutlineColorHost{
+    flex-basis:32px !important;
+
+    width:32px !important;
+    min-width:32px !important;
+    max-width:32px !important;
+
+    height:32px !important;
+    min-height:32px !important;
+    max-height:32px !important;
   }
 }
 
