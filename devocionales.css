@@ -2377,4 +2377,294 @@ button[onclick*="wrapperF1"] i{
   }
 }
 
+/* =========================================================
+   DEVOCIONALES FASE 1 Y FASE 2
+   FUENTES Y ESTILOS IGUALES A CREAR IMAGEN DE BIBLIA
+========================================================= */
+
+
+/* ---------------------------------------------------------
+   FILAS DE TIPOGRAFÍA
+--------------------------------------------------------- */
+
+#modalDevFase1 .dev-fila-texto-compacta,
+#modalDevFase2 .dev2-fila-fuente-tamano{
+  align-items:center !important;
+  justify-content:center !important;
+  gap:6px !important;
+}
+
+#modalDevFase1 .style-row,
+#modalDevFase2 .style-row{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+
+  gap:6px !important;
+  margin:0 !important;
+  padding:0 !important;
+
+  flex-wrap:nowrap !important;
+}
+
+
+/* ---------------------------------------------------------
+   BOTONES FUENTES
+   Mismo alto, fondo, borde y esquinas que Biblia
+--------------------------------------------------------- */
+
+#modalDevFase1 #dev1BtnFuentes,
+#modalDevFase2 #dev2BtnFuentes{
+  width:auto !important;
+  min-width:38px !important;
+  max-width:none !important;
+
+  height:38px !important;
+  min-height:38px !important;
+  max-height:38px !important;
+
+  margin:0 !important;
+  padding:0 12px !important;
+
+  border:none !important;
+  border-radius:10px !important;
+  outline:none !important;
+
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+
+  gap:4px !important;
+
+  background:var(--ui-azul-claro) !important;
+  color:#000 !important;
+
+  font-family:inherit !important;
+  font-size:13px !important;
+  font-weight:700 !important;
+  line-height:1 !important;
+  white-space:nowrap !important;
+
+  box-shadow:none !important;
+  cursor:pointer !important;
+}
+
+
+/* ---------------------------------------------------------
+   Aa / B / I
+   Cuadrados redondeados, no círculos
+--------------------------------------------------------- */
+
+#modalDevFase1 #dev1Upper,
+#modalDevFase1 #dev1Bold,
+#modalDevFase1 #dev1Italic,
+
+#modalDevFase2 #dev2Upper,
+#modalDevFase2 #dev2Bold,
+#modalDevFase2 #dev2Italic{
+  flex:0 0 38px !important;
+
+  width:38px !important;
+  min-width:38px !important;
+  max-width:38px !important;
+
+  height:38px !important;
+  min-height:38px !important;
+  max-height:38px !important;
+
+  margin:0 !important;
+  padding:0 !important;
+
+  border:none !important;
+  border-radius:10px !important;
+  outline:none !important;
+
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+
+  background:var(--ui-azul-claro) !important;
+  color:#000 !important;
+
+  font-family:inherit !important;
+  font-size:14px !important;
+  font-weight:700 !important;
+  line-height:1 !important;
+
+  box-shadow:none !important;
+  cursor:pointer !important;
+}
+
+
+/* Estado seleccionado, igual que Biblia */
+#modalDevFase1 #dev1Upper.activo,
+#modalDevFase1 #dev1Bold.activo,
+#modalDevFase1 #dev1Italic.activo,
+
+#modalDevFase2 #dev2Upper.activo,
+#modalDevFase2 #dev2Bold.activo,
+#modalDevFase2 #dev2Italic.activo{
+  background:var(--ui-azul-hover) !important;
+  color:#fff !important;
+
+  border:none !important;
+  box-shadow:none !important;
+}
+
+
+/* U continúa oculto */
+#modalDevFase1 #dev1Under,
+#modalDevFase2 #dev2Under{
+  display:none !important;
+}
+
+
+/* ---------------------------------------------------------
+   COLORES DE TEXTO Y CONTORNO
+   Texto cuadrado y contorno redondo, como Biblia
+--------------------------------------------------------- */
+
+#modalDevFase1 #dev1ColorHost,
+#modalDevFase1 #dev1OutlineColorHost,
+
+#modalDevFase2 #dev2ColorHost,
+#modalDevFase2 #dev2OutlineColorHost{
+  flex:0 0 38px !important;
+
+  width:38px !important;
+  min-width:38px !important;
+  max-width:38px !important;
+
+  height:38px !important;
+  min-height:38px !important;
+  max-height:38px !important;
+
+  margin:0 !important;
+  padding:0 !important;
+
+  border:none !important;
+  outline:none !important;
+
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+
+  background:var(--pickr-color, #000000) !important;
+
+  box-shadow:
+    inset 0 0 0 1px rgba(0,0,0,.16),
+    0 1px 3px rgba(0,0,0,.10) !important;
+}
+
+
+/* Color del texto: cuadrado redondeado */
+#modalDevFase1 #dev1ColorHost,
+#modalDevFase2 #dev2ColorHost{
+  border-radius:10px !important;
+}
+
+
+/* Color del contorno: redondo */
+#modalDevFase1 #dev1OutlineColorHost,
+#modalDevFase2 #dev2OutlineColorHost{
+  border-radius:999px !important;
+}
+
+
+/* Aro interno del contorno */
+#modalDevFase1 #dev1OutlineColorHost::after,
+#modalDevFase2 #dev2OutlineColorHost::after{
+  content:"";
+
+  width:18px !important;
+  height:18px !important;
+
+  border-radius:999px !important;
+  border:2px solid rgba(255,255,255,.90) !important;
+
+  box-shadow:
+    0 0 0 1px rgba(0,0,0,.35),
+    inset 0 0 0 1px rgba(0,0,0,.15) !important;
+}
+
+
+/* ---------------------------------------------------------
+   LISTAS DE FUENTES
+   También iguales a la lista de Biblia
+--------------------------------------------------------- */
+
+#modalDevFase1 #dev1ListaFuentes button,
+#modalDevFase2 #dev2ListaFuentes button{
+  width:max-content !important;
+  min-width:max-content !important;
+  height:34px !important;
+
+  flex:0 0 auto !important;
+
+  margin:0 !important;
+  padding:0 12px !important;
+
+  border:none !important;
+  border-radius:10px !important;
+
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+
+  background:#e9f6ff !important;
+  color:#000 !important;
+
+  font-size:13px !important;
+  line-height:1 !important;
+  white-space:nowrap !important;
+
+  box-shadow:none !important;
+}
+
+
+#modalDevFase1 #dev1ListaFuentes button.activo,
+#modalDevFase2 #dev2ListaFuentes button.activo{
+  background:var(--ui-azul-hover) !important;
+  color:#fff !important;
+}
+
+
+/* Hover solamente para computadora */
+@media (hover:hover) and (pointer:fine){
+
+  #modalDevFase1 #dev1BtnFuentes:hover,
+  #modalDevFase2 #dev2BtnFuentes:hover,
+
+  #modalDevFase1 #dev1Upper:hover,
+  #modalDevFase1 #dev1Bold:hover,
+  #modalDevFase1 #dev1Italic:hover,
+
+  #modalDevFase2 #dev2Upper:hover,
+  #modalDevFase2 #dev2Bold:hover,
+  #modalDevFase2 #dev2Italic:hover{
+    background:var(--ui-azul-hover) !important;
+    color:#fff !important;
+    border:none !important;
+  }
+}
+
+
+/* En celular el toque no deja un hover pegado */
+@media (hover:none) and (pointer:coarse){
+
+  #modalDevFase1 #dev1BtnFuentes:hover,
+  #modalDevFase2 #dev2BtnFuentes:hover,
+
+  #modalDevFase1 #dev1Upper:not(.activo):hover,
+  #modalDevFase1 #dev1Bold:not(.activo):hover,
+  #modalDevFase1 #dev1Italic:not(.activo):hover,
+
+  #modalDevFase2 #dev2Upper:not(.activo):hover,
+  #modalDevFase2 #dev2Bold:not(.activo):hover,
+  #modalDevFase2 #dev2Italic:not(.activo):hover{
+    background:var(--ui-azul-claro) !important;
+    color:#000 !important;
+  }
+}
+
 </style>
