@@ -13492,53 +13492,39 @@ if (secBiblia) secBiblia.classList.remove("filtros-abiertos");
   
 // ================= 🔺 IGLESIA: SUB-SECCIONES =================
 window.mostrarIglesiaSub = (sub) => {
-  // ✅ Iglesia solo puede manejar sus subsecciones si estamos en Iglesia
+  // Iglesia solo maneja subsecciones si realmente estamos en Iglesia.
   if (!document.body.classList.contains("en-iglesia")) return;
 
-  // ✅ refuerzo: no permitir que Mi Panel/Compartidos queden visibles abajo
+  // Evita que otras secciones queden visibles debajo.
   if (typeof forzarSeccionActiva === "function") {
     forzarSeccionActiva("iglesia");
   }
 
-  const permitidas = ["devocionales", "abc", "subidos", "recursos"];
-  if (!permitidas.includes(sub)) sub = "devocionales";
+  const permitidas = [
+    "devocionales",
+    "abc",
+    "subidos",
+    "recursos"
+  ];
 
-  // ✅ Usuarios comunes no pueden abrir Recursos.
-  // Si todavía no sabemos permisos o no tiene permiso, NO mandamos a Devocionales:
-  // mandamos a Compartidos.
+  if (!permitidas.includes(sub)) {
+    sub = "devocionales";
+  }
+
+  /*
+    RECURSOS:
+    solamente admin o colaborador.
+    Si no tiene permiso, vuelve a Compartidos.
+  */
   if (sub === "recursos") {
-    const puedeVerRecursos = !!window.__ES_ADMIN || !!window.__ES_COLABORADOR;
+    const puedeVerRecursos =
+      !!window.__ES_ADMIN ||
+      !!window.__ES_COLABORADOR;
 
     if (!puedeVerRecursos) {
       try {
         window.__IGLESIA_SUB_ACTIVA = "";
-window.__IGLESIA_SUB_ACTIVA = sub;
-
-/* =====================================================
-   TÍTULO SUPERIOR DE IGLESIA
-   Solo: Devocionales / Agenda / Recursos
-   ABC queda sin título.
-===================================================== */
-
-const tituloSubIglesia =
-  document.getElementById("vaTituloSubIglesia");
-
-if (tituloSubIglesia) {
-  const titulosSubIglesia = {
-    devocionales: "Devocionales",
-    subidos: "Agenda",
-    recursos: "Recursos"
-  };
-
-  const textoTitulo =
-    titulosSubIglesia[sub] || "";
-
-  tituloSubIglesia.textContent =
-    textoTitulo;
-
-  tituloSubIglesia.hidden =
-    !textoTitulo;
-}
+        window.__RECURSOS_SUB_ACTIVA = "";
 
         if (typeof guardarEstadoBiblia === "function") {
           guardarEstadoBiblia({
@@ -13550,81 +13536,200 @@ if (tituloSubIglesia) {
 
         if (typeof window.irA === "function") {
           window.irA("compartidos");
-        } else if (typeof window.forzarSeccionActiva === "function") {
+        } else if (
+          typeof window.forzarSeccionActiva === "function"
+        ) {
           window.forzarSeccionActiva("compartidos");
         }
 
         setTimeout(() => {
-          try { window.mostrarCompartidosSub?.("todo"); } catch(e) {}
-          try { window.mostrarCompartidos?.("todo"); } catch(e) {}
-          try { window.scrollTo({ top: 0, behavior: "auto" }); } catch(e) {}
+          try {
+            window.mostrarCompartidosSub?.("todo");
+          } catch (e) {}
+
+          try {
+            window.mostrarCompartidos?.("todo");
+          } catch (e) {}
+
+          try {
+            window.scrollTo({
+              top: 0,
+              behavior: "auto"
+            });
+          } catch (e) {}
         }, 0);
 
       } catch (e) {
-        console.warn("No pude mandar a Compartidos:", e);
+        console.warn(
+          "No pude mandar a Compartidos:",
+          e
+        );
       }
 
       return;
     }
   }
 
-    window.__IGLESIA_SUB_ACTIVA = sub;
+  /*
+    TÍTULO SUPERIOR:
+    Devocionales / Agenda / Recursos.
+    En ABC se oculta.
+  */
+  const actualizarTituloIglesia = () => {
+    const titulo =
+      document.getElementById(
+        "vaTituloSubIglesia"
+      );
+
+    if (!titulo) return;
+
+    const nombres = {
+      devocionales: "Devocionales",
+      subidos: "Agenda",
+      recursos: "Recursos"
+    };
+
+    const texto =
+      nombres[sub] || "";
+
+    titulo.textContent = texto;
+
+    if (texto) {
+      titulo.hidden = false;
+      titulo.removeAttribute("hidden");
+    } else {
+      titulo.hidden = true;
+      titulo.setAttribute("hidden", "");
+    }
+  };
+
+  window.__IGLESIA_SUB_ACTIVA = sub;
+
+  actualizarTituloIglesia();
 
   try {
     guardarEstadoBiblia({
       seccion: "iglesia",
       subIglesia: sub
     });
-  } catch(e) {}
+  } catch (e) {}
 
-  // ✅ detecto si estaba en ABC antes
-  const abcAntes = document.getElementById("iglesia-abc");
-  const estabaEnABC = !!(abcAntes && getComputedStyle(abcAntes).display !== "none");
+  // Detecta si antes estaba abierto ABC.
+  const abcAntes =
+    document.getElementById("iglesia-abc");
 
-  // ✅ si salgo de ABC a otro sub, apago ABC
+  const estabaEnABC = !!(
+    abcAntes &&
+    getComputedStyle(abcAntes).display !== "none"
+  );
+
+  // Al salir de ABC, apaga sus manejadores.
   if (estabaEnABC && sub !== "abc") {
-    try { window.__abcOnExit?.(); } catch(e) { console.warn(e); }
+    try {
+      window.__abcOnExit?.();
+    } catch (e) {
+      console.warn(e);
+    }
   }
 
-  permitidas.forEach(k => {
-    const el = document.getElementById("iglesia-" + k);
-    if (el) {
-      el.style.setProperty("display", k === sub ? "block" : "none", "important");
-    }
+  /*
+    Muestra solamente la subsección elegida:
+    Devocionales / ABC / Agenda / Recursos.
+  */
+  permitidas.forEach((nombre) => {
+    const elemento =
+      document.getElementById(
+        "iglesia-" + nombre
+      );
+
+    if (!elemento) return;
+
+    elemento.style.setProperty(
+      "display",
+      nombre === sub ? "block" : "none",
+      "important"
+    );
   });
 
-  const wrap = document.getElementById("seccion-iglesia");
+  const wrap =
+    document.getElementById(
+      "seccion-iglesia"
+    );
+
   if (wrap) {
-    wrap.querySelectorAll(".iglesia-tab, .nav-btn, button").forEach(b => b.classList.remove("activo"));
+    wrap
+      .querySelectorAll(
+        ".iglesia-tab, .nav-btn, button"
+      )
+      .forEach((boton) => {
+        boton.classList.remove("activo");
+      });
 
-    const btn = wrap.querySelector(`[onclick="mostrarIglesiaSub('${sub}')"]`);
-    if (btn) btn.classList.add("activo");
+    const botonActivo =
+      wrap.querySelector(
+        `[onclick="mostrarIglesiaSub('${sub}')"]`
+      );
+
+    if (botonActivo) {
+      botonActivo.classList.add("activo");
+    }
   }
 
-  // ✅ cuando entro a ABC: inicializo ABC + apago modos de Biblia
+  // Inicialización especial de ABC.
   if (sub === "abc") {
-    try { bibliaBackupUI(); } catch(e) {}
-    try { bibliaApagarModosParaCambiarSeccion(); } catch(e) {}
+    try {
+      bibliaBackupUI();
+    } catch (e) {}
 
-    try { window.mostrarABC?.(); } catch(e) { console.warn(e); }
-    try { window.__abcOnEnter?.(); } catch(e) { console.warn(e); }
+    try {
+      bibliaApagarModosParaCambiarSeccion();
+    } catch (e) {}
+
+    try {
+      window.mostrarABC?.();
+    } catch (e) {
+      console.warn(e);
+    }
+
+    try {
+      window.__abcOnEnter?.();
+    } catch (e) {
+      console.warn(e);
+    }
   }
 
- if (sub === "recursos") {
-    const estado = leerEstadoBiblia?.() || {};
+  // Abre la subsección interna guardada de Recursos.
+  if (sub === "recursos") {
+    const estado =
+      leerEstadoBiblia?.() || {};
+
     const subRecursosGuardada =
       window.__RECURSOS_SUB_ACTIVA ||
       estado.subRecursos ||
       "ediciones";
 
-    try { window.mostrarRecursosSub?.(subRecursosGuardada); } catch(e) { console.warn(e); }
+    try {
+      window.mostrarRecursosSub?.(
+        subRecursosGuardada
+      );
+    } catch (e) {
+      console.warn(e);
+    }
   }
 
-  // ✅ segundo refuerzo por si devocionales/ABC/recursos renderizan después
+  /*
+    Refuerzo después del render.
+    Mantiene el título correcto aunque Recursos
+    cargue contenido de forma asincrónica.
+  */
   requestAnimationFrame(() => {
-    if (typeof forzarSeccionActiva === "function") {
+    if (
+      typeof forzarSeccionActiva === "function"
+    ) {
       forzarSeccionActiva("iglesia");
     }
+
+    actualizarTituloIglesia();
   });
 };
 
