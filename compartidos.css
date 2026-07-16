@@ -2265,4 +2265,187 @@ body.oscuro .comp-filtros button.activo{
   display: none !important;
 }
 
+/* =========================================================
+   COMPARTIDOS:
+   FILTROS ORDENADOS, CENTRADOS Y COMPACTOS
+========================================================= */
+
+/*
+  Centrado seguro:
+  - Si entran todos, quedan centrados.
+  - Si no entran, permite desplazarlos sin cortar el primero.
+*/
+.comp-filtros{
+  width:100% !important;
+  max-width:100% !important;
+
+  display:flex !important;
+  align-items:center !important;
+  justify-content:safe center !important;
+
+  box-sizing:border-box !important;
+  scroll-padding-inline:7px;
+}
+
+
+/* Subfiltros de Ediciones:
+   Todo / Flyers / Libros / Videos / Stickers */
+.comp-subfiltros-ediciones{
+  width:100% !important;
+  max-width:100% !important;
+
+  display:flex !important;
+  align-items:center !important;
+  justify-content:safe center !important;
+
+  box-sizing:border-box !important;
+  scroll-padding-inline:6px;
+}
+
+
+/* =========================================================
+   CELULAR
+   El botón general conserva texto.
+   Agenda, Devocionales, Ediciones, Imágenes y Notas:
+   solamente iconos.
+========================================================= */
+
+@media (max-width:700px){
+
+  .comp-filtros{
+    gap:5px !important;
+    padding:5px !important;
+    margin-top:8px !important;
+    margin-bottom:12px !important;
+
+    overflow-x:auto !important;
+    overflow-y:hidden !important;
+  }
+
+
+  /* Botones comunes en celular */
+  .comp-filtros button{
+    flex:0 0 auto !important;
+
+    margin:0 !important;
+    box-sizing:border-box !important;
+  }
+
+
+  /*
+    Los cinco filtros específicos:
+    círculo con icono, sin texto.
+  */
+  .comp-filtros
+  button:not([data-comp-filtro="todo"]){
+    width:34px !important;
+    min-width:34px !important;
+    max-width:34px !important;
+
+    height:34px !important;
+    min-height:34px !important;
+    max-height:34px !important;
+
+    padding:0 !important;
+    border-radius:999px !important;
+
+    gap:0 !important;
+  }
+
+  .comp-filtros
+  button:not([data-comp-filtro="todo"])
+  span{
+    display:none !important;
+  }
+
+  .comp-filtros
+  button:not([data-comp-filtro="todo"])
+  i{
+    margin:0 !important;
+    padding:0 !important;
+
+    font-size:14px !important;
+    line-height:1 !important;
+  }
+
+
+  /*
+    Botón general:
+    icono de personas + texto completo.
+    Lo dejamos angosto y en varias líneas para que
+    entren también los otros cinco iconos.
+  */
+  .comp-filtros
+  button[data-comp-filtro="todo"]{
+    flex:0 0 140px !important;
+
+    width:140px !important;
+    min-width:140px !important;
+    max-width:140px !important;
+
+    height:44px !important;
+    min-height:44px !important;
+    max-height:44px !important;
+
+    padding:0 7px !important;
+
+    border-radius:15px !important;
+
+    display:inline-flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+
+    gap:6px !important;
+  }
+
+  .comp-filtros
+  button[data-comp-filtro="todo"]
+  i{
+    flex:0 0 auto !important;
+
+    margin:0 !important;
+    font-size:15px !important;
+    line-height:1 !important;
+  }
+
+  .comp-filtros
+  button[data-comp-filtro="todo"]
+  span{
+    display:block !important;
+
+    min-width:0 !important;
+
+    white-space:normal !important;
+    text-align:center !important;
+
+    font-size:10.2px !important;
+    line-height:1.05 !important;
+    font-weight:900 !important;
+  }
+
+
+  /*
+    Los subfiltros de Ediciones conservan sus palabras
+    también en celular.
+  */
+  .comp-subfiltros-ediciones{
+    gap:6px !important;
+    padding:5px !important;
+  }
+
+  .comp-subfiltros-ediciones button{
+    display:inline-flex !important;
+
+    height:25px !important;
+    min-height:25px !important;
+
+    padding:0 9px !important;
+
+    font-size:10.5px !important;
+    line-height:1 !important;
+
+    white-space:nowrap !important;
+  }
+}
+
 </style>
