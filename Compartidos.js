@@ -268,11 +268,11 @@ function compRenderFiltrosHTML() {
 <span>
   ${
     f.id === "todo"
-      ? `
-        Todas las
-        <br class="comp-filtro-salto-cel">
-        Publicaciones Compartidas
-      `
+  ? `
+    Todas las Publicaciones
+    <br class="comp-filtro-salto-cel">
+    Compartidas
+  `
       : compEscape(f.label)
   }
 </span>
@@ -3722,33 +3722,6 @@ function compActualizarEstadoBotonPredica(card) {
       "comp-predica-expandida"
     );
 
-  card
-    .querySelectorAll(
-      ".comp-predica-desplegar"
-    )
-    .forEach(btn => {
-      btn.title =
-        abierta
-          ? "Cerrar prédica"
-          : "Desplegar prédica";
-
-      btn.setAttribute(
-        "aria-label",
-        abierta
-          ? "Cerrar prédica"
-          : "Desplegar prédica"
-      );
-
-      btn.innerHTML =
-        abierta
-          ? `
-            <i class="fa-solid fa-chevron-up"></i>
-          `
-          : `
-            <i class="fa-solid fa-chevron-down"></i>
-          `;
-    });
-
   const wrap =
     card.querySelector(
       ".comp-predica-abierta-wrap"
@@ -3757,7 +3730,7 @@ function compActualizarEstadoBotonPredica(card) {
   if (wrap) {
     wrap.title =
       abierta
-        ? "Tocar para cerrar"
+        ? "Prédica completa"
         : "Tocar para desplegar";
   }
 }
@@ -3807,19 +3780,46 @@ if (!window.__COMP_PREDICA_COMPRIMIR_CLICK_READY) {
   });
 }
 
-function compCrearBotonPredicaIntro(subidoId) {
-  const btn = document.createElement("button");
+function compCrearBotonPredicaIntro(
+  subidoId,
+  accion = "abrir"
+) {
+  const esCerrar =
+    accion === "cerrar";
+
+  const btn =
+    document.createElement("button");
 
   btn.type = "button";
-  btn.className = "comp-predica-desplegar";
-  btn.title = "Desplegar prédica";
-  btn.setAttribute("aria-label", "Desplegar prédica");
+
+  btn.className =
+    `comp-predica-desplegar ${
+      esCerrar
+        ? "comp-predica-desplegar--cerrar"
+        : "comp-predica-desplegar--abrir"
+    }`;
+
+  btn.title =
+    esCerrar
+      ? "Cerrar prédica"
+      : "Desplegar prédica";
+
+  btn.setAttribute(
+    "aria-label",
+    esCerrar
+      ? "Cerrar prédica"
+      : "Desplegar prédica"
+  );
+
   btn.setAttribute(
     "onclick",
     `compTogglePredicaCompartidos('${compJs(subidoId)}', event)`
   );
 
-  btn.innerHTML = `<i class="fa-solid fa-arrow-down-short-wide"></i>`;
+  btn.innerHTML =
+    esCerrar
+      ? `<i class="fa-solid fa-chevron-up"></i>`
+      : `<i class="fa-solid fa-arrow-down-short-wide"></i>`;
 
   return btn;
 }
@@ -3966,14 +3966,15 @@ function compPrepararPredicaCompartidosHTML(
   const pieResumen =
     document.createElement("div");
 
-  pieResumen.className =
-    "comp-predica-expandir-wrap";
+pieResumen.className =
+  "comp-predica-expandir-wrap comp-predica-expandir-wrap--abrir";
 
-  pieResumen.appendChild(
-    compCrearBotonPredicaIntro(
-      subidoId
-    )
-  );
+pieResumen.appendChild(
+  compCrearBotonPredicaIntro(
+    subidoId,
+    "abrir"
+  )
+);
 
   resumen.appendChild(pieResumen);
 
@@ -3991,13 +3992,48 @@ function compPrepararPredicaCompartidosHTML(
   contenidoExtra.className =
     "comp-predica-extra";
 
-  while (tpl.content.firstChild) {
-    contenidoExtra.appendChild(
-      tpl.content.firstChild
-    );
-  }
+while (tpl.content.firstChild) {
+  contenidoExtra.appendChild(
+    tpl.content.firstChild
+  );
+}
 
-  const preparado =
+/*
+  BOTÓN DE CERRAR:
+  se agrega al final del marco original,
+  después de la nota final, iglesia y dirección.
+*/
+const pieCierre =
+  document.createElement("div");
+
+pieCierre.className =
+  "comp-predica-expandir-wrap comp-predica-expandir-wrap--cerrar";
+
+pieCierre.appendChild(
+  compCrearBotonPredicaIntro(
+    subidoId,
+    "cerrar"
+  )
+);
+
+/*
+  Lo metemos dentro del marco original para
+  que quede realmente después de la dirección.
+*/
+const destinoCierre =
+  contenidoExtra.querySelector(
+    ".subidos-visor-marco"
+  ) ||
+  contenidoExtra.querySelector(
+    ".subidos-visor-predica-full"
+  ) ||
+  contenidoExtra;
+
+destinoCierre.appendChild(
+  pieCierre
+);
+
+const preparado =
     document.createElement("div");
 
   preparado.className =
