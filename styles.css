@@ -6768,4 +6768,54 @@ body.oscuro #buscarNotasPanelLibro::placeholder{
   }
 }
 
+/* =========================================================
+   HEADER SUPERIOR GLOBAL
+   Visible al subir y oculto al bajar
+========================================================= */
+
+#header{
+  position:sticky !important;
+  top:0 !important;
+  z-index:1000 !important;
+
+  transform:translateY(0);
+
+  transition:
+    transform .22s ease,
+    box-shadow .22s ease;
+
+  will-change:transform;
+}
+
+
+/* Se aplica en todas las secciones principales */
+body.va-header-biblia-oculto
+#header{
+  transform:
+    translateY(
+      calc(-100% - 3px)
+    ) !important;
+
+  pointer-events:none !important;
+}
+
+
+/* Cuando vuelve a aparecer */
+body:not(.va-header-biblia-oculto)
+#header{
+  transform:
+    translateY(0) !important;
+
+  pointer-events:auto !important;
+}
+
+
+/* Transición de las barras internas sticky */
+#barraTituloBiblia,
+#abcStickyBar,
+#rhStickyBar{
+  transition:
+    top .20s ease !important;
+}
+
 </style> 
