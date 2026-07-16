@@ -6818,4 +6818,40 @@ body:not(.va-header-biblia-oculto)
     top .20s ease !important;
 }
 
+/* =========================================================
+   HEADER:
+   VIDA·ABUNDANTE Y BIBLIA EXACTAMENTE DEL MISMO ALTO
+========================================================= */
+
+#btnNavVida,
+#btnNavBiblia{
+  height:42px !important;
+  min-height:42px !important;
+  max-height:42px !important;
+
+  box-sizing:border-box !important;
+
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+
+  line-height:1 !important;
+}
+
+/* Conserva el ancho natural de Biblia */
+#btnNavBiblia{
+  padding-top:0 !important;
+  padding-bottom:0 !important;
+  padding-left:13px !important;
+  padding-right:13px !important;
+
+  gap:6px !important;
+}
+
+/* Icono y palabra centrados verticalmente */
+#btnNavBiblia i,
+#btnNavBiblia .text{
+  line-height:1 !important;
+}
+
 </style> 
