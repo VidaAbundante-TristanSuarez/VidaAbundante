@@ -2869,4 +2869,70 @@ body.en-compartidos
   }
 }
 
+/* =========================================================
+   COMPARTIDOS:
+   NO HEREDAR EL ALTO DE PANTALLA COMPLETA DEL MODAL AGENDA
+========================================================= */
+
+@media (max-width:800px){
+
+  /*
+    Subidos usa estas clases para su modal fullscreen,
+    pero dentro de Compartidos deben medir solo
+    lo que realmente ocupa su contenido.
+  */
+  body.en-compartidos
+  .comp-predica-preparada
+  .subidos-visor-predica-full,
+
+  body.en-compartidos
+  .comp-predica-preparada
+  .subidos-visor-marco,
+
+  body.en-compartidos
+  .comp-predica-resumen,
+
+  body.en-compartidos
+  .comp-predica-extra{
+    height:auto !important;
+    min-height:0 !important;
+    max-height:none !important;
+
+    flex:0 0 auto !important;
+
+    overflow:visible !important;
+  }
+
+  /*
+    El resumen no debe estirarse hasta completar
+    toda la pantalla del celular.
+  */
+  body.en-compartidos
+  .comp-predica-resumen{
+    align-self:auto !important;
+  }
+
+  /*
+    Cuando se despliega, las citas siguientes
+    empiezan inmediatamente después de la primera.
+  */
+  body.en-compartidos
+  .comp-post--predica-abierta.comp-predica-expandida
+  .comp-predica-extra{
+    margin-top:0 !important;
+    padding-top:0 !important;
+  }
+
+  body.en-compartidos
+  .comp-predica-extra
+  .subidos-visor-predica-full,
+
+  body.en-compartidos
+  .comp-predica-extra
+  .subidos-visor-marco{
+    margin-top:0 !important;
+    min-height:0 !important;
+  }
+}
+
 </style>
