@@ -74,21 +74,21 @@ let compSubFiltroEdicionesActual = (() => {
 const COMP_FILTROS = [
   {
     id: "todo",
-    label: "Todo",
-    icon: "fa-solid fa-splotch",
+    label: "Todas las Publicaciones Compartidas",
+    icon: "fa-solid fa-people-group",
     tipos: []
+  },
+  {
+    id: "agenda",
+    label: "Agenda",
+    icon: "fa-solid fa-calendar-check",
+    tipos: ["subido"]
   },
   {
     id: "devocionales",
     label: "Devocionales",
-    icon: "fa-solid fa-calendar-days",
+    icon: "fa-solid fa-book-open",
     tipos: ["devocional"]
-  },
-  {
-    id: "imagenes",
-    label: "Imágenes",
-    icon: "fa-solid fa-image",
-    tipos: ["imagen"]
   },
   {
     id: "ediciones",
@@ -97,16 +97,16 @@ const COMP_FILTROS = [
     tipos: ["edicion"]
   },
   {
-    id: "notas",
-    label: "Notas",
-    icon: "fa-solid fa-bookmark",
-    tipos: ["nota"]
+    id: "imagenes",
+    label: "Imágenes",
+    icon: "fa-solid fa-image",
+    tipos: ["imagen"]
   },
   {
-    id: "agenda",
-    label: "Agenda",
-    icon: "fa-solid fa-calendar-check",
-    tipos: ["subido"]
+    id: "notas",
+    label: "Notas",
+    icon: "fa-solid fa-rectangle-list",
+    tipos: ["nota"]
   }
 ];
 
@@ -229,19 +229,45 @@ function compRenderSubFiltrosEdicionesHTML() {
 }
 
 function compRenderFiltrosHTML() {
-  compFiltroActual = compFiltroValido(compFiltroActual);
+  compFiltroActual =
+    compFiltroValido(compFiltroActual);
 
   return `
-    <div id="compFiltros" class="comp-filtros">
+    <div
+      id="compFiltros"
+      class="comp-filtros"
+      aria-label="Filtros de publicaciones compartidas"
+    >
       ${COMP_FILTROS.map(f => `
         <button
           type="button"
+
           data-comp-filtro="${compEscape(f.id)}"
-          class="${f.id === compFiltroActual ? "activo" : ""}"
-          onclick="compCambiarFiltroCompartidos('${compJs(f.id)}', this)"
+
+          class="${
+            f.id === compFiltroActual
+              ? "activo"
+              : ""
+          }"
+
+          onclick="
+            compCambiarFiltroCompartidos(
+              '${compJs(f.id)}',
+              this
+            )
+          "
+
+          title="${compEscape(f.label)}"
+          aria-label="${compEscape(f.label)}"
         >
-          <i class="${compEscape(f.icon)}"></i>
-          <span>${compEscape(f.label)}</span>
+          <i
+            class="${compEscape(f.icon)}"
+            aria-hidden="true"
+          ></i>
+
+          <span>
+            ${compEscape(f.label)}
+          </span>
         </button>
       `).join("")}
     </div>
