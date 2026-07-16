@@ -2711,4 +2711,162 @@ body.oscuro .comp-filtros button.activo{
   }
 }
 
+/* =========================================================
+   AJUSTE FINAL:
+   BOTONES ABRIR / CERRAR PRÉDICA
+========================================================= */
+
+/* Cerrada: aparece solamente el botón de abrir */
+body.en-compartidos
+.comp-predica-expandir-wrap--abrir{
+  display:flex !important;
+}
+
+body.en-compartidos
+.comp-predica-expandir-wrap--cerrar{
+  display:none !important;
+}
+
+
+/* Abierta: desaparece el botón del primer versículo */
+body.en-compartidos
+.comp-post--predica-abierta.comp-predica-expandida
+.comp-predica-expandir-wrap--abrir{
+  display:none !important;
+}
+
+
+/*
+  Abierta: botón de cerrar al final,
+  después de iglesia y dirección.
+*/
+body.en-compartidos
+.comp-post--predica-abierta.comp-predica-expandida
+.comp-predica-expandir-wrap--cerrar{
+  width:100% !important;
+
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+
+  margin-top:7px !important;
+  padding:9px 0 4px !important;
+}
+
+
+/* =========================================================
+   FILTROS DE COMPARTIDOS — COMPUTADORA
+   Menos gap y padding para dar aire después de Notas
+========================================================= */
+
+@media (min-width:701px){
+
+  .comp-filtros{
+    gap:5px !important;
+
+    padding-top:7px !important;
+    padding-right:9px !important;
+    padding-bottom:7px !important;
+    padding-left:9px !important;
+
+    justify-content:center !important;
+  }
+
+  .comp-filtros button{
+    padding:7px 9px !important;
+    gap:5px !important;
+
+    font-size:12px !important;
+  }
+
+  .comp-filtros button i{
+    font-size:13px !important;
+  }
+
+  .comp-filtros button:first-child,
+  .comp-filtros button:last-child{
+    margin-left:0 !important;
+    margin-right:0 !important;
+  }
+}
+
+
+/* =========================================================
+   FILTROS DE COMPARTIDOS — CELULAR
+========================================================= */
+
+@media (max-width:700px){
+
+  /*
+    Bajamos un poco el aire general.
+    Así entran los cinco círculos y el botón grande.
+  */
+  .comp-filtros{
+    gap:4px !important;
+    padding:4px !important;
+  }
+
+
+  /*
+    Botón general más ancho y más bajo.
+    El salto manual garantiza exactamente dos líneas.
+  */
+  .comp-filtros
+  button[data-comp-filtro="todo"]{
+    flex:0 0 161px !important;
+
+    width:161px !important;
+    min-width:161px !important;
+    max-width:161px !important;
+
+    height:40px !important;
+    min-height:40px !important;
+    max-height:40px !important;
+
+    padding:0 6px !important;
+
+    gap:5px !important;
+    border-radius:14px !important;
+  }
+
+
+  .comp-filtros
+  button[data-comp-filtro="todo"]
+  i{
+    flex:0 0 14px !important;
+
+    width:14px !important;
+    margin:0 !important;
+
+    font-size:14px !important;
+  }
+
+
+  /*
+    nowrap evita que Chrome invente un tercer renglón.
+    El único corte permitido es el <br> que pusimos.
+  */
+  .comp-filtros
+  button[data-comp-filtro="todo"]
+  span{
+    display:block !important;
+
+    width:auto !important;
+    min-width:0 !important;
+
+    white-space:nowrap !important;
+
+    text-align:center !important;
+
+    font-size:9.4px !important;
+    font-weight:900 !important;
+    line-height:1.02 !important;
+  }
+
+
+  .comp-filtro-salto-cel{
+    display:block !important;
+  }
+}
+
 </style>
