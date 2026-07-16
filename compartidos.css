@@ -1976,16 +1976,33 @@ body.en-compartidos
 }
 
 
+/* El primer versículo siempre se muestra completo,
+   aunque sea una cita larga con varios versículos */
 body.en-compartidos
 .comp-post--predica-abierta:not(.comp-predica-expandida)
 .comp-predica-resumen
 .subidos-visor-texto-primera{
-  display:-webkit-box !important;
+  display:block !important;
 
-  -webkit-box-orient:vertical;
-  -webkit-line-clamp:7;
+  width:auto !important;
+  height:auto !important;
+  min-height:0 !important;
+  max-height:none !important;
 
-  overflow:hidden !important;
+  -webkit-line-clamp:unset !important;
+  -webkit-box-orient:initial !important;
+
+  overflow:visible !important;
+  text-overflow:clip !important;
+}
+
+body.en-compartidos
+.comp-post--predica-abierta:not(.comp-predica-expandida)
+.comp-predica-resumen
+.subidos-visor-bloque-primera{
+  height:auto !important;
+  min-height:0 !important;
+  max-height:none !important;
 }
 
 
