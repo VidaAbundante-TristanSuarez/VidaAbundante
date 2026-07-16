@@ -1822,120 +1822,276 @@ body.en-compartidos .comp-action-count{
 
 /* =========================================================
    COMPARTIDOS - PRÉDICA ABIERTA / COMPACTA
+   Sin recortar por altura
 ========================================================= */
 
-body.en-compartidos .comp-predica-abierta-wrap{
-  cursor: pointer;
-  overflow: hidden;
-}
-
-/* ✅ Cerrada: no dejamos que aparezca el cajón gigante vacío */
-body.en-compartidos .comp-post--predica-abierta:not(.comp-predica-expandida)
+body.en-compartidos
 .comp-predica-abierta-wrap{
-  max-height: 360px;
+  width:100%;
+  cursor:pointer;
+
+  overflow:visible !important;
+  max-height:none !important;
 }
 
-/* ✅ Si la prédica viene desde Subidos con marco grande, también la comprimimos */
-body.en-compartidos .comp-post--predica-abierta:not(.comp-predica-expandida)
-.subidos-visor-marco,
-body.en-compartidos .comp-post--predica-abierta:not(.comp-predica-expandida)
-.subidos-visor-contenido,
-body.en-compartidos .comp-post--predica-abierta:not(.comp-predica-expandida)
-.subidos-visor-predica{
-  max-height: 330px !important;
-  overflow: hidden !important;
+
+/* Contenedor general preparado */
+body.en-compartidos
+.comp-predica-preparada{
+  width:100%;
+  max-width:100%;
+
+  display:block;
+
+  box-sizing:border-box;
 }
 
-/* ✅ Oculta bloques posteriores mientras está cerrada */
-body.en-compartidos .comp-post--predica-abierta:not(.comp-predica-expandida)
-.comp-predica-intro-wrap ~ *,
-body.en-compartidos .comp-post--predica-abierta:not(.comp-predica-expandida)
-.subidos-visor-bloques,
-body.en-compartidos .comp-post--predica-abierta:not(.comp-predica-expandida)
-.subidos-visor-cierre{
-  display: none !important;
+
+/* Parte siempre visible */
+body.en-compartidos
+.comp-predica-resumen{
+  width:100%;
+  max-width:100%;
+
+  margin:0 !important;
+
+  overflow:visible !important;
+  max-height:none !important;
+
+  box-sizing:border-box;
 }
 
-/* ✅ Al abrir, vuelve a verse completa */
-body.en-compartidos .comp-post--predica-abierta.comp-predica-expandida
-.comp-predica-abierta-wrap,
-body.en-compartidos .comp-post--predica-abierta.comp-predica-expandida
-.subidos-visor-marco,
-body.en-compartidos .comp-post--predica-abierta.comp-predica-expandida
-.subidos-visor-contenido,
-body.en-compartidos .comp-post--predica-abierta.comp-predica-expandida
-.subidos-visor-predica{
-  max-height: none !important;
-  overflow: visible !important;
+
+/* Parte extendida */
+body.en-compartidos
+.comp-predica-extra{
+  display:none;
+  width:100%;
 }
 
-/* ✅ La introducción queda prolija */
-body.en-compartidos .comp-predica-intro-preparada{
-  display: flex !important;
-  align-items: flex-end !important;
-  gap: 8px !important;
+
+/* Al extender aparecen las citas restantes */
+body.en-compartidos
+.comp-post--predica-abierta.comp-predica-expandida
+.comp-predica-extra{
+  display:block;
 }
 
-body.en-compartidos .comp-predica-intro-text{
-  flex: 1 1 auto;
-  min-width: 0;
-  white-space: inherit;
+
+/*
+  El marco adicional conserva el mismo fondo,
+  pero queda unido visualmente al resumen.
+*/
+body.en-compartidos
+.comp-predica-extra
+.subidos-visor-predica-full{
+  margin-top:0 !important;
 }
 
-/* ✅ Botón desplegar */
-body.en-compartidos .comp-predica-desplegar{
-  border: none;
-  cursor: pointer;
-
-  width: 34px;
-  height: 34px;
-  min-width: 34px;
-  min-height: 34px;
-
-  border-radius: 999px;
-  margin: 0 0 1px 4px;
-  padding: 0;
-
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  background: var(--ui-azul-claro, #bcdcff);
-  color: #000;
-  font-weight: 900;
-  box-shadow: 0 3px 10px rgba(0,0,0,.10);
+body.en-compartidos
+.comp-predica-extra
+.subidos-visor-marco{
+  margin-top:7px !important;
+  padding-top:9px !important;
 }
 
-body.en-compartidos .comp-predica-desplegar:hover{
-  background: var(--ui-azul-hover, #9cc8ff);
-  color: #000;
+
+/* =========================================================
+   ARCHIVO / VIDEO COMPACTO
+========================================================= */
+
+body.en-compartidos
+.comp-predica-resumen
+.subidos-visor-archivo{
+  width:100%;
+  max-width:100%;
+
+  margin-bottom:7px !important;
+
+  overflow:hidden;
+  border-radius:15px;
 }
 
-body.en-compartidos .comp-post--predica-abierta.comp-predica-expandida
+body.en-compartidos
+.comp-predica-resumen
+.subidos-visor-archivo img,
+
+body.en-compartidos
+.comp-predica-resumen
+.subidos-visor-archivo video,
+
+body.en-compartidos
+.comp-predica-resumen
+.subidos-visor-archivo
+.subidos-video-poster{
+  width:100% !important;
+
+  max-height:280px !important;
+
+  object-fit:cover !important;
+  object-position:center !important;
+
+  display:block !important;
+}
+
+
+/* =========================================================
+   TÍTULO Y AUDIO
+========================================================= */
+
+body.en-compartidos
+.comp-predica-resumen
+.subidos-visor-predica-titulo{
+  margin-top:7px !important;
+  margin-bottom:5px !important;
+}
+
+body.en-compartidos
+.comp-predica-resumen
+.subidos-predica-audio{
+  margin:4px 0 7px !important;
+}
+
+
+/* =========================================================
+   INTRODUCCIÓN Y PRIMER VERSÍCULO
+========================================================= */
+
+/*
+  Cerrada:
+  mostramos una vista previa suficiente,
+  sin convertir nuevamente la card
+  en una prédica completa gigante.
+*/
+body.en-compartidos
+.comp-post--predica-abierta:not(.comp-predica-expandida)
+.comp-predica-resumen
+.subidos-visor-intro{
+  display:-webkit-box !important;
+
+  -webkit-box-orient:vertical;
+  -webkit-line-clamp:4;
+
+  overflow:hidden !important;
+}
+
+
+body.en-compartidos
+.comp-post--predica-abierta:not(.comp-predica-expandida)
+.comp-predica-resumen
+.subidos-visor-texto-primera{
+  display:-webkit-box !important;
+
+  -webkit-box-orient:vertical;
+  -webkit-line-clamp:7;
+
+  overflow:hidden !important;
+}
+
+
+/*
+  El comentario del primer versículo aparece
+  al extender, no ocupa espacio en la compacta.
+*/
+body.en-compartidos
+.comp-post--predica-abierta:not(.comp-predica-expandida)
+.comp-predica-resumen
+.subidos-visor-bloque-primera
+.subidos-visor-comentario{
+  display:none !important;
+}
+
+
+/* =========================================================
+   BOTÓN EXTENDER
+========================================================= */
+
+body.en-compartidos
+.comp-predica-expandir-wrap{
+  width:100%;
+
+  padding:5px 0 2px;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+
+body.en-compartidos
 .comp-predica-desplegar{
-  display: none !important;
+  width:38px;
+  min-width:38px;
+  height:38px;
+  min-height:38px;
+
+  margin:0;
+  padding:0;
+
+  border:none;
+  border-radius:999px;
+
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+
+  background:var(
+    --ui-azul-claro,
+    #bcdcff
+  );
+
+  color:#000;
+
+  cursor:pointer;
+
+  box-shadow:
+    0 4px 12px rgba(0,0,0,.13);
 }
 
-@media (max-width: 700px){
-  body.en-compartidos .comp-post--predica-abierta:not(.comp-predica-expandida)
-  .comp-predica-abierta-wrap{
-    max-height: 315px;
+
+body.en-compartidos
+.comp-predica-desplegar i{
+  font-size:15px;
+  line-height:1;
+}
+
+
+body.en-compartidos
+.comp-predica-desplegar:hover{
+  background:var(
+    --ui-azul-hover,
+    #9cc8ff
+  );
+
+  color:#000;
+}
+
+
+/* Celular */
+@media (max-width:700px){
+
+  body.en-compartidos
+  .comp-predica-resumen
+  .subidos-visor-archivo img,
+
+  body.en-compartidos
+  .comp-predica-resumen
+  .subidos-visor-archivo video,
+
+  body.en-compartidos
+  .comp-predica-resumen
+  .subidos-visor-archivo
+  .subidos-video-poster{
+    max-height:220px !important;
   }
 
-  body.en-compartidos .comp-post--predica-abierta:not(.comp-predica-expandida)
-  .subidos-visor-marco,
-  body.en-compartidos .comp-post--predica-abierta:not(.comp-predica-expandida)
-  .subidos-visor-contenido,
-  body.en-compartidos .comp-post--predica-abierta:not(.comp-predica-expandida)
-  .subidos-visor-predica{
-    max-height: 295px !important;
-  }
 
-  body.en-compartidos .comp-predica-desplegar{
-    width: 32px;
-    height: 32px;
-    min-width: 32px;
-    min-height: 32px;
+  body.en-compartidos
+  .comp-predica-desplegar{
+    width:36px;
+    min-width:36px;
+    height:36px;
+    min-height:36px;
   }
 }
 
@@ -2445,6 +2601,113 @@ body.oscuro .comp-filtros button.activo{
     line-height:1 !important;
 
     white-space:nowrap !important;
+  }
+}
+
+/* =========================================================
+   AJUSTES FINALES DE FILTROS
+========================================================= */
+
+/* El salto solo se usa en celular */
+.comp-filtro-salto-cel{
+  display:none;
+}
+
+
+/* PC: mismo aire al principio y al final */
+@media (min-width:701px){
+
+  .comp-filtros{
+    padding-left:14px !important;
+    padding-right:14px !important;
+  }
+
+  .comp-filtros
+  button:first-child{
+    margin-left:2px !important;
+  }
+
+  .comp-filtros
+  button:last-child{
+    margin-right:2px !important;
+  }
+}
+
+
+/* Centrado vertical real de subfiltros de Ediciones */
+.comp-subfiltros-ediciones button{
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+
+  box-sizing:border-box !important;
+
+  padding-top:0 !important;
+  padding-bottom:0 !important;
+
+  line-height:1 !important;
+  vertical-align:middle !important;
+}
+
+
+@media (max-width:700px){
+
+  .comp-filtro-salto-cel{
+    display:block;
+  }
+
+
+  /*
+    Dos renglones:
+    Todas las
+    Publicaciones Compartidas
+  */
+  .comp-filtros
+  button[data-comp-filtro="todo"]{
+    flex-basis:158px !important;
+
+    width:158px !important;
+    min-width:158px !important;
+    max-width:158px !important;
+
+    height:46px !important;
+    min-height:46px !important;
+    max-height:46px !important;
+
+    padding:0 7px !important;
+  }
+
+
+  .comp-filtros
+  button[data-comp-filtro="todo"]
+  span{
+    font-size:10px !important;
+    line-height:1.07 !important;
+
+    white-space:normal !important;
+    text-align:center !important;
+  }
+
+
+  .comp-subfiltros-ediciones{
+    min-height:47px !important;
+
+    align-items:center !important;
+    justify-content:safe center !important;
+  }
+
+
+  .comp-subfiltros-ediciones button{
+    height:25px !important;
+    min-height:25px !important;
+
+    display:inline-flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+
+    padding:0 9px !important;
+
+    line-height:1 !important;
   }
 }
 
