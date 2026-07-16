@@ -10410,6 +10410,75 @@ let seleccionEliminarMarcadores = {}; // {id:true}
 let filtroNotasPanel = "todas"; // "todas" | "con" | "sin" | "abc"
 let menuFiltroNotasPanelAbierto = false;
 
+/*
+  Búsqueda de Mi Panel > Notas.
+  Usa el mismo criterio que el listado de Marcadores:
+  libro y referencia bíblica.
+*/
+let busquedaNotasPanelLibro = "";
+
+function aplicarFiltroNotasPanelLibro() {
+  const panel =
+    document.getElementById("panel-marcadores");
+
+  if (!panel) return;
+
+  const busqueda =
+    marcadoresNormalizarBusqueda(
+      busquedaNotasPanelLibro
+    );
+
+  const cards = Array.from(
+    panel.querySelectorAll(
+      ".card-marcador[data-panel-nota-libro]"
+    )
+  );
+
+  let visibles = 0;
+
+  cards.forEach(card => {
+    const libroYReferencia =
+      String(
+        card.dataset.panelNotaLibro || ""
+      );
+
+    const mostrar =
+      !busqueda ||
+      libroYReferencia.includes(busqueda);
+
+    card.style.display =
+      mostrar ? "" : "none";
+
+    if (mostrar) visibles++;
+  });
+
+  const mensaje =
+    document.getElementById(
+      "panelNotasSinResultadoBusqueda"
+    );
+
+  if (mensaje) {
+    mensaje.style.display =
+      busqueda &&
+      cards.length > 0 &&
+      visibles === 0
+        ? "block"
+        : "none";
+  }
+}
+
+window.filtrarNotasPanelPorLibro =
+  function(valor = "") {
+    busquedaNotasPanelLibro =
+      String(valor || "");
+
+    /*
+      No reconstruimos todo el panel mientras escribe.
+      Solo ocultamos o mostramos las cards.
+    */
+    aplicarFiltroNotasPanelLibro();
+  };
+
 function renderPanelMarcadores() {
   const panel = document.getElementById("panel-marcadores");
   if (!panel) return;
@@ -10435,14 +10504,17 @@ function renderPanelMarcadores() {
 
   const cantSel = Object.keys(seleccionEliminarMarcadores || {}).length;
 
-  const tituloPanel =
-    filtroNotasPanel === "todas"
-      ? "📝 Todas las notas"
-      : filtroNotasPanel === "con"
-        ? "📌 Notas de Biblia"
-        : filtroNotasPanel === "sin"
-          ? "🗒 Notas libres"
-          : "🎓 Notas ABC";
+const tituloPanel =
+  filtroNotasPanel === "todas"
+    ? `
+      <i class="fa-solid fa-rectangle-list"></i>
+      <span>Todas las notas</span>
+    `
+    : filtroNotasPanel === "con"
+      ? "📌 Notas de Biblia"
+      : filtroNotasPanel === "sin"
+        ? "🗒 Notas libres"
+        : "🎓 Notas ABC";
 
   const filtroActualIcono =
     filtroNotasPanel === "todas"
@@ -10454,15 +10526,41 @@ function renderPanelMarcadores() {
           : `<i class="fa-solid fa-graduation-cap"></i>`;
 
   panel.innerHTML = `
-    <div class="panel-marcadores-bar">
-      <div class="pm-left">
-        <b>${tituloPanel}</b>
-        <div class="pm-sub muted" style="font-size:12px; margin-top:2px;">
-          orden: más recientes primero
-        </div>
-      </div>
+<div class="panel-marcadores-bar">
+  <div class="pm-left">
 
-      <div class="pm-right" style="position:relative;">
+    <div class="pm-left-top">
+      <b class="pm-titulo-panel">
+        ${tituloPanel}
+      </b>
+
+      <label
+        class="panel-notas-busqueda-wrap"
+        title="Buscar por libro"
+      >
+        <i class="fa-solid fa-magnifying-glass"></i>
+
+        <input
+          id="buscarNotasPanelLibro"
+          type="search"
+          placeholder="Libro..."
+          autocomplete="off"
+          aria-label="Buscar notas por libro"
+          value="${marcadorEscapeHTML(busquedaNotasPanelLibro)}"
+          oninput="filtrarNotasPanelPorLibro(this.value)"
+        >
+      </label>
+    </div>
+
+    <div
+      class="pm-sub muted"
+      style="font-size:12px; margin-top:2px;"
+    >
+      orden: más recientes primero
+    </div>
+  </div>
+
+  <div class="pm-right" style="position:relative;">
         <button type="button" class="pm-btn" onclick="abrirNotaLibre()" title="Agregar nota">
           <i class="fa-solid fa-square-plus"></i>
         </button>
@@ -10588,7 +10686,7 @@ const notaEstaPublicadaEnCompartidos =
 
       const puedeEditarNota = !notaVieneDeCompartidos;
 
-      const audioUrl =
+const audioUrl =
   String(
     m.audioUrl ||
     m.audioGithubUrl ||
@@ -10596,8 +10694,24 @@ const notaEstaPublicadaEnCompartidos =
     ""
   ).trim();
 
-      return `
-        <div class="card-marcador" style="${bgDestacada ? `background:${bgDestacada} !important; color:${colorTextoDestacada} !important; border:1px solid rgba(0,0,0,.10);` : ""}">
+/*
+  Texto utilizado únicamente por la lupa.
+  Igual que en Marcadores:
+  busca por libro y referencia.
+*/
+const libroBusquedaPanel =
+  marcadorEscapeHTML(
+    marcadoresNormalizarBusqueda(
+      `${m.libro || ""} ${m.ref || ""}`
+    )
+  );
+
+return `
+<div
+  class="card-marcador"
+  data-panel-nota-libro="${libroBusquedaPanel}"
+  style="${bgDestacada ? `background:${bgDestacada} !important; color:${colorTextoDestacada} !important; border:1px solid rgba(0,0,0,.10);` : ""}"
+>
           <div style="display:flex; justify-content:space-between; gap:10px; align-items:center;">
             <div style="font-size:13px;">
               <b>${m.destacada ? "⭐ " : ""}${m.titulo || "Marcador"}</b><br>
@@ -10659,8 +10773,34 @@ ${
 }
 </div>
       `;
-    }).join("") : `<p style="opacity:.75">Todavía no tenés notas para este filtro.</p>`}
+}).join("") : `<p style="opacity:.75">Todavía no tenés notas para este filtro.</p>`}
+
+    ${
+      filtrados.length
+        ? `
+          <p
+            id="panelNotasSinResultadoBusqueda"
+            style="
+              display:none;
+              opacity:.75;
+              text-align:center;
+              padding:12px;
+            "
+          >
+            No encontré notas de ese libro.
+          </p>
+        `
+        : ``
+    }
   `;
+
+  /*
+    Se vuelve a aplicar cuando cambiás entre:
+    Todas / Biblia / Libres / ABC.
+  */
+  requestAnimationFrame(() => {
+    aplicarFiltroNotasPanelLibro();
+  });
 }
 
 window.toggleMenuFiltroNotasPanel = () => {
