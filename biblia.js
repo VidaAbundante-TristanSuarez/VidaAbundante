@@ -15975,91 +15975,221 @@ slider.addEventListener("input", () => {
 
 
 // =========================================================
-// BIBLIA:
-// HEADER SUPERIOR VISIBLE AL SUBIR, OCULTO AL BAJAR
+// HEADER SUPERIOR GLOBAL
+// - Bajando: se oculta.
+// - Subiendo: reaparece.
+// - Funciona en Biblia, Iglesia, Mi Panel y Compartidos.
 // =========================================================
 
-(function vaInstalarHeaderBibliaAuto() {
-  if (window.__vaHeaderBibliaAutoInstalado) return;
-
-  window.__vaHeaderBibliaAutoInstalado = true;
-
-  let ultimoY = Math.max(
-    0,
-    window.scrollY ||
-    document.documentElement.scrollTop ||
-    0
-  );
-
-  let acumulado = 0;
-  let raf = 0;
-
-  function medirHeaderBiblia() {
-    const header =
-      document.getElementById("header");
-
-    if (!header) return;
-
-    const alto = Math.ceil(
-      header.offsetHeight ||
-      header.getBoundingClientRect().height ||
-      0
-    );
-
-    document.documentElement.style.setProperty(
-      "--va-header-biblia-alto",
-      `${alto}px`
-    );
+(function vaInstalarHeaderAutoGlobal() {
+  if (window.__vaHeaderAutoGlobalInstalado) {
+    return;
   }
 
-  function actualizarHeaderBibliaPorScroll() {
-    raf = 0;
+  window.__vaHeaderAutoGlobalInstalado = true;
 
-    const y = Math.max(
+  /*
+    Conservamos esta variable vieja por compatibilidad
+    con cualquier código anterior.
+  */
+  window.__vaHeaderBibliaAutoInstalado = true;
+
+  const CLASE_OCULTO =
+    "va-header-biblia-oculto";
+
+  /*
+    Barras internas que también son sticky.
+    Cuando aparece el header, bajan debajo de él.
+    Cuando se esconde, vuelven al borde superior.
+  */
+  const STICKY_INTERNOS = [
+    "barraTituloBiblia",
+    "abcStickyBar",
+    "rhStickyBar"
+  ];
+
+  let ultimoY =
+    Math.max(
       0,
       window.scrollY ||
       document.documentElement.scrollTop ||
       0
     );
 
+  let acumulado = 0;
+  let raf = 0;
+  let seccionAnterior = "";
+
+
+  function vaScrollYActual() {
+    return Math.max(
+      0,
+      window.scrollY ||
+      document.documentElement.scrollTop ||
+      0
+    );
+  }
+
+
+  function vaSeccionPrincipalActual() {
+    const clases = [
+      "en-biblia",
+      "en-iglesia",
+      "en-panel",
+      "en-compartidos"
+    ];
+
+    return (
+      clases.find(clase =>
+        document.body.classList.contains(clase)
+      ) ||
+      ""
+    );
+  }
+
+
+  function vaMedirHeaderGlobal() {
+    const header =
+      document.getElementById("header");
+
+    if (!header) return 0;
+
+    const alto =
+      Math.ceil(
+        header.offsetHeight ||
+        header.getBoundingClientRect().height ||
+        0
+      );
+
     /*
-      Fuera de Biblia siempre queda visible.
+      Conservamos el nombre de variable anterior,
+      para que Biblia siga siendo compatible.
+    */
+    document.documentElement.style.setProperty(
+      "--va-header-biblia-alto",
+      `${alto}px`
+    );
+
+    document.documentElement.style.setProperty(
+      "--va-header-global-alto",
+      `${alto}px`
+    );
+
+    return alto;
+  }
+
+
+  function vaActualizarStickyInternos(
+    headerOculto
+  ) {
+    const alto =
+      vaMedirHeaderGlobal();
+
+    const top =
+      headerOculto
+        ? "0px"
+        : `${alto}px`;
+
+    STICKY_INTERNOS.forEach(id => {
+      const elemento =
+        document.getElementById(id);
+
+      if (!elemento) return;
+
+      /*
+        Se aplica inline con important para pisar
+        también el top inline que actualmente usa ABC.
+      */
+      elemento.style.setProperty(
+        "top",
+        top,
+        "important"
+      );
+    });
+  }
+
+
+  function vaPonerHeaderOculto(
+    ocultar
+  ) {
+    /*
+      Los links directos de prédicas esconden el header
+      deliberadamente. No interferimos con ese caso.
     */
     if (
-      !document.body.classList.contains(
-        "en-biblia"
+      document.body.classList.contains(
+        "comp-link-directo"
       )
     ) {
       document.body.classList.remove(
-        "va-header-biblia-oculto"
+        CLASE_OCULTO
       );
 
+      return;
+    }
+
+    document.body.classList.toggle(
+      CLASE_OCULTO,
+      !!ocultar
+    );
+
+    vaActualizarStickyInternos(
+      !!ocultar
+    );
+  }
+
+
+  function vaActualizarHeaderGlobal() {
+    raf = 0;
+
+    const header =
+      document.getElementById("header");
+
+    const y =
+      vaScrollYActual();
+
+    if (!header) {
       ultimoY = y;
       acumulado = 0;
       return;
     }
 
-    medirHeaderBiblia();
-
-    const delta = y - ultimoY;
+    const seccion =
+      vaSeccionPrincipalActual();
 
     /*
-      Cerca del comienzo siempre visible.
+      Si todavía no hay una sección principal activa,
+      dejamos el header visible.
     */
-    if (y <= 24) {
-      document.body.classList.remove(
-        "va-header-biblia-oculto"
-      );
+    if (!seccion) {
+      vaPonerHeaderOculto(false);
 
-      acumulado = 0;
       ultimoY = y;
+      acumulado = 0;
       return;
     }
 
+    const delta =
+      y - ultimoY;
+
+
+    /*
+      Cerca del principio siempre visible.
+    */
+    if (y <= 24) {
+      vaPonerHeaderOculto(false);
+
+      ultimoY = y;
+      acumulado = 0;
+      return;
+    }
+
+
     if (Math.abs(delta) >= 1) {
+
       /*
-        Cuando cambia la dirección,
-        reiniciamos el movimiento acumulado.
+        Si cambia el sentido del scroll,
+        reiniciamos el acumulado.
       */
       if (
         (delta > 0 && acumulado < 0) ||
@@ -16070,25 +16200,24 @@ slider.addEventListener("input", () => {
 
       acumulado += delta;
 
+
       /*
-        Bajando: ocultar.
+        Bajando:
+        ocultamos después de un pequeño movimiento,
+        para evitar parpadeos.
       */
       if (acumulado >= 14) {
-        document.body.classList.add(
-          "va-header-biblia-oculto"
-        );
-
+        vaPonerHeaderOculto(true);
         acumulado = 0;
       }
 
-      /*
-        Subiendo: mostrar.
-      */
-      if (acumulado <= -10) {
-        document.body.classList.remove(
-          "va-header-biblia-oculto"
-        );
 
+      /*
+        Subiendo:
+        vuelve un poco más rápidamente.
+      */
+      if (acumulado <= -9) {
+        vaPonerHeaderOculto(false);
         acumulado = 0;
       }
     }
@@ -16096,28 +16225,91 @@ slider.addEventListener("input", () => {
     ultimoY = y;
   }
 
-  function pedirActualizacionHeaderBiblia() {
+
+  function vaPedirHeaderGlobal() {
     if (raf) return;
 
-    raf = requestAnimationFrame(
-      actualizarHeaderBibliaPorScroll
-    );
+    raf =
+      requestAnimationFrame(
+        vaActualizarHeaderGlobal
+      );
   }
+
 
   window.addEventListener(
     "scroll",
-    pedirActualizacionHeaderBiblia,
+    vaPedirHeaderGlobal,
     { passive:true }
   );
+
 
   window.addEventListener(
     "resize",
     () => {
-      medirHeaderBiblia();
-      pedirActualizacionHeaderBiblia();
+      vaMedirHeaderGlobal();
+      vaPedirHeaderGlobal();
     }
   );
 
-  medirHeaderBiblia();
-  actualizarHeaderBibliaPorScroll();
+
+  /*
+    Cuando cambiamos entre Biblia / Iglesia /
+    Mi Panel / Compartidos, lo mostramos nuevamente.
+  */
+  const observer =
+    new MutationObserver(() => {
+      const seccionNueva =
+        vaSeccionPrincipalActual();
+
+      if (
+        seccionNueva === seccionAnterior
+      ) {
+        return;
+      }
+
+      seccionAnterior =
+        seccionNueva;
+
+      acumulado = 0;
+      ultimoY =
+        vaScrollYActual();
+
+      vaPonerHeaderOculto(false);
+
+      /*
+        Algunas barras como RH y ABC se crean
+        después de abrir la sección.
+      */
+      setTimeout(
+        () => vaActualizarStickyInternos(false),
+        0
+      );
+
+      setTimeout(
+        () => vaActualizarStickyInternos(false),
+        150
+      );
+
+      setTimeout(
+        () => vaActualizarStickyInternos(false),
+        450
+      );
+    });
+
+
+  observer.observe(
+    document.body,
+    {
+      attributes:true,
+      attributeFilter:["class"]
+    }
+  );
+
+
+  seccionAnterior =
+    vaSeccionPrincipalActual();
+
+  vaMedirHeaderGlobal();
+  vaPonerHeaderOculto(false);
+  vaActualizarHeaderGlobal();
 })();
