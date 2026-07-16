@@ -75,7 +75,7 @@ const COMP_FILTROS = [
   {
     id: "todo",
     label: "Todas las Publicaciones Compartidas",
-    icon: "fa-solid fa-people-group",
+    icon: "fa-solid fa-splotch",
     tipos: []
   },
   {
@@ -265,9 +265,17 @@ function compRenderFiltrosHTML() {
             aria-hidden="true"
           ></i>
 
-          <span>
-            ${compEscape(f.label)}
-          </span>
+<span>
+  ${
+    f.id === "todo"
+      ? `
+        Todas las
+        <br class="comp-filtro-salto-cel">
+        Publicaciones Compartidas
+      `
+      : compEscape(f.label)
+  }
+</span>
         </button>
       `).join("")}
     </div>
@@ -3709,16 +3717,48 @@ function compCssEscape(v) {
 function compActualizarEstadoBotonPredica(card) {
   if (!card) return;
 
-  const abierta = card.classList.contains("comp-predica-expandida");
+  const abierta =
+    card.classList.contains(
+      "comp-predica-expandida"
+    );
 
-  card.querySelectorAll(".comp-predica-desplegar").forEach(btn => {
-    btn.title = abierta ? "Cerrar prédica" : "Desplegar prédica";
-    btn.setAttribute("aria-label", abierta ? "Cerrar prédica" : "Desplegar prédica");
-  });
+  card
+    .querySelectorAll(
+      ".comp-predica-desplegar"
+    )
+    .forEach(btn => {
+      btn.title =
+        abierta
+          ? "Cerrar prédica"
+          : "Desplegar prédica";
 
-  const wrap = card.querySelector(".comp-predica-abierta-wrap");
+      btn.setAttribute(
+        "aria-label",
+        abierta
+          ? "Cerrar prédica"
+          : "Desplegar prédica"
+      );
+
+      btn.innerHTML =
+        abierta
+          ? `
+            <i class="fa-solid fa-chevron-up"></i>
+          `
+          : `
+            <i class="fa-solid fa-chevron-down"></i>
+          `;
+    });
+
+  const wrap =
+    card.querySelector(
+      ".comp-predica-abierta-wrap"
+    );
+
   if (wrap) {
-    wrap.title = abierta ? "Tocar para cerrar" : "Tocar para desplegar";
+    wrap.title =
+      abierta
+        ? "Tocar para cerrar"
+        : "Tocar para desplegar";
   }
 }
 
@@ -3784,51 +3824,189 @@ function compCrearBotonPredicaIntro(subidoId) {
   return btn;
 }
 
-function compPrepararPredicaCompartidosHTML(html = "", subidoId = "") {
+function compPrepararPredicaCompartidosHTML(
+  html = "",
+  subidoId = "",
+  item = {}
+) {
   const raw = String(html || "").trim();
+
   if (!raw) return "";
 
-  const tpl = document.createElement("template");
+  const tpl =
+    document.createElement("template");
+
   tpl.innerHTML = raw;
 
   const root = tpl.content;
 
-  // ✅ Soporta la prédica vieja (.comp-predica-intro)
-  // y la prédica abierta reutilizada de Subidos (.subidos-visor-intro).
-  const intro = root.querySelector(".subidos-visor-intro, .comp-predica-intro");
+  /*
+    Eliminamos cualquier botón viejo que pudiera
+    haber quedado dentro del HTML.
+  */
+  root
+    .querySelectorAll(".comp-predica-desplegar")
+    .forEach(btn => btn.remove());
 
-  if (!intro) return raw;
+  const marco =
+    root.querySelector(".subidos-visor-marco") ||
+    root.querySelector(".comp-predica-full") ||
+    root.firstElementChild;
 
-  intro.classList.add("comp-predica-intro-preparada");
-
-  // ✅ Marcamos el bloque real de introducción para ocultar todo lo que viene después.
-  const parent = intro.parentElement;
-
-  if (
-    parent &&
-    parent.children.length === 1 &&
-    !parent.classList.contains("subidos-visor-marco") &&
-    !parent.classList.contains("comp-predica-full")
-  ) {
-    parent.classList.add("comp-predica-intro-wrap");
-  } else {
-    intro.classList.add("comp-predica-intro-wrap");
+  if (!marco) {
+    return raw;
   }
 
-  // Evita duplicados si en algún momento el HTML viniera ya preparado.
-  intro.querySelectorAll(".comp-predica-desplegar").forEach(btn => btn.remove());
+  /*
+    Esta parte queda siempre visible.
+  */
+  const resumen =
+    document.createElement("div");
 
-  const texto = document.createElement("span");
-  texto.className = "comp-predica-intro-text";
+  resumen.className =
+    "comp-predica-resumen subidos-visor-marco";
 
-  while (intro.firstChild) {
-    texto.appendChild(intro.firstChild);
+  /*
+    Conserva el fondo elegido para la prédica.
+  */
+  const estiloMarco =
+    marco.getAttribute("style");
+
+  if (estiloMarco) {
+    resumen.setAttribute(
+      "style",
+      estiloMarco
+    );
   }
 
-  intro.appendChild(texto);
-  intro.appendChild(compCrearBotonPredicaIntro(subidoId));
+  const moverAlResumen = elemento => {
+    if (
+      elemento &&
+      elemento.parentNode
+    ) {
+      resumen.appendChild(elemento);
+    }
+  };
 
-  return tpl.innerHTML;
+  const encabezado =
+    marco.querySelector(
+      ".subidos-visor-encabezado-predica"
+    );
+
+  const archivo =
+    marco.querySelector(
+      ".subidos-visor-archivo"
+    );
+
+  const titulo =
+    marco.querySelector(
+      ".subidos-visor-predica-titulo"
+    );
+
+  const audio =
+    marco.querySelector(
+      ".subidos-predica-audio"
+    );
+
+  const primeraCita =
+    marco.querySelector(
+      ".subidos-visor-bloque-primera"
+    );
+
+  /*
+    Solo tomamos una introducción cuando el item
+    realmente tiene introducción.
+
+    Así evitamos confundir la nota final
+    con la introducción.
+  */
+  const hayIntroduccion =
+    String(
+      item?.predicaIntroduccion ||
+      item?.introduccionPredica ||
+      ""
+    ).trim();
+
+  let bloqueIntroduccion = null;
+
+  if (hayIntroduccion) {
+    const intro =
+      marco.querySelector(
+        ".subidos-visor-intro"
+      );
+
+    if (intro) {
+      const padre =
+        intro.parentElement;
+
+      bloqueIntroduccion =
+        padre &&
+        padre !== marco &&
+        padre.children.length === 1
+          ? padre
+          : intro;
+    }
+  }
+
+  /*
+    Orden de la prédica comprimida:
+    encabezado, archivo, título, audio,
+    introducción y primera cita.
+  */
+  moverAlResumen(encabezado);
+  moverAlResumen(archivo);
+  moverAlResumen(titulo);
+  moverAlResumen(audio);
+  moverAlResumen(bloqueIntroduccion);
+  moverAlResumen(primeraCita);
+
+  /*
+    Botón visible debajo del primer versículo.
+  */
+  const pieResumen =
+    document.createElement("div");
+
+  pieResumen.className =
+    "comp-predica-expandir-wrap";
+
+  pieResumen.appendChild(
+    compCrearBotonPredicaIntro(
+      subidoId
+    )
+  );
+
+  resumen.appendChild(pieResumen);
+
+  /*
+    Lo que queda dentro del HTML original son:
+    - citas restantes;
+    - nota final;
+    - cierre.
+
+    Se muestra solamente al extender.
+  */
+  const contenidoExtra =
+    document.createElement("div");
+
+  contenidoExtra.className =
+    "comp-predica-extra";
+
+  while (tpl.content.firstChild) {
+    contenidoExtra.appendChild(
+      tpl.content.firstChild
+    );
+  }
+
+  const preparado =
+    document.createElement("div");
+
+  preparado.className =
+    "comp-predica-preparada";
+
+  preparado.appendChild(resumen);
+  preparado.appendChild(contenidoExtra);
+
+  return preparado.outerHTML;
 }
 
 function compActivarBotonesSubidosRenderizados(items = []) {
@@ -3866,10 +4044,12 @@ function compRenderSubido(item) {
       "all"
     );
 
-    const predicaHTML = compPrepararPredicaCompartidosHTML(
-      predicaHTMLBase,
-      subidoId
-    );
+const predicaHTML =
+  compPrepararPredicaCompartidosHTML(
+    predicaHTMLBase,
+    subidoId,
+    item
+  );
 
     return `
       <article
@@ -3895,16 +4075,6 @@ function compRenderSubido(item) {
 >
   ${predicaHTML || `<div class="comp-post-empty">No pude cargar la prédica.</div>`}
 </div>
-
-${
-  typeof window.subidosHtmlAudioPredica ===
-  "function"
-    ? window.subidosHtmlAudioPredica({
-        ...item,
-        id: subidoId
-      })
-    : ``
-}
 
 <div class="comp-post-actions">
           <button type="button" onclick="compartirSubido('${compJs(subidoId)}', this)" title="Compartir">
