@@ -4604,7 +4604,7 @@ function obtenerVersiculoSeleccionado() {
 
   const referencia = referenciaImagenEnOrden(items);
 
-  return (textos.join(" ") + "\n▪ " + referencia).trim();
+  return (textos.join(" ") + "\n\n▪ " + referencia).trim();
 }
 
 // ================= ⭐ texto libre  =======================
@@ -6519,7 +6519,7 @@ function bibliaAsegurarBotonCuentagotasWrapper() {
   const btn = document.createElement("button");
   btn.type = "button";
   btn.id = "btnBibliaCuentagotasWrapper";
-  btn.title = "Tomar color del fondo para el wrapper";
+  btn.title = "Tomar color del fondo para el resaltado";
   btn.setAttribute("aria-label", btn.title);
   btn.innerHTML = `<i class="fa-solid fa-eye-dropper"></i>`;
 
@@ -6596,7 +6596,7 @@ function bibliaAsegurarModalCuentagotasWrapper() {
         "
       >×</button>
 
-      <h3 style="margin:4px 38px 6px;">Color del wrapper</h3>
+      <h3 style="margin:4px 38px 6px;">Color del resaltado</h3>
 
       <p style="margin:0 0 12px; opacity:.72;">
         Tocá o arrastrá sobre la imagen para elegir un color.
@@ -6936,23 +6936,62 @@ function bibliaWrapperVisualDataUrl(op, color){
   return url;
 }
 
-function aplicarWrapperBibliaImagen(wrapper, op, color){
+function aplicarWrapperBibliaImagen(wrapper, op, color, innerBack = null){
   if (!wrapper) return;
 
   const raw = Math.max(0, Math.min(1, Number(op) || 0));
+  const esCrearBiblia = !modoImagenLibre && origenModalImagen === "biblia";
 
-  /*
-    El wrapper conserva TODO su tamaño exterior.
-    El texto aprovecha casi toda el área útil: solamente dejamos
-    3 px reales entre el texto y el borde interior.
-  */
   wrapper.style.padding = "0px";
   wrapper.style.boxSizing = "border-box";
+  wrapper.style.boxShadow = "none";
+
+  /*
+    CREAR IMAGEN BIBLIA:
+    ya no dibujamos un wrapper grande detrás de todo el texto.
+    El mismo control de color/opacidad funciona como resaltador
+    puntual de cada renglón.
+  */
+  if (esCrearBiblia) {
+    wrapper.style.backgroundColor = "transparent";
+    wrapper.style.backgroundImage = "none";
+    wrapper.style.backgroundRepeat = "no-repeat";
+    wrapper.style.backgroundPosition = "center";
+    wrapper.style.backgroundSize = "100% 100%";
+    wrapper.style.borderRadius = "0";
+    wrapper.style.overflow = "visible";
+
+    if (innerBack) {
+      const resaltado = raw > 0
+        ? bibliaRgba(color || "#000000", raw)
+        : "transparent";
+
+      innerBack.style.display = "inline";
+      innerBack.style.width = "auto";
+      innerBack.style.maxWidth = "100%";
+      innerBack.style.margin = "0";
+      innerBack.style.padding = raw > 0 ? "1px 3px" : "0";
+      innerBack.style.boxSizing = "border-box";
+
+      // Clona el fondo en cada fragmento visual cuando el texto salta de línea.
+      innerBack.style.boxDecorationBreak = "clone";
+      innerBack.style.webkitBoxDecorationBreak = "clone";
+
+      innerBack.style.background = resaltado;
+      innerBack.style.borderRadius = raw > 0 ? "7px" : "0";
+      innerBack.style.boxShadow = "none";
+    }
+
+    return;
+  }
+
+  /*
+    IMAGEN LIBRE / MI PANEL:
+    conserva el comportamiento anterior del wrapper.
+  */
   wrapper.style.borderRadius = "34px";
   wrapper.style.overflow = "hidden";
-
   wrapper.style.backgroundColor = "transparent";
-  wrapper.style.boxShadow = "none";
   wrapper.style.backgroundRepeat = "no-repeat";
   wrapper.style.backgroundPosition = "center";
   wrapper.style.backgroundSize = "100% 100%";
@@ -6984,8 +7023,24 @@ function actualizarPreview() {
 
 const textoSeguro = textoLibreHtmlSeguro(textoFinal);
 
-previewTexto.innerHTML = `<div class="preview-text-inner">${textoSeguro}</div>`;
-previewTextoBack.innerHTML = `<div class="preview-text-inner">${textoSeguro}</div>`;
+const esCrearBiblia = !modoImagenLibre && origenModalImagen === "biblia";
+
+if (esCrearBiblia) {
+  previewTexto.innerHTML = `
+    <div class="preview-text-center">
+      <span class="preview-text-inner">${textoSeguro}</span>
+    </div>
+  `;
+
+  previewTextoBack.innerHTML = `
+    <div class="preview-text-center">
+      <span class="preview-text-inner">${textoSeguro}</span>
+    </div>
+  `;
+} else {
+  previewTexto.innerHTML = `<div class="preview-text-inner">${textoSeguro}</div>`;
+  previewTextoBack.innerHTML = `<div class="preview-text-inner">${textoSeguro}</div>`;
+}
 
 previewTexto.style.display = "grid";
 previewTextoBack.style.display = "grid";
@@ -7063,16 +7118,34 @@ previewTextoBack.style.fontSize = finalSize + "px";
 
 const innerFront = previewTexto.querySelector(".preview-text-inner");
 const innerBack  = previewTextoBack.querySelector(".preview-text-inner");
+const centerFront = previewTexto.querySelector(".preview-text-center");
+const centerBack  = previewTextoBack.querySelector(".preview-text-center");
+
+[centerFront, centerBack].forEach(center => {
+  if (!center) return;
+  center.style.width = "100%";
+  center.style.maxWidth = "100%";
+  center.style.margin = "0";
+  center.style.padding = "0";
+  center.style.boxSizing = "border-box";
+  center.style.textAlign = "center";
+});
 
 if (innerFront) {
-  innerFront.style.width = "100%";
+  innerFront.style.display = esCrearBiblia ? "inline" : "block";
+  innerFront.style.width = esCrearBiblia ? "auto" : "100%";
   innerFront.style.maxWidth = "100%";
   innerFront.style.margin = "0";
   innerFront.style.padding = "0";
   innerFront.style.boxSizing = "border-box";
+  innerFront.style.background = "transparent";
+  innerFront.style.boxDecorationBreak = "clone";
+  innerFront.style.webkitBoxDecorationBreak = "clone";
 }
+
 if (innerBack) {
-  innerBack.style.width = "100%";
+  innerBack.style.display = esCrearBiblia ? "inline" : "block";
+  innerBack.style.width = esCrearBiblia ? "auto" : "100%";
   innerBack.style.maxWidth = "100%";
   innerBack.style.margin = "0";
   innerBack.style.padding = "0";
@@ -7157,7 +7230,7 @@ if (!isNaN(op)) {
   bgColor = `rgba(${r}, ${g}, ${b}, ${Math.max(0, Math.min(1, op))})`;
 }
 
-aplicarWrapperBibliaImagen(wrapper, op, opColor);
+aplicarWrapperBibliaImagen(wrapper, op, opColor, innerBack);
 
 activarEdicionDirectaTextoLibre();
   
