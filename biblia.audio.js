@@ -740,78 +740,211 @@ function audioPredicaTextoFueEditado(textoActual = "") {
   return actual !== original;
 }
 
-function audioSegmentosPredicaSeguros(textoActual = "", textoLimpio = "") {
-  const segmentosBase = Array.isArray(window.__AUDIO_PREDICA_SEGMENTOS)
-    ? window.__AUDIO_PREDICA_SEGMENTOS.filter(s => s && String(s.texto || "").trim())
+function audioPredicaClonarSegmentosBase() {
+  const base = Array.isArray(window.__AUDIO_PREDICA_SEGMENTOS)
+    ? window.__AUDIO_PREDICA_SEGMENTOS
     : [];
 
-  const bloquesEditados = audioPredicaBloquesDesdeTexto(textoActual)
-    .map(txt => audioPrepararTextoParaTTS(txt))
-    .filter(Boolean);
+  return base
+    .filter(seg => seg && String(seg.texto || "").trim())
+    .map(seg => ({
+      // El tipo viene de Subidos.js y NO se modifica.
+      tipo: seg.tipo === "comentario" ? "comentario" : "biblia",
+      texto: String(seg.texto || "")
+        .replace(/\r/g, "")
+    }));
+}
+
+function audioPredicaTextoDesdeModelo(segmentos = []) {
+  return (Array.isArray(segmentos) ? segmentos : [])
+    .map(seg => String(seg?.texto || "").replace(/\r/g, ""))
+    .join("\n\n");
+}
+
+function audioPredicaIniciarModeloEdicion(ta = null) {
+  const segmentos = audioPredicaClonarSegmentosBase();
+
+  window.__AUDIO_PREDICA_SEGMENTOS_EDITADOS =
+    segmentos.map(seg => ({ ...seg }));
+
+  window.__AUDIO_PREDICA_EDICION_VALIDA = true;
+
+  window.__AUDIO_PREDICA_TEXTO_ANTES_INPUT =
+    String(ta?.value || audioPredicaTextoDesdeModelo(segmentos))
+      .replace(/\r/g, "");
+}
+
+function audioPredicaAplicarCambioAlModelo(textoAntes = "", textoAhora = "") {
+  const antes = String(textoAntes || "").replace(/\r/g, "");
+  const ahora = String(textoAhora || "").replace(/\r/g, "");
+
+  const segmentos = Array.isArray(window.__AUDIO_PREDICA_SEGMENTOS_EDITADOS)
+    ? window.__AUDIO_PREDICA_SEGMENTOS_EDITADOS
+    : [];
+
+  if (!segmentos.length) return false;
+
+  /*
+    El modelo debe representar exactamente lo que había en el textarea
+    antes de esta tecla. Así sabemos en qué segmento ocurrió el cambio
+    sin adivinar voces ni repartir párrafos.
+  */
+  const modeloAntes = audioPredicaTextoDesdeModelo(segmentos);
+
+  if (modeloAntes !== antes) {
+    return false;
+  }
+
+  if (antes === ahora) return true;
+
+  // Parte idéntica al principio.
+  let prefijo = 0;
+  const limitePrefijo = Math.min(antes.length, ahora.length);
+
+  while (
+    prefijo < limitePrefijo &&
+    antes[prefijo] === ahora[prefijo]
+  ) {
+    prefijo++;
+  }
+
+  // Parte idéntica al final.
+  let sufijo = 0;
+  const limiteSufijo = Math.min(
+    antes.length - prefijo,
+    ahora.length - prefijo
+  );
+
+  while (
+    sufijo < limiteSufijo &&
+    antes[antes.length - 1 - sufijo] ===
+      ahora[ahora.length - 1 - sufijo]
+  ) {
+    sufijo++;
+  }
+
+  const finAntes = antes.length - sufijo;
+  const finAhora = ahora.length - sufijo;
+
+  const insertado = ahora.slice(prefijo, finAhora);
+
+  /*
+    Calculamos la posición exacta de cada segmento.
+    Entre segmentos hay exactamente dos saltos de línea porque así
+    Subidos.js construye el textarea de la prédica.
+  */
+  let cursor = 0;
+
+  for (let i = 0; i < segmentos.length; i++) {
+    const seg = segmentos[i];
+    const textoSeg = String(seg.texto || "").replace(/\r/g, "");
+
+    const inicio = cursor;
+    const fin = inicio + textoSeg.length;
+
+    const esInsercion = prefijo === finAntes;
+
+    const cambioDentro =
+      esInsercion
+        ? (
+            prefijo >= inicio &&
+            prefijo <= fin &&
+            !insertado.includes("\n\n")
+          )
+        : (
+            prefijo >= inicio &&
+            finAntes <= fin
+          );
+
+    if (cambioDentro) {
+      const localDesde = prefijo - inicio;
+      const localHasta = finAntes - inicio;
+
+      /*
+        SOLO cambia el texto.
+        "tipo" queda exactamente como venía:
+        biblia o comentario.
+      */
+      seg.texto =
+        textoSeg.slice(0, localDesde) +
+        insertado +
+        textoSeg.slice(localHasta);
+
+      const modeloDespues =
+        audioPredicaTextoDesdeModelo(segmentos);
+
+      return modeloDespues === ahora;
+    }
+
+    cursor =
+      fin +
+      (i < segmentos.length - 1 ? 2 : 0);
+  }
+
+  return false;
+}
+
+function audioSegmentosPredicaSeguros(textoActual = "", textoLimpio = "") {
+  const segmentosBase = audioPredicaClonarSegmentosBase();
 
   const fueEditado =
     window.__AUDIO_TEXTO_EDITADO === true ||
     audioPredicaTextoFueEditado(textoActual);
 
-  /*
-    Si el usuario corrigió el textarea, el audio DEBE salir de ese texto.
-    Si se conservaron la misma cantidad de bloques, mantenemos además
-    qué bloques usan voz bíblica y cuáles voz de comentario.
-  */
-  if (fueEditado && bloquesEditados.length) {
-    if (
-      segmentosBase.length &&
-      bloquesEditados.length === segmentosBase.length
-    ) {
-      return bloquesEditados.map((texto, i) => ({
-        tipo:
-          segmentosBase[i]?.tipo === "comentario"
-            ? "comentario"
-            : "biblia",
-        texto
-      }));
-    }
-
-    if (segmentosBase.length) {
-      return bloquesEditados.map((texto, i) => {
-        const indiceBase =
-          bloquesEditados.length === 1
-            ? 0
-            : Math.round(
-                (i * (segmentosBase.length - 1)) /
-                Math.max(1, bloquesEditados.length - 1)
-              );
-
-        return {
-          tipo:
-            segmentosBase[indiceBase]?.tipo === "comentario"
-              ? "comentario"
-              : "biblia",
-          texto
-        };
-      });
-    }
-
-    const textoEditadoCompleto = audioPrepararTextoParaTTS(
-      textoLimpio || textoActual || ""
-    );
-
-    return textoEditadoCompleto
-      ? [{ tipo: "biblia", texto: textoEditadoCompleto }]
+  if (fueEditado) {
+    const editados = Array.isArray(window.__AUDIO_PREDICA_SEGMENTOS_EDITADOS)
+      ? window.__AUDIO_PREDICA_SEGMENTOS_EDITADOS
       : [];
+
+    if (
+      window.__AUDIO_PREDICA_EDICION_VALIDA === true &&
+      editados.length === segmentosBase.length &&
+      editados.length
+    ) {
+      /*
+        Acá está la clave:
+        NO se vuelve a decidir qué voz corresponde.
+        Cada segmento conserva el "tipo" que recibió de Subidos.js.
+
+        Biblia:
+          fecha, título, referencias y versículos.
+
+        Comentario:
+          introducción, comentarios y nota final.
+      */
+      return editados
+        .map(seg => ({
+          tipo: seg.tipo === "comentario" ? "comentario" : "biblia",
+          texto: audioPrepararTextoParaTTS(seg.texto || "")
+        }))
+        .filter(seg => seg.texto);
+    }
+
+    /*
+      Si la edición atravesó el separador entre dos bloques,
+      frenamos esa regeneración en vez de mezclar las voces.
+      Una corrección normal de palabras/frases dentro de un bloque
+      nunca entra acá.
+    */
+    throw new Error(
+      "No pude conservar la separación exacta de las dos voces. Restaurá el texto y hacé la corrección sin borrar los espacios entre los bloques."
+    );
   }
 
-  // Si NO fue editado, conservamos exactamente los segmentos originales.
+  // Sin edición: exactamente el funcionamiento original.
   if (segmentosBase.length) {
     return segmentosBase
       .map(seg => ({
         tipo: seg.tipo === "comentario" ? "comentario" : "biblia",
         texto: audioPrepararTextoParaTTS(seg.texto || "")
       }))
-      .filter(s => s.texto);
+      .filter(seg => seg.texto);
   }
 
-  const texto = audioPrepararTextoParaTTS(textoLimpio || textoActual || "");
+  const texto = audioPrepararTextoParaTTS(
+    textoLimpio || textoActual || ""
+  );
+
   return texto
     ? [{ tipo: "biblia", texto }]
     : [];
@@ -823,12 +956,54 @@ function audioHookLimpiarCacheAlEditarTextarea(ta) {
   ta.__audioClearCacheHooked = true;
 
   /*
-    Editar el texto NO debe frenar el audio que el usuario está escuchando.
-    Solo marcamos que el textarea cambió. Recién al tocar Escucha previa / Regenerar
-    se genera un audio nuevo usando exactamente el texto actual del textarea.
+    Editar mientras escuchás:
+    - NO pausa el audio.
+    - NO borra el src.
+    - NO muestra avisos.
+    - Solo actualiza el texto del segmento exacto que tocaste.
   */
+  ta.addEventListener("beforeinput", () => {
+    if (audioContextoActual() !== "predica") return;
+
+    if (
+      !Array.isArray(window.__AUDIO_PREDICA_SEGMENTOS_EDITADOS) ||
+      !window.__AUDIO_PREDICA_SEGMENTOS_EDITADOS.length
+    ) {
+      audioPredicaIniciarModeloEdicion(ta);
+    }
+
+    window.__AUDIO_PREDICA_TEXTO_ANTES_INPUT =
+      String(ta.value || "").replace(/\r/g, "");
+  });
+
   ta.addEventListener("input", () => {
+    if (audioContextoActual() !== "predica") {
+      window.__AUDIO_TEXTO_EDITADO = true;
+      return;
+    }
+
+    const antes = String(
+      window.__AUDIO_PREDICA_TEXTO_ANTES_INPUT || ""
+    ).replace(/\r/g, "");
+
+    const ahora = String(
+      ta.value || ""
+    ).replace(/\r/g, "");
+
+    const ok =
+      audioPredicaAplicarCambioAlModelo(
+        antes,
+        ahora
+      );
+
+    window.__AUDIO_PREDICA_EDICION_VALIDA =
+      window.__AUDIO_PREDICA_EDICION_VALIDA !== false &&
+      ok;
+
     window.__AUDIO_TEXTO_EDITADO = true;
+
+    window.__AUDIO_PREDICA_TEXTO_ANTES_INPUT =
+      ahora;
   });
 }
 
@@ -865,6 +1040,13 @@ audioLimpiarEstadoViejoSiCambioTexto(textoActual);
     ta.value = "";
   }
 
+  if (contexto === "predica") {
+    audioPredicaIniciarModeloEdicion(ta);
+  } else {
+    window.__AUDIO_PREDICA_SEGMENTOS_EDITADOS = [];
+    window.__AUDIO_PREDICA_EDICION_VALIDA = true;
+  }
+
   // El contenido recién cargado es la base; todavía no hubo edición manual.
   window.__AUDIO_TEXTO_EDITADO = false;
 
@@ -895,7 +1077,13 @@ audioLimpiarEstadoViejoSiCambioTexto(textoActual);
   window.restaurarTextoAudio = () => {
     const ta = document.getElementById("textoAudio");
     if (!ta) return;
+
     ta.value = __audioTextoOriginal || "";
+
+    if (audioContextoActual() === "predica") {
+      audioPredicaIniciarModeloEdicion(ta);
+    }
+
     window.__AUDIO_TEXTO_EDITADO = false;
   };
 
@@ -1129,6 +1317,11 @@ audioBase64Final =
 
     window.__AUDIO_TEXTO_EDITADO = false;
 
+    if (esPredicaArpa) {
+      window.__AUDIO_PREDICA_TEXTO_ANTES_INPUT =
+        String(ta.value || "").replace(/\r/g, "");
+    }
+
     const bytes = Uint8Array.from(
       atob(data.audioBase64),
       c => c.charCodeAt(0)
@@ -1160,9 +1353,11 @@ audioBase64Final =
       const mensaje = String(e?.message || "");
 
       estado.textContent =
-        mensaje.includes("5000 bytes")
-          ? "❌ El texto sigue siendo demasiado largo para el servicio de voz."
-          : "❌ No se pudo generar la previa real.";
+        mensaje.includes("separación exacta de las dos voces")
+          ? "⚠️ No pude conservar las dos voces porque se modificó la separación entre bloques. Tocá Restaurar y corregí solo las palabras necesarias."
+          : mensaje.includes("5000 bytes")
+            ? "❌ El texto sigue siendo demasiado largo para el servicio de voz."
+            : "❌ No se pudo generar la previa real.";
     }
   }
 };
