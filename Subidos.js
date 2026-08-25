@@ -4139,10 +4139,10 @@ color:#111;
         border-radius:22px;
         display:flex;
         flex-direction:column;
-        align-items:stretch;
+        align-items:center;
         justify-content:center;
         gap:8px;
-        text-align:left;
+        text-align:center;
         overflow:hidden;
       }
 
@@ -4167,7 +4167,7 @@ color:#111;
         line-height:1.14;
         font-weight:900;
         text-align:left;
-        overflow-wrap:break-word;
+        overflow-wrap:anywhere;
       }
 
       #subidosExportPredicaFinal.v1-grande .subidos-export-primera-texto,
@@ -4188,7 +4188,6 @@ color:#111;
         line-height:1;
         font-weight:900;
         white-space:nowrap;
-        align-self:center;
       }
 
       /* ===== INTRO + NOTA FINAL ===== */
