@@ -745,15 +745,41 @@ function audioSegmentosPredicaSeguros(textoActual = "", textoLimpio = "") {
     ? window.__AUDIO_PREDICA_SEGMENTOS.filter(s => s && String(s.texto || "").trim())
     : [];
 
+  const bloquesEditados = audioPredicaBloquesDesdeTexto(textoActual)
+    .map(txt => audioPrepararTextoParaTTS(txt))
+    .filter(Boolean);
+
+  const fueEditado = audioPredicaTextoFueEditado(textoActual);
+
   /*
-    PRÉDICA:
-    Volvemos al sistema seguro:
-    usar SIEMPRE los segmentos originales de Subidos.
-    Eso mantiene:
-    - audio completo
-    - dos voces
-    - orden correcto
+    Si el usuario corrigió el textarea, el audio DEBE salir de ese texto.
+    Si se conservaron la misma cantidad de bloques, mantenemos además
+    qué bloques usan voz bíblica y cuáles voz de comentario.
   */
+  if (fueEditado && bloquesEditados.length) {
+    if (
+      segmentosBase.length &&
+      bloquesEditados.length === segmentosBase.length
+    ) {
+      return bloquesEditados.map((texto, i) => ({
+        tipo:
+          segmentosBase[i]?.tipo === "comentario"
+            ? "comentario"
+            : "biblia",
+        texto
+      }));
+    }
+
+    const textoEditadoCompleto = audioPrepararTextoParaTTS(
+      textoLimpio || textoActual || ""
+    );
+
+    return textoEditadoCompleto
+      ? [{ tipo: "biblia", texto: textoEditadoCompleto }]
+      : [];
+  }
+
+  // Si NO fue editado, conservamos exactamente los segmentos originales.
   if (segmentosBase.length) {
     return segmentosBase
       .map(seg => ({
@@ -764,7 +790,6 @@ function audioSegmentosPredicaSeguros(textoActual = "", textoLimpio = "") {
   }
 
   const texto = audioPrepararTextoParaTTS(textoLimpio || textoActual || "");
-
   return texto
     ? [{ tipo: "biblia", texto }]
     : [];
