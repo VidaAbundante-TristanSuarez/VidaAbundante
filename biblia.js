@@ -4604,7 +4604,7 @@ function obtenerVersiculoSeleccionado() {
 
   const referencia = referenciaImagenEnOrden(items);
 
-  return (textos.join(" ") + "\n\n▪ " + referencia).trim();
+  return (textos.join(" ") + "\n▪ " + referencia).trim();
 }
 
 // ================= ⭐ texto libre  =======================
@@ -6950,7 +6950,7 @@ function aplicarWrapperBibliaImagen(wrapper, op, color, innerBack = null){
     CREAR IMAGEN BIBLIA:
     ya no dibujamos un wrapper grande detrás de todo el texto.
     El mismo control de color/opacidad funciona como resaltador
-    puntual de cada renglón.
+    puntual de cada renglón y de la cita, de forma prolija.
   */
   if (esCrearBiblia) {
     wrapper.style.backgroundColor = "transparent";
@@ -6961,16 +6961,18 @@ function aplicarWrapperBibliaImagen(wrapper, op, color, innerBack = null){
     wrapper.style.borderRadius = "0";
     wrapper.style.overflow = "visible";
 
-    if (innerBack) {
-      const resaltado = raw > 0
-        ? bibliaRgba(color || "#000000", raw)
-        : "transparent";
+    const refBack = previewTextoBack?.querySelector?.(".preview-text-ref");
 
+    const resaltado = raw > 0
+      ? bibliaRgba(color || "#000000", raw)
+      : "transparent";
+
+    if (innerBack) {
       innerBack.style.display = "inline";
       innerBack.style.width = "auto";
       innerBack.style.maxWidth = "100%";
-      innerBack.style.margin = "0";
-      innerBack.style.padding = raw > 0 ? "1px 3px" : "0";
+      innerBack.style.margin = "0 auto";
+      innerBack.style.padding = raw > 0 ? "2px 5px" : "0";
       innerBack.style.boxSizing = "border-box";
 
       // Clona el fondo en cada fragmento visual cuando el texto salta de línea.
@@ -6978,8 +6980,18 @@ function aplicarWrapperBibliaImagen(wrapper, op, color, innerBack = null){
       innerBack.style.webkitBoxDecorationBreak = "clone";
 
       innerBack.style.background = resaltado;
-      innerBack.style.borderRadius = raw > 0 ? "7px" : "0";
+      innerBack.style.borderRadius = raw > 0 ? "12px" : "0";
       innerBack.style.boxShadow = "none";
+    }
+
+    if (refBack) {
+      refBack.style.display = "inline-block";
+      refBack.style.margin = "0 auto";
+      refBack.style.padding = raw > 0 ? "1px 5px" : "0";
+      refBack.style.boxSizing = "border-box";
+      refBack.style.background = resaltado;
+      refBack.style.borderRadius = raw > 0 ? "12px" : "0";
+      refBack.style.boxShadow = "none";
     }
 
     return;
@@ -7021,23 +7033,37 @@ function actualizarPreview() {
 
   const textoFinal = obtenerTextoParaPreview();
 
-const textoSeguro = textoLibreHtmlSeguro(textoFinal);
-
 const esCrearBiblia = !modoImagenLibre && origenModalImagen === "biblia";
 
 if (esCrearBiblia) {
+  const textoPlano = String(textoFinal || "").replace(/\r/g, "");
+  const partesBiblia = textoPlano.split("\n");
+  const idxRef = partesBiblia.findIndex(x => String(x || "").trim().startsWith("▪"));
+  const cuerpoPlano = (idxRef >= 0 ? partesBiblia.slice(0, idxRef) : partesBiblia)
+    .join("\n")
+    .trim();
+  const refPlano = idxRef >= 0
+    ? partesBiblia.slice(idxRef).join(" ").trim()
+    : "";
+
+  const cuerpoSeguro = textoLibreHtmlSeguro(cuerpoPlano);
+  const refSeguro = textoLibreHtmlSeguro(refPlano);
+
   previewTexto.innerHTML = `
-    <div class="preview-text-center">
-      <span class="preview-text-inner">${textoSeguro}</span>
+    <div class="preview-text-center preview-biblia-stack">
+      <span class="preview-text-inner preview-biblia-cuerpo">${cuerpoSeguro}</span>
+      ${refSeguro ? `<span class="preview-text-ref">${refSeguro}</span>` : ``}
     </div>
   `;
 
   previewTextoBack.innerHTML = `
-    <div class="preview-text-center">
-      <span class="preview-text-inner">${textoSeguro}</span>
+    <div class="preview-text-center preview-biblia-stack">
+      <span class="preview-text-inner preview-biblia-cuerpo">${cuerpoSeguro}</span>
+      ${refSeguro ? `<span class="preview-text-ref">${refSeguro}</span>` : ``}
     </div>
   `;
 } else {
+  const textoSeguro = textoLibreHtmlSeguro(textoFinal);
   previewTexto.innerHTML = `<div class="preview-text-inner">${textoSeguro}</div>`;
   previewTextoBack.innerHTML = `<div class="preview-text-inner">${textoSeguro}</div>`;
 }
@@ -7120,6 +7146,8 @@ const innerFront = previewTexto.querySelector(".preview-text-inner");
 const innerBack  = previewTextoBack.querySelector(".preview-text-inner");
 const centerFront = previewTexto.querySelector(".preview-text-center");
 const centerBack  = previewTextoBack.querySelector(".preview-text-center");
+const refFront = previewTexto.querySelector(".preview-text-ref");
+const refBack  = previewTextoBack.querySelector(".preview-text-ref");
 
 [centerFront, centerBack].forEach(center => {
   if (!center) return;
@@ -7129,28 +7157,48 @@ const centerBack  = previewTextoBack.querySelector(".preview-text-center");
   center.style.padding = "0";
   center.style.boxSizing = "border-box";
   center.style.textAlign = "center";
+
+  if (esCrearBiblia) {
+    center.style.display = "flex";
+    center.style.flexDirection = "column";
+    center.style.alignItems = "center";
+    center.style.justifyContent = "center";
+    center.style.gap = "6px";
+  }
 });
 
 if (innerFront) {
   innerFront.style.display = esCrearBiblia ? "inline" : "block";
   innerFront.style.width = esCrearBiblia ? "auto" : "100%";
   innerFront.style.maxWidth = "100%";
-  innerFront.style.margin = "0";
+  innerFront.style.margin = "0 auto";
   innerFront.style.padding = "0";
   innerFront.style.boxSizing = "border-box";
   innerFront.style.background = "transparent";
   innerFront.style.boxDecorationBreak = "clone";
   innerFront.style.webkitBoxDecorationBreak = "clone";
+  innerFront.style.lineHeight = esCrearBiblia ? "1.22" : "";
 }
 
 if (innerBack) {
   innerBack.style.display = esCrearBiblia ? "inline" : "block";
   innerBack.style.width = esCrearBiblia ? "auto" : "100%";
   innerBack.style.maxWidth = "100%";
-  innerBack.style.margin = "0";
+  innerBack.style.margin = "0 auto";
   innerBack.style.padding = "0";
   innerBack.style.boxSizing = "border-box";
+  innerBack.style.lineHeight = esCrearBiblia ? "1.22" : "";
 }
+
+[refFront, refBack].forEach(refEl => {
+  if (!refEl) return;
+  refEl.style.display = "inline-block";
+  refEl.style.margin = "0 auto";
+  refEl.style.padding = "0";
+  refEl.style.boxSizing = "border-box";
+  refEl.style.lineHeight = "1.1";
+  refEl.style.textAlign = "center";
+});
   
 // ================= Color / Outline =================
 const colorEl = document.getElementById("personalizarColor");
@@ -7295,6 +7343,35 @@ if (wrapperTexto) {
   t.style.padding = "0";
   t.style.margin = "0";
   t.style.boxSizing = "border-box";
+
+  const center = t.querySelector(".preview-text-center");
+  if (center) {
+    center.style.width = "100%";
+    center.style.maxWidth = "100%";
+    center.style.margin = "0";
+    center.style.padding = "0";
+    center.style.boxSizing = "border-box";
+    center.style.textAlign = "center";
+    center.style.display = "flex";
+    center.style.flexDirection = "column";
+    center.style.alignItems = "center";
+    center.style.justifyContent = "center";
+    center.style.gap = "6px";
+  }
+
+  const inner = t.querySelector(".preview-text-inner");
+  if (inner) {
+    inner.style.maxWidth = "100%";
+    inner.style.margin = "0 auto";
+    inner.style.lineHeight = "1.22";
+  }
+
+  const refEl = t.querySelector(".preview-text-ref");
+  if (refEl) {
+    refEl.style.display = "inline-block";
+    refEl.style.margin = "0 auto";
+    refEl.style.lineHeight = "1.1";
+  }
 });
 
   const fondoUsable = fondoFinalBlobUrl || fondoFinal;
