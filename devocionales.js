@@ -3077,15 +3077,22 @@ function buildFase2HTML(basePx, scale = 1){
 
   const fw  = DEV.f2.style.bold ? 700 : 400;
 
-const adorno  = DEV.f2.adornoUrl;
-const adornoW = Math.max(30, Math.min(95, Number(DEV.f2.adornoWidth || 70)));
-const adornoOp = Math.max(0, Math.min(1, Number(DEV.f2.adornoOpacidad ?? 1)));
+  const adorno  = DEV.f2.adornoUrl;
+  const adornoW = Math.max(30, Math.min(95, Number(DEV.f2.adornoWidth || 70)));
+  const adornoOp = Math.max(0, Math.min(1, Number(DEV.f2.adornoOpacidad ?? 1)));
 
-  // ✅ Estos valores ahora escalan igual en preview y en final
+  // ✅ Preview y final usan exactamente la misma caja proporcional.
+  // Antes el <img> tenía width:% + max-height fijo. En adornos altos/verticales
+  // mandaba el max-height, por eso mover "Tamaño" parecía no hacer nada;
+  // además html2canvas podía terminar deformando esa combinación en Fase 3.
+  // Ahora el slider cambia A LA VEZ el ancho y el alto máximo de una caja,
+  // y la imagen vive dentro con width/height auto: nunca pierde su proporción.
   const padTop = Math.max(1, Math.round(4 * scale));
   const padX   = Math.max(1, Math.round(18 * scale));
   const gapOra = Math.max(2, Math.round(6 * scale));
-  const adornoMaxH = Math.max(24, Math.round(86 * scale));
+  const adornoFactor = adornoW / 70;
+  const adornoBoxW = adornoW;
+  const adornoBoxH = Math.max(12, Math.round(86 * scale * adornoFactor));
 
   return `
     <div style="
@@ -3136,22 +3143,36 @@ const adornoOp = Math.max(0, Math.min(1, Number(DEV.f2.adornoOpacidad ?? 1)));
           padding:0 0 ${padTop}px;
           box-sizing:border-box;
           pointer-events:none;
+          overflow:visible;
         ">
-          <img
-            src="${devUrlRecursoSeguro(
-              adorno,
-              "adorno_devocional.png"
-            )}"
-            alt="adorno"
-            style="
-              width:${adornoW}%;
-              max-height:${adornoMaxH}px;
-              height:auto;
-              object-fit:contain;
-           display:block;
-opacity:${adornoOp};
-            "
-          />
+          <div style="
+            width:${adornoBoxW}%;
+            height:${adornoBoxH}px;
+            display:flex;
+            align-items:flex-end;
+            justify-content:center;
+            overflow:visible;
+            flex:0 0 auto;
+          ">
+            <img
+              src="${devUrlRecursoSeguro(
+                adorno,
+                "adorno_devocional.png"
+              )}"
+              alt="adorno"
+              style="
+                max-width:100%;
+                max-height:100%;
+                width:auto;
+                height:auto;
+                object-fit:contain;
+                object-position:center bottom;
+                display:block;
+                flex:0 0 auto;
+                opacity:${adornoOp};
+              "
+            />
+          </div>
         </div>
       ` : ``}
 
@@ -4038,6 +4059,33 @@ function devRgba(hex, alpha = 1){
   return `rgba(${r}, ${g}, ${b}, ${a})`;
 }
 
+async function devEsperarImagenesNodo(root, timeoutMs = 5000){
+  if (!root) return;
+
+  const imgs = Array.from(root.querySelectorAll("img"));
+  if (!imgs.length) return;
+
+  await Promise.all(imgs.map(img => {
+    if (img.complete && img.naturalWidth > 0 && img.naturalHeight > 0) {
+      return Promise.resolve();
+    }
+
+    return new Promise(resolve => {
+      let terminado = false;
+
+      const fin = () => {
+        if (terminado) return;
+        terminado = true;
+        resolve();
+      };
+
+      img.addEventListener("load", fin, { once:true });
+      img.addEventListener("error", fin, { once:true });
+      setTimeout(fin, timeoutMs);
+    });
+  }));
+}
+
 function devDibujarUnionSuaveFinal(ctx, W, y){
   const c1 = devHexSeguro(DEV.f2?.fondoColor) || "#ffffff";
   const c2 = devHexSeguro(DEV.f2?.gradienteColor2) || c1;
@@ -4252,6 +4300,10 @@ texto.style.webkitTextStroke = "0.75px " + outlineF2;
 
   await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
   if (document.fonts?.ready) await document.fonts.ready;
+
+  // ✅ Esperar que el adorno esté realmente cargado antes de capturar Fase 3.
+  // Así html2canvas no calcula dimensiones con la imagen todavía pendiente.
+  await devEsperarImagenesNodo(n2);
 
   const cap1 = await html2canvas(n1, { backgroundColor: null, scale: 2, useCORS: true });
   const cap2 = await html2canvas(n2, { backgroundColor: null, scale: 2, useCORS: true });
