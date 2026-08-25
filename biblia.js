@@ -3955,8 +3955,10 @@ function sugerirFontSizeQueEntre(wrapper, elFront, elBack, maxPx = 64, minPx = 1
   const padX = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
   const padY = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0);
 
-  const maxW = Math.max(10, wrapper.clientWidth - padX);
-  const maxH = Math.max(10, wrapper.clientHeight - padY);
+  // El texto queda a 3 px del wrapper por cada lado.
+  const bordeTexto = 3;
+  const maxW = Math.max(10, wrapper.clientWidth - padX - (bordeTexto * 2));
+  const maxH = Math.max(10, wrapper.clientHeight - padY - (bordeTexto * 2));
 
   // helper: aplica tamaño y revisa si entra
   const entra = (px) => {
@@ -4602,7 +4604,7 @@ function obtenerVersiculoSeleccionado() {
 
   const referencia = referenciaImagenEnOrden(items);
 
-  return (textos.join(" ") + "\n\n▪ " + referencia).trim();
+  return (textos.join(" ") + "\n▪ " + referencia).trim();
 }
 
 // ================= ⭐ texto libre  =======================
@@ -6880,7 +6882,7 @@ function bibliaWrapperVisualDataUrl(op, color){
   const ctx = c.getContext("2d");
   ctx.clearRect(0, 0, size, size);
 
-  bibliaRoundRectPath(ctx, 0, 0, size, size, 145);
+  bibliaRoundRectPath(ctx, 0, 0, size, size, 210);
   ctx.clip();
 
   // Centro visible, bordes más suaves.
@@ -6939,6 +6941,16 @@ function aplicarWrapperBibliaImagen(wrapper, op, color){
 
   const raw = Math.max(0, Math.min(1, Number(op) || 0));
 
+  /*
+    El wrapper conserva TODO su tamaño exterior.
+    El texto aprovecha casi toda el área útil: solamente dejamos
+    3 px reales entre el texto y el borde interior.
+  */
+  wrapper.style.padding = "0px";
+  wrapper.style.boxSizing = "border-box";
+  wrapper.style.borderRadius = "34px";
+  wrapper.style.overflow = "hidden";
+
   wrapper.style.backgroundColor = "transparent";
   wrapper.style.boxShadow = "none";
   wrapper.style.backgroundRepeat = "no-repeat";
@@ -6981,6 +6993,25 @@ previewTexto.style.placeItems = "center";
 previewTextoBack.style.placeItems = "center";
 previewTexto.style.textAlign = "center";
 previewTextoBack.style.textAlign = "center";
+
+/*
+  Máximo aprovechamiento del wrapper:
+  previewTexto y previewTextoBack están superpuestos.
+  Dejamos únicamente 3 px por cada lado.
+*/
+wrapper.style.padding = "0px";
+wrapper.style.boxSizing = "border-box";
+wrapper.style.borderRadius = "34px";
+wrapper.style.overflow = "hidden";
+
+[previewTexto, previewTextoBack].forEach(el => {
+  el.style.inset = "3px";
+  el.style.width = "auto";
+  el.style.height = "auto";
+  el.style.padding = "0";
+  el.style.margin = "0";
+  el.style.boxSizing = "border-box";
+});
   
   // ================= Fondo =================
   // ✅ Modo imagen conserva el fondo viejo; modo diseño usa color/degradado + capas.
@@ -7035,11 +7066,17 @@ const innerBack  = previewTextoBack.querySelector(".preview-text-inner");
 
 if (innerFront) {
   innerFront.style.width = "100%";
+  innerFront.style.maxWidth = "100%";
   innerFront.style.margin = "0";
+  innerFront.style.padding = "0";
+  innerFront.style.boxSizing = "border-box";
 }
 if (innerBack) {
   innerBack.style.width = "100%";
+  innerBack.style.maxWidth = "100%";
   innerBack.style.margin = "0";
+  innerBack.style.padding = "0";
+  innerBack.style.boxSizing = "border-box";
 }
   
 // ================= Color / Outline =================
@@ -7163,6 +7200,10 @@ if (wrapperTexto) {
   wrapperTexto.style.alignItems = "center";
   wrapperTexto.style.justifyContent = "center";
   wrapperTexto.style.textAlign = "center";
+  wrapperTexto.style.padding = "0px";
+  wrapperTexto.style.boxSizing = "border-box";
+  wrapperTexto.style.borderRadius = "34px";
+  wrapperTexto.style.overflow = "hidden";
 }
 
 [t1, t2].forEach(t => {
@@ -7173,6 +7214,14 @@ if (wrapperTexto) {
   t.style.textAlign = "center";
   t.style.alignItems = "center";
   t.style.justifyItems = "center";
+
+  // Exactamente el mismo margen interior que en la vista previa.
+  t.style.inset = "3px";
+  t.style.width = "auto";
+  t.style.height = "auto";
+  t.style.padding = "0";
+  t.style.margin = "0";
+  t.style.boxSizing = "border-box";
 });
 
   const fondoUsable = fondoFinalBlobUrl || fondoFinal;
