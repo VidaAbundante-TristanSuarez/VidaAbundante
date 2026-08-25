@@ -6959,8 +6959,9 @@ function aplicarWrapperBibliaImagen(wrapper, op, color, partes = {}){
     wrapper.style.borderRadius = "0";
     wrapper.style.overflow = "visible";
     wrapper.style.setProperty("--va-biblia-resaltado", resaltado);
-    wrapper.style.setProperty("--va-biblia-line-pad", raw > 0 ? "3px 8px" : "0px");
-    wrapper.style.setProperty("--va-biblia-line-radius", raw > 0 ? "14px" : "0px");
+    wrapper.style.setProperty("--va-biblia-line-pad", raw > 0 ? "2px 7px" : "0px");
+    wrapper.style.setProperty("--va-biblia-cita-pad", raw > 0 ? "2px 9px" : "0px");
+    wrapper.style.setProperty("--va-biblia-line-radius", raw > 0 ? "999px" : "0px");
 
     [
       partes.innerFront,
@@ -6987,6 +6988,7 @@ function aplicarWrapperBibliaImagen(wrapper, op, color, partes = {}){
   wrapper.style.backgroundSize = "100% 100%";
   wrapper.style.removeProperty("--va-biblia-resaltado");
   wrapper.style.removeProperty("--va-biblia-line-pad");
+  wrapper.style.removeProperty("--va-biblia-cita-pad");
   wrapper.style.removeProperty("--va-biblia-line-radius");
 
   if (raw <= 0) {
@@ -7039,15 +7041,27 @@ if (esCrearBiblia) {
 
   previewTexto.innerHTML = `
     <div class="preview-text-center preview-biblia-stack">
-      <span class="preview-text-inner preview-biblia-linea">${cuerpoSeguro}</span>
-      ${refSeguro ? `<span class="preview-text-ref preview-biblia-cita">${refSeguro}</span>` : ``}
+      <div class="preview-biblia-cuerpo-wrap">
+        <span class="preview-text-inner preview-biblia-linea">${cuerpoSeguro}</span>
+      </div>
+      ${refSeguro ? `
+        <div class="preview-biblia-cita-wrap">
+          <span class="preview-text-ref preview-biblia-cita">${refSeguro}</span>
+        </div>
+      ` : ``}
     </div>
   `;
 
   previewTextoBack.innerHTML = `
     <div class="preview-text-center preview-biblia-stack" aria-hidden="true">
-      <span class="preview-text-inner preview-biblia-linea">${cuerpoSeguro}</span>
-      ${refSeguro ? `<span class="preview-text-ref preview-biblia-cita">${refSeguro}</span>` : ``}
+      <div class="preview-biblia-cuerpo-wrap">
+        <span class="preview-text-inner preview-biblia-linea">${cuerpoSeguro}</span>
+      </div>
+      ${refSeguro ? `
+        <div class="preview-biblia-cita-wrap">
+          <span class="preview-text-ref preview-biblia-cita">${refSeguro}</span>
+        </div>
+      ` : ``}
     </div>
   `;
 } else {
@@ -7136,6 +7150,10 @@ const centerFront = previewTexto.querySelector(".preview-text-center");
 const centerBack  = previewTextoBack.querySelector(".preview-text-center");
 const refFront = previewTexto.querySelector(".preview-text-ref");
 const refBack  = previewTextoBack.querySelector(".preview-text-ref");
+const cuerpoWrapFront = previewTexto.querySelector(".preview-biblia-cuerpo-wrap");
+const cuerpoWrapBack  = previewTextoBack.querySelector(".preview-biblia-cuerpo-wrap");
+const citaWrapFront = previewTexto.querySelector(".preview-biblia-cita-wrap");
+const citaWrapBack  = previewTextoBack.querySelector(".preview-biblia-cita-wrap");
 
 [centerFront, centerBack].forEach(center => {
   if (!center) return;
@@ -7151,8 +7169,20 @@ const refBack  = previewTextoBack.querySelector(".preview-text-ref");
     center.style.flexDirection = "column";
     center.style.alignItems = "center";
     center.style.justifyContent = "center";
-    center.style.gap = ".85em";
+    center.style.gap = ".72em";
   }
+});
+
+[cuerpoWrapFront, cuerpoWrapBack, citaWrapFront, citaWrapBack].forEach(w => {
+  if (!w) return;
+  w.style.display = "block";
+  w.style.width = "100%";
+  w.style.maxWidth = "100%";
+  w.style.margin = "0";
+  w.style.padding = "0";
+  w.style.textAlign = "center";
+  w.style.background = "transparent";
+  w.style.boxSizing = "border-box";
 });
 
 [innerFront, innerBack].forEach(inner => {
@@ -7353,7 +7383,7 @@ if (wrapperTexto) {
     center.style.flexDirection = "column";
     center.style.alignItems = "center";
     center.style.justifyContent = "center";
-    center.style.gap = ".85em";
+    center.style.gap = ".72em";
   }
 
   const inner = t.querySelector(".preview-text-inner");

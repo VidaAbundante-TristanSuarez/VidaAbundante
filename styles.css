@@ -834,7 +834,9 @@ html, body {
   z-index: 2;
 }
 
-/* Crear Imagen Biblia: resaltador limpio por renglón, sin wrapper grande ni manchas */
+/* Crear Imagen Biblia: resaltador REAL por renglón.
+   El fondo se pinta sobre un SPAN inline dentro de un contenedor,
+   así una última línea corta NO llena todo el ancho. */
 #previewTexto .preview-text-center,
 #previewTextoBack .preview-text-center{
   width:100%;
@@ -848,22 +850,41 @@ html, body {
 .preview-biblia-stack{
   display:flex;
   flex-direction:column;
-  align-items:center;
+  align-items:stretch;
   justify-content:center;
-  gap:.85em;
+  gap:.72em;
+  width:100%;
+  max-width:100%;
 }
 
+/* Estos son sólo contenedores de alineación.
+   NO llevan fondo. */
+.preview-biblia-cuerpo-wrap,
+.preview-biblia-cita-wrap{
+  display:block;
+  width:100%;
+  max-width:100%;
+  margin:0;
+  padding:0;
+  text-align:center;
+  background:transparent !important;
+}
+
+/* El resaltado vive acá.
+   Como es inline, box-decoration-break:clone crea una cápsula
+   independiente para CADA renglón real. */
 .preview-biblia-linea,
 .preview-biblia-cita{
   display:inline;
   width:auto;
   max-width:100%;
-  margin:0 auto;
-  padding:var(--va-biblia-line-pad, 3px 8px);
-  border-radius:var(--va-biblia-line-radius, 14px);
+  margin:0;
+  padding:var(--va-biblia-line-pad, 2px 7px);
+  border-radius:var(--va-biblia-line-radius, 999px);
   line-height:1.28;
   white-space:pre-wrap;
-  word-break:break-word;
+  overflow-wrap:anywhere;
+  word-break:normal;
   box-decoration-break:clone;
   -webkit-box-decoration-break:clone;
 }
@@ -871,6 +892,8 @@ html, body {
 .preview-biblia-cita{
   line-height:1.18;
   font-size:.95em;
+  padding:var(--va-biblia-cita-pad, 2px 9px);
+  border-radius:999px;
 }
 
 #previewTexto .preview-biblia-linea,
