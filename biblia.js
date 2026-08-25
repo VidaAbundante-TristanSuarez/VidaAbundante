@@ -7176,9 +7176,9 @@ const citaWrapBack  = previewTextoBack.querySelector(".preview-biblia-cita-wrap"
 [cuerpoWrapFront, cuerpoWrapBack, citaWrapFront, citaWrapBack].forEach(w => {
   if (!w) return;
   w.style.display = "block";
-  w.style.width = "100%";
+  w.style.width = esCrearBiblia ? "fit-content" : "100%";
   w.style.maxWidth = "100%";
-  w.style.margin = "0";
+  w.style.margin = esCrearBiblia ? "0 auto" : "0";
   w.style.padding = "0";
   w.style.textAlign = "center";
   w.style.background = "transparent";
@@ -7200,7 +7200,7 @@ const citaWrapBack  = previewTextoBack.querySelector(".preview-biblia-cita-wrap"
 
 [refFront, refBack].forEach(refEl => {
   if (!refEl) return;
-  refEl.style.display = "inline";
+  refEl.style.display = "inline-block";
   refEl.style.width = "auto";
   refEl.style.maxWidth = "100%";
   refEl.style.margin = "0 auto";
@@ -7285,19 +7285,41 @@ if (!isNaN(op)) {
   bgColor = `rgba(${r}, ${g}, ${b}, ${Math.max(0, Math.min(1, op))})`;
 }
 
-if (esCrearBiblia && op > 0) {
-  // Con resaltador por renglón no usamos la capa de contorno, porque generaba manchas blancas.
-  previewTextoBack.style.color = "transparent";
-  previewTextoBack.style.WebkitTextStroke = "0px";
-  previewTextoBack.style.webkitTextFillColor = "transparent";
-  previewTextoBack.style.textShadow = "none";
-  previewTextoBack.style.filter = "none";
-} else {
-  previewTextoBack.style.color = outlineColor;
-  previewTextoBack.style.WebkitTextStroke = `${strokePx}px ${outlineColor}`;
-  previewTextoBack.style.webkitTextFillColor = "transparent";
-  previewTextoBack.style.textShadow = textShadowLegibleBiblia(color, outlineScale, outlineColor);
-}
+// ✅ Contorno SIEMPRE activo.
+// El resaltado vive en la capa BACK, por debajo del texto,
+// así no tapa el contorno ni crea manchas.
+// Si el texto es oscuro -> contorno claro.
+// Si el texto es claro -> contorno oscuro.
+// Si el usuario eligió un contorno manual, se respeta.
+const sombraContorno = textShadowLegibleBiblia(
+  color,
+  outlineScale,
+  outlineColor
+);
+
+previewTextoBack.style.color = outlineColor;
+previewTextoBack.style.WebkitTextStroke = `${strokePx}px ${outlineColor}`;
+previewTextoBack.style.webkitTextFillColor = "transparent";
+previewTextoBack.style.textShadow = sombraContorno;
+previewTextoBack.style.filter = "none";
+
+[innerBack, refBack].forEach(el => {
+  if (!el) return;
+  el.style.color = outlineColor;
+  el.style.WebkitTextStroke = `${strokePx}px ${outlineColor}`;
+  el.style.webkitTextFillColor = "transparent";
+  el.style.textShadow = sombraContorno;
+  el.style.paintOrder = "stroke fill";
+});
+
+[innerFront, refFront].forEach(el => {
+  if (!el) return;
+  el.style.color = color;
+  el.style.WebkitTextStroke = "0px";
+  el.style.webkitTextFillColor = color;
+  el.style.textShadow = "none";
+  el.style.paintOrder = "stroke fill";
+});
 
 aplicarWrapperBibliaImagen(wrapper, op, opColor, {
   innerFront,
@@ -7386,6 +7408,21 @@ if (wrapperTexto) {
     center.style.gap = ".72em";
   }
 
+  const cuerpoWrap = t.querySelector(".preview-biblia-cuerpo-wrap");
+  const citaWrap = t.querySelector(".preview-biblia-cita-wrap");
+
+  [cuerpoWrap, citaWrap].forEach(w => {
+    if (!w) return;
+    w.style.display = "block";
+    w.style.width = "fit-content";
+    w.style.maxWidth = "100%";
+    w.style.margin = "0 auto";
+    w.style.padding = "0";
+    w.style.textAlign = "center";
+    w.style.boxSizing = "border-box";
+    w.style.background = "transparent";
+  });
+
   const inner = t.querySelector(".preview-text-inner");
   if (inner) {
     inner.style.display = "inline";
@@ -7399,7 +7436,7 @@ if (wrapperTexto) {
 
   const refEl = t.querySelector(".preview-text-ref");
   if (refEl) {
-    refEl.style.display = "inline";
+    refEl.style.display = "inline-block";
     refEl.style.width = "auto";
     refEl.style.maxWidth = "100%";
     refEl.style.margin = "0 auto";
