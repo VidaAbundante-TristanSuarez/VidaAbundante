@@ -3891,7 +3891,7 @@ const layoutClase = subidosClaseLayoutPredicaExport(primeraTexto, introduccion, 
 
   const node = document.createElement("article");
   node.id = "subidosExportPredicaFinal";
-node.className = `subidos-export-template ${layoutClase}`;
+node.className = `subidos-export-template ${layoutClase} ${tieneArchivoHero ? "con-archivo" : "sin-archivo"}`;
   node.style.setProperty("--grow-primera", repartoFlexible.growPrimera);
 node.style.setProperty("--grow-textos", repartoFlexible.growTextos);
 node.style.setProperty("--gap-general", `${repartoFlexible.gapGeneral}px`);
@@ -4085,6 +4085,49 @@ color:#111;
   font-weight:800;
 }
 
+/* ✅ Sin archivo/foto: datos de la iglesia compactos, sin gastar 168px de alto */
+#subidosExportPredicaFinal.sin-archivo .subidos-export-hero{
+  flex:0 0 auto !important;
+  min-height:0 !important;
+  display:block !important;
+}
+
+#subidosExportPredicaFinal.sin-archivo .subidos-export-brand-wrap{
+  width:100% !important;
+  min-height:0 !important;
+  display:block !important;
+}
+
+#subidosExportPredicaFinal.sin-archivo .subidos-export-brand-box{
+  min-height:0 !important;
+  padding:7px 12px !important;
+  border-radius:18px;
+  flex-direction:row;
+  flex-wrap:wrap;
+  align-items:center;
+  justify-content:center;
+  gap:2px 9px;
+}
+
+#subidosExportPredicaFinal.sin-archivo .subidos-export-iglesia{
+  font-size:13.5px;
+  line-height:1.08;
+}
+
+#subidosExportPredicaFinal.sin-archivo .subidos-export-address,
+#subidosExportPredicaFinal.sin-archivo .subidos-export-meeting{
+  margin-top:0;
+  font-size:11.2px;
+  line-height:1.08;
+}
+
+#subidosExportPredicaFinal.sin-archivo .subidos-export-address::before,
+#subidosExportPredicaFinal.sin-archivo .subidos-export-meeting::before{
+  content:"•";
+  margin-right:8px;
+  opacity:.65;
+}
+
                 /* ===== PRIMERA CITA DESTACADA ===== */
 
       #subidosExportPredicaFinal .subidos-export-primera-box{
@@ -4104,15 +4147,16 @@ color:#111;
       }
 
       #subidosExportPredicaFinal .subidos-export-primera-box.larga{
-        padding:12px 18px;
+        padding:8px 12px;
+        justify-content:flex-start;
       }
 
       #subidosExportPredicaFinal .subidos-export-primera-box.media{
-        padding:18px 24px;
+        padding:12px 16px;
       }
 
       #subidosExportPredicaFinal .subidos-export-primera-box.breve{
-        padding:24px 34px;
+        padding:16px 22px;
       }
 
       #subidosExportPredicaFinal .subidos-export-primera-texto{
@@ -4345,28 +4389,37 @@ color:#111;
 
     <div class="subidos-export-divider"></div>
 
-<div class="subidos-export-hero" ${tieneArchivoHero ? "" : `style="display:flex;"`}>
+<div class="subidos-export-hero">
   ${archivoHeroHtml}
 
-  <div class="subidos-export-brand-wrap" ${tieneArchivoHero ? "" : `style="width:100%;"`}>
+  <div class="subidos-export-brand-wrap">
         <div class="subidos-export-brand-box">
           <div class="subidos-export-iglesia">
-            Iglesia Cristiana de<br>
-            la Vida Abundante
+            ${tieneArchivoHero
+              ? `Iglesia Cristiana de<br>la Vida Abundante`
+              : `Iglesia Cristiana de la Vida Abundante`}
           </div>
 
           <div class="subidos-export-address">
-            Roca 123,<br>
-            Tristan Suarez
+            ${tieneArchivoHero
+              ? `Roca 123,<br>Tristan Suarez`
+              : `Roca 123, Tristan Suarez`}
           </div>
 
           <div class="subidos-export-meeting">
-            Reunión<br>
-            Domingo 10hs
+            ${tieneArchivoHero
+              ? `Reunión<br>Domingo 10hs`
+              : `Reunión Domingo 10hs`}
           </div>
         </div>
       </div>
     </div>
+
+${tituloPredica ? `
+  <div class="subidos-export-predica-titulo">
+    ${escaparHtml(tituloPredica)}
+  </div>
+` : ``}
 
     <div class="subidos-export-primera-box ${primeraClase}">
       ${primeraTexto ? `
@@ -4385,12 +4438,6 @@ color:#111;
         </div>
       ` : ``}
     </div>
-
-${tituloPredica ? `
-  <div class="subidos-export-predica-titulo">
-    ${escaparHtml(tituloPredica)}
-  </div>
-` : ``}
 
     ${introduccion ? `
   <div class="subidos-export-text-row intro-row">
@@ -4636,7 +4683,7 @@ function subidosSetMaxPrimeraExport(box, textEl, refEl) {
 function subidosAjustarLayoutInteligenteExportPredica(node) {
   if (!node) return;
 
-  const GAP = 5;
+  const GAP = 4;
 
   const primeraBox = node.querySelector(".subidos-export-primera-box");
   const primeraText = node.querySelector(".subidos-export-primera-texto");
@@ -4681,40 +4728,55 @@ function subidosAjustarLayoutInteligenteExportPredica(node) {
   });
 
   if (primeraBox) {
-    primeraBox.style.gap = "7px";
+    primeraBox.style.gap = "5px";
+
+    if (primeraBox.classList.contains("larga")) {
+      primeraBox.style.justifyContent = "flex-start";
+      primeraBox.style.padding = "7px 10px";
+    } else if (primeraBox.classList.contains("media")) {
+      primeraBox.style.padding = "10px 14px";
+    } else {
+      primeraBox.style.padding = "14px 18px";
+    }
   }
 
   if (primeraText) {
     primeraText.style.fontSize = "15px";
-    primeraText.style.lineHeight = "1.12";
+    primeraText.style.lineHeight = "1.10";
+  }
+
+  if (primeraRef) {
+    primeraRef.style.padding = "4px 13px";
   }
 
   if (introText) {
     introText.style.fontSize = "11.8px";
-    introText.style.lineHeight = "1.12";
+    introText.style.lineHeight = "1.10";
     introText.style.textAlign = "left";
   }
 
   if (noteText) {
     noteText.style.fontSize = "11.8px";
-    noteText.style.lineHeight = "1.12";
+    noteText.style.lineHeight = "1.10";
     noteText.style.textAlign = "left";
   }
 
   if (otrasText) {
     otrasText.style.fontSize = "12px";
-    otrasText.style.lineHeight = "1.14";
+    otrasText.style.lineHeight = "1.12";
     otrasText.style.textAlign = "center";
     otrasText.style.justifyContent = "center";
   }
 
-  // Si el primer versículo queda muy alto, baja un poquito antes de medir el alto final.
+  // Si el primer bloque es muy largo, achicamos solo lo necesario
+  // antes de medir el alto total. Así no se desperdicia espacio.
   if (primeraText && primeraBox) {
     let fontSize = parseFloat(window.getComputedStyle(primeraText).fontSize || "15");
+    const limiteAlto = primeraBox.classList.contains("larga") ? 170 : 190;
 
     while (
-      fontSize > 11.2 &&
-      primeraText.scrollHeight > 190
+      fontSize > 10.2 &&
+      primeraText.scrollHeight > limiteAlto
     ) {
       fontSize -= 0.2;
       primeraText.style.fontSize = fontSize + "px";
@@ -4732,30 +4794,32 @@ function subidosAjustarAltoFinalExportPredica(node) {
   if (!node) return;
 
   const exportW = subidosAnchoExportPredica();
-
-  // Máximo: historia 9:16.
   const MAX_H = Math.round((exportW * 16) / 9);
-
-  // Mínimo: no lo dejamos demasiado petiso.
   const MIN_H = 500;
 
-  const GAP = 5;
+  let gapActual = 4;
 
   node.style.height = "auto";
   node.style.minHeight = "0";
-  node.style.gap = GAP + "px";
+  node.style.gap = gapActual + "px";
   node.style.justifyContent = "flex-start";
 
-  const textosReducibles = [
-    ...node.querySelectorAll(`
-      .subidos-export-primera-texto,
-      .subidos-export-intro,
-      .subidos-export-note,
-      .subidos-export-otras-citas
-    `)
-  ];
-
+  const primeraText = node.querySelector(".subidos-export-primera-texto");
+  const primeraBox = node.querySelector(".subidos-export-primera-box");
+  const primeraRef = node.querySelector(".subidos-export-primera-ref");
+  const introText = node.querySelector(".subidos-export-intro");
+  const noteText = node.querySelector(".subidos-export-note");
+  const otrasText = node.querySelector(".subidos-export-otras-citas");
   const hero = node.querySelector(".subidos-export-hero");
+  const titulo = node.querySelector(".subidos-export-predica-titulo");
+  const esSinArchivo = node.classList.contains("sin-archivo");
+
+  const textosReducibles = [
+    primeraText,
+    introText,
+    noteText,
+    otrasText
+  ].filter(Boolean);
 
   const medirAltoNatural = () => {
     const cs = window.getComputedStyle(node);
@@ -4773,47 +4837,100 @@ function subidosAjustarAltoFinalExportPredica(node) {
       return total + Math.ceil(el.getBoundingClientRect().height || el.offsetHeight || 0);
     }, 0);
 
-    const gaps = Math.max(0, hijos.length - 1) * GAP;
+    const gaps = Math.max(0, hijos.length - 1) * gapActual;
 
-    return Math.ceil(paddingY + altoHijos + gaps + 10);
+    return Math.ceil(paddingY + altoHijos + gaps + 6);
   };
 
   let altoNatural = medirAltoNatural();
 
-  // Si entra en menos que 9:16, usamos el alto real y NO recortamos.
   if (altoNatural <= MAX_H) {
-    const altoFinal = subidosClampNumero(altoNatural, MIN_H, MAX_H);
-    node.style.height = altoFinal + "px";
+    node.style.height = subidosClampNumero(altoNatural, MIN_H, MAX_H) + "px";
     return;
   }
 
-  // Si no entra, primero reducimos un poco fuentes.
-  for (let i = 0; i < 18 && altoNatural > MAX_H; i++) {
+  // 1) Reducimos tipografías gradualmente. Priorizamos conservar
+  // la nota final completa antes que dejar aire innecesario.
+  for (let i = 0; i < 38 && altoNatural > MAX_H; i++) {
     textosReducibles.forEach(el => {
       const actual = parseFloat(window.getComputedStyle(el).fontSize || "12");
-      const min = el.classList.contains("subidos-export-primera-texto") ? 10.4 : 9.8;
+      const esPrimera = el === primeraText;
+      const min = esPrimera ? 9.4 : 8.9;
+      const paso = esPrimera ? 0.22 : 0.16;
 
       if (actual > min) {
-        el.style.fontSize = Math.max(min, actual - 0.25) + "px";
+        el.style.fontSize = Math.max(min, actual - paso) + "px";
       }
     });
 
     altoNatural = medirAltoNatural();
   }
 
-  // Si todavía no entra, bajamos un poco el bloque de foto + iglesia.
-  if (altoNatural > MAX_H && hero) {
+  // 2) Con foto/archivo, si aún no entra achicamos el hero.
+  // Sin archivo ya es compacto por CSS y no ocupa 168px.
+  if (altoNatural > MAX_H && hero && !esSinArchivo) {
     let heroH = Math.round(hero.getBoundingClientRect().height || 168);
 
-    while (heroH > 142 && altoNatural > MAX_H) {
+    while (heroH > 112 && altoNatural > MAX_H) {
       heroH -= 4;
       hero.style.flexBasis = heroH + "px";
       altoNatural = medirAltoNatural();
     }
   }
 
-  const altoFinal = subidosClampNumero(altoNatural, MIN_H, MAX_H);
-  node.style.height = altoFinal + "px";
+  // 3) Último ajuste de espacios antes de permitir cualquier recorte.
+  if (altoNatural > MAX_H) {
+    gapActual = 3;
+    node.style.gap = gapActual + "px";
+    node.style.padding = "9px 10px 10px";
+
+    if (primeraBox) {
+      primeraBox.style.padding = "5px 8px";
+      primeraBox.style.gap = "4px";
+    }
+
+    if (primeraRef) {
+      primeraRef.style.padding = "3px 10px";
+      primeraRef.style.fontSize = "11.5px";
+    }
+
+    node.querySelectorAll(".subidos-export-text-box").forEach(box => {
+      box.style.padding = "6px 9px";
+    });
+
+    const otrasBox = node.querySelector(".subidos-export-otras-citas-box");
+    if (otrasBox) otrasBox.style.padding = "6px 9px";
+
+    if (titulo) {
+      titulo.style.padding = "4px 8px";
+      titulo.style.fontSize = "15.5px";
+    }
+
+    altoNatural = medirAltoNatural();
+  }
+
+  // 4) Seguridad para prédicas excepcionalmente largas.
+  // Seguimos bajando principalmente el bloque bíblico para que la
+  // nota final no desaparezca por overflow del canvas.
+  for (let i = 0; i < 30 && altoNatural > MAX_H; i++) {
+    if (primeraText) {
+      const actual = parseFloat(window.getComputedStyle(primeraText).fontSize || "10");
+      if (actual > 8.5) {
+        primeraText.style.fontSize = Math.max(8.5, actual - 0.18) + "px";
+      }
+    }
+
+    [introText, noteText, otrasText].filter(Boolean).forEach(el => {
+      const actual = parseFloat(window.getComputedStyle(el).fontSize || "9");
+      if (actual > 8.4) {
+        el.style.fontSize = Math.max(8.4, actual - 0.08) + "px";
+      }
+    });
+
+    altoNatural = medirAltoNatural();
+  }
+
+  node.style.height = subidosClampNumero(altoNatural, MIN_H, MAX_H) + "px";
 }
 
 async function subidosConvertirImagenesExportConProxy(node) {
@@ -7111,7 +7228,23 @@ if (esPredica) {
     datosBase
   );
 
-  if (necesitaRegenerarShare) {
+  let regenerarShare = necesitaRegenerarShare;
+
+  // ✅ Al EDITAR una prédica que ya tiene imagen, preguntamos.
+  // Una prédica nueva (o una vieja sin imagen) se genera automáticamente.
+  if (
+    necesitaRegenerarShare &&
+    subidosEditandoId &&
+    String(actual.shareUrl || "").trim()
+  ) {
+    regenerarShare = window.confirm(
+      "Cambiaste datos de la prédica que pueden modificar la imagen para compartir.\n\n" +
+      "¿Querés regenerar la imagen ahora?\n\n" +
+      "Aceptar = regenerar imagen\nCancelar = conservar la imagen actual"
+    );
+  }
+
+  if (regenerarShare) {
     const share =
       await subidosCrearSharePredicaAlGuardar(
         idFinal,
