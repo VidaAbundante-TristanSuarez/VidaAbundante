@@ -5,6 +5,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ================= MODAL 3: AUDIO (BIBLIA) =================
   let __audioTextoOriginal = "";
+  let __audioTextoEditado = false;
 
   // ✅ URL Worker: el Worker llama al TTS con arpa
   const AUDIO_WEBAPP_URL = "https://subir-imagen-r2.vidaabundante-tristansuarez.workers.dev";
@@ -545,13 +546,18 @@ async function audioPedirPredicaCompletaTTS({
     texto: String(texto || "").trim(),
     segmentos: Array.isArray(segmentos) ? segmentos : [],
     voiceNameScripture: AUDIO_VOZ_DEVOCIONAL,
-    voiceNameComment: AUDIO_VOZ_COMENTARIO_PREDICA
+    voiceNameComment: AUDIO_VOZ_COMENTARIO_PREDICA,
+
+    // Evita reutilizaciones accidentales de una generación anterior.
+    requestId: `${Date.now()}-${Math.random().toString(36).slice(2)}`
   };
 
   const r = await fetch(AUDIO_WEBAPP_URL, {
     method: "POST",
+    cache: "no-store",
     headers: {
-      "Content-Type": "application/json"
+      "Content-Type": "application/json",
+      "Cache-Control": "no-cache"
     },
     body: JSON.stringify(body)
   });
@@ -730,6 +736,9 @@ function audioPredicaNormalizarParaComparar(txt = "") {
 function audioPredicaTextoFueEditado(textoActual = "") {
   if (audioContextoActual() !== "predica") return false;
 
+  // Si el usuario tocó el textarea, para Regenerar ese texto es la fuente real.
+  if (__audioTextoEditado) return true;
+
   const actual = audioPredicaNormalizarParaComparar(textoActual);
   const original = audioPredicaNormalizarParaComparar(
     window.__AUDIO_PREDICA_TEXTO || ""
@@ -801,15 +810,22 @@ function audioHookLimpiarCacheAlEditarTextarea(ta) {
   ta.__audioClearCacheHooked = true;
 
   ta.addEventListener("input", () => {
-    audioResetAudioGeneradoActual();
-
-    const estado = document.getElementById("audioEstado");
     const contexto = audioContextoActual();
 
-    if (estado && contexto === "predica") {
-      estado.textContent =
-        "✏️ Texto modificado. Tocá escuchar previa para generar un audio nuevo.";
+    /*
+      PRÉDICA:
+      mientras el usuario corrige el texto NO frenamos el audio,
+      NO borramos el src y NO cambiamos el mensaje de estado.
+      Solo marcamos que, cuando toque Regenerar/Escucha previa,
+      hay que crear un audio nuevo desde el textarea actual.
+    */
+    if (contexto === "predica") {
+      __audioTextoEditado = true;
+      return;
     }
+
+    // Biblia / devocionales conservan el comportamiento anterior.
+    audioResetAudioGeneradoActual();
   });
 }
 
@@ -845,6 +861,9 @@ audioLimpiarEstadoViejoSiCambioTexto(textoActual);
   } else if (contexto === "biblia") {
     ta.value = "";
   }
+
+  // Recién abierto: todavía no hay cambios manuales en este textarea.
+  __audioTextoEditado = false;
 
   if (estado) {
     estado.textContent =
@@ -925,7 +944,9 @@ const contexto = audioContextoActual();
   const cache = window.__audioCacheLocal || {};
 
   const puedeReutilizar =
+    !__audioTextoEditado &&
     cache.texto === textoLimpio &&
+    String(cache.textoOriginal || "").trim() === texto &&
     cache.voiceName === voiceName &&
     cache.contexto === contexto &&
     cache.audioBase64;
@@ -1102,6 +1123,9 @@ audioBase64Final =
       contexto,
       audioBase64: data.audioBase64
     };
+
+    // Este audio corresponde exactamente al texto que se acaba de generar.
+    __audioTextoEditado = false;
 
     const bytes = Uint8Array.from(
       atob(data.audioBase64),
@@ -1502,6 +1526,14 @@ window.finalizarYSubirAudio =
           origen === "predica"
             ? "⚠️ La prédica no tiene texto para el audio."
             : "⚠️ Escribí o pegá el texto del audio.";
+      }
+      return;
+    }
+
+    if (origen === "predica" && __audioTextoEditado) {
+      if (estado) {
+        estado.textContent =
+          "⚠️ Terminaste de editar el texto. Tocá Regenerar y después Correcto.";
       }
       return;
     }

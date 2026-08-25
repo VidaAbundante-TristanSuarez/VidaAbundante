@@ -4139,10 +4139,10 @@ color:#111;
         border-radius:22px;
         display:flex;
         flex-direction:column;
-        align-items:center;
+        align-items:stretch;
         justify-content:center;
         gap:8px;
-        text-align:center;
+        text-align:left;
         overflow:hidden;
       }
 
@@ -4166,8 +4166,8 @@ color:#111;
         font-size:15px;
         line-height:1.14;
         font-weight:900;
-        text-align:center;
-        overflow-wrap:anywhere;
+        text-align:left;
+        overflow-wrap:break-word;
       }
 
       #subidosExportPredicaFinal.v1-grande .subidos-export-primera-texto,
@@ -4188,6 +4188,7 @@ color:#111;
         line-height:1;
         font-weight:900;
         white-space:nowrap;
+        align-self:center;
       }
 
       /* ===== INTRO + NOTA FINAL ===== */
