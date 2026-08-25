@@ -772,6 +772,26 @@ function audioSegmentosPredicaSeguros(textoActual = "", textoLimpio = "") {
       }));
     }
 
+    if (segmentosBase.length) {
+      return bloquesEditados.map((texto, i) => {
+        const indiceBase =
+          bloquesEditados.length === 1
+            ? 0
+            : Math.round(
+                (i * (segmentosBase.length - 1)) /
+                Math.max(1, bloquesEditados.length - 1)
+              );
+
+        return {
+          tipo:
+            segmentosBase[indiceBase]?.tipo === "comentario"
+              ? "comentario"
+              : "biblia",
+          texto
+        };
+      });
+    }
+
     const textoEditadoCompleto = audioPrepararTextoParaTTS(
       textoLimpio || textoActual || ""
     );
@@ -1015,13 +1035,6 @@ audioBase64Final =
     texto: textoPredicaSeguro,
     segmentos: segmentosPredica
   });
-
-// Desde este momento, ESTA versión del textarea es la versión de audio vigente.
-window.__AUDIO_PREDICA_TEXTO = texto;
-window.__AUDIO_PREDICA_SEGMENTOS = segmentosPredica.map(seg => ({
-  tipo: seg?.tipo === "comentario" ? "comentario" : "biblia",
-  texto: String(seg?.texto || "").trim()
-})).filter(seg => seg.texto);
 
     } else if (esDevocionalArpa) {
       /*
