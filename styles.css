@@ -1,5 +1,3 @@
-<style>
-
 /* ✅ Box sizing global: evita cortes y corrimientos */
 *,
 *::before,
@@ -834,6 +832,55 @@ html, body {
 /* Front = texto final */
 #previewTexto{
   z-index: 2;
+}
+
+/* Crear Imagen Biblia: resaltador limpio por renglón, sin wrapper grande ni manchas */
+#previewTexto .preview-text-center,
+#previewTextoBack .preview-text-center{
+  width:100%;
+  max-width:100%;
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  text-align:center;
+}
+
+.preview-biblia-stack{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:.85em;
+}
+
+.preview-biblia-linea,
+.preview-biblia-cita{
+  display:inline;
+  width:auto;
+  max-width:100%;
+  margin:0 auto;
+  padding:var(--va-biblia-line-pad, 3px 8px);
+  border-radius:var(--va-biblia-line-radius, 14px);
+  line-height:1.28;
+  white-space:pre-wrap;
+  word-break:break-word;
+  box-decoration-break:clone;
+  -webkit-box-decoration-break:clone;
+}
+
+.preview-biblia-cita{
+  line-height:1.18;
+  font-size:.95em;
+}
+
+#previewTexto .preview-biblia-linea,
+#previewTexto .preview-biblia-cita{
+  background:var(--va-biblia-resaltado, transparent);
+}
+
+#previewTextoBack .preview-biblia-linea,
+#previewTextoBack .preview-biblia-cita{
+  background:transparent !important;
 }
 
 @media (max-width: 480px) {
@@ -6853,5 +6900,3 @@ body:not(.va-header-biblia-oculto)
 #btnNavBiblia .text{
   line-height:1 !important;
 }
-
-</style> 

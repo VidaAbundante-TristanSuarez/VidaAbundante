@@ -6936,7 +6936,7 @@ function bibliaWrapperVisualDataUrl(op, color){
   return url;
 }
 
-function aplicarWrapperBibliaImagen(wrapper, op, color, innerBack = null){
+function aplicarWrapperBibliaImagen(wrapper, op, color, partes = {}){
   if (!wrapper) return;
 
   const raw = Math.max(0, Math.min(1, Number(op) || 0));
@@ -6946,13 +6946,11 @@ function aplicarWrapperBibliaImagen(wrapper, op, color, innerBack = null){
   wrapper.style.boxSizing = "border-box";
   wrapper.style.boxShadow = "none";
 
-  /*
-    CREAR IMAGEN BIBLIA:
-    ya no dibujamos un wrapper grande detrás de todo el texto.
-    El mismo control de color/opacidad funciona como resaltador
-    puntual de cada renglón y de la cita, de forma prolija.
-  */
   if (esCrearBiblia) {
+    const resaltado = raw > 0
+      ? bibliaRgba(color || "#000000", raw)
+      : "transparent";
+
     wrapper.style.backgroundColor = "transparent";
     wrapper.style.backgroundImage = "none";
     wrapper.style.backgroundRepeat = "no-repeat";
@@ -6960,53 +6958,36 @@ function aplicarWrapperBibliaImagen(wrapper, op, color, innerBack = null){
     wrapper.style.backgroundSize = "100% 100%";
     wrapper.style.borderRadius = "0";
     wrapper.style.overflow = "visible";
+    wrapper.style.setProperty("--va-biblia-resaltado", resaltado);
+    wrapper.style.setProperty("--va-biblia-line-pad", raw > 0 ? "3px 8px" : "0px");
+    wrapper.style.setProperty("--va-biblia-line-radius", raw > 0 ? "14px" : "0px");
 
-    const refBack = previewTextoBack?.querySelector?.(".preview-text-ref");
-
-    const resaltado = raw > 0
-      ? bibliaRgba(color || "#000000", raw)
-      : "transparent";
-
-    if (innerBack) {
-      innerBack.style.display = "inline";
-      innerBack.style.width = "auto";
-      innerBack.style.maxWidth = "100%";
-      innerBack.style.margin = "0 auto";
-      innerBack.style.padding = raw > 0 ? "2px 5px" : "0";
-      innerBack.style.boxSizing = "border-box";
-
-      // Clona el fondo en cada fragmento visual cuando el texto salta de línea.
-      innerBack.style.boxDecorationBreak = "clone";
-      innerBack.style.webkitBoxDecorationBreak = "clone";
-
-      innerBack.style.background = resaltado;
-      innerBack.style.borderRadius = raw > 0 ? "12px" : "0";
-      innerBack.style.boxShadow = "none";
-    }
-
-    if (refBack) {
-      refBack.style.display = "inline-block";
-      refBack.style.margin = "0 auto";
-      refBack.style.padding = raw > 0 ? "1px 5px" : "0";
-      refBack.style.boxSizing = "border-box";
-      refBack.style.background = resaltado;
-      refBack.style.borderRadius = raw > 0 ? "12px" : "0";
-      refBack.style.boxShadow = "none";
-    }
+    [
+      partes.innerFront,
+      partes.innerBack,
+      partes.refFront,
+      partes.refBack
+    ].forEach(el => {
+      if (!el) return;
+      el.style.boxSizing = "border-box";
+      el.style.boxShadow = "none";
+      el.style.boxDecorationBreak = "clone";
+      el.style.webkitBoxDecorationBreak = "clone";
+    });
 
     return;
   }
 
-  /*
-    IMAGEN LIBRE / MI PANEL:
-    conserva el comportamiento anterior del wrapper.
-  */
+  /* Imagen libre / Mi Panel: conserva el wrapper visual anterior. */
   wrapper.style.borderRadius = "34px";
   wrapper.style.overflow = "hidden";
   wrapper.style.backgroundColor = "transparent";
   wrapper.style.backgroundRepeat = "no-repeat";
   wrapper.style.backgroundPosition = "center";
   wrapper.style.backgroundSize = "100% 100%";
+  wrapper.style.removeProperty("--va-biblia-resaltado");
+  wrapper.style.removeProperty("--va-biblia-line-pad");
+  wrapper.style.removeProperty("--va-biblia-line-radius");
 
   if (raw <= 0) {
     wrapper.style.backgroundImage = "none";
@@ -7036,30 +7017,37 @@ function actualizarPreview() {
 const esCrearBiblia = !modoImagenLibre && origenModalImagen === "biblia";
 
 if (esCrearBiblia) {
-  const textoPlano = String(textoFinal || "").replace(/\r/g, "");
+  const textoPlano = String(textoFinal || "")
+    .replace(/\r/g, "")
+    .replace(/\n{2,}/g, "\n")
+    .trim();
+
   const partesBiblia = textoPlano.split("\n");
   const idxRef = partesBiblia.findIndex(x => String(x || "").trim().startsWith("▪"));
+
   const cuerpoPlano = (idxRef >= 0 ? partesBiblia.slice(0, idxRef) : partesBiblia)
     .join("\n")
+    .replace(/\n{2,}/g, "\n")
     .trim();
-  const refPlano = idxRef >= 0
-    ? partesBiblia.slice(idxRef).join(" ").trim()
-    : "";
+
+  const refPlano = (idxRef >= 0 ? partesBiblia.slice(idxRef).join(" ") : "")
+    .replace(/^\s*▪\s*/, "")
+    .trim();
 
   const cuerpoSeguro = textoLibreHtmlSeguro(cuerpoPlano);
   const refSeguro = textoLibreHtmlSeguro(refPlano);
 
   previewTexto.innerHTML = `
     <div class="preview-text-center preview-biblia-stack">
-      <span class="preview-text-inner preview-biblia-cuerpo">${cuerpoSeguro}</span>
-      ${refSeguro ? `<span class="preview-text-ref">${refSeguro}</span>` : ``}
+      <span class="preview-text-inner preview-biblia-linea">${cuerpoSeguro}</span>
+      ${refSeguro ? `<span class="preview-text-ref preview-biblia-cita">${refSeguro}</span>` : ``}
     </div>
   `;
 
   previewTextoBack.innerHTML = `
-    <div class="preview-text-center preview-biblia-stack">
-      <span class="preview-text-inner preview-biblia-cuerpo">${cuerpoSeguro}</span>
-      ${refSeguro ? `<span class="preview-text-ref">${refSeguro}</span>` : ``}
+    <div class="preview-text-center preview-biblia-stack" aria-hidden="true">
+      <span class="preview-text-inner preview-biblia-linea">${cuerpoSeguro}</span>
+      ${refSeguro ? `<span class="preview-text-ref preview-biblia-cita">${refSeguro}</span>` : ``}
     </div>
   `;
 } else {
@@ -7163,41 +7151,34 @@ const refBack  = previewTextoBack.querySelector(".preview-text-ref");
     center.style.flexDirection = "column";
     center.style.alignItems = "center";
     center.style.justifyContent = "center";
-    center.style.gap = "6px";
+    center.style.gap = ".85em";
   }
 });
 
-if (innerFront) {
-  innerFront.style.display = esCrearBiblia ? "inline" : "block";
-  innerFront.style.width = esCrearBiblia ? "auto" : "100%";
-  innerFront.style.maxWidth = "100%";
-  innerFront.style.margin = "0 auto";
-  innerFront.style.padding = "0";
-  innerFront.style.boxSizing = "border-box";
-  innerFront.style.background = "transparent";
-  innerFront.style.boxDecorationBreak = "clone";
-  innerFront.style.webkitBoxDecorationBreak = "clone";
-  innerFront.style.lineHeight = esCrearBiblia ? "1.22" : "";
-}
-
-if (innerBack) {
-  innerBack.style.display = esCrearBiblia ? "inline" : "block";
-  innerBack.style.width = esCrearBiblia ? "auto" : "100%";
-  innerBack.style.maxWidth = "100%";
-  innerBack.style.margin = "0 auto";
-  innerBack.style.padding = "0";
-  innerBack.style.boxSizing = "border-box";
-  innerBack.style.lineHeight = esCrearBiblia ? "1.22" : "";
-}
+[innerFront, innerBack].forEach(inner => {
+  if (!inner) return;
+  inner.style.display = esCrearBiblia ? "inline" : "block";
+  inner.style.width = esCrearBiblia ? "auto" : "100%";
+  inner.style.maxWidth = "100%";
+  inner.style.margin = "0 auto";
+  inner.style.boxSizing = "border-box";
+  inner.style.boxDecorationBreak = "clone";
+  inner.style.webkitBoxDecorationBreak = "clone";
+  inner.style.lineHeight = esCrearBiblia ? "1.28" : "";
+  if (!esCrearBiblia) inner.style.padding = "0";
+});
 
 [refFront, refBack].forEach(refEl => {
   if (!refEl) return;
-  refEl.style.display = "inline-block";
+  refEl.style.display = "inline";
+  refEl.style.width = "auto";
+  refEl.style.maxWidth = "100%";
   refEl.style.margin = "0 auto";
-  refEl.style.padding = "0";
   refEl.style.boxSizing = "border-box";
-  refEl.style.lineHeight = "1.1";
+  refEl.style.lineHeight = "1.18";
   refEl.style.textAlign = "center";
+  refEl.style.boxDecorationBreak = "clone";
+  refEl.style.webkitBoxDecorationBreak = "clone";
 });
   
 // ================= Color / Outline =================
@@ -7251,12 +7232,8 @@ bibliaSetHostColorVisual("personalizarOutlineHost", outlineColor);
   previewTexto.style.caretColor = color;
 
   // atrás = contorno visible
-  previewTextoBack.style.color = outlineColor;
-  previewTextoBack.style.WebkitTextStroke = `${strokePx}px ${outlineColor}`;
-  previewTextoBack.style.webkitTextFillColor = "transparent";
   previewTextoBack.style.transform = "none";
   previewTextoBack.style.filter = "none";
- previewTextoBack.style.textShadow = textShadowLegibleBiblia(color, outlineScale, outlineColor);
   
 // ================= Opacidad Oscuro/Claro =================
 const op = parseFloat(opacidad);
@@ -7278,7 +7255,26 @@ if (!isNaN(op)) {
   bgColor = `rgba(${r}, ${g}, ${b}, ${Math.max(0, Math.min(1, op))})`;
 }
 
-aplicarWrapperBibliaImagen(wrapper, op, opColor, innerBack);
+if (esCrearBiblia && op > 0) {
+  // Con resaltador por renglón no usamos la capa de contorno, porque generaba manchas blancas.
+  previewTextoBack.style.color = "transparent";
+  previewTextoBack.style.WebkitTextStroke = "0px";
+  previewTextoBack.style.webkitTextFillColor = "transparent";
+  previewTextoBack.style.textShadow = "none";
+  previewTextoBack.style.filter = "none";
+} else {
+  previewTextoBack.style.color = outlineColor;
+  previewTextoBack.style.WebkitTextStroke = `${strokePx}px ${outlineColor}`;
+  previewTextoBack.style.webkitTextFillColor = "transparent";
+  previewTextoBack.style.textShadow = textShadowLegibleBiblia(color, outlineScale, outlineColor);
+}
+
+aplicarWrapperBibliaImagen(wrapper, op, opColor, {
+  innerFront,
+  innerBack,
+  refFront,
+  refBack
+});
 
 activarEdicionDirectaTextoLibre();
   
@@ -7317,14 +7313,15 @@ const t2 = document.getElementById("previewTextoBack");
 const wrapperTexto = document.getElementById("previewTextoWrapper");
 
 if (wrapperTexto) {
+  const esCrearBibliaRender = !modoImagenLibre && origenModalImagen === "biblia";
   wrapperTexto.style.display = "flex";
   wrapperTexto.style.alignItems = "center";
   wrapperTexto.style.justifyContent = "center";
   wrapperTexto.style.textAlign = "center";
   wrapperTexto.style.padding = "0px";
   wrapperTexto.style.boxSizing = "border-box";
-  wrapperTexto.style.borderRadius = "34px";
-  wrapperTexto.style.overflow = "hidden";
+  wrapperTexto.style.borderRadius = esCrearBibliaRender ? "0" : "34px";
+  wrapperTexto.style.overflow = esCrearBibliaRender ? "visible" : "hidden";
 }
 
 [t1, t2].forEach(t => {
@@ -7356,21 +7353,29 @@ if (wrapperTexto) {
     center.style.flexDirection = "column";
     center.style.alignItems = "center";
     center.style.justifyContent = "center";
-    center.style.gap = "6px";
+    center.style.gap = ".85em";
   }
 
   const inner = t.querySelector(".preview-text-inner");
   if (inner) {
+    inner.style.display = "inline";
+    inner.style.width = "auto";
     inner.style.maxWidth = "100%";
     inner.style.margin = "0 auto";
-    inner.style.lineHeight = "1.22";
+    inner.style.lineHeight = "1.28";
+    inner.style.boxDecorationBreak = "clone";
+    inner.style.webkitBoxDecorationBreak = "clone";
   }
 
   const refEl = t.querySelector(".preview-text-ref");
   if (refEl) {
-    refEl.style.display = "inline-block";
+    refEl.style.display = "inline";
+    refEl.style.width = "auto";
+    refEl.style.maxWidth = "100%";
     refEl.style.margin = "0 auto";
-    refEl.style.lineHeight = "1.1";
+    refEl.style.lineHeight = "1.18";
+    refEl.style.boxDecorationBreak = "clone";
+    refEl.style.webkitBoxDecorationBreak = "clone";
   }
 });
 
