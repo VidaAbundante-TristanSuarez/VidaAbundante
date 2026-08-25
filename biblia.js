@@ -3217,13 +3217,9 @@ let filtroBibliaBackup = null;
 // ================= 🔁 RETORNO RÁPIDO DESDE FILTROS BIBLIA =================
 const LS_FILTRO_BIBLIA_RETORNO = "va_biblia_filtro_retorno_v1";
 
-/* ✅ La marca empieza vacía cada vez que abrís la app.
-   Así el botón NO arranca activo apenas abrís filtros. */
-let filtroBibliaRetorno = null;
-
-try {
-  localStorage.removeItem(LS_FILTRO_BIBLIA_RETORNO);
-} catch (e) {}
+/* ✅ El punto con PIN queda guardado hasta tocar "Volver".
+   No se pierde aunque navegues por otros libros/capítulos o cierres y abras la app. */
+let filtroBibliaRetorno = leerRetornoFiltrosBiblia();
 
 function leerRetornoFiltrosBiblia() {
   try {
@@ -3245,9 +3241,14 @@ function leerRetornoFiltrosBiblia() {
 }
 
 function guardarRetornoFiltrosBibliaLocal(data) {
-  // ✅ Solo memoria viva de la app, no localStorage.
-  // Así se activa cuando tocás el clip, pero no queda pegado al reiniciar.
   filtroBibliaRetorno = data;
+
+  try {
+    localStorage.setItem(
+      LS_FILTRO_BIBLIA_RETORNO,
+      JSON.stringify(data || {})
+    );
+  } catch (e) {}
 }
 
 function borrarRetornoFiltrosBiblia() {
@@ -8450,6 +8451,9 @@ if (!modoMarcador) {
 
 let busquedaMarcadoresLibro = "";
 
+// Vista del modal: por defecto NOTAS. El usuario puede alternar a RESALTADOS.
+let vistaMarcadoresActual = "notas";
+
 function marcadoresNormalizarBusqueda(valor = "") {
   return String(valor || "")
     .normalize("NFD")
@@ -8457,6 +8461,85 @@ function marcadoresNormalizarBusqueda(valor = "") {
     .trim()
     .toLowerCase();
 }
+
+
+function asegurarEstiloToggleMarcadores() {
+  if (document.getElementById("marcadoresVistaToggleStyle")) return;
+
+  const st = document.createElement("style");
+  st.id = "marcadoresVistaToggleStyle";
+  st.textContent = `
+    #marcadoresCabeceraIzquierda .marcadores-vista-toggle{
+      display:flex;
+      align-items:center;
+      gap:5px;
+      min-width:0;
+      white-space:nowrap;
+    }
+
+    #marcadoresCabeceraIzquierda .marcadores-vista-btn{
+      appearance:none;
+      border:0;
+      background:transparent;
+      color:inherit;
+      padding:4px 7px;
+      border-radius:999px;
+      font:inherit;
+      font-size:13px;
+      font-weight:900;
+      line-height:1;
+      cursor:pointer;
+      opacity:.58;
+    }
+
+    #marcadoresCabeceraIzquierda .marcadores-vista-btn.activo{
+      background:var(--ui-azul-claro, #bcdcff);
+      color:#000;
+      opacity:1;
+      box-shadow:0 2px 8px rgba(0,0,0,.08);
+    }
+
+    #marcadoresCabeceraIzquierda .marcadores-vista-separador{
+      opacity:.42;
+      font-weight:900;
+    }
+  `;
+
+  document.head.appendChild(st);
+}
+
+function actualizarToggleMarcadores() {
+  asegurarEstiloToggleMarcadores();
+
+  const btnNotas =
+    document.getElementById("btnVistaMarcadoresNotas");
+
+  const btnResaltados =
+    document.getElementById("btnVistaMarcadoresResaltados");
+
+  const esNotas =
+    vistaMarcadoresActual !== "resaltados";
+
+  if (btnNotas) {
+    btnNotas.classList.toggle("activo", esNotas);
+    btnNotas.setAttribute("aria-selected", esNotas ? "true" : "false");
+  }
+
+  if (btnResaltados) {
+    btnResaltados.classList.toggle("activo", !esNotas);
+    btnResaltados.setAttribute("aria-selected", !esNotas ? "true" : "false");
+  }
+}
+
+window.cambiarVistaMarcadores = function(tipo = "notas") {
+  vistaMarcadoresActual =
+    tipo === "resaltados"
+      ? "resaltados"
+      : "notas";
+
+  actualizarToggleMarcadores();
+  renderListaMarcadores();
+};
 
 function prepararCabeceraBuscadorMarcadores() {
   const modal = document.getElementById("modalMarcadores");
@@ -8472,20 +8555,26 @@ function prepararCabeceraBuscadorMarcadores() {
     Buscamos la cabecera que contiene el título Marcadores.
     De esta manera no hace falta modificar el HTML.
   */
-  const cabecera = Array.from(card.children).find(el => {
-    if (!(el instanceof HTMLElement)) return false;
+  const bloqueExistente = document.getElementById(
+    "marcadoresCabeceraIzquierda"
+  );
 
-    if (
-      el.id === "listaMarcadores" ||
-      el.id === "formNuevoMarcador"
-    ) {
-      return false;
-    }
+  const cabecera =
+    bloqueExistente?.parentElement ||
+    Array.from(card.children).find(el => {
+      if (!(el instanceof HTMLElement)) return false;
 
-    return marcadoresNormalizarBusqueda(
-      el.textContent
-    ).includes("marcadores");
-  });
+      if (
+        el.id === "listaMarcadores" ||
+        el.id === "formNuevoMarcador"
+      ) {
+        return false;
+      }
+
+      return marcadoresNormalizarBusqueda(
+        el.textContent
+      ).includes("marcadores");
+    });
 
   if (!cabecera) return;
 
@@ -8514,9 +8603,28 @@ function prepararCabeceraBuscadorMarcadores() {
     bloque.id = "marcadoresCabeceraIzquierda";
 
     bloque.innerHTML = `
-      <div class="marcadores-cabecera-titulo">
-        <i class="fa-classic fa-solid fa-bookmark"></i>
-        <span>Marcadores</span>
+      <div
+        class="marcadores-cabecera-titulo marcadores-vista-toggle"
+        role="tablist"
+        aria-label="Notas o resaltados"
+      >
+        <button
+          type="button"
+          id="btnVistaMarcadoresNotas"
+          class="marcadores-vista-btn"
+          onclick="cambiarVistaMarcadores('notas')"
+          role="tab"
+        >NOTAS</button>
+
+        <span class="marcadores-vista-separador">/</span>
+
+        <button
+          type="button"
+          id="btnVistaMarcadoresResaltados"
+          class="marcadores-vista-btn"
+          onclick="cambiarVistaMarcadores('resaltados')"
+          role="tab"
+        >RESALTADOS</button>
       </div>
 
       <label
@@ -8575,6 +8683,8 @@ function prepararCabeceraBuscadorMarcadores() {
   ) {
     input.value = busquedaMarcadoresLibro;
   }
+
+  actualizarToggleMarcadores();
 }
 
 window.filtrarMarcadoresPorLibro = function(valor = "") {
@@ -8617,6 +8727,7 @@ window.abrirMarcadores = () => {
     comenzamos sin filtro.
   */
   busquedaMarcadoresLibro = "";
+  vistaMarcadoresActual = "notas";
 
   prepararCabeceraBuscadorMarcadores();
 
@@ -8773,6 +8884,228 @@ function notaResumenVersiculoLista(m = {}, max = 92) {
 
 window.notaResumenVersiculoLista = notaResumenVersiculoLista;
 
+
+function parsearIdResaltadoBiblia(id = "") {
+  const m = String(id || "").match(/^(.*)_(\d+)_(\d+)$/);
+
+  if (!m) return null;
+
+  return {
+    libro: String(m[1] || ""),
+    capitulo: Number(m[2] || 0),
+    versiculo: Number(m[3] || 0)
+  };
+}
+
+function obtenerVersiculoResaltadoPorId(id = "") {
+  const p = parsearIdResaltadoBiblia(id);
+  if (!p) return null;
+
+  return (bibliaData || []).find(v =>
+    String(v?.Libro || "") === p.libro &&
+    Number(v?.Capitulo || 0) === p.capitulo &&
+    Number(v?.Versiculo || 0) === p.versiculo
+  ) || null;
+}
+
+function renderListaResaltadosMarcadores() {
+  const lista = document.getElementById("listaMarcadores");
+  if (!lista) return;
+
+  const busqueda =
+    marcadoresNormalizarBusqueda(busquedaMarcadoresLibro);
+
+  const ordenBiblia = new Map(
+    (bibliaData || []).map((v, i) => [
+      `${v.Libro}_${v.Capitulo}_${v.Versiculo}`,
+      i
+    ])
+  );
+
+  const todos = Object.entries(marcados || {})
+    .map(([id, data]) => {
+      const pos = parsearIdResaltadoBiblia(id);
+      const v = obtenerVersiculoResaltadoPorId(id);
+
+      if (!pos) return null;
+
+      return {
+        id,
+        color: data?.color || "#fff3b0",
+        libro: pos.libro,
+        capitulo: pos.capitulo,
+        versiculo: pos.versiculo,
+        texto: v ? String(getTextoVersiculo(v) || "").trim() : "",
+        orden: ordenBiblia.has(id)
+          ? Number(ordenBiblia.get(id))
+          : Number.MAX_SAFE_INTEGER
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => {
+      if (a.orden !== b.orden) return a.orden - b.orden;
+
+      const porLibro = a.libro.localeCompare(b.libro, "es", {
+        numeric: true,
+        sensitivity: "base"
+      });
+
+      if (porLibro) return porLibro;
+      if (a.capitulo !== b.capitulo) return a.capitulo - b.capitulo;
+      return a.versiculo - b.versiculo;
+    });
+
+  const items = busqueda
+    ? todos.filter(item =>
+        marcadoresNormalizarBusqueda(
+          `${item.libro} ${item.capitulo}:${item.versiculo}`
+        ).includes(busqueda)
+      )
+    : todos;
+
+  if (!todos.length) {
+    lista.innerHTML = `
+      <p class="muted">
+        Todavía no guardaste resaltados.
+      </p>
+    `;
+
+    lista.scrollTop = 0;
+    lista.scrollLeft = 0;
+    return;
+  }
+
+  if (!items.length) {
+    lista.innerHTML = `
+      <p class="muted">
+        No encontré resaltados de ese libro.
+      </p>
+    `;
+
+    lista.scrollTop = 0;
+    lista.scrollLeft = 0;
+    return;
+  }
+
+  lista.innerHTML = items.map(item => {
+    const referencia = marcadorEscapeHTML(
+      `${item.libro} ${item.capitulo}:${item.versiculo}`
+    );
+
+    const resumenPlano =
+      String(item.texto || "")
+        .replace(/\s+/g, " ")
+        .trim();
+
+    const resumen = marcadorEscapeHTML(
+      resumenPlano.length > 120
+        ? resumenPlano.slice(0, 120).trim() + " (...)"
+        : resumenPlano
+    );
+
+    const fondo = item.color || "#fff3b0";
+
+    const colorTexto =
+      typeof colorContraste === "function"
+        ? colorContraste(fondo)
+        : "#000";
+
+    const idSeguro =
+      String(item.id || "")
+        .replace(/\\/g, "\\\\")
+        .replace(/'/g, "\\'");
+
+    return `
+      <div
+        class="card-marcador nota-lista-card"
+        style="
+          --nota-bg:${fondo};
+          --nota-color:${colorTexto};
+        "
+      >
+        <div
+          class="nota-lista-contenido"
+          onclick="abrirResaltadoDesdeLista('${idSeguro}')"
+          title="Ir a este versículo"
+        >
+          <div class="nota-lista-titulo">
+            ${referencia}
+          </div>
+
+          ${
+            resumen
+              ? `
+                <div class="nota-lista-resumen">
+                  ${resumen}
+                </div>
+              `
+              : ``
+          }
+        </div>
+
+        <div class="nota-lista-botones">
+          <button
+            type="button"
+            class="pm-btn"
+            onclick="
+              event.stopPropagation();
+              abrirResaltadoDesdeLista('${idSeguro}');
+            "
+            title="Ir al versículo"
+            aria-label="Ir al versículo"
+          >
+            <i class="fa-solid fa-book-open"></i>
+          </button>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  lista.scrollTop = 0;
+  lista.scrollLeft = 0;
+}
+
+window.abrirResaltadoDesdeLista = function(id = "") {
+  const p = parsearIdResaltadoBiblia(id);
+  if (!p) return;
+
+  const libros =
+    [...new Set((bibliaData || []).map(v => v.Libro))];
+
+  if (!libros.includes(p.libro)) {
+    mostrarToast?.("No encontré ese versículo en esta versión.");
+    return;
+  }
+
+  libroSel.value = p.libro;
+  cargarCapitulos();
+  capSel.value = String(p.capitulo);
+
+  mostrarTexto({
+    irArriba: false,
+    guardar: true
+  });
+
+  cerrarMarcadores();
+
+  setTimeout(() => {
+    const idV =
+      `${p.libro}_${p.capitulo}_${p.versiculo}`;
+
+    const el = document.querySelector(
+      `.versiculo[data-id="${CSS.escape(idV)}"]`
+    );
+
+    if (el) {
+      el.scrollIntoView({
+        behavior: "smooth",
+        block: "center"
+      });
+    }
+  }, 120);
+};
+
+
 // ================= ✨ Render Lista Marcadores 📌=================
 function renderListaMarcadores() {
   const lista = document.getElementById(
@@ -8780,6 +9113,13 @@ function renderListaMarcadores() {
   );
 
   if (!lista) return;
+
+  actualizarToggleMarcadores();
+
+  if (vistaMarcadoresActual === "resaltados") {
+    renderListaResaltadosMarcadores();
+    return;
+  }
 
   /*
     Primero reunimos todas las notas de Biblia.

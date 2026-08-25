@@ -183,6 +183,12 @@ const TTS_VOLUME = 1;
 
   let versos = [];
   let indiceActual = 0;
+
+  // Versículo elegido tocándolo cuando el reproductor todavía está detenido.
+  // No reproduce hasta tocar Play.
+  let versiculoInicioElegidoId = "";
+  let pausaReubicada = false;
+
   let estado = "detenido"; // detenido | leyendo | pausado
   let tokenLectura = 0;
   let keepAliveTimer = null;
@@ -817,12 +823,69 @@ if (vozSuave) {
      LECTURA VERSÍCULO POR VERSÍCULO
      ========================================================= */
 
+  function continuarEnCapituloSiguiente(miToken) {
+    if (miToken !== tokenLectura) return;
+    if (estado !== "leyendo") return;
+
+    const libroAntes =
+      String(document.getElementById("libro")?.value || "");
+
+    const capAntes =
+      String(document.getElementById("capitulo")?.value || "");
+
+    if (typeof window.capituloSiguiente !== "function") {
+      detenerBibliaTTS(true);
+      return;
+    }
+
+    /*
+      Llamamos directamente a la navegación de Biblia.
+      No simulamos un click, así el listener que frena el audio
+      en cambios manuales no interrumpe el avance automático.
+    */
+    window.capituloSiguiente();
+
+    setTimeout(() => {
+      if (miToken !== tokenLectura) return;
+      if (estado !== "leyendo") return;
+
+      const libroDespues =
+        String(document.getElementById("libro")?.value || "");
+
+      const capDespues =
+        String(document.getElementById("capitulo")?.value || "");
+
+      /*
+        Si no cambió libro/capítulo, estábamos en Apocalipsis 22
+        o no había capítulo siguiente.
+      */
+      if (
+        libroDespues === libroAntes &&
+        capDespues === capAntes
+      ) {
+        detenerBibliaTTS(true);
+        return;
+      }
+
+      versos = obtenerVersos();
+      indiceActual = 0;
+      versiculoInicioElegidoId = "";
+
+      if (!versos.length) {
+        detenerBibliaTTS(true);
+        return;
+      }
+
+      leerActual(miToken);
+    }, ES_MOVIL ? 140 : 110);
+  }
+
   function leerActual(miToken) {
     if (miToken !== tokenLectura) return;
     if (estado !== "leyendo") return;
 
     if (indiceActual >= versos.length) {
-      detenerBibliaTTS(true);
+      continuarEnCapituloSiguiente(miToken);
       return;
     }
 
@@ -851,6 +914,7 @@ if (vozSuave) {
      ========================================================= */
 
   function reproducirDesde(indice = 0) {
+    pausaReubicada = false;
     versos = obtenerVersos();
 
     if (!versos.length) {
@@ -905,6 +969,12 @@ if (vozSuave) {
   function continuarBibliaTTS() {
     if (estado !== "pausado") return;
 
+    if (pausaReubicada) {
+      pausaReubicada = false;
+      reproducirDesde(indiceActual);
+      return;
+    }
+
     estado = "leyendo";
     setBoton("leyendo");
     iniciarKeepAlive();
@@ -930,6 +1000,8 @@ if (vozSuave) {
   function detenerBibliaTTS(limpiar = true) {
     tokenLectura++;
     estado = "detenido";
+    versiculoInicioElegidoId = "";
+    pausaReubicada = false;
     detenerKeepAlive();
     detenerArpaBiblia();
     detenerBibliaTTSNativo();
@@ -961,10 +1033,17 @@ if (vozSuave) {
       return;
     }
 
-    const idxGuardado = obtenerIndiceUltimoGuardadoTTS();
+    versos = obtenerVersos();
+
+    const idxElegido =
+      versiculoInicioElegidoId
+        ? versos.findIndex(
+            v => v.id === versiculoInicioElegidoId
+          )
+        : -1;
 
     reproducirDesde(
-      Number.isFinite(idxGuardado) ? idxGuardado : 0
+      idxElegido >= 0 ? idxElegido : 0
     );
   }
 
@@ -992,6 +1071,49 @@ if (vozSuave) {
     const idx = versos.findIndex(v => v.el === el);
     if (idx < 0) return;
 
+    const elegido = versos[idx];
+    versiculoInicioElegidoId = elegido?.id || "";
+
+    /*
+      DETENIDO:
+      tocar un versículo SOLO elige desde dónde empezará Play.
+      No arranca el audio.
+    */
+    if (estado === "detenido") {
+      indiceActual = idx;
+      marcarActivo(el);
+      setBoton("detenido");
+      return;
+    }
+
+    /*
+      PAUSADO:
+      elegimos otro punto, pero seguimos pausados.
+      Al tocar Play comenzará desde este versículo.
+    */
+    if (estado === "pausado") {
+      tokenLectura++;
+      detenerBibliaTTSNativo();
+
+      try {
+        if (speechSynthesisDisponible()) {
+          speechSynthesis.cancel();
+        }
+      } catch {}
+
+      indiceActual = idx;
+      pausaReubicada = true;
+      marcarActivo(el);
+      pausarArpaBiblia();
+      setBoton("pausado");
+      return;
+    }
+
+    /*
+      LEYENDO:
+      después de haber arrancado con Play sí permitimos
+      tocar otro versículo para saltar y reproducir desde ahí.
+    */
     reproducirDesde(idx);
   }
 
@@ -1004,6 +1126,7 @@ if (vozSuave) {
       t.closest?.("#btnAplicarFiltrosBiblia") ||
       t.closest?.(".btn-version-inline")
     ) {
+      versiculoInicioElegidoId = "";
       detenerBibliaTTS(true);
     }
   }
@@ -1045,6 +1168,7 @@ if (vozSuave) {
 
     document.addEventListener("change", (e) => {
       if (e.target?.matches?.("#libro, #capitulo")) {
+        versiculoInicioElegidoId = "";
         detenerBibliaTTS(true);
       }
     });
