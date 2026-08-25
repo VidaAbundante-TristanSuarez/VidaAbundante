@@ -7176,9 +7176,9 @@ const citaWrapBack  = previewTextoBack.querySelector(".preview-biblia-cita-wrap"
 [cuerpoWrapFront, cuerpoWrapBack, citaWrapFront, citaWrapBack].forEach(w => {
   if (!w) return;
   w.style.display = "block";
-  w.style.width = esCrearBiblia ? "fit-content" : "100%";
+  w.style.width = "100%";
   w.style.maxWidth = "100%";
-  w.style.margin = esCrearBiblia ? "0 auto" : "0";
+  w.style.margin = "0";
   w.style.padding = "0";
   w.style.textAlign = "center";
   w.style.background = "transparent";
@@ -7190,8 +7190,9 @@ const citaWrapBack  = previewTextoBack.querySelector(".preview-biblia-cita-wrap"
   inner.style.display = esCrearBiblia ? "inline" : "block";
   inner.style.width = esCrearBiblia ? "auto" : "100%";
   inner.style.maxWidth = "100%";
-  inner.style.margin = "0 auto";
+  inner.style.margin = "0";
   inner.style.boxSizing = "border-box";
+  inner.style.textAlign = "center";
   inner.style.boxDecorationBreak = "clone";
   inner.style.webkitBoxDecorationBreak = "clone";
   inner.style.lineHeight = esCrearBiblia ? "1.28" : "";
@@ -7203,7 +7204,7 @@ const citaWrapBack  = previewTextoBack.querySelector(".preview-biblia-cita-wrap"
   refEl.style.display = "inline-block";
   refEl.style.width = "auto";
   refEl.style.maxWidth = "100%";
-  refEl.style.margin = "0 auto";
+  refEl.style.margin = "0";
   refEl.style.boxSizing = "border-box";
   refEl.style.lineHeight = "1.18";
   refEl.style.textAlign = "center";
@@ -7303,23 +7304,6 @@ previewTextoBack.style.webkitTextFillColor = "transparent";
 previewTextoBack.style.textShadow = sombraContorno;
 previewTextoBack.style.filter = "none";
 
-[innerBack, refBack].forEach(el => {
-  if (!el) return;
-  el.style.color = outlineColor;
-  el.style.WebkitTextStroke = `${strokePx}px ${outlineColor}`;
-  el.style.webkitTextFillColor = "transparent";
-  el.style.textShadow = sombraContorno;
-  el.style.paintOrder = "stroke fill";
-});
-
-[innerFront, refFront].forEach(el => {
-  if (!el) return;
-  el.style.color = color;
-  el.style.WebkitTextStroke = "0px";
-  el.style.webkitTextFillColor = color;
-  el.style.textShadow = "none";
-  el.style.paintOrder = "stroke fill";
-});
 
 aplicarWrapperBibliaImagen(wrapper, op, opColor, {
   innerFront,
@@ -7414,9 +7398,9 @@ if (wrapperTexto) {
   [cuerpoWrap, citaWrap].forEach(w => {
     if (!w) return;
     w.style.display = "block";
-    w.style.width = "fit-content";
+    w.style.width = "100%";
     w.style.maxWidth = "100%";
-    w.style.margin = "0 auto";
+    w.style.margin = "0";
     w.style.padding = "0";
     w.style.textAlign = "center";
     w.style.boxSizing = "border-box";
@@ -7428,7 +7412,7 @@ if (wrapperTexto) {
     inner.style.display = "inline";
     inner.style.width = "auto";
     inner.style.maxWidth = "100%";
-    inner.style.margin = "0 auto";
+    inner.style.margin = "0";
     inner.style.lineHeight = "1.28";
     inner.style.boxDecorationBreak = "clone";
     inner.style.webkitBoxDecorationBreak = "clone";
@@ -7439,7 +7423,7 @@ if (wrapperTexto) {
     refEl.style.display = "inline-block";
     refEl.style.width = "auto";
     refEl.style.maxWidth = "100%";
-    refEl.style.margin = "0 auto";
+    refEl.style.margin = "0";
     refEl.style.lineHeight = "1.18";
     refEl.style.boxDecorationBreak = "clone";
     refEl.style.webkitBoxDecorationBreak = "clone";

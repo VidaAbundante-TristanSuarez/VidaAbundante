@@ -862,9 +862,9 @@ html, body {
 .preview-biblia-cuerpo-wrap,
 .preview-biblia-cita-wrap{
   display:block;
-  width:fit-content;
+  width:100%;
   max-width:100%;
-  margin:0 auto;
+  margin:0;
   padding:0;
   text-align:center;
   background:transparent !important;
