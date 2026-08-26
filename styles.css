@@ -852,13 +852,14 @@ html, body {
   flex-direction:column;
   align-items:center;
   justify-content:center;
-  gap:.72em;
+  gap:0;
   width:100%;
   max-width:100%;
+  text-align:center;
 }
 
-/* Estos son sólo contenedores de alineación.
-   NO llevan fondo. */
+/* El cuerpo usa TODO el ancho para que el centro sea el centro REAL
+   del área de imagen, no el centro de una cajita de ancho variable. */
 .preview-biblia-cuerpo-wrap,
 .preview-biblia-cita-wrap{
   display:block;
@@ -871,40 +872,59 @@ html, body {
   box-sizing:border-box;
 }
 
-/* El resaltado vive acá.
-   Como es inline, box-decoration-break:clone crea una cápsula
-   independiente para CADA renglón real. */
-.preview-biblia-linea,
-.preview-biblia-cita{
-  display:inline;
-  width:auto;
+.preview-biblia-renglones{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:0;
+  width:100%;
   max-width:100%;
   margin:0;
+  padding:0;
+  text-align:center;
+}
+
+/* Cada renglón ya es un elemento independiente.
+   Por eso el padding izquierdo y derecho es EXACTAMENTE igual. */
+.preview-biblia-renglon{
+  display:inline-block;
+  width:max-content;
+  max-width:100%;
+  margin:0 auto;
   padding:var(--va-biblia-line-pad, 2px 7px);
   border-radius:var(--va-biblia-line-radius, 999px);
   line-height:1.28;
-  white-space:pre-wrap;
-  overflow-wrap:anywhere;
-  word-break:normal;
-  box-decoration-break:clone;
-  -webkit-box-decoration-break:clone;
+  white-space:nowrap;
+  box-sizing:border-box;
+  text-align:center;
+}
+
+/* EXACTAMENTE un renglón vacío entre el texto y la cita. */
+.preview-biblia-cita-wrap{
+  margin-top:1.28em;
 }
 
 .preview-biblia-cita{
   display:inline-block;
+  width:auto;
+  max-width:100%;
+  margin:0 auto;
   line-height:1.18;
   font-size:.95em;
   padding:var(--va-biblia-cita-pad, 2px 9px);
   border-radius:999px;
   text-align:center;
+  white-space:nowrap;
+  box-sizing:border-box;
 }
 
-#previewTexto .preview-biblia-linea,
+#previewTexto .preview-biblia-renglon,
 #previewTexto .preview-biblia-cita{
   background:transparent !important;
 }
 
-#previewTextoBack .preview-biblia-linea,
+#previewTextoBack .preview-biblia-renglon,
 #previewTextoBack .preview-biblia-cita{
   background:var(--va-biblia-resaltado, transparent);
 }

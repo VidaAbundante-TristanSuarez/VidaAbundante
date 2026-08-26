@@ -4604,7 +4604,7 @@ function obtenerVersiculoSeleccionado() {
 
   const referencia = referenciaImagenEnOrden(items);
 
-  return (textos.join(" ") + "\n▪ " + referencia).trim();
+  return (textos.join(" ") + "\n\n▪ " + referencia).trim();
 }
 
 // ================= ⭐ texto libre  =======================
@@ -7000,6 +7000,167 @@ function aplicarWrapperBibliaImagen(wrapper, op, color, partes = {}){
   wrapper.style.backgroundImage = url ? `url("${url}")` : "none";
 }
 
+
+// ================= ✅ BIBLIA: RENDER REAL POR RENGLONES =======================
+// Ya NO dependemos de box-decoration-break para el resaltado.
+// Calculamos qué palabras entran en cada renglón y luego cada renglón
+// se dibuja como una cápsula independiente y perfectamente centrada.
+let __bibliaCanvasMedicionRenglones = null;
+
+function bibliaMedirAnchoTexto(texto, elementoBase) {
+  if (!__bibliaCanvasMedicionRenglones) {
+    __bibliaCanvasMedicionRenglones = document.createElement("canvas");
+  }
+
+  const ctx = __bibliaCanvasMedicionRenglones.getContext("2d");
+  if (!ctx || !elementoBase) return 0;
+
+  const cs = getComputedStyle(elementoBase);
+
+  const fontStyle = cs.fontStyle || "normal";
+  const fontWeight = cs.fontWeight || "400";
+  const fontSize = cs.fontSize || "16px";
+  const fontFamily = cs.fontFamily || "Arial, sans-serif";
+
+  ctx.font = `${fontStyle} ${fontWeight} ${fontSize} ${fontFamily}`;
+
+  let valor = String(texto || "");
+  if ((cs.textTransform || "").toLowerCase() === "uppercase") {
+    valor = valor.toUpperCase();
+  }
+
+  let ancho = ctx.measureText(valor).width;
+
+  const letterSpacing = parseFloat(cs.letterSpacing);
+  if (Number.isFinite(letterSpacing) && letterSpacing !== 0 && valor.length > 1) {
+    ancho += letterSpacing * (valor.length - 1);
+  }
+
+  return ancho;
+}
+
+function bibliaPartirTextoEnRenglones(texto, elementoBase, maxAnchoTexto) {
+  const limpio = String(texto || "")
+    .replace(/\r/g, "")
+    .replace(/[ \t]+/g, " ")
+    .trim();
+
+  if (!limpio) return [];
+
+  const parrafos = limpio
+    .split(/\n+/)
+    .map(x => x.trim())
+    .filter(Boolean);
+
+  const resultado = [];
+
+  const partirPalabraLarga = (palabra) => {
+    let actual = "";
+
+    for (const ch of String(palabra || "")) {
+      const candidato = actual + ch;
+
+      if (
+        actual &&
+        bibliaMedirAnchoTexto(candidato, elementoBase) > maxAnchoTexto
+      ) {
+        resultado.push(actual);
+        actual = ch;
+      } else {
+        actual = candidato;
+      }
+    }
+
+    return actual;
+  };
+
+  for (const parrafo of parrafos) {
+    const palabras = parrafo.split(/\s+/).filter(Boolean);
+    let linea = "";
+
+    for (const palabra of palabras) {
+      const candidato = linea ? `${linea} ${palabra}` : palabra;
+
+      if (
+        !linea ||
+        bibliaMedirAnchoTexto(candidato, elementoBase) <= maxAnchoTexto
+      ) {
+        linea = candidato;
+        continue;
+      }
+
+      resultado.push(linea.trim());
+      linea = "";
+
+      if (bibliaMedirAnchoTexto(palabra, elementoBase) <= maxAnchoTexto) {
+        linea = palabra;
+      } else {
+        linea = partirPalabraLarga(palabra);
+      }
+    }
+
+    if (linea.trim()) {
+      resultado.push(linea.trim());
+    }
+  }
+
+  return resultado.filter(Boolean);
+}
+
+function bibliaRenderBibliaPorRenglones(
+  previewTexto,
+  previewTextoBack,
+  cuerpoPlano,
+  refPlano
+) {
+  if (!previewTexto || !previewTextoBack) return;
+
+  /*
+    Dejamos 7 px a cada lado para el resaltado.
+    Así el TEXTO entra dentro del ancho y la cápsula nunca queda cortada.
+  */
+  const padHorizontal = 7;
+  const anchoDisponible = Math.max(
+    20,
+    Math.min(previewTexto.clientWidth, previewTextoBack.clientWidth) -
+      (padHorizontal * 2)
+  );
+
+  const lineas = bibliaPartirTextoEnRenglones(
+    cuerpoPlano,
+    previewTexto,
+    anchoDisponible
+  );
+
+  const htmlLineas = lineas
+    .map(linea =>
+      `<span class="preview-biblia-renglon">${textoLibreHtmlSeguro(linea)}</span>`
+    )
+    .join("");
+
+  const referenciaSegura = textoLibreHtmlSeguro(
+    String(refPlano || "").trim()
+  );
+
+  const construir = (esBack = false) => `
+    <div class="preview-text-center preview-biblia-stack"${esBack ? ' aria-hidden="true"' : ""}>
+      <div class="preview-biblia-cuerpo-wrap">
+        <div class="preview-text-inner preview-biblia-renglones">
+          ${htmlLineas}
+        </div>
+      </div>
+      ${referenciaSegura ? `
+        <div class="preview-biblia-cita-wrap">
+          <span class="preview-text-ref preview-biblia-cita">${referenciaSegura}</span>
+        </div>
+      ` : ``}
+    </div>
+  `;
+
+  previewTexto.innerHTML = construir(false);
+  previewTextoBack.innerHTML = construir(true);
+}
+
 // ================= ⭐ ACTUALIZAR VISTA PREVIA (FIX) 🌅 =======================
 function actualizarPreview() {
   const previewImagen = document.getElementById("previewImagen");
@@ -7021,7 +7182,6 @@ const esCrearBiblia = !modoImagenLibre && origenModalImagen === "biblia";
 if (esCrearBiblia) {
   const textoPlano = String(textoFinal || "")
     .replace(/\r/g, "")
-    .replace(/\n{2,}/g, "\n")
     .trim();
 
   const partesBiblia = textoPlano.split("\n");
@@ -7146,7 +7306,11 @@ if (!userSetFontSize && sizeSlider) {
     const strokeBackAnterior = previewTextoBack.style.WebkitTextStroke;
     const fillBackAnterior = previewTextoBack.style.webkitTextFillColor;
 
-    const textoSeguroMedicion = textoLibreHtmlSeguro(textoFinal);
+    const textoSeguroMedicion = textoLibreHtmlSeguro(
+      esCrearBiblia && refPlano
+        ? `${cuerpoPlano}\n\n${refPlano}`
+        : textoFinal
+    );
 
     // Layout de medición original: un único bloque de ancho completo.
     previewTexto.innerHTML = `<div class="preview-text-inner">${textoSeguroMedicion}</div>`;
@@ -7204,6 +7368,20 @@ const finalSize = sizeSlider ? Number(sizeSlider.value || 32) : 32;
 previewTexto.style.fontSize = finalSize + "px";
 previewTextoBack.style.fontSize = finalSize + "px";
 
+// ✅ Ahora que conocemos el tamaño final, armamos los renglones reales.
+// Esto garantiza:
+// - centro real,
+// - padding idéntico izquierda/derecha,
+// - un renglón vacío real antes de la cita.
+if (esCrearBiblia) {
+  bibliaRenderBibliaPorRenglones(
+    previewTexto,
+    previewTextoBack,
+    cuerpoPlano,
+    refPlano
+  );
+}
+
 const innerFront = previewTexto.querySelector(".preview-text-inner");
 const innerBack  = previewTextoBack.querySelector(".preview-text-inner");
 const centerFront = previewTexto.querySelector(".preview-text-center");
@@ -7229,7 +7407,7 @@ const citaWrapBack  = previewTextoBack.querySelector(".preview-biblia-cita-wrap"
     center.style.flexDirection = "column";
     center.style.alignItems = "center";
     center.style.justifyContent = "center";
-    center.style.gap = ".72em";
+    center.style.gap = "0";
   }
 });
 
@@ -7448,7 +7626,7 @@ if (wrapperTexto) {
     center.style.flexDirection = "column";
     center.style.alignItems = "center";
     center.style.justifyContent = "center";
-    center.style.gap = ".72em";
+    center.style.gap = "0";
   }
 
   const cuerpoWrap = t.querySelector(".preview-biblia-cuerpo-wrap");
@@ -7468,13 +7646,21 @@ if (wrapperTexto) {
 
   const inner = t.querySelector(".preview-text-inner");
   if (inner) {
-    inner.style.display = "inline";
-    inner.style.width = "auto";
+    inner.style.display = "flex";
+    inner.style.flexDirection = "column";
+    inner.style.alignItems = "center";
+    inner.style.justifyContent = "center";
+    inner.style.width = "100%";
     inner.style.maxWidth = "100%";
-    inner.style.margin = "0 auto";
+    inner.style.margin = "0";
+    inner.style.padding = "0";
     inner.style.lineHeight = "1.28";
-    inner.style.boxDecorationBreak = "clone";
-    inner.style.webkitBoxDecorationBreak = "clone";
+    inner.style.textAlign = "center";
+  }
+
+  const citaWrapFinal = t.querySelector(".preview-biblia-cita-wrap");
+  if (citaWrapFinal) {
+    citaWrapFinal.style.marginTop = "1.28em";
   }
 
   const refEl = t.querySelector(".preview-text-ref");
