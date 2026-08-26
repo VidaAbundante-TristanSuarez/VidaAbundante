@@ -15,7 +15,7 @@ const R2_UPLOAD_URL = R2_WORKER_URL;
 const GH_UPLOAD_URL = R2_WORKER_URL;
 const TTS_URL = R2_WORKER_URL;
 
-console.log("✅ devocionales.js cargó (module)", "F1-FINAL-RESALTADO-20260826-3");
+console.log("✅ devocionales.js cargó (module)", "F1-SPREAD8-CERRAR-20260826-4");
 window.__DEV_DEVOCIONALES_LOADED__ = true;
 
 function $(id){ return document.getElementById(id); }
@@ -2431,6 +2431,17 @@ function devEnsureBotonCuentagotasWrapperF1(){
   host.insertAdjacentElement("afterend", btn);
 }
 
+window.devCerrarCuentagotasF2 = function(){
+  try {
+    DEV_CUENTAGOTAS_F2.arrastrando = false;
+
+    const cursor = $("devCuentagotasCursor");
+    if (cursor) cursor.style.display = "none";
+  } catch (e) {}
+
+  cerrarModal("modalDevCuentagotasF2");
+};
+
 function devEnsureModalCuentagotasF2(){
   if ($("modalDevCuentagotasF2")) return;
 
@@ -2441,7 +2452,7 @@ function devEnsureModalCuentagotasF2(){
 
   div.innerHTML = `
     <div class="modal-contenido">
-      <button type="button" class="cerrar-modal" onclick="cerrarModal('modalDevCuentagotasF2')">✕</button>
+      <button type="button" class="cerrar-modal" onclick="devCerrarCuentagotasF2()">✕</button>
 
       <h3 style="margin:8px 36px 4px; color:#0e286f;">
         Tomar color del fondo
@@ -2468,7 +2479,7 @@ function devEnsureModalCuentagotasF2(){
   Usar este color
 </button>
 
-        <button type="button" onclick="cerrarModal('modalDevCuentagotasF2')">
+        <button type="button" onclick="devCerrarCuentagotasF2()">
           Cancelar
         </button>
       </div>
@@ -2476,6 +2487,13 @@ function devEnsureModalCuentagotasF2(){
   `;
 
   document.body.appendChild(div);
+
+  // Cerrar también tocando fuera de la caja blanca.
+  div.addEventListener("click", (e) => {
+    if (e.target === div) {
+      window.devCerrarCuentagotasF2();
+    }
+  });
 }
 
 function devSetColorCuentagotasF2(hex){
@@ -2945,7 +2963,10 @@ function buildFase1HTML(versiculoCanvasPx, scale){
   const rgbF1 = hexToRgb(DEV.f1.opColor || "#000000");
   const alphaF1 = Math.max(0, Math.min(1, Number(DEV.f1.op ?? 0.35)));
   const resaltadoF1 = `rgba(${rgbF1.r}, ${rgbF1.g}, ${rgbF1.b}, ${alphaF1})`;
-  const spreadF1 = Math.max(1, 4 * scale);
+  // 8 px totales por lado:
+  // conserva los 4 px anteriores + agrega 4 px más
+  // para que el resaltado no corte visualmente el contorno de la fuente.
+  const spreadF1 = Math.max(1, 8 * scale);
 
   const resaltarF1 = (contenido) => `
     <span
