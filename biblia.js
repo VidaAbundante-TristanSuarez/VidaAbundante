@@ -37,6 +37,8 @@ const R2_DOWNLOAD_URL = R2_WORKER_URL;
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
+console.log("✅ biblia.js imagen/notas/resaltados", "20260826-1");
+
 const VA_ANDROID_ID_TOKEN_KEY = "__VA_ANDROID_ID_TOKEN__";
 let vaLoginAndroidEnCurso = false;
 
@@ -2382,6 +2384,7 @@ if (seccion === "iglesia") {
     return vaSelectorVisible([
       "#panel-imagenes",
       "#panel-marcadores",
+      "#panel-resaltados",
       "#panel-compartidos",
       "#panel-abc",
       "#panel-recursos"
@@ -2717,7 +2720,7 @@ function mostrarPanelVisitante() {
   const tabs = panel.querySelector(".panel-tabs");
   if (tabs) tabs.style.display = "none";
 
-  ["imagenes", "marcadores", "compartidos", "abc", "recursos"].forEach(s => {
+  ["imagenes", "marcadores", "resaltados", "compartidos", "abc", "recursos"].forEach(s => {
     const el = document.getElementById("panel-" + s);
     if (el) el.style.setProperty("display", "none", "important");
   });
@@ -2990,6 +2993,13 @@ onValue(ref(db, "marcados/" + uid), s => {
 
   if (obtenerSeccionActual() === "biblia") {
     mostrarTexto({ guardar: false });
+  }
+
+  if (
+    document.body.classList.contains("en-panel") &&
+    document.getElementById("panel-resaltados")?.offsetParent !== null
+  ) {
+    renderPanelResaltados();
   }
 });
 
@@ -7087,8 +7097,16 @@ function actualizarPreview() {
   wrapper.style.borderRadius = esCrearBiblia ? "0" : "34px";
   wrapper.style.overflow = esCrearBiblia ? "visible" : "hidden";
 
+  /*
+    Crear Imagen Biblia:
+    solamente 10 px reales desde el borde de la imagen
+    hasta el área donde puede crecer el texto.
+    Los otros modos conservan su geometría anterior.
+  */
+  wrapper.style.inset = esCrearBiblia ? "10px" : "";
+
   [previewTexto, previewTextoBack].forEach(el => {
-    el.style.inset = "3px";
+    el.style.inset = esCrearBiblia ? "0" : "3px";
     el.style.width = "auto";
     el.style.height = "auto";
     el.style.padding = "0";
@@ -7143,7 +7161,11 @@ function actualizarPreview() {
 
     [previewTexto, previewTextoBack].forEach(el => {
       el.style.inset = "0";
-      el.style.padding = "20px";
+      /*
+        En Biblia el wrapper ya aporta los 10 px reales.
+        No agregamos otros 20 px durante la medición automática.
+      */
+      el.style.padding = esCrearBiblia ? "0" : "20px";
     });
 
     sizeSlider.value = "64";
@@ -7161,10 +7183,15 @@ function actualizarPreview() {
 
     sizeSlider.value = String(sugerido);
 
-    previewTexto.style.inset = estadoFront.inset || "3px";
-    previewTexto.style.padding = estadoFront.padding || "0px";
-    previewTextoBack.style.inset = estadoBack.inset || "3px";
-    previewTextoBack.style.padding = estadoBack.padding || "0px";
+    previewTexto.style.inset =
+      estadoFront.inset || (esCrearBiblia ? "0" : "3px");
+    previewTexto.style.padding =
+      estadoFront.padding || "0px";
+
+    previewTextoBack.style.inset =
+      estadoBack.inset || (esCrearBiblia ? "0" : "3px");
+    previewTextoBack.style.padding =
+      estadoBack.padding || "0px";
   }
 
   const finalSize = sizeSlider ? Number(sizeSlider.value || 32) : 32;
@@ -7287,6 +7314,187 @@ function actualizarPreview() {
   invalidarRenderFinal();
 } // ✅ CIERRA actualizarPreview()
 
+
+// ================= ✅ RESALTADO BIBLIA: PNG IGUAL AL PREVIEW =================
+function bibliaPrepararResaltadoExplicitoParaCaptura() {
+  const esCrearBiblia =
+    !modoImagenLibre &&
+    origenModalImagen === "biblia";
+
+  if (!esCrearBiblia) {
+    return () => {};
+  }
+
+  const wrapper =
+    document.getElementById(
+      "previewTextoWrapper"
+    );
+
+  const back =
+    document.getElementById(
+      "previewTextoBack"
+    );
+
+  if (!wrapper || !back) {
+    return () => {};
+  }
+
+  const csWrapper =
+    getComputedStyle(wrapper);
+
+  const colorResaltado =
+    String(
+      csWrapper.getPropertyValue(
+        "--va-biblia-resaltado"
+      ) || ""
+    ).trim();
+
+  if (
+    !colorResaltado ||
+    colorResaltado === "transparent" ||
+    colorResaltado === "rgba(0, 0, 0, 0)"
+  ) {
+    return () => {};
+  }
+
+  const spread =
+    Math.max(
+      0,
+      parseFloat(
+        csWrapper.getPropertyValue(
+          "--va-biblia-resaltado-spread"
+        )
+      ) || 4
+    );
+
+  const overlay =
+    document.createElement("div");
+
+  overlay.className =
+    "va-biblia-resaltado-captura";
+
+  Object.assign(
+    overlay.style,
+    {
+      position: "absolute",
+      inset: "0",
+      zIndex: "0",
+      pointerEvents: "none",
+      overflow: "visible"
+    }
+  );
+
+  const wrapperRect =
+    wrapper.getBoundingClientRect();
+
+  const spans =
+    Array.from(
+      back.querySelectorAll(
+        ".preview-biblia-linea, .preview-biblia-cita"
+      )
+    );
+
+  const restaurar = [];
+
+  spans.forEach(span => {
+    const estilo = span.style;
+
+    restaurar.push({
+      span,
+      background:
+        estilo.background,
+      backgroundColor:
+        estilo.backgroundColor,
+      boxShadow:
+        estilo.boxShadow
+    });
+
+    let rects = [];
+
+    try {
+      const range =
+        document.createRange();
+
+      range.selectNodeContents(span);
+
+      rects =
+        Array.from(
+          range.getClientRects()
+        );
+
+      range.detach?.();
+    } catch (e) {}
+
+    if (!rects.length) {
+      const r =
+        span.getBoundingClientRect();
+
+      if (r.width > 0 && r.height > 0) {
+        rects = [r];
+      }
+    }
+
+    rects.forEach(r => {
+      if (
+        r.width <= 0 ||
+        r.height <= 0
+      ) {
+        return;
+      }
+
+      const pill =
+        document.createElement("div");
+
+      Object.assign(
+        pill.style,
+        {
+          position: "absolute",
+          left:
+            `${r.left - wrapperRect.left - spread}px`,
+          top:
+            `${r.top - wrapperRect.top}px`,
+          width:
+            `${r.width + (spread * 2)}px`,
+          height:
+            `${r.height}px`,
+          borderRadius:
+            "999px",
+          background:
+            colorResaltado,
+          boxShadow:
+            "none"
+        }
+      );
+
+      overlay.appendChild(pill);
+    });
+
+    // Apagamos SOLO el fondo original durante la captura.
+    // Texto y contorno permanecen intactos.
+    span.style.background =
+      "transparent";
+    span.style.backgroundColor =
+      "transparent";
+    span.style.boxShadow =
+      "none";
+  });
+
+  wrapper.prepend(overlay);
+
+  return () => {
+    restaurar.forEach(item => {
+      item.span.style.background =
+        item.background;
+      item.span.style.backgroundColor =
+        item.backgroundColor;
+      item.span.style.boxShadow =
+        item.boxShadow;
+    });
+
+    overlay.remove();
+  };
+}
+
 // ================= ⭐ CANVAS GENERA IMAGEN FINAL (FIX REAL) ============================
 async function generarImagenFinal(opts = {}) {
   const { subir = true } = opts; // ✅ por defecto sube (Finalizar), pero Descargar/Compartir pasan false
@@ -7313,99 +7521,11 @@ async function generarImagenFinal(opts = {}) {
 
 preview.classList.remove("render-final");
 
-const t1 = document.getElementById("previewTexto");
-const t2 = document.getElementById("previewTextoBack");
-const wrapperTexto = document.getElementById("previewTextoWrapper");
-
-if (wrapperTexto) {
-  const esCrearBibliaRender = !modoImagenLibre && origenModalImagen === "biblia";
-  wrapperTexto.style.display = "flex";
-  wrapperTexto.style.alignItems = "center";
-  wrapperTexto.style.justifyContent = "center";
-  wrapperTexto.style.textAlign = "center";
-  wrapperTexto.style.padding = "0px";
-  wrapperTexto.style.boxSizing = "border-box";
-  wrapperTexto.style.borderRadius = esCrearBibliaRender ? "0" : "34px";
-  wrapperTexto.style.overflow = esCrearBibliaRender ? "visible" : "hidden";
-}
-
-[t1, t2].forEach(t => {
-  if (!t) return;
-
-  t.style.display = "grid";
-  t.style.placeItems = "center";
-  t.style.textAlign = "center";
-  t.style.alignItems = "center";
-  t.style.justifyItems = "center";
-  t.style.inset = "3px";
-  t.style.width = "auto";
-  t.style.height = "auto";
-  t.style.padding = "0";
-  t.style.margin = "0";
-  t.style.boxSizing = "border-box";
-
-  const center = t.querySelector(".preview-text-center");
-  if (center) {
-    center.style.display = "block";
-    center.style.width = "100%";
-    center.style.maxWidth = "100%";
-    center.style.margin = "0";
-    center.style.padding = "0";
-    center.style.boxSizing = "border-box";
-    center.style.textAlign = "center";
-    center.style.lineHeight = "1.25";
-  }
-
-  const cuerpoWrap = t.querySelector(".preview-biblia-cuerpo-wrap");
-  const citaWrap = t.querySelector(".preview-biblia-cita-wrap");
-
-  [cuerpoWrap, citaWrap].forEach(w => {
-    if (!w) return;
-    w.style.display = "block";
-    w.style.width = "100%";
-    w.style.maxWidth = "100%";
-    w.style.margin = "0";
-    w.style.padding = "0";
-    w.style.textAlign = "center";
-    w.style.boxSizing = "border-box";
-    w.style.background = "transparent";
-  });
-
-  const inner = t.querySelector(".preview-text-inner");
-  if (inner) {
-    inner.style.display = "block";
-    inner.style.width = "100%";
-    inner.style.maxWidth = "100%";
-    inner.style.margin = "0";
-    inner.style.padding = "0";
-    inner.style.lineHeight = "1.25";
-    inner.style.whiteSpace = "normal";
-    inner.style.textAlign = "center";
-  }
-
-  const espacio = t.querySelector(".preview-biblia-espacio");
-  if (espacio) {
-    espacio.style.display = "block";
-    espacio.style.width = "100%";
-    espacio.style.height = "1.25em";
-    espacio.style.margin = "0";
-    espacio.style.padding = "0";
-  }
-
-  const refEl = t.querySelector(".preview-text-ref");
-  if (refEl) {
-    refEl.style.display = "inline-block";
-    refEl.style.width = "auto";
-    refEl.style.maxWidth = "100%";
-    refEl.style.margin = "0";
-    refEl.style.padding = "0";
-    refEl.style.lineHeight = "1.25";
-    refEl.style.fontSize = "1em";
-    refEl.style.textAlign = "center";
-    refEl.style.whiteSpace = "nowrap";
-    refEl.style.transform = "none";
-  }
-});
+/*
+  La captura final NO vuelve a tocar display, line-height, inset,
+  wrappers ni posiciones. Se captura exactamente la composición
+  que el usuario está viendo en pantalla.
+*/
 
   const fondoUsable = fondoFinalBlobUrl || fondoFinal;
 
@@ -7426,15 +7546,29 @@ if (wrapperTexto) {
     // ✅ Si está activo el fondo diseñado, esperamos textura y adorno antes de capturar.
     await bibliaEsperarRecursosDiseno();
 
-    const canvasTemp = await html2canvas(preview, {
-      scale: SCALE,
-      useCORS: true,
-      allowTaint: false,
-      logging: false,
-      width: Math.round(rect.width),
-      height: Math.round(rect.height),
-      backgroundColor: (modoFondoBiblia === "diseno" || fondoUsable) ? null : "#ffffff"
-    });
+    /*
+      html2canvas puede interpretar distinto box-decoration-break.
+      Para el PNG convertimos temporalmente cada renglón resaltado
+      en una cápsula real usando las posiciones EXACTAS del preview.
+    */
+    const limpiarResaltadoCaptura =
+      bibliaPrepararResaltadoExplicitoParaCaptura();
+
+    let canvasTemp;
+
+    try {
+      canvasTemp = await html2canvas(preview, {
+        scale: SCALE,
+        useCORS: true,
+        allowTaint: false,
+        logging: false,
+        width: Math.round(rect.width),
+        height: Math.round(rect.height),
+        backgroundColor: (modoFondoBiblia === "diseno" || fondoUsable) ? null : "#ffffff"
+      });
+    } finally {
+      limpiarResaltadoCaptura();
+    }
 
     canvasFinal.width = canvasTemp.width;
     canvasFinal.height = canvasTemp.height;
@@ -10863,19 +10997,34 @@ limpiarSeleccionMarcadorCompleta();
     }
 
     /*
-      Después de crear o editar una nota,
-      pasamos directamente al audio.
+      Nota nueva:
+      NO saltamos automáticamente al generador de audio.
 
-      Solo se abre para quienes tienen permiso
-      para generar audios.
+      Si puede generar audio, volvemos a abrir la nota recién guardada
+      dentro del mismo editor. Ahí queda el botón "Crear audio",
+      igual que cuando editás una nota existente.
     */
     if (
-      window.__ES_ADMIN ||
-      window.__ES_COLABORADOR
+      !editId &&
+      (
+        window.__ES_ADMIN ||
+        window.__ES_COLABORADOR
+      )
     ) {
       setTimeout(() => {
-        window.abrirAudioNota?.(id);
-      }, 220);
+        try {
+          window.abrirMarcadores?.();
+
+          setTimeout(() => {
+            window.editarMarcadorDesdeLista?.(id);
+          }, 0);
+        } catch (e) {
+          console.warn(
+            "No pude volver a abrir la nota recién guardada:",
+            e
+          );
+        }
+      }, 120);
     }
 
   } catch (e) {
@@ -11049,6 +11198,307 @@ window.filtrarNotasPanelPorLibro =
       Solo ocultamos o mostramos las cards.
     */
     aplicarFiltroNotasPanelLibro();
+  };
+
+
+// ================= ✨ MI PANEL > RESALTADOS =================
+function asegurarPanelResaltadosUI() {
+  const seccionPanel =
+    document.getElementById("seccion-panel");
+
+  if (!seccionPanel) return;
+
+  const tabs =
+    seccionPanel.querySelector(".panel-tabs");
+
+  if (tabs) {
+    let btnResaltados =
+      tabs.querySelector(
+        '[data-panel-tab="resaltados"]'
+      );
+
+    if (!btnResaltados) {
+      btnResaltados =
+        document.createElement("button");
+
+      btnResaltados.type = "button";
+      btnResaltados.dataset.panelTab =
+        "resaltados";
+      btnResaltados.setAttribute(
+        "onclick",
+        "mostrarSeccion('resaltados')"
+      );
+      btnResaltados.innerHTML = `
+        <i class="fa-solid fa-highlighter"></i>
+        <span>Resaltados</span>
+      `;
+
+      const btnNotas =
+        Array.from(
+          tabs.querySelectorAll("button")
+        ).find(btn =>
+          String(
+            btn.getAttribute("onclick") || ""
+          ).includes(
+            "mostrarSeccion('marcadores')"
+          ) ||
+          String(
+            btn.getAttribute("onclick") || ""
+          ).includes(
+            'mostrarSeccion("marcadores")'
+          )
+        );
+
+      if (btnNotas?.nextSibling) {
+        tabs.insertBefore(
+          btnResaltados,
+          btnNotas.nextSibling
+        );
+      } else {
+        tabs.appendChild(btnResaltados);
+      }
+    }
+  }
+
+  let panelResaltados =
+    document.getElementById(
+      "panel-resaltados"
+    );
+
+  if (!panelResaltados) {
+    panelResaltados =
+      document.createElement("div");
+
+    panelResaltados.id =
+      "panel-resaltados";
+    panelResaltados.className =
+      "panel-seccion";
+    panelResaltados.style.display =
+      "none";
+
+    const panelNotas =
+      document.getElementById(
+        "panel-marcadores"
+      );
+
+    if (panelNotas?.parentElement) {
+      panelNotas.insertAdjacentElement(
+        "afterend",
+        panelResaltados
+      );
+    } else {
+      seccionPanel.appendChild(
+        panelResaltados
+      );
+    }
+  }
+}
+
+function renderPanelResaltados() {
+  asegurarPanelResaltadosUI();
+
+  const panel =
+    document.getElementById(
+      "panel-resaltados"
+    );
+
+  if (!panel) return;
+
+  const ordenBiblia =
+    new Map(
+      (bibliaData || []).map((v, i) => [
+        `${v.Libro}_${v.Capitulo}_${v.Versiculo}`,
+        i
+      ])
+    );
+
+  const items =
+    Object.entries(marcados || {})
+      .map(([id, data]) => {
+        const pos =
+          parsearIdResaltadoBiblia(id);
+
+        if (!pos) return null;
+
+        const v =
+          obtenerVersiculoResaltadoPorId(
+            id
+          );
+
+        return {
+          id,
+          color:
+            data?.color || "#fff3b0",
+          libro: pos.libro,
+          capitulo: pos.capitulo,
+          versiculo: pos.versiculo,
+          texto: v
+            ? String(
+                getTextoVersiculo(v) || ""
+              ).trim()
+            : "",
+          orden:
+            ordenBiblia.has(id)
+              ? Number(
+                  ordenBiblia.get(id)
+                )
+              : Number.MAX_SAFE_INTEGER
+        };
+      })
+      .filter(Boolean)
+      .sort((a, b) => {
+        if (a.orden !== b.orden) {
+          return a.orden - b.orden;
+        }
+
+        const porLibro =
+          a.libro.localeCompare(
+            b.libro,
+            "es",
+            {
+              numeric: true,
+              sensitivity: "base"
+            }
+          );
+
+        if (porLibro) return porLibro;
+        if (a.capitulo !== b.capitulo) {
+          return a.capitulo - b.capitulo;
+        }
+
+        return a.versiculo - b.versiculo;
+      });
+
+  panel.innerHTML = `
+    <div class="panel-marcadores-bar">
+      <div class="pm-left">
+        <div class="pm-left-top">
+          <b class="pm-titulo-panel">
+            <i class="fa-solid fa-highlighter"></i>
+            <span>Resaltados</span>
+          </b>
+        </div>
+
+        <div
+          class="pm-sub muted"
+          style="font-size:12px; margin-top:2px;"
+        >
+          ${items.length}
+          ${
+            items.length === 1
+              ? "versículo resaltado"
+              : "versículos resaltados"
+          }
+        </div>
+      </div>
+    </div>
+
+    ${
+      items.length
+        ? items.map(item => {
+            const fondo =
+              item.color || "#fff3b0";
+
+            const colorTexto =
+              typeof colorContraste ===
+              "function"
+                ? colorContraste(fondo)
+                : "#000";
+
+            const idSeguro =
+              String(item.id || "")
+                .replace(/\\/g, "\\\\")
+                .replace(/'/g, "\\'");
+
+            const refTxt =
+              marcadorEscapeHTML(
+                `${item.libro} ${item.capitulo}:${item.versiculo}`
+              );
+
+            const texto =
+              marcadorEscapeHTML(
+                item.texto || ""
+              );
+
+            return `
+              <div
+                class="card-marcador"
+                style="
+                  background:${fondo} !important;
+                  color:${colorTexto} !important;
+                  border:1px solid rgba(0,0,0,.10);
+                "
+              >
+                <div
+                  style="
+                    display:flex;
+                    justify-content:space-between;
+                    gap:10px;
+                    align-items:center;
+                  "
+                >
+                  <div style="min-width:0; flex:1 1 auto;">
+                    <b>${refTxt}</b>
+                  </div>
+
+                  <button
+                    type="button"
+                    class="pm-btn"
+                    onclick="abrirResaltadoDesdePanel('${idSeguro}')"
+                    title="Volver a este versículo"
+                    aria-label="Volver a este versículo"
+                  >
+                    <i class="fa-solid fa-reply"></i>
+                  </button>
+                </div>
+
+                ${
+                  texto
+                    ? `
+                      <div
+                        class="nota"
+                        style="
+                          margin-top:8px;
+                          background:rgba(255,255,255,.38);
+                          color:inherit;
+                        "
+                      >
+                        ${texto}
+                      </div>
+                    `
+                    : ``
+                }
+              </div>
+            `;
+          }).join("")
+        : `
+          <p style="opacity:.75;">
+            Todavía no guardaste resaltados.
+          </p>
+        `
+    }
+  `;
+}
+
+window.abrirResaltadoDesdePanel =
+  function(id = "") {
+    if (!id) return;
+
+    try {
+      irA("biblia");
+    } catch (e) {
+      try {
+        forzarSeccionActiva(
+          "biblia"
+        );
+      } catch (_) {}
+    }
+
+    setTimeout(() => {
+      window
+        .abrirResaltadoDesdeLista
+        ?.(id);
+    }, 0);
   };
 
 function renderPanelMarcadores() {
@@ -12541,6 +12991,8 @@ window.mostrarSeccion = (tipo) => {
   // ✅ Mi Panel solo puede manejar sus pestañas si realmente estamos en Mi Panel
   if (!document.body.classList.contains("en-panel")) return;
 
+  asegurarPanelResaltadosUI();
+
   if (!uid) {
   mostrarPanelVisitante();
   return;
@@ -12551,7 +13003,7 @@ window.mostrarSeccion = (tipo) => {
     forzarSeccionActiva("panel");
   }
 
-  const permitidas = ["imagenes", "marcadores", "compartidos"];
+  const permitidas = ["imagenes", "marcadores", "resaltados", "compartidos"];
   if (!permitidas.includes(tipo)) tipo = "imagenes";
 
   permitidas.forEach(s => {
@@ -12563,6 +13015,10 @@ window.mostrarSeccion = (tipo) => {
 
   if (tipo === "marcadores") {
     try { renderPanelMarcadores(); } catch(e) { console.warn(e); }
+  }
+
+  if (tipo === "resaltados") {
+    try { renderPanelResaltados(); } catch(e) { console.warn(e); }
   }
 
   if (tipo === "compartidos") {
@@ -15488,6 +15944,7 @@ function obtenerContenedorScrollActivo() {
 
     document.querySelector("body.en-panel #panel-imagenes"),
     document.querySelector("body.en-panel #panel-marcadores"),
+    document.querySelector("body.en-panel #panel-resaltados"),
     document.querySelector("body.en-panel #seccion-panel")
   ].filter(elementoVisible);
 
@@ -15557,6 +16014,7 @@ function puedeMostrarse() {
   "iglesia-subidos",
   "panel-imagenes",
   "panel-marcadores",
+  "panel-resaltados",
   "seccion-iglesia",
   "seccion-panel"
 ]
@@ -16039,7 +16497,8 @@ function limpiarFondosInternosApp() {
     document.getElementById("recursos-hermanos"),
     document.getElementById("recursos-permisos"),
     document.getElementById("panel-imagenes"),
-    document.getElementById("panel-marcadores")
+    document.getElementById("panel-marcadores"),
+    document.getElementById("panel-resaltados")
   ].filter(Boolean).forEach(el => {
     el.style.background = "none";
     el.style.backgroundImage = "none";
