@@ -15,7 +15,7 @@ const R2_UPLOAD_URL = R2_WORKER_URL;
 const GH_UPLOAD_URL = R2_WORKER_URL;
 const TTS_URL = R2_WORKER_URL;
 
-console.log("✅ devocionales.js cargó (module)", "F1-POS-20260826-2");
+console.log("✅ devocionales.js cargó (module)", "F1-FINAL-RESALTADO-20260826-3");
 window.__DEV_DEVOCIONALES_LOADED__ = true;
 
 function $(id){ return document.getElementById(id); }
@@ -2948,18 +2948,23 @@ function buildFase1HTML(versiculoCanvasPx, scale){
   const spreadF1 = Math.max(1, 4 * scale);
 
   const resaltarF1 = (contenido) => `
-    <span style="
-      display:inline;
-      margin:0;
-      padding:0;
-      background:${resaltadoF1};
-      box-shadow:
-        ${spreadF1}px 0 0 ${resaltadoF1},
-        -${spreadF1}px 0 0 ${resaltadoF1};
-      border-radius:999px;
-      box-decoration-break:clone;
-      -webkit-box-decoration-break:clone;
-    ">${contenido}</span>
+    <span
+      class="dev-f1-resaltado-lineas"
+      data-dev-f1-spread="${spreadF1}"
+      data-dev-f1-color="${resaltadoF1}"
+      style="
+        display:inline;
+        margin:0;
+        padding:0;
+        background:${resaltadoF1};
+        box-shadow:
+          ${spreadF1}px 0 0 ${resaltadoF1},
+          -${spreadF1}px 0 0 ${resaltadoF1};
+        border-radius:999px;
+        box-decoration-break:clone;
+        -webkit-box-decoration-break:clone;
+      "
+    >${contenido}</span>
   `;
 
   // ✅ tamaños reales en canvas 1080 (se escalan en preview)
@@ -4138,6 +4143,187 @@ function devDibujarUnionSuaveFinal(ctx, W, y){
   ctx.restore();
 }
 
+
+// ============================================================
+// ✅ FASE 1 FINAL: RESALTADO POR RENGLÓN IGUAL AL PREVIEW
+// ============================================================
+function devPrepararResaltadoF1ParaCaptura(nodeF1) {
+  if (!nodeF1) return () => {};
+
+  const spans = Array.from(
+    nodeF1.querySelectorAll(
+      ".dev-f1-resaltado-lineas"
+    )
+  );
+
+  if (!spans.length) return () => {};
+
+  const nodeRect =
+    nodeF1.getBoundingClientRect();
+
+  const overlay =
+    document.createElement("div");
+
+  overlay.className =
+    "dev-f1-resaltado-captura";
+
+  Object.assign(
+    overlay.style,
+    {
+      position: "absolute",
+      inset: "0",
+      zIndex: "0",
+      pointerEvents: "none",
+      overflow: "visible"
+    }
+  );
+
+  const restaurar = [];
+
+  spans.forEach(span => {
+    const color =
+      String(
+        span.dataset.devF1Color || ""
+      ).trim();
+
+    const spread =
+      Math.max(
+        0,
+        Number(
+          span.dataset.devF1Spread || 4
+        ) || 4
+      );
+
+    restaurar.push({
+      span,
+      background:
+        span.style.background,
+      backgroundColor:
+        span.style.backgroundColor,
+      boxShadow:
+        span.style.boxShadow
+    });
+
+    let rects = [];
+
+    try {
+      const range =
+        document.createRange();
+
+      range.selectNodeContents(span);
+
+      rects =
+        Array.from(
+          range.getClientRects()
+        ).filter(
+          r =>
+            r.width > 0 &&
+            r.height > 0
+        );
+
+      range.detach?.();
+    } catch (e) {}
+
+    if (!rects.length) {
+      const r =
+        span.getBoundingClientRect();
+
+      if (
+        r.width > 0 &&
+        r.height > 0
+      ) {
+        rects = [r];
+      }
+    }
+
+    rects.forEach(r => {
+      const pill =
+        document.createElement("div");
+
+      Object.assign(
+        pill.style,
+        {
+          position: "absolute",
+          left:
+            `${
+              r.left -
+              nodeRect.left -
+              spread
+            }px`,
+          top:
+            `${
+              r.top -
+              nodeRect.top
+            }px`,
+          width:
+            `${
+              r.width +
+              (spread * 2)
+            }px`,
+          height:
+            `${r.height}px`,
+          borderRadius:
+            "999px",
+          background:
+            color,
+          boxShadow:
+            "none",
+          margin: "0",
+          padding: "0"
+        }
+      );
+
+      overlay.appendChild(pill);
+    });
+
+    /*
+      Durante html2canvas apagamos únicamente
+      el fondo CSS del span.
+      El texto, tamaño, contorno y posición NO cambian.
+    */
+    span.style.background =
+      "transparent";
+    span.style.backgroundColor =
+      "transparent";
+    span.style.boxShadow =
+      "none";
+  });
+
+  /*
+    El texto ya está dentro de un wrapper.
+    Lo ponemos por encima de las cápsulas
+    sin modificar su geometría.
+  */
+  const hijos =
+    Array.from(nodeF1.children);
+
+  hijos.forEach(hijo => {
+    if (
+      hijo !== overlay &&
+      !hijo.style.zIndex
+    ) {
+      hijo.style.zIndex = "1";
+    }
+  });
+
+  nodeF1.prepend(overlay);
+
+  return () => {
+    restaurar.forEach(item => {
+      item.span.style.background =
+        item.background;
+
+      item.span.style.backgroundColor =
+        item.backgroundColor;
+
+      item.span.style.boxShadow =
+        item.boxShadow;
+    });
+
+    overlay.remove();
+  };
+}
+
 async function renderFinalCanvasCaptureReal(){
   const cFinal = $("devCanvasFinal");
   if (!cFinal) return null;
@@ -4329,8 +4515,34 @@ texto.style.webkitTextStroke = "0.75px " + outlineF2;
   // Así html2canvas no calcula dimensiones con la imagen todavía pendiente.
   await devEsperarImagenesNodo(n2);
 
-  const cap1 = await html2canvas(n1, { backgroundColor: null, scale: 2, useCORS: true });
-  const cap2 = await html2canvas(n2, { backgroundColor: null, scale: 2, useCORS: true });
+  /*
+    html2canvas no reproduce de forma fiable
+    box-decoration-break: clone en spans multilínea.
+
+    La preview del navegador está bien.
+    Antes de capturar Fase 1 convertimos temporalmente
+    esos fondos en cápsulas reales por cada renglón visible.
+  */
+  const limpiarResaltadoF1 =
+    devPrepararResaltadoF1ParaCaptura(n1);
+
+  let cap1;
+
+  try {
+    cap1 = await html2canvas(n1, {
+      backgroundColor: null,
+      scale: 2,
+      useCORS: true
+    });
+  } finally {
+    limpiarResaltadoF1();
+  }
+
+  const cap2 = await html2canvas(n2, {
+    backgroundColor: null,
+    scale: 2,
+    useCORS: true
+  });
 
   ctx.drawImage(cap1, 0, 0, W, H1);
   ctx.drawImage(cap2, 0, H1, W, H2);
