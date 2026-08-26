@@ -7179,6 +7179,14 @@ function actualizarPreview() {
 
 const esCrearBiblia = !modoImagenLibre && origenModalImagen === "biblia";
 
+/*
+  Variables disponibles durante TODA actualizarPreview().
+  Antes estaban declaradas dentro del if y por eso después
+  aparecía: ReferenceError: refPlano is not defined.
+*/
+let cuerpoPlano = "";
+let refPlano = "";
+
 if (esCrearBiblia) {
   const textoPlano = String(textoFinal || "")
     .replace(/\r/g, "")
@@ -7187,12 +7195,12 @@ if (esCrearBiblia) {
   const partesBiblia = textoPlano.split("\n");
   const idxRef = partesBiblia.findIndex(x => String(x || "").trim().startsWith("▪"));
 
-  const cuerpoPlano = (idxRef >= 0 ? partesBiblia.slice(0, idxRef) : partesBiblia)
+  cuerpoPlano = (idxRef >= 0 ? partesBiblia.slice(0, idxRef) : partesBiblia)
     .join("\n")
     .replace(/\n{2,}/g, "\n")
     .trim();
 
-  const refPlano = (idxRef >= 0 ? partesBiblia.slice(idxRef).join(" ") : "")
+  refPlano = (idxRef >= 0 ? partesBiblia.slice(idxRef).join(" ") : "")
     .replace(/^\s*▪\s*/, "")
     .trim();
 
