@@ -3955,10 +3955,8 @@ function sugerirFontSizeQueEntre(wrapper, elFront, elBack, maxPx = 64, minPx = 1
   const padX = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
   const padY = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0);
 
-  // El texto queda a 3 px del wrapper por cada lado.
-  const bordeTexto = 3;
-  const maxW = Math.max(10, wrapper.clientWidth - padX - (bordeTexto * 2));
-  const maxH = Math.max(10, wrapper.clientHeight - padY - (bordeTexto * 2));
+  const maxW = Math.max(10, wrapper.clientWidth - padX);
+  const maxH = Math.max(10, wrapper.clientHeight - padY);
 
   // helper: aplica tamaño y revisa si entra
   const entra = (px) => {
@@ -6958,10 +6956,16 @@ function aplicarWrapperBibliaImagen(wrapper, op, color, partes = {}){
     wrapper.style.backgroundSize = "100% 100%";
     wrapper.style.borderRadius = "0";
     wrapper.style.overflow = "visible";
+
+    /*
+      El resaltado no modifica el layout:
+      la expansión visual es igual a izquierda y derecha.
+    */
     wrapper.style.setProperty("--va-biblia-resaltado", resaltado);
-    wrapper.style.setProperty("--va-biblia-line-pad", raw > 0 ? "2px 7px" : "0px");
-    wrapper.style.setProperty("--va-biblia-cita-pad", raw > 0 ? "2px 9px" : "0px");
-    wrapper.style.setProperty("--va-biblia-line-radius", raw > 0 ? "999px" : "0px");
+    wrapper.style.setProperty(
+      "--va-biblia-resaltado-spread",
+      raw > 0 ? "4px" : "0px"
+    );
 
     [
       partes.innerFront,
@@ -6971,7 +6975,6 @@ function aplicarWrapperBibliaImagen(wrapper, op, color, partes = {}){
     ].forEach(el => {
       if (!el) return;
       el.style.boxSizing = "border-box";
-      el.style.boxShadow = "none";
       el.style.boxDecorationBreak = "clone";
       el.style.webkitBoxDecorationBreak = "clone";
     });
@@ -6987,9 +6990,7 @@ function aplicarWrapperBibliaImagen(wrapper, op, color, partes = {}){
   wrapper.style.backgroundPosition = "center";
   wrapper.style.backgroundSize = "100% 100%";
   wrapper.style.removeProperty("--va-biblia-resaltado");
-  wrapper.style.removeProperty("--va-biblia-line-pad");
-  wrapper.style.removeProperty("--va-biblia-cita-pad");
-  wrapper.style.removeProperty("--va-biblia-line-radius");
+  wrapper.style.removeProperty("--va-biblia-resaltado-spread");
 
   if (raw <= 0) {
     wrapper.style.backgroundImage = "none";
@@ -7000,166 +7001,6 @@ function aplicarWrapperBibliaImagen(wrapper, op, color, partes = {}){
   wrapper.style.backgroundImage = url ? `url("${url}")` : "none";
 }
 
-
-// ================= ✅ BIBLIA: RENDER REAL POR RENGLONES =======================
-// Ya NO dependemos de box-decoration-break para el resaltado.
-// Calculamos qué palabras entran en cada renglón y luego cada renglón
-// se dibuja como una cápsula independiente y perfectamente centrada.
-let __bibliaCanvasMedicionRenglones = null;
-
-function bibliaMedirAnchoTexto(texto, elementoBase) {
-  if (!__bibliaCanvasMedicionRenglones) {
-    __bibliaCanvasMedicionRenglones = document.createElement("canvas");
-  }
-
-  const ctx = __bibliaCanvasMedicionRenglones.getContext("2d");
-  if (!ctx || !elementoBase) return 0;
-
-  const cs = getComputedStyle(elementoBase);
-
-  const fontStyle = cs.fontStyle || "normal";
-  const fontWeight = cs.fontWeight || "400";
-  const fontSize = cs.fontSize || "16px";
-  const fontFamily = cs.fontFamily || "Arial, sans-serif";
-
-  ctx.font = `${fontStyle} ${fontWeight} ${fontSize} ${fontFamily}`;
-
-  let valor = String(texto || "");
-  if ((cs.textTransform || "").toLowerCase() === "uppercase") {
-    valor = valor.toUpperCase();
-  }
-
-  let ancho = ctx.measureText(valor).width;
-
-  const letterSpacing = parseFloat(cs.letterSpacing);
-  if (Number.isFinite(letterSpacing) && letterSpacing !== 0 && valor.length > 1) {
-    ancho += letterSpacing * (valor.length - 1);
-  }
-
-  return ancho;
-}
-
-function bibliaPartirTextoEnRenglones(texto, elementoBase, maxAnchoTexto) {
-  const limpio = String(texto || "")
-    .replace(/\r/g, "")
-    .replace(/[ \t]+/g, " ")
-    .trim();
-
-  if (!limpio) return [];
-
-  const parrafos = limpio
-    .split(/\n+/)
-    .map(x => x.trim())
-    .filter(Boolean);
-
-  const resultado = [];
-
-  const partirPalabraLarga = (palabra) => {
-    let actual = "";
-
-    for (const ch of String(palabra || "")) {
-      const candidato = actual + ch;
-
-      if (
-        actual &&
-        bibliaMedirAnchoTexto(candidato, elementoBase) > maxAnchoTexto
-      ) {
-        resultado.push(actual);
-        actual = ch;
-      } else {
-        actual = candidato;
-      }
-    }
-
-    return actual;
-  };
-
-  for (const parrafo of parrafos) {
-    const palabras = parrafo.split(/\s+/).filter(Boolean);
-    let linea = "";
-
-    for (const palabra of palabras) {
-      const candidato = linea ? `${linea} ${palabra}` : palabra;
-
-      if (
-        !linea ||
-        bibliaMedirAnchoTexto(candidato, elementoBase) <= maxAnchoTexto
-      ) {
-        linea = candidato;
-        continue;
-      }
-
-      resultado.push(linea.trim());
-      linea = "";
-
-      if (bibliaMedirAnchoTexto(palabra, elementoBase) <= maxAnchoTexto) {
-        linea = palabra;
-      } else {
-        linea = partirPalabraLarga(palabra);
-      }
-    }
-
-    if (linea.trim()) {
-      resultado.push(linea.trim());
-    }
-  }
-
-  return resultado.filter(Boolean);
-}
-
-function bibliaRenderBibliaPorRenglones(
-  previewTexto,
-  previewTextoBack,
-  cuerpoPlano,
-  refPlano
-) {
-  if (!previewTexto || !previewTextoBack) return;
-
-  /*
-    Dejamos 7 px a cada lado para el resaltado.
-    Así el TEXTO entra dentro del ancho y la cápsula nunca queda cortada.
-  */
-  const padHorizontal = 7;
-  const anchoDisponible = Math.max(
-    20,
-    Math.min(previewTexto.clientWidth, previewTextoBack.clientWidth) -
-      (padHorizontal * 2)
-  );
-
-  const lineas = bibliaPartirTextoEnRenglones(
-    cuerpoPlano,
-    previewTexto,
-    anchoDisponible
-  );
-
-  const htmlLineas = lineas
-    .map(linea =>
-      `<span class="preview-biblia-renglon">${textoLibreHtmlSeguro(linea)}</span>`
-    )
-    .join("");
-
-  const referenciaSegura = textoLibreHtmlSeguro(
-    String(refPlano || "").trim()
-  );
-
-  const construir = (esBack = false) => `
-    <div class="preview-text-center preview-biblia-stack"${esBack ? ' aria-hidden="true"' : ""}>
-      <div class="preview-biblia-cuerpo-wrap">
-        <div class="preview-text-inner preview-biblia-renglones">
-          ${htmlLineas}
-        </div>
-      </div>
-      ${referenciaSegura ? `
-        <div class="preview-biblia-cita-wrap">
-          <span class="preview-text-ref preview-biblia-cita">${referenciaSegura}</span>
-        </div>
-      ` : ``}
-    </div>
-  `;
-
-  previewTexto.innerHTML = construir(false);
-  previewTextoBack.innerHTML = construir(true);
-}
 
 // ================= ⭐ ACTUALIZAR VISTA PREVIA (FIX) 🌅 =======================
 function actualizarPreview() {
@@ -7176,96 +7017,44 @@ function actualizarPreview() {
   asegurarCajaTextoLibrePanel();
 
   const textoFinal = obtenerTextoParaPreview();
+  const esCrearBiblia = !modoImagenLibre && origenModalImagen === "biblia";
 
-const esCrearBiblia = !modoImagenLibre && origenModalImagen === "biblia";
+  /*
+    IMPORTANTE:
+    Para calcular el tamaño sugerido usamos PRIMERO la misma estructura
+    simple que tenía el archivo original. No medimos el resaltado.
+  */
+  const textoSeguroMedicion = textoLibreHtmlSeguro(textoFinal);
 
-/*
-  Variables disponibles durante TODA actualizarPreview().
-  Antes estaban declaradas dentro del if y por eso después
-  aparecía: ReferenceError: refPlano is not defined.
-*/
-let cuerpoPlano = "";
-let refPlano = "";
+  previewTexto.innerHTML = `<div class="preview-text-inner">${textoSeguroMedicion}</div>`;
+  previewTextoBack.innerHTML = `<div class="preview-text-inner">${textoSeguroMedicion}</div>`;
 
-if (esCrearBiblia) {
-  const textoPlano = String(textoFinal || "")
-    .replace(/\r/g, "")
-    .trim();
+  previewTexto.style.display = "grid";
+  previewTextoBack.style.display = "grid";
+  previewTexto.style.placeItems = "center";
+  previewTextoBack.style.placeItems = "center";
+  previewTexto.style.textAlign = "center";
+  previewTextoBack.style.textAlign = "center";
 
-  const partesBiblia = textoPlano.split("\n");
-  const idxRef = partesBiblia.findIndex(x => String(x || "").trim().startsWith("▪"));
+  /*
+    Mantener el aprovechamiento del wrapper que pediste:
+    sólo 3 px entre el área de texto y el borde.
+  */
+  wrapper.style.padding = "0px";
+  wrapper.style.boxSizing = "border-box";
+  wrapper.style.borderRadius = esCrearBiblia ? "0" : "34px";
+  wrapper.style.overflow = esCrearBiblia ? "visible" : "hidden";
 
-  cuerpoPlano = (idxRef >= 0 ? partesBiblia.slice(0, idxRef) : partesBiblia)
-    .join("\n")
-    .replace(/\n{2,}/g, "\n")
-    .trim();
+  [previewTexto, previewTextoBack].forEach(el => {
+    el.style.inset = "3px";
+    el.style.width = "auto";
+    el.style.height = "auto";
+    el.style.padding = "0";
+    el.style.margin = "0";
+    el.style.boxSizing = "border-box";
+  });
 
-  refPlano = (idxRef >= 0 ? partesBiblia.slice(idxRef).join(" ") : "")
-    .replace(/^\s*▪\s*/, "")
-    .trim();
-
-  const cuerpoSeguro = textoLibreHtmlSeguro(cuerpoPlano);
-  const refSeguro = textoLibreHtmlSeguro(refPlano);
-
-  previewTexto.innerHTML = `
-    <div class="preview-text-center preview-biblia-stack">
-      <div class="preview-biblia-cuerpo-wrap">
-        <span class="preview-text-inner preview-biblia-linea">${cuerpoSeguro}</span>
-      </div>
-      ${refSeguro ? `
-        <div class="preview-biblia-cita-wrap">
-          <span class="preview-text-ref preview-biblia-cita">${refSeguro}</span>
-        </div>
-      ` : ``}
-    </div>
-  `;
-
-  previewTextoBack.innerHTML = `
-    <div class="preview-text-center preview-biblia-stack" aria-hidden="true">
-      <div class="preview-biblia-cuerpo-wrap">
-        <span class="preview-text-inner preview-biblia-linea">${cuerpoSeguro}</span>
-      </div>
-      ${refSeguro ? `
-        <div class="preview-biblia-cita-wrap">
-          <span class="preview-text-ref preview-biblia-cita">${refSeguro}</span>
-        </div>
-      ` : ``}
-    </div>
-  `;
-} else {
-  const textoSeguro = textoLibreHtmlSeguro(textoFinal);
-  previewTexto.innerHTML = `<div class="preview-text-inner">${textoSeguro}</div>`;
-  previewTextoBack.innerHTML = `<div class="preview-text-inner">${textoSeguro}</div>`;
-}
-
-previewTexto.style.display = "grid";
-previewTextoBack.style.display = "grid";
-previewTexto.style.placeItems = "center";
-previewTextoBack.style.placeItems = "center";
-previewTexto.style.textAlign = "center";
-previewTextoBack.style.textAlign = "center";
-
-/*
-  Máximo aprovechamiento del wrapper:
-  previewTexto y previewTextoBack están superpuestos.
-  Dejamos únicamente 3 px por cada lado.
-*/
-wrapper.style.padding = "0px";
-wrapper.style.boxSizing = "border-box";
-wrapper.style.borderRadius = "34px";
-wrapper.style.overflow = "hidden";
-
-[previewTexto, previewTextoBack].forEach(el => {
-  el.style.inset = "3px";
-  el.style.width = "auto";
-  el.style.height = "auto";
-  el.style.padding = "0";
-  el.style.margin = "0";
-  el.style.boxSizing = "border-box";
-});
-  
   // ================= Fondo =================
-  // ✅ Modo imagen conserva el fondo viejo; modo diseño usa color/degradado + capas.
   bibliaAplicarFondoAlPreview(previewImagen);
 
   // ================= Fuente =================
@@ -7274,8 +7063,6 @@ wrapper.style.overflow = "hidden";
   previewTextoBack.style.fontFamily = fuente;
 
   // ================= Estilos Texto =================
-  // ✅ IMPORTANTE: aplicar estilos ANTES de medir el tamaño.
-  // Así Mayúsculas, Bold e Italic no se calculan con el estado anterior.
   const transform = textStyle?.upper ? "uppercase" : "none";
   const pesoTexto = textStyle?.bold ? "800" : "500";
   const estiloTexto = textStyle?.italic ? "italic" : "normal";
@@ -7293,39 +7080,161 @@ wrapper.style.overflow = "hidden";
   previewTexto.style.textDecoration = decoracionTexto;
   previewTextoBack.style.textDecoration = decoracionTexto;
 
-// ================= Tamaño (AUTO sugerido por MEDICION / MANUAL libre) =================
-const sizeSlider = document.getElementById("personalizarTamaño");
+  // ================= Tamaño: LÓGICA ORIGINAL =================
+  const sizeSlider = document.getElementById("personalizarTamaño");
 
-// 1) AUTO: sugerimos midiendo si entra.
-// IMPORTANTE: en Crear Imagen Biblia medimos con el MISMO layout simple que había antes
-// del resaltado por renglón. Así el resaltado nuevo NO achica artificialmente la letra.
-if (!userSetFontSize && sizeSlider) {
-  sizeSlider.value = "64";
-  previewTexto.style.fontSize = "64px";
-  previewTextoBack.style.fontSize = "64px";
+  if (!userSetFontSize && sizeSlider) {
+    sizeSlider.value = "64";
+    previewTexto.style.fontSize = "64px";
+    previewTextoBack.style.fontSize = "64px";
 
-  let sugerido = 32;
-
-  if (esCrearBiblia) {
-    const htmlFrontReal = previewTexto.innerHTML;
-    const htmlBackReal = previewTextoBack.innerHTML;
-
-    const sombraBackAnterior = previewTextoBack.style.textShadow;
-    const strokeBackAnterior = previewTextoBack.style.WebkitTextStroke;
-    const fillBackAnterior = previewTextoBack.style.webkitTextFillColor;
-
-    const textoSeguroMedicion = textoLibreHtmlSeguro(
-      esCrearBiblia && refPlano
-        ? `${cuerpoPlano}\n\n${refPlano}`
-        : textoFinal
+    const sugerido = sugerirFontSizeQueEntre(
+      wrapper,
+      previewTexto,
+      previewTextoBack,
+      64,
+      10,
+      0.5
     );
 
-    // Layout de medición original: un único bloque de ancho completo.
-    previewTexto.innerHTML = `<div class="preview-text-inner">${textoSeguroMedicion}</div>`;
-    previewTextoBack.innerHTML = `<div class="preview-text-inner">${textoSeguroMedicion}</div>`;
+    sizeSlider.value = String(sugerido);
+  }
 
-    [previewTexto, previewTextoBack].forEach(el => {
-      const inner = el.querySelector(".preview-text-inner");
+  const finalSize = sizeSlider ? Number(sizeSlider.value || 32) : 32;
+  previewTexto.style.fontSize = finalSize + "px";
+  previewTextoBack.style.fontSize = finalSize + "px";
+
+  /*
+    Recién DESPUÉS de calcular el tamaño armamos el resaltado.
+    Así no puede modificar el tamaño sugerido.
+  */
+  let cuerpoPlano = "";
+  let refPlano = "";
+
+  if (esCrearBiblia) {
+    const textoPlano = String(textoFinal || "")
+      .replace(/\r/g, "")
+      .trim();
+
+    const partes = textoPlano.split("\n");
+    const idxRef = partes.findIndex(x =>
+      String(x || "").trim().startsWith("▪")
+    );
+
+    cuerpoPlano = (idxRef >= 0 ? partes.slice(0, idxRef) : partes)
+      .join(" ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    refPlano = (idxRef >= 0 ? partes.slice(idxRef).join(" ") : "")
+      .replace(/^\s*▪\s*/, "")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    const cuerpoSeguro = textoLibreHtmlSeguro(cuerpoPlano);
+    const refSeguro = textoLibreHtmlSeguro(refPlano);
+
+    const construirBiblia = (esBack = false) => `
+      <div class="preview-text-center preview-biblia-stack"${esBack ? ' aria-hidden="true"' : ""}>
+        <div class="preview-biblia-cuerpo-wrap">
+          <span class="preview-text-inner preview-biblia-linea">${cuerpoSeguro}</span>
+        </div>
+        <div class="preview-biblia-espacio" aria-hidden="true"></div>
+        ${refSeguro ? `
+          <div class="preview-biblia-cita-wrap">
+            <span class="preview-text-ref preview-biblia-cita">${refSeguro}</span>
+          </div>
+        ` : ``}
+      </div>
+    `;
+
+    previewTexto.innerHTML = construirBiblia(false);
+    previewTextoBack.innerHTML = construirBiblia(true);
+  }
+
+  const innerFront = previewTexto.querySelector(".preview-text-inner");
+  const innerBack  = previewTextoBack.querySelector(".preview-text-inner");
+  const centerFront = previewTexto.querySelector(".preview-text-center");
+  const centerBack  = previewTextoBack.querySelector(".preview-text-center");
+  const refFront = previewTexto.querySelector(".preview-text-ref");
+  const refBack  = previewTextoBack.querySelector(".preview-text-ref");
+  const cuerpoWrapFront = previewTexto.querySelector(".preview-biblia-cuerpo-wrap");
+  const cuerpoWrapBack  = previewTextoBack.querySelector(".preview-biblia-cuerpo-wrap");
+  const citaWrapFront = previewTexto.querySelector(".preview-biblia-cita-wrap");
+  const citaWrapBack  = previewTextoBack.querySelector(".preview-biblia-cita-wrap");
+  const espacioFront = previewTexto.querySelector(".preview-biblia-espacio");
+  const espacioBack  = previewTextoBack.querySelector(".preview-biblia-espacio");
+
+  if (esCrearBiblia) {
+    [centerFront, centerBack].forEach(center => {
+      if (!center) return;
+      center.style.display = "block";
+      center.style.width = "100%";
+      center.style.maxWidth = "100%";
+      center.style.margin = "0";
+      center.style.padding = "0";
+      center.style.boxSizing = "border-box";
+      center.style.textAlign = "center";
+      center.style.lineHeight = "1.25";
+    });
+
+    [cuerpoWrapFront, cuerpoWrapBack, citaWrapFront, citaWrapBack].forEach(w => {
+      if (!w) return;
+      w.style.display = "block";
+      w.style.width = "100%";
+      w.style.maxWidth = "100%";
+      w.style.margin = "0";
+      w.style.padding = "0";
+      w.style.boxSizing = "border-box";
+      w.style.textAlign = "center";
+      w.style.background = "transparent";
+    });
+
+    [innerFront, innerBack].forEach(inner => {
+      if (!inner) return;
+      inner.style.display = "inline";
+      inner.style.width = "auto";
+      inner.style.maxWidth = "100%";
+      inner.style.margin = "0";
+      inner.style.padding = "0";
+      inner.style.boxSizing = "border-box";
+      inner.style.lineHeight = "1.25";
+      inner.style.whiteSpace = "normal";
+      inner.style.wordBreak = "normal";
+      inner.style.overflowWrap = "normal";
+      inner.style.textAlign = "center";
+      inner.style.boxDecorationBreak = "clone";
+      inner.style.webkitBoxDecorationBreak = "clone";
+    });
+
+    [espacioFront, espacioBack].forEach(espacio => {
+      if (!espacio) return;
+      espacio.style.display = "block";
+      espacio.style.width = "100%";
+      espacio.style.height = "1.25em";
+      espacio.style.margin = "0";
+      espacio.style.padding = "0";
+      espacio.style.lineHeight = "1.25";
+    });
+
+    [refFront, refBack].forEach(refEl => {
+      if (!refEl) return;
+      refEl.style.display = "inline-block";
+      refEl.style.width = "auto";
+      refEl.style.maxWidth = "100%";
+      refEl.style.margin = "0";
+      refEl.style.padding = "0";
+      refEl.style.boxSizing = "border-box";
+      refEl.style.lineHeight = "1.25";
+      refEl.style.fontSize = "1em";
+      refEl.style.textAlign = "center";
+      refEl.style.whiteSpace = "nowrap";
+      refEl.style.transform = "none";
+      refEl.style.left = "auto";
+      refEl.style.right = "auto";
+    });
+  } else {
+    [innerFront, innerBack].forEach(inner => {
       if (!inner) return;
       inner.style.display = "block";
       inner.style.width = "100%";
@@ -7333,166 +7242,44 @@ if (!userSetFontSize && sizeSlider) {
       inner.style.margin = "0";
       inner.style.padding = "0";
       inner.style.boxSizing = "border-box";
-      inner.style.textAlign = "center";
     });
-
-    // El contorno no debe participar de la medición del tamaño.
-    previewTextoBack.style.textShadow = "none";
-    previewTextoBack.style.WebkitTextStroke = "0px";
-    previewTextoBack.style.webkitTextFillColor = "transparent";
-
-    sugerido = sugerirFontSizeQueEntre(
-      wrapper,
-      previewTexto,
-      previewTextoBack,
-      64,
-      10,
-      0.5
-    );
-
-    // Restauramos inmediatamente el resaltado por renglón.
-    previewTexto.innerHTML = htmlFrontReal;
-    previewTextoBack.innerHTML = htmlBackReal;
-
-    previewTextoBack.style.textShadow = sombraBackAnterior;
-    previewTextoBack.style.WebkitTextStroke = strokeBackAnterior;
-    previewTextoBack.style.webkitTextFillColor = fillBackAnterior;
-  } else {
-    sugerido = sugerirFontSizeQueEntre(
-      wrapper,
-      previewTexto,
-      previewTextoBack,
-      64,
-      10,
-      0.5
-    );
   }
 
-  sizeSlider.value = String(sugerido);
-}
+  // ================= Color / Outline =================
+  const colorEl = document.getElementById("personalizarColor");
+  const opEl = document.getElementById("personalizarOpacidad");
+  const outlineEl = asegurarColorContornoBiblia();
 
-// 2) MANUAL (o AUTO ya sugerido): el tamaño final SIEMPRE es el del slider
-const finalSize = sizeSlider ? Number(sizeSlider.value || 32) : 32;
-previewTexto.style.fontSize = finalSize + "px";
-previewTextoBack.style.fontSize = finalSize + "px";
+  const color = colorEl ? colorEl.value : "#000000";
+  const opacidad = opEl ? opEl.value : "0.3";
 
-// ✅ Ahora que conocemos el tamaño final, armamos los renglones reales.
-// Esto garantiza:
-// - centro real,
-// - padding idéntico izquierda/derecha,
-// - un renglón vacío real antes de la cita.
-if (esCrearBiblia) {
-  bibliaRenderBibliaPorRenglones(
-    previewTexto,
-    previewTextoBack,
-    cuerpoPlano,
-    refPlano
-  );
-}
+  let outlineColor = colorOutlineDesdeBase(color);
 
-const innerFront = previewTexto.querySelector(".preview-text-inner");
-const innerBack  = previewTextoBack.querySelector(".preview-text-inner");
-const centerFront = previewTexto.querySelector(".preview-text-center");
-const centerBack  = previewTextoBack.querySelector(".preview-text-center");
-const refFront = previewTexto.querySelector(".preview-text-ref");
-const refBack  = previewTextoBack.querySelector(".preview-text-ref");
-const cuerpoWrapFront = previewTexto.querySelector(".preview-biblia-cuerpo-wrap");
-const cuerpoWrapBack  = previewTextoBack.querySelector(".preview-biblia-cuerpo-wrap");
-const citaWrapFront = previewTexto.querySelector(".preview-biblia-cita-wrap");
-const citaWrapBack  = previewTextoBack.querySelector(".preview-biblia-cita-wrap");
+  if (outlineEl) {
+    const manual = outlineEl.dataset.manual === "1";
+    const valorManual = bibliaHexSeguro(outlineEl.value);
 
-[centerFront, centerBack].forEach(center => {
-  if (!center) return;
-  center.style.width = "100%";
-  center.style.maxWidth = "100%";
-  center.style.margin = "0";
-  center.style.padding = "0";
-  center.style.boxSizing = "border-box";
-  center.style.textAlign = "center";
-
-  if (esCrearBiblia) {
-    center.style.display = "flex";
-    center.style.flexDirection = "column";
-    center.style.alignItems = "center";
-    center.style.justifyContent = "center";
-    center.style.gap = "0";
+    if (manual && valorManual) {
+      outlineColor = valorManual;
+    } else {
+      outlineEl.value = outlineColor;
+      outlineEl.dataset.manual = "0";
+    }
   }
-});
 
-[cuerpoWrapFront, cuerpoWrapBack, citaWrapFront, citaWrapBack].forEach(w => {
-  if (!w) return;
-  w.style.display = "block";
-  w.style.width = "100%";
-  w.style.maxWidth = "100%";
-  w.style.margin = "0";
-  w.style.padding = "0";
-  w.style.textAlign = "center";
-  w.style.background = "transparent";
-  w.style.boxSizing = "border-box";
-});
+  bibliaSetHostColorVisual("personalizarColorHost", color);
+  bibliaSetHostColorVisual("personalizarOutlineHost", outlineColor);
 
-[innerFront, innerBack].forEach(inner => {
-  if (!inner) return;
-  inner.style.display = esCrearBiblia ? "inline" : "block";
-  inner.style.width = esCrearBiblia ? "auto" : "100%";
-  inner.style.maxWidth = "100%";
-  inner.style.margin = "0 auto";
-  inner.style.boxSizing = "border-box";
-  inner.style.boxDecorationBreak = "clone";
-  inner.style.webkitBoxDecorationBreak = "clone";
-  inner.style.lineHeight = esCrearBiblia ? "1.28" : "";
-  if (!esCrearBiblia) inner.style.padding = "0";
-});
-
-[refFront, refBack].forEach(refEl => {
-  if (!refEl) return;
-  refEl.style.display = "inline-block";
-  refEl.style.width = "auto";
-  refEl.style.maxWidth = "100%";
-  refEl.style.margin = "0 auto";
-  refEl.style.boxSizing = "border-box";
-  refEl.style.lineHeight = "1.18";
-  refEl.style.textAlign = "center";
-  refEl.style.boxDecorationBreak = "clone";
-  refEl.style.webkitBoxDecorationBreak = "clone";
-});
-  
-// ================= Color / Outline =================
-const colorEl = document.getElementById("personalizarColor");
-const opEl = document.getElementById("personalizarOpacidad");
-const outlineEl = asegurarColorContornoBiblia();
-
-const color = colorEl ? colorEl.value : "#000000";
-const opacidad = opEl ? opEl.value : "0.3";
-
-let outlineColor = colorOutlineDesdeBase(color);
-
-// ✅ Si el usuario no eligió contorno manualmente,
-// seguimos sugiriendo blanco/negro automático.
-if (outlineEl) {
-  const manual = outlineEl.dataset.manual === "1";
-  const valorManual = bibliaHexSeguro(outlineEl.value);
-
-  if (manual && valorManual) {
-    outlineColor = valorManual;
-  } else {
-    outlineEl.value = outlineColor;
-    outlineEl.dataset.manual = "0";
-  }
-}
-
-bibliaSetHostColorVisual("personalizarColorHost", color);
-bibliaSetHostColorVisual("personalizarOutlineHost", outlineColor);
-
-  // ✅ más parecido a Devocionales: contorno más visible y prolijo
+  /*
+    Contorno original: una sola capa.
+    No lo aplicamos otra vez a cada span.
+  */
   const outlineScale = 1.35;
   const strokePx = (0.75 * outlineScale).toFixed(2);
 
-  // ✅ NO tocar position acá. La define el CSS para que queden idénticos.
   previewTexto.style.zIndex = "2";
   previewTextoBack.style.zIndex = "1";
 
-  // reset acumulables
   previewTexto.style.textShadow = "none";
   previewTexto.style.WebkitTextStroke = "0px";
   previewTexto.style.webkitTextFillColor = color;
@@ -7503,64 +7290,33 @@ bibliaSetHostColorVisual("personalizarOutlineHost", outlineColor);
   previewTextoBack.style.textShadow = "none";
   previewTextoBack.style.paintOrder = "stroke fill";
 
-  // frente = texto normal
   previewTexto.style.color = color;
   previewTexto.style.caretColor = color;
 
-  // atrás = contorno visible
-  previewTextoBack.style.transform = "none";
+  previewTextoBack.style.color = outlineColor;
+  previewTextoBack.style.WebkitTextStroke = `${strokePx}px ${outlineColor}`;
+  previewTextoBack.style.webkitTextFillColor = "transparent";
+  previewTextoBack.style.textShadow = textShadowLegibleBiblia(
+    color,
+    outlineScale,
+    outlineColor
+  );
   previewTextoBack.style.filter = "none";
-  
-// ================= Opacidad Oscuro/Claro =================
-const op = parseFloat(opacidad);
-let bgColor = "rgba(0,0,0,0)";
 
-const opColorEl = document.getElementById("colorOpacidadBiblia");
-const opColor = opColorEl ? opColorEl.value : "#000000";
+  // ================= Resaltado =================
+  const op = parseFloat(opacidad);
+  const opColorEl = document.getElementById("colorOpacidadBiblia");
+  const opColor = opColorEl ? opColorEl.value : "#000000";
 
-if (!isNaN(op)) {
-  const hex = String(opColor || "#000000").replace("#", "");
-  const full = hex.length === 3
-    ? hex.split("").map(x => x + x).join("")
-    : hex.padEnd(6, "0").slice(0, 6);
+  aplicarWrapperBibliaImagen(wrapper, op, opColor, {
+    innerFront,
+    innerBack,
+    refFront,
+    refBack
+  });
 
-  const r = parseInt(full.slice(0, 2), 16) || 0;
-  const g = parseInt(full.slice(2, 4), 16) || 0;
-  const b = parseInt(full.slice(4, 6), 16) || 0;
-
-  bgColor = `rgba(${r}, ${g}, ${b}, ${Math.max(0, Math.min(1, op))})`;
-}
-
-// ✅ Contorno SIEMPRE activo.
-// El resaltado vive en la capa BACK, por debajo del texto,
-// así no tapa el contorno ni crea manchas.
-// Si el texto es oscuro -> contorno claro.
-// Si el texto es claro -> contorno oscuro.
-// Si el usuario eligió un contorno manual, se respeta.
-const sombraContorno = textShadowLegibleBiblia(
-  color,
-  outlineScale,
-  outlineColor
-);
-
-previewTextoBack.style.color = outlineColor;
-previewTextoBack.style.WebkitTextStroke = `${strokePx}px ${outlineColor}`;
-previewTextoBack.style.webkitTextFillColor = "transparent";
-previewTextoBack.style.textShadow = sombraContorno;
-previewTextoBack.style.filter = "none";
-
-
-aplicarWrapperBibliaImagen(wrapper, op, opColor, {
-  innerFront,
-  innerBack,
-  refFront,
-  refBack
-});
-
-activarEdicionDirectaTextoLibre();
-  
-invalidarRenderFinal();
-
+  activarEdicionDirectaTextoLibre();
+  invalidarRenderFinal();
 } // ✅ CIERRA actualizarPreview()
 
 // ================= ⭐ CANVAS GENERA IMAGEN FINAL (FIX REAL) ============================
@@ -7613,8 +7369,6 @@ if (wrapperTexto) {
   t.style.textAlign = "center";
   t.style.alignItems = "center";
   t.style.justifyItems = "center";
-
-  // Exactamente el mismo margen interior que en la vista previa.
   t.style.inset = "3px";
   t.style.width = "auto";
   t.style.height = "auto";
@@ -7624,17 +7378,14 @@ if (wrapperTexto) {
 
   const center = t.querySelector(".preview-text-center");
   if (center) {
+    center.style.display = "block";
     center.style.width = "100%";
     center.style.maxWidth = "100%";
     center.style.margin = "0";
     center.style.padding = "0";
     center.style.boxSizing = "border-box";
     center.style.textAlign = "center";
-    center.style.display = "flex";
-    center.style.flexDirection = "column";
-    center.style.alignItems = "center";
-    center.style.justifyContent = "center";
-    center.style.gap = "0";
+    center.style.lineHeight = "1.25";
   }
 
   const cuerpoWrap = t.querySelector(".preview-biblia-cuerpo-wrap");
@@ -7654,21 +7405,25 @@ if (wrapperTexto) {
 
   const inner = t.querySelector(".preview-text-inner");
   if (inner) {
-    inner.style.display = "flex";
-    inner.style.flexDirection = "column";
-    inner.style.alignItems = "center";
-    inner.style.justifyContent = "center";
-    inner.style.width = "100%";
+    inner.style.display = "inline";
+    inner.style.width = "auto";
     inner.style.maxWidth = "100%";
     inner.style.margin = "0";
     inner.style.padding = "0";
-    inner.style.lineHeight = "1.28";
+    inner.style.lineHeight = "1.25";
+    inner.style.whiteSpace = "normal";
     inner.style.textAlign = "center";
+    inner.style.boxDecorationBreak = "clone";
+    inner.style.webkitBoxDecorationBreak = "clone";
   }
 
-  const citaWrapFinal = t.querySelector(".preview-biblia-cita-wrap");
-  if (citaWrapFinal) {
-    citaWrapFinal.style.marginTop = "1.28em";
+  const espacio = t.querySelector(".preview-biblia-espacio");
+  if (espacio) {
+    espacio.style.display = "block";
+    espacio.style.width = "100%";
+    espacio.style.height = "1.25em";
+    espacio.style.margin = "0";
+    espacio.style.padding = "0";
   }
 
   const refEl = t.querySelector(".preview-text-ref");
@@ -7676,10 +7431,13 @@ if (wrapperTexto) {
     refEl.style.display = "inline-block";
     refEl.style.width = "auto";
     refEl.style.maxWidth = "100%";
-    refEl.style.margin = "0 auto";
-    refEl.style.lineHeight = "1.18";
-    refEl.style.boxDecorationBreak = "clone";
-    refEl.style.webkitBoxDecorationBreak = "clone";
+    refEl.style.margin = "0";
+    refEl.style.padding = "0";
+    refEl.style.lineHeight = "1.25";
+    refEl.style.fontSize = "1em";
+    refEl.style.textAlign = "center";
+    refEl.style.whiteSpace = "nowrap";
+    refEl.style.transform = "none";
   }
 });
 
