@@ -19,7 +19,7 @@ const SUBIDOS_PROXY_URL = R2_WORKER_URL;
 
 const SUBIDOS_EXPORT_BG_URL = "./img/fondos/Tarjetas/1a.png";
 
-console.log("✅ Subidos PRINT FIX cargado", "20260826-PDF-1");
+console.log("✅ Subidos PRINT FIX cargado", "20260826-PDF-PAGINADO-2");
 
 /*
   ✅ Fondos de prédica:
@@ -5462,25 +5462,37 @@ async function subidosCrearPdfPredica(it = {}) {
     if (!limpio) return;
 
     const lineas = medirLineas(limpio, width, size, bold, italic);
-    const alto = Math.max(lineH, lineas.length * lineH);
+    if (!lineas.length) return;
 
-    saltoPaginaSiHaceFalta(alto + after);
     setFont(size, bold, italic);
 
-    lineas.forEach((linea, i) => {
-      const yy = y + (i * lineH);
+    /*
+      IMPORTANTE:
+      paginamos RENGLÓN POR RENGLÓN.
+
+      Antes se reservaba "alto total + after" antes de imprimir.
+      Eso podía mandar un renglón a una hoja nueva aunque el renglón
+      sí entrara físicamente en la hoja actual.
+
+      Ahora el espacio posterior NO puede provocar un salto de página.
+    */
+    lineas.forEach(linea => {
+      saltoPaginaSiHaceFalta(lineH);
 
       if (align === "center") {
-        doc.text(String(linea), x + (width / 2), yy, { align: "center" });
+        doc.text(String(linea), x + (width / 2), y, { align: "center" });
       } else {
-        doc.text(String(linea), x, yy);
+        doc.text(String(linea), x, y);
       }
+
+      y += lineH;
     });
 
-    y += alto + after;
+    // El aire después del párrafo se suma, pero NO crea una hoja nueva.
+    y += Math.max(0, Number(after) || 0);
   };
 
-  const tituloSeccion = (texto) => {
+  const tituloSeccion = (texto, opciones = {}) => {
     const limpio = subidosTextoPlanoPdf(texto);
     if (!limpio) return;
 
@@ -5490,7 +5502,13 @@ async function subidosCrearPdfPredica(it = {}) {
     const lineas = medirLineas(limpio, anchoTexto, size, true, false);
     const alto = Math.max(1, lineas.length) * lineH;
 
-    saltoPaginaSiHaceFalta(alto + 2.5);
+    /*
+      Normalmente conservamos el comportamiento anterior.
+      Para Nota final podemos evitar que el "aire posterior"
+      sea lo que fuerce una hoja nueva.
+    */
+    const reservaExtra = opciones?.sinReservaExtra ? 0 : 2.5;
+    saltoPaginaSiHaceFalta(alto + reservaExtra);
 
     setFont(size, true, false);
     doc.text("•", M + 0.8, y);
@@ -5693,12 +5711,13 @@ async function subidosCrearPdfPredica(it = {}) {
     doc.line(M, y, PAGE_W - M, y);
     y += 4;
 
-    tituloSeccion("Nota final");
+    tituloSeccion("Nota final", { sinReservaExtra: true });
     parrafos(notaFinal, {
       x: M + 6,
       width: CONTENT_W - 6,
       size: 10.1,
-      lineH: 4.25
+      lineH: 4.15,
+      after: 0.8
     });
   }
 
