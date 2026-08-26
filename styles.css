@@ -835,11 +835,9 @@ html, body {
 }
 
 /* Crear Imagen Biblia:
-   - layout y tamaño conservan el comportamiento original;
-   - el resaltado NO participa del layout;
-   - cuerpo y cita comparten exactamente el mismo centro. */
-#previewTexto .preview-text-center,
-#previewTextoBack .preview-text-center{
+   UN SOLO FLUJO, sin wrappers intermedios que cambien el layout.
+   El resaltado es visual y no interviene en el tamaño sugerido. */
+.preview-biblia-flow{
   display:block;
   width:100%;
   max-width:100%;
@@ -848,60 +846,30 @@ html, body {
   box-sizing:border-box;
   text-align:center;
   line-height:1.25;
+  white-space:normal;
+  word-break:normal;
+  overflow-wrap:normal;
 }
 
-.preview-biblia-stack{
-  display:block;
-  width:100%;
-  max-width:100%;
-  margin:0;
-  padding:0;
-  text-align:center;
-  line-height:1.25;
-}
-
-.preview-biblia-cuerpo-wrap,
-.preview-biblia-cita-wrap{
-  display:block;
-  width:100%;
-  max-width:100%;
-  margin:0;
-  padding:0;
-  box-sizing:border-box;
-  text-align:center;
-  background:transparent !important;
-}
-
-/* El texto usa el wrapping normal del navegador.
-   No se parte manualmente en renglones. */
+/* Texto bíblico: inline para que el fondo se clone por cada renglón real. */
 .preview-biblia-linea{
   display:inline;
-  width:auto;
-  max-width:100%;
   margin:0;
   padding:0;
   line-height:1.25;
   white-space:normal;
   word-break:normal;
   overflow-wrap:normal;
-  text-align:center;
   box-decoration-break:clone;
   -webkit-box-decoration-break:clone;
 }
 
-/* Un renglón vacío EXACTO entre el texto y la cita. */
-.preview-biblia-espacio{
-  display:block;
-  width:100%;
-  height:1.25em;
-  margin:0;
-  padding:0;
+/* Dos <br> = exactamente UN renglón vacío entre cuerpo y cita. */
+.preview-biblia-salto{
   line-height:1.25;
-  background:transparent !important;
 }
 
-/* La cita ocupa sólo su contenido pero su PADRE ocupa 100%,
-   así queda centrada sobre el mismo eje del texto bíblico. */
+/* Cita dentro del MISMO bloque y del MISMO centro. */
 .preview-biblia-cita{
   display:inline-block;
   width:auto;
@@ -917,22 +885,21 @@ html, body {
   transform:none;
 }
 
-/* Frente: sólo texto. */
+/* Frente: solamente texto. */
 #previewTexto .preview-biblia-linea,
 #previewTexto .preview-biblia-cita{
   background:transparent !important;
   box-shadow:none !important;
 }
 
-/* Atrás: resaltado visual.
-   box-shadow agrega EXACTAMENTE lo mismo a izquierda y derecha
-   sin cambiar ancho, wrapping, tamaño sugerido ni centrado. */
+/* Atrás: resaltado puntual.
+   Se extiende EXACTAMENTE 4px hacia cada lado sin cambiar el layout. */
 #previewTextoBack .preview-biblia-linea,
 #previewTextoBack .preview-biblia-cita{
   background:var(--va-biblia-resaltado, transparent);
   box-shadow:
-    0 0 0 var(--va-biblia-resaltado-spread, 0px)
-    var(--va-biblia-resaltado, transparent);
+     4px 0 0 var(--va-biblia-resaltado, transparent),
+    -4px 0 0 var(--va-biblia-resaltado, transparent);
   border-radius:999px;
   box-decoration-break:clone;
   -webkit-box-decoration-break:clone;
