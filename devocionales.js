@@ -15,7 +15,7 @@ const R2_UPLOAD_URL = R2_WORKER_URL;
 const GH_UPLOAD_URL = R2_WORKER_URL;
 const TTS_URL = R2_WORKER_URL;
 
-console.log("✅ devocionales.js cargó (module)", "VERSION 1");
+console.log("✅ devocionales.js cargó (module)", "F1-POS-20260826-2");
 window.__DEV_DEVOCIONALES_LOADED__ = true;
 
 function $(id){ return document.getElementById(id); }
@@ -2987,12 +2987,12 @@ function buildFase1HTML(versiculoCanvasPx, scale){
 
   // ===== Coordenadas fijas tipo Cloudinary (porcentaje del wrapper) =====
   // Arriba
-  const Y_DEV   = 1.27;   // ~10 px más arriba
-  const Y_FECHA = 5.83;   // ~10 px arriba + ~3 px de separación real
+  const Y_DEV   = -0.68;  // desplazamiento visible: ~10 px arriba en la preview actual
+  const Y_FECHA = 5.05;   // deja ~3 px reales de aire debajo de DEVOCIONAL
    
   // Abajo (pie)
-  const Y_IGL   = 90.53;  // ~10 px más abajo
-  const Y_DIR   = 94.03;  // ~10 px más abajo
+  const Y_IGL   = 92.48;  // ~10 px visibles más abajo
+  const Y_DIR   = 95.98;  // ~10 px visibles más abajo, sin salir del área
 
   // Caja central (versículo + cita) MÁS GRANDE
   const Y_VBOX  = 14.2;
