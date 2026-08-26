@@ -2987,12 +2987,12 @@ function buildFase1HTML(versiculoCanvasPx, scale){
 
   // ===== Coordenadas fijas tipo Cloudinary (porcentaje del wrapper) =====
   // Arriba
-  const Y_DEV   = 2.2;
-  const Y_FECHA = 6.2;
+  const Y_DEV   = 1.27;   // ~10 px más arriba
+  const Y_FECHA = 5.83;   // ~10 px arriba + ~3 px de separación real
    
   // Abajo (pie)
-  const Y_IGL   = 89.6;
-  const Y_DIR   = 93.1;
+  const Y_IGL   = 90.53;  // ~10 px más abajo
+  const Y_DIR   = 94.03;  // ~10 px más abajo
 
   // Caja central (versículo + cita) MÁS GRANDE
   const Y_VBOX  = 14.2;
