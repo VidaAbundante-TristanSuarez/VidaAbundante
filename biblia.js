@@ -7128,14 +7128,74 @@ wrapper.style.overflow = "hidden";
 // ================= Tamaño (AUTO sugerido por MEDICION / MANUAL libre) =================
 const sizeSlider = document.getElementById("personalizarTamaño");
 
-// 1) AUTO: sugerimos midiendo si entra (NO es obligación, solo sugerencia)
+// 1) AUTO: sugerimos midiendo si entra.
+// IMPORTANTE: en Crear Imagen Biblia medimos con el MISMO layout simple que había antes
+// del resaltado por renglón. Así el resaltado nuevo NO achica artificialmente la letra.
 if (!userSetFontSize && sizeSlider) {
-  // primero ponemos un tamaño alto para que mida bien el “peor caso”
   sizeSlider.value = "64";
   previewTexto.style.fontSize = "64px";
   previewTextoBack.style.fontSize = "64px";
 
-  const sugerido = sugerirFontSizeQueEntre(wrapper, previewTexto, previewTextoBack, 64, 10, 0.5);
+  let sugerido = 32;
+
+  if (esCrearBiblia) {
+    const htmlFrontReal = previewTexto.innerHTML;
+    const htmlBackReal = previewTextoBack.innerHTML;
+
+    const sombraBackAnterior = previewTextoBack.style.textShadow;
+    const strokeBackAnterior = previewTextoBack.style.WebkitTextStroke;
+    const fillBackAnterior = previewTextoBack.style.webkitTextFillColor;
+
+    const textoSeguroMedicion = textoLibreHtmlSeguro(textoFinal);
+
+    // Layout de medición original: un único bloque de ancho completo.
+    previewTexto.innerHTML = `<div class="preview-text-inner">${textoSeguroMedicion}</div>`;
+    previewTextoBack.innerHTML = `<div class="preview-text-inner">${textoSeguroMedicion}</div>`;
+
+    [previewTexto, previewTextoBack].forEach(el => {
+      const inner = el.querySelector(".preview-text-inner");
+      if (!inner) return;
+      inner.style.display = "block";
+      inner.style.width = "100%";
+      inner.style.maxWidth = "100%";
+      inner.style.margin = "0";
+      inner.style.padding = "0";
+      inner.style.boxSizing = "border-box";
+      inner.style.textAlign = "center";
+    });
+
+    // El contorno no debe participar de la medición del tamaño.
+    previewTextoBack.style.textShadow = "none";
+    previewTextoBack.style.WebkitTextStroke = "0px";
+    previewTextoBack.style.webkitTextFillColor = "transparent";
+
+    sugerido = sugerirFontSizeQueEntre(
+      wrapper,
+      previewTexto,
+      previewTextoBack,
+      64,
+      10,
+      0.5
+    );
+
+    // Restauramos inmediatamente el resaltado por renglón.
+    previewTexto.innerHTML = htmlFrontReal;
+    previewTextoBack.innerHTML = htmlBackReal;
+
+    previewTextoBack.style.textShadow = sombraBackAnterior;
+    previewTextoBack.style.WebkitTextStroke = strokeBackAnterior;
+    previewTextoBack.style.webkitTextFillColor = fillBackAnterior;
+  } else {
+    sugerido = sugerirFontSizeQueEntre(
+      wrapper,
+      previewTexto,
+      previewTextoBack,
+      64,
+      10,
+      0.5
+    );
+  }
+
   sizeSlider.value = String(sugerido);
 }
 
@@ -7190,9 +7250,8 @@ const citaWrapBack  = previewTextoBack.querySelector(".preview-biblia-cita-wrap"
   inner.style.display = esCrearBiblia ? "inline" : "block";
   inner.style.width = esCrearBiblia ? "auto" : "100%";
   inner.style.maxWidth = "100%";
-  inner.style.margin = "0";
+  inner.style.margin = "0 auto";
   inner.style.boxSizing = "border-box";
-  inner.style.textAlign = "center";
   inner.style.boxDecorationBreak = "clone";
   inner.style.webkitBoxDecorationBreak = "clone";
   inner.style.lineHeight = esCrearBiblia ? "1.28" : "";
@@ -7204,7 +7263,7 @@ const citaWrapBack  = previewTextoBack.querySelector(".preview-biblia-cita-wrap"
   refEl.style.display = "inline-block";
   refEl.style.width = "auto";
   refEl.style.maxWidth = "100%";
-  refEl.style.margin = "0";
+  refEl.style.margin = "0 auto";
   refEl.style.boxSizing = "border-box";
   refEl.style.lineHeight = "1.18";
   refEl.style.textAlign = "center";
@@ -7412,7 +7471,7 @@ if (wrapperTexto) {
     inner.style.display = "inline";
     inner.style.width = "auto";
     inner.style.maxWidth = "100%";
-    inner.style.margin = "0";
+    inner.style.margin = "0 auto";
     inner.style.lineHeight = "1.28";
     inner.style.boxDecorationBreak = "clone";
     inner.style.webkitBoxDecorationBreak = "clone";
@@ -7423,7 +7482,7 @@ if (wrapperTexto) {
     refEl.style.display = "inline-block";
     refEl.style.width = "auto";
     refEl.style.maxWidth = "100%";
-    refEl.style.margin = "0";
+    refEl.style.margin = "0 auto";
     refEl.style.lineHeight = "1.18";
     refEl.style.boxDecorationBreak = "clone";
     refEl.style.webkitBoxDecorationBreak = "clone";
