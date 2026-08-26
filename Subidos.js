@@ -19,7 +19,7 @@ const SUBIDOS_PROXY_URL = R2_WORKER_URL;
 
 const SUBIDOS_EXPORT_BG_URL = "./img/fondos/Tarjetas/1a.png";
 
-console.log("✅ Subidos PRINT FIX cargado", "20260826-PDF-ORDEN-14PT-4");
+console.log("✅ Subidos PRINT FIX cargado", "20260826-PDF-ESCALA-NONE-14PT-5");
 
 /*
   ✅ Fondos de prédica:
@@ -5416,23 +5416,50 @@ async function subidosCrearPdfPredica(it = {}) {
     compress: true
   });
 
+  /*
+    IMPORTANTE:
+    Chrome estaba achicando el PDF para "ajustarlo" al área imprimible.
+    Eso hacía que un A4 con 1 cm real terminara viéndose con un bloque
+    blanco enorme a la derecha y abajo.
+
+    Le pedimos al visor/impresora que NO vuelva a escalar el PDF.
+  */
+  try {
+    doc.viewerPreferences({
+      PrintScaling: "None",
+      PickTrayByPDFSize: true,
+      PrintArea: "MediaBox",
+      PrintClip: "MediaBox"
+    });
+  } catch (e) {}
+
+  try {
+    doc.setDisplayMode("fullwidth", "continuous", "UseNone");
+  } catch (e) {}
+
   // =========================================================
-  // A4: 1 cm REAL en los cuatro lados.
-  // No agregamos "márgenes internos" innecesarios:
-  // todo el contenido puede usar los 190 mm útiles.
+  // MEDIDAS REALES DEL PDF.
+  // No usamos 210/297 "a mano": leemos la página que jsPDF creó.
   // =========================================================
-  const PAGE_W = 210;
-  const PAGE_H = 297;
-  const M = 10;
+  const PAGE_W = Number(doc.internal.pageSize.getWidth());
+  const PAGE_H = Number(doc.internal.pageSize.getHeight());
+
+  const M = 10;                 // 1 cm REAL
   const LEFT = M;
   const RIGHT = PAGE_W - M;
   const TOP = M;
   const BOTTOM = PAGE_H - M;
-  const FULL_W = RIGHT - LEFT; // 190 mm
+  const FULL_W = RIGHT - LEFT;
 
-  // 14 pt reales para TODO el cuerpo.
+  // 14 pt REALES para todo el cuerpo.
   const BODY_SIZE = 14;
-  const BODY_LINE = 5.05;
+
+  /*
+    14 pt = ~4,94 mm.
+    Usamos prácticamente ese alto real, sin inflar artificialmente
+    los renglones y desperdiciar la parte inferior de la hoja.
+  */
+  const BODY_LINE = 4.95;
 
   let y = TOP;
 
@@ -5463,7 +5490,13 @@ async function subidosCrearPdfPredica(it = {}) {
       .replace(/[ ]{2,}/g, " ")
       .trim();
 
-  const dividir = (txt, width, size = BODY_SIZE, bold = false, italic = false) => {
+  const dividir = (
+    txt,
+    width,
+    size = BODY_SIZE,
+    bold = false,
+    italic = false
+  ) => {
     const limpio = limpiarUnaLinea(txt);
     if (!limpio) return [];
 
@@ -5472,31 +5505,32 @@ async function subidosCrearPdfPredica(it = {}) {
   };
 
   // =========================================================
-  // SEPARADOR
-  // Las líneas van EN LOS SALTOS entre conceptos.
-  // Nunca atraviesan texto.
+  // LÍNEA ENTRE CONCEPTOS
+  //
+  // Queda EN EL ESPACIO, no pegada al texto.
+  // Es fina y gris para separar sin "tachar".
   // =========================================================
   const separador = () => {
-    // Si ya estamos demasiado abajo, empezamos la página nueva
-    // sin dejar una raya sola al pie.
-    if (y + 4 > BOTTOM) {
+    // Si no entra línea + aire para la siguiente línea de texto,
+    // pasamos de hoja sin dejar una raya huérfana abajo.
+    if (y + 4.8 > BOTTOM) {
       nuevaPagina();
       return;
     }
 
-    y += 1.4;
+    const lineY = y + 0.55;
 
-    doc.setDrawColor(0, 0, 0);
-    doc.setLineWidth(0.28);
-    doc.line(LEFT, y, RIGHT, y);
+    doc.setDrawColor(135, 135, 135);
+    doc.setLineWidth(0.15);
+    doc.line(LEFT, lineY, RIGHT, lineY);
 
-    y += 3.0;
+    // Baseline del próximo texto queda suficientemente debajo de la raya.
+    y = lineY + 3.95;
   };
 
   // =========================================================
-  // TEXTO GENÉRICO, línea por línea.
-  // Así NO queda media hoja vacía porque un bloque completo
-  // haya sido empujado a la página siguiente.
+  // TEXTO GENÉRICO
+  // Se pagina RENGLÓN POR RENGLÓN.
   // =========================================================
   const escribirLineas = (
     txt,
@@ -5524,22 +5558,21 @@ async function subidosCrearPdfPredica(it = {}) {
     y += Math.max(0, Number(after) || 0);
   };
 
-  // Respeta los saltos que el usuario escribió.
-  const escribirParrafosOriginales = (
-    txt,
-    opts = {}
-  ) => {
+  /*
+    Conservamos las líneas que el usuario escribió.
+    Una línea vacía existe, pero es compacta para no tirar media hoja.
+  */
+  const escribirParrafosOriginales = (txt, opts = {}) => {
     const raw = String(txt || "").replace(/\r/g, "");
     if (!raw.trim()) return;
 
-    const lineasOriginales = raw.split("\n");
+    const originales = raw.split("\n");
 
-    lineasOriginales.forEach((linea, idx) => {
+    originales.forEach((linea, idx) => {
       const limpio = limpiarUnaLinea(linea);
 
       if (!limpio) {
-        // Un salto vacío real, pero compacto.
-        y += 1.6;
+        y += 1.15;
         return;
       }
 
@@ -5548,8 +5581,8 @@ async function subidosCrearPdfPredica(it = {}) {
         after: 0
       });
 
-      if (idx < lineasOriginales.length - 1) {
-        y += 0.55;
+      if (idx < originales.length - 1) {
+        y += 0.25;
       }
     });
 
@@ -5557,8 +5590,7 @@ async function subidosCrearPdfPredica(it = {}) {
   };
 
   // =========================================================
-  // CABECERA
-  // TÍTULO a la IZQUIERDA — FECHA a la DERECHA
+  // TÍTULO IZQUIERDA / FECHA DERECHA
   // =========================================================
   const escribirCabecera = (titulo = "", fecha = "") => {
     const tituloTxt = limpiarUnaLinea(titulo || "Prédica");
@@ -5571,45 +5603,44 @@ async function subidosCrearPdfPredica(it = {}) {
     setFont(DATE_SIZE, true, false);
     const fechaW = fechaTxt ? doc.getTextWidth(fechaTxt) : 0;
 
-    const tituloWDisponible = Math.max(
+    const tituloW = Math.max(
       70,
       FULL_W - fechaW - GAP
     );
 
     const tituloLineas = dividir(
       tituloTxt,
-      tituloWDisponible,
+      tituloW,
       TITLE_SIZE,
       true,
       false
     );
 
-    const lineH = 6.4;
+    const titleLineH = 6.15;
 
-    // La fecha va a la derecha de la primera línea.
     if (fechaTxt) {
       setFont(DATE_SIZE, true, false);
       doc.text(fechaTxt, RIGHT, y, { align: "right" });
     }
 
     setFont(TITLE_SIZE, true, false);
+
     tituloLineas.forEach((linea, i) => {
-      doc.text(String(linea), LEFT, y + (i * lineH));
+      doc.text(String(linea), LEFT, y + (i * titleLineH));
     });
 
-    y += Math.max(1, tituloLineas.length) * lineH;
+    y += Math.max(1, tituloLineas.length) * titleLineH;
 
     separador();
   };
 
   // =========================================================
-  // INTRO y NOTA
-  // 14 pt ITALIC, ocupando prácticamente todo el ancho.
+  // INTRO / NOTA FINAL: 14 pt ITALIC, CASI ANCHO COMPLETO
   // =========================================================
   const escribirItalic = (txt = "") => {
     escribirParrafosOriginales(txt, {
-      x: LEFT + 2,
-      width: RIGHT - (LEFT + 2),
+      x: LEFT + 1,
+      width: RIGHT - (LEFT + 1),
       size: BODY_SIZE,
       italic: true,
       lineH: BODY_LINE,
@@ -5619,21 +5650,26 @@ async function subidosCrearPdfPredica(it = {}) {
 
   // =========================================================
   // CITA BÍBLICA
-  // Sangría + viñeta + BOLD.
-  // La raya viene DESPUÉS del bloque de versículos, no debajo
-  // de la cita, para que jamás parezca texto tachado.
+  // Viñeta + sangría pequeña + 14 pt BOLD.
   // =========================================================
   const escribirReferencia = (referencia = "") => {
     const refTxt = limpiarUnaLinea(referencia);
     if (!refTxt) return;
 
-    const BULLET_X = LEFT + 3;
-    const TEXT_X = LEFT + 8;
+    // Sangría mínima para aprovechar realmente el ancho.
+    const BULLET_X = LEFT + 1.5;
+    const TEXT_X = LEFT + 5;
     const TEXT_W = RIGHT - TEXT_X;
 
-    const lineas = dividir(refTxt, TEXT_W, BODY_SIZE, true, false);
+    const lineas = dividir(
+      refTxt,
+      TEXT_W,
+      BODY_SIZE,
+      true,
+      false
+    );
 
-    // Reservamos referencia + una sola línea de versículo, nada más.
+    // Solo reservamos cita + una línea de versículo.
     if (y + (BODY_LINE * 2) > BOTTOM) {
       nuevaPagina();
     }
@@ -5643,18 +5679,19 @@ async function subidosCrearPdfPredica(it = {}) {
 
     lineas.forEach((linea, i) => {
       if (i > 0) asegurarLinea(BODY_LINE);
+
+      setFont(BODY_SIZE, true, false);
       doc.text(String(linea), TEXT_X, y);
       y += BODY_LINE;
     });
 
-    y += 0.6;
+    y += 0.25;
   };
 
   // =========================================================
   // VERSÍCULOS
-  // Misma sangría general que la cita.
-  // SOLO el número del versículo va en bold.
-  // El texto bíblico sigue en 14 pt normal.
+  // Misma sangría visual que la cita.
+  // SOLO el número va bold.
   // =========================================================
   const escribirVersiculo = (linea = "") => {
     const limpio = limpiarUnaLinea(linea);
@@ -5662,8 +5699,8 @@ async function subidosCrearPdfPredica(it = {}) {
 
     const m = limpio.match(/^(\d+)\s*[\.\)]?\s*(.*)$/);
 
-    const X_NUM = LEFT + 8;
-    const X_BODY = LEFT + 14;
+    const X_NUM = LEFT + 5;
+    const X_BODY = LEFT + 10.5;
     const BODY_W = RIGHT - X_BODY;
 
     if (!m) {
@@ -5673,14 +5710,15 @@ async function subidosCrearPdfPredica(it = {}) {
         size: BODY_SIZE,
         lineH: BODY_LINE
       });
-      y += 0.45;
+
+      y += 0.18;
       return;
     }
 
-    const num = `${m[1]}.`;
+    const numero = `${m[1]}.`;
     const cuerpo = String(m[2] || "").trim();
 
-    const cuerpoLineas = dividir(
+    const lineas = dividir(
       cuerpo,
       BODY_W,
       BODY_SIZE,
@@ -5691,57 +5729,59 @@ async function subidosCrearPdfPredica(it = {}) {
     asegurarLinea(BODY_LINE);
 
     setFont(BODY_SIZE, true, false);
-    doc.text(num, X_NUM, y);
+    doc.text(numero, X_NUM, y);
 
-    if (cuerpoLineas.length) {
+    if (lineas.length) {
       setFont(BODY_SIZE, false, false);
-      doc.text(String(cuerpoLineas[0]), X_BODY, y);
+      doc.text(String(lineas[0]), X_BODY, y);
     }
 
     y += BODY_LINE;
 
-    for (let i = 1; i < cuerpoLineas.length; i++) {
+    for (let i = 1; i < lineas.length; i++) {
       asegurarLinea(BODY_LINE);
+
       setFont(BODY_SIZE, false, false);
-      doc.text(String(cuerpoLineas[i]), X_BODY, y);
+      doc.text(String(lineas[i]), X_BODY, y);
+
       y += BODY_LINE;
     }
 
-    y += 0.4;
+    y += 0.18;
   };
 
   // =========================================================
-  // COMENTARIO
-  // - Sin itálica forzada.
-  // - Si encuentra "1." o "1)" lo muestra SIEMPRE como "1)".
-  // - Conserva •, -, –, —, *, ▪, ◦, · cuando ya estaban escritos.
-  // - Respeta los saltos de línea originales.
+  // COMENTARIOS
+  // - 14 pt normal.
+  // - 1. / 1) -> SIEMPRE 1)
+  // - numeración en bold.
+  // - conserva viñetas originales.
+  // - aprovecha casi todo el ancho.
   // =========================================================
   const escribirComentario = (txt = "") => {
     const raw = String(txt || "").replace(/\r/g, "");
     if (!raw.trim()) return;
 
-    const COMMENT_X = LEFT + 8;
+    const COMMENT_X = LEFT + 5;
     const COMMENT_W = RIGHT - COMMENT_X;
-    const HANG_X = LEFT + 15;
+    const HANG_X = LEFT + 10.5;
     const HANG_W = RIGHT - HANG_X;
 
-    const lineas = raw.split("\n");
-
-    lineas.forEach((lineaOriginal) => {
+    raw.split("\n").forEach(lineaOriginal => {
       const linea = limpiarUnaLinea(lineaOriginal);
 
       if (!linea) {
-        y += 1.5;
+        y += 1.1;
         return;
       }
 
-      // Enumeración: 1. / 1) -> siempre 1)
+      // 1. / 1) => 1)
       const num = linea.match(/^(\d+)\s*[\.\)]\s*(.*)$/);
 
       if (num) {
         const marcador = `${num[1]})`;
         const cuerpo = String(num[2] || "").trim();
+
         const partes = dividir(
           cuerpo,
           HANG_W,
@@ -5763,21 +5803,24 @@ async function subidosCrearPdfPredica(it = {}) {
 
         for (let i = 1; i < partes.length; i++) {
           asegurarLinea(BODY_LINE);
+
           setFont(BODY_SIZE, true, false);
           doc.text(String(partes[i]), HANG_X, y);
+
           y += BODY_LINE;
         }
 
-        y += 0.65;
+        y += 0.25;
         return;
       }
 
-      // Viñeta ORIGINAL: la conservamos.
+      // Viñetas ya escritas por el usuario.
       const bullet = linea.match(/^([•▪◦·\-\–\—\*])\s*(.*)$/);
 
       if (bullet) {
         const marcador = bullet[1];
         const cuerpo = String(bullet[2] || "").trim();
+
         const partes = dividir(
           cuerpo,
           HANG_W,
@@ -5799,15 +5842,17 @@ async function subidosCrearPdfPredica(it = {}) {
 
         for (let i = 1; i < partes.length; i++) {
           asegurarLinea(BODY_LINE);
+
+          setFont(BODY_SIZE, false, false);
           doc.text(String(partes[i]), HANG_X, y);
+
           y += BODY_LINE;
         }
 
-        y += 0.55;
+        y += 0.2;
         return;
       }
 
-      // Texto normal del comentario.
       escribirLineas(linea, {
         x: COMMENT_X,
         width: COMMENT_W,
@@ -5815,7 +5860,7 @@ async function subidosCrearPdfPredica(it = {}) {
         lineH: BODY_LINE
       });
 
-      y += 0.55;
+      y += 0.2;
     });
   };
 
@@ -5845,8 +5890,8 @@ async function subidosCrearPdfPredica(it = {}) {
   const citas = obtenerCitasPredicaSubido(it);
 
   // =========================================================
-  // ORDEN EXACTO
-  // Título/Fecha
+  // ORDEN
+  // Título izq / Fecha der
   // línea
   // Intro italic
   // línea
@@ -5854,8 +5899,10 @@ async function subidosCrearPdfPredica(it = {}) {
   // línea
   // Comentario
   // línea
-  // siguiente cita...
-  // Nota italic
+  // siguiente cita
+  // ...
+  // línea
+  // Nota final italic
   // =========================================================
   escribirCabecera(titulo, fecha);
 
@@ -5867,7 +5914,11 @@ async function subidosCrearPdfPredica(it = {}) {
   citas.forEach((cita, idx) => {
     const referencia = String(cita?.referencia || "").trim();
     const textoBiblico = String(cita?.texto || "").trim();
-    const comentario = String(cita?.comentario || cita?.nota || "").trim();
+    const comentario = String(
+      cita?.comentario ||
+      cita?.nota ||
+      ""
+    ).trim();
 
     if (referencia) {
       escribirReferencia(referencia);
@@ -5888,7 +5939,6 @@ async function subidosCrearPdfPredica(it = {}) {
       escribirComentario(comentario);
     }
 
-    // Línea entre una cita completa y la siguiente.
     if (idx < citas.length - 1) {
       separador();
     }
@@ -5930,6 +5980,10 @@ window.subidosImprimirPredica = async function subidosImprimirPredica(id) {
 
     const doc = await subidosCrearPdfPredica(it);
 
+    /*
+      El PDF ya lleva PrintScaling=None.
+      autoPrint solamente abre el diálogo; no debe volver a achicarlo.
+    */
     if (typeof doc.autoPrint === "function") {
       try {
         doc.autoPrint({ variant: "non-conform" });
