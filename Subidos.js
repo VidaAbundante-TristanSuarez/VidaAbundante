@@ -19,7 +19,7 @@ const SUBIDOS_PROXY_URL = R2_WORKER_URL;
 
 const SUBIDOS_EXPORT_BG_URL = "./img/fondos/Tarjetas/1a.png";
 
-console.log("✅ Subidos PRINT FIX cargado", "20260826-PDF-14PT-PROL-3");
+console.log("✅ Subidos PRINT FIX cargado", "20260826-PDF-ORDEN-14PT-4");
 
 /*
   ✅ Fondos de prédica:
@@ -5417,20 +5417,26 @@ async function subidosCrearPdfPredica(it = {}) {
   });
 
   // =========================================================
-  // A4 REAL: 210 × 297 mm
-  // MARGEN: exactamente 10 mm (1 cm) en los 4 lados
+  // A4: 1 cm REAL en los cuatro lados.
+  // No agregamos "márgenes internos" innecesarios:
+  // todo el contenido puede usar los 190 mm útiles.
   // =========================================================
   const PAGE_W = 210;
   const PAGE_H = 297;
   const M = 10;
+  const LEFT = M;
   const RIGHT = PAGE_W - M;
+  const TOP = M;
   const BOTTOM = PAGE_H - M;
-  const CONTENT_W = RIGHT - M; // 190 mm útiles
+  const FULL_W = RIGHT - LEFT; // 190 mm
 
-  let y = M;
+  // 14 pt reales para TODO el cuerpo.
+  const BODY_SIZE = 14;
+  const BODY_LINE = 5.05;
 
-  // ---------- Tipografía ----------
-  const setFont = (size = 14, bold = false, italic = false) => {
+  let y = TOP;
+
+  const setFont = (size = BODY_SIZE, bold = false, italic = false) => {
     const style = bold
       ? (italic ? "bolditalic" : "bold")
       : (italic ? "italic" : "normal");
@@ -5442,215 +5448,374 @@ async function subidosCrearPdfPredica(it = {}) {
 
   const nuevaPagina = () => {
     doc.addPage();
-    y = M;
+    y = TOP;
   };
 
-  const asegurar = (altoNecesario = 5) => {
-    if (y + altoNecesario <= BOTTOM) return;
+  const asegurarLinea = (alto = BODY_LINE) => {
+    if (y + alto <= BOTTOM) return;
     nuevaPagina();
   };
 
-  const split = (texto, ancho, size = 14, bold = false, italic = false) => {
-    const limpio = subidosTextoPlanoPdf(texto);
+  const limpiarUnaLinea = (txt = "") =>
+    String(txt || "")
+      .replace(/\u00A0/g, " ")
+      .replace(/\t/g, " ")
+      .replace(/[ ]{2,}/g, " ")
+      .trim();
+
+  const dividir = (txt, width, size = BODY_SIZE, bold = false, italic = false) => {
+    const limpio = limpiarUnaLinea(txt);
     if (!limpio) return [];
 
     setFont(size, bold, italic);
-    return doc.splitTextToSize(limpio, ancho);
+    return doc.splitTextToSize(limpio, width);
   };
 
-  // ---------- Texto general ----------
-  // Pagina RENGLÓN POR RENGLÓN:
-  // si entra físicamente, se queda en la hoja actual.
-  const escribirTexto = (
-    texto,
+  // =========================================================
+  // SEPARADOR
+  // Las líneas van EN LOS SALTOS entre conceptos.
+  // Nunca atraviesan texto.
+  // =========================================================
+  const separador = () => {
+    // Si ya estamos demasiado abajo, empezamos la página nueva
+    // sin dejar una raya sola al pie.
+    if (y + 4 > BOTTOM) {
+      nuevaPagina();
+      return;
+    }
+
+    y += 1.4;
+
+    doc.setDrawColor(0, 0, 0);
+    doc.setLineWidth(0.28);
+    doc.line(LEFT, y, RIGHT, y);
+
+    y += 3.0;
+  };
+
+  // =========================================================
+  // TEXTO GENÉRICO, línea por línea.
+  // Así NO queda media hoja vacía porque un bloque completo
+  // haya sido empujado a la página siguiente.
+  // =========================================================
+  const escribirLineas = (
+    txt,
     {
-      x = M,
-      width = CONTENT_W,
-      size = 14,
+      x = LEFT,
+      width = FULL_W,
+      size = BODY_SIZE,
       bold = false,
       italic = false,
-      lineH = 5.25,
-      after = 1.5,
-      align = "left"
+      lineH = BODY_LINE,
+      after = 0
     } = {}
   ) => {
-    const lineas = split(texto, width, size, bold, italic);
+    const lineas = dividir(txt, width, size, bold, italic);
     if (!lineas.length) return;
 
     setFont(size, bold, italic);
 
     lineas.forEach(linea => {
-      asegurar(lineH);
-
-      if (align === "center") {
-        doc.text(String(linea), x + (width / 2), y, { align: "center" });
-      } else {
-        doc.text(String(linea), x, y);
-      }
-
+      asegurarLinea(lineH);
+      doc.text(String(linea), x, y);
       y += lineH;
     });
 
-    // El espacio posterior no fuerza una nueva página.
     y += Math.max(0, Number(after) || 0);
   };
 
-  const escribirParrafos = (texto, opts = {}) => {
-    const partes = String(texto || "")
-      .replace(/\r/g, "")
-      .split(/\n+/)
-      .map(x => subidosTextoPlanoPdf(x))
-      .filter(Boolean);
+  // Respeta los saltos que el usuario escribió.
+  const escribirParrafosOriginales = (
+    txt,
+    opts = {}
+  ) => {
+    const raw = String(txt || "").replace(/\r/g, "");
+    if (!raw.trim()) return;
 
-    partes.forEach((p, i) => {
-      escribirTexto(p, {
-        x: opts.x ?? M,
-        width: opts.width ?? CONTENT_W,
-        size: opts.size ?? 14,
-        bold: !!opts.bold,
-        italic: !!opts.italic,
-        lineH: opts.lineH ?? 5.25,
-        after:
-          i === partes.length - 1
-            ? (opts.after ?? 1.5)
-            : (opts.paragraphGap ?? 1.2)
+    const lineasOriginales = raw.split("\n");
+
+    lineasOriginales.forEach((linea, idx) => {
+      const limpio = limpiarUnaLinea(linea);
+
+      if (!limpio) {
+        // Un salto vacío real, pero compacto.
+        y += 1.6;
+        return;
+      }
+
+      escribirLineas(limpio, {
+        ...opts,
+        after: 0
       });
+
+      if (idx < lineasOriginales.length - 1) {
+        y += 0.55;
+      }
+    });
+
+    y += Number(opts.after ?? 0);
+  };
+
+  // =========================================================
+  // CABECERA
+  // TÍTULO a la IZQUIERDA — FECHA a la DERECHA
+  // =========================================================
+  const escribirCabecera = (titulo = "", fecha = "") => {
+    const tituloTxt = limpiarUnaLinea(titulo || "Prédica");
+    const fechaTxt = limpiarUnaLinea(fecha || "");
+
+    const TITLE_SIZE = 18;
+    const DATE_SIZE = 14;
+    const GAP = 5;
+
+    setFont(DATE_SIZE, true, false);
+    const fechaW = fechaTxt ? doc.getTextWidth(fechaTxt) : 0;
+
+    const tituloWDisponible = Math.max(
+      70,
+      FULL_W - fechaW - GAP
+    );
+
+    const tituloLineas = dividir(
+      tituloTxt,
+      tituloWDisponible,
+      TITLE_SIZE,
+      true,
+      false
+    );
+
+    const lineH = 6.4;
+
+    // La fecha va a la derecha de la primera línea.
+    if (fechaTxt) {
+      setFont(DATE_SIZE, true, false);
+      doc.text(fechaTxt, RIGHT, y, { align: "right" });
+    }
+
+    setFont(TITLE_SIZE, true, false);
+    tituloLineas.forEach((linea, i) => {
+      doc.text(String(linea), LEFT, y + (i * lineH));
+    });
+
+    y += Math.max(1, tituloLineas.length) * lineH;
+
+    separador();
+  };
+
+  // =========================================================
+  // INTRO y NOTA
+  // 14 pt ITALIC, ocupando prácticamente todo el ancho.
+  // =========================================================
+  const escribirItalic = (txt = "") => {
+    escribirParrafosOriginales(txt, {
+      x: LEFT + 2,
+      width: RIGHT - (LEFT + 2),
+      size: BODY_SIZE,
+      italic: true,
+      lineH: BODY_LINE,
+      after: 0
     });
   };
 
-  // ---------- Separadores ----------
-  const lineaHorizontal = (x1 = M, x2 = RIGHT, grosor = 0.28) => {
-    doc.setDrawColor(0, 0, 0);
-    doc.setLineWidth(grosor);
-    doc.line(x1, y, x2, y);
-  };
+  // =========================================================
+  // CITA BÍBLICA
+  // Sangría + viñeta + BOLD.
+  // La raya viene DESPUÉS del bloque de versículos, no debajo
+  // de la cita, para que jamás parezca texto tachado.
+  // =========================================================
+  const escribirReferencia = (referencia = "") => {
+    const refTxt = limpiarUnaLinea(referencia);
+    if (!refTxt) return;
 
-  // ---------- Título de sección ----------
-  // Viñeta visible + título bold + línea debajo.
-  const tituloSeccion = (texto, { linea = true } = {}) => {
-    const limpio = subidosTextoPlanoPdf(texto);
-    if (!limpio) return;
-
-    const SIZE = 14.8;
-    const LINE_H = 5.45;
-    const BULLET_X = M + 0.8;
-    const TEXT_X = M + 6;
+    const BULLET_X = LEFT + 3;
+    const TEXT_X = LEFT + 8;
     const TEXT_W = RIGHT - TEXT_X;
 
-    const lineas = split(limpio, TEXT_W, SIZE, true, false);
-    const alto = Math.max(1, lineas.length) * LINE_H;
+    const lineas = dividir(refTxt, TEXT_W, BODY_SIZE, true, false);
 
-    // título + al menos un renglón de contenido debajo
-    asegurar(alto + 6.2);
+    // Reservamos referencia + una sola línea de versículo, nada más.
+    if (y + (BODY_LINE * 2) > BOTTOM) {
+      nuevaPagina();
+    }
 
-    setFont(15.2, true, false);
+    setFont(BODY_SIZE, true, false);
     doc.text("•", BULLET_X, y);
 
-    setFont(SIZE, true, false);
-    lineas.forEach((l, i) => {
-      doc.text(String(l), TEXT_X, y + (i * LINE_H));
+    lineas.forEach((linea, i) => {
+      if (i > 0) asegurarLinea(BODY_LINE);
+      doc.text(String(linea), TEXT_X, y);
+      y += BODY_LINE;
     });
 
-    y += alto + 1.25;
-
-    if (linea) {
-      lineaHorizontal(TEXT_X, RIGHT, 0.22);
-      y += 2.5;
-    }
+    y += 0.6;
   };
 
-  // ---------- Versículos ----------
-  // Texto mínimo 14 pt, número en bold y ancho casi completo.
-  const escribirVerso = (linea = "") => {
-    const limpio = subidosTextoPlanoPdf(linea);
+  // =========================================================
+  // VERSÍCULOS
+  // Misma sangría general que la cita.
+  // SOLO el número del versículo va en bold.
+  // El texto bíblico sigue en 14 pt normal.
+  // =========================================================
+  const escribirVersiculo = (linea = "") => {
+    const limpio = limpiarUnaLinea(linea);
     if (!limpio) return;
 
-    const match = limpio.match(/^(\d+)\s*[\.\)]?\s*(.*)$/);
+    const m = limpio.match(/^(\d+)\s*[\.\)]?\s*(.*)$/);
 
-    const SIZE = 14;
-    const LINE_H = 5.18;
+    const X_NUM = LEFT + 8;
+    const X_BODY = LEFT + 14;
+    const BODY_W = RIGHT - X_BODY;
 
-    // Solo 2 mm de sangría visual para el bloque,
-    // así aprovechamos prácticamente los 190 mm útiles.
-    const X_NUM = M + 2;
-    const X_BODY = M + 9;
-    const BODY_W = RIGHT - X_BODY; // termina exactamente a 10 mm del borde derecho
-
-    if (!match) {
-      escribirTexto(limpio, {
+    if (!m) {
+      escribirLineas(limpio, {
         x: X_NUM,
         width: RIGHT - X_NUM,
-        size: SIZE,
-        lineH: LINE_H,
-        after: 0.85
+        size: BODY_SIZE,
+        lineH: BODY_LINE
       });
+      y += 0.45;
       return;
     }
 
-    const numero = `${match[1]}.`;
-    const cuerpo = String(match[2] || "").trim();
-    const lineas = split(cuerpo, BODY_W, SIZE, false, false);
+    const num = `${m[1]}.`;
+    const cuerpo = String(m[2] || "").trim();
 
-    if (!lineas.length) {
-      asegurar(LINE_H);
-      setFont(SIZE, true, false);
-      doc.text(numero, X_NUM, y);
-      y += LINE_H;
-      return;
+    const cuerpoLineas = dividir(
+      cuerpo,
+      BODY_W,
+      BODY_SIZE,
+      false,
+      false
+    );
+
+    asegurarLinea(BODY_LINE);
+
+    setFont(BODY_SIZE, true, false);
+    doc.text(num, X_NUM, y);
+
+    if (cuerpoLineas.length) {
+      setFont(BODY_SIZE, false, false);
+      doc.text(String(cuerpoLineas[0]), X_BODY, y);
     }
 
-    // Primera línea: número + texto.
-    asegurar(LINE_H);
+    y += BODY_LINE;
 
-    setFont(SIZE, true, false);
-    doc.text(numero, X_NUM, y);
-
-    setFont(SIZE, false, false);
-    doc.text(String(lineas[0]), X_BODY, y);
-    y += LINE_H;
-
-    // Continuaciones usan todo el ancho desde el cuerpo
-    // y pueden seguir en la próxima hoja sin dejar huecos enormes.
-    for (let i = 1; i < lineas.length; i++) {
-      asegurar(LINE_H);
-      setFont(SIZE, false, false);
-      doc.text(String(lineas[i]), X_BODY, y);
-      y += LINE_H;
+    for (let i = 1; i < cuerpoLineas.length; i++) {
+      asegurarLinea(BODY_LINE);
+      setFont(BODY_SIZE, false, false);
+      doc.text(String(cuerpoLineas[i]), X_BODY, y);
+      y += BODY_LINE;
     }
 
-    y += 0.8;
+    y += 0.4;
   };
 
-  // ---------- Comentarios ----------
-  const bloqueComentario = (texto = "") => {
-    const limpio = String(texto || "").trim();
-    if (!limpio) return;
+  // =========================================================
+  // COMENTARIO
+  // - Sin itálica forzada.
+  // - Si encuentra "1." o "1)" lo muestra SIEMPRE como "1)".
+  // - Conserva •, -, –, —, *, ▪, ◦, · cuando ya estaban escritos.
+  // - Respeta los saltos de línea originales.
+  // =========================================================
+  const escribirComentario = (txt = "") => {
+    const raw = String(txt || "").replace(/\r/g, "");
+    if (!raw.trim()) return;
 
-    asegurar(11);
+    const COMMENT_X = LEFT + 8;
+    const COMMENT_W = RIGHT - COMMENT_X;
+    const HANG_X = LEFT + 15;
+    const HANG_W = RIGHT - HANG_X;
 
-    const BULLET_X = M + 3;
-    const TEXT_X = M + 9;
-    const TEXT_W = RIGHT - TEXT_X;
+    const lineas = raw.split("\n");
 
-    setFont(14.2, true, false);
-    doc.text("•", BULLET_X, y);
-    doc.text("Comentario", TEXT_X, y);
+    lineas.forEach((lineaOriginal) => {
+      const linea = limpiarUnaLinea(lineaOriginal);
 
-    // pequeña línea visual para diferenciar comentario de Biblia
-    doc.setDrawColor(0, 0, 0);
-    doc.setLineWidth(0.18);
-    doc.line(TEXT_X + 31, y - 0.9, RIGHT, y - 0.9);
+      if (!linea) {
+        y += 1.5;
+        return;
+      }
 
-    y += 5.0;
+      // Enumeración: 1. / 1) -> siempre 1)
+      const num = linea.match(/^(\d+)\s*[\.\)]\s*(.*)$/);
 
-    escribirParrafos(limpio, {
-      x: TEXT_X,
-      width: TEXT_W,
-      size: 14,
-      italic: true,
-      lineH: 5.2,
-      after: 1.7,
-      paragraphGap: 1.0
+      if (num) {
+        const marcador = `${num[1]})`;
+        const cuerpo = String(num[2] || "").trim();
+        const partes = dividir(
+          cuerpo,
+          HANG_W,
+          BODY_SIZE,
+          true,
+          false
+        );
+
+        asegurarLinea(BODY_LINE);
+
+        setFont(BODY_SIZE, true, false);
+        doc.text(marcador, COMMENT_X, y);
+
+        if (partes.length) {
+          doc.text(String(partes[0]), HANG_X, y);
+        }
+
+        y += BODY_LINE;
+
+        for (let i = 1; i < partes.length; i++) {
+          asegurarLinea(BODY_LINE);
+          setFont(BODY_SIZE, true, false);
+          doc.text(String(partes[i]), HANG_X, y);
+          y += BODY_LINE;
+        }
+
+        y += 0.65;
+        return;
+      }
+
+      // Viñeta ORIGINAL: la conservamos.
+      const bullet = linea.match(/^([•▪◦·\-\–\—\*])\s*(.*)$/);
+
+      if (bullet) {
+        const marcador = bullet[1];
+        const cuerpo = String(bullet[2] || "").trim();
+        const partes = dividir(
+          cuerpo,
+          HANG_W,
+          BODY_SIZE,
+          false,
+          false
+        );
+
+        asegurarLinea(BODY_LINE);
+
+        setFont(BODY_SIZE, false, false);
+        doc.text(marcador, COMMENT_X, y);
+
+        if (partes.length) {
+          doc.text(String(partes[0]), HANG_X, y);
+        }
+
+        y += BODY_LINE;
+
+        for (let i = 1; i < partes.length; i++) {
+          asegurarLinea(BODY_LINE);
+          doc.text(String(partes[i]), HANG_X, y);
+          y += BODY_LINE;
+        }
+
+        y += 0.55;
+        return;
+      }
+
+      // Texto normal del comentario.
+      escribirLineas(linea, {
+        x: COMMENT_X,
+        width: COMMENT_W,
+        size: BODY_SIZE,
+        lineH: BODY_LINE
+      });
+
+      y += 0.55;
     });
   };
 
@@ -5664,13 +5829,6 @@ async function subidosCrearPdfPredica(it = {}) {
   ).trim();
 
   const fecha = subidosFechaBonitaExport(it.fechaEvento || "");
-  const citas = obtenerCitasPredicaSubido(it);
-
-  const version = String(
-    it.predicaVersion ||
-    citas[0]?.version ||
-    ""
-  ).trim();
 
   const introduccion = String(
     it.predicaIntroduccion ||
@@ -5684,128 +5842,63 @@ async function subidosCrearPdfPredica(it = {}) {
     ""
   ).trim();
 
-  // =========================================================
-  // CABECERA: SOLO TÍTULO + FECHA REAL DE LA PRÉDICA / VERSIÓN
-  // =========================================================
-  const TITULO_SIZE = 20;
-  const TITULO_LINE_H = 7.2;
-
-  const tituloLineas = split(
-    titulo || "Prédica",
-    CONTENT_W,
-    TITULO_SIZE,
-    true,
-    false
-  );
-
-  setFont(TITULO_SIZE, true, false);
-
-  tituloLineas.forEach((l, i) => {
-    doc.text(
-      String(l),
-      PAGE_W / 2,
-      y + (i * TITULO_LINE_H),
-      { align: "center" }
-    );
-  });
-
-  y += Math.max(1, tituloLineas.length) * TITULO_LINE_H + 0.7;
-
-  if (fecha || version) {
-    setFont(11.5, true, false);
-
-    const meta =
-      `${fecha || ""}` +
-      `${fecha && version ? " · " : ""}` +
-      `${version || ""}`;
-
-    doc.text(meta, PAGE_W / 2, y, { align: "center" });
-    y += 4.6;
-  }
-
-  lineaHorizontal(M, RIGHT, 0.4);
-  y += 4.2;
+  const citas = obtenerCitasPredicaSubido(it);
 
   // =========================================================
-  // INTRODUCCIÓN
+  // ORDEN EXACTO
+  // Título/Fecha
+  // línea
+  // Intro italic
+  // línea
+  // Cita + versículos
+  // línea
+  // Comentario
+  // línea
+  // siguiente cita...
+  // Nota italic
   // =========================================================
+  escribirCabecera(titulo, fecha);
+
   if (introduccion) {
-    tituloSeccion("Introducción");
-
-    escribirParrafos(introduccion, {
-      x: M + 6,
-      width: RIGHT - (M + 6),
-      size: 14,
-      lineH: 5.25,
-      after: 2.0,
-      paragraphGap: 1.1
-    });
-
-    y += 0.8;
+    escribirItalic(introduccion);
+    separador();
   }
 
-  // =========================================================
-  // CITAS
-  // =========================================================
-  citas.forEach((c, idx) => {
-    const referencia = String(c?.referencia || "").trim();
-    const textoBiblico = String(c?.texto || "").trim();
-    const comentario = String(c?.comentario || c?.nota || "").trim();
+  citas.forEach((cita, idx) => {
+    const referencia = String(cita?.referencia || "").trim();
+    const textoBiblico = String(cita?.texto || "").trim();
+    const comentario = String(cita?.comentario || cita?.nota || "").trim();
 
     if (referencia) {
-      tituloSeccion(referencia);
+      escribirReferencia(referencia);
     }
 
     if (textoBiblico) {
-      const lineasBiblia = String(textoBiblico)
+      const versos = String(textoBiblico)
         .replace(/\r/g, "")
         .split("\n")
         .map(x => x.trim())
         .filter(Boolean);
 
-      lineasBiblia.forEach(linea => escribirVerso(linea));
-
-      y += 0.8;
+      versos.forEach(escribirVersiculo);
     }
 
     if (comentario) {
-      bloqueComentario(comentario);
+      separador();
+      escribirComentario(comentario);
     }
 
-    // Separador claro entre una cita y la siguiente.
+    // Línea entre una cita completa y la siguiente.
     if (idx < citas.length - 1) {
-      asegurar(5);
-      y += 0.8;
-      lineaHorizontal(M + 2, RIGHT, 0.16);
-      y += 3.0;
+      separador();
     }
   });
 
-  // =========================================================
-  // NOTA FINAL
-  // =========================================================
   if (notaFinal) {
-    asegurar(12);
-
-    y += 1.0;
-    lineaHorizontal(M, RIGHT, 0.35);
-    y += 3.5;
-
-    tituloSeccion("Nota final", { linea: false });
-
-    escribirParrafos(notaFinal, {
-      x: M + 6,
-      width: RIGHT - (M + 6),
-      size: 14,
-      lineH: 5.25,
-      after: 0,
-      paragraphGap: 1.0
-    });
+    separador();
+    escribirItalic(notaFinal);
   }
 
-  // NO incluye:
-  // iglesia, pastor, dirección, horario, URL, fecha/hora de impresión,
-  // título automático del navegador ni numeración de páginas.
   return doc;
 }
 
@@ -5962,8 +6055,6 @@ const descripcionPredica = String(
 
         ${subidosHtmlAudioPredica(it)}
 
-        ${primeraBloque}
-
         ${introduccion ? `
           <div style="${bloqueInfoEstilo}">
             <div class="subidos-visor-intro">
@@ -5971,6 +6062,8 @@ const descripcionPredica = String(
             </div>
           </div>
         ` : ``}
+
+        ${primeraBloque}
 
         ${bloquesRestantes ? `
           <div class="subidos-visor-bloques">
