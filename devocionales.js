@@ -2405,7 +2405,7 @@ function devEnsureBotonCuentagotasWrapperF1(){
   const btn = document.createElement("button");
   btn.type = "button";
   btn.id = "devBtnCuentagotasWrapperF1";
-  btn.title = "Tomar color del fondo para el wrapper";
+  btn.title = "Tomar color del fondo para el resaltado";
   btn.setAttribute("aria-label", btn.title);
   btn.innerHTML = `<i class="fa-solid fa-eye-dropper"></i>`;
 
@@ -2794,20 +2794,17 @@ function wrapperVisualDataUrl(op, color){
 function applyFase1WrapperLook(el, st, scale = 1){
   if (!el || !st) return;
 
-  const s = Math.max(0.12, Number(scale) || 1);
-  const url = wrapperVisualDataUrl(st.op, st.opColor);
-
-  el.style.backgroundImage = `url("${url}")`;
-  el.style.backgroundSize = "100% 100%";
-  el.style.backgroundPosition = "center";
-  el.style.backgroundRepeat = "no-repeat";
+  /*
+    FASE 1:
+    ya NO dibujamos un wrapper enorme detrás de todo.
+    El resaltado vive directamente detrás de cada texto/renglón,
+    igual que en "Crear imagen" de Biblia.
+  */
+  el.style.backgroundImage = "none";
   el.style.backgroundColor = "transparent";
-
-  // ✅ No usar box-shadow acá: html2canvas lo interpreta distinto.
   el.style.boxShadow = "none";
-
-  el.style.borderRadius = `${Math.round(118 * s)}px`;
-  el.style.overflow = "hidden";
+  el.style.borderRadius = "0";
+  el.style.overflow = "visible";
 }
 
 function esc(s){
@@ -2938,6 +2935,33 @@ function buildFase1HTML(versiculoCanvasPx, scale){
 
   const versiculoPx = Math.max(8, versiculoCanvasPx * scale);
 
+  /*
+    Resaltado puntual, mismo criterio visual que Biblia:
+    - no modifica el layout;
+    - no modifica el tamaño sugerido;
+    - se extiende igual a izquierda y derecha;
+    - box-decoration-break lo clona por cada renglón real.
+  */
+  const rgbF1 = hexToRgb(DEV.f1.opColor || "#000000");
+  const alphaF1 = Math.max(0, Math.min(1, Number(DEV.f1.op ?? 0.35)));
+  const resaltadoF1 = `rgba(${rgbF1.r}, ${rgbF1.g}, ${rgbF1.b}, ${alphaF1})`;
+  const spreadF1 = Math.max(1, 4 * scale);
+
+  const resaltarF1 = (contenido) => `
+    <span style="
+      display:inline;
+      margin:0;
+      padding:0;
+      background:${resaltadoF1};
+      box-shadow:
+        ${spreadF1}px 0 0 ${resaltadoF1},
+        -${spreadF1}px 0 0 ${resaltadoF1};
+      border-radius:999px;
+      box-decoration-break:clone;
+      -webkit-box-decoration-break:clone;
+    ">${contenido}</span>
+  `;
+
   // ✅ tamaños reales en canvas 1080 (se escalan en preview)
   const devocionalPx = Math.round(44 * scale);
   const fechaPx      = Math.round(32 * scale);
@@ -2978,11 +3002,11 @@ function buildFase1HTML(versiculoCanvasPx, scale){
     <div style="position:relative; width:100%; height:100%;">
 
       <div style="${base(devocionalPx,700)} top:${Y_DEV}%;">
-        DEVOCIONAL
+        ${resaltarF1("DEVOCIONAL")}
       </div>
 
       <div style="${base(fechaPx,550)} top:${Y_FECHA}%; opacity:.95;">
-        ${esc(p1.fecha)}
+        ${resaltarF1(esc(p1.fecha))}
       </div>
 
       <!-- ✅ Caja fija grande: Versículo + Cita juntos -->
@@ -3019,7 +3043,7 @@ function buildFase1HTML(versiculoCanvasPx, scale){
             word-break:break-word;
             line-height:1.02;
           ">
-            ${esc(p1.versiculo)}
+            ${resaltarF1(esc(p1.versiculo))}
           </div>
 
                     <div style="
@@ -3030,17 +3054,17 @@ function buildFase1HTML(versiculoCanvasPx, scale){
             word-break:break-word;
             line-height:1.02;
           ">
-            ${esc(p1.cita)}
+            ${resaltarF1(esc(p1.cita))}
           </div>
         </div>
       </div>
 
       <div style="${base(iglesiaPx,700)} top:${Y_IGL}%;">
-        ${esc(p1.iglesia)}
+        ${resaltarF1(esc(p1.iglesia))}
       </div>
 
       <div style="${base(direPx,700)} top:${Y_DIR}%;">
-        ${esc(p1.direccion)}
+        ${resaltarF1(esc(p1.direccion))}
       </div>
 
     </div>
