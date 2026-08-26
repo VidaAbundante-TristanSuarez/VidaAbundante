@@ -5168,6 +5168,232 @@ function htmlArchivoGrandePredica(it) {
   `;
 }
 
+
+/* =========================================================
+   PRÉDICA: IMPRESIÓN A4 BLANCO Y NEGRO
+   ========================================================= */
+function subidosHtmlBibliaImpresion(txt = "") {
+  const limpio = String(txt || "")
+    .replace(/\u00A0/g, " ")
+    .replace(/\r/g, "")
+    .trim();
+
+  if (!limpio) return "";
+
+  return limpio
+    .split("\n")
+    .map(linea => String(linea || "").trim())
+    .filter(Boolean)
+    .map(linea => {
+      let html = escaparHtml(linea);
+      html = html.replace(
+        /^(\d+\s*[\.\)]?\s*)/,
+        '<strong class="print-num-verso">$1</strong>'
+      );
+      return `<div class="print-verso">${html}</div>`;
+    })
+    .join("");
+}
+
+function subidosHtmlParrafosImpresion(txt = "") {
+  return String(txt || "")
+    .replace(/\u00A0/g, " ")
+    .replace(/\r/g, "")
+    .trim()
+    .split(/\n+/)
+    .map(linea => String(linea || "").trim())
+    .filter(Boolean)
+    .map(linea => `<p>${escaparHtml(linea)}</p>`)
+    .join("");
+}
+
+function subidosHtmlPredicaImpresion(it = {}) {
+  const citas = obtenerCitasPredicaSubido(it);
+
+  const titulo = String(
+    it.predicaTitulo ||
+    it.tituloPredica ||
+    "Prédica"
+  ).trim();
+
+  const fecha = subidosFechaBonitaExport(it.fechaEvento || "");
+
+  const version = String(
+    it.predicaVersion ||
+    citas[0]?.version ||
+    ""
+  ).trim();
+
+  const introduccion = String(
+    it.predicaIntroduccion ||
+    it.introduccionPredica ||
+    ""
+  ).trim();
+
+  const notaFinal = String(
+    it.predicaNotaFinal ||
+    it.notaFinalGeneral ||
+    ""
+  ).trim();
+
+  const citasHtml = citas.map(c => {
+    const referencia = String(c?.referencia || "").trim();
+    const textoBiblico = String(c?.texto || "").trim();
+    const comentario = String(c?.comentario || c?.nota || "").trim();
+
+    return `
+      <section class="print-cita">
+        ${referencia ? `
+          <div class="print-ref">
+            <span class="print-bullet">•</span>
+            <strong>${escaparHtml(referencia)}</strong>
+          </div>
+        ` : ``}
+
+        ${textoBiblico ? `
+          <div class="print-biblia">
+            ${subidosHtmlBibliaImpresion(textoBiblico)}
+          </div>
+        ` : ``}
+
+        ${comentario ? `
+          <div class="print-item print-comentario">
+            <span class="print-bullet">•</span>
+            <div>
+              <strong>Comentario:</strong>
+              ${subidosHtmlParrafosImpresion(comentario)}
+            </div>
+          </div>
+        ` : ``}
+      </section>
+    `;
+  }).join("");
+
+  return `<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>${escaparHtml(titulo || "Prédica")}</title>
+<style>
+@page{size:A4 portrait;margin:1cm;}
+*{box-sizing:border-box;}
+html,body{
+  margin:0;padding:0;background:#fff!important;color:#000!important;
+  font-family:Arial,Helvetica,sans-serif;font-size:10.5pt;line-height:1.27;
+}
+.print-header{
+  text-align:center;border-bottom:1.4px solid #000;
+  padding:0 0 3mm;margin:0 0 4mm;
+}
+.print-header h1{margin:0;font-size:17pt;line-height:1.12;font-weight:800;}
+.print-meta{margin-top:1.5mm;font-size:9.4pt;font-weight:700;}
+.print-item,.print-ref,.print-seccion-titulo{
+  display:grid;grid-template-columns:4mm 1fr;column-gap:1.5mm;align-items:start;
+}
+.print-bullet{font-weight:900;font-size:12pt;line-height:1.05;text-align:center;}
+.print-item{margin:0 0 3mm;}
+.print-item p,.print-seccion-contenido p{
+  margin:0 0 1.5mm;text-align:justify;orphans:3;widows:3;
+}
+.print-item p:last-child,.print-seccion-contenido p:last-child{margin-bottom:0;}
+.print-cita{margin:0 0 4mm;break-inside:auto;}
+.print-ref{
+  margin:0 0 2mm;font-size:11.3pt;
+  break-after:avoid;page-break-after:avoid;
+}
+.print-biblia{margin:0 0 2.5mm 5.5mm;padding-left:3mm;border-left:1px solid #000;}
+.print-verso{margin:0 0 1.1mm;text-align:justify;orphans:3;widows:3;}
+.print-num-verso{font-weight:800;}
+.print-comentario{margin-left:5.5mm;margin-bottom:2mm;}
+.print-seccion{margin:0 0 4mm;}
+.print-seccion-titulo{margin:0 0 1.5mm;break-after:avoid;page-break-after:avoid;}
+.print-seccion-contenido{margin-left:5.5mm;}
+.print-nota{border-top:1px solid #000;padding-top:3mm;margin-top:2mm;}
+strong{font-weight:800;}
+</style>
+</head>
+<body>
+<main>
+  <header class="print-header">
+    <h1>${escaparHtml(titulo || "Prédica")}</h1>
+    ${(fecha || version) ? `
+      <div class="print-meta">
+        ${fecha ? escaparHtml(fecha) : ""}
+        ${(fecha && version) ? " · " : ""}
+        ${version ? escaparHtml(version) : ""}
+      </div>
+    ` : ``}
+  </header>
+
+  ${introduccion ? `
+    <section class="print-seccion">
+      <div class="print-seccion-titulo">
+        <span class="print-bullet">•</span>
+        <strong>Introducción</strong>
+      </div>
+      <div class="print-seccion-contenido">
+        ${subidosHtmlParrafosImpresion(introduccion)}
+      </div>
+    </section>
+  ` : ``}
+
+  ${citasHtml}
+
+  ${notaFinal ? `
+    <section class="print-seccion print-nota">
+      <div class="print-seccion-titulo">
+        <span class="print-bullet">•</span>
+        <strong>Nota final</strong>
+      </div>
+      <div class="print-seccion-contenido">
+        ${subidosHtmlParrafosImpresion(notaFinal)}
+      </div>
+    </section>
+  ` : ``}
+</main>
+</body>
+</html>`;
+}
+
+window.subidosImprimirPredica = function subidosImprimirPredica(id) {
+  const it = obtenerSubidoPorId(id);
+  if (!it) {
+    alert("No encontré la prédica para imprimir.");
+    return;
+  }
+
+  const frame = document.createElement("iframe");
+  frame.setAttribute("aria-hidden", "true");
+  frame.style.cssText = "position:fixed;right:0;bottom:0;width:1px;height:1px;border:0;opacity:0;pointer-events:none;";
+  document.body.appendChild(frame);
+
+  const w = frame.contentWindow;
+  const d = frame.contentDocument || w?.document;
+
+  if (!w || !d) {
+    frame.remove();
+    alert("No pude abrir la vista de impresión.");
+    return;
+  }
+
+  d.open();
+  d.write(subidosHtmlPredicaImpresion(it));
+  d.close();
+
+  setTimeout(() => {
+    try {
+      w.focus();
+      w.print();
+    } catch (e) {
+      console.error("No pude imprimir la prédica:", e);
+      alert("No pude abrir el diálogo de impresión.");
+    }
+    setTimeout(() => {
+      try { frame.remove(); } catch {}
+    }, 1500);
+  }, 350);
+};
+
 function htmlPredicaBibliaSubidoGrande(it, abrirClave = "") {
   const citas = obtenerCitasPredicaSubido(it);
   const primeraCita = citas[0] || null;
@@ -5236,8 +5462,37 @@ const descripcionPredica = String(
     border:1px solid #d8eef9;
   `;
 
+  const idPrint = String(it?.id || "")
+    .replace(/\\/g, "\\\\")
+    .replace(/'/g, "\\'");
+
   return `
     <div class="subidos-visor-predica-full">
+      <div style="display:flex;justify-content:flex-end;align-items:center;margin:0 0 8px;">
+        <button
+          type="button"
+          onclick="subidosImprimirPredica('${idPrint}')"
+          title="Imprimir prédica en A4"
+          aria-label="Imprimir prédica en A4"
+          style="
+            border:1px solid #cfd8df;
+            background:#fff;
+            color:#111;
+            border-radius:999px;
+            padding:8px 13px;
+            font-weight:800;
+            cursor:pointer;
+            display:inline-flex;
+            align-items:center;
+            gap:7px;
+            box-shadow:0 3px 10px rgba(0,0,0,.10);
+          "
+        >
+          <i class="fa-solid fa-print"></i>
+          Imprimir A4
+        </button>
+      </div>
+
       <div
         class="subidos-visor-marco"
         style="--subidos-predica-fondo:url('${subidosCssUrl(fondoUrl)}');"
