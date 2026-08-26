@@ -19,6 +19,8 @@ const SUBIDOS_PROXY_URL = R2_WORKER_URL;
 
 const SUBIDOS_EXPORT_BG_URL = "./img/fondos/Tarjetas/1a.png";
 
+console.log("✅ Subidos PRINT FIX cargado", "20260826-PDF-1");
+
 /*
   ✅ Fondos de prédica:
   Dejamos SOLO TARJETAS.
@@ -5273,13 +5275,24 @@ function subidosHtmlPredicaImpresion(it = {}) {
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<title>${escaparHtml(titulo || "Prédica")}</title>
+<title>&#8203;</title>
 <style>
-@page{size:A4 portrait;margin:1cm;}
+@page{size:A4 portrait;margin:0;}
 *{box-sizing:border-box;}
 html,body{
-  margin:0;padding:0;background:#fff!important;color:#000!important;
-  font-family:Arial,Helvetica,sans-serif;font-size:10.5pt;line-height:1.27;
+  margin:0;
+  padding:0;
+  background:#fff!important;
+  color:#000!important;
+  font-family:Arial,Helvetica,sans-serif;
+  font-size:10.5pt;
+  line-height:1.27;
+}
+main{
+  width:100%;
+  padding:1cm;
+  box-decoration-break:clone;
+  -webkit-box-decoration-break:clone;
 }
 .print-header{
   text-align:center;border-bottom:1.4px solid #000;
@@ -5355,44 +5368,399 @@ strong{font-weight:800;}
 </html>`;
 }
 
-window.subidosImprimirPredica = function subidosImprimirPredica(id) {
+function subidosCargarJsPDF() {
+  if (window.jspdf?.jsPDF) {
+    return Promise.resolve(window.jspdf.jsPDF);
+  }
+
+  if (window.__SUBIDOS_JSPDF_PROMISE) {
+    return window.__SUBIDOS_JSPDF_PROMISE;
+  }
+
+  window.__SUBIDOS_JSPDF_PROMISE = new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = "https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js";
+    script.async = true;
+
+    script.onload = () => {
+      if (window.jspdf?.jsPDF) {
+        resolve(window.jspdf.jsPDF);
+      } else {
+        reject(new Error("jsPDF no quedó disponible."));
+      }
+    };
+
+    script.onerror = () => reject(new Error("No pude cargar el generador PDF."));
+
+    document.head.appendChild(script);
+  });
+
+  return window.__SUBIDOS_JSPDF_PROMISE;
+}
+
+function subidosTextoPlanoPdf(txt = "") {
+  return String(txt || "")
+    .replace(/\u00A0/g, " ")
+    .replace(/\r/g, "")
+    .replace(/[ \t]+/g, " ")
+    .trim();
+}
+
+async function subidosCrearPdfPredica(it = {}) {
+  const jsPDF = await subidosCargarJsPDF();
+
+  const doc = new jsPDF({
+    orientation: "portrait",
+    unit: "mm",
+    format: "a4",
+    compress: true
+  });
+
+  const PAGE_W = 210;
+  const PAGE_H = 297;
+  const M = 10;            // 1 cm real
+  const CONTENT_W = PAGE_W - (M * 2);
+
+  let y = M;
+
+  const setFont = (size = 10.2, bold = false, italic = false) => {
+    const style = bold
+      ? (italic ? "bolditalic" : "bold")
+      : (italic ? "italic" : "normal");
+
+    doc.setFont("helvetica", style);
+    doc.setFontSize(size);
+    doc.setTextColor(0, 0, 0);
+  };
+
+  const saltoPaginaSiHaceFalta = (altoNecesario = 5) => {
+    if (y + altoNecesario <= PAGE_H - M) return;
+
+    doc.addPage();
+    y = M;
+  };
+
+  const medirLineas = (texto, ancho, size = 10.2, bold = false, italic = false) => {
+    setFont(size, bold, italic);
+    return doc.splitTextToSize(subidosTextoPlanoPdf(texto), ancho);
+  };
+
+  const textoNormal = (
+    texto,
+    {
+      x = M,
+      width = CONTENT_W,
+      size = 10.2,
+      bold = false,
+      italic = false,
+      lineH = 4.25,
+      after = 1.8,
+      align = "left"
+    } = {}
+  ) => {
+    const limpio = subidosTextoPlanoPdf(texto);
+    if (!limpio) return;
+
+    const lineas = medirLineas(limpio, width, size, bold, italic);
+    const alto = Math.max(lineH, lineas.length * lineH);
+
+    saltoPaginaSiHaceFalta(alto + after);
+    setFont(size, bold, italic);
+
+    lineas.forEach((linea, i) => {
+      const yy = y + (i * lineH);
+
+      if (align === "center") {
+        doc.text(String(linea), x + (width / 2), yy, { align: "center" });
+      } else {
+        doc.text(String(linea), x, yy);
+      }
+    });
+
+    y += alto + after;
+  };
+
+  const tituloSeccion = (texto) => {
+    const limpio = subidosTextoPlanoPdf(texto);
+    if (!limpio) return;
+
+    const size = 11.2;
+    const lineH = 4.6;
+    const anchoTexto = CONTENT_W - 6;
+    const lineas = medirLineas(limpio, anchoTexto, size, true, false);
+    const alto = Math.max(1, lineas.length) * lineH;
+
+    saltoPaginaSiHaceFalta(alto + 2.5);
+
+    setFont(size, true, false);
+    doc.text("•", M + 0.8, y);
+
+    lineas.forEach((linea, i) => {
+      doc.text(String(linea), M + 6, y + (i * lineH));
+    });
+
+    y += alto + 2;
+  };
+
+  // Reescribimos tituloSeccion sin sintaxis ajena a JS.
+
+  const parrafos = (texto, opts = {}) => {
+    const partes = String(texto || "")
+      .replace(/\r/g, "")
+      .split(/\n+/)
+      .map(x => subidosTextoPlanoPdf(x))
+      .filter(Boolean);
+
+    partes.forEach(p => {
+      textoNormal(p, {
+        x: opts.x ?? (M + 6),
+        width: opts.width ?? (CONTENT_W - 6),
+        size: opts.size ?? 10.2,
+        bold: !!opts.bold,
+        italic: !!opts.italic,
+        lineH: opts.lineH ?? 4.25,
+        after: opts.after ?? 1.6
+      });
+    });
+  };
+
+  const verso = (linea = "") => {
+    const limpio = subidosTextoPlanoPdf(linea);
+    if (!limpio) return;
+
+    const m = limpio.match(/^(\d+)\s*[\.\)]?\s*(.*)$/);
+
+    if (!m) {
+      textoNormal(limpio, {
+        x: M + 7,
+        width: CONTENT_W - 7,
+        size: 9.9,
+        lineH: 4.1,
+        after: 1
+      });
+      return;
+    }
+
+    const numero = `${m[1]}.`;
+    const cuerpo = String(m[2] || "").trim();
+
+    const xNum = M + 7;
+    const xBody = M + 14;
+    const bodyW = CONTENT_W - 14;
+    const lineH = 4.1;
+
+    const lineas = medirLineas(cuerpo, bodyW, 9.9, false, false);
+    const alto = Math.max(1, lineas.length) * lineH;
+
+    saltoPaginaSiHaceFalta(alto + 1);
+
+    setFont(9.9, true, false);
+    doc.text(numero, xNum, y);
+
+    setFont(9.9, false, false);
+    lineas.forEach((l, i) => {
+      doc.text(String(l), xBody, y + (i * lineH));
+    });
+
+    y += alto + 1;
+  };
+
+  const bloqueComentario = (texto = "") => {
+    const limpio = String(texto || "").trim();
+    if (!limpio) return;
+
+    saltoPaginaSiHaceFalta(8);
+    setFont(10.1, true, false);
+    doc.text("•", M + 6.8, y);
+    doc.text("Comentario:", M + 12, y);
+    y += 4.4;
+
+    parrafos(limpio, {
+      x: M + 12,
+      width: CONTENT_W - 12,
+      size: 9.9,
+      lineH: 4.1,
+      after: 1.3
+    });
+
+    y += 0.6;
+  };
+
+  const titulo = String(
+    it.predicaTitulo ||
+    it.tituloPredica ||
+    "Prédica"
+  ).trim();
+
+  const fecha = subidosFechaBonitaExport(it.fechaEvento || "");
+  const citas = obtenerCitasPredicaSubido(it);
+
+  const version = String(
+    it.predicaVersion ||
+    citas[0]?.version ||
+    ""
+  ).trim();
+
+  const introduccion = String(
+    it.predicaIntroduccion ||
+    it.introduccionPredica ||
+    ""
+  ).trim();
+
+  const notaFinal = String(
+    it.predicaNotaFinal ||
+    it.notaFinalGeneral ||
+    ""
+  ).trim();
+
+  // TÍTULO: solo una vez, dentro del contenido real del PDF.
+  const tituloLineas = medirLineas(titulo || "Prédica", CONTENT_W, 17, true, false);
+  const tituloH = Math.max(1, tituloLineas.length) * 6.2;
+
+  setFont(17, true, false);
+  tituloLineas.forEach((l, i) => {
+    doc.text(String(l), PAGE_W / 2, y + (i * 6.2), { align: "center" });
+  });
+
+  y += tituloH + 1.2;
+
+  // Fecha real de la prédica + versión. NO fecha/hora de impresión.
+  if (fecha || version) {
+    setFont(9.2, true, false);
+    const meta = `${fecha || ""}${fecha && version ? " · " : ""}${version || ""}`;
+    doc.text(meta, PAGE_W / 2, y, { align: "center" });
+    y += 4.5;
+  }
+
+  doc.setDrawColor(0, 0, 0);
+  doc.setLineWidth(0.35);
+  doc.line(M, y, PAGE_W - M, y);
+  y += 5;
+
+  if (introduccion) {
+    tituloSeccion("Introducción");
+    parrafos(introduccion, {
+      x: M + 6,
+      width: CONTENT_W - 6,
+      size: 10.1,
+      lineH: 4.25,
+      after: 1.6
+    });
+    y += 1.5;
+  }
+
+  citas.forEach(c => {
+    const referencia = String(c?.referencia || "").trim();
+    const textoBiblico = String(c?.texto || "").trim();
+    const comentario = String(c?.comentario || c?.nota || "").trim();
+
+    if (referencia) {
+      tituloSeccion(referencia);
+    }
+
+    if (textoBiblico) {
+      // Línea vertical simple, B/N, como separador.
+      const yInicioBiblia = y;
+      const lineasBiblia = String(textoBiblico || "")
+        .replace(/\r/g, "")
+        .split("\n")
+        .map(x => x.trim())
+        .filter(Boolean);
+
+      lineasBiblia.forEach(linea => verso(linea));
+
+      const yFinBiblia = y - 0.6;
+      if (yFinBiblia > yInicioBiblia) {
+        doc.setDrawColor(0, 0, 0);
+        doc.setLineWidth(0.25);
+        doc.line(M + 5, yInicioBiblia - 1.5, M + 5, yFinBiblia);
+      }
+
+      y += 1;
+    }
+
+    if (comentario) {
+      bloqueComentario(comentario);
+    }
+
+    y += 1.2;
+  });
+
+  if (notaFinal) {
+    saltoPaginaSiHaceFalta(12);
+    doc.setDrawColor(0, 0, 0);
+    doc.setLineWidth(0.25);
+    doc.line(M, y, PAGE_W - M, y);
+    y += 4;
+
+    tituloSeccion("Nota final");
+    parrafos(notaFinal, {
+      x: M + 6,
+      width: CONTENT_W - 6,
+      size: 10.1,
+      lineH: 4.25
+    });
+  }
+
+  // El PDF NO incluye: iglesia, pastor, dirección, horario,
+  // URL, fecha/hora de impresión, título automático ni número de página.
+  return doc;
+}
+
+window.subidosImprimirPredica = async function subidosImprimirPredica(id) {
   const it = obtenerSubidoPorId(id);
+
   if (!it) {
     alert("No encontré la prédica para imprimir.");
     return;
   }
 
-  const frame = document.createElement("iframe");
-  frame.setAttribute("aria-hidden", "true");
-  frame.style.cssText = "position:fixed;right:0;bottom:0;width:1px;height:1px;border:0;opacity:0;pointer-events:none;";
-  document.body.appendChild(frame);
+  // Abrimos una pestaña en el mismo click para evitar bloqueadores.
+  const visorPdf = window.open("", "_blank");
 
-  const w = frame.contentWindow;
-  const d = frame.contentDocument || w?.document;
-
-  if (!w || !d) {
-    frame.remove();
-    alert("No pude abrir la vista de impresión.");
+  if (!visorPdf) {
+    alert("El navegador bloqueó la vista de impresión. Permití ventanas emergentes para esta página.");
     return;
   }
 
-  d.open();
-  d.write(subidosHtmlPredicaImpresion(it));
-  d.close();
+  try {
+    visorPdf.document.write(`
+      <html>
+        <head><title>Preparando impresión…</title></head>
+        <body style="font-family:Arial,sans-serif;padding:24px;">
+          Preparando A4…
+        </body>
+      </html>
+    `);
 
-  setTimeout(() => {
-    try {
-      w.focus();
-      w.print();
-    } catch (e) {
-      console.error("No pude imprimir la prédica:", e);
-      alert("No pude abrir el diálogo de impresión.");
+    const doc = await subidosCrearPdfPredica(it);
+
+    if (typeof doc.autoPrint === "function") {
+      try {
+        doc.autoPrint({ variant: "non-conform" });
+      } catch (e) {}
     }
+
+    const blob = doc.output("blob");
+    const url = URL.createObjectURL(blob);
+
+    visorPdf.location.replace(url);
+
     setTimeout(() => {
-      try { frame.remove(); } catch {}
-    }, 1500);
-  }, 350);
+      try { URL.revokeObjectURL(url); } catch {}
+    }, 120000);
+
+  } catch (e) {
+    console.error("No pude preparar el PDF de la prédica:", e);
+
+    try {
+      visorPdf.close();
+    } catch {}
+
+    alert("No pude preparar el A4 para imprimir.");
+  }
 };
+
 
 function htmlPredicaBibliaSubidoGrande(it, abrirClave = "") {
   const citas = obtenerCitasPredicaSubido(it);
@@ -5462,37 +5830,8 @@ const descripcionPredica = String(
     border:1px solid #d8eef9;
   `;
 
-  const idPrint = String(it?.id || "")
-    .replace(/\\/g, "\\\\")
-    .replace(/'/g, "\\'");
-
   return `
     <div class="subidos-visor-predica-full">
-      <div style="display:flex;justify-content:flex-end;align-items:center;margin:0 0 8px;">
-        <button
-          type="button"
-          onclick="subidosImprimirPredica('${idPrint}')"
-          title="Imprimir prédica en A4"
-          aria-label="Imprimir prédica en A4"
-          style="
-            border:1px solid #cfd8df;
-            background:#fff;
-            color:#111;
-            border-radius:999px;
-            padding:8px 13px;
-            font-weight:800;
-            cursor:pointer;
-            display:inline-flex;
-            align-items:center;
-            gap:7px;
-            box-shadow:0 3px 10px rgba(0,0,0,.10);
-          "
-        >
-          <i class="fa-solid fa-print"></i>
-          Imprimir A4
-        </button>
-      </div>
-
       <div
         class="subidos-visor-marco"
         style="--subidos-predica-fondo:url('${subidosCssUrl(fondoUrl)}');"
@@ -5559,7 +5898,20 @@ window.subidosRenderPredicaAbiertaHTML = function subidosRenderPredicaAbiertaHTM
   if (!item) return "";
 
   try {
-    return htmlPredicaBibliaSubidoGrande(item, abrirClave);
+    const html = htmlPredicaBibliaSubidoGrande(item, abrirClave);
+
+    // ✅ Compartidos NUNCA recibe el botón de impresión.
+    // Esto protege el abrir/cerrar aunque el visor de Subidos tenga su propio botón.
+    const tpl = document.createElement("template");
+    tpl.innerHTML = String(html || "");
+
+    tpl.content
+      .querySelectorAll(
+        '[data-subidos-print-a4], button[onclick*="subidosImprimirPredica"]'
+      )
+      .forEach(el => el.remove());
+
+    return tpl.innerHTML;
   } catch (e) {
     console.error("No pude renderizar prédica abierta para Compartidos:", e);
     return "";
@@ -5576,9 +5928,48 @@ window.abrirSubidosVisorPredica =
 
     if (!it) return;
 
+    const idPrint = String(it?.id || "")
+      .replace(/\\/g, "\\\\")
+      .replace(/'/g, "\\'");
+
+    const botonImprimir = `
+      <div
+        data-subidos-print-a4="1"
+        style="
+        display:flex;
+        justify-content:flex-end;
+        align-items:center;
+        margin:0 0 8px;
+      ">
+        <button
+          type="button"
+          onclick="event.stopPropagation(); subidosImprimirPredica('${idPrint}')"
+          title="Imprimir prédica en A4"
+          aria-label="Imprimir prédica en A4"
+          style="
+            border:1px solid #cfd8df;
+            background:#fff;
+            color:#111;
+            border-radius:999px;
+            padding:8px 13px;
+            font-weight:800;
+            cursor:pointer;
+            display:inline-flex;
+            align-items:center;
+            gap:7px;
+            box-shadow:0 3px 10px rgba(0,0,0,.10);
+          "
+        >
+          <i class="fa-solid fa-print"></i>
+          Imprimir A4
+        </button>
+      </div>
+    `;
+
     abrirModalSubidosVisor(
       it.etiqueta || "Prédica",
 
+      botonImprimir +
       htmlPredicaBibliaSubidoGrande(
         it,
         abrirClave
