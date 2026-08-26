@@ -19,7 +19,7 @@ const SUBIDOS_PROXY_URL = R2_WORKER_URL;
 
 const SUBIDOS_EXPORT_BG_URL = "./img/fondos/Tarjetas/1a.png";
 
-console.log("✅ Subidos PRINT FIX cargado", "20260826-PDF-PAGINADO-2");
+console.log("✅ Subidos PRINT FIX cargado", "20260826-PDF-14PT-PROL-3");
 
 /*
   ✅ Fondos de prédica:
@@ -5416,14 +5416,21 @@ async function subidosCrearPdfPredica(it = {}) {
     compress: true
   });
 
+  // =========================================================
+  // A4 REAL: 210 × 297 mm
+  // MARGEN: exactamente 10 mm (1 cm) en los 4 lados
+  // =========================================================
   const PAGE_W = 210;
   const PAGE_H = 297;
-  const M = 10;            // 1 cm real
-  const CONTENT_W = PAGE_W - (M * 2);
+  const M = 10;
+  const RIGHT = PAGE_W - M;
+  const BOTTOM = PAGE_H - M;
+  const CONTENT_W = RIGHT - M; // 190 mm útiles
 
   let y = M;
 
-  const setFont = (size = 10.2, bold = false, italic = false) => {
+  // ---------- Tipografía ----------
+  const setFont = (size = 14, bold = false, italic = false) => {
     const style = bold
       ? (italic ? "bolditalic" : "bold")
       : (italic ? "italic" : "normal");
@@ -5433,51 +5440,47 @@ async function subidosCrearPdfPredica(it = {}) {
     doc.setTextColor(0, 0, 0);
   };
 
-  const saltoPaginaSiHaceFalta = (altoNecesario = 5) => {
-    if (y + altoNecesario <= PAGE_H - M) return;
-
+  const nuevaPagina = () => {
     doc.addPage();
     y = M;
   };
 
-  const medirLineas = (texto, ancho, size = 10.2, bold = false, italic = false) => {
-    setFont(size, bold, italic);
-    return doc.splitTextToSize(subidosTextoPlanoPdf(texto), ancho);
+  const asegurar = (altoNecesario = 5) => {
+    if (y + altoNecesario <= BOTTOM) return;
+    nuevaPagina();
   };
 
-  const textoNormal = (
+  const split = (texto, ancho, size = 14, bold = false, italic = false) => {
+    const limpio = subidosTextoPlanoPdf(texto);
+    if (!limpio) return [];
+
+    setFont(size, bold, italic);
+    return doc.splitTextToSize(limpio, ancho);
+  };
+
+  // ---------- Texto general ----------
+  // Pagina RENGLÓN POR RENGLÓN:
+  // si entra físicamente, se queda en la hoja actual.
+  const escribirTexto = (
     texto,
     {
       x = M,
       width = CONTENT_W,
-      size = 10.2,
+      size = 14,
       bold = false,
       italic = false,
-      lineH = 4.25,
-      after = 1.8,
+      lineH = 5.25,
+      after = 1.5,
       align = "left"
     } = {}
   ) => {
-    const limpio = subidosTextoPlanoPdf(texto);
-    if (!limpio) return;
-
-    const lineas = medirLineas(limpio, width, size, bold, italic);
+    const lineas = split(texto, width, size, bold, italic);
     if (!lineas.length) return;
 
     setFont(size, bold, italic);
 
-    /*
-      IMPORTANTE:
-      paginamos RENGLÓN POR RENGLÓN.
-
-      Antes se reservaba "alto total + after" antes de imprimir.
-      Eso podía mandar un renglón a una hoja nueva aunque el renglón
-      sí entrara físicamente en la hoja actual.
-
-      Ahora el espacio posterior NO puede provocar un salto de página.
-    */
     lineas.forEach(linea => {
-      saltoPaginaSiHaceFalta(lineH);
+      asegurar(lineH);
 
       if (align === "center") {
         doc.text(String(linea), x + (width / 2), y, { align: "center" });
@@ -5488,122 +5491,172 @@ async function subidosCrearPdfPredica(it = {}) {
       y += lineH;
     });
 
-    // El aire después del párrafo se suma, pero NO crea una hoja nueva.
+    // El espacio posterior no fuerza una nueva página.
     y += Math.max(0, Number(after) || 0);
   };
 
-  const tituloSeccion = (texto, opciones = {}) => {
-    const limpio = subidosTextoPlanoPdf(texto);
-    if (!limpio) return;
-
-    const size = 11.2;
-    const lineH = 4.6;
-    const anchoTexto = CONTENT_W - 6;
-    const lineas = medirLineas(limpio, anchoTexto, size, true, false);
-    const alto = Math.max(1, lineas.length) * lineH;
-
-    /*
-      Normalmente conservamos el comportamiento anterior.
-      Para Nota final podemos evitar que el "aire posterior"
-      sea lo que fuerce una hoja nueva.
-    */
-    const reservaExtra = opciones?.sinReservaExtra ? 0 : 2.5;
-    saltoPaginaSiHaceFalta(alto + reservaExtra);
-
-    setFont(size, true, false);
-    doc.text("•", M + 0.8, y);
-
-    lineas.forEach((linea, i) => {
-      doc.text(String(linea), M + 6, y + (i * lineH));
-    });
-
-    y += alto + 2;
-  };
-
-  // Reescribimos tituloSeccion sin sintaxis ajena a JS.
-
-  const parrafos = (texto, opts = {}) => {
+  const escribirParrafos = (texto, opts = {}) => {
     const partes = String(texto || "")
       .replace(/\r/g, "")
       .split(/\n+/)
       .map(x => subidosTextoPlanoPdf(x))
       .filter(Boolean);
 
-    partes.forEach(p => {
-      textoNormal(p, {
-        x: opts.x ?? (M + 6),
-        width: opts.width ?? (CONTENT_W - 6),
-        size: opts.size ?? 10.2,
+    partes.forEach((p, i) => {
+      escribirTexto(p, {
+        x: opts.x ?? M,
+        width: opts.width ?? CONTENT_W,
+        size: opts.size ?? 14,
         bold: !!opts.bold,
         italic: !!opts.italic,
-        lineH: opts.lineH ?? 4.25,
-        after: opts.after ?? 1.6
+        lineH: opts.lineH ?? 5.25,
+        after:
+          i === partes.length - 1
+            ? (opts.after ?? 1.5)
+            : (opts.paragraphGap ?? 1.2)
       });
     });
   };
 
-  const verso = (linea = "") => {
+  // ---------- Separadores ----------
+  const lineaHorizontal = (x1 = M, x2 = RIGHT, grosor = 0.28) => {
+    doc.setDrawColor(0, 0, 0);
+    doc.setLineWidth(grosor);
+    doc.line(x1, y, x2, y);
+  };
+
+  // ---------- Título de sección ----------
+  // Viñeta visible + título bold + línea debajo.
+  const tituloSeccion = (texto, { linea = true } = {}) => {
+    const limpio = subidosTextoPlanoPdf(texto);
+    if (!limpio) return;
+
+    const SIZE = 14.8;
+    const LINE_H = 5.45;
+    const BULLET_X = M + 0.8;
+    const TEXT_X = M + 6;
+    const TEXT_W = RIGHT - TEXT_X;
+
+    const lineas = split(limpio, TEXT_W, SIZE, true, false);
+    const alto = Math.max(1, lineas.length) * LINE_H;
+
+    // título + al menos un renglón de contenido debajo
+    asegurar(alto + 6.2);
+
+    setFont(15.2, true, false);
+    doc.text("•", BULLET_X, y);
+
+    setFont(SIZE, true, false);
+    lineas.forEach((l, i) => {
+      doc.text(String(l), TEXT_X, y + (i * LINE_H));
+    });
+
+    y += alto + 1.25;
+
+    if (linea) {
+      lineaHorizontal(TEXT_X, RIGHT, 0.22);
+      y += 2.5;
+    }
+  };
+
+  // ---------- Versículos ----------
+  // Texto mínimo 14 pt, número en bold y ancho casi completo.
+  const escribirVerso = (linea = "") => {
     const limpio = subidosTextoPlanoPdf(linea);
     if (!limpio) return;
 
-    const m = limpio.match(/^(\d+)\s*[\.\)]?\s*(.*)$/);
+    const match = limpio.match(/^(\d+)\s*[\.\)]?\s*(.*)$/);
 
-    if (!m) {
-      textoNormal(limpio, {
-        x: M + 7,
-        width: CONTENT_W - 7,
-        size: 9.9,
-        lineH: 4.1,
-        after: 1
+    const SIZE = 14;
+    const LINE_H = 5.18;
+
+    // Solo 2 mm de sangría visual para el bloque,
+    // así aprovechamos prácticamente los 190 mm útiles.
+    const X_NUM = M + 2;
+    const X_BODY = M + 9;
+    const BODY_W = RIGHT - X_BODY; // termina exactamente a 10 mm del borde derecho
+
+    if (!match) {
+      escribirTexto(limpio, {
+        x: X_NUM,
+        width: RIGHT - X_NUM,
+        size: SIZE,
+        lineH: LINE_H,
+        after: 0.85
       });
       return;
     }
 
-    const numero = `${m[1]}.`;
-    const cuerpo = String(m[2] || "").trim();
+    const numero = `${match[1]}.`;
+    const cuerpo = String(match[2] || "").trim();
+    const lineas = split(cuerpo, BODY_W, SIZE, false, false);
 
-    const xNum = M + 7;
-    const xBody = M + 14;
-    const bodyW = CONTENT_W - 14;
-    const lineH = 4.1;
+    if (!lineas.length) {
+      asegurar(LINE_H);
+      setFont(SIZE, true, false);
+      doc.text(numero, X_NUM, y);
+      y += LINE_H;
+      return;
+    }
 
-    const lineas = medirLineas(cuerpo, bodyW, 9.9, false, false);
-    const alto = Math.max(1, lineas.length) * lineH;
+    // Primera línea: número + texto.
+    asegurar(LINE_H);
 
-    saltoPaginaSiHaceFalta(alto + 1);
+    setFont(SIZE, true, false);
+    doc.text(numero, X_NUM, y);
 
-    setFont(9.9, true, false);
-    doc.text(numero, xNum, y);
+    setFont(SIZE, false, false);
+    doc.text(String(lineas[0]), X_BODY, y);
+    y += LINE_H;
 
-    setFont(9.9, false, false);
-    lineas.forEach((l, i) => {
-      doc.text(String(l), xBody, y + (i * lineH));
-    });
+    // Continuaciones usan todo el ancho desde el cuerpo
+    // y pueden seguir en la próxima hoja sin dejar huecos enormes.
+    for (let i = 1; i < lineas.length; i++) {
+      asegurar(LINE_H);
+      setFont(SIZE, false, false);
+      doc.text(String(lineas[i]), X_BODY, y);
+      y += LINE_H;
+    }
 
-    y += alto + 1;
+    y += 0.8;
   };
 
+  // ---------- Comentarios ----------
   const bloqueComentario = (texto = "") => {
     const limpio = String(texto || "").trim();
     if (!limpio) return;
 
-    saltoPaginaSiHaceFalta(8);
-    setFont(10.1, true, false);
-    doc.text("•", M + 6.8, y);
-    doc.text("Comentario:", M + 12, y);
-    y += 4.4;
+    asegurar(11);
 
-    parrafos(limpio, {
-      x: M + 12,
-      width: CONTENT_W - 12,
-      size: 9.9,
-      lineH: 4.1,
-      after: 1.3
+    const BULLET_X = M + 3;
+    const TEXT_X = M + 9;
+    const TEXT_W = RIGHT - TEXT_X;
+
+    setFont(14.2, true, false);
+    doc.text("•", BULLET_X, y);
+    doc.text("Comentario", TEXT_X, y);
+
+    // pequeña línea visual para diferenciar comentario de Biblia
+    doc.setDrawColor(0, 0, 0);
+    doc.setLineWidth(0.18);
+    doc.line(TEXT_X + 31, y - 0.9, RIGHT, y - 0.9);
+
+    y += 5.0;
+
+    escribirParrafos(limpio, {
+      x: TEXT_X,
+      width: TEXT_W,
+      size: 14,
+      italic: true,
+      lineH: 5.2,
+      after: 1.7,
+      paragraphGap: 1.0
     });
-
-    y += 0.6;
   };
 
+  // =========================================================
+  // DATOS
+  // =========================================================
   const titulo = String(
     it.predicaTitulo ||
     it.tituloPredica ||
@@ -5631,43 +5684,70 @@ async function subidosCrearPdfPredica(it = {}) {
     ""
   ).trim();
 
-  // TÍTULO: solo una vez, dentro del contenido real del PDF.
-  const tituloLineas = medirLineas(titulo || "Prédica", CONTENT_W, 17, true, false);
-  const tituloH = Math.max(1, tituloLineas.length) * 6.2;
+  // =========================================================
+  // CABECERA: SOLO TÍTULO + FECHA REAL DE LA PRÉDICA / VERSIÓN
+  // =========================================================
+  const TITULO_SIZE = 20;
+  const TITULO_LINE_H = 7.2;
 
-  setFont(17, true, false);
+  const tituloLineas = split(
+    titulo || "Prédica",
+    CONTENT_W,
+    TITULO_SIZE,
+    true,
+    false
+  );
+
+  setFont(TITULO_SIZE, true, false);
+
   tituloLineas.forEach((l, i) => {
-    doc.text(String(l), PAGE_W / 2, y + (i * 6.2), { align: "center" });
+    doc.text(
+      String(l),
+      PAGE_W / 2,
+      y + (i * TITULO_LINE_H),
+      { align: "center" }
+    );
   });
 
-  y += tituloH + 1.2;
+  y += Math.max(1, tituloLineas.length) * TITULO_LINE_H + 0.7;
 
-  // Fecha real de la prédica + versión. NO fecha/hora de impresión.
   if (fecha || version) {
-    setFont(9.2, true, false);
-    const meta = `${fecha || ""}${fecha && version ? " · " : ""}${version || ""}`;
+    setFont(11.5, true, false);
+
+    const meta =
+      `${fecha || ""}` +
+      `${fecha && version ? " · " : ""}` +
+      `${version || ""}`;
+
     doc.text(meta, PAGE_W / 2, y, { align: "center" });
-    y += 4.5;
+    y += 4.6;
   }
 
-  doc.setDrawColor(0, 0, 0);
-  doc.setLineWidth(0.35);
-  doc.line(M, y, PAGE_W - M, y);
-  y += 5;
+  lineaHorizontal(M, RIGHT, 0.4);
+  y += 4.2;
 
+  // =========================================================
+  // INTRODUCCIÓN
+  // =========================================================
   if (introduccion) {
     tituloSeccion("Introducción");
-    parrafos(introduccion, {
+
+    escribirParrafos(introduccion, {
       x: M + 6,
-      width: CONTENT_W - 6,
-      size: 10.1,
-      lineH: 4.25,
-      after: 1.6
+      width: RIGHT - (M + 6),
+      size: 14,
+      lineH: 5.25,
+      after: 2.0,
+      paragraphGap: 1.1
     });
-    y += 1.5;
+
+    y += 0.8;
   }
 
-  citas.forEach(c => {
+  // =========================================================
+  // CITAS
+  // =========================================================
+  citas.forEach((c, idx) => {
     const referencia = String(c?.referencia || "").trim();
     const textoBiblico = String(c?.texto || "").trim();
     const comentario = String(c?.comentario || c?.nota || "").trim();
@@ -5677,52 +5757,55 @@ async function subidosCrearPdfPredica(it = {}) {
     }
 
     if (textoBiblico) {
-      // Línea vertical simple, B/N, como separador.
-      const yInicioBiblia = y;
-      const lineasBiblia = String(textoBiblico || "")
+      const lineasBiblia = String(textoBiblico)
         .replace(/\r/g, "")
         .split("\n")
         .map(x => x.trim())
         .filter(Boolean);
 
-      lineasBiblia.forEach(linea => verso(linea));
+      lineasBiblia.forEach(linea => escribirVerso(linea));
 
-      const yFinBiblia = y - 0.6;
-      if (yFinBiblia > yInicioBiblia) {
-        doc.setDrawColor(0, 0, 0);
-        doc.setLineWidth(0.25);
-        doc.line(M + 5, yInicioBiblia - 1.5, M + 5, yFinBiblia);
-      }
-
-      y += 1;
+      y += 0.8;
     }
 
     if (comentario) {
       bloqueComentario(comentario);
     }
 
-    y += 1.2;
+    // Separador claro entre una cita y la siguiente.
+    if (idx < citas.length - 1) {
+      asegurar(5);
+      y += 0.8;
+      lineaHorizontal(M + 2, RIGHT, 0.16);
+      y += 3.0;
+    }
   });
 
+  // =========================================================
+  // NOTA FINAL
+  // =========================================================
   if (notaFinal) {
-    saltoPaginaSiHaceFalta(12);
-    doc.setDrawColor(0, 0, 0);
-    doc.setLineWidth(0.25);
-    doc.line(M, y, PAGE_W - M, y);
-    y += 4;
+    asegurar(12);
 
-    tituloSeccion("Nota final", { sinReservaExtra: true });
-    parrafos(notaFinal, {
+    y += 1.0;
+    lineaHorizontal(M, RIGHT, 0.35);
+    y += 3.5;
+
+    tituloSeccion("Nota final", { linea: false });
+
+    escribirParrafos(notaFinal, {
       x: M + 6,
-      width: CONTENT_W - 6,
-      size: 10.1,
-      lineH: 4.15,
-      after: 0.8
+      width: RIGHT - (M + 6),
+      size: 14,
+      lineH: 5.25,
+      after: 0,
+      paragraphGap: 1.0
     });
   }
 
-  // El PDF NO incluye: iglesia, pastor, dirección, horario,
-  // URL, fecha/hora de impresión, título automático ni número de página.
+  // NO incluye:
+  // iglesia, pastor, dirección, horario, URL, fecha/hora de impresión,
+  // título automático del navegador ni numeración de páginas.
   return doc;
 }
 
