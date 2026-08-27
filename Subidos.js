@@ -19,7 +19,7 @@ const SUBIDOS_PROXY_URL = R2_WORKER_URL;
 
 const SUBIDOS_EXPORT_BG_URL = "./img/fondos/Tarjetas/1a.png";
 
-console.log("✅ Subidos PRINT FIX cargado", "20260827-PDF-AJUSTE-LINEAS-8");
+console.log("✅ Subidos PRINT FIX cargado", "20260827-PDF-LINEA-VERTICAL-9");
 
 /*
   ✅ Fondos de prédica:
@@ -5415,9 +5415,7 @@ async function subidosCrearPdfPredica(it = {}) {
     "Prédica"
   ).trim();
 
-  const fecha = subidosFechaBonitaExport(
-    it.fechaEvento || ""
-  );
+  const fecha = subidosFechaBonitaExport(it.fechaEvento || "");
 
   const introduccion = String(
     it.predicaIntroduccion ||
@@ -5451,14 +5449,15 @@ async function subidosCrearPdfPredica(it = {}) {
     const PAGE_W = Number(doc.internal.pageSize.getWidth());
     const PAGE_H = Number(doc.internal.pageSize.getHeight());
 
-    const M = 28.3464567; // 1 cm real
+    // Ajuste más aprovechado de hoja
+    const M = 24; // aprox 0.85 cm, más útil visualmente
     const LEFT = M;
     const RIGHT = PAGE_W - M;
     const TOP = M;
     const BOTTOM = PAGE_H - M;
     const FULL_W = RIGHT - LEFT;
 
-    const LINE_H = BODY_SIZE * 1.17;
+    const LINE_H = BODY_SIZE * 1.18;
     let y = TOP;
 
     const setFont = (size = BODY_SIZE, bold = false, italic = false) => {
@@ -5494,20 +5493,20 @@ async function subidosCrearPdfPredica(it = {}) {
       return doc.splitTextToSize(t, Math.max(20, width));
     };
 
-    // Dibuja la línea EN el espacio vacío posterior al texto, nunca encima.
+    // línea horizontal bien separada del texto
     const separador = () => {
-      const antes = BODY_SIZE * 0.48;
-      const despues = BODY_SIZE * 0.58;
-      const total = antes + despues + 1;
+      const gapTop = BODY_SIZE * 0.60;
+      const gapBottom = BODY_SIZE * 0.70;
+      const total = gapTop + gapBottom + 1;
       if (y + total > BOTTOM) {
         nuevaPagina();
         return;
       }
-      const lineY = y + antes;
-      doc.setDrawColor(175, 175, 175);
-      doc.setLineWidth(0.35);
+      const lineY = y + gapTop;
+      doc.setDrawColor(165, 165, 165);
+      doc.setLineWidth(0.45);
       doc.line(LEFT, lineY, RIGHT, lineY);
-      y = lineY + despues;
+      y = lineY + gapBottom;
     };
 
     const escribir = (txt, {
@@ -5524,19 +5523,17 @@ async function subidosCrearPdfPredica(it = {}) {
       if (!lineas.length) return;
 
       setFont(size, bold, italic);
-
       lineas.forEach((linea, i) => {
         asegurar(lineH);
         const s = String(linea);
         const esUltima = i === lineas.length - 1;
-        if (justificar && !esUltima && s.trim().includes(" ")) {
+        if (justificar && !esUltima && s.trim().includes(" ") && s.length > 18) {
           doc.text(s, x, y, { maxWidth: width, align: "justify" });
         } else {
           doc.text(s, x, y);
         }
         y += lineH;
       });
-
       y += Math.max(0, Number(after) || 0);
     };
 
@@ -5546,11 +5543,11 @@ async function subidosCrearPdfPredica(it = {}) {
       raw.split("\n").forEach((linea, i, arr) => {
         const t = limpiar(linea);
         if (!t) {
-          y += BODY_SIZE * 0.28;
+          y += BODY_SIZE * 0.34;
           return;
         }
         escribir(t, { ...opts, after: 0 });
-        if (i < arr.length - 1) y += BODY_SIZE * 0.08;
+        if (i < arr.length - 1) y += BODY_SIZE * 0.10;
       });
     };
 
@@ -5559,21 +5556,23 @@ async function subidosCrearPdfPredica(it = {}) {
       const fechaTxt = limpiar(fecha || "");
       const TITLE_SIZE = BODY_SIZE + 4;
       const DATE_SIZE = BODY_SIZE;
-      setFont(DATE_SIZE, true, false);
+      setFont(DATE_SIZE, false, false);
       const fechaW = fechaTxt ? doc.getTextWidth(fechaTxt) : 0;
-      const gap = BODY_SIZE * 1.4;
-      const tituloW = Math.max(FULL_W * 0.54, FULL_W - fechaW - gap);
+      const gap = BODY_SIZE * 1.6;
+      const tituloW = Math.max(FULL_W * 0.58, FULL_W - fechaW - gap);
       const tituloLineas = dividir(tituloTxt, tituloW, TITLE_SIZE, true, false);
+
+      setFont(TITLE_SIZE, true, false);
+      tituloLineas.forEach((linea, i) => {
+        doc.text(String(linea), LEFT, y + i * (TITLE_SIZE * 1.14));
+      });
+
       if (fechaTxt) {
-        setFont(DATE_SIZE, true, false);
+        setFont(DATE_SIZE, false, false);
         doc.text(fechaTxt, RIGHT, y, { align: "right" });
       }
-      setFont(TITLE_SIZE, true, false);
-      const titleLineH = TITLE_SIZE * 1.14;
-      tituloLineas.forEach((linea, i) => {
-        doc.text(String(linea), LEFT, y + i * titleLineH);
-      });
-      y += Math.max(1, tituloLineas.length) * titleLineH;
+
+      y += Math.max(1, tituloLineas.length) * (TITLE_SIZE * 1.14);
       separador();
     };
 
@@ -5588,39 +5587,48 @@ async function subidosCrearPdfPredica(it = {}) {
       });
     };
 
-    // Citas bíblicas con viñeta diferente
+    // Viñeta distinta para citas bíblicas: cuadrado sólido tipo ▪
     const escribirReferencia = (referencia = "") => {
       const ref = limpiar(referencia);
       if (!ref) return;
-      const BULLET_X = LEFT + 1;
-      const TEXT_X = LEFT + 14;
+      const BULLET_X = LEFT + 2;
+      const BULLET_Y = y - BODY_SIZE * 0.45;
+      const TEXT_X = LEFT + 15;
       const TEXT_W = RIGHT - TEXT_X;
       const lineas = dividir(ref, TEXT_W, BODY_SIZE, true, false);
       if (y + (LINE_H * 2) > BOTTOM) nuevaPagina();
+      doc.setFillColor(0, 0, 0);
+      doc.rect(BULLET_X, BULLET_Y, 4.2, 4.2, 'F');
       setFont(BODY_SIZE, true, false);
-      doc.text("◆", BULLET_X, y);
       lineas.forEach((linea, i) => {
         if (i > 0) asegurar(LINE_H);
-        setFont(BODY_SIZE, true, false);
         doc.text(String(linea), TEXT_X, y);
         y += LINE_H;
       });
-      y += BODY_SIZE * 0.06;
+      y += BODY_SIZE * 0.08;
     };
 
+    // Versículos con línea vertical elegante a la izquierda
     const escribirVersiculo = (linea = "") => {
       const t = limpiar(linea);
       if (!t) return;
       const m = t.match(/^(\d+)\s*[\.\)]?\s*(.*)$/);
-      const X_NUM = LEFT + 12;
+      const BAR_X = LEFT + 5;
+      const X_NUM = LEFT + 14;
+      const X_BODY_FALLBACK = LEFT + 18;
+
       if (!m) {
+        const startY = y;
         escribir(t, {
-          x: X_NUM,
-          width: RIGHT - X_NUM,
+          x: X_BODY_FALLBACK,
+          width: RIGHT - X_BODY_FALLBACK,
           size: BODY_SIZE,
           lineH: LINE_H,
           justificar: true
         });
+        doc.setDrawColor(135, 135, 135);
+        doc.setLineWidth(0.8);
+        doc.line(BAR_X, startY - BODY_SIZE * 0.75, BAR_X, y - BODY_SIZE * 0.28);
         return;
       }
 
@@ -5631,6 +5639,7 @@ async function subidosCrearPdfPredica(it = {}) {
       const X_BODY = X_NUM + anchoNumero + 7;
       const BODY_W = RIGHT - X_BODY;
       const lineas = dividir(cuerpo, BODY_W, BODY_SIZE, false, false);
+      const startY = y;
 
       asegurar(LINE_H);
       setFont(BODY_SIZE, true, false);
@@ -5639,7 +5648,7 @@ async function subidosCrearPdfPredica(it = {}) {
       if (lineas.length) {
         setFont(BODY_SIZE, false, false);
         const primera = String(lineas[0]);
-        if (lineas.length > 1 && primera.trim().includes(" ")) {
+        if (lineas.length > 1 && primera.trim().includes(" ") && primera.length > 18) {
           doc.text(primera, X_BODY, y, { maxWidth: BODY_W, align: "justify" });
         } else {
           doc.text(primera, X_BODY, y);
@@ -5652,13 +5661,17 @@ async function subidosCrearPdfPredica(it = {}) {
         setFont(BODY_SIZE, false, false);
         const s = String(lineas[i]);
         const esUltima = i === lineas.length - 1;
-        if (!esUltima && s.trim().includes(" ")) {
+        if (!esUltima && s.trim().includes(" ") && s.length > 18) {
           doc.text(s, X_BODY, y, { maxWidth: BODY_W, align: "justify" });
         } else {
           doc.text(s, X_BODY, y);
         }
         y += LINE_H;
       }
+
+      doc.setDrawColor(135, 135, 135);
+      doc.setLineWidth(0.8);
+      doc.line(BAR_X, startY - BODY_SIZE * 0.75, BAR_X, y - BODY_SIZE * 0.28);
     };
 
     const escribirComentario = (txt = "") => {
@@ -5672,7 +5685,7 @@ async function subidosCrearPdfPredica(it = {}) {
       raw.split("\n").forEach((lineaOriginal) => {
         const linea = limpiar(lineaOriginal);
         if (!linea) {
-          y += BODY_SIZE * 0.28;
+          y += BODY_SIZE * 0.34;
           return;
         }
 
@@ -5693,7 +5706,7 @@ async function subidosCrearPdfPredica(it = {}) {
             setFont(BODY_SIZE, false, false);
             const s = String(parte);
             const esUltima = i === partes.length - 1;
-            if (!esUltima && s.trim().includes(" ")) {
+            if (!esUltima && s.trim().includes(" ") && s.length > 18) {
               doc.text(s, BODY_X, y, { maxWidth: BODY_W, align: "justify" });
             } else {
               doc.text(s, BODY_X, y);
@@ -5705,7 +5718,7 @@ async function subidosCrearPdfPredica(it = {}) {
 
         const bullet = linea.match(/^([•▪◦·\-\–\—\*])\s*(.*)$/);
         if (bullet) {
-          const marcador = bullet[1];
+          const marcador = "•";
           const cuerpo = String(bullet[2] || "").trim();
           setFont(BODY_SIZE, false, false);
           const anchoMarca = doc.getTextWidth(marcador);
@@ -5718,7 +5731,7 @@ async function subidosCrearPdfPredica(it = {}) {
             if (i > 0) asegurar(LINE_H);
             const s = String(parte);
             const esUltima = i === partes.length - 1;
-            if (!esUltima && s.trim().includes(" ")) {
+            if (!esUltima && s.trim().includes(" ") && s.length > 18) {
               doc.text(s, BODY_X, y, { maxWidth: BODY_W, align: "justify" });
             } else {
               doc.text(s, BODY_X, y);
@@ -5766,9 +5779,7 @@ async function subidosCrearPdfPredica(it = {}) {
         escribirComentario(comentario);
       }
 
-      if (idx < citas.length - 1) {
-        separador();
-      }
+      if (idx < citas.length - 1) separador();
     });
 
     if (notaFinal) {
@@ -5787,7 +5798,6 @@ async function subidosCrearPdfPredica(it = {}) {
 
   const base = renderPdf(14);
   let elegido = base;
-
   for (const size of [14.5, 15, 15.5, 16]) {
     const candidato = renderPdf(size);
     if (candidato.pages === base.pages) {
@@ -5802,7 +5812,7 @@ async function subidosCrearPdfPredica(it = {}) {
     paginas: elegido.pages,
     yFinal: elegido.lastY,
     bordeInferior: elegido.bottom,
-    version: "20260827-PDF-AJUSTE-LINEAS-8"
+    version: "20260827-PDF-LINEA-VERTICAL-9"
   });
 
   return elegido.doc;
