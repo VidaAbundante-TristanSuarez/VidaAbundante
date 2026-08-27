@@ -19,7 +19,7 @@ const SUBIDOS_PROXY_URL = R2_WORKER_URL;
 
 const SUBIDOS_EXPORT_BG_URL = "./img/fondos/Tarjetas/1a.png";
 
-console.log("✅ Subidos PRINT FIX cargado", "20260827-PDF-LINEA-VERTICAL-9");
+console.log("✅ Subidos PRINT FIX cargado", "20260827-PDF-SIN-LINEAS-HORIZ-10");
 
 /*
   ✅ Fondos de prédica:
@@ -5495,18 +5495,12 @@ async function subidosCrearPdfPredica(it = {}) {
 
     // línea horizontal bien separada del texto
     const separador = () => {
-      const gapTop = BODY_SIZE * 0.60;
-      const gapBottom = BODY_SIZE * 0.70;
-      const total = gapTop + gapBottom + 1;
-      if (y + total > BOTTOM) {
+      const espacio = BODY_SIZE * 0.95;
+      if (y + espacio > BOTTOM) {
         nuevaPagina();
         return;
       }
-      const lineY = y + gapTop;
-      doc.setDrawColor(165, 165, 165);
-      doc.setLineWidth(0.45);
-      doc.line(LEFT, lineY, RIGHT, lineY);
-      y = lineY + gapBottom;
+      y += espacio;
     };
 
     const escribir = (txt, {
