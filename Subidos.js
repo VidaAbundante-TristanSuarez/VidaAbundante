@@ -19,7 +19,7 @@ const SUBIDOS_PROXY_URL = R2_WORKER_URL;
 
 const SUBIDOS_EXPORT_BG_URL = "./img/fondos/Tarjetas/1a.png";
 
-console.log("✅ Subidos PRINT FIX cargado", "20260827-PDF-SIN-LINEAS-HORIZ-10");
+console.log("✅ Subidos PRINT FIX cargado", "20260827-PDF-SIN-PALABRA-HUERFANA-11");
 
 /*
   ✅ Fondos de prédica:
@@ -5503,6 +5503,41 @@ async function subidosCrearPdfPredica(it = {}) {
       y += espacio;
     };
 
+    /*
+      Evita que una sola palabra quede huérfana al comienzo de la hoja siguiente.
+
+      Ejemplo:
+      "... A NUESTRA"  [fin de hoja]
+      "MANERA"         [hoja siguiente]
+
+      En ese caso hacemos el salto UNA línea antes, para que la última línea
+      completa acompañe a esa palabra en la hoja siguiente.
+      No altera el tamaño, márgenes, viñetas ni el resto del diseño.
+    */
+    const corteParaEvitarPalabraSola = (lineas = [], lineH = LINE_H) => {
+      if (!Array.isArray(lineas) || lineas.length < 2) return -1;
+
+      const ultima = String(lineas[lineas.length - 1] || "").trim();
+      if (!ultima || ultima.split(/\s+/).length !== 1) return -1;
+
+      const disponibles = Math.max(
+        0,
+        Math.floor(((BOTTOM - y) + 0.01) / lineH)
+      );
+
+      // Solo actuamos cuando, con el corte natural, quedaría EXACTAMENTE
+      // esa única última línea en la página siguiente.
+      if (
+        disponibles > 0 &&
+        disponibles < lineas.length &&
+        (lineas.length - disponibles) === 1
+      ) {
+        return Math.max(0, disponibles - 1);
+      }
+
+      return -1;
+    };
+
     const escribir = (txt, {
       x = LEFT,
       width = FULL_W,
@@ -5517,8 +5552,17 @@ async function subidosCrearPdfPredica(it = {}) {
       if (!lineas.length) return;
 
       setFont(size, bold, italic);
+
+      const cortePalabraSola =
+        corteParaEvitarPalabraSola(lineas, lineH);
+
       lineas.forEach((linea, i) => {
-        asegurar(lineH);
+        if (i === cortePalabraSola) {
+          nuevaPagina();
+        } else {
+          asegurar(lineH);
+        }
+
         const s = String(linea);
         const esUltima = i === lineas.length - 1;
         if (justificar && !esUltima && s.trim().includes(" ") && s.length > 18) {
@@ -5633,6 +5677,14 @@ async function subidosCrearPdfPredica(it = {}) {
       const X_BODY = X_NUM + anchoNumero + 7;
       const BODY_W = RIGHT - X_BODY;
       const lineas = dividir(cuerpo, BODY_W, BODY_SIZE, false, false);
+
+      const cortePalabraSola =
+        corteParaEvitarPalabraSola(lineas, LINE_H);
+
+      if (cortePalabraSola === 0) {
+        nuevaPagina();
+      }
+
       const startY = y;
 
       asegurar(LINE_H);
@@ -5651,7 +5703,12 @@ async function subidosCrearPdfPredica(it = {}) {
       y += LINE_H;
 
       for (let i = 1; i < lineas.length; i++) {
-        asegurar(LINE_H);
+        if (i === cortePalabraSola) {
+          nuevaPagina();
+        } else {
+          asegurar(LINE_H);
+        }
+
         setFont(BODY_SIZE, false, false);
         const s = String(lineas[i]);
         const esUltima = i === lineas.length - 1;
@@ -5692,11 +5749,26 @@ async function subidosCrearPdfPredica(it = {}) {
           const BODY_X = MARK_X + anchoMarca + 7;
           const BODY_W = RIGHT - BODY_X;
           const partes = dividir(cuerpo, BODY_W, BODY_SIZE, false, false);
-          asegurar(LINE_H);
+
+          const cortePalabraSola =
+            corteParaEvitarPalabraSola(partes, LINE_H);
+
+          if (cortePalabraSola === 0) {
+            nuevaPagina();
+          } else {
+            asegurar(LINE_H);
+          }
+
           setFont(BODY_SIZE, true, false);
           doc.text(marcador, MARK_X, y);
           partes.forEach((parte, i) => {
-            if (i > 0) asegurar(LINE_H);
+            if (i > 0) {
+              if (i === cortePalabraSola) {
+                nuevaPagina();
+              } else {
+                asegurar(LINE_H);
+              }
+            }
             setFont(BODY_SIZE, false, false);
             const s = String(parte);
             const esUltima = i === partes.length - 1;
@@ -5719,10 +5791,25 @@ async function subidosCrearPdfPredica(it = {}) {
           const BODY_X = MARK_X + anchoMarca + 7;
           const BODY_W = RIGHT - BODY_X;
           const partes = dividir(cuerpo, BODY_W, BODY_SIZE, false, false);
-          asegurar(LINE_H);
+
+          const cortePalabraSola =
+            corteParaEvitarPalabraSola(partes, LINE_H);
+
+          if (cortePalabraSola === 0) {
+            nuevaPagina();
+          } else {
+            asegurar(LINE_H);
+          }
+
           doc.text(marcador, MARK_X, y);
           partes.forEach((parte, i) => {
-            if (i > 0) asegurar(LINE_H);
+            if (i > 0) {
+              if (i === cortePalabraSola) {
+                nuevaPagina();
+              } else {
+                asegurar(LINE_H);
+              }
+            }
             const s = String(parte);
             const esUltima = i === partes.length - 1;
             if (!esUltima && s.trim().includes(" ") && s.length > 18) {
