@@ -19,7 +19,7 @@ const SUBIDOS_PROXY_URL = R2_WORKER_URL;
 
 const SUBIDOS_EXPORT_BG_URL = "./img/fondos/Tarjetas/1a.png";
 
-console.log("✅ Subidos PRINT FIX cargado", "20260826-PDF-PT-14PT-6");
+console.log("✅ Subidos PRINT FIX cargado", "20260827-PDF-AJUSTE-LINEAS-8");
 
 /*
   ✅ Fondos de prédica:
@@ -5409,463 +5409,15 @@ function subidosTextoPlanoPdf(txt = "") {
 async function subidosCrearPdfPredica(it = {}) {
   const jsPDF = await subidosCargarJsPDF();
 
-  /*
-    CAMBIO IMPORTANTE:
-    El PDF se construye en PUNTOS, no en mm.
-
-    Así:
-    - 14 pt de fuente = 14 pt reales.
-    - 1 cm = 28.346 pt reales.
-    - evitamos cualquier conversión rara entre mm / puntos que estaba
-      dejando el contenido visualmente angosto.
-  */
-  const doc = new jsPDF({
-    orientation: "portrait",
-    unit: "pt",
-    format: "a4",
-    compress: true
-  });
-
-  try {
-    doc.viewerPreferences({
-      PrintScaling: "None",
-      PickTrayByPDFSize: true
-    });
-  } catch (e) {}
-
-  const PAGE_W = Number(doc.internal.pageSize.getWidth());
-  const PAGE_H = Number(doc.internal.pageSize.getHeight());
-
-  // 1 cm REAL = 28.346 pt
-  const M = 28.346;
-  const LEFT = M;
-  const RIGHT = PAGE_W - M;
-  const TOP = M;
-  const BOTTOM = PAGE_H - M;
-  const FULL_W = RIGHT - LEFT;
-
-  const BODY_SIZE = 14;
-  const LINE_H = 16.5;
-
-  let y = TOP;
-
-  console.log("🖨️ PDF A4 REAL", {
-    unidad: "pt",
-    anchoPagina: PAGE_W,
-    altoPagina: PAGE_H,
-    margen: M,
-    anchoUtil: FULL_W
-  });
-
-  const setFont = (size = BODY_SIZE, bold = false, italic = false) => {
-    const style = bold
-      ? (italic ? "bolditalic" : "bold")
-      : (italic ? "italic" : "normal");
-
-    doc.setFont("helvetica", style);
-    doc.setFontSize(size);
-    doc.setTextColor(0, 0, 0);
-  };
-
-  const nuevaPagina = () => {
-    doc.addPage();
-    y = TOP;
-  };
-
-  const asegurar = (alto = LINE_H) => {
-    if (y + alto <= BOTTOM) return;
-    nuevaPagina();
-  };
-
-  const limpiar = (txt = "") =>
-    String(txt || "")
-      .replace(/\u00A0/g, " ")
-      .replace(/\t/g, " ")
-      .replace(/[ ]{2,}/g, " ")
-      .trim();
-
-  const dividir = (
-    txt,
-    width,
-    size = BODY_SIZE,
-    bold = false,
-    italic = false
-  ) => {
-    const t = limpiar(txt);
-    if (!t) return [];
-
-    setFont(size, bold, italic);
-    return doc.splitTextToSize(t, width);
-  };
-
-  /*
-    LÍNEA SEPARADORA:
-    queda realmente ENTRE bloques.
-    La línea nunca usa la misma coordenada vertical que el texto.
-  */
-  const separador = () => {
-    const espacioTotal = 17;
-
-    if (y + espacioTotal > BOTTOM) {
-      nuevaPagina();
-      return;
-    }
-
-    // y ya está una línea completa debajo del último baseline.
-    const lineY = y - 3.8;
-
-    doc.setDrawColor(155, 155, 155);
-    doc.setLineWidth(0.45);
-    doc.line(LEFT, lineY, RIGHT, lineY);
-
-    // El siguiente baseline queda 10 pt debajo de la raya.
-    y = lineY + 10;
-  };
-
-  /*
-    Texto genérico: renglón por renglón.
-    No empuja un párrafo entero a la siguiente hoja.
-  */
-  const escribir = (
-    txt,
-    {
-      x = LEFT,
-      width = FULL_W,
-      size = BODY_SIZE,
-      bold = false,
-      italic = false,
-      lineH = LINE_H,
-      after = 0
-    } = {}
-  ) => {
-    const lineas = dividir(txt, width, size, bold, italic);
-    if (!lineas.length) return;
-
-    setFont(size, bold, italic);
-
-    lineas.forEach(linea => {
-      asegurar(lineH);
-      doc.text(String(linea), x, y);
-      y += lineH;
-    });
-
-    y += Math.max(0, Number(after) || 0);
-  };
-
-  /*
-    Conserva la estructura que escribió el usuario.
-    Una línea vacía existe, pero no desperdicia media página.
-  */
-  const escribirOriginal = (txt, opts = {}) => {
-    const raw = String(txt || "").replace(/\r/g, "");
-    if (!raw.trim()) return;
-
-    const originales = raw.split("\n");
-
-    originales.forEach((linea, i) => {
-      const t = limpiar(linea);
-
-      if (!t) {
-        y += 4;
-        return;
-      }
-
-      escribir(t, {
-        ...opts,
-        after: 0
-      });
-
-      if (i < originales.length - 1) {
-        y += 1.5;
-      }
-    });
-
-    y += Number(opts.after || 0);
-  };
-
-  // =========================================================
-  // TÍTULO IZQUIERDA — FECHA DERECHA
-  // =========================================================
-  const escribirCabecera = (titulo = "", fecha = "") => {
-    const tituloTxt = limpiar(titulo || "Prédica");
-    const fechaTxt = limpiar(fecha || "");
-
-    const TITLE_SIZE = 18;
-    const DATE_SIZE = 14;
-
-    setFont(DATE_SIZE, true, false);
-    const fechaW = fechaTxt ? doc.getTextWidth(fechaTxt) : 0;
-
-    const tituloW = Math.max(
-      FULL_W * 0.55,
-      FULL_W - fechaW - 20
-    );
-
-    const tituloLineas = dividir(
-      tituloTxt,
-      tituloW,
-      TITLE_SIZE,
-      true,
-      false
-    );
-
-    if (fechaTxt) {
-      setFont(DATE_SIZE, true, false);
-      doc.text(fechaTxt, RIGHT, y, { align: "right" });
-    }
-
-    setFont(TITLE_SIZE, true, false);
-
-    tituloLineas.forEach((linea, i) => {
-      doc.text(
-        String(linea),
-        LEFT,
-        y + (i * 20)
-      );
-    });
-
-    y += Math.max(1, tituloLineas.length) * 20;
-
-    separador();
-  };
-
-  // =========================================================
-  // INTRO / NOTA: 14 PT ITALIC, ANCHO COMPLETO
-  // =========================================================
-  const escribirItalic = (txt = "") => {
-    escribirOriginal(txt, {
-      x: LEFT,
-      width: FULL_W,
-      size: BODY_SIZE,
-      italic: true,
-      lineH: LINE_H
-    });
-  };
-
-  // =========================================================
-  // CITA BÍBLICA: • + BOLD + sangría mínima
-  // =========================================================
-  const escribirReferencia = (referencia = "") => {
-    const ref = limpiar(referencia);
-    if (!ref) return;
-
-    const BULLET_X = LEFT + 2;
-    const TEXT_X = LEFT + 14;
-    const TEXT_W = RIGHT - TEXT_X;
-
-    const lineas = dividir(
-      ref,
-      TEXT_W,
-      BODY_SIZE,
-      true,
-      false
-    );
-
-    // Cita + por lo menos un renglón del versículo.
-    if (y + (LINE_H * 2) > BOTTOM) {
-      nuevaPagina();
-    }
-
-    setFont(BODY_SIZE, true, false);
-    doc.text("•", BULLET_X, y);
-
-    lineas.forEach((linea, i) => {
-      if (i > 0) asegurar(LINE_H);
-
-      setFont(BODY_SIZE, true, false);
-      doc.text(String(linea), TEXT_X, y);
-      y += LINE_H;
-    });
-
-    y += 1;
-  };
-
-  // =========================================================
-  // VERSÍCULO:
-  // número BOLD en una columna propia
-  // texto normal y con espacio suficiente para que JAMÁS se pisen.
-  // =========================================================
-  const escribirVersiculo = (linea = "") => {
-    const t = limpiar(linea);
-    if (!t) return;
-
-    const m = t.match(/^(\d+)\s*[\.\)]?\s*(.*)$/);
-
-    // Misma zona general de sangría de la cita.
-    const X_NUM = LEFT + 14;
-
-    /*
-      34 pt de columna para el número.
-      Aun "176." en 14 pt bold entra sin tocar el texto.
-    */
-    const X_BODY = X_NUM + 34;
-    const BODY_W = RIGHT - X_BODY;
-
-    if (!m) {
-      escribir(t, {
-        x: X_NUM,
-        width: RIGHT - X_NUM,
-        size: BODY_SIZE,
-        lineH: LINE_H
-      });
-
-      return;
-    }
-
-    const numero = `${m[1]}.`;
-    const cuerpo = String(m[2] || "").trim();
-
-    const lineas = dividir(
-      cuerpo,
-      BODY_W,
-      BODY_SIZE,
-      false,
-      false
-    );
-
-    asegurar(LINE_H);
-
-    setFont(BODY_SIZE, true, false);
-    doc.text(numero, X_NUM, y);
-
-    if (lineas.length) {
-      setFont(BODY_SIZE, false, false);
-      doc.text(String(lineas[0]), X_BODY, y);
-    }
-
-    y += LINE_H;
-
-    for (let i = 1; i < lineas.length; i++) {
-      asegurar(LINE_H);
-
-      setFont(BODY_SIZE, false, false);
-      doc.text(String(lineas[i]), X_BODY, y);
-
-      y += LINE_H;
-    }
-  };
-
-  // =========================================================
-  // COMENTARIO
-  // - 14 pt normal.
-  // - 1. / 1) => 1)
-  // - conserva viñetas originales.
-  // =========================================================
-  const escribirComentario = (txt = "") => {
-    const raw = String(txt || "").replace(/\r/g, "");
-    if (!raw.trim()) return;
-
-    const MARK_X = LEFT + 14;
-    const BODY_X = MARK_X + 30;
-    const BODY_W = RIGHT - BODY_X;
-
-    const TEXTO_X = LEFT + 14;
-    const TEXTO_W = RIGHT - TEXTO_X;
-
-    raw.split("\n").forEach(lineaOriginal => {
-      const linea = limpiar(lineaOriginal);
-
-      if (!linea) {
-        y += 4;
-        return;
-      }
-
-      // Enumeración -> siempre 1)
-      const num = linea.match(/^(\d+)\s*[\.\)]\s*(.*)$/);
-
-      if (num) {
-        const marcador = `${num[1]})`;
-        const cuerpo = String(num[2] || "").trim();
-
-        const partes = dividir(
-          cuerpo,
-          BODY_W,
-          BODY_SIZE,
-          false,
-          false
-        );
-
-        asegurar(LINE_H);
-
-        setFont(BODY_SIZE, true, false);
-        doc.text(marcador, MARK_X, y);
-
-        if (partes.length) {
-          setFont(BODY_SIZE, false, false);
-          doc.text(String(partes[0]), BODY_X, y);
-        }
-
-        y += LINE_H;
-
-        for (let i = 1; i < partes.length; i++) {
-          asegurar(LINE_H);
-
-          setFont(BODY_SIZE, false, false);
-          doc.text(String(partes[i]), BODY_X, y);
-
-          y += LINE_H;
-        }
-
-        return;
-      }
-
-      // Viñeta original.
-      const bullet = linea.match(/^([•▪◦·\-\–\—\*])\s*(.*)$/);
-
-      if (bullet) {
-        const marcador = bullet[1];
-        const cuerpo = String(bullet[2] || "").trim();
-
-        const partes = dividir(
-          cuerpo,
-          BODY_W,
-          BODY_SIZE,
-          false,
-          false
-        );
-
-        asegurar(LINE_H);
-
-        setFont(BODY_SIZE, false, false);
-        doc.text(marcador, MARK_X, y);
-
-        if (partes.length) {
-          doc.text(String(partes[0]), BODY_X, y);
-        }
-
-        y += LINE_H;
-
-        for (let i = 1; i < partes.length; i++) {
-          asegurar(LINE_H);
-          doc.text(String(partes[i]), BODY_X, y);
-          y += LINE_H;
-        }
-
-        return;
-      }
-
-      escribir(linea, {
-        x: TEXTO_X,
-        width: TEXTO_W,
-        size: BODY_SIZE,
-        lineH: LINE_H
-      });
-    });
-  };
-
-  // =========================================================
-  // DATOS
-  // =========================================================
   const titulo = String(
     it.predicaTitulo ||
     it.tituloPredica ||
     "Prédica"
   ).trim();
 
-  const fecha =
-    subidosFechaBonitaExport(
-      it.fechaEvento || ""
-    );
+  const fecha = subidosFechaBonitaExport(
+    it.fechaEvento || ""
+  );
 
   const introduccion = String(
     it.predicaIntroduccion ||
@@ -5881,59 +5433,379 @@ async function subidosCrearPdfPredica(it = {}) {
 
   const citas = obtenerCitasPredicaSubido(it);
 
-  // =========================================================
-  // ORDEN EXACTO
-  // =========================================================
-  escribirCabecera(titulo, fecha);
+  const renderPdf = (BODY_SIZE = 14) => {
+    const doc = new jsPDF({
+      orientation: "portrait",
+      unit: "pt",
+      format: "a4",
+      compress: true
+    });
 
-  if (introduccion) {
-    escribirItalic(introduccion);
-    separador();
+    try {
+      doc.viewerPreferences({
+        PrintScaling: "None",
+        PickTrayByPDFSize: true
+      });
+    } catch (e) {}
+
+    const PAGE_W = Number(doc.internal.pageSize.getWidth());
+    const PAGE_H = Number(doc.internal.pageSize.getHeight());
+
+    const M = 28.3464567; // 1 cm real
+    const LEFT = M;
+    const RIGHT = PAGE_W - M;
+    const TOP = M;
+    const BOTTOM = PAGE_H - M;
+    const FULL_W = RIGHT - LEFT;
+
+    const LINE_H = BODY_SIZE * 1.17;
+    let y = TOP;
+
+    const setFont = (size = BODY_SIZE, bold = false, italic = false) => {
+      const style = bold
+        ? (italic ? "bolditalic" : "bold")
+        : (italic ? "italic" : "normal");
+      doc.setFont("helvetica", style);
+      doc.setFontSize(size);
+      doc.setTextColor(0, 0, 0);
+    };
+
+    const nuevaPagina = () => {
+      doc.addPage();
+      y = TOP;
+    };
+
+    const asegurar = (alto = LINE_H) => {
+      if (y + alto <= BOTTOM) return;
+      nuevaPagina();
+    };
+
+    const limpiar = (txt = "") =>
+      String(txt || "")
+        .replace(/\u00A0/g, " ")
+        .replace(/\t/g, " ")
+        .replace(/[ ]{2,}/g, " ")
+        .trim();
+
+    const dividir = (txt, width, size = BODY_SIZE, bold = false, italic = false) => {
+      const t = limpiar(txt);
+      if (!t) return [];
+      setFont(size, bold, italic);
+      return doc.splitTextToSize(t, Math.max(20, width));
+    };
+
+    // Dibuja la línea EN el espacio vacío posterior al texto, nunca encima.
+    const separador = () => {
+      const antes = BODY_SIZE * 0.48;
+      const despues = BODY_SIZE * 0.58;
+      const total = antes + despues + 1;
+      if (y + total > BOTTOM) {
+        nuevaPagina();
+        return;
+      }
+      const lineY = y + antes;
+      doc.setDrawColor(175, 175, 175);
+      doc.setLineWidth(0.35);
+      doc.line(LEFT, lineY, RIGHT, lineY);
+      y = lineY + despues;
+    };
+
+    const escribir = (txt, {
+      x = LEFT,
+      width = FULL_W,
+      size = BODY_SIZE,
+      bold = false,
+      italic = false,
+      lineH = LINE_H,
+      after = 0,
+      justificar = false
+    } = {}) => {
+      const lineas = dividir(txt, width, size, bold, italic);
+      if (!lineas.length) return;
+
+      setFont(size, bold, italic);
+
+      lineas.forEach((linea, i) => {
+        asegurar(lineH);
+        const s = String(linea);
+        const esUltima = i === lineas.length - 1;
+        if (justificar && !esUltima && s.trim().includes(" ")) {
+          doc.text(s, x, y, { maxWidth: width, align: "justify" });
+        } else {
+          doc.text(s, x, y);
+        }
+        y += lineH;
+      });
+
+      y += Math.max(0, Number(after) || 0);
+    };
+
+    const escribirOriginal = (txt, opts = {}) => {
+      const raw = String(txt || "").replace(/\r/g, "");
+      if (!raw.trim()) return;
+      raw.split("\n").forEach((linea, i, arr) => {
+        const t = limpiar(linea);
+        if (!t) {
+          y += BODY_SIZE * 0.28;
+          return;
+        }
+        escribir(t, { ...opts, after: 0 });
+        if (i < arr.length - 1) y += BODY_SIZE * 0.08;
+      });
+    };
+
+    const escribirCabecera = () => {
+      const tituloTxt = limpiar(titulo || "Prédica");
+      const fechaTxt = limpiar(fecha || "");
+      const TITLE_SIZE = BODY_SIZE + 4;
+      const DATE_SIZE = BODY_SIZE;
+      setFont(DATE_SIZE, true, false);
+      const fechaW = fechaTxt ? doc.getTextWidth(fechaTxt) : 0;
+      const gap = BODY_SIZE * 1.4;
+      const tituloW = Math.max(FULL_W * 0.54, FULL_W - fechaW - gap);
+      const tituloLineas = dividir(tituloTxt, tituloW, TITLE_SIZE, true, false);
+      if (fechaTxt) {
+        setFont(DATE_SIZE, true, false);
+        doc.text(fechaTxt, RIGHT, y, { align: "right" });
+      }
+      setFont(TITLE_SIZE, true, false);
+      const titleLineH = TITLE_SIZE * 1.14;
+      tituloLineas.forEach((linea, i) => {
+        doc.text(String(linea), LEFT, y + i * titleLineH);
+      });
+      y += Math.max(1, tituloLineas.length) * titleLineH;
+      separador();
+    };
+
+    const escribirItalic = (txt = "") => {
+      escribirOriginal(txt, {
+        x: LEFT,
+        width: FULL_W,
+        size: BODY_SIZE,
+        italic: true,
+        lineH: LINE_H,
+        justificar: true
+      });
+    };
+
+    // Citas bíblicas con viñeta diferente
+    const escribirReferencia = (referencia = "") => {
+      const ref = limpiar(referencia);
+      if (!ref) return;
+      const BULLET_X = LEFT + 1;
+      const TEXT_X = LEFT + 14;
+      const TEXT_W = RIGHT - TEXT_X;
+      const lineas = dividir(ref, TEXT_W, BODY_SIZE, true, false);
+      if (y + (LINE_H * 2) > BOTTOM) nuevaPagina();
+      setFont(BODY_SIZE, true, false);
+      doc.text("◆", BULLET_X, y);
+      lineas.forEach((linea, i) => {
+        if (i > 0) asegurar(LINE_H);
+        setFont(BODY_SIZE, true, false);
+        doc.text(String(linea), TEXT_X, y);
+        y += LINE_H;
+      });
+      y += BODY_SIZE * 0.06;
+    };
+
+    const escribirVersiculo = (linea = "") => {
+      const t = limpiar(linea);
+      if (!t) return;
+      const m = t.match(/^(\d+)\s*[\.\)]?\s*(.*)$/);
+      const X_NUM = LEFT + 12;
+      if (!m) {
+        escribir(t, {
+          x: X_NUM,
+          width: RIGHT - X_NUM,
+          size: BODY_SIZE,
+          lineH: LINE_H,
+          justificar: true
+        });
+        return;
+      }
+
+      const numero = `${m[1]}.`;
+      const cuerpo = String(m[2] || "").trim();
+      setFont(BODY_SIZE, true, false);
+      const anchoNumero = doc.getTextWidth(numero);
+      const X_BODY = X_NUM + anchoNumero + 7;
+      const BODY_W = RIGHT - X_BODY;
+      const lineas = dividir(cuerpo, BODY_W, BODY_SIZE, false, false);
+
+      asegurar(LINE_H);
+      setFont(BODY_SIZE, true, false);
+      doc.text(numero, X_NUM, y);
+
+      if (lineas.length) {
+        setFont(BODY_SIZE, false, false);
+        const primera = String(lineas[0]);
+        if (lineas.length > 1 && primera.trim().includes(" ")) {
+          doc.text(primera, X_BODY, y, { maxWidth: BODY_W, align: "justify" });
+        } else {
+          doc.text(primera, X_BODY, y);
+        }
+      }
+      y += LINE_H;
+
+      for (let i = 1; i < lineas.length; i++) {
+        asegurar(LINE_H);
+        setFont(BODY_SIZE, false, false);
+        const s = String(lineas[i]);
+        const esUltima = i === lineas.length - 1;
+        if (!esUltima && s.trim().includes(" ")) {
+          doc.text(s, X_BODY, y, { maxWidth: BODY_W, align: "justify" });
+        } else {
+          doc.text(s, X_BODY, y);
+        }
+        y += LINE_H;
+      }
+    };
+
+    const escribirComentario = (txt = "") => {
+      const raw = String(txt || "").replace(/\r/g, "");
+      if (!raw.trim()) return;
+
+      const MARK_X = LEFT + 12;
+      const TEXTO_X = LEFT + 12;
+      const TEXTO_W = RIGHT - TEXTO_X;
+
+      raw.split("\n").forEach((lineaOriginal) => {
+        const linea = limpiar(lineaOriginal);
+        if (!linea) {
+          y += BODY_SIZE * 0.28;
+          return;
+        }
+
+        const num = linea.match(/^(\d+)\s*[\.\)]\s*(.*)$/);
+        if (num) {
+          const marcador = `${num[1]})`;
+          const cuerpo = String(num[2] || "").trim();
+          setFont(BODY_SIZE, true, false);
+          const anchoMarca = doc.getTextWidth(marcador);
+          const BODY_X = MARK_X + anchoMarca + 7;
+          const BODY_W = RIGHT - BODY_X;
+          const partes = dividir(cuerpo, BODY_W, BODY_SIZE, false, false);
+          asegurar(LINE_H);
+          setFont(BODY_SIZE, true, false);
+          doc.text(marcador, MARK_X, y);
+          partes.forEach((parte, i) => {
+            if (i > 0) asegurar(LINE_H);
+            setFont(BODY_SIZE, false, false);
+            const s = String(parte);
+            const esUltima = i === partes.length - 1;
+            if (!esUltima && s.trim().includes(" ")) {
+              doc.text(s, BODY_X, y, { maxWidth: BODY_W, align: "justify" });
+            } else {
+              doc.text(s, BODY_X, y);
+            }
+            y += LINE_H;
+          });
+          return;
+        }
+
+        const bullet = linea.match(/^([•▪◦·\-\–\—\*])\s*(.*)$/);
+        if (bullet) {
+          const marcador = bullet[1];
+          const cuerpo = String(bullet[2] || "").trim();
+          setFont(BODY_SIZE, false, false);
+          const anchoMarca = doc.getTextWidth(marcador);
+          const BODY_X = MARK_X + anchoMarca + 7;
+          const BODY_W = RIGHT - BODY_X;
+          const partes = dividir(cuerpo, BODY_W, BODY_SIZE, false, false);
+          asegurar(LINE_H);
+          doc.text(marcador, MARK_X, y);
+          partes.forEach((parte, i) => {
+            if (i > 0) asegurar(LINE_H);
+            const s = String(parte);
+            const esUltima = i === partes.length - 1;
+            if (!esUltima && s.trim().includes(" ")) {
+              doc.text(s, BODY_X, y, { maxWidth: BODY_W, align: "justify" });
+            } else {
+              doc.text(s, BODY_X, y);
+            }
+            y += LINE_H;
+          });
+          return;
+        }
+
+        escribir(linea, {
+          x: TEXTO_X,
+          width: TEXTO_W,
+          size: BODY_SIZE,
+          lineH: LINE_H,
+          justificar: true
+        });
+      });
+    };
+
+    escribirCabecera();
+
+    if (introduccion) {
+      escribirItalic(introduccion);
+      separador();
+    }
+
+    citas.forEach((cita, idx) => {
+      const referencia = String(cita?.referencia || "").trim();
+      const textoBiblico = String(cita?.texto || "").trim();
+      const comentario = String(cita?.comentario || cita?.nota || "").trim();
+
+      if (referencia) escribirReferencia(referencia);
+
+      if (textoBiblico) {
+        String(textoBiblico)
+          .replace(/\r/g, "")
+          .split("\n")
+          .map(x => x.trim())
+          .filter(Boolean)
+          .forEach(escribirVersiculo);
+      }
+
+      if (comentario) {
+        separador();
+        escribirComentario(comentario);
+      }
+
+      if (idx < citas.length - 1) {
+        separador();
+      }
+    });
+
+    if (notaFinal) {
+      separador();
+      escribirItalic(notaFinal);
+    }
+
+    return {
+      doc,
+      pages: doc.getNumberOfPages(),
+      lastY: y,
+      bottom: BOTTOM,
+      fontSize: BODY_SIZE
+    };
+  };
+
+  const base = renderPdf(14);
+  let elegido = base;
+
+  for (const size of [14.5, 15, 15.5, 16]) {
+    const candidato = renderPdf(size);
+    if (candidato.pages === base.pages) {
+      elegido = candidato;
+    } else {
+      break;
+    }
   }
 
-  citas.forEach((cita, idx) => {
-    const referencia =
-      String(cita?.referencia || "").trim();
-
-    const textoBiblico =
-      String(cita?.texto || "").trim();
-
-    const comentario =
-      String(
-        cita?.comentario ||
-        cita?.nota ||
-        ""
-      ).trim();
-
-    if (referencia) {
-      escribirReferencia(referencia);
-    }
-
-    if (textoBiblico) {
-      String(textoBiblico)
-        .replace(/\r/g, "")
-        .split("\n")
-        .map(x => x.trim())
-        .filter(Boolean)
-        .forEach(escribirVersiculo);
-    }
-
-    if (comentario) {
-      separador();
-      escribirComentario(comentario);
-    }
-
-    if (idx < citas.length - 1) {
-      separador();
-    }
+  console.log("🖨️ PDF prédica", {
+    fuente: elegido.fontSize,
+    paginas: elegido.pages,
+    yFinal: elegido.lastY,
+    bordeInferior: elegido.bottom,
+    version: "20260827-PDF-AJUSTE-LINEAS-8"
   });
 
-  if (notaFinal) {
-    separador();
-    escribirItalic(notaFinal);
-  }
-
-  return doc;
+  return elegido.doc;
 }
 
 window.subidosImprimirPredica = async function subidosImprimirPredica(id) {
