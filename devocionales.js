@@ -1710,6 +1710,21 @@ function devUrlRecursoSeguro(url, nombre = "recurso.png") {
   }
 }
 
+function devOptimizarCargaImagen(img){
+  if (!img) return img;
+
+  // Las galerías pueden tener decenas de recursos.
+  // Lazy + decode async evita bloquear la apertura del modal y el hilo principal.
+  img.loading = "lazy";
+  img.decoding = "async";
+
+  try {
+    img.fetchPriority = "low";
+  } catch (_) {}
+
+  return img;
+}
+
 async function urlToBlobURL(url){
   const urlSegura = devUrlRecursoSeguro(
     url,
@@ -1717,7 +1732,9 @@ async function urlToBlobURL(url){
   );
 
   const res = await fetch(urlSegura, {
-    cache: "no-store"
+    // Reutiliza la caché HTTP cuando el servidor lo permite.
+    // Evita volver a descargar un fondo que ya cargó como miniatura.
+    cache: "default"
   });
 
   if (!res.ok) {
@@ -1790,6 +1807,7 @@ function cargarFondosDev(){
   const finalUrl = base;
 
     const im = document.createElement("img");
+    devOptimizarCargaImagen(im);
     im.crossOrigin = "anonymous";
     im.referrerPolicy = "no-referrer";
     im.src = devUrlRecursoSeguro(
@@ -1952,6 +1970,7 @@ function cargarAdornosF2(){
     if (item.url) {
       b.textContent = "";
       const img = document.createElement("img");
+      devOptimizarCargaImagen(img);
       img.crossOrigin = "anonymous";
       img.src = devUrlRecursoSeguro(
         item.url,
@@ -2126,6 +2145,7 @@ function cargarTexturasF2(){
 
     if (item.url) {
       const img = document.createElement("img");
+      devOptimizarCargaImagen(img);
       img.crossOrigin = "anonymous";
       img.src = devUrlRecursoSeguro(
         item.url,
@@ -2963,10 +2983,10 @@ function buildFase1HTML(versiculoCanvasPx, scale){
   const rgbF1 = hexToRgb(DEV.f1.opColor || "#000000");
   const alphaF1 = Math.max(0, Math.min(1, Number(DEV.f1.op ?? 0.35)));
   const resaltadoF1 = `rgba(${rgbF1.r}, ${rgbF1.g}, ${rgbF1.b}, ${alphaF1})`;
-  // 8 px totales por lado:
-  // conserva los 4 px anteriores + agrega 4 px más
-  // para que el resaltado no corte visualmente el contorno de la fuente.
-  const spreadF1 = Math.max(1, 8 * scale);
+  // 11 px totales por lado:
+  // conserva los 8 px actuales y extiende 3 px más
+  // al inicio y al final de cada renglón.
+  const spreadF1 = Math.max(1, 11 * scale);
 
   const resaltarF1 = (contenido) => `
     <span
@@ -3067,7 +3087,7 @@ function buildFase1HTML(versiculoCanvasPx, scale){
             width:100%;
             white-space:normal;
             word-break:break-word;
-            line-height:1.02;
+            line-height:${((versiculoPx * 1.02) + (2 * scale)).toFixed(2)}px;
           ">
             ${resaltarF1(esc(p1.versiculo))}
           </div>
@@ -3089,7 +3109,7 @@ function buildFase1HTML(versiculoCanvasPx, scale){
         ${resaltarF1(esc(p1.iglesia))}
       </div>
 
-      <div style="${base(direPx,700)} top:${Y_DIR}%;">
+      <div style="${base(direPx,700)} top:${Y_DIR}%; transform:translateY(${(3 * scale).toFixed(2)}px);">
         ${resaltarF1(esc(p1.direccion))}
       </div>
 
