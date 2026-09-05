@@ -15,7 +15,7 @@ const R2_UPLOAD_URL = R2_WORKER_URL;
 const GH_UPLOAD_URL = R2_WORKER_URL;
 const TTS_URL = R2_WORKER_URL;
 
-console.log("✅ devocionales.js cargó (module)", "F3-UNA-CAPTURA-WEBVIEW-20260905-1");
+console.log("✅ devocionales.js cargó (module)", "APK-CANVAS-DIRECT-20260905-1");
 window.__DEV_DEVOCIONALES_LOADED__ = true;
 
 function $(id){ return document.getElementById(id); }
@@ -4411,6 +4411,645 @@ async function devEsperarFuentesFase3(timeoutMs = 1500){
   ]);
 }
 
+/* =========================================================
+   APK: FASE 3 DIRECTA EN CANVAS (SIN html2canvas)
+   =========================================================
+   Objetivo:
+   - mantener salida final 1080x1920;
+   - replicar el diseño de Fase 1 + Fase 2;
+   - evitar la rasterización DOM de html2canvas dentro de Android WebView;
+   - mantener la ruta web/PWA anterior intacta.
+*/
+const DEV_CANVAS_IMG_CACHE = new Map();
+
+function devCanvasFuente(st, px, weight){
+  const italic = st?.style?.italic ? "italic " : "";
+  const family = String(st?.fuente || "Roboto, sans-serif").trim();
+  return `${italic}${weight} ${Math.max(1, Number(px) || 16)}px ${family}`;
+}
+
+function devCanvasTransformarTexto(texto, st){
+  const s = String(texto || "");
+  return st?.style?.upper ? s.toLocaleUpperCase("es") : s;
+}
+
+function devCanvasResolverUrlImagen(url, nombre = "recurso.png"){
+  const src = String(url || "").trim();
+  if (!src) return "";
+  if (/^(blob:|data:)/i.test(src)) return src;
+  return devUrlRecursoSeguro(src, nombre);
+}
+
+async function devCanvasCargarImagen(url, nombre = "recurso.png", timeoutMs = 6000){
+  const src = devCanvasResolverUrlImagen(url, nombre);
+  if (!src) return null;
+
+  const existente = DEV_CANVAS_IMG_CACHE.get(src);
+  if (existente?.complete && existente.naturalWidth > 0) return existente;
+
+  const prom = existente instanceof Promise ? existente : new Promise((resolve, reject)=>{
+    const img = new Image();
+    if (!/^(blob:|data:)/i.test(src)) {
+      img.crossOrigin = "anonymous";
+      img.referrerPolicy = "no-referrer";
+    }
+    try { img.decoding = "async"; } catch {}
+
+    let terminado = false;
+    const timer = setTimeout(()=>{
+      if (terminado) return;
+      terminado = true;
+      DEV_CANVAS_IMG_CACHE.delete(src);
+      reject(new Error(`Tiempo agotado cargando ${nombre}`));
+    }, Math.max(800, Number(timeoutMs) || 6000));
+
+    img.onload = ()=>{
+      if (terminado) return;
+      terminado = true;
+      clearTimeout(timer);
+      DEV_CANVAS_IMG_CACHE.set(src, img);
+      resolve(img);
+    };
+
+    img.onerror = ()=>{
+      if (terminado) return;
+      terminado = true;
+      clearTimeout(timer);
+      DEV_CANVAS_IMG_CACHE.delete(src);
+      reject(new Error(`No pude cargar ${nombre}`));
+    };
+
+    img.src = src;
+  });
+
+  if (!(existente instanceof Promise)) DEV_CANVAS_IMG_CACHE.set(src, prom);
+  return await prom;
+}
+
+function devCanvasDibujarCover(ctx, img, x, y, w, h){
+  if (!ctx || !img || !img.naturalWidth || !img.naturalHeight) return;
+
+  const sc = Math.max(w / img.naturalWidth, h / img.naturalHeight);
+  const dw = img.naturalWidth * sc;
+  const dh = img.naturalHeight * sc;
+  const dx = x + (w - dw) / 2;
+  const dy = y + (h - dh) / 2;
+  ctx.drawImage(img, dx, dy, dw, dh);
+}
+
+function devCanvasDibujarContainBottom(ctx, img, x, y, w, h, alpha = 1){
+  if (!ctx || !img || !img.naturalWidth || !img.naturalHeight) return;
+
+  const sc = Math.min(w / img.naturalWidth, h / img.naturalHeight);
+  const dw = img.naturalWidth * sc;
+  const dh = img.naturalHeight * sc;
+  const dx = x + (w - dw) / 2;
+  const dy = y + h - dh;
+
+  ctx.save();
+  ctx.globalAlpha = Math.max(0, Math.min(1, Number(alpha) || 0));
+  ctx.drawImage(img, dx, dy, dw, dh);
+  ctx.restore();
+}
+
+function devCanvasPartirPalabra(ctx, palabra, maxW){
+  const partes = [];
+  let actual = "";
+
+  for (const ch of String(palabra || "")) {
+    const test = actual + ch;
+    if (!actual || ctx.measureText(test).width <= maxW) {
+      actual = test;
+    } else {
+      partes.push(actual);
+      actual = ch;
+    }
+  }
+
+  if (actual) partes.push(actual);
+  return partes;
+}
+
+function devCanvasWrapTexto(ctx, texto, maxW){
+  const bruto = String(texto || "").replace(/\r/g, "");
+  const paras = bruto.split("\n");
+  const lineas = [];
+
+  paras.forEach((parrafo, pIndex)=>{
+    const limpio = parrafo.trim();
+    if (!limpio) {
+      if (pIndex < paras.length - 1) lineas.push("");
+      return;
+    }
+
+    // Split sólo por espacios comunes: los NBSP que usa Fase 2
+    // mantienen unidas las últimas dos palabras, igual que en el DOM.
+    const palabras = limpio.split(/ +/).filter(Boolean);
+    let linea = "";
+
+    palabras.forEach(palabra=>{
+      const prueba = linea ? `${linea} ${palabra}` : palabra;
+      if (ctx.measureText(prueba).width <= maxW) {
+        linea = prueba;
+        return;
+      }
+
+      if (linea) {
+        lineas.push(linea);
+        linea = "";
+      }
+
+      if (ctx.measureText(palabra).width <= maxW) {
+        linea = palabra;
+        return;
+      }
+
+      const trozos = devCanvasPartirPalabra(ctx, palabra, maxW);
+      if (trozos.length) {
+        trozos.slice(0, -1).forEach(x => lineas.push(x));
+        linea = trozos[trozos.length - 1];
+      }
+    });
+
+    if (linea) lineas.push(linea);
+  });
+
+  return lineas.length ? lineas : [""];
+}
+
+function devCanvasCapsula(ctx, cx, cy, anchoTexto, altoLinea, spread, color){
+  if (!color || !anchoTexto) return;
+
+  const h = Math.max(8, altoLinea * 0.92);
+  const w = Math.max(h, anchoTexto + (Math.max(0, spread) * 2));
+  const x = cx - w / 2;
+  const y = cy - h / 2;
+
+  ctx.save();
+  ctx.fillStyle = color;
+  roundedRectPath(ctx, x, y, w, h, h / 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function devCanvasTextoConContorno(ctx, texto, x, y, cfg = {}){
+  const {
+    font,
+    color = "#000000",
+    outline = "#ffffff",
+    shadowScale = 1,
+    strokePx = 0.75,
+    alpha = 1,
+    highlightColor = "",
+    highlightSpread = 0,
+    lineHeight = 20
+  } = cfg;
+
+  ctx.save();
+  ctx.font = font;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.lineJoin = "round";
+  ctx.miterLimit = 2;
+  ctx.globalAlpha = Math.max(0, Math.min(1, Number(alpha) || 0));
+
+  const ancho = ctx.measureText(texto).width;
+  if (highlightColor) {
+    devCanvasCapsula(ctx, x, y, ancho, lineHeight, highlightSpread, highlightColor);
+  }
+
+  const s = Math.max(0.12, Number(shadowScale) || 1);
+  const offsets = [
+    [-3*s, 0], [3*s, 0], [0, -3*s], [0, 3*s],
+    [-2*s, -2*s], [2*s, -2*s], [-2*s, 2*s], [2*s, 2*s]
+  ];
+
+  ctx.fillStyle = outline;
+  ctx.shadowColor = outline;
+  ctx.shadowBlur = 4 * s;
+  offsets.forEach(([dx,dy]) => ctx.fillText(texto, x + dx, y + dy));
+
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = outline;
+  ctx.lineWidth = Math.max(0.1, Number(strokePx) || 0.1) * 2;
+  ctx.strokeText(texto, x, y);
+
+  ctx.fillStyle = color;
+  ctx.fillText(texto, x, y);
+  ctx.restore();
+}
+
+function devCanvasDibujarBloqueLineas(ctx, lineas, cfg){
+  const {
+    x,
+    yTop,
+    lineHeight,
+    font,
+    color,
+    outline,
+    shadowScale,
+    strokePx,
+    alpha = 1,
+    highlightColor = "",
+    highlightSpread = 0
+  } = cfg;
+
+  lineas.forEach((linea, i)=>{
+    const cy = yTop + lineHeight * (i + 0.5);
+    devCanvasTextoConContorno(ctx, linea, x, cy, {
+      font, color, outline, shadowScale, strokePx, alpha,
+      highlightColor, highlightSpread, lineHeight
+    });
+  });
+}
+
+function devCanvasDibujarFase1Texto(ctx){
+  const p1 = DEV.p1;
+  if (!p1) return;
+
+  const st = DEV.f1;
+  const wrapX = 1080 * 0.06;
+  const wrapY = 1080 * 0.06;
+  const wrapW = 1080 * 0.88;
+  const wrapH = 1080 * 0.88;
+  const cx = wrapX + wrapW / 2;
+
+  const outline = devHexSeguro(st.outlineColor) || outlineColor(st.color || "#000000");
+  const rgb = hexToRgb(st.opColor || "#000000");
+  const op = Math.max(0, Math.min(1, Number(st.op ?? 0.35)));
+  const highlight = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${op})`;
+  const spread = 11;
+
+  const texto = (s) => devCanvasTransformarTexto(s, st);
+  const dibujarBase = (contenido, topPct, px, weight, alpha = 1, extraY = 0)=>{
+    const font = devCanvasFuente(st, px, weight);
+    ctx.font = font;
+    const maxW = wrapW * 0.98;
+    const lineH = px * 1.05;
+    const lines = devCanvasWrapTexto(ctx, texto(contenido), maxW);
+    devCanvasDibujarBloqueLineas(ctx, lines, {
+      x: cx,
+      yTop: wrapY + (wrapH * topPct / 100) + extraY,
+      lineHeight: lineH,
+      font,
+      color: st.color || "#000000",
+      outline,
+      shadowScale: 2.15,
+      strokePx: 0.72 * 2.15,
+      alpha,
+      highlightColor: highlight,
+      highlightSpread: spread
+    });
+  };
+
+  dibujarBase("DEVOCIONAL", -0.68, 44, 700);
+  dibujarBase(p1.fecha || "", 5.05, 32, 550, 0.95);
+
+  const versPx = Math.max(8, Number(st.size) || 30);
+  const citaPx = Math.max(14, Math.round(versPx * 0.75));
+  const vboxTop = wrapY + wrapH * 0.142;
+  const vboxH = wrapH * 0.715;
+  const vboxW = (wrapW * 0.98) - 36;
+
+  const fontVers = devCanvasFuente(st, versPx, st.style?.bold ? 800 : 400);
+  ctx.font = fontVers;
+  const versLines = devCanvasWrapTexto(ctx, texto(p1.versiculo || ""), vboxW);
+  const versLineH = versPx * 1.02 + 2;
+
+  const fontCita = devCanvasFuente(st, citaPx, st.style?.bold ? 700 : 400);
+  ctx.font = fontCita;
+  const citaLines = devCanvasWrapTexto(ctx, texto(p1.cita || ""), vboxW);
+  const citaLineH = citaPx * 1.02;
+
+  const gap = 4;
+  const totalH = versLines.length * versLineH + gap + citaLines.length * citaLineH;
+  let y = vboxTop + (vboxH - totalH) / 2;
+
+  devCanvasDibujarBloqueLineas(ctx, versLines, {
+    x: cx,
+    yTop: y,
+    lineHeight: versLineH,
+    font: fontVers,
+    color: st.color || "#000000",
+    outline,
+    shadowScale: 2.15,
+    strokePx: 0.72 * 2.15,
+    highlightColor: highlight,
+    highlightSpread: spread
+  });
+
+  y += versLines.length * versLineH + gap;
+  devCanvasDibujarBloqueLineas(ctx, citaLines, {
+    x: cx,
+    yTop: y,
+    lineHeight: citaLineH,
+    font: fontCita,
+    color: st.color || "#000000",
+    outline,
+    shadowScale: 2.15,
+    strokePx: 0.72 * 2.15,
+    highlightColor: highlight,
+    highlightSpread: spread
+  });
+
+  dibujarBase(p1.iglesia || "", 92.48, 34, 700);
+  dibujarBase(p1.direccion || "", 95.98, 34, 700, 1, 3);
+}
+
+function devCanvasAgregarStops(grad, colores){
+  if (colores.length <= 1) {
+    grad.addColorStop(0, colores[0] || "#ffffff");
+    grad.addColorStop(1, colores[0] || "#ffffff");
+  } else if (colores.length === 2) {
+    grad.addColorStop(0, colores[0]);
+    grad.addColorStop(1, colores[1]);
+  } else {
+    grad.addColorStop(0, colores[0]);
+    grad.addColorStop(0.5, colores[1]);
+    grad.addColorStop(1, colores[2]);
+  }
+}
+
+function devCanvasManchaEliptica(ctx, cx, cy, rx, ry, stops){
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.scale(Math.max(1, rx), Math.max(1, ry));
+  const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 1);
+  stops.forEach(([pos, color]) => g.addColorStop(pos, color));
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.arc(0, 0, 1, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function devCanvasUrlDesdeCssUrl(cssUrl){
+  const s = String(cssUrl || "").trim();
+  const m = s.match(/^url\(["']?(.*?)["']?\)$/s);
+  return m ? m[1] : s;
+}
+
+async function devCanvasDibujarFondoF2(ctx, w, h, romboImg = null){
+  const st = DEV.f2;
+  const c1 = devHexSeguro(st.fondoColor) || "#ffffff";
+  const c2 = devHexSeguro(st.gradienteColor2) || "#d1eeff";
+  const c3 = st.usarColor3
+    ? (devHexSeguro(st.gradienteColor3) || "#a6d0ff")
+    : c2;
+
+  ctx.save();
+  ctx.fillStyle = c1;
+  ctx.fillRect(0, 0, w, h);
+
+  if (!st.usarColor2) {
+    ctx.restore();
+    return;
+  }
+
+  if (st.gradienteForma === "rombo" && romboImg) {
+    ctx.drawImage(romboImg, 0, 0, w, h);
+    ctx.restore();
+    return;
+  }
+
+  if (st.gradienteForma === "manchas") {
+    // Equivalente Canvas de las seis capas CSS usadas en la preview.
+    devCanvasManchaEliptica(ctx, w*0.50, h*0.50, w*1.20, h*0.86, [
+      [0, devRgba(c2,.14)], [.38, devRgba(c3,.10)], [.74, "rgba(0,0,0,0)"], [1, "rgba(0,0,0,0)"]
+    ]);
+    devCanvasManchaEliptica(ctx, w*0.76, h*0.76, w*1.08, h*0.80, [
+      [0, devRgba(c2,.28)], [.32, devRgba(c2,.18)], [.56, devRgba(c2,.08)], [.80, "rgba(0,0,0,0)"], [1, "rgba(0,0,0,0)"]
+    ]);
+    devCanvasManchaEliptica(ctx, w*0.24, h*0.76, w*1.08, h*0.80, [
+      [0, devRgba(c3,.28)], [.32, devRgba(c3,.18)], [.56, devRgba(c3,.08)], [.80, "rgba(0,0,0,0)"], [1, "rgba(0,0,0,0)"]
+    ]);
+    devCanvasManchaEliptica(ctx, w*0.78, h*0.24, w*1.03, h*0.78, [
+      [0, devRgba(c3,.30)], [.31, devRgba(c3,.20)], [.55, devRgba(c3,.09)], [.79, "rgba(0,0,0,0)"], [1, "rgba(0,0,0,0)"]
+    ]);
+    devCanvasManchaEliptica(ctx, w*0.22, h*0.24, w*1.03, h*0.78, [
+      [0, devRgba(c2,.32)], [.30, devRgba(c2,.22)], [.54, devRgba(c2,.10)], [.78, "rgba(0,0,0,0)"], [1, "rgba(0,0,0,0)"]
+    ]);
+    ctx.restore();
+    return;
+  }
+
+  let grad;
+  if (st.gradienteForma === "horizontal") {
+    grad = ctx.createLinearGradient(0, 0, w, 0);
+  } else if (st.gradienteForma === "diagonal") {
+    grad = ctx.createLinearGradient(0, 0, w, h);
+  } else if (st.gradienteForma === "radial") {
+    grad = ctx.createRadialGradient(w/2, h/2, 0, w/2, h/2, Math.hypot(w/2, h/2));
+  } else {
+    grad = ctx.createLinearGradient(0, 0, 0, h);
+  }
+
+  devCanvasAgregarStops(grad, st.usarColor3 ? [c1,c2,c3] : [c1,c2]);
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, w, h);
+  ctx.restore();
+}
+
+function devCanvasDibujarF2Texto(ctx, adornoImg){
+  const p2 = DEV.p2;
+  if (!p2) return;
+
+  const st = DEV.f2;
+  const wrapX = 16;
+  const wrapY = 16;
+  const wrapW = 1080 - 32;
+  const wrapH = 840 - 32;
+
+  const ref = devEvitarUltimaPalabraSola(p2.reflexion || "");
+  const ora = devEvitarUltimaPalabraSola(p2.oracion || "");
+  const fw = st.style?.bold ? 700 : 400;
+  const px = Math.max(8, Number(st.size) || 26);
+  const lineH = px * 1.18;
+  const padTop = 4;
+  const padX = 18;
+  const gapOra = 6;
+  const maxW = wrapW - padX * 2;
+  const outline = devHexSeguro(st.outlineColor) || outlineColor(st.color || "#000000");
+  const font = devCanvasFuente(st, px, fw);
+
+  ctx.font = font;
+  const refTexto = devCanvasTransformarTexto(`Reflexión: ${ref}`, st);
+  const oraTexto = ora ? devCanvasTransformarTexto(`Oración: ${ora}`, st) : "";
+  const refLines = devCanvasWrapTexto(ctx, refTexto, maxW);
+  const oraLines = oraTexto ? devCanvasWrapTexto(ctx, oraTexto, maxW) : [];
+
+  const adornoW = Math.max(30, Math.min(95, Number(st.adornoWidth || 70)));
+  const adornoFactor = adornoW / 70;
+  const adornoBoxH = Math.max(12, Math.round(86 * adornoFactor));
+  const tieneAdorno = !!st.adornoUrl;
+  const bottomH = tieneAdorno ? adornoBoxH + padTop : 0;
+  const textAreaH = wrapH - bottomH;
+  const usableTextH = Math.max(1, textAreaH - padTop);
+
+  const totalTextH = refLines.length * lineH +
+    (oraLines.length ? gapOra + oraLines.length * lineH : 0);
+  let y = wrapY + padTop + Math.max(0, (usableTextH - totalTextH) / 2);
+  const cx = wrapX + wrapW / 2;
+
+  devCanvasDibujarBloqueLineas(ctx, refLines, {
+    x: cx,
+    yTop: y,
+    lineHeight: lineH,
+    font,
+    color: st.color || "#000000",
+    outline,
+    shadowScale: 1.25,
+    strokePx: 0.75
+  });
+
+  y += refLines.length * lineH;
+  if (oraLines.length) {
+    y += gapOra;
+    devCanvasDibujarBloqueLineas(ctx, oraLines, {
+      x: cx,
+      yTop: y,
+      lineHeight: lineH,
+      font,
+      color: st.color || "#000000",
+      outline,
+      shadowScale: 1.25,
+      strokePx: 0.75
+    });
+  }
+
+  if (tieneAdorno && adornoImg) {
+    const boxW = wrapW * (adornoW / 100);
+    const boxX = wrapX + (wrapW - boxW) / 2;
+    const boxY = wrapY + wrapH - padTop - adornoBoxH;
+    devCanvasDibujarContainBottom(
+      ctx,
+      adornoImg,
+      boxX,
+      boxY,
+      boxW,
+      adornoBoxH,
+      Math.max(0, Math.min(1, Number(st.adornoOpacidad ?? 1)))
+    );
+  }
+}
+
+async function devCanvasEsperarFuentesDirectas(){
+  if (!document.fonts?.load) {
+    await devEsperarFuentesFase3(500);
+    return;
+  }
+
+  const cargas = [];
+  try {
+    cargas.push(document.fonts.load(devCanvasFuente(DEV.f1, Math.max(30, Number(DEV.f1.size)||30), DEV.f1.style?.bold ? 800 : 400)));
+    cargas.push(document.fonts.load(devCanvasFuente(DEV.f2, Math.max(26, Number(DEV.f2.size)||26), DEV.f2.style?.bold ? 700 : 400)));
+  } catch {}
+
+  if (!cargas.length) return;
+  await Promise.race([
+    Promise.allSettled(cargas),
+    new Promise(resolve => setTimeout(resolve, 900))
+  ]);
+}
+
+async function devRenderFinalCanvasDirectoAPK(cFinal, ctx, W = 1080, H = 1920){
+  const H1 = 1080;
+  const H2 = 840;
+
+  // Evitar que imágenes de devocionales anteriores queden retenidas por esta capa.
+  // El navegador/WebView conserva su propia caché de red; acá sólo soltamos referencias JS.
+  DEV_CANVAS_IMG_CACHE.clear();
+
+  devF3Estado("Preparando modo rápido APK");
+  await devCanvasEsperarFuentesDirectas();
+
+  const fondoF1Url = DEV.f1.fondoBlob || DEV.f1.fondoUrl || "";
+  const texturas = devF2TexturasSeleccionadas();
+  const adornoUrl = DEV.f2.adornoUrl || "";
+
+  let romboUrl = "";
+  if (DEV.f2.usarColor2 && DEV.f2.gradienteForma === "rombo") {
+    const c1 = devHexSeguro(DEV.f2.fondoColor) || "#ffffff";
+    const c2 = devHexSeguro(DEV.f2.gradienteColor2) || "#d1eeff";
+    const c3 = DEV.f2.usarColor3
+      ? (devHexSeguro(DEV.f2.gradienteColor3) || "#a6d0ff")
+      : c2;
+    romboUrl = devCanvasUrlDesdeCssUrl(
+      devSvgRomboDifuminadoDataUrl(c1, c2, c3, !!DEV.f2.usarColor3)
+    );
+  }
+
+  devF3Estado("Cargando recursos elegidos");
+  // Si un recurso elegido no carga, abortamos con un error visible en vez de
+  // generar una imagen incompleta o distinta de la preview.
+  const fondoPromise = fondoF1Url
+    ? devCanvasCargarImagen(fondoF1Url, "fondo_devocional.png", 4500)
+    : Promise.resolve(null);
+  const texturaPromises = texturas.map((url, i) =>
+    devCanvasCargarImagen(url, `textura_devocional_${i+1}.png`, 4500)
+  );
+  const adornoPromise = adornoUrl
+    ? devCanvasCargarImagen(adornoUrl, "adorno_devocional.png", 4500)
+    : Promise.resolve(null);
+  const romboPromise = romboUrl
+    ? devCanvasCargarImagen(romboUrl, "gradiente_rombo.svg", 2500)
+    : Promise.resolve(null);
+
+  const [fondoF1, texturaImgs, adornoImg, romboImg] = await Promise.all([
+    fondoPromise,
+    Promise.all(texturaPromises),
+    adornoPromise,
+    romboPromise
+  ]);
+
+  devF3Estado("Dibujando Fase 1");
+  ctx.save();
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, W, H1);
+  if (fondoF1) devCanvasDibujarCover(ctx, fondoF1, 0, 0, W, H1);
+  devCanvasDibujarFase1Texto(ctx);
+  ctx.restore();
+
+  devF3Estado("Dibujando Fase 2");
+  const f2Canvas = document.createElement("canvas");
+  f2Canvas.width = W;
+  f2Canvas.height = H2;
+  const f2ctx = f2Canvas.getContext("2d");
+
+  await devCanvasDibujarFondoF2(f2ctx, W, H2, romboImg);
+
+  const validTextures = texturaImgs.filter(Boolean);
+  if (validTextures.length) {
+    const texCanvas = document.createElement("canvas");
+    texCanvas.width = W;
+    texCanvas.height = H2;
+    const tctx = texCanvas.getContext("2d");
+    validTextures.forEach(img => devCanvasDibujarCover(tctx, img, 0, 0, W, H2));
+
+    f2ctx.save();
+    f2ctx.globalAlpha = Math.max(0, Math.min(1, Number(DEV.f2.texturaOp ?? 0.22)));
+    f2ctx.drawImage(texCanvas, 0, 0);
+    f2ctx.restore();
+
+    try { texCanvas.width = 0; texCanvas.height = 0; } catch {}
+  }
+
+  devCanvasDibujarF2Texto(f2ctx, adornoImg);
+  ctx.drawImage(f2Canvas, 0, H1);
+  try { f2Canvas.width = 0; f2Canvas.height = 0; } catch {}
+
+  devF3Estado("Terminando composición");
+  devDibujarUnionSuaveFinal(ctx, W, H1);
+
+  const listo = makeRoundedCanvas(cFinal, 52);
+  const ahora = performance?.now ? performance.now() : Date.now();
+  if (DEV_F3_T0) {
+    console.log(`⚡ Fase 3 APK directa: ${((ahora - DEV_F3_T0) / 1000).toFixed(2)} s`);
+  }
+  return listo;
+}
+
+
 async function renderFinalCanvasCaptureReal(){
   const cFinal = $("devCanvasFinal");
   if (!cFinal) return null;
@@ -4455,6 +5094,12 @@ async function renderFinalCanvasCaptureReal(){
   // =====================================================
   // MODO NORMAL: composición fases 1 + 2
   // =====================================================
+  // APK Android: ruta directa Canvas 2D. Evita html2canvas por completo.
+  // PWA/web conserva el render anterior para no modificar un flujo que ya funciona bien.
+  if (devEsAPKAndroid()) {
+    return await devRenderFinalCanvasDirectoAPK(cFinal, ctx, W, H);
+  }
+
   if (typeof html2canvas !== "function") {
     alert("❌ Falta html2canvas. Agregalo en el HTML como en Biblia.");
     return null;
@@ -4941,7 +5586,7 @@ window.devIrFase3 = async () => {
   devF3Estado("Iniciando Fase 3");
 
   try {
-    if (typeof html2canvas === "function") {
+    if (devEsAPKAndroid() || typeof html2canvas === "function") {
       const c = await renderFinalCanvasCaptureReal();
       if (!c) throw new Error("No se pudo crear el canvas final.");
       await devPrepararShareFinalDesdeCanvas(c);
