@@ -4400,10 +4400,11 @@ async function renderFinalCanvasCaptureReal(){
     ctx.drawImage(img, dx, dy, drawW, drawH);
 
     const rounded = makeRoundedCanvas(cFinal, 52);
-    DEV.finalDataUrl = rounded.toDataURL("image/png");
 
-    const outImg = $("devFinalImg");
-    if (outImg) outImg.src = DEV.finalDataUrl;
+    // ✅ Fase 3 rápida: NO convertir acá a Base64 con toDataURL.
+    // devPrepararShareFinalDesdeCanvas() genera un único Blob PNG y
+    // usa ese mismo Blob tanto para la preview como para compartir.
+    DEV.finalDataUrl = "";
 
     return rounded;
   }
@@ -4572,7 +4573,9 @@ texto.style.webkitTextStroke = "0.75px " + outlineF2;
   try {
     cap1 = await html2canvas(n1, {
       backgroundColor: null,
-      scale: 2,
+      // El nodo ya mide 1080px: scale 1 conserva el tamaño final real
+      // y evita crear una captura 2160px que luego se reduce otra vez.
+      scale: 1,
       useCORS: true
     });
   } finally {
@@ -4581,21 +4584,30 @@ texto.style.webkitTextStroke = "0.75px " + outlineF2;
 
   const cap2 = await html2canvas(n2, {
     backgroundColor: null,
-    scale: 2,
+    // Igual que Fase 1: captura nativa al tamaño final, sin sobremuestreo 2x.
+    scale: 1,
     useCORS: true
   });
 
   ctx.drawImage(cap1, 0, 0, W, H1);
   ctx.drawImage(cap2, 0, H1, W, H2);
 
+  // ✅ Liberar memoria pesada cuanto antes, especialmente en Android WebView.
+  // Una vez dibujadas en el canvas final, estas capturas ya no se necesitan.
+  cap1.width = 1;
+  cap1.height = 1;
+  cap2.width = 1;
+  cap2.height = 1;
+  stage.innerHTML = "";
+
   // ✅ unión suave entre imagen superior y bloque inferior
   devDibujarUnionSuaveFinal(ctx, W, H1);
 
   const rounded = makeRoundedCanvas(cFinal, 52);
 
-  DEV.finalDataUrl = rounded.toDataURL("image/png");
-  const img = $("devFinalImg");
-  if (img) img.src = DEV.finalDataUrl;
+  // ✅ Evitar una segunda codificación PNG en Base64.
+  // La preview se alimenta luego desde el mismo Blob que se usa para compartir.
+  DEV.finalDataUrl = "";
 
   return rounded;
 }
@@ -4732,6 +4744,9 @@ window.devIrFase1Desde0 = async () => {
     try {
       const c = await renderFinalCanvasCaptureReal();
       await devPrepararShareFinalDesdeCanvas(c);
+    } catch (e) {
+      console.error("Error preparando Fase 3 finalizada:", e);
+      alert("❌ No se pudo preparar la Fase 3.\n\nDetalle: " + (e?.message || e));
     } finally {
       devSetLoadingFase3(false);
     }
@@ -4878,6 +4893,11 @@ window.devIrFase3 = async () => {
     } else {
       alert("❌ Falta html2canvas. Cargalo como en biblia.js");
     }
+  } catch (e) {
+    // ✅ En APK no hay consola visible: mostrar el error evita quedar con una
+    // Fase 3 vacía sin saber qué falló y nos da un dato concreto para corregir.
+    console.error("Error generando Fase 3:", e);
+    alert("❌ No se pudo generar la Fase 3.\n\nDetalle: " + (e?.message || e));
   } finally {
     devSetLoadingFase3(false);
   }
@@ -5305,12 +5325,15 @@ async function devDescargarAudioSiExiste(){
    ========================================================= */
 window.__devFinalCanvas = null;
 window.__devFinalFile = null;
+window.__devFinalPreviewUrl = window.__devFinalPreviewUrl || "";
 
 async function devPrepararShareFinalDesdeCanvas(canvas){
   if (!canvas) return null;
 
   window.__devFinalCanvas = canvas;
 
+  // ✅ Una sola codificación PNG. Antes se hacía toDataURL() para la preview
+  // y después toBlob() otra vez para compartir, duplicando CPU y memoria.
   const blob = await new Promise(res => canvas.toBlob(res, "image/png"));
   if (!blob) {
     window.__devFinalFile = null;
@@ -5318,11 +5341,25 @@ async function devPrepararShareFinalDesdeCanvas(canvas){
   }
 
   window.__devFinalFile = new File([blob], "devocional.png", { type: "image/png" });
+
+  // La misma imagen ya codificada alimenta la preview de Fase 3.
+  if (window.__devFinalPreviewUrl) {
+    try { URL.revokeObjectURL(window.__devFinalPreviewUrl); } catch (_) {}
+  }
+  window.__devFinalPreviewUrl = URL.createObjectURL(blob);
+
+  const img = $("devFinalImg");
+  if (img) img.src = window.__devFinalPreviewUrl;
+
+  DEV.finalDataUrl = "";
   return window.__devFinalFile;
 }
 
 async function devDescargarImagenSolo(canvas){
-  const blob = await devCanvasABlobPNG(canvas);
+  // ✅ Si Fase 3 ya preparó el PNG, no volver a codificar el canvas.
+  const blob = window.__devFinalFile instanceof Blob
+    ? window.__devFinalFile
+    : await devCanvasABlobPNG(canvas);
 
   if (!blob) {
     alert("❌ No se pudo preparar la imagen.");
