@@ -15,7 +15,7 @@ const R2_UPLOAD_URL = R2_WORKER_URL;
 const GH_UPLOAD_URL = R2_WORKER_URL;
 const TTS_URL = R2_WORKER_URL;
 
-console.log("✅ devocionales.js cargó (module)", "F1-SPREAD8-CERRAR-20260826-4");
+console.log("✅ devocionales.js cargó (module)", "F3-UNA-CAPTURA-WEBVIEW-20260905-1");
 window.__DEV_DEVOCIONALES_LOADED__ = true;
 
 function $(id){ return document.getElementById(id); }
@@ -1711,16 +1711,19 @@ function devUrlRecursoSeguro(url, nombre = "recurso.png") {
   }
 }
 
-function devOptimizarCargaImagen(img){
+function devOptimizarCargaImagen(img, indice = 0, prioritarias = 10){
   if (!img) return img;
 
-  // Las galerías pueden tener decenas de recursos.
-  // Lazy + decode async evita bloquear la apertura del modal y el hilo principal.
-  img.loading = "lazy";
+  // En Android WebView, marcar TODO como lazy/low puede hacer que las miniaturas
+  // visibles se demoren mucho más que en Chrome/PWA. Priorizamos el primer tramo
+  // que el usuario ve y dejamos el resto diferido.
+  const prioridadAlta = Number(indice) < Number(prioritarias);
+
+  img.loading = prioridadAlta ? "eager" : "lazy";
   img.decoding = "async";
 
   try {
-    img.fetchPriority = "low";
+    img.fetchPriority = prioridadAlta ? "high" : "low";
   } catch (_) {}
 
   return img;
@@ -1804,11 +1807,11 @@ function cargarFondosDev(){
     ? window.vaFondosObtenerLista(devF1CategoriaActual)
     : (fondosCategorias[devF1CategoriaActual] || []);
 
-  fondos.forEach(base=>{
+  fondos.forEach((base, indice)=>{
   const finalUrl = base;
 
     const im = document.createElement("img");
-    devOptimizarCargaImagen(im);
+    devOptimizarCargaImagen(im, indice, 12);
     im.crossOrigin = "anonymous";
     im.referrerPolicy = "no-referrer";
     im.src = devUrlRecursoSeguro(
@@ -1963,7 +1966,7 @@ function cargarAdornosF2(){
     DEV.f2.adornoUrl = null;
   }
 
-  items.forEach(item=>{
+  items.forEach((item, indice)=>{
     const b = document.createElement("button");
     b.type = "button";
     b.className = "dev-adorno-btn";
@@ -1971,7 +1974,7 @@ function cargarAdornosF2(){
     if (item.url) {
       b.textContent = "";
       const img = document.createElement("img");
-      devOptimizarCargaImagen(img);
+      devOptimizarCargaImagen(img, indice, 12);
       img.crossOrigin = "anonymous";
       img.src = devUrlRecursoSeguro(
         item.url,
@@ -2138,7 +2141,7 @@ function cargarTexturasF2(){
 
   devF2GuardarTexturas(seleccionadas);
 
-  items.forEach(item=>{
+  items.forEach((item, indice)=>{
     const b = document.createElement("button");
     b.type = "button";
     b.className = "dev-textura-btn";
@@ -2146,7 +2149,7 @@ function cargarTexturasF2(){
 
     if (item.url) {
       const img = document.createElement("img");
-      devOptimizarCargaImagen(img);
+      devOptimizarCargaImagen(img, indice, 12);
       img.crossOrigin = "anonymous";
       img.src = devUrlRecursoSeguro(
         item.url,
@@ -4079,6 +4082,18 @@ function devSetLoadingFase3(on, msg){
   }
 }
 
+let DEV_F3_T0 = 0;
+
+function devF3IniciarCronometro(){
+  DEV_F3_T0 = performance?.now ? performance.now() : Date.now();
+}
+
+function devF3Estado(texto){
+  const ahora = performance?.now ? performance.now() : Date.now();
+  const seg = DEV_F3_T0 ? Math.max(0, (ahora - DEV_F3_T0) / 1000) : 0;
+  devSetLoadingFase3(true, `⏳ ${texto}${DEV_F3_T0 ? ` · ${seg.toFixed(1)} s` : ""}`);
+}
+
 function roundedRectPath(ctx, x, y, w, h, r){
   const rr = Math.max(0, Math.min(r, w/2, h/2));
   ctx.beginPath();
@@ -4575,61 +4590,60 @@ texto.style.webkitTextStroke = "0.75px " + outlineF2;
 
   const n1 = makeFase1Node();
   const n2 = makeFase2Node();
+
+  // Capturamos las dos fases JUNTAS en una sola pasada.
+  // Antes se invocaba html2canvas dos veces y Chromium tenía que clonar,
+  // medir y rasterizar el árbol dos veces. En WebView ese costo era enorme.
+  stage.style.width = W + "px";
+  stage.style.height = H + "px";
+  stage.style.display = "block";
   stage.appendChild(n1);
   stage.appendChild(n2);
 
+  devF3Estado("Preparando tipografía y recursos");
   await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-  // No dejar Fase 3 esperando indefinidamente por una fuente remota.
-  // Las fuentes elegidas normalmente ya se cargaron en las previews anteriores.
-  await devEsperarFuentesFase3(1500);
 
-  // ✅ Esperar que el adorno esté realmente cargado antes de capturar Fase 3.
-  // Así html2canvas no calcula dimensiones con la imagen todavía pendiente.
-  await devEsperarImagenesNodo(n2);
+  // Las fuentes ya se usaron en las previews; sólo damos un margen corto
+  // por si Android WebView todavía estaba terminando de resolver alguna.
+  await devEsperarFuentesFase3(700);
 
-  /*
-    html2canvas no reproduce de forma fiable
-    box-decoration-break: clone en spans multilínea.
+  // El adorno visible debe estar cargado; no bloqueamos cinco segundos enteros.
+  await devEsperarImagenesNodo(n2, 1800);
 
-    La preview del navegador está bien.
-    Antes de capturar Fase 1 convertimos temporalmente
-    esos fondos en cápsulas reales por cada renglón visible.
-  */
   const limpiarResaltadoF1 =
     devPrepararResaltadoF1ParaCaptura(n1);
 
-  let cap1;
+  let captura = null;
 
   try {
-    cap1 = await html2canvas(n1, {
+    devF3Estado("Generando imagen 1080×1920");
+    captura = await html2canvas(stage, {
       backgroundColor: null,
-      // n1 ya mide 1080x1080: scale 1 conserva el tamaño final
-      // sin crear un canvas intermedio de 2160x2160.
       scale: 1,
       useCORS: true,
-      imageTimeout: 6000,
-      logging: false
+      // Los recursos elegidos ya están visibles/cargados en Fase 1 y 2.
+      // Un timeout corto evita esperas de varios segundos por recursos rotos.
+      imageTimeout: 2200,
+      logging: false,
+      width: W,
+      height: H
     });
   } finally {
     limpiarResaltadoF1();
+    if (!captura) {
+      stage.replaceChildren();
+    }
   }
 
-  const cap2 = await html2canvas(n2, {
-    backgroundColor: null,
-    // n2 ya mide 1080x840: capturar directamente al tamaño final.
-    scale: 1,
-    useCORS: true,
-    imageTimeout: 6000,
-    logging: false
-  });
+  if (!captura) {
+    throw new Error("html2canvas no devolvió la imagen final.");
+  }
 
-  ctx.drawImage(cap1, 0, 0, W, H1);
-  ctx.drawImage(cap2, 0, H1, W, H2);
+  devF3Estado("Componiendo resultado final");
+  ctx.drawImage(captura, 0, 0, W, H);
 
-  // html2canvas puede dejar varios MB por canvas temporal.
-  // Ya compuestos en cFinal, los liberamos inmediatamente.
-  try { cap1.width = 0; cap1.height = 0; } catch {}
-  try { cap2.width = 0; cap2.height = 0; } catch {}
+  // Liberar el canvas temporal inmediatamente.
+  try { captura.width = 0; captura.height = 0; } catch {}
   stage.replaceChildren();
 
   // ✅ unión suave entre imagen superior y bloque inferior
@@ -4923,7 +4937,8 @@ window.devIrFase3 = async () => {
    
   devSetFinalButtons(DEV.requiereAudio ? !!DEV.audioOk : true);
 
-  devSetLoadingFase3(true, "⏳ Generando…");
+  devF3IniciarCronometro();
+  devF3Estado("Iniciando Fase 3");
 
   try {
     if (typeof html2canvas === "function") {
@@ -5381,6 +5396,8 @@ async function devPrepararShareFinalDesdeCanvas(canvas){
 
   window.__devFinalCanvas = canvas;
 
+  devF3Estado("Codificando PNG final");
+
   // ÚNICA codificación PNG de Fase 3.
   const blob = await new Promise(res => canvas.toBlob(res, "image/png"));
   if (!blob) {
@@ -5398,6 +5415,7 @@ async function devPrepararShareFinalDesdeCanvas(canvas){
   const img = $("devFinalImg");
   if (img) img.src = window.__devFinalPreviewUrl;
 
+  devF3Estado("Listo");
   return window.__devFinalFile;
 }
 
