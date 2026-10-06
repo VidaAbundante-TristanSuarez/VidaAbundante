@@ -231,7 +231,7 @@ const TTS_VOLUME = 1;
       const data = JSON.parse(raw);
       if (!data?.id) return;
 
-      const el = qsa("#texto .versiculo").find(x => x.dataset.id === data.id);
+      const el = obtenerVersos().find(v => v.id === data.id)?.el;
       if (!el) return;
 
       limpiarUltimoGuardadoVisual();
@@ -405,7 +405,9 @@ const TTS_VOLUME = 1;
   }
 
   function obtenerVersos() {
+    const version = document.getElementById('texto')?.dataset.versionActiva;
     return qsa("#texto .versiculo")
+      .filter(el => !version || !el.dataset.version || el.dataset.version === version)
       .map((el, i) => ({
         el,
         id: el.dataset.id || "",
@@ -1022,6 +1024,10 @@ if (vozSuave) {
 
   function togglePlayPausa() {
     desbloquearArpaBibliaPorToque();
+    const version = document.getElementById('texto')?.dataset.versionActiva;
+    if (version && versos[indiceActual]?.el.dataset.version && versos[indiceActual].el.dataset.version !== version) {
+      detenerBibliaTTS(false);
+    }
 
     if (estado === "leyendo") {
       pausarBibliaTTS();
@@ -1035,10 +1041,11 @@ if (vozSuave) {
 
     versos = obtenerVersos();
 
+    const elegidoId = window.vaBibliaVersiculoElegido || versiculoInicioElegidoId;
     const idxElegido =
-      versiculoInicioElegidoId
+      elegidoId
         ? versos.findIndex(
-            v => v.id === versiculoInicioElegidoId
+            v => v.id === elegidoId
           )
         : -1;
 
@@ -1058,6 +1065,9 @@ if (vozSuave) {
     const el = e.target.closest?.("#texto .versiculo");
     if (!el) return;
 
+    const seleccion = window.getSelection();
+    if (seleccion && !seleccion.isCollapsed && el.contains(seleccion.anchorNode)) return;
+    if (e.detail > 1) return;
     if (e.target.closest("button, a, input, select, textarea, i, svg, .icono-nota, .btn")) return;
     if (estaEnModoSeleccion()) return;
     if (window.resaltadorBloqueado === false) return;
@@ -1066,6 +1076,7 @@ if (vozSuave) {
     e.stopPropagation();
     e.stopImmediatePropagation();
 
+    window.vaSeleccionarVersionLectura?.(el.dataset.version, el.dataset.id);
     versos = obtenerVersos();
 
     const idx = versos.findIndex(v => v.el === el);

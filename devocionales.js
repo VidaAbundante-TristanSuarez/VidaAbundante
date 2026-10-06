@@ -1,4 +1,4 @@
-import { ordenarFondos, registrarUsoFondo, urlFondoSeguro, cargarFondoBlob, prepararMiniaturas, montarEditorTexto, aplicarCajaTexto, dibujarCajaTexto } from "./imagen-editor.js";
+import { ordenarFondos, registrarUsoFondo, urlFondoSeguro, cargarFondoBlob, prepararMiniaturas, montarEditorTexto, aplicarCajaTexto, dibujarCajaTexto, aplicarFormatoSeleccion, alternarFormatoSeleccion, restaurarControlesTexto, aplicarSubrayadoTexto } from "./imagen-editor.js?v=20261006-correccion-2";
 
 // devocionales.js (NUEVO LIMPIO)
 // ✅ OCR + Recorte + Modal 3 fases (9:9 + 9:7 => 9:16)
@@ -1423,6 +1423,7 @@ function crearListaFuentes(fase){
       e.preventDefault();
       e.stopPropagation();
 
+      if (aplicarFormatoSeleccion($(`dev${fase}Preview`), 'fontFamily', f.css)) return;
       st.fuente = f.css;
 
       lista.querySelectorAll("button").forEach(x=>x.classList.remove("activo"));
@@ -2344,8 +2345,6 @@ function applyTextStylesToOne(el, st){
   el.style.fontWeight     = st.style.bold ? "900" : "500";
   el.style.fontStyle      = st.style.italic ? "italic" : "normal";
 
-  // ✅ Subrayado eliminado: en imagen no estaba funcionando bien
-  // y nos libera espacio en los controles.
   el.style.textDecoration = "none";
 }
 
@@ -3623,16 +3622,13 @@ function dev2InterceptarHostsColorFondo(){
   });
 }
 
-function devOcultarSubrayadoDev(){
+function devMostrarSubrayadoDev(){
   [1, 2].forEach(fase => {
     const btn = $(`dev${fase}Under`);
     if (btn) {
-      btn.style.display = "none";
-      btn.setAttribute("aria-hidden", "true");
+      btn.style.setProperty('display', 'inline-flex', 'important');
+      btn.removeAttribute('aria-hidden');
     }
-
-    const st = fase === 1 ? DEV.f1 : DEV.f2;
-    if (st?.style) st.style.underline = false;
   });
 }
 
@@ -3667,10 +3663,13 @@ function devCompactarFilaTextoFase1(){
   fila.appendChild(btnAa);
   fila.appendChild(btnB);
   fila.appendChild(btnI);
+  if ($("dev1Under")) fila.appendChild($("dev1Under"));
   fila.appendChild(colorHost);
   fila.appendChild(outlineHost);
+  const editar = fila.querySelector(".va-editor-toggle");
+  if (editar) fila.appendChild(editar);
 
-  devOcultarSubrayadoDev();
+  devMostrarSubrayadoDev();
 }
 
 function dev2CompactarFilaTexto(){
@@ -3709,7 +3708,7 @@ function dev2CompactarFilaTexto(){
   fila.appendChild(btnMenos);
   fila.appendChild(inputTam);
   fila.appendChild(btnMas);
-   devOcultarSubrayadoDev();
+   devMostrarSubrayadoDev();
 }
 
 function dev2AsegurarSlidersAdorno(){
@@ -3918,6 +3917,7 @@ window.dev2ToggleColor3 = function(){
 };
 
 function devRenderFase(fase){
+  restaurarControlesTexto($(`dev${fase}Preview`));
   if (fase === 1) {
     devEnsureBotonCuentagotasWrapperF1();
 
@@ -5740,6 +5740,7 @@ window.devCambiarTamano = (fase, delta) => {
   const next = Math.max(8, Math.min(90, +(cur + delta * step).toFixed(1)));
 
   inp.value = String(next);
+  if (aplicarFormatoSeleccion($(`dev${fase}Preview`), 'fontSize', next)) return;
 
   if (fase === 1) {
     DEV.f1.size = next;
@@ -5753,9 +5754,11 @@ window.devCambiarTamano = (fase, delta) => {
 };
 
 window.devToggleStyle = (fase, key) => {
-     if (key === "underline") return;
+  const styles = {upper:['textTransform','uppercase','none'],bold:['fontWeight','800','400'],italic:['fontStyle','italic','normal'],underline:['textDecoration','underline','none']};
+  if (styles[key] && alternarFormatoSeleccion($(`dev${fase}Preview`), ...styles[key])) return;
   const st = (fase===1) ? DEV.f1 : DEV.f2;
   st.style[key] = !st.style[key];
+  if (key === "underline") aplicarSubrayadoTexto($(`dev${fase}Preview`), st.style.underline);
 
   const btnId =
     key==="upper" ? `dev${fase}Upper` :
@@ -5779,11 +5782,12 @@ function bindInputs(){
   if (!el) return;
 
   el.addEventListener("input", ()=>{
-    // opacidad y color siempre desde los inputs
-    DEV.f1.op = Number($("dev1Opacidad")?.value || 0.35);
-    DEV.f1.color = $("dev1Color")?.value || "#000000";
-    DEV.f1.opColor = $("dev1OpColor")?.value || "#000000";
-    DEV.f1.size = Number($("dev1Tamano")?.value || 30);
+    const prop = k === 'Tamano' ? 'fontSize' : k === 'Color' ? 'color' : null;
+    if (prop && aplicarFormatoSeleccion($('dev1Preview'), prop, el.value)) return;
+    if (k === 'Opacidad') DEV.f1.op = Number(el.value || 0.35);
+    if (k === 'Color') DEV.f1.color = el.value || '#000000';
+    if (k === 'OpColor') DEV.f1.opColor = el.value || '#000000';
+    if (k === 'Tamano') DEV.f1.size = Number(el.value || 30);
 
     if (k === "Tamano") {
       DEV.f1.userChanged = true;
@@ -5807,13 +5811,14 @@ function bindInputs(){
   if (!el) return;
 
   el.addEventListener("input", ()=>{
+    const prop = k === 'Tamano' ? 'fontSize' : k === 'Color' ? 'color' : null;
+    if (prop && aplicarFormatoSeleccion($('dev2Preview'), prop, el.value)) return;
     DEV.f2.userChanged = true;
-
-    DEV.f2.size = Number($("dev2Tamano")?.value || 26);
-    DEV.f2.color = $("dev2Color")?.value || "#000000";
-    DEV.f2.texturaOp = Number($("dev2TexturaOp")?.value || 0.22);
-    DEV.f2.adornoWidth = Number($("dev2AdornoTamano")?.value || 70);
-    DEV.f2.adornoOpacidad = Math.max(0, Math.min(1, Number($("dev2AdornoOpacidad")?.value ?? 1)));
+    if (k === 'Tamano') DEV.f2.size = Number(el.value || 26);
+    if (k === 'Color') DEV.f2.color = el.value || '#000000';
+    if (k === 'TexturaOp') DEV.f2.texturaOp = Number(el.value || 0.22);
+    if (k === 'AdornoTamano') DEV.f2.adornoWidth = Number(el.value || 70);
+    if (k === 'AdornoOpacidad') DEV.f2.adornoOpacidad = Math.max(0, Math.min(1, Number(el.value ?? 1)));
 
     // ✅ solo si tocás color de texto en Fase 2,
     // Fase 2 deja de copiar el color/borde de Fase 1.
@@ -8531,7 +8536,21 @@ function devAplicarEditorTexto(fase, stage, interactivo = false) {
   const bottom = fase === 2 && st.adornoUrl
     ? 1 - (16 + Math.max(12, Math.round(86 * (Number(st.adornoWidth || 70) / 70))) + 4) / 840
     : .98;
-  const opts = {stage, target, state:st.editor, fontPx:st.size * scale,
+  const opts = {stage, target, state:st.editor, fontPx:st.size * scale, baseFontSize:st.size, defaultUnderline:st.style.underline,
+    controlHost: $(`dev${fase}Bold`)?.parentElement,
+    controlsRoot: $(`modalDevFase${fase}`),
+    onSelectionChange: selection => {
+      const input = $(`dev${fase}Tamano`);
+      if (input) input.value = String(selection ? Math.round(selection.size * 10) / 10 : st.size);
+      const color = $(`dev${fase}Color`);
+      if (color) {
+        color.value = selection ? selection.color : st.color;
+        devSetHostColorVisual(`dev${fase}ColorHost`, color.value);
+      }
+      for (const [key,suffix] of [['upper','Upper'],['bold','Bold'],['italic','Italic'],['underline','Under']]) {
+        $(`dev${fase}${suffix}`)?.classList.toggle('activo', selection ? selection[key] : st.style[key]);
+      }
+    },
     bounds: fase === 1 ? {left:.07,right:.93,top:.14,bottom:.86} : {left:.03,right:.97,top:.02,bottom},
     onChange: () => {
       st.userChanged = true;
@@ -8549,7 +8568,7 @@ function devDibujarEditorCanvas(ctx, fase) {
   const wrap = document.createElement('div');
   Object.assign(wrap.style, {position:'absolute',inset:fase === 1?'6%':'16px'});
   const text = document.createElement('div');
-  Object.assign(text.style, {position:'absolute',inset:'0',fontFamily:st.fuente,color:st.color,fontStyle:st.style.italic?'italic':'normal',textTransform:st.style.upper?'uppercase':'none',textAlign:'center'});
+  Object.assign(text.style, {position:'absolute',inset:'0',fontFamily:st.fuente,color:st.color,fontStyle:st.style.italic?'italic':'normal',textTransform:st.style.upper?'uppercase':'none',textAlign:'center',textDecoration:st.style.underline?'underline':'none'});
   text.innerHTML = fase === 1 ? buildFase1HTML(st.size,1) : buildFase2HTML(st.size,1);
   wrap.appendChild(text); stage.appendChild(wrap);document.body.appendChild(stage);
   try {

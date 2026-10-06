@@ -1,4 +1,4 @@
-import { ordenarFondos, registrarUsoFondo, configurarUsoFondos, combinarUsoFondos, urlFondoSeguro, cargarFondoBlob, prepararMiniaturas, montarEditorTexto } from "./imagen-editor.js";
+import { ordenarFondos, registrarUsoFondo, configurarUsoFondos, combinarUsoFondos, urlFondoSeguro, cargarFondoBlob, prepararMiniaturas, montarEditorTexto, aplicarFormatoSeleccion, alternarFormatoSeleccion, restaurarControlesTexto, aplicarSubrayadoTexto, desactivarEditorTexto } from "./imagen-editor.js?v=20261006-correccion-2";
 
 // ================= IMPORTS FIREBASE =================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -1020,10 +1020,7 @@ let bibliaDataNTV = [];
 let versionActual = "RV1960"; // "RV1960" | "NTV"
 let lecturaDobleBiblia = false;
 try { lecturaDobleBiblia = localStorage.getItem("va_lectura_doble_v1") === "true"; } catch {}
-let versionAudioComparada = null;
-let versiculoAudioComparado = null;
-let vaCapituloAudioComparado = "";
-let vaVozComparadaToken = 0, vaVozComparadaEnCurso = false;
+let vaCapituloLectura = "";
 
 let marcados = {};
 let size = 18;
@@ -3561,7 +3558,6 @@ if (btn) {
 
 function aplicarFiltrosBiblia() {
   const versiculo = Number(document.getElementById("versiculoBiblia")?.value || 0);
-  vaDetenerLecturaComparada();
   const libro = libroSel?.value || "";
   const capitulo = Number(capSel?.value || 1);
 
@@ -3785,26 +3781,19 @@ function actualizarTituloBiblia() {
   const htmlNuevo = `
     <span class="titulo-libro-cap">${libroSel.value} ${capSel.value}</span>
     <span class="versiones-inline">
-      <button type="button"
-        onclick="event.stopPropagation(); cambiarVersionBiblia('RV1960')"
-        class="btn-version-inline ${versionActual === "RV1960" ? "activo" : ""}">
-        RV1960
-      </button>
-
-      <button type="button"
-        onclick="event.stopPropagation(); cambiarVersionBiblia('NTV')"
-        class="btn-version-inline ${versionActual === "NTV" ? "activo" : ""}">
-        NTV
-      </button>
-      <button type="button" class="btn-version-inline ${lecturaDobleBiblia ? 'activo' : ''}"
-        onclick="event.stopPropagation(); vaToggleLecturaDoble()" aria-pressed="${lecturaDobleBiblia}" title="Leer ambas versiones">Ambas</button>
-      ${lecturaDobleBiblia ? `<button type="button" class="btn-version-inline va-play-comparada" onclick="event.stopPropagation(); vaPlayLecturaComparada()" title="Escuchar versión elegida" aria-label="Escuchar, pausar o continuar"><i class="fa-solid fa-play"></i></button>
-        <button type="button" class="btn-version-inline va-play-comparada" onclick="event.stopPropagation(); vaStopLecturaComparada()" title="Detener lectura" aria-label="Detener lectura"><i class="fa-solid fa-stop"></i></button>` : ''}
+      ${["RV1960", "NTV"].map(version => {
+        const elegida = lecturaDobleBiblia || versionActual === version;
+        return `<button type="button" class="btn-version-inline ${elegida ? 'activo' : ''}"
+          aria-pressed="${elegida}" data-version="${version}"
+          onclick="event.stopPropagation(); vaToggleVersionLectura('${version}')">${version}</button>`;
+      }).join('')}
     </span>
   `;
+  if (texto) texto.dataset.versionActiva = versionActual;
 
   if (titulo.innerHTML !== htmlNuevo) {
     titulo.innerHTML = htmlNuevo;
+    requestAnimationFrame(vaAjustarNombreLibro);
   }
 }
 
@@ -3894,8 +3883,7 @@ function restaurarAnclaScrollBiblia(ancla) {
 window.cambiarVersionBiblia = function(version) {
   if (version !== "RV1960" && version !== "NTV") return;
   if (lecturaDobleBiblia) {
-    vaDetenerLecturaComparada();
-    vaPosicionarVersion(version, versiculoAudioComparado);
+    vaPosicionarVersion(version, window.vaBibliaVersiculoElegido);
     if (modoImagen) actualizarPreview();
     return;
   }
@@ -4387,11 +4375,10 @@ window.forceSyncResaltadorUI = function forceSyncResaltadorUI(intentos = 20) {
 
 // ================= ⭐ MOSTRAR TEXTO =======================
 function mostrarTexto(opts = {}) {
-  const lugarAudio = `${libroSel?.value}_${capSel?.value}`;
-  if (vaCapituloAudioComparado !== lugarAudio) {
-    vaDetenerLecturaComparada();
-    versionAudioComparada = null; versiculoAudioComparado = null;
-    vaCapituloAudioComparado = lugarAudio;
+  const lugarLectura = `${libroSel?.value}_${capSel?.value}`;
+  if (vaCapituloLectura !== lugarLectura) {
+    window.vaBibliaVersiculoElegido = "";
+    vaCapituloLectura = lugarLectura;
   }
   const {
     irArriba = false,
@@ -4849,6 +4836,8 @@ function initPersonalizarListeners() {
     }
 
     const handler = () => {
+      const prop = id === "personalizarTamaño" ? 'fontSize' : id === "personalizarColor" ? 'color' : null;
+      if (prop && aplicarFormatoSeleccion(document.getElementById('previewImagen'), prop, el.value)) return;
       if (id === "personalizarTamaño") userSetFontSize = true; // manual si tocan tamaño
       actualizarPreview();
     };
@@ -4932,6 +4921,7 @@ function crearListaVisualFuentes() {
       e.preventDefault();
       e.stopPropagation();
 
+      if (aplicarFormatoSeleccion(document.getElementById('previewImagen'), 'fontFamily', f.css)) return;
       fuenteActual = f.css;
 
       // actualizar activo visual
@@ -6366,6 +6356,8 @@ function vaImgCapturarEstadoDisenoActual() {
   const opInput = document.getElementById("personalizarOpacidad");
   const opColorInput = document.getElementById("colorOpacidadBiblia");
   const outlineInput = document.getElementById("personalizarOutlineColor");
+  const editor = document.getElementById("previewImagen")?.__vaEditor;
+  const seleccion = editor?.range;
 
   return {
     version: 2,
@@ -6393,8 +6385,8 @@ function vaImgCapturarEstadoDisenoActual() {
     userSetFontSize: !!userSetFontSize,
 
     controles: {
-      tamano: sizeInput ? String(sizeInput.value || "") : "",
-      colorTexto: colorInput ? String(colorInput.value || "#000000") : "#000000",
+      tamano: String(seleccion ? editor.opts.baseFontSize : sizeInput?.value || ""),
+      colorTexto: String(seleccion ? editor.opts.baseColor : colorInput?.value || "#000000"),
       opacidad: opInput ? String(opInput.value || "0.35") : "0.35",
       colorOpacidad: opColorInput ? String(opColorInput.value || "#000000") : "#000000",
       outlineColor: outlineInput ? String(outlineInput.value || "") : "",
@@ -7057,6 +7049,8 @@ function actualizarPreview() {
   const wrapper = document.getElementById("previewTextoWrapper");
 
   if (!previewImagen || !previewTexto || !previewTextoBack || !wrapper) return;
+  if (!modoImagenLibre && origenModalImagen === "biblia") restaurarControlesTexto(previewImagen);
+  else desactivarEditorTexto(previewImagen);
 
   bibliaAsegurarBotonCuentagotasWrapper();
 
@@ -7351,14 +7345,21 @@ function actualizarPreview() {
     refBack
   });
 
-  // El cuadro completo, incluida la cita, comparte edición y geometría.
-  previewTexto.removeAttribute("contenteditable");
-  montarEditorTexto({
-    stage: previewImagen, target: innerFront, backTarget: innerBack,
-    state: editorTextoBiblia, fontPx: finalSize,
-    bounds: {left:.025, right:.975, top:.025, bottom:.975},
-    onChange: () => { userSetFontSize = true; invalidarRenderFinal(); }
-  });
+  if (esCrearBiblia) {
+    // El cuadro completo, incluida la cita, comparte edición y geometría.
+    previewTexto.removeAttribute("contenteditable");
+    montarEditorTexto({
+      stage: previewImagen, target: innerFront, backTarget: innerBack,
+      state: editorTextoBiblia, fontPx: finalSize, baseColor:color, baseFontSize: Number(sizeSlider?.value || finalSize),
+      controlHost: document.getElementById('textStyles'),
+      controlsRoot: document.getElementById('modalPersonalizar'),
+      onSelectionChange: vaSyncSeleccionImagen,
+      bounds: {left:.025, right:.975, top:.025, bottom:.975},
+      onChange: () => { userSetFontSize = true; invalidarRenderFinal(); }
+    });
+  } else {
+    activarEdicionDirectaTextoLibre();
+  }
   invalidarRenderFinal();
 } // ✅ CIERRA actualizarPreview()
 
@@ -13128,6 +13129,7 @@ function conservarTamanoAlCambiarEstilo() {
 
 // ================= 🔺 TEXTO MAYUSCULAR ===================
 window.toggleUpper = () => {
+  if (alternarFormatoSeleccion(document.getElementById('previewImagen'), 'textTransform', 'uppercase', 'none')) return;
   conservarTamanoAlCambiarEstilo();
 
   textStyle.upper = !textStyle.upper;
@@ -13140,6 +13142,7 @@ window.toggleUpper = () => {
 
 // ================= 🔺 TEXTO NEGRITA ===================
 window.toggleBold = () => {
+  if (alternarFormatoSeleccion(document.getElementById('previewImagen'), 'fontWeight', '800', '400')) return;
   conservarTamanoAlCambiarEstilo();
 
   textStyle.bold = !textStyle.bold;
@@ -13152,6 +13155,7 @@ window.toggleBold = () => {
 
 // ================= 🔺 TEXTO ITALIC ===================
 window.toggleItalic = () => {
+  if (alternarFormatoSeleccion(document.getElementById('previewImagen'), 'fontStyle', 'italic', 'normal')) return;
   conservarTamanoAlCambiarEstilo();
 
   textStyle.italic = !textStyle.italic;
@@ -13164,9 +13168,11 @@ window.toggleItalic = () => {
 
 // ================= 🔺 TEXTO UNDERLINE ===================
 window.toggleUnderline = () => {
+  if (alternarFormatoSeleccion(document.getElementById('previewImagen'), 'textDecoration', 'underline', 'none')) return;
   conservarTamanoAlCambiarEstilo();
 
   textStyle.underline = !textStyle.underline;
+  aplicarSubrayadoTexto(document.getElementById("previewImagen"), textStyle.underline);
 
   const b = document.getElementById("btnUnderline");
   if (b) b.classList.toggle("activo", textStyle.underline);
@@ -13239,6 +13245,7 @@ window.cambiarTamanoPreview = (delta) => {
   const next = cur + (delta * step);
 
   inp.value = String(next);
+  if (aplicarFormatoSeleccion(document.getElementById('previewImagen'), 'fontSize', next)) return;
   actualizarPreview();
 };
 
@@ -17393,15 +17400,26 @@ function vaEstiloLecturaExtras() {
   if (document.getElementById('va-lectura-extras-style')) return;
   const style=document.createElement('style');style.id='va-lectura-extras-style';
   style.textContent=`
-    #texto.va-lectura-doble .va-biblia-par{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;align-items:stretch;}
-    #texto.va-lectura-doble .versiculo{margin:0!important;padding:10px 8px!important;min-width:0;overflow-wrap:anywhere;}
+    #seccion-biblia #texto.va-lectura-doble{width:calc(100% + 24px);max-width:none;margin:4px -12px 8px;padding:2px;border-radius:12px;}
+    #texto.va-lectura-doble .va-biblia-par{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:2px;align-items:stretch;}
+    #texto.va-lectura-doble .versiculo{position:relative;display:block!important;margin:0!important;padding:6px 3px!important;min-width:0;overflow-wrap:break-word;word-break:normal;}
+    #texto.va-lectura-doble .versiculo .num{display:inline;width:auto;margin:0 4px 0 0;vertical-align:baseline;}
+    #texto.va-lectura-doble .versiculo .txt{display:inline;overflow-wrap:break-word;word-break:normal;}
+    #texto.va-lectura-doble .versiculo .icono-nota{position:absolute;top:6px;right:2px;width:auto;font-size:12px;}
+    #texto.va-lectura-doble .versiculo:has(.icono-nota){padding-right:17px!important;}
+    #barraTituloBiblia{gap:4px!important;}
+    #barraTituloBiblia #titulo{flex:1 1 auto;min-width:0;gap:4px;padding:6px!important;}
+    #titulo .titulo-libro-cap{white-space:nowrap;flex:1 1 auto;min-width:0;line-height:1.1;}
+    #titulo .versiones-inline{flex:0 0 auto;gap:3px;margin-left:0;}
+    #barraTituloBiblia .nav-capitulo{flex:0 0 auto;gap:3px;}
+    @media(max-width:420px){#titulo .btn-version-inline{padding:3px 5px;font-size:10px;}}
     #texto.va-lectura-doble .versiculo[data-version=NTV]{border-left:1px solid #9daabb!important;}
     #texto.va-lectura-doble .va-columna-activa{box-shadow:inset 0 0 0 1px #779dcc;}
-    #texto .txt{user-select:text;-webkit-user-select:text;}
-    .va-biblia-versions{display:grid;grid-template-columns:1fr 1fr;gap:8px;font:700 13px Arial,sans-serif;padding:8px;text-align:center;background:var(--ui-azul-claro,#d1eeff);color:#14283f;}
+    #seccion-biblia #texto .versiculo .txt{user-select:text!important;-webkit-user-select:text!important;-webkit-touch-callout:default;}
+    .va-biblia-versions{display:grid;grid-template-columns:1fr 1fr;gap:2px;font:700 13px Arial,sans-serif;padding:5px 2px;text-align:center;background:var(--ui-azul-claro,#d1eeff);color:#14283f;}
     .va-palabra-item{display:inline-block;position:relative;padding-right:10px;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px;}
     .va-palabra-item button{position:absolute!important;top:-5px!important;right:0!important;font-size:9px!important;line-height:1!important;padding:1px!important;background:transparent!important;color:inherit!important;border:0!important;border-radius:0!important;min-width:0!important;min-height:0!important;width:10px!important;height:12px!important;}
-    #vaCrearItemPalabra{position:fixed;z-index:10050;background:#e6f2ff;color:#172535;border:1px solid #3777bd;border-radius:10px;padding:8px 12px;font:700 14px Arial,sans-serif;box-shadow:0 3px 12px #0003;}
+    #vaCrearItemPalabra{position:fixed;z-index:10050;background:#e6f2ff;color:#172535;border:1px solid #3777bd;border-radius:10px;padding:8px 12px;font:700 14px Arial,sans-serif;box-shadow:0 3px 12px #0003;touch-action:manipulation;white-space:nowrap;}
     .va-item-drawer{position:fixed;z-index:10060;right:12px;bottom:12px;width:min(420px,calc(100vw - 24px));background:#fff;color:#14283f;border:1px solid #849bb5;border-radius:16px;box-shadow:0 8px 36px #0005;padding:16px;font:15px Arial,sans-serif;}
     .va-item-drawer textarea{display:block;width:100%;min-height:90px;margin:12px 0;border:1px solid #8298b0;border-radius:8px;padding:10px;color:#10263e;background:#fff;resize:vertical;font:inherit;}
     .va-item-actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:10px;}
@@ -17409,9 +17427,7 @@ function vaEstiloLecturaExtras() {
     .va-item-card{border:1px solid #a0b6cc;border-radius:12px;padding:12px;margin:8px 0;background:#fff;color:#14283f;}
     .va-item-card p{white-space:pre-wrap;overflow-wrap:anywhere;margin:8px 0;}.va-item-ref{font-size:12px;color:#3b526b;}
     .va-filtro-versiculo{display:inline-flex;gap:6px;align-items:center;margin:4px;}.va-filtro-versiculo select{min-width:65px;}
-    #texto .va-voz-actual{outline:2px solid #2374dc!important;outline-offset:-2px;}
-    .versiones-inline .va-play-comparada{font-size:13px;}
-    @media(max-width:520px){#texto.va-lectura-doble .va-biblia-par{gap:3px;}#texto.va-lectura-doble .versiculo{padding:8px 4px!important;}}
+
   `;document.head.appendChild(style);
 }
 function vaPintarLecturaDoble(libro,capitulo) {
@@ -17433,74 +17449,51 @@ function vaPintarLecturaDoble(libro,capitulo) {
 function vaMarcarColumnaActiva() {
   for(const cell of texto?.querySelectorAll('.versiculo')||[])cell.classList.toggle('va-columna-activa',lecturaDobleBiblia&&cell.dataset.version===versionActual);
 }
-window.vaToggleLecturaDoble=()=>{
-  const anchor=obtenerAnclaScrollBiblia();lecturaDobleBiblia=!lecturaDobleBiblia;
-  try{localStorage.setItem('va_lectura_doble_v1',String(lecturaDobleBiblia));}catch{}
-  vaDetenerLecturaComparada();mostrarTexto({guardar:false});
-  requestAnimationFrame(()=>restaurarAnclaScrollBiblia(anchor));
+// Cada botón marca su versión; siempre queda al menos una seleccionada.
+window.vaToggleVersionLectura = version => {
+  if (version !== 'RV1960' && version !== 'NTV') return;
+  if (!lecturaDobleBiblia && version === versionActual) return;
+  const anchor = obtenerAnclaScrollBiblia();
+  if (lecturaDobleBiblia) {
+    lecturaDobleBiblia = false;
+    versionActual = version === 'NTV' ? 'RV1960' : 'NTV';
+  } else {
+    lecturaDobleBiblia = true;
+    versionActual = version;
+  }
+  bibliaData = versionActual === 'NTV' ? bibliaDataNTV : bibliaDataRV;
+  try { localStorage.setItem('va_lectura_doble_v1', String(lecturaDobleBiblia)); } catch {}
+  mostrarTexto({guardar:true});
+  if (modoImagen) actualizarPreview();
+  requestAnimationFrame(() => restaurarAnclaScrollBiblia(anchor));
 };
-function vaPosicionarVersion(version,id) {
-  if(!lecturaDobleBiblia)return;
-  versionActual=version;bibliaData=version==='NTV'?bibliaDataNTV:bibliaDataRV;
-  versionAudioComparada=version;versiculoAudioComparado=id;
+function vaPosicionarVersion(version, id) {
+  if (version !== 'RV1960' && version !== 'NTV') return;
+  if (id) window.vaBibliaVersiculoElegido = id;
+  if (version === versionActual) return;
+  versionActual = version;
+  bibliaData = version === 'NTV' ? bibliaDataNTV : bibliaDataRV;
+  texto.dataset.versionActiva = version;
   vaMarcarColumnaActiva();actualizarTituloBiblia();guardarEstadoBiblia();
 }
-
-// Escucha en modo dividido: una sola versión, empezando por el verso señalado.
-
-function vaDetenerLecturaComparada(){
-  vaVozComparadaToken++;
-  if(vaVozComparadaEnCurso)window.speechSynthesis?.cancel();
-  vaVozComparadaEnCurso=false;
-  texto?.querySelectorAll('.va-voz-actual').forEach(el=>el.classList.remove('va-voz-actual'));
-}
-function vaEscucharComparada(version){
-  if(!window.speechSynthesis||typeof SpeechSynthesisUtterance!=='function'){
-    mostrarToast('La lectura por voz no está disponible en este navegador.');return;
+window.vaSeleccionarVersionLectura = vaPosicionarVersion;
+function vaAjustarNombreLibro() {
+  const label = titulo?.querySelector('.titulo-libro-cap');
+  if (!label || !label.clientWidth) return;
+  label.style.fontSize = '17px';
+  if (label.scrollWidth > label.clientWidth) {
+    label.style.fontSize = `${Math.max(6, 17 * label.clientWidth / label.scrollWidth)}px`;
   }
-  vaDetenerLecturaComparada();
-  const libro=libroSel.value,capitulo=Number(capSel.value);
-  const data=version==='NTV'?bibliaDataNTV:bibliaDataRV;
-  const num=Number(String(versiculoAudioComparado||'').split('_').pop())||1;
-  const versos=data.filter(v=>v.Libro===libro&&Number(v.Capitulo)===capitulo&&Number(v.Versiculo)>=num).sort((a,b)=>Number(a.Versiculo)-Number(b.Versiculo));
-  if(!versos.length)return;
-  const token=vaVozComparadaToken;vaVozComparadaEnCurso=true;
-  const voz=window.speechSynthesis.getVoices().find(v=>v.lang==='es-US')||window.speechSynthesis.getVoices().find(v=>v.lang.startsWith('es'));
-  const siguiente=i=>{
-    if(token!==vaVozComparadaToken)return;
-    if(i>=versos.length){vaDetenerLecturaComparada();return;}
-    const v=versos[i],id=`${v.Libro}_${v.Capitulo}_${v.Versiculo}`;
-    texto.querySelectorAll('.va-voz-actual').forEach(el=>el.classList.remove('va-voz-actual'));
-    const cell=texto.querySelector(`.versiculo[data-id="${CSS.escape(id)}"][data-version="${version}"]`);
-    if(cell){cell.classList.add('va-voz-actual');cell.scrollIntoView({block:'nearest',behavior:'smooth'});}
-    const u=new SpeechSynthesisUtterance(String(v[version]||''));u.lang='es-US';u.rate=.95;if(voz)u.voice=voz;
-    u.onend=()=>siguiente(i+1);u.onerror=()=>{if(token===vaVozComparadaToken){vaDetenerLecturaComparada();mostrarToast('No se pudo reproducir la lectura.');}};
-    window.speechSynthesis.speak(u);
-  };siguiente(0);
 }
-window.vaPlayLecturaComparada=()=>{
-  if(vaVozComparadaEnCurso){
-    if(window.speechSynthesis?.paused)window.speechSynthesis.resume();else window.speechSynthesis?.pause();return;
-  }
-  if(versionAudioComparada){vaEscucharComparada(versionAudioComparada);return;}
-  const drawer=vaCrearCajon('¿Qué versión querés escuchar?');
-  for(const version of ['RV1960','NTV'])vaBotonCajon(drawer,version,()=>{drawer.remove();versionAudioComparada=version;vaEscucharComparada(version);});
-  vaBotonCajon(drawer,'Cancelar',()=>drawer.remove());
-};
-window.vaStopLecturaComparada=vaDetenerLecturaComparada;
-// El Play de lectura existente también adopta la versión elegida en modo doble.
-document.addEventListener('click',e=>{
-  if(!lecturaDobleBiblia)return;
-  const button=e.target.closest('button');
-  if(!button||button.classList.contains('va-play-comparada')||button.closest('.modal-overlay,.va-item-drawer,.devBigAudioBox'))return;
-  if(!button.closest('#seccion-biblia')||!button.querySelector('.fa-play'))return;
-  e.preventDefault();e.stopImmediatePropagation();window.vaPlayLecturaComparada();
-},true);
+if (titulo && typeof ResizeObserver === 'function') {
+  new ResizeObserver(vaAjustarNombreLibro).observe(titulo);
+}
+document.fonts?.ready.then(vaAjustarNombreLibro);
 
 function vaAsegurarFiltroVersiculo() {
   if(!capSel||document.getElementById('versiculoBiblia'))return;
   const label=document.createElement('label');label.className='va-filtro-versiculo';
-  label.innerHTML='<span>Versículo</span><select id="versiculoBiblia" aria-label="Versículo"><option value="0">Todos</option></select>';
+  label.innerHTML='<span>Versículo</span><select id="versiculoBiblia" aria-label="Versículo"><option value="0"></option></select>';
   capSel.insertAdjacentElement('afterend',label);
   const search=document.getElementById('buscarLibroBiblia');
   if(search){search.placeholder='Libro, capítulo o versículo…';search.setAttribute('aria-label','Buscar libro, capítulo y versículo');}
@@ -17508,7 +17501,7 @@ function vaAsegurarFiltroVersiculo() {
 function vaRefrescarFiltroVersiculo(preferido=0){
   vaAsegurarFiltroVersiculo();const select=document.getElementById('versiculoBiblia');if(!select)return;
   const nums=[...new Set(bibliaData.filter(v=>v.Libro===libroSel?.value&&Number(v.Capitulo)===Number(capSel?.value)).map(v=>Number(v.Versiculo)))].sort((a,b)=>a-b);
-  select.innerHTML='<option value="0">Todos</option>';
+  select.innerHTML='<option value="0"></option>';
   for(const n of nums){const o=document.createElement('option');o.value=String(n);o.textContent=String(n);select.appendChild(o);}
   select.value=nums.includes(Number(preferido))?String(preferido):'0';
 }
@@ -17517,7 +17510,7 @@ function vaIrVersiculo(numero,version=versionActual){
   requestAnimationFrame(()=>{
     const selector=lecturaDobleBiblia?`[data-version="${version}"]`:'';
     const el=texto.querySelector(`.versiculo[data-id="${CSS.escape(id)}"]${selector}`);
-    if(el){el.scrollIntoView({block:'center',behavior:'smooth'});versiculoAudioComparado=id;}
+    if(el){el.scrollIntoView({block:'center',behavior:'smooth'});window.vaBibliaVersiculoElegido=id;}
   });
 }
 function vaBuscarReferencia(valor){
@@ -17591,19 +17584,27 @@ function vaCapturarPalabra(){
 function vaMostrarCrearItem(){
   const selection=vaCapturarPalabra();let b=document.getElementById('vaCrearItemPalabra');
   if(!selection){b?.remove();return;}vaSeleccionItemActual=selection;vaEstiloLecturaExtras();
-  if(!b){b=document.createElement('button');b.id='vaCrearItemPalabra';b.type='button';b.innerHTML='<i class="fa-brands fa-slack"></i> Ítem';
-    b.onpointerdown=e=>e.preventDefault();b.onclick=e=>{
-      e.stopPropagation();const {rect,...data}=vaSeleccionItemActual;
+  if(!b){b=document.createElement('button');b.id='vaCrearItemPalabra';b.type='button';b.innerHTML='<i class="fa-brands fa-slack"></i> Subrayar + ítem';
+    b.onpointerdown=e=>{e.preventDefault();e.stopPropagation();};b.onclick=e=>{
+      e.preventDefault();e.stopPropagation();
+      if (!vaSeleccionItemActual) return;
+      const {rect,...data}=vaSeleccionItemActual;
       const existing=vaItemsPalabra().find(m=>m.libro===data.libro&&Number(m.capitulo)===data.capitulo&&Number(m.versiculo)===data.versiculo&&m.version===data.version&&Number(m.inicio)===data.inicio&&Number(m.fin)===data.fin);
       vaAbrirItem(existing||data);b.remove();
     };document.body.appendChild(b);
   }
-  b.style.left=`${Math.max(8,Math.min(innerWidth-100,selection.rect.right-70))}px`;
-  b.style.top=`${Math.max(8,Math.min(innerHeight-48,selection.rect.top-42))}px`;
+  const width = b.offsetWidth || 165, height = b.offsetHeight || 38;
+  b.style.left=`${Math.max(8,Math.min(innerWidth-width-8,selection.rect.left))}px`;
+  const below = selection.rect.bottom + 8;
+  b.style.top=`${Math.max(8,below + height < innerHeight ? below : selection.rect.top-height-8)}px`;
 }
 let vaItemSelectionTimer;
 document.addEventListener('selectionchange',()=>{clearTimeout(vaItemSelectionTimer);vaItemSelectionTimer=setTimeout(vaMostrarCrearItem,100);});
-window.addEventListener('scroll',()=>document.getElementById('vaCrearItemPalabra')?.remove(),{passive:true});
+document.addEventListener('pointerup', () => setTimeout(vaMostrarCrearItem, 0));
+document.addEventListener('keyup', vaMostrarCrearItem);
+window.addEventListener('scroll',()=>{
+  if (document.getElementById('vaCrearItemPalabra')) vaMostrarCrearItem();
+},{passive:true});
 function vaRenderListaItems(container,busqueda=''){
   if(!container)return;container.replaceChildren();
   const q=marcadoresNormalizarBusqueda(busqueda);
@@ -17658,3 +17659,18 @@ onAuthStateChanged(auth,user=>{
   },()=>{});
 });
 vaEstiloLecturaExtras();vaAsegurarFiltroVersiculo();vaAsegurarPanelItems();
+
+// Los controles existentes se usan también para la palabra seleccionada.
+function vaSyncSeleccionImagen(selection) {
+  const size = document.getElementById('personalizarTamaño');
+  const opts = document.getElementById("previewImagen")?.__vaEditor?.opts;
+  if (size && opts) size.value = String(selection ? Math.round(selection.size * 10) / 10 : opts.baseFontSize);
+  const color = document.getElementById("personalizarColor");
+  if (color && opts) {
+    color.value = selection ? selection.color : opts.baseColor;
+    bibliaSetHostColorVisual("personalizarColorHost", color.value);
+  }
+  for (const [key,id] of [['upper','btnUpper'],['bold','btnBold'],['italic','btnItalic'],['underline','btnUnderline']]) {
+    document.getElementById(id)?.classList.toggle('activo', selection ? selection[key] : textStyle[key]);
+  }
+}
