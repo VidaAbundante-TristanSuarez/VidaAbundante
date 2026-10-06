@@ -1,3 +1,5 @@
+import { ordenarFondos, registrarUsoFondo, urlFondoSeguro, cargarFondoBlob, prepararMiniaturas, montarEditorTexto, aplicarCajaTexto, dibujarCajaTexto } from "./imagen-editor.js";
+
 // devocionales.js (NUEVO LIMPIO)
 // ✅ OCR + Recorte + Modal 3 fases (9:9 + 9:7 => 9:16)
 // ✅ NO toca biblia.js
@@ -138,7 +140,11 @@ style: { upper:false, bold:false, italic:false, underline:false }
 
 };
 
+let seleccionFondoDevToken = 0;
+
 function devResetAjustesDevocionalNuevo(){
+  seleccionFondoDevToken++;
+  DEV.f1.editor = {}; DEV.f2.editor = {};
   // ✅ limpiar fondo anterior de fase 1
   if (DEV.f1?.fondoBlob) {
     try { URL.revokeObjectURL(DEV.f1.fondoBlob); } catch {}
@@ -1730,28 +1736,7 @@ function devOptimizarCargaImagen(img, indice = 0, prioritarias = 10){
 }
 
 async function urlToBlobURL(url){
-  const urlSegura = devUrlRecursoSeguro(
-    url,
-    "fondo_devocional.png"
-  );
-
-  const res = await fetch(urlSegura, {
-    // Reutiliza la caché HTTP cuando el servidor lo permite.
-    // Evita volver a descargar un fondo que ya cargó como miniatura.
-    cache: "default"
-  });
-
-  if (!res.ok) {
-    throw new Error(`Fondo no disponible (HTTP ${res.status})`);
-  }
-
-  const blob = await res.blob();
-
-  if (!blob || !blob.size) {
-    throw new Error("El fondo se recibió vacío.");
-  }
-
-  return URL.createObjectURL(blob);
+  return cargarFondoBlob(urlFondoSeguro(url, R2_WORKER_URL));
 }
 
 function cargarFondosDev(){
@@ -1793,48 +1778,52 @@ function cargarFondosDev(){
     menu.classList.toggle("abierto");
   };
 
-  document.addEventListener("click", (e)=>{
-    if (!menuWrap.contains(e.target)) {
-      menu.classList.remove("abierto");
-    }
-  });
+  if (!window.__devFondosOutsideClick) {
+    window.__devFondosOutsideClick = true;
+    document.addEventListener("click", e => {
+      document.querySelectorAll("#dev1Fondos .dev-f1-menu.abierto").forEach(m => {
+        if (!m.closest(".dev-f1-menu-wrap")?.contains(e.target)) m.classList.remove("abierto");
+      });
+    });
+  }
 
   menuWrap.appendChild(menuBtn);
   menuWrap.appendChild(menu);
   cont.appendChild(menuWrap);
 
-  const fondos = window.vaFondosObtenerLista
+  const fondos = ordenarFondos(window.vaFondosObtenerLista
     ? window.vaFondosObtenerLista(devF1CategoriaActual)
-    : (fondosCategorias[devF1CategoriaActual] || []);
+    : (fondosCategorias[devF1CategoriaActual] || []), "devocionales");
+  const prepararMiniatura = prepararMiniaturas(cont);
 
   fondos.forEach((base, indice)=>{
   const finalUrl = base;
 
     const im = document.createElement("img");
-    devOptimizarCargaImagen(im, indice, 12);
+    im.classList.toggle("activo", finalUrl === DEV.f1.fondoSrc);
     im.crossOrigin = "anonymous";
     im.referrerPolicy = "no-referrer";
-    im.src = devUrlRecursoSeguro(
-      finalUrl,
-      "fondo_devocional.png"
-    );
+    prepararMiniatura(im, urlFondoSeguro(finalUrl, R2_WORKER_URL), indice);
 
     im.onclick = async ()=>{
+      const token = ++seleccionFondoDevToken;
       try{
+        const nuevoBlob = await urlToBlobURL(finalUrl);
+        if (token !== seleccionFondoDevToken) { URL.revokeObjectURL(nuevoBlob); return; }
         if (DEV.f1.fondoBlob) URL.revokeObjectURL(DEV.f1.fondoBlob);
         DEV.f1.fondoUrl = null;
-        DEV.f1.fondoBlob = await urlToBlobURL(finalUrl);
+        DEV.f1.fondoSrc = finalUrl;
+        DEV.f1.fondoBlob = nuevoBlob;
+        registrarUsoFondo(finalUrl, "devocionales");
+        cont.appendChild(im);
 
         cont.querySelectorAll("img").forEach(x=>x.classList.remove("activo"));
         im.classList.add("activo");
 
         devRenderFase(1);
       } catch (e) {
+        if (token !== seleccionFondoDevToken) return;
         console.error("Fondo error real:", e);
-
-        DEV.f1.fondoUrl = null;
-        if (DEV.f1.fondoBlob) URL.revokeObjectURL(DEV.f1.fondoBlob);
-        DEV.f1.fondoBlob = null;
 
         alert("No se pudo usar este fondo.\n\nDetalle: " + (e?.message || e));
         devRenderFase(1);
@@ -3076,33 +3065,31 @@ function buildFase1HTML(versiculoCanvasPx, scale){
         text-align:center;
         overflow:hidden;
       ">
-        <div style="
+        <div data-va-editor-block="dev1" style="
           width:100%;
-          display:flex;
-          flex-direction:column;
-          align-items:center;
-          justify-content:center;
-          gap:4px;                 /* ✅ espacio corto entre versículo y cita */
-          line-height:1.03;
+          font-size:${versiculoPx}px;
+          text-align:center;
+          line-height:1.05;
         ">
                     <div style="
-            font-size:${versiculoPx}px;
+            font-size:1em;
             font-weight:${DEV.f1.style.bold ? 800 : 400};
             width:100%;
             white-space:normal;
             word-break:break-word;
-            line-height:${((versiculoPx * 1.02) + (2 * scale)).toFixed(2)}px;
+            line-height:1.05;
           ">
             ${resaltarF1(esc(p1.versiculo))}
           </div>
 
                     <div style="
-            font-size:${citaPx}px;
+            font-size:${citaPx / versiculoPx}em;
+            margin-top:${4 / versiculoPx}em;
             font-weight:${DEV.f1.style.bold ? 700 : 400};
             width:100%;
             white-space:normal;
             word-break:break-word;
-            line-height:1.02;
+            line-height:1.05;
           ">
             ${resaltarF1(esc(p1.cita))}
           </div>
@@ -3188,7 +3175,7 @@ function buildFase2HTML(basePx, scale = 1){
         text-align:center;
         overflow:hidden;
       ">
-        <div style="
+        <div data-va-editor-block="dev2" style="
           width:100%;
           max-width:100%;
           font-size:${basePx}px;
@@ -3204,7 +3191,7 @@ function buildFase2HTML(basePx, scale = 1){
           justify-content:center;
         ">
           <div style="width:100%;">Reflexión: ${esc(ref)}</div>
-          ${ora ? `<div style="width:100%; margin-top:${gapOra}px;">Oración: ${esc(ora)}</div>` : ``}
+          ${ora ? `<div style="width:100%; margin-top:${gapOra / basePx}em;">Oración: ${esc(ora)}</div>` : ``}
         </div>
       </div>
 
@@ -3968,6 +3955,7 @@ applyFase1WrapperLook(w, st, sc);
 applyTextStylesToOne(t, st);
 devSyncStyleButtons(1);
 devCompactarFilaTextoFase1();
+devAplicarEditorTexto(1, p, true);
 return;
   }
 
@@ -4064,6 +4052,7 @@ t.style.paintOrder = "stroke fill";
 
   applyTextStylesToOne(t, st);
   devSyncStyleButtons(2);
+  devAplicarEditorTexto(2, p, true);
   return;
 }
 }
@@ -4209,7 +4198,7 @@ function devPrepararResaltadoF1ParaCaptura(nodeF1) {
 
   const spans = Array.from(
     nodeF1.querySelectorAll(
-      ".dev-f1-resaltado-lineas"
+      ".dev-f1-resaltado-lineas, .va-rich-highlight"
     )
   );
 
@@ -4240,14 +4229,14 @@ function devPrepararResaltadoF1ParaCaptura(nodeF1) {
   spans.forEach(span => {
     const color =
       String(
-        span.dataset.devF1Color || ""
+        span.dataset.devF1Color || getComputedStyle(span).getPropertyValue("--va-rich-highlight-color") || ""
       ).trim();
 
     const spread =
       Math.max(
         0,
         Number(
-          span.dataset.devF1Spread || 4
+          span.dataset.devF1Spread || parseFloat(getComputedStyle(span).getPropertyValue("--va-rich-highlight-spread")) || 4
         ) || 4
       );
 
@@ -4705,6 +4694,7 @@ function devCanvasDibujarFase1Texto(ctx){
   dibujarBase("DEVOCIONAL", -0.68, 44, 700);
   dibujarBase(p1.fecha || "", 5.05, 32, 550, 0.95);
 
+  if (!DEV.f1.editor?.changed) {
   const versPx = Math.max(8, Number(st.size) || 30);
   const citaPx = Math.max(14, Math.round(versPx * 0.75));
   const vboxTop = wrapY + wrapH * 0.142;
@@ -4751,6 +4741,10 @@ function devCanvasDibujarFase1Texto(ctx){
     highlightColor: highlight,
     highlightSpread: spread
   });
+
+  } else {
+    devDibujarEditorCanvas(ctx, 1);
+  }
 
   dibujarBase(p1.iglesia || "", 92.48, 34, 700);
   dibujarBase(p1.direccion || "", 95.98, 34, 700, 1, 3);
@@ -4891,6 +4885,7 @@ function devCanvasDibujarF2Texto(ctx, adornoImg){
   let y = wrapY + padTop + Math.max(0, (usableTextH - totalTextH) / 2);
   const cx = wrapX + wrapW / 2;
 
+  if (!DEV.f2.editor?.changed) {
   devCanvasDibujarBloqueLineas(ctx, refLines, {
     x: cx,
     yTop: y,
@@ -4915,6 +4910,10 @@ function devCanvasDibujarF2Texto(ctx, adornoImg){
       shadowScale: 1.25,
       strokePx: 0.75
     });
+  }
+
+  } else {
+    devDibujarEditorCanvas(ctx, 2);
   }
 
   if (tieneAdorno && adornoImg) {
@@ -5244,6 +5243,8 @@ texto.style.webkitTextStroke = "0.75px " + outlineF2;
   stage.style.display = "block";
   stage.appendChild(n1);
   stage.appendChild(n2);
+  devAplicarEditorTexto(1, n1);
+  devAplicarEditorTexto(2, n2);
 
   devF3Estado("Preparando tipografía y recursos");
   await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
@@ -8512,3 +8513,50 @@ window.devCompartirImagenItem = async function(url, fileName = "devocional.png")
     devBusyHide();
   }
 };
+// El editor sólo abarca el versículo/cita en Fase 1 y el texto en Fase 2.
+function devAplicarEditorTexto(fase, stage, interactivo = false) {
+  const st = fase === 1 ? DEV.f1 : DEV.f2;
+  const source = fase === 1
+    ? `${DEV.p1?.versiculo || ''}\n${DEV.p1?.cita || ''}`
+    : `${DEV.p2?.reflexion || ''}\n${DEV.p2?.oracion || ''}`;
+  if (st.editorSource !== source) { st.editor = {}; st.editorSource = source; }
+  st.editor ||= {};
+  const target = stage.querySelector(`[data-va-editor-block="dev${fase}"]`);
+  if (!target) return;
+  const scale = stage.offsetWidth / 1080;
+  if (fase === 1) {
+    target.style.setProperty('--va-rich-highlight-color', devRgba(st.opColor || '#000000', st.op ?? .35));
+    target.style.setProperty('--va-rich-highlight-spread', `${11 * scale}px`);
+  }
+  const bottom = fase === 2 && st.adornoUrl
+    ? 1 - (16 + Math.max(12, Math.round(86 * (Number(st.adornoWidth || 70) / 70))) + 4) / 840
+    : .98;
+  const opts = {stage, target, state:st.editor, fontPx:st.size * scale,
+    bounds: fase === 1 ? {left:.07,right:.93,top:.14,bottom:.86} : {left:.03,right:.97,top:.02,bottom},
+    onChange: () => {
+      st.userChanged = true;
+      window.__devFinalCanvas = null; window.__devFinalFile = null;
+    }
+  };
+  if (interactivo) montarEditorTexto(opts);
+  else aplicarCajaTexto(opts);
+}
+
+function devDibujarEditorCanvas(ctx, fase) {
+  const st = fase === 1 ? DEV.f1 : DEV.f2;
+  const stage = document.createElement('div');
+  Object.assign(stage.style, {position:'fixed',left:'-12000px',top:'0',width:'1080px',height: fase === 1 ? '1080px' : '840px',pointerEvents:'none',overflow:'hidden'});
+  const wrap = document.createElement('div');
+  Object.assign(wrap.style, {position:'absolute',inset:fase === 1?'6%':'16px'});
+  const text = document.createElement('div');
+  Object.assign(text.style, {position:'absolute',inset:'0',fontFamily:st.fuente,color:st.color,fontStyle:st.style.italic?'italic':'normal',textTransform:st.style.upper?'uppercase':'none',textAlign:'center'});
+  text.innerHTML = fase === 1 ? buildFase1HTML(st.size,1) : buildFase2HTML(st.size,1);
+  wrap.appendChild(text); stage.appendChild(wrap);document.body.appendChild(stage);
+  try {
+    const target = text.querySelector(`[data-va-editor-block="dev${fase}"]`);
+    dibujarCajaTexto(ctx, {stage,target,state:st.editor,fontPx:st.size,color:st.color,
+      outline:devHexSeguro(st.outlineColor)||outlineColor(st.color),
+      stroke:fase === 1 ? .72 * 2.15 : .75,
+      highlight:fase === 1 ? devRgba(st.opColor || '#000000',st.op ?? .35) : '',spread:11});
+  } finally { stage.remove(); }
+}
