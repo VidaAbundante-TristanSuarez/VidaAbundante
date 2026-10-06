@@ -116,13 +116,13 @@ function instalarEstilos() {
   const style = document.createElement('style');
   style.id = 'va-editor-style';
   style.textContent = `
-    .va-editor-toggle{white-space:nowrap;flex:0 0 auto;}
-    .va-editor-content{overflow-wrap:anywhere!important;min-width:0;outline:none;}
+    .va-editor-content{overflow-wrap:anywhere!important;min-width:0;outline:none;pointer-events:auto;}
     .va-editor-content div,.va-editor-content p{max-width:100%;line-height:inherit;}
     .va-editor-content span{line-height:inherit;}
     .va-editor-content span[style*="font-"]{line-height:1.25;}
     .va-editor-content:not(.va-editor-back) span{-webkit-text-fill-color:currentColor;}
     .va-editor-back{pointer-events:none;}
+    .va-editor-content,.va-editor-content span{text-decoration-thickness:.0556em;text-underline-offset:.1em;text-decoration-skip-ink:none;}
     .va-editor-content[contenteditable=true]{touch-action:auto;user-select:text!important;-webkit-user-select:text!important;cursor:text!important;}
     .va-editor-content .preview-biblia-cita{white-space:normal!important;display:inline!important;}
     .va-editor-outline{position:absolute;z-index:40;border:1px solid #2374dc;pointer-events:none;box-sizing:border-box;}
@@ -147,21 +147,40 @@ function copiarHTMLSeguro(html) {
       if (!permitidos.has(el.tagName)) { el.replaceWith(...el.childNodes); continue; }
       const css = el.style;
       const guardado = {};
+      const contorno = css.getPropertyValue('--va-word-outline');
       for (const p of ['fontSize','fontFamily','fontWeight','fontStyle','textDecoration','textTransform','color','marginTop','width']) {
         const value = css[p];
         if (value && !/url\(|expression|javascript|var\(/i.test(value)) guardado[p] = value;
       }
-      const clases = [...el.classList].filter(c => /^(preview-biblia-|preview-text-ref$|va-rich-highlight$)/.test(c));
+      const clases = [...el.classList].filter(c => /^(preview-biblia-|preview-text-ref$|va-rich-highlight$|va-word-outline$)/.test(c));
       if (el.classList.contains('dev-f1-resaltado-lineas')) clases.push('va-rich-highlight');
       for (const a of [...el.attributes]) el.removeAttribute(a.name);
       el.className = clases.join(' ');
       Object.assign(el.style, guardado);
+      if (/^#[\da-f]{3,8}$|^rgba?\([\d\s,.%]+\)$/i.test(contorno.trim())) el.style.setProperty('--va-word-outline', contorno.trim());
     }
   }
   limpiar(template.content);
   return template.innerHTML;
 }
-export function aplicarCajaTexto({stage, target, backTarget, state, fontPx, defaultUnderline}) {
+function contornoPalabra(el, target, fallback) {
+  for (let node=el; node && target.contains(node); node=node.parentElement) {
+    const color=node.style.getPropertyValue('--va-word-outline').trim();
+    if (color) return color;
+  }
+  return fallback;
+}
+function aplicarContornos({target, backTarget, outlineShadow}) {
+  for (const root of [target, backTarget].filter(Boolean)) {
+    for (const el of root.querySelectorAll('.va-word-outline')) {
+      const color=el.style.getPropertyValue('--va-word-outline');
+      el.style.webkitTextStrokeColor=color;
+      if (outlineShadow && (backTarget ? root===backTarget : true)) el.style.textShadow=outlineShadow(color);
+    }
+  }
+}
+export function aplicarCajaTexto(opts) {
+  const {stage, target, backTarget, state, fontPx, defaultUnderline}=opts;
   if (!stage || !target) return;
   instalarEstilos();
   target.classList.add('va-editor-content');
@@ -184,6 +203,7 @@ export function aplicarCajaTexto({stage, target, backTarget, state, fontPx, defa
     backTarget.innerHTML = target.innerHTML;
     for (const el of backTarget.querySelectorAll('*')) { el.style.removeProperty('color'); }
   }
+  aplicarContornos(opts);
   if (!state.geometry) return;
   const sr = stage.getBoundingClientRect();
   const sw = stage.offsetWidth || sr.width;
@@ -244,16 +264,11 @@ function editar(c, on) {
   c.opts.target.contentEditable = String(on);
   c.opts.target.style.touchAction = on ? 'auto' : 'none';
   c.opts.target.style.cursor = on ? 'text' : 'move';
-  if (c.editButton) {
-    c.editButton.classList.toggle('activo', on);
-    c.editButton.setAttribute('aria-pressed', String(on));
-    c.editButton.title = on ? 'Mover o cambiar tamaño del cuadro' : 'Editar palabras y saltos de línea';
-  }
-  for (const h of c.outline.children) h.hidden = on;
-  if (!on) { c.range = null; c.opts.onSelectionChange?.(null); }
+  if (!on) { c.range = null; c.protectedRange=false; c.opts.onSelectionChange?.(null); }
   posicionarControles(c);
 }
 function guardarRango(c) {
+  if (c.protectedRange) return;
   const sel = window.getSelection();
   if (sel?.rangeCount && !sel.isCollapsed) {
     const range = sel.getRangeAt(0);
@@ -269,19 +284,25 @@ function actualizarSeleccion(c) {
   const node = c.range.startContainer;
   const el = node.nodeType === 3 ? node.parentElement : node;
   const css = getComputedStyle(el), root = getComputedStyle(c.opts.target);
-  const rgb = css.color.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+  const hex = color => {
+    const rgb=String(color || '').match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+    return rgb ? '#' + rgb.slice(1).map(n=>Number(n).toString(16).padStart(2,'0')).join('') : color;
+  };
   c.opts.onSelectionChange?.({
     size: parseFloat(css.fontSize) / parseFloat(root.fontSize) * c.opts.baseFontSize,
     bold: Number(css.fontWeight) >= 600, italic: css.fontStyle === 'italic',
     underline: tieneSubrayado(el, c.opts.stage),
-    upper: css.textTransform === 'uppercase', color: rgb ? '#' + rgb.slice(1).map(n=>Number(n).toString(16).padStart(2,'0')).join('') : css.color, font: css.fontFamily
+    upper: css.textTransform === 'uppercase', color: hex(css.color), font: css.fontFamily,
+    outlineColor: hex(contornoPalabra(el,c.opts.target,c.opts.baseOutline))
   });
 }
 function formatear(c, property, value) {
   if (property === 'textDecoration') normalizarSubrayado(c);
   const range = c.range.cloneRange();
   const span = document.createElement('span');
-  span.style[property] = value;
+  if (property === 'outlineColor') {
+    span.className='va-word-outline';span.style.setProperty('--va-word-outline',value);
+  } else span.style[property] = value;
   span.appendChild(range.extractContents()); range.insertNode(span);
   if (property === 'fontSize' && /em$/.test(value)) {
     const rootPx = parseFloat(getComputedStyle(c.opts.target).fontSize);
@@ -291,7 +312,12 @@ function formatear(c, property, value) {
   range.selectNodeContents(span);
   const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range); c.range = range.cloneRange();
   // Un estilo seleccionado vence al formato heredado de palabras ya editadas.
-  for (const el of span.querySelectorAll('*')) el.style.removeProperty(property.replace(/[A-Z]/g,m=>'-'+m.toLowerCase()));
+  for (const el of span.querySelectorAll('*')) {
+    if (property === 'outlineColor') {
+      el.classList.remove('va-word-outline');
+      for(const p of ['--va-word-outline','-webkit-text-stroke-color','text-shadow'])el.style.removeProperty(p);
+    } else el.style.removeProperty(property.replace(/[A-Z]/g,m=>'-'+m.toLowerCase()));
+  }
   recordarHTML(c);
   actualizarSeleccion(c);
 }
@@ -303,22 +329,22 @@ export function aplicarFormatoSeleccion(stage, property, value) {
 }
 export function restaurarControlesTexto(stage) {
   const c = stage?.__vaEditor;
-  if (c?.range) { c.range=null; c.opts.onSelectionChange?.(null); }
+  if (c?.range) { c.range=null;c.protectedRange=false; c.opts.onSelectionChange?.(null); }
 }
 export function desactivarEditorTexto(stage) {
   const c=stage?.__vaEditor;if(!c)return;
-  c.editing=false;c.range=null;c.disabled=true;c.points.clear();c.gesture=null;
+  cancelarPulsacion(c);c.editing=false;c.range=null;c.disabled=true;c.points.clear();c.gesture=null;
   if(activo===c)activo=null;
   c.outline.hidden=c.guideX.hidden=c.guideY.hidden=true;
   c.opts.target.contentEditable='false';
-  c.editButton?.style.setProperty('display','none','important');c.resize.disconnect();
+  c.resize.disconnect();
 }
 export function aplicarSubrayadoTexto(stage, on) {
   const c=stage?.__vaEditor;
   if(!c || c.disabled)return;
   c.range=document.createRange();c.range.selectNodeContents(c.opts.target);
   formatear(c,'textDecoration',on?'underline':'none');
-  c.range=null;c.opts.onSelectionChange?.(null);
+  c.range=null;c.protectedRange=false;c.opts.onSelectionChange?.(null);
   window.getSelection()?.removeAllRanges();
 }
 function normalizarSubrayado(c) {
@@ -342,21 +368,67 @@ function normalizarSubrayado(c) {
   c.range=range;c.opts.state.separateUnderline=true;
   aplicarCajaTexto(c.opts);
 }
-export function seleccionarPalabraEnPunto(target, x, y) {
-  let range = document.caretRangeFromPoint?.(x,y);
-  if (!range && document.caretPositionFromPoint) {
-    const p=document.caretPositionFromPoint(x,y);
-    if(p){range=document.createRange();range.setStart(p.offsetNode,p.offset);}
+function rangoPalabraEnPunto(target, x, y) {
+  // Range mide en coordenadas de pantalla, incluso con preview escalada o movida.
+  const walker=document.createTreeWalker(target,NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT), partes=[];
+  let texto='', bloque=null;
+  while(walker.nextNode()){
+    const node=walker.currentNode;
+    if(node.nodeType!==3){if(node.tagName==='BR')texto+='\n';continue;}
+    const actual=node.parentElement.closest('div,p');
+    if(partes.length && actual!==bloque)texto+='\n';
+    partes.push({node,start:texto.length,end:texto.length+node.length});
+    texto+=node.textContent;bloque=actual;
   }
-  if(!range || range.startContainer.nodeType!==3 || !target.contains(range.startContainer)) return false;
-  const node=range.startContainer, text=node.textContent, word=/[\p{L}\p{N}\p{M}'’_-]/u;
-  let start=range.startOffset,end=start;
-  if(!word.test(text[start]||'') && start>0) start=end=start-1;
-  if(!word.test(text[start]||'')) return false;
-  while(start>0 && word.test(text[start-1]))start--;
-  while(end<text.length && word.test(text[end]))end++;
-  range.setStart(node,start);range.setEnd(node,end);
+  let elegido=null, distancia=Infinity;
+  for(const match of texto.matchAll(/[\p{L}\p{N}\p{M}]+(?:['’_-][\p{L}\p{N}\p{M}]+)*/gu)){
+    const inicio=match.index, fin=inicio+match[0].length;
+    const a=partes.find(p=>inicio>=p.start && inicio<p.end),b=partes.find(p=>fin>p.start && fin<=p.end);
+    if(!a || !b)continue;
+    const range=document.createRange();range.setStart(a.node,inicio-a.start);range.setEnd(b.node,fin-b.start);
+    for(const r of range.getClientRects()){
+      if(!r.width || !r.height || y<r.top-3 || y>r.bottom+3)continue;
+      const d=Math.max(r.left-x,0,x-r.right);
+      if(d<=6 && d<distancia){elegido=range;distancia=d;}
+    }
+    if(distancia===0)break;
+  }
+  return elegido;
+}
+export function seleccionarPalabraEnPunto(target, x, y) {
+  const range=rangoPalabraEnPunto(target,x,y);
+  if(!range)return false;
   const sel=window.getSelection();sel.removeAllRanges();sel.addRange(range);return true;
+}
+function seleccionarParaEditar(c,x,y) {
+  const range=rangoPalabraEnPunto(c.opts.target,x,y);
+  if(!range)return false;
+  cancelarPulsacion(c);c.points.clear();c.gesture=null;c.protectedRange=false;
+  editar(c,true);c.opts.target.focus({preventScroll:true});
+  const sel=window.getSelection();sel.removeAllRanges();sel.addRange(range);
+  c.range=range.cloneRange();actualizarSeleccion(c);c.ignoreClick=true;
+  return true;
+}
+function posicionarCursor(c,x,y) {
+  const word=rangoPalabraEnPunto(c.opts.target,x,y);if(!word)return;
+  const walker=document.createTreeWalker(c.opts.target,NodeFilter.SHOW_TEXT);
+  let best=null,distance=Infinity;
+  while(walker.nextNode()){
+    const node=walker.currentNode;
+    if(!word.intersectsNode(node))continue;
+    const start=word.startContainer===node?word.startOffset:0,end=word.endContainer===node?word.endOffset:node.length;
+    for(let i=start;i<end;i++){
+      const range=document.createRange();range.setStart(node,i);range.setEnd(node,i+1);
+      for(const r of range.getClientRects()){
+        if(!r.width || y<r.top-3 || y>r.bottom+3)continue;
+        const d=Math.abs(x-(r.left+r.right)/2);
+        if(d<distance){distance=d;best={node,offset:i+(x>(r.left+r.right)/2?1:0)};}
+      }
+    }
+  }
+  if(!best)return;
+  const range=document.createRange();range.setStart(best.node,best.offset);range.collapse(true);
+  const sel=window.getSelection();sel.removeAllRanges();sel.addRange(range);guardarRango(c);
 }
 function tieneSubrayado(el, stage) {
   for (let node=el; node && stage.contains(node); node=node.parentElement) {
@@ -374,30 +446,22 @@ export function alternarFormatoSeleccion(stage, property, on, off) {
   return aplicarFormatoSeleccion(stage, property, enabled ? off : on);
 }
 function crearControles(c) {
-  const host = c.opts.controlHost;
-  if (host) {
-    const b = document.createElement('button'); b.type='button'; b.textContent='Editar';
-    b.className='va-editor-toggle'; b.dataset.html2canvasIgnore='true';
-    for (const [key,value] of [['width','auto'],['min-width','0'],['max-width','none'],['padding','0 8px']]) b.style.setProperty(key,value,'important');
-    b.onpointerdown=e=>{guardarRango(c);e.preventDefault();};
-    b.onclick=()=>{const open=activo===c;activar(c);editar(c,open ? !c.editing : false);if(c.editing)c.opts.target.focus();};
-    host.appendChild(b); c.editButton=b;
-  }
   for(const [key,cls] of [['outline','va-editor-outline'],['guideX','va-editor-guide vertical'],['guideY','va-editor-guide horizontal']]){
     const div=document.createElement('div');div.className=`${cls} va-editor-overlay`;div.dataset.html2canvasIgnore='true';div.hidden=true;c[key]=div;c.opts.stage.appendChild(div);
   }
   for(const [name,x,y] of [['nw',0,0],['ne',100,0],['sw',0,100],['se',100,100],['w',0,50],['e',100,50]]){
     const h=document.createElement('button');h.type='button';h.className='va-editor-handle';h.setAttribute('aria-label',name==='w'||name==='e'?'Cambiar ancho de texto':'Escalar texto');
     h.style.left=`${x}%`;h.style.top=`${y}%`;h.style.transform='translate(-50%,-50%)';
-    h.onpointerdown=e=>iniciarGesto(c,e,name);c.outline.appendChild(h);
+    h.addEventListener('pointerdown',e=>iniciarGesto(c,e,name));c.outline.appendChild(h);
   }
   c.resize=new ResizeObserver(()=>{
     aplicarCajaTexto(c.opts);posicionarControles(c);
   });c.resize.observe(c.opts.stage);
 }
 function iniciarGesto(c,e,handle='move') {
-  if (c.editing && handle==='move' && c.points.size===0) return;
   if (e.button && e.pointerType==='mouse') return;
+  cancelarPulsacion(c);
+  if(c.editing)editar(c,false);
   e.preventDefault();e.stopPropagation();activar(c);
   e.currentTarget.setPointerCapture?.(e.pointerId);
   c.points.set(e.pointerId,{x:e.clientX,y:e.clientY});
@@ -406,6 +470,55 @@ function iniciarGesto(c,e,handle='move') {
     const [a,b]=[...c.points.values()];c.gesture.distance=Math.hypot(b.x-a.x,b.y-a.y);
     c.gesture.mid={x:(a.x+b.x)/2,y:(a.y+b.y)/2};c.gesture.handle='pinch';
   }
+}
+function cancelarPulsacion(c) {
+  clearTimeout(c.holdTimer);c.holdTimer=null;c.press=null;
+}
+function pulsarTexto(c,e) {
+  if(c.disabled || e.button>0)return;
+  c.protectedRange=false;c.ignoreClick=false;activar(c);
+  if(c.press && c.press.id!==e.pointerId){
+    const p=c.press;
+    iniciarGesto(c,{pointerId:p.id,clientX:p.x,clientY:p.y,currentTarget:p.element,preventDefault(){},stopPropagation(){}});
+    iniciarGesto(c,e);return;
+  }
+  if(c.points.size){iniciarGesto(c,e);return;}
+  cancelarPulsacion(c);
+  const press={id:e.pointerId,x:e.clientX,y:e.clientY,element:e.currentTarget,wordMode:c.editing};
+  c.press=press;
+  // No se arrastra el cuadro hasta que el dedo o mouse se mueva realmente.
+  if(!c.editing){e.preventDefault();e.currentTarget.setPointerCapture?.(e.pointerId);}
+  c.holdTimer=setTimeout(()=>{
+    if(c.press!==press)return;
+    try{press.element.releasePointerCapture?.(press.id);}catch{}
+    seleccionarParaEditar(c,press.x,press.y);
+  },450);
+}
+function moverPulsacion(c,e) {
+  const p=c.press;
+  if(p && p.id===e.pointerId && Math.hypot(e.clientX-p.x,e.clientY-p.y)>5){
+    if(p.wordMode){cancelarPulsacion(c);return;}
+    iniciarGesto(c,{pointerId:p.id,clientX:p.x,clientY:p.y,currentTarget:p.element,preventDefault(){},stopPropagation(){}});
+  }
+  moverGesto(c,e);
+}
+function soltarPulsacion(c,e) {
+  if(c.press?.id===e.pointerId)cancelarPulsacion(c);
+  terminarGesto(c,e);
+}
+function ocultarMarco(c, conservarSeleccion=false) {
+  cancelarPulsacion(c);
+  c.outline.hidden=c.guideX.hidden=c.guideY.hidden=true;
+  if(activo===c)activo=null;
+  if(!conservarSeleccion){
+    const sel=window.getSelection();
+    if(sel?.anchorNode && c.opts.target.contains(sel.anchorNode))sel.removeAllRanges();
+    editar(c,false);
+  }
+}
+function esControlFormato(c,el) {
+  if(el.closest?.('.pcr-app,.va-editor-handle'))return true;
+  return !!(c.opts.controlsRoot?.contains(el) && el.closest?.(c.opts.formatControls || '.style-row,.pickr-host'));
 }
 function limitarCaja(c) {
   const s=c.opts.state, sr=c.opts.stage.getBoundingClientRect();
@@ -449,32 +562,35 @@ export function montarEditorTexto(opts) {
   let c=opts.stage.__vaEditor;
   if(!c){
     c={opts,points:new Map(),range:null,editing:false};opts.stage.__vaEditor=c;crearControles(c);
-    document.addEventListener('selectionchange',()=>{if(activo===c)guardarRango(c);});
+    document.addEventListener('selectionchange',()=>{if(c.editing && !c.disabled)guardarRango(c);});
     document.addEventListener('pointerdown',e=>{
-      if (c.opts.controlsRoot?.contains(e.target)) { guardarRango(c); return; }
-      if(activo===c&&!c.opts.stage.contains(e.target)){
-        c.outline.hidden=true;c.guideX.hidden=true;c.guideY.hidden=true;activo=null;
+      if(c.disabled || c.opts.target.contains(e.target) || c.outline.contains(e.target))return;
+      if(esControlFormato(c,e.target)){
+        guardarRango(c);c.protectedRange=!!c.range;ocultarMarco(c,true);return;
       }
+      if(activo===c || c.editing)ocultarMarco(c);
     });
-    opts.stage.addEventListener('pointermove',e=>moverGesto(c,e));
-    opts.stage.addEventListener('pointerup',e=>terminarGesto(c,e));
-    opts.stage.addEventListener('pointercancel',e=>terminarGesto(c,e));
+    opts.stage.addEventListener('pointermove',e=>moverPulsacion(c,e));
+    opts.stage.addEventListener('pointerup',e=>soltarPulsacion(c,e));
+    opts.stage.addEventListener('pointercancel',e=>soltarPulsacion(c,e));
+    document.addEventListener('pointerup',e=>{if(c.press?.id===e.pointerId)cancelarPulsacion(c);});
+    document.addEventListener('pointercancel',e=>{if(c.press?.id===e.pointerId)cancelarPulsacion(c);});
   }
-  c.disabled=false;c.editButton?.style.removeProperty('display');c.resize.observe(opts.stage);
-  if (c.opts.target !== opts.target) c.range=null;
+  c.disabled=false;c.resize.observe(opts.stage);
+  if (c.opts.target !== opts.target) {cancelarPulsacion(c);c.range=null;c.editing=false;c.protectedRange=false;}
   c.opts=opts;aplicarCajaTexto(opts);
   if(!opts.target.__vaEditorReady){
     opts.target.__vaEditorReady=true;
     opts.target.setAttribute('aria-label','Cuadro de texto de la imagen');opts.target.spellcheck=false;
-    opts.target.addEventListener('pointerdown',e=>{activar(c);iniciarGesto(c,e);});
-    opts.target.addEventListener('pointerdown',e=>{
-      c.touch=e.pointerType==='touch';
-      const sel=window.getSelection();c.tapHadSelection=sel&&!sel.isCollapsed&&c.opts.target.contains(sel.anchorNode);
-    });
+    opts.target.addEventListener('pointerdown',e=>pulsarTexto(c,e));
     opts.target.addEventListener('click',e=>{
+      if(c.disabled)return;
       activar(c);e.stopPropagation();
-      if (c.editing && c.touch && !c.tapHadSelection && window.getSelection()?.isCollapsed) seleccionarPalabraEnPunto(c.opts.target,e.clientX,e.clientY);
+      if(c.ignoreClick){c.ignoreClick=false;e.preventDefault();return;}
+      if(c.editing && window.getSelection()?.isCollapsed)posicionarCursor(c,e.clientX,e.clientY);
     });
+    opts.target.addEventListener('dblclick',e=>{if(!c.disabled){e.preventDefault();seleccionarParaEditar(c,e.clientX,e.clientY);}});
+    opts.target.addEventListener('contextmenu',e=>{if(!c.disabled)e.preventDefault();});
     opts.target.addEventListener('input',()=>{inicializarGeometria(c);recordarHTML(c);});
     opts.target.addEventListener('paste',e=>{
       if(!c.editing)return;e.preventDefault();
@@ -489,19 +605,25 @@ export function montarEditorTexto(opts) {
   editar(c,c.editing);posicionarControles(c);
 }
 
-// Canvas nativo de Android: usa las posiciones tipográficas medidas por el navegador.
-// Sólo se usa este camino cuando hay un cuadro editado; los diseños previos mantienen su render.
-export function dibujarCajaTexto(ctx, {stage, target, state, fontPx, color, outline, stroke=1, highlight='', spread=0}) {
-  aplicarCajaTexto({stage,target,state,fontPx});
+// Web y APK dibujan el mismo texto, con las posiciones medidas por el navegador.
+export function dibujarCajaTexto(ctx, opts) {
+  const {stage, target, state, fontPx, color, outline, stroke=1, highlight='', spread=0}=opts;
+  if(!target)return;
+  aplicarCajaTexto(opts);
   const sr=stage.getBoundingClientRect();
+  ctx.save();
+  ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';
+  ctx.shadowColor='transparent';ctx.shadowBlur=0;ctx.shadowOffsetX=ctx.shadowOffsetY=0;
+  try {
   if(highlight){
     const rangos=[];
     for(const span of target.querySelectorAll('.va-rich-highlight,.dev-f1-resaltado-lineas')){
       const range=document.createRange();range.selectNodeContents(span);
-      for(const r of range.getClientRects()) if(r.width) rangos.push(r);
+      for(const r of range.getClientRects()) if(r.width && r.height) rangos.push(r);
     }
     ctx.fillStyle=highlight;
-    for(const r of rangos){
+    for(const [i,r] of rangos.entries()){
+      if(rangos.some((other,j)=>j!==i && other.left<=r.left && other.right>=r.right && other.top<=r.top && other.bottom>=r.bottom && (j<i || other.width>r.width || other.height>r.height)))continue;
       ctx.beginPath();
       const args=[r.left-sr.left-spread,r.top-sr.top-2,r.width+2*spread,r.height+4];
       if(ctx.roundRect)ctx.roundRect(...args,Math.min(14,r.height/2));else ctx.rect(...args);
@@ -513,9 +635,16 @@ export function dibujarCajaTexto(ctx, {stage, target, state, fontPx, color, outl
   while((node=walker.nextNode())){
     const cs=getComputedStyle(node.parentElement);const zoom=state.geometry?state.zoom:1;
     const px=parseFloat(cs.fontSize)*zoom;
+    if(!px || !node.textContent.trim())continue;
     ctx.font=`${cs.fontStyle} ${cs.fontWeight} ${px}px ${cs.fontFamily}`;
     ctx.textAlign='left';ctx.textBaseline='alphabetic';ctx.lineJoin='round';
-    ctx.fillStyle=cs.color||color;ctx.strokeStyle=outline;ctx.lineWidth=stroke*zoom;
+    const borde=contornoPalabra(node.parentElement,target,outline);
+    ctx.fillStyle=cs.color||color;ctx.strokeStyle=borde;ctx.lineWidth=stroke*zoom;
+    const shadows=String(cs.textShadow||'').split(/,(?![^(]*\))/).map(s=>{
+      const nums=[...s.matchAll(/(-?[\d.]+)px/g)].map(m=>Number(m[1])*zoom);
+      const shadowColor=s.match(/rgba?\([^)]*\)|#[\da-f]{3,8}\b/i)?.[0];
+      return nums.length>=2 ? {x:nums[0],y:nums[1],blur:nums[2]||0,color:borde||shadowColor} : null;
+    }).filter(Boolean).reverse();
     const metrics=ctx.measureText('Mg');
     const ascent=metrics.fontBoundingBoxAscent||px*.9,descent=metrics.fontBoundingBoxDescent||px*.2;
     // Agrupamos caracteres de la misma línea para conservar ligaduras y kerning.
@@ -523,9 +652,15 @@ export function dibujarCajaTexto(ctx, {stage, target, state, fontPx, color, outl
     const flush=end=>{
       if(end<=start)return;range.setStart(node,start);range.setEnd(node,end);const r=range.getBoundingClientRect();
       let text=node.textContent.slice(start,end);if(cs.textTransform==='uppercase')text=text.toLocaleUpperCase('es');
+      if(!r.width || !r.height || !text.trim())return;
       const x=r.left-sr.left,y=r.top-sr.top+(r.height-ascent-descent)/2+ascent;
+      for(const shadow of shadows){
+        ctx.shadowColor=shadow.color;ctx.shadowOffsetX=shadow.x;ctx.shadowOffsetY=shadow.y;ctx.shadowBlur=shadow.blur;
+        ctx.fillText(text,x,y);
+      }
+      ctx.shadowColor='transparent';ctx.shadowOffsetX=ctx.shadowOffsetY=0;ctx.shadowBlur=0;
       if(stroke)ctx.strokeText(text,x,y);ctx.fillText(text,x,y);
-      if(tieneSubrayado(node.parentElement,stage)){ctx.beginPath();ctx.strokeStyle=ctx.fillStyle;ctx.lineWidth=Math.max(1,px/18);ctx.moveTo(x,y+descent/2);ctx.lineTo(x+r.width,y+descent/2);ctx.stroke();ctx.strokeStyle=outline;ctx.lineWidth=stroke*zoom;}
+      if(tieneSubrayado(node.parentElement,stage)){ctx.beginPath();ctx.strokeStyle=ctx.fillStyle;ctx.lineWidth=Math.max(1,px/18);ctx.moveTo(x,y+px*.1);ctx.lineTo(x+r.width,y+px*.1);ctx.stroke();ctx.strokeStyle=borde;ctx.lineWidth=stroke*zoom;}
     };
     for(let i=0;i<node.textContent.length;i++){
       range.setStart(node,i);range.setEnd(node,i+1);const r=range.getBoundingClientRect();
@@ -533,4 +668,5 @@ export function dibujarCajaTexto(ctx, {stage, target, state, fontPx, color, outl
     }
     flush(node.textContent.length);
   }
+  } finally { ctx.restore(); }
 }

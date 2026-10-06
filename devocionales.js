@@ -1,4 +1,4 @@
-import { ordenarFondos, registrarUsoFondo, urlFondoSeguro, cargarFondoBlob, prepararMiniaturas, montarEditorTexto, aplicarCajaTexto, dibujarCajaTexto, aplicarFormatoSeleccion, alternarFormatoSeleccion, restaurarControlesTexto, aplicarSubrayadoTexto } from "./imagen-editor.js?v=20261006-correccion-2";
+import { ordenarFondos, registrarUsoFondo, urlFondoSeguro, cargarFondoBlob, prepararMiniaturas, montarEditorTexto, aplicarCajaTexto, dibujarCajaTexto, aplicarFormatoSeleccion, alternarFormatoSeleccion, restaurarControlesTexto, aplicarSubrayadoTexto } from "./imagen-editor.js?v=20261006-gestos-3";
 
 // devocionales.js (NUEVO LIMPIO)
 // ✅ OCR + Recorte + Modal 3 fases (9:9 + 9:7 => 9:16)
@@ -2266,6 +2266,10 @@ function devAsegurarControlContorno(fase) {
 
     input.addEventListener("input", () => {
       const st = fase === 1 ? DEV.f1 : DEV.f2;
+      if (aplicarFormatoSeleccion($(`dev${fase}Preview`), "outlineColor", input.value)) {
+        devSetHostColorVisual(`dev${fase}OutlineColorHost`, input.value);
+        return;
+      }
 
       input.dataset.manual = "1";
       st.outlineColor = devHexSeguro(input.value) || "";
@@ -3623,6 +3627,23 @@ function dev2InterceptarHostsColorFondo(){
 }
 
 function devMostrarSubrayadoDev(){
+  if (!$("devUnderlineStyle")) {
+    const style = document.createElement("style");
+    style.id = "devUnderlineStyle";
+    style.textContent = `
+      #modalDevFase1 #dev1Under,#modalDevFase2 #dev2Under{
+        flex:0 0 38px!important;width:38px!important;min-width:38px!important;max-width:38px!important;
+        height:38px!important;min-height:38px!important;max-height:38px!important;
+        margin:0!important;padding:0!important;border:none!important;border-radius:10px!important;outline:none!important;
+        display:inline-flex!important;align-items:center!important;justify-content:center!important;
+        background:var(--ui-azul-claro)!important;color:#000!important;font-family:inherit!important;
+        font-size:14px!important;font-weight:700!important;line-height:1!important;box-shadow:none!important;cursor:pointer!important;
+      }
+      #modalDevFase1 #dev1Under.activo,#modalDevFase2 #dev2Under.activo{
+        background:var(--ui-azul-hover)!important;color:#fff!important;border:none!important;box-shadow:none!important;
+      }`;
+    document.head.appendChild(style);
+  }
   [1, 2].forEach(fase => {
     const btn = $(`dev${fase}Under`);
     if (btn) {
@@ -3666,8 +3687,6 @@ function devCompactarFilaTextoFase1(){
   if ($("dev1Under")) fila.appendChild($("dev1Under"));
   fila.appendChild(colorHost);
   fila.appendChild(outlineHost);
-  const editar = fila.querySelector(".va-editor-toggle");
-  if (editar) fila.appendChild(editar);
 
   devMostrarSubrayadoDev();
 }
@@ -4200,7 +4219,7 @@ function devPrepararResaltadoF1ParaCaptura(nodeF1) {
     nodeF1.querySelectorAll(
       ".dev-f1-resaltado-lineas, .va-rich-highlight"
     )
-  );
+  ).filter(span => span.closest('[data-va-editor-block]')?.style.visibility !== 'hidden');
 
   if (!spans.length) return () => {};
 
@@ -4694,57 +4713,7 @@ function devCanvasDibujarFase1Texto(ctx){
   dibujarBase("DEVOCIONAL", -0.68, 44, 700);
   dibujarBase(p1.fecha || "", 5.05, 32, 550, 0.95);
 
-  if (!DEV.f1.editor?.changed) {
-  const versPx = Math.max(8, Number(st.size) || 30);
-  const citaPx = Math.max(14, Math.round(versPx * 0.75));
-  const vboxTop = wrapY + wrapH * 0.142;
-  const vboxH = wrapH * 0.715;
-  const vboxW = (wrapW * 0.98) - 36;
-
-  const fontVers = devCanvasFuente(st, versPx, st.style?.bold ? 800 : 400);
-  ctx.font = fontVers;
-  const versLines = devCanvasWrapTexto(ctx, texto(p1.versiculo || ""), vboxW);
-  const versLineH = versPx * 1.02 + 2;
-
-  const fontCita = devCanvasFuente(st, citaPx, st.style?.bold ? 700 : 400);
-  ctx.font = fontCita;
-  const citaLines = devCanvasWrapTexto(ctx, texto(p1.cita || ""), vboxW);
-  const citaLineH = citaPx * 1.02;
-
-  const gap = 4;
-  const totalH = versLines.length * versLineH + gap + citaLines.length * citaLineH;
-  let y = vboxTop + (vboxH - totalH) / 2;
-
-  devCanvasDibujarBloqueLineas(ctx, versLines, {
-    x: cx,
-    yTop: y,
-    lineHeight: versLineH,
-    font: fontVers,
-    color: st.color || "#000000",
-    outline,
-    shadowScale: 2.15,
-    strokePx: 0.72 * 2.15,
-    highlightColor: highlight,
-    highlightSpread: spread
-  });
-
-  y += versLines.length * versLineH + gap;
-  devCanvasDibujarBloqueLineas(ctx, citaLines, {
-    x: cx,
-    yTop: y,
-    lineHeight: citaLineH,
-    font: fontCita,
-    color: st.color || "#000000",
-    outline,
-    shadowScale: 2.15,
-    strokePx: 0.72 * 2.15,
-    highlightColor: highlight,
-    highlightSpread: spread
-  });
-
-  } else {
-    devDibujarEditorCanvas(ctx, 1);
-  }
+  devDibujarEditorCanvas(ctx, 1);
 
   dibujarBase(p1.iglesia || "", 92.48, 34, 700);
   dibujarBase(p1.direccion || "", 95.98, 34, 700, 1, 3);
@@ -4849,72 +4818,13 @@ function devCanvasDibujarF2Texto(ctx, adornoImg){
   if (!p2) return;
 
   const st = DEV.f2;
-  const wrapX = 16;
-  const wrapY = 16;
-  const wrapW = 1080 - 32;
-  const wrapH = 840 - 32;
-
-  const ref = devEvitarUltimaPalabraSola(p2.reflexion || "");
-  const ora = devEvitarUltimaPalabraSola(p2.oracion || "");
-  const fw = st.style?.bold ? 700 : 400;
-  const px = Math.max(8, Number(st.size) || 26);
-  const lineH = px * 1.18;
+  const wrapX = 16, wrapY = 16, wrapW = 1080 - 32, wrapH = 840 - 32;
   const padTop = 4;
-  const padX = 18;
-  const gapOra = 6;
-  const maxW = wrapW - padX * 2;
-  const outline = devHexSeguro(st.outlineColor) || outlineColor(st.color || "#000000");
-  const font = devCanvasFuente(st, px, fw);
-
-  ctx.font = font;
-  const refTexto = devCanvasTransformarTexto(`Reflexión: ${ref}`, st);
-  const oraTexto = ora ? devCanvasTransformarTexto(`Oración: ${ora}`, st) : "";
-  const refLines = devCanvasWrapTexto(ctx, refTexto, maxW);
-  const oraLines = oraTexto ? devCanvasWrapTexto(ctx, oraTexto, maxW) : [];
-
   const adornoW = Math.max(30, Math.min(95, Number(st.adornoWidth || 70)));
-  const adornoFactor = adornoW / 70;
-  const adornoBoxH = Math.max(12, Math.round(86 * adornoFactor));
+  const adornoBoxH = Math.max(12, Math.round(86 * (adornoW / 70)));
   const tieneAdorno = !!st.adornoUrl;
-  const bottomH = tieneAdorno ? adornoBoxH + padTop : 0;
-  const textAreaH = wrapH - bottomH;
-  const usableTextH = Math.max(1, textAreaH - padTop);
 
-  const totalTextH = refLines.length * lineH +
-    (oraLines.length ? gapOra + oraLines.length * lineH : 0);
-  let y = wrapY + padTop + Math.max(0, (usableTextH - totalTextH) / 2);
-  const cx = wrapX + wrapW / 2;
-
-  if (!DEV.f2.editor?.changed) {
-  devCanvasDibujarBloqueLineas(ctx, refLines, {
-    x: cx,
-    yTop: y,
-    lineHeight: lineH,
-    font,
-    color: st.color || "#000000",
-    outline,
-    shadowScale: 1.25,
-    strokePx: 0.75
-  });
-
-  y += refLines.length * lineH;
-  if (oraLines.length) {
-    y += gapOra;
-    devCanvasDibujarBloqueLineas(ctx, oraLines, {
-      x: cx,
-      yTop: y,
-      lineHeight: lineH,
-      font,
-      color: st.color || "#000000",
-      outline,
-      shadowScale: 1.25,
-      strokePx: 0.75
-    });
-  }
-
-  } else {
-    devDibujarEditorCanvas(ctx, 2);
-  }
+  devDibujarEditorCanvas(ctx, 2);
 
   if (tieneAdorno && adornoImg) {
     const boxW = wrapW * (adornoW / 100);
@@ -5094,7 +5004,7 @@ async function renderFinalCanvasCaptureReal(){
   // MODO NORMAL: composición fases 1 + 2
   // =====================================================
   // APK Android: ruta directa Canvas 2D. Evita html2canvas por completo.
-  // PWA/web conserva el render anterior para no modificar un flujo que ya funciona bien.
+  // Los fondos se capturan en web; los bloques de texto se dibujan igual que en APK.
   if (devEsAPKAndroid()) {
     return await devRenderFinalCanvasDirectoAPK(cFinal, ctx, W, H);
   }
@@ -5256,6 +5166,8 @@ texto.style.webkitTextStroke = "0.75px " + outlineF2;
   // El adorno visible debe estar cargado; no bloqueamos cinco segundos enteros.
   await devEsperarImagenesNodo(n2, 1800);
 
+  const cuerpos = [n1.querySelector('[data-va-editor-block="dev1"]'), n2.querySelector('[data-va-editor-block="dev2"]')];
+  for (const cuerpo of cuerpos) cuerpo.style.visibility = "hidden";
   const limpiarResaltadoF1 =
     devPrepararResaltadoF1ParaCaptura(n1);
 
@@ -5276,6 +5188,7 @@ texto.style.webkitTextStroke = "0.75px " + outlineF2;
     });
   } finally {
     limpiarResaltadoF1();
+    for (const cuerpo of cuerpos) cuerpo.style.removeProperty("visibility");
     if (!captura) {
       stage.replaceChildren();
     }
@@ -5286,11 +5199,19 @@ texto.style.webkitTextStroke = "0.75px " + outlineF2;
   }
 
   devF3Estado("Componiendo resultado final");
-  ctx.drawImage(captura, 0, 0, W, H);
-
-  // Liberar el canvas temporal inmediatamente.
-  try { captura.width = 0; captura.height = 0; } catch {}
-  stage.replaceChildren();
+  try {
+    ctx.drawImage(captura, 0, 0, W, H);
+    devDibujarEditorCanvas(ctx, 1, n1);
+    ctx.save();
+    try {
+      ctx.translate(0, H1);
+      devDibujarEditorCanvas(ctx, 2, n2);
+    } finally { ctx.restore(); }
+  } finally {
+    // Liberar los recursos también si falla el dibujo del texto.
+    try { captura.width = 0; captura.height = 0; } catch {}
+    stage.replaceChildren();
+  }
 
   // ✅ unión suave entre imagen superior y bloque inferior
   devDibujarUnionSuaveFinal(ctx, W, H1);
@@ -8529,6 +8450,10 @@ function devAplicarEditorTexto(fase, stage, interactivo = false) {
   const target = stage.querySelector(`[data-va-editor-block="dev${fase}"]`);
   if (!target) return;
   const scale = stage.offsetWidth / 1080;
+  const bodyOutline = devHexSeguro(st.outlineColor) || outlineColor(st.color);
+  target.style.textShadow = textShadowLegibleFinal(st.color, scale * 1.25, bodyOutline);
+  target.style.webkitTextStroke = `${((fase === 1 ? .78 : .72) * scale).toFixed(2)}px ${bodyOutline}`;
+  target.style.paintOrder = "stroke fill";
   if (fase === 1) {
     target.style.setProperty('--va-rich-highlight-color', devRgba(st.opColor || '#000000', st.op ?? .35));
     target.style.setProperty('--va-rich-highlight-spread', `${11 * scale}px`);
@@ -8537,7 +8462,9 @@ function devAplicarEditorTexto(fase, stage, interactivo = false) {
     ? 1 - (16 + Math.max(12, Math.round(86 * (Number(st.adornoWidth || 70) / 70))) + 4) / 840
     : .98;
   const opts = {stage, target, state:st.editor, fontPx:st.size * scale, baseFontSize:st.size, defaultUnderline:st.style.underline,
-    controlHost: $(`dev${fase}Bold`)?.parentElement,
+    baseOutline: bodyOutline,
+    outlineShadow: elegido => textShadowLegibleFinal(st.color, scale * 1.25, elegido),
+    formatControls: `.dev-stepper,.pickr-host,#dev${fase}Upper,#dev${fase}Bold,#dev${fase}Italic,#dev${fase}Under,#dev${fase}BtnFuentes,#dev${fase}ListaFuentes`,
     controlsRoot: $(`modalDevFase${fase}`),
     onSelectionChange: selection => {
       const input = $(`dev${fase}Tamano`);
@@ -8546,6 +8473,11 @@ function devAplicarEditorTexto(fase, stage, interactivo = false) {
       if (color) {
         color.value = selection ? selection.color : st.color;
         devSetHostColorVisual(`dev${fase}ColorHost`, color.value);
+      }
+      const outline = $(`dev${fase}OutlineColor`);
+      if (outline) {
+        outline.value = selection ? selection.outlineColor : opts.baseOutline;
+        devSetHostColorVisual(`dev${fase}OutlineColorHost`, outline.value);
       }
       for (const [key,suffix] of [['upper','Upper'],['bold','Bold'],['italic','Italic'],['underline','Under']]) {
         $(`dev${fase}${suffix}`)?.classList.toggle('activo', selection ? selection[key] : st.style[key]);
@@ -8561,21 +8493,28 @@ function devAplicarEditorTexto(fase, stage, interactivo = false) {
   else aplicarCajaTexto(opts);
 }
 
-function devDibujarEditorCanvas(ctx, fase) {
+function devDibujarEditorCanvas(ctx, fase, stageExistente = null) {
   const st = fase === 1 ? DEV.f1 : DEV.f2;
-  const stage = document.createElement('div');
-  Object.assign(stage.style, {position:'fixed',left:'-12000px',top:'0',width:'1080px',height: fase === 1 ? '1080px' : '840px',pointerEvents:'none',overflow:'hidden'});
-  const wrap = document.createElement('div');
-  Object.assign(wrap.style, {position:'absolute',inset:fase === 1?'6%':'16px'});
-  const text = document.createElement('div');
-  Object.assign(text.style, {position:'absolute',inset:'0',fontFamily:st.fuente,color:st.color,fontStyle:st.style.italic?'italic':'normal',textTransform:st.style.upper?'uppercase':'none',textAlign:'center',textDecoration:st.style.underline?'underline':'none'});
-  text.innerHTML = fase === 1 ? buildFase1HTML(st.size,1) : buildFase2HTML(st.size,1);
-  wrap.appendChild(text); stage.appendChild(wrap);document.body.appendChild(stage);
+  st.editor ||= {};
+  const stage = stageExistente || document.createElement('div');
+  if (!stageExistente) {
+    Object.assign(stage.style, {position:'fixed',left:'-12000px',top:'0',width:'1080px',height: fase === 1 ? '1080px' : '840px',pointerEvents:'none',overflow:'hidden'});
+    const wrap = document.createElement('div');
+    Object.assign(wrap.style, {position:'absolute',inset:fase === 1?'6%':'16px'});
+    const text = document.createElement('div');
+    Object.assign(text.style, {position:'absolute',inset:'0',fontFamily:st.fuente,color:st.color,fontStyle:st.style.italic?'italic':'normal',textTransform:st.style.upper?'uppercase':'none',textAlign:'center'});
+    text.innerHTML = fase === 1 ? buildFase1HTML(st.size,1) : buildFase2HTML(st.size,1);
+    wrap.appendChild(text); stage.appendChild(wrap);document.body.appendChild(stage);
+  }
   try {
-    const target = text.querySelector(`[data-va-editor-block="dev${fase}"]`);
-    dibujarCajaTexto(ctx, {stage,target,state:st.editor,fontPx:st.size,color:st.color,
-      outline:devHexSeguro(st.outlineColor)||outlineColor(st.color),
-      stroke:fase === 1 ? .72 * 2.15 : .75,
+    const target = stage.querySelector(`[data-va-editor-block="dev${fase}"]`);
+    const outline = devHexSeguro(st.outlineColor) || outlineColor(st.color);
+    // La misma escala y color en preview, captura web y Canvas de Android.
+    target.style.textShadow = textShadowLegibleFinal(st.color, 1.25, outline);
+    dibujarCajaTexto(ctx, {stage,target,state:st.editor,fontPx:st.size,color:st.color,baseOutline:outline,
+      defaultUnderline:st.style.underline,outline,
+      outlineShadow: elegido => textShadowLegibleFinal(st.color, 1.25, elegido),
+      stroke:fase === 1 ? .78 : .72,
       highlight:fase === 1 ? devRgba(st.opColor || '#000000',st.op ?? .35) : '',spread:11});
-  } finally { stage.remove(); }
+  } finally { if (!stageExistente) stage.remove(); }
 }

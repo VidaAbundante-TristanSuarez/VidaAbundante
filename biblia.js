@@ -1,4 +1,4 @@
-import { ordenarFondos, registrarUsoFondo, configurarUsoFondos, combinarUsoFondos, urlFondoSeguro, cargarFondoBlob, prepararMiniaturas, montarEditorTexto, aplicarFormatoSeleccion, alternarFormatoSeleccion, restaurarControlesTexto, aplicarSubrayadoTexto, desactivarEditorTexto } from "./imagen-editor.js?v=20261006-correccion-2";
+import { ordenarFondos, registrarUsoFondo, configurarUsoFondos, combinarUsoFondos, urlFondoSeguro, cargarFondoBlob, prepararMiniaturas, montarEditorTexto, aplicarFormatoSeleccion, alternarFormatoSeleccion, restaurarControlesTexto, aplicarSubrayadoTexto, desactivarEditorTexto } from "./imagen-editor.js?v=20261006-gestos-3";
 
 // ================= IMPORTS FIREBASE =================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -2010,6 +2010,11 @@ function asegurarColorContornoBiblia() {
     input.dataset.ready = "1";
 
     const handler = () => {
+      if (aplicarFormatoSeleccion(document.getElementById("previewImagen"), "outlineColor", input.value)) {
+        bibliaSetHostColorVisual("personalizarOutlineHost", input.value);
+        invalidarRenderFinal();
+        return;
+      }
       input.dataset.manual = "1";
       bibliaSetHostColorVisual("personalizarOutlineHost", input.value);
       actualizarPreview();
@@ -6389,7 +6394,7 @@ function vaImgCapturarEstadoDisenoActual() {
       colorTexto: String(seleccion ? editor.opts.baseColor : colorInput?.value || "#000000"),
       opacidad: opInput ? String(opInput.value || "0.35") : "0.35",
       colorOpacidad: opColorInput ? String(opColorInput.value || "#000000") : "#000000",
-      outlineColor: outlineInput ? String(outlineInput.value || "") : "",
+      outlineColor: String(seleccion ? editor.opts.baseOutline : outlineInput?.value || ""),
       outlineManual: outlineInput ? outlineInput.dataset.manual === "1" : false
     }
   };
@@ -7351,7 +7356,9 @@ function actualizarPreview() {
     montarEditorTexto({
       stage: previewImagen, target: innerFront, backTarget: innerBack,
       state: editorTextoBiblia, fontPx: finalSize, baseColor:color, baseFontSize: Number(sizeSlider?.value || finalSize),
-      controlHost: document.getElementById('textStyles'),
+      baseOutline: outlineColor,
+      outlineShadow: elegido => textShadowLegibleBiblia(color, outlineScale, elegido),
+      formatControls: '#textStyles,#btnFuentes,#listaFuentes,#boxControlesTexto,.pickr-host',
       controlsRoot: document.getElementById('modalPersonalizar'),
       onSelectionChange: vaSyncSeleccionImagen,
       bounds: {left:.025, right:.975, top:.025, bottom:.975},
@@ -17669,6 +17676,11 @@ function vaSyncSeleccionImagen(selection) {
   if (color && opts) {
     color.value = selection ? selection.color : opts.baseColor;
     bibliaSetHostColorVisual("personalizarColorHost", color.value);
+  }
+  const outline = document.getElementById("personalizarOutlineColor");
+  if (outline && opts) {
+    outline.value = selection ? selection.outlineColor : opts.baseOutline;
+    bibliaSetHostColorVisual("personalizarOutlineHost", outline.value);
   }
   for (const [key,id] of [['upper','btnUpper'],['bold','btnBold'],['italic','btnItalic'],['underline','btnUnderline']]) {
     document.getElementById(id)?.classList.toggle('activo', selection ? selection[key] : textStyle[key]);
