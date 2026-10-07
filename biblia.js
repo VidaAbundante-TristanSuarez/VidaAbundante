@@ -1,4 +1,4 @@
-import { ordenarFondos, registrarUsoFondo, configurarUsoFondos, combinarUsoFondos, urlFondoSeguro, cargarFondoBlob, prepararMiniaturas, montarEditorTexto, aplicarFormatoSeleccion, alternarFormatoSeleccion, restaurarControlesTexto, aplicarSubrayadoTexto, desactivarEditorTexto } from "./imagen-editor.js?v=20261006-gestos-3";
+import { ordenarFondos, registrarUsoFondo, configurarUsoFondos, combinarUsoFondos, urlFondoSeguro, cargarFondoBlob, prepararMiniaturas, montarEditorTexto, aplicarFormatoSeleccion, alternarFormatoSeleccion, restaurarControlesTexto, aplicarSubrayadoTexto, desactivarEditorTexto, crearInstantaneaPreview, esperarFuentesPreview, dibujarCajaTexto } from "./imagen-editor.js?v=20261006-exportacion-4";
 
 // ================= IMPORTS FIREBASE =================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -7553,99 +7553,83 @@ function bibliaPrepararResaltadoExplicitoParaCaptura() {
 
 // ================= ⭐ CANVAS GENERA IMAGEN FINAL (FIX REAL) ============================
 async function generarImagenFinal(opts = {}) {
-  const { subir = true } = opts; // ✅ por defecto sube (Finalizar), pero Descargar/Compartir pasan false
-
+  const { subir = true } = opts;
   const preview = document.getElementById("previewImagen");
   const canvasFinal = document.getElementById("canvasFinal");
   const modal = document.getElementById("modalPersonalizar");
+  if (!preview || !canvasFinal || (modal && getComputedStyle(modal).display === "none")) return false;
 
-  if (!preview || !canvasFinal) return false;
-
-  if (modal && getComputedStyle(modal).display === "none") {
-    canvasFinal.width = 0;
-    canvasFinal.height = 0;
-    return false;
-  }
-
-  actualizarPreview();
-
-  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-  await document.fonts.ready;
-
-  const rect = preview.getBoundingClientRect();
-  if (rect.width < 10 || rect.height < 10) return false;
-
-preview.classList.remove("render-final");
-
-/*
-  La captura final NO vuelve a tocar display, line-height, inset,
-  wrappers ni posiciones. Se captura exactamente la composición
-  que el usuario está viendo en pantalla.
-*/
-
-  const fondoUsable = fondoFinalBlobUrl || fondoFinal;
-
+  let instantanea = null, canvasTemp = null;
   try {
-    const dpr = window.devicePixelRatio || 1;
-    const SCALE = (rect.width <= 480 && rect.height <= 480) ? 1 : Math.min(2, dpr);
-
-    if (fondoUsable && typeof fondoUsable === "string" && /^blob:|^https?:/.test(fondoUsable)) {
-      await new Promise((resolve) => {
-        const img = new Image();
-        img.crossOrigin = "anonymous";
-        img.onload = () => resolve();
-        img.onerror = () => resolve();
-        img.src = fondoUsable;
-      });
+    // No reconstruir la preview ni esperar fuentes ajenas a esta imagen.
+    await Promise.all([esperarFuentesPreview(preview), bibliaEsperarRecursosDiseno()]);
+    const rect = preview.getBoundingClientRect();
+    if (rect.width < 10 || rect.height < 10) return false;
+    instantanea = crearInstantaneaPreview(preview);
+    if (!instantanea) return false;
+    const esBiblia = !modoImagenLibre && origenModalImagen === "biblia";
+    const front = instantanea.get(document.getElementById("previewTexto"));
+    const back = instantanea.get(document.getElementById("previewTextoBack"));
+    if (esBiblia) {
+      front.style.setProperty("visibility", "hidden", "important");
+      back.style.setProperty("visibility", "hidden", "important");
     }
-
-    // ✅ Si está activo el fondo diseñado, esperamos textura y adorno antes de capturar.
-    await bibliaEsperarRecursosDiseno();
-
-    /*
-      html2canvas puede interpretar distinto box-decoration-break.
-      Para el PNG convertimos temporalmente cada renglón resaltado
-      en una cápsula real usando las posiciones EXACTAS del preview.
-    */
-    const limpiarResaltadoCaptura =
-      bibliaPrepararResaltadoExplicitoParaCaptura();
-
-    let canvasTemp;
-
-    try {
-      canvasTemp = await html2canvas(preview, {
-        scale: SCALE,
-        useCORS: true,
-        allowTaint: false,
-        logging: false,
-        width: Math.round(rect.width),
-        height: Math.round(rect.height),
-        backgroundColor: (modoFondoBiblia === "diseno" || fondoUsable) ? null : "#ffffff"
-      });
-    } finally {
-      limpiarResaltadoCaptura();
-    }
-
+    const scale = (rect.width <= 480 && rect.height <= 480) ? 1 : Math.min(2, window.devicePixelRatio || 1);
+    canvasTemp = await html2canvas(instantanea.stage, {
+      scale, useCORS: true, allowTaint: false, logging: false, imageTimeout: 2200,
+      width: Math.round(instantanea.width), height: Math.round(instantanea.height),
+      backgroundColor: (modoFondoBiblia === "diseno" || fondoFinalBlobUrl || fondoFinal) ? null : "#ffffff"
+    });
     canvasFinal.width = canvasTemp.width;
     canvasFinal.height = canvasTemp.height;
-
     const ctx = canvasFinal.getContext("2d");
-    ctx.clearRect(0, 0, canvasFinal.width, canvasFinal.height);
     ctx.drawImage(canvasTemp, 0, 0);
-
+    if (esBiblia) {
+      const editor = preview.__vaEditor?.opts;
+      ctx.save();
+      ctx.scale(scale, scale);
+      try {
+        dibujarCajaTexto(ctx, {stage:instantanea.stage, target:front, backTarget:back,
+          aplicar:false, resaltadoDOM:true, highlightRoot:back,
+          outline:editor?.baseOutline || getComputedStyle(back).color,
+          outlineShadow:editor?.outlineShadow});
+      } finally { ctx.restore(); }
+    }
   } catch (err) {
-    console.error("html2canvas falló:", err);
-    alert("No se pudo generar PNG. Probable problema de CORS con el fondo elegido.\nProbá con otro fondo o sin fondo.");
+    console.error("No pude generar la imagen:", err);
+    alert("No se pudo generar PNG.\n\nDetalle: " + (err?.message || err));
     return false;
+  } finally {
+    instantanea?.remove();
+    if (canvasTemp) { canvasTemp.width = 0; canvasTemp.height = 0; }
   }
-
-    // ================= ✅ SI pidieron "subir", subimos a Firebase =================
-  if (subir) {
-    await subirImagenBibliaUnaVezYGuardarDestinos();
-  }
-
-  
+  if (subir) return await subirImagenBibliaUnaVezYGuardarDestinos();
   return true;
+}
+
+async function obtenerPNGFinalBiblia() {
+  const canvas = document.getElementById("canvasFinal");
+  const cache = window.__canvasFinalCache;
+  for (let intento = 0; intento < 2; intento++) {
+    if (!await asegurarCanvasFinal({subir:false})) return null;
+    const key = cache.key, revision = cache.revision;
+    if (cache.blob && cache.blobKey === key) return cache.blob;
+    if (!cache.blobPromise || cache.blobKey !== key) {
+      cache.blob = null;
+      cache.blobKey = key;
+      cache.blobPromise = new Promise(resolve => canvas.toBlob(resolve, "image/png")).then(blob => {
+        if (revision !== cache.revision || key !== cache.key || key !== getRenderKey()) return null;
+        cache.blob = blob;
+        return blob;
+      });
+    }
+    const promise = cache.blobPromise;
+    try {
+      const blob = await promise;
+      if (blob && revision === cache.revision && key === cache.key && key === getRenderKey()) return blob;
+    } finally { if (cache.blobPromise === promise) cache.blobPromise = null; }
+  }
+  return null;
 }
 
 // ================= ✅ CLICK SEGURO PARA DESCARGA =================
@@ -7683,7 +7667,7 @@ async function subirImagenBibliaBaseUnaVez() {
   const canvas = document.getElementById("canvasFinal");
   if (!canvas || canvas.width < 10 || canvas.height < 10) return null;
 
-  const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
+  const blob = await obtenerPNGFinalBiblia();
   if (!blob) return null;
 
   const ts = Date.now();
@@ -7986,7 +7970,7 @@ async function descargarImagenFinal() {
     const canvas = document.getElementById("canvasFinal");
     if (!canvas) return;
 
-    const ok = await generarImagenFinal({ subir: false });
+    const ok = await asegurarCanvasFinal({ subir: false });
     if (!ok) return;
 
     let nombreArchivo = "versiculo.png";
@@ -8029,12 +8013,10 @@ async function descargarImagenFinal() {
     };
 
     try {
-      const blob = await new Promise(resolve => {
-        canvas.toBlob(resolve, "image/png");
-      });
+      const blob = await obtenerPNGFinalBiblia();
 
       if (!blob) {
-        descargarDesdeDataURL();
+        if (await asegurarCanvasFinal({subir:false})) descargarDesdeDataURL();
         return;
       }
 
@@ -8059,7 +8041,7 @@ async function descargarImagenFinal() {
 
     } catch (e) {
       console.warn("Descarga falló, uso dataURL:", e);
-      descargarDesdeDataURL();
+      if (await asegurarCanvasFinal({subir:false})) descargarDesdeDataURL();
     }
   });
 }
@@ -8073,14 +8055,9 @@ async function compartirImagenFinal() {
     const ok = await asegurarCanvasFinal({ subir: false }); // ✅ NO SUBE
     if (!ok) return;
 
-    const blob = await new Promise(resolve => {
-      canvas.toBlob(resolve, "image/png");
-    });
+    const blob = await obtenerPNGFinalBiblia();
 
-    if (!blob) {
-      await descargarImagenFinal();
-      return;
-    }
+    if (!blob) return;
 
     const file = new File([blob], "versiculo.png", {
       type: "image/png"
@@ -8102,11 +8079,7 @@ async function compartirImagenFinal() {
       }
 
       // ✅ fallback
-      if (await window.vaAndroidDescargarFile?.(file, file.name)) {
-        return;
-      }
-
-      await descargarImagenFinal();
+      await descargarArchivoBibliaPreparado(file);
       alert("Tu dispositivo/navegador no permite compartir directo. La imagen se descargó para compartirla manualmente.");
 
     } catch (e) {
@@ -8116,13 +8089,17 @@ async function compartirImagenFinal() {
 
       console.warn("Share falló:", e);
 
-      if (await window.vaAndroidDescargarFile?.(file, file.name)) {
-        return;
-      }
-
-      await descargarImagenFinal();
+      await descargarArchivoBibliaPreparado(file);
     }
   });
+}
+
+async function descargarArchivoBibliaPreparado(file) {
+  if (await window.vaAndroidDescargarFile?.(file, file.name)) return;
+  const url = URL.createObjectURL(file);
+  const link = document.createElement("a");
+  link.href = url; link.download = file.name; clickLink(link);
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
 
 // ================= ⭐ RESET DEL MODAL  =======================
@@ -8266,7 +8243,12 @@ async function withRenderLock(fn) {
 window.__canvasFinalCache = {
   key: "",       // firma del estado renderizado
   busy: false,   // evita renders dobles
-  lastOk: false
+  lastOk: false,
+  revision: 0,
+  blob: null,
+  blobKey: "",
+  blobPromise: null,
+  renderPromise: null
 };
 
 function getRenderKey() {
@@ -8293,7 +8275,11 @@ function getRenderKey() {
     font,
     color,
     opBack,
-    JSON.stringify(editorTextoBiblia)
+    JSON.stringify(editorTextoBiblia),
+    JSON.stringify(textStyle), fuenteActual,
+    preview.__vaEditor?.opts?.fontPx || document.getElementById("personalizarTamaño")?.value,
+    getComputedStyle(document.getElementById("previewTextoBack") || preview).textShadow,
+    document.getElementById("previewTextoWrapper")?.style.cssText || ""
   ].join("|");
 }
 
@@ -8301,55 +8287,41 @@ function getRenderKey() {
 function invalidarRenderFinal() {
   window.__canvasFinalCache.key = "";
   window.__canvasFinalCache.lastOk = false;
+  window.__canvasFinalCache.revision++;
+  window.__canvasFinalCache.blob = null;
+  window.__canvasFinalCache.blobKey = "";
+  window.__canvasFinalCache.blobPromise = null;
 }
 
 // Render SOLO si hace falta (si cambió algo)
 async function asegurarCanvasFinal({ subir = false } = {}) {
   const modal = document.getElementById("modalPersonalizar");
   const canvas = document.getElementById("canvasFinal");
-  if (!canvas) return false;
-
-  // si el modal no está visible, no renderices
-  if (modal && getComputedStyle(modal).display === "none") return false;
-
-  const nuevaKey = getRenderKey();
-
-  // ✅ si ya está renderizado con el mismo estado, no hacemos nada
-  if (
-    window.__canvasFinalCache.lastOk &&
-    window.__canvasFinalCache.key === nuevaKey &&
-    canvas.width > 10 && canvas.height > 10
-  ) {
-    // Si alguien pidió "subir", subimos sin re-render
-if (subir) {
-  await subirImagenBibliaUnaVezYGuardarDestinos();
-}
-
-    return true;
-  }
-
-  // ✅ evita renders simultáneos: si ya está ocupado, devolvemos false
-  if (window.__canvasFinalCache.busy) return false;
-  window.__canvasFinalCache.busy = true;
-
-  try {
-    // ✅ acá estaba tu bug: NO hay que llamarse a sí misma
-    const ok = await generarImagenFinal({ subir: false });
-
-    if (ok) {
-      window.__canvasFinalCache.key = nuevaKey;
-      window.__canvasFinalCache.lastOk = true;
-
-if (subir) {
-  await subirImagenBibliaUnaVezYGuardarDestinos();
-}
-
+  if (!canvas || (modal && getComputedStyle(modal).display === "none")) return false;
+  const cache = window.__canvasFinalCache;
+  let ok = cache.lastOk && cache.key === getRenderKey() && canvas.width > 10 && canvas.height > 10;
+  if (!ok) {
+    if (!cache.renderPromise) {
+      cache.busy = true;
+      cache.renderPromise = (async () => {
+        // Si el usuario cambia el diseño durante la captura, no entregar una versión anterior.
+        for (let intento = 0; intento < 2; intento++) {
+          const revision = cache.revision, key = getRenderKey();
+          if (!await generarImagenFinal({subir:false})) return false;
+          if (revision === cache.revision && key === getRenderKey()) {
+            cache.key = getRenderKey(); cache.lastOk = true;
+            return true;
+          }
+        }
+        return false;
+      })();
     }
-
-    return ok;
-  } finally {
-    window.__canvasFinalCache.busy = false;
+    const promise = cache.renderPromise;
+    try { ok = await promise; }
+    finally { if (cache.renderPromise === promise) { cache.renderPromise = null; cache.busy = false; } }
   }
+  if (ok && subir) return await subirImagenBibliaUnaVezYGuardarDestinos();
+  return ok;
 }
 
 // ================= 🔺 WINDOW / UI ⭕ ===============================
@@ -8929,6 +8901,18 @@ function asegurarEstiloToggleMarcadores() {
       opacity:.42;
       font-weight:900;
     }
+    #modalMarcadores #marcadoresCabeceraIzquierda{
+      display:flex!important;flex-direction:column!important;align-items:stretch!important;
+      flex:1 1 auto!important;min-width:0!important;gap:5px!important;
+    }
+    #modalMarcadores #marcadoresCabeceraIzquierda .marcadores-busqueda-wrap{
+      width:100%!important;max-width:none!important;min-width:0!important;box-sizing:border-box!important;
+      flex:0 0 auto!important;margin:0!important;gap:5px!important;
+    }
+    #modalMarcadores #marcadoresCabeceraIzquierda .marcadores-vista-toggle{
+      justify-content:flex-start!important;gap:3px!important;
+    }
+    #modalMarcadores #marcadoresCabeceraIzquierda .marcadores-vista-btn{padding:4px 6px!important;}
   `;
 
   document.head.appendChild(st);

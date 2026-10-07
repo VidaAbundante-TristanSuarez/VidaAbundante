@@ -1,4 +1,4 @@
-import { ordenarFondos, registrarUsoFondo, urlFondoSeguro, cargarFondoBlob, prepararMiniaturas, montarEditorTexto, aplicarCajaTexto, dibujarCajaTexto, aplicarFormatoSeleccion, alternarFormatoSeleccion, restaurarControlesTexto, aplicarSubrayadoTexto } from "./imagen-editor.js?v=20261006-gestos-3";
+import { ordenarFondos, registrarUsoFondo, urlFondoSeguro, cargarFondoBlob, prepararMiniaturas, montarEditorTexto, aplicarCajaTexto, dibujarCajaTexto, aplicarFormatoSeleccion, alternarFormatoSeleccion, restaurarControlesTexto, aplicarSubrayadoTexto, crearInstantaneaPreview, esperarFuentesPreview } from "./imagen-editor.js?v=20261006-exportacion-4";
 
 // devocionales.js (NUEVO LIMPIO)
 // ✅ OCR + Recorte + Modal 3 fases (9:9 + 9:7 => 9:16)
@@ -21,6 +21,42 @@ console.log("✅ devocionales.js cargó (module)", "APK-CANVAS-DIRECT-20260905-1
 window.__DEV_DEVOCIONALES_LOADED__ = true;
 
 function $(id){ return document.getElementById(id); }
+const DEV_EXPORT_PREVIEWS = new Map();
+let devRevisionPNGFinal = 0;
+
+function devInvalidarPNGFinal(){
+  devRevisionPNGFinal++;
+  window.__devFinalCanvas = null;
+  window.__devFinalFile = null;
+}
+
+function devLiberarInstantaneasPreview(){
+  for (const snapshot of DEV_EXPORT_PREVIEWS.values()) snapshot.remove();
+  DEV_EXPORT_PREVIEWS.clear();
+  devInvalidarPNGFinal();
+}
+
+async function devCapturarPreviewFase(fase){
+  const source = $(`dev${fase}Preview`);
+  await Promise.all([esperarFuentesPreview(source), devEsperarImagenesNodo(source, 1800)]);
+  const snapshot = crearInstantaneaPreview(source);
+  if (!snapshot) throw new Error("No pude leer la preview de la fase " + fase);
+  snapshot.texto = snapshot.get($(`dev${fase}Texto`));
+  DEV_EXPORT_PREVIEWS.get(fase)?.remove();
+  DEV_EXPORT_PREVIEWS.set(fase, snapshot);
+  devInvalidarPNGFinal();
+  return snapshot;
+}
+
+function devDibujarPreviewTexto(ctx, fase){
+  const snapshot = DEV_EXPORT_PREVIEWS.get(fase);
+  if (!snapshot) throw new Error("Falta la preview de la fase " + fase);
+  const scale = 1080 / snapshot.width;
+  ctx.save(); ctx.scale(scale, scale);
+  try {
+    dibujarCajaTexto(ctx, {stage:snapshot.stage, target:snapshot.texto, aplicar:false, resaltadoDOM:fase === 1});
+  } finally { ctx.restore(); }
+}
 
 /* =========================================================
    0) ESTADO GLOBAL DEV
@@ -143,6 +179,7 @@ style: { upper:false, bold:false, italic:false, underline:false }
 let seleccionFondoDevToken = 0;
 
 function devResetAjustesDevocionalNuevo(){
+  devLiberarInstantaneasPreview();
   seleccionFondoDevToken++;
   DEV.f1.editor = {}; DEV.f2.editor = {};
   // ✅ limpiar fondo anterior de fase 1
@@ -1325,8 +1362,7 @@ window.devCerrarTodo = () => {
 
   devResetAudioManual();
 
-  window.__devFinalCanvas = null;
-  window.__devFinalFile = null;
+  devInvalidarPNGFinal();
   if (typeof devLiberarPreviewFinalUrl === "function") devLiberarPreviewFinalUrl();
 
   // ✅ reset visual de la pantalla crear
@@ -4870,7 +4906,7 @@ async function devRenderFinalCanvasDirectoAPK(cFinal, ctx, W = 1080, H = 1920){
   DEV_CANVAS_IMG_CACHE.clear();
 
   devF3Estado("Preparando modo rápido APK");
-  await devCanvasEsperarFuentesDirectas();
+  await Promise.all([...DEV_EXPORT_PREVIEWS.values()].map(snapshot => esperarFuentesPreview(snapshot.stage)));
 
   const fondoF1Url = DEV.f1.fondoBlob || DEV.f1.fondoUrl || "";
   const texturas = devF2TexturasSeleccionadas();
@@ -4916,7 +4952,7 @@ async function devRenderFinalCanvasDirectoAPK(cFinal, ctx, W = 1080, H = 1920){
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, W, H1);
   if (fondoF1) devCanvasDibujarCover(ctx, fondoF1, 0, 0, W, H1);
-  devCanvasDibujarFase1Texto(ctx);
+  devDibujarPreviewTexto(ctx, 1);
   ctx.restore();
 
   devF3Estado("Dibujando Fase 2");
@@ -4943,7 +4979,18 @@ async function devRenderFinalCanvasDirectoAPK(cFinal, ctx, W = 1080, H = 1920){
     try { texCanvas.width = 0; texCanvas.height = 0; } catch {}
   }
 
-  devCanvasDibujarF2Texto(f2ctx, adornoImg);
+  devDibujarPreviewTexto(f2ctx, 2);
+  if (adornoImg) {
+    const snapshot = DEV_EXPORT_PREVIEWS.get(2);
+    const img = snapshot.stage.querySelector('img');
+    if (img) {
+      const r = img.getBoundingClientRect(), sr = snapshot.stage.getBoundingClientRect();
+      const scale = 1080 / snapshot.width;
+      f2ctx.save(); f2ctx.globalAlpha = Number(DEV.f2.adornoOpacidad ?? 1);
+      f2ctx.drawImage(adornoImg, (r.left-sr.left)*scale, (r.top-sr.top)*scale, r.width*scale, r.height*scale);
+      f2ctx.restore();
+    }
+  }
   ctx.drawImage(f2Canvas, 0, H1);
   try { f2Canvas.width = 0; f2Canvas.height = 0; } catch {}
 
@@ -5014,203 +5061,39 @@ async function renderFinalCanvasCaptureReal(){
     return null;
   }
 
-  const H1 = 1080, H2 = 840;
-
-  let stage = document.getElementById("devCaptureStage");
-  if (!stage) {
-    stage = document.createElement("div");
-    stage.id = "devCaptureStage";
-    stage.style.position = "fixed";
-    stage.style.left = "-10000px";
-    stage.style.top  = "-10000px";
-    stage.style.opacity = "1";
-    stage.style.visibility = "visible";
-    stage.style.pointerEvents = "none";
-    stage.style.transform = "none";
-    stage.style.zIndex = "-1";
-    document.body.appendChild(stage);
-  }
-  stage.innerHTML = "";
-
-  const makeFase1Node = () => {
-    const st = DEV.f1;
-    const node = document.createElement("div");
-    node.style.width = W + "px";
-    node.style.height = H1 + "px";
-    node.style.position = "relative";
-    node.style.overflow = "hidden";
-    node.style.borderRadius = "0";
-
-    const fondoUsable = st.fondoBlob || st.fondoUrl;
-    node.style.backgroundImage = fondoUsable ? `url("${fondoUsable}")` : "none";
-    node.style.backgroundSize = "cover";
-    node.style.backgroundPosition = "center";
-    node.style.backgroundColor = fondoUsable ? "transparent" : "#ffffff";
-
-const wrap = document.createElement("div");
-wrap.style.position = "absolute";
-wrap.style.inset = "6%";
-
-applyFase1WrapperLook(wrap, st, 1);
-
-    const texto = document.createElement("div");
-    texto.style.position = "absolute";
-    texto.style.inset = "0";
-    texto.style.fontFamily = st.fuente;
-    texto.style.color = st.color;
-    applyTextStylesToOne(texto, st);
-
-const outlineFinalF1 = 2.15;
-const outlineF1 = devHexSeguro(st.outlineColor) || devGetOutlineColor(1, st.color);
-
-texto.style.textShadow = textShadowLegibleFinal(st.color, outlineFinalF1, outlineF1);
-texto.style.webkitTextStroke = `${(0.72 * outlineFinalF1).toFixed(2)}px ${outlineF1}`;
-texto.style.paintOrder = "stroke fill";
-texto.innerHTML = buildFase1HTML(st.size, 1);
-
-    wrap.appendChild(texto);
-    node.appendChild(wrap);
-    return node;
-  };
-
-  const makeFase2Node = () => {
-    const st = DEV.f2;
-
-    const node = document.createElement("div");
-    node.style.width = W + "px";
-    node.style.height = H2 + "px";
-    node.style.position = "relative";
-    node.style.overflow = "hidden";
-    node.style.borderRadius = "0";
-    dev2AplicarFondoBase(node, st);
-
-    const texturasActivas = devF2TexturasSeleccionadas();
-
-    if (texturasActivas.length) {
-      const textureLayer = document.createElement("div");
-      textureLayer.style.position = "absolute";
-      textureLayer.style.inset = "0";
-      textureLayer.style.backgroundImage = texturasActivas
-        .map(url => devUrlRecursoSeguro(
-          url,
-          "textura_devocional.png"
-        ))
-        .map(url => `url("${url}")`)
-        .join(", ");
-      textureLayer.style.backgroundSize = texturasActivas
-        .map(() => "cover")
-        .join(", ");
-      textureLayer.style.backgroundPosition = texturasActivas
-        .map(() => "center")
-        .join(", ");
-      textureLayer.style.backgroundRepeat = texturasActivas
-        .map(() => "no-repeat")
-        .join(", ");
-      textureLayer.style.opacity = String(
-        Math.max(0, Math.min(1, Number(st.texturaOp ?? 0.22)))
-      );
-      textureLayer.style.mixBlendMode = "normal";
-      textureLayer.style.filter = "none";
-      textureLayer.style.pointerEvents = "none";
-
-      node.appendChild(textureLayer);
-    }
-
-    const wrap = document.createElement("div");
-    wrap.style.position = "absolute";
-    wrap.style.inset = "16px";
-    wrap.style.overflow = "hidden";
-    wrap.style.textAlign = "center";
-    wrap.style.zIndex = "1";
-
-    const texto = document.createElement("div");
-    texto.style.width = "100%";
-    texto.style.height = "100%";
-    texto.style.fontFamily = st.fuente;
-    texto.style.color = st.color;
-    applyTextStylesToOne(texto, st);
-
-    const outlineF2 = devHexSeguro(st.outlineColor) || devGetOutlineColor(2, st.color);
-
-texto.style.textShadow = textShadowLegibleFinal(st.color, 1.25, outlineF2);
-texto.style.webkitTextStroke = "0.75px " + outlineF2;
-    texto.style.paintOrder = "stroke fill";
-    texto.innerHTML = buildFase2HTML(st.size, 1);
-    wrap.appendChild(texto);
-    node.appendChild(wrap);
-
-    return node;
-  };
-
-  const n1 = makeFase1Node();
-  const n2 = makeFase2Node();
-
-  // Capturamos las dos fases JUNTAS en una sola pasada.
-  // Antes se invocaba html2canvas dos veces y Chromium tenía que clonar,
-  // medir y rasterizar el árbol dos veces. En WebView ese costo era enorme.
-  stage.style.width = W + "px";
-  stage.style.height = H + "px";
-  stage.style.display = "block";
-  stage.appendChild(n1);
-  stage.appendChild(n2);
-  devAplicarEditorTexto(1, n1);
-  devAplicarEditorTexto(2, n2);
-
-  devF3Estado("Preparando tipografía y recursos");
-  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-
-  // Las fuentes ya se usaron en las previews; sólo damos un margen corto
-  // por si Android WebView todavía estaba terminando de resolver alguna.
-  await devEsperarFuentesFase3(700);
-
-  // El adorno visible debe estar cargado; no bloqueamos cinco segundos enteros.
-  await devEsperarImagenesNodo(n2, 1800);
-
-  const cuerpos = [n1.querySelector('[data-va-editor-block="dev1"]'), n2.querySelector('[data-va-editor-block="dev2"]')];
-  for (const cuerpo of cuerpos) cuerpo.style.visibility = "hidden";
-  const limpiarResaltadoF1 =
-    devPrepararResaltadoF1ParaCaptura(n1);
-
-  let captura = null;
-
-  try {
-    devF3Estado("Generando imagen 1080×1920");
-    captura = await html2canvas(stage, {
-      backgroundColor: null,
-      scale: 1,
-      useCORS: true,
-      // Los recursos elegidos ya están visibles/cargados en Fase 1 y 2.
-      // Un timeout corto evita esperas de varios segundos por recursos rotos.
-      imageTimeout: 2200,
-      logging: false,
-      width: W,
-      height: H
-    });
-  } finally {
-    limpiarResaltadoF1();
-    for (const cuerpo of cuerpos) cuerpo.style.removeProperty("visibility");
-    if (!captura) {
-      stage.replaceChildren();
-    }
-  }
-
-  if (!captura) {
-    throw new Error("html2canvas no devolvió la imagen final.");
-  }
-
-  devF3Estado("Componiendo resultado final");
-  try {
-    ctx.drawImage(captura, 0, 0, W, H);
-    devDibujarEditorCanvas(ctx, 1, n1);
-    ctx.save();
+  const H1 = 1080;
+  for (const fase of [1, 2]) {
+    const snapshot = DEV_EXPORT_PREVIEWS.get(fase);
+    if (!snapshot) throw new Error("Falta la preview de la fase " + fase);
+    await esperarFuentesPreview(snapshot.stage);
+    await devEsperarImagenesNodo(snapshot.stage, 1800);
+    const text = snapshot.texto;
+    const visibility = text.style.getPropertyValue("visibility");
+    const priority = text.style.getPropertyPriority("visibility");
+    const images = [...text.querySelectorAll('img')];
+    const imageStyles = images.map(img => [img, img.style.getPropertyValue('visibility'), img.style.getPropertyPriority('visibility')]);
+    text.style.setProperty("visibility", "hidden", "important");
+    for (const img of images) img.style.setProperty("visibility", "visible", "important");
+    let capture;
     try {
-      ctx.translate(0, H1);
-      devDibujarEditorCanvas(ctx, 2, n2);
-    } finally { ctx.restore(); }
-  } finally {
-    // Liberar los recursos también si falla el dibujo del texto.
-    try { captura.width = 0; captura.height = 0; } catch {}
-    stage.replaceChildren();
+      capture = await html2canvas(snapshot.stage, {
+        backgroundColor:null, scale:1080/snapshot.width, useCORS:true,
+        imageTimeout:2200, logging:false, width:snapshot.width, height:snapshot.height
+      });
+      const top = fase === 1 ? 0 : H1;
+      const height = fase === 1 ? H1 : 840;
+      ctx.drawImage(capture, 0, top, 1080, height);
+      ctx.save(); ctx.translate(0, top);
+      try { devDibujarPreviewTexto(ctx, fase); } finally { ctx.restore(); }
+    } finally {
+      if (visibility) text.style.setProperty("visibility", visibility, priority);
+      else text.style.removeProperty("visibility");
+      for (const [img, value, importance] of imageStyles) {
+        if (value) img.style.setProperty('visibility', value, importance);
+        else img.style.removeProperty('visibility');
+      }
+      if (capture) { capture.width = 0; capture.height = 0; }
+    }
   }
 
   // ✅ unión suave entre imagen superior y bloque inferior
@@ -5232,21 +5115,9 @@ window.devToggleSubirPanel = () => {
 
 // ✅ descarga PNG
 async function devDescargarPNG(){
-  const c = await renderFinalCanvasCaptureReal();
-  if (!c) return;
-
+  await devAsegurarShareFinalListo();
   const fecha = DEV?.p1?.fecha || "sin_fecha";
-  const name = "Devocional_" + safeFilePart(fecha) + ".png";
-
-  c.toBlob((blob)=>{
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = name;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(()=> URL.revokeObjectURL(a.href), 2000);
-  }, "image/png");
+  await devDescargarImagenSolo(window.__devFinalCanvas, "Devocional_" + safeFilePart(fecha) + ".png");
 }
 
 // ✅ descarga pack: primero PNG, luego audio
@@ -5330,8 +5201,7 @@ window.devIrFase1Desde0 = async () => {
   // reset final
   DEV.finalDataUrl = "";
   if (typeof devLiberarPreviewFinalUrl === "function") devLiberarPreviewFinalUrl();
-  window.__devFinalCanvas = null;
-  window.__devFinalFile = null;
+  devInvalidarPNGFinal();
   const imgF = $("devFinalImg");
   if (imgF && DEV.finalOriginalUrl && DEV.finalizadaMode) {
     imgF.src = DEV.finalOriginalUrl;
@@ -5356,9 +5226,7 @@ window.devIrFase1Desde0 = async () => {
 
     devSetLoadingFase3(true, "⏳ Preparando imagen finalizada…");
     try {
-      const c = await renderFinalCanvasCaptureReal();
-      if (!c) throw new Error("No se pudo crear el canvas final.");
-      await devPrepararShareFinalDesdeCanvas(c);
+      await devAsegurarShareFinalListo();
     } catch (e) {
       console.error("❌ Error preparando imagen finalizada:", e);
       alert("❌ No pude preparar la imagen final.\n\nDetalle: " + (e?.message || e));
@@ -5438,8 +5306,9 @@ function devF2HeredarTextoDesdeF1SiCorresponde(){
   devSetHostColorVisual("dev2OutlineColorHost", finalOutline);
 }
 
-window.devIrFase2 = () => {
-  devRenderFase(1);
+window.devIrFase2 = async () => {
+  try { await devCapturarPreviewFase(1); }
+  catch (e) { alert("No pude preparar la imagen.\n\nDetalle: " + (e?.message || e)); return; }
 
   cerrarModal("modalDevFase1");
   abrirModal("modalDevFase2");
@@ -5483,7 +5352,8 @@ window.devVolverFase1 = () => {
 };
 
 window.devIrFase3 = async () => {
-  devRenderFase(2);
+  try { await devCapturarPreviewFase(2); }
+  catch (e) { alert("No pude preparar la imagen.\n\nDetalle: " + (e?.message || e)); return; }
 
   // La foto original usada para OCR ya no participa de Fase 3.
   // Liberarla antes de html2canvas reduce mucho el pico de RAM en Android/WebView.
@@ -5509,9 +5379,7 @@ window.devIrFase3 = async () => {
 
   try {
     if (devEsAPKAndroid() || typeof html2canvas === "function") {
-      const c = await renderFinalCanvasCaptureReal();
-      if (!c) throw new Error("No se pudo crear el canvas final.");
-      await devPrepararShareFinalDesdeCanvas(c);
+      await devAsegurarShareFinalListo();
     } else {
       throw new Error("Falta html2canvas. Cargalo como en biblia.js");
     }
@@ -5529,8 +5397,7 @@ window.devIrFase3 = async () => {
 window.devVolverFase2 = () => {
   cerrarModal("modalDevFase3");
   abrirModal("modalDevFase2");
-  window.__devFinalCanvas = null;
-  window.__devFinalFile = null;
+  devInvalidarPNGFinal();
   devRenderFase(2);
 };
 
@@ -5966,12 +5833,15 @@ function devLiberarPreviewFinalUrl(){
 async function devPrepararShareFinalDesdeCanvas(canvas){
   if (!canvas) return null;
 
+  if (window.__devFinalCanvas === canvas && window.__devFinalFile) return window.__devFinalFile;
+  const revision = devRevisionPNGFinal;
   window.__devFinalCanvas = canvas;
 
   devF3Estado("Codificando PNG final");
 
   // ÚNICA codificación PNG de Fase 3.
   const blob = await new Promise(res => canvas.toBlob(res, "image/png"));
+  if (revision !== devRevisionPNGFinal) return null;
   if (!blob) {
     window.__devFinalFile = null;
     return null;
@@ -5991,7 +5861,7 @@ async function devPrepararShareFinalDesdeCanvas(canvas){
   return window.__devFinalFile;
 }
 
-async function devDescargarImagenSolo(canvas){
+async function devDescargarImagenSolo(canvas, fileName = "devocional.png"){
   // Si Fase 3 ya preparó el PNG, reutilizarlo.
   // Evita volver a codificar el canvas completo al descargar.
   const blob =
@@ -6005,14 +5875,14 @@ async function devDescargarImagenSolo(canvas){
   }
 
   if (devEsAPKAndroid() && window.AndroidVida?.descargarArchivoBase64) {
-    await devAndroidDescargarBlob(blob, "devocional.png", "image/png");
+    await devAndroidDescargarBlob(blob, fileName, "image/png");
     return;
   }
 
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = "devocional.png";
+  link.download = fileName;
   document.body.appendChild(link);
   link.click();
   link.remove();
@@ -6346,13 +6216,12 @@ async function devSubirImagenBaseUnaVez(tsParam){
     throw new Error("Usuario no logueado");
   }
 
-  const c = await renderFinalCanvasCaptureReal();
-  if (!c) throw new Error("No se pudo renderizar el canvas final");
+  await devAsegurarShareFinalListo();
 
   const ts = Number(tsParam) || Date.now();
   const fileName = `devocional_${ts}.png`;
 
-  const blob = await new Promise(res => c.toBlob(res, "image/png"));
+  const blob = window.__devFinalFile;
   if (!blob) throw new Error("No se pudo convertir a PNG");
 
   const fileBase64 = await blobToBase64(blob);
@@ -6436,13 +6305,25 @@ async function devGuardarEnMiPanel(asset){
 // ✅ candado anti doble submit
 DEV.publicando = DEV.publicando || false;
 
+let devPreparandoPNGFinal = null;
 async function devAsegurarShareFinalListo(){
   if (window.__devFinalCanvas && window.__devFinalFile) return;
-
-  const c = await renderFinalCanvasCaptureReal();
-  if (!c) throw new Error("No se pudo preparar la imagen para compartir.");
-
-  await devPrepararShareFinalDesdeCanvas(c);
+  if (!devPreparandoPNGFinal) {
+    devPreparandoPNGFinal = (async () => {
+      for (let intento = 0; intento < 2; intento++) {
+        const revision = devRevisionPNGFinal;
+        const c = await renderFinalCanvasCaptureReal();
+        if (!c) throw new Error("No se pudo preparar la imagen para compartir.");
+        if (revision !== devRevisionPNGFinal) continue;
+        const file = await devPrepararShareFinalDesdeCanvas(c);
+        if (file && revision === devRevisionPNGFinal) return;
+      }
+      throw new Error("El diseño cambió mientras se preparaba la imagen. Volvé a intentarlo.");
+    })();
+  }
+  const promise = devPreparandoPNGFinal;
+  try { await promise; }
+  finally { if (devPreparandoPNGFinal === promise) devPreparandoPNGFinal = null; }
 }
 
 window.devFinalizar = async () => {
@@ -8486,7 +8367,7 @@ function devAplicarEditorTexto(fase, stage, interactivo = false) {
     bounds: fase === 1 ? {left:.07,right:.93,top:.14,bottom:.86} : {left:.03,right:.97,top:.02,bottom},
     onChange: () => {
       st.userChanged = true;
-      window.__devFinalCanvas = null; window.__devFinalFile = null;
+      devInvalidarPNGFinal();
     }
   };
   if (interactivo) montarEditorTexto(opts);

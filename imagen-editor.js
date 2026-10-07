@@ -605,68 +605,165 @@ export function montarEditorTexto(opts) {
   editar(c,c.editing);posicionarControles(c);
 }
 
-// Web y APK dibujan el mismo texto, con las posiciones medidas por el navegador.
+// Congelar la preview visible conserva sus medidas, estilos y saltos al exportar.
+export function crearInstantaneaPreview(source) {
+  const rect=source?.getBoundingClientRect();
+  if(!rect?.width || !rect.height)return null;
+  const sourceStyle=getComputedStyle(source);
+  const width=parseFloat(sourceStyle.width)||rect.width,height=parseFloat(sourceStyle.height)||rect.height;
+  const stage=source.cloneNode(true),nodes=new Map();
+  function copiar(original,clone){
+    nodes.set(original,clone);
+    if(original.nodeType!==1)return;
+    const css=getComputedStyle(original);
+    for(let i=0;i<css.length;i++){
+      const property=css[i];
+      if(property==='visibility' && css.getPropertyValue(property)==='visible'){clone.style.removeProperty(property);continue;}
+      clone.style.setProperty(property,css.getPropertyValue(property),'important');
+    }
+    clone.removeAttribute('id');clone.removeAttribute('contenteditable');
+    for(let i=0;i<original.childNodes.length;i++)copiar(original.childNodes[i],clone.childNodes[i]);
+  }
+  copiar(source,stage);
+  for(const el of stage.querySelectorAll('[data-html2canvas-ignore],.va-editor-overlay'))el.remove();
+  for(const [property,value]of Object.entries({position:'relative',left:'0',top:'0',right:'auto',bottom:'auto',margin:'0',transform:'none',width:`${width}px`,height:`${height}px`,visibility:'visible'}))stage.style.setProperty(property,value,'important');
+  const holder=document.createElement('div');
+  Object.assign(holder.style,{position:'fixed',left:'-20000px',top:'0',width:`${width}px`,height:`${height}px`,pointerEvents:'none',zIndex:'-1'});
+  holder.appendChild(stage);document.body.appendChild(holder);
+  return {stage,width,height,get:original=>nodes.get(original),remove:()=>holder.remove()};
+}
+
+export async function esperarFuentesPreview(root) {
+  if(!root || !document.fonts?.load)return;
+  const fuentes=new Map(),walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);
+  while(walker.nextNode()){
+    const text=walker.currentNode.textContent.trim();if(!text)continue;
+    const cs=getComputedStyle(walker.currentNode.parentElement);
+    const font=`${cs.fontStyle || 'normal'} ${cs.fontWeight || '400'} 16px ${cs.fontFamily}`;
+    fuentes.set(font,(fuentes.get(font)||'')+text);
+  }
+  await Promise.allSettled([...fuentes].map(([font,text])=>document.fonts.check?.(font,text)?Promise.resolve():document.fonts.load(font,text)));
+}
+
+function metricaDOM(css,letter,cache) {
+  const key=[css.fontFamily,css.fontSize,css.fontWeight,css.fontStyle,letter].join('|');
+  if(cache.has(key))return cache.get(key);
+  const probe=document.createElement('span'),marker=document.createElement('span');
+  Object.assign(probe.style,{position:'fixed',left:'-24000px',top:'0',padding:'0',margin:'0',border:'0',whiteSpace:'pre',lineHeight:'normal'});
+  for(const property of ['fontFamily','fontSize','fontWeight','fontStyle','fontStretch','fontVariant','fontVariationSettings','textTransform'])probe.style[property]=css[property];
+  probe.appendChild(document.createTextNode(letter));
+  Object.assign(marker.style,{display:'inline-block',width:'0',height:'0',padding:'0',margin:'0',border:'0',verticalAlign:'baseline'});
+  probe.appendChild(marker);document.body.appendChild(probe);
+  const range=document.createRange();range.selectNodeContents(probe.firstChild);
+  const r=range.getBoundingClientRect(),baseline=marker.getBoundingClientRect().top-r.top;
+  const result=r.height>0 && baseline>0 && baseline<=r.height ? {height:r.height,baseline} : null;
+  probe.remove();cache.set(key,result);return result;
+}
+function decoracionTexto(el,stage){
+  for(let node=el;node && stage.contains(node);node=node.parentElement){
+    const css=getComputedStyle(node);
+    if(css.textDecorationLine?.includes('underline') || css.textDecoration?.includes('underline'))return css;
+  }
+  return null;
+}
+function longitudTexto(value,px,fallback){
+  if(!value || value==='auto' || value==='from-font')return fallback;
+  const n=parseFloat(value);if(!Number.isFinite(n))return fallback;
+  return /em$/.test(value)?n*px:n;
+}
+
+// Web y APK usan la geometría y la línea de base de la misma preview.
 export function dibujarCajaTexto(ctx, opts) {
   const {stage, target, state, fontPx, color, outline, stroke=1, highlight='', spread=0}=opts;
   if(!target)return;
-  aplicarCajaTexto(opts);
+  if(opts.aplicar!==false)aplicarCajaTexto(opts);
   const sr=stage.getBoundingClientRect();
+  const metricas=new Map();
   ctx.save();
   ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';
   ctx.shadowColor='transparent';ctx.shadowBlur=0;ctx.shadowOffsetX=ctx.shadowOffsetY=0;
   try {
-  if(highlight){
+  if(highlight || opts.resaltadoDOM){
     const rangos=[];
-    for(const span of target.querySelectorAll('.va-rich-highlight,.dev-f1-resaltado-lineas')){
+    const root=opts.highlightRoot || target;
+    for(const span of root.querySelectorAll('.va-rich-highlight,.dev-f1-resaltado-lineas,.preview-biblia-linea,.preview-biblia-cita')){
+      const css=getComputedStyle(span),fill=highlight || css.backgroundColor;
+      if(!fill || fill==='transparent' || fill==='rgba(0, 0, 0, 0)')continue;
+      const shadowOffsets=[...String(css.boxShadow).matchAll(/(-?[\d.]+)px/g)].map(m=>Math.abs(Number(m[1])));
+      const expansion=opts.resaltadoDOM?Math.max(0,...shadowOffsets):spread;
       const range=document.createRange();range.selectNodeContents(span);
-      for(const r of range.getClientRects()) if(r.width && r.height) rangos.push(r);
+      for(const r of range.getClientRects()) if(r.width && r.height)rangos.push({...r,left:r.left,top:r.top,right:r.right,bottom:r.bottom,width:r.width,height:r.height,fill,expansion});
     }
-    ctx.fillStyle=highlight;
     for(const [i,r] of rangos.entries()){
       if(rangos.some((other,j)=>j!==i && other.left<=r.left && other.right>=r.right && other.top<=r.top && other.bottom>=r.bottom && (j<i || other.width>r.width || other.height>r.height)))continue;
+      ctx.fillStyle=r.fill;
       ctx.beginPath();
-      const args=[r.left-sr.left-spread,r.top-sr.top-2,r.width+2*spread,r.height+4];
-      if(ctx.roundRect)ctx.roundRect(...args,Math.min(14,r.height/2));else ctx.rect(...args);
+      const args=[r.left-sr.left-r.expansion,r.top-sr.top,r.width+2*r.expansion,r.height];
+      if(ctx.roundRect)ctx.roundRect(...args,r.height/2);else ctx.rect(...args);
       ctx.fill();
     }
   }
   const walker=document.createTreeWalker(target,NodeFilter.SHOW_TEXT);
   let node;
   while((node=walker.nextNode())){
-    const cs=getComputedStyle(node.parentElement);const zoom=state.geometry?state.zoom:1;
-    const px=parseFloat(cs.fontSize)*zoom;
-    if(!px || !node.textContent.trim())continue;
+    const cs=getComputedStyle(node.parentElement),basePx=parseFloat(cs.fontSize);
+    if(!basePx || !node.textContent.trim())continue;
+    const range=document.createRange(),runs=[];
+    const preserve=/pre|break-spaces/.test(cs.whiteSpace);
+    let run=null,first=null;
+    for(let i=0;i<node.length;){
+      const letter=String.fromCodePoint(node.textContent.codePointAt(i));
+      range.setStart(node,i);i+=letter.length;range.setEnd(node,i);const r=range.getBoundingClientRect();
+      if(!r.width || !r.height)continue;
+      if(!first && !/\s/u.test(letter))first={letter,r};
+      if(!run || Math.abs(r.top-run.top)>basePx*.2){run={text:'',left:r.left,top:r.top,right:r.right,bottom:r.bottom,height:r.height};runs.push(run);}
+      run.text+=!preserve && /[\r\n\t\f ]/.test(letter)?' ':letter;
+      run.right=Math.max(run.right,r.right);run.bottom=Math.max(run.bottom,r.bottom);run.height=run.bottom-run.top;
+    }
+    if(!first)continue;
+    const metrica=opts.aplicar===false?metricaDOM(cs,first.letter,metricas):null;
+    const zoom=metrica?first.r.height/metrica.height:(state?.geometry?state.zoom:1);
+    const px=basePx*zoom;
     ctx.font=`${cs.fontStyle} ${cs.fontWeight} ${px}px ${cs.fontFamily}`;
     ctx.textAlign='left';ctx.textBaseline='alphabetic';ctx.lineJoin='round';
-    const borde=contornoPalabra(node.parentElement,target,outline);
-    ctx.fillStyle=cs.color||color;ctx.strokeStyle=borde;ctx.lineWidth=stroke*zoom;
-    const shadows=String(cs.textShadow||'').split(/,(?![^(]*\))/).map(s=>{
+    for(const property of ['fontKerning','fontStretch','fontVariantCaps','textRendering','direction'])if(property in ctx && cs[property])ctx[property]=cs[property];
+    for(const property of ['letterSpacing','wordSpacing'])if(property in ctx)ctx[property]=`${longitudTexto(cs[property],basePx,0)*zoom}px`;
+    let alpha=1;for(let el=node.parentElement;el && stage.contains(el);el=el.parentElement)alpha*=Number(getComputedStyle(el).opacity || 1);
+    ctx.globalAlpha=alpha;
+    const respaldo=opts.backTarget?getComputedStyle(opts.backTarget):null;
+    const borde=contornoPalabra(node.parentElement,target,outline || cs.webkitTextStrokeColor || cs.color);
+    const width=opts.aplicar===false?parseFloat((respaldo || cs).webkitTextStrokeWidth)||0:stroke;
+    ctx.fillStyle=cs.color||color;ctx.strokeStyle=borde;ctx.lineWidth=width*zoom;
+    const shadowText=opts.outlineShadow?opts.outlineShadow(borde):(respaldo?.textShadow || cs.textShadow);
+    const shadows=String(shadowText||'').split(/,(?![^(]*\))/).map(s=>{
       const nums=[...s.matchAll(/(-?[\d.]+)px/g)].map(m=>Number(m[1])*zoom);
       const shadowColor=s.match(/rgba?\([^)]*\)|#[\da-f]{3,8}\b/i)?.[0];
-      return nums.length>=2 ? {x:nums[0],y:nums[1],blur:nums[2]||0,color:borde||shadowColor} : null;
+      return nums.length>=2 ? {x:nums[0],y:nums[1],blur:nums[2]||0,color:shadowColor || borde} : null;
     }).filter(Boolean).reverse();
     const metrics=ctx.measureText('Mg');
     const ascent=metrics.fontBoundingBoxAscent||px*.9,descent=metrics.fontBoundingBoxDescent||px*.2;
-    // Agrupamos caracteres de la misma línea para conservar ligaduras y kerning.
-    const range=document.createRange();let start=0;let anterior=null;
-    const flush=end=>{
-      if(end<=start)return;range.setStart(node,start);range.setEnd(node,end);const r=range.getBoundingClientRect();
-      let text=node.textContent.slice(start,end);if(cs.textTransform==='uppercase')text=text.toLocaleUpperCase('es');
-      if(!r.width || !r.height || !text.trim())return;
-      const x=r.left-sr.left,y=r.top-sr.top+(r.height-ascent-descent)/2+ascent;
+    const decoration=decoracionTexto(node.parentElement,stage);
+    for(const r of runs){
+      let text=r.text;if(cs.textTransform==='uppercase')text=text.toLocaleUpperCase('es');
+      if(!text.trim())continue;
+      const x=r.left-sr.left,y=r.top-sr.top+(metrica?metrica.baseline*zoom:(r.height-ascent-descent)/2+ascent);
       for(const shadow of shadows){
         ctx.shadowColor=shadow.color;ctx.shadowOffsetX=shadow.x;ctx.shadowOffsetY=shadow.y;ctx.shadowBlur=shadow.blur;
         ctx.fillText(text,x,y);
       }
       ctx.shadowColor='transparent';ctx.shadowOffsetX=ctx.shadowOffsetY=0;ctx.shadowBlur=0;
-      if(stroke)ctx.strokeText(text,x,y);ctx.fillText(text,x,y);
-      if(tieneSubrayado(node.parentElement,stage)){ctx.beginPath();ctx.strokeStyle=ctx.fillStyle;ctx.lineWidth=Math.max(1,px/18);ctx.moveTo(x,y+px*.1);ctx.lineTo(x+r.width,y+px*.1);ctx.stroke();ctx.strokeStyle=borde;ctx.lineWidth=stroke*zoom;}
-    };
-    for(let i=0;i<node.textContent.length;i++){
-      range.setStart(node,i);range.setEnd(node,i+1);const r=range.getBoundingClientRect();
-      if(anterior&&Math.abs(r.top-anterior.top)>px*.2){flush(i);start=i;}anterior=r;
+      if(width)ctx.strokeText(text,x,y);ctx.fillText(text,x,y);
+      if(decoration){
+        ctx.beginPath();ctx.strokeStyle=decoration.textDecorationColor || ctx.fillStyle;
+        const decorPx=parseFloat(decoration.fontSize)||basePx;
+        ctx.lineWidth=Math.max(.1,longitudTexto(decoration.textDecorationThickness,decorPx,decorPx/18)*zoom);
+        const offset=longitudTexto(decoration.textUnderlineOffset,decorPx,decorPx*.1)*zoom;
+        ctx.moveTo(x,y+offset);ctx.lineTo(r.right-sr.left,y+offset);
+        for(const shadow of shadows){ctx.shadowColor=shadow.color;ctx.shadowOffsetX=shadow.x;ctx.shadowOffsetY=shadow.y;ctx.shadowBlur=shadow.blur;ctx.stroke();}
+        ctx.shadowColor='transparent';ctx.shadowOffsetX=ctx.shadowOffsetY=0;ctx.shadowBlur=0;ctx.stroke();
+        ctx.strokeStyle=borde;ctx.lineWidth=width*zoom;
+      }
     }
-    flush(node.textContent.length);
   }
   } finally { ctx.restore(); }
 }
