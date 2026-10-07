@@ -671,6 +671,27 @@ function longitudTexto(value,px,fallback){
   const n=parseFloat(value);if(!Number.isFinite(n))return fallback;
   return /em$/.test(value)?n*px:n;
 }
+function escalaElemento(el,stage){
+  let scale=1;
+  for(let node=el;node && node!==stage;node=node.parentElement){
+    const transform=getComputedStyle(node).transform || '';
+    const matrix=transform.match(/^matrix\(([^)]+)\)/);
+    if(matrix){const values=matrix[1].split(',').map(Number);scale*=Math.hypot(values[0],values[1]);}
+    else {const simple=transform.match(/scale\(([\d.]+)\)/);if(simple)scale*=Number(simple[1]);}
+  }
+  return scale;
+}
+function sombrasTexto(value,zoom,transform){
+  return String(value||'').split(/,(?![^(]*\))/).map(part=>{
+    const color=part.match(/rgba?\([^)]*\)|#[\da-f]{3,8}\b/i)?.[0];
+    // En las sombras originales, los desplazamientos 0 no llevan unidad.
+    const lengths=part.replace(color||'','').match(/-?(?:\d*\.\d+|\d+)(?:px)?/g)?.map(parseFloat) || [];
+    if(lengths.length<2)return null;
+    const x=lengths[0]*zoom,y=lengths[1]*zoom;
+    return {x:x*transform.a+y*transform.c,y:x*transform.b+y*transform.d,
+      blur:(lengths[2]||0)*zoom*Math.max(Math.hypot(transform.a,transform.b),Math.hypot(transform.c,transform.d)),color};
+  }).filter(Boolean).reverse();
+}
 
 // Web y APK usan la geometría y la línea de base de la misma preview.
 export function dibujarCajaTexto(ctx, opts) {
@@ -682,6 +703,8 @@ export function dibujarCajaTexto(ctx, opts) {
   ctx.save();
   ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';
   ctx.shadowColor='transparent';ctx.shadowBlur=0;ctx.shadowOffsetX=ctx.shadowOffsetY=0;
+  const outputScale=opts.escalaSalida || 1;
+  const transform=ctx.getTransform?.() || {a:outputScale,b:0,c:0,d:outputScale};
   try {
   if(highlight || opts.resaltadoDOM){
     const rangos=[];
@@ -690,9 +713,12 @@ export function dibujarCajaTexto(ctx, opts) {
       const css=getComputedStyle(span),fill=highlight || css.backgroundColor;
       if(!fill || fill==='transparent' || fill==='rgba(0, 0, 0, 0)')continue;
       const shadowOffsets=[...String(css.boxShadow).matchAll(/(-?[\d.]+)px/g)].map(m=>Math.abs(Number(m[1])));
-      const expansion=opts.resaltadoDOM?Math.max(0,...shadowOffsets):spread;
-      const range=document.createRange();range.selectNodeContents(span);
-      for(const r of range.getClientRects()) if(r.width && r.height)rangos.push({...r,left:r.left,top:r.top,right:r.right,bottom:r.bottom,width:r.width,height:r.height,fill,expansion});
+      const expansion=(opts.resaltadoDOM?Math.max(0,...shadowOffsets):spread)*escalaElemento(span,stage);
+      // Los fragmentos del span son los que pinta CSS. El Range incluye también
+      // cajas de palabras anidadas y dibujaba el resaltado varias veces.
+      let rects=[...span.getClientRects()];
+      if(!rects.length){const range=document.createRange();range.selectNodeContents(span);rects=[...range.getClientRects()];}
+      for(const r of rects) if(r.width && r.height)rangos.push({left:r.left,top:r.top,right:r.right,bottom:r.bottom,width:r.width,height:r.height,fill,expansion});
     }
     for(const [i,r] of rangos.entries()){
       if(rangos.some((other,j)=>j!==i && other.left<=r.left && other.right>=r.right && other.top<=r.top && other.bottom>=r.bottom && (j<i || other.width>r.width || other.height>r.height)))continue;
@@ -726,7 +752,8 @@ export function dibujarCajaTexto(ctx, opts) {
     const px=basePx*zoom;
     ctx.font=`${cs.fontStyle} ${cs.fontWeight} ${px}px ${cs.fontFamily}`;
     ctx.textAlign='left';ctx.textBaseline='alphabetic';ctx.lineJoin='round';
-    for(const property of ['fontKerning','fontStretch','fontVariantCaps','textRendering','direction'])if(property in ctx && cs[property])ctx[property]=cs[property];
+    const valoresCanvas={fontKerning:['auto','normal','none'],fontStretch:['ultra-condensed','extra-condensed','condensed','semi-condensed','normal','semi-expanded','expanded','extra-expanded','ultra-expanded'],fontVariantCaps:['normal','small-caps','all-small-caps','petite-caps','all-petite-caps','unicase','titling-caps'],textRendering:['auto','optimizeSpeed','optimizeLegibility','geometricPrecision'],direction:['ltr','rtl','inherit']};
+    for(const[property,validos]of Object.entries(valoresCanvas))if(property in ctx && validos.includes(cs[property]))ctx[property]=cs[property];
     for(const property of ['letterSpacing','wordSpacing'])if(property in ctx)ctx[property]=`${longitudTexto(cs[property],basePx,0)*zoom}px`;
     let alpha=1;for(let el=node.parentElement;el && stage.contains(el);el=el.parentElement)alpha*=Number(getComputedStyle(el).opacity || 1);
     ctx.globalAlpha=alpha;
@@ -735,11 +762,7 @@ export function dibujarCajaTexto(ctx, opts) {
     const width=opts.aplicar===false?parseFloat((respaldo || cs).webkitTextStrokeWidth)||0:stroke;
     ctx.fillStyle=cs.color||color;ctx.strokeStyle=borde;ctx.lineWidth=width*zoom;
     const shadowText=opts.outlineShadow?opts.outlineShadow(borde):(respaldo?.textShadow || cs.textShadow);
-    const shadows=String(shadowText||'').split(/,(?![^(]*\))/).map(s=>{
-      const nums=[...s.matchAll(/(-?[\d.]+)px/g)].map(m=>Number(m[1])*zoom);
-      const shadowColor=s.match(/rgba?\([^)]*\)|#[\da-f]{3,8}\b/i)?.[0];
-      return nums.length>=2 ? {x:nums[0],y:nums[1],blur:nums[2]||0,color:shadowColor || borde} : null;
-    }).filter(Boolean).reverse();
+    const shadows=sombrasTexto(shadowText,zoom,transform);
     const metrics=ctx.measureText('Mg');
     const ascent=metrics.fontBoundingBoxAscent||px*.9,descent=metrics.fontBoundingBoxDescent||px*.2;
     const decoration=decoracionTexto(node.parentElement,stage);
@@ -748,8 +771,9 @@ export function dibujarCajaTexto(ctx, opts) {
       if(!text.trim())continue;
       const x=r.left-sr.left,y=r.top-sr.top+(metrica?metrica.baseline*zoom:(r.height-ascent-descent)/2+ascent);
       for(const shadow of shadows){
-        ctx.shadowColor=shadow.color;ctx.shadowOffsetX=shadow.x;ctx.shadowOffsetY=shadow.y;ctx.shadowBlur=shadow.blur;
-        ctx.fillText(text,x,y);
+        ctx.shadowColor=shadow.color || borde;ctx.shadowOffsetX=shadow.x;ctx.shadowOffsetY=shadow.y;ctx.shadowBlur=shadow.blur;
+        if(width)ctx.strokeText(text,x,y);
+        if(!respaldo || !width)ctx.fillText(text,x,y);
       }
       ctx.shadowColor='transparent';ctx.shadowOffsetX=ctx.shadowOffsetY=0;ctx.shadowBlur=0;
       if(width)ctx.strokeText(text,x,y);ctx.fillText(text,x,y);
@@ -759,7 +783,7 @@ export function dibujarCajaTexto(ctx, opts) {
         ctx.lineWidth=Math.max(.1,longitudTexto(decoration.textDecorationThickness,decorPx,decorPx/18)*zoom);
         const offset=longitudTexto(decoration.textUnderlineOffset,decorPx,decorPx*.1)*zoom;
         ctx.moveTo(x,y+offset);ctx.lineTo(r.right-sr.left,y+offset);
-        for(const shadow of shadows){ctx.shadowColor=shadow.color;ctx.shadowOffsetX=shadow.x;ctx.shadowOffsetY=shadow.y;ctx.shadowBlur=shadow.blur;ctx.stroke();}
+        for(const shadow of shadows){ctx.shadowColor=shadow.color || borde;ctx.shadowOffsetX=shadow.x;ctx.shadowOffsetY=shadow.y;ctx.shadowBlur=shadow.blur;ctx.stroke();}
         ctx.shadowColor='transparent';ctx.shadowOffsetX=ctx.shadowOffsetY=0;ctx.shadowBlur=0;ctx.stroke();
         ctx.strokeStyle=borde;ctx.lineWidth=width*zoom;
       }

@@ -1,4 +1,4 @@
-import { ordenarFondos, registrarUsoFondo, urlFondoSeguro, cargarFondoBlob, prepararMiniaturas, montarEditorTexto, aplicarCajaTexto, dibujarCajaTexto, aplicarFormatoSeleccion, alternarFormatoSeleccion, restaurarControlesTexto, aplicarSubrayadoTexto, crearInstantaneaPreview, esperarFuentesPreview } from "./imagen-editor.js?v=20261006-exportacion-4";
+import { ordenarFondos, registrarUsoFondo, urlFondoSeguro, cargarFondoBlob, prepararMiniaturas, montarEditorTexto, aplicarCajaTexto, dibujarCajaTexto, aplicarFormatoSeleccion, alternarFormatoSeleccion, restaurarControlesTexto, aplicarSubrayadoTexto, crearInstantaneaPreview, esperarFuentesPreview } from "./imagen-editor.js?v=20261007-contornos-items-5";
 
 // devocionales.js (NUEVO LIMPIO)
 // ✅ OCR + Recorte + Modal 3 fases (9:9 + 9:7 => 9:16)
@@ -54,7 +54,7 @@ function devDibujarPreviewTexto(ctx, fase){
   const scale = 1080 / snapshot.width;
   ctx.save(); ctx.scale(scale, scale);
   try {
-    dibujarCajaTexto(ctx, {stage:snapshot.stage, target:snapshot.texto, aplicar:false, resaltadoDOM:fase === 1});
+    dibujarCajaTexto(ctx, {stage:snapshot.stage, target:snapshot.texto, aplicar:false, escalaSalida:scale, resaltadoDOM:fase === 1});
   } finally { ctx.restore(); }
 }
 
