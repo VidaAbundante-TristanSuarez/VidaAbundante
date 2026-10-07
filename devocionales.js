@@ -4906,7 +4906,7 @@ async function devRenderFinalCanvasDirectoAPK(cFinal, ctx, W = 1080, H = 1920){
   // El navegador/WebView conserva su propia caché de red; acá sólo soltamos referencias JS.
   DEV_CANVAS_IMG_CACHE.clear();
 
-  devF3Estado("Preparando modo rápido APK");
+  devF3Estado("Preparando imagen final");
   await Promise.all([...DEV_EXPORT_PREVIEWS.values()].map(snapshot => esperarFuentesPreview(snapshot.stage)));
 
   const fondoF1Url = DEV.f1.fondoBlob || DEV.f1.fondoUrl || "";
@@ -5001,7 +5001,7 @@ async function devRenderFinalCanvasDirectoAPK(cFinal, ctx, W = 1080, H = 1920){
   const listo = makeRoundedCanvas(cFinal, 52);
   const ahora = performance?.now ? performance.now() : Date.now();
   if (DEV_F3_T0) {
-    console.log(`⚡ Fase 3 APK directa: ${((ahora - DEV_F3_T0) / 1000).toFixed(2)} s`);
+    console.log(`⚡ Fase 3 Canvas directo: ${((ahora - DEV_F3_T0) / 1000).toFixed(2)} s`);
   }
   return listo;
 }
@@ -5051,60 +5051,9 @@ async function renderFinalCanvasCaptureReal(){
   // =====================================================
   // MODO NORMAL: composición fases 1 + 2
   // =====================================================
-  // APK Android: ruta directa Canvas 2D. Evita html2canvas por completo.
-  // Los fondos se capturan en web; los bloques de texto se dibujan igual que en APK.
-  if (devEsAPKAndroid()) {
-    return await devRenderFinalCanvasDirectoAPK(cFinal, ctx, W, H);
-  }
-
-  if (typeof html2canvas !== "function") {
-    alert("❌ Falta html2canvas. Agregalo en el HTML como en Biblia.");
-    return null;
-  }
-
-  const H1 = 1080;
-  for (const fase of [1, 2]) {
-    const snapshot = DEV_EXPORT_PREVIEWS.get(fase);
-    if (!snapshot) throw new Error("Falta la preview de la fase " + fase);
-    await esperarFuentesPreview(snapshot.stage);
-    await devEsperarImagenesNodo(snapshot.stage, 1800);
-    const text = snapshot.texto;
-    const visibility = text.style.getPropertyValue("visibility");
-    const priority = text.style.getPropertyPriority("visibility");
-    const images = [...text.querySelectorAll('img')];
-    const imageStyles = images.map(img => [img, img.style.getPropertyValue('visibility'), img.style.getPropertyPriority('visibility')]);
-    text.style.setProperty("visibility", "hidden", "important");
-    for (const img of images) img.style.setProperty("visibility", "visible", "important");
-    let capture;
-    try {
-      capture = await html2canvas(snapshot.stage, {
-        backgroundColor:null, scale:1080/snapshot.width, useCORS:true,
-        imageTimeout:2200, logging:false, width:snapshot.width, height:snapshot.height
-      });
-      const top = fase === 1 ? 0 : H1;
-      const height = fase === 1 ? H1 : 840;
-      ctx.drawImage(capture, 0, top, 1080, height);
-      ctx.save(); ctx.translate(0, top);
-      try { devDibujarPreviewTexto(ctx, fase); } finally { ctx.restore(); }
-    } finally {
-      if (visibility) text.style.setProperty("visibility", visibility, priority);
-      else text.style.removeProperty("visibility");
-      for (const [img, value, importance] of imageStyles) {
-        if (value) img.style.setProperty('visibility', value, importance);
-        else img.style.removeProperty('visibility');
-      }
-      if (capture) { capture.width = 0; capture.height = 0; }
-    }
-  }
-
-  // ✅ unión suave entre imagen superior y bloque inferior
-  devDibujarUnionSuaveFinal(ctx, W, H1);
-
-  const rounded = makeRoundedCanvas(cFinal, 52);
-
-  // No convertir a Data URL acá. devPrepararShareFinalDesdeCanvas()
-  // generará un único Blob que sirve para preview, compartir y descargar.
-  return rounded;
+  // PC y APK comparten la composición directa que conserva los recursos
+  // elegidos. La captura HTML podía omitir fondos o repintar estilos en PC.
+  return await devRenderFinalCanvasDirectoAPK(cFinal, ctx, W, H);
 }
 
 window.devToggleSubirPanel = () => {
@@ -5379,11 +5328,7 @@ window.devIrFase3 = async () => {
   devF3Estado("Iniciando Fase 3");
 
   try {
-    if (devEsAPKAndroid() || typeof html2canvas === "function") {
-      await devAsegurarShareFinalListo();
-    } else {
-      throw new Error("Falta html2canvas. Cargalo como en biblia.js");
-    }
+    await devAsegurarShareFinalListo();
   } catch (e) {
     console.error("❌ Error generando Fase 3:", e);
     alert(

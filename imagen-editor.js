@@ -700,7 +700,6 @@ export function dibujarCajaTexto(ctx, opts) {
   if(opts.aplicar!==false)aplicarCajaTexto(opts);
   const sr=stage.getBoundingClientRect();
   const metricas=new Map();
-  const primerosPlanos=[];
   ctx.save();
   ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';
   ctx.shadowColor='transparent';ctx.shadowBlur=0;ctx.shadowOffsetX=ctx.shadowOffsetY=0;
@@ -764,7 +763,6 @@ export function dibujarCajaTexto(ctx, opts) {
     ctx.fillStyle=cs.color||color;ctx.strokeStyle=borde;ctx.lineWidth=width*zoom;
     const shadowText=opts.outlineShadow?opts.outlineShadow(borde):(respaldo?.textShadow || cs.textShadow);
     const shadows=sombrasTexto(shadowText,zoom,transform);
-    const estiloFrente=opts.sombrasSeparadas?Object.fromEntries(['font','fontKerning','fontStretch','fontVariantCaps','textRendering','direction','letterSpacing','wordSpacing','fillStyle','strokeStyle','lineWidth','globalAlpha','lineJoin','textAlign','textBaseline'].filter(key=>key in ctx).map(key=>[key,ctx[key]])):null;
     const metrics=ctx.measureText('Mg');
     const ascent=metrics.fontBoundingBoxAscent||px*.9,descent=metrics.fontBoundingBoxDescent||px*.2;
     const decoration=decoracionTexto(node.parentElement,stage);
@@ -772,42 +770,24 @@ export function dibujarCajaTexto(ctx, opts) {
       let text=r.text;if(cs.textTransform==='uppercase')text=text.toLocaleUpperCase('es');
       if(!text.trim())continue;
       const x=r.left-sr.left,y=r.top-sr.top+(metrica?metrica.baseline*zoom:(r.height-ascent-descent)/2+ascent);
-      // En Devocionales, proyectar las sombras desde fuera del canvas evita
-      // repintar las letras y saturar sus bordes en cada pasada del contorno.
-      const shadowShift=opts.sombrasSeparadas && shadows.length ? sr.width+Math.max(0,r.right-sr.left) : 0;
       for(const shadow of shadows){
-        ctx.shadowColor=shadow.color || borde;ctx.shadowOffsetX=shadow.x+shadowShift*transform.a;ctx.shadowOffsetY=shadow.y+shadowShift*transform.b;ctx.shadowBlur=shadow.blur;
-        if(width)ctx.strokeText(text,x-shadowShift,y);
-        if(!respaldo || !width)ctx.fillText(text,x-shadowShift,y);
+        ctx.shadowColor=shadow.color || borde;ctx.shadowOffsetX=shadow.x;ctx.shadowOffsetY=shadow.y;ctx.shadowBlur=shadow.blur;
+        if(width)ctx.strokeText(text,x,y);
+        if(!respaldo || !width)ctx.fillText(text,x,y);
       }
       ctx.shadowColor='transparent';ctx.shadowOffsetX=ctx.shadowOffsetY=0;ctx.shadowBlur=0;
-      if(!opts.sombrasSeparadas){if(width)ctx.strokeText(text,x,y);ctx.fillText(text,x,y);}
+      if(width)ctx.strokeText(text,x,y);ctx.fillText(text,x,y);
       if(decoration){
         ctx.beginPath();ctx.strokeStyle=decoration.textDecorationColor || ctx.fillStyle;
         const decorPx=parseFloat(decoration.fontSize)||basePx;
         ctx.lineWidth=Math.max(.1,longitudTexto(decoration.textDecorationThickness,decorPx,decorPx/18)*zoom);
         const offset=longitudTexto(decoration.textUnderlineOffset,decorPx,decorPx*.1)*zoom;
-        ctx.moveTo(x-shadowShift,y+offset);ctx.lineTo(r.right-sr.left-shadowShift,y+offset);
-        for(const shadow of shadows){ctx.shadowColor=shadow.color || borde;ctx.shadowOffsetX=shadow.x+shadowShift*transform.a;ctx.shadowOffsetY=shadow.y+shadowShift*transform.b;ctx.shadowBlur=shadow.blur;ctx.stroke();}
-        ctx.shadowColor='transparent';ctx.shadowOffsetX=ctx.shadowOffsetY=0;ctx.shadowBlur=0;
-        if(!opts.sombrasSeparadas)ctx.stroke();
+        ctx.moveTo(x,y+offset);ctx.lineTo(r.right-sr.left,y+offset);
+        for(const shadow of shadows){ctx.shadowColor=shadow.color || borde;ctx.shadowOffsetX=shadow.x;ctx.shadowOffsetY=shadow.y;ctx.shadowBlur=shadow.blur;ctx.stroke();}
+        ctx.shadowColor='transparent';ctx.shadowOffsetX=ctx.shadowOffsetY=0;ctx.shadowBlur=0;ctx.stroke();
         ctx.strokeStyle=borde;ctx.lineWidth=width*zoom;
       }
-      if(opts.sombrasSeparadas)primerosPlanos.push(()=>{
-        Object.assign(ctx,estiloFrente);
-        ctx.shadowColor='transparent';ctx.shadowOffsetX=ctx.shadowOffsetY=0;ctx.shadowBlur=0;
-        if(width)ctx.strokeText(text,x,y);ctx.fillText(text,x,y);
-        if(decoration){
-          const decorPx=parseFloat(decoration.fontSize)||basePx;
-          ctx.strokeStyle=decoration.textDecorationColor || ctx.fillStyle;
-          ctx.lineWidth=Math.max(.1,longitudTexto(decoration.textDecorationThickness,decorPx,decorPx/18)*zoom);
-          const offset=longitudTexto(decoration.textUnderlineOffset,decorPx,decorPx*.1)*zoom;
-          ctx.beginPath();ctx.moveTo(x,y+offset);ctx.lineTo(r.right-sr.left,y+offset);ctx.stroke();
-        }
-      });
     }
   }
-  // Las sombras de líneas posteriores tampoco pueden tapar letras anteriores.
-  for(const pintar of primerosPlanos)pintar();
   } finally { ctx.restore(); }
 }
