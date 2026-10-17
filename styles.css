@@ -3673,9 +3673,6 @@ body.oscuro .subir-iglesia-btn:has(input:checked){
 #wrapFiltrosBiblia.abierto .filtros {
   display: grid;
   grid-template-columns: 1fr 48px;
-  grid-template-areas:
-    "buscar buscar"
-    "libro cap";
   align-items: center;
   gap: 5px;
 
@@ -3704,21 +3701,7 @@ body.oscuro #wrapFiltrosBiblia.abierto .filtros{
   box-shadow: 0 10px 24px rgba(0,0,0,.45);
 }
 
-#buscarLibroBiblia{
-  grid-area: buscar;
-  height: 32px;
-  padding: 0 12px;
-  font-size: 13px;
-  font-family: "Lora", serif;
-  border-radius: 999px;
-  border: 1px solid rgba(0,0,0,.14);
-  outline: none;
-  width: 100%;
-  box-sizing: border-box;
-}
 
-#libro{ grid-area: libro; }
-#capitulo{ grid-area: cap; }
 
 #wrapFiltrosBiblia .filtros select{
   height: 32px;
@@ -3742,11 +3725,6 @@ box-sizing: border-box;
    width: 100%;
 }
 
-body.oscuro #buscarLibroBiblia{
-  background:#2a2a2a;
-  color:#fff;
-  border-color: rgba(255,255,255,.18);
-}
 
 /* ✅ FIX MOBILE: la paleta del resaltador no depende de la barra scrolleable */
 @media (max-width: 640px){
@@ -5504,87 +5482,6 @@ body.oscuro .tema-toggle-fondo input:checked + label{
    Se usa desde Mi Panel y desde Compartidos
 ========================================================= */
 
-.nota-share-stage{
-  position: fixed;
-  left: -12000px;
-  top: 0;
-  z-index: -1;
-
-  width: 720px;
-  padding: 24px;
-
-  background-color: #f4eef2;
-  background-size: cover;
-  background-position: center center;
-  background-repeat: no-repeat;
-
-  font-family: Arial, sans-serif;
-  box-sizing: border-box;
-}
-
-.nota-share-card{
-  width: 100%;
-  box-sizing: border-box;
-
-  padding: 26px 25px 30px;
-  border-radius: 30px;
-
-  background: var(--nota-share-fondo, #fff3b0);
-  color: var(--nota-share-texto, #000);
-
-  border: 1px solid rgba(0,0,0,.10);
-  box-shadow: 0 10px 28px rgba(0,0,0,.16);
-}
-
-.nota-share-title{
-  font-size: 27px;
-  line-height: 1.18;
-  font-weight: 800;
-  margin: 0 0 5px;
-}
-
-.nota-share-meta{
-  font-size: 20px;
-  line-height: 1.25;
-  font-weight: 400;
-  opacity: .88;
-  margin: 0 0 22px;
-}
-
-.nota-share-verse{
-  margin: 0 0 20px;
-
-  font-family: "Lora", Georgia, serif;
-  font-size: 25px;
-  line-height: 1.36;
-  font-weight: 700;
-  font-style: italic;
-
-  white-space: pre-wrap;
-}
-
-.nota-share-text{
-  margin: 0;
-
-  font-size: 24px;
-  line-height: 1.56;
-  font-weight: 400;
-
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
-.nota-share-firma{
-  margin-top: 25px;
-  padding-top: 13px;
-  border-top: 1px solid rgba(0,0,0,.12);
-
-  font-size: 16px;
-  font-weight: 700;
-  opacity: .70;
-  text-align: right;
-}
-
 /* ✅ Modal notas/marcadores: scroll real en celular */
 #modalMarcadores {
   overflow-y: auto !important;
@@ -6123,87 +6020,6 @@ body.oscuro .nav-vida-btn.activo{
     min-height: 100%;
     padding-bottom: 8px;
   }
-}
-
-/* =========================================================
-   NOTAS LARGAS: DISEÑO FINAL LIMPIO
-========================================================= */
-/* ================= NOTA LARGA ================= */
-.nota-share-stage.nota-share-stage--larga{
-  width: 1080px !important;
-  padding: 20px !important;
-}
-
-.nota-share-stage--larga .nota-share-card{
-  padding: 26px 28px 30px !important;
-  border-radius: 28px !important;
-}
-
-.nota-share-stage--larga .nota-share-title{
-  font-size: 28px !important;
-  line-height: 1.16;
-}
-
-.nota-share-stage--larga .nota-share-meta{
-  font-size: 19px !important;
-  line-height: 1.22;
-  margin-bottom: 18px;
-}
-
-.nota-share-stage--larga .nota-share-verse{
-  font-size: 24px !important;
-  line-height: 1.30;
-  margin-bottom: 17px;
-}
-
-.nota-share-stage--larga .nota-share-text{
-  font-size: 23px !important;
-  line-height: 1.42;
-}
-
-.nota-share-stage--larga .nota-share-firma{
-  margin-top: 20px;
-  padding-top: 11px;
-  font-size: 16px !important;
-}
-
-/* ================= NOTA EXTREMADAMENTE LARGA ================= */
-.nota-share-stage.nota-share-stage--muy-larga{
-  width: 1320px !important;
-  padding: 22px !important;
-}
-
-.nota-share-stage--muy-larga .nota-share-card{
-  padding: 28px 30px 32px !important;
-  border-radius: 30px !important;
-}
-
-.nota-share-stage--muy-larga .nota-share-title{
-  font-size: 27px !important;
-  line-height: 1.14;
-}
-
-.nota-share-stage--muy-larga .nota-share-meta{
-  font-size: 18px !important;
-  line-height: 1.20;
-  margin-bottom: 16px;
-}
-
-.nota-share-stage--muy-larga .nota-share-verse{
-  font-size: 23px !important;
-  line-height: 1.27;
-  margin-bottom: 16px;
-}
-
-.nota-share-stage--muy-larga .nota-share-text{
-  font-size: 22px !important;
-  line-height: 1.37;
-}
-
-.nota-share-stage--muy-larga .nota-share-firma{
-  margin-top: 18px;
-  padding-top: 10px;
-  font-size: 15px !important;
 }
 
 /* =========================================================
@@ -6922,3 +6738,90 @@ body:not(.va-header-biblia-oculto)
 #btnNavBiblia .text{
   line-height:1 !important;
 }
+/* Búsqueda compacta de libro, capítulo y versículo. */
+#wrapFiltrosBiblia.abierto .filtros{
+  display:flex;flex-wrap:wrap;gap:5px;align-items:center;
+  left:auto;right:0;top:calc(100% + 7px);transform:none;
+  width:min(350px,calc(100vw - 24px));padding:8px 44px 8px 8px;
+}
+.va-selector-biblia{position:relative;flex:1 1 80px;min-width:0;}
+.va-selector-biblia[data-campo=libro]{flex-basis:100%;}
+#wrapFiltrosBiblia .va-filtro-versiculo{display:contents;margin:0;}
+#wrapFiltrosBiblia .va-filtro-versiculo > span{display:none;}
+#wrapFiltrosBiblia .va-selector-boton{
+  width:100%;min-width:0;height:34px;margin:0;padding:0 9px;
+  border:1px solid #8aa3b7;border-radius:9px;background:#fff;color:#14283f;
+  font:14px Arial,sans-serif;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.va-selector-listado{
+  position:fixed;z-index:2147483002;display:flex;flex-direction:column;
+  padding:7px;border:1px solid #899fb7;border-radius:12px;background:#fff;color:#14283f;
+  box-shadow:0 6px 24px #0004;font:14px Arial,sans-serif;overflow:hidden;
+}
+.va-selector-listado[hidden]{display:none!important;}
+.va-selector-listado > input{flex:0 0 auto;width:100%;height:36px;margin:0 0 6px;padding:6px 9px;border:1px solid #899fb7;border-radius:8px;background:#fff;color:#14283f;font:16px Arial,sans-serif;}
+.va-selector-opciones{min-height:0;max-height:222px;overflow-y:auto;overscroll-behavior:contain;}
+.va-selector-opciones button{display:block;width:100%;min-height:31px;padding:5px 9px;border:0;border-radius:6px;background:transparent;color:inherit;font:14px Arial,sans-serif;text-align:left;cursor:pointer;}
+.va-selector-opciones button[aria-selected=true]{font-weight:700;}
+.va-selector-opciones button:hover,.va-selector-opciones .va-opcion-activa{background:#d1eeff;}
+.va-selector-opciones p{margin:8px;}
+body.oscuro .va-selector-listado,body.oscuro .va-selector-listado > input,body.oscuro #wrapFiltrosBiblia .va-selector-boton{background:#202833;color:#f2f5f9;border-color:#677f99;}
+body.oscuro .va-selector-opciones button:hover,body.oscuro .va-selector-opciones .va-opcion-activa{background:#385575;}
+@media(max-width:640px){
+  #seccion-panel .panel-tabs{flex-wrap:nowrap!important;overflow-x:auto;gap:6px;}
+  #seccion-panel .panel-tabs button{font-size:0!important;flex:0 0 38px!important;width:38px!important;min-width:38px!important;max-width:38px!important;padding:0!important;gap:0!important;}
+  #seccion-panel .panel-tabs button > :not(i){display:none!important;}
+  #seccion-panel .panel-tabs button i{font-size:16px!important;}
+}
+
+/* Editor de notas: mismos controles en la nota y en su imagen. */
+.va-nota-toolbar{display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin:8px 0;}
+.va-nota-toolbar button{flex:0 0 34px;min-width:34px;height:34px;padding:3px;border:1px solid #90a8c1;border-radius:7px;background:#edf5ff;color:#172d47;font:700 16px Arial,sans-serif;cursor:pointer;}
+.va-nota-toolbar button[aria-label=Subrayado]{text-decoration:underline;}
+.va-nota-toolbar button[aria-label=Cursiva]{font-style:italic;}
+.va-nota-toolbar button[aria-pressed=true]{background:#badbff;box-shadow:inset 0 0 0 1px #5076a2;}
+.va-nota-toolbar input{flex:0 0 62px;min-width:0;width:62px;height:34px;padding:3px;border:1px solid #90a8c1;border-radius:7px;font:16px Arial,sans-serif;text-align:center;background:white;color:#172d47;}
+.va-nota-editor{
+  min-height:160px;padding:12px;border:1px solid #9caec1;border-radius:9px;
+  background:#fff;color:#14283f;font:18px/1.4 Arial,sans-serif;text-align:left;
+  white-space:pre-wrap;overflow-wrap:anywhere;word-break:normal;
+  user-select:text!important;-webkit-user-select:text!important;cursor:text;
+}
+.va-nota-editor:empty::before{content:attr(data-placeholder);color:#6b7787;pointer-events:none;}
+.va-nota-editor:focus{outline:2px solid #4384bc;outline-offset:1px;}
+.nota-vista-texto,.card-marcador .nota{white-space:pre-wrap;overflow-wrap:anywhere;}
+body.oscuro #vaTextoNota{background:#202833;color:#f2f5f9;border-color:#677f99;}
+
+/* Captura: 540 × 960 a escala 2 = 1080 × 1920, sin estirar ni reducir letra. */
+.nota-share-stage{
+  position:fixed;left:-12000px;top:0;z-index:-1;width:540px;height:960px;
+  padding:0;overflow:hidden;background-color:#f4eef2;background-size:cover;
+  background-position:center;background-repeat:no-repeat;font-family:Arial,sans-serif;box-sizing:border-box;
+}
+.nota-share-card{position:absolute;inset:20px;padding:0;border:1px solid #0002;border-radius:26px;box-shadow:0 8px 22px #0002;}
+.nota-share-textbox{position:absolute;box-sizing:border-box;}
+.nota-share-contenido,.va-nota-medidor{
+  display:block;min-height:0;margin:0;padding:0;border:0;border-radius:0;
+  background:transparent;color:inherit;font:22px/1.4 Arial,sans-serif;
+  white-space:pre-wrap;overflow-wrap:anywhere;word-break:normal;text-align:left;
+  box-sizing:border-box;overflow:hidden;
+}
+.nota-share-contenido{width:100%;height:100%;}
+.nota-share-pagina{position:absolute;bottom:32px;left:24px;right:24px;text-align:center;font:14px Arial,sans-serif;color:#333;}
+.va-nota-medidor{position:fixed;left:-12000px;top:0;z-index:-1;visibility:hidden;}
+.va-nota-imagen-modal{position:fixed;inset:0;z-index:2147483100;display:flex;align-items:flex-start;justify-content:center;padding:12px;background:#000a;overflow:auto;overscroll-behavior:contain;}
+.va-nota-imagen-dialogo{width:min(600px,100%);margin:auto;padding:12px;border-radius:16px;background:#f5f8fc;color:#172d47;box-sizing:border-box;}
+.va-nota-imagen-cabecera,.va-nota-imagen-acciones{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;}
+.va-nota-imagen-dialogo button:not(.va-nota-asa){min-height:34px;border:1px solid #90a8c1;border-radius:8px;background:#dfedff;color:#172d47;padding:6px 10px;cursor:pointer;}
+.va-nota-imagen-dialogo button:disabled{opacity:.6;cursor:wait;}
+.va-nota-imagen-dialogo [hidden]{display:none!important;}
+.va-nota-imagen-ayuda,.va-nota-imagen-estado{margin:8px 0;font:14px/1.4 Arial,sans-serif;}
+.va-nota-imagen-preview{position:relative;width:100%;max-width:540px;margin:10px auto;}
+.nota-share-stage.nota-share-stage--editor{position:absolute;left:0;top:0;z-index:0;transform-origin:top left;overflow:visible;}
+.va-nota-caja-editable{outline:1px dashed #4c7da6;}
+.va-nota-caja-editable .nota-share-contenido{overflow:auto;scrollbar-width:thin;}
+.va-nota-caja-editable .nota-share-contenido:focus{outline:none;}
+.va-nota-asa{position:absolute;z-index:2;width:40px;height:40px;padding:0;border:1px solid #4b779f;border-radius:50%;background:#dfedff;color:#172d47;font-size:23px;touch-action:none;user-select:none;cursor:move;}
+.va-nota-mover{left:-20px;top:-20px;}
+.va-nota-escalar{right:-20px;bottom:-20px;cursor:nwse-resize;}
+body.oscuro .va-nota-imagen-dialogo{background:#202833;color:#f2f5f9;}
