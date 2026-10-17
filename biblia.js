@@ -3128,8 +3128,7 @@ onValue(ref(db, "panelEdiciones/" + uid), s => {
 
 Object.entries(marcadores || {}).forEach(([idMarcador, m]) => {
       if (["itemPalabra", "formatoPalabra"].includes(m?.tipo)) return;
-      const tieneNota = !!(m?.nota && String(m.nota).trim());
-      if (!tieneNota) return;
+      if (!vaEsNotaGuardada(m)) return;
 
       if (m?.origen === "abc") {
         const bid = m?.abcBidLast || m?.abcBid || null;
@@ -3478,10 +3477,6 @@ function normalizarTextoFiltro(s) {
     .trim();
 }
 
-function getLibrosUnicosActuales() {
-  return [...new Set(bibliaData.map(v => v.Libro))];
-}
-
 function reconstruirCapitulosParaLibro(libro, capituloPreferido = 1) {
   if (!capSel) return;
 
@@ -3515,32 +3510,22 @@ function abrirFiltrosBiblia() {
     libro: libroSel?.value || "",
     capitulo: Number(capSel?.value || 1),
     scroll: window.scrollY || document.documentElement.scrollTop || 0,
-    input: document.getElementById("buscarLibroBiblia")?.value || "",
     versiculo: Number(document.getElementById("versiculoBiblia")?.value || 0)
   };
 
   asegurarBotonRetornoFiltrosBiblia();
   actualizarBotonRetornoFiltrosBiblia();
 
+  vaPrepararSelectoresBiblia();
   wrap.classList.add("abierto");
 if (btn) btn.classList.add("activo");
 
-   if (libroSel) {
-    Array.from(libroSel.options).forEach(opt => {
-      opt.hidden = false;
-    });
-  }
-  
-  setTimeout(() => {
-    const inputBuscar = document.getElementById("buscarLibroBiblia");
-    if (inputBuscar) inputBuscar.focus();
-  }, 0);
+  vaSelectoresBiblia.get("libro")?.boton.focus();
 }
 
 function cerrarFiltrosBiblia(cancelar = false) {
   const wrap = document.getElementById("wrapFiltrosBiblia");
   const btn  = document.getElementById("btnToggleFiltros");
-  const inputBuscar = document.getElementById("buscarLibroBiblia");
 
   if (!wrap) return;
 
@@ -3550,11 +3535,9 @@ function cerrarFiltrosBiblia(cancelar = false) {
       reconstruirCapitulosParaLibro(filtroBibliaBackup.libro, filtroBibliaBackup.capitulo);
       vaRefrescarFiltroVersiculo(filtroBibliaBackup.versiculo);
     }
-    if (inputBuscar) {
-      inputBuscar.value = filtroBibliaBackup.input || "";
-    }
   }
 
+vaCerrarSelectoresBiblia();
 wrap.classList.remove("abierto");
 if (btn) {
     btn.classList.remove("activo");
@@ -9210,6 +9193,7 @@ window.editarMarcadorDesdeLista = (idMarcador) => {
   // ✅ precargar campos
   if (inputTitulo) inputTitulo.value = m.titulo || "";
   if (inputNota) inputNota.value = m.nota || "";
+  vaCargarEditorNota(m);
   if (inputColor) inputColor.value = m.color || "#fff3b0";
 
   if (chkKeep) chkKeep.checked = !!(m.destacada || m.keep);
@@ -10581,7 +10565,7 @@ window.abrirVistaMarcadorDesdeLista = function(idMarcador, origenLista = "biblia
 
   const meta = marcadorEscapeHTML([temaABC, metaBase].filter(Boolean).join(" · "));
   const versiculo = marcadorEscapeHTML(datos.versiculo || "");
-  const nota = marcadorEscapeHTML(datos.texto || "");
+  const nota = vaNotaHTML(datos.texto || "", m.notaFormato);
 
   const audioUrl =
   String(
@@ -10803,6 +10787,7 @@ window.abrirFormNuevoMarcador = () => {
   lista.style.display = "none";
   form.style.display = "block";
 
+vaCargarEditorNota(base || {nota: ""});
 renderPreviewVersiculosMarcador();
 
 window
@@ -10881,7 +10866,10 @@ window.cancelarNuevoMarcador = () => {
 };
 
 // ================= ✨ Guardar Nuevo Marcador 📌=================
+let vaGuardandoNota = false;
 async function guardarNuevoMarcador() {
+  if (vaGuardandoNota) return;
+  vaGuardandoNota = true;
   try {
     if (!uid) {
       window.abrirLoginParaGuardarMiPanel();
@@ -10889,7 +10877,8 @@ async function guardarNuevoMarcador() {
     }
 
     const titulo = (document.getElementById("marcadorTitulo")?.value || "").trim();
-    const nota = (document.getElementById("marcadorNota")?.value || "").trim();
+    const nota = document.getElementById("marcadorNota")?.value || "";
+    const notaFormato = vaFormatoNotaActual();
     const color = document.getElementById("marcadorColor")?.value || "#fff3b0";
     const keep = !!document.getElementById("marcadorKeep")?.checked;
     const destacada = creandoNotaLibre ? keep : false;
@@ -10909,6 +10898,12 @@ async function guardarNuevoMarcador() {
 
     if (!creandoNotaLibre && itemsMarcador.length === 0) {
       mostrarToast("Seleccioná al menos 1 versículo 📌");
+      return;
+    }
+
+    if (!nota.trim() && !itemsMarcador.length) {
+      mostrarToast("Escribí una nota o seleccioná versículos para guardarla.");
+      document.getElementById("vaTextoNota")?.focus();
       return;
     }
 
@@ -10969,8 +10964,11 @@ const audioUrlAnterior =
   ).trim();
     
     const data = {
+      ...audioAnterior,
+      tipo: "nota",
       titulo,
       nota,
+      notaFormato,
       color,
       keep: creandoNotaLibre ? false : keep,
       destacada,
@@ -11023,6 +11021,8 @@ marcadores[id] = {
   id,
   ...data
 };
+renderPanelMarcadores();
+renderListaMarcadores();
 
 limpiarSeleccionMarcadorCompleta();
     creandoNotaLibre = false;
@@ -11098,6 +11098,8 @@ limpiarSeleccionMarcadorCompleta();
     } else {
       mostrarToast("❌ No se pudo guardar el marcador");
     }
+  } finally {
+    vaGuardandoNota = false;
   }
 }
 
@@ -11569,8 +11571,7 @@ function renderPanelMarcadores() {
 
   const filtrados = ordenados.filter(m => {
     if (["itemPalabra", "formatoPalabra"].includes(m?.tipo)) return false;
-    const tieneNota = !!(m.nota && String(m.nota).trim());
-    if (!tieneNota) return false;
+    if (!vaEsNotaGuardada(m)) return false;
 
     const esABC = (m?.origen === "abc");
     const cantVers = (m.versiculos || []).length;
@@ -11837,7 +11838,7 @@ return `
 
           ${textoVers ? `<div class="nota preview-versiculos-marcador" style="margin-top:8px;">${textoVers}</div>` : ""}
           ${(!textoVers && textoABC) ? `<div class="nota preview-versiculos-marcador" style="margin-top:8px;">${textoABC}</div>` : ""}
-${m.nota ? `<div class="nota">${m.nota}</div>` : ""}
+${m.nota ? `<div class="nota">${vaNotaHTML(m.nota, m.notaFormato)}</div>` : ""}
 
 ${
   audioUrl
@@ -11980,6 +11981,7 @@ window.editarMarcadorEnPanel = (idMarcador) => {
 
     if (inputTitulo) inputTitulo.value = m.titulo || "";
     if (inputNota) inputNota.value = m.nota || "";
+  vaCargarEditorNota(m);
 
     syncMarcadorColorUI(m.color || "#fff3b0");
 
@@ -12243,6 +12245,8 @@ window.abrirNotaLibre = () => {
 
   if (inputTitulo) inputTitulo.value = "";
   if (inputNota) inputNota.value = "";
+
+  vaCargarEditorNota({nota: ""});
 
   // ✅ color default REAL + visual
   syncMarcadorColorUI("#fff3b0");
@@ -13051,6 +13055,7 @@ window.mostrarSeccion = (tipo) => {
   if (!document.body.classList.contains("en-panel")) return;
 
   asegurarPanelResaltadosUI();
+  vaCompactarTabsPanel();
 
   if (!uid) {
   mostrarPanelVisitante();
@@ -13320,7 +13325,271 @@ window.mostrarBarraAcciones = () => {
 
 let __compartirMarcadorId = null;
 
-window.__notaShareFiles = window.__notaShareFiles || new Map();
+
+// Formato por rangos de texto; nunca se guarda HTML introducido por el usuario.
+function vaNotaEstilo(datos = {}, tamano = 18) {
+  return {
+    bold: !!datos.bold, italic: !!datos.italic, underline: !!datos.underline, upper: !!datos.upper,
+    tamano: Math.min(160, Math.max(8, Number(datos.tamano) || tamano))
+  };
+}
+
+function vaNotaNormalizar(texto, formato = {}) {
+  const base = vaNotaEstilo({}, Number(formato?.tamano) || 18);
+  const entradas = (Array.isArray(formato?.rangos) ? formato.rangos : []).filter(r =>
+    Number.isInteger(r.inicio) && Number.isInteger(r.fin) && r.inicio >= 0 && r.fin > r.inicio && r.inicio < texto.length
+  ).sort((a, b) => a.inicio - b.inicio);
+  const rangos = [];
+  const agregar = (inicio, fin, estilo) => {
+    if (fin <= inicio) return;
+    const anterior = rangos[rangos.length - 1];
+    if (anterior && anterior.fin === inicio && JSON.stringify(vaNotaEstilo(anterior)) === JSON.stringify(estilo)) anterior.fin = fin;
+    else rangos.push({inicio, fin, ...estilo});
+  };
+  let pos = 0;
+  for (const r of entradas) {
+    const inicio = Math.max(pos, r.inicio), fin = Math.min(texto.length, r.fin);
+    if (inicio > pos) agregar(pos, inicio, base);
+    agregar(inicio, fin, vaNotaEstilo(r, base.tamano));
+    pos = Math.max(pos, fin);
+  }
+  agregar(pos, texto.length, base);
+  return {version: 1, tamano: base.tamano, rangos};
+}
+
+function vaNotaHTML(texto = '', formato = {}, escala = 1, desde = 0, hasta = texto.length) {
+  return vaNotaNormalizar(texto, formato).rangos.filter(r => r.fin > desde && r.inicio < hasta).map(r => {
+    const estilo = `font-size:${r.tamano * escala}px;font-weight:${r.bold ? 700 : 400};font-style:${r.italic ? 'italic' : 'normal'};text-decoration:${r.underline ? 'underline' : 'none'};text-transform:${r.upper ? 'uppercase' : 'none'}`;
+    return `<span style="${estilo}">${marcadorEscapeHTML(texto.slice(Math.max(desde, r.inicio), Math.min(hasta, r.fin)))}</span>`;
+  }).join('');
+}
+
+function vaNotaLeerDOM(editor, tamano = 18) {
+  let texto = '';
+  const rangos = [];
+  const recorrer = (nodo, heredado) => {
+    if (nodo.nodeType === Node.TEXT_NODE) {
+      const inicio = texto.length;
+      texto += nodo.nodeValue.replace(/\r/g, '');
+      if (texto.length > inicio) rangos.push({inicio, fin: texto.length, ...heredado});
+      return;
+    }
+    if (nodo.nodeType !== Node.ELEMENT_NODE) return;
+    if (nodo.tagName === 'BR') {
+      const inicio = texto.length; texto += '\n'; rangos.push({inicio, fin: texto.length, ...heredado}); return;
+    }
+    const estilo = {...heredado};
+    const css = nodo.style;
+    if (css.fontSize) estilo.tamano = vaNotaEstilo({tamano: parseFloat(css.fontSize)}, tamano).tamano;
+    if (css.fontWeight) estilo.bold = Number(css.fontWeight) >= 600 || css.fontWeight === 'bold';
+    if (css.fontStyle) estilo.italic = css.fontStyle === 'italic';
+    if (css.textDecoration) estilo.underline = css.textDecoration.includes('underline');
+    if (css.textTransform) estilo.upper = css.textTransform === 'uppercase';
+    if (['B', 'STRONG'].includes(nodo.tagName)) estilo.bold = true;
+    if (['I', 'EM'].includes(nodo.tagName)) estilo.italic = true;
+    if (nodo.tagName === 'U') estilo.underline = true;
+    if (['DIV', 'P'].includes(nodo.tagName) && texto && !texto.endsWith('\n')) {
+      const inicio = texto.length; texto += '\n'; rangos.push({inicio, fin: texto.length, ...estilo});
+    }
+    for (const hijo of nodo.childNodes) recorrer(hijo, estilo);
+  };
+  for (const hijo of editor.childNodes) recorrer(hijo, vaNotaEstilo({}, tamano));
+  return {texto, formato: vaNotaNormalizar(texto, {tamano, rangos})};
+}
+
+function vaNotaSeleccion(editor) {
+  const sel = window.getSelection();
+  if (!sel?.rangeCount) return null;
+  const range = sel.getRangeAt(0);
+  if (!editor.contains(range.startContainer) || !editor.contains(range.endContainer)) return null;
+  const previo = range.cloneRange();
+  previo.selectNodeContents(editor);
+  previo.setEnd(range.startContainer, range.startOffset);
+  const inicio = previo.toString().length;
+  return {inicio, fin: inicio + range.toString().length};
+}
+
+function vaNotaRestaurarSeleccion(editor, seleccion) {
+  const walker = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT);
+  const puntos = [];
+  let pos = 0, nodo;
+  while ((nodo = walker.nextNode())) {
+    puntos.push({nodo, inicio: pos, fin: pos + nodo.length}); pos += nodo.length;
+  }
+  const ubicar = offset => {
+    const p = puntos.find(p => offset <= p.fin) || puntos[puntos.length - 1];
+    return p ? [p.nodo, Math.max(0, Math.min(p.nodo.length, offset - p.inicio))] : [editor, 0];
+  };
+  const range = document.createRange();
+  range.setStart(...ubicar(seleccion.inicio)); range.setEnd(...ubicar(seleccion.fin));
+  const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
+}
+
+function vaMontarEditorNota(editor, toolbar, datos, alCambiar = () => {}) {
+  const eventos = new AbortController(), signal = eventos.signal;
+  let texto = String(datos.texto || ''), formato = vaNotaNormalizar(texto, datos.formato);
+  let seleccion = null, historial = [], futuros = [];
+  editor.contentEditable = 'true';
+  editor.spellcheck = true;
+  editor.classList.add('va-nota-editor');
+  editor.setAttribute('role', 'textbox');
+  editor.setAttribute('aria-multiline', 'true');
+  editor.setAttribute('aria-label', datos.label || 'Texto de la nota');
+  toolbar.classList.add('va-nota-toolbar');
+  toolbar.setAttribute('role', 'toolbar');
+  toolbar.setAttribute('aria-label', 'Estilo y tamaño del texto');
+  const size = document.createElement('input');
+  size.type = 'number'; size.min = '8'; size.max = '160'; size.step = '1';
+  size.setAttribute('aria-label', 'Tamaño de letra');
+  const botones = {};
+  const boton = (label, title, accion) => {
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = label;
+    b.title = title; b.setAttribute('aria-label', title);
+    b.addEventListener('pointerdown', e => { seleccion = vaNotaSeleccion(editor) || seleccion; e.preventDefault(); }, {signal});
+    b.onclick = accion; toolbar.appendChild(b); return b;
+  };
+  const actualizar = () => {
+    const rango = vaNotaSeleccion(editor) || seleccion;
+    const activos = formato.rangos.filter(r => !rango || rango.inicio === rango.fin ?
+      !rango || (r.inicio <= rango.inicio && r.fin >= rango.inicio) : r.fin > rango.inicio && r.inicio < rango.fin);
+    size.value = String(Math.round((activos[0]?.tamano || formato.tamano) * 10) / 10);
+    for (const [key, b] of Object.entries(botones)) b.setAttribute('aria-pressed', String(!!activos.length && activos.every(r => r[key])));
+  };
+  const pintar = () => { editor.style.fontSize = `${formato.tamano}px`; editor.innerHTML = vaNotaHTML(texto, formato); actualizar(); };
+  const avisar = () => { actualizar(); alCambiar({texto, formato}); };
+  const recordar = () => {
+    historial.push({texto, formato, seleccion});
+    if (historial.length > 60) historial.shift();
+    futuros = [];
+  };
+  const cambiar = (campo, valor) => {
+    seleccion = vaNotaSeleccion(editor) || seleccion;
+    const inicio = seleccion && seleccion.inicio !== seleccion.fin ? seleccion.inicio : 0;
+    const fin = seleccion && seleccion.inicio !== seleccion.fin ? seleccion.fin : texto.length;
+    recordar();
+    const aplicar = estilo => {
+      if (campo === 'tamano') estilo.tamano = Math.min(160, Math.max(8, Number(valor) || estilo.tamano));
+      else if (campo === 'escala') estilo.tamano = Math.min(160, Math.max(8, estilo.tamano * valor));
+      else estilo[campo] = valor;
+      return estilo;
+    };
+    const rangos = [];
+    for (const r of formato.rangos) {
+      if (r.fin <= inicio || r.inicio >= fin) { rangos.push(r); continue; }
+      if (r.inicio < inicio) rangos.push({...r, fin: inicio});
+      rangos.push({...aplicar(vaNotaEstilo(r)), inicio: Math.max(inicio, r.inicio), fin: Math.min(fin, r.fin)});
+      if (r.fin > fin) rangos.push({...r, inicio: fin});
+    }
+    const base = campo === 'tamano' ? Number(valor) : campo === 'escala' ? formato.tamano * valor : formato.tamano;
+    formato = vaNotaNormalizar(texto, {tamano: base, rangos});
+    pintar(); editor.focus({preventScroll: true});
+    if (seleccion) vaNotaRestaurarSeleccion(editor, seleccion);
+    avisar();
+  };
+  for (const [key, label, title] of [['bold', 'B', 'Negrita'], ['underline', 'U', 'Subrayado'], ['italic', 'I', 'Cursiva'], ['upper', 'A', 'Mayúsculas']]) {
+    botones[key] = boton(label, title, () => cambiar(key, botones[key].getAttribute('aria-pressed') !== 'true'));
+  }
+  boton('−', 'Reducir tamaño', () => cambiar('tamano', Number(size.value) - 1));
+  toolbar.appendChild(size);
+  size.addEventListener('focus', () => { seleccion = vaNotaSeleccion(editor) || seleccion; }, {signal});
+  size.addEventListener('change', () => cambiar('tamano', size.value), {signal});
+  boton('+', 'Aumentar tamaño', () => cambiar('tamano', Number(size.value) + 1));
+  const insertar = contenido => {
+    const sel = window.getSelection();
+    if (!sel?.rangeCount || !vaNotaSeleccion(editor)) editor.focus();
+    const rango = window.getSelection()?.rangeCount ? window.getSelection().getRangeAt(0) : null;
+    if (!rango || !editor.contains(rango.commonAncestorContainer)) return;
+    rango.deleteContents();
+    const node = document.createTextNode(contenido); rango.insertNode(node);
+    rango.setStartAfter(node); rango.collapse(true); sel.removeAllRanges(); sel.addRange(rango);
+    leer();
+  };
+  const leer = () => {
+    recordar();
+    const nuevo = vaNotaLeerDOM(editor, formato.tamano);
+    texto = nuevo.texto; formato = nuevo.formato; seleccion = vaNotaSeleccion(editor); avisar();
+  };
+  editor.addEventListener('input', leer, {signal});
+  editor.addEventListener('beforeinput', e => {
+    if (['insertParagraph', 'insertLineBreak'].includes(e.inputType)) { e.preventDefault(); insertar('\n'); }
+  }, {signal});
+  editor.addEventListener('paste', e => { e.preventDefault(); insertar(e.clipboardData.getData('text/plain').replace(/\r\n?/g, '\n')); }, {signal});
+  editor.addEventListener('drop', e => { e.preventDefault(); }, {signal});
+  editor.addEventListener('keydown', e => {
+    if (!(e.ctrlKey || e.metaKey)) return;
+    const key = e.key.toLowerCase(), campo = {b: 'bold', i: 'italic', u: 'underline'}[key];
+    if (campo) { e.preventDefault(); seleccion = vaNotaSeleccion(editor); cambiar(campo, botones[campo].getAttribute('aria-pressed') !== 'true'); }
+    if (key === 'z' || key === 'y') {
+      e.preventDefault();
+      const rehacer = key === 'y' || e.shiftKey;
+      const origen = rehacer ? futuros : historial, destino = rehacer ? historial : futuros;
+      const anterior = origen.pop();
+      if (anterior) {
+        destino.push({texto, formato, seleccion});
+        ({texto, formato, seleccion} = anterior);
+        pintar(); if (seleccion) vaNotaRestaurarSeleccion(editor, seleccion); avisar();
+      }
+    }
+  }, {signal});
+  document.addEventListener('selectionchange', () => {
+    const actual = vaNotaSeleccion(editor);
+    if (actual) { seleccion = actual; actualizar(); }
+  }, {signal});
+  pintar();
+  return {
+    leer: () => ({texto, formato}),
+    cargar: (contenido, estilos = {}) => {
+      texto = String(contenido || ''); formato = vaNotaNormalizar(texto, estilos);
+      seleccion = null; historial = []; futuros = []; pintar(); alCambiar({texto, formato});
+    },
+    escalar: factor => { seleccion = null; window.getSelection()?.removeAllRanges(); cambiar('escala', factor); },
+    destruir: () => eventos.abort()
+  };
+}
+
+function vaCargarEditorNota(m = {}) {
+  const input = document.getElementById('marcadorNota');
+  if (!input) return;
+  if (!input.__vaNotaEditor) {
+    const toolbar = document.createElement('div'), editor = document.createElement('div');
+    editor.id = 'vaTextoNota';
+    editor.dataset.placeholder = input.placeholder || 'Escribí tu nota…';
+    input.before(toolbar, editor);
+    input.style.setProperty('display', 'none', 'important');
+    input.tabIndex = -1;
+    input.setAttribute('aria-hidden', 'true');
+    for (const label of document.querySelectorAll('label[for="marcadorNota"]')) label.htmlFor = editor.id;
+    // Los módulos que siguen usando textarea.value (incluido ABC) se sincronizan.
+    const propiedad = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(input), 'value');
+    let desdeEditor = false;
+    if (propiedad?.get && propiedad?.set) Object.defineProperty(input, 'value', {
+      configurable: true,
+      get() { return propiedad.get.call(this); },
+      set(valor) {
+        propiedad.set.call(this, valor);
+        if (!desdeEditor) this.__vaNotaEditor?.cargar(String(valor ?? ''));
+      }
+    });
+    input.__vaNotaEditor = vaMontarEditorNota(editor, toolbar, {texto: input.value}, estado => {
+      desdeEditor = true;
+      input.value = estado.texto;
+      desdeEditor = false;
+      input.dispatchEvent(new Event('input', {bubbles: true}));
+    });
+  }
+  input.__vaNotaEditor.cargar(m.nota ?? input.value, m.notaFormato || {});
+}
+
+function vaFormatoNotaActual() {
+  const input = document.getElementById('marcadorNota');
+  return input?.__vaNotaEditor?.leer().formato || vaNotaNormalizar(input?.value || '');
+}
+
+function vaEsNotaGuardada(m = {}) {
+  if (['itemPalabra', 'formatoPalabra'].includes(m.tipo)) return false;
+  return !!(String(m.nota || '').trim() || String(m.titulo || '').trim() || itemsMarcadorDesdeData(m).length || String(m.abcTexto || '').trim());
+}
+
 
 function notaShareColorContraste(color = "#fff3b0") {
   const c = String(color || "#fff3b0").trim();
@@ -13492,142 +13761,10 @@ function notaShareDatosDesdeMarcador(m = {}) {
     referencia,
     meta: [referencia, fecha].filter(Boolean).join(" · "),
     versiculo: notaShareTextoVersiculoMarcador(m),
-    texto: String(m.nota || "").trim(),
+    texto: String(m.nota || ""),
+    notaFormato: m.notaFormato || null,
     fondo: String(m.color || "#fff3b0").trim()
   };
-}
-
-function notaShareCrearNodo(datos = {}) {
-  const stage = document.createElement("div");
-  stage.className = "nota-share-stage";
-
-  /*
-    Medimos la cantidad total de texto.
-
-    Nota normal:
-    mantiene el formato actual.
-
-    Nota larga:
-    se genera más ancha para que no quede como una tira.
-
-    Nota extremadamente larga:
-    aumenta todavía más el ancho y ajusta el texto.
-  */
-const textoTotalNota = [
-  datos.titulo || "",
-  datos.meta || "",
-  datos.versiculo || "",
-  datos.texto || ""
-]
-  .join("\n")
-  .trim();
-
-const cantidadCaracteres =
-  textoTotalNota.length;
-
-const cantidadSaltos =
-  (
-    textoTotalNota.match(/\n/g) || []
-  ).length;
-
-/*
-  Los saltos y párrafos también aumentan
-  visualmente la altura de la nota.
-*/
-const puntajeVisual =
-  cantidadCaracteres +
-  cantidadSaltos * 90;
-
-/*
-  Antes:
-  - larga desde 3000
-  - muy larga desde 7000
-
-  Ahora detectamos antes las notas
-  que visualmente ocupan mucho espacio.
-*/
-if (
-  cantidadCaracteres >= 4200 ||
-  puntajeVisual >= 4700
-) {
-  stage.classList.add(
-    "nota-share-stage--muy-larga"
-  );
-
-} else if (
-  cantidadCaracteres >= 1400 ||
-  puntajeVisual >= 1750
-) {
-  stage.classList.add(
-    "nota-share-stage--larga"
-  );
-}
-
-  /*
-    Nunca ponemos acá directamente la URL de R2.
-    El fondo real se aplica después mediante Blob seguro.
-  */
-  stage.style.backgroundImage =
-    "linear-gradient(145deg, rgba(255,214,232,.82), rgba(209,238,255,.82))";
-
-  const card = document.createElement("div");
-  card.className = "nota-share-card";
-
-  card.style.setProperty(
-    "--nota-share-fondo",
-    datos.fondo || "#fff3b0"
-  );
-
-  card.style.setProperty(
-    "--nota-share-texto",
-    notaShareColorContraste(
-      datos.fondo || "#fff3b0"
-    )
-  );
-
-  const agregar = (clase, texto) => {
-    const limpio = String(
-      texto || ""
-    ).trim();
-
-    if (!limpio) return;
-
-    const div = document.createElement("div");
-    div.className = clase;
-    div.textContent = limpio;
-
-    card.appendChild(div);
-  };
-
-  agregar(
-    "nota-share-title",
-    datos.titulo
-  );
-
-  agregar(
-    "nota-share-meta",
-    datos.meta
-  );
-
-  agregar(
-    "nota-share-verse",
-    datos.versiculo
-  );
-
-  agregar(
-    "nota-share-text",
-    datos.texto
-  );
-
-  agregar(
-    "nota-share-firma",
-    "Vida Abundante"
-  );
-
-  stage.appendChild(card);
-  document.body.appendChild(stage);
-
-  return stage;
 }
 
 function notaShareCanvasBlob(canvas) {
@@ -13647,89 +13784,262 @@ function notaShareCanvasBlob(canvas) {
   });
 }
 
-function notaShareClaveCache(claveBase = "", datos = {}) {
-  return [
-    claveBase,
-    datos.titulo,
-    datos.meta,
-    datos.versiculo,
-    datos.texto,
-    datos.fondo
-  ].join("|");
+// Lienzo vertical fijo. La edición de la imagen no modifica la nota guardada.
+function notaShareModelo(datos = {}) {
+  if (datos.imagenNota) return datos.imagenNota;
+  let texto = '';
+  const rangos = [];
+  const agregar = (valor, estilo = {}, formato = null) => {
+    if (!valor) return;
+    if (texto) texto += '\n\n';
+    const inicio = texto.length;
+    texto += String(valor);
+    const parte = formato ? vaNotaNormalizar(String(valor), formato) : vaNotaNormalizar(String(valor), {tamano: estilo.tamano || 22});
+    for (const r of parte.rangos) rangos.push({...r, ...estilo, inicio: inicio + r.inicio, fin: inicio + r.fin});
+  };
+  agregar(datos.titulo, {bold: true, tamano: 27});
+  agregar(datos.meta, {tamano: 14});
+  agregar(datos.versiculo, {bold: true, italic: true, tamano: 22});
+  const formatoNota = vaNotaNormalizar(datos.texto || '', datos.notaFormato);
+  const escala = 22 / formatoNota.tamano;
+  agregar(datos.texto, {}, {...formatoNota, tamano: 22, rangos: formatoNota.rangos.map(r => ({...r, tamano: r.tamano * escala}))});
+  agregar('Vida Abundante', {bold: true, tamano: 14});
+  return {texto, formato: vaNotaNormalizar(texto, {tamano: 22, rangos}), caja: {x: 44, y: 64, ancho: 452, alto: 832}};
+}
+
+function notaShareCrearNodo(datos = {}) {
+  const modelo = notaShareModelo(datos);
+  const stage = document.createElement('div');
+  stage.className = 'nota-share-stage';
+  stage.style.backgroundImage = 'linear-gradient(145deg, rgba(255,214,232,.82), rgba(209,238,255,.82))';
+  stage.style.color = notaShareColorContraste(datos.fondo || '#fff3b0');
+  const card = document.createElement('div');
+  card.className = 'nota-share-card';
+  card.style.backgroundColor = /^#[\da-f]{6}$/i.test(datos.fondo || '') ? datos.fondo : '#fff3b0';
+  card.style.color = notaShareColorContraste(datos.fondo || '#fff3b0');
+  const box = document.createElement('div');
+  box.className = 'nota-share-textbox';
+  notaShareColocarCaja(box, modelo.caja);
+  const text = document.createElement('div');
+  text.className = 'va-nota-editor nota-share-contenido';
+  const desde = modelo.desde || 0, hasta = modelo.hasta ?? modelo.texto.length;
+  text.innerHTML = vaNotaHTML(modelo.texto, modelo.formato, 1, desde, hasta);
+  box.appendChild(text);
+  stage.append(card, box);
+  if (modelo.total > 1) {
+    const numero = document.createElement('div');
+    numero.className = 'nota-share-pagina';
+    numero.textContent = `${modelo.pagina} / ${modelo.total}`;
+    stage.appendChild(numero);
+  }
+  document.body.appendChild(stage);
+  return stage;
+}
+
+function notaShareColocarCaja(box, caja) {
+  Object.assign(box.style, {left: `${caja.x}px`, top: `${caja.y}px`, width: `${caja.ancho}px`, height: `${caja.alto}px`});
+}
+
+function notaSharePaginar(modelo, medidor) {
+  const {texto, formato, caja} = modelo;
+  medidor.style.width = `${caja.ancho}px`;
+  medidor.style.height = `${caja.alto}px`;
+  // Los límites respetan emojis, acentos combinados y secuencias de caracteres.
+  const limites = [0];
+  if (typeof Intl.Segmenter === 'function') {
+    for (const s of new Intl.Segmenter('es', {granularity: 'grapheme'}).segment(texto)) limites.push(s.index + s.segment.length);
+  } else {
+    let offset = 0;
+    for (const caracter of texto) { offset += caracter.length; limites.push(offset); }
+  }
+  const cabe = (desde, hasta) => {
+    medidor.innerHTML = vaNotaHTML(texto, formato, 1, desde, hasta);
+    return medidor.scrollHeight <= medidor.clientHeight && medidor.scrollWidth <= medidor.clientWidth;
+  };
+  const paginas = [];
+  let indice = 0;
+  while (indice < limites.length - 1) {
+    let bajo = indice + 1, alto = limites.length - 1, mejor = indice;
+    while (bajo <= alto) {
+      const medio = Math.floor((bajo + alto) / 2);
+      if (cabe(limites[indice], limites[medio])) { mejor = medio; bajo = medio + 1; }
+      else alto = medio - 1;
+    }
+    if (mejor === indice) throw new Error('Una letra no cabe en el recuadro. Agrandalo o reducí su tamaño.');
+    if (mejor < limites.length - 1) {
+      const minimo = Math.floor((indice + mejor) / 2);
+      for (let n = mejor; n > minimo; n--) {
+        if (/\s$/u.test(texto.slice(limites[n - 1], limites[n]))) { mejor = n; break; }
+      }
+    }
+    paginas.push({desde: limites[indice], hasta: limites[mejor]});
+    indice = mejor;
+  }
+  return paginas.length ? paginas : [{desde: 0, hasta: 0}];
 }
 
 async function notaShareGenerarArchivo(datos = {}) {
-  if (typeof html2canvas !== "function") {
-    throw new Error("Falta html2canvas para generar la imagen.");
-  }
-
+  if (typeof html2canvas !== 'function') throw new Error('Falta html2canvas para generar la imagen.');
   const stage = notaShareCrearNodo(datos);
-
   try {
-    // ✅ Traemos el fondo por proxy antes de capturar.
     await notaShareAplicarFondoSeguro(stage);
-
-    await new Promise(resolve =>
-      requestAnimationFrame(() => requestAnimationFrame(resolve))
-    );
-
-    if (document.fonts?.ready) {
-      await document.fonts.ready;
-    }
-
-const escalaCaptura =
-      stage.classList.contains(
-        "nota-share-stage--muy-larga"
-      )
-        ? 1.4
-        : stage.classList.contains(
-            "nota-share-stage--larga"
-          )
-          ? 1.65
-          : 2;
-
+    await document.fonts?.ready;
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     const canvas = await html2canvas(stage, {
-      scale: escalaCaptura,
-      useCORS: true,
-      allowTaint: false,
-      logging: false,
-      backgroundColor: null
+      scale: 2, width: 540, height: 960, useCORS: true, allowTaint: false,
+      logging: false, backgroundColor: null
     });
-
     const blob = await notaShareCanvasBlob(canvas);
-
-    return new File(
-      [blob],
-      notaShareNombreArchivo(datos.titulo),
-      { type: "image/png" }
-    );
-
+    const modelo = datos.imagenNota;
+    const nombre = notaShareNombreArchivo(datos.titulo);
+    const sufijo = modelo?.total > 1 ? `_${String(modelo.pagina).padStart(2, '0')}-de-${modelo.total}` : '';
+    return new File([blob], nombre.replace(/\.png$/i, `${sufijo}.png`), {type: 'image/png'});
   } finally {
-    if (stage.__notaShareFondoObjectUrl) {
-      URL.revokeObjectURL(stage.__notaShareFondoObjectUrl);
-    }
-
+    if (stage.__notaShareFondoObjectUrl) URL.revokeObjectURL(stage.__notaShareFondoObjectUrl);
     stage.remove();
   }
 }
 
-window.notaPrepararComoImagen = async function(datos = {}, claveBase = "nota") {
-  const clave = notaShareClaveCache(claveBase, datos);
-
-  if (window.__notaShareFiles.has(clave)) {
-    return await window.__notaShareFiles.get(clave);
-  }
-
-  const preparando = notaShareGenerarArchivo(datos);
-  window.__notaShareFiles.set(clave, preparando);
-
-  try {
-    return await preparando;
-  } catch (e) {
-    window.__notaShareFiles.delete(clave);
-    throw e;
-  }
+// Conserva la API de preparación de un archivo para los otros módulos.
+window.notaPrepararComoImagen = async function(datos = {}, claveBase = 'nota') {
+  return notaShareGenerarArchivo({...datos, titulo: datos.titulo || claveBase});
 };
+
+async function notaShareEditarImagen(datos, accion) {
+  const modelo = notaShareModelo(datos);
+  const anterior = document.activeElement;
+  const modal = document.createElement('div');
+  modal.className = 'va-nota-imagen-modal';
+  modal.setAttribute('role', 'dialog'); modal.setAttribute('aria-modal', 'true');
+  modal.setAttribute('aria-label', 'Editar imagen de la nota');
+  const dialogo = document.createElement('div'); dialogo.className = 'va-nota-imagen-dialogo';
+  const cabecera = document.createElement('div'); cabecera.className = 'va-nota-imagen-cabecera';
+  const titulo = document.createElement('strong'); titulo.textContent = 'Imagen para compartir';
+  const cerrar = document.createElement('button'); cerrar.type = 'button'; cerrar.textContent = 'Cerrar';
+  cabecera.append(titulo, cerrar);
+  const toolbar = document.createElement('div');
+  const ayuda = document.createElement('p'); ayuda.className = 'va-nota-imagen-ayuda';
+  ayuda.textContent = 'Seleccioná palabras para darles estilo. Mové o escalá el texto desde las esquinas de su recuadro.';
+  const frame = document.createElement('div'); frame.className = 'va-nota-imagen-preview';
+  const stage = notaShareCrearNodo({...datos, imagenNota: modelo}); stage.classList.add('nota-share-stage--editor');
+  frame.appendChild(stage);
+  const box = stage.querySelector('.nota-share-textbox'); box.classList.add('va-nota-caja-editable');
+  const text = box.querySelector('.nota-share-contenido');
+  const estado = document.createElement('p'); estado.className = 'va-nota-imagen-estado'; estado.setAttribute('role', 'status');
+  const acciones = document.createElement('div'); acciones.className = 'va-nota-imagen-acciones';
+  const generar = document.createElement('button'); generar.type = 'button'; generar.textContent = 'Generar imagen';
+  const usar = document.createElement('button'); usar.type = 'button'; usar.hidden = true;
+  usar.textContent = accion === 'compartir' ? 'Compartir imágenes' : 'Descargar imágenes';
+  acciones.append(generar, usar);
+  dialogo.append(cabecera, toolbar, ayuda, frame, estado, acciones); modal.appendChild(dialogo);
+  document.body.appendChild(modal);
+  const medidor = document.createElement('div'); medidor.className = 'va-nota-medidor va-nota-editor'; document.body.appendChild(medidor);
+  let escala = 1, files = null, ocupado = false, cerrado = false, timer;
+  const actualizar = () => {
+    if (cerrado) return;
+    files = null; usar.hidden = true;
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      try {
+        const n = notaSharePaginar(modelo, medidor).length;
+        estado.textContent = n > 1 ? `El texto supera una imagen reel. Se necesitan ${n} imágenes con este tamaño de letra.` : 'El texto cabe en una imagen reel (1080 × 1920).';
+      } catch (e) { estado.textContent = e.message; }
+    }, 180);
+  };
+  const editor = vaMontarEditorNota(text, toolbar, {texto: modelo.texto, formato: modelo.formato, label: 'Texto de la imagen'}, nuevo => {
+    modelo.texto = nuevo.texto; modelo.formato = nuevo.formato; actualizar();
+  });
+  const ajustar = () => {
+    escala = Math.min(1, frame.clientWidth / 540);
+    stage.style.transform = `scale(${escala})`;
+    frame.style.height = `${960 * escala}px`;
+  };
+  const resize = new ResizeObserver(ajustar); resize.observe(frame); ajustar();
+  const registrarAsa = (clase, simbolo, nombre, redimensionar) => {
+    const asa = document.createElement('button'); asa.type = 'button'; asa.className = `va-nota-asa ${clase}`;
+    asa.textContent = simbolo; asa.title = nombre; asa.setAttribute('aria-label', nombre); box.appendChild(asa);
+    let arrastre = null;
+    asa.onpointerdown = e => {
+      e.preventDefault(); arrastre = {x: e.clientX, y: e.clientY, ...modelo.caja};
+      asa.setPointerCapture(e.pointerId);
+    };
+    const mover = (dx, dy, original = {...modelo.caja}) => {
+      if (redimensionar) {
+        const ancho = Math.max(100, Math.min(516 - original.x, original.ancho + dx));
+        const alto = Math.max(100, Math.min(936 - original.y, original.alto + dy));
+        const factor = ancho / modelo.caja.ancho;
+        modelo.caja.ancho = ancho; modelo.caja.alto = alto;
+        editor.escalar(factor);
+      } else {
+        modelo.caja.x = Math.max(24, Math.min(516 - original.ancho, original.x + dx));
+        modelo.caja.y = Math.max(24, Math.min(936 - original.alto, original.y + dy));
+      }
+      notaShareColocarCaja(box, modelo.caja); actualizar();
+    };
+    asa.onpointermove = e => { if (arrastre) mover((e.clientX - arrastre.x) / escala, (e.clientY - arrastre.y) / escala, arrastre); };
+    asa.onpointerup = asa.onpointercancel = () => { arrastre = null; };
+    asa.onkeydown = e => {
+      const delta = {ArrowLeft: [-5, 0], ArrowRight: [5, 0], ArrowUp: [0, -5], ArrowDown: [0, 5]}[e.key];
+      if (delta) { e.preventDefault(); mover(...delta); }
+    };
+  };
+  registrarAsa('va-nota-mover', '↔', 'Mover texto', false);
+  registrarAsa('va-nota-escalar', '↘', 'Escalar texto', true);
+  let finalizar;
+  const resultado = new Promise(resolve => { finalizar = resolve; });
+  const terminar = valor => {
+    if (ocupado) return;
+    cerrado = true; clearTimeout(timer); resize.disconnect(); editor.destruir(); medidor.remove(); modal.remove();
+    if (stage.__notaShareFondoObjectUrl) URL.revokeObjectURL(stage.__notaShareFondoObjectUrl);
+    anterior?.focus?.({preventScroll: true}); finalizar(valor);
+  };
+  cerrar.onclick = () => terminar(null);
+  usar.onclick = () => terminar(files);
+  modal.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); terminar(null); }
+    if (e.key === 'Tab') {
+      const focos = Array.from(modal.querySelectorAll('button, input, [contenteditable="true"]')).filter(el => !el.disabled && !el.hidden && el.getClientRects().length);
+      if (!focos.length) { e.preventDefault(); return; }
+      const primero = focos[0], ultimo = focos[focos.length - 1];
+      if (e.shiftKey && document.activeElement === primero) { e.preventDefault(); ultimo.focus(); }
+      else if (!e.shiftKey && document.activeElement === ultimo) { e.preventDefault(); primero.focus(); }
+    }
+  });
+  generar.onclick = async () => {
+    if (ocupado) return;
+    try {
+      await document.fonts?.ready;
+      const paginas = notaSharePaginar(modelo, medidor);
+      if (paginas.length > 1 && !confirm(`El texto rebasa el tamaño reel con esta letra. ¿Querés generar ${paginas.length} imágenes para incluirlo completo?`)) return;
+      ocupado = true; generar.disabled = true; cerrar.disabled = true;
+      toolbar.inert = true; box.inert = true; usar.hidden = true;
+      const nuevas = [];
+      for (const [index, pagina] of paginas.entries()) {
+        estado.textContent = `Generando imagen ${index + 1} de ${paginas.length}…`;
+        nuevas.push(await window.notaPrepararComoImagen({...datos, imagenNota: {
+          ...modelo, ...pagina, pagina: index + 1, total: paginas.length
+        }}));
+      }
+      files = nuevas; usar.hidden = false;
+      usar.textContent = `${accion === 'compartir' ? 'Compartir' : 'Descargar'} ${files.length === 1 ? 'imagen' : `${files.length} imágenes`}`;
+      estado.textContent = `${files.length === 1 ? 'Imagen lista' : `${files.length} imágenes listas`}. Podés continuar o seguir editando.`;
+      usar.focus();
+    } catch (e) {
+      console.error('No pude generar las imágenes de la nota:', e);
+      estado.textContent = `No pude generar la imagen. ${e.message || 'Intentá otra vez.'}`;
+    } finally {
+      ocupado = false; generar.disabled = false; cerrar.disabled = false; toolbar.inert = false; box.inert = false;
+    }
+  };
+  // El fondo se carga una sola vez para la vista previa; su error conserva el degradado.
+  notaShareAplicarFondoSeguro(stage).catch(e => console.warn('No pude cargar el fondo de la vista previa:', e)).finally(() => {
+    if (cerrado && stage.__notaShareFondoObjectUrl) URL.revokeObjectURL(stage.__notaShareFondoObjectUrl);
+  });
+  document.fonts?.ready.then(() => { if (!cerrado) actualizar(); });
+  actualizar(); cerrar.focus();
+  return resultado;
+}
+
 
 window.__notaShareAccionEnCurso = false;
 
@@ -13830,14 +14140,12 @@ window.notaDescargarComoImagen = async function(datos = {}, claveBase = "nota", 
     if (boton) boton.disabled = true;
     if (icono) icono.className = "fa-solid fa-spinner fa-spin";
 
-    notaShareBusyShow("Preparando descarga…");
-
-    const file = await window.notaPrepararComoImagen(datos, claveBase);
-
-    notaShareDescargarArchivo(file);
+    const files = await notaShareEditarImagen({...datos, titulo: datos.titulo || claveBase}, "descargar");
+    if (!files) return false;
+    for (const file of files) notaShareDescargarArchivo(file);
 
     if (typeof mostrarToast === "function") {
-      mostrarToast("📥 Descargando imagen");
+      mostrarToast("📥 Descargando imágenes");
     }
 
     return true;
@@ -13873,36 +14181,20 @@ window.notaCompartirComoImagen = async function(datos = {}, claveBase = "nota", 
     if (boton) boton.disabled = true;
     if (icono) icono.className = "fa-solid fa-spinner fa-spin";
 
-    notaShareBusyShow("Preparando para compartir…");
+    const files = await notaShareEditarImagen({...datos, titulo: datos.titulo || claveBase}, "compartir");
+    if (!files) return false;
 
-    const file = await window.notaPrepararComoImagen(datos, claveBase);
+    if (files.length === 1 && await window.vaAndroidCompartirFile?.(files[0], datos.titulo || "Nota - Vida Abundante")) return true;
 
-        // ✅ APK Android: compartir nativo real
-    if (await window.vaAndroidCompartirFile?.(file, datos.titulo || "Nota - Vida Abundante")) {
-      return true;
-    }
-
-    if (navigator.share && navigator.canShare?.({ files: [file] })) {
+    if (navigator.share && navigator.canShare?.({files})) {
       notaShareBusyShow("Abriendo opciones para compartir…");
-
-      await navigator.share({
-        files: [file],
-        title: datos.titulo || "Nota - Vida Abundante"
-      });
-
+      await navigator.share({files, title: datos.titulo || "Nota - Vida Abundante"});
       return true;
     }
 
-    const descargar = confirm(
-      "Este navegador no permite compartir la imagen directamente.\n\n¿Querés descargar el PNG?"
-    );
-
-    if (descargar) {
-      notaShareDescargarArchivo(file);
-
-      if (typeof mostrarToast === "function") {
-        mostrarToast("📥 Descargando imagen");
-      }
+    if (confirm("Este dispositivo no permite compartir estas imágenes juntas. ¿Querés descargarlas para compartirlas?")) {
+      for (const file of files) notaShareDescargarArchivo(file);
+      mostrarToast("📥 Descargando imágenes");
     }
 
     return false;
@@ -13997,15 +14289,7 @@ window.abrirCompartirMarcador = (id) => {
     modal.setAttribute("aria-hidden", "false");
   }
 
-  // ✅ Prepara la imagen apenas abrís el modal para compartir en redes.
-  const m = (marcadores || {})[id];
 
-  if (m && typeof window.notaPrepararComoImagen === "function") {
-    const datos = notaShareDatosDesdeMarcador(m);
-
-    window.notaPrepararComoImagen(datos, `panel_${id}`)
-      .catch(e => console.warn("No pude precargar imagen de nota:", e));
-  }
 };
 
 window.cerrarCompartirMarcador = () => {
@@ -14683,20 +14967,6 @@ if (tituloBiblia && !tituloBiblia.__readyFiltrosBiblia) {
   });
 }
 
-const inputBuscarLibro = document.getElementById("buscarLibroBiblia");
-const selectLibro = document.getElementById("libro");
-
-if (inputBuscarLibro && selectLibro) {
-  inputBuscarLibro.addEventListener("input", () => vaBuscarReferencia(inputBuscarLibro.value));
-
-  inputBuscarLibro.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      aplicarFiltrosBiblia();
-    }
-  });
-}
-    
 // cuando Firebase confirma el usuario
 onAuthStateChanged(auth, (user) => {
   if (!user) return;
@@ -17501,8 +17771,6 @@ function vaAsegurarFiltroVersiculo() {
   const label=document.createElement('label');label.className='va-filtro-versiculo';
   label.innerHTML='<span>Versículo</span><select id="versiculoBiblia" aria-label="Versículo"><option value="0"></option></select>';
   capSel.insertAdjacentElement('afterend',label);
-  const search=document.getElementById('buscarLibroBiblia');
-  if(search){search.placeholder='Libro, capítulo o versículo…';search.setAttribute('aria-label','Buscar libro, capítulo y versículo');}
 }
 function vaRefrescarFiltroVersiculo(preferido=0){
   vaAsegurarFiltroVersiculo();const select=document.getElementById('versiculoBiblia');if(!select)return;
@@ -17510,6 +17778,7 @@ function vaRefrescarFiltroVersiculo(preferido=0){
   select.innerHTML='<option value="0"></option>';
   for(const n of nums){const o=document.createElement('option');o.value=String(n);o.textContent=String(n);select.appendChild(o);}
   select.value=nums.includes(Number(preferido))?String(preferido):'0';
+  vaPrepararSelectoresBiblia();
 }
 function vaIrVersiculo(numero,version=versionActual){
   const id=`${libroSel.value}_${capSel.value}_${numero}`;
@@ -17519,15 +17788,169 @@ function vaIrVersiculo(numero,version=versionActual){
     if(el){el.scrollIntoView({block:'center',behavior:'smooth'});window.vaBibliaVersiculoElegido=id;}
   });
 }
-function vaBuscarReferencia(valor){
-  let q=String(valor||'').trim(),cap=0,vers=0;
-  let match=q.match(/^(.+?)\s+(\d+)(?:\s*[:.,]\s*(\d+)|\s+(\d+))?\s*$/);
-  if(match){q=match[1];cap=Number(match[2]);vers=Number(match[3]||match[4]||0);}
-  else if((match=q.match(/^(\d+)(?:\s*[:.,]\s*(\d+))?$/))){q=libroSel.value;cap=Number(match[1]);vers=Number(match[2]||0);}
-  const normal=normalizarTextoFiltro(q);let primero=null;
-  for(const o of libroSel.options){const ok=!normal||normalizarTextoFiltro(o.text).includes(normal);o.hidden=!ok;if(ok&&!primero)primero=o;}
-  if(primero){libroSel.value=primero.value;reconstruirCapitulosParaLibro(primero.value,cap||1);vaRefrescarFiltroVersiculo(vers);}
+// Selectores compactos: los select originales conservan el estado de navegación.
+const vaSelectoresBiblia = new Map();
+
+function vaCerrarSelectoresBiblia() {
+  for (const selector of vaSelectoresBiblia.values()) selector.cerrar();
 }
+
+function vaPrepararSelectoresBiblia() {
+  document.getElementById('buscarLibroBiblia')?.remove();
+  for (const [id, nombre] of [['libro', 'Libro'], ['capitulo', 'Capítulo'], ['versiculoBiblia', 'Versículo']]) {
+    const select = document.getElementById(id);
+    if (!select) continue;
+    if (vaSelectoresBiblia.has(id)) {
+      vaSelectoresBiblia.get(id).actualizar();
+      continue;
+    }
+    const wrap = document.createElement('div');
+    wrap.className = 'va-selector-biblia';
+    wrap.dataset.campo = id;
+    const boton = document.createElement('button');
+    boton.type = 'button';
+    boton.className = 'va-selector-boton';
+    boton.setAttribute('aria-haspopup', 'listbox');
+    boton.setAttribute('aria-expanded', 'false');
+    const panel = document.createElement('div');
+    panel.id = `va-listado-${id}`;
+    panel.className = 'va-selector-listado';
+    panel.hidden = true;
+    const input = document.createElement('input');
+    input.type = 'search';
+    input.placeholder = `Buscar ${nombre.toLowerCase()}…`;
+    input.setAttribute('aria-label', input.placeholder);
+    input.setAttribute('role', 'combobox');
+    input.setAttribute('aria-expanded', 'false');
+    input.autocomplete = 'off';
+    if (id !== 'libro') input.inputMode = 'numeric';
+    const lista = document.createElement('div');
+    lista.id = `${panel.id}-opciones`;
+    lista.className = 'va-selector-opciones';
+    lista.setAttribute('role', 'listbox');
+    lista.setAttribute('aria-label', nombre);
+    input.setAttribute('aria-controls', lista.id);
+    boton.setAttribute('aria-controls', lista.id);
+    panel.append(input, lista);
+    select.before(wrap);
+    wrap.append(boton, select);
+    document.body.appendChild(panel);
+    select.style.setProperty('display', 'none', 'important');
+    select.tabIndex = -1;
+    select.setAttribute('aria-hidden', 'true');
+    let opciones = [], activo = -1;
+    const cerrar = () => {
+      panel.hidden = true;
+      boton.setAttribute('aria-expanded', 'false');
+      input.setAttribute('aria-expanded', 'false');
+    };
+    const posicionar = () => {
+      const rect = boton.getBoundingClientRect();
+      const ancho = Math.min(id === 'libro' ? 290 : 210, innerWidth - 16);
+      panel.style.width = `${ancho}px`;
+      panel.style.left = `${Math.max(8, Math.min(rect.left, innerWidth - ancho - 8))}px`;
+      const alto = Math.min(284, innerHeight - 24);
+      panel.style.maxHeight = `${alto}px`;
+      panel.style.top = `${Math.max(8, Math.min(rect.bottom + 5, innerHeight - alto - 8))}px`;
+    };
+    const marcarActivo = index => {
+      activo = index;
+      Array.from(lista.children).forEach((el, i) => el.classList.toggle('va-opcion-activa', i === index));
+      const el = lista.children[index];
+      if (el) {
+        input.setAttribute('aria-activedescendant', el.id);
+        el.scrollIntoView({block: 'nearest'});
+      } else input.removeAttribute('aria-activedescendant');
+    };
+    const elegir = opcion => {
+      if (!opcion) return;
+      select.value = opcion.value;
+      select.dispatchEvent(new Event('change', {bubbles: true}));
+      actualizar();
+      cerrar();
+      boton.focus();
+    };
+    const filtrar = () => {
+      const q = normalizarTextoFiltro(input.value);
+      opciones = Array.from(select.options).filter(o => !o.disabled &&
+        (!q || normalizarTextoFiltro(o.textContent).includes(q)));
+      if (q) opciones.sort((a, b) => Number(normalizarTextoFiltro(b.textContent) === q) - Number(normalizarTextoFiltro(a.textContent) === q));
+      lista.replaceChildren();
+      for (const [index, opcion] of opciones.entries()) {
+        const item = document.createElement('button');
+        item.type = 'button';
+        item.tabIndex = -1;
+        item.id = `${lista.id}-${index}`;
+        item.setAttribute('role', 'option');
+        item.setAttribute('aria-selected', String(opcion.value === select.value));
+        item.textContent = opcion.textContent.trim() || 'Sin versículo';
+        item.onclick = () => elegir(opcion);
+        lista.appendChild(item);
+      }
+      if (!opciones.length) {
+        const vacio = document.createElement('p');
+        vacio.textContent = 'Sin resultados';
+        vacio.setAttribute('role', 'status');
+        lista.appendChild(vacio);
+      }
+      marcarActivo(opciones.length ? Math.max(0, opciones.findIndex(o => !q && o.value === select.value)) : -1);
+    };
+    const actualizar = () => {
+      const valor = select.selectedOptions[0]?.textContent.trim() || '—';
+      boton.textContent = `${nombre}: ${valor} ▾`;
+      boton.setAttribute('aria-label', `${nombre}: ${valor}`);
+      if (!panel.hidden) filtrar();
+    };
+    boton.onclick = () => {
+      const abrir = panel.hidden;
+      vaCerrarSelectoresBiblia();
+      if (!abrir) return;
+      input.value = '';
+      panel.hidden = false;
+      boton.setAttribute('aria-expanded', 'true');
+      input.setAttribute('aria-expanded', 'true');
+      posicionar();
+      filtrar();
+      input.focus({preventScroll: true});
+    };
+    input.oninput = filtrar;
+    input.onkeydown = e => {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (opciones.length) marcarActivo((activo + (e.key === 'ArrowDown' ? 1 : -1) + opciones.length) % opciones.length);
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        elegir(opciones[activo]);
+      } else if (e.key === 'Escape') {
+        e.preventDefault(); e.stopPropagation(); cerrar(); boton.focus();
+      } else if (e.key === 'Tab') cerrar();
+    };
+    select.addEventListener('change', actualizar);
+    new MutationObserver(actualizar).observe(select, {childList: true, subtree: true, characterData: true});
+    vaSelectoresBiblia.set(id, {actualizar, cerrar, boton, panel, posicionar});
+    actualizar();
+  }
+}
+
+document.addEventListener('pointerdown', e => {
+  for (const s of vaSelectoresBiblia.values()) if (!s.panel.contains(e.target) && !s.boton.contains(e.target)) s.cerrar();
+});
+window.addEventListener('resize', () => {
+  for (const s of vaSelectoresBiblia.values()) if (!s.panel.hidden) s.posicionar();
+});
+window.addEventListener('scroll', vaCerrarSelectoresBiblia, {passive: true});
+
+function vaCompactarTabsPanel() {
+  for (const boton of document.querySelectorAll('#seccion-panel .panel-tabs button')) {
+    boton.classList.add('solo-icono-movil');
+    const nombre = boton.textContent.trim() || boton.title || boton.getAttribute('aria-label');
+    if (nombre) {
+      boton.title = nombre;
+      boton.setAttribute('aria-label', nombre);
+    }
+  }
+}
+
 
 function vaItemsPalabra(){return vaPalabrasGuardadas().filter(m=>m.tipo==='itemPalabra');}
 function vaPalabrasGuardadas(){
@@ -17540,26 +17963,40 @@ function vaMismaPalabra(a,b){
 function vaPalabraGuardada(data){return vaPalabrasGuardadas().find(m=>m.tipo==='itemPalabra'&&vaMismaPalabra(m,data)) || vaPalabrasGuardadas().find(m=>vaMismaPalabra(m,data));}
 function vaTieneSubrayadoPalabra(item){return item?.tipo==='itemPalabra'?item.subrayado!==false:!!item?.subrayado;}
 function vaSubrayadosPalabra(){return vaPalabrasGuardadas().filter(vaTieneSubrayadoPalabra);}
-function vaPintarItemsPalabra(container,v,version){
-  const raw=String(v[version]||'');
-  const records=vaPalabrasGuardadas().filter(m=>m.libro===v.Libro&&Number(m.capitulo)===Number(v.Capitulo)&&Number(m.versiculo)===Number(v.Versiculo)&&m.version===version).sort((a,b)=>a.inicio-b.inicio||(a.tipo==='itemPalabra'?-1:1));
-  let pos=0;const fragment=document.createDocumentFragment();
-  for(const item of records){
-    const start=Number(item.inicio),end=Number(item.fin);
-    if(start<pos||end<=start||raw.slice(start,end)!==item.palabra)continue;
-    fragment.appendChild(document.createTextNode(raw.slice(pos,start)));
-    const span=document.createElement('span');span.className=item.tipo==='itemPalabra'?'va-palabra-item':'va-palabra-estilo';
-    if(vaTieneSubrayadoPalabra(item))span.classList.add('va-subrayado-palabra');
-    if(item.mayusculas)span.classList.add('va-mayusculas-palabra');
-    span.appendChild(document.createTextNode(raw.slice(start,end)));
-    if(item.tipo==='itemPalabra'){
-      const b=document.createElement('button');b.type='button';b.title='Abrir ítem: '+item.palabra;b.setAttribute('aria-label',b.title);b.innerHTML='<i class="fa-brands fa-slack" aria-hidden="true"></i>';
-      b.onclick=e=>{e.stopPropagation();e.preventDefault();vaAbrirItem(item);};span.appendChild(b);
+function vaPintarItemsPalabra(container, v, version) {
+  const raw = String(v[version] || '');
+  const records = vaPalabrasGuardadas().filter(m => m.libro === v.Libro &&
+    Number(m.capitulo) === Number(v.Capitulo) && Number(m.versiculo) === Number(v.Versiculo) &&
+    m.version === version && Number.isInteger(m.inicio) && Number.isInteger(m.fin) &&
+    m.inicio >= 0 && m.fin <= raw.length && m.fin > m.inicio && raw.slice(m.inicio, m.fin) === m.palabra);
+  const limites = [...new Set([0, raw.length, ...records.flatMap(m => [m.inicio, m.fin])])].sort((a, b) => a - b);
+  const fragment = document.createDocumentFragment();
+  for (let i = 0; i < limites.length - 1; i++) {
+    const inicio = limites[i], fin = limites[i + 1];
+    const activos = records.filter(m => m.inicio <= inicio && m.fin >= fin);
+    if (!activos.length) { fragment.appendChild(document.createTextNode(raw.slice(inicio, fin))); continue; }
+    const span = document.createElement('span'); span.className = 'va-palabra-estilo';
+    if (activos.some(vaTieneSubrayadoPalabra)) span.classList.add('va-subrayado-palabra');
+    if (activos.some(m => m.mayusculas)) span.classList.add('va-mayusculas-palabra');
+    span.appendChild(document.createTextNode(raw.slice(inicio, fin)));
+    const items = activos.filter(m => m.tipo === 'itemPalabra' && m.fin === fin);
+    if (items.length) {
+      span.classList.add('va-palabra-item');
+      span.style.paddingRight = `${items.length * 12}px`;
+      items.forEach((item, index) => {
+        const b = document.createElement('button'); b.type = 'button';
+        b.title = `Abrir ítem: ${item.palabra}`; b.setAttribute('aria-label', b.title);
+        b.innerHTML = '<i class="fa-brands fa-slack" aria-hidden="true"></i>';
+        b.style.setProperty('right', `${index * 12}px`, 'important');
+        b.onclick = e => { e.stopPropagation(); e.preventDefault(); vaAbrirItem(item); };
+        span.appendChild(b);
+      });
     }
-    fragment.appendChild(span);pos=end;
+    fragment.appendChild(span);
   }
-  fragment.appendChild(document.createTextNode(raw.slice(pos)));container.replaceChildren(fragment);
+  container.replaceChildren(fragment);
 }
+
 async function vaCambiarEstiloPalabra(data,campo){
   if(!uid){window.abrirLoginParaGuardarMiPanel?.();return false;}
   const owner=uid,existing=vaPalabraGuardada(data),{rect,id,...base}=existing||data;
@@ -17638,7 +18075,7 @@ function vaCapturarPalabra(){
   const txt=start.closest?.('#texto .txt');
   if(!txt||!txt.contains(range.endContainer))return null;
   const cell=txt.closest('.versiculo');if(!cell||!cell.dataset.id)return null;
-  const selected=range.toString();const word=selected.trim();if(!word||word.length>60)return null;
+  const selected=range.toString();const word=selected.trim();if(!word)return null;
   const prefix=range.cloneRange();prefix.selectNodeContents(txt);prefix.setEnd(range.startContainer,range.startOffset);
   const inicio=prefix.toString().length+selected.indexOf(word),fin=inicio+word.length;
   const where=parsearIdResaltadoBiblia(cell.dataset.id);if(!where)return null;
@@ -17649,7 +18086,7 @@ function vaMostrarCrearItem(){
   if(document.getElementById('vaItemDrawer')||!selection||!document.body.classList.contains('en-biblia')){toolbar?.remove();return;}
   vaSeleccionItemActual=selection;vaEstiloLecturaExtras();
   if(!toolbar){
-    toolbar=document.createElement('div');toolbar.id='vaCrearItemPalabra';toolbar.setAttribute('role','toolbar');toolbar.setAttribute('aria-label','Formato e ítem de la palabra');
+    toolbar=document.createElement('div');toolbar.id='vaCrearItemPalabra';toolbar.setAttribute('role','toolbar');toolbar.setAttribute('aria-label','Formato e ítem del texto seleccionado');
     toolbar.onpointerdown=e=>{e.preventDefault();e.stopPropagation();};
     for(const [text,action,name]of [['Aa','mayusculas','Mayúsculas'],['U','subrayado','Subrayar'],['*','item','Agregar ítem']]){
       const b=document.createElement('button');b.type='button';b.textContent=text;b.title=name;b.setAttribute('aria-label',name);b.dataset.vaAccion=action;
@@ -17732,6 +18169,7 @@ function vaAsegurarPanelItems(){
     const input=document.createElement('input');input.type='search';input.placeholder='Palabra, libro o nota…';input.oninput=()=>vaRenderListaItems(list,input.value);label.appendChild(input);div.appendChild(label);
     const list=document.createElement('div');list.id='vaPanelItemsLista';div.appendChild(list);panel.appendChild(div);
   }
+  vaCompactarTabsPanel();
 }
 function vaRenderItemsEnPanel(){vaAsegurarPanelItems();const panel=document.getElementById('panel-items');if(panel && panel.offsetParent!==null)vaRenderListaItems(document.getElementById('vaPanelItemsLista'),panel?.querySelector('input')?.value||'');}
 
@@ -17751,7 +18189,7 @@ onAuthStateChanged(auth,user=>{
     combinarUsoFondos(uso);
   },()=>{});
 });
-vaEstiloLecturaExtras();vaAsegurarFiltroVersiculo();vaAsegurarPanelItems();
+vaEstiloLecturaExtras();vaAsegurarFiltroVersiculo();vaPrepararSelectoresBiblia();vaAsegurarPanelItems();
 
 // Los controles existentes se usan también para la palabra seleccionada.
 function vaSyncSeleccionImagen(selection) {
