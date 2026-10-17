@@ -3990,7 +3990,7 @@ body.oscuro .panel-marcadores-bar .pm-left .muted{
 
 /* ✅ Mantener bold en resaltadores */
 #seccion-biblia #texto .versiculo.versiculo-con-fondo-resaltado .txt{
-  font-weight: var(--va-peso-texto-biblia, 700) !important;
+  font-weight: var(--va-peso-texto-biblia, inherit) !important;
 }
 
 /* ✅ La pluma NO usa el color bíblico */
@@ -6783,7 +6783,7 @@ body.oscuro .va-selector-opciones button:hover,body.oscuro .va-selector-opciones
 .va-nota-toolbar input{flex:0 1 50px;min-width:40px;width:50px;height:32px;padding:3px;border:1px solid #90a8c1;border-radius:7px;font:16px Arial,sans-serif;text-align:center;background:white;color:#172d47;}
 .va-nota-editor{
   min-height:160px;padding:12px;border:1px solid #9caec1;border-radius:9px;
-  background:#fff;color:#14283f;font:18px/1.4 Arial,sans-serif;text-align:left;
+  background:#fff;color:#14283f;font:18px/1.4 var(--va-fuente-usuario,Arial,sans-serif);text-align:left;
   white-space:pre-wrap;overflow-wrap:anywhere;word-break:normal;
   user-select:text!important;-webkit-user-select:text!important;cursor:text;
 }
@@ -6792,23 +6792,20 @@ body.oscuro .va-selector-opciones button:hover,body.oscuro .va-selector-opciones
 .nota-vista-texto,.card-marcador .nota{white-space:pre-wrap;overflow-wrap:anywhere;}
 body.oscuro #vaTextoNota{background:#202833;color:#f2f5f9;border-color:#677f99;}
 
-/* Captura: 540 × 960 a escala 2 = 1080 × 1920, sin estirar ni reducir letra. */
+/* Vista editable a 540 px; exportación a 1080 px con alto según el texto. */
 .nota-share-stage{
   position:fixed;left:-12000px;top:0;z-index:-1;width:540px;
   padding:0;overflow:hidden;background-color:#f4eef2;background-size:cover;
-  background-position:center;background-repeat:no-repeat;font-family:Arial,sans-serif;box-sizing:border-box;
+  background-position:center;background-repeat:no-repeat;font-family:var(--va-fuente-usuario,Arial,sans-serif);box-sizing:border-box;
 }
 .nota-share-card{position:absolute;inset:20px;padding:0;border:1px solid #0002;border-radius:26px;box-shadow:0 8px 22px #0002;}
 .nota-share-textbox{position:absolute;box-sizing:border-box;}
-.nota-share-contenido,.va-nota-medidor{
+.nota-share-contenido{
   display:block;min-height:0;margin:0;padding:0;border:0;border-radius:0;
-  background:transparent;color:inherit;font:22px/1.4 Arial,sans-serif;
+  background:transparent;color:inherit;font:22px/1.4 var(--va-fuente-usuario,Arial,sans-serif);
   white-space:pre-wrap;overflow-wrap:anywhere;word-break:normal;text-align:left;
-  box-sizing:border-box;overflow:hidden;
+  box-sizing:border-box;overflow:hidden;width:100%;height:100%;
 }
-.nota-share-contenido{width:100%;height:100%;}
-.nota-share-pagina{position:absolute;bottom:32px;left:24px;right:24px;text-align:center;font:14px Arial,sans-serif;color:#333;}
-.va-nota-medidor{position:fixed;left:-12000px;top:0;z-index:-1;visibility:hidden;}
 .va-nota-imagen-modal{position:fixed;inset:0;z-index:2147483100;display:flex;align-items:flex-start;justify-content:center;padding:12px;background:#000a;overflow:auto;overscroll-behavior:contain;}
 .va-nota-imagen-dialogo{display:flex;flex-direction:column;max-height:calc(100dvh - 24px);width:min(600px,100%);margin:auto;padding:12px;border-radius:16px;background:#f5f8fc;color:#172d47;box-sizing:border-box;}
 .va-nota-imagen-cabecera,.va-nota-imagen-acciones{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;}
@@ -6887,3 +6884,18 @@ body.oscuro .va-nota-imagen-estado.va-nota-desborde{color:#ffd391;}
   #modalMarcadores .va-nota-form-acciones .va-nota-audio-edicion-botones button span{display:none;}
   #modalMarcadores .va-nota-form-acciones{gap:4px;}
 }
+
+/* Texto personal: conserva la tipografía del lector sin sangrías de plantilla. */
+.va-texto-usuario{font-family:var(--va-fuente-usuario,Arial,sans-serif);font-weight:var(--va-peso-usuario,400);font-style:var(--va-estilo-usuario,normal);text-indent:0;}
+.card-marcador .nota,.nota-vista-texto{font-family:var(--va-fuente-usuario,Arial,sans-serif);}
+.va-item-contexto{margin:7px 0 10px;white-space:pre-wrap;line-height:1.45;overflow-wrap:anywhere;}
+.va-item-palabra-contexto{text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:2px;}
+.va-item-drawer > strong{font-family:var(--va-fuente-usuario,Arial,sans-serif);}
+.va-nota-bloque{white-space:pre-wrap;}
+.va-nota-imagen-terminada{display:block;width:100%;height:auto;margin:10px auto;border-radius:10px;}
+.va-nota-imagen-paginador{display:flex;align-items:center;justify-content:center;gap:10px;margin:8px 0;}
+.va-nota-imagen-paginador[hidden]{display:none!important;}
+.va-nota-imagen-vista .va-nota-imagen-acciones{flex-wrap:nowrap;gap:5px;}
+.va-nota-imagen-vista .va-nota-imagen-acciones button{flex:1 1 auto;min-width:0;font-size:13px;padding:6px;}
+
+.va-item-drawer{max-height:calc(100dvh - 24px);overflow-y:auto;overscroll-behavior:contain;}
