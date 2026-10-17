@@ -6741,7 +6741,7 @@ body:not(.va-header-biblia-oculto)
 /* Búsqueda compacta de libro, capítulo y versículo. */
 #wrapFiltrosBiblia.abierto .filtros{
   display:flex;flex-wrap:wrap;gap:5px;align-items:center;
-  left:auto;right:0;top:calc(100% + 7px);transform:none;
+  position:fixed;left:50%;right:auto;top:100px;transform:translateX(-50%);
   width:min(350px,calc(100vw - 24px));padding:8px 44px 8px 8px;
 }
 .va-selector-biblia{position:relative;flex:1 1 80px;min-width:0;}
@@ -6775,12 +6775,12 @@ body.oscuro .va-selector-opciones button:hover,body.oscuro .va-selector-opciones
 }
 
 /* Editor de notas: mismos controles en la nota y en su imagen. */
-.va-nota-toolbar{display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin:8px 0;}
-.va-nota-toolbar button{flex:0 0 34px;min-width:34px;height:34px;padding:3px;border:1px solid #90a8c1;border-radius:7px;background:#edf5ff;color:#172d47;font:700 16px Arial,sans-serif;cursor:pointer;}
+.va-nota-toolbar{display:flex;gap:3px;align-items:center;flex-wrap:nowrap;max-width:100%;min-width:0;margin:8px 0;}
+.va-nota-toolbar button{display:inline-flex;align-items:center;justify-content:center;flex:0 0 30px;min-width:30px;width:30px;height:32px;padding:2px;border:1px solid #90a8c1;border-radius:7px;background:#edf5ff;color:#172d47;font:700 16px Arial,sans-serif;cursor:pointer;}
 .va-nota-toolbar button[aria-label=Subrayado]{text-decoration:underline;}
 .va-nota-toolbar button[aria-label=Cursiva]{font-style:italic;}
 .va-nota-toolbar button[aria-pressed=true]{background:#badbff;box-shadow:inset 0 0 0 1px #5076a2;}
-.va-nota-toolbar input{flex:0 0 62px;min-width:0;width:62px;height:34px;padding:3px;border:1px solid #90a8c1;border-radius:7px;font:16px Arial,sans-serif;text-align:center;background:white;color:#172d47;}
+.va-nota-toolbar input{flex:0 1 50px;min-width:40px;width:50px;height:32px;padding:3px;border:1px solid #90a8c1;border-radius:7px;font:16px Arial,sans-serif;text-align:center;background:white;color:#172d47;}
 .va-nota-editor{
   min-height:160px;padding:12px;border:1px solid #9caec1;border-radius:9px;
   background:#fff;color:#14283f;font:18px/1.4 Arial,sans-serif;text-align:left;
@@ -6794,7 +6794,7 @@ body.oscuro #vaTextoNota{background:#202833;color:#f2f5f9;border-color:#677f99;}
 
 /* Captura: 540 × 960 a escala 2 = 1080 × 1920, sin estirar ni reducir letra. */
 .nota-share-stage{
-  position:fixed;left:-12000px;top:0;z-index:-1;width:540px;height:960px;
+  position:fixed;left:-12000px;top:0;z-index:-1;width:540px;
   padding:0;overflow:hidden;background-color:#f4eef2;background-size:cover;
   background-position:center;background-repeat:no-repeat;font-family:Arial,sans-serif;box-sizing:border-box;
 }
@@ -6810,9 +6810,9 @@ body.oscuro #vaTextoNota{background:#202833;color:#f2f5f9;border-color:#677f99;}
 .nota-share-pagina{position:absolute;bottom:32px;left:24px;right:24px;text-align:center;font:14px Arial,sans-serif;color:#333;}
 .va-nota-medidor{position:fixed;left:-12000px;top:0;z-index:-1;visibility:hidden;}
 .va-nota-imagen-modal{position:fixed;inset:0;z-index:2147483100;display:flex;align-items:flex-start;justify-content:center;padding:12px;background:#000a;overflow:auto;overscroll-behavior:contain;}
-.va-nota-imagen-dialogo{width:min(600px,100%);margin:auto;padding:12px;border-radius:16px;background:#f5f8fc;color:#172d47;box-sizing:border-box;}
+.va-nota-imagen-dialogo{display:flex;flex-direction:column;max-height:calc(100dvh - 24px);width:min(600px,100%);margin:auto;padding:12px;border-radius:16px;background:#f5f8fc;color:#172d47;box-sizing:border-box;}
 .va-nota-imagen-cabecera,.va-nota-imagen-acciones{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;}
-.va-nota-imagen-dialogo button:not(.va-nota-asa){min-height:34px;border:1px solid #90a8c1;border-radius:8px;background:#dfedff;color:#172d47;padding:6px 10px;cursor:pointer;}
+.va-nota-imagen-dialogo button:not(.va-nota-asa):not(.va-nota-toolbar button){min-height:34px;border:1px solid #90a8c1;border-radius:8px;background:#dfedff;color:#172d47;padding:6px 10px;cursor:pointer;}
 .va-nota-imagen-dialogo button:disabled{opacity:.6;cursor:wait;}
 .va-nota-imagen-dialogo [hidden]{display:none!important;}
 .va-nota-imagen-ayuda,.va-nota-imagen-estado{margin:8px 0;font:14px/1.4 Arial,sans-serif;}
@@ -6825,3 +6825,65 @@ body.oscuro #vaTextoNota{background:#202833;color:#f2f5f9;border-color:#677f99;}
 .va-nota-mover{left:-20px;top:-20px;}
 .va-nota-escalar{right:-20px;bottom:-20px;cursor:nwse-resize;}
 body.oscuro .va-nota-imagen-dialogo{background:#202833;color:#f2f5f9;}
+
+/* Resaltadores en la misma fila de estilos. La paleta es flotante. */
+.va-nota-toolbar [aria-label=Resaltadores]{position:relative;}
+.va-nota-toolbar .marker-shape{flex:0 0 auto;transform:scale(.72);transform-origin:center;}
+.va-nota-paleta{position:fixed;z-index:2147483400;display:flex;flex-wrap:wrap;gap:4px;padding:8px;border:1px solid #8da3bb;border-radius:12px;background:#f4f8ff;color:#14283f;box-shadow:0 5px 22px #0004;}
+.va-nota-paleta button{display:inline-flex;align-items:center;justify-content:center;flex:0 0 28px;width:28px;min-width:28px;height:32px;padding:0;border:1px solid #91a5bd;border-radius:7px;background:#fff;color:#14283f;cursor:pointer;}
+.va-nota-paleta .va-nota-quitar-resaltado{flex:1 0 100%;width:auto;font:13px Arial,sans-serif;}
+.va-nota-paleta .marker-shape{transform:scale(.8);transform-origin:center;}
+body.oscuro .va-nota-paleta{background:#202833;color:#f2f5f9;}
+.va-nota-versiculos{min-height:0;padding:6px;border:0;background:transparent;color:inherit;}
+
+/* Solo el contenido del formulario se desplaza; sus botones siguen visibles. */
+#modalMarcadores.va-nota-editando{overflow:hidden!important;align-items:center!important;justify-content:center!important;}
+#modalMarcadores.va-nota-editando > div,
+#modalMarcadores.va-nota-editando .modal-contenido{
+  display:flex!important;flex-direction:column!important;
+  width:min(680px,calc(100vw - 24px))!important;max-width:min(680px,calc(100vw - 24px))!important;
+  height:calc(100dvh - 24px)!important;max-height:calc(100dvh - 24px)!important;
+  margin:0 auto!important;overflow:hidden!important;min-height:0;
+}
+#modalMarcadores #formNuevoMarcador.va-nota-form{
+  flex:1 1 auto!important;flex-direction:column;min-height:0!important;
+  overflow:hidden!important;max-height:none!important;padding-bottom:0!important;
+}
+#modalMarcadores .va-nota-form-scroll{
+  flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;
+  overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:0 3px 10px;
+}
+#modalMarcadores .va-nota-form-scroll > .va-nota-toolbar{
+  position:sticky;top:0;z-index:3;background:#f3f8ff;padding:5px 0;
+}
+body.oscuro #modalMarcadores .va-nota-form-scroll > .va-nota-toolbar{background:#202833;}
+#modalMarcadores .va-nota-form-acciones{
+  flex:0 0 auto;display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap;
+  padding:8px 0 max(6px,env(safe-area-inset-bottom));border-top:1px solid #819bb444;background:inherit;
+}
+#modalMarcadores .va-nota-form-acciones .va-nota-guardar-row,
+#modalMarcadores .va-nota-form-acciones #vaNotaAudioEdicion:not([style*="display: none"]),
+#modalMarcadores .va-nota-form-acciones .va-nota-audio-edicion-botones{display:contents!important;}
+#modalMarcadores .va-nota-form-acciones .va-nota-audio-edicion-titulo,
+#modalMarcadores .va-nota-form-acciones .va-nota-audio-sin-audio{display:none;}
+#modalMarcadores .va-nota-form-acciones audio{flex:1 0 100%;width:100%;min-height:32px;height:36px;margin:0;}
+#modalMarcadores .va-nota-form-acciones button{min-height:34px;margin:0!important;padding:6px 10px;font-size:13px;}
+
+/* La vista previa también ajusta su alto; el reel no impone el formato final. */
+.va-nota-imagen-trabajo{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;padding:0 18px 8px;}
+.va-nota-imagen-cabecera,.va-nota-imagen-acciones,.va-nota-imagen-dialogo > .va-nota-toolbar{flex:0 0 auto;}
+.va-nota-imagen-estado:empty{display:none;}
+.va-nota-imagen-estado.va-nota-desborde{color:#865100;font-weight:700;}
+body.oscuro .va-nota-imagen-estado.va-nota-desborde{color:#ffd391;}
+
+@media(max-width:400px){
+  .va-nota-toolbar{gap:2px;}
+  .va-nota-toolbar button{flex-basis:25px;min-width:25px;width:25px;height:31px;font-size:14px;}
+  .va-nota-toolbar input{flex-basis:44px;width:44px;min-width:38px;font-size:14px;}
+}
+@media(max-width:760px){
+  #modalMarcadores.va-nota-editando > div,
+  #modalMarcadores.va-nota-editando .modal-contenido{width:calc(100vw - 8px)!important;max-width:calc(100vw - 8px)!important;height:calc(100dvh - 8px)!important;max-height:calc(100dvh - 8px)!important;}
+  #modalMarcadores .va-nota-form-acciones .va-nota-audio-edicion-botones button span{display:none;}
+  #modalMarcadores .va-nota-form-acciones{gap:4px;}
+}
