@@ -9335,6 +9335,7 @@ function obtenerVersiculoResaltadoPorId(id = "") {
 }
 
 function renderListaResaltadosMarcadores() {
+  vaEstiloFuenteUsuario();
   const lista = document.getElementById("listaMarcadores");
   if (!lista) return;
 
@@ -9462,9 +9463,7 @@ function renderListaResaltadosMarcadores() {
           ${
             resumen
               ? `
-                <div class="nota-lista-resumen">
-                  ${resumen}
-                </div>
+                <div class="nota-lista-resumen va-texto-usuario">${resumen}</div>
               `
               : ``
           }
@@ -10668,6 +10667,9 @@ window.abrirVistaMarcadorDesdeLista = function(idMarcador, origenLista = "biblia
           </button>
         ` : ``}
       
+        <button type="button" class="pm-btn" onclick="verImagenNotaPanel('${idMarcador}', this)" title="Ver imagen" aria-label="Ver imagen de la nota">
+          <i class="fa-solid fa-image"></i>
+        </button>
         <button
           type="button"
           class="pm-btn"
@@ -11350,6 +11352,7 @@ function asegurarPanelResaltadosUI() {
 }
 
 function renderPanelResaltados() {
+  vaEstiloFuenteUsuario();
   asegurarPanelResaltadosUI();
 
   const panel =
@@ -11508,15 +11511,13 @@ function renderPanelResaltados() {
                   texto
                     ? `
                       <div
-                        class="nota"
+                        class="nota va-texto-usuario"
                         style="
                           margin-top:8px;
                           background:rgba(255,255,255,.38);
                           color:inherit;
                         "
-                      >
-                        ${texto}
-                      </div>
+                      >${texto}</div>
                     `
                     : ``
                 }
@@ -11555,6 +11556,7 @@ window.abrirResaltadoDesdePanel =
   };
 
 function renderPanelMarcadores() {
+  vaEstiloFuenteUsuario();
   const panel = document.getElementById("panel-marcadores");
   if (!panel) return;
 
@@ -11810,6 +11812,7 @@ return `
   </button>
 ` : ``}
 
+<button type="button" class="pm-btn" onclick="verImagenNotaPanel('${m.id}', this)" title="Ver imagen" aria-label="Ver imagen de la nota"><i class="fa-solid fa-image"></i></button>
 <button type="button"
   class="pm-btn pm-share-main ${notaEstaPublicadaEnCompartidos ? "pm-btn-compartido" : ""}"
   onclick="abrirCompartirMarcador('${m.id}')"
@@ -13346,7 +13349,7 @@ function vaCrearBarraNota(toolbar) {
     b.onclick = accion; toolbar.appendChild(b); return b;
   };
   const size = document.createElement('input');
-  size.type = 'number'; size.min = '8'; size.max = '160'; size.step = '1';
+  size.type = 'number'; size.min = '7'; size.max = '160'; size.step = '1';
   size.setAttribute('aria-label', 'Tamaño de letra');
   for (const [key, label, nombre] of [['bold', 'B', 'Negrita'], ['underline', 'U', 'Subrayado'], ['italic', 'I', 'Cursiva'], ['upper', 'A', 'Mayúsculas']]) {
     botones[key] = boton(label, nombre, () => barra.activo?.aplicar(key, botones[key].getAttribute('aria-pressed') !== 'true'));
@@ -13454,10 +13457,26 @@ function vaFormatoVersiculoNotaActual() {
   return document.getElementById('previewVersiculosMarcador')?.__vaEditorVersiculo?.leer().formato || null;
 }
 
+// La tipografía se toma del lector, incluida la preferencia de negrita.
+function vaEstiloFuenteUsuario() {
+  const nodo = document.querySelector('#texto .versiculo:not(.versiculo-con-fondo-resaltado) .txt') || document.querySelector('#texto .versiculo .txt') || document.getElementById('texto') || document.body;
+  const estilo = getComputedStyle(nodo);
+  const familia = estilo.fontFamily || '"Lora", Georgia, serif';
+  const bold = Number(estilo.fontWeight) >= 600 || estilo.fontWeight === 'bold';
+  const italic = estilo.fontStyle === 'italic' || estilo.fontStyle === 'oblique';
+  const root = document.documentElement;
+  root.style.setProperty('--va-fuente-usuario', familia);
+  root.style.setProperty('--va-peso-usuario', bold ? '700' : '400');
+  root.style.setProperty('--va-estilo-usuario', italic ? 'italic' : 'normal');
+  const verso = document.createElement('span'); verso.className = 'nota-vista-versiculo'; verso.hidden = true; document.body.appendChild(verso);
+  const familiaVersiculo = getComputedStyle(verso).fontFamily || familia; verso.remove();
+  return {familia, familiaVersiculo, bold, italic};
+}
+
 function vaNotaEstilo(datos = {}, tamano = 18) {
   return {
     bold: !!datos.bold, italic: !!datos.italic, underline: !!datos.underline, upper: !!datos.upper,
-    tamano: Math.min(160, Math.max(8, Number(datos.tamano) || tamano)),
+    tamano: Math.min(160, Math.max(7, Number(datos.tamano) || tamano)),
     fondo: vaNotaColorSeguro(datos.fondo)
   };
 }
@@ -13574,7 +13593,13 @@ function vaMontarEditorNota(editor, toolbar, datos, alCambiar = () => {}) {
       !rango || (r.inicio <= rango.inicio && r.fin > rango.inicio) : r.fin > rango.inicio && r.inicio < rango.fin);
   };
   const actualizar = () => { if (barra.activo === api) barra.reflejar(); };
-  const pintar = () => { editor.style.fontSize = `${formato.tamano}px`; editor.innerHTML = vaNotaHTML(texto, formato); actualizar(); };
+  const pintar = () => {
+    editor.style.fontSize = `${formato.tamano}px`;
+    const fuente = vaEstiloFuenteUsuario();
+    editor.style.fontFamily = datos.soloFormato ? fuente.familiaVersiculo : fuente.familia;
+    editor.innerHTML = datos.renderizar ? datos.renderizar(texto, formato) : vaNotaHTML(texto, formato);
+    actualizar();
+  };
   const avisar = () => { actualizar(); alCambiar({texto, formato}); };
   const recordar = () => {
     historial.push({texto, formato, seleccion});
@@ -13587,8 +13612,8 @@ function vaMontarEditorNota(editor, toolbar, datos, alCambiar = () => {}) {
     const fin = seleccion && seleccion.inicio !== seleccion.fin ? seleccion.fin : texto.length;
     recordar();
     const aplicar = estilo => {
-      if (campo === 'tamano') estilo.tamano = Math.min(160, Math.max(8, Number(valor) || estilo.tamano));
-      else if (campo === 'escala') estilo.tamano = Math.min(160, Math.max(8, estilo.tamano * valor));
+      if (campo === 'tamano') estilo.tamano = Math.min(160, Math.max(7, datos.escalaGlobal && inicio === 0 && fin === texto.length ? estilo.tamano * Number(valor) / formato.tamano : Number(valor) || estilo.tamano));
+      else if (campo === 'escala') estilo.tamano = Math.min(160, Math.max(7, estilo.tamano * valor));
       else if (campo === 'fondo') estilo.fondo = vaNotaColorSeguro(valor);
       else estilo[campo] = valor;
       return estilo;
@@ -13600,7 +13625,8 @@ function vaMontarEditorNota(editor, toolbar, datos, alCambiar = () => {}) {
       rangos.push({...aplicar(vaNotaEstilo(r)), inicio: Math.max(inicio, r.inicio), fin: Math.min(fin, r.fin)});
       if (r.fin > fin) rangos.push({...r, inicio: fin});
     }
-    const base = campo === 'tamano' ? Number(valor) : campo === 'escala' ? formato.tamano * valor : formato.tamano;
+    const parcial = datos.escalaGlobal && seleccion && seleccion.inicio !== seleccion.fin;
+    const base = parcial ? formato.tamano : campo === 'tamano' ? Number(valor) : campo === 'escala' ? formato.tamano * valor : formato.tamano;
     formato = vaNotaNormalizar(texto, {tamano: base, rangos});
     const seleccionAplicada = seleccion && {...seleccion};
     pintar(); editor.focus({preventScroll: true});
@@ -13657,7 +13683,7 @@ function vaMontarEditorNota(editor, toolbar, datos, alCambiar = () => {}) {
     estado: () => {
       const rangos = activos();
       return {
-        tamano: rangos[0]?.tamano || formato.tamano, fondo: rangos[0]?.fondo || '',
+        tamano: datos.escalaGlobal && (!seleccion || seleccion.inicio === seleccion.fin) ? formato.tamano : rangos[0]?.tamano || formato.tamano, fondo: rangos[0]?.fondo || '',
         ...Object.fromEntries(['bold', 'italic', 'underline', 'upper'].map(k => [k, !!rangos.length && rangos.every(r => r[k])]))
       };
     },
@@ -13794,7 +13820,7 @@ async function notaShareAplicarFondoSeguro(stage) {
     const urlAbsoluta = new URL(urlRaw, window.location.href).href;
 
     // ✅ Usa el Worker/proxy que ya tenés en biblia.js.
-    // Así html2canvas no intenta leer R2 directamente y no choca con CORS.
+    // La imagen usa un blob seguro y reutiliza la descarga del fondo.
     if (!notaShareFondosCache.has(urlAbsoluta)) {
       const pendiente = fetchPanelImagenBlob(urlAbsoluta, "fondo_nota.jpg").catch(error => { notaShareFondosCache.delete(urlAbsoluta); throw error; });
       notaShareFondosCache.set(urlAbsoluta, pendiente);
@@ -13902,7 +13928,8 @@ function notaShareDatosDesdeMarcador(m = {}) {
     texto: String(m.nota || ""),
     notaFormato: m.notaFormato || null,
     versiculoFormato: m.versiculoFormato || null,
-    fondo: String(m.color || "#fff3b0").trim()
+    fondo: String(m.color || "#fff3b0").trim(),
+    fuente: vaEstiloFuenteUsuario()
   };
 }
 
@@ -13925,57 +13952,68 @@ function notaShareCanvasBlob(canvas) {
 
 // Imagen ajustada al texto; el alto reel solo fija el límite de cada página. La edición de la imagen no modifica la nota guardada.
 function notaShareModelo(datos = {}) {
-  if (datos.imagenNota) return datos.imagenNota;
-  let texto = '';
-  const rangos = [];
-  const agregar = (valor, estilo = {}, formato = null) => {
-    if (!valor) return;
-    if (texto) texto += '\n\n';
-    const inicio = texto.length;
-    texto += String(valor);
-    const parte = formato ? vaNotaNormalizar(String(valor), formato) : vaNotaNormalizar(String(valor), {tamano: estilo.tamano || 22});
-    for (const r of parte.rangos) rangos.push({...r, ...estilo, inicio: inicio + r.inicio, fin: inicio + r.fin});
+  if (datos.imagenNota) return JSON.parse(JSON.stringify(datos.imagenNota));
+  const fuente = datos.fuente || vaEstiloFuenteUsuario();
+  let texto = ''; const rangos = [], bloques = [];
+  const agregar = (tipo, valor, tamano, antes, formato = null, estilo = {}) => {
+    if (!String(valor || '').length) return;
+    if (texto) texto += '\n';
+    const inicio = texto.length; texto += String(valor);
+    const f = vaNotaNormalizar(String(valor), formato || {tamano});
+    for (const r of f.rangos) rangos.push({...r, ...estilo, tamano: r.tamano * tamano / f.tamano, inicio: inicio + r.inicio, fin: inicio + r.fin});
+    bloques.push({tipo, inicio, fin: texto.length, antes});
   };
-  agregar(datos.titulo, {bold: true, tamano: 27});
-  agregar(datos.referencia, {tamano: 14});
-  if (datos.versiculoFormato) {
-    const f = vaNotaNormalizar(datos.versiculo || '', datos.versiculoFormato);
-    agregar(datos.versiculo, {}, {...f, tamano: 22, rangos: f.rangos.map(r => ({...r, tamano: r.tamano * 22 / f.tamano}))});
-  } else agregar(datos.versiculo, {bold: true, italic: true, tamano: 22});
-  const formatoNota = vaNotaNormalizar(datos.texto || '', datos.notaFormato);
-  const escala = 22 / formatoNota.tamano;
-  agregar(datos.texto, {}, {...formatoNota, tamano: 22, rangos: formatoNota.rangos.map(r => ({...r, tamano: r.tamano * escala}))});
-  agregar('Vida Abundante App', {bold: true, tamano: 14});
-  return {texto, formato: vaNotaNormalizar(texto, {tamano: 22, rangos}), caja: {x: 44, y: 64, ancho: 452, alto: 832}};
+  agregar('titulo', datos.titulo, 27, 0, null, {bold: true});
+  agregar('versiculo', datos.versiculo, 22, 7, datos.versiculoFormato, datos.versiculoFormato ? {} : {bold: fuente.bold, italic: fuente.italic});
+  agregar('citas', datos.referencia, 12, 5, null, {bold: false, italic: false});
+  agregar('nota', datos.texto, 22, 10, datos.notaFormato, datos.notaFormato ? {} : {bold: fuente.bold, italic: fuente.italic});
+  agregar('firma', 'Vida Abundante App', 7, 12, null, {bold: false, italic: false});
+  return {texto, bloques, fuente, formato: vaNotaNormalizar(texto, {tamano: 22, rangos}), caja: {x: 44, y: 44, ancho: 452, alto: 832}};
+}
+
+function notaShareActualizarBloques(modelo, texto) {
+  const anterior = modelo.texto;
+  if (anterior === texto) return;
+  let inicio = 0, cola = 0;
+  while (inicio < anterior.length && inicio < texto.length && anterior[inicio] === texto[inicio]) inicio++;
+  while (cola < anterior.length - inicio && cola < texto.length - inicio && anterior[anterior.length - 1 - cola] === texto[texto.length - 1 - cola]) cola++;
+  const finViejo = anterior.length - cola, finNuevo = texto.length - cola, delta = texto.length - anterior.length;
+  for (const b of modelo.bloques || []) {
+    b.inicio = b.inicio <= inicio ? b.inicio : b.inicio >= finViejo ? b.inicio + delta : inicio;
+    b.fin = b.fin < inicio ? b.fin : b.fin >= finViejo ? b.fin + delta : finNuevo;
+  }
+}
+
+function notaShareBloques(modelo) {
+  const bloques = (modelo.bloques || []).filter(b => b.fin > b.inicio && b.inicio >= 0 && b.fin <= modelo.texto.length).sort((a,b) => a.inicio - b.inicio);
+  let pos = 0;
+  for (const b of bloques) {
+    if (b.inicio < pos || modelo.texto.slice(pos, b.inicio).trim()) return [{tipo: 'nota', inicio: 0, fin: modelo.texto.length, antes: 0}];
+    pos = b.fin;
+  }
+  if (!bloques.length || modelo.texto.slice(pos).trim()) return [{tipo: 'nota', inicio: 0, fin: modelo.texto.length, antes: 0}];
+  return bloques;
+}
+
+function notaShareHTMLBloques(modelo) {
+  const bloques = notaShareBloques(modelo);
+  return bloques.map((b,i) => {
+    const separador = i ? `<span style="display:none">${marcadorEscapeHTML(modelo.texto.slice(bloques[i-1].fin,b.inicio))}</span>` : '';
+    return `${separador}<span class="va-nota-bloque" style="display:block;font-size:7px;line-height:1.4;margin-top:${i ? b.antes : 0}px;font-family:${String(b.tipo === 'versiculo' ? modelo.fuente?.familiaVersiculo || modelo.fuente?.familia : modelo.fuente?.familia || 'inherit').replace(/"/g,'&quot;')};text-align:${b.tipo === 'firma' ? 'right' : 'left'};opacity:${b.tipo === 'citas' ? '.7' : '1'}">${vaNotaHTML(modelo.texto, modelo.formato, 1, b.inicio, b.fin)}</span>`;
+  }).join('');
 }
 
 function notaShareCrearNodo(datos = {}) {
-  const modelo = notaShareModelo(datos);
-  const stage = document.createElement('div');
-  stage.className = 'nota-share-stage';
-  stage.style.height = `${modelo.altoImagen || 960}px`;
+  const modelo = notaShareModelo(datos), stage = document.createElement('div');
+  stage.className = 'nota-share-stage'; stage.style.height = `${modelo.altoImagen || 960}px`;
   stage.style.backgroundImage = 'linear-gradient(145deg, rgba(255,214,232,.82), rgba(209,238,255,.82))';
   stage.style.color = notaShareColorContraste(datos.fondo || '#fff3b0');
-  const card = document.createElement('div');
-  card.className = 'nota-share-card';
-  card.style.backgroundColor = /^#[\da-f]{6}$/i.test(datos.fondo || '') ? datos.fondo : '#fff3b0';
-  card.style.color = notaShareColorContraste(datos.fondo || '#fff3b0');
-  const box = document.createElement('div');
-  box.className = 'nota-share-textbox';
-  notaShareColocarCaja(box, modelo.caja);
-  const text = document.createElement('div');
-  text.className = 'va-nota-editor nota-share-contenido';
-  const desde = modelo.desde || 0, hasta = modelo.hasta ?? modelo.texto.length;
-  text.innerHTML = vaNotaHTML(modelo.texto, modelo.formato, 1, desde, hasta);
-  box.appendChild(text);
-  stage.append(card, box);
-  if (modelo.total > 1) {
-    const numero = document.createElement('div');
-    numero.className = 'nota-share-pagina';
-    numero.textContent = `${modelo.pagina} / ${modelo.total}`;
-    stage.appendChild(numero);
-  }
-  document.body.appendChild(stage);
+  stage.style.fontFamily = modelo.fuente?.familia || vaEstiloFuenteUsuario().familia;
+  const card = document.createElement('div'); card.className = 'nota-share-card';
+  card.style.backgroundColor = vaNotaColorSeguro(datos.fondo) || '#fff3b0';
+  const box = document.createElement('div'); box.className = 'nota-share-textbox'; notaShareColocarCaja(box, modelo.caja);
+  const contenido = document.createElement('div'); contenido.className = 'va-nota-editor nota-share-contenido';
+  contenido.innerHTML = notaShareHTMLBloques(modelo); box.appendChild(contenido); stage.append(card, box); document.body.appendChild(stage);
   return stage;
 }
 
@@ -13983,87 +14021,155 @@ function notaShareColocarCaja(box, caja) {
   Object.assign(box.style, {left: `${caja.x}px`, top: `${caja.y}px`, width: `${caja.ancho}px`, height: `${caja.alto}px`});
 }
 
-function notaSharePaginar(modelo, medidor) {
-  const {texto, formato, caja} = modelo;
-  medidor.style.width = `${caja.ancho}px`;
-  const altoDisponible = Math.max(1, 960 - caja.y - 44);
-  medidor.style.height = `${altoDisponible}px`;
-  // Los límites respetan emojis, acentos combinados y secuencias de caracteres.
-  const limites = [0];
-  if (typeof Intl.Segmenter === 'function') {
-    for (const s of new Intl.Segmenter('es', {granularity: 'grapheme'}).segment(texto)) limites.push(s.index + s.segment.length);
-  } else {
-    let offset = 0;
-    for (const caracter of texto) { offset += caracter.length; limites.push(offset); }
-  }
-  const cabe = (desde, hasta) => {
-    medidor.innerHTML = vaNotaHTML(texto, formato, 1, desde, hasta);
-    return medidor.scrollHeight <= medidor.clientHeight && medidor.scrollWidth <= medidor.clientWidth;
-  };
-  const paginas = [];
-  let indice = 0;
-  while (indice < limites.length - 1) {
-    let bajo = indice + 1, alto = limites.length - 1, mejor = indice;
-    while (bajo <= alto) {
-      const medio = Math.floor((bajo + alto) / 2);
-      if (cabe(limites[indice], limites[medio])) { mejor = medio; bajo = medio + 1; }
-      else alto = medio - 1;
+function notaShareFont(estilo, fuente) {
+  return `${estilo.italic ? 'italic' : 'normal'} ${estilo.bold ? '700' : '400'} ${estilo.tamano}px ${estilo.familia || fuente.familia}`;
+}
+
+async function notaShareEsperarFuentes(modelo) {
+  if (!document.fonts) return;
+  const fuente = modelo.fuente || vaEstiloFuenteUsuario();
+  const fuentes = new Set(vaNotaNormalizar(modelo.texto, modelo.formato).rangos.flatMap(r => [fuente.familia, fuente.familiaVersiculo || fuente.familia].map(familia => notaShareFont({...r, familia}, fuente))));
+  await Promise.all(Array.from(fuentes, f => document.fonts.load(f).catch(() => [])));
+  await document.fonts.ready;
+}
+
+// El mismo plan de líneas mide, pagina y dibuja el PNG; no se captura texto HTML.
+function notaSharePlanTexto(modelo, contexto = null) {
+  const ctx = contexto || document.createElement('canvas').getContext('2d');
+  if (!ctx) throw new Error('No pude iniciar el lienzo de la nota.');
+  const fuente = modelo.fuente || vaEstiloFuenteUsuario(), formato = vaNotaNormalizar(modelo.texto, modelo.formato);
+  const ancho = modelo.caja.ancho, lineas = [];
+  const segmentos = texto => typeof Intl.Segmenter === 'function' ? [...new Intl.Segmenter('es', {granularity: 'grapheme'}).segment(texto)].map(s => s.segment) : Array.from(texto);
+  const agrupar = caracteres => {
+    const grupos = [];
+    for (const c of caracteres) {
+      const font = notaShareFont(c.estilo, fuente), clave = font + '|' + c.estilo.fondo + '|' + c.estilo.underline + '|' + c.estilo.upper;
+      const ultimo = grupos[grupos.length - 1];
+      if (ultimo?.clave === clave) { ultimo.original += c.original; ultimo.texto += c.texto; ultimo.fin = c.fin; }
+      else grupos.push({clave, font, estilo: c.estilo, original: c.original, texto: c.texto, inicio: c.inicio, fin: c.fin});
     }
-    if (mejor === indice) throw new Error('Una letra no cabe en el recuadro. Agrandalo o reducí su tamaño.');
-    if (mejor < limites.length - 1) {
-      const minimo = Math.floor((indice + mejor) / 2);
-      for (let n = mejor; n > minimo; n--) {
-        if (/\s$/u.test(texto.slice(limites[n - 1], limites[n]))) { mejor = n; break; }
+    for (const g of grupos) { ctx.font = g.font; g.ancho = ctx.measureText(g.texto).width; }
+    return grupos;
+  };
+  const medir = caracteres => agrupar(caracteres).reduce((n,g) => n + g.ancho, 0);
+  for (const bloque of notaShareBloques(modelo)) {
+    const primeraLineaBloque = lineas.length;
+    let pos = bloque.inicio, pendiente = [], primera = true;
+    const agregarLinea = (salto = '') => {
+      const grupos = agrupar(pendiente), tamano = grupos.length ? Math.max(...grupos.map(g => g.estilo.tamano)) : formato.tamano;
+      const alto = Math.ceil(tamano * 1.4);
+      lineas.push({grupos, original: pendiente.map(c=>c.original).join('') + salto, alto, antes: primera ? bloque.antes : 0, tipo: bloque.tipo,
+        ancho: grupos.reduce((n,g)=>n+g.ancho,0), inicio: pendiente[0]?.inicio ?? pos, fin: pendiente.at(-1)?.fin ?? pos});
+      pendiente = []; primera = false;
+    };
+    const caracteres = segmentos(modelo.texto.slice(bloque.inicio, bloque.fin)).map(original => {
+      const inicio = pos; pos += original.length;
+      const r = formato.rangos.find(r => inicio >= r.inicio && inicio < r.fin) || vaNotaEstilo({}, formato.tamano);
+      return {original, texto: r.upper ? original.toLocaleUpperCase('es') : original, inicio, fin: pos, estilo: {...r, familia: bloque.tipo === 'versiculo' ? fuente.familiaVersiculo || fuente.familia : fuente.familia}};
+    });
+    const tokens = [];
+    for (const c of caracteres) {
+      if (/[\r\n]/.test(c.original)) tokens.push([c]);
+      else {
+        const ultimo = tokens.at(-1), espacio = /^\s+$/u.test(c.original);
+        if (ultimo && !/[\r\n]/.test(ultimo[0].original) && /^\s+$/u.test(ultimo[0].original) === espacio) ultimo.push(c);
+        else tokens.push([c]);
       }
     }
-    paginas.push({desde: limites[indice], hasta: limites[mejor]});
-    indice = mejor;
+    for (const token of tokens) {
+      if (/[\r\n]/.test(token[0].original)) { agregarLinea(token.map(c=>c.original).join('')); continue; }
+      if (pendiente.length && medir([...pendiente,...token]) > ancho) agregarLinea();
+      for (const c of token) {
+        if (medir([c]) > ancho + .01) throw new Error('Una letra no cabe. Agrandá el recuadro o reducí la letra.');
+        if (pendiente.length && medir([...pendiente,c]) > ancho + .01) agregarLinea();
+        pendiente.push(c);
+      }
+    }
+    if (pendiente.length || !caracteres.length) agregarLinea();
+    const recuperado = lineas.slice(primeraLineaBloque).map(l=>l.original).join('');
+    if (recuperado !== modelo.texto.slice(bloque.inicio,bloque.fin)) throw new Error('La verificación del texto falló. No se generó una imagen incompleta.');
   }
-  return (paginas.length ? paginas : [{desde: 0, hasta: 0}]).map(pagina => {
-    medidor.style.height = 'auto';
-    medidor.innerHTML = vaNotaHTML(texto, formato, 1, pagina.desde, pagina.hasta);
-    const altoTexto = Math.max(1, Math.ceil(medidor.scrollHeight));
-    return {...pagina, altoTexto, altoImagen: Math.min(960, Math.ceil(caja.y + altoTexto + 44))};
-  });
+  return lineas;
+}
+
+function notaSharePaginar(modelo) {
+  const lineas = notaSharePlanTexto(modelo), firma = lineas.filter(l => l.tipo === 'firma');
+  const contenido = lineas.filter(l => l.tipo !== 'firma');
+  const firmaAlto = firma.reduce((n,l)=>n+l.alto,0), reserva = firma.length ? firmaAlto + 12 : 0;
+  const limite = 960 - modelo.caja.y - 44 - reserva, paginas = [];
+  let actual = [], alto = 0;
+  const cerrar = () => {
+    const altoTexto = Math.max(1, alto + reserva), altoImagen = Math.ceil(modelo.caja.y + altoTexto + 44);
+    if (altoImagen > 960) throw new Error('El texto supera el espacio disponible. Reducí la letra o movelo más arriba.');
+    paginas.push({lineas: actual, firma, altoTexto, altoImagen, desde: actual[0]?.inicio || 0, hasta: actual.at(-1)?.fin || 0}); actual=[]; alto=0;
+  };
+  for (const l of contenido) {
+    const espacio = (actual.length ? l.antes : 0) + l.alto;
+    if (l.alto > limite) throw new Error('Una línea no cabe en el alto máximo. Reducí la letra o movela más arriba.');
+    if (actual.length && alto + espacio > limite) cerrar();
+    actual.push({...l, y: alto + (actual.length ? l.antes : 0)});
+    alto += (actual.length > 1 ? l.antes : 0) + l.alto;
+  }
+  if (actual.length || !paginas.length) cerrar();
+  return paginas;
+}
+
+function notaSharePintarLineas(ctx, lineas, caja, color, firmaY = null) {
+  let yFirma = firmaY;
+  for (const l of lineas) {
+    const y = firmaY === null ? caja.y + l.y : yFirma;
+    let x = caja.x + (l.tipo === 'firma' ? Math.max(0,caja.ancho-l.ancho) : 0);
+    const medidas = l.grupos.map(g => { ctx.font = g.font; return ctx.measureText(g.texto); });
+    const ascenso = Math.max(0,...medidas.map((m,i)=>m.actualBoundingBoxAscent || l.grupos[i].estilo.tamano*.85));
+    const descenso = Math.max(0,...medidas.map((m,i)=>m.actualBoundingBoxDescent || l.grupos[i].estilo.tamano*.2));
+    const base = y + (l.alto-ascenso-descenso)/2+ascenso;
+    const grupos = l.grupos.map(g=>{const dibujar={...g,x};x+=g.ancho;return dibujar;});
+    // Primero todos los fondos: ninguno puede tapar letras cursivas de otro tramo.
+    for (const g of grupos) if (g.estilo.fondo) {
+      ctx.fillStyle=g.estilo.fondo;ctx.fillRect(g.x,base-ascenso-1,g.ancho,ascenso+descenso+2);
+    }
+    for (const g of grupos) {
+      ctx.font=g.font;ctx.textBaseline='alphabetic';
+      ctx.fillStyle=g.estilo.fondo ? notaShareColorContraste(g.estilo.fondo) : color;
+      ctx.globalAlpha=l.tipo==='citas' ? .7 : 1;
+      ctx.fillText(g.texto,g.x,base);
+      if(g.estilo.underline){ctx.strokeStyle=ctx.fillStyle;ctx.lineWidth=Math.max(1,g.estilo.tamano*.045);ctx.beginPath();ctx.moveTo(g.x,base+Math.max(2,descenso*.5));ctx.lineTo(g.x+g.ancho,base+Math.max(2,descenso*.5));ctx.stroke();}
+      ctx.globalAlpha=1;
+    }
+    if(firmaY!==null)yFirma+=l.alto;
+  }
 }
 
 async function notaShareGenerarArchivo(datos = {}) {
-  if (typeof html2canvas !== 'function') throw new Error('Falta html2canvas para generar la imagen.');
-  await document.fonts?.ready;
-  let modelo = notaShareModelo(datos);
-  if (!modelo.altoImagen) {
-    const medidor = document.createElement('div'); medidor.className = 'va-nota-medidor va-nota-editor'; document.body.appendChild(medidor);
-    try {
-      const paginas = notaSharePaginar(modelo, medidor);
-      if (paginas.length > 1) throw new Error('La nota necesita varias imágenes. Abrí su editor para generarlas completas.');
-      modelo = {...modelo, ...paginas[0], caja: {...modelo.caja, alto: paginas[0].altoTexto}};
-    } finally { medidor.remove(); }
-  } else modelo = {...modelo, caja: {...modelo.caja, alto: modelo.altoTexto || modelo.caja.alto}};
-  const stage = notaShareCrearNodo({...datos, imagenNota: modelo});
+  const modelo = notaShareModelo(datos); await notaShareEsperarFuentes(modelo);
+  const paginas = notaSharePaginar(modelo), numero = Math.max(0,Number(modelo.pagina || 1)-1);
+  if (!datos.imagenNota?.pagina && paginas.length > 1) throw new Error('La nota necesita varias imágenes. Generala desde su vista de imagen.');
+  const pagina = paginas[numero]; if (!pagina) throw new Error('No encontré esa página de la nota.');
+  const canvas=document.createElement('canvas');canvas.width=1080;canvas.height=pagina.altoImagen*2;
+  const ctx=canvas.getContext('2d');if(!ctx)throw new Error('No pude iniciar el lienzo.');ctx.scale(2,2);
+  const grad=ctx.createLinearGradient(0,0,540,pagina.altoImagen);grad.addColorStop(0,'#ffe5ef');grad.addColorStop(1,'#d1eeff');ctx.fillStyle=grad;ctx.fillRect(0,0,540,pagina.altoImagen);
+  const stage={style:{}};
   try {
     await notaShareAplicarFondoSeguro(stage);
-    await document.fonts?.ready;
-    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-    const canvas = await html2canvas(stage, {
-      scale: 2, width: 540, height: modelo.altoImagen, useCORS: true, allowTaint: false,
-      logging: false, backgroundColor: null
-    });
-    const blob = await notaShareCanvasBlob(canvas);
-    const nombre = notaShareNombreArchivo(datos.titulo);
-    const sufijo = modelo?.total > 1 ? `_${String(modelo.pagina).padStart(2, '0')}-de-${modelo.total}` : '';
-    return new File([blob], nombre.replace(/\.png$/i, `${sufijo}.png`), {type: 'image/png'});
-  } finally {
-    if (stage.__notaShareFondoObjectUrl) URL.revokeObjectURL(stage.__notaShareFondoObjectUrl);
-    stage.remove();
-  }
+    if(stage.__notaShareFondoObjectUrl){
+      const img=new Image();await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=reject;img.src=stage.__notaShareFondoObjectUrl;});
+      const factor=Math.max(540/img.naturalWidth,pagina.altoImagen/img.naturalHeight),w=img.naturalWidth*factor,h=img.naturalHeight*factor;
+      ctx.drawImage(img,(540-w)/2,(pagina.altoImagen-h)/2,w,h);ctx.fillStyle='rgba(255,255,255,.4)';ctx.fillRect(0,0,540,pagina.altoImagen);
+    }
+    ctx.fillStyle=vaNotaColorSeguro(datos.fondo)||'#fff3b0';ctx.beginPath();if(ctx.roundRect)ctx.roundRect(20,20,500,pagina.altoImagen-40,26);else ctx.rect(20,20,500,pagina.altoImagen-40);ctx.fill();
+    const color=notaShareColorContraste(datos.fondo||'#fff3b0');notaSharePintarLineas(ctx,pagina.lineas,modelo.caja,color);
+    const firmaY=pagina.altoImagen-44-pagina.firma.reduce((n,l)=>n+l.alto,0);notaSharePintarLineas(ctx,pagina.firma,modelo.caja,color,firmaY);
+    const blob=await notaShareCanvasBlob(canvas),total=paginas.length;
+    const nombre=notaShareNombreArchivo(datos.titulo).replace(/\.png$/i,total>1?`_${String(numero+1).padStart(2,'0')}-de-${total}.png`:'.png');
+    return new File([blob],nombre,{type:'image/png'});
+  } finally { if(stage.__notaShareFondoObjectUrl)URL.revokeObjectURL(stage.__notaShareFondoObjectUrl); }
 }
 
-// Conserva la API de preparación de un archivo para los otros módulos.
 window.notaPrepararComoImagen = async function(datos = {}, claveBase = 'nota') {
-  return notaShareGenerarArchivo({...datos, titulo: datos.titulo || claveBase});
+  return notaShareGenerarArchivo({...datos,titulo:datos.titulo||claveBase});
 };
 
-async function notaShareEditarImagen(datos, accion) {
+async function notaShareEditarImagen(datos, claveBase = 'nota') {
   const modelo = notaShareModelo(datos);
   const anterior = document.activeElement;
   const modal = document.createElement('div');
@@ -14087,16 +14193,16 @@ async function notaShareEditarImagen(datos, accion) {
   const acciones = document.createElement('div'); acciones.className = 'va-nota-imagen-acciones';
   const generar = document.createElement('button'); generar.type = 'button'; generar.textContent = 'Generar imagen';
   const usar = document.createElement('button'); usar.type = 'button'; usar.hidden = true;
-  usar.textContent = accion === 'compartir' ? 'Compartir imágenes' : 'Descargar imágenes';
-  acciones.append(generar, usar);
+  usar.textContent = 'Compartir';
+  const descargar = document.createElement('button'); descargar.type = 'button'; descargar.hidden = true; descargar.textContent = 'Descargar';
+  acciones.append(generar, descargar, usar);
   const trabajo = document.createElement('div'); trabajo.className = 'va-nota-imagen-trabajo';
   trabajo.append(ayuda, frame, estado);
   dialogo.append(cabecera, toolbar, trabajo, acciones); modal.appendChild(dialogo);
   document.body.appendChild(modal);
-  const medidor = document.createElement('div'); medidor.className = 'va-nota-medidor va-nota-editor'; document.body.appendChild(medidor);
   let escala = 1, files = null, ocupado = false, cerrado = false, timer;
   const recalcular = () => {
-    const paginas = notaSharePaginar(modelo, medidor);
+    const paginas = notaSharePaginar(modelo);
     modelo.caja.alto = paginas[0].altoTexto;
     modelo.altoImagen = paginas[0].altoImagen;
     notaShareColocarCaja(box, modelo.caja);
@@ -14110,15 +14216,18 @@ async function notaShareEditarImagen(datos, accion) {
   };
   const actualizar = () => {
     if (cerrado) return;
-    files = null; usar.hidden = true;
+    files = null; usar.hidden = true; descargar.hidden = true;
     estado.textContent = ''; estado.classList.remove('va-nota-desborde');
     clearTimeout(timer);
     timer = setTimeout(() => {
       try { recalcular(); } catch (e) { estado.textContent = e.message; }
     }, 60);
   };
-  const editor = vaMontarEditorNota(text, toolbar, {texto: modelo.texto, formato: modelo.formato, label: 'Texto de la imagen'}, nuevo => {
-    modelo.texto = nuevo.texto; modelo.formato = nuevo.formato; actualizar();
+  const editor = vaMontarEditorNota(text, toolbar, {
+    texto: modelo.texto, formato: modelo.formato, label: 'Texto de la imagen', escalaGlobal: true,
+    renderizar: (texto, formato) => { notaShareActualizarBloques(modelo, texto); modelo.texto = texto; modelo.formato = formato; return notaShareHTMLBloques(modelo); }
+  }, nuevo => {
+    notaShareActualizarBloques(modelo, nuevo.texto); modelo.texto = nuevo.texto; modelo.formato = nuevo.formato; actualizar();
   });
   const ajustar = () => {
     escala = Math.min(1, frame.clientWidth / 540);
@@ -14161,12 +14270,13 @@ async function notaShareEditarImagen(datos, accion) {
   const resultado = new Promise(resolve => { finalizar = resolve; });
   const terminar = valor => {
     if (ocupado) return;
-    cerrado = true; clearTimeout(timer); resize.disconnect(); editor.destruir(); medidor.remove(); modal.remove();
+    cerrado = true; clearTimeout(timer); resize.disconnect(); editor.destruir(); modal.remove();
     if (stage.__notaShareFondoObjectUrl) URL.revokeObjectURL(stage.__notaShareFondoObjectUrl);
     anterior?.focus?.({preventScroll: true}); finalizar(valor);
   };
   cerrar.onclick = () => terminar(null);
   usar.onclick = () => terminar(files);
+  descargar.onclick = () => { if (files) { for (const file of files) notaShareDescargarArchivo(file); estado.textContent = 'Descargando la imagen generada. Podés seguir editando.'; } };
   modal.addEventListener('keydown', e => {
     if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); terminar(null); }
     if (e.key === 'Tab') {
@@ -14180,23 +14290,25 @@ async function notaShareEditarImagen(datos, accion) {
   generar.onclick = async () => {
     if (ocupado) return;
     try {
-      await document.fonts?.ready;
+      await notaShareEsperarFuentes(modelo);
       clearTimeout(timer);
       if (!modelo.texto.trim()) throw new Error('Escribí el texto de la imagen.');
       const paginas = recalcular();
       if (paginas.length > 1 && !confirm(`El texto supera el alto máximo con esta letra. ¿Querés generar ${paginas.length} imágenes para incluirlo completo?`)) return;
       ocupado = true; generar.disabled = true; cerrar.disabled = true;
-      toolbar.inert = true; box.inert = true; usar.hidden = true;
+      toolbar.inert = true; box.inert = true; usar.hidden = true; descargar.hidden = true;
       const nuevas = [];
-      for (const [index, pagina] of paginas.entries()) {
+      for (const index of paginas.keys()) {
         estado.textContent = `Generando imagen ${index + 1} de ${paginas.length}…`;
         nuevas.push(await window.notaPrepararComoImagen({...datos, imagenNota: {
-          ...modelo, ...pagina, pagina: index + 1, total: paginas.length
+          ...modelo, pagina: index + 1
         }}));
       }
-      files = nuevas; usar.hidden = false;
-      usar.textContent = `${accion === 'compartir' ? 'Compartir' : 'Descargar'} ${files.length === 1 ? 'imagen' : `${files.length} imágenes`}`;
-      estado.textContent = `${files.length === 1 ? 'Imagen lista' : `${files.length} imágenes listas`}. Podés continuar o seguir editando.`;
+      await notaImagenGuardar(datos, claveBase, modelo, nuevas);
+      files = nuevas; usar.hidden = false; descargar.hidden = false;
+      usar.textContent = 'Compartir';
+      descargar.textContent = files.length === 1 ? 'Descargar' : 'Descargar todas';
+      estado.textContent = `${files.length === 1 ? 'Imagen lista' : `${files.length} imágenes listas`}. Podés descargar, compartir o seguir editando.`;
       usar.focus();
     } catch (e) {
       console.error('No pude generar las imágenes de la nota:', e);
@@ -14298,6 +14410,145 @@ function notaShareDescargarArchivo(file) {
   descargarWeb();
 }
 
+// La imagen terminada se conserva por usuario y nota; editar es una acción aparte.
+const notaImagenMemoria = new Map();
+let notaImagenDBPendiente = null;
+function notaImagenDB() {
+  if (!window.indexedDB) return Promise.resolve(null);
+  if (!notaImagenDBPendiente) notaImagenDBPendiente = new Promise(resolve => {
+    const abrir = window.indexedDB.open('va-notas-imagenes', 1);
+    abrir.onupgradeneeded = () => { if (!abrir.result.objectStoreNames.contains('imagenes')) abrir.result.createObjectStore('imagenes', {keyPath: 'id'}); };
+    abrir.onsuccess = () => {
+      abrir.result.onversionchange = () => { abrir.result.close(); notaImagenDBPendiente = null; };
+      resolve(abrir.result);
+    };
+    abrir.onerror = abrir.onblocked = () => { notaImagenDBPendiente = null; resolve(null); };
+  });
+  return notaImagenDBPendiente;
+}
+function notaImagenIdentidad(datos, clave) {
+  const fuente = vaEstiloFuenteUsuario();
+  const texto = String(datos.texto || ''), versiculo = String(datos.versiculo || '');
+  const huella = JSON.stringify([3, datos.titulo, datos.referencia, versiculo, texto, vaNotaNormalizar(texto, datos.notaFormato), vaNotaNormalizar(versiculo, datos.versiculoFormato), datos.fondo, fuente]);
+  const propietario = typeof uid !== 'undefined' && uid ? uid : 'local';
+  return {id: `${propietario}:${String(clave || 'nota').replace(/^(panel|nota)_/, '')}`, huella};
+}
+async function notaImagenLeer(datos, clave) {
+  const identidad = notaImagenIdentidad(datos, clave);
+  let registro = notaImagenMemoria.get(identidad.id);
+  if (!registro) {
+    try {
+      const dbImagen = await notaImagenDB();
+      if (dbImagen) registro = await new Promise(resolve => {
+        const tx = dbImagen.transaction('imagenes', 'readonly'), req = tx.objectStore('imagenes').get(identidad.id);
+        req.onsuccess = () => resolve(req.result); req.onerror = () => resolve(null); tx.onabort = () => resolve(null);
+      });
+    } catch (e) { console.warn('No pude recuperar la imagen guardada:', e); }
+  }
+  if (!registro || registro.huella !== identidad.huella || !registro.archivos?.length) return null;
+  notaImagenMemoria.set(identidad.id, registro);
+  return registro;
+}
+function notaImagenArchivos(registro) {
+  return registro.archivos.map(a => new File([a.blob], a.nombre, {type: 'image/png'}));
+}
+async function notaImagenGuardar(datos, clave, modelo, files) {
+  const registro = {...notaImagenIdentidad(datos, clave), modelo: JSON.parse(JSON.stringify(modelo)), archivos: files.map(f => ({nombre: f.name, blob: f})), fecha: Date.now()};
+  notaImagenMemoria.set(registro.id, registro);
+  try {
+    const dbImagen = await notaImagenDB();
+    if (dbImagen) await new Promise((resolve,reject) => {
+      const tx = dbImagen.transaction('imagenes','readwrite');tx.objectStore('imagenes').put(registro);
+      tx.oncomplete = resolve;tx.onabort = tx.onerror = () => reject(tx.error);
+    });
+  } catch (e) {
+    console.warn('La imagen está lista, pero no pude conservarla para la próxima visita:', e);
+    mostrarToast?.('Imagen lista. Descargala para conservarla; no hay espacio para guardarla aquí.');
+  }
+  return registro;
+}
+async function notaImagenObtener(datos, clave) {
+  const anterior = await notaImagenLeer(datos, clave);
+  if (anterior) return anterior;
+  const modelo = notaShareModelo(datos); await notaShareEsperarFuentes(modelo);
+  const paginas = notaSharePaginar(modelo);
+  if (paginas.length > 1 && !confirm(`La nota necesita ${paginas.length} imágenes para incluir todo el texto. ¿Querés generarlas?`)) return null;
+  notaShareBusyShow('Generando imagen…');
+  const files = [];
+  for (let i=0;i<paginas.length;i++) files.push(await notaShareGenerarArchivo({...datos,imagenNota:{...modelo,pagina:i+1}}));
+  return notaImagenGuardar(datos, clave, modelo, files);
+}
+async function notaImagenCompartirArchivos(files, titulo) {
+  if (files.length === 1 && await window.vaAndroidCompartirFile?.(files[0], titulo || 'Nota - Vida Abundante')) return true;
+  if (navigator.share && navigator.canShare?.({files})) { await navigator.share({files,title:titulo || 'Nota - Vida Abundante'}); return true; }
+  if (confirm('Este dispositivo no permite compartir estas imágenes juntas. ¿Querés descargarlas para compartirlas?')) {
+    for (const f of files) notaShareDescargarArchivo(f);
+    return true;
+  }
+  return false;
+}
+function notaImagenAbrirVista(datos, clave, registro) {
+  const anterior = document.activeElement, modal = document.createElement('div');
+  modal.className='va-nota-imagen-modal va-nota-imagen-vista';modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');modal.setAttribute('aria-label','Imagen de la nota');
+  const dialogo=document.createElement('div');dialogo.className='va-nota-imagen-dialogo';
+  const cabecera=document.createElement('div');cabecera.className='va-nota-imagen-cabecera';
+  const titulo=document.createElement('strong');titulo.textContent=datos.titulo||'Imagen de la nota';
+  const cerrar=document.createElement('button');cerrar.type='button';cerrar.textContent='Cerrar';cabecera.append(titulo,cerrar);
+  const contenido=document.createElement('div');contenido.className='va-nota-imagen-trabajo';
+  const img=document.createElement('img');img.className='va-nota-imagen-terminada';img.alt='Imagen generada de la nota';
+  const paginas=document.createElement('div');paginas.className='va-nota-imagen-paginador';
+  const atras=document.createElement('button'),adelante=document.createElement('button'),contador=document.createElement('span');
+  atras.type=adelante.type='button';atras.textContent='Anterior';adelante.textContent='Siguiente';contador.setAttribute('aria-live','polite');paginas.append(atras,contador,adelante);contenido.append(img,paginas);
+  const estado=document.createElement('p');estado.className='va-nota-imagen-estado';estado.setAttribute('role','status');contenido.appendChild(estado);
+  const acciones=document.createElement('div');acciones.className='va-nota-imagen-acciones';
+  const descargar=document.createElement('button'),compartir=document.createElement('button'),editar=document.createElement('button');
+  descargar.type=compartir.type=editar.type='button';descargar.textContent='Descargar';compartir.textContent='Compartir';editar.textContent='Editar imagen';acciones.append(descargar,compartir,editar);
+  dialogo.append(cabecera,contenido,acciones);modal.appendChild(dialogo);document.body.appendChild(modal);
+  const files=notaImagenArchivos(registro), urls=files.map(f=>URL.createObjectURL(f));let pagina=0,cerrado=false;
+  const pintar=()=>{img.src=urls[pagina];contador.textContent=`${pagina+1} / ${files.length}`;atras.disabled=pagina===0;adelante.disabled=pagina===files.length-1;paginas.hidden=files.length===1;};
+  const salir=()=>{if(cerrado)return;cerrado=true;urls.forEach(url=>URL.revokeObjectURL(url));modal.remove();anterior?.focus?.({preventScroll:true});};
+  cerrar.onclick=salir;atras.onclick=()=>{pagina--;pintar();};adelante.onclick=()=>{pagina++;pintar();};
+  descargar.onclick=()=>{for(const f of files)notaShareDescargarArchivo(f);estado.textContent=files.length===1?'Descargando imagen.':'Descargando todas las imágenes.';};
+  compartir.onclick=async()=>{
+    compartir.disabled=true;
+    try{await notaImagenCompartirArchivos(files,datos.titulo);}
+    catch(e){if(!window.vaShareCancelado?.(e)&&e?.name!=='AbortError')estado.textContent='No pude compartir. Podés descargar la imagen o volver a intentar.';}
+    finally{compartir.disabled=false;}
+  };
+  editar.onclick=async()=>{
+    salir();
+    const resultado=await notaShareEditarImagen({...datos,imagenNota:registro.modelo},clave);
+    if(resultado){try{await notaImagenCompartirArchivos(resultado,datos.titulo);}catch(e){if(e?.name!=='AbortError')mostrarToast?.('La imagen quedó guardada. Abrila para compartirla.');}}
+    const actual=await notaImagenLeer(datos,clave);
+    if(actual)notaImagenAbrirVista(datos,clave,actual);
+  };
+  modal.addEventListener('keydown',e=>{
+    if(e.key==='Escape'){e.preventDefault();e.stopPropagation();salir();}
+    if(e.key==='Tab'){
+      const focos=[...modal.querySelectorAll('button')].filter(b=>!b.disabled&&!b.hidden&&b.getClientRects().length);
+      const primero=focos[0],ultimo=focos.at(-1);
+      if(e.shiftKey&&document.activeElement===primero){e.preventDefault();ultimo.focus();}
+      else if(!e.shiftKey&&document.activeElement===ultimo){e.preventDefault();primero.focus();}
+    }
+  });
+  pintar();cerrar.focus();
+}
+window.verImagenNotaPanel=async function(id,boton=null){
+  const m=(marcadores||{})[id];if(!m)return;
+  if(boton)boton.disabled=true;
+  try{
+    const datos=notaShareDatosDesdeMarcador(m),clave=`nota_${id}`;
+    let registro=await notaImagenLeer(datos,clave);
+    if(!registro){
+      const files=await notaShareEditarImagen(datos,clave);
+      if(files){try{await notaImagenCompartirArchivos(files,datos.titulo);}catch(e){if(e?.name!=='AbortError')mostrarToast?.('La imagen quedó guardada. Abrila para compartirla.');}}
+      registro=await notaImagenLeer(datos,clave);
+    }
+    if(registro)notaImagenAbrirVista(datos,clave,registro);
+  }catch(e){console.error('No pude abrir la imagen:',e);alert(`No pude abrir la imagen. ${e.message||''}`);}
+  finally{if(boton)boton.disabled=false;notaShareBusyHide();}
+};
+
 window.notaDescargarComoImagen = async function(datos = {}, claveBase = "nota", boton = null) {
   if (window.__notaShareAccionEnCurso) {
     if (typeof mostrarToast === "function") {
@@ -14315,8 +14566,9 @@ window.notaDescargarComoImagen = async function(datos = {}, claveBase = "nota", 
     if (boton) boton.disabled = true;
     if (icono) icono.className = "fa-solid fa-spinner fa-spin";
 
-    const files = await notaShareEditarImagen({...datos, titulo: datos.titulo || claveBase}, "descargar");
-    if (!files) return false;
+    const registro = await notaImagenObtener({...datos, titulo: datos.titulo || claveBase}, claveBase);
+    if (!registro) return false;
+    const files = notaImagenArchivos(registro);
     for (const file of files) notaShareDescargarArchivo(file);
 
     if (typeof mostrarToast === "function") {
@@ -14356,23 +14608,13 @@ window.notaCompartirComoImagen = async function(datos = {}, claveBase = "nota", 
     if (boton) boton.disabled = true;
     if (icono) icono.className = "fa-solid fa-spinner fa-spin";
 
-    const files = await notaShareEditarImagen({...datos, titulo: datos.titulo || claveBase}, "compartir");
-    if (!files) return false;
-
-    if (files.length === 1 && await window.vaAndroidCompartirFile?.(files[0], datos.titulo || "Nota - Vida Abundante")) return true;
-
-    if (navigator.share && navigator.canShare?.({files})) {
-      notaShareBusyShow("Abriendo opciones para compartir…");
-      await navigator.share({files, title: datos.titulo || "Nota - Vida Abundante"});
-      return true;
+    const registro = await notaImagenObtener({...datos, titulo: datos.titulo || claveBase}, claveBase);
+    if (!registro) return false;
+    try { return await notaImagenCompartirArchivos(notaImagenArchivos(registro), datos.titulo); }
+    catch (e) {
+      if (e?.name === 'NotAllowedError') { notaImagenAbrirVista(datos, claveBase, registro); return false; }
+      throw e;
     }
-
-    if (confirm("Este dispositivo no permite compartir estas imágenes juntas. ¿Querés descargarlas para compartirlas?")) {
-      for (const file of files) notaShareDescargarArchivo(file);
-      mostrarToast("📥 Descargando imágenes");
-    }
-
-    return false;
 
   } catch (e) {
     if (window.vaShareCancelado?.(e)) {
@@ -17075,6 +17317,7 @@ function aplicarEstadoVisualSeccion(seccion, estado) {
     if (limpio.textoBold) {
       el.style.setProperty("--va-peso-texto-biblia", "700");
     }
+    vaEstiloFuenteUsuario();
   }
 }
 
@@ -18147,7 +18390,7 @@ function vaMismaPalabra(a,b){
 }
 function vaPalabraGuardada(data){return vaPalabrasGuardadas().find(m=>m.tipo==='itemPalabra'&&vaMismaPalabra(m,data)) || vaPalabrasGuardadas().find(m=>vaMismaPalabra(m,data));}
 function vaTieneSubrayadoPalabra(item){return item?.tipo==='itemPalabra'?item.subrayado!==false:!!item?.subrayado;}
-function vaSubrayadosPalabra(){return vaPalabrasGuardadas().filter(vaTieneSubrayadoPalabra);}
+function vaSubrayadosPalabra(){return vaPalabrasGuardadas().filter(m=>m.tipo==='formatoPalabra'&&vaTieneSubrayadoPalabra(m));}
 function vaPintarItemsPalabra(container, v, version) {
   const raw = String(v[version] || '');
   const records = vaPalabrasGuardadas().filter(m => m.libro === v.Libro &&
@@ -18208,11 +18451,31 @@ function vaCrearCajon(titulo){
   d.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();d.__vaPedirCierre?.();}});return d;
 }
 function vaBotonCajon(drawer,label,action){const b=document.createElement('button');b.type='button';b.textContent=label;b.onclick=action;drawer.querySelector('.va-item-actions').appendChild(b);return b;}
+function vaContextoVersiculoItem(item) {
+  vaEstiloFuenteUsuario();
+  const lista = item.version === 'NTV' ? bibliaDataNTV : bibliaDataRV;
+  const v = (lista || []).find(v => v.Libro === item.libro && Number(v.Capitulo) === Number(item.capitulo) && Number(v.Versiculo) === Number(item.versiculo));
+  const texto = String((v ? v[item.version === 'NTV' ? 'NTV' : 'RV1960'] : '') || item.textoVersiculo || '');
+  const p = document.createElement('p'); p.className = 'va-item-contexto va-texto-usuario';
+  if (!texto) { p.textContent = 'El versículo se mostrará cuando termine de cargar la Biblia.'; return p; }
+  let inicio = Number(item.inicio), fin = Number(item.fin);
+  if (!Number.isInteger(inicio) || !Number.isInteger(fin) || texto.slice(inicio,fin) !== item.palabra) {
+    inicio = texto.indexOf(item.palabra); fin = inicio + String(item.palabra || '').length;
+  }
+  if (inicio < 0 || fin <= inicio) p.textContent = texto;
+  else {
+    const palabra = document.createElement('span'); palabra.className = 'va-item-palabra-contexto'; palabra.textContent = texto.slice(inicio,fin);
+    p.append(document.createTextNode(texto.slice(0,inicio)), palabra, document.createTextNode(texto.slice(fin)));
+  }
+  return p;
+}
 function vaAbrirItem(item){
   if(!uid){window.abrirLoginParaGuardarMiPanel?.();return;}
   if(vaPedirCierreItem(()=>vaAbrirItem(item)))return;
   const owner=uid,drawer=vaCrearCajon(`Ítem: ${item.palabra}`);
   const reference=document.createElement('div');reference.className='va-item-ref';reference.textContent=`${item.libro} ${item.capitulo}:${item.versiculo} · ${item.version}`;drawer.insertBefore(reference,drawer.lastChild);
+  drawer.insertBefore(vaContextoVersiculoItem(item),drawer.lastChild);
+  vaBotonCajon(drawer,'Ir al versículo',()=>vaIrPalabraGuardada(item));
   const input=document.createElement('textarea');input.maxLength=500;input.value=item.nota||'';input.placeholder='Escribí una nota breve…';input.setAttribute('aria-label','Nota del ítem');drawer.insertBefore(input,drawer.lastChild);
   const label=document.createElement('label');label.className='va-item-check';
   const check=document.createElement('input');check.type='checkbox';check.checked=item.tipo==='itemPalabra'?vaTieneSubrayadoPalabra(item):true;check.setAttribute('aria-label','Subrayar también');label.appendChild(check);label.appendChild(document.createTextNode('Subrayar también'));drawer.insertBefore(label,drawer.lastChild);
@@ -18301,17 +18564,22 @@ window.addEventListener('scroll',()=>{
   if (document.getElementById('vaCrearItemPalabra')) vaMostrarCrearItem();
 },{passive:true});
 function vaIrPalabraGuardada(item){
-  document.getElementById('modalMarcadores')?.style.setProperty('display','none');
+  if(vaPedirCierreItem(()=>vaIrPalabraGuardada(item)))return;
+  document.getElementById('vaCrearItemPalabra')?.remove();
+  window.getSelection()?.removeAllRanges();
+  window.cerrarMarcadores();
+  window.mostrarSeccionPrincipal?.('biblia');
   forzarSeccionActiva('biblia');
   versionActual=item.version;bibliaData=item.version==='NTV'?bibliaDataNTV:bibliaDataRV;
   libroSel.value=item.libro;reconstruirCapitulosParaLibro(item.libro,item.capitulo);mostrarTexto({guardar:true});vaIrVersiculo(item.versiculo,item.version);
 }
 function vaRenderSubrayadosPalabra(container,items){
+  vaEstiloFuenteUsuario();
   if(!container||!items.length)return;
   vaEstiloLecturaExtras();
   for(const item of items){
     const card=document.createElement('article');card.className='va-item-card va-subrayado-card';
-    const word=document.createElement('strong');word.textContent=item.palabra;if(item.mayusculas)word.className='va-mayusculas-palabra';card.appendChild(word);
+    const word=document.createElement('strong');word.className='va-texto-usuario';word.textContent=item.palabra;if(item.mayusculas)word.classList.add('va-mayusculas-palabra');card.appendChild(word);
     const refText=document.createElement('div');refText.className='va-item-ref';refText.textContent=`${item.libro} ${item.capitulo}:${item.versiculo} · ${item.version}`;card.appendChild(refText);
     const actions=document.createElement('div');actions.className='va-item-actions';card.appendChild(actions);
     for(const [label,action]of [['Ir al versículo',()=>vaIrPalabraGuardada(item)],['Quitar subrayado',()=>vaCambiarEstiloPalabra(item,'subrayado')]]){
@@ -18327,16 +18595,12 @@ function vaRenderListaItems(container,busqueda=''){
   if(!items.length){container.textContent='No hay ítems guardados'+(q?' para esta búsqueda.':'.');return;}
   for(const item of items){
     const card=document.createElement('article');card.className='va-item-card';
-    const word=document.createElement('strong');word.textContent=item.palabra;card.appendChild(word);
+    const word=document.createElement('strong');word.className='va-texto-usuario';word.textContent=item.palabra;card.appendChild(word);
     const reference=document.createElement('div');reference.className='va-item-ref';reference.textContent=`${item.libro} ${item.capitulo}:${item.versiculo} · ${item.version}`;card.appendChild(reference);
-    const note=document.createElement('p');note.textContent=item.nota||'';card.appendChild(note);
+    card.appendChild(vaContextoVersiculoItem(item));
+    const note=document.createElement('p');note.className='va-texto-usuario';note.textContent=item.nota||'';card.appendChild(note);
     const actions=document.createElement('div');actions.className='va-item-actions';card.appendChild(actions);
-    for(const [label,handler] of [['Ir al versículo',()=>{
-      document.getElementById('modalMarcadores')?.style.setProperty('display','none');
-      window.mostrarSeccionPrincipal?.('biblia');forzarSeccionActiva('biblia');
-      versionActual=item.version;bibliaData=item.version==='NTV'?bibliaDataNTV:bibliaDataRV;
-      libroSel.value=item.libro;reconstruirCapitulosParaLibro(item.libro,item.capitulo);mostrarTexto({guardar:true});vaIrVersiculo(item.versiculo,item.version);
-    }],['Editar',()=>vaAbrirItem(item)],['Borrar',async()=>{
+    for(const [label,handler] of [['Ir al versículo',()=>vaIrPalabraGuardada(item)],['Editar',()=>vaAbrirItem(item)],['Borrar',async()=>{
       try{await remove(ref(db,`marcadores/${uid}/${item.id}`));}catch{mostrarToast('No pude borrar el ítem.');}
     }]]){const b=document.createElement('button');b.type='button';b.textContent=label;b.onclick=handler;actions.appendChild(b);}
     container.appendChild(card);
