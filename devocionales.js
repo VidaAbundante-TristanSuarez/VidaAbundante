@@ -1,4 +1,4 @@
-import { ordenarFondos, registrarUsoFondo, urlFondoSeguro, cargarFondoBlob, prepararMiniaturas, montarEditorTexto, aplicarCajaTexto, aplicarFormatoSeleccion, alternarFormatoSeleccion, restaurarControlesTexto, aplicarSubrayadoTexto, crearInstantaneaPreview, esperarFuentesPreview } from "./imagen-editor.js?v=20261007-contornos-items-5";
+import { urlFondoSeguro, cargarFondoBlob, prepararMiniaturas, montarEditorTexto, aplicarCajaTexto, aplicarFormatoSeleccion, alternarFormatoSeleccion, restaurarControlesTexto, aplicarSubrayadoTexto, crearInstantaneaPreview, esperarFuentesPreview } from "./imagen-editor.js?v=20261007-contornos-items-5";
 import { dibujarCajaTexto } from "./imagen-editor.js?v=20261007-dev-fase3-6";
 
 // devocionales.js (NUEVO LIMPIO)
@@ -1690,6 +1690,214 @@ const fondosEtiquetas = {
 
 let devF1CategoriaActual = "paisajes";
 
+/* El uso se confirma al publicar, nunca al probar un fondo. */
+let devFondosPublicados = [];
+let devFondosUltimoUso = new Map();
+const devFondosHuellas = new Map();
+const devFondosRecuperados = new Map();
+const devFondosIntentados = new Set();
+let devFondosRecuperando = false;
+let devFondosRevision = 0;
+
+function devFondoClave(src){
+  if (!src || /^(blob:|data:)/i.test(src)) return "";
+  try {
+    const url = new URL(src, window.location.href);
+    url.hash = "";
+    return url.href;
+  } catch { return String(src); }
+}
+
+function devFondoIdPublicado(it){
+  return `${it.id || `${it.uidOwner || ""}_${it.tsKey || it.fecha || 0}`}|${it.url || ""}`;
+}
+
+function devFondosListaCategoria(cat){
+  return window.vaFondosObtenerLista
+    ? window.vaFondosObtenerLista(cat)
+    : (fondosCategorias[cat] || []);
+}
+
+function devFondosActualizarUso(items){
+  devFondosPublicados = Array.isArray(items) ? items : [];
+  devFondosUltimoUso = new Map();
+  for (const it of devFondosPublicados) {
+    const src = it.fondoFase1 || devFondosRecuperados.get(devFondoIdPublicado(it));
+    const clave = devFondoClave(src);
+    const fecha = Number(it.fecha || it.tsKey || 0);
+    if (clave && Number.isFinite(fecha) && fecha > 0) {
+      devFondosUltimoUso.set(clave, Math.max(fecha, devFondosUltimoUso.get(clave) || 0));
+    }
+  }
+  devFondosReordenarGaleria();
+}
+
+function devOrdenarFondosPublicados(lista){
+  return [...lista].sort((a, b) =>
+    (devFondosUltimoUso.get(devFondoClave(a)) || 0) -
+    (devFondosUltimoUso.get(devFondoClave(b)) || 0)
+  );
+}
+
+function devFondosReordenarGaleria(){
+  const cont = $("dev1Fondos");
+  if (!cont) return;
+  const scroll = cont.scrollLeft;
+  const imagenes = Array.from(cont.querySelectorAll("img[data-dev-fondo]"));
+  // Partir del catálogo evita conservar el orden de una selección anterior.
+  const posiciones = new Map(devOrdenarFondosPublicados(devFondosListaCategoria(devF1CategoriaActual))
+    .map((src, i) => [devFondoClave(src), i]));
+  imagenes.sort((a, b) => (posiciones.get(devFondoClave(a.dataset.devFondo)) ?? Infinity) -
+    (posiciones.get(devFondoClave(b.dataset.devFondo)) ?? Infinity));
+  imagenes.forEach(img => cont.appendChild(img));
+  cont.scrollLeft = scroll;
+}
+
+// Los registros antiguos sólo tienen el PNG final. Comparamos el margen de
+// su mitad superior con los fondos; la caja de texto comienza al 6%.
+// Una coincidencia dudosa se deja sin asignar y nunca se escribe en Firebase.
+function devFondoHuella(img, publicado = false){
+  const w = img.naturalWidth, h = img.naturalHeight;
+  if (!w || !h || (publicado && Math.abs(h / w - 16 / 9) > 0.04)) return null;
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = 128;
+  const ctx = canvas.getContext("2d", {willReadFrequently:true});
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, 128, 128);
+  if (publicado) ctx.drawImage(img, 0, 0, w, w, 0, 0, 128, 128);
+  else devCanvasDibujarCover(ctx, img, 0, 0, 128, 128);
+  const pixeles = ctx.getImageData(0, 0, 128, 128).data;
+  const huella = [];
+  for (const borde of [3, 4, 123, 124]) {
+    for (let p = 16; p <= 112; p += 8) {
+      for (const [x, y] of [[p, borde], [borde, p]]) {
+        const i = (y * 128 + x) * 4;
+        huella.push(pixeles[i], pixeles[i + 1], pixeles[i + 2]);
+      }
+    }
+  }
+  return huella;
+}
+
+function devFondoCoincidencia(huella){
+  if (!huella?.length || Math.max(...huella) - Math.min(...huella) < 24) return "";
+  const coincidencias = [];
+  for (const [src, otra] of devFondosHuellas) {
+    if (!otra || otra.length !== huella.length) continue;
+    let total = 0, distintos = 0;
+    for (let i = 0; i < huella.length; i++) {
+      const diferencia = Math.abs(huella[i] - otra[i]);
+      total += diferencia;
+      if (diferencia > 12) distintos++;
+    }
+    coincidencias.push({src, error:total / huella.length, distintos});
+  }
+  coincidencias.sort((a, b) => a.error - b.error);
+  const [mejor, segunda] = coincidencias;
+  return mejor && mejor.error <= 2 && mejor.distintos <= huella.length * 0.02 &&
+    (!segunda || segunda.error > Math.max(5, mejor.error * 4)) ? mejor.src : "";
+}
+
+async function devFondoCargarHuella(src, publicado = false){
+  const revision = devFondosRevision;
+  const cacheKey = `va-dev-fondo-huella-v1:${publicado ? "publicado" : "fondo"}:${src}`;
+  try {
+    const guardada = JSON.parse(localStorage.getItem(cacheKey) || "null");
+    if (Array.isArray(guardada) && guardada.length === 312 &&
+        guardada.every(n => Number.isInteger(n) && n >= 0 && n <= 255)) return guardada;
+  } catch {}
+  const img = await new Promise((resolve, reject) => {
+    const im = new Image();
+    im.crossOrigin = "anonymous";
+    im.referrerPolicy = "no-referrer";
+    im.decoding = "async";
+    im.fetchPriority = "low";
+    const fin = (error) => {
+      clearTimeout(timer);
+      im.onload = im.onerror = null;
+      if (error) { im.src = ""; reject(error); }
+      else resolve(im);
+    };
+    const timer = setTimeout(() => fin(new Error("Fondo anterior no disponible")), 5000);
+    im.onload = () => fin();
+    im.onerror = () => fin(new Error("Fondo anterior no disponible"));
+    im.src = devUrlRecursoSeguro(src, "fondo_historial.png");
+  });
+  const huella = devFondoHuella(img, publicado);
+  img.src = ""; // No retener imágenes completas en memoria.
+  if (huella && (publicado || revision === devFondosRevision)) {
+    try { localStorage.setItem(cacheKey, JSON.stringify(huella)); } catch {}
+  }
+  return huella;
+}
+
+function devFondosInvalidarComparaciones(){
+  devFondosRevision++;
+  for (const cat of Object.keys(fondosCategorias)) {
+    for (const src of devFondosListaCategoria(cat)) {
+      try { localStorage.removeItem(`va-dev-fondo-huella-v1:fondo:${src}`); } catch {}
+    }
+  }
+  devFondosHuellas.clear();
+  devFondosRecuperados.clear();
+  devFondosIntentados.clear();
+  devFondosActualizarUso(devFondosPublicados);
+}
+
+function devFondosFase1Visible(){
+  return isAdmin() && !!$("modalDevFase1")?.getClientRects().length;
+}
+
+function devFondosRecuperarAnteriores(){
+  if (devFondosRecuperando || !devFondosFase1Visible() ||
+      !devFondosPublicados.some(it => !it.fondoFase1 && it.url &&
+        !devFondosIntentados.has(devFondoIdPublicado(it)))) return;
+  devFondosRecuperando = true;
+  const revision = devFondosRevision;
+  (async () => {
+    // Una imagen por turno: no bloquear la edición ni cargar todo en paralelo.
+    const pausa = () => new Promise(resolve => setTimeout(resolve, 30));
+    const candidatos = Array.from(new Set(Object.keys(fondosCategorias)
+      .flatMap(cat => devFondosListaCategoria(cat))));
+    for (const src of candidatos) {
+      if (!devFondosFase1Visible() || revision !== devFondosRevision) return;
+      if (devFondosHuellas.has(src) || devFondosIntentados.has(src)) continue;
+      devFondosIntentados.add(src);
+      await pausa();
+      try {
+        const huella = await devFondoCargarHuella(src);
+        if (revision !== devFondosRevision) return;
+        devFondosHuellas.set(src, huella);
+      } catch {}
+    }
+    // Evaluar sólo contra los fondos actuales, incluso si Ediciones los cambió.
+    for (const src of devFondosHuellas.keys()) {
+      if (!candidatos.includes(src)) devFondosHuellas.delete(src);
+    }
+    for (const it of devFondosPublicados) {
+      if (!devFondosFase1Visible() || revision !== devFondosRevision) return;
+      if (it.fondoFase1 || !it.url) continue;
+      const id = devFondoIdPublicado(it);
+      if (devFondosRecuperados.has(id) || devFondosIntentados.has(id)) continue;
+      devFondosIntentados.add(id);
+      await pausa();
+      try {
+        const src = devFondoCoincidencia(await devFondoCargarHuella(it.url, true));
+        if (revision !== devFondosRevision) return;
+        if (src) {
+          devFondosRecuperados.set(id, src);
+          devFondosActualizarUso(devFondosPublicados);
+        }
+      } catch {}
+    }
+  })().catch(e => console.warn("No pude recuperar el orden anterior de fondos:", e))
+    .finally(() => {
+      devFondosRecuperando = false;
+      if (revision !== devFondosRevision) devFondosRecuperarAnteriores();
+    });
+}
+
+
 
 /* =========================================================
    FONDOS COMPARTIDOS CON EDICIONES
@@ -1715,8 +1923,10 @@ if (!window.__DEV_FONDOS_EVENTO_ACTIVO) {
   window.__DEV_FONDOS_EVENTO_ACTIVO = true;
 
   window.addEventListener("va-fondos-actualizados", () => {
+    devFondosInvalidarComparaciones();
     if (document.getElementById("dev1Fondos")) {
       cargarFondosDev();
+      devFondosRecuperarAnteriores();
     }
   });
 }
@@ -1829,15 +2039,14 @@ function cargarFondosDev(){
   menuWrap.appendChild(menu);
   cont.appendChild(menuWrap);
 
-  const fondos = ordenarFondos(window.vaFondosObtenerLista
-    ? window.vaFondosObtenerLista(devF1CategoriaActual)
-    : (fondosCategorias[devF1CategoriaActual] || []), "devocionales");
+  const fondos = devOrdenarFondosPublicados(devFondosListaCategoria(devF1CategoriaActual));
   const prepararMiniatura = prepararMiniaturas(cont);
 
   fondos.forEach((base, indice)=>{
   const finalUrl = base;
 
     const im = document.createElement("img");
+    im.dataset.devFondo = finalUrl;
     im.classList.toggle("activo", finalUrl === DEV.f1.fondoSrc);
     im.crossOrigin = "anonymous";
     im.referrerPolicy = "no-referrer";
@@ -1852,8 +2061,6 @@ function cargarFondosDev(){
         DEV.f1.fondoUrl = null;
         DEV.f1.fondoSrc = finalUrl;
         DEV.f1.fondoBlob = nuevoBlob;
-        registrarUsoFondo(finalUrl, "devocionales");
-        cont.appendChild(im);
 
         cont.querySelectorAll("img").forEach(x=>x.classList.remove("activo"));
         im.classList.add("activo");
@@ -3973,6 +4180,7 @@ window.dev2ToggleColor3 = function(){
 };
 
 function devRenderFase(fase){
+  if (fase === 1) devFondosRecuperarAnteriores();
   restaurarControlesTexto($(`dev${fase}Preview`));
   if (fase === 1) {
     devEnsureBotonCuentagotasWrapperF1();
@@ -6169,6 +6377,7 @@ async function devSubirImagenBaseUnaVez(tsParam){
 
   const blob = window.__devFinalFile;
   if (!blob) throw new Error("No se pudo convertir a PNG");
+  const fondoFase1 = DEV.f1.fondoSrc || "";
 
   const fileBase64 = await blobToBase64(blob);
 
@@ -6178,6 +6387,7 @@ return {
   ok: true,
   ts,
   url: subida.url,
+  fondoFase1,
   dbPath: ""
 };
 }
@@ -6200,6 +6410,7 @@ async function devGuardarEnIglesia(asset){
 await set(ref(db, dbPath), {
   url: asset.url,
   fecha: asset.ts,
+  fondoFase1: asset.fondoFase1 || "",
   texto: DEV.audioText || "",
   cita: DEV.p1?.cita || "",
   versiculo: DEV.p1?.versiculo || "",
@@ -7130,6 +7341,8 @@ devMoverAddDebajoGaleria();
 
     items.sort((a,b)=>(b.fecha||b.tsKey||0)-(a.fecha||a.tsKey||0));
     window.__DEV_ITEMS_PUBLICADOS = items;
+    devFondosActualizarUso(items);
+    devFondosRecuperarAnteriores();
     if (!items.length) {
       if (feed) feed.innerHTML = `<div style="opacity:.8; padding:10px;">
         No hay devocionales todavía.<br>
