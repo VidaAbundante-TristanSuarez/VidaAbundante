@@ -12815,7 +12815,10 @@ document.addEventListener("click", (e) => {
   if (!wrap) return;
   if (!wrap.classList.contains("abierto")) return;
 
+  // Los listados viven en body y elegir un libro puede reconstruir sus opciones.
+  const ruta = e.composedPath();
   if (
+    Array.from(vaSelectoresBiblia.values()).some(s => ruta.includes(s.panel)) ||
     wrap.contains(e.target) ||
     (btn && btn.contains(e.target)) ||
     (titulo && titulo.contains(e.target))
