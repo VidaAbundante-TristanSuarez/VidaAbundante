@@ -605,6 +605,23 @@ export function montarEditorTexto(opts) {
   editar(c,c.editing);posicionarControles(c);
 }
 
+// Ajustar sólo cuando hace falta: nunca cortar palabras para dar lugar al adorno.
+export function encajarCajaTexto(opts) {
+  if (!opts?.stage || !opts?.target || !opts?.state) return;
+  aplicarCajaTexto(opts);
+  const sr=opts.stage.getBoundingClientRect(),tr=opts.target.getBoundingClientRect();
+  if (!sr.width || !sr.height || !tr.width || !tr.height) return;
+  const b=opts.bounds || {left:0,right:1,top:0,bottom:1};
+  const fuera=tr.left<sr.left+b.left*sr.width+2 || tr.right>sr.left+b.right*sr.width-2 ||
+    tr.top<sr.top+b.top*sr.height+2 || tr.bottom>sr.top+b.bottom*sr.height-2;
+  if (!fuera && !opts.state.geometry) return;
+  const c={opts};
+  inicializarGeometria(c);
+  opts.state.geometry=true;
+  aplicarCajaTexto(opts);
+  limitarCaja(c);
+}
+
 // Congelar la preview visible conserva sus medidas, estilos y saltos al exportar.
 export function crearInstantaneaPreview(source) {
   const rect=source?.getBoundingClientRect();
@@ -620,6 +637,10 @@ export function crearInstantaneaPreview(source) {
       const property=css[i];
       if(property==='visibility' && css.getPropertyValue(property)==='visible'){clone.style.removeProperty(property);continue;}
       clone.style.setProperty(property,css.getPropertyValue(property),'important');
+    }
+    if (original instanceof HTMLCanvasElement) {
+      clone.width=original.width; clone.height=original.height;
+      if (original.width && original.height) clone.getContext('2d').drawImage(original,0,0);
     }
     clone.removeAttribute('id');clone.removeAttribute('contenteditable');
     for(let i=0;i<original.childNodes.length;i++)copiar(original.childNodes[i],clone.childNodes[i]);

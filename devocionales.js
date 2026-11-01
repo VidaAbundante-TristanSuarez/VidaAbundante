@@ -1,5 +1,6 @@
-import { urlFondoSeguro, cargarFondoBlob, prepararMiniaturas, montarEditorTexto, aplicarCajaTexto, aplicarFormatoSeleccion, alternarFormatoSeleccion, restaurarControlesTexto, aplicarSubrayadoTexto, crearInstantaneaPreview, esperarFuentesPreview } from "./imagen-editor.js?v=20261007-contornos-items-5";
-import { dibujarCajaTexto } from "./imagen-editor.js?v=20261007-dev-fase3-6";
+import { actualizarCapaTexturas, esperarCapaTexturas, montarControlesTextura, margenesTexturas } from "./texturas-editor.js?v=20261101-texturas-adornos-1";
+import { urlFondoSeguro, cargarFondoBlob, prepararMiniaturas, montarEditorTexto, aplicarCajaTexto, aplicarFormatoSeleccion, alternarFormatoSeleccion, restaurarControlesTexto, aplicarSubrayadoTexto, crearInstantaneaPreview, esperarFuentesPreview, encajarCajaTexto } from "./imagen-editor.js?v=20261101-texturas-adornos-1";
+import { dibujarCajaTexto } from "./imagen-editor.js?v=20261101-texturas-adornos-1";
 
 // devocionales.js (NUEVO LIMPIO)
 // ✅ OCR + Recorte + Modal 3 fases (9:9 + 9:7 => 9:16)
@@ -39,7 +40,11 @@ function devLiberarInstantaneasPreview(){
 
 async function devCapturarPreviewFase(fase){
   const source = $(`dev${fase}Preview`);
-  await Promise.all([esperarFuentesPreview(source), devEsperarImagenesNodo(source, 1800)]);
+  await Promise.all([
+    esperarFuentesPreview(source), devEsperarImagenesNodo(source, 1800),
+    fase === 2 ? esperarCapaTexturas(source?.querySelector(".dev2-texture-layer")) : Promise.resolve()
+  ]);
+  if (fase === 2 && source?.__vaEditor) encajarCajaTexto(source.__vaEditor.opts);
   const snapshot = crearInstantaneaPreview(source);
   if (!snapshot) throw new Error("No pude leer la preview de la fase " + fase);
   snapshot.texto = snapshot.get($(`dev${fase}Texto`));
@@ -55,6 +60,13 @@ function devDibujarPreviewTexto(ctx, fase){
   const scale = 1080 / snapshot.width;
   ctx.save(); ctx.scale(scale, scale);
   try {
+    if (fase === 2) {
+      const limits=devLimitesTextoF2(snapshot.stage);
+      ctx.beginPath();
+      ctx.rect(limits.left*snapshot.width, limits.top*snapshot.height,
+        (limits.right-limits.left)*snapshot.width, (limits.bottom-limits.top)*snapshot.height);
+      ctx.clip();
+    }
     dibujarCajaTexto(ctx, {stage:snapshot.stage, target:snapshot.texto, aplicar:false, escalaSalida:scale, sombrasSeparadas:true, resaltadoDOM:fase === 1});
   } finally { ctx.restore(); }
 }
@@ -128,6 +140,8 @@ gradienteForma: "vertical",
     texturasUrls: [],
     texturaUrl: null, // compatibilidad interna con el sistema anterior
     texturaOp: 0.22,
+    texturaAjuste: "auto",
+    texturaEscala: 100,
     fuente: "Roboto",
 color: "#000000",
 outlineColor: "",
@@ -212,6 +226,8 @@ DEV.f2.gradienteForma = "vertical";
   DEV.f2.texturasUrls = [];
   DEV.f2.texturaUrl = null;
   DEV.f2.texturaOp = 0.22;
+  DEV.f2.texturaAjuste = "auto";
+  DEV.f2.texturaEscala = 100;
   DEV.f2.fuente = "Roboto";
 DEV.f2.color = "#000000";
 DEV.f2.outlineColor = "";
@@ -3403,7 +3419,7 @@ function buildFase2HTML(basePx, scale = 1){
   const adornoBoxH = Math.max(12, Math.round(86 * scale * adornoFactor));
 
   return `
-    <div style="
+    <div data-dev2-layout style="
       width:100%;
       height:100%;
       display:flex;
@@ -3411,7 +3427,8 @@ function buildFase2HTML(basePx, scale = 1){
       overflow:hidden;
     ">
 
-      <div style="
+      <div data-dev2-text-region style="
+        position:relative;
         flex:1 1 auto;
         min-height:0;
         display:flex;
@@ -3443,7 +3460,8 @@ function buildFase2HTML(basePx, scale = 1){
       </div>
 
       ${adorno ? `
-        <div style="
+        <div data-dev2-ornament-area style="
+          margin-top:${Math.max(2, 8 * scale)}px;
           flex:0 0 auto;
           display:flex;
           align-items:flex-end;
@@ -3451,7 +3469,7 @@ function buildFase2HTML(basePx, scale = 1){
           padding:0 0 ${padTop}px;
           box-sizing:border-box;
           pointer-events:none;
-          overflow:visible;
+          overflow:hidden;
         ">
           <div style="
             width:${adornoBoxW}%;
@@ -3467,6 +3485,7 @@ function buildFase2HTML(basePx, scale = 1){
                 adorno,
                 "adorno_devocional.png"
               )}"
+              data-dev2-ornament
               alt="adorno"
               style="
                 max-width:100%;
@@ -3486,6 +3505,32 @@ function buildFase2HTML(basePx, scale = 1){
 
     </div>
   `;
+}
+
+function devLimitesTextoF2(stage){
+  const sr=stage.getBoundingClientRect();
+  const region=stage.querySelector("[data-dev2-text-region]");
+  if (!region || !sr.width || !sr.height) return {left:.03,right:.97,top:.02,bottom:.98};
+  const r=region.getBoundingClientRect(), css=getComputedStyle(region);
+  return {
+    left:(r.left-sr.left+parseFloat(css.paddingLeft||0))/sr.width,
+    right:(r.right-sr.left-parseFloat(css.paddingRight||0))/sr.width,
+    top:(r.top-sr.top+parseFloat(css.paddingTop||0))/sr.height,
+    bottom:(r.bottom-sr.top-Math.max(1,4*sr.width/1080))/sr.height
+  };
+}
+
+function dev2ObservarPreview(stage){
+  if (stage.__devResize || typeof ResizeObserver!=="function") return;
+  let anterior="";
+  stage.__devResize=new ResizeObserver(()=>{
+    if (!stage.clientWidth || !stage.clientHeight) return;
+    const medidas=stage.clientWidth+"x"+stage.clientHeight;
+    if (medidas===anterior) return;
+    anterior=medidas;
+    requestAnimationFrame(()=>{ if (stage.clientWidth && stage.clientHeight) devRenderFase(2); });
+  });
+  stage.__devResize.observe(stage);
 }
 
 function scalePreviewF1(){
@@ -4065,6 +4110,18 @@ function dev2AsegurarSlidersAdorno(){
   }
 }
 
+function dev2AsegurarControlesTextura(){
+  montarControlesTextura($("dev2TexturaOp"), {
+    ajuste: DEV.f2.texturaAjuste,
+    escala: DEV.f2.texturaEscala,
+    intensidad: DEV.f2.texturaOp,
+    onChange: ({ajuste, escala}) => {
+      DEV.f2.texturaAjuste=ajuste; DEV.f2.texturaEscala=escala;
+      DEV.f2.userChanged=true; devRenderFase(2);
+    }
+  });
+}
+
 function dev2ActualizarPanelUI(){
   const st = DEV.f2;
   const tab = ["fondo", "textura", "adorno"].includes(st.tabActiva)
@@ -4076,6 +4133,7 @@ dev2AsegurarOpcionRombo();
 dev2InterceptarHostsColorFondo();
 dev2CompactarFilaTexto();
 dev2AsegurarSlidersAdorno();
+dev2AsegurarControlesTextura();
 
   ["fondo", "textura", "adorno"].forEach(nombre => {
     const btn = $(`dev2Tab${nombre.charAt(0).toUpperCase()}${nombre.slice(1)}`);
@@ -4234,11 +4292,24 @@ if (fase === 2) {
 
   const st = DEV.f2;
 
+  dev2ObservarPreview(p);
   const sc2 = scalePreviewF2();
   const pxPreview = Math.max(8, (st.size * sc2));
 
-  // ✅ El inset también escala, para que la preview sea proporcional al final
-  w.style.inset = `${Math.max(4, Math.round(16 * sc2))}px`;
+  const layer = ensureDev2TextureLayer(p);
+  actualizarCapaTexturas(layer, {
+    urls: devF2TexturasSeleccionadas().map(url => devUrlRecursoSeguro(url, "textura_devocional.png")),
+    width: 1080, height: 840,
+    ajuste: st.texturaAjuste || "auto", escala: st.texturaEscala || 100,
+    intensidad: st.texturaOp ?? .22,
+    onReady: () => { if (p.clientWidth && p.clientHeight) devRenderFase(2); }
+  });
+  const margenes = margenesTexturas(layer);
+  const baseInset = Math.max(4, Math.round(16 * sc2));
+  w.style.inset = [Math.max(baseInset,margenes.top*p.clientHeight),
+    Math.max(baseInset,margenes.right*p.clientWidth),
+    Math.max(baseInset,margenes.bottom*p.clientHeight),
+    Math.max(baseInset,margenes.left*p.clientWidth)].map(n=>n+"px").join(" ");
 
   t.innerHTML = buildFase2HTML(pxPreview, sc2);
 
@@ -4256,46 +4327,6 @@ p.style.backgroundBlendMode = "normal";
   // =========================
   // textura en capa separada
   // =========================
-  const layer = ensureDev2TextureLayer(p);
-
-  if (layer) {
-    const op = Math.max(0, Math.min(1, Number(st.texturaOp ?? 0.22)));
-
-const texturasActivas = devF2TexturasSeleccionadas();
-
-if (texturasActivas.length) {
-  layer.style.display = "block";
-  layer.style.backgroundImage = texturasActivas
-    .map(url => devUrlRecursoSeguro(
-      url,
-      "textura_devocional.png"
-    ))
-    .map(url => `url("${url}")`)
-    .join(", ");
-  layer.style.backgroundSize = texturasActivas
-    .map(() => "cover")
-    .join(", ");
-  layer.style.backgroundPosition = texturasActivas
-    .map(() => "center")
-    .join(", ");
-  layer.style.backgroundRepeat = texturasActivas
-    .map(() => "no-repeat")
-    .join(", ");
-  layer.style.opacity = String(op);
-  layer.style.mixBlendMode = "normal";
-  layer.style.filter = "none";
-} else {
-  layer.style.display = "none";
-  layer.style.backgroundImage = "none";
-  layer.style.backgroundSize = "";
-  layer.style.backgroundPosition = "";
-  layer.style.backgroundRepeat = "";
-  layer.style.opacity = "0";
-  layer.style.mixBlendMode = "normal";
-  layer.style.filter = "none";
-}
-  }
-
   // =========================
   // texto arriba de todo
   // =========================
@@ -5118,7 +5149,6 @@ async function devRenderFinalCanvasDirectoAPK(cFinal, ctx, W = 1080, H = 1920){
   await Promise.all([...DEV_EXPORT_PREVIEWS.values()].map(snapshot => esperarFuentesPreview(snapshot.stage)));
 
   const fondoF1Url = DEV.f1.fondoBlob || DEV.f1.fondoUrl || "";
-  const texturas = devF2TexturasSeleccionadas();
   const adornoUrl = DEV.f2.adornoUrl || "";
 
   let romboUrl = "";
@@ -5139,9 +5169,6 @@ async function devRenderFinalCanvasDirectoAPK(cFinal, ctx, W = 1080, H = 1920){
   const fondoPromise = fondoF1Url
     ? devCanvasCargarImagen(fondoF1Url, "fondo_devocional.png", 4500)
     : Promise.resolve(null);
-  const texturaPromises = texturas.map((url, i) =>
-    devCanvasCargarImagen(url, `textura_devocional_${i+1}.png`, 4500)
-  );
   const adornoPromise = adornoUrl
     ? devCanvasCargarImagen(adornoUrl, "adorno_devocional.png", 4500)
     : Promise.resolve(null);
@@ -5149,9 +5176,8 @@ async function devRenderFinalCanvasDirectoAPK(cFinal, ctx, W = 1080, H = 1920){
     ? devCanvasCargarImagen(romboUrl, "gradiente_rombo.svg", 2500)
     : Promise.resolve(null);
 
-  const [fondoF1, texturaImgs, adornoImg, romboImg] = await Promise.all([
+  const [fondoF1, adornoImg, romboImg] = await Promise.all([
     fondoPromise,
-    Promise.all(texturaPromises),
     adornoPromise,
     romboPromise
   ]);
@@ -5172,34 +5198,25 @@ async function devRenderFinalCanvasDirectoAPK(cFinal, ctx, W = 1080, H = 1920){
 
   await devCanvasDibujarFondoF2(f2ctx, W, H2, romboImg);
 
-  const validTextures = texturaImgs.filter(Boolean);
-  if (validTextures.length) {
-    const texCanvas = document.createElement("canvas");
-    texCanvas.width = W;
-    texCanvas.height = H2;
-    const tctx = texCanvas.getContext("2d");
-    validTextures.forEach(img => devCanvasDibujarCover(tctx, img, 0, 0, W, H2));
+  const snapshotF2=DEV_EXPORT_PREVIEWS.get(2);
+  const texturaCanvas=snapshotF2?.stage.querySelector('canvas[data-va-texturas]');
+  if (texturaCanvas) f2ctx.drawImage(texturaCanvas,0,0,W,H2);
 
-    f2ctx.save();
-    f2ctx.globalAlpha = Math.max(0, Math.min(1, Number(DEV.f2.texturaOp ?? 0.22)));
-    f2ctx.drawImage(texCanvas, 0, 0);
-    f2ctx.restore();
-
-    try { texCanvas.width = 0; texCanvas.height = 0; } catch {}
-  }
-
-  devDibujarPreviewTexto(f2ctx, 2);
-  if (adornoImg) {
-    const snapshot = DEV_EXPORT_PREVIEWS.get(2);
-    const img = snapshot.stage.querySelector('img');
-    if (img) {
-      const r = img.getBoundingClientRect(), sr = snapshot.stage.getBoundingClientRect();
-      const scale = 1080 / snapshot.width;
-      f2ctx.save(); f2ctx.globalAlpha = Number(DEV.f2.adornoOpacidad ?? 1);
-      f2ctx.drawImage(adornoImg, (r.left-sr.left)*scale, (r.top-sr.top)*scale, r.width*scale, r.height*scale);
+  // El adorno sólo puede dibujarse en su banda, debajo del texto.
+  if (adornoImg && snapshotF2) {
+    const img=snapshotF2.stage.querySelector('img[data-dev2-ornament]');
+    const area=snapshotF2.stage.querySelector('[data-dev2-ornament-area]');
+    if (img && area) {
+      const r=img.getBoundingClientRect(), a=area.getBoundingClientRect();
+      const sr=snapshotF2.stage.getBoundingClientRect(), scale=W/snapshotF2.width;
+      f2ctx.save();
+      f2ctx.beginPath(); f2ctx.rect((a.left-sr.left)*scale,(a.top-sr.top)*scale,a.width*scale,a.height*scale); f2ctx.clip();
+      f2ctx.globalAlpha=Math.max(0,Math.min(1,Number(DEV.f2.adornoOpacidad ?? 1)));
+      f2ctx.drawImage(adornoImg,(r.left-sr.left)*scale,(r.top-sr.top)*scale,r.width*scale,r.height*scale);
       f2ctx.restore();
     }
   }
+  devDibujarPreviewTexto(f2ctx, 2);
   ctx.drawImage(f2Canvas, 0, H1);
   try { f2Canvas.width = 0; f2Canvas.height = 0; } catch {}
 
@@ -8498,9 +8515,6 @@ function devAplicarEditorTexto(fase, stage, interactivo = false) {
     target.style.setProperty('--va-rich-highlight-color', devRgba(st.opColor || '#000000', st.op ?? .35));
     target.style.setProperty('--va-rich-highlight-spread', `${11 * scale}px`);
   }
-  const bottom = fase === 2 && st.adornoUrl
-    ? 1 - (16 + Math.max(12, Math.round(86 * (Number(st.adornoWidth || 70) / 70))) + 4) / 840
-    : .98;
   const opts = {stage, target, state:st.editor, fontPx:st.size * scale, baseFontSize:st.size, defaultUnderline:st.style.underline,
     baseOutline: bodyOutline,
     outlineShadow: elegido => textShadowLegibleFinal(st.color, scale * 1.25, elegido),
@@ -8523,12 +8537,13 @@ function devAplicarEditorTexto(fase, stage, interactivo = false) {
         $(`dev${fase}${suffix}`)?.classList.toggle('activo', selection ? selection[key] : st.style[key]);
       }
     },
-    bounds: fase === 1 ? {left:.07,right:.93,top:.14,bottom:.86} : {left:.03,right:.97,top:.02,bottom},
+    bounds: fase === 1 ? {left:.07,right:.93,top:.14,bottom:.86} : devLimitesTextoF2(stage),
     onChange: () => {
       st.userChanged = true;
       devInvalidarPNGFinal();
     }
   };
+  if (fase === 2) encajarCajaTexto(opts);
   if (interactivo) montarEditorTexto(opts);
   else aplicarCajaTexto(opts);
 }

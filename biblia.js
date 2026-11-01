@@ -1,4 +1,5 @@
-import { ordenarFondos, registrarUsoFondo, configurarUsoFondos, combinarUsoFondos, urlFondoSeguro, cargarFondoBlob, prepararMiniaturas, montarEditorTexto, aplicarFormatoSeleccion, alternarFormatoSeleccion, restaurarControlesTexto, aplicarSubrayadoTexto, desactivarEditorTexto, crearInstantaneaPreview, esperarFuentesPreview, dibujarCajaTexto } from "./imagen-editor.js?v=20261007-contornos-items-5";
+import { actualizarCapaTexturas, esperarCapaTexturas, montarControlesTextura, margenesTexturas } from "./texturas-editor.js?v=20261101-texturas-adornos-1";
+import { ordenarFondos, registrarUsoFondo, configurarUsoFondos, combinarUsoFondos, urlFondoSeguro, cargarFondoBlob, prepararMiniaturas, montarEditorTexto, aplicarFormatoSeleccion, alternarFormatoSeleccion, restaurarControlesTexto, aplicarSubrayadoTexto, desactivarEditorTexto, crearInstantaneaPreview, esperarFuentesPreview, dibujarCajaTexto, encajarCajaTexto } from "./imagen-editor.js?v=20261101-texturas-adornos-1";
 
 // ================= IMPORTS FIREBASE =================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -1887,6 +1888,8 @@ function bibliaNuevoEstadoFondoDiseno() {
     texturasUrls: [],
     texturaUrl: null, // compatibilidad con diseños guardados anteriormente
     texturaOpacidad: 0.22,
+    texturaAjuste: "auto",
+    texturaEscala: 100,
 
     adornoUrl: null,
    adornoTamano: 70,
@@ -5659,6 +5662,7 @@ function bibliaLimpiarCapasFondoDiseno() {
   const imgAdorno = document.getElementById("bibliaFondoAdornoImg");
 
   if (textura) {
+    actualizarCapaTexturas(textura, {urls:[]});
     textura.style.display = "none";
     textura.style.backgroundImage = "none";
     textura.style.backgroundSize = "";
@@ -5727,38 +5731,22 @@ function bibliaAplicarFondoAlPreview(previewImagen) {
     }
   }
 
-  // ✅ Varias texturas pueden superponerse sobre imagen o color.
   if (textura) {
-    const texturasActivas = bibliaTexturasSeleccionadas();
-
-    if (texturasActivas.length) {
-      textura.style.display = "block";
-      textura.style.backgroundImage = texturasActivas
-        .map(url => bibliaUrlRecursoSeguro(
-          url,
-          "textura_biblia.png"
-        ))
-        .map(url => `url("${url}")`)
-        .join(", ");
-      textura.style.backgroundSize = texturasActivas
-        .map(() => "cover")
-        .join(", ");
-      textura.style.backgroundPosition = texturasActivas
-        .map(() => "center")
-        .join(", ");
-      textura.style.backgroundRepeat = texturasActivas
-        .map(() => "no-repeat")
-        .join(", ");
-      textura.style.opacity = String(
-        Math.max(0, Math.min(1, Number(fondoDisenoBiblia.texturaOpacidad) || 0))
-      );
-    } else {
-      textura.style.display = "none";
-      textura.style.backgroundImage = "none";
-      textura.style.backgroundSize = "";
-      textura.style.backgroundPosition = "";
-      textura.style.backgroundRepeat = "";
-      textura.style.opacity = "0";
+    actualizarCapaTexturas(textura, {
+      urls: bibliaTexturasSeleccionadas().map(url => bibliaUrlRecursoSeguro(url, "textura_biblia.png")),
+      width: 1080, height: formatoImagenActual === "story" ? 1920 : 1080,
+      ajuste: fondoDisenoBiblia.texturaAjuste || "auto",
+      escala: fondoDisenoBiblia.texturaEscala || 100,
+      intensidad: fondoDisenoBiblia.texturaOpacidad ?? .22,
+      onReady: () => { if (previewImagen.clientWidth && previewImagen.clientHeight) actualizarPreview(); }
+    });
+    const margenes=margenesTexturas(textura);
+    const wrapper=document.getElementById("previewTextoWrapper");
+    if (wrapper && Math.max(...Object.values(margenes))>0) {
+      wrapper.style.inset=[Math.max(10,margenes.top*previewImagen.clientHeight),
+        Math.max(10,margenes.right*previewImagen.clientWidth),
+        Math.max(10,margenes.bottom*previewImagen.clientHeight),
+        Math.max(10,margenes.left*previewImagen.clientWidth)].map(n=>n+"px").join(" ");
     }
   }
 
@@ -5838,7 +5826,16 @@ function bibliaSincronizarControlesFondoDiseno() {
     forma.style.display = fondoDisenoBiblia.usarColor2 ? "inline-flex" : "none";
   }
 
-  if (texturaOp) texturaOp.value = String(fondoDisenoBiblia.texturaOpacidad);
+  montarControlesTextura(texturaOp, {
+    ajuste: fondoDisenoBiblia.texturaAjuste,
+    escala: fondoDisenoBiblia.texturaEscala,
+    intensidad: fondoDisenoBiblia.texturaOpacidad,
+    onChange: ({ajuste, escala}) => {
+      fondoDisenoBiblia.texturaAjuste = ajuste;
+      fondoDisenoBiblia.texturaEscala = escala;
+      actualizarPreview();
+    }
+  });
   if (adornoTam) adornoTam.value = String(fondoDisenoBiblia.adornoTamano);
   if (adornoOp) adornoOp.value = String(fondoDisenoBiblia.adornoOpacidad ?? 1);
 
@@ -6540,7 +6537,7 @@ async function bibliaEsperarRecursosDiseno() {
   if (modoFondoBiblia !== "diseno") return;
 
   await Promise.all([
-    ...bibliaTexturasSeleccionadas().map(url => bibliaPrecargarRecurso(url)),
+    esperarCapaTexturas(document.getElementById("bibliaFondoTexturaLayer")),
     bibliaPrecargarRecurso(fondoDisenoBiblia.adornoUrl)
   ]);
 }
@@ -7372,9 +7369,16 @@ function actualizarPreview() {
       formatControls: '#textStyles,#btnFuentes,#listaFuentes,#boxControlesTexto,.pickr-host',
       controlsRoot: document.getElementById('modalPersonalizar'),
       onSelectionChange: vaSyncSeleccionImagen,
-      bounds: {left:.025, right:.975, top:.025, bottom:.975},
+      bounds: (() => {
+        const m=margenesTexturas(document.getElementById("bibliaFondoTexturaLayer"));
+        return {left:Math.max(.025,m.left),right:1-Math.max(.025,m.right),
+          top:Math.max(.025,m.top),bottom:1-Math.max(.025,m.bottom)};
+      })(),
       onChange: () => { userSetFontSize = true; invalidarRenderFinal(); }
     });
+    if (Math.max(...Object.values(margenesTexturas(document.getElementById("bibliaFondoTexturaLayer"))))>0) {
+      encajarCajaTexto(previewImagen.__vaEditor.opts);
+    }
   } else {
     activarEdicionDirectaTextoLibre();
   }
