@@ -1,7 +1,8 @@
-import { actualizarAdorno, activarAdorno, esperarAdorno } from "./adornos-editor.js?v=20261101-flujo-adorno-3";
-import { actualizarCapaTexturas, esperarCapaTexturas, montarControlesTextura, margenesTexturas } from "./texturas-editor.js?v=20261101-flujo-adorno-3";
-import { urlFondoSeguro, cargarFondoBlob, prepararMiniaturas, montarEditorTexto, aplicarCajaTexto, aplicarFormatoSeleccion, alternarFormatoSeleccion, restaurarControlesTexto, aplicarSubrayadoTexto, crearInstantaneaPreview, esperarFuentesPreview, recuperarCajaTexto } from "./imagen-editor.js?v=20261101-flujo-adorno-3";
-import { dibujarCajaTexto } from "./imagen-editor.js?v=20261101-flujo-adorno-3";
+import { actualizarAdorno, activarAdorno, esperarAdorno } from "./adornos-editor.js?v=20261101-exportacion-4";
+import { elegirResolucionImagen, dimensionesExportacion, conProgresoExportacion } from "./exportacion-imagen.js?v=20261101-exportacion-4";
+import { actualizarCapaTexturas, esperarCapaTexturas, montarControlesTextura, margenesTexturas, cargarTextura, dibujarTexturas } from "./texturas-editor.js?v=20261101-exportacion-4";
+import { urlFondoSeguro, cargarFondoBlob, prepararMiniaturas, montarEditorTexto, aplicarCajaTexto, aplicarFormatoSeleccion, alternarFormatoSeleccion, restaurarControlesTexto, aplicarSubrayadoTexto, crearInstantaneaPreview, esperarFuentesPreview, recuperarCajaTexto } from "./imagen-editor.js?v=20261101-exportacion-4";
+import { dibujarCajaTexto } from "./imagen-editor.js?v=20261101-exportacion-4";
 
 // devocionales.js (NUEVO LIMPIO)
 // ✅ OCR + Recorte + Modal 3 fases (9:9 + 9:7 => 9:16)
@@ -49,16 +50,20 @@ async function devCapturarPreviewFase(fase){
   const snapshot = crearInstantaneaPreview(source);
   if (!snapshot) throw new Error("No pude leer la preview de la fase " + fase);
   snapshot.texto = snapshot.get($(`dev${fase}Texto`));
+  if(fase===2)snapshot.texturas={
+    urls:devF2TexturasSeleccionadas().map(url=>devUrlRecursoSeguro(url,'textura_devocional.png')),
+    ajuste:DEV.f2.texturaAjuste || 'auto',escala:DEV.f2.texturaEscala || 100,intensidad:DEV.f2.texturaOp ?? .22
+  };
   DEV_EXPORT_PREVIEWS.get(fase)?.remove();
   DEV_EXPORT_PREVIEWS.set(fase, snapshot);
   devInvalidarPNGFinal();
   return snapshot;
 }
 
-function devDibujarPreviewTexto(ctx, fase){
+function devDibujarPreviewTexto(ctx, fase, anchoSalida=1080){
   const snapshot = DEV_EXPORT_PREVIEWS.get(fase);
   if (!snapshot) throw new Error("Falta la preview de la fase " + fase);
-  const scale = 1080 / snapshot.width;
+  const scale = anchoSalida / snapshot.width;
   ctx.save(); ctx.scale(scale, scale);
   try {
     dibujarCajaTexto(ctx, {stage:snapshot.stage, target:snapshot.texto, aplicar:false, escalaSalida:scale, sombrasSeparadas:true, resaltadoDOM:fase === 1});
@@ -4317,13 +4322,14 @@ async function devEsperarImagenesNodo(root, timeoutMs = 5000){
 }
 
 function devDibujarUnionSuaveFinal(ctx, W, y){
+  const escala=W/1080;
   const c1 = devHexSeguro(DEV.f2?.fondoColor) || "#ffffff";
   const c2 = devHexSeguro(DEV.f2?.gradienteColor2) || c1;
 
   // banda suave que tapa el corte seco
-  const alto = 72;
+  const alto = 72*escala;
 
-  const g = ctx.createLinearGradient(0, y - alto, 0, y + 28);
+  const g = ctx.createLinearGradient(0, y - alto, 0, y + 28*escala);
   g.addColorStop(0.00, devRgba(c1, 0));
   g.addColorStop(0.45, devRgba(c1, 0.45));
   g.addColorStop(0.68, devRgba(c1, 0.88));
@@ -4331,16 +4337,16 @@ function devDibujarUnionSuaveFinal(ctx, W, y){
 
   ctx.save();
   ctx.fillStyle = g;
-  ctx.fillRect(0, y - alto, W, alto + 34);
+  ctx.fillRect(0, y - alto, W, alto + 34*escala);
 
   // detalle finito para que parezca separación intencional, no corte
-  const linea = ctx.createLinearGradient(0, y - 4, 0, y + 18);
+  const linea = ctx.createLinearGradient(0, y - 4*escala, 0, y + 18*escala);
   linea.addColorStop(0.00, "rgba(0,0,0,0)");
   linea.addColorStop(0.45, "rgba(0,0,0,0.08)");
   linea.addColorStop(1.00, devRgba(c2, 0.10));
 
   ctx.fillStyle = linea;
-  ctx.fillRect(0, y - 6, W, 26);
+  ctx.fillRect(0, y - 6*escala, W, 26*escala);
   ctx.restore();
 }
 
@@ -4559,7 +4565,7 @@ async function devEsperarFuentesFase3(timeoutMs = 1500){
    APK: FASE 3 DIRECTA EN CANVAS (SIN html2canvas)
    =========================================================
    Objetivo:
-   - mantener salida final 1080x1920;
+   - salida normal 1080x1920 y descarga opcional 2160x3840;
    - replicar el diseño de Fase 1 + Fase 2;
    - evitar la rasterización DOM de html2canvas dentro de Android WebView;
    - mantener la ruta web/PWA anterior intacta.
@@ -4997,15 +5003,15 @@ async function devCanvasEsperarFuentesDirectas(){
   ]);
 }
 
-async function devRenderFinalCanvasDirectoAPK(cFinal, ctx, W = 1080, H = 1920){
-  const H1 = 1080;
-  const H2 = 840;
+async function devRenderFinalCanvasDirectoAPK(cFinal, ctx, W = 1080, H = 1920, opciones={}){
+  const factor=W/1080,H1=1080*factor,H2=840*factor;
+  const informar=opciones.silencioso?()=>{}:devF3Estado;
 
   // Evitar que imágenes de devocionales anteriores queden retenidas por esta capa.
   // El navegador/WebView conserva su propia caché de red; acá sólo soltamos referencias JS.
   DEV_CANVAS_IMG_CACHE.clear();
 
-  devF3Estado("Preparando imagen final");
+  informar("Preparando imagen final");
   await Promise.all([...DEV_EXPORT_PREVIEWS.values()].map(snapshot => esperarFuentesPreview(snapshot.stage)));
 
   const fondoF1Url = DEV.f1.fondoBlob || DEV.f1.fondoUrl || "";
@@ -5024,7 +5030,7 @@ async function devRenderFinalCanvasDirectoAPK(cFinal, ctx, W = 1080, H = 1920){
     );
   }
 
-  devF3Estado("Cargando recursos elegidos");
+  informar("Cargando recursos elegidos");
   // Si un recurso elegido no carga, abortamos con un error visible en vez de
   // generar una imagen incompleta o distinta de la preview.
   const fondoPromise = fondoF1Url
@@ -5043,15 +5049,15 @@ async function devRenderFinalCanvasDirectoAPK(cFinal, ctx, W = 1080, H = 1920){
     romboPromise
   ]);
 
-  devF3Estado("Dibujando Fase 1");
+  informar("Dibujando Fase 1");
   ctx.save();
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, W, H1);
   if (fondoF1) devCanvasDibujarCover(ctx, fondoF1, 0, 0, W, H1);
-  devDibujarPreviewTexto(ctx, 1);
+  devDibujarPreviewTexto(ctx, 1, W);
   ctx.restore();
 
-  devF3Estado("Dibujando Fase 2");
+  informar("Dibujando Fase 2");
   const f2Canvas = document.createElement("canvas");
   f2Canvas.width = W;
   f2Canvas.height = H2;
@@ -5061,7 +5067,11 @@ async function devRenderFinalCanvasDirectoAPK(cFinal, ctx, W = 1080, H = 1920){
 
   const snapshotF2=DEV_EXPORT_PREVIEWS.get(2);
   const texturaCanvas=snapshotF2?.stage.querySelector('canvas[data-va-texturas]');
-  if (texturaCanvas) f2ctx.drawImage(texturaCanvas,0,0,W,H2);
+  if(W>1080 && snapshotF2?.texturas?.urls.length){
+    const opcionesTextura=snapshotF2.texturas;
+    const imagenes=await Promise.all(opcionesTextura.urls.map(url=>cargarTextura(url,{maxSize:4096,cache:false})));
+    dibujarTexturas(f2ctx,imagenes,W,H2,opcionesTextura);
+  }else if (texturaCanvas) f2ctx.drawImage(texturaCanvas,0,0,W,H2);
 
   // Posición libre del adorno, congelada tal como se veía en Fase 2.
   if(adornoImg && snapshotF2){
@@ -5073,14 +5083,14 @@ async function devRenderFinalCanvasDirectoAPK(cFinal, ctx, W = 1080, H = 1920){
       f2ctx.drawImage(adornoImg,(r.left-sr.left)*scale,(r.top-sr.top)*scale,r.width*scale,r.height*scale);f2ctx.restore();
     }
   }
-  devDibujarPreviewTexto(f2ctx, 2);
+  devDibujarPreviewTexto(f2ctx, 2, W);
   ctx.drawImage(f2Canvas, 0, H1);
   try { f2Canvas.width = 0; f2Canvas.height = 0; } catch {}
 
-  devF3Estado("Terminando composición");
+  informar("Terminando composición");
   devDibujarUnionSuaveFinal(ctx, W, H1);
 
-  const listo = makeRoundedCanvas(cFinal, 52);
+  const listo = makeRoundedCanvas(cFinal, 52*factor);
   const ahora = performance?.now ? performance.now() : Date.now();
   if (DEV_F3_T0) {
     console.log(`⚡ Fase 3 Canvas directo: ${((ahora - DEV_F3_T0) / 1000).toFixed(2)} s`);
@@ -5089,11 +5099,11 @@ async function devRenderFinalCanvasDirectoAPK(cFinal, ctx, W = 1080, H = 1920){
 }
 
 
-async function renderFinalCanvasCaptureReal(){
-  const cFinal = $("devCanvasFinal");
+async function renderFinalCanvasCaptureReal(opciones={}){
+  const cFinal = opciones.temporal ? document.createElement('canvas') : $("devCanvasFinal");
   if (!cFinal) return null;
 
-  const W = 1080, H = 1920;
+  const {width:W,height:H}=dimensionesExportacion('vertical',opciones.ancho);
   cFinal.width = W;
   cFinal.height = H;
   const ctx = cFinal.getContext("2d");
@@ -5123,7 +5133,8 @@ async function renderFinalCanvasCaptureReal(){
 
     ctx.drawImage(img, dx, dy, drawW, drawH);
 
-    const rounded = makeRoundedCanvas(cFinal, 52);
+    const rounded = makeRoundedCanvas(cFinal, 52*W/1080);
+    if(opciones.temporal)cFinal.width=cFinal.height=0;
 
     // La preview se crea una sola vez desde el Blob en
     // devPrepararShareFinalDesdeCanvas(), evitando un Base64 gigante extra.
@@ -5135,7 +5146,8 @@ async function renderFinalCanvasCaptureReal(){
   // =====================================================
   // PC y APK comparten la composición directa que conserva los recursos
   // elegidos. La captura HTML podía omitir fondos o repintar estilos en PC.
-  return await devRenderFinalCanvasDirectoAPK(cFinal, ctx, W, H);
+  try{return await devRenderFinalCanvasDirectoAPK(cFinal, ctx, W, H,{silencioso:!!opciones.temporal});}
+  finally{if(opciones.temporal)cFinal.width=cFinal.height=0;}
 }
 
 window.devToggleSubirPanel = () => {
@@ -5147,15 +5159,30 @@ window.devToggleSubirPanel = () => {
 
 // ✅ descarga PNG
 async function devDescargarPNG(){
-  await devAsegurarShareFinalListo();
-  const fecha = DEV?.p1?.fecha || "sin_fecha";
-  await devDescargarImagenSolo(window.__devFinalCanvas, "Devocional_" + safeFilePart(fecha) + ".png");
+  const ancho=await elegirResolucionImagen('vertical');
+  if(!ancho)return false;
+  return conProgresoExportacion(async()=>{
+    await devAsegurarShareFinalListo();
+    const revision=devRevisionPNGFinal,fecha=DEV?.p1?.fecha || 'sin_fecha';
+    let temporal=null;
+    try{
+      const canvas=ancho===2160 ? (temporal=await renderFinalCanvasCaptureReal({ancho,temporal:true})) : window.__devFinalCanvas;
+      if(!canvas)throw new Error('No pude preparar la imagen. Volvé a intentarlo.');
+      if(revision!==devRevisionPNGFinal)throw new Error('El diseño cambió. Volvé a descargar la imagen.');
+      return await devDescargarImagenSolo(canvas,'Devocional_'+safeFilePart(fecha)+(ancho===2160?'_alta':'')+'.png');
+    }finally{if(temporal)temporal.width=temporal.height=0;}
+  });
 }
 
 // ✅ descarga pack: primero PNG, luego audio
 window.devDescargarPack = async () => {
-  await devDescargarPNG();
-  await devDescargarFinal(); // tu función actual (audio + intenta GitHub)
+  if(DEV.descargando)return;
+  DEV.descargando=true;
+  try{
+    if(!await devDescargarPNG())return;
+    await window.devDescargarFinal();
+  }catch(e){console.warn('No pude descargar el devocional:',e);alert(e?.message || 'No pude descargar el devocional. Volvé a intentarlo.');}
+  finally{DEV.descargando=false;}
 };
 
 /* =========================================================
@@ -5901,12 +5928,12 @@ async function devDescargarImagenSolo(canvas, fileName = "devocional.png"){
 
   if (!blob) {
     alert("❌ No se pudo preparar la imagen.");
-    return;
+    return false;
   }
 
   if (devEsAPKAndroid() && window.AndroidVida?.descargarArchivoBase64) {
     await devAndroidDescargarBlob(blob, fileName, "image/png");
-    return;
+    return true;
   }
 
   const url = URL.createObjectURL(blob);
@@ -5918,6 +5945,7 @@ async function devDescargarImagenSolo(canvas, fileName = "devocional.png"){
   link.remove();
 
   setTimeout(() => URL.revokeObjectURL(url), 2000);
+  return true;
 }
 
 window.devCompartirFinal = async () => {

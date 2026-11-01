@@ -771,13 +771,15 @@ html, body {
 
 /* 📐 FORMATOS (FIX REAL) */
 #previewImagen.preview-post {
+  width: min(100%, 420px, 50vh);
   aspect-ratio: 1 / 1;
-  max-height: 50vh;
+  max-height: none;
 }
 
 #previewImagen.preview-story {
+  width: min(100%, 420px, 33.75vh);
   aspect-ratio: 9 / 16;
-  max-height: 60vh;
+  max-height: none;
 }
    
 /* ================= TEXTO DOBLE (PREVIEW) ================= */

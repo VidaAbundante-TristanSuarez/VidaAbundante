@@ -43,9 +43,12 @@ function analizarImagen(source) {
   };
 }
 
-export async function cargarTextura(url) {
-  const key = new URL(url, location.href).href;
-  if (recursos.has(key)) {
+export async function cargarTextura(url, opciones = {}) {
+  const src=new URL(url, location.href).href;
+  const maxSize=limitar(Number(opciones.maxSize)||2048,512,4096);
+  const conservar=opciones.cache!==false;
+  const key=src+'|'+maxSize;
+  if (conservar && recursos.has(key)) {
     const recurso=recursos.get(key); recursos.delete(key); recursos.set(key,recurso);
     return recurso;
   }
@@ -57,18 +60,18 @@ export async function cargarTextura(url) {
       clearTimeout(timer); img.onload=img.onerror=null;
       if (error) { reject(error); return; }
       try {
-        const factor=Math.min(1,2048/Math.max(img.naturalWidth,img.naturalHeight));
+        const factor=Math.min(1,maxSize/Math.max(img.naturalWidth,img.naturalHeight));
         const source=lienzo(img.naturalWidth*factor,img.naturalHeight*factor);
         source.getContext('2d').drawImage(img,0,0,source.width,source.height);
         const recurso={source,...analizarImagen(source),realzada:null,realce:0};
-        recursos.set(key,recurso);
+        if(conservar)recursos.set(key,recurso);
         // La caché no retiene todas las texturas grandes de la galería.
         while (recursos.size>4) recursos.delete(recursos.keys().next().value);
         resolve(recurso);
       } catch { reject(new Error('No pude preparar una textura. Comprobá que la imagen permita su uso.')); }
     }
     img.onload=()=>fin(); img.onerror=()=>fin(new Error('No pude cargar una textura. Volvé a intentarlo.'));
-    img.src=key;
+    img.src=src;
   }).finally(()=>pendientes.delete(key));
   pendientes.set(key,trabajo);
   return trabajo;
@@ -165,7 +168,9 @@ export function actualizarCapaTexturas(layer,opciones={}) {
     layer.style.display='none'; estado.promise=Promise.resolve(); return estado.promise;
   }
   layer.style.display='block';
-  estado.promise=Promise.all(urls.map(cargarTextura)).then(imagenes=>{
+  estado.promise=Promise.all(urls.map(url=>cargarTextura(url,{
+    maxSize:opciones.maxResourceSize,cache:opciones.cacheRecursos!==false
+  }))).then(imagenes=>{
     if (estado.token!==token) return;
     const margenes={left:0,right:0,top:0,bottom:0};
     for (const recurso of imagenes) {

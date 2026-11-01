@@ -1,6 +1,7 @@
-import { actualizarAdorno, activarAdorno, esperarAdorno } from "./adornos-editor.js?v=20261101-flujo-adorno-3";
-import { actualizarCapaTexturas, esperarCapaTexturas, montarControlesTextura, margenesTexturas } from "./texturas-editor.js?v=20261101-flujo-adorno-3";
-import { ordenarFondos, registrarUsoFondo, configurarUsoFondos, combinarUsoFondos, urlFondoSeguro, cargarFondoBlob, prepararMiniaturas, montarEditorTexto, aplicarFormatoSeleccion, alternarFormatoSeleccion, restaurarControlesTexto, aplicarSubrayadoTexto, desactivarEditorTexto, crearInstantaneaPreview, esperarFuentesPreview, dibujarCajaTexto, recuperarCajaTexto } from "./imagen-editor.js?v=20261101-flujo-adorno-3";
+import { actualizarAdorno, activarAdorno, esperarAdorno } from "./adornos-editor.js?v=20261101-exportacion-4";
+import { elegirResolucionImagen, dimensionesExportacion, conProgresoExportacion } from "./exportacion-imagen.js?v=20261101-exportacion-4";
+import { actualizarCapaTexturas, esperarCapaTexturas, montarControlesTextura, margenesTexturas } from "./texturas-editor.js?v=20261101-exportacion-4";
+import { ordenarFondos, registrarUsoFondo, configurarUsoFondos, combinarUsoFondos, urlFondoSeguro, cargarFondoBlob, prepararMiniaturas, montarEditorTexto, aplicarFormatoSeleccion, alternarFormatoSeleccion, restaurarControlesTexto, aplicarSubrayadoTexto, desactivarEditorTexto, crearInstantaneaPreview, esperarFuentesPreview, dibujarCajaTexto, recuperarCajaTexto } from "./imagen-editor.js?v=20261101-exportacion-4";
 
 // ================= IMPORTS FIREBASE =================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -7532,9 +7533,9 @@ function bibliaPrepararResaltadoExplicitoParaCaptura() {
 
 // ================= ⭐ CANVAS GENERA IMAGEN FINAL (FIX REAL) ============================
 async function generarImagenFinal(opts = {}) {
-  const { subir = true } = opts;
+  const { subir = true, ancho = 1080, canvasDestino = null } = opts;
   const preview = document.getElementById("previewImagen");
-  const canvasFinal = document.getElementById("canvasFinal");
+  const canvasFinal = canvasDestino || document.getElementById("canvasFinal");
   const modal = document.getElementById("modalPersonalizar");
   if (!preview || !canvasFinal || (modal && getComputedStyle(modal).display === "none")) return false;
 
@@ -7546,6 +7547,17 @@ async function generarImagenFinal(opts = {}) {
     if (rect.width < 10 || rect.height < 10) return false;
     instantanea = crearInstantaneaPreview(preview);
     if (!instantanea) return false;
+    const medida=dimensionesExportacion(formatoImagenActual==='story'?'vertical':'cuadrado',ancho);
+    const textura=instantanea.stage.querySelector('#bibliaFondoTexturaLayer') || instantanea.get(document.getElementById('bibliaFondoTexturaLayer'));
+    if(textura){
+      await actualizarCapaTexturas(textura,{
+        urls:bibliaTexturasSeleccionadas().map(url=>bibliaUrlRecursoSeguro(url,'textura_biblia.png')),
+        width:medida.width,height:medida.height,
+        ajuste:fondoDisenoBiblia.texturaAjuste || 'auto',escala:fondoDisenoBiblia.texturaEscala || 100,
+        intensidad:fondoDisenoBiblia.texturaOpacidad ?? .22,
+        maxResourceSize:medida.width>1080?4096:2048,cacheRecursos:medida.width===1080
+      });
+    }
     const esBiblia = !modoImagenLibre && origenModalImagen === "biblia";
     const front = instantanea.get(document.getElementById("previewTexto"));
     const back = instantanea.get(document.getElementById("previewTextoBack"));
@@ -7553,10 +7565,11 @@ async function generarImagenFinal(opts = {}) {
       front.style.setProperty("visibility", "hidden", "important");
       back.style.setProperty("visibility", "hidden", "important");
     }
-    const scale = (rect.width <= 480 && rect.height <= 480) ? 1 : Math.min(2, window.devicePixelRatio || 1);
+    const scale=medida.width/instantanea.width;
+    canvasTemp=document.createElement('canvas');canvasTemp.width=medida.width;canvasTemp.height=medida.height;
     canvasTemp = await html2canvas(instantanea.stage, {
-      scale, useCORS: true, allowTaint: false, logging: false, imageTimeout: 2200,
-      width: Math.round(instantanea.width), height: Math.round(instantanea.height),
+      canvas:canvasTemp,scale, useCORS: true, allowTaint: false, logging: false, imageTimeout: 2200,
+      width:instantanea.width,height:medida.height/scale,
       backgroundColor: (modoFondoBiblia === "diseno" || fondoFinalBlobUrl || fondoFinal) ? null : "#ffffff"
     });
     canvasFinal.width = canvasTemp.width;
@@ -7948,9 +7961,9 @@ async function descargarImagenFinal() {
   return withRenderLock(async () => {
     const canvas = document.getElementById("canvasFinal");
     if (!canvas) return;
-
-    const ok = await asegurarCanvasFinal({ subir: false });
-    if (!ok) return;
+    const ancho=await elegirResolucionImagen(formatoImagenActual==='story'?'vertical':'cuadrado');
+    if(!ancho)return;
+    return conProgresoExportacion(async()=>{
 
     let nombreArchivo = "versiculo.png";
 
@@ -7984,44 +7997,29 @@ async function descargarImagenFinal() {
       }
     }
 
-    const descargarDesdeDataURL = () => {
-      const link = document.createElement("a");
-      link.href = canvas.toDataURL("image/png");
-      link.download = nombreArchivo;
-      clickLink(link);
-    };
-
+    let temporal=null;
     try {
-      const blob = await obtenerPNGFinalBiblia();
-
-      if (!blob) {
-        if (await asegurarCanvasFinal({subir:false})) descargarDesdeDataURL();
-        return;
+      let blob;
+      if(ancho===2160){
+        const key=getRenderKey();temporal=document.createElement('canvas');
+        if(!await generarImagenFinal({subir:false,ancho,canvasDestino:temporal}))return;
+        blob=await new Promise(resolve=>temporal.toBlob(resolve,'image/png'));
+        if(key!==getRenderKey())throw new Error('El diseño cambió. Volvé a descargar la imagen.');
+        nombreArchivo=nombreArchivo.replace(/\.png$/i,'_alta.png');
+      }else{
+        blob=await obtenerPNGFinalBiblia();
       }
-
+      if(!blob)throw new Error('No pude preparar la imagen. Volvé a intentarlo.');
       const file = new File([blob], nombreArchivo, {
         type: "image/png"
       });
 
-      // ✅ APK Android: descarga nativa real
-      if (await window.vaAndroidDescargarFile?.(file, nombreArchivo)) {
-        return;
-      }
-
-      // ✅ PWA / navegador: descarga normal
-      const objUrl = URL.createObjectURL(file);
-
-      const link = document.createElement("a");
-      link.href = objUrl;
-      link.download = nombreArchivo;
-      clickLink(link);
-
-      setTimeout(() => URL.revokeObjectURL(objUrl), 2000);
-
+      await descargarArchivoBibliaPreparado(file);
     } catch (e) {
-      console.warn("Descarga falló, uso dataURL:", e);
-      if (await asegurarCanvasFinal({subir:false})) descargarDesdeDataURL();
-    }
+      console.warn('No pude descargar la imagen:',e);
+      alert(e?.message || 'No pude descargar la imagen. Volvé a intentarlo.');
+    } finally {if(temporal)temporal.width=temporal.height=0;}
+    });
   });
 }
 
