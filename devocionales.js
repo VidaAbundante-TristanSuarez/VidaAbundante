@@ -1,6 +1,7 @@
-import { actualizarCapaTexturas, esperarCapaTexturas, montarControlesTextura, margenesTexturas } from "./texturas-editor.js?v=20261101-texturas-adornos-1";
-import { urlFondoSeguro, cargarFondoBlob, prepararMiniaturas, montarEditorTexto, aplicarCajaTexto, aplicarFormatoSeleccion, alternarFormatoSeleccion, restaurarControlesTexto, aplicarSubrayadoTexto, crearInstantaneaPreview, esperarFuentesPreview, encajarCajaTexto } from "./imagen-editor.js?v=20261101-texturas-adornos-1";
-import { dibujarCajaTexto } from "./imagen-editor.js?v=20261101-texturas-adornos-1";
+import { actualizarAdorno, activarAdorno, esperarAdorno } from "./adornos-editor.js?v=20261101-texto-adornos-nav-2";
+import { actualizarCapaTexturas, esperarCapaTexturas, montarControlesTextura, margenesTexturas } from "./texturas-editor.js?v=20261101-texto-adornos-nav-2";
+import { urlFondoSeguro, cargarFondoBlob, prepararMiniaturas, montarEditorTexto, aplicarCajaTexto, aplicarFormatoSeleccion, alternarFormatoSeleccion, restaurarControlesTexto, aplicarSubrayadoTexto, crearInstantaneaPreview, esperarFuentesPreview, recuperarCajaTexto } from "./imagen-editor.js?v=20261101-texto-adornos-nav-2";
+import { dibujarCajaTexto } from "./imagen-editor.js?v=20261101-texto-adornos-nav-2";
 
 // devocionales.js (NUEVO LIMPIO)
 // ✅ OCR + Recorte + Modal 3 fases (9:9 + 9:7 => 9:16)
@@ -42,9 +43,8 @@ async function devCapturarPreviewFase(fase){
   const source = $(`dev${fase}Preview`);
   await Promise.all([
     esperarFuentesPreview(source), devEsperarImagenesNodo(source, 1800),
-    fase === 2 ? esperarCapaTexturas(source?.querySelector(".dev2-texture-layer")) : Promise.resolve()
+    fase === 2 ? Promise.all([esperarCapaTexturas(source?.querySelector(".dev2-texture-layer")), esperarAdorno(source)]) : Promise.resolve()
   ]);
-  if (fase === 2 && source?.__vaEditor) encajarCajaTexto(source.__vaEditor.opts);
   const snapshot = crearInstantaneaPreview(source);
   if (!snapshot) throw new Error("No pude leer la preview de la fase " + fase);
   snapshot.texto = snapshot.get($(`dev${fase}Texto`));
@@ -60,13 +60,6 @@ function devDibujarPreviewTexto(ctx, fase){
   const scale = 1080 / snapshot.width;
   ctx.save(); ctx.scale(scale, scale);
   try {
-    if (fase === 2) {
-      const limits=devLimitesTextoF2(snapshot.stage);
-      ctx.beginPath();
-      ctx.rect(limits.left*snapshot.width, limits.top*snapshot.height,
-        (limits.right-limits.left)*snapshot.width, (limits.bottom-limits.top)*snapshot.height);
-      ctx.clip();
-    }
     dibujarCajaTexto(ctx, {stage:snapshot.stage, target:snapshot.texto, aplicar:false, escalaSalida:scale, sombrasSeparadas:true, resaltadoDOM:fase === 1});
   } finally { ctx.restore(); }
 }
@@ -151,6 +144,7 @@ op: 0.15,
     userChanged: false,
 adornoUrl: null,
 adornoWidth: 70,
+adornoTransform: {},
 adornoOpacidad: 1,
 style: { upper:false, bold:false, italic:false, underline:false }
   },
@@ -237,6 +231,7 @@ DEV.f2.op = 0.15;
   DEV.f2.userChanged = false;
 DEV.f2.adornoUrl = null;
 DEV.f2.adornoWidth = 70;
+DEV.f2.adornoTransform = {};
 DEV.f2.adornoOpacidad = 1;
 DEV.f2.style = { upper:false, bold:false, italic:false, underline:false };
   DEV.audioOk = false;
@@ -2252,15 +2247,6 @@ function cargarAdornosF2(){
       cont.querySelectorAll("button").forEach(x=>x.classList.remove("activo"));
       b.classList.add("activo");
 
-      if (!DEV.f2.userChanged) {
-        const texto = `Reflexión: ${DEV.p2?.reflexion || ""}\nOración: ${DEV.p2?.oracion || ""}`;
-        const sugerido = sugerirTamanoFase2Auto(texto);
-        DEV.f2.size = sugerido;
-
-        const s2 = $("dev2Tamano");
-        if (s2) s2.value = fmtSize(sugerido);
-      }
-
       devRenderFase(2);
     };
 
@@ -3173,36 +3159,19 @@ function sugerirTamanoVersiculoAuto(versiculo){
 }
 
 function sugerirTamanoFase2Auto(texto){
-  const W = 1080;
-  const H = 840;
-
-  const tieneAdorno = !!DEV?.f2?.adornoUrl;
-
-  const maxW = W - 120;
-  const altoDisponible = H - (tieneAdorno ? 180 : 120);
-
-  const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
-
-  const maxPx = 32;
-  const minPx = 12;
-  const limpio = oneLine(texto || "");
-
-  for (let px = maxPx; px >= minPx; px -= 0.5) {
-    ctx.font = `600 ${px}px ${DEV.f2.fuente}, Arial`;
-    const lines = wrapMeasureLines(ctx, limpio, maxW);
-    const lineH = px * 1.24;
-    const totalH = lines.length * lineH;
-
-    const safety = px * (tieneAdorno ? 2.2 : 1.6);
-
-    if ((totalH + safety) <= altoDisponible) {
-      const bonus = tieneAdorno ? 3 : 8;
-      return Math.max(12, Math.min(90, roundToHalf(px + bonus)));
+  if(!DEV.p2)return 26;
+  const stage=document.createElement("div");
+  Object.assign(stage.style,{position:"fixed",left:"-20000px",top:"0",width:"1048px",height:"808px",fontFamily:DEV.f2.fuente,fontStyle:DEV.f2.style.italic?"italic":"normal",textTransform:DEV.f2.style.upper?"uppercase":"none",visibility:"hidden"});
+  stage.innerHTML=buildFase2HTML(40,1);document.body.appendChild(stage);
+  const target=stage.querySelector('[data-va-editor-block="dev2"]');
+  const region=stage.querySelector('[data-dev2-text-region]');
+  try {
+    for(let px=40;px>=10;px-=.5){
+      target.style.fontSize=px+"px";
+      if(target.getBoundingClientRect().height<=region.clientHeight-8)return px;
     }
-  }
-
-  return tieneAdorno ? 15 : 20;
+    return 10;
+  } finally {stage.remove();}
 }
 
 function devSyncStyleButtons(fase){
@@ -3391,120 +3360,57 @@ function devEvitarUltimaPalabraSola(s){
 }
 
 function buildFase2HTML(basePx, scale = 1){
-  const p2 = DEV.p2;
-  if (!p2) return "";
-
-  scale = Number(scale) || 1;
-
-  const ref = devEvitarUltimaPalabraSola(p2.reflexion || "");
-  const ora = devEvitarUltimaPalabraSola(p2.oracion || "");
-
-  const fw  = DEV.f2.style.bold ? 700 : 400;
-
-  const adorno  = DEV.f2.adornoUrl;
-  const adornoW = Math.max(30, Math.min(95, Number(DEV.f2.adornoWidth || 70)));
-  const adornoOp = Math.max(0, Math.min(1, Number(DEV.f2.adornoOpacidad ?? 1)));
-
-  // ✅ Preview y final usan exactamente la misma caja proporcional.
-  // Antes el <img> tenía width:% + max-height fijo. En adornos altos/verticales
-  // mandaba el max-height, por eso mover "Tamaño" parecía no hacer nada;
-  // además html2canvas podía terminar deformando esa combinación en Fase 3.
-  // Ahora el slider cambia A LA VEZ el ancho y el alto máximo de una caja,
-  // y la imagen vive dentro con width/height auto: nunca pierde su proporción.
-  const padTop = Math.max(1, Math.round(4 * scale));
-  const padX   = Math.max(1, Math.round(18 * scale));
-  const gapOra = Math.max(2, Math.round(6 * scale));
-  const adornoFactor = adornoW / 70;
-  const adornoBoxW = adornoW;
-  const adornoBoxH = Math.max(12, Math.round(86 * scale * adornoFactor));
-
-  return `
-    <div data-dev2-layout style="
-      width:100%;
-      height:100%;
-      display:flex;
-      flex-direction:column;
-      overflow:hidden;
-    ">
-
-      <div data-dev2-text-region style="
-        position:relative;
-        flex:1 1 auto;
-        min-height:0;
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        padding:${padTop}px ${padX}px 0;
-        box-sizing:border-box;
-        text-align:center;
-        overflow:hidden;
-      ">
-        <div data-va-editor-block="dev2" style="
-          width:100%;
-          max-width:100%;
-          font-size:${basePx}px;
-          font-weight:${fw};
-          line-height:1.18;
-          word-break:normal;
-          overflow-wrap:normal;
-          hyphens:none;
-          text-wrap:pretty;
-          display:flex;
-          flex-direction:column;
-          align-items:center;
-          justify-content:center;
-        ">
-          <div style="width:100%;">Reflexión: ${esc(ref)}</div>
-          ${ora ? `<div style="width:100%; margin-top:${gapOra / basePx}em;">Oración: ${esc(ora)}</div>` : ``}
-        </div>
+  const p2=DEV.p2;if(!p2)return "";
+  const ref=devEvitarUltimaPalabraSola(p2.reflexion || "");
+  const ora=devEvitarUltimaPalabraSola(p2.oracion || "");
+  const gap=6*scale, padX=18*scale, padTop=4*scale;
+  const reserva=86*scale;
+  return `<div data-dev2-layout style="width:100%;height:100%;display:flex;flex-direction:column;overflow:hidden;">
+    <div data-dev2-text-region style="position:relative;flex:1 1 auto;min-height:0;display:flex;align-items:center;justify-content:center;padding:${padTop}px ${padX}px 0;box-sizing:border-box;text-align:center;overflow:hidden;">
+      <div data-va-editor-block="dev2" style="width:100%;max-width:100%;font-size:${basePx}px;font-weight:${DEV.f2.style.bold?700:400};line-height:1.18;word-break:normal;overflow-wrap:normal;hyphens:none;text-wrap:pretty;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+        <div style="width:100%;">Reflexión: ${esc(ref)}</div>
+        ${ora ? `<div style="width:100%;margin-top:${gap/basePx}em;">Oración: ${esc(ora)}</div>` : ''}
       </div>
-
-      ${adorno ? `
-        <div data-dev2-ornament-area style="
-          margin-top:${Math.max(2, 8 * scale)}px;
-          flex:0 0 auto;
-          display:flex;
-          align-items:flex-end;
-          justify-content:center;
-          padding:0 0 ${padTop}px;
-          box-sizing:border-box;
-          pointer-events:none;
-          overflow:hidden;
-        ">
-          <div style="
-            width:${adornoBoxW}%;
-            height:${adornoBoxH}px;
-            display:flex;
-            align-items:flex-end;
-            justify-content:center;
-            overflow:visible;
-            flex:0 0 auto;
-          ">
-            <img
-              src="${devUrlRecursoSeguro(
-                adorno,
-                "adorno_devocional.png"
-              )}"
-              data-dev2-ornament
-              alt="adorno"
-              style="
-                max-width:100%;
-                max-height:100%;
-                width:auto;
-                height:auto;
-                object-fit:contain;
-                object-position:center bottom;
-                display:block;
-                flex:0 0 auto;
-                opacity:${adornoOp};
-              "
-            />
-          </div>
-        </div>
-      ` : ``}
-
     </div>
-  `;
+    ${reserva ? `<div aria-hidden="true" style="flex:0 0 ${reserva}px;"></div>` : ''}
+  </div>`;
+}
+
+// Ajustar sólo la tipografía del flujo: el ancho del párrafo no se escala.
+function dev2AjustarFlujoTexto(stage){
+  const st=DEV.f2;st.editor ||= {};recuperarCajaTexto(st.editor);
+  if(st.editor.geometry)return;
+  const target=stage.querySelector('[data-va-editor-block="dev2"]');
+  const region=stage.querySelector('[data-dev2-text-region]');
+  if(!target || !region || !region.clientHeight)return;
+  const scale=stage.offsetWidth/1080;
+  const alto=region.clientHeight-6*scale;
+  if(target.getBoundingClientRect().height<=alto)return;
+  let lo=10,hi=Number(st.size)||26,best=10;
+  for(let i=0;i<12 && hi-lo>=.25;i++){
+    const px=Math.floor((lo+hi)*2)/4;
+    target.style.fontSize=(px*scale)+"px";
+    if(target.getBoundingClientRect().height<=alto){best=px;lo=px+.25;}else hi=px-.25;
+  }
+  st.size=Math.max(10,Math.floor(best*2)/2);
+  target.style.fontSize=(st.size*scale)+"px";
+  const input=$("dev2Tamano");if(input)input.value=fmtSize(st.size);
+}
+
+function dev2ActualizarAdorno(){
+  const stage=$("dev2Preview");if(!stage)return;
+  const st=DEV.f2;st.adornoTransform ||= {};
+  actualizarAdorno(stage, {
+    url:st.adornoUrl ? devUrlRecursoSeguro(st.adornoUrl,"adorno_devocional.png") : "",
+    resourceKey:st.adornoUrl || "",state:st.adornoTransform,
+    defaultWidth:(Number(st.adornoWidth)||70)/100,initialMaxHeight:.12,
+    opacity:st.adornoOpacidad ?? 1,interactive:st.tabActiva==="adorno",
+    onChange:(next,usuario)=>{
+      Object.assign(st.adornoTransform,next);
+      if(usuario)st.userChanged=true;
+      devInvalidarPNGFinal();
+    }
+  });
 }
 
 function devLimitesTextoF2(stage){
@@ -4020,94 +3926,15 @@ function dev2CompactarFilaTexto(){
 }
 
 function dev2AsegurarSlidersAdorno(){
-  const tam = $("dev2AdornoTamano");
-  if (!tam) return;
-
-  tam.classList.add("dev2-slider-mini");
-
-  const filaVieja =
-    tam.closest(".dev2-slider-row") ||
-    tam.closest(".dev-row") ||
-    tam.closest("label") ||
-    tam.parentElement;
-
-  let box = $("dev2AdornoSliders");
-
-  if (!box) {
-    box = document.createElement("div");
-    box.id = "dev2AdornoSliders";
-    box.className = "dev2-adorno-sliders";
-
-    if (filaVieja) {
-      filaVieja.insertAdjacentElement("beforebegin", box);
-    } else {
-      $("dev2PaneAdorno")?.appendChild(box);
-    }
+  const tam=$("dev2AdornoTamano");
+  if(tam)tam.closest('.dev2-slider-row,.dev-row,label')?.style.setProperty('display','none');
+  let op=$("dev2AdornoOpacidad");
+  if(!op){
+    const row=document.createElement("label");row.className="dev2-slider-row";row.title="Opacidad del adorno";
+    row.innerHTML='<i class="fa-solid fa-circle-half-stroke"></i>';
+    op=document.createElement("input");op.id="dev2AdornoOpacidad";op.type="range";op.min="0";op.max="1";op.step=".01";op.value=String(DEV.f2.adornoOpacidad??1);op.className="dev2-slider-mini";op.setAttribute('aria-label','Opacidad del adorno');row.appendChild(op);$("dev2PaneAdorno")?.appendChild(row);
   }
-
-  let packTam = $("dev2AdornoPackTamano");
-  if (!packTam) {
-    packTam = document.createElement("label");
-    packTam.id = "dev2AdornoPackTamano";
-    packTam.className = "dev2-slider-pack";
-    packTam.title = "Tamaño del adorno";
-    packTam.innerHTML = `<i class="fa-solid fa-up-right-and-down-left-from-center"></i>`;
-  }
-
-  let op = $("dev2AdornoOpacidad");
-  if (!op) {
-    op = document.createElement("input");
-    op.id = "dev2AdornoOpacidad";
-    op.type = "range";
-    op.min = "0";
-    op.max = "1";
-    op.step = "0.01";
-    op.value = String(DEV.f2.adornoOpacidad ?? 1);
-  }
-
-  op.classList.add("dev2-slider-mini");
-
-  let packOp = $("dev2AdornoPackOpacidad");
-  if (!packOp) {
-    packOp = document.createElement("label");
-    packOp.id = "dev2AdornoPackOpacidad";
-    packOp.className = "dev2-slider-pack";
-    packOp.title = "Opacidad del adorno";
-    packOp.innerHTML = `<i class="fa-solid fa-circle-half-stroke"></i>`;
-  }
-
-  if (!packTam.contains(tam)) packTam.appendChild(tam);
-  if (!packOp.contains(op)) packOp.appendChild(op);
-
-  if (!box.contains(packTam)) box.appendChild(packTam);
-  if (!box.contains(packOp)) box.appendChild(packOp);
-
-  // ✅ Borra la fila vieja que quedó vacía con el ícono solo
-  document.querySelectorAll("#dev2PaneAdorno .dev2-slider-row").forEach(row => {
-    const tieneInput = row.querySelector("input");
-    const esFilaViejaAdorno = row.querySelector(".fa-up-right-and-down-left-from-center");
-
-    if (!tieneInput && esFilaViejaAdorno) {
-      row.remove();
-    }
-  });
-
-  const leer = () => {
-    DEV.f2.userChanged = true;
-    DEV.f2.adornoWidth = Number($("dev2AdornoTamano")?.value || 70);
-    DEV.f2.adornoOpacidad = Math.max(0, Math.min(1, Number($("dev2AdornoOpacidad")?.value ?? 1)));
-    requestAnimationFrame(()=> devRenderFase(2));
-  };
-
-  if (!tam.dataset.devAdornoReady) {
-    tam.dataset.devAdornoReady = "1";
-    tam.addEventListener("input", leer);
-  }
-
-  if (!op.dataset.devAdornoReady) {
-    op.dataset.devAdornoReady = "1";
-    op.addEventListener("input", leer);
-  }
+  if(!op.dataset.devAdornoReady){op.dataset.devAdornoReady="1";op.addEventListener("input",()=>{DEV.f2.adornoOpacidad=Number(op.value);dev2ActualizarAdorno();devInvalidarPNGFinal();});}
 }
 
 function dev2AsegurarControlesTextura(){
@@ -4134,6 +3961,7 @@ dev2InterceptarHostsColorFondo();
 dev2CompactarFilaTexto();
 dev2AsegurarSlidersAdorno();
 dev2AsegurarControlesTextura();
+activarAdorno($("dev2Preview"),tab==="adorno");
 
   ["fondo", "textura", "adorno"].forEach(nombre => {
     const btn = $(`dev2Tab${nombre.charAt(0).toUpperCase()}${nombre.slice(1)}`);
@@ -4294,7 +4122,7 @@ if (fase === 2) {
 
   dev2ObservarPreview(p);
   const sc2 = scalePreviewF2();
-  const pxPreview = Math.max(8, (st.size * sc2));
+  const pxPreview = Math.max(1, st.size * sc2);
 
   const layer = ensureDev2TextureLayer(p);
   actualizarCapaTexturas(layer, {
@@ -4302,14 +4130,10 @@ if (fase === 2) {
     width: 1080, height: 840,
     ajuste: st.texturaAjuste || "auto", escala: st.texturaEscala || 100,
     intensidad: st.texturaOp ?? .22,
-    onReady: () => { if (p.clientWidth && p.clientHeight) devRenderFase(2); }
+    onReady: () => devInvalidarPNGFinal()
   });
-  const margenes = margenesTexturas(layer);
-  const baseInset = Math.max(4, Math.round(16 * sc2));
-  w.style.inset = [Math.max(baseInset,margenes.top*p.clientHeight),
-    Math.max(baseInset,margenes.right*p.clientWidth),
-    Math.max(baseInset,margenes.bottom*p.clientHeight),
-    Math.max(baseInset,margenes.left*p.clientWidth)].map(n=>n+"px").join(" ");
+  const baseInset=16*sc2;
+  w.style.inset=baseInset+"px";
 
   t.innerHTML = buildFase2HTML(pxPreview, sc2);
 
@@ -4331,7 +4155,7 @@ p.style.backgroundBlendMode = "normal";
   // texto arriba de todo
   // =========================
   w.style.position = "absolute";
-  w.style.zIndex = "1";
+  w.style.zIndex = "3";
   w.style.backgroundColor = "transparent";
 
 t.style.fontFamily = st.fuente;
@@ -4347,7 +4171,9 @@ t.style.paintOrder = "stroke fill";
 
   applyTextStylesToOne(t, st);
   devSyncStyleButtons(2);
+  dev2AjustarFlujoTexto(p);
   devAplicarEditorTexto(2, p, true);
+  dev2ActualizarAdorno();
   return;
 }
 }
@@ -5202,18 +5028,14 @@ async function devRenderFinalCanvasDirectoAPK(cFinal, ctx, W = 1080, H = 1920){
   const texturaCanvas=snapshotF2?.stage.querySelector('canvas[data-va-texturas]');
   if (texturaCanvas) f2ctx.drawImage(texturaCanvas,0,0,W,H2);
 
-  // El adorno sólo puede dibujarse en su banda, debajo del texto.
-  if (adornoImg && snapshotF2) {
-    const img=snapshotF2.stage.querySelector('img[data-dev2-ornament]');
-    const area=snapshotF2.stage.querySelector('[data-dev2-ornament-area]');
-    if (img && area) {
-      const r=img.getBoundingClientRect(), a=area.getBoundingClientRect();
-      const sr=snapshotF2.stage.getBoundingClientRect(), scale=W/snapshotF2.width;
-      f2ctx.save();
-      f2ctx.beginPath(); f2ctx.rect((a.left-sr.left)*scale,(a.top-sr.top)*scale,a.width*scale,a.height*scale); f2ctx.clip();
-      f2ctx.globalAlpha=Math.max(0,Math.min(1,Number(DEV.f2.adornoOpacidad ?? 1)));
-      f2ctx.drawImage(adornoImg,(r.left-sr.left)*scale,(r.top-sr.top)*scale,r.width*scale,r.height*scale);
-      f2ctx.restore();
+  // Posición libre del adorno, congelada tal como se veía en Fase 2.
+  if(adornoImg && snapshotF2){
+    const img=snapshotF2.stage.querySelector('img[data-va-adorno-image]');
+    if(img){
+      const r=img.getBoundingClientRect(),sr=snapshotF2.stage.getBoundingClientRect(),scale=W/snapshotF2.width;
+      f2ctx.save();f2ctx.beginPath();f2ctx.rect(0,0,W,H2);f2ctx.clip();
+      f2ctx.globalAlpha=Math.max(0,Math.min(1,Number(DEV.f2.adornoOpacidad??1)));
+      f2ctx.drawImage(adornoImg,(r.left-sr.left)*scale,(r.top-sr.top)*scale,r.width*scale,r.height*scale);f2ctx.restore();
     }
   }
   devDibujarPreviewTexto(f2ctx, 2);
@@ -5777,7 +5599,7 @@ function bindInputs(){
     if (k === 'Color') DEV.f2.color = el.value || '#000000';
     if (k === 'TexturaOp') DEV.f2.texturaOp = Number(el.value || 0.22);
     if (k === 'AdornoTamano') DEV.f2.adornoWidth = Number(el.value || 70);
-    if (k === 'AdornoOpacidad') DEV.f2.adornoOpacidad = Math.max(0, Math.min(1, Number(el.value ?? 1)));
+    if (k === 'AdornoOpacidad') { DEV.f2.adornoOpacidad = Math.max(0, Math.min(1, Number(el.value ?? 1))); dev2ActualizarAdorno(); return; }
 
     // ✅ solo si tocás color de texto en Fase 2,
     // Fase 2 deja de copiar el color/borde de Fase 1.
@@ -8543,7 +8365,7 @@ function devAplicarEditorTexto(fase, stage, interactivo = false) {
       devInvalidarPNGFinal();
     }
   };
-  if (fase === 2) encajarCajaTexto(opts);
+  recuperarCajaTexto(st.editor);
   if (interactivo) montarEditorTexto(opts);
   else aplicarCajaTexto(opts);
 }

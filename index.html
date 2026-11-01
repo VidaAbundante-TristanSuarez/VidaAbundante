@@ -137,7 +137,7 @@
   <!-- Librería que convierte HTML en imagen (para generar imágenes bíblicas) -->
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
-<link rel="stylesheet" href="styles.css?v=20260705-notas-5">
+<link rel="stylesheet" href="styles.css?v=20261101-texto-adornos-nav-2">
 <link rel="stylesheet" href="devocionales.css?v=4">
 <link rel="stylesheet" href="subidos.css?v=3">
 <link rel="stylesheet" href="materiales/ediciones.css?v=2">
@@ -192,19 +192,16 @@
     <i class="fa-solid fa-ellipsis-vertical"></i>
   </button>
 
-  <!-- Vida·Abundante unificado -->
-  <button id="btnNavVida" type="button" class="nav-btn nav-vida-btn" onclick="vaToggleVidaAbundante()">
-    <span id="vidaSwitch" class="vida-switch" aria-hidden="true">
-      <span id="vidaSwitchThumb" class="vida-switch-thumb">
-        <i id="vidaNavIcon" class="fa-solid fa-church"></i>
-      </span>
-    </span>
-
-    <span class="text">Vida·Abundante</span>
+  <button id="btnNavVida" type="button" class="nav-btn nav-vida-btn" onclick="irA('compartidos')" title="Vida Abundante">
+    <i id="vidaNavIcon" class="fa-solid fa-house-chimney-crack" aria-hidden="true"></i>
+    <span class="text">Vida Abundante</span>
   </button>
-
-<button id="btnNavBiblia" class="nav-btn nav-biblia-btn" onclick="irA('biblia')">
-    <i class="fa-solid fa-book-bible"></i>
+  <button id="btnNavMis" type="button" class="nav-btn nav-mis-btn" onclick="irA('panel')" title="Mis contenidos">
+    <i class="fa-solid fa-heart-circle-plus" aria-hidden="true"></i>
+    <span class="text">Mis</span>
+  </button>
+  <button id="btnNavBiblia" type="button" class="nav-btn nav-biblia-btn" onclick="irA('biblia')">
+    <i class="fa-solid fa-book-bookmark" aria-hidden="true"></i>
     <span class="text">Biblia</span>
   </button>
 
@@ -1812,10 +1809,10 @@
 <!-- ================= SCRIPT PRINCIPAL ================= -->
 <!-- ⚠️ biblia.js CONTROLA TODO -->
 
-<script type="module" src="./biblia.js?v=20261101-texturas-adornos-1"></script>
+<script type="module" src="./biblia.js?v=20261101-texto-adornos-nav-2"></script>
 <script type="module" src="biblia.audio.js?v=20260713-5"></script>
 <script type="module" src="biblia.tts.js?v=20260714-tts-arpa-web-priority-3"></script>
-<script type="module" src="devocionales.js?v=20261101-texturas-adornos-1"></script>
+<script type="module" src="devocionales.js?v=20261101-texto-adornos-nav-2"></script>
 <script type="module" src="Subidos.js?v=20260703-11"></script>
 <script type="module" src="ABC/abc.js?v=20260705-abc-sticky-9"></script>
 <script type="module" src="materiales/Recursos.js?v=2026-07-03-58"></script>

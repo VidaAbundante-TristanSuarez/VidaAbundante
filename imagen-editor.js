@@ -605,21 +605,13 @@ export function montarEditorTexto(opts) {
   editar(c,c.editing);posicionarControles(c);
 }
 
-// Ajustar sólo cuando hace falta: nunca cortar palabras para dar lugar al adorno.
-export function encajarCajaTexto(opts) {
-  if (!opts?.stage || !opts?.target || !opts?.state) return;
-  aplicarCajaTexto(opts);
-  const sr=opts.stage.getBoundingClientRect(),tr=opts.target.getBoundingClientRect();
-  if (!sr.width || !sr.height || !tr.width || !tr.height) return;
-  const b=opts.bounds || {left:0,right:1,top:0,bottom:1};
-  const fuera=tr.left<sr.left+b.left*sr.width+2 || tr.right>sr.left+b.right*sr.width-2 ||
-    tr.top<sr.top+b.top*sr.height+2 || tr.bottom>sr.top+b.bottom*sr.height-2;
-  if (!fuera && !opts.state.geometry) return;
-  const c={opts};
-  inicializarGeometria(c);
-  opts.state.geometry=true;
-  aplicarCajaTexto(opts);
-  limitarCaja(c);
+// Compatibilidad con archivos anteriores. El render nunca escala el párrafo entero.
+export function encajarCajaTexto(opts) { aplicarCajaTexto(opts); }
+
+// Recuperar las cajas que la corrección anterior había reducido automáticamente.
+export function recuperarCajaTexto(state) {
+  if (!state?.geometry || state.changed) return;
+  for (const key of ['geometry','x','y','width','zoom']) delete state[key];
 }
 
 // Congelar la preview visible conserva sus medidas, estilos y saltos al exportar.

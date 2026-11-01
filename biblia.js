@@ -1,5 +1,6 @@
-import { actualizarCapaTexturas, esperarCapaTexturas, montarControlesTextura, margenesTexturas } from "./texturas-editor.js?v=20261101-texturas-adornos-1";
-import { ordenarFondos, registrarUsoFondo, configurarUsoFondos, combinarUsoFondos, urlFondoSeguro, cargarFondoBlob, prepararMiniaturas, montarEditorTexto, aplicarFormatoSeleccion, alternarFormatoSeleccion, restaurarControlesTexto, aplicarSubrayadoTexto, desactivarEditorTexto, crearInstantaneaPreview, esperarFuentesPreview, dibujarCajaTexto, encajarCajaTexto } from "./imagen-editor.js?v=20261101-texturas-adornos-1";
+import { actualizarAdorno, activarAdorno, esperarAdorno } from "./adornos-editor.js?v=20261101-texto-adornos-nav-2";
+import { actualizarCapaTexturas, esperarCapaTexturas, montarControlesTextura, margenesTexturas } from "./texturas-editor.js?v=20261101-texto-adornos-nav-2";
+import { ordenarFondos, registrarUsoFondo, configurarUsoFondos, combinarUsoFondos, urlFondoSeguro, cargarFondoBlob, prepararMiniaturas, montarEditorTexto, aplicarFormatoSeleccion, alternarFormatoSeleccion, restaurarControlesTexto, aplicarSubrayadoTexto, desactivarEditorTexto, crearInstantaneaPreview, esperarFuentesPreview, dibujarCajaTexto, recuperarCajaTexto } from "./imagen-editor.js?v=20261101-texto-adornos-nav-2";
 
 // ================= IMPORTS FIREBASE =================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -787,45 +788,18 @@ window.vaAbrirIglesiaDesdeMenu = function(sub = "devocionales") {
   }, 120);
 };
 
-window.vaToggleVidaAbundante = function() {
-  if(vaPedirCierreItem(()=>window.vaToggleVidaAbundante()))return;
-  document.getElementById('vaCrearItemPalabra')?.remove();
-  const estoyEnCompartidos = document.body.classList.contains("en-compartidos");
-  const estoyEnPanel = document.body.classList.contains("en-panel");
+window.vaToggleVidaAbundante = function() { irA("compartidos"); };
 
-  if (estoyEnCompartidos) {
-    irA("panel");
-    return;
+function actualizarNavVida(seccion){
+  for(const [id,activo] of [
+    ['btnNavVida',seccion==='compartidos'||seccion==='iglesia'],
+    ['btnNavMis',seccion==='panel'],['btnNavBiblia',seccion==='biblia']
+  ]){
+    const btn=document.getElementById(id);if(!btn)continue;
+    btn.classList.toggle('activo',activo);
+    btn.classList.remove('modo-personal','modo-iglesia');
+    if(activo)btn.setAttribute('aria-current','page');else btn.removeAttribute('aria-current');
   }
-
-  if (estoyEnPanel) {
-    irA("compartidos");
-    return;
-  }
-
-  irA("compartidos");
-};
-
-function actualizarNavVida(seccion) {
-  const btnVida = document.getElementById("btnNavVida");
-  const iconVida = document.getElementById("vidaNavIcon");
-
-  if (!btnVida || !iconVida) return;
-
-  const esVida =
-    seccion === "compartidos" ||
-    seccion === "panel" ||
-    seccion === "iglesia";
-
-  const esPersonal = seccion === "panel";
-
-  btnVida.classList.toggle("activo", esVida);
-  btnVida.classList.toggle("modo-iglesia", !esPersonal);
-  btnVida.classList.toggle("modo-personal", esPersonal);
-
-  iconVida.className = esPersonal
-    ? "fa-solid fa-heart"
-    : "fa-solid fa-church";
 }
 
 window.actualizarNavVida = actualizarNavVida;
@@ -1893,6 +1867,7 @@ function bibliaNuevoEstadoFondoDiseno() {
 
     adornoUrl: null,
    adornoTamano: 70,
+   adornoTransform: {},
 adornoOpacidad: 1
   };
 }
@@ -5738,36 +5713,26 @@ function bibliaAplicarFondoAlPreview(previewImagen) {
       ajuste: fondoDisenoBiblia.texturaAjuste || "auto",
       escala: fondoDisenoBiblia.texturaEscala || 100,
       intensidad: fondoDisenoBiblia.texturaOpacidad ?? .22,
-      onReady: () => { if (previewImagen.clientWidth && previewImagen.clientHeight) actualizarPreview(); }
+      onReady: () => invalidarRenderFinal()
     });
-    const margenes=margenesTexturas(textura);
-    const wrapper=document.getElementById("previewTextoWrapper");
-    if (wrapper && Math.max(...Object.values(margenes))>0) {
-      wrapper.style.inset=[Math.max(10,margenes.top*previewImagen.clientHeight),
-        Math.max(10,margenes.right*previewImagen.clientWidth),
-        Math.max(10,margenes.bottom*previewImagen.clientHeight),
-        Math.max(10,margenes.left*previewImagen.clientWidth)].map(n=>n+"px").join(" ");
-    }
   }
 
-  // ✅ Adorno siempre puede ir arriba de imagen o color
-  if (adorno && imgAdorno) {
-    if (fondoDisenoBiblia.adornoUrl) {
-      adorno.style.display = "flex";
-      imgAdorno.crossOrigin = "anonymous";
-      imgAdorno.src = bibliaUrlRecursoSeguro(
-        fondoDisenoBiblia.adornoUrl,
-        "adorno_biblia.png"
-      );
-      imgAdorno.style.width = `${Math.max(20, Math.min(100, Number(fondoDisenoBiblia.adornoTamano) || 70))}%`;
-      imgAdorno.style.opacity = String(
-  Math.max(0, Math.min(1, Number(fondoDisenoBiblia.adornoOpacidad ?? 1)))
-);
-    } else {
-      adorno.style.display = "none";
-      imgAdorno.removeAttribute("src");
-    }
-  }
+  bibliaActualizarAdorno(previewImagen);
+}
+
+function bibliaActualizarAdorno(stage){
+  if(!stage)return;
+  const st=fondoDisenoBiblia;st.adornoTransform ||= {};
+  // La capa anterior queda oculta: el adorno ahora tiene geometría propia.
+  const legacy=document.getElementById('bibliaFondoAdornoLayer');if(legacy)legacy.style.display='none';
+  actualizarAdorno(stage,{
+    url:st.adornoUrl ? bibliaUrlRecursoSeguro(st.adornoUrl,'adorno_biblia.png') : '',
+    resourceKey:st.adornoUrl||'',state:st.adornoTransform,
+    defaultWidth:(Number(st.adornoTamano)||70)/100,initialMaxHeight:.18,
+    opacity:st.adornoOpacidad ?? 1,
+    interactive:!!document.getElementById('bibliaPanelAdorno')?.classList.contains('activo'),
+    onChange:next=>{Object.assign(st.adornoTransform,next);invalidarRenderFinal();}
+  });
 }
 
 function bibliaSincronizarHostPickrFondo(idHost, color) {
@@ -5836,7 +5801,10 @@ function bibliaSincronizarControlesFondoDiseno() {
       actualizarPreview();
     }
   });
-  if (adornoTam) adornoTam.value = String(fondoDisenoBiblia.adornoTamano);
+  if (adornoTam) {
+    adornoTam.value=String(fondoDisenoBiblia.adornoTamano);
+    adornoTam.closest('label,.biblia-slider-row')?.style.setProperty('display','none');
+  }
   if (adornoOp) adornoOp.value = String(fondoDisenoBiblia.adornoOpacidad ?? 1);
 
   if (color2Wrap) {
@@ -6157,6 +6125,7 @@ if (boxDiseno) {
 
   if (elegida === "textura") bibliaRenderTexturasDiseno();
   if (elegida === "adorno") bibliaRenderAdornosDiseno();
+  activarAdorno(document.getElementById("previewImagen"),elegida==="adorno");
 
   bibliaSincronizarControlesFondoDiseno();
 };
@@ -6538,6 +6507,7 @@ async function bibliaEsperarRecursosDiseno() {
 
   await Promise.all([
     esperarCapaTexturas(document.getElementById("bibliaFondoTexturaLayer")),
+    esperarAdorno(document.getElementById("previewImagen")),
     bibliaPrecargarRecurso(fondoDisenoBiblia.adornoUrl)
   ]);
 }
@@ -7361,6 +7331,7 @@ function actualizarPreview() {
   if (esCrearBiblia) {
     // El cuadro completo, incluida la cita, comparte edición y geometría.
     previewTexto.removeAttribute("contenteditable");
+    recuperarCajaTexto(editorTextoBiblia);
     montarEditorTexto({
       stage: previewImagen, target: innerFront, backTarget: innerBack,
       state: editorTextoBiblia, fontPx: finalSize, baseColor:color, baseFontSize: Number(sizeSlider?.value || finalSize),
@@ -7369,16 +7340,9 @@ function actualizarPreview() {
       formatControls: '#textStyles,#btnFuentes,#listaFuentes,#boxControlesTexto,.pickr-host',
       controlsRoot: document.getElementById('modalPersonalizar'),
       onSelectionChange: vaSyncSeleccionImagen,
-      bounds: (() => {
-        const m=margenesTexturas(document.getElementById("bibliaFondoTexturaLayer"));
-        return {left:Math.max(.025,m.left),right:1-Math.max(.025,m.right),
-          top:Math.max(.025,m.top),bottom:1-Math.max(.025,m.bottom)};
-      })(),
+      bounds: {left:.025,right:.975,top:.025,bottom:.975},
       onChange: () => { userSetFontSize = true; invalidarRenderFinal(); }
     });
-    if (Math.max(...Object.values(margenesTexturas(document.getElementById("bibliaFondoTexturaLayer"))))>0) {
-      encajarCajaTexto(previewImagen.__vaEditor.opts);
-    }
   } else {
     activarEdicionDirectaTextoLibre();
   }
