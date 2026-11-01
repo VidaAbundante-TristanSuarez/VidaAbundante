@@ -1,7 +1,7 @@
-import { actualizarAdorno, activarAdorno, esperarAdorno } from "./adornos-editor.js?v=20261101-texto-adornos-nav-2";
-import { actualizarCapaTexturas, esperarCapaTexturas, montarControlesTextura, margenesTexturas } from "./texturas-editor.js?v=20261101-texto-adornos-nav-2";
-import { urlFondoSeguro, cargarFondoBlob, prepararMiniaturas, montarEditorTexto, aplicarCajaTexto, aplicarFormatoSeleccion, alternarFormatoSeleccion, restaurarControlesTexto, aplicarSubrayadoTexto, crearInstantaneaPreview, esperarFuentesPreview, recuperarCajaTexto } from "./imagen-editor.js?v=20261101-texto-adornos-nav-2";
-import { dibujarCajaTexto } from "./imagen-editor.js?v=20261101-texto-adornos-nav-2";
+import { actualizarAdorno, activarAdorno, esperarAdorno } from "./adornos-editor.js?v=20261101-flujo-adorno-3";
+import { actualizarCapaTexturas, esperarCapaTexturas, montarControlesTextura, margenesTexturas } from "./texturas-editor.js?v=20261101-flujo-adorno-3";
+import { urlFondoSeguro, cargarFondoBlob, prepararMiniaturas, montarEditorTexto, aplicarCajaTexto, aplicarFormatoSeleccion, alternarFormatoSeleccion, restaurarControlesTexto, aplicarSubrayadoTexto, crearInstantaneaPreview, esperarFuentesPreview, recuperarCajaTexto } from "./imagen-editor.js?v=20261101-flujo-adorno-3";
+import { dibujarCajaTexto } from "./imagen-editor.js?v=20261101-flujo-adorno-3";
 
 // devocionales.js (NUEVO LIMPIO)
 // ✅ OCR + Recorte + Modal 3 fases (9:9 + 9:7 => 9:16)
@@ -45,6 +45,7 @@ async function devCapturarPreviewFase(fase){
     esperarFuentesPreview(source), devEsperarImagenesNodo(source, 1800),
     fase === 2 ? Promise.all([esperarCapaTexturas(source?.querySelector(".dev2-texture-layer")), esperarAdorno(source)]) : Promise.resolve()
   ]);
+  if(fase===2){dev2AjustarFlujoTexto(source);devAplicarEditorTexto(2,source,true);}
   const snapshot = crearInstantaneaPreview(source);
   if (!snapshot) throw new Error("No pude leer la preview de la fase " + fase);
   snapshot.texto = snapshot.get($(`dev${fase}Texto`));
@@ -141,6 +142,8 @@ outlineColor: "",
 textoSigueF1: true,
 op: 0.15,
     size: 26,
+    sizePreferido: 26,
+    _sizeAplicado: 26,
     userChanged: false,
 adornoUrl: null,
 adornoWidth: 70,
@@ -228,6 +231,9 @@ DEV.f2.outlineColor = "";
 DEV.f2.textoSigueF1 = true;
 DEV.f2.op = 0.15;
   DEV.f2.size = 26;
+  DEV.f2.sizePreferido = 26;
+  DEV.f2._sizeAplicado = 26;
+  delete DEV.f2._editorAplicado;
   DEV.f2.userChanged = false;
 DEV.f2.adornoUrl = null;
 DEV.f2.adornoWidth = 70;
@@ -3161,14 +3167,14 @@ function sugerirTamanoVersiculoAuto(versiculo){
 function sugerirTamanoFase2Auto(texto){
   if(!DEV.p2)return 26;
   const stage=document.createElement("div");
-  Object.assign(stage.style,{position:"fixed",left:"-20000px",top:"0",width:"1048px",height:"808px",fontFamily:DEV.f2.fuente,fontStyle:DEV.f2.style.italic?"italic":"normal",textTransform:DEV.f2.style.upper?"uppercase":"none",visibility:"hidden"});
+  Object.assign(stage.style,{position:"fixed",left:"-20000px",top:"0",width:"1048px",height:"821px",fontFamily:DEV.f2.fuente,fontStyle:DEV.f2.style.italic?"italic":"normal",textTransform:DEV.f2.style.upper?"uppercase":"none",visibility:"hidden"});
   stage.innerHTML=buildFase2HTML(40,1);document.body.appendChild(stage);
   const target=stage.querySelector('[data-va-editor-block="dev2"]');
   const region=stage.querySelector('[data-dev2-text-region]');
   try {
     for(let px=40;px>=10;px-=.5){
       target.style.fontSize=px+"px";
-      if(target.getBoundingClientRect().height<=region.clientHeight-8)return px;
+      if(target.getBoundingClientRect().height<=region.clientHeight-4)return px;
     }
     return 10;
   } finally {stage.remove();}
@@ -3364,36 +3370,61 @@ function buildFase2HTML(basePx, scale = 1){
   const ref=devEvitarUltimaPalabraSola(p2.reflexion || "");
   const ora=devEvitarUltimaPalabraSola(p2.oracion || "");
   const gap=6*scale, padX=18*scale, padTop=4*scale;
-  const reserva=86*scale;
   return `<div data-dev2-layout style="width:100%;height:100%;display:flex;flex-direction:column;overflow:hidden;">
     <div data-dev2-text-region style="position:relative;flex:1 1 auto;min-height:0;display:flex;align-items:center;justify-content:center;padding:${padTop}px ${padX}px 0;box-sizing:border-box;text-align:center;overflow:hidden;">
       <div data-va-editor-block="dev2" style="width:100%;max-width:100%;font-size:${basePx}px;font-weight:${DEV.f2.style.bold?700:400};line-height:1.18;word-break:normal;overflow-wrap:normal;hyphens:none;text-wrap:pretty;display:flex;flex-direction:column;align-items:center;justify-content:center;">
         <div style="width:100%;">Reflexión: ${esc(ref)}</div>
-        ${ora ? `<div style="width:100%;margin-top:${gap/basePx}em;">Oración: ${esc(ora)}</div>` : ''}
+        ${ora ? `<div style="width:100%;margin-top:${gap}px;">Oración: ${esc(ora)}</div>` : ''}
       </div>
     </div>
-    ${reserva ? `<div aria-hidden="true" style="flex:0 0 ${reserva}px;"></div>` : ''}
   </div>`;
 }
 
-// Ajustar sólo la tipografía del flujo: el ancho del párrafo no se escala.
+// Sólo se reserva la altura visible del adorno. El tamaño elegido se conserva
+// aparte del tamaño temporal que entra en la composición actual.
 function dev2AjustarFlujoTexto(stage){
-  const st=DEV.f2;st.editor ||= {};recuperarCajaTexto(st.editor);
-  if(st.editor.geometry)return;
+  if(!stage)return;
+  const st=DEV.f2,source=`${DEV.p2?.reflexion || ''}\n${DEV.p2?.oracion || ''}`;
+  if(st.editorSource!==source){st.editor={};st.editorSource=source;}
+  st.editor ||= {};recuperarCajaTexto(st.editor);
   const target=stage.querySelector('[data-va-editor-block="dev2"]');
   const region=stage.querySelector('[data-dev2-text-region]');
-  if(!target || !region || !region.clientHeight)return;
+  const wrapper=$("dev2TextoWrapper");
+  if(!target || !region || !wrapper || !stage.clientWidth)return;
   const scale=stage.offsetWidth/1080;
-  const alto=region.clientHeight-6*scale;
-  if(target.getBoundingClientRect().height<=alto)return;
-  let lo=10,hi=Number(st.size)||26,best=10;
-  for(let i=0;i<12 && hi-lo>=.25;i++){
-    const px=Math.floor((lo+hi)*2)/4;
-    target.style.fontSize=(px*scale)+"px";
-    if(target.getBoundingClientRect().height<=alto){best=px;lo=px+.25;}else hi=px-.25;
+  const sr=stage.getBoundingClientRect();
+  const img=stage.querySelector('img[data-va-adorno-image]');
+  const tieneAdorno=!!(st.adornoUrl && img?.complete && img.naturalWidth && !img.parentElement.hidden && Number(st.adornoOpacidad??1)>0);
+  const bottom=tieneAdorno ? sr.bottom-img.getBoundingClientRect().top+3*scale : 3*scale;
+  wrapper.style.bottom=bottom+'px';
+  region.style.alignItems=tieneAdorno?'flex-end':'center';
+  const actual=Number(st.size)||26;
+  if(!Number.isFinite(st.sizePreferido) || actual!==st._sizeAplicado)st.sizePreferido=actual;
+  const preferido=Math.max(1,Number(st.sizePreferido)||actual);
+  const state={...st.editor};
+  // Aplicar el ancho que el usuario haya elegido antes de medir las líneas.
+  aplicarCajaTexto({stage,target,state,fontPx:preferido*scale});
+  const bounds=devLimitesTextoF2(stage);
+  const alto=Math.max(0,(bounds.bottom-bounds.top)*sr.height);
+  let aplicado=preferido;
+  if(target.getBoundingClientRect().height>alto){
+    let lo=.5,hi=preferido,best=.5;
+    for(let i=0;i<16 && hi-lo>=.125;i++){
+      const px=Math.floor((lo+hi)*4)/8;
+      target.style.fontSize=(px*scale)+'px';
+      if(target.getBoundingClientRect().height<=alto){best=px;lo=px+.125;}else hi=px-.125;
+    }
+    aplicado=Math.max(.5,Math.floor(best*2)/2);
   }
-  st.size=Math.max(10,Math.floor(best*2)/2);
-  target.style.fontSize=(st.size*scale)+"px";
+  st.size=aplicado;st._sizeAplicado=aplicado;
+  target.style.fontSize=(aplicado*scale)+'px';
+  if(state.geometry){
+    const mitad=target.getBoundingClientRect().height/(2*sr.height);
+    state.y=tieneAdorno
+      ? (bounds.bottom-mitad)*sr.height*(stage.offsetWidth/sr.width)/stage.offsetHeight
+      : Math.max(bounds.top+mitad,Math.min(bounds.bottom-mitad,state.y));
+  }
+  st._editorAplicado=state;
   const input=$("dev2Tamano");if(input)input.value=fmtSize(st.size);
 }
 
@@ -3404,13 +3435,18 @@ function dev2ActualizarAdorno(){
     url:st.adornoUrl ? devUrlRecursoSeguro(st.adornoUrl,"adorno_devocional.png") : "",
     resourceKey:st.adornoUrl || "",state:st.adornoTransform,
     defaultWidth:(Number(st.adornoWidth)||70)/100,initialMaxHeight:.12,
+    bottomMargin:3,designWidth:1080,trimTransparent:true,
     opacity:st.adornoOpacidad ?? 1,interactive:st.tabActiva==="adorno",
     onChange:(next,usuario)=>{
       Object.assign(st.adornoTransform,next);
       if(usuario)st.userChanged=true;
+      dev2AjustarFlujoTexto(stage);
+      devAplicarEditorTexto(2,stage,true);
       devInvalidarPNGFinal();
     }
   });
+  dev2AjustarFlujoTexto(stage);
+  devAplicarEditorTexto(2,stage,true);
 }
 
 function devLimitesTextoF2(stage){
@@ -3422,7 +3458,7 @@ function devLimitesTextoF2(stage){
     left:(r.left-sr.left+parseFloat(css.paddingLeft||0))/sr.width,
     right:(r.right-sr.left-parseFloat(css.paddingRight||0))/sr.width,
     top:(r.top-sr.top+parseFloat(css.paddingTop||0))/sr.height,
-    bottom:(r.bottom-sr.top-Math.max(1,4*sr.width/1080))/sr.height
+    bottom:(r.bottom-sr.top-parseFloat(css.paddingBottom||0))/sr.height
   };
 }
 
@@ -3449,8 +3485,7 @@ function scalePreviewF1(){
 function scalePreviewF2(){
   const p = $("dev2Preview");
   if (!p) return 1;
-  const h = p.getBoundingClientRect().height || 1;
-  return h / 840; // fase 2 = 9:7 = 840 de alto en canvas
+  return (p.offsetWidth || 1080) / 1080;
 }
 
 function ensureDev2TextureLayer(container){
@@ -4120,6 +4155,7 @@ if (fase === 2) {
 
   const st = DEV.f2;
 
+  p.style.border='0';
   dev2ObservarPreview(p);
   const sc2 = scalePreviewF2();
   const pxPreview = Math.max(1, st.size * sc2);
@@ -4171,8 +4207,6 @@ t.style.paintOrder = "stroke fill";
 
   applyTextStylesToOne(t, st);
   devSyncStyleButtons(2);
-  dev2AjustarFlujoTexto(p);
-  devAplicarEditorTexto(2, p, true);
   dev2ActualizarAdorno();
   return;
 }
@@ -4975,7 +5009,8 @@ async function devRenderFinalCanvasDirectoAPK(cFinal, ctx, W = 1080, H = 1920){
   await Promise.all([...DEV_EXPORT_PREVIEWS.values()].map(snapshot => esperarFuentesPreview(snapshot.stage)));
 
   const fondoF1Url = DEV.f1.fondoBlob || DEV.f1.fondoUrl || "";
-  const adornoUrl = DEV.f2.adornoUrl || "";
+  const adornoVisible=DEV_EXPORT_PREVIEWS.get(2)?.stage.querySelector('img[data-va-adorno-image]');
+  const adornoUrl=adornoVisible?.getAttribute('src') || '';
 
   let romboUrl = "";
   if (DEV.f2.usarColor2 && DEV.f2.gradienteForma === "rombo") {
@@ -5333,6 +5368,7 @@ if (typeof window.initPickrEnHosts === "function") {
       const sugerido = sugerirTamanoFase2Auto(texto);
 
       DEV.f2.size = sugerido;
+      DEV.f2.sizePreferido = sugerido;
 
       const s2 = $("dev2Tamano");
       if (s2) s2.value = fmtSize(sugerido);
@@ -5528,6 +5564,7 @@ window.devCambiarTamano = (fase, delta) => {
     DEV.f1.userChanged = true;
   } else {
     DEV.f2.size = next;
+    DEV.f2.sizePreferido = next;
     DEV.f2.userChanged = true;
   }
 
@@ -5595,7 +5632,7 @@ function bindInputs(){
     const prop = k === 'Tamano' ? 'fontSize' : k === 'Color' ? 'color' : null;
     if (prop && aplicarFormatoSeleccion($('dev2Preview'), prop, el.value)) return;
     DEV.f2.userChanged = true;
-    if (k === 'Tamano') DEV.f2.size = Number(el.value || 26);
+    if (k === 'Tamano') {DEV.f2.size = Number(el.value || 26);DEV.f2.sizePreferido=DEV.f2.size;}
     if (k === 'Color') DEV.f2.color = el.value || '#000000';
     if (k === 'TexturaOp') DEV.f2.texturaOp = Number(el.value || 0.22);
     if (k === 'AdornoTamano') DEV.f2.adornoWidth = Number(el.value || 70);
@@ -8337,7 +8374,7 @@ function devAplicarEditorTexto(fase, stage, interactivo = false) {
     target.style.setProperty('--va-rich-highlight-color', devRgba(st.opColor || '#000000', st.op ?? .35));
     target.style.setProperty('--va-rich-highlight-spread', `${11 * scale}px`);
   }
-  const opts = {stage, target, state:st.editor, fontPx:st.size * scale, baseFontSize:st.size, defaultUnderline:st.style.underline,
+  const opts = {stage, target, state:fase===2 && st._editorAplicado ? st._editorAplicado : st.editor, fontPx:st.size * scale, baseFontSize:st.size, defaultUnderline:st.style.underline,
     baseOutline: bodyOutline,
     outlineShadow: elegido => textShadowLegibleFinal(st.color, scale * 1.25, elegido),
     formatControls: `.dev-stepper,.pickr-host,#dev${fase}Upper,#dev${fase}Bold,#dev${fase}Italic,#dev${fase}Under,#dev${fase}BtnFuentes,#dev${fase}ListaFuentes`,
@@ -8361,6 +8398,7 @@ function devAplicarEditorTexto(fase, stage, interactivo = false) {
     },
     bounds: fase === 1 ? {left:.07,right:.93,top:.14,bottom:.86} : devLimitesTextoF2(stage),
     onChange: () => {
+      if(fase===2)Object.assign(st.editor,opts.state);
       st.userChanged = true;
       devInvalidarPNGFinal();
     }

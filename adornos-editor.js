@@ -16,6 +16,31 @@ function dimensiones(c){
   return {r,ratio,max:Math.max(.025,max)};
 }
 
+// El margen se mide desde los pétalos visibles, no desde el relleno transparente.
+function recortarTransparencia(img){
+  try{
+    const nw=img.naturalWidth,nh=img.naturalHeight;
+    const factor=Math.min(1,1024/Math.max(nw,nh));
+    const muestra=document.createElement('canvas');
+    muestra.width=Math.max(1,Math.round(nw*factor));muestra.height=Math.max(1,Math.round(nh*factor));
+    const ctx=muestra.getContext('2d',{willReadFrequently:true});ctx.drawImage(img,0,0,muestra.width,muestra.height);
+    const pixels=ctx.getImageData(0,0,muestra.width,muestra.height).data;
+    let l=muestra.width,t=muestra.height,r=-1,b=-1;
+    for(let y=0;y<muestra.height;y++)for(let x=0;x<muestra.width;x++){
+      if(pixels[(y*muestra.width+x)*4+3]>4){l=Math.min(l,x);r=Math.max(r,x);t=Math.min(t,y);b=Math.max(b,y);}
+    }
+    if(r<l || (l===0 && t===0 && r===muestra.width-1 && b===muestra.height-1))return '';
+    const sx=Math.max(0,Math.floor(l*nw/muestra.width));
+    const sy=Math.max(0,Math.floor(t*nh/muestra.height));
+    const sw=Math.min(nw,Math.ceil((r+1)*nw/muestra.width))-sx;
+    const sh=Math.min(nh,Math.ceil((b+1)*nh/muestra.height))-sy;
+    const salida=document.createElement('canvas'),escala=Math.min(1,4096/Math.max(sw,sh));
+    salida.width=Math.max(1,Math.round(sw*escala));salida.height=Math.max(1,Math.round(sh*escala));
+    salida.getContext('2d').drawImage(img,sx,sy,sw,sh,0,0,salida.width,salida.height);
+    return salida.toDataURL('image/png');
+  }catch{return '';}
+}
+
 function dibujar(c,avisar=false,usuario=false){
   if(!c.img.complete || !c.img.naturalWidth || !c.stage.clientWidth)return;
   const {r,ratio,max}=dimensiones(c),s=c.opts.state;
@@ -27,6 +52,10 @@ function dibujar(c,avisar=false,usuario=false){
   }
   s.width=acotar(Number(s.width)||.3,.025,max);
   const h=s.width*r.width/ratio/r.height;
+  if(Number.isFinite(c.opts.bottomMargin) && !s.posicionEditada){
+    const margen=c.opts.bottomMargin*r.width/(Number(c.opts.designWidth)||1080);
+    s.y=1-margen/r.height-h/2;
+  }
   s.x=acotar(Number.isFinite(s.x)?s.x:.5,s.width/2,1-s.width/2);
   s.y=acotar(Number.isFinite(s.y)?s.y:.9,h/2,1-h/2);
   const estilo={left:s.x*100+'%',top:s.y*100+'%',width:s.width*100+'%',height:h*100+'%'};
@@ -60,8 +89,10 @@ function mover(c,e){
     if(!g.mid){comenzar(c);return;}
     s.width=g.width*mid.d/Math.max(1,g.mid.d);
     s.x=g.x+(mid.x-g.mid.x)/r.width;s.y=g.y+(mid.y-g.mid.y)/r.height;
+    s.posicionEditada=!!g.posicionEditada || Math.hypot(mid.x-g.mid.x,mid.y-g.mid.y)>5;
   }else if(g.handle==='move'){
     s.x=g.x+(e.clientX-g.point.x)/r.width;s.y=g.y+(e.clientY-g.point.y)/r.height;
+    s.posicionEditada=true;
   }else{
     const cx=r.left+g.x*r.width,cy=r.top+g.y*r.height;
     const antes=Math.hypot(g.point.x-cx,g.point.y-cy);
@@ -101,6 +132,7 @@ function crear(stage){
     e.preventDefault();
     if(e.key==='ArrowLeft')s.x-=d/r.width;if(e.key==='ArrowRight')s.x+=d/r.width;
     if(e.key==='ArrowUp')s.y-=d/r.height;if(e.key==='ArrowDown')s.y+=d/r.height;
+    if(e.key.startsWith('Arrow'))s.posicionEditada=true;
     if(e.key==='+')s.width*=1.05;if(e.key==='-')s.width/=1.05;
     s.editado=true;dibujar(c,true,true);
   });
@@ -114,14 +146,15 @@ export function actualizarAdorno(stage,opts={}){
   const key=opts.resourceKey||opts.url||'';
   if(!opts.url){
     c.token++;c.visual.hidden=true;c.control.hidden=true;c.img.removeAttribute('src');
+    c.loadedUrl='';
     c.promise=Promise.resolve();c.error=null;return c.promise;
   }
   c.visual.hidden=false;
   if(opts.state.source!==key){
-    Object.assign(opts.state,{source:key,inicializado:false,editado:false});
+    Object.assign(opts.state,{source:key,inicializado:false,editado:false,posicionEditada:false});
   }
-  if(c.img.getAttribute('src')===opts.url && !c.error){dibujar(c);return c.promise;}
-  const token=++c.token;c.error=null;
+  if(c.loadedUrl===opts.url && !c.error){dibujar(c);return c.promise;}
+  const token=++c.token;c.error=null;c.loadedUrl=opts.url;
   c.promise=new Promise((resolve,reject)=>{
     const timer=setTimeout(()=>fin(new Error('No pude cargar el adorno. Volvé a intentarlo.')),12000);
     function fin(error){
@@ -131,7 +164,16 @@ export function actualizarAdorno(stage,opts={}){
       if(error){c.error=error;reject(error);return;}
       dibujar(c,true,false);resolve();
     }
-    c.img.onload=()=>fin();c.img.onerror=()=>fin(new Error('No pude cargar el adorno. Volvé a intentarlo.'));
+    let preparado=false;
+    c.img.onload=()=>{
+      if(token!==c.token){fin();return;}
+      if(opts.trimTransparent && !preparado){
+        preparado=true;const recortado=recortarTransparencia(c.img);
+        if(recortado){c.img.src=recortado;return;}
+      }
+      fin();
+    };
+    c.img.onerror=()=>fin(new Error('No pude cargar el adorno. Volvé a intentarlo.'));
     c.img.src=opts.url;
   });
   c.promise.catch(()=>{});return c.promise;
