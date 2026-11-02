@@ -1,3 +1,4 @@
+import { referenciasHTML, referenciasDePublicacion, carruselImagenHTML } from "./publicaciones-imagen.js?v=20261102-galerias-5";
 import {
   ref,
   onValue,
@@ -2706,6 +2707,9 @@ window.compGuardarImagenCompartidaEnMiPanel = async function compGuardarImagenCo
     await set(ref(db, `panelImagenesPersonal/${uid}/${ts}`), {
       url,
       originalUrl: url,
+      disenosImagen:item.disenosImagen || null,
+      disenosOrden:item.disenosOrden || null,
+      disenoPortadaId:item.disenoPortadaId || null,
       fecha: ts,
       uid,
       tipo: "imagen",
@@ -2713,6 +2717,8 @@ window.compGuardarImagenCompartidaEnMiPanel = async function compGuardarImagenCo
       libro: item.libro || "",
       capitulo: Number(item.capitulo || 0),
       versiculos: Array.isArray(item.versiculos) ? item.versiculos : [],
+      versiculosDetalle:referenciasDePublicacion(item),
+      seleccionOrden:referenciasDePublicacion(item).map(r=>r.id),
       ref: compReferenciaItem(item),
 
       origen: "compartidos",
@@ -2845,11 +2851,8 @@ const guardarBtn = compEsPropia(item) ? "" : `
           </div>
         </div>
 
-        <div class="comp-post-media" onclick="compAbrirMedia('${compJs(url)}', 'imagen', '${compJs(tituloBase)}')" role="button">
-          ${url
-            ? `<img src="${compEscape(url)}" alt="${titulo}" loading="lazy">`
-            : `<div class="comp-post-empty">Sin imagen</div>`
-          }
+        <div class="comp-post-media" onclick="if(event.target.closest('button,a')) return; const c=this.querySelector('[data-va-carrusel]'); compAbrirMedia(c?.querySelectorAll('.va-diseno-slide img')[Number(c.dataset.disenoActivo)||0]?.src || '${compJs(url)}', 'imagen', '${compJs(tituloBase)}')" role="button">
+          ${carruselImagenHTML(item,key)}${referenciasHTML(item)}
         </div>
 
         ${textoLibre ? `<div class="comp-post-note-text">${compEscape(textoLibre)}</div>` : ``}
@@ -2906,7 +2909,7 @@ const guardarBtn = compEsPropia(item) ? "" : `
 
       <div
         class="comp-card-click-wrap"
-        onclick="if(event.target.closest('button,audio,video,input,textarea,select')) return; compAbrirMedia('${compJs(url)}', 'imagen', '${compJs(tituloBase)}')"
+        onclick="if(event.target.closest('button,a,audio,video,input,textarea,select')) return; const c=this.querySelector('[data-va-carrusel]'); const u=c?.querySelectorAll('.va-diseno-slide img')[Number(c.dataset.disenoActivo)||0]?.src || '${compJs(url)}'; compAbrirMedia(u, 'imagen', '${compJs(tituloBase)}')"
       >
         ${card}
       </div>
@@ -3121,6 +3124,7 @@ function compDatosImagenNota(item = {}) {
   const fecha = compFechaHoraNota(item);
 
   return {
+    referencias:referenciasDePublicacion(item),
     titulo,
     referencia,
     meta: [referencia, fecha].filter(Boolean).join(" · "),
@@ -3240,6 +3244,8 @@ window.compGuardarNotaCompartidaEnMiPanel = async function compGuardarNotaCompar
       libro: item.libro || "",
       capitulo: Number(item.capitulo || 0),
       versiculos: Array.isArray(item.versiculos) ? item.versiculos : [],
+      versiculosDetalle:referenciasDePublicacion(item),
+      seleccionOrden:referenciasDePublicacion(item).map(r=>r.id),
       ref: datos.referencia || "",
 textoVersiculo: datos.versiculo || "",
 
@@ -3408,6 +3414,7 @@ function compRenderNota(item) {
         </div>
       </div>
 
+      ${referenciasHTML(item)}
       <div class="comp-post-nota-contenido">
         ${verso ? `
           <div class="comp-post-verse-block">${verso}</div>

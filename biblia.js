@@ -1,7 +1,8 @@
-import { actualizarAdorno, activarAdorno, esperarAdorno } from "./adornos-editor.js?v=20261101-exportacion-4";
-import { elegirResolucionImagen, dimensionesExportacion, conProgresoExportacion } from "./exportacion-imagen.js?v=20261101-exportacion-4";
-import { actualizarCapaTexturas, esperarCapaTexturas, montarControlesTextura, margenesTexturas } from "./texturas-editor.js?v=20261101-exportacion-4";
-import { ordenarFondos, registrarUsoFondo, configurarUsoFondos, combinarUsoFondos, urlFondoSeguro, cargarFondoBlob, prepararMiniaturas, montarEditorTexto, aplicarFormatoSeleccion, alternarFormatoSeleccion, restaurarControlesTexto, aplicarSubrayadoTexto, desactivarEditorTexto, crearInstantaneaPreview, esperarFuentesPreview, dibujarCajaTexto, recuperarCajaTexto } from "./imagen-editor.js?v=20261101-exportacion-4";
+import { actualizarAdorno, activarAdorno, esperarAdorno } from "./adornos-editor.js?v=20261102-galerias-5";
+import { elegirResolucionImagen, dimensionesExportacion, conProgresoExportacion } from "./exportacion-imagen.js?v=20261102-galerias-5";
+import { referenciasDePublicacion, referenciasHTML, disenosDeImagen, agregarDisenoImagen, combinarDisenosImagen, carruselImagenHTML, disenoActivoDeCard } from "./publicaciones-imagen.js?v=20261102-galerias-5";
+import { actualizarCapaTexturas, esperarCapaTexturas, montarControlesTextura, margenesTexturas } from "./texturas-editor.js?v=20261102-galerias-5";
+import { ordenarFondos, registrarUsoFondo, configurarUsoFondos, combinarUsoFondos, urlFondoSeguro, cargarFondoBlob, prepararMiniaturas, montarEditorTexto, aplicarFormatoSeleccion, alternarFormatoSeleccion, restaurarControlesTexto, aplicarSubrayadoTexto, desactivarEditorTexto, crearInstantaneaPreview, esperarFuentesPreview, dibujarCajaTexto, recuperarCajaTexto } from "./imagen-editor.js?v=20261102-galerias-5";
 
 // ================= IMPORTS FIREBASE =================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -1559,47 +1560,7 @@ function vaImgNormalizarUrlGuardada(url) {
 }
 
 function vaImgItemsDesdePanelItem(item = {}) {
-  const out = [];
-
-  function add(libro, capitulo, versiculo) {
-    const Libro = String(libro || "").trim();
-    const Capitulo = Number(capitulo || 0);
-    const Versiculo = Number(versiculo || 0);
-
-    if (!Libro || !Number.isFinite(Capitulo) || !Number.isFinite(Versiculo)) return;
-
-    const id = `${Libro}_${Capitulo}_${Versiculo}`;
-
-    if (!out.some(x => x.id === id)) {
-      out.push({ id, Libro, Capitulo, Versiculo });
-    }
-  }
-
-  if (Array.isArray(item?.versiculosDetalle)) {
-    item.versiculosDetalle.forEach(v => {
-      add(
-        v?.Libro || v?.libro || item.libro,
-        v?.Capitulo || v?.capitulo || item.capitulo,
-        v?.Versiculo || v?.versiculo
-      );
-    });
-  }
-
-  if (Array.isArray(item?.versiculos)) {
-    item.versiculos.forEach(v => {
-      if (v && typeof v === "object") {
-        add(
-          v.Libro || v.libro || item.libro,
-          v.Capitulo || v.capitulo || item.capitulo,
-          v.Versiculo || v.versiculo
-        );
-      } else {
-        add(item.libro, item.capitulo, v);
-      }
-    });
-  }
-
-  return out;
+  return referenciasDePublicacion(item).map(r=>({id:r.id,Libro:r.libro,Capitulo:r.capitulo,Versiculo:r.versiculo}));
 }
 
 function vaImgCargarSeleccionBibliaDesdePanelItem(item = {}) {
@@ -1721,38 +1682,7 @@ function getItemsMarcadorEnOrden() {
 }
 
 function itemsMarcadorDesdeData(m = {}) {
-  const orden = Array.isArray(m?.seleccionOrden)
-    ? m.seleccionOrden.map(marcadorItemDesdeId).filter(Boolean)
-    : [];
-
-  // ✅ si existe el orden real, manda el orden real
-  if (orden.length) return orden;
-
-  const detalle = Array.isArray(m?.versiculosDetalle)
-    ? m.versiculosDetalle.map(it => ({
-        id: it.id || `${it.libro || it.Libro}_${it.capitulo || it.Capitulo}_${it.versiculo || it.Versiculo}`,
-        Libro: it.Libro || it.libro || "",
-        Capitulo: Number(it.Capitulo || it.capitulo || 0),
-        Versiculo: Number(it.Versiculo || it.versiculo || 0)
-      })).filter(it => it.Libro && it.Capitulo && it.Versiculo)
-    : [];
-
-  if (detalle.length) return detalle;
-
-  const libro = String(m?.libro || "").trim();
-  const capitulo = Number(m?.capitulo || 0);
-  const versiculos = Array.isArray(m?.versiculos)
-    ? m.versiculos.map(Number).filter(n => !isNaN(n))
-    : [];
-
-  if (!libro || !capitulo || !versiculos.length) return [];
-
-  return versiculos.map(n => ({
-    id: `${libro}_${capitulo}_${n}`,
-    Libro: libro,
-    Capitulo: capitulo,
-    Versiculo: n
-  }));
+  return referenciasDePublicacion(m).map(r=>({id:r.id,Libro:r.libro,Capitulo:r.capitulo,Versiculo:r.versiculo}));
 }
 
 function getItemsMarcadorParaForm(base = null) {
@@ -2176,6 +2106,7 @@ function vaSeccionInicialVisitante() {
 let vaPantallaInicialAplicada = false;
 
 function vaAbrirPantallaInicialUnaVez(seccion, motivo = "") {
+  if(location.hash.startsWith('#versiculo/'))seccion='biblia';
   if (vaPantallaInicialAplicada) return;
   if (!seccion) return;
   if (!vaSeccionValidaApp(seccion)) seccion = "compartidos";
@@ -2186,6 +2117,7 @@ function vaAbrirPantallaInicialUnaVez(seccion, motivo = "") {
     try {
 if (typeof window.irA === "function") {
   window.irA(seccion);
+  if(location.hash.startsWith('#versiculo/'))vaProcesarEnlaceVersiculo();
 }
 
 // ✅ En links directos no mostramos cartel de instalar app.
@@ -2516,6 +2448,7 @@ function vaMostrarCargandoSuave(texto = "Actualizando...") {
 }
 
 function vaRestaurarSnapshotVisualRapido() {
+  if(location.hash.startsWith('#versiculo/'))return false;
   
 // ✅ Teléfonos: no restaurar HTML cacheado pesado.
 if (vaEsMovil()) {
@@ -2666,7 +2599,7 @@ function restaurarEstadoBibliaInicial() {
 
    // ✅ Biblia solo restaura Biblia.
   // La pantalla inicial la decide vaAbrirPantallaInicialUnaVez().
-  if (estado.seccion === "biblia") {
+  if (estado.seccion === "biblia" && !location.hash.startsWith('#versiculo/')) {
     setTimeout(() => {
       if (obtenerSeccionActual() === "biblia") {
         window.scrollTo({
@@ -3003,6 +2936,7 @@ onValue(ref(db, "marcados/" + uid), s => {
 onValue(ref(db, "panelImagenesPersonal/" + uid), s => {
   const data = s.val() || {};
   panelImagenesGuardadas = data;
+  window.vaActualizarGaleriaCreada?.();
 
   // ✅ En celulares no renderizamos Mi Panel si no está visible.
   // Esto evita cargar muchas imágenes al iniciar Biblia/Compartidos.
@@ -3679,8 +3613,36 @@ function iniciar() {
   };
 
   restaurarEstadoBibliaInicial();
+  vaProcesarEnlaceVersiculo();
   
 }
+
+function vaAbrirVersiculoReferencia(r){
+  const normalizar=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase();
+  const encontrado=bibliaData.find(v=>normalizar(v.Libro)===normalizar(r?.libro)&&Number(v.Capitulo)===Number(r?.capitulo)&&Number(v.Versiculo)===Number(r?.versiculo));
+  if(!encontrado){mostrarToast('No encontré ese versículo en la Biblia.');return;}
+  cerrarMarcadores();
+  window.vaCerrarGaleriaCreada?.();
+  if(modoImagen)salirModoImagen();
+  if(modoMarcador)salirModoMarcadorLimpio();
+  window.irA?.('biblia');
+  libroSel.value=encontrado.Libro;
+  cargarCapitulos({capituloPreferido:Number(encontrado.Capitulo),irArriba:false,guardar:true});
+  capSel.value=String(encontrado.Capitulo);mostrarTexto({irArriba:false,guardar:true});
+  const hash='#versiculo/'+encodeURIComponent(encontrado.Libro)+'/'+encontrado.Capitulo+'/'+encontrado.Versiculo;
+  history.replaceState(null,'',hash);
+  requestAnimationFrame(()=>{
+    const id=`${encontrado.Libro}_${encontrado.Capitulo}_${encontrado.Versiculo}`;
+    const el=document.querySelector(`.versiculo[data-id="${CSS.escape(id)}"]`);
+    if(el){el.classList.add('va-versiculo-destino');el.scrollIntoView({behavior:'smooth',block:'center'});setTimeout(()=>el.classList.remove('va-versiculo-destino'),2500);}
+  });
+}
+window.vaAbrirVersiculoReferencia=vaAbrirVersiculoReferencia;
+function vaProcesarEnlaceVersiculo(){
+  const m=location.hash.match(/^#versiculo\/([^/]+)\/(\d+)\/(\d+)$/);if(!m||!bibliaData.length)return;
+  try{vaAbrirVersiculoReferencia({libro:decodeURIComponent(m[1]),capitulo:Number(m[2]),versiculo:Number(m[3])});}catch{}
+}
+window.addEventListener('hashchange',vaProcesarEnlaceVersiculo);
 
 // ================= ⭐ CARGA CAPITULOS ==============================
 function cargarCapitulos(opts = {}) {
@@ -7776,12 +7738,21 @@ async function guardarReferenciaImagenEnPanel(asset) {
     sourceOracionesKey: itemAnterior.sourceOracionesKey || ""
   };
 
-  await set(ref(db, dbPath), nuevoItem);
+  const disenoId=editando?.disenoId || disenosDeImagen(itemAnterior)[0]?.id || (crypto.randomUUID?.() || String(ahora));
+  const diseno={id:disenoId,url:nuevoItem.url,imagenUrl:nuevoItem.url,disenoImagen:nuevoItem.disenoImagen,fecha:ahora};
+  const resultado=await runTransaction(ref(db, dbPath),actual=>({
+    ...(actual||{}),...nuevoItem,
+    ...agregarDisenoImagen({...itemAnterior,...(actual||{})},diseno)
+  }));
+  if(!resultado.committed)throw new Error('No pude guardar el diseño. Volvé a intentarlo.');
+  const guardado=resultado.snapshot.val();
 
   panelImagenesGuardadas = {
     ...(panelImagenesGuardadas || {}),
-    [panelId]: nuevoItem
+    [panelId]: guardado
   };
+  if(editando){editando.item=guardado;editando.disenoId=disenoId;editando.nuevoDiseno=false;}
+  window.vaActualizarGaleriaCreada?.();
 
   window.__VA_ULTIMA_IMG_PANEL_ID = panelId;
   asset.panelItemId = panelId;
@@ -7818,7 +7789,7 @@ async function guardarReferenciaImagenEnCompartidos(asset) {
   const metaImagen = asset.meta || window.__VA_IMG_META_ACTUAL || {};
   const metaColor = vaImgMetaHex(metaImagen.color || itemPanel.color || itemPanel.colorFondo || "#fff3b0") || "#fff3b0";
 
-  const urlFinal = vaImgNormalizarUrlGuardada(asset.url);
+  const urlFinal = vaImgNormalizarUrlGuardada(itemPanel.url || asset.url);
 
   const fechaOriginal = Number(
     anterior.fechaOriginal ||
@@ -7881,7 +7852,7 @@ async function guardarReferenciaImagenEnCompartidos(asset) {
     textoLibre: modoImagenLibre ? (textoLibreImagen || "") : "",
 
     // ✅ Si se publica, también conserva los datos de edición.
-    disenoImagen: vaImgCapturarEstadoDisenoActual(),
+    disenoImagen: itemPanel.disenoImagen || vaImgCapturarEstadoDisenoActual(),
 
     audioOk: !!audioFinal,
     audioGithubUrl: audioFinal,
@@ -7898,12 +7869,13 @@ async function guardarReferenciaImagenEnCompartidos(asset) {
       ""
   };
 
-  await set(ref(db, dbPath), nuevoCompartido);
+  const resultado=await runTransaction(ref(db, dbPath),actual=>({...actual,...nuevoCompartido,...combinarDisenosImagen(actual||{},nuevoCompartido)}));
+  if(!resultado.committed)throw new Error('No pude actualizar la publicación. Volvé a intentarlo.');
 
   panelImagenesPublicadas[panelId] = {
     compId,
     path: dbPath,
-    item: nuevoCompartido
+    item: resultado.snapshot.val()
   };
 
   return compId;
@@ -8609,6 +8581,7 @@ window.finalizarEdicion = async (ev) => {
     // ✅ Nueva imagen: modal vacío.
     // ✅ Edición: trae título/desc/color anteriores.
     const meta = await pedirDatosImagenMeta(window.__VA_IMG_EDITANDO?.item || {});
+    if(!meta)return;
 
     imagenMetaActual = meta || {
       titulo: "",
@@ -8620,7 +8593,7 @@ window.finalizarEdicion = async (ev) => {
 
     // ✅ Crear consume límite.
     // ✅ Editar NO consume límite diario porque no es una imagen nueva del panel.
-    if (!editandoAhora) {
+    if (!editandoAhora || window.__VA_IMG_EDITANDO?.nuevoDiseno) {
       try {
         await window.vaConsumirUsoColaborador?.(
           "crearImagenBiblia",
@@ -9155,7 +9128,7 @@ window.editarMarcadorDesdeLista = (idMarcador) => {
     ? m.versiculos.map(Number).filter(n => !isNaN(n))
     : [];
 
-  const esNotaLibre = versiculosM.length === 0;
+  const esNotaLibre = referenciasDePublicacion(m).length === 0;
 
   // ✅ marcamos “modo edición”
   window.__editMarcadorId = idMarcador;
@@ -9704,6 +9677,7 @@ function renderListaMarcadores() {
             }
           </div>
 
+          ${referenciasHTML(m)}
           <div class="nota-lista-botones">
             <button
               type="button"
@@ -10594,6 +10568,7 @@ window.abrirVistaMarcadorDesdeLista = function(idMarcador, origenLista = "biblia
         </div>
       </div>
 
+      ${referenciasHTML(m)}
       <div
         class="nota-vista-card"
         style="background:${fondoNota} !important; color:${colorTexto} !important;"
@@ -11535,7 +11510,7 @@ function renderPanelMarcadores() {
     if (!vaEsNotaGuardada(m)) return false;
 
     const esABC = (m?.origen === "abc");
-    const cantVers = (m.versiculos || []).length;
+    const cantVers = referenciasDePublicacion(m).length;
 
     if (filtroNotasPanel === "todas") return true;
     if (filtroNotasPanel === "abc") return esABC;
@@ -11798,6 +11773,7 @@ return `
             </div>
           </div>
 
+          ${referenciasHTML(m)}
           ${textoVers ? `<div class="nota preview-versiculos-marcador" style="margin-top:8px;">${vaNotaHTML(textoVers, m.versiculoFormato || {tamano: 18})}</div>` : ""}
           ${(!textoVers && textoABC) ? `<div class="nota preview-versiculos-marcador" style="margin-top:8px;">${textoABC}</div>` : ""}
 ${m.nota ? `<div class="nota">${vaNotaHTML(m.nota, m.notaFormato)}</div>` : ""}
@@ -11868,7 +11844,7 @@ window.abrirMarcadorDesdePanel = (idMarcador) => {
   const m = (marcadores || {})[idMarcador];
   if (!m) return;
 
-  const esNotaLibre = !(m.versiculos || []).length;
+  const esNotaLibre = !referenciasDePublicacion(m).length;
 
 if (esNotaLibre) {
   mostrarToast("Esta nota es libre y no tiene versículo para volver");
@@ -12397,7 +12373,8 @@ const cardKeyJs = panelImgJs(cardKey);
 style="position:relative; ${tieneMetaImagen ? `background:${panelImgAttr(colorMeta)};` : ``}"
 >
  ${metaHtml}
- <img src="${urlAttr}" alt="Imagen generada" loading="lazy">
+ ${carruselImagenHTML(it,cardKey)}
+ ${referenciasHTML(it)}
 
 ${audioRaw ? `
   <div class="devBigAudioBox">
@@ -12425,6 +12402,7 @@ ${audioRaw ? `
         ` : ``}
 
         ${extraAcciones}
+        ${(String(it.publicadoPor || it.uid || uid)===String(uid) && vaImgItemsDesdePanelItem(it).length && panelImagenesGuardadas?.[it.panelItemId || it.sourcePanelItemId || it.id] && !panelImagenVieneDeCompartidos(panelImagenesGuardadas[it.panelItemId || it.sourcePanelItemId || it.id]) && usuarioPuedeCrearImagen()) ? `<button class="btn-primary" type="button" onclick="vaEditarDisenoCard('${cardKeyJs}', true)" title="Copiar con un nuevo diseño" aria-label="Copiar con un nuevo diseño"><i class="fa-solid fa-copy"></i></button>` : ''}
       </div>
 
       ${eliminarHtml}
@@ -12607,7 +12585,7 @@ panelImgRenderAddBoton();
       <button
         class="btn-primary"
         type="button"
-        onclick="editarImagenPanel('${idJs}')"
+        onclick="vaEditarDisenoCard('panelImgBig_${idJs}', false)"
         aria-label="Editar imagen"
         title="Editar imagen"
       >
@@ -13856,6 +13834,8 @@ function notaShareTextoVersiculoMarcador(m = {}) {
 
 function notaShareReferenciaMarcador(m = {}) {
   if (m.ref) return String(m.ref).trim();
+  const items=itemsMarcadorDesdeData(m);
+  if(items.length)return referenciaMarcadorEnOrden(items);
 
   if (m.libro && m.capitulo && (m.versiculos || []).length) {
     const rango = notaShareRangoVersiculos(m.versiculos);
@@ -13895,6 +13875,7 @@ function notaShareDatosDesdeMarcador(m = {}) {
     meta: [referencia, fecha].filter(Boolean).join(" · "),
     versiculo: notaShareTextoVersiculoMarcador(m),
     texto: String(m.nota || ""),
+    referencias:referenciasDePublicacion(m),
     notaFormato: m.notaFormato || null,
     versiculoFormato: m.versiculoFormato || null,
     fondo: String(m.color || "#fff3b0").trim(),
@@ -14472,10 +14453,12 @@ function notaImagenAbrirVista(datos, clave, registro) {
   const acciones=document.createElement('div');acciones.className='va-nota-imagen-acciones';
   const descargar=document.createElement('button'),compartir=document.createElement('button'),editar=document.createElement('button');
   descargar.type=compartir.type=editar.type='button';descargar.textContent='Descargar';compartir.textContent='Compartir';editar.textContent='Editar imagen';acciones.append(descargar,compartir,editar);
-  dialogo.append(cabecera,contenido,acciones);modal.appendChild(dialogo);document.body.appendChild(modal);
+  dialogo.append(cabecera);
+  const enlaces=document.createElement('div');enlaces.innerHTML=referenciasHTML({versiculos:datos.referencias||[]});dialogo.append(enlaces,contenido,acciones);modal.appendChild(dialogo);document.body.appendChild(modal);
   const files=notaImagenArchivos(registro), urls=files.map(f=>URL.createObjectURL(f));let pagina=0,cerrado=false;
   const pintar=()=>{img.src=urls[pagina];contador.textContent=`${pagina+1} / ${files.length}`;atras.disabled=pagina===0;adelante.disabled=pagina===files.length-1;paginas.hidden=files.length===1;};
   const salir=()=>{if(cerrado)return;cerrado=true;urls.forEach(url=>URL.revokeObjectURL(url));modal.remove();anterior?.focus?.({preventScroll:true});};
+  modal.addEventListener('va-referencia-navegar',salir);
   cerrar.onclick=salir;atras.onclick=()=>{pagina--;pintar();};adelante.onclick=()=>{pagina++;pintar();};
   descargar.onclick=()=>{for(const f of files)notaShareDescargarArchivo(f);estado.textContent=files.length===1?'Descargando imagen.':'Descargando todas las imágenes.';};
   compartir.onclick=async()=>{
@@ -15164,7 +15147,7 @@ function aplicarUIAccionesPorModo() {
   vaSetDisplay(btnLista, "inline-flex");
 
   // ✅ Admin y colaborador ven el botón para entrar a modo imagen.
-  vaSetDisplay(btnImagen, puedeCrearImagen ? "inline-flex" : "none");
+  vaSetDisplay(btnImagen, (puedeCrearImagen || !!uid) ? "inline-flex" : "none");
 
   // ✅ Este solo aparece dentro del modo imagen.
   vaSetDisplay(btnCrear, "none");
@@ -15971,7 +15954,9 @@ async function panelImagenCrearPublicacionFile(item = {}) {
 }
 
 window.panelImagenAccionCard = async function(cardKey, accion = "descargar") {
-  const item = window.__VA_PANEL_IMG_ITEMS?.[cardKey];
+  const base = window.__VA_PANEL_IMG_ITEMS?.[cardKey];
+  const activo=base?disenoActivoDeCard(base,document.getElementById(cardKey)):null;
+  const item=activo?{...base,...activo}:base;
 
   if (!item || !(item.url || item.imagenUrl)) {
     alert("No encuentro la imagen.");
@@ -16264,7 +16249,7 @@ function panelImagenVieneDeCompartidos(item = {}) {
 }
 
 // ================= ✏️ EDITAR IMAGEN DESDE MI PANEL =================
-window.editarImagenPanel = async function(id) {
+window.editarImagenPanel = async function(id, opciones = {}) {
   try {
     if (!uid) {
       window.abrirLoginParaGuardarMiPanel();
@@ -16307,7 +16292,9 @@ window.editarImagenPanel = async function(id) {
 
     window.__VA_IMG_EDITANDO = {
       id,
-      item: { ...item }
+      item: { ...item },
+      disenoId:opciones.nuevoDiseno ? (crypto.randomUUID?.() || String(Date.now())) : (opciones.disenoId || disenosDeImagen(item)[0]?.id || 'original'),
+      nuevoDiseno:!!opciones.nuevoDiseno
     };
 
     origenModalImagen = esLibre ? "panel" : "biblia";
@@ -16336,7 +16323,12 @@ window.editarImagenPanel = async function(id) {
     bibliaCompactarControlesMobile?.();
 
     // ✅ Restaura fondo/textura/adorno/tamaño/fuente/colores si la imagen ya lo tiene guardado.
-    const pudoRestaurarDiseno = await vaImgAplicarEstadoDisenoGuardado(item);
+    const elegido=disenosDeImagen(item).find(d=>d.id===opciones.disenoId) || disenosDeImagen(item)[0];
+    const pudoRestaurarDiseno = await vaImgAplicarEstadoDisenoGuardado({...item,disenoImagen:elegido?.disenoImagen || item.disenoImagen});
+    if(opciones.nuevoDiseno){
+      const chk=document.getElementById('checkIglesia');
+      if(chk)chk.checked=!!panelBuscarPublicacionImagenPanel(id,item);
+    }
 
     // ✅ Si es imagen vieja sin datos de diseño, abre igual pero no inventa adornos.
     if (!pudoRestaurarDiseno) {
@@ -16410,12 +16402,13 @@ window.publicarImagenPanelEnCompartidos = async function(id) {
       if (snap.exists()) {
         const anterior = snap.val() || {};
 
-        await set(pubRef, {
-          ...anterior,
-
+        await runTransaction(pubRef, actual => ({
+          ...(actual || anterior),
+          ...item,
+          ...combinarDisenosImagen(actual || anterior,item),
           tipo: "imagen",
-          url: anterior.url || url,
-          imagenUrl: anterior.imagenUrl || url,
+          url: item.url || anterior.url || url,
+          imagenUrl: item.imagenUrl || anterior.imagenUrl || url,
 
           // ✅ conserva la fecha original y refresca posición
           fechaOriginal: Number(
@@ -16445,7 +16438,7 @@ window.publicarImagenPanelEnCompartidos = async function(id) {
             item.sourceOracionesKey ||
             item.sourceCompKey ||
             ""
-        });
+        }));
 
         panelImagenesPublicadas[id] = {
           compId: existente.compId,
@@ -16575,7 +16568,8 @@ window.compartirImagenPanel = async (url, fileName = "imagen_vida_abundante.png"
 };
 
 window.eliminarImagenPanel = async (id) => {
-  if (!confirm("¿Eliminar esta imagen de Mi Panel?")) return;
+  const cantidad=disenosDeImagen(panelImagenesGuardadas?.[id]||{}).length;
+  if (!confirm(cantidad>1?`¿Eliminar esta publicación de Mi Panel con sus ${cantidad} diseños?`:"¿Eliminar esta imagen de Mi Panel?")) return;
 
   try {
     const uid = window.__UID;
@@ -18628,3 +18622,69 @@ function vaSyncSeleccionImagen(selection) {
     document.getElementById(id)?.classList.toggle('activo', selection ? selection[key] : textStyle[key]);
   }
 }
+
+// Imágenes de versículos: una publicación puede conservar varios diseños.
+window.vaEditarDisenoCard = async function(clave,nuevo=false){
+  const item=window.__VA_PANEL_IMG_ITEMS?.[clave];if(!item)return;
+  const id=String(item.panelItemId||item.sourcePanelItemId||item.id||'');
+  const diseno=disenoActivoDeCard(item,document.getElementById(clave));
+  await window.editarImagenPanel(id,{disenoId:diseno?.id,nuevoDiseno:!!nuevo});
+};
+
+window.abrirOpcionesImagenBiblia = function(){
+  if(modoImagen){window.toggleModoImagen();return;}
+  if(!uid){window.abrirLoginParaGuardarMiPanel();return;}
+  document.getElementById('vaMenuImagenBiblia')?.remove();
+  const previo=document.activeElement,modal=document.createElement('div');
+  modal.id='vaMenuImagenBiblia';modal.className='va-creadas-modal';
+  modal.innerHTML=`<section class="va-imagen-menu" role="dialog" aria-modal="true" aria-labelledby="vaImagenMenuTitulo"><header><strong id="vaImagenMenuTitulo">Imágenes de versículos</strong><button type="button" data-cerrar aria-label="Cerrar">×</button></header>${usuarioPuedeCrearImagen()?'<button type="button" data-crear><i class="fa-solid fa-panorama"></i> Crear imagen</button>':''}<button type="button" data-ver><i class="fa-solid fa-images"></i> Ver imágenes creadas</button></section>`;
+  const cerrar=()=>{modal.remove();previo?.focus?.({preventScroll:true});};
+  modal.querySelector('[data-cerrar]').onclick=cerrar;
+  modal.querySelector('[data-crear]')?.addEventListener('click',()=>{cerrar();window.toggleModoImagen();});
+  modal.querySelector('[data-ver]').onclick=()=>{cerrar();window.verImagenesCreadasBiblia();};
+  modal.addEventListener('click',e=>{if(e.target===modal)cerrar();});
+  modal.addEventListener('keydown',e=>vaTeclasGaleria(e,modal,cerrar));
+  document.body.appendChild(modal);modal.querySelector('[data-ver]').focus();
+};
+
+function vaTeclasGaleria(e,modal,cerrar){
+  if(e.key==='Escape'){e.preventDefault();e.stopPropagation();cerrar();return;}
+  if(e.key!=='Tab')return;
+  const botones=[...modal.querySelectorAll('button,a[href],input,[tabindex="0"]')].filter(el=>!el.disabled&&el.getClientRects().length);
+  const primero=botones[0],ultimo=botones.at(-1);
+  if(e.shiftKey&&document.activeElement===primero){e.preventDefault();ultimo?.focus();}
+  else if(!e.shiftKey&&document.activeElement===ultimo){e.preventDefault();primero?.focus();}
+}
+
+window.verImagenesCreadasBiblia = function(){
+  if(!uid){window.abrirLoginParaGuardarMiPanel();return;}
+  window.vaCerrarGaleriaCreada?.();
+  const previo=document.activeElement,modal=document.createElement('div');
+  modal.id='vaGaleriaCreada';modal.className='va-creadas-modal';
+  modal.innerHTML='<section class="va-creadas-dialogo" role="dialog" aria-modal="true" aria-labelledby="vaCreadaTitulo"><header><div><h2 id="vaCreadaTitulo">Imágenes creadas</h2><span class="va-creadas-cantidad" aria-live="polite"></span></div><button type="button" data-cerrar aria-label="Cerrar">×</button></header><div class="va-creadas-filtros"><input type="search" placeholder="Libro o referencia…" aria-label="Buscar imágenes por libro o referencia"><button type="button" data-capitulo aria-pressed="false">Este capítulo</button></div><div class="va-creadas-lista" tabindex="0" aria-label="Imágenes creadas, desplazamiento horizontal"></div></section>';
+  let soloCapitulo=false;
+  const lista=modal.querySelector('.va-creadas-lista'),input=modal.querySelector('input');
+  const pintar=()=>{
+    const buscar=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+    const query=buscar(input.value);
+    const publicaciones=Object.entries(panelImagenesGuardadas||{}).map(([id,item])=>({...item,id})).filter(item=>{
+      if(panelImagenVieneDeCompartidos(item)||(!uid)||(item.uid&&item.uid!==uid))return false;
+      const refs=referenciasDePublicacion(item);if(!refs.length)return false;
+      if(soloCapitulo&&!refs.some(r=>r.libro===libroSel.value&&r.capitulo===Number(capSel.value)))return false;
+      return !query||buscar(refs.map(r=>`${r.libro} ${r.capitulo}:${r.versiculo}`).join(' ')).includes(query);
+    }).sort((a,b)=>Number(b.fecha)-Number(a.fecha));
+    const fichas=publicaciones.flatMap(item=>disenosDeImagen(item).map((d,i,ds)=>({item,d,i,total:ds.length})));
+    modal.querySelector('.va-creadas-cantidad').textContent=`${fichas.length} ${fichas.length===1?'imagen':'imágenes'} · ${publicaciones.length} ${publicaciones.length===1?'publicación':'publicaciones'}`;
+    lista.innerHTML=fichas.length?fichas.map(({item,d,i,total})=>`<article class="va-creada-ficha"><div class="va-creada-imagen"><img src="${panelImgAttr(d.url)}" alt="Diseño ${i+1} de ${panelImgAttr(item.ref||'versículos')}" loading="lazy"></div><div class="va-creada-detalle"><strong>${panelImgHtml(item.titulo||item.ref||'Imagen de versículos')}</strong>${total>1?`<span class="va-creada-numero">Diseño ${i+1} / ${total}</span>`:''}</div>${referenciasHTML(item)}<div class="va-creada-acciones"><button type="button" data-abrir="${panelImgAttr(item.id)}" aria-label="Abrir publicación" title="Abrir publicación"><i class="fa-solid fa-arrow-up-right-from-square"></i></button>${usuarioPuedeCrearImagen()?`<button type="button" data-copiar="${panelImgAttr(item.id)}" data-diseno="${panelImgAttr(d.id)}" aria-label="Copiar con un nuevo diseño" title="Copiar con un nuevo diseño"><i class="fa-solid fa-copy"></i></button>`:''}</div></article>`).join(''):'<p class="va-creadas-vacio">No hay imágenes para esta búsqueda.</p>';
+    for(const b of lista.querySelectorAll('[data-copiar]'))b.onclick=async()=>{const id=b.dataset.copiar,disenoId=b.dataset.diseno;cerrar();await window.editarImagenPanel(id,{disenoId,nuevoDiseno:true});};
+    for(const b of lista.querySelectorAll('[data-abrir]'))b.onclick=()=>{const id=b.dataset.abrir;cerrar();vaImgAbrirPanelImagenesDespuesGuardar();setTimeout(()=>document.getElementById('panelImgBig_'+id)?.scrollIntoView({behavior:'smooth',block:'start'}),180);};
+  };
+  const cerrar=()=>{modal.remove();window.vaActualizarGaleriaCreada=null;window.vaCerrarGaleriaCreada=null;previo?.focus?.({preventScroll:true});};
+  window.vaActualizarGaleriaCreada=pintar;window.vaCerrarGaleriaCreada=cerrar;
+  modal.querySelector('[data-cerrar]').onclick=cerrar;
+  const capitulo=modal.querySelector('[data-capitulo]');capitulo.onclick=()=>{soloCapitulo=!soloCapitulo;capitulo.setAttribute('aria-pressed',String(soloCapitulo));pintar();};
+  input.oninput=pintar;modal.addEventListener('va-referencia-navegar',cerrar);
+  modal.addEventListener('click',e=>{if(e.target===modal)cerrar();});
+  modal.addEventListener('keydown',e=>vaTeclasGaleria(e,modal,cerrar));
+  document.body.appendChild(modal);pintar();modal.querySelector('[data-cerrar]').focus();
+};
