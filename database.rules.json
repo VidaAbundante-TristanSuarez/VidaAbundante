@@ -1,0 +1,259 @@
+{
+  "rules": {
+    "admins": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      "$uid": {
+        ".read": "auth != null && (auth.uid === $uid || root.child('admins').child(auth.uid).val() === true)",
+        ".validate": "newData.isBoolean()"
+      }
+    },
+    "usuarios": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      "$uid": {
+        ".read": "auth != null && (auth.uid === $uid || root.child('admins').child(auth.uid).val() === true)",
+        ".write": "auth != null && (auth.uid === $uid || root.child('admins').child(auth.uid).val() === true)"
+      }
+    },
+    "colaboradores": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      "$uid": {
+        ".read": "auth != null && (auth.uid === $uid || root.child('admins').child(auth.uid).val() === true)",
+        ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
+        ".validate": "newData.isBoolean()"
+      }
+    },
+    "hermanos": {
+      ".read": "auth != null && (root.child('admins').child(auth.uid).val() === true || root.child('colaboradores').child(auth.uid).val() === true)",
+      "$id": {
+        ".write": "auth != null && root.child('admins').child(auth.uid).val() === true"
+      }
+    },
+    "linksPedidosOracion": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true"
+    },
+    "panelRecursos": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    },
+    "fondosGalerias": {
+      ".read": true,
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true"
+    },
+    "ediciones": {
+      ".read": true,
+      ".write": "auth != null && root.child('admins').child(auth.uid).exists()"
+    },
+    "edicionesRefs": {
+      ".read": true,
+      "$refPublica": {
+        ".write": "auth != null && root.child('admins').child(auth.uid).val() === true"
+      }
+    },
+    "compartidos": {
+      ".read": true,
+      ".write": "auth != null && root.child('admins').child(auth.uid).exists()"
+    },
+    "compartidosOcultos": {
+      ".read": true,
+      "$key": {
+        ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
+        ".validate": "newData.val() === true || !newData.exists()"
+      }
+    },
+    "panelEdiciones": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    },
+    "edicionesStats": {
+      ".read": true,
+      "$edicionId": {
+        "guardados": {
+          ".write": true,
+          ".validate": "newData.isNumber()"
+        },
+        "descargas": {
+          ".write": true,
+          ".validate": "newData.isNumber()"
+        },
+        "compartidos": {
+          ".write": true,
+          ".validate": "newData.isNumber()"
+        }
+      }
+    },
+    "panelDescargasEdiciones": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    },
+    "devocionalesIglesia": {
+      ".read": true,
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      "$uid": {
+        "$tsKey": {
+          ".write": "auth != null && auth.uid === $uid && root.child('colaboradores').child(auth.uid).val() === true && newData.exists()"
+        }
+      }
+    },
+    "miPanelDevocionales": {
+      "$uid": {
+        ".read": "auth != null && auth.uid == $uid",
+        ".write": "auth != null && auth.uid == $uid"
+      }
+    },
+    "panelImagenesPersonal": {
+      "$uid": {
+        ".read": "auth != null && auth.uid == $uid",
+        ".write": "auth != null && auth.uid == $uid"
+      }
+    },
+    "panelImagenesIglesia": {
+      "$uid": {
+        ".read": "auth != null && auth.uid == $uid",
+        ".write": "auth != null && auth.uid == $uid"
+      }
+    },
+    "marcados": {
+      "$uid": {
+        ".read": "auth != null && auth.uid == $uid",
+        ".write": "auth != null && auth.uid == $uid"
+      }
+    },
+    "marcadores": {
+      "$uid": {
+        ".read": "auth != null && auth.uid == $uid",
+        ".write": "auth != null && auth.uid == $uid"
+      }
+    },
+    "usuariosConfig": {
+      "$uid": {
+        ".read": "auth != null && auth.uid == $uid",
+        ".write": "auth != null && auth.uid == $uid"
+      }
+    },
+    "marcadoresIglesia": {
+      "$uid": {
+        ".read": "auth != null",
+        ".write": "auth != null && auth.uid == $uid"
+      }
+    },
+    "abcProgreso": {
+      "$uid": {
+        ".read": "auth != null && auth.uid == $uid",
+        ".write": "auth != null && auth.uid == $uid"
+      }
+    },
+    "abcResaltados": {
+      "$uid": {
+        ".read": "auth != null && auth.uid == $uid",
+        ".write": "auth != null && auth.uid == $uid"
+      }
+    },
+    "abcNotas": {
+      "$uid": {
+        ".read": "auth != null && auth.uid == $uid",
+        ".write": "auth != null && auth.uid == $uid"
+      }
+    },
+    "subidosIglesia": {
+      ".read": true,
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      "$id": {
+        ".write": "auth != null && root.child('colaboradores').child(auth.uid).val() === true && newData.exists()"
+      }
+    },
+    "subidosEtiquetas": {
+      ".read": true,
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true"
+    },
+    "devocionalesOraciones": {
+      "$uidOwner": {
+        "$tsKey": {
+          ".read": "auth != null && (auth.uid === $uidOwner || root.child('admins').child(auth.uid).val() === true)",
+          "$comentId": {
+            ".read": "auth != null && (data.child('publica').val() === true || auth.uid === data.child('autorUid').val() || auth.uid === $uidOwner || root.child('admins').child(auth.uid).val() === true)",
+            ".write": "auth != null && ((!data.exists() && newData.child('autorUid').val() === auth.uid) || (data.exists() && (data.child('autorUid').val() === auth.uid || auth.uid === $uidOwner || root.child('admins').child(auth.uid).val() === true)))"
+          }
+        }
+      }
+    },
+    "devocionalesOracionesMias": {
+      "$uid": {
+        ".read": "auth != null && (auth.uid === $uid || root.child('admins').child(auth.uid).val() === true)",
+        "$devKey": {
+          "$comentId": {
+            ".write": "auth != null && (auth.uid === $uid || root.child('admins').child(auth.uid).val() === true)"
+          }
+        }
+      }
+    },
+    "devocionalesOracionesPublicas": {
+      ".read": true,
+      "$uidOwner": {
+        "$tsKey": {
+          "$comentId": {
+            ".write": "auth != null && ((!data.exists() && newData.exists() && newData.child('publica').val() === true && newData.child('autorUid').val() === auth.uid) || (data.exists() && (data.child('autorUid').val() === auth.uid || root.child('admins').child(auth.uid).val() === true)))"
+          }
+        }
+      }
+    },
+    "compartidosOracionesMias": {
+      "$uid": {
+        ".read": "auth != null && (auth.uid === $uid || root.child('admins').child(auth.uid).val() === true)",
+        "$publicacionKey": {
+          "$oracionId": {
+            ".write": "auth != null && (auth.uid === $uid || root.child('admins').child(auth.uid).val() === true)",
+            ".validate": "!newData.exists() || (newData.child('autorUid').val() === $uid && newData.child('publicacionKey').val() === $publicacionKey && newData.child('texto').isString() && newData.child('texto').val().length > 0 && newData.child('texto').val().length <= 3000 && newData.child('publica').isBoolean() && newData.child('creadoEn').isNumber())"
+          }
+        }
+      }
+    },
+    "compartidosOracionesPublicas": {
+      ".read": true,
+      "$publicacionKey": {
+        "$oracionId": {
+          ".write": "auth != null && ((!data.exists() && newData.exists() && newData.child('publica').val() === true && newData.child('autorUid').val() === auth.uid) || (data.exists() && !newData.exists() && (data.child('autorUid').val() === auth.uid || root.child('admins').child(auth.uid).val() === true)) || (data.exists() && newData.exists() && newData.child('autorUid').val() === data.child('autorUid').val() && (data.child('autorUid').val() === auth.uid || root.child('admins').child(auth.uid).val() === true)))",
+          ".validate": "!newData.exists() || (newData.child('publica').val() === true && newData.child('publicacionKey').val() === $publicacionKey && newData.child('texto').isString() && newData.child('texto').val().length > 0 && newData.child('texto').val().length <= 3000 && newData.child('autorUid').isString() && newData.child('creadoEn').isNumber())"
+        }
+      }
+    },
+    "subidosBackups": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      "$id": {
+        "$ts": {
+          ".write": "auth != null && root.child('colaboradores').child(auth.uid).val() === true && !data.exists() && newData.exists()"
+        }
+      }
+    },
+    "colectasIglesia": {
+      ".read": "auth != null && (root.child('admins').child(auth.uid).val() === true || root.child('colaboradores').child(auth.uid).val() === true)",
+      "$id": {
+        ".write": "auth != null && (root.child('admins').child(auth.uid).val() === true || (root.child('colaboradores').child(auth.uid).val() === true && newData.exists()))",
+        ".validate": "newData.hasChildren(['titulo', 'creado', 'creadoPor']) && newData.child('titulo').isString() && newData.child('titulo').val().length > 0 && newData.child('titulo').val().length <= 150 && newData.child('creado').isNumber() && newData.child('creadoPor').isString() && ((!data.exists() && newData.child('creadoPor').val() === auth.uid) || (data.exists() && newData.child('creadoPor').val() === data.child('creadoPor').val()))",
+        "necesidades": {
+          "$necesidad": {
+            ".validate": "newData.hasChildren(['concepto', 'cantidad', 'unidad']) && newData.child('concepto').isString() && newData.child('concepto').val().length > 0 && newData.child('cantidad').isNumber() && newData.child('cantidad').val() > 0 && newData.child('unidad').isString() && (!newData.child('precioCentavos').exists() || (newData.child('precioCentavos').isNumber() && newData.child('precioCentavos').val() >= 0)) && (!newData.child('asignadoId').exists() || newData.child('asignadoId').isString())"
+          }
+        },
+        "aportes": {
+          "$aporte": {
+            ".validate": "newData.hasChildren(['nombre', 'necesidadId', 'cantidad', 'recibido']) && newData.child('nombre').isString() && newData.child('nombre').val().length > 0 && newData.child('necesidadId').isString() && newData.parent().parent().child('necesidades').child(newData.child('necesidadId').val()).exists() && newData.child('cantidad').isNumber() && newData.child('cantidad').val() > 0 && newData.child('recibido').isNumber() && newData.child('recibido').val() >= 0 && newData.child('recibido').val() <= newData.child('cantidad').val()"
+          }
+        },
+        "presupuestos": {
+          "$presupuesto": {
+            ".validate": "newData.hasChildren(['concepto', 'cantidad', 'precioCentavos']) && newData.child('concepto').isString() && newData.child('concepto').val().length > 0 && newData.child('cantidad').isNumber() && newData.child('cantidad').val() > 0 && newData.child('precioCentavos').isNumber() && newData.child('precioCentavos').val() >= 0"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,3 +1,4 @@
+import { botonAdjuntosHTML } from './documentos-adjuntos.js?v=20261102-colectas-11';
 import { normalizarUrlImagen, obtenerBlobImagen } from './carga-imagenes.js?v=20261102-agenda-imagenes-8';
 // ================= SUBIDOS.JS =================
 const { db } = window.__FB || {};
@@ -6201,13 +6202,10 @@ function subidosTipoMediaArchivo(archivo = {}) {
 }
 
 function subidosHtmlDocumentos(archivos = []) {
-  const documentos = archivos.filter(a => subidosTipoMediaArchivo(a) === "documento");
-  if (!documentos.length) return "";
-  return `<div class="va-documentos" aria-label="Documentos adjuntos" onclick="event.stopPropagation()">${documentos.map(a => {
-    const url = escaparHtml(a.url || ""), nombre = escaparHtml(a.fileName || "Documento");
-    const pdf = /pdf/i.test(a.mimeType || "") || /\.pdf(?:[?#]|$)/i.test(a.url || "") || /\.pdf$/i.test(a.fileName || "");
-    return `<div class="va-documento"><i class="fa-solid ${pdf ? 'fa-file-pdf' : 'fa-file-lines'}" aria-hidden="true"></i><span class="va-documento-nombre" title="${nombre}">${nombre}</span><div class="va-documento-acciones"><a href="${url}" target="_blank" rel="noopener noreferrer" aria-label="Abrir ${nombre}">Abrir${pdf ? ' PDF' : ''}</a><button type="button" data-url="${url}" data-nombre="${nombre}" onclick="subidosDescargarAdjunto(this)" aria-label="Descargar ${nombre}"><i class="fa-solid fa-download" aria-hidden="true"></i> Descargar</button></div></div>`;
-  }).join('')}</div>`;
+  const documentos=archivos.filter(a=>subidosTipoMediaArchivo(a)==='documento');
+  const esPDF=a=>/pdf/i.test(a.mimeType||'')||/\.pdf(?:[?#]|$)/i.test(a.url||'')||/\.pdf$/i.test(a.fileName||'');
+  return botonAdjuntosHTML(documentos.filter(esPDF))+
+    botonAdjuntosHTML(documentos.filter(a=>!esPDF(a)),{etiqueta:'Archivos',titulo:'Archivos adjuntos'});
 }
 
 window.subidosDescargarAdjunto = async function(btn) {

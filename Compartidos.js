@@ -1,3 +1,4 @@
+import { botonAdjuntosHTML } from './documentos-adjuntos.js?v=20261102-colectas-11';
 import { referenciasHTML, referenciasDePublicacion, carruselImagenHTML } from "./publicaciones-imagen.js?v=20261102-agenda-imagenes-8";
 import { normalizarUrlImagen, prepararCargaImagenes } from './carga-imagenes.js?v=20261102-agenda-imagenes-8';
 import {
@@ -314,12 +315,10 @@ function compRenderGaleriaAgenda(items=[]){
       return `<article class="comp-agenda-archivo"><button type="button" class="comp-agenda-media" data-va-imagen-host onclick="compAbrirArchivoAgenda(${i})" aria-label="Abrir ${compEscape(nombre)}">${foto?`<img data-va-imagen src="${compEscape(foto)}" alt="${compEscape(nombre)}" loading="${i<4?'eager':'lazy'}" decoding="async">`:`<i class="fa-solid ${icono}" aria-hidden="true"></i><span>${compEscape(nombre)}</span>`}</button><div class="comp-agenda-archivo-info"><strong title="${compEscape(titulo)}">${compEscape(titulo)}</strong><time>${compEscape(compFechaAlbumAgenda(item.fechaEvento))}</time></div><div class="comp-agenda-archivo-actions">${compBotonEditarAgenda(item)}<button type="button" onclick="compAccionArchivoAgenda(${i},'descargar')" aria-label="Descargar ${compEscape(nombre)}"><i class="fa-solid fa-download" aria-hidden="true"></i></button><button type="button" onclick="compAccionArchivoAgenda(${i},'compartir')" aria-label="Compartir ${compEscape(nombre)}"><i class="fa-solid fa-share-nodes" aria-hidden="true"></i></button></div></article>`;
     }).join('');
   }
-  const documentos=archivos.map(({archivo,item},i)=>{
-    if(compTipoArchivoAgenda(archivo)!=='pdf')return '';
-    const nombre=compEscape(archivo.fileName||'Documento PDF');
-    return `<div class="va-documento"><i class="fa-solid fa-file-pdf" aria-hidden="true"></i><div class="va-documento-nombre"><strong title="${nombre}">${nombre}</strong><small>${compEscape(compTituloAlbumAgenda(item))} · ${compEscape(compFechaAlbumAgenda(item.fechaEvento))}</small></div><div class="va-documento-acciones"><a href="${compEscape(archivo.url)}" target="_blank" rel="noopener noreferrer" aria-label="Abrir ${nombre}">Abrir PDF</a><button type="button" onclick="compAccionArchivoAgenda(${i},'descargar')" aria-label="Descargar ${nombre}"><i class="fa-solid fa-download" aria-hidden="true"></i> Descargar</button>${compBotonEditarAgenda(item)}</div></div>`;
-  }).join('');
-  return `<section class="comp-agenda-galeria" aria-label="Archivos de Agenda">${encabezado}${albumHead}${contenido?`<div class="comp-agenda-grid">${contenido}</div>`:''}${documentos?`<div class="va-documentos"><h3>PDF adjuntos</h3>${documentos}</div>`:''}${!contenido&&!documentos?'<p class="comp-agenda-vacio">Todavía no hay archivos para mostrar.</p>':''}</section>`;
+  const documentos=archivos.filter(({archivo})=>compTipoArchivoAgenda(archivo)==='pdf')
+    .map(({archivo,item})=>({...archivo,detalle:compTituloAlbumAgenda(item)+' · '+compFechaAlbumAgenda(item.fechaEvento)}));
+  const botonPDF=botonAdjuntosHTML(documentos,{descargar:'comp'});
+  return `<section class="comp-agenda-galeria" aria-label="Archivos de Agenda">${encabezado}${albumHead}${contenido?`<div class="comp-agenda-grid">${contenido}</div>`:''}${botonPDF}${!contenido&&!documentos.length?'<p class="comp-agenda-vacio">Todavía no hay archivos para mostrar.</p>':''}</section>`;
 }
 
 const COMP_FILTROS = [
