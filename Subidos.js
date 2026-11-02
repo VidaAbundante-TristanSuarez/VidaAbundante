@@ -1,3 +1,4 @@
+import { normalizarUrlImagen, obtenerBlobImagen } from './carga-imagenes.js?v=20261102-agenda-imagenes-8';
 // ================= SUBIDOS.JS =================
 const { db } = window.__FB || {};
 const FB = window.__FB_API || {};
@@ -72,6 +73,15 @@ const fondosEtiquetas = {
 };
 
 let subidosFondosTarjetasCache = null;
+let subidosFondosSolicitud = 0;
+
+function subidosAplicarFondoEdicion(){
+  const modal=document.getElementById('modalSubidos');if(!modal)return;
+  const esPredica=esPredicaSubidos(document.getElementById('subidosEtiqueta')?.value||'');
+  modal.classList.toggle('subidos-editando-predica',esPredica);
+  const url=normalizarUrlImagen(subidosFondoPredicaActual());
+  modal.style.setProperty('--subidos-fondo-edicion',`url(${JSON.stringify(url)})`);
+}
 
 function subidosFondoPredicaActual(it = null) {
   return String(
@@ -172,7 +182,7 @@ function subidosRenderFondosPredica({
   fondos,
   actual
 }) {
-  const lista = subidosOrdenarFondosPorNombre(fondos || []);
+  const lista = subidosOrdenarFondosPorNombre([...new Set([...(fondos || []),actual].filter(Boolean))]);
 
   const actualFinal =
     lista.includes(actual)
@@ -180,6 +190,7 @@ function subidosRenderFondosPredica({
       : (lista[0] || SUBIDOS_EXPORT_BG_URL);
 
   input.value = actualFinal;
+  subidosAplicarFondoEdicion();
 
   galeria.innerHTML = `
     <div class="subidos-fondo-predica-cats">
@@ -237,23 +248,21 @@ function subidosPoblarFondosPredica(valorActual = "", categoriaInicial = "") {
 
   const actual = String(valorActual || input.value || SUBIDOS_EXPORT_BG_URL).trim();
   input.value = actual;
-
-  galeria.innerHTML = `
-    <div style="font-size:12px; opacity:.75; padding:8px;">
-      Cargando fondos de tarjetas...
-    </div>
-  `;
+  const solicitud=++subidosFondosSolicitud;
+  subidosRenderFondosPredica({input,galeria,fondos:subidosFondosTarjetasCache||fondosCategorias.tarjetas,actual});
 
   subidosLeerFondosTarjetasDesdeGithub()
     .then(fondos => {
+      if(solicitud!==subidosFondosSolicitud)return;
       subidosRenderFondosPredica({
         input,
         galeria,
         fondos,
-        actual
+        actual:input.value||actual
       });
     })
     .catch(e => {
+      if(solicitud!==subidosFondosSolicitud)return;
       console.warn("No pude cargar fondos:", e);
 
       subidosRenderFondosPredica({
@@ -360,6 +369,7 @@ async function subidosAndroidCompartirFile(file, texto = ""){
 
 const subidosFileCache = new Map();
 const subidosFilePreparando = new Set();
+const subidosFilesPendientes = new Map();
 
 function subidosNombreLimpio(nombre = "archivo") {
   return String(nombre || "archivo")
@@ -515,10 +525,13 @@ async function subidosObtenerFileDesdeInfo(info = {}, id = "") {
   const cache = subidosLeerFileCachePorInfo(normal, id);
   if (cache) return cache;
 
-  const file = await subidosCrearFileDesdeInfo(normal);
-  subidosGuardarFileCachePorInfo(normal, file, id);
-
-  return file;
+  if(!subidosFilesPendientes.has(normal.url)){
+    const trabajo=subidosCrearFileDesdeInfo(normal);
+    subidosFilesPendientes.set(normal.url,trabajo);
+    trabajo.finally(()=>subidosFilesPendientes.delete(normal.url)).catch(()=>{});
+  }
+  const file=await subidosFilesPendientes.get(normal.url);
+  subidosGuardarFileCachePorInfo(normal,file,id);return file;
 }
 
 function subidosEsImagenParaShare(info = {}) {
@@ -1237,18 +1250,11 @@ const file = await subidosObtenerFileDesdeInfo(info, idCache);
 }
 
 function subidosPrepararArchivosDelFeed() {
-  setTimeout(() => {
-    const cards = [...document.querySelectorAll(".subidos-feed-card[id^='subido-']")];
-
-    cards.forEach((card, i) => {
-      const id = card.id.replace("subido-", "");
-
-      // ✅ escalonado para no trabar todo de golpe
-      setTimeout(() => {
-        subidosPrepararArchivoAccion(id);
-      }, i * 300);
-    });
-  }, 500);
+  // Los archivos completos se preparan al usarlos; abrir otra sección
+  // no debe descargar todos los audios, videos y PNG de la agenda.
+  for(const card of document.querySelectorAll(".subidos-feed-card[id^='subido-']")){
+    subidosMarcarArchivoAccionListo(card.id.replace('subido-',''),true);
+  }
 }
 
 async function subidosDescargarFileReal(file) {
@@ -1275,6 +1281,7 @@ async function subidosDescargarFileReal(file) {
 
 const ETIQUETAS_DEFAULT = [
   "Predica",
+  "Archivos",
   "Anuncio",
   "Plan",
   "Racimo",
@@ -1386,8 +1393,6 @@ function resetPredicaSubidosUI() {
   const titulo = document.getElementById("subidosPredicaTitulo");
   const fondo = document.getElementById("subidosPredicaFondo");
 
-  subidosPoblarFondosPredica();
-
   if (box) box.style.display = "none";
   if (wrap) wrap.innerHTML = "";
   if (notaFinal) notaFinal.value = "";
@@ -1396,6 +1401,7 @@ function resetPredicaSubidosUI() {
   if (titulo) titulo.value = "";
   if (fondo) fondo.value = SUBIDOS_EXPORT_BG_URL;
   subidosPoblarFondosPredica(SUBIDOS_EXPORT_BG_URL);
+  document.getElementById('modalSubidos')?.classList.remove('subidos-editando-predica');
 }
 
 function actualizarPredicaSubidosUI() {
@@ -1410,8 +1416,10 @@ function actualizarPredicaSubidosUI() {
   if (!sel || !box || !wrap) return
 
   const mostrar = esPredicaSubidos(sel.value);
+  const tituloGeneral=document.getElementById('subidosTituloWrap');if(tituloGeneral)tituloGeneral.style.display=mostrar?'none':'flex';
 
   box.style.display = mostrar ? "block" : "none";
+  subidosAplicarFondoEdicion();
 
   if (!mostrar) {
     wrap.innerHTML = "";
@@ -2762,6 +2770,7 @@ function abrirModalSubidos() {
   setSubidosModalTitulo("Nuevo subido");
   if (archivo) archivo.value = "";
   if (descripcion) descripcion.value = "";
+  const tituloGeneral=document.getElementById('subidosTitulo');if(tituloGeneral)tituloGeneral.value='';
   if (estado) estado.textContent = "";
   if (fecha) fecha.value = fechaYMD(new Date());
   if (etiqueta) etiqueta.value = "";
@@ -2779,6 +2788,19 @@ delete m.dataset.cumpleNombre;
   m.style.display = "flex";
   m.setAttribute("aria-hidden", "false");
 }
+
+window.subidosAgregarArchivosDesdeGaleria=function({fecha='',titulo=''}={}){
+  if(!subidosEsAdmin)return;
+  abrirModalSubidos();
+  const etiqueta=document.getElementById('subidosEtiqueta');
+  if(etiqueta){
+    if(![...etiqueta.options].some(o=>o.value==='Archivos'))etiqueta.add(new Option('Archivos','Archivos'));
+    etiqueta.value='Archivos';
+  }
+  const inputFecha=document.getElementById('subidosFecha');if(fecha&&inputFecha)inputFecha.value=fecha;
+  const inputTitulo=document.getElementById('subidosTitulo');if(inputTitulo)inputTitulo.value=titulo;
+  actualizarPredicaSubidosUI();setSubidosModalTitulo('Agregar archivos');
+};
 
 window.cerrarModalSubidos = function cerrarModalSubidos() {
   const m = document.getElementById("modalSubidos");
@@ -2989,7 +3011,7 @@ function renderCalendario() {
         <div class="subidos-day-events">
           ${itemsDia.slice(0, 3).map(it => {
             const color = colorEtiquetaSubidos(it.etiqueta || "");
-            const titulo = escaparHtml(it.descripcion || it.etiqueta || "Subido");
+            const titulo = escaparHtml(it.titulo || it.descripcion || it.etiqueta || "Subido");
 
             return `
               <button
@@ -3587,18 +3609,17 @@ function subidosEsperarImagenes(node) {
 
   return Promise.all(
     imgs.map(img => {
-      if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+      if (img.complete) return img.naturalWidth>0?Promise.resolve():Promise.reject(new Error('No se pudo cargar una imagen de la prédica.'));
 
-      return new Promise(resolve => {
-        const fin = () => {
+      return new Promise((resolve,reject) => {
+        const fin = (error) => {
           clearTimeout(timer);
-          resolve();
+          img.removeEventListener('load',cargada);img.removeEventListener('error',fallo);
+          error?reject(error):resolve();
         };
-
-        const timer = setTimeout(fin, 12000);
-
-        img.addEventListener("load", fin, { once: true });
-        img.addEventListener("error", fin, { once: true });
+        const cargada=()=>fin(),fallo=()=>fin(new Error('No se pudo cargar una imagen de la prédica.'));
+        const timer = setTimeout(fallo, 12000);
+        img.addEventListener('load',cargada,{once:true});img.addEventListener('error',fallo,{once:true});
       });
     })
   );
@@ -3892,6 +3913,7 @@ const layoutClase = subidosClaseLayoutPredicaExport(primeraTexto, introduccion, 
   const repartoFlexible = subidosRepartoFlexiblePredicaExport(primeraTexto, introduccion, notaFinal);
 
   const node = document.createElement("article");
+  node.dataset.fondoExport=normalizarUrlImagen(fondoUrl);
   node.id = "subidosExportPredicaFinal";
 node.className = `subidos-export-template ${layoutClase} ${tieneArchivoHero ? "con-archivo" : "sin-archivo"}`;
   node.style.setProperty("--grow-primera", repartoFlexible.growPrimera);
@@ -3927,7 +3949,7 @@ color:#111;
   content:"";
   position:absolute;
   inset:0;
-  background-image:url("${fondoUrl}");
+  background-image:var(--subidos-export-fondo,url("${fondoUrl}"));
   background-size:cover;
   background-position:center center;
   background-repeat:no-repeat;
@@ -4935,85 +4957,73 @@ function subidosAjustarAltoFinalExportPredica(node) {
   node.style.height = subidosClampNumero(altoNatural, MIN_H, MAX_H) + "px";
 }
 
-async function subidosConvertirImagenesExportConProxy(node) {
-  const imgs = [...node.querySelectorAll("img")];
+const subidosRecursosExport = new Map();
+const subidosPngExport = new Map(), subidosPngPendientes = new Map();
+let subidosColaExport = Promise.resolve();
 
-  for (const img of imgs) {
-    const src = img.currentSrc || img.getAttribute("src") || img.src || "";
-    if (!src || src.startsWith("data:") || src.startsWith("blob:")) continue;
-
-    try {
-      const proxy = subidosProxyArchivoUrl(src, "imagen-export.png", false);
-      const r = await fetch(proxy);
-
-      if (!r.ok) throw new Error("No pude leer imagen desde descargarImagenR2.");
-
-      const blob = await r.blob();
-      const dataUrl = await subidosBlobToDataURL(blob);
-
-      img.removeAttribute("crossorigin");
-      img.removeAttribute("srcset");
-      img.removeAttribute("sizes");
-      img.src = dataUrl;
-    } catch (e) {
-      console.warn("No pude convertir imagen para exportación:", src, e);
-    }
+async function subidosRecursoDataUrl(src){
+  const url=normalizarUrlImagen(src);
+  if(!url||url.startsWith('data:'))return url;
+  if(!subidosRecursosExport.has(url)){
+    const trabajo=obtenerBlobImagen(url,'imagen-predica.png').then(subidosBlobToDataURL);
+    subidosRecursosExport.set(url,trabajo);
+    trabajo.catch(()=>subidosRecursosExport.delete(url));
+    while(subidosRecursosExport.size>6)subidosRecursosExport.delete(subidosRecursosExport.keys().next().value);
   }
+  return subidosRecursosExport.get(url);
+}
+
+async function subidosConvertirImagenesExportConProxy(node) {
+  const imagenes=[...node.querySelectorAll('img')];
+  await Promise.all([
+    ...imagenes.map(async img=>{
+      const src=img.getAttribute('src')||img.src;
+      if(!src)return;
+      const dataUrl=await subidosRecursoDataUrl(src);
+      img.removeAttribute('crossorigin');img.removeAttribute('srcset');img.removeAttribute('sizes');
+      img.loading='eager';img.src=dataUrl;
+    }),
+    (async()=>{
+      if(!node.dataset.fondoExport)return;
+      const fondo=await subidosRecursoDataUrl(node.dataset.fondoExport);
+      node.style.setProperty('--subidos-export-fondo',`url("${fondo}")`);
+    })()
+  ]);
 }
 
 async function subidosGenerarBlobCardPredica(id, itemOverride = null) {
-  const it = itemOverride || obtenerSubidoPorId(id);
-  if (!it) throw new Error("No encontré la prédica a exportar.");
-
-  const stage = document.getElementById("subidosExportStage");
-  if (!stage) throw new Error("Falta #subidosExportStage en el HTML.");
-
-  stage.innerHTML = "";
-
-  const exportNode = subidosCrearNodoExportPredica({
-    id,
-    ...(it || {})
+  const it=itemOverride||obtenerSubidoPorId(id);
+  if(!it)throw new Error('No encontré la prédica a exportar.');
+  const key=String(id)+'|'+subidosFirmaVisualPredica(it);
+  if(subidosPngExport.has(key))return subidosPngExport.get(key);
+  if(subidosPngPendientes.has(key))return subidosPngPendientes.get(key);
+  const trabajo=subidosColaExport.then(async()=>{
+    const stage=document.getElementById('subidosExportStage');
+    if(!stage)throw new Error('Falta el espacio para preparar la imagen.');
+    const node=subidosCrearNodoExportPredica({id,...it});let canvas;
+    try{
+      // El fondo, la foto y la marca se preparan juntos, sin descargas en serie.
+      await Promise.all([
+        subidosConvertirImagenesExportConProxy(node),
+        document.fonts?Promise.all(['400 16px Lora','700 16px Lora'].map(font=>document.fonts.load(font))):Promise.resolve()
+      ]);
+      stage.replaceChildren(node);
+      await subidosEsperarImagenes(node);
+      subidosAjustarTextosExportPredica(node);
+      subidosAjustarAltoFinalExportPredica(node);
+      canvas=await html2canvas(node,{backgroundColor:null,scale:2,useCORS:true,logging:false,imageTimeout:4000});
+      const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
+      if(!blob)throw new Error('No se pudo generar la imagen de la prédica.');
+      subidosPngExport.set(key,blob);
+      while(subidosPngExport.size>3)subidosPngExport.delete(subidosPngExport.keys().next().value);
+      return blob;
+    }finally{
+      node.remove();if(canvas){canvas.width=0;canvas.height=0;}
+    }
   });
-
-  stage.appendChild(exportNode);
-
-  await subidosConvertirImagenesExportConProxy(exportNode);
-  await subidosEsperarImagenes(exportNode);
-  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-
- subidosAjustarTextosExportPredica(exportNode);
-
-// ✅ Achica el alto final del PNG si no necesita todo el 9:16.
-subidosAjustarAltoFinalExportPredica(exportNode);
-
-// ✅ esperamos otro frame para que el navegador aplique el nuevo tamaño si cambió
-await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-
-  let canvas;
-
-  try {
-    canvas = await html2canvas(exportNode, {
-      backgroundColor: null,
-      scale: 2,
-      useCORS: true
-    });
-  } catch (e) {
-    stage.innerHTML = "";
-    throw new Error("No pude generar la imagen de la prédica.");
-  }
-
-  console.log("✅ EXPORT PREDICA TEMPLATE:", {
-    anchoCanvas: canvas.width,
-    altoCanvas: canvas.height,
-    proporcion: (canvas.height / canvas.width).toFixed(2)
-  });
-
-  const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
-
-  stage.innerHTML = "";
-
-  if (!blob) throw new Error("No se pudo generar la imagen.");
-  return blob;
+  subidosColaExport=trabajo.catch(()=>{});subidosPngPendientes.set(key,trabajo);
+  trabajo.finally(()=>subidosPngPendientes.delete(key)).catch(()=>{});
+  return trabajo;
 }
 
 function subidosEsPredicaConContenido(it) {
@@ -6626,6 +6636,7 @@ const fondoPredica = document.getElementById("subidosPredicaFondo");
   if (fecha) fecha.value = it.fechaEvento || "";
   if (etiqueta) etiqueta.value = it.etiqueta || "";
   if (descripcion) descripcion.value = it.descripcion || "";
+  const tituloGeneral=document.getElementById('subidosTitulo');if(tituloGeneral)tituloGeneral.value=it.titulo||'';
   if (archivo) archivo.value = "";
 
   const archivoBox = document.getElementById("subidosArchivoActualBox");
@@ -6958,6 +6969,9 @@ const tieneArchivo = archivosItem.length > 0;
           </div>
 
           ${
+            it.titulo?`<div class="subidos-feed-titulo">${escaparHtml(it.titulo)}</div>`:``
+          }
+          ${
             it.descripcion
               ? `<div class="subidos-feed-desc">${escaparHtml(it.descripcion || "")}</div>`
               : ``
@@ -7111,7 +7125,7 @@ window.compartirSubido = async function compartirSubido(id, btn = null) {
     }
 
     const esPredica = subidosEsPredicaConContenido(it);
-    const titulo = it?.descripcion || it?.etiqueta || "Archivo";
+    const titulo = it?.titulo || it?.descripcion || it?.etiqueta || "Archivo";
 
     // ✅ PRÉDICA: MISMO SISTEMA DE SIEMPRE, ARCHIVO + LINK.
     if (esPredica) {
@@ -7281,6 +7295,7 @@ async function subidosCrearSharePredicaAlGuardar(id, datosBase) {
     const subida = await subirArchivoAR2DesdeWeb(file, "subidos-share");
 
     if (!subida?.url) return null;
+    subidosGuardarFileCachePorInfo({url:subida.url,fileName:nombre,mimeType:'image/png'},file,id);
 
     return {
       shareUrl: subida.url,
@@ -7660,6 +7675,7 @@ async function guardarSubido() {
     const fechaEvento = (inpFecha?.value || "").trim();
     const etiqueta = (inpEtiqueta?.value || "").trim();
     const descripcion = (inpDesc?.value || "").trim();
+    const tituloGeneral=(document.getElementById('subidosTitulo')?.value||'').trim();
     const esPredica = esPredicaSubidos(etiqueta);
     const modalSubidos = document.getElementById("modalSubidos");
     const esCumpleanos = subidosEsCumpleanos(etiqueta);
@@ -7683,12 +7699,6 @@ async function guardarSubido() {
 
     if (!etiqueta) {
       alert("Elegí una etiqueta.");
-      return;
-    }
-
-    // ✅ Si hay video, solo permitimos 1 archivo.
-    if (files.length > 1 && files.some(f => subidosEsVideoFile(f))) {
-      alert("Cuando subís video, solo se permite 1 archivo en esa card.");
       return;
     }
 
@@ -7944,6 +7954,7 @@ const audioAnteriorUrl =
   ).trim();
 
 const datosBase = {
+      titulo:esPredica?(actual.titulo||''):tituloGeneral,
       fecha: actual.fecha || ts,
       fechaEdicion: subidosEditandoId ? ts : "",
       fechaEvento,

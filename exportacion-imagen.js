@@ -3,7 +3,8 @@ let seleccionPendiente=null;
 
 export function dimensionesExportacion(formato='vertical',ancho=1080){
   const width=ancho===2160?2160:1080;
-  return {width,height:formato==='cuadrado'?width:width*16/9};
+  const proporcion = Number(formato?.aspectRatio) || (formato==='cuadrado'?1:9/16);
+  return {width,height:Math.round(width/proporcion)};
 }
 
 function estilos(){

@@ -221,6 +221,37 @@ body.oscuro #subidosApp{
   box-shadow:0 6px 16px rgba(0,0,0,.05) !important;
 }
 
+#modalSubidos.subidos-editando-predica .modal-card{
+  background-color:#f7fbff!important;
+  background-image:linear-gradient(#ffffff70,#ffffff70),var(--subidos-fondo-edicion)!important;
+  background-size:cover!important;
+  background-position:center!important;
+}
+.subidos-feed-titulo{font-weight:800;font-size:16px;line-height:1.35;margin-top:8px;overflow-wrap:anywhere}
+#modalSubidos.subidos-editando-predica #subidosPredicaBox{
+  background:rgba(255,255,255,.58)!important;
+  border-color:#ffffffa8!important;
+}
+#modalSubidos.subidos-editando-predica #subidosPredicaCitasWrap .subidos-cita-card{
+  background:rgba(255,255,255,.82)!important;
+  border-color:#d3e0eb!important;
+}
+#modalSubidos.subidos-editando-predica :is(textarea,input:not([type=hidden]),select){
+  background:rgba(255,255,255,.95)!important;
+  border:1px solid #afc5d5!important;
+  color:#173347!important;
+  box-shadow:0 2px 5px #274a6420;
+}
+body.oscuro #modalSubidos.subidos-editando-predica .modal-card{
+  background-image:linear-gradient(#172e47b8,#172e47b8),var(--subidos-fondo-edicion)!important;
+}
+body.oscuro #modalSubidos.subidos-editando-predica #subidosPredicaBox{
+  background:#19334b8c!important;color:#f4faff;
+}
+body.oscuro #modalSubidos.subidos-editando-predica #subidosPredicaCitasWrap .subidos-cita-card{
+  background:#23445de8!important;color:#f4faff;
+}
+
 #modalSubidos .btn-ghost,
 #modalSubidos .btn-primary{
   border:none !important;

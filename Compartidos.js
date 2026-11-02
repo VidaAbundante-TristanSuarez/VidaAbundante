@@ -1,4 +1,5 @@
-import { referenciasHTML, referenciasDePublicacion, carruselImagenHTML } from "./publicaciones-imagen.js?v=20261102-notas-compartir-7";
+import { referenciasHTML, referenciasDePublicacion, carruselImagenHTML } from "./publicaciones-imagen.js?v=20261102-agenda-imagenes-8";
+import { normalizarUrlImagen, prepararCargaImagenes } from './carga-imagenes.js?v=20261102-agenda-imagenes-8';
 import {
   ref,
   onValue,
@@ -71,6 +72,130 @@ let compSubFiltroEdicionesActual = (() => {
     return "todo";
   }
 })();
+
+const COMP_AGENDA_FILTROS=[{id:'todo',label:'Todo'},{id:'predicas',label:'Prédicas'},{id:'eventos',label:'Eventos'},{id:'archivos',label:'Archivos'}];
+let compSubFiltroAgendaActual='todo',compAgendaVista='todos',compAgendaAlbumActual='';
+try{
+  const filtro=localStorage.getItem('vaCompAgendaFiltro');
+  if(COMP_AGENDA_FILTROS.some(f=>f.id===filtro))compSubFiltroAgendaActual=filtro;
+  if(localStorage.getItem('vaCompAgendaVista')==='albumes')compAgendaVista='albumes';
+}catch{}
+let compAgendaArchivosVisibles=[],compAgendaAlbumesVisibles=[];
+
+function compAgendaEsPredica(item){
+  return item?.esPredica===true||compNormalizarEtiqueta(item?.etiqueta)==='predica'||!!compEsPredica(item);
+}
+
+function compArchivosAgenda(item={}){
+  const raw=Array.isArray(item.archivos)?item.archivos:Object.values(item.archivos||{});
+  const archivos=raw.length?raw:(item.url?[item]:[]);
+  const vistos=new Set();
+  return archivos.filter(a=>{
+    const url=normalizarUrlImagen(a?.url);if(!url||vistos.has(url))return false;
+    vistos.add(url);return true;
+  }).map(a=>({...a,url:normalizarUrlImagen(a.url)}));
+}
+
+function compTituloAlbumAgenda(item={}){
+  return String(item.titulo||item.predicaTitulo||item.tituloPredica||item.descripcion||item.etiqueta||'Archivos de Agenda').trim();
+}
+
+function compFechaAlbumAgenda(fecha=''){
+  const d=new Date(fecha+'T12:00:00');
+  return Number.isNaN(d.getTime())?String(fecha||'Sin fecha'):d.toLocaleDateString('es-AR',{day:'numeric',month:'short',year:'numeric'});
+}
+
+function compAlbumesAgenda(items=[]){
+  const grupos=new Map();
+  for(const item of [...items].sort((a,b)=>compTs(a)-compTs(b))){
+    const archivos=compArchivosAgenda(item);if(!archivos.length)continue;
+    const titulo=compTituloAlbumAgenda(item),fecha=String(item.fechaEvento||'');
+    const nombreReal=item.titulo||item.predicaTitulo||item.tituloPredica||item.descripcion;
+    const key=JSON.stringify([fecha,nombreReal?compNormalizarEtiqueta(titulo):String(item._subidoId||item.id)]);
+    if(!grupos.has(key))grupos.set(key,{key,titulo,fecha,archivos:[]});
+    const album=grupos.get(key);
+    for(const archivo of archivos)album.archivos.push({archivo,item,albumKey:key});
+  }
+  return [...grupos.values()].sort((a,b)=>b.fecha.localeCompare(a.fecha));
+}
+
+function compTipoArchivoAgenda(archivo={}){
+  const mime=String(archivo.mimeType||archivo.contentType||'').toLowerCase();
+  const path=new URL(archivo.url,location.href).pathname;
+  if(mime.startsWith('image/')||/\.(png|jpe?g|webp|gif|avif)$/i.test(path))return 'imagen';
+  if(mime.startsWith('video/')||/\.(mp4|webm|mov)$/i.test(path))return 'video';
+  if(mime.startsWith('audio/')||/\.(mp3|m4a|wav|ogg)$/i.test(path))return 'audio';
+  return 'archivo';
+}
+
+function compRenderSubFiltrosAgendaHTML(){
+  if(compFiltroActual!=='agenda')return '';
+  return `<div class="comp-agenda-filtros" role="group" aria-label="Filtrar Agenda">${COMP_AGENDA_FILTROS.map(f=>`<button type="button" class="${f.id===compSubFiltroAgendaActual?'activo':''}" aria-pressed="${f.id===compSubFiltroAgendaActual}" onclick="compCambiarFiltroAgenda('${f.id}')">${f.label}</button>`).join('')}</div>`;
+}
+
+window.compCambiarFiltroAgenda=function(filtro){
+  if(!COMP_AGENDA_FILTROS.some(f=>f.id===filtro))return;
+  compSubFiltroAgendaActual=filtro;compAgendaAlbumActual='';
+  try{localStorage.setItem('vaCompAgendaFiltro',filtro);}catch{}
+  renderCompartidos();
+};
+window.compCambiarVistaAgenda=function(vista){
+  compAgendaVista=vista==='albumes'?'albumes':'todos';compAgendaAlbumActual='';
+  try{localStorage.setItem('vaCompAgendaVista',compAgendaVista);}catch{}
+  renderCompartidos();
+};
+window.compAbrirAlbumAgenda=function(indice){
+  compAgendaAlbumActual=compAgendaAlbumesVisibles[indice]?.key||'';renderCompartidos();
+};
+window.compAbrirFotoAlbumAgenda=function(indice,host){
+  const album=compAgendaAlbumesVisibles[indice];if(!album)return;
+  const fotos=album.archivos.filter(r=>compTipoArchivoAgenda(r.archivo)==='imagen');
+  const activo=Number(host?.querySelector('[data-va-carrusel]')?.dataset.disenoActivo)||0;
+  const foto=fotos[activo];if(foto)window.compAbrirMedia(foto.archivo.url,'imagen',foto.archivo.fileName||album.titulo);
+};
+window.compVolverAlbumesAgenda=function(){compAgendaAlbumActual='';renderCompartidos();};
+window.compAgregarArchivosAgenda=function(){
+  if(!compEsAdmin())return;
+  const album=compAgendaAlbumesVisibles.find(a=>a.key===compAgendaAlbumActual);
+  window.subidosAgregarArchivosDesdeGaleria?.({fecha:album?.fecha||'',titulo:album?.titulo||''});
+};
+window.compAbrirArchivoAgenda=function(indice){
+  const registro=compAgendaArchivosVisibles[indice];if(!registro)return;
+  const {archivo,item}=registro,tipo=compTipoArchivoAgenda(archivo);
+  if(tipo==='archivo'){window.open(archivo.url,'_blank','noopener');return;}
+  window.compAbrirMedia(archivo.url,tipo,archivo.fileName||compTituloAlbumAgenda(item));
+};
+window.compAccionArchivoAgenda=function(indice,accion){
+  const a=compAgendaArchivosVisibles[indice]?.archivo;if(!a)return;
+  if(accion==='descargar')return compDescargarUrl(a.url,a.fileName||'archivo');
+  return compCompartirUrl(a.url,a.fileName||'archivo');
+};
+
+function compRenderGaleriaAgenda(items=[]){
+  const albumes=compAlbumesAgenda(items);compAgendaAlbumesVisibles=albumes;
+  const album=albumes.find(a=>a.key===compAgendaAlbumActual);
+  const vistaAlbumes=compAgendaVista==='albumes'&&!album;
+  const archivos=album?album.archivos:albumes.flatMap(a=>a.archivos);compAgendaArchivosVisibles=archivos;
+  const encabezado=`<div class="comp-agenda-galeria-head"><div class="comp-agenda-vistas" role="group" aria-label="Vista de archivos"><button type="button" aria-pressed="${compAgendaVista==='todos'}" onclick="compCambiarVistaAgenda('todos')">Todos</button><button type="button" aria-pressed="${compAgendaVista==='albumes'}" onclick="compCambiarVistaAgenda('albumes')"><i class="fa-solid fa-folder-open" aria-hidden="true"></i> Álbumes</button></div>${compEsAdmin()?'<button type="button" class="comp-agenda-add" onclick="compAgregarArchivosAgenda()" aria-label="Agregar archivos" title="Agregar archivos"><i class="fa-solid fa-plus" aria-hidden="true"></i></button>':''}</div>`;
+  const albumHead=album?`<div class="comp-agenda-album-head"><button type="button" onclick="compVolverAlbumesAgenda()" aria-label="Volver a los álbumes">‹</button><div><h3>${compEscape(album.titulo)}</h3><time>${compEscape(compFechaAlbumAgenda(album.fecha))}</time></div></div>`:'';
+  let contenido;
+  if(vistaAlbumes){
+    contenido=albumes.map((a,i)=>{
+      const fotos=a.archivos.filter(r=>compTipoArchivoAgenda(r.archivo)==='imagen');
+      const disenosImagen=Object.fromEntries(fotos.map((r,n)=>[String(n),{url:r.archivo.url}]));
+      const portada=fotos.length?carruselImagenHTML({disenosImagen,disenosOrden:fotos.map((_,n)=>String(n))},'agenda_album_'+i):'<div class="comp-agenda-carpeta"><i class="fa-solid fa-folder-open" aria-hidden="true"></i></div>';
+      return `<article class="comp-agenda-album"><div class="comp-agenda-portadas" onclick="if(!event.target.closest('button,a'))compAbrirFotoAlbumAgenda(${i},this)">${portada}</div><button type="button" class="comp-agenda-album-datos" onclick="compAbrirAlbumAgenda(${i})"><strong><i class="fa-solid fa-folder" aria-hidden="true"></i> ${compEscape(a.titulo)}</strong><time>${compEscape(compFechaAlbumAgenda(a.fecha))}</time><small>${a.archivos.length} ${a.archivos.length===1?'archivo':'archivos'}</small></button></article>`;
+    }).join('');
+  }else{
+    contenido=archivos.map(({archivo,item},i)=>{
+      const tipo=compTipoArchivoAgenda(archivo),foto=tipo==='imagen'?archivo.url:(archivo.videoPreviewUrl||'');
+      const icono=tipo==='video'?'fa-file-video':tipo==='audio'?'fa-headphones':'fa-file-lines';
+      const titulo=compTituloAlbumAgenda(item),nombre=archivo.fileName||titulo;
+      return `<article class="comp-agenda-archivo"><button type="button" class="comp-agenda-media" data-va-imagen-host onclick="compAbrirArchivoAgenda(${i})" aria-label="Abrir ${compEscape(nombre)}">${foto?`<img data-va-imagen src="${compEscape(foto)}" alt="${compEscape(nombre)}" loading="${i<4?'eager':'lazy'}" decoding="async">`:`<i class="fa-solid ${icono}" aria-hidden="true"></i><span>${compEscape(nombre)}</span>`}</button><div class="comp-agenda-archivo-info"><strong>${compEscape(titulo)}</strong><time>${compEscape(compFechaAlbumAgenda(item.fechaEvento))}</time></div><div class="comp-agenda-archivo-actions"><button type="button" onclick="compAccionArchivoAgenda(${i},'descargar')" aria-label="Descargar ${compEscape(nombre)}"><i class="fa-solid fa-download" aria-hidden="true"></i></button><button type="button" onclick="compAccionArchivoAgenda(${i},'compartir')" aria-label="Compartir ${compEscape(nombre)}"><i class="fa-solid fa-share-nodes" aria-hidden="true"></i></button></div></article>`;
+    }).join('');
+  }
+    return `<section class="comp-agenda-galeria" aria-label="Archivos de Agenda">${encabezado}${albumHead}<div class="comp-agenda-grid">${contenido||'<p class="comp-agenda-vacio">Todavía no hay archivos para mostrar.</p>'}</div></section>`;
+}
 
 const COMP_FILTROS = [
   {
@@ -282,6 +407,7 @@ function compRenderFiltrosHTML() {
     </div>
 
     ${compRenderSubFiltrosEdicionesHTML()}
+    ${compRenderSubFiltrosAgendaHTML()}
   `;
 }
 
@@ -307,6 +433,12 @@ function compFiltrarItems(items = []) {
       // ✅ Si todavía no sabemos la categoría, NO lo mostramos en un subfiltro.
       return categoria && categoria === compSubFiltroEdicionesActual;
     });
+  }
+
+  if(compFiltroActual==='agenda'){
+    if(compSubFiltroAgendaActual==='predicas')salida=salida.filter(compAgendaEsPredica);
+    if(compSubFiltroAgendaActual==='eventos')salida=salida.filter(item=>!compAgendaEsPredica(item)&&!['archivo','archivos'].includes(compNormalizarEtiqueta(item.etiqueta)));
+    if(compSubFiltroAgendaActual==='archivos')salida=salida.filter(item=>compArchivosAgenda(item).length);
   }
 
   return salida;
@@ -376,8 +508,8 @@ window.compVerMasPublicaciones = function compVerMasPublicaciones() {
 };
 
 function compOptimizarImagenesFeed() {
-  document.querySelectorAll("#compLista img").forEach(img => {
-    img.loading = "lazy";
+  document.querySelectorAll("#compLista img").forEach((img,i) => {
+    img.loading = i<2?'eager':'lazy';
     img.decoding = "async";
     img.referrerPolicy = "no-referrer";
   });
@@ -885,6 +1017,7 @@ function compAsegurarVisor() {
 }
 
 window.compAbrirMedia = function compAbrirMedia(url, tipo = "imagen", titulo = "Archivo") {
+  url=normalizarUrlImagen(url);
   compAsegurarVisor();
 
   const modal = document.getElementById("compMediaViewer");
@@ -904,7 +1037,7 @@ window.compAbrirMedia = function compAbrirMedia(url, tipo = "imagen", titulo = "
     `;
   } else {
     body.innerHTML = `
-      <img src="${compEscape(url)}" alt="${compEscape(titulo)}" style="width:100%; max-height:78vh; object-fit:contain; display:block; border-radius:16px; background:#fff;">
+      <img data-va-imagen src="${compEscape(url)}" alt="${compEscape(titulo)}" style="width:100%; max-height:78vh; object-fit:contain; display:block; border-radius:16px; background:#fff;">
     `;
   }
 
@@ -917,6 +1050,7 @@ window.compAbrirMedia = function compAbrirMedia(url, tipo = "imagen", titulo = "
   }
 
   modal.style.display = "flex";
+  prepararCargaImagenes(body);
 };
 
 window.compCerrarMedia = function compCerrarMedia() {
@@ -2856,7 +2990,7 @@ const guardarBtn = compEsPropia(item) ? "" : `
           </div>
         </div>
 
-        <div class="comp-post-media" onclick="if(event.target.closest('button,a')) return; const c=this.querySelector('[data-va-carrusel]'); compAbrirMedia(c?.querySelectorAll('.va-diseno-slide img')[Number(c.dataset.disenoActivo)||0]?.src || '${compJs(url)}', 'imagen', '${compJs(tituloBase)}')" role="button">
+        <div class="comp-post-media" onclick="if(event.target.closest('button,a')) return; const c=this.querySelector('[data-va-carrusel]'),d=c?.querySelectorAll('.va-diseno-slide img')[Number(c.dataset.disenoActivo)||0]; compAbrirMedia(d?.dataset.vaOriginal || d?.src || '${compJs(url)}', 'imagen', '${compJs(tituloBase)}')" role="button">
           ${carruselImagenHTML(item,key)}${referenciasHTML(item,{agruparPorCapitulo:true,lineaUnica:true})}
         </div>
 
@@ -2914,7 +3048,7 @@ const guardarBtn = compEsPropia(item) ? "" : `
 
       <div
         class="comp-card-click-wrap"
-        onclick="if(event.target.closest('button,a,audio,video,input,textarea,select')) return; const c=this.querySelector('[data-va-carrusel]'); const u=c?.querySelectorAll('.va-diseno-slide img')[Number(c.dataset.disenoActivo)||0]?.src || '${compJs(url)}'; compAbrirMedia(u, 'imagen', '${compJs(tituloBase)}')"
+        onclick="if(event.target.closest('button,a,audio,video,input,textarea,select')) return; const c=this.querySelector('[data-va-carrusel]'),d=c?.querySelectorAll('.va-diseno-slide img')[Number(c.dataset.disenoActivo)||0]; const u=d?.dataset.vaOriginal || d?.src || '${compJs(url)}'; compAbrirMedia(u, 'imagen', '${compJs(tituloBase)}')"
       >
         ${card}
       </div>
@@ -4841,6 +4975,9 @@ window.renderCompartidos = function renderCompartidos() {
   renderCompartidosTop();
 
   const itemsTodos = compFiltrarItems(compUnificarItems());
+  if(compFiltroActual==='agenda'&&compSubFiltroAgendaActual==='archivos'){
+    lista.innerHTML=compRenderGaleriaAgenda(itemsTodos);compOptimizarImagenesFeed();return;
+  }
 
   // ✅ iPhone/Safari: pintar por tandas.
   // PC/Android siguen viendo todo como antes.

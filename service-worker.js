@@ -1,4 +1,4 @@
-const VA_CACHE = "vida-abundante-pwa-v2";
+const VA_CACHE = "vida-abundante-pwa-v3";
 
 const APP_SHELL = [
   "/VidaAbundante/",
@@ -21,6 +21,12 @@ const APP_SHELL = [
   "/VidaAbundante/materiales/Recursos.js",
   "/VidaAbundante/materiales/Ediciones.js",
   "/VidaAbundante/Compartidos.js",
+  "/VidaAbundante/carga-imagenes.js",
+  "/VidaAbundante/publicaciones-imagen.js",
+  "/VidaAbundante/exportacion-imagen.js",
+  "/VidaAbundante/imagen-editor.js",
+  "/VidaAbundante/texturas-editor.js",
+  "/VidaAbundante/adornos-editor.js",
 
   "/VidaAbundante/img/app/icon-192.png",
   "/VidaAbundante/img/app/icon-512.png",
@@ -58,7 +64,7 @@ function esEstatico(url) {
   const path = url.pathname.toLowerCase();
 
   return (
-    path.startsWith("/VidaAbundante/") &&
+    url.origin === self.location.origin && path.startsWith("/vidaabundante/") &&
     (
       path.endsWith(".js") ||
       path.endsWith(".css") ||
@@ -124,20 +130,21 @@ async function networkFirst(request, event) {
   }
 }
 
-async function staleWhileRevalidate(request) {
+async function staleWhileRevalidate(request,event) {
   const cache = await caches.open(VA_CACHE);
   const cached = await cache.match(request);
 
   const update = fetch(request)
-    .then(response => {
+    .then(async response => {
       if (response && response.ok) {
-        cache.put(request, response.clone());
+        await ponerEnCache(request,response);
       }
 
       return response;
     })
-    .catch(() => null);
+    .catch(() => cached || Response.error());
 
+  if(cached)event?.waitUntil(update.then(()=>{}));
   return cached || update;
 }
 
@@ -178,7 +185,7 @@ self.addEventListener("activate", (event) => {
 
       await Promise.all(
         keys
-          .filter(key => key !== VA_CACHE)
+          .filter(key => key.startsWith('vida-abundante-') && key !== VA_CACHE)
           .map(key => caches.delete(key))
       );
 
@@ -211,18 +218,16 @@ self.addEventListener("fetch", (event) => {
 
   // Archivos principales de la app: abrir rápido con cache y actualizar atrás.
   if (esEstatico(url)) {
-    event.respondWith(staleWhileRevalidate(request));
+    event.respondWith(staleWhileRevalidate(request,event));
     return;
   }
 
   // CDN de iconos/fuentes/librerías: cache primero.
   if (esCDNCacheable(url)) {
-    event.respondWith(cacheFirst(request));
+    event.respondWith(cacheFirst(request).catch(()=>Response.error()));
     return;
   }
 
-  // Resto: red normal, fallback cache.
-  event.respondWith(
-    fetch(request).catch(() => caches.match(request))
-  );
+  // Los archivos de otros servicios siguen la red normal del navegador.
+  // No devolver undefined si falla una imagen o un audio remoto.
 });

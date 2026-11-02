@@ -1,6 +1,7 @@
 import { actualizarAdorno, activarAdorno, esperarAdorno } from "./adornos-editor.js?v=20261102-notas-compartir-7";
-import { elegirResolucionImagen, dimensionesExportacion, conProgresoExportacion } from "./exportacion-imagen.js?v=20261102-notas-compartir-7";
-import { referenciasDePublicacion, referenciasHTML, disenosDeImagen, agregarDisenoImagen, combinarDisenosImagen, carruselImagenHTML, disenoActivoDeCard } from "./publicaciones-imagen.js?v=20261102-notas-compartir-7";
+import { elegirResolucionImagen, dimensionesExportacion, conProgresoExportacion } from "./exportacion-imagen.js?v=20261102-agenda-imagenes-8";
+import { referenciasDePublicacion, referenciasHTML, disenosDeImagen, agregarDisenoImagen, combinarDisenosImagen, carruselImagenHTML, disenoActivoDeCard } from "./publicaciones-imagen.js?v=20261102-agenda-imagenes-8";
+import { normalizarUrlImagen, obtenerBlobImagen } from './carga-imagenes.js?v=20261102-agenda-imagenes-8';
 import { actualizarCapaTexturas, esperarCapaTexturas, montarControlesTextura, margenesTexturas } from "./texturas-editor.js?v=20261102-notas-compartir-7";
 import { ordenarFondos, registrarUsoFondo, configurarUsoFondos, combinarUsoFondos, urlFondoSeguro, cargarFondoBlob, prepararMiniaturas, montarEditorTexto, aplicarFormatoSeleccion, alternarFormatoSeleccion, restaurarControlesTexto, aplicarSubrayadoTexto, desactivarEditorTexto, crearInstantaneaPreview, esperarFuentesPreview, dibujarCajaTexto, recuperarCajaTexto } from "./imagen-editor.js?v=20261102-notas-compartir-7";
 
@@ -5680,7 +5681,7 @@ function bibliaAplicarFondoAlPreview(previewImagen) {
   if (textura) {
     actualizarCapaTexturas(textura, {
       urls: bibliaTexturasSeleccionadas().map(url => bibliaUrlRecursoSeguro(url, "textura_biblia.png")),
-      width: 1080, height: formatoImagenActual === "story" ? 1920 : 1080,
+      ...dimensionesExportacion(bibliaFormatoExportacion(),1080),
       ajuste: fondoDisenoBiblia.texturaAjuste || "auto",
       escala: fondoDisenoBiblia.texturaEscala || 100,
       intensidad: fondoDisenoBiblia.texturaOpacidad ?? .22,
@@ -7502,6 +7503,12 @@ function bibliaPrepararResaltadoExplicitoParaCaptura() {
 }
 
 // ================= ⭐ CANVAS GENERA IMAGEN FINAL (FIX REAL) ============================
+function bibliaFormatoExportacion(){
+  if(formatoImagenActual!=='story')return 'cuadrado';
+  const rect=document.getElementById('previewImagen')?.getBoundingClientRect();
+  return {aspectRatio:rect?.width>0&&rect?.height>0?rect.width/rect.height:9/16};
+}
+
 async function generarImagenFinal(opts = {}) {
   const { subir = true, ancho = 1080, canvasDestino = null } = opts;
   const preview = document.getElementById("previewImagen");
@@ -7517,7 +7524,7 @@ async function generarImagenFinal(opts = {}) {
     if (rect.width < 10 || rect.height < 10) return false;
     instantanea = crearInstantaneaPreview(preview);
     if (!instantanea) return false;
-    const medida=dimensionesExportacion(formatoImagenActual==='story'?'vertical':'cuadrado',ancho);
+    const medida=dimensionesExportacion(bibliaFormatoExportacion(),ancho);
     const textura=instantanea.stage.querySelector('#bibliaFondoTexturaLayer') || instantanea.get(document.getElementById('bibliaFondoTexturaLayer'));
     if(textura){
       await actualizarCapaTexturas(textura,{
@@ -7941,7 +7948,7 @@ async function descargarImagenFinal() {
   return withRenderLock(async () => {
     const canvas = document.getElementById("canvasFinal");
     if (!canvas) return;
-    const ancho=await elegirResolucionImagen(formatoImagenActual==='story'?'vertical':'cuadrado');
+    const ancho=await elegirResolucionImagen(bibliaFormatoExportacion());
     if(!ancho)return;
     return conProgresoExportacion(async()=>{
 
@@ -12529,8 +12536,8 @@ panelImgRenderAddBoton();
       <div class="devIndexCard" onclick="document.getElementById('panelImgBig_${it.id}')?.scrollIntoView({behavior:'smooth', block:'start'})">
         <div class="devIndexBar devIndexBarTop">${refTxt}</div>
 
-        <div class="devIndexImgWrap">
-          ${url ? `<img src="${url}" loading="lazy">` : `<div class="devIndexImgFallback">Sin imagen</div>`}
+        <div class="devIndexImgWrap" data-va-imagen-host>
+          ${url ? `<img data-va-imagen src="${url}" loading="lazy" decoding="async" alt="${refTxt}">` : `<div class="devIndexImgFallback">Sin imagen</div>`}
         </div>
 
         <div class="devIndexBar devIndexBarBottom">${fechaTxt}</div>
@@ -15613,24 +15620,7 @@ function panelProxyImagenUrl(url, fileName = "imagen_vida_abundante.png", descar
 }
 
 async function fetchPanelImagenBlob(url, fileName = "imagen_vida_abundante.png"){
-  if (!url) throw new Error("No hay imagen para descargar.");
-
-  const proxyUrl = panelProxyImagenUrl(url, fileName, false);
-
-  const r = await fetch(proxyUrl, { cache: "no-store" });
-
-  if (!r.ok) {
-    const txt = await r.text().catch(() => "");
-    throw new Error("No pude bajar la imagen (" + r.status + ") " + txt);
-  }
-
-  const blob = await r.blob();
-
-  if (!blob || !blob.size) {
-    throw new Error("La imagen bajó vacía.");
-  }
-
-  return blob;
+  return obtenerBlobImagen(url,fileName);
 }
 
 function panelImagenTieneMeta(item = {}) {
@@ -15694,8 +15684,8 @@ function panelImagenCrearModalSalida() {
 
   document.body.insertAdjacentHTML("beforeend", `
     <div id="modalImagenSalida" class="va-img-salida-modal" aria-hidden="true">
-      <div class="va-img-salida-card">
-        <h3>¿Qué querés usar?</h3>
+      <div class="va-img-salida-card" role="dialog" aria-modal="true" aria-labelledby="va-img-salida-titulo">
+        <h3 id="va-img-salida-titulo">¿Qué querés usar?</h3>
         <p>Publicación incluye título, descripción y color. Imagen es solo el PNG original.</p>
 
         <div class="va-img-salida-actions">
@@ -15728,6 +15718,7 @@ function panelImagenCrearModalSalida() {
 }
 
 function panelImagenCerrarModalSalida(valor) {
+  window.__VA_IMG_SALIDA_LIMPIAR?.();window.__VA_IMG_SALIDA_LIMPIAR=null;
   const modal = document.getElementById("modalImagenSalida");
 
   if (modal) {
@@ -15753,7 +15744,18 @@ function panelImagenElegirSalida() {
   modal.setAttribute("aria-hidden", "false");
 
   return new Promise(resolve => {
+    const previo=document.activeElement;
+    const tecla=e=>{
+      if(e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();panelImagenCerrarModalSalida(null);}
+      if(e.key==='Tab'){
+        const botones=[...modal.querySelectorAll('button')],i=botones.indexOf(document.activeElement);
+        e.preventDefault();e.stopImmediatePropagation();botones[(i+(e.shiftKey?-1:1)+botones.length)%botones.length]?.focus();
+      }
+    };
+    document.addEventListener('keydown',tecla,true);
+    window.__VA_IMG_SALIDA_LIMPIAR=()=>{document.removeEventListener('keydown',tecla,true);previo?.isConnected&&previo.focus?.({preventScroll:true});};
     window.__VA_IMG_SALIDA_RESOLVE = resolve;
+    modal.querySelector('button')?.focus();
   });
 }
 
@@ -15940,7 +15942,11 @@ async function panelImagenCrearPublicacionFile(item = {}) {
 window.panelImagenAccionCard = async function(cardKey, accion = "descargar") {
   const base = window.__VA_PANEL_IMG_ITEMS?.[cardKey];
   const activo=base?disenoActivoDeCard(base,document.getElementById(cardKey)):null;
-  const item=activo?{...base,...activo}:base;
+  return panelImagenAccionItem(base,accion,activo);
+};
+
+async function panelImagenAccionItem(base,accion='descargar',activo=null){
+  const item=activo?{...base,...activo,id:base.id}:base;
 
   if (!item || !(item.url || item.imagenUrl)) {
     alert("No encuentro la imagen.");
@@ -15997,7 +16003,7 @@ window.panelImagenAccionCard = async function(cardKey, accion = "descargar") {
     console.error(e);
     alert("No se pudo preparar la publicación.\n\nDetalle: " + (e?.message || e));
   }
-};
+}
 
 window.descargarImagenPanel = async (url, fileName = "imagen_vida_abundante.png") => {
   try {
@@ -18659,15 +18665,16 @@ window.verImagenesCreadasBiblia = function(){
     }).sort((a,b)=>Number(b.fecha)-Number(a.fecha));
     const fichas=publicaciones.flatMap(item=>disenosDeImagen(item).map((d,i,ds)=>({item,d,i,total:ds.length})));
     modal.querySelector('.va-creadas-cantidad').textContent=`${fichas.length} ${fichas.length===1?'imagen':'imágenes'} · ${publicaciones.length} ${publicaciones.length===1?'publicación':'publicaciones'}`;
-    lista.innerHTML=fichas.length?fichas.map(({item,d,i,total})=>`<article class="va-creada-ficha" data-publicacion="${panelImgAttr(item.id)}" data-diseno="${panelImgAttr(d.id)}"><button type="button" class="va-creada-imagen" data-abrir="${panelImgAttr(item.id)}" data-diseno="${panelImgAttr(d.id)}" aria-label="Abrir imagen"><img src="${panelImgAttr(d.url)}" alt="Diseño ${i+1} de ${panelImgAttr(item.ref||'versículos')}" loading="lazy"></button><div class="va-creada-detalle"><strong>${panelImgHtml(item.titulo||item.ref||'Imagen de versículos')}</strong>${total>1?`<span class="va-creada-numero">Diseño ${i+1} / ${total}</span>`:''}</div>${referenciasHTML(item,{agruparPorCapitulo:true,lineaUnica:true})}<div class="va-creada-acciones"><button type="button" data-compartir="${panelImgAttr(item.id)}" data-diseno="${panelImgAttr(d.id)}" aria-label="Compartir imagen" title="Compartir imagen"><i class="fa-solid fa-share-nodes"></i></button>${usuarioPuedeCrearImagen()?`<button type="button" data-copiar="${panelImgAttr(item.id)}" data-diseno="${panelImgAttr(d.id)}" aria-label="Copiar con un nuevo diseño" title="Copiar con un nuevo diseño"><i class="fa-solid fa-copy"></i></button>`:''}</div></article>`).join(''):'<p class="va-creadas-vacio">No hay imágenes para esta búsqueda.</p>';
+    lista.innerHTML=fichas.length?fichas.map(({item,d,i,total},indice)=>`<article class="va-creada-ficha" data-publicacion="${panelImgAttr(item.id)}" data-diseno="${panelImgAttr(d.id)}"><button type="button" class="va-creada-imagen" data-va-imagen-host data-abrir="${panelImgAttr(item.id)}" data-diseno="${panelImgAttr(d.id)}" aria-label="Abrir imagen"><img data-va-imagen src="${panelImgAttr(d.miniaturaUrl||d.url)}" alt="Diseño ${i+1} de ${panelImgAttr(item.ref||'versículos')}" loading="${indice<2?'eager':'lazy'}" decoding="async"></button><div class="va-creada-detalle"><strong>${panelImgHtml(item.titulo||item.ref||'Imagen de versículos')}</strong>${total>1?`<span class="va-creada-numero">Diseño ${i+1} / ${total}</span>`:''}</div>${referenciasHTML(item,{agruparPorCapitulo:true,lineaUnica:true})}<div class="va-creada-acciones"><button type="button" data-descargar="${panelImgAttr(item.id)}" data-diseno="${panelImgAttr(d.id)}" aria-label="Descargar imagen" title="Descargar imagen"><i class="fa-solid fa-download"></i></button><button type="button" data-compartir="${panelImgAttr(item.id)}" data-diseno="${panelImgAttr(d.id)}" aria-label="Compartir imagen" title="Compartir imagen"><i class="fa-solid fa-share-nodes"></i></button>${usuarioPuedeCrearImagen()?`<button type="button" data-copiar="${panelImgAttr(item.id)}" data-diseno="${panelImgAttr(d.id)}" aria-label="Copiar con un nuevo diseño" title="Copiar con un nuevo diseño"><i class="fa-solid fa-copy"></i></button>`:''}</div></article>`).join(''):'<p class="va-creadas-vacio">No hay imágenes para esta búsqueda.</p>';
     for(const b of lista.querySelectorAll('[data-copiar]'))b.onclick=async()=>{const id=b.dataset.copiar,disenoId=b.dataset.diseno;cerrar();await window.editarImagenPanel(id,{disenoId,nuevoDiseno:true});};
-    const abrir=(id,disenoId)=>{const ficha=fichas.find(f=>f.item.id===id&&f.d.id===disenoId);if(ficha)vaAbrirImagenDeGaleria(ficha.d.url,ficha.item.titulo||ficha.item.ref||'Imagen');};
+    const abrir=(id,disenoId)=>{const ficha=fichas.find(f=>f.item.id===id&&f.d.id===disenoId);if(ficha)vaAbrirImagenDeGaleria(ficha.d.url,ficha.item.titulo||ficha.item.ref||'Imagen',ficha.item,ficha.d);};
     for(const b of lista.querySelectorAll('[data-abrir]'))b.onclick=()=>abrir(b.dataset.abrir,b.dataset.diseno);
     for(const ficha of lista.querySelectorAll('[data-publicacion]'))ficha.onclick=e=>{if(!e.target.closest('button,a,.va-referencias,.va-creada-acciones'))abrir(ficha.dataset.publicacion,ficha.dataset.diseno);};
-    for(const b of lista.querySelectorAll('[data-compartir]'))b.onclick=async()=>{
-      const ficha=fichas.find(f=>f.item.id===b.dataset.compartir&&f.d.id===b.dataset.diseno);if(!ficha||b.disabled)return;
+    for(const b of lista.querySelectorAll('[data-compartir],[data-descargar]'))b.onclick=async()=>{
+      const accion=b.hasAttribute('data-descargar')?'descargar':'compartir';
+      const ficha=fichas.find(f=>f.item.id===(b.dataset.compartir||b.dataset.descargar)&&f.d.id===b.dataset.diseno);if(!ficha||b.disabled)return;
       b.disabled=true;
-      try{await window.compartirImagenPanel(ficha.d.url,panelImagenNombreArchivo(ficha.item,'imagen'));}
+      try{await panelImagenAccionItem(ficha.item,accion,ficha.d);}
       finally{b.disabled=false;}
     };
   };
@@ -18682,12 +18689,15 @@ window.verImagenesCreadasBiblia = function(){
 };
 
 
-function vaAbrirImagenDeGaleria(url,titulo){
+function vaAbrirImagenDeGaleria(url,titulo,item=null,diseno=null){
   if(typeof window.compAbrirMedia!=='function'){window.open(url,'_blank','noopener');return;}
   const anterior=document.activeElement;
   window.compAbrirMedia(url,'imagen',titulo);
   const visor=document.getElementById('compMediaViewer');if(!visor)return;
   visor.classList.add('va-desde-galeria');visor.__vaGaleriaFocus=anterior;
+  if(item)for(const [id,accion] of [['compMediaBtnDescargar','descargar'],['compMediaBtnCompartir','compartir']]){
+    const b=document.getElementById(id);if(b)b.onclick=()=>panelImagenAccionItem(item,accion,diseno);
+  }
   if(!visor.__vaGaleriaTeclas){
     visor.__vaGaleriaTeclas=true;
     visor.addEventListener('keydown',e=>{if(visor.classList.contains('va-desde-galeria'))vaTeclasGaleria(e,visor,()=>window.compCerrarMedia());});
