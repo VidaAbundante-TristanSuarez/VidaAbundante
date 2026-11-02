@@ -1,4 +1,4 @@
-import { referenciasHTML, referenciasDePublicacion, carruselImagenHTML } from "./publicaciones-imagen.js?v=20261102-galerias-5";
+import { referenciasHTML, referenciasDePublicacion, carruselImagenHTML } from "./publicaciones-imagen.js?v=20261102-notas-compartir-7";
 import {
   ref,
   onValue,
@@ -924,7 +924,12 @@ window.compCerrarMedia = function compCerrarMedia() {
   const body = document.getElementById("compMediaViewerBody");
 
   if (body) body.innerHTML = "";
-  if (modal) modal.style.display = "none";
+  if (modal) {
+    modal.style.display = "none";
+    modal.classList.remove('va-desde-galeria');
+    const volver=modal.__vaGaleriaFocus;delete modal.__vaGaleriaFocus;
+    if(volver?.isConnected)volver.focus?.({preventScroll:true});
+  }
 };
 
 function compLimpiarCompartidosTop() {
@@ -2852,7 +2857,7 @@ const guardarBtn = compEsPropia(item) ? "" : `
         </div>
 
         <div class="comp-post-media" onclick="if(event.target.closest('button,a')) return; const c=this.querySelector('[data-va-carrusel]'); compAbrirMedia(c?.querySelectorAll('.va-diseno-slide img')[Number(c.dataset.disenoActivo)||0]?.src || '${compJs(url)}', 'imagen', '${compJs(tituloBase)}')" role="button">
-          ${carruselImagenHTML(item,key)}${referenciasHTML(item)}
+          ${carruselImagenHTML(item,key)}${referenciasHTML(item,{agruparPorCapitulo:true,lineaUnica:true})}
         </div>
 
         ${textoLibre ? `<div class="comp-post-note-text">${compEscape(textoLibre)}</div>` : ``}

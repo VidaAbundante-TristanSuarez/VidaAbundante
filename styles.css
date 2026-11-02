@@ -6934,3 +6934,12 @@ body.oscuro .va-nota-imagen-estado.va-nota-desborde{color:#ffd391;}
 body.oscuro .va-creadas-dialogo,body.oscuro .va-imagen-menu{background:#182f40;color:#eff9ff;border-color:#365165}body.oscuro .va-creada-ficha{background:#233e51;border-color:#425f74}body.oscuro .va-creada-imagen{background:#152d3d}body.oscuro .va-creadas-filtros input{background:#243e52;color:white;border-color:#4c6e83}
 #listaMarcadores .nota-lista-card>.va-referencias{grid-column:1 / -1;grid-row:2;padding:3px 0;max-height:76px}
 #listaMarcadores .nota-lista-card:has(>.va-referencias)>.nota-lista-botones{grid-column:2;grid-row:1}
+
+/* Referencias agrupadas en una sola fila dentro del listado de notas. */
+#listaMarcadores .nota-lista-card>.va-referencias-linea{display:flex;flex-wrap:nowrap;align-items:center;min-width:0;width:100%;max-width:100%;max-height:none;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scrollbar-width:thin}
+#listaMarcadores .nota-lista-card>.va-referencias-linea>a{flex:0 0 auto}
+
+.va-creada-ficha>.va-creada-imagen{padding:0;border:0;border-radius:0;min-height:0;flex-shrink:0;width:100%;cursor:pointer}
+.va-creada-detalle{cursor:pointer}
+.va-creada-acciones button:disabled{opacity:.55;cursor:wait}
+#compMediaViewer.va-desde-galeria{z-index:100200!important}

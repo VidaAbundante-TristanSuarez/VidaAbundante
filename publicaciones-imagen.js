@@ -38,11 +38,34 @@ export function referenciasDePublicacion(item={}){
   return salida;
 }
 
-export function referenciasHTML(item={}){
+function comprimirVersiculos(numeros){
+  const valores=[...new Set(numeros)].sort((a,b)=>a-b),rangos=[];
+  for(let i=0;i<valores.length;i++){
+    const primero=valores[i];let ultimo=primero;
+    while(valores[i+1]===ultimo+1)ultimo=valores[++i];
+    rangos.push(primero===ultimo?String(primero):`${primero}-${ultimo}`);
+  }
+  return rangos.join(',');
+}
+
+export function referenciasHTML(item={},opciones={}){
   instalar();const refs=referenciasDePublicacion(item);if(!refs.length)return '';
-  return `<nav class="va-referencias" aria-label="Versículos incluidos">${refs.map(r=>{
+  let enlaces=refs.map(r=>({destino:r,rango:String(r.versiculo)}));
+  if(opciones.agruparPorCapitulo){
+    const grupos=new Map();
+    for(const r of refs){
+      const key=r.libro+'_'+r.capitulo;
+      if(!grupos.has(key))grupos.set(key,{...r,versiculos:[]});
+      grupos.get(key).versiculos.push(r.versiculo);
+    }
+    enlaces=[...grupos.values()].map(g=>{
+      const numeros=[...new Set(g.versiculos)].sort((a,b)=>a-b);
+      return {destino:{...g,id:`${g.libro}_${g.capitulo}_${numeros[0]}`,versiculo:numeros[0],versiculos:numeros},rango:comprimirVersiculos(numeros)};
+    });
+  }
+  return `<nav class="va-referencias${opciones.lineaUnica?' va-referencias-linea':''}"${opciones.lineaUnica?' tabindex="0"':''} aria-label="Versículos incluidos">${enlaces.map(({destino:r,rango})=>{
     const href='#versiculo/'+encodeURIComponent(r.libro)+'/'+r.capitulo+'/'+r.versiculo;
-    return `<a href="${escapar(href)}" data-va-versiculo="${escapar(JSON.stringify(r))}" title="Abrir ${escapar(r.libro)} ${r.capitulo}:${r.versiculo}">${escapar(r.libro)} <b>${r.capitulo}:${r.versiculo}</b></a>`;
+    return `<a href="${escapar(href)}" data-va-versiculo="${escapar(JSON.stringify(r))}" title="Abrir ${escapar(r.libro)} ${r.capitulo}:${rango}">${escapar(r.libro)} <b>${r.capitulo}:${rango}</b></a>`;
   }).join('')}</nav>`;
 }
 
@@ -106,6 +129,8 @@ function instalar(){
     .va-referencias{display:flex;gap:6px;flex-wrap:wrap;padding:10px 12px;margin:0;max-height:112px;overflow:auto;scrollbar-width:thin}
     .va-referencias a{display:inline-flex;align-items:center;gap:5px;border:1px solid #9bbad65c;background:#f0f8ffd9;color:#245274!important;border-radius:999px;padding:5px 9px;font:500 12px/1.35 Arial,sans-serif;text-decoration:none;white-space:nowrap;transition:background .15s}
     .va-referencias a:hover,.va-referencias a:focus-visible{background:#cee9ff;outline:2px solid #5b91ba;outline-offset:1px}
+    .va-referencias.va-referencias-linea{flex-wrap:nowrap;align-items:center;min-width:0;width:100%;max-width:100%;box-sizing:border-box;max-height:none;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain}
+    .va-referencias-linea>a{flex:0 0 auto}
     .va-carrusel-imagen{position:relative;min-width:0;width:100%;overflow:hidden}
     .va-disenos-rail{position:relative;display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:thin;overscroll-behavior-x:contain;touch-action:pan-x pan-y;cursor:grab}
     .va-disenos-rail.va-arrastrando{scroll-snap-type:none;cursor:grabbing;user-select:none}
@@ -133,8 +158,10 @@ function instalar(){
   },true);
   document.addEventListener('scroll',e=>{if(e.target.classList?.contains('va-disenos-rail'))actualizar(e.target);},true);
   document.addEventListener('keydown',e=>{
-    if(!e.target.classList?.contains('va-disenos-rail')||!['ArrowLeft','ArrowRight'].includes(e.key))return;
-    e.preventDefault();const rail=e.target;rail.scrollBy({left:(e.key==='ArrowRight'?1:-1)*rail.clientWidth,behavior:'smooth'});
+    const rail=e.target;
+    if(!rail.classList?.contains('va-disenos-rail')&&!rail.classList?.contains('va-referencias-linea'))return;
+    if(!['ArrowLeft','ArrowRight'].includes(e.key))return;
+    e.preventDefault();rail.scrollBy({left:(e.key==='ArrowRight'?1:-1)*rail.clientWidth,behavior:'smooth'});
   });
   let arrastre=null;
   document.addEventListener('pointerdown',e=>{

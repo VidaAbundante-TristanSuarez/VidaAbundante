@@ -1,8 +1,8 @@
-import { actualizarAdorno, activarAdorno, esperarAdorno } from "./adornos-editor.js?v=20261102-galerias-5";
-import { elegirResolucionImagen, dimensionesExportacion, conProgresoExportacion } from "./exportacion-imagen.js?v=20261102-galerias-5";
-import { referenciasDePublicacion, referenciasHTML, disenosDeImagen, agregarDisenoImagen, combinarDisenosImagen, carruselImagenHTML, disenoActivoDeCard } from "./publicaciones-imagen.js?v=20261102-galerias-5";
-import { actualizarCapaTexturas, esperarCapaTexturas, montarControlesTextura, margenesTexturas } from "./texturas-editor.js?v=20261102-galerias-5";
-import { ordenarFondos, registrarUsoFondo, configurarUsoFondos, combinarUsoFondos, urlFondoSeguro, cargarFondoBlob, prepararMiniaturas, montarEditorTexto, aplicarFormatoSeleccion, alternarFormatoSeleccion, restaurarControlesTexto, aplicarSubrayadoTexto, desactivarEditorTexto, crearInstantaneaPreview, esperarFuentesPreview, dibujarCajaTexto, recuperarCajaTexto } from "./imagen-editor.js?v=20261102-galerias-5";
+import { actualizarAdorno, activarAdorno, esperarAdorno } from "./adornos-editor.js?v=20261102-notas-compartir-7";
+import { elegirResolucionImagen, dimensionesExportacion, conProgresoExportacion } from "./exportacion-imagen.js?v=20261102-notas-compartir-7";
+import { referenciasDePublicacion, referenciasHTML, disenosDeImagen, agregarDisenoImagen, combinarDisenosImagen, carruselImagenHTML, disenoActivoDeCard } from "./publicaciones-imagen.js?v=20261102-notas-compartir-7";
+import { actualizarCapaTexturas, esperarCapaTexturas, montarControlesTextura, margenesTexturas } from "./texturas-editor.js?v=20261102-notas-compartir-7";
+import { ordenarFondos, registrarUsoFondo, configurarUsoFondos, combinarUsoFondos, urlFondoSeguro, cargarFondoBlob, prepararMiniaturas, montarEditorTexto, aplicarFormatoSeleccion, alternarFormatoSeleccion, restaurarControlesTexto, aplicarSubrayadoTexto, desactivarEditorTexto, crearInstantaneaPreview, esperarFuentesPreview, dibujarCajaTexto, recuperarCajaTexto } from "./imagen-editor.js?v=20261102-notas-compartir-7";
 
 // ================= IMPORTS FIREBASE =================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -3632,9 +3632,17 @@ function vaAbrirVersiculoReferencia(r){
   const hash='#versiculo/'+encodeURIComponent(encontrado.Libro)+'/'+encontrado.Capitulo+'/'+encontrado.Versiculo;
   history.replaceState(null,'',hash);
   requestAnimationFrame(()=>{
+    const numeros=Array.isArray(r.versiculos)?r.versiculos:[encontrado.Versiculo];
+    for(const n of numeros){
+      const incluido=bibliaData.find(v=>v.Libro===encontrado.Libro&&Number(v.Capitulo)===Number(encontrado.Capitulo)&&Number(v.Versiculo)===Number(n));
+      if(!incluido)continue;
+      const idIncluido=`${incluido.Libro}_${incluido.Capitulo}_${incluido.Versiculo}`;
+      const nodo=document.querySelector(`.versiculo[data-id="${CSS.escape(idIncluido)}"]`);
+      if(nodo){nodo.classList.add('va-versiculo-destino');setTimeout(()=>nodo.classList.remove('va-versiculo-destino'),2500);}
+    }
     const id=`${encontrado.Libro}_${encontrado.Capitulo}_${encontrado.Versiculo}`;
     const el=document.querySelector(`.versiculo[data-id="${CSS.escape(id)}"]`);
-    if(el){el.classList.add('va-versiculo-destino');el.scrollIntoView({behavior:'smooth',block:'center'});setTimeout(()=>el.classList.remove('va-versiculo-destino'),2500);}
+    if(el)el.scrollIntoView({behavior:'smooth',block:'center'});
   });
 }
 window.vaAbrirVersiculoReferencia=vaAbrirVersiculoReferencia;
@@ -9600,31 +9608,7 @@ function renderListaMarcadores() {
   lista.innerHTML =
     header +
     items.map(m => {
-      const refTxt =
-        m.ref ||
-        (
-          m.libro && m.capitulo
-            ? `${m.libro} ${m.capitulo}`
-            : "Nota"
-        );
-
-      const tituloTxt =
-        m.titulo || "Marcador";
-
-      /*
-        Acá quitamos completamente la fecha.
-
-        Antes se mostraba:
-        referencia - fecha - título
-
-        Ahora se muestra:
-        referencia - título
-      */
-      const linea = marcadorEscapeHTML(
-        [refTxt, tituloTxt]
-          .filter(Boolean)
-          .join(" - ")
-      );
+      const linea = marcadorEscapeHTML(m.titulo || "Marcador");
 
       const fondoNota =
         m.color || "#fff3b0";
@@ -9677,7 +9661,7 @@ function renderListaMarcadores() {
             }
           </div>
 
-          ${referenciasHTML(m)}
+          ${referenciasHTML(m,{agruparPorCapitulo:true,lineaUnica:true})}
           <div class="nota-lista-botones">
             <button
               type="button"
@@ -12374,7 +12358,7 @@ style="position:relative; ${tieneMetaImagen ? `background:${panelImgAttr(colorMe
 >
  ${metaHtml}
  ${carruselImagenHTML(it,cardKey)}
- ${referenciasHTML(it)}
+ ${referenciasHTML(it,{agruparPorCapitulo:true,lineaUnica:true})}
 
 ${audioRaw ? `
   <div class="devBigAudioBox">
@@ -18675,9 +18659,17 @@ window.verImagenesCreadasBiblia = function(){
     }).sort((a,b)=>Number(b.fecha)-Number(a.fecha));
     const fichas=publicaciones.flatMap(item=>disenosDeImagen(item).map((d,i,ds)=>({item,d,i,total:ds.length})));
     modal.querySelector('.va-creadas-cantidad').textContent=`${fichas.length} ${fichas.length===1?'imagen':'imágenes'} · ${publicaciones.length} ${publicaciones.length===1?'publicación':'publicaciones'}`;
-    lista.innerHTML=fichas.length?fichas.map(({item,d,i,total})=>`<article class="va-creada-ficha"><div class="va-creada-imagen"><img src="${panelImgAttr(d.url)}" alt="Diseño ${i+1} de ${panelImgAttr(item.ref||'versículos')}" loading="lazy"></div><div class="va-creada-detalle"><strong>${panelImgHtml(item.titulo||item.ref||'Imagen de versículos')}</strong>${total>1?`<span class="va-creada-numero">Diseño ${i+1} / ${total}</span>`:''}</div>${referenciasHTML(item)}<div class="va-creada-acciones"><button type="button" data-abrir="${panelImgAttr(item.id)}" aria-label="Abrir publicación" title="Abrir publicación"><i class="fa-solid fa-arrow-up-right-from-square"></i></button>${usuarioPuedeCrearImagen()?`<button type="button" data-copiar="${panelImgAttr(item.id)}" data-diseno="${panelImgAttr(d.id)}" aria-label="Copiar con un nuevo diseño" title="Copiar con un nuevo diseño"><i class="fa-solid fa-copy"></i></button>`:''}</div></article>`).join(''):'<p class="va-creadas-vacio">No hay imágenes para esta búsqueda.</p>';
+    lista.innerHTML=fichas.length?fichas.map(({item,d,i,total})=>`<article class="va-creada-ficha" data-publicacion="${panelImgAttr(item.id)}" data-diseno="${panelImgAttr(d.id)}"><button type="button" class="va-creada-imagen" data-abrir="${panelImgAttr(item.id)}" data-diseno="${panelImgAttr(d.id)}" aria-label="Abrir imagen"><img src="${panelImgAttr(d.url)}" alt="Diseño ${i+1} de ${panelImgAttr(item.ref||'versículos')}" loading="lazy"></button><div class="va-creada-detalle"><strong>${panelImgHtml(item.titulo||item.ref||'Imagen de versículos')}</strong>${total>1?`<span class="va-creada-numero">Diseño ${i+1} / ${total}</span>`:''}</div>${referenciasHTML(item,{agruparPorCapitulo:true,lineaUnica:true})}<div class="va-creada-acciones"><button type="button" data-compartir="${panelImgAttr(item.id)}" data-diseno="${panelImgAttr(d.id)}" aria-label="Compartir imagen" title="Compartir imagen"><i class="fa-solid fa-share-nodes"></i></button>${usuarioPuedeCrearImagen()?`<button type="button" data-copiar="${panelImgAttr(item.id)}" data-diseno="${panelImgAttr(d.id)}" aria-label="Copiar con un nuevo diseño" title="Copiar con un nuevo diseño"><i class="fa-solid fa-copy"></i></button>`:''}</div></article>`).join(''):'<p class="va-creadas-vacio">No hay imágenes para esta búsqueda.</p>';
     for(const b of lista.querySelectorAll('[data-copiar]'))b.onclick=async()=>{const id=b.dataset.copiar,disenoId=b.dataset.diseno;cerrar();await window.editarImagenPanel(id,{disenoId,nuevoDiseno:true});};
-    for(const b of lista.querySelectorAll('[data-abrir]'))b.onclick=()=>{const id=b.dataset.abrir;cerrar();vaImgAbrirPanelImagenesDespuesGuardar();setTimeout(()=>document.getElementById('panelImgBig_'+id)?.scrollIntoView({behavior:'smooth',block:'start'}),180);};
+    const abrir=(id,disenoId)=>{const ficha=fichas.find(f=>f.item.id===id&&f.d.id===disenoId);if(ficha)vaAbrirImagenDeGaleria(ficha.d.url,ficha.item.titulo||ficha.item.ref||'Imagen');};
+    for(const b of lista.querySelectorAll('[data-abrir]'))b.onclick=()=>abrir(b.dataset.abrir,b.dataset.diseno);
+    for(const ficha of lista.querySelectorAll('[data-publicacion]'))ficha.onclick=e=>{if(!e.target.closest('button,a,.va-referencias,.va-creada-acciones'))abrir(ficha.dataset.publicacion,ficha.dataset.diseno);};
+    for(const b of lista.querySelectorAll('[data-compartir]'))b.onclick=async()=>{
+      const ficha=fichas.find(f=>f.item.id===b.dataset.compartir&&f.d.id===b.dataset.diseno);if(!ficha||b.disabled)return;
+      b.disabled=true;
+      try{await window.compartirImagenPanel(ficha.d.url,panelImagenNombreArchivo(ficha.item,'imagen'));}
+      finally{b.disabled=false;}
+    };
   };
   const cerrar=()=>{modal.remove();window.vaActualizarGaleriaCreada=null;window.vaCerrarGaleriaCreada=null;previo?.focus?.({preventScroll:true});};
   window.vaActualizarGaleriaCreada=pintar;window.vaCerrarGaleriaCreada=cerrar;
@@ -18688,3 +18680,17 @@ window.verImagenesCreadasBiblia = function(){
   modal.addEventListener('keydown',e=>vaTeclasGaleria(e,modal,cerrar));
   document.body.appendChild(modal);pintar();modal.querySelector('[data-cerrar]').focus();
 };
+
+
+function vaAbrirImagenDeGaleria(url,titulo){
+  if(typeof window.compAbrirMedia!=='function'){window.open(url,'_blank','noopener');return;}
+  const anterior=document.activeElement;
+  window.compAbrirMedia(url,'imagen',titulo);
+  const visor=document.getElementById('compMediaViewer');if(!visor)return;
+  visor.classList.add('va-desde-galeria');visor.__vaGaleriaFocus=anterior;
+  if(!visor.__vaGaleriaTeclas){
+    visor.__vaGaleriaTeclas=true;
+    visor.addEventListener('keydown',e=>{if(visor.classList.contains('va-desde-galeria'))vaTeclasGaleria(e,visor,()=>window.compCerrarMedia());});
+  }
+  visor.querySelector('.comp-media-close')?.focus();
+}
