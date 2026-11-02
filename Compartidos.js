@@ -81,6 +81,7 @@ try{
   if(localStorage.getItem('vaCompAgendaVista')==='albumes')compAgendaVista='albumes';
 }catch{}
 let compAgendaArchivosVisibles=[],compAgendaAlbumesVisibles=[];
+let compAgendaFecha='',compAgendaMesCalendario=new Date();
 
 function compAgendaEsPredica(item){
   return item?.esPredica===true||compNormalizarEtiqueta(item?.etiqueta)==='predica'||!!compEsPredica(item);
@@ -125,17 +126,127 @@ function compTipoArchivoAgenda(archivo={}){
   if(mime.startsWith('image/')||/\.(png|jpe?g|webp|gif|avif)$/i.test(path))return 'imagen';
   if(mime.startsWith('video/')||/\.(mp4|webm|mov)$/i.test(path))return 'video';
   if(mime.startsWith('audio/')||/\.(mp3|m4a|wav|ogg)$/i.test(path))return 'audio';
+  if(mime.split(';')[0].trim()==='application/pdf'||/\.pdf$/i.test(path)||/\.pdf$/i.test(archivo.fileName||''))return 'pdf';
   return 'archivo';
 }
 
+function compPuedeEditarAgenda(){
+  return !!compUidActual()&&!!(compEsAdmin()||window.__ES_COLABORADOR);
+}
+
+function compBotonEditarAgenda(item={}){
+  if(!compPuedeEditarAgenda())return '';
+  const id=item._subidoId||String(item.id||'').replace(/^sub_/, '');
+  return `<button type="button" class="comp-agenda-editar" data-subido-id="${compEscape(id)}" onclick="compEditarAgenda(this.dataset.subidoId)" title="Editar y agregar imágenes" aria-label="Editar y agregar imágenes"><i class="fa-solid fa-pen" aria-hidden="true"></i></button>`;
+}
+
+window.compEditarAgenda=function(id){
+  if(!compPuedeEditarAgenda()||!id)return;
+  window.abrirEditarSubido?.(id);
+};
+
+function compAgendaCoincideCategoria(item,filtro=compSubFiltroAgendaActual){
+  if(item?.tipo!=='subido')return false;
+  if(filtro==='predicas')return compAgendaEsPredica(item);
+  if(filtro==='eventos')return !compAgendaEsPredica(item)&&!['archivo','archivos'].includes(compNormalizarEtiqueta(item.etiqueta));
+  if(filtro==='archivos')return compArchivosAgenda(item).length>0;
+  return true;
+}
+
+function compFechaAgendaValida(fecha){
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(fecha||''))return false;
+  const d=new Date(fecha+'T12:00:00');
+  return !Number.isNaN(d.getTime())&&compFechaAgendaClave(d)===fecha;
+}
+
+function compFechaAgendaClave(d){
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function compFechasCalendarioAgenda(){
+  const fechas=new Map();
+  for(const item of compUnificarItems()){
+    if(!compAgendaCoincideCategoria(item)||!compFechaAgendaValida(item.fechaEvento))continue;
+    fechas.set(item.fechaEvento,(fechas.get(item.fechaEvento)||0)+1);
+  }
+  return fechas;
+}
+
+function compAsegurarCalendarioAgenda(){
+  let modal=document.getElementById('compCalendarioAgenda');if(modal)return modal;
+  modal=document.createElement('div');modal.id='compCalendarioAgenda';modal.className='comp-calendario-overlay';
+  modal.hidden=true;modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');
+  modal.setAttribute('aria-labelledby','compCalendarioTitulo');
+  modal.addEventListener('click',e=>{if(e.target===modal)window.compCerrarCalendarioAgenda();});
+  document.addEventListener('keydown',e=>{
+    if(modal.hidden)return;
+    if(e.key==='Escape'){e.preventDefault();window.compCerrarCalendarioAgenda();}
+    if(e.key==='Tab'){
+      const controles=[...modal.querySelectorAll('button:not(:disabled),select')];
+      const primero=controles[0],ultimo=controles.at(-1);
+      if(!modal.contains(document.activeElement)){e.preventDefault();primero?.focus();}
+      else if(e.shiftKey&&document.activeElement===primero){e.preventDefault();ultimo?.focus();}
+      else if(!e.shiftKey&&document.activeElement===ultimo){e.preventDefault();primero?.focus();}
+    }
+  });
+  document.body.appendChild(modal);return modal;
+}
+
+function compPintarCalendarioAgenda(){
+  const modal=compAsegurarCalendarioAgenda(),fechas=compFechasCalendarioAgenda();
+  const foco=modal.contains(document.activeElement)?document.activeElement.getAttribute('aria-label'):'';
+  const anio=compAgendaMesCalendario.getFullYear(),mes=compAgendaMesCalendario.getMonth();
+  const inicio=(new Date(anio,mes,1,12).getDay()+6)%7,total=new Date(anio,mes+1,0,12).getDate();
+  const hoy=compFechaAgendaClave(new Date()),esPredica=compSubFiltroAgendaActual==='predicas';
+  const nombre=esPredica?'Prédicas':'Eventos',tipo=esPredica?'prédica':'evento';
+  const anios=[new Date().getFullYear(),anio,...[...fechas.keys()].map(f=>Number(f.slice(0,4)))];
+  const min=Math.min(...anios)-1,max=Math.max(...anios)+1;
+  const meses=Array.from({length:12},(_,m)=>new Date(2026,m,1).toLocaleDateString('es-AR',{month:'long'}));
+  const dias=Array.from({length:inicio},()=>'<span aria-hidden="true"></span>');
+  for(let dia=1;dia<=total;dia++){
+    const clave=compFechaAgendaClave(new Date(anio,mes,dia,12)),cantidad=fechas.get(clave)||0;
+    const descripcion=`${compFechaAlbumAgenda(clave)} · ${cantidad} ${tipo}${cantidad===1?'':'s'}`;
+    dias.push(`<button type="button" data-fecha="${clave}" class="comp-calendario-dia${cantidad?' con-evento':''}${clave===compAgendaFecha?' seleccionado':''}" aria-label="${compEscape(descripcion)}" aria-pressed="${clave===compAgendaFecha}" ${clave===hoy?'aria-current="date"':''} onclick="compSeleccionarFechaAgenda(this.dataset.fecha)"><span>${dia}</span>${cantidad?'<i aria-hidden="true"></i>':''}</button>`);
+  }
+  modal.innerHTML=`<div class="comp-calendario-card"><div class="comp-calendario-head"><h3 id="compCalendarioTitulo">${nombre} por fecha</h3><button type="button" onclick="compCerrarCalendarioAgenda()" aria-label="Cerrar calendario">×</button></div><div class="comp-calendario-mes"><button type="button" onclick="compMoverMesAgenda(-1)" aria-label="Mes anterior">‹</button><select aria-label="Mes" onchange="compElegirMesAgenda(this.value)">${meses.map((m,i)=>`<option value="${i}" ${i===mes?'selected':''}>${m}</option>`).join('')}</select><select aria-label="Año" onchange="compElegirAnioAgenda(this.value)">${Array.from({length:max-min+1},(_,i)=>min+i).map(a=>`<option ${a===anio?'selected':''}>${a}</option>`).join('')}</select><button type="button" onclick="compMoverMesAgenda(1)" aria-label="Mes siguiente">›</button></div><div class="comp-calendario-semana" aria-hidden="true">${['L','M','M','J','V','S','D'].map(d=>`<span>${d}</span>`).join('')}</div><div class="comp-calendario-dias">${dias.join('')}</div><p class="comp-calendario-leyenda"><i aria-hidden="true"></i> Fechas con ${nombre.toLowerCase()}</p><div class="comp-calendario-footer"><button type="button" onclick="compCalendarioHoy()">Hoy</button><button type="button" onclick="compSeleccionarFechaAgenda('')">Ver todas las fechas</button></div></div>`;
+  if(foco)[...modal.querySelectorAll('[aria-label]')].find(el=>el.getAttribute('aria-label')===foco)?.focus();
+}
+
+window.compAbrirCalendarioAgenda=function(btn){
+  if(!['predicas','eventos'].includes(compSubFiltroAgendaActual))return;
+  const modal=compAsegurarCalendarioAgenda();modal.__compFocus=btn||document.activeElement;
+  compAgendaMesCalendario=compAgendaFecha?new Date(compAgendaFecha+'T12:00:00'):new Date();
+  compAgendaMesCalendario=new Date(compAgendaMesCalendario.getFullYear(),compAgendaMesCalendario.getMonth(),1,12);
+  compPintarCalendarioAgenda();modal.hidden=false;document.body.classList.add('comp-calendario-abierto');
+  (modal.querySelector('.seleccionado')||modal.querySelector('[aria-current="date"]')||modal.querySelector('select'))?.focus();
+};
+window.compCerrarCalendarioAgenda=function(){
+  const modal=document.getElementById('compCalendarioAgenda');if(!modal)return;
+  modal.hidden=true;document.body.classList.remove('comp-calendario-abierto');modal.__compFocus?.focus();
+};
+window.compMoverMesAgenda=function(paso){
+  compAgendaMesCalendario=new Date(compAgendaMesCalendario.getFullYear(),compAgendaMesCalendario.getMonth()+paso,1,12);
+  compPintarCalendarioAgenda();
+};
+window.compElegirMesAgenda=function(mes){compAgendaMesCalendario.setMonth(Number(mes));compPintarCalendarioAgenda();};
+window.compElegirAnioAgenda=function(anio){compAgendaMesCalendario.setFullYear(Number(anio));compPintarCalendarioAgenda();};
+window.compCalendarioHoy=function(){const hoy=new Date();compAgendaMesCalendario=new Date(hoy.getFullYear(),hoy.getMonth(),1,12);compPintarCalendarioAgenda();};
+window.compSeleccionarFechaAgenda=function(fecha){
+  if(fecha&&!compFechaAgendaValida(fecha))return;
+  compAgendaFecha=fecha;window.compCerrarCalendarioAgenda();renderCompartidos();
+  document.querySelector('[data-comp-calendario]')?.focus();
+};
+
 function compRenderSubFiltrosAgendaHTML(){
   if(compFiltroActual!=='agenda')return '';
-  return `<div class="comp-agenda-filtros" role="group" aria-label="Filtrar Agenda">${COMP_AGENDA_FILTROS.map(f=>`<button type="button" class="${f.id===compSubFiltroAgendaActual?'activo':''}" aria-pressed="${f.id===compSubFiltroAgendaActual}" onclick="compCambiarFiltroAgenda('${f.id}')">${f.label}</button>`).join('')}</div>`;
+  const calendario=['predicas','eventos'].includes(compSubFiltroAgendaActual);
+  return `<div id="compAgendaFiltros"><div class="comp-agenda-filtros" role="group" aria-label="Filtrar Agenda">${COMP_AGENDA_FILTROS.map(f=>`<button type="button" class="${f.id===compSubFiltroAgendaActual?'activo':''}" aria-pressed="${f.id===compSubFiltroAgendaActual}" onclick="compCambiarFiltroAgenda('${f.id}')">${f.label}</button>`).join('')}</div>${calendario?`<div class="comp-agenda-fecha"><button type="button" data-comp-calendario onclick="compAbrirCalendarioAgenda(this)"><i class="fa-solid fa-calendar-days" aria-hidden="true"></i> ${compAgendaFecha?compEscape(compFechaAlbumAgenda(compAgendaFecha)):'Buscar por fecha'}</button>${compAgendaFecha?'<button type="button" onclick="compSeleccionarFechaAgenda(\'\')" aria-label="Quitar filtro de fecha">×</button>':''}</div>`:''}</div>`;
 }
 
 window.compCambiarFiltroAgenda=function(filtro){
   if(!COMP_AGENDA_FILTROS.some(f=>f.id===filtro))return;
-  compSubFiltroAgendaActual=filtro;compAgendaAlbumActual='';
+  if(compSubFiltroAgendaActual!==filtro)compAgendaFecha='';
+  window.compCerrarCalendarioAgenda();compSubFiltroAgendaActual=filtro;compAgendaAlbumActual='';
   try{localStorage.setItem('vaCompAgendaFiltro',filtro);}catch{}
   renderCompartidos();
 };
@@ -156,14 +267,15 @@ window.compAbrirFotoAlbumAgenda=function(indice,host){
 };
 window.compVolverAlbumesAgenda=function(){compAgendaAlbumActual='';renderCompartidos();};
 window.compAgregarArchivosAgenda=function(){
-  if(!compEsAdmin())return;
+  if(!compPuedeEditarAgenda())return;
   const album=compAgendaAlbumesVisibles.find(a=>a.key===compAgendaAlbumActual);
+  if(album?.archivos[0]){window.compEditarAgenda(album.archivos[0].item._subidoId||String(album.archivos[0].item.id||'').replace(/^sub_/,''));return;}
   window.subidosAgregarArchivosDesdeGaleria?.({fecha:album?.fecha||'',titulo:album?.titulo||''});
 };
 window.compAbrirArchivoAgenda=function(indice){
   const registro=compAgendaArchivosVisibles[indice];if(!registro)return;
   const {archivo,item}=registro,tipo=compTipoArchivoAgenda(archivo);
-  if(tipo==='archivo'){window.open(archivo.url,'_blank','noopener');return;}
+  if(tipo==='archivo'||tipo==='pdf'){window.open(archivo.url,'_blank','noopener');return;}
   if(tipo==='imagen'){
     const fotos=compAgendaArchivosVisibles.filter(r=>compTipoArchivoAgenda(r.archivo)==='imagen');
     compAbrirGaleriaMedia(fotos.map(r=>({url:r.archivo.url,titulo:compTituloAlbumAgenda(r.item),fileName:r.archivo.fileName})),fotos.indexOf(registro));return;
@@ -181,26 +293,33 @@ function compRenderGaleriaAgenda(items=[]){
   const album=albumes.find(a=>a.key===compAgendaAlbumActual);
   const vistaAlbumes=compAgendaVista==='albumes'&&!album;
   const archivos=album?album.archivos:albumes.flatMap(a=>a.archivos);compAgendaArchivosVisibles=archivos;
-  const encabezado=`<div class="comp-agenda-galeria-head"><div class="comp-agenda-vistas" role="group" aria-label="Vista de archivos"><button type="button" aria-pressed="${compAgendaVista==='todos'}" onclick="compCambiarVistaAgenda('todos')">Todos</button><button type="button" aria-pressed="${compAgendaVista==='albumes'}" onclick="compCambiarVistaAgenda('albumes')"><i class="fa-solid fa-folder-open" aria-hidden="true"></i> Álbumes</button></div>${compEsAdmin()?'<button type="button" class="comp-agenda-add" onclick="compAgregarArchivosAgenda()" aria-label="Agregar archivos" title="Agregar archivos"><i class="fa-solid fa-plus" aria-hidden="true"></i></button>':''}</div>`;
+  const encabezado=`<div class="comp-agenda-galeria-head"><div class="comp-agenda-vistas" role="group" aria-label="Vista de archivos"><button type="button" aria-pressed="${compAgendaVista==='todos'}" onclick="compCambiarVistaAgenda('todos')">Todos</button><button type="button" aria-pressed="${compAgendaVista==='albumes'}" onclick="compCambiarVistaAgenda('albumes')"><i class="fa-solid fa-folder-open" aria-hidden="true"></i> Álbumes</button></div>${compPuedeEditarAgenda()?'<button type="button" class="comp-agenda-add" onclick="compAgregarArchivosAgenda()" aria-label="Agregar archivos" title="Agregar archivos"><i class="fa-solid fa-plus" aria-hidden="true"></i></button>':''}</div>`;
   const albumHead=album?`<div class="comp-agenda-album-head"><button type="button" onclick="compVolverAlbumesAgenda()" aria-label="Volver a los álbumes">‹</button><div><h3>${compEscape(album.titulo)}</h3><time>${compEscape(compFechaAlbumAgenda(album.fecha))}</time></div></div>`:'';
   let contenido;
   if(vistaAlbumes){
     contenido=albumes.map((a,i)=>{
+      if(a.archivos.every(r=>compTipoArchivoAgenda(r.archivo)==='pdf'))return '';
       const fotos=a.archivos.filter(r=>compTipoArchivoAgenda(r.archivo)==='imagen');
       const disenosImagen=Object.fromEntries(fotos.map((r,n)=>[String(n),{url:r.archivo.url}]));
       const portada=fotos.length?carruselImagenHTML({disenosImagen,disenosOrden:fotos.map((_,n)=>String(n))},'agenda_album_'+i):'<div class="comp-agenda-carpeta"><i class="fa-solid fa-folder-open" aria-hidden="true"></i></div>';
       const controlSolo=fotos.length<=1?`<div class="comp-agenda-control-solo" aria-hidden="true">${fotos.length?'1 / 1':'&nbsp;'}</div>`:'';
-      return `<article class="comp-agenda-album"><div class="comp-agenda-portadas" onclick="if(!event.target.closest('button,a'))compAbrirFotoAlbumAgenda(${i},this)">${portada}${controlSolo}</div><button type="button" class="comp-agenda-album-datos" onclick="compAbrirAlbumAgenda(${i})" title="${compEscape(a.titulo)}"><strong><i class="fa-solid fa-folder" aria-hidden="true"></i> ${compEscape(a.titulo)}</strong><time>${compEscape(compFechaAlbumAgenda(a.fecha))}</time><small>${a.archivos.length} ${a.archivos.length===1?'archivo':'archivos'}</small></button></article>`;
+      return `<article class="comp-agenda-album"><div class="comp-agenda-portadas" onclick="if(!event.target.closest('button,a'))compAbrirFotoAlbumAgenda(${i},this)">${portada}${controlSolo}</div><button type="button" class="comp-agenda-album-datos" onclick="compAbrirAlbumAgenda(${i})" title="${compEscape(a.titulo)}"><strong><i class="fa-solid fa-folder" aria-hidden="true"></i> ${compEscape(a.titulo)}</strong><time>${compEscape(compFechaAlbumAgenda(a.fecha))}</time><small>${a.archivos.length} ${a.archivos.length===1?'archivo':'archivos'}</small></button>${compPuedeEditarAgenda()?`<div class="comp-agenda-album-actions">${compBotonEditarAgenda(a.archivos[0]?.item)}</div>`:''}</article>`;
     }).join('');
   }else{
     contenido=archivos.map(({archivo,item},i)=>{
+      if(compTipoArchivoAgenda(archivo)==='pdf')return '';
       const tipo=compTipoArchivoAgenda(archivo),foto=tipo==='imagen'?archivo.url:(archivo.videoPreviewUrl||'');
       const icono=tipo==='video'?'fa-file-video':tipo==='audio'?'fa-headphones':'fa-file-lines';
       const titulo=compTituloAlbumAgenda(item),nombre=archivo.fileName||titulo;
-      return `<article class="comp-agenda-archivo"><button type="button" class="comp-agenda-media" data-va-imagen-host onclick="compAbrirArchivoAgenda(${i})" aria-label="Abrir ${compEscape(nombre)}">${foto?`<img data-va-imagen src="${compEscape(foto)}" alt="${compEscape(nombre)}" loading="${i<4?'eager':'lazy'}" decoding="async">`:`<i class="fa-solid ${icono}" aria-hidden="true"></i><span>${compEscape(nombre)}</span>`}</button><div class="comp-agenda-archivo-info"><strong title="${compEscape(titulo)}">${compEscape(titulo)}</strong><time>${compEscape(compFechaAlbumAgenda(item.fechaEvento))}</time></div><div class="comp-agenda-archivo-actions"><button type="button" onclick="compAccionArchivoAgenda(${i},'descargar')" aria-label="Descargar ${compEscape(nombre)}"><i class="fa-solid fa-download" aria-hidden="true"></i></button><button type="button" onclick="compAccionArchivoAgenda(${i},'compartir')" aria-label="Compartir ${compEscape(nombre)}"><i class="fa-solid fa-share-nodes" aria-hidden="true"></i></button></div></article>`;
+      return `<article class="comp-agenda-archivo"><button type="button" class="comp-agenda-media" data-va-imagen-host onclick="compAbrirArchivoAgenda(${i})" aria-label="Abrir ${compEscape(nombre)}">${foto?`<img data-va-imagen src="${compEscape(foto)}" alt="${compEscape(nombre)}" loading="${i<4?'eager':'lazy'}" decoding="async">`:`<i class="fa-solid ${icono}" aria-hidden="true"></i><span>${compEscape(nombre)}</span>`}</button><div class="comp-agenda-archivo-info"><strong title="${compEscape(titulo)}">${compEscape(titulo)}</strong><time>${compEscape(compFechaAlbumAgenda(item.fechaEvento))}</time></div><div class="comp-agenda-archivo-actions">${compBotonEditarAgenda(item)}<button type="button" onclick="compAccionArchivoAgenda(${i},'descargar')" aria-label="Descargar ${compEscape(nombre)}"><i class="fa-solid fa-download" aria-hidden="true"></i></button><button type="button" onclick="compAccionArchivoAgenda(${i},'compartir')" aria-label="Compartir ${compEscape(nombre)}"><i class="fa-solid fa-share-nodes" aria-hidden="true"></i></button></div></article>`;
     }).join('');
   }
-    return `<section class="comp-agenda-galeria" aria-label="Archivos de Agenda">${encabezado}${albumHead}<div class="comp-agenda-grid">${contenido||'<p class="comp-agenda-vacio">Todavía no hay archivos para mostrar.</p>'}</div></section>`;
+  const documentos=archivos.map(({archivo,item},i)=>{
+    if(compTipoArchivoAgenda(archivo)!=='pdf')return '';
+    const nombre=compEscape(archivo.fileName||'Documento PDF');
+    return `<div class="va-documento"><i class="fa-solid fa-file-pdf" aria-hidden="true"></i><div class="va-documento-nombre"><strong title="${nombre}">${nombre}</strong><small>${compEscape(compTituloAlbumAgenda(item))} · ${compEscape(compFechaAlbumAgenda(item.fechaEvento))}</small></div><div class="va-documento-acciones"><a href="${compEscape(archivo.url)}" target="_blank" rel="noopener noreferrer" aria-label="Abrir ${nombre}">Abrir PDF</a><button type="button" onclick="compAccionArchivoAgenda(${i},'descargar')" aria-label="Descargar ${nombre}"><i class="fa-solid fa-download" aria-hidden="true"></i> Descargar</button>${compBotonEditarAgenda(item)}</div></div>`;
+  }).join('');
+  return `<section class="comp-agenda-galeria" aria-label="Archivos de Agenda">${encabezado}${albumHead}${contenido?`<div class="comp-agenda-grid">${contenido}</div>`:''}${documentos?`<div class="va-documentos"><h3>PDF adjuntos</h3>${documentos}</div>`:''}${!contenido&&!documentos?'<p class="comp-agenda-vacio">Todavía no hay archivos para mostrar.</p>':''}</section>`;
 }
 
 const COMP_FILTROS = [
@@ -442,9 +561,8 @@ function compFiltrarItems(items = []) {
   }
 
   if(compFiltroActual==='agenda'){
-    if(compSubFiltroAgendaActual==='predicas')salida=salida.filter(compAgendaEsPredica);
-    if(compSubFiltroAgendaActual==='eventos')salida=salida.filter(item=>!compAgendaEsPredica(item)&&!['archivo','archivos'].includes(compNormalizarEtiqueta(item.etiqueta)));
-    if(compSubFiltroAgendaActual==='archivos')salida=salida.filter(item=>compArchivosAgenda(item).length);
+    salida=salida.filter(item=>compAgendaCoincideCategoria(item));
+    if(compAgendaFecha&&['predicas','eventos'].includes(compSubFiltroAgendaActual))salida=salida.filter(item=>item.fechaEvento===compAgendaFecha);
   }
 
   return salida;
@@ -4301,6 +4419,7 @@ const predicaHTML =
 </div>
 
 <div class="comp-post-actions">
+  ${compBotonEditarAgenda(item)}
           <button type="button" onclick="compartirSubido('${compJs(subidoId)}', this)" title="Compartir">
             <i class="fa-solid fa-share-nodes"></i>
           </button>
@@ -4341,7 +4460,7 @@ const predicaHTML =
   class="comp-archivo-abierta-wrap"
   onclick="
     if (!event.target.closest('img, video, .subidos-archivo-img, .subidos-archivo-media, .subidos-visor-img')) return;
-    abrirSubidosVisorArchivo('${compJs(subidoId)}', 0);
+    abrirSubidosVisorArchivo('${compJs(subidoId)}', Number(event.target.closest('[data-subidos-archivo]')?.dataset.subidosArchivo)||0);
   "
   title="Tocar la imagen para abrir"
   role="button"
@@ -4350,11 +4469,12 @@ const predicaHTML =
 </div>
 
 <div class="comp-post-actions">
-  <button type="button" onclick="compartirSubido('${compJs(subidoId)}')" title="Compartir">
+  ${compBotonEditarAgenda(item)}
+  <button type="button" onclick="compartirSubido('${compJs(subidoId)}', this)" title="Compartir">
     <i class="fa-solid fa-share-nodes"></i>
   </button>
 
-  <button type="button" onclick="descargarSubido('${compJs(subidoId)}')" title="Descargar">
+  <button type="button" onclick="descargarSubido('${compJs(subidoId)}', this)" title="Descargar">
     <i class="fa-solid fa-download"></i>
   </button>
 </div>
@@ -4372,7 +4492,7 @@ const predicaHTML =
       },
       {
         idPrefix: "compSubido_",
-        mostrarEditar: false,
+        mostrarEditar: compPuedeEditarAgenda(),
         mostrarBorrarOriginal: false,
         mostrarAccionesArchivo: true,
         borrarHtml: ""
@@ -4424,11 +4544,12 @@ const predicaHTML =
       }
 
       <div class="comp-post-actions">
-        <button type="button" onclick="compartirSubido('${compJs(subidoId)}')" title="Compartir">
+  ${compBotonEditarAgenda(item)}
+        <button type="button" onclick="compartirSubido('${compJs(subidoId)}', this)" title="Compartir">
           <i class="fa-solid fa-share-nodes"></i>
         </button>
 
-        <button type="button" onclick="descargarSubido('${compJs(subidoId)}')" title="Descargar">
+        <button type="button" onclick="descargarSubido('${compJs(subidoId)}', this)" title="Descargar">
           <i class="fa-solid fa-download"></i>
         </button>
       </div>
@@ -5015,6 +5136,10 @@ window.renderCompartidos = function renderCompartidos() {
 
   // ✅ Recién cuando la carga base terminó, mostramos banner/promos.
   renderCompartidosTop();
+  const filtrosAgenda=document.getElementById('compAgendaFiltros');
+  if(filtrosAgenda)filtrosAgenda.outerHTML=compRenderSubFiltrosAgendaHTML();
+  const calendarioAgenda=document.getElementById('compCalendarioAgenda');
+  if(calendarioAgenda&&!calendarioAgenda.hidden)compPintarCalendarioAgenda();
 
   const itemsTodos = compFiltrarItems(compUnificarItems());
   if(compFiltroActual==='agenda'&&compSubFiltroAgendaActual==='archivos'){

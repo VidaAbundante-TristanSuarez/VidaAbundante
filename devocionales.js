@@ -341,6 +341,7 @@ function devMostrarHome(){
 }
 
 function devMostrarCrear(){
+  if (!devPuedeCrear()) return false;
   const home = $("devHome");
   const crear = $("devCrear");
   if (home) home.style.display = "none";
@@ -1867,7 +1868,7 @@ function devFondosInvalidarComparaciones(){
 }
 
 function devFondosFase1Visible(){
-  return isAdmin() && !!$("modalDevFase1")?.getClientRects().length;
+  return devPuedeCrear() && !!$("modalDevFase1")?.getClientRects().length;
 }
 
 function devFondosRecuperarAnteriores(){
@@ -6298,6 +6299,7 @@ return {
 
 // ✅ SOLO GUARDA REFERENCIA EN IGLESIA
 async function devGuardarEnIglesia(asset){
+  if (!devPuedeCrear()) throw new Error("Solo administradores o colaboradores pueden publicar devocionales.");
   const fb = window.__FB;
   const api = window.__FB_API;
 
@@ -6389,6 +6391,10 @@ async function devAsegurarShareFinalListo(){
 
 window.devFinalizar = async () => {
   if (DEV.publicando) return;
+  if (!devPuedeCrear()) {
+    alert("Solo administradores o colaboradores pueden publicar devocionales.");
+    return;
+  }
 
   DEV.publicando = true;
 
@@ -6787,16 +6793,20 @@ async function resolverAdminYArrancar(){
     const { ref, get } = window.__FB_API;
 
     const uid = window.__UID;
-    const snap = await get(ref(db, "admins/" + uid));
-    window.__ES_ADMIN = !!snap.val();
+    const [admin, colaborador] = await Promise.all([
+      get(ref(db, "admins/" + uid)),
+      get(ref(db, "colaboradores/" + uid))
+    ]);
+    if (window.__UID !== uid) return;
+    window.__ES_ADMIN = !!admin.val();
+    window.__ES_COLABORADOR = !!colaborador.val();
   }catch(e){
-    console.warn("No pude chequear admin:", e);
-    window.__ES_ADMIN = false;
+    console.warn("No pude chequear permisos de creación:", e);
   }
 
   // mostrar/ocultar botón +
   const btnNuevo = document.getElementById("btnDevNuevo");
-  if (btnNuevo) btnNuevo.style.display = window.__ES_ADMIN ? "inline-flex" : "none";
+  if (btnNuevo) btnNuevo.style.display = devPuedeCrear() ? "inline-flex" : "none";
 
   cargarDevocionales();
 }
@@ -6811,6 +6821,10 @@ document.addEventListener("DOMContentLoaded", ()=>{
 function isAdmin(){
   // si biblia.js te setea este flag, lo usamos
   return !!window.__ES_ADMIN;
+}
+
+function devPuedeCrear(){
+  return !!window.__UID && !!(window.__ES_ADMIN || window.__ES_COLABORADOR);
 }
 
 window.devPrivacidadLabel = function(){
@@ -7195,8 +7209,9 @@ async function cargarDevocionales(){
 
 const btnNuevo = $("btnDevNuevo");
 if (btnNuevo) {
-  btnNuevo.style.display = isAdmin() ? "inline-flex" : "none";
+  btnNuevo.style.display = devPuedeCrear() ? "inline-flex" : "none";
   btnNuevo.onclick = ()=> {
+    if (!devPuedeCrear()) return;
     devMostrarCrear();
     // ✅ abrir selector de imagen directo
     const inp = document.getElementById("devImg");
@@ -7250,7 +7265,7 @@ devMoverAddDebajoGaleria();
     if (!items.length) {
       if (feed) feed.innerHTML = `<div style="opacity:.8; padding:10px;">
         No hay devocionales todavía.<br>
-        ${isAdmin() ? "Tocá el botón + para crear el primero." : "Pedile a un admin que publique uno."}
+        ${devPuedeCrear() ? "Tocá el botón + para crear el primero." : "Todavía no se publicó ninguno."}
       </div>`;
       if (row) row.innerHTML = "";
       return;

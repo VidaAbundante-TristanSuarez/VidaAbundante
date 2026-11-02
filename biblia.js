@@ -2633,6 +2633,7 @@ async function registrarUsuarioActual(user) {
     const actual = snap.val() || {};
 
     await set(ref(db, `usuarios/${user.uid}`), {
+      ...actual,
       uid: user.uid,
       nombre: actual.nombre || data.nombre,
       email: actual.email || data.email,
@@ -2785,10 +2786,10 @@ if (wrapRecursos && !puedeVerRecursos) {
 
   // botones ya existentes que dependían de admin
   const btnDevNuevo = document.getElementById("btnDevNuevo");
-  if (btnDevNuevo) btnDevNuevo.style.display = esAdmin ? "inline-flex" : "none";
+  if (btnDevNuevo) btnDevNuevo.style.display = puedeVerRecursos ? "inline-flex" : "none";
 
   const btnSubidoNuevo = document.getElementById("btnSubidoNuevo");
-  if (btnSubidoNuevo) btnSubidoNuevo.style.display = esAdmin ? "inline-flex" : "none";
+  if (btnSubidoNuevo) btnSubidoNuevo.style.display = puedeVerRecursos ? "inline-flex" : "none";
 
 if (typeof panelImgRenderAddBoton === "function") {
   panelImgRenderAddBoton();
@@ -2906,6 +2907,7 @@ onValue(ref(db, "colaboradores/" + uid), (s) => {
   window.__PUEDE_CREAR_IMAGEN_BIBLIA = !!(window.__ES_ADMIN || window.__ES_COLABORADOR);
 
   actualizarPermisosUI();
+  window.renderCompartidos?.();
 
   // ✅ El rol colaborador llega después de pintar la barra.
   // Repintamos varias veces para ganarle a cualquier render posterior.

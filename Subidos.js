@@ -289,6 +289,11 @@ window.addEventListener("va-fondos-actualizados", () => {
 
 let subidosUID = null;
 let subidosEsAdmin = false;
+let subidosEsColaborador = false;
+
+function subidosPuedeEditar() {
+  return !!window.__UID && !!(window.__ES_ADMIN || window.__ES_COLABORADOR);
+}
 let subidosMesActual = new Date();
 let subidosItems = [];
 let subidosCargados = false;
@@ -1058,13 +1063,15 @@ function subidosIndiceActualDesdeBoton(id, btn) {
     base?.querySelector?.(".subidos-visor-archivos-carril") ||
     document.querySelector("#modalSubidosVisor .subidos-visor-archivos-carril");
 
-  if (!carril) return 0;
+  if (!carril) return Number(base?.querySelector('[data-subidos-archivo]')?.dataset.subidosArchivo) || 0;
 
   const selector = carril.classList.contains("subidos-visor-archivos-carril")
     ? ".subidos-visor-archivo-slide"
     : ".subidos-media-slide";
 
-  return subidosIndiceActualCarril(carril, selector);
+  const slides = [...carril.querySelectorAll(selector)].filter(s => s.dataset.clon !== "1");
+  const activo = slides[subidosIndiceActualCarril(carril, selector)];
+  return Number(activo?.dataset.subidosArchivo) || 0;
 }
 
 async function subidosCrearFileDeItemPorIndice(it, indice = 0) {
@@ -2566,12 +2573,12 @@ async function subidosCrearVistaPreviaVideoAlGuardar(file, estadoEl = null, idx 
 }
 
 function subidosArchivosItem(it = {}) {
-  const arr = Array.isArray(it.archivos)
-    ? it.archivos.filter(a => a && String(a.url || "").trim())
-    : [];
+  const fuente = Array.isArray(it.archivos) ? it.archivos : Object.values(it.archivos || {});
+  const arr = fuente.filter(a => a && String(a.url || "").trim());
 
   if (arr.length) {
     return arr.map((a, i) => ({
+      ...a,
       url: a.url || "",
       r2Key: a.r2Key || "",
       mimeType: a.mimeType || a.contentType || "",
@@ -2752,6 +2759,7 @@ function setSubidosModalTitulo(texto) {
 }
 
 function abrirModalSubidos() {
+  if (!subidosPuedeEditar()) return;
   const m = document.getElementById("modalSubidos");
   if (!m) return;
 
@@ -2769,6 +2777,8 @@ function abrirModalSubidos() {
 
   setSubidosModalTitulo("Nuevo subido");
   if (archivo) archivo.value = "";
+  const archivoLabel = document.getElementById("subidosArchivoLabel");
+  if (archivoLabel) archivoLabel.textContent = "Archivos";
   if (descripcion) descripcion.value = "";
   const tituloGeneral=document.getElementById('subidosTitulo');if(tituloGeneral)tituloGeneral.value='';
   if (estado) estado.textContent = "";
@@ -2790,7 +2800,7 @@ delete m.dataset.cumpleNombre;
 }
 
 window.subidosAgregarArchivosDesdeGaleria=function({fecha='',titulo=''}={}){
-  if(!subidosEsAdmin)return;
+  if(!subidosPuedeEditar())return;
   abrirModalSubidos();
   const etiqueta=document.getElementById('subidosEtiqueta');
   if(etiqueta){
@@ -2920,8 +2930,8 @@ function subidosHabitualDesdeId(id) {
 }
 
 function abrirNuevoHabitualDesdeCalendario(id) {
-  if (!subidosEsAdmin) {
-    alert("Solo admin puede crear o editar este evento.");
+  if (!subidosPuedeEditar()) {
+    alert("Solo administradores o colaboradores pueden crear o editar este evento.");
     return;
   }
 
@@ -6179,32 +6189,65 @@ window.abrirSubidosVisorPredica =
     );
   };
 
+function subidosTipoMediaArchivo(archivo = {}) {
+  const mime = String(archivo.mimeType || archivo.contentType || "").toLowerCase();
+  let path = String(archivo.url || "").split(/[?#]/)[0];
+  try { path = new URL(archivo.url, location.href).pathname; } catch {}
+  if (mime.startsWith("application/pdf") || /\.pdf$/i.test(path)) return "documento";
+  if (mime.startsWith("image/") || /\.(png|jpe?g|gif|webp|avif)$/i.test(path)) return "imagen";
+  if (mime.startsWith("video/") || /\.(mp4|webm|mov)$/i.test(path)) return "video";
+  if (mime.startsWith("audio/") || /\.(mp3|m4a|wav|ogg)$/i.test(path)) return "audio";
+  return "documento";
+}
+
+function subidosHtmlDocumentos(archivos = []) {
+  const documentos = archivos.filter(a => subidosTipoMediaArchivo(a) === "documento");
+  if (!documentos.length) return "";
+  return `<div class="va-documentos" aria-label="Documentos adjuntos" onclick="event.stopPropagation()">${documentos.map(a => {
+    const url = escaparHtml(a.url || ""), nombre = escaparHtml(a.fileName || "Documento");
+    const pdf = /pdf/i.test(a.mimeType || "") || /\.pdf(?:[?#]|$)/i.test(a.url || "") || /\.pdf$/i.test(a.fileName || "");
+    return `<div class="va-documento"><i class="fa-solid ${pdf ? 'fa-file-pdf' : 'fa-file-lines'}" aria-hidden="true"></i><span class="va-documento-nombre" title="${nombre}">${nombre}</span><div class="va-documento-acciones"><a href="${url}" target="_blank" rel="noopener noreferrer" aria-label="Abrir ${nombre}">Abrir${pdf ? ' PDF' : ''}</a><button type="button" data-url="${url}" data-nombre="${nombre}" onclick="subidosDescargarAdjunto(this)" aria-label="Descargar ${nombre}"><i class="fa-solid fa-download" aria-hidden="true"></i> Descargar</button></div></div>`;
+  }).join('')}</div>`;
+}
+
+window.subidosDescargarAdjunto = async function(btn) {
+  if (btn.disabled) return;
+  btn.disabled = true;
+  try {
+    await descargarArchivoRemoto(btn.dataset.url, btn.dataset.nombre);
+  } catch (e) {
+    alert("No se pudo descargar el archivo.\n\n" + (e?.message || e));
+  } finally {
+    btn.disabled = false;
+  }
+};
+
 function subidosHtmlArchivoVisor(archivo, idx) {
   const url = String(archivo?.url || "").trim();
-  const mime = String(archivo?.mimeType || "");
+  const tipo = subidosTipoMediaArchivo(archivo);
   const nombre = escaparHtml(archivo?.fileName || "archivo");
 
   if (!url) return "";
 
-  if (mime.startsWith("image/")) {
+  if (tipo === "imagen") {
     return `
-      <section id="subidosVisorArchivo-${idx}" class="subidos-visor-archivo-slide">
+      <section id="subidosVisorArchivo-${idx}" class="subidos-visor-archivo-slide" data-subidos-archivo="${idx}">
         <img src="${url}" alt="${nombre}" loading="lazy" decoding="async">
       </section>
     `;
   }
 
-  if (mime.startsWith("video/")) {
+  if (tipo === "video") {
     return `
-      <section id="subidosVisorArchivo-${idx}" class="subidos-visor-archivo-slide">
+      <section id="subidosVisorArchivo-${idx}" class="subidos-visor-archivo-slide" data-subidos-archivo="${idx}">
         <video src="${url}" controls playsinline preload="metadata"></video>
       </section>
     `;
   }
 
-  if (mime.startsWith("audio/")) {
+  if (tipo === "audio") {
     return `
-      <section id="subidosVisorArchivo-${idx}" class="subidos-visor-archivo-slide">
+      <section id="subidosVisorArchivo-${idx}" class="subidos-visor-archivo-slide" data-subidos-archivo="${idx}">
         <div class="subidos-visor-archivo-audio">
           <i class="fa-solid fa-headphones"></i>
           <strong>${nombre}</strong>
@@ -6214,18 +6257,18 @@ function subidosHtmlArchivoVisor(archivo, idx) {
     `;
   }
 
-  return `
-    <section id="subidosVisorArchivo-${idx}" class="subidos-visor-archivo-slide">
-      <iframe src="${url}" title="${nombre}"></iframe>
-    </section>
-  `;
+  return "";
 }
 
 function subidosHtmlArchivosAbiertos(it, indiceInicial = 0) {
   const archivos = subidosArchivosItem(it);
   if (!archivos.length) return "";
 
-  const mostrarFlechas = archivos.length > 1;
+  const media = archivos.map((archivo, indice) => ({archivo, indice}))
+    .filter(r => subidosTipoMediaArchivo(r.archivo) !== "documento");
+  const documentos = subidosHtmlDocumentos(archivos);
+  if (!media.length) return documentos;
+  const mostrarFlechas = media.length > 1;
 
   return `
     <div class="subidos-visor-archivos-shell" data-indice-inicial="${Number(indiceInicial || 0)}">
@@ -6236,7 +6279,7 @@ function subidosHtmlArchivosAbiertos(it, indiceInicial = 0) {
       ` : ``}
 
       <div class="subidos-visor-archivos-carril">
-        ${archivos.map((a, i) => subidosHtmlArchivoVisor(a, i)).join("")}
+        ${media.map(r => subidosHtmlArchivoVisor(r.archivo, r.indice)).join("")}
       </div>
 
       ${mostrarFlechas ? `
@@ -6245,6 +6288,7 @@ function subidosHtmlArchivosAbiertos(it, indiceInicial = 0) {
         </button>
       ` : ``}
     </div>
+    ${documentos}
   `;
 }
 
@@ -6608,8 +6652,8 @@ async function poblarCardPredicaDesdeDato(card, cita) {
 }
 
 window.abrirEditarSubido = async function abrirEditarSubido(id) {
-  if (!subidosEsAdmin) {
-    alert("Solo admin puede editar.");
+  if (!subidosPuedeEditar()) {
+    alert("Solo administradores o colaboradores pueden editar.");
     return;
   }
 
@@ -6618,6 +6662,8 @@ window.abrirEditarSubido = async function abrirEditarSubido(id) {
 
   abrirModalSubidos();
   subidosEditandoId = id;
+  const archivoLabel = document.getElementById("subidosArchivoLabel");
+  if (archivoLabel) archivoLabel.textContent = "Agregar archivos";
 
   const ttl = document.getElementById("subidosModalTitulo");
   setSubidosModalTitulo("Editar subido");
@@ -6702,7 +6748,7 @@ function subidosHtmlBotonArchivoPreview(it, archivo, idx = 0) {
 
   if (mime.startsWith("image/")) {
     return `
-      <button type="button" onclick="${accionAbrir}" class="subidos-media-link subidos-media-frame subidos-media-slide is-image" title="Abrir">
+      <button type="button" onclick="${accionAbrir}" data-subidos-archivo="${idx}" class="subidos-media-link subidos-media-frame subidos-media-slide is-image" title="Abrir">
         <img src="${url}" alt="${nombre}" loading="lazy" decoding="async">
       </button>
     `;
@@ -6716,6 +6762,7 @@ function subidosHtmlBotonArchivoPreview(it, archivo, idx = 0) {
         type="button"
         onclick="${accionAbrir}"
         class="subidos-media-link subidos-media-frame subidos-media-slide is-video subidos-video-frame"
+        data-subidos-archivo="${idx}"
         title="Abrir video"
       >
         ${subidosHtmlPosterVideo(preview.url, nombrePlano)}
@@ -6725,7 +6772,7 @@ function subidosHtmlBotonArchivoPreview(it, archivo, idx = 0) {
 
   if (mime.startsWith("audio/")) {
     return `
-      <button type="button" onclick="${accionAbrir}" class="subidos-media-link subidos-media-frame subidos-media-slide is-audio" title="Abrir">
+      <button type="button" onclick="${accionAbrir}" data-subidos-archivo="${idx}" class="subidos-media-link subidos-media-frame subidos-media-slide is-audio" title="Abrir">
         <div class="subidos-file-open">
           <i class="fa-solid fa-headphones"></i>
           <span>${nombre}</span>
@@ -6866,12 +6913,16 @@ window.subidosMoverCarruselCard = function subidosMoverCarruselCard(ev, btn, dir
   subidosMoverCarrilCircular(carril, dir, ".subidos-media-slide");
 };
 
-function htmlPreviewArchivoSubido(it) {
+function htmlPreviewArchivoSubido(it, incluirDocumentos = true) {
   const archivos = subidosArchivosItem(it);
   if (!archivos.length) return "";
+  const media = archivos.map((archivo, indice) => ({archivo, indice}))
+    .filter(r => subidosTipoMediaArchivo(r.archivo) !== "documento");
+  const documentos = incluirDocumentos ? subidosHtmlDocumentos(archivos) : "";
+  if (!media.length) return documentos;
 
-  if (archivos.length === 1) {
-    return subidosHtmlBotonArchivoPreview(it, archivos[0], 0);
+  if (media.length === 1) {
+    return subidosHtmlBotonArchivoPreview(it, media[0].archivo, media[0].indice) + documentos;
   }
 
   return `
@@ -6881,13 +6932,14 @@ function htmlPreviewArchivoSubido(it) {
       </button>
 
       <div class="subidos-media-carril">
-        ${archivos.map((a, i) => subidosHtmlBotonArchivoPreview(it, a, i)).join("")}
+        ${media.map(r => subidosHtmlBotonArchivoPreview(it, r.archivo, r.indice)).join("")}
       </div>
 
       <button type="button" class="subidos-media-nav subidos-media-next" onclick="subidosMoverCarruselCard(event, this, 1)" title="Siguiente">
         <i class="fa-solid fa-chevron-right"></i>
       </button>
     </div>
+    ${documentos}
   `;
 }
 
@@ -6911,7 +6963,7 @@ function subidosRenderCardHTML(it = {}, opciones = {}) {
   const idPrefix = opciones.idPrefix ?? "subido-";
   const domId = opciones.domId ?? `${idPrefix}${idReal}`;
 
-  const mostrarEditar = opciones.mostrarEditar ?? subidosEsAdmin;
+  const mostrarEditar = opciones.mostrarEditar ?? subidosPuedeEditar();
   const mostrarBorrarOriginal = opciones.mostrarBorrarOriginal ?? subidosEsAdmin;
   const mostrarAccionesArchivo = opciones.mostrarAccionesArchivo ?? true;
 
@@ -6932,6 +6984,7 @@ function subidosRenderCardHTML(it = {}, opciones = {}) {
 const archivoPrincipal = archivosItem[0] || null;
 
 const tieneArchivo = archivosItem.length > 0;
+  const tieneMedia = archivosItem.some(a => subidosTipoMediaArchivo(a) !== "documento");
   const tienePredica = subidosTieneContenidoPredica(it);
   const mostrarAcciones = mostrarAccionesArchivo && !!(tieneArchivo || tienePredica);
 
@@ -6979,11 +7032,12 @@ const tieneArchivo = archivosItem.length > 0;
         </div>
       </div>
 
-      ${tieneArchivo ? `
+      ${tieneMedia ? `
         <div class="subidos-media">
-          ${htmlPreviewArchivoSubido(it)}
+          ${htmlPreviewArchivoSubido(it, false)}
         </div>
       ` : ``}
+      ${subidosHtmlDocumentos(archivosItem)}
 
 ${tienePredica ? bloquePredica : ``}
 
@@ -7067,7 +7121,7 @@ function renderFeed() {
 
   feed.innerHTML = subidosItems.map(it => subidosRenderCardHTML(it, {
     idPrefix: "subido-",
-    mostrarEditar: subidosEsAdmin,
+    mostrarEditar: subidosPuedeEditar(),
     mostrarBorrarOriginal: subidosEsAdmin,
     mostrarAccionesArchivo: true
   })).join("");
@@ -7213,7 +7267,7 @@ function refrescarSubidos() {
   renderFeed();
 
   const btnNuevo = document.getElementById("btnSubidoNuevo");
-  if (btnNuevo) btnNuevo.style.display = subidosEsAdmin ? "inline-flex" : "none";
+  if (btnNuevo) btnNuevo.style.display = subidosPuedeEditar() ? "inline-flex" : "none";
 
   // ✅ prepara archivos reales en memoria para descargar/compartir
   subidosPrepararArchivosDelFeed();
@@ -7647,17 +7701,35 @@ window.subidosGuardarAudioPredica =
     return cambios;
   };
 
+async function subidosGuardarEdicion(destinoRef, datos, editando) {
+  if (!editando || typeof FB.runTransaction !== "function") {
+    await set(destinoRef, datos);
+    return;
+  }
+  const resultado = await FB.runTransaction(destinoRef, actual => {
+    if (!actual) return;
+    const archivos = new Map(subidosArchivosItem(actual).map(a => [a.url, a]));
+    for (const archivo of subidosArchivosItem(datos)) {
+      archivos.set(archivo.url, {...archivos.get(archivo.url), ...archivo});
+    }
+    return {...actual, ...datos, archivos: [...archivos.values()]};
+  }, {applyLocally: false});
+  if (!resultado.committed) throw new Error("La publicación ya no está disponible para editar.");
+}
+
 async function guardarSubido() {
   if (subidosGuardando) return;
+  const editandoId = subidosEditandoId;
 
   try {
+    subidosUID = window.__UID || null;
     if (!subidosUID) {
       alert("Necesitás iniciar sesión.");
       return;
     }
 
-    if (!subidosEsAdmin) {
-      alert("Solo admin puede subir archivos.");
+    if (!subidosPuedeEditar()) {
+      alert("Solo administradores o colaboradores pueden subir archivos.");
       return;
     }
 
@@ -7668,7 +7740,7 @@ async function guardarSubido() {
     const estado = document.getElementById("subidosEstado");
     const btnGuardar = document.getElementById("btnGuardarSubido");
 
-    const actual = subidosEditandoId ? (obtenerSubidoPorId(subidosEditandoId) || {}) : {};
+    const actual = editandoId ? (obtenerSubidoPorId(editandoId) || {}) : {};
     const files = [...(inpFile?.files || [])];
     const file = files[0] || null;
 
@@ -7727,7 +7799,7 @@ if (esPredica) {
       pero la prédica ya tenía citas guardadas,
       NO dejamos que se borre.
     */
-    if (subidosEditandoId && citasGuardadas.length) {
+    if (editandoId && citasGuardadas.length) {
       console.warn("Formulario de prédica incompleto. Mantengo citas guardadas:", e);
 
       datosPredica = {
@@ -7752,7 +7824,7 @@ if (esPredica) {
     Si estoy editando una prédica y el formulario quedó sin citas,
     conservamos las citas que ya estaban guardadas.
   */
-  if (subidosEditandoId && !citasNuevas.length && citasGuardadas.length) {
+  if (editandoId && !citasNuevas.length && citasGuardadas.length) {
     datosPredica.citas = citasGuardadas;
 
     datosPredica.version =
@@ -7810,6 +7882,7 @@ if (esPredica) {
     const ts = Date.now();
 
 let archivos = subidosArchivosItem(actual).map(a => ({
+  ...a,
   url: a.url || "",
   r2Key: a.r2Key || "",
   mimeType: a.mimeType || "",
@@ -7843,8 +7916,6 @@ let videoPreviewMimeType = principalActual.videoPreviewMimeType || actual.videoP
 let videoPreviewFileName = principalActual.videoPreviewFileName || actual.videoPreviewFileName || "";
 
     if (files.length) {
-      archivos = [];
-
       for (let i = 0; i < files.length; i++) {
         const fileActual = files[i];
         const esVideo = subidosEsVideoFile(fileActual);
@@ -7923,8 +7994,8 @@ videoPreviewMimeType = principal.videoPreviewMimeType || "";
 videoPreviewFileName = principal.videoPreviewFileName || "";
     }
 
-    const destinoRef = subidosEditandoId
-      ? ref(db, `subidosIglesia/${subidosEditandoId}`)
+    const destinoRef = editandoId
+      ? ref(db, `subidosIglesia/${editandoId}`)
       : push(ref(db, "subidosIglesia"));
 
     const idFinal = destinoRef.key;
@@ -7953,10 +8024,13 @@ const audioAnteriorUrl =
     ""
   ).trim();
 
+const datosAnteriores = {...actual};
+delete datosAnteriores.id;
 const datosBase = {
+      ...datosAnteriores,
       titulo:esPredica?(actual.titulo||''):tituloGeneral,
       fecha: actual.fecha || ts,
-      fechaEdicion: subidosEditandoId ? ts : "",
+      fechaEdicion: editandoId ? ts : "",
       fechaEvento,
       etiqueta,
       descripcion,
@@ -8044,7 +8118,7 @@ shareFingerprintPredica: esPredica ? subidosFirmaVisualPredica({
   Si algo se pisa en el futuro, queda copia en:
   subidosBackups/{id}/{timestamp}
 */
-if (subidosEditandoId && actual && Object.keys(actual).length) {
+if (editandoId && actual && Object.keys(actual).length) {
   try {
     await set(
       ref(db, `subidosBackups/${idFinal}/${Date.now()}`),
@@ -8067,10 +8141,7 @@ let datosFinalGuardados =
   guarda los datos y después prepara su PNG.
 */
 if (esPredica) {
-  await set(
-    destinoRef,
-    datosBase
-  );
+  await subidosGuardarEdicion(destinoRef, datosBase, !!editandoId);
 
   const necesitaRegenerarShare = subidosPredicaNecesitaRegenerarShare(
     actual,
@@ -8083,7 +8154,7 @@ if (esPredica) {
   // Una prédica nueva (o una vieja sin imagen) se genera automáticamente.
   if (
     necesitaRegenerarShare &&
-    subidosEditandoId &&
+    editandoId &&
     String(actual.shareUrl || "").trim()
   ) {
     regenerarShare = window.confirm(
@@ -8106,10 +8177,7 @@ if (esPredica) {
         ...share
       };
 
-      await set(
-        destinoRef,
-        datosFinalGuardados
-      );
+      await subidosGuardarEdicion(destinoRef, datosFinalGuardados, !!editandoId);
 
       subidosFileCache.delete(idFinal);
       subidosFilePreparando.delete(idFinal);
@@ -8127,10 +8195,7 @@ if (esPredica) {
         ""
     };
 
-    await set(
-      destinoRef,
-      datosFinalGuardados
-    );
+    await subidosGuardarEdicion(destinoRef, datosFinalGuardados, !!editandoId);
   }
 
 } else {
@@ -8161,10 +8226,7 @@ if (esPredica) {
   datosFinalGuardados =
     datosFinal;
 
-  await set(
-    destinoRef,
-    datosFinal
-  );
+  await subidosGuardarEdicion(destinoRef, datosFinal, !!editandoId);
 
   subidosFileCache.delete(idFinal);
   subidosFilePreparando.delete(idFinal);
@@ -8260,7 +8322,7 @@ function initSubidosBotones() {
 
   if (btnAgregarEtiqueta) {
     btnAgregarEtiqueta.onclick = () => {
-      if (!subidosEsAdmin) return;
+      if (!subidosPuedeEditar()) return;
 
       const nueva = prompt("Nueva etiqueta:");
       if (!nueva || !nueva.trim()) return;
@@ -8321,14 +8383,16 @@ onValue(ref(db, "subidosIglesia"), (s) => {
 const esperarAuth = () => {
   const uidPrevio = subidosUID;
   const adminPrevio = subidosEsAdmin;
+  const colaboradorPrevio = subidosEsColaborador;
 
   subidosUID = window.__UID || null;
   subidosEsAdmin = !!window.__ES_ADMIN;
+  subidosEsColaborador = !!window.__ES_COLABORADOR;
 
   const btnNuevo = document.getElementById("btnSubidoNuevo");
-  if (btnNuevo) btnNuevo.style.display = subidosEsAdmin ? "inline-flex" : "none";
+  if (btnNuevo) btnNuevo.style.display = subidosPuedeEditar() ? "inline-flex" : "none";
 
-  if (uidPrevio !== subidosUID || adminPrevio !== subidosEsAdmin) {
+  if (uidPrevio !== subidosUID || adminPrevio !== subidosEsAdmin || colaboradorPrevio !== subidosEsColaborador) {
     refrescarSubidos();
   }
 
