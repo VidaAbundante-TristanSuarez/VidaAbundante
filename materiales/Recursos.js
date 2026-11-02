@@ -1,3 +1,5 @@
+import { crearMensajesHermanos } from './mensajes-hermanos.js?v=20261102-agenda-10';
+import { crearColectas } from './colectas.js?v=20261102-agenda-10';
 import {
   getDatabase,
   ref,
@@ -77,7 +79,7 @@ if (!puedeVerRecursos) {
   return;
 }
 
-  const permitidas = ["rh", "talleres", "hermanos", "permisos", "ediciones"];
+  const permitidas = ["rh", "talleres", "hermanos", "colectas", "permisos", "ediciones"];
   if (!permitidas.includes(sub)) sub = "ediciones";
 
   // ✅ Permisos solo admin.
@@ -101,12 +103,14 @@ if (!puedeVerRecursos) {
   const rh = document.getElementById("recursos-rh");
   const talleres = document.getElementById("recursos-talleres");
   const hermanos = document.getElementById("recursos-hermanos");
+  const colectas = document.getElementById("recursos-colectas");
   const permisos = document.getElementById("recursos-permisos");
   const ediciones = document.getElementById("recursos-ediciones");
 
   if (rh) rh.style.display = (sub === "rh") ? "block" : "none";
   if (talleres) talleres.style.display = (sub === "talleres") ? "block" : "none";
   if (hermanos) hermanos.style.display = (sub === "hermanos") ? "block" : "none";
+  if (colectas) colectas.style.display = (sub === "colectas") ? "block" : "none";
   if (permisos) permisos.style.display = (sub === "permisos") ? "block" : "none";
   if (ediciones) ediciones.style.display = (sub === "ediciones") ? "block" : "none";
 
@@ -130,6 +134,10 @@ if (!puedeVerRecursos) {
 
   if (sub === "hermanos") {
     await mostrarHermanos();
+  }
+  if (sub === "colectas") {
+    iniciarEscuchaHermanos();
+    await hColectas.mostrar();
   }
 
   if (sub === "permisos") {
@@ -1012,6 +1020,8 @@ let hermanosIniciado = false;
 let hermanosEscuchaActiva = false;
 let hermanosCache = [];
 let hermanoEditId = null;
+const hMensajeria = crearMensajesHermanos({obtenerHermanos:()=>hermanosCache});
+const hColectas = crearColectas({obtenerHermanos:()=>hermanosCache});
 
 function hCrearTokenPedido() {
   return (
@@ -2163,6 +2173,7 @@ ${window.__ES_ADMIN ? `
           </div>
         </div>
 
+        ${hMensajeria.barraHTML()}
         <div id="hermanosLista"></div>
 
       </div>
@@ -2313,6 +2324,7 @@ window.renderHermanosLista = () => {
         ${q ? "No encontré resultados para esa búsqueda." : "Todavía no hay contactos cargados."}
       </div>
     `;
+    hMensajeria.actualizar();
     return;
   }
 
@@ -2322,6 +2334,7 @@ window.renderHermanosLista = () => {
 
     return `
       <div class="hermano-card" id="hermanoCard_${h.id}">
+        ${hMensajeria.marcaHTML(h)}
         
         <button type="button" class="hermano-resumen" onclick="toggleHermanoCard('${h.id}')">
           <div class="hermano-resumen-info">
@@ -2368,7 +2381,8 @@ window.renderHermanosLista = () => {
 
           <div class="hermano-acciones">
             ${window.__ES_ADMIN ? `<button type="button" onclick="editarHermano('${h.id}')">Editar</button>` : ``}
-            <button type="button" onclick="enviarHermanoPorWhatsApp('${h.id}')">WhatsApp</button>
+            <button type="button" data-contacto="${hEscape(h.id)}" onclick="hAbrirMensajesHermanos(this.dataset.contacto)"><i class="fa-brands fa-whatsapp" aria-hidden="true"></i> Mensaje</button>
+            <button type="button" onclick="enviarHermanoPorWhatsApp('${h.id}')">Pedido de oración</button>
             ${window.__ES_ADMIN ? `<button type="button" onclick="borrarHermano('${h.id}')">Borrar</button>` : ``}
           </div>
         </div>
@@ -2377,6 +2391,7 @@ window.renderHermanosLista = () => {
   }).join("");
 
   hActualizarPedidosSeleccionados();
+  hMensajeria.actualizar();
 };
 
 window.toggleHermanoCard = (id) => {
