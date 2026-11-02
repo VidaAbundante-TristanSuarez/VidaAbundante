@@ -1,5 +1,5 @@
-import { crearMensajesHermanos } from './mensajes-hermanos.js?v=20261102-agenda-10';
-import { crearColectas } from './colectas.js?v=20261102-agenda-10';
+import { crearMensajesHermanos } from './mensajes-hermanos.js?v=20261102-colectas-11';
+import { crearColectas } from './colectas.js?v=20261102-colectas-11';
 import {
   getDatabase,
   ref,
@@ -1020,8 +1020,8 @@ let hermanosIniciado = false;
 let hermanosEscuchaActiva = false;
 let hermanosCache = [];
 let hermanoEditId = null;
-const hMensajeria = crearMensajesHermanos({obtenerHermanos:()=>hermanosCache});
 const hColectas = crearColectas({obtenerHermanos:()=>hermanosCache});
+const hMensajeria = crearMensajesHermanos({obtenerHermanos:()=>hermanosCache,obtenerColectas:()=>hColectas.listar()});
 
 function hCrearTokenPedido() {
   return (
