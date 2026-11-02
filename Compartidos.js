@@ -150,8 +150,9 @@ window.compAbrirAlbumAgenda=function(indice){
 window.compAbrirFotoAlbumAgenda=function(indice,host){
   const album=compAgendaAlbumesVisibles[indice];if(!album)return;
   const fotos=album.archivos.filter(r=>compTipoArchivoAgenda(r.archivo)==='imagen');
+  if(!fotos.length){window.compAbrirAlbumAgenda(indice);return;}
   const activo=Number(host?.querySelector('[data-va-carrusel]')?.dataset.disenoActivo)||0;
-  const foto=fotos[activo];if(foto)window.compAbrirMedia(foto.archivo.url,'imagen',foto.archivo.fileName||album.titulo);
+  if(fotos[activo])compAbrirGaleriaMedia(fotos.map(r=>({url:r.archivo.url,titulo:album.titulo,fileName:r.archivo.fileName})),activo);
 };
 window.compVolverAlbumesAgenda=function(){compAgendaAlbumActual='';renderCompartidos();};
 window.compAgregarArchivosAgenda=function(){
@@ -163,6 +164,10 @@ window.compAbrirArchivoAgenda=function(indice){
   const registro=compAgendaArchivosVisibles[indice];if(!registro)return;
   const {archivo,item}=registro,tipo=compTipoArchivoAgenda(archivo);
   if(tipo==='archivo'){window.open(archivo.url,'_blank','noopener');return;}
+  if(tipo==='imagen'){
+    const fotos=compAgendaArchivosVisibles.filter(r=>compTipoArchivoAgenda(r.archivo)==='imagen');
+    compAbrirGaleriaMedia(fotos.map(r=>({url:r.archivo.url,titulo:compTituloAlbumAgenda(r.item),fileName:r.archivo.fileName})),fotos.indexOf(registro));return;
+  }
   window.compAbrirMedia(archivo.url,tipo,archivo.fileName||compTituloAlbumAgenda(item));
 };
 window.compAccionArchivoAgenda=function(indice,accion){
@@ -184,14 +189,15 @@ function compRenderGaleriaAgenda(items=[]){
       const fotos=a.archivos.filter(r=>compTipoArchivoAgenda(r.archivo)==='imagen');
       const disenosImagen=Object.fromEntries(fotos.map((r,n)=>[String(n),{url:r.archivo.url}]));
       const portada=fotos.length?carruselImagenHTML({disenosImagen,disenosOrden:fotos.map((_,n)=>String(n))},'agenda_album_'+i):'<div class="comp-agenda-carpeta"><i class="fa-solid fa-folder-open" aria-hidden="true"></i></div>';
-      return `<article class="comp-agenda-album"><div class="comp-agenda-portadas" onclick="if(!event.target.closest('button,a'))compAbrirFotoAlbumAgenda(${i},this)">${portada}</div><button type="button" class="comp-agenda-album-datos" onclick="compAbrirAlbumAgenda(${i})"><strong><i class="fa-solid fa-folder" aria-hidden="true"></i> ${compEscape(a.titulo)}</strong><time>${compEscape(compFechaAlbumAgenda(a.fecha))}</time><small>${a.archivos.length} ${a.archivos.length===1?'archivo':'archivos'}</small></button></article>`;
+      const controlSolo=fotos.length<=1?`<div class="comp-agenda-control-solo" aria-hidden="true">${fotos.length?'1 / 1':'&nbsp;'}</div>`:'';
+      return `<article class="comp-agenda-album"><div class="comp-agenda-portadas" onclick="if(!event.target.closest('button,a'))compAbrirFotoAlbumAgenda(${i},this)">${portada}${controlSolo}</div><button type="button" class="comp-agenda-album-datos" onclick="compAbrirAlbumAgenda(${i})" title="${compEscape(a.titulo)}"><strong><i class="fa-solid fa-folder" aria-hidden="true"></i> ${compEscape(a.titulo)}</strong><time>${compEscape(compFechaAlbumAgenda(a.fecha))}</time><small>${a.archivos.length} ${a.archivos.length===1?'archivo':'archivos'}</small></button></article>`;
     }).join('');
   }else{
     contenido=archivos.map(({archivo,item},i)=>{
       const tipo=compTipoArchivoAgenda(archivo),foto=tipo==='imagen'?archivo.url:(archivo.videoPreviewUrl||'');
       const icono=tipo==='video'?'fa-file-video':tipo==='audio'?'fa-headphones':'fa-file-lines';
       const titulo=compTituloAlbumAgenda(item),nombre=archivo.fileName||titulo;
-      return `<article class="comp-agenda-archivo"><button type="button" class="comp-agenda-media" data-va-imagen-host onclick="compAbrirArchivoAgenda(${i})" aria-label="Abrir ${compEscape(nombre)}">${foto?`<img data-va-imagen src="${compEscape(foto)}" alt="${compEscape(nombre)}" loading="${i<4?'eager':'lazy'}" decoding="async">`:`<i class="fa-solid ${icono}" aria-hidden="true"></i><span>${compEscape(nombre)}</span>`}</button><div class="comp-agenda-archivo-info"><strong>${compEscape(titulo)}</strong><time>${compEscape(compFechaAlbumAgenda(item.fechaEvento))}</time></div><div class="comp-agenda-archivo-actions"><button type="button" onclick="compAccionArchivoAgenda(${i},'descargar')" aria-label="Descargar ${compEscape(nombre)}"><i class="fa-solid fa-download" aria-hidden="true"></i></button><button type="button" onclick="compAccionArchivoAgenda(${i},'compartir')" aria-label="Compartir ${compEscape(nombre)}"><i class="fa-solid fa-share-nodes" aria-hidden="true"></i></button></div></article>`;
+      return `<article class="comp-agenda-archivo"><button type="button" class="comp-agenda-media" data-va-imagen-host onclick="compAbrirArchivoAgenda(${i})" aria-label="Abrir ${compEscape(nombre)}">${foto?`<img data-va-imagen src="${compEscape(foto)}" alt="${compEscape(nombre)}" loading="${i<4?'eager':'lazy'}" decoding="async">`:`<i class="fa-solid ${icono}" aria-hidden="true"></i><span>${compEscape(nombre)}</span>`}</button><div class="comp-agenda-archivo-info"><strong title="${compEscape(titulo)}">${compEscape(titulo)}</strong><time>${compEscape(compFechaAlbumAgenda(item.fechaEvento))}</time></div><div class="comp-agenda-archivo-actions"><button type="button" onclick="compAccionArchivoAgenda(${i},'descargar')" aria-label="Descargar ${compEscape(nombre)}"><i class="fa-solid fa-download" aria-hidden="true"></i></button><button type="button" onclick="compAccionArchivoAgenda(${i},'compartir')" aria-label="Compartir ${compEscape(nombre)}"><i class="fa-solid fa-share-nodes" aria-hidden="true"></i></button></div></article>`;
     }).join('');
   }
     return `<section class="comp-agenda-galeria" aria-label="Archivos de Agenda">${encabezado}${albumHead}<div class="comp-agenda-grid">${contenido||'<p class="comp-agenda-vacio">Todavía no hay archivos para mostrar.</p>'}</div></section>`;
@@ -986,84 +992,120 @@ window.compCompartirUrl = async function compCompartirUrl(url, fileName = "image
 };
 
 function compAsegurarVisor() {
-  if (document.getElementById("compMediaViewer")) return;
-
-  const div = document.createElement("div");
-  div.id = "compMediaViewer";
-  div.className = "comp-media-viewer";
-  div.style.display = "none";
-
-  div.innerHTML = `
+  const existente=document.getElementById('compMediaViewer');
+  if(existente?.querySelector('.comp-media-toolbar'))return;
+  existente?.remove();
+  const div=document.createElement('div');
+  div.id='compMediaViewer';div.className='comp-media-viewer';div.style.display='none';
+  div.setAttribute('role','dialog');div.setAttribute('aria-modal','true');div.setAttribute('aria-labelledby','compMediaTitulo');
+  div.innerHTML=`
     <div class="comp-media-viewer-backdrop" onclick="compCerrarMedia()"></div>
-
     <div class="comp-media-viewer-card">
-      <button type="button" class="comp-media-close" onclick="compCerrarMedia()">✕</button>
-
-      <div id="compMediaViewerBody" class="comp-media-viewer-body"></div>
-
-      <div class="comp-media-actions">
-        <button type="button" id="compMediaBtnDescargar" title="Descargar">
-          <i class="fa-solid fa-download"></i>
-        </button>
-
-        <button type="button" id="compMediaBtnCompartir" title="Compartir">
-          <i class="fa-solid fa-share-nodes"></i>
-        </button>
+      <div class="comp-media-toolbar">
+        <h2 id="compMediaTitulo">Imagen</h2>
+        <span id="compMediaContador" aria-live="polite"></span>
+        <button type="button" class="comp-media-close" onclick="compCerrarMedia()" aria-label="Cerrar imagen" title="Cerrar">×</button>
       </div>
-    </div>
-  `;
-
+      <div class="comp-media-stage">
+        <button type="button" class="comp-media-anterior" onclick="compMoverMedia(-1)" aria-label="Imagen anterior" title="Imagen anterior" hidden>‹</button>
+        <div id="compMediaViewerBody" class="comp-media-viewer-body"></div>
+        <button type="button" class="comp-media-siguiente" onclick="compMoverMedia(1)" aria-label="Imagen siguiente" title="Imagen siguiente" hidden>›</button>
+      </div>
+      <div class="comp-media-actions">
+        <button type="button" id="compMediaBtnDescargar" title="Descargar" aria-label="Descargar"><i class="fa-solid fa-download"></i></button>
+        <button type="button" id="compMediaBtnCompartir" title="Compartir" aria-label="Compartir"><i class="fa-solid fa-share-nodes"></i></button>
+      </div>
+    </div>`;
+  div.addEventListener('keydown',e=>{
+    if(e.key==='Escape'){e.preventDefault();e.stopPropagation();window.compCerrarMedia();return;}
+    if(['ArrowLeft','ArrowRight'].includes(e.key)&&!e.target.closest('input,textarea,select,video,audio')&&div.__compGaleria?.fotos.length>1){
+      e.preventDefault();e.stopPropagation();window.compMoverMedia(e.key==='ArrowLeft'?-1:1);return;
+    }
+    if(e.key==='Tab'){
+      const botones=[...div.querySelectorAll('button,[href],input,video,audio')].filter(b=>!b.disabled&&b.getClientRects().length);
+      const primero=botones[0],ultimo=botones.at(-1);
+      if(e.shiftKey&&document.activeElement===primero){e.preventDefault();ultimo?.focus();}
+      else if(!e.shiftKey&&document.activeElement===ultimo){e.preventDefault();primero?.focus();}
+    }
+  });
+  const dedos=new Set();let gesto=null;
+  const stage=div.querySelector('.comp-media-stage');
+  div.__compLimpiarGesto=()=>{dedos.clear();gesto=null;};
+  stage.addEventListener('pointerdown',e=>{
+    if(e.pointerType!=='touch'&&e.pointerType!=='pen')return;
+    dedos.add(e.pointerId);
+    gesto=dedos.size===1&&!e.target.closest('button,video,audio')?{id:e.pointerId,x:e.clientX,y:e.clientY}:null;
+  });
+  const terminar=(e,cancelado=false)=>{
+    dedos.delete(e.pointerId);const inicio=gesto;gesto=null;
+    if(cancelado||!inicio||inicio.id!==e.pointerId||!div.__compGaleria)return;
+    const dx=e.clientX-inicio.x,dy=e.clientY-inicio.y;
+    if(Math.abs(dx)>45&&Math.abs(dx)>Math.abs(dy)*1.3){e.preventDefault();window.compMoverMedia(dx<0?1:-1);}
+  };
+  stage.addEventListener('pointerup',e=>terminar(e));
+  stage.addEventListener('pointercancel',e=>terminar(e,true));
   document.body.appendChild(div);
 }
 
-window.compAbrirMedia = function compAbrirMedia(url, tipo = "imagen", titulo = "Archivo") {
-  url=normalizarUrlImagen(url);
+function compActualizarNavegacionMedia(modal){
+  const galeria=modal.__compGaleria,total=galeria?.fotos.length||0;
+  const antes=modal.querySelector('.comp-media-anterior'),despues=modal.querySelector('.comp-media-siguiente');
+  const enfocado=document.activeElement;
+  antes.hidden=despues.hidden=total<2;
+  antes.disabled=!galeria||galeria.indice===0;despues.disabled=!galeria||galeria.indice===total-1;
+  document.getElementById('compMediaContador').textContent=total?`${galeria.indice+1} / ${total}`:'';
+  if((enfocado===antes&&antes.disabled)||(enfocado===despues&&despues.disabled))modal.querySelector('.comp-media-close').focus({preventScroll:true});
+}
+
+function compAbrirGaleriaMedia(fotos=[],indice=0){
+  const validas=fotos.map(f=>({...f,url:normalizarUrlImagen(f.url)})).filter(f=>f.url);
+  if(!validas.length)return;
   compAsegurarVisor();
+  const modal=document.getElementById('compMediaViewer');
+  modal.__compGaleria={fotos:validas,indice:Math.max(0,Math.min(indice,validas.length-1))};
+  compMostrarFotoMedia(modal);
+}
 
-  const modal = document.getElementById("compMediaViewer");
-  const body = document.getElementById("compMediaViewerBody");
-  const btnDescargar = document.getElementById("compMediaBtnDescargar");
-  const btnCompartir = document.getElementById("compMediaBtnCompartir");
+function compMostrarFotoMedia(modal){
+  const galeria=modal.__compGaleria,foto=galeria?.fotos[galeria.indice];if(!foto)return;
+  window.compAbrirMedia(foto.url,'imagen',foto.titulo||foto.fileName||'Imagen',{galeria:true,fileName:foto.fileName});
+}
 
-  if (!modal || !body) return;
-
-  const fileName = compFileName(url, tipo === "video" ? "video.mp4" : "imagen.png");
-
-  if (tipo === "video") {
-    body.innerHTML = `
-      <video controls playsinline style="width:100%; max-height:78vh; border-radius:16px; background:#000;">
-        <source src="${compEscape(url)}">
-      </video>
-    `;
-  } else {
-    body.innerHTML = `
-      <img data-va-imagen src="${compEscape(url)}" alt="${compEscape(titulo)}" style="width:100%; max-height:78vh; object-fit:contain; display:block; border-radius:16px; background:#fff;">
-    `;
-  }
-
-  if (btnDescargar) {
-    btnDescargar.onclick = () => compDescargarUrl(url, fileName);
-  }
-
-  if (btnCompartir) {
-    btnCompartir.onclick = () => compCompartirUrl(url, fileName);
-  }
-
-  modal.style.display = "flex";
-  prepararCargaImagenes(body);
+window.compMoverMedia=function(paso){
+  const modal=document.getElementById('compMediaViewer'),galeria=modal?.__compGaleria;if(!galeria)return;
+  const indice=Math.max(0,Math.min(galeria.fotos.length-1,galeria.indice+Number(paso)));
+  if(indice===galeria.indice)return;
+  galeria.indice=indice;compMostrarFotoMedia(modal);
 };
 
-window.compCerrarMedia = function compCerrarMedia() {
-  const modal = document.getElementById("compMediaViewer");
-  const body = document.getElementById("compMediaViewerBody");
+window.compAbrirMedia=function compAbrirMedia(url,tipo='imagen',titulo='Archivo',opciones={}){
+  url=normalizarUrlImagen(url);if(!url)return;
+  compAsegurarVisor();
+  const modal=document.getElementById('compMediaViewer'),body=document.getElementById('compMediaViewerBody');
+  if(!opciones.galeria)modal.__compGaleria=null;
+  const recienAbierto=modal.style.display==='none';
+  if(recienAbierto)modal.__compFocus=document.activeElement;
+  document.getElementById('compMediaTitulo').textContent=titulo||'Imagen';
+  const fileName=opciones.fileName||compFileName(url,tipo==='video'?'video.mp4':tipo==='audio'?'audio.mp3':'imagen.png');
+  if(tipo==='video')body.innerHTML=`<video controls playsinline><source src="${compEscape(url)}"></video>`;
+  else if(tipo==='audio')body.innerHTML=`<audio controls src="${compEscape(url)}"></audio>`;
+  else body.innerHTML=`<img data-va-imagen src="${compEscape(url)}" alt="${compEscape(titulo)}">`;
+  document.getElementById('compMediaBtnDescargar').onclick=()=>compDescargarUrl(url,fileName);
+  document.getElementById('compMediaBtnCompartir').onclick=()=>compCompartirUrl(url,fileName);
+  compActualizarNavegacionMedia(modal);modal.style.display='flex';document.body.classList.add('comp-media-abierta');
+  prepararCargaImagenes(body);
+  if(recienAbierto)modal.querySelector('.comp-media-close').focus({preventScroll:true});
+};
 
-  if (body) body.innerHTML = "";
-  if (modal) {
-    modal.style.display = "none";
-    modal.classList.remove('va-desde-galeria');
-    const volver=modal.__vaGaleriaFocus;delete modal.__vaGaleriaFocus;
-    if(volver?.isConnected)volver.focus?.({preventScroll:true});
-  }
+window.compCerrarMedia=function compCerrarMedia(){
+  const modal=document.getElementById('compMediaViewer');if(!modal)return;
+  document.getElementById('compMediaViewerBody')?.replaceChildren();
+  modal.style.display='none';modal.classList.remove('va-desde-galeria');modal.__compGaleria=null;
+  document.body.classList.remove('comp-media-abierta');
+  modal.__compLimpiarGesto?.();
+  const volver=modal.__vaGaleriaFocus||modal.__compFocus;
+  delete modal.__vaGaleriaFocus;delete modal.__compFocus;
+  if(volver?.isConnected)volver.focus?.({preventScroll:true});
 };
 
 function compLimpiarCompartidosTop() {
