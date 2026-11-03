@@ -18664,21 +18664,32 @@ window.verImagenesCreadasBiblia = function(){
       const refs=referenciasDePublicacion(item);if(!refs.length)return false;
       if(soloCapitulo&&!refs.some(r=>r.libro===libroSel.value&&r.capitulo===Number(capSel.value)))return false;
       return !query||buscar(refs.map(r=>`${r.libro} ${r.capitulo}:${r.versiculo}`).join(' ')).includes(query);
-    }).sort((a,b)=>Number(b.fecha)-Number(a.fecha));
-    const fichas=publicaciones.flatMap(item=>disenosDeImagen(item).map((d,i,ds)=>({item,d,i,total:ds.length})));
-    modal.querySelector('.va-creadas-cantidad').textContent=`${fichas.length} ${fichas.length===1?'imagen':'imágenes'} · ${publicaciones.length} ${publicaciones.length===1?'publicación':'publicaciones'}`;
-    lista.innerHTML=fichas.length?fichas.map(({item,d,i,total},indice)=>`<article class="va-creada-ficha" data-publicacion="${panelImgAttr(item.id)}" data-diseno="${panelImgAttr(d.id)}"><button type="button" class="va-creada-imagen" data-va-imagen-host data-abrir="${panelImgAttr(item.id)}" data-diseno="${panelImgAttr(d.id)}" aria-label="Abrir imagen"><img data-va-imagen src="${panelImgAttr(d.miniaturaUrl||d.url)}" alt="Diseño ${i+1} de ${panelImgAttr(item.ref||'versículos')}" loading="${indice<2?'eager':'lazy'}" decoding="async"></button><div class="va-creada-detalle"><strong>${panelImgHtml(item.titulo||item.ref||'Imagen de versículos')}</strong>${total>1?`<span class="va-creada-numero">Diseño ${i+1} / ${total}</span>`:''}</div>${referenciasHTML(item,{agruparPorCapitulo:true,lineaUnica:true})}<div class="va-creada-acciones"><button type="button" data-descargar="${panelImgAttr(item.id)}" data-diseno="${panelImgAttr(d.id)}" aria-label="Descargar imagen" title="Descargar imagen"><i class="fa-solid fa-download"></i></button><button type="button" data-compartir="${panelImgAttr(item.id)}" data-diseno="${panelImgAttr(d.id)}" aria-label="Compartir imagen" title="Compartir imagen"><i class="fa-solid fa-share-nodes"></i></button>${usuarioPuedeCrearImagen()?`<button type="button" data-copiar="${panelImgAttr(item.id)}" data-diseno="${panelImgAttr(d.id)}" aria-label="Copiar con un nuevo diseño" title="Copiar con un nuevo diseño"><i class="fa-solid fa-copy"></i></button>`:''}</div></article>`).join(''):'<p class="va-creadas-vacio">No hay imágenes para esta búsqueda.</p>';
-    for(const b of lista.querySelectorAll('[data-copiar]'))b.onclick=async()=>{const id=b.dataset.copiar,disenoId=b.dataset.diseno;cerrar();await window.editarImagenPanel(id,{disenoId,nuevoDiseno:true});};
-    const abrir=(id,disenoId)=>{const ficha=fichas.find(f=>f.item.id===id&&f.d.id===disenoId);if(ficha)vaAbrirImagenDeGaleria(ficha.d.url,ficha.item.titulo||ficha.item.ref||'Imagen',ficha.item,ficha.d);};
-    for(const b of lista.querySelectorAll('[data-abrir]'))b.onclick=()=>abrir(b.dataset.abrir,b.dataset.diseno);
-    for(const ficha of lista.querySelectorAll('[data-publicacion]'))ficha.onclick=e=>{if(!e.target.closest('button,a,.va-referencias,.va-creada-acciones'))abrir(ficha.dataset.publicacion,ficha.dataset.diseno);};
-    for(const b of lista.querySelectorAll('[data-compartir],[data-descargar]'))b.onclick=async()=>{
-      const accion=b.hasAttribute('data-descargar')?'descargar':'compartir';
-      const ficha=fichas.find(f=>f.item.id===(b.dataset.compartir||b.dataset.descargar)&&f.d.id===b.dataset.diseno);if(!ficha||b.disabled)return;
-      b.disabled=true;
-      try{await panelImagenAccionItem(ficha.item,accion,ficha.d);}
-      finally{b.disabled=false;}
-    };
+    });
+    const fichas=publicaciones.map(item=>{
+      const disenos=disenosDeImagen(item).map((d,i)=>({...d,indiceOriginal:i})).sort((a,b)=>(Number(b.fecha)||0)-(Number(a.fecha)||0)||b.indiceOriginal-a.indiceOriginal);
+      const vista={...item,disenosOrden:disenos.map(d=>d.id),disenosImagen:Object.fromEntries(disenos.map(d=>[d.id,d]))};
+      const fecha=Math.max(Number(item.fecha)||0,...disenos.map(d=>Number(d.fecha)||0));
+      return {item,vista,disenos,fecha};
+    }).filter(f=>f.disenos.length).sort((a,b)=>b.fecha-a.fecha);
+    const cantidad=fichas.reduce((n,f)=>n+f.disenos.length,0);
+    modal.querySelector('.va-creadas-cantidad').textContent=`${cantidad} ${cantidad===1?'imagen':'imágenes'} · ${fichas.length} ${fichas.length===1?'publicación':'publicaciones'}`;
+    lista.innerHTML=fichas.length?fichas.map(({item,vista})=>`<article class="va-creada-ficha" data-publicacion="${panelImgAttr(item.id)}"><div class="va-creada-carrusel">${carruselImagenHTML(vista,'creadas_'+item.id)}</div><div class="va-creada-detalle"><strong>${panelImgHtml(item.titulo||item.ref||'Imagen de versículos')}</strong></div>${referenciasHTML(item,{agruparPorCapitulo:true,lineaUnica:true})}<div class="va-creada-acciones"><button type="button" data-descargar="${panelImgAttr(item.id)}" aria-label="Descargar imagen" title="Descargar imagen"><i class="fa-solid fa-download"></i></button><button type="button" data-compartir="${panelImgAttr(item.id)}" aria-label="Compartir imagen" title="Compartir imagen"><i class="fa-solid fa-share-nodes"></i></button>${usuarioPuedeCrearImagen()?`<button type="button" data-copiar="${panelImgAttr(item.id)}" aria-label="Copiar con un nuevo diseño" title="Copiar con un nuevo diseño"><i class="fa-solid fa-copy"></i></button>`:''}</div></article>`).join(''):'<p class="va-creadas-vacio">No hay imágenes para esta búsqueda.</p>';
+    for(const card of lista.querySelectorAll('[data-publicacion]')){
+      const ficha=fichas.find(f=>f.item.id===card.dataset.publicacion);
+      const activo=()=>disenoActivoDeCard(ficha.vista,card);
+      const abrir=()=>{const d=activo();if(d)vaAbrirImagenDeGaleria(d.url,ficha.item.titulo||ficha.item.ref||'Imagen',ficha.item,d);};
+      card.onclick=e=>{if(!e.target.closest('button,a,.va-referencias,.va-creada-acciones'))abrir();};
+      const rail=card.querySelector('.va-disenos-rail');
+      rail?.setAttribute('aria-label','Deslizar diseños; presioná Enter para abrir la imagen');
+      rail?.addEventListener('keydown',e=>{if(e.target===rail&&['Enter',' '].includes(e.key)){e.preventDefault();abrir();}});
+      card.querySelector('[data-copiar]')?.addEventListener('click',async()=>{const d=activo();if(!d)return;cerrar();await window.editarImagenPanel(ficha.item.id,{disenoId:d.id,nuevoDiseno:true});});
+      for(const b of card.querySelectorAll('[data-compartir],[data-descargar]'))b.onclick=async()=>{
+        const accion=b.hasAttribute('data-descargar')?'descargar':'compartir',d=activo();if(!d||b.disabled)return;
+        b.disabled=true;
+        try{await panelImagenAccionItem(ficha.item,accion,d);}
+        finally{b.disabled=false;}
+      };
+    }
   };
   const cerrar=()=>{modal.remove();window.vaActualizarGaleriaCreada=null;window.vaCerrarGaleriaCreada=null;previo?.focus?.({preventScroll:true});};
   window.vaActualizarGaleriaCreada=pintar;window.vaCerrarGaleriaCreada=cerrar;

@@ -1,4 +1,5 @@
 import { botonAdjuntosHTML } from './documentos-adjuntos.js?v=20261102-colectas-11';
+import { ordenarArchivosPorPortada } from './agenda-archivos.js?v=20261102-agenda-12';
 import { referenciasHTML, referenciasDePublicacion, carruselImagenHTML } from "./publicaciones-imagen.js?v=20261102-agenda-imagenes-8";
 import { normalizarUrlImagen, prepararCargaImagenes } from './carga-imagenes.js?v=20261102-agenda-imagenes-8';
 import {
@@ -92,10 +93,10 @@ function compArchivosAgenda(item={}){
   const raw=Array.isArray(item.archivos)?item.archivos:Object.values(item.archivos||{});
   const archivos=raw.length?raw:(item.url?[item]:[]);
   const vistos=new Set();
-  return archivos.filter(a=>{
+  return ordenarArchivosPorPortada(archivos.filter(a=>{
     const url=normalizarUrlImagen(a?.url);if(!url||vistos.has(url))return false;
     vistos.add(url);return true;
-  }).map(a=>({...a,url:normalizarUrlImagen(a.url)}));
+  }).map(a=>({...a,url:normalizarUrlImagen(a.url)})),item.portadaUrl||'');
 }
 
 function compTituloAlbumAgenda(item={}){
@@ -114,11 +115,14 @@ function compAlbumesAgenda(items=[]){
     const titulo=compTituloAlbumAgenda(item),fecha=String(item.fechaEvento||'');
     const nombreReal=item.titulo||item.predicaTitulo||item.tituloPredica||item.descripcion;
     const key=JSON.stringify([fecha,nombreReal?compNormalizarEtiqueta(titulo):String(item._subidoId||item.id)]);
-    if(!grupos.has(key))grupos.set(key,{key,titulo,fecha,archivos:[]});
+    if(!grupos.has(key))grupos.set(key,{key,titulo,fecha,archivos:[],portadaUrl:'',portadaActualizadaEn:0});
     const album=grupos.get(key);
     for(const archivo of archivos)album.archivos.push({archivo,item,albumKey:key});
+    if(item.portadaUrl&&Number(item.portadaActualizadaEn||0)>album.portadaActualizadaEn){
+      album.portadaUrl=item.portadaUrl;album.portadaActualizadaEn=Number(item.portadaActualizadaEn);
+    }
   }
-  return [...grupos.values()].sort((a,b)=>b.fecha.localeCompare(a.fecha));
+  return [...grupos.values()].map(album=>({...album,archivos:ordenarArchivosPorPortada(album.archivos,album.portadaUrl)})).sort((a,b)=>b.fecha.localeCompare(a.fecha));
 }
 
 function compTipoArchivoAgenda(archivo={}){
@@ -562,6 +566,11 @@ function compFiltrarItems(items = []) {
   if(compFiltroActual==='agenda'){
     salida=salida.filter(item=>compAgendaCoincideCategoria(item));
     if(compAgendaFecha&&['predicas','eventos'].includes(compSubFiltroAgendaActual))salida=salida.filter(item=>item.fechaEvento===compAgendaFecha);
+    salida=[...salida].sort((a,b)=>{
+      const fechaA=compFechaAgendaValida(a.fechaEvento)?a.fechaEvento:'';
+      const fechaB=compFechaAgendaValida(b.fechaEvento)?b.fechaEvento:'';
+      return fechaB.localeCompare(fechaA)||(compTs(b)||0)-(compTs(a)||0);
+    });
   }
 
   return salida;

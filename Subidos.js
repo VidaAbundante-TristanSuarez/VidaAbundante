@@ -1,3 +1,4 @@
+import { crearGestorArchivosAgenda, ordenarArchivosPorPortada } from './agenda-archivos.js?v=20261102-agenda-12';
 import { botonAdjuntosHTML } from './documentos-adjuntos.js?v=20261102-colectas-11';
 import { normalizarUrlImagen, obtenerBlobImagen } from './carga-imagenes.js?v=20261102-agenda-imagenes-8';
 // ================= SUBIDOS.JS =================
@@ -291,6 +292,8 @@ window.addEventListener("va-fondos-actualizados", () => {
 let subidosUID = null;
 let subidosEsAdmin = false;
 let subidosEsColaborador = false;
+let subidosGestorArchivos = null;
+function subidosObtenerGestor(){return subidosGestorArchivos ||= crearGestorArchivosAgenda();}
 
 function subidosPuedeEditar() {
   return !!window.__UID && !!(window.__ES_ADMIN || window.__ES_COLABORADOR);
@@ -2760,7 +2763,7 @@ function setSubidosModalTitulo(texto) {
 }
 
 function abrirModalSubidos() {
-  if (!subidosPuedeEditar()) return;
+  if (subidosGuardando || !subidosPuedeEditar()) return false;
   const m = document.getElementById("modalSubidos");
   if (!m) return;
 
@@ -2776,10 +2779,10 @@ function abrirModalSubidos() {
 
   subidosEditandoId = null;
 
-  setSubidosModalTitulo("Nuevo subido");
+  setSubidosModalTitulo("Nueva publicación");
   if (archivo) archivo.value = "";
   const archivoLabel = document.getElementById("subidosArchivoLabel");
-  if (archivoLabel) archivoLabel.textContent = "Archivos";
+  if (archivoLabel) archivoLabel.textContent = "Archivos y carátula";
   if (descripcion) descripcion.value = "";
   const tituloGeneral=document.getElementById('subidosTitulo');if(tituloGeneral)tituloGeneral.value='';
   if (estado) estado.textContent = "";
@@ -2798,11 +2801,12 @@ delete m.dataset.cumpleNombre;
 
   m.style.display = "flex";
   m.setAttribute("aria-hidden", "false");
+  subidosObtenerGestor()?.reiniciar();
+  return true;
 }
 
 window.subidosAgregarArchivosDesdeGaleria=function({fecha='',titulo=''}={}){
-  if(!subidosPuedeEditar())return;
-  abrirModalSubidos();
+  if(!subidosPuedeEditar()||!abrirModalSubidos())return;
   const etiqueta=document.getElementById('subidosEtiqueta');
   if(etiqueta){
     if(![...etiqueta.options].some(o=>o.value==='Archivos'))etiqueta.add(new Option('Archivos','Archivos'));
@@ -2813,14 +2817,16 @@ window.subidosAgregarArchivosDesdeGaleria=function({fecha='',titulo=''}={}){
   actualizarPredicaSubidosUI();setSubidosModalTitulo('Agregar archivos');
 };
 
-window.cerrarModalSubidos = function cerrarModalSubidos() {
+window.cerrarModalSubidos = function cerrarModalSubidos(completado = false) {
+  if(subidosGuardando && completado !== true)return;
   const m = document.getElementById("modalSubidos");
   if (!m) return;
 
   const ttl = document.getElementById("subidosModalTitulo");
-  setSubidosModalTitulo("Nuevo subido");
+  setSubidosModalTitulo("Nueva publicación");
 
   subidosEditandoId = null;
+  subidosGestorArchivos?.vaciar();
   m.style.display = "none";
   m.setAttribute("aria-hidden", "true");
 };
@@ -2931,6 +2937,7 @@ function subidosHabitualDesdeId(id) {
 }
 
 function abrirNuevoHabitualDesdeCalendario(id) {
+  if(subidosGuardando)return;
   if (!subidosPuedeEditar()) {
     alert("Solo administradores o colaboradores pueden crear o editar este evento.");
     return;
@@ -3263,6 +3270,7 @@ window.enviarWhatsAppCumpleSubidos = function enviarWhatsAppCumpleSubidos(id) {
 };
 
 window.abrirEditarCumpleanosSubidos = function abrirEditarCumpleanosSubidos(id) {
+  if(subidosGuardando)return;
   if (!subidosEsAdmin) {
     alert("Solo admin puede editar cumpleaños.");
     return;
@@ -6650,6 +6658,7 @@ async function poblarCardPredicaDesdeDato(card, cita) {
 }
 
 window.abrirEditarSubido = async function abrirEditarSubido(id) {
+  if(subidosGuardando)return;
   if (!subidosPuedeEditar()) {
     alert("Solo administradores o colaboradores pueden editar.");
     return;
@@ -6661,10 +6670,10 @@ window.abrirEditarSubido = async function abrirEditarSubido(id) {
   abrirModalSubidos();
   subidosEditandoId = id;
   const archivoLabel = document.getElementById("subidosArchivoLabel");
-  if (archivoLabel) archivoLabel.textContent = "Agregar archivos";
+  if (archivoLabel) archivoLabel.textContent = "Archivos y carátula";
 
   const ttl = document.getElementById("subidosModalTitulo");
-  setSubidosModalTitulo("Editar subido");
+  setSubidosModalTitulo("Editar publicación");
   
   const fecha = document.getElementById("subidosFecha");
 const etiqueta = document.getElementById("subidosEtiqueta");
@@ -6688,6 +6697,7 @@ const fondoPredica = document.getElementById("subidosPredicaFondo");
   const btnVerArchivo = document.getElementById("btnVerArchivoActualSubido");
 
  const archivosActuales = subidosArchivosItem(it);
+ subidosObtenerGestor()?.reiniciar(archivosActuales,it.portadaUrl||'');
 
 if (archivoBox) archivoBox.style.display = archivosActuales.length ? "block" : "none";
 
@@ -7699,6 +7709,23 @@ window.subidosGuardarAudioPredica =
     return cambios;
   };
 
+function subidosCambiarGuardando(valor){
+  subidosGuardando=!!valor;
+  const modal=document.getElementById('modalSubidos');modal?.setAttribute('aria-busy',String(subidosGuardando));
+  const campos=document.getElementById('subidosCampos');if(campos)campos.disabled=subidosGuardando;
+  for(const id of ['btnGuardarSubido','btnCancelarSubido','subidosCerrarModal']){const b=document.getElementById(id);if(b){b.disabled=subidosGuardando;b.setAttribute('aria-disabled',String(subidosGuardando));}}
+  const btn=document.getElementById('btnGuardarSubido'),texto=btn?.querySelector('[data-guardar-texto]'),icono=btn?.querySelector('i');
+  if(texto)texto.textContent=subidosGuardando?'Subiendo…':'Guardar';
+  if(icono)icono.className=subidosGuardando?'fa-solid fa-spinner fa-spin':'fa-solid fa-check';
+  const progreso=document.getElementById('subidosProgresoWrap');if(progreso)progreso.hidden=!subidosGuardando;
+  subidosGestorArchivos?.bloquear(subidosGuardando);
+}
+
+function subidosMostrarProgreso(completos,total,texto=''){
+  const p=document.getElementById('subidosProgreso');if(p){p.max=Math.max(1,total+1);p.value=completos;}
+  const label=document.getElementById('subidosProgresoTexto');if(label)label.textContent=texto||`${completos} de ${total} archivos`;
+}
+
 async function subidosGuardarEdicion(destinoRef, datos, editando) {
   if (!editando || typeof FB.runTransaction !== "function") {
     await set(destinoRef, datos);
@@ -7710,7 +7737,22 @@ async function subidosGuardarEdicion(destinoRef, datos, editando) {
     for (const archivo of subidosArchivosItem(datos)) {
       archivos.set(archivo.url, {...archivos.get(archivo.url), ...archivo});
     }
-    return {...actual, ...datos, archivos: [...archivos.values()]};
+    const actualMasNueva=Number(actual.portadaActualizadaEn||0)>Number(datos.portadaActualizadaEn||0);
+    const portada=actualMasNueva?actual.portadaUrl:(datos.portadaUrl||actual.portadaUrl||'');
+    const ordenados=ordenarArchivosPorPortada([...archivos.values()],portada),primero=ordenados[0]||{};
+    const compartible=datos.esPredica?{}:{
+      shareUrl:primero.shareUrl||'',shareR2Key:primero.shareR2Key||'',
+      shareMimeType:primero.shareMimeType||'',shareFileName:primero.shareFileName||''
+    };
+    return {
+      ...actual,...datos,...compartible,portadaUrl:portada,
+      portadaActualizadaEn:Math.max(Number(actual.portadaActualizadaEn)||0,Number(datos.portadaActualizadaEn)||0),
+      archivos:ordenados,url:primero.url||datos.url||'',r2Key:primero.r2Key||'',
+      mimeType:primero.mimeType||'',fileName:primero.fileName||'',sizeBytes:Number(primero.sizeBytes)||0,
+      subidaDirectaVideo:!!primero.subidaDirectaVideo,
+      videoPreviewUrl:primero.videoPreviewUrl||'',videoPreviewR2Key:primero.videoPreviewR2Key||'',
+      videoPreviewMimeType:primero.videoPreviewMimeType||'',videoPreviewFileName:primero.videoPreviewFileName||''
+    };
   }, {applyLocally: false});
   if (!resultado.committed) throw new Error("La publicación ya no está disponible para editar.");
 }
@@ -7739,7 +7781,11 @@ async function guardarSubido() {
     const btnGuardar = document.getElementById("btnGuardarSubido");
 
     const actual = editandoId ? (obtenerSubidoPorId(editandoId) || {}) : {};
-    const files = [...(inpFile?.files || [])];
+    const gestor=subidosObtenerGestor();
+    const pendientes=gestor?gestor.pendientes():[...(inpFile?.files||[])].map((file,i)=>({file,id:String(i)}));
+    const files=pendientes.map(p=>p.file);
+    const portadaSeleccionada=gestor?.seleccion()||{};
+    const urlsNuevas=new Map();
     const file = files[0] || null;
 
     const fechaEvento = (inpFecha?.value || "").trim();
@@ -7866,8 +7912,8 @@ if (esPredica) {
   }
 }
 
-    subidosGuardando = true;
-    if (btnGuardar) btnGuardar.disabled = true;
+    subidosCambiarGuardando(true);
+    subidosMostrarProgreso(0,files.length,files.length?`Preparando ${files.length} archivos…`:'Guardando publicación…');
 
     if (estado) {
       estado.textContent = files.length > 1
@@ -7916,6 +7962,8 @@ let videoPreviewFileName = principalActual.videoPreviewFileName || actual.videoP
     if (files.length) {
       for (let i = 0; i < files.length; i++) {
         const fileActual = files[i];
+        gestor?.estadoArchivo(pendientes[i].id,'Subiendo…');
+        subidosMostrarProgreso(i,files.length,`Archivo ${i+1} de ${files.length}`);
         const esVideo = subidosEsVideoFile(fileActual);
 
         if (estado) {
@@ -7975,8 +8023,14 @@ if (!esPredica) {
 }
 
 archivos.push(archivoBase);
+urlsNuevas.set(pendientes[i].id,archivoBase.url);
+gestor?.estadoArchivo(pendientes[i].id,'Subido');
+subidosMostrarProgreso(i+1,files.length);
       }
+    }
 
+    const portadaUrl=portadaSeleccionada.url||urlsNuevas.get(portadaSeleccionada.id)||actual.portadaUrl||'';
+    archivos=ordenarArchivosPorPortada(archivos,portadaUrl);
 const principal = archivos[0] || {};
 
 url = principal.url || "";
@@ -7990,8 +8044,8 @@ videoPreviewUrl = principal.videoPreviewUrl || "";
 videoPreviewR2Key = principal.videoPreviewR2Key || "";
 videoPreviewMimeType = principal.videoPreviewMimeType || "";
 videoPreviewFileName = principal.videoPreviewFileName || "";
-    }
 
+    subidosMostrarProgreso(files.length,files.length,'Guardando publicación…');
     const destinoRef = editandoId
       ? ref(db, `subidosIglesia/${editandoId}`)
       : push(ref(db, "subidosIglesia"));
@@ -8032,6 +8086,8 @@ const datosBase = {
       fechaEvento,
       etiqueta,
       descripcion,
+      portadaUrl,
+      portadaActualizadaEn:portadaSeleccionada.manual?(portadaSeleccionada.elegidaEn||ts):(Number(actual.portadaActualizadaEn)||0),
 
       // ✅ compatibilidad vieja: se sigue guardando el primer archivo como url principal
 url,
@@ -8237,7 +8293,7 @@ if (estado) {
   estado.textContent = "✅ Guardado";
 }
 
-cerrarModalSubidos();
+cerrarModalSubidos(true);
 
 /*
   Al terminar una prédica,
@@ -8264,10 +8320,7 @@ if (esPredica) {
 
     alert("No se pudo guardar el subido.\n\n" + (e?.message || e));
   } finally {
-    subidosGuardando = false;
-
-    const btnGuardar = document.getElementById("btnGuardarSubido");
-    if (btnGuardar) btnGuardar.disabled = false;
+    subidosCambiarGuardando(false);
   }
 }
 
@@ -8298,6 +8351,7 @@ function initSubidosBotones() {
   }
 
   if (btnGuardar) btnGuardar.onclick = guardarSubido;
+  subidosObtenerGestor();
 
   if (selEtiqueta && !selEtiqueta.__predicaHook) {
     selEtiqueta.__predicaHook = true;
@@ -8496,6 +8550,8 @@ function subidosAsegurarFooterFijo() {
     );
   }
 
+  const progreso=document.getElementById('subidosProgresoWrap');
+  if(progreso&&progreso.parentElement!==footer)footer.insertBefore(progreso,footer.firstChild);
   filaBotones.classList.add(
     "subidos-modal-footer-botones"
   );

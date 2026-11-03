@@ -2753,5 +2753,105 @@ button{
   font-size:18px !important;
 }
 
+
+/* Agenda: editor de archivos y carátula */
+#modalSubidos .subidos-dialogo{width:min(850px,calc(100vw - 28px))!important;max-width:850px!important;max-height:calc(100dvh - 28px)!important;padding:0!important;border-radius:24px!important}
+#modalSubidos .subidos-modal-head{display:flex;flex:0 0 auto;align-items:center;justify-content:space-between;gap:12px;padding:17px 20px;background:#ffffffeb;border-bottom:1px solid #cddde8}
+#modalSubidos .subidos-modal-identidad{display:flex;align-items:center;gap:11px}
+#modalSubidos .subidos-modal-title-icon{width:40px;height:40px;flex:0 0 40px;background:#d6edfc;color:#2c668d}
+#modalSubidos .subidos-modal-contexto{display:block;margin-bottom:3px;font:700 10px/1.2 Arial,sans-serif;letter-spacing:1.2px;text-transform:uppercase;color:#647e90}
+#modalSubidos .subidos-modal-title{font:700 21px/1.2 Georgia,serif;color:#1c3b51}
+#subidosCerrarModal{width:36px;height:36px;flex:0 0 36px;border:1px solid #dce6ec;border-radius:50%;background:#f4f8fb;color:#3d596d;font:26px/1 Arial;cursor:pointer}
+#modalSubidos .subidos-dialogo>.subidos-modal-scroll{padding:18px 20px!important;gap:14px!important}
+#modalSubidos .subidos-campos{display:flex;flex-direction:column;gap:16px;margin:0;padding:0;border:0;min-inline-size:0;width:100%}
+#modalSubidos .subidos-media-editor,#modalSubidos .subidos-datos-editor{padding:16px;border:1px solid #dce6ee;border-radius:19px;background:#ffffffdf;box-shadow:0 3px 14px #183a5110}
+#modalSubidos .subidos-seccion-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
+#modalSubidos .subidos-seccion-head h3{font:700 14px/1.3 Arial,sans-serif;margin:0;color:#294b64}
+#subidosArchivosCantidad{font:500 11px/1.3 Arial,sans-serif;color:#647b8e;text-align:right}
+#modalSubidos .subidos-zona-archivos{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:10px;padding:13px;border:1.5px dashed #bad5e5;border-radius:13px;background:#f4faff;color:#617d90;font:12px Arial,sans-serif;transition:background .15s,border-color .15s}
+#modalSubidos .subidos-zona-archivos>i{font-size:20px;color:#78a9c8}
+#modalSubidos .subidos-zona-archivos.arrastrando{background:#ddf2ff;border-color:#4e94be}
+#modalSubidos .subidos-zona-archivos button,#modalSubidos .subidos-cambiar-caratula{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:35px;padding:7px 12px;border:0;border-radius:10px;background:#cee9fc;color:#204d6c;font:700 12px/1.25 Arial,sans-serif;cursor:pointer}
+#modalSubidos input[hidden]{display:none!important}
+#modalSubidos .subidos-archivos-diseno{display:grid;grid-template-columns:190px minmax(0,1fr);gap:14px;margin-top:14px;align-items:start}
+#modalSubidos .subidos-caratula-card{padding:10px;border:1px solid #c9dfed;border-radius:14px;background:#f4faff;display:flex;flex-direction:column;gap:8px}
+#modalSubidos .subidos-caratula-head{display:flex;align-items:center;justify-content:space-between;color:#345b75;font:700 12px Arial}
+#subidosVerPortada{display:grid;place-items:center;width:28px;height:28px;border:0;border-radius:8px;background:#e2f0f9;color:#456b85;cursor:pointer}
+#subidosPortadaPreview{display:flex;align-items:center;justify-content:center;width:100%;height:155px;overflow:hidden;border-radius:9px;background:#e7f0f5}
+#subidosPortadaPreview img{display:block;width:100%;height:100%;object-fit:contain}
+#modalSubidos .subidos-portada-vacia{display:flex;flex-direction:column;align-items:center;gap:10px;color:#8bafc5;font:12px Arial}
+#modalSubidos .subidos-portada-vacia i{font-size:36px}
+#subidosPortadaNombre{display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:#637d90;font:11px/1.4 Arial}
+#modalSubidos .subidos-cambiar-caratula{width:100%;min-height:33px;background:white;border:1px solid #cbdfea;font-size:11px}
+#modalSubidos .subidos-gestor-archivos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;max-height:290px;overflow-y:auto;overflow-x:hidden;padding:2px 5px 2px 2px;scrollbar-width:thin;align-content:start;overscroll-behavior:contain}
+#modalSubidos .subidos-archivo-tile{border:1.5px solid #e1e8ee;border-radius:12px;background:white;overflow:hidden;padding:5px;min-width:0;transition:border-color .15s,box-shadow .15s}
+#modalSubidos .subidos-archivo-tile.es-portada{border-color:#70abd0;box-shadow:0 0 0 2px #cee9fa}
+#modalSubidos .subidos-archivo-thumb{position:relative;display:grid;place-items:center;height:87px;overflow:hidden;border-radius:7px;background:#eff5f9;color:#81a8c0}
+#modalSubidos .subidos-archivo-thumb>i{font-size:30px}
+#modalSubidos .subidos-archivo-thumb>[data-elegir-portada]{position:absolute;inset:0;display:block;width:100%;height:100%;min-height:0!important;padding:0;border:0;background:transparent;cursor:pointer;overflow:hidden}
+#modalSubidos .subidos-archivo-thumb img{display:block;width:100%;height:100%;object-fit:contain}
+#modalSubidos .subidos-archivo-tile>strong{display:block;margin:7px 3px 3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#38546a;font:600 10px/1.3 Arial}
+#modalSubidos .subidos-archivo-tile>small{display:block;margin:0 3px 3px;font:10px/1.3 Arial;color:#7b91a1}
+#modalSubidos .subidos-archivo-tile.archivo-listo>small{color:#347659}
+#modalSubidos .subidos-portada-badge{position:absolute;left:3px;bottom:3px;padding:4px 6px;border-radius:6px;background:#2e6488ed;color:white;font:700 9px/1 Arial;pointer-events:none}
+#modalSubidos .subidos-portada-badge[hidden]{display:none}
+#modalSubidos .subidos-quitar-pendiente{position:absolute;top:2px;right:2px;width:32px;height:32px;padding:0;border:1px solid #d4e2eb;border-radius:50%;background:#ffffffec;color:#6b7f8f;font:22px/1 Arial;cursor:pointer}
+#modalSubidos .subidos-archivos-vacio{grid-column:1/-1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;min-height:220px;padding:20px;border:1px solid #e5edf2;border-radius:13px;text-align:center;color:#809caf;font:12px/1.5 Arial}
+#modalSubidos .subidos-archivos-vacio i{font-size:32px;color:#a5c3d6}
+#subidosArchivosAviso{margin:8px 0 0;font:12px/1.4 Arial;color:#8d6629}
+#subidosArchivosAviso:empty{display:none}
+#modalSubidos .subidos-datos-editor label{display:block;margin-bottom:6px!important;color:#3c596d;font-size:11px!important;opacity:1!important}
+#modalSubidos .subidos-datos-fila{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:14px;margin-bottom:12px}
+#modalSubidos .subidos-datos-fila label>input{display:block;margin-top:6px}
+#modalSubidos .subidos-etiqueta-campo>div{display:flex;gap:7px;align-items:center}
+#modalSubidos .subidos-etiqueta-campo select{flex:1}
+#modalSubidos .subidos-etiqueta-campo button{flex:0 0 auto;padding:0 12px!important;font-size:11px!important;white-space:nowrap}
+#modalSubidos #btnAgregarEtiquetaSubidos{width:auto!important;min-width:70px}
+#modalSubidos .subidos-datos-editor :is(input,select,textarea){border:1px solid #cfdee8!important;border-radius:10px!important;padding:10px 11px!important;background:#fff!important;color:#214157!important;font:13px/1.35 Arial,sans-serif!important;box-shadow:none!important;width:100%;min-height:39px}
+#modalSubidos .subidos-titulo-campo{margin-bottom:13px;flex-direction:column}
+#modalSubidos .subidos-datos-editor textarea{min-height:80px!important;resize:vertical}
+#modalSubidos .subidos-dialogo button:focus-visible,#modalSubidos .subidos-dialogo :is(input,select,textarea):focus-visible{outline:2px solid #6babcF;outline-offset:2px}
+#modalSubidos #subidosFooterFijo{padding:11px 20px calc(11px + env(safe-area-inset-bottom));background:#ffffffed;border-top:1px solid #d4e2ec;box-shadow:0 -4px 14px #193d530a}
+#modalSubidos #subidosEstado:empty{display:none}
+#modalSubidos #subidosEstado{color:#48677b;font-size:11px!important;margin-bottom:8px}
+#modalSubidos .subidos-progreso[hidden]{display:none}
+#modalSubidos .subidos-progreso{margin-bottom:9px;font:600 11px/1.4 Arial;color:#3d6c8a}
+#subidosProgreso{appearance:none;display:block;width:100%;height:6px;margin-top:6px;border:0;border-radius:99px;background:#e4eef5;overflow:hidden;accent-color:#72add2}
+#subidosProgreso::-webkit-progress-bar{background:#e4eef5;border-radius:99px}
+#subidosProgreso::-webkit-progress-value{background:#72add2;border-radius:99px}
+#subidosProgreso::-moz-progress-bar{background:#72add2;border-radius:99px}
+#modalSubidos .subidos-dialogo button:disabled{cursor:default!important}
+#modalSubidos #btnGuardarSubido:disabled{background:#dce4e9!important;color:#81919d!important;box-shadow:none!important;opacity:.8!important;pointer-events:none!important}
+#modalSubidos[aria-busy=true] :is(#btnCancelarSubido,#subidosCerrarModal){opacity:.35;pointer-events:none}
+#modalSubidos[aria-busy=true] .subidos-campos{opacity:.65}
+#modalSubidos[aria-busy=true] .subidos-quitar-pendiente{display:none}
+#modalSubidos.subidos-editando-predica :is(.subidos-media-editor,.subidos-datos-editor){background:#ffffffe0}
+body.oscuro #modalSubidos .subidos-modal-head,body.oscuro #modalSubidos #subidosFooterFijo{background:#1f3445;color:#edf7ff;border-color:#436075}
+body.oscuro #modalSubidos .subidos-modal-title{color:#edf7ff}
+body.oscuro #modalSubidos .subidos-modal-contexto{color:#b5ccdc}
+@media(max-width:600px){
+ #modalSubidos{padding:8px!important}
+ #modalSubidos .subidos-dialogo{width:calc(100vw - 16px)!important;max-height:calc(100dvh - 16px)!important;border-radius:20px!important}
+ #modalSubidos .subidos-modal-head{padding:12px 14px}
+ #modalSubidos .subidos-modal-title{font-size:19px}
+ #modalSubidos .subidos-dialogo>.subidos-modal-scroll{padding:12px!important}
+ #modalSubidos .subidos-media-editor,#modalSubidos .subidos-datos-editor{padding:11px;border-radius:15px}
+ #modalSubidos .subidos-zona-archivos{padding:10px;gap:7px}
+ #modalSubidos .subidos-zona-archivos>span{display:none}
+ #modalSubidos .subidos-archivos-diseno{grid-template-columns:112px minmax(0,1fr);gap:9px;margin-top:11px}
+ #modalSubidos .subidos-caratula-card{padding:7px;gap:7px;border-radius:11px}
+ #subidosPortadaPreview{height:109px}
+ #modalSubidos .subidos-cambiar-caratula{font-size:10px;padding:6px;min-height:34px;gap:4px;flex-wrap:wrap}
+ #modalSubidos .subidos-gestor-archivos{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;max-height:232px}
+ #modalSubidos .subidos-archivo-tile{padding:3px;border-radius:8px}
+ #modalSubidos .subidos-archivo-thumb{height:69px}
+ #modalSubidos .subidos-archivo-tile>strong{font-size:9px;margin:5px 1px 3px}
+ #modalSubidos .subidos-portada-badge{font-size:8px;padding:3px;left:1px;bottom:1px}
+ #modalSubidos .subidos-archivos-vacio{padding:8px;min-height:185px;font-size:11px}
+ #modalSubidos .subidos-datos-fila{grid-template-columns:1fr;gap:10px}
+ #modalSubidos .subidos-etiqueta-campo button{min-width:70px}
+ #modalSubidos #subidosFooterFijo{padding:9px 13px calc(9px + env(safe-area-inset-bottom))}
+}
+
 </style>
 

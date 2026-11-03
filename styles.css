@@ -7078,3 +7078,16 @@ body.oscuro :is(.h-contactos-mensajes,.h-mensajes-card,.colecta-ficha,.colecta-d
 body.oscuro :is(.va-adjuntos-card,.h-mensajes-colecta,.colecta-necesidad-borrador){background:#203e54;color:#edf7ff;border-color:#4e6c83}body.oscuro .h-colecta-adjunto-necesidades label{background:#2a4b64;border-color:#53758d}body.oscuro :is(.h-colecta-adjunto-necesidades small,.colecta-borrador-subtotal,#hMensajeColectaAviso){color:#b7d0e2}
 @media(max-width:420px){.va-adjuntos-card{padding:12px}.colecta-borrador-campos{grid-template-columns:minmax(0,1fr)}.colecta-necesidad-borrador{padding:10px}.h-mensajes-colecta{padding:10px}}
 .colecta-form-card{display:flex;flex-direction:column;overflow:hidden}.colecta-form-card>.colectas-head{flex:0 0 auto}.colecta-form-card #colectaForm{display:flex;flex-direction:column;min-height:0;flex:1}.colecta-form-scroll{overflow-y:auto;min-height:0;padding:0 2px;overscroll-behavior:contain}.colecta-form-acciones{flex:0 0 auto;padding-top:12px;border-top:1px solid #d0e2ef}.colecta-add-final{margin-top:3px}.colecta-objetivo{font-size:13px;line-height:1.5;overflow-wrap:anywhere}
+
+/* Diseños de una misma imagen dentro de su ficha */
+.va-creada-carrusel{flex:0 0 auto;min-width:0;width:100%;background:#eaf3f9}
+.va-creada-carrusel .va-diseno-slide{height:min(32dvh,290px);background:#eaf3f9}
+.va-creada-carrusel .va-carrusel-imagen .va-diseno-slide img{width:100%;height:100%;max-height:none;object-fit:contain}
+.va-creada-carrusel .va-disenos-rail{scrollbar-width:none}
+.va-creada-carrusel .va-disenos-rail::-webkit-scrollbar{display:none}
+.va-creada-carrusel .va-disenos-navegar{height:38px;box-sizing:border-box;padding:4px;gap:12px}
+.va-creada-carrusel .va-disenos-navegar button{min-height:28px;width:28px;height:28px;padding:0;font-size:22px}
+.va-creada-carrusel .va-carrusel-imagen:not(.va-varios-disenos){padding-bottom:38px;background:#f0f8ff}
+.va-creada-carrusel .va-disenos-rail:focus-visible{outline:2px solid #518bb6;outline-offset:-2px}
+body.oscuro .va-creada-carrusel,body.oscuro .va-creada-carrusel .va-diseno-slide{background:#152d3d}
+body.oscuro .va-creada-carrusel .va-carrusel-imagen:not(.va-varios-disenos){background:#233c50}

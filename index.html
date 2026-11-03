@@ -137,9 +137,9 @@
   <!-- Librería que convierte HTML en imagen (para generar imágenes bíblicas) -->
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
-<link rel="stylesheet" href="styles.css?v=20261102-colectas-11">
+<link rel="stylesheet" href="styles.css?v=20261102-agenda-12">
 <link rel="stylesheet" href="devocionales.css?v=4">
-<link rel="stylesheet" href="subidos.css?v=20261102-agenda-imagenes-8">
+<link rel="stylesheet" href="subidos.css?v=20261102-agenda-12">
 <link rel="stylesheet" href="materiales/ediciones.css?v=2">
 <link rel="stylesheet" href="compartidos.css?v=2">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/themes/classic.min.css"/>
@@ -1417,127 +1417,28 @@
 
 <!-- ================= MODAL SUBIDOS ================= -->
 <!-- ================= MODAL SUBIDOS ================= -->
-<div id="modalSubidos" class="modal-overlay" aria-hidden="true">
-  <div class="modal-card" style="max-width:560px; width:100%;">
-
-    <div style="padding:12px 14px; border-bottom:1px solid #ddd; display:flex; align-items:center; justify-content:space-between;">
-      <b id="subidosModalTitulo" class="subidos-modal-title">
-  <span class="subidos-modal-title-icon" aria-hidden="true">
-    <i class="fa-brands fa-earlybirds"></i>
-  </span>
-  <span id="subidosModalTituloTexto">Nuevo subido</span>
-</b>
-      <button type="button" onclick="cerrarModalSubidos()"
-        style="border:none; background:#eee; border-radius:999px; width:34px; height:34px; cursor:pointer;">✖</button>
-    </div>
-
-    <div style="padding:12px 14px; display:flex; flex-direction:column; gap:12px; max-height:85vh; overflow:auto;">
-
-      <label id="subidosArchivoLabel" for="subidosArchivo" style="font-weight:700;">Archivos</label>
-      <input id="subidosArchivo" type="file" accept="image/*,video/*,audio/*,.pdf" multiple>
-
-      <div id="subidosArchivoActualBox"
-           style="display:none; border:1px solid #d8eef9; background:#f6fcff; border-radius:12px; padding:10px;">
-        <div style="font-weight:700; margin-bottom:6px;">Archivo actual</div>
-        <div id="subidosArchivoActualNombre" style="font-size:14px; margin-bottom:8px;"></div>
-        <button type="button" id="btnVerArchivoActualSubido" class="btn-ghost">Ver archivo actual</button>
-      </div>
-
-<!-- FECHA + ETIQUETA EN EL MISMO RENGLÓN -->
-<div
-  style="
-    display:grid;
-    grid-template-columns:minmax(0,.72fr) minmax(0,1.28fr);
-    gap:10px;
-    align-items:end;
-    width:100%;
-  "
->
-  <div
-    style="
-      display:flex;
-      flex-direction:column;
-      gap:6px;
-      min-width:0;
-    "
-  >
-    <label
-      for="subidosFecha"
-      style="font-weight:700;"
-    >
-      Fecha
-    </label>
-
-    <input
-      id="subidosFecha"
-      type="date"
-      style="
-        width:100%;
-        min-width:0;
-        box-sizing:border-box;
-      "
-    >
-  </div>
-
-  <div
-    style="
-      display:flex;
-      flex-direction:column;
-      gap:6px;
-      min-width:0;
-    "
-  >
-    <label
-      for="subidosEtiqueta"
-      style="font-weight:700;"
-    >
-      Etiqueta
-    </label>
-
-    <div
-      style="
-        display:grid;
-        grid-template-columns:minmax(0,1fr) auto;
-        gap:8px;
-        min-width:0;
-      "
-    >
-      <select
-        id="subidosEtiqueta"
-        style="
-          width:100%;
-          min-width:0;
-        "
-      >
-        <option value="">Seleccionar…</option>
-      </select>
-
-      <button
-        type="button"
-        id="btnAgregarEtiquetaSubidos"
-        class="btn-ghost"
-        style="
-          white-space:nowrap;
-          padding-left:12px;
-          padding-right:12px;
-        "
-      >
-        + Etiqueta
-      </button>
-    </div>
-  </div>
-</div>
-
-      <div id="subidosTituloWrap" style="display:flex; flex-direction:column; gap:6px;">
-        <label for="subidosTitulo" style="font-weight:700;">Título</label>
-        <input id="subidosTitulo" type="text" placeholder="Ej.: Encuentro de familias" style="width:100%; border-radius:12px; padding:12px;">
-      </div>
-
-      <!-- ✅ DESCRIPCIÓN DEBAJO DE ETIQUETA -->
-      <label style="font-weight:700;">Descripción</label>
-      <textarea id="subidosDescripcion"
-                rows="4"
-                style="width:100%; border-radius:12px; padding:12px;"></textarea>
+<div id="modalSubidos" class="modal-overlay" aria-hidden="true" aria-labelledby="subidosModalTituloTexto">
+  <div class="modal-card subidos-dialogo" role="dialog" aria-modal="true" aria-labelledby="subidosModalTituloTexto">
+    <header class="subidos-modal-head">
+      <div class="subidos-modal-identidad"><span class="subidos-modal-title-icon"><i class="fa-solid fa-calendar-plus" aria-hidden="true"></i></span><div><span class="subidos-modal-contexto">Agenda</span><b id="subidosModalTitulo" class="subidos-modal-title"><span id="subidosModalTituloTexto">Nueva publicación</span></b></div></div>
+      <button type="button" id="subidosCerrarModal" onclick="cerrarModalSubidos()" aria-label="Cerrar publicación">×</button>
+    </header>
+    <div class="subidos-modal-scroll">
+      <fieldset id="subidosCampos" class="subidos-campos">
+        <section class="subidos-media-editor">
+          <div class="subidos-seccion-head"><h3 id="subidosArchivoLabel">Archivos y carátula</h3><span id="subidosArchivosCantidad">0 archivos</span></div>
+          <div id="subidosZonaArchivos" class="subidos-zona-archivos"><i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i><span>Soltá archivos aquí</span><button type="button" onclick="document.getElementById('subidosArchivo').click()"><i class="fa-solid fa-plus" aria-hidden="true"></i> Agregar archivos</button><input id="subidosArchivo" type="file" accept="image/*,video/*,audio/*,.pdf" multiple hidden></div>
+          <div class="subidos-archivos-diseno">
+            <div class="subidos-caratula-card"><div class="subidos-caratula-head"><strong>Carátula</strong><button type="button" id="subidosVerPortada" aria-label="Ampliar carátula"><i class="fa-solid fa-expand" aria-hidden="true"></i></button></div><div id="subidosPortadaPreview" data-va-imagen-host></div><span id="subidosPortadaNombre">Sin imagen seleccionada</span><button type="button" class="subidos-cambiar-caratula" onclick="document.getElementById('subidosPortadaArchivo').click()"><i class="fa-solid fa-image" aria-hidden="true"></i> Subir carátula</button><input type="file" id="subidosPortadaArchivo" accept="image/*" hidden></div>
+            <div id="subidosGestorArchivos" class="subidos-gestor-archivos" aria-label="Archivos de la publicación"></div>
+          </div>
+          <p id="subidosArchivosAviso" class="subidos-archivos-aviso" role="status"></p>
+        </section>
+        <section class="subidos-datos-editor"><div class="subidos-seccion-head"><h3>Datos de la publicación</h3></div>
+          <div class="subidos-datos-fila"><label for="subidosFecha">Fecha del evento<input id="subidosFecha" type="date"></label><div class="subidos-etiqueta-campo"><label for="subidosEtiqueta">Etiqueta</label><div><select id="subidosEtiqueta"><option value="">Seleccionar…</option></select><button type="button" id="btnAgregarEtiquetaSubidos" class="btn-ghost" aria-label="Agregar etiqueta">+ Etiqueta</button></div></div></div>
+          <div id="subidosTituloWrap" class="subidos-titulo-campo"><label for="subidosTitulo">Título</label><input id="subidosTitulo" type="text" placeholder="Ej.: Encuentro de familias"></div>
+          <label for="subidosDescripcion">Descripción</label><textarea id="subidosDescripcion" rows="3"></textarea>
+        </section>
 
       <!-- SOLO PARA PREDICA -->
       <div id="subidosPredicaBox"
@@ -1596,11 +1497,13 @@
                   placeholder="Nota general (opcional)"></textarea>
       </div>
 
-      <div id="subidosEstado" style="font-size:13px; opacity:.8;"></div>
+      </fieldset>
+      <div id="subidosProgresoWrap" class="subidos-progreso" hidden><div id="subidosProgresoTexto" aria-live="polite"></div><progress id="subidosProgreso" value="0" max="1" aria-label="Progreso de la publicación"></progress></div>
+      <div id="subidosEstado" role="status" aria-live="polite"></div>
 
       <div style="display:flex; justify-content:flex-end; gap:10px;">
-        <button type="button" class="btn-ghost" onclick="cerrarModalSubidos()">Cancelar</button>
-        <button type="button" class="btn-primary" id="btnGuardarSubido">Guardar</button>
+        <button type="button" id="btnCancelarSubido" class="btn-ghost" onclick="cerrarModalSubidos()">Cancelar</button>
+        <button type="button" class="btn-primary" id="btnGuardarSubido"><i class="fa-solid fa-check" aria-hidden="true"></i> <span data-guardar-texto>Guardar</span></button>
       </div>
 
     </div>
@@ -1820,15 +1723,15 @@
 <!-- ================= SCRIPT PRINCIPAL ================= -->
 <!-- ⚠️ biblia.js CONTROLA TODO -->
 
-<script type="module" src="./biblia.js?v=20261102-agenda-10"></script>
+<script type="module" src="./biblia.js?v=20261102-agenda-12"></script>
 <script type="module" src="biblia.audio.js?v=20260713-5"></script>
 <script type="module" src="biblia.tts.js?v=20260714-tts-arpa-web-priority-3"></script>
 <script type="module" src="devocionales.js?v=20261102-agenda-10"></script>
-<script type="module" src="Subidos.js?v=20261102-colectas-11"></script>
+<script type="module" src="Subidos.js?v=20261102-agenda-12"></script>
 <script type="module" src="ABC/abc.js?v=20260705-abc-sticky-9"></script>
 <script type="module" src="materiales/Recursos.js?v=20261102-colectas-11"></script>
 <script type="module" src="materiales/Ediciones.js?v=20260713-apk-3"></script>
-<script type="module" src="./Compartidos.js?v=20261102-colectas-11"></script>
+<script type="module" src="./Compartidos.js?v=20261102-agenda-12"></script>
 <script src="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/pickr.min.js"></script> 
 
 <script>
