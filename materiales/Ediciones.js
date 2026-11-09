@@ -1,3 +1,4 @@
+import { crearMiniaturaImagen, subirArchivoR2, urlMiniaturaImagen } from "../carga-imagenes.js?v=20261109-medios-1";
 import {
   ref,
   set,
@@ -18,7 +19,6 @@ import {
 // ✅ SIN FIREBASE FUNCTIONS: Ediciones usa Cloudflare Worker + R2
 const R2_WORKER_URL_EDICIONES = "https://subir-imagen-r2.vidaabundante-tristansuarez.workers.dev";
 
-const R2_UPLOAD_URL_EDICIONES = R2_WORKER_URL_EDICIONES;
 const R2_VIDEO_UPLOAD_URL_EDICIONES = R2_WORKER_URL_EDICIONES;
 const R2_PROXY_URL_EDICIONES = R2_WORKER_URL_EDICIONES;
 
@@ -213,6 +213,7 @@ function edFondosConstruirLista(categoria = "", incluirOcultos = false) {
         originalUrl ||
         ""
       ).trim(),
+      miniaturaUrl: cfg.miniaturaUrl || "",
 
       originalUrl,
 
@@ -261,6 +262,7 @@ function edFondosConstruirLista(categoria = "", incluirOcultos = false) {
       categoria: cat,
 
       url: String(item.url || "").trim(),
+      miniaturaUrl: item.miniaturaUrl || "",
 
       originalUrl: String(
         item.originalUrl || ""
@@ -834,11 +836,12 @@ window.edFondosAgregar = async function(categoria = "", input) {
 
       edFondosSetEstado(`Subiendo fondo ${i + 1} de ${files.length}…`);
 
-      const url = await subirArchivoEdicionR2(file, `fondos/${cat}`);
+      const {url, miniaturaUrl} = await subirImagenEdicionR2(file, `fondos/${cat}`, 192);
       const id = `nuevo_${Date.now()}_${edFondosHash(file.name + Math.random())}`;
 
       await set(ref(db, `${ED_FONDOS_RUTA}/${cat}/${id}`), {
         url,
+        miniaturaUrl,
         nombre: file.name || "Fondo",
         activo: true,
         nuevo: true,
@@ -1064,6 +1067,7 @@ window.edFondoGuardarEdicion = async function(categoria = "", id = "") {
       edFondosConfigCategoria(catOrigen)?.[id] || {};
 
     let url = item.url;
+    let miniaturaUrl = item.miniaturaUrl || "";
 
     /*
       Solo subimos otra imagen cuando realmente
@@ -1076,10 +1080,7 @@ window.edFondoGuardarEdicion = async function(categoria = "", id = "") {
         estado.textContent = "Subiendo la nueva imagen…";
       }
 
-      url = await subirArchivoEdicionR2(
-        file,
-        `fondos/${catDestino}`
-      );
+      ({url, miniaturaUrl} = await subirImagenEdicionR2(file, `fondos/${catDestino}`, 192));
     }
 
     if (estado) {
@@ -1093,6 +1094,7 @@ window.edFondoGuardarEdicion = async function(categoria = "", id = "") {
     const datosDestino = {
       ...actual,
       url,
+      miniaturaUrl,
       nombre,
       originalUrl: item.originalUrl || "",
       activo: true,
@@ -2244,6 +2246,7 @@ function edPaginasArrayConPortada(edicion) {
     id: "portada",
     orden: -1,
     imagenUrl: portadaUrl,
+    miniaturaUrl: edicion.portadaMiniaturaUrl || "",
     mediaUrl: portadaUrl,
     mediaType: "image/*",
     audioEsUrl: "",
@@ -2932,7 +2935,7 @@ onclick="edAgregarStickersWhatsApp('${edEscape(ed.id)}', this)"
                     ? `<img src="${edEscape(portada)}" alt="${titulo}" loading="lazy" onclick="abrirPresentacionEdicion('${ed.id}')">`
                     : `<span onclick="abrirPresentacionEdicion('${ed.id}')" role="button"><i class="fa-solid fa-video"></i><br>Edición con video</span>`
                 )
-              : edMiniPaginasHTML(ed.id, "ediciones")
+              : edMiniPaginasHTML(ed.id, "ediciones", ed)
           }
         </div>
 
@@ -3167,6 +3170,7 @@ window.edAgregarPagina = (data = {}) => {
 
   div.dataset.mediaUrl = mediaUrl;
   div.dataset.mediaType = mediaType;
+  div.dataset.miniaturaUrl = esVideo ? "" : (data.miniaturaUrl || "");
 
   div.dataset.imagenUrl = esVideo ? "" : (data.imagenUrl || data.mediaUrl || "");
   div.dataset.videoUrl = esVideo ? (data.videoUrl || data.mediaUrl || data.imagenUrl || "") : "";
@@ -3641,34 +3645,35 @@ const portadaFile = ed$("edPortadaFile")?.files?.[0] || null;
     return;
   }
 
-    const existente = edicionEditId ? await obtenerEdicion(edicionEditId) : null;
-
-  const portadaExistente = String(existente?.portadaUrl || "").trim();
-
-  if (!rows.length && !portadaFile && !portadaExistente) {
-    alert("Cargá una portada o agregá al menos una página.");
-    return;
+  if (btn?.disabled) return;
+  const editandoId = edicionEditId;
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "Guardando...";
   }
-  
-  const edId = edicionEditId || push(ref(db, "ediciones")).key;
-    const refPublica = existente?.refPublica || await edCrearRefPublicaUnica(titulo, edId);
 
   try {
-    if (btn) {
-      btn.disabled = true;
-      btn.textContent = "Guardando...";
+    const existente = editandoId ? await obtenerEdicion(editandoId) : null;
+    const portadaExistente = String(existente?.portadaUrl || "").trim();
+    if (!rows.length && !portadaFile && !portadaExistente) {
+      alert("Cargá una portada o agregá al menos una página.");
+      return;
     }
 
+    const edId = editandoId || push(ref(db, "ediciones")).key;
+    const refPublica = existente?.refPublica || await edCrearRefPublicaUnica(titulo, edId);
     edSetEstado("Preparando archivos...");
 
     const paginasObj = {};
-let portadaDesdePagina = "";
+    let portadaDesdePagina = "";
+    let miniaturaDesdePagina = "";
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
       const pageId = row.dataset.pageId || edKey("p");
 
       let imagenUrl = row.dataset.imagenUrl || "";
+      let miniaturaUrl = row.dataset.miniaturaUrl || "";
       let videoUrl = row.dataset.videoUrl || "";
       let mediaUrl = row.dataset.mediaUrl || imagenUrl || videoUrl || "";
       let mediaType = row.dataset.mediaType || (videoUrl ? "video/mp4" : (imagenUrl ? "image/*" : ""));
@@ -3697,6 +3702,7 @@ const mediaFile =
 
           videoUrl = subida.url;
           imagenUrl = "";
+          miniaturaUrl = "";
           mediaUrl = subida.url;
           mediaType = subida.contentType;
 
@@ -3706,7 +3712,9 @@ const mediaFile =
         } else {
           edSetEstado(`Subiendo imagen ${i + 1}...`);
 
-          imagenUrl = await subirArchivoEdicionR2(mediaFile, `ediciones/${edId}/imagenes`);
+          const subida = await subirImagenEdicionR2(mediaFile, `ediciones/${edId}/imagenes`, 720);
+          imagenUrl = subida.url;
+          miniaturaUrl = subida.miniaturaUrl;
           videoUrl = "";
           mediaUrl = imagenUrl;
           mediaType = mediaFile.type || "image/*";
@@ -3747,8 +3755,8 @@ const mediaFile =
       paginasObj[pageId] = {
         orden: i,
 
-        // ✅ compatibilidad vieja
         imagenUrl,
+        miniaturaUrl,
 
         // ✅ nuevo soporte imagen / video
         videoUrl,
@@ -3764,25 +3772,28 @@ const mediaFile =
         actualizado: Date.now()
       };
 
-            if (row.dataset.portadaElegida === "1" && !edPaginaEsVideo({ mediaType, videoUrl, mediaUrl })) {
+      if (row.dataset.portadaElegida === "1" && !edPaginaEsVideo({ mediaType, videoUrl, mediaUrl })) {
         portadaDesdePagina = imagenUrl || mediaUrl || "";
+        miniaturaDesdePagina = miniaturaUrl;
       }
     }
 
-     let portadaUrl = portadaDesdePagina || existente?.portadaUrl || "";
+    let portadaUrl = portadaDesdePagina || portadaExistente;
+    let portadaMiniaturaUrl = portadaDesdePagina ? miniaturaDesdePagina : (existente?.portadaMiniaturaUrl || "");
 
     if (portadaFile) {
       edSetEstado("Subiendo portada...");
-      portadaUrl = await subirArchivoEdicionR2(portadaFile, `ediciones/${edId}/portada`);
-    } else if (portadaDesdePagina) {
-      portadaUrl = portadaDesdePagina;
+      const subida = await subirImagenEdicionR2(portadaFile, `ediciones/${edId}/portada`, 720);
+      portadaUrl = subida.url;
+      portadaMiniaturaUrl = subida.miniaturaUrl;
     }
 
-       if (!portadaUrl) {
+    if (!portadaUrl) {
       const primeraImagen = Object.values(paginasObj)
         .find(p => !edPaginaEsVideo(p) && (p.imagenUrl || p.mediaUrl));
 
       portadaUrl = primeraImagen?.imagenUrl || primeraImagen?.mediaUrl || "";
+      portadaMiniaturaUrl = primeraImagen?.miniaturaUrl || "";
     }
 
     // ✅ Si no hay páginas, pero sí hay portada,
@@ -3798,6 +3809,7 @@ const mediaFile =
       paginasObj[portadaPageId] = {
         orden: 0,
         imagenUrl: portadaUrl,
+        miniaturaUrl: portadaMiniaturaUrl,
         videoUrl: "",
         mediaUrl: portadaUrl,
         mediaType: "image/*",
@@ -3830,6 +3842,7 @@ const data = {
   categoria: rama,
   tipoEdicion: rama,
   portadaUrl,
+  portadaMiniaturaUrl,
   paginas: paginasObj,
   publicada: true,
   creadoPor: existente?.creadoPor || window.__UID || "",
@@ -3947,69 +3960,18 @@ async function subirVideoEdicionR2Directo(file) {
 }
 
 async function subirArchivoEdicionR2(file, carpeta) {
-  const safe = `${Date.now()}_${edSafeName(file.name)}`;
-
-  const fileBase64 = await edFileToBase64(file);
-
-  const payload = {
-    fileBase64,
-    fileName: safe,
-    contentType: file.type || "application/octet-stream",
-    folder: carpeta || "ediciones"
-  };
-
-  const r = await fetch(R2_UPLOAD_URL_EDICIONES, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(payload)
-  });
-
-  const text = await r.text();
-  let data = {};
-
-  try {
-    data = JSON.parse(text);
-  } catch (_) {
-    data = {};
-  }
-
-  if (!r.ok) {
-    console.error("R2 respondió error:", r.status, data || text);
-    throw new Error(data.error || data.message || text || "Error subiendo archivo a R2");
-  }
-
-  const url =
-    data.url ||
-    data.publicUrl ||
-    data.downloadURL ||
-    data.fileUrl ||
-    data.r2Url ||
-    data?.data?.url ||
-    data?.data?.publicUrl;
-
-  if (!url) {
-    console.warn("Respuesta R2 sin URL:", data, text);
-    throw new Error("La función R2 respondió, pero no devolvió URL.");
-  }
-
-  return url;
+  const nombre = `${Date.now()}_${edSafeName(file.name)}`;
+  return (await subirArchivoR2(file, carpeta || "ediciones", nombre)).url;
 }
 
-function edFileToBase64(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-
-    reader.onload = () => {
-      const result = String(reader.result || "");
-      const base64 = result.includes(",") ? result.split(",")[1] : result;
-      resolve(base64);
-    };
-
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
+async function subirImagenEdicionR2(file, carpeta, lado) {
+  const miniatura = crearMiniaturaImagen(file, lado).then(async blob => {
+    if (!blob) return "";
+    const nombre = edSafeName(file.name) + ".webp";
+    return (await subirArchivoR2(blob, `${carpeta}/miniaturas`, nombre)).url;
+  }).catch(() => "");
+  const [url, miniaturaUrl] = await Promise.all([subirArchivoEdicionR2(file, carpeta), miniatura]);
+  return {url, miniaturaUrl};
 }
 
 /* ================= OBTENER / BORRAR ================= */
@@ -4629,8 +4591,8 @@ await descargarPaginaEdicionPNG(id, indiceActual, null, {
   }
 };
 
-function edMiniPaginasHTML(id, contexto = "ediciones") {
-  const ed =
+function edMiniPaginasHTML(id, contexto = "ediciones", edicion) {
+  const ed = edicion ||
     edicionesCache.find(x => x.id === id) ||
     (window.__EDICIONES_CACHE || []).find(x => x.id === id);
 
@@ -4673,9 +4635,12 @@ function edMiniPaginasHTML(id, contexto = "ediciones") {
           return `
             <div class="ed-mini-page">
               <img
-                src="${edEscape(url)}"
+                data-va-imagen
+                data-va-src="${edEscape(urlMiniaturaImagen(url, p.miniaturaUrl))}"
+                data-va-original="${edEscape(url)}"
                 alt="${edEscape(ed.titulo || "Edición")} ${i + 1}"
                 loading="lazy"
+                decoding="async"
                 onclick="abrirPresentacionEdicion('${edEscape(id)}')"
               >
             </div>

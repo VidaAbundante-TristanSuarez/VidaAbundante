@@ -1,4 +1,4 @@
-import { necesidadesParaMensaje, listadoColecta, mensajeSugeridoColecta } from './colectas.js?v=20261102-colectas-11';
+import { necesidadesParaMensaje, listadoColecta, mensajeSugeridoColecta } from './colectas.js?v=20261109-medios-1';
 const escapar=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const puede=()=>!!window.__UID&&!!(window.__ES_ADMIN||window.__ES_COLABORADOR);
 const sugeridosColecta=()=>[{id:'colecta_invitacion',titulo:'Colecta: invitación a colaborar',texto:mensajeSugeridoColecta()},{id:'colecta_recordatorio',titulo:'Colecta: recordar lo que falta',texto:mensajeSugeridoColecta({},true)}];
@@ -259,12 +259,19 @@ export function crearMensajesHermanos({obtenerHermanos,obtenerColectas=async()=>
     if(uidSeleccion!==window.__UID){marcados.clear();uidSeleccion=window.__UID;colectasDisponibles=[];uidColectas='';revisionCarga++;if(sesion&&sesion.uid!==window.__UID){sesion=null;if(modal){modal.hidden=true;document.body.classList.remove('h-mensajes-abierto');}}}
     const ids=new Set(obtenerHermanos().map(h=>h.id));for(const id of marcados)if(!ids.has(id))marcados.delete(id);
     const contador=document.getElementById('hContactosCantidad');if(contador)contador.textContent=`${marcados.size} seleccionado${marcados.size===1?'':'s'}`;
+    const seleccionarLista = document.getElementById('hContactosSeleccionarLista');
+    if (seleccionarLista) {
+      const checks = [...document.querySelectorAll('#hermanosLista .h-contacto-check')];
+      const todosMarcados = checks.length && checks.every(check => check.checked);
+      seleccionarLista.disabled = !checks.length || !puede();
+      seleccionarLista.textContent = todosMarcados ? 'Deseleccionar los de la lista' : 'Seleccionar los de la lista';
+    }
     const envio=document.getElementById('hContactosEnviar');if(envio)envio.disabled=!marcados.size||!puede();
     const limpiar=document.getElementById('hContactosLimpiar');if(limpiar)limpiar.disabled=!marcados.size;
     const continuar=document.getElementById('hContactosContinuar'),guardado=leer(sessionStorage,claveSesion());if(continuar)continuar.hidden=!puede()||!guardado?.ids?.length;
   }
   return {
-    barraHTML:()=>`<div class="h-contactos-mensajes"><button type="button" onclick="hMarcarContactosVisibles()">Marcar visibles</button><span id="hContactosCantidad">0 seleccionados</span><button id="hContactosLimpiar" type="button" onclick="hLimpiarContactos()" disabled>Limpiar</button><button id="hContactosEnviar" type="button" onclick="hAbrirMensajesHermanos()" disabled><i class="fa-brands fa-whatsapp" aria-hidden="true"></i> Mensaje</button><button type="button" onclick="hAbrirMensajesHermanos()" title="Administrar mensajes predeterminados">Mensajes guardados</button><button id="hContactosContinuar" type="button" onclick="hContinuarMensajes()" hidden>Continuar mensajes</button></div>`,
+    barraHTML:()=>`<div class="h-contactos-mensajes"><button id="hContactosSeleccionarLista" type="button" onclick="hMarcarContactosVisibles()" title="Selecciona todos los contactos que muestra la búsqueda" disabled>Seleccionar los de la lista</button><span id="hContactosCantidad">0 seleccionados</span><button id="hContactosLimpiar" type="button" onclick="hLimpiarContactos()" disabled>Limpiar</button><button id="hContactosEnviar" type="button" onclick="hAbrirMensajesHermanos()" disabled><i class="fa-brands fa-whatsapp" aria-hidden="true"></i> Mensaje</button><button type="button" onclick="hAbrirMensajesHermanos()" title="Administrar mensajes predeterminados">Mensajes guardados</button><button id="hContactosContinuar" type="button" onclick="hContinuarMensajes()" hidden>Continuar mensajes</button></div>`,
     marcaHTML:h=>`<label class="h-contacto-marca" title="Seleccionar ${escapar((h.nombre||'')+' '+(h.apellido||''))}"><input type="checkbox" class="h-contacto-check" data-id="${escapar(h.id)}" ${marcados.has(h.id)?'checked':''} onchange="hMarcarContacto(this.dataset.id,this.checked)" aria-label="Seleccionar ${escapar((h.nombre||'')+' '+(h.apellido||''))}"></label>`,
     actualizar
   };

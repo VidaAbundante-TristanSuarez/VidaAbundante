@@ -85,10 +85,19 @@ export function crearColectas({obtenerHermanos}){
     const h=obtenerHermanos().find(h=>h.id===id);
     return h?`${h.nombre||''} ${h.apellido||''}`.trim():String(nombreAnterior||'Contacto no disponible');
   }
-  function opcionesHermanos(id='',nombre=''){
+  function opcionesHermanos(id='',nombre='',primeraOpcion='Sin asignar'){
     const hermanos=obtenerHermanos();
     const antiguo=id&&!hermanos.some(h=>h.id===id)?`<option value="${esc(id)}" selected>${esc(nombre||'Contacto no disponible')}</option>`:'';
-    return '<option value="">Sin asignar</option>'+antiguo+hermanos.map(h=>`<option value="${esc(h.id)}" ${h.id===id?'selected':''}>${esc(`${h.nombre||''} ${h.apellido||''}`.trim())}</option>`).join('');
+    return `<option value="">${primeraOpcion}</option>`+antiguo+hermanos.map(h=>`<option value="${esc(h.id)}" ${h.id===id?'selected':''}>${esc(`${h.nombre||''} ${h.apellido||''}`.trim())}</option>`).join('');
+  }
+  function actualizarContactos(){
+    if (!modal || modal.hidden) return;
+    for (const select of modal.querySelectorAll('select[data-campo="asignadoId"], select[name="asignadoId"], select[name="hermanoId"]')) {
+      const id = select.value;
+      const nombre = select.selectedOptions[0]?.textContent;
+      const primeraOpcion = select.name === 'hermanoId' ? 'Escribir un nombre' : 'Sin asignar';
+      select.innerHTML = opcionesHermanos(id, nombre, primeraOpcion);
+    }
   }
   function renderBorradores(){
     const host=modal?.querySelector('#colectaNecesidadesBorrador');if(!host||!edicion)return;
@@ -145,7 +154,7 @@ export function crearColectas({obtenerHermanos}){
   function abrirForm(titulo,html,datos){
     asegurarModal();edicion={...datos,colectaId:datos.colectaId||actual,uid:window.__UID};
     if(datos.tipo==='colecta'){const originales=datos.id?(cache[datos.id]?.necesidades||{}):{};edicion.originalNecesidades=structuredClone(originales);edicion.necesidades=entradas(originales);}modal.__foco=document.activeElement;
-    modal.innerHTML=`<div class="colecta-form-card"><div class="colectas-head"><h3 id="colectaFormTitulo">${titulo}</h3><button type="button" onclick="vaColectaCerrarForm()" aria-label="Cerrar formulario">×</button></div><form id="colectaForm" onsubmit="vaColectaGuardar(event)"><div class="colecta-form-scroll">${html}${datos.tipo==='colecta'?'<section class="colecta-necesidades-editor"><div class="colecta-seccion-head"><h4>Lista de necesidades</h4><button type="button" onclick="vaColectaAgregarBorrador()">+ Necesidad</button></div><div id="colectaNecesidadesBorrador"></div><button type="button" class="colecta-add-final" onclick="vaColectaAgregarBorrador()">+ Agregar otra necesidad</button></section>':''}<p id="colectaFormError" class="colecta-error" role="alert"></p></div><div class="colecta-form-acciones"><button type="button" onclick="vaColectaCerrarForm()">Cancelar</button><button type="submit">Guardar</button></div></form></div>`;
+    modal.innerHTML=`<div class="colecta-form-card"><div class="colectas-head"><h3 id="colectaFormTitulo">${titulo}</h3><button type="button" onclick="vaColectaCerrarForm()" aria-label="Cerrar formulario">×</button></div><form id="colectaForm" onsubmit="vaColectaGuardar(event)"><div class="colecta-form-scroll">${html}${datos.tipo==='colecta'?'<section class="colecta-necesidades-editor"><div class="colecta-seccion-head"><h4>Lista de necesidades</h4></div><div id="colectaNecesidadesBorrador"></div><button type="button" class="colecta-add-final" onclick="vaColectaAgregarBorrador()">+ Necesidad</button></section>':''}<p id="colectaFormError" class="colecta-error" role="alert"></p></div><div class="colecta-form-acciones"><button type="button" onclick="vaColectaCerrarForm()">Cancelar</button><button type="submit">Guardar</button></div></form></div>`;
     if(datos.tipo==='colecta')renderBorradores();
     modal.hidden=false;document.body.classList.add('colecta-modal-abierto');modal.querySelector('input,select,textarea')?.focus();
   }
@@ -176,7 +185,7 @@ export function crearColectas({obtenerHermanos}){
     if(tipo==='necesidad')html=input('concepto','Qué necesitamos',it.concepto||'','text','required')+input('cantidad','Cantidad necesaria',it.cantidad||1,'number','min="0.01" step="any" required')+input('unidad','Unidad (por ejemplo: paquetes, kilos o pesos)',it.unidad||'unidades')+input('precio','Costo aproximado por unidad (ARS)',cantidad(it.precioCentavos)/100,'number','min="0" step="0.01"')+`<label>Asignado a<select name="asignadoId">${opcionesHermanos(it.asignadoId,it.asignadoNombre)}</select></label>`+input('nota','Observación',it.nota||'');
     if(tipo==='aporte'){
       if(!Object.keys(c.necesidades||{}).length)return;
-      html=`<label>Hermano<select name="hermanoId" onchange="vaColectaElegirHermano(this)"><option value="">Escribir un nombre</option>${obtenerHermanos().map(h=>`<option value="${esc(h.id)}" ${h.id===it.hermanoId?'selected':''}>${esc(`${h.nombre||''} ${h.apellido||''}`.trim())}</option>`).join('')}</select></label>`+input('nombre','Nombre del hermano',it.nombre||'','text','required')+`<label>Qué aporta<select name="necesidadId" required>${entradas(c.necesidades).map(n=>`<option value="${esc(n.id)}" ${n.id===it.necesidadId?'selected':''}>${esc(n.concepto)} (${esc(n.unidad||'unidades')})</option>`).join('')}</select></label>`+input('cantidad','Cantidad prometida',it.cantidad||1,'number','min="0.01" step="any" required')+input('recibido','Cantidad ya recibida',it.recibido||0,'number','min="0" step="any" required')+input('nota','Observación',it.nota||'');
+      html=`<label>Hermano<select name="hermanoId" onchange="vaColectaElegirHermano(this)">${opcionesHermanos(it.hermanoId,it.nombre,'Escribir un nombre')}</select></label>`+input('nombre','Nombre del hermano',it.nombre||'','text','required')+`<label>Qué aporta<select name="necesidadId" required>${entradas(c.necesidades).map(n=>`<option value="${esc(n.id)}" ${n.id===it.necesidadId?'selected':''}>${esc(n.concepto)} (${esc(n.unidad||'unidades')})</option>`).join('')}</select></label>`+input('cantidad','Cantidad prometida',it.cantidad||1,'number','min="0.01" step="any" required')+input('recibido','Cantidad ya recibida',it.recibido||0,'number','min="0" step="any" required')+input('nota','Observación',it.nota||'');
     }
     if(tipo==='presupuesto')html=input('concepto','Concepto del presupuesto',it.concepto||'','text','required')+input('proveedor','Proveedor / presupuesto de',it.proveedor||'')+input('cantidad','Cantidad',it.cantidad||1,'number','min="0.01" step="any" required')+input('precio','Costo unitario estimado (ARS)',(it.precioCentavos||0)/100,'number','min="0" step="0.01" required')+input('nota','Observación',it.nota||'');
     abrirForm((id?'Editar ':'Agregar ')+tipo,html,{tipo,id,grupo});
@@ -235,5 +244,5 @@ export function crearColectas({obtenerHermanos}){
     if(uid!==window.__UID||!puede())throw new Error('La cuenta cambió');
     return entradas(snap.val()||{});
   }
-  return {mostrar,listar};
+  return {mostrar,listar,actualizarContactos};
 }

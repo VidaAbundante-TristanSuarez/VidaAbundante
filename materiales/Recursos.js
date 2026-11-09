@@ -1,5 +1,5 @@
-import { crearMensajesHermanos } from './mensajes-hermanos.js?v=20261102-colectas-11';
-import { crearColectas } from './colectas.js?v=20261102-colectas-11';
+import { crearMensajesHermanos } from './mensajes-hermanos.js?v=20261109-medios-1';
+import { crearColectas } from './colectas.js?v=20261109-medios-1';
 import {
   getDatabase,
   ref,
@@ -1018,6 +1018,7 @@ window.cerrarRHCompartido = () => {
 
 let hermanosIniciado = false;
 let hermanosEscuchaActiva = false;
+let hermanosEstado = "cargando";
 let hermanosCache = [];
 let hermanoEditId = null;
 const hColectas = crearColectas({obtenerHermanos:()=>hermanosCache});
@@ -2133,7 +2134,7 @@ window.mostrarHermanos = async () => {
         <div id="hermanosTop">
           <div id="hermanosTopLeft">
             <h3>Contactos</h3>
-            <div id="hermanosCount">0 registros</div>
+            <div id="hermanosCount" role="status"></div>
           </div>
 
           <div id="hermanosActions">
@@ -2243,24 +2244,23 @@ ${window.__ES_ADMIN ? `
   }
 
   iniciarEscuchaHermanos();
+  // Colectas puede haber cargado la lista antes de que exista este panel.
+  renderHermanosLista();
 };
 
 function iniciarEscuchaHermanos() {
   if (hermanosEscuchaActiva) return;
 
   const db = window.__FB?.db;
-  if (!db) {
-    console.warn("db no está disponible todavía");
-    return;
-  }
-
   const { ref, onValue } = window.__FB_API || {};
-  if (!ref || !onValue) {
-    console.warn("Firebase API no está disponible todavía");
+  if (!db || !ref || !onValue) {
+    hermanosEstado = "error";
     return;
   }
 
   const hermanosRef = ref(db, "hermanos");
+  hermanosEstado = "cargando";
+  hermanosEscuchaActiva = true;
 
   onValue(hermanosRef, (snap) => {
     const val = snap.val() || {};
@@ -2280,13 +2280,21 @@ function iniciarEscuchaHermanos() {
       return noA.localeCompare(noB, "es");
     });
 
+    hermanosEstado = "listo";
     renderHermanosLista();
+    hColectas.actualizarContactos();
   }, (err) => {
+    hermanosEscuchaActiva = false;
+    hermanosEstado = "error";
     console.error("Error leyendo hermanos:", err);
+    renderHermanosLista();
   });
-
-  hermanosEscuchaActiva = true;
 }
+
+window.hReintentarContactos = () => {
+  iniciarEscuchaHermanos();
+  renderHermanosLista();
+};
 
 window.renderHermanosLista = () => {
   const lista = document.getElementById("hermanosLista");
@@ -2315,13 +2323,17 @@ window.renderHermanosLista = () => {
       });
 
   if (count) {
-    count.textContent = `${filtrados.length} registro${filtrados.length === 1 ? "" : "s"}`;
+    count.textContent = hermanosEstado === "listo" || hermanosCache.length
+      ? `${filtrados.length} contacto${filtrados.length === 1 ? "" : "s"}`
+      : "";
   }
 
   if (!filtrados.length) {
     lista.innerHTML = `
       <div id="hermanosVacio">
-        ${q ? "No encontré resultados para esa búsqueda." : "Todavía no hay contactos cargados."}
+        ${hermanosEstado === "cargando" ? "Cargando contactos…" :
+          hermanosEstado === "error" ? 'No se pudieron cargar los contactos. <button type="button" class="hermanosBtnAccion" onclick="hReintentarContactos()">Reintentar</button>' :
+          q ? "No encontré resultados para esa búsqueda." : "Todavía no hay contactos cargados."}
       </div>
     `;
     hMensajeria.actualizar();
