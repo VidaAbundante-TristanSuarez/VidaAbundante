@@ -1,9 +1,9 @@
 import { actualizarAdorno, activarAdorno, esperarAdorno } from "./adornos-editor.js?v=20261102-notas-compartir-7";
 import { elegirResolucionImagen, dimensionesExportacion, conProgresoExportacion } from "./exportacion-imagen.js?v=20261102-agenda-imagenes-8";
-import { referenciasDePublicacion, referenciasHTML, disenosDeImagen, agregarDisenoImagen, combinarDisenosImagen, carruselImagenHTML, disenoActivoDeCard } from "./publicaciones-imagen.js?v=20261102-agenda-imagenes-8";
-import { normalizarUrlImagen, obtenerBlobImagen } from './carga-imagenes.js?v=20261102-agenda-imagenes-8';
-import { actualizarCapaTexturas, esperarCapaTexturas, montarControlesTextura, margenesTexturas } from "./texturas-editor.js?v=20261102-notas-compartir-7";
-import { ordenarFondos, registrarUsoFondo, configurarUsoFondos, combinarUsoFondos, urlFondoSeguro, cargarFondoBlob, prepararMiniaturas, montarEditorTexto, aplicarFormatoSeleccion, alternarFormatoSeleccion, restaurarControlesTexto, aplicarSubrayadoTexto, desactivarEditorTexto, crearInstantaneaPreview, esperarFuentesPreview, dibujarCajaTexto, recuperarCajaTexto } from "./imagen-editor.js?v=20261102-notas-compartir-7";
+import { referenciasDePublicacion, referenciasHTML, disenosDeImagen, agregarDisenoImagen, combinarDisenosImagen, carruselImagenHTML, disenoActivoDeCard } from "./publicaciones-imagen.js?v=20261109-medios-1";
+import { normalizarUrlImagen, obtenerBlobImagen, subirArchivoR2 } from './carga-imagenes.js?v=20261109-medios-1';
+import { actualizarCapaTexturas, esperarCapaTexturas, montarControlesTextura, margenesTexturas } from "./texturas-editor.js?v=20261109-medios-1";
+import { montarOpcionesColorEditor, aplicarColorEditor, colorEnCanvas, ordenarFondos, registrarUsoFondo, configurarUsoFondos, combinarUsoFondos, urlFondoSeguro, cargarFondoBlob, prepararMiniaturas, montarEditorTexto, aplicarFormatoSeleccion, alternarFormatoSeleccion, restaurarControlesTexto, aplicarSubrayadoTexto, desactivarEditorTexto, crearInstantaneaPreview, esperarFuentesPreview, dibujarCajaTexto, recuperarCajaTexto } from "./imagen-editor.js?v=20261109-medios-1";
 
 // ================= IMPORTS FIREBASE =================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -38,7 +38,6 @@ const firebaseConfig = {
 // ✅ SIN FIREBASE FUNCTIONS: Biblia usa Cloudflare Worker + R2
 const R2_WORKER_URL = "https://subir-imagen-r2.vidaabundante-tristansuarez.workers.dev";
 
-const R2_UPLOAD_URL = R2_WORKER_URL;
 const R2_DOWNLOAD_URL = R2_WORKER_URL;
 
 const app = initializeApp(firebaseConfig);
@@ -1945,6 +1944,14 @@ function asegurarColorContornoBiblia() {
     }, 0);
   }
 
+  for (const selector of [colorHost, host]) {
+    montarOpcionesColorEditor(selector, () => ({
+      titulo: selector.title,
+      fondo: fondoDisenoBiblia.baseTipo === "imagen" ? fondoFinalBlobUrl || fondoFinal : "",
+      tomarColor: fondo => window.bibliaAbrirCuentagotasWrapper(selector, fondo)
+    }));
+  }
+
   bibliaSetHostColorVisual("personalizarOutlineHost", input.value || sugerido);
 
   return input;
@@ -3570,7 +3577,7 @@ const BIBLIA_VERSION_CACHE = "2026-05-01-correcciones2";
 
 Promise.all([
   fetch(`VidaAbundante - RV1960.json?v=${BIBLIA_VERSION_CACHE}`).then(r => r.json()),
-  fetch(`biblia_ntv.json?v=${BIBLIA_VERSION_CACHE}`).then(r => r.json())
+  fetch("biblia_ntv.json?v=20261109-proverbios-31").then(r => r.json())
 ])
 .then(([rvData, ntvData]) => {
   bibliaDataRV = Array.isArray(rvData) ? rvData : [];
@@ -4950,39 +4957,6 @@ if (btnFuentes && listaFuentes) {
   });
 }
 
-// ================= ☁️ R2 HELPERS (COPIADO DE DEVOCIONALES) =================
-async function blobToBase64(blob){
-  return await new Promise((resolve,reject)=>{
-    const rd = new FileReader();
-    rd.onerror = reject;
-    rd.onload = ()=>{
-      const s = String(rd.result || "");
-      resolve(s.split(",")[1] || "");
-    };
-    rd.readAsDataURL(blob);
-  });
-}
-
-async function subirImagenAR2DesdeWeb(fileBase64, fileName, contentType = "image/png"){
-  const r = await fetch(R2_UPLOAD_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      fileBase64,
-      fileName,
-      contentType,
-      folder: "biblia"
-    })
-  });
-
-  const data = await r.json().catch(() => ({}));
-  if (!r.ok || !data?.ok || !data?.url) {
-    throw new Error(data?.error || data?.detail || "No se pudo subir imagen a R2");
-  }
-
-  return data;
-}
-
 // ================= 🌄 FONDOS ⛺================================
 const fondosCategorias = {
   paisajes: [
@@ -5270,10 +5244,11 @@ function cargarFondos() {
   if (!cont) return;
 
   bibliaAsegurarTabsFondoDiseno();
-  const fondos = ordenarFondos(window.vaFondosObtenerLista
-    ? window.vaFondosObtenerLista(fondoCategoriaActual)
-    : (fondosCategorias[fondoCategoriaActual] || []), "biblia");
-  const clave = JSON.stringify([fondoCategoriaActual, fondos]);
+  const catalogo = window.vaFondosObtenerItems?.(fondoCategoriaActual) ||
+    (fondosCategorias[fondoCategoriaActual] || []).map(url => ({url}));
+  const miniaturas = new Map(catalogo.map(item => [item.url, item.miniaturaUrl || ""]));
+  const fondos = ordenarFondos([...miniaturas.keys()], "biblia");
+  const clave = JSON.stringify([fondoCategoriaActual, [...miniaturas]]);
   if (cont.__vaFondosClave === clave && cont.querySelector('#btnBibliaPaletaFondo')) {
     cont.querySelectorAll('img.biblia-fondo-img').forEach(img => img.classList.toggle('activo', img.dataset.fondoUrl === fondoFinal));
     bibliaSincronizarControlesFondoDiseno(); return;
@@ -5416,24 +5391,23 @@ menuBtn.onclick = (e) => {
   cont.appendChild(menuWrap);
 
   }
-  const prepararMiniatura = cont.__vaPrepararMiniatura || (cont.__vaPrepararMiniatura = prepararMiniaturas(cont));
+  const prepararMiniatura = prepararMiniaturas(cont);
   const lote = document.createDocumentFragment();
   cont.querySelectorAll('[data-categoria-fondo]').forEach(b => b.classList.toggle('activo', b.dataset.categoriaFondo === fondoCategoriaActual));
 
   fondos.forEach((baseUrl, indice) => {
     const finalUrl = baseUrl;
 
-    const img = anteriores.get(finalUrl) || document.createElement("img");
-    const nueva = !anteriores.has(finalUrl);
+    const miniatura = miniaturas.get(finalUrl);
+    const anterior = anteriores.get(finalUrl);
+    const img = anterior?.dataset.miniatura === miniatura ? anterior : document.createElement("img");
+    if (anterior && anterior !== img) anterior.remove();
     img.dataset.fondoUrl = finalUrl;
-    img.loading = indice < 6 ? "eager" : "lazy";
-    img.decoding = "async";
-    img.fetchPriority = indice < 2 ? "high" : "low";
+    img.dataset.miniatura = miniatura;
     img.alt = `Fondo ${indice + 1}`;
     img.className = "biblia-fondo-img";
-    img.crossOrigin = "anonymous";
     img.referrerPolicy = "no-referrer";
-    if (nueva) prepararMiniatura(img, urlFondoSeguro(finalUrl, R2_WORKER_URL), indice);
+    if (!img.getAttribute("src")) prepararMiniatura(img, finalUrl, indice, miniatura);
     img.classList.toggle("activo", finalUrl === fondoFinal);
 
     img.onclick = async () => {
@@ -5847,7 +5821,8 @@ function bibliaRecursosAdministrados(categoria, base, nombreVacio) {
       ? window.vaFondosObtenerItems(categoria, false)
           .map(item => ({
             nombre: String(item?.nombre || "Recurso"),
-            url: String(item?.url || "").trim()
+            url: String(item?.url || "").trim(),
+            miniaturaUrl: item?.miniaturaUrl || ""
           }))
           .filter(item => item.url)
       : baseLimpia;
@@ -5862,7 +5837,8 @@ function bibliaRenderTexturasDiseno() {
   const cont = document.getElementById("bibliaTexturasCarril");
   if (!cont) return;
 
-  cont.innerHTML = "";
+  cont.replaceChildren();
+  const prepararMiniatura = prepararMiniaturas(cont);
 
   const items = bibliaRecursosAdministrados(
     "texturas",
@@ -5879,7 +5855,7 @@ function bibliaRenderTexturasDiseno() {
 
   bibliaGuardarTexturasSeleccionadas(seleccionadas);
 
-  items.forEach(item => {
+  items.forEach((item, indice) => {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "biblia-recurso-mini";
@@ -5895,14 +5871,8 @@ function bibliaRenderTexturasDiseno() {
 
     if (item.url) {
       const miniatura = document.createElement("img");
-      miniatura.crossOrigin = "anonymous";
-      miniatura.loading = "lazy";
-      miniatura.decoding = "async";
-      miniatura.src = bibliaUrlRecursoSeguro(
-        item.url,
-        "textura_biblia.png"
-      );
       miniatura.alt = item.nombre;
+      prepararMiniatura(miniatura, item.url, indice - 1, item.miniaturaUrl);
       btn.appendChild(miniatura);
     } else {
       btn.innerHTML = `<i class="fa-solid fa-ban"></i>`;
@@ -5932,7 +5902,8 @@ function bibliaRenderAdornosDiseno() {
   const cont = document.getElementById("bibliaAdornosCarril");
   if (!cont) return;
 
-  cont.innerHTML = "";
+  cont.replaceChildren();
+  const prepararMiniatura = prepararMiniaturas(cont);
 
   const items = bibliaRecursosAdministrados(
     "adornos",
@@ -5951,7 +5922,7 @@ function bibliaRenderAdornosDiseno() {
     fondoDisenoBiblia.adornoUrl = null;
   }
 
-  items.forEach(item => {
+  items.forEach((item, indice) => {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "biblia-recurso-mini";
@@ -5960,14 +5931,8 @@ function bibliaRenderAdornosDiseno() {
 
     if (item.url) {
       const miniatura = document.createElement("img");
-      miniatura.crossOrigin = "anonymous";
-      miniatura.loading = "lazy";
-      miniatura.decoding = "async";
-      miniatura.src = bibliaUrlRecursoSeguro(
-        item.url,
-        "adorno_biblia.png"
-      );
       miniatura.alt = item.nombre;
+      prepararMiniatura(miniatura, item.url, indice - 1, item.miniaturaUrl);
       btn.appendChild(miniatura);
     } else {
       btn.innerHTML = `<i class="fa-solid fa-ban"></i>`;
@@ -6022,11 +5987,7 @@ if (fondosBox.parentNode && fondosBox.previousElementSibling !== box) {
         <div class="biblia-slider-row">
           <input
             id="bibliaTexturaOpacidad"
-            class="biblia-slider-mini"
-            type="range"
-            min="0"
-            max="1"
-            step="0.01"
+            type="hidden"
             value="0.22"
             oninput="actualizarFondoDisenoBibliaDesdeUI()"
           >
@@ -6493,14 +6454,6 @@ const BIBLIA_CUENTAGOTAS_WRAPPER = {
   arrastrando: false
 };
 
-function bibliaRgbToHex(r, g, b) {
-  const hx = n => Math.max(0, Math.min(255, Math.round(n)))
-    .toString(16)
-    .padStart(2, "0");
-
-  return `#${hx(r)}${hx(g)}${hx(b)}`;
-}
-
 function bibliaAsegurarBotonCuentagotasWrapper() {
   if (document.getElementById("btnBibliaCuentagotasWrapper")) return;
 
@@ -6547,6 +6500,7 @@ function bibliaAsegurarModalCuentagotasWrapper() {
 
   modal = document.createElement("div");
   modal.id = "modalBibliaCuentagotasWrapper";
+  modal.dataset.vaEditorColor = "";
   modal.style.position = "fixed";
   modal.style.inset = "0";
   modal.style.zIndex = "9999999";
@@ -6600,9 +6554,11 @@ function bibliaAsegurarModalCuentagotasWrapper() {
         id="bibliaCuentagotasWrapperCanvas"
         style="
           display:block;
-          width:100%;
+          width:auto;
+          height:auto;
+          max-width:100%;
           max-height:68vh;
-          object-fit:contain;
+          margin:0 auto;
           border-radius:16px;
           background:#eee;
           touch-action:none;
@@ -6644,7 +6600,7 @@ function bibliaAsegurarModalCuentagotasWrapper() {
       >
         <button
           type="button"
-          onclick="bibliaAplicarCuentagotasWrapper()"
+          id="bibliaCuentagotasAplicar" disabled
           style="
             border:none;
             border-radius:999px;
@@ -6711,21 +6667,28 @@ function bibliaCargarImagenCuentagotasWrapper(src) {
   });
 }
 
-window.bibliaAbrirCuentagotasWrapper = async function() {
-  const src = fondoFinalBlobUrl || fondoFinal || "";
+window.bibliaAbrirCuentagotasWrapper = async function(host, src = fondoFinalBlobUrl || fondoFinal) {
 
   if (!src) {
     alert("Primero elegí una imagen de fondo.");
     return;
   }
 
-  bibliaAsegurarModalCuentagotasWrapper();
-
-  const canvas = document.getElementById("bibliaCuentagotasWrapperCanvas");
-  if (!canvas) return;
+  const destino = host || document.getElementById("colorOpacidadBibliaHost");
+  const modal = bibliaAsegurarModalCuentagotasWrapper();
+  modal.querySelector("h3").textContent = host?.title || "Color del resaltado";
+  const canvas = modal.querySelector("canvas");
+  const aplicar = modal.querySelector("#bibliaCuentagotasAplicar");
+  aplicar.disabled = true;
+  aplicar.onclick = () => {
+    window.bibliaCerrarCuentagotasWrapper();
+    aplicarColorEditor(destino, BIBLIA_CUENTAGOTAS_WRAPPER.color);
+  };
+  BIBLIA_CUENTAGOTAS_WRAPPER.arrastrando = false;
 
   try {
     const img = await bibliaCargarImagenCuentagotasWrapper(src);
+    if (!modal.isConnected) return;
 
     const maxW = 1000;
     const maxH = 1000;
@@ -6740,36 +6703,11 @@ window.bibliaAbrirCuentagotasWrapper = async function() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-    const actual =
-      document.getElementById("colorOpacidadBiblia")?.value ||
-      "#000000";
+    const actual = destino?.dataset.target && document.querySelector(destino.dataset.target)?.value;
+    bibliaSetColorCuentagotasWrapper(actual || "#000000");
+    aplicar.disabled = false;
 
-    bibliaSetColorCuentagotasWrapper(actual);
-
-    const tomar = e => {
-      const rect = canvas.getBoundingClientRect();
-
-      const x = Math.max(
-        0,
-        Math.min(
-          canvas.width - 1,
-          Math.floor((e.clientX - rect.left) * (canvas.width / rect.width))
-        )
-      );
-
-      const y = Math.max(
-        0,
-        Math.min(
-          canvas.height - 1,
-          Math.floor((e.clientY - rect.top) * (canvas.height / rect.height))
-        )
-      );
-
-      const px = ctx.getImageData(x, y, 1, 1).data;
-      const hex = bibliaRgbToHex(px[0], px[1], px[2]);
-
-      bibliaSetColorCuentagotasWrapper(hex);
-    };
+    const tomar = e => bibliaSetColorCuentagotasWrapper(colorEnCanvas(canvas, ctx, e));
 
     canvas.onpointerdown = e => {
       e.preventDefault();
@@ -6798,7 +6736,8 @@ window.bibliaAbrirCuentagotasWrapper = async function() {
     };
 
   } catch (error) {
-    console.error("Error en cuentagotas del wrapper:", error);
+    if (!modal.isConnected) return;
+    console.error("Error en cuentagotas:", error);
     window.bibliaCerrarCuentagotasWrapper();
 
     alert(
@@ -6806,21 +6745,6 @@ window.bibliaAbrirCuentagotasWrapper = async function() {
       (error?.message || error)
     );
   }
-};
-
-window.bibliaAplicarCuentagotasWrapper = function() {
-  const hex = BIBLIA_CUENTAGOTAS_WRAPPER.color || "#000000";
-  const input = document.getElementById("colorOpacidadBiblia");
-
-  if (input) {
-    input.value = hex;
-    input.dispatchEvent(new Event("input", { bubbles: true }));
-    input.dispatchEvent(new Event("change", { bubbles: true }));
-  }
-
-  bibliaSetHostColorVisual("colorOpacidadBibliaHost", hex);
-  actualizarPreview();
-  window.bibliaCerrarCuentagotasWrapper();
 };
 
 // ================= WRAPPER SUAVE PARA CREAR IMAGEN BIBLIA =================
@@ -7645,8 +7569,7 @@ async function subirImagenBibliaBaseUnaVez() {
   const fileName = `versiculo_${ts}.png`;
 
   try {
-    const fileBase64 = await blobToBase64(blob);
-    const subida = await subirImagenAR2DesdeWeb(fileBase64, fileName, "image/png");
+    const subida = await subirArchivoR2(blob, "biblia", fileName);
 
     return {
       ts,
@@ -17125,29 +17048,9 @@ async function subirFondoTemaAR2(dataUrl, seccion) {
   const s = String(dataUrl || "");
   if (!s.startsWith("data:")) return s;
 
-  const match = s.match(/^data:(.*?);base64,(.*)$/);
-  if (!match) throw new Error("Imagen inválida.");
-
-  const contentType = match[1] || "image/jpeg";
-  const fileBase64 = match[2] || "";
-
-  const r = await fetch(R2_UPLOAD_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      fileBase64,
-      fileName: `fondo-${seccion}-${Date.now()}.jpg`,
-      contentType,
-      folder: "fondos-app"
-    })
-  });
-
-  const data = await r.json().catch(() => ({}));
-
-  if (!r.ok || !data?.ok || !data?.url) {
-    throw new Error(data?.error || data?.detail || "No se pudo subir el fondo a R2.");
-  }
-
+  if (!/^data:image\/[^;]+;base64,/.test(s)) throw new Error("Imagen inválida.");
+  const blob = await (await fetch(s)).blob();
+  const data = await subirArchivoR2(blob, "fondos-app", `fondo-${seccion}-${Date.now()}.jpg`);
   return data.url;
 }
 

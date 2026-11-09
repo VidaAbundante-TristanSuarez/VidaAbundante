@@ -212,33 +212,113 @@ export function margenesTexturas(layer) {
   return capas.get(layer)?.margenes || {left:0,right:0,top:0,bottom:0};
 }
 
-export function montarControlesTextura(input,{ajuste='auto',escala=100,intensidad=.22,onChange}={}) {
+function prepararPasoTextura(grupo, alCambiar) {
+  const campo = grupo.querySelector('input');
+  const [menos, mas] = grupo.querySelectorAll('button');
+  const min = Number(campo.min);
+  const max = Number(campo.max);
+  let confirmado;
+
+  function mostrar(numero) {
+    confirmado = limitar(Math.round(numero), min, max);
+    campo.value = String(confirmado);
+    menos.disabled = confirmado === min;
+    mas.disabled = confirmado === max;
+  }
+
+  function cambiar(numero) {
+    const anterior = confirmado;
+    mostrar(Number.isFinite(numero) ? numero : anterior);
+    if (confirmado !== anterior) alCambiar(confirmado);
+  }
+
+  menos.onclick = () => cambiar(confirmado - 5);
+  mas.onclick = () => cambiar(confirmado + 5);
+  campo.onchange = () => cambiar(campo.valueAsNumber);
+  return mostrar;
+}
+
+export function montarControlesTextura(input, {ajuste = 'auto', escala = 100, intensidad = .22, onChange} = {}) {
   if (!input) return;
-  Object.assign(input.parentElement.style,{display:'flex',flexWrap:'wrap',alignItems:'center',justifyContent:'center',height:'auto',minHeight:'16px',overflow:'visible'});
+  const fila = input.parentElement;
+  fila.classList.add('va-textura-fila');
   input.closest('#bibliaDisenoFondos,#dev2DisenoPanel')?.classList.add('va-texturas-panel');
-  input.min='0'; input.max='4'; input.step='.01';
-  input.value=String(limitar(Number(intensidad)||0,0,4));
-  input.setAttribute('aria-label','Intensidad de textura');
-  input.title='Intensidad de textura';
-  let box=input.parentElement.querySelector('.va-textura-controles');
-  if (!box) {
-    box=document.createElement('div'); box.className='va-textura-controles';
-    box.innerHTML='<label>Ajuste <select aria-label="Ajuste de textura"><option value="auto">Automático</option><option value="marco">Marco</option><option value="completa">Completa</option><option value="repetir">Repetir</option><option value="cubrir">Cubrir</option></select></label><label>Escala <input type="range" min="25" max="250" step="1" aria-label="Escala de textura"></label>';
-    input.parentElement.appendChild(box);
-    const titulo=document.createElement('span'); titulo.className='va-textura-intensidad'; titulo.textContent='Intensidad';
-    input.insertAdjacentElement('beforebegin',titulo);
-    const output=document.createElement('output'); output.className='va-textura-valor';
-    input.insertAdjacentElement('afterend',output);
-    input.addEventListener('input',()=>{output.value=Math.round(Number(input.value)*100)+'%';});
+
+  if (!fila.__vaControlesTextura) {
+    const box = document.createElement('div');
+    box.className = 'va-textura-controles';
+    box.innerHTML = `
+      <label class="va-textura-ajuste">Ajuste
+        <select aria-label="Ajuste de textura">
+          <option value="auto">Automático</option>
+          <option value="marco">Marco</option>
+          <option value="completa">Completa</option>
+          <option value="repetir">Repetir</option>
+          <option value="cubrir">Cubrir</option>
+        </select>
+      </label>
+      ${[['Intensidad', 0, 400], ['Escala', 25, 250]].map(([nombre, min, max]) => `
+        <div class="va-textura-paso" role="group" aria-label="${nombre} de textura">
+          <span>${nombre}</span>
+          <div class="va-textura-paso-botones">
+            <button type="button" aria-label="Bajar ${nombre.toLowerCase()} de textura">−</button>
+            <label class="va-textura-porcentaje">
+              <input type="number" inputmode="numeric" min="${min}" max="${max}" step="1" aria-label="${nombre} de textura en porcentaje">
+              <span aria-hidden="true">%</span>
+            </label>
+            <button type="button" aria-label="Subir ${nombre.toLowerCase()} de textura">+</button>
+          </div>
+        </div>`).join('')}
+    `;
+    fila.appendChild(box);
+    const select = box.querySelector('select');
+    const [intensidadGrupo, escalaGrupo] = box.querySelectorAll('.va-textura-paso');
+    const controles = {select, escala: 100};
+    const notificar = () => controles.onChange?.({ajuste: select.value, escala: controles.escala});
+    controles.mostrarIntensidad = prepararPasoTextura(intensidadGrupo, valor => {
+      input.value = String(valor / 100);
+      input.dispatchEvent(new Event('input', {bubbles: true}));
+    });
+    controles.mostrarEscala = prepararPasoTextura(escalaGrupo, valor => {
+      controles.escala = valor;
+      notificar();
+    });
+    select.onchange = notificar;
+    fila.__vaControlesTextura = controles;
   }
-  const select=box.querySelector('select'),range=box.querySelector('input');
-  select.value=modos.has(ajuste) ? ajuste : 'auto'; range.value=String(escala);
-  input.parentElement.querySelector('output.va-textura-valor').value=Math.round(Number(input.value)*100)+'%';
-  select.onchange=range.oninput=()=>onChange?.({ajuste:select.value,escala:Number(range.value)});
-  if (!document.getElementById('va-estilos-texturas')) {
-    const style=document.createElement('style'); style.id='va-estilos-texturas';
-    style.textContent='.va-textura-controles{display:flex;flex:1 0 100%;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap}.va-textura-controles label{display:flex;align-items:center;gap:5px;font:500 11px Arial;color:#234}.va-textura-controles select{max-width:115px;min-height:26px;border:1px solid #ccdce5;border-radius:8px;background:#fff;color:#123;font:12px Arial}.va-textura-controles input{width:105px!important;min-width:65px;max-width:30vw}.va-textura-intensidad,.va-textura-valor{font:11px Arial;color:#234;white-space:nowrap}.va-textura-valor{min-width:30px}.dev2-slider-row:has(.va-textura-controles),.biblia-slider-row:has(.va-textura-controles){display:flex;flex-wrap:wrap;align-items:center;gap:5px;justify-content:center}.dev2-slider-row:has(.va-textura-controles)>input,.biblia-slider-row:has(.va-textura-controles)>input{flex:1;min-width:70px;max-width:220px}';
-    document.head.appendChild(style);
-    style.textContent+='#modalPersonalizar #bibliaDisenoFondos.va-texturas-panel.tab-textura{height:auto;min-height:0;overflow:visible}';
-  }
+
+  const controles = fila.__vaControlesTextura;
+  controles.onChange = onChange;
+  controles.select.value = modos.has(ajuste) ? ajuste : 'auto';
+  controles.escala = limitar(Number(escala) || 100, 25, 250);
+  input.value = String(limitar(Number(intensidad) || 0, 0, 4));
+  controles.mostrarIntensidad(Number(input.value) * 100);
+  controles.mostrarEscala(controles.escala);
+
+  if (document.getElementById('va-estilos-texturas')) return;
+  const style = document.createElement('style');
+  style.id = 'va-estilos-texturas';
+  style.textContent = `
+    .va-texturas-panel .va-textura-fila{display:flex!important;justify-content:center;height:auto!important;overflow:visible!important;padding:4px 0}
+    .va-textura-controles{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:6px 12px;font:600 12px/1.2 Arial,sans-serif;color:#234}
+    .va-textura-paso,.va-textura-controles .va-textura-ajuste{display:flex!important;flex-direction:row!important;align-items:center;gap:5px;white-space:nowrap;margin:0!important}
+    .va-textura-ajuste select{width:110px;max-width:110px;height:32px;border:1px solid #c6d9e7;border-radius:8px;background:#fff;color:#234;font:12px Arial}
+    .va-textura-paso-botones{display:flex;align-items:center;gap:2px;border:1px solid #c6d9e7;border-radius:9px;background:#fff}
+    .va-textura-paso-botones button{display:grid;place-items:center;width:30px;min-width:30px;height:30px;padding:0;border:0;border-radius:8px;background:#e5f2fc;color:#224e70;font:700 16px/1 Arial;cursor:pointer}
+    .va-textura-paso-botones button:disabled{opacity:.38;cursor:default}
+    :is(#modalPersonalizar,#modalDevFase2) .va-textura-porcentaje{display:flex!important;flex-direction:row!important;align-items:center;gap:0!important;margin:0!important;padding:0 3px 0 0!important;font-size:11px;color:#234}
+    :is(#modalPersonalizar,#modalDevFase2) .va-textura-porcentaje input{width:25px!important;min-width:0!important;height:24px!important;padding:0!important;margin:0!important;border:0!important;box-shadow:none!important;background:transparent!important;color:inherit!important;text-align:right;font:inherit;appearance:textfield}
+    .va-textura-porcentaje input::-webkit-inner-spin-button,.va-textura-porcentaje input::-webkit-outer-spin-button{appearance:none;margin:0}
+    body.oscuro .va-textura-controles,body.oscuro :is(#modalPersonalizar,#modalDevFase2) .va-textura-porcentaje{color:#e6f2ff}
+    body.oscuro .va-textura-paso-botones,body.oscuro .va-textura-ajuste select{background:#263e52;border-color:#57748b;color:#e6f2ff}
+    #modalPersonalizar #bibliaDisenoFondos.va-texturas-panel.tab-textura{height:auto;min-height:0;overflow:visible}
+    @media(max-width:520px){
+      .va-textura-controles{display:grid;grid-template-columns:auto auto}
+      .va-textura-controles .va-textura-ajuste{grid-column:1/-1;justify-self:center}
+    }
+    @media(max-width:355px){
+      .va-textura-paso{flex-direction:column!important;gap:3px}
+    }
+  `;
+  document.head.appendChild(style);
 }

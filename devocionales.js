@@ -1,8 +1,9 @@
+import { subirArchivoR2 } from "./carga-imagenes.js?v=20261109-medios-1";
 import { actualizarAdorno, activarAdorno, esperarAdorno } from "./adornos-editor.js?v=20261102-notas-compartir-7";
 import { elegirResolucionImagen, dimensionesExportacion, conProgresoExportacion } from "./exportacion-imagen.js?v=20261102-notas-compartir-7";
-import { actualizarCapaTexturas, esperarCapaTexturas, montarControlesTextura, margenesTexturas, cargarTextura, dibujarTexturas } from "./texturas-editor.js?v=20261102-notas-compartir-7";
-import { urlFondoSeguro, cargarFondoBlob, prepararMiniaturas, montarEditorTexto, aplicarCajaTexto, aplicarFormatoSeleccion, alternarFormatoSeleccion, restaurarControlesTexto, aplicarSubrayadoTexto, crearInstantaneaPreview, esperarFuentesPreview, recuperarCajaTexto } from "./imagen-editor.js?v=20261102-notas-compartir-7";
-import { dibujarCajaTexto } from "./imagen-editor.js?v=20261102-notas-compartir-7";
+import { actualizarCapaTexturas, esperarCapaTexturas, montarControlesTextura, margenesTexturas, cargarTextura, dibujarTexturas } from "./texturas-editor.js?v=20261109-medios-1";
+import { montarOpcionesColorEditor, abrirOpcionesColorEditor, aplicarColorEditor, colorEnCanvas, urlFondoSeguro, cargarFondoBlob, prepararMiniaturas, montarEditorTexto, aplicarCajaTexto, aplicarFormatoSeleccion, alternarFormatoSeleccion, restaurarControlesTexto, aplicarSubrayadoTexto, crearInstantaneaPreview, esperarFuentesPreview, recuperarCajaTexto } from "./imagen-editor.js?v=20261109-medios-1";
+import { dibujarCajaTexto } from "./imagen-editor.js?v=20261109-medios-1";
 
 // devocionales.js (NUEVO LIMPIO)
 // ✅ OCR + Recorte + Modal 3 fases (9:9 + 9:7 => 9:16)
@@ -14,7 +15,6 @@ const R2_WORKER_URL = "https://subir-imagen-r2.vidaabundante-tristansuarez.worke
 
 // ✅ OCR bueno y R2 pasan por Worker.
 const OCR_URL = R2_WORKER_URL;
-const R2_UPLOAD_URL = R2_WORKER_URL;
 
 // ✅ Audio también pasa por Worker para evitar CORS,
 // pero adentro sigue usando tus Functions originales.
@@ -718,27 +718,6 @@ async function devAndroidCompartirBlob(blob, nombre = "devocional.png", mime = "
     tipo,
     base64
   );
-}
-
-async function subirImagenAR2DesdeWeb(fileBase64, fileName, contentType = "image/png"){
-  const r = await fetch(R2_UPLOAD_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      fileBase64,
-      fileName,
-      contentType,
-      folder: "devocionales"
-    })
-  });
-
-  const data = await r.json().catch(() => ({}));
-
-  if (!r.ok || !data?.ok || !data?.url) {
-    throw new Error(data?.error || data?.detail || "No se pudo subir imagen a R2");
-  }
-
-  return data;
 }
 
 /* =========================================================
@@ -1821,6 +1800,22 @@ function devFondoCoincidencia(huella){
     (!segunda || segunda.error > Math.max(5, mejor.error * 4)) ? mejor.src : "";
 }
 
+const devRaizFondosLocales = new URL("./img/fondos/", import.meta.url);
+let devHuellasLocales;
+
+async function devFondoHuellaLocal(src){
+  const url = new URL(src, location.href);
+  if (url.origin !== devRaizFondosLocales.origin || !url.pathname.startsWith(devRaizFondosLocales.pathname)) return null;
+
+  devHuellasLocales ||= fetch(new URL("./img/miniaturas/huellas-fondos.json?v=1", import.meta.url))
+    .then(respuesta => respuesta.ok ? respuesta.json() : {})
+    .catch(() => ({}));
+  const mapa = await devHuellasLocales;
+  const clave = decodeURIComponent(url.pathname.slice(devRaizFondosLocales.pathname.length));
+  const huella = mapa[clave];
+  return huella ? Array.from(atob(huella), letra => letra.charCodeAt(0)) : null;
+}
+
 async function devFondoCargarHuella(src, publicado = false){
   const revision = devFondosRevision;
   const cacheKey = `va-dev-fondo-huella-v1:${publicado ? "publicado" : "fondo"}:${src}`;
@@ -1829,6 +1824,10 @@ async function devFondoCargarHuella(src, publicado = false){
     if (Array.isArray(guardada) && guardada.length === 312 &&
         guardada.every(n => Number.isInteger(n) && n >= 0 && n <= 255)) return guardada;
   } catch {}
+  if (!publicado) {
+    const local = await devFondoHuellaLocal(src);
+    if (local) return local;
+  }
   const img = await new Promise((resolve, reject) => {
     const im = new Image();
     im.crossOrigin = "anonymous";
@@ -1878,8 +1877,12 @@ function devFondosRecuperarAnteriores(){
   devFondosRecuperando = true;
   const revision = devFondosRevision;
   (async () => {
-    // Una imagen por turno: no bloquear la edición ni cargar todo en paralelo.
+    // Dejar que la galería visible se cargue antes de revisar el historial.
     const pausa = () => new Promise(resolve => setTimeout(resolve, 30));
+    await new Promise(resolve => {
+      if (window.requestIdleCallback) requestIdleCallback(resolve, {timeout: 1500});
+      else setTimeout(resolve, 400);
+    });
     const candidatos = Array.from(new Set(Object.keys(fondosCategorias)
       .flatMap(cat => devFondosListaCategoria(cat))));
     for (const src of candidatos) {
@@ -1988,24 +1991,6 @@ function devUrlRecursoSeguro(url, nombre = "recurso.png") {
   }
 }
 
-function devOptimizarCargaImagen(img, indice = 0, prioritarias = 10){
-  if (!img) return img;
-
-  // En Android WebView, marcar TODO como lazy/low puede hacer que las miniaturas
-  // visibles se demoren mucho más que en Chrome/PWA. Priorizamos el primer tramo
-  // que el usuario ve y dejamos el resto diferido.
-  const prioridadAlta = Number(indice) < Number(prioritarias);
-
-  img.loading = prioridadAlta ? "eager" : "lazy";
-  img.decoding = "async";
-
-  try {
-    img.fetchPriority = prioridadAlta ? "high" : "low";
-  } catch (_) {}
-
-  return img;
-}
-
 async function urlToBlobURL(url){
   return cargarFondoBlob(urlFondoSeguro(url, R2_WORKER_URL));
 }
@@ -2062,7 +2047,10 @@ function cargarFondosDev(){
   menuWrap.appendChild(menu);
   cont.appendChild(menuWrap);
 
-  const fondos = devOrdenarFondosPublicados(devFondosListaCategoria(devF1CategoriaActual));
+  const catalogo = window.vaFondosObtenerItems?.(devF1CategoriaActual) ||
+    devFondosListaCategoria(devF1CategoriaActual).map(url => ({url}));
+  const miniaturas = new Map(catalogo.map(item => [item.url, item.miniaturaUrl || ""]));
+  const fondos = devOrdenarFondosPublicados([...miniaturas.keys()]);
   const prepararMiniatura = prepararMiniaturas(cont);
 
   fondos.forEach((base, indice)=>{
@@ -2071,9 +2059,8 @@ function cargarFondosDev(){
     const im = document.createElement("img");
     im.dataset.devFondo = finalUrl;
     im.classList.toggle("activo", finalUrl === DEV.f1.fondoSrc);
-    im.crossOrigin = "anonymous";
     im.referrerPolicy = "no-referrer";
-    prepararMiniatura(im, urlFondoSeguro(finalUrl, R2_WORKER_URL), indice);
+    prepararMiniatura(im, finalUrl, indice, miniaturas.get(finalUrl));
 
     im.onclick = async ()=>{
       const token = ++seleccionFondoDevToken;
@@ -2189,7 +2176,8 @@ function devRecursosF2Administrados(categoria, base, nombreVacio) {
       ? window.vaFondosObtenerItems(categoria, false)
           .map(item => ({
             nombre: String(item?.nombre || "Recurso"),
-            url: String(item?.url || "").trim()
+            url: String(item?.url || "").trim(),
+            miniaturaUrl: item?.miniaturaUrl || ""
           }))
           .filter(item => item.url)
       : baseLimpia;
@@ -2204,7 +2192,8 @@ function cargarAdornosF2(){
   const cont = $("dev2Adornos");
   if (!cont) return;
 
-  cont.innerHTML = "";
+  cont.replaceChildren();
+  const prepararMiniatura = prepararMiniaturas(cont);
 
   const items = devRecursosF2Administrados(
     "adornos",
@@ -2231,18 +2220,9 @@ function cargarAdornosF2(){
     if (item.url) {
       b.textContent = "";
       const img = document.createElement("img");
-      devOptimizarCargaImagen(img, indice, 12);
-      img.crossOrigin = "anonymous";
-      img.src = devUrlRecursoSeguro(
-        item.url,
-        "adorno_devocional.png"
-      );
       img.alt = item.nombre;
       img.className = "dev-adorno-thumb";
-      img.onerror = () => {
-        b.classList.add("dev-adorno-btn-none");
-        b.innerHTML = `<i class="fa-solid fa-genderless"></i>`;
-      };
+      prepararMiniatura(img, item.url, indice - 1, item.miniaturaUrl);
       b.appendChild(img);
     } else {
       b.classList.add("dev-adorno-btn-none");
@@ -2372,7 +2352,8 @@ function cargarTexturasF2(){
   const cont = $("dev2Texturas");
   if (!cont) return;
 
-  cont.innerHTML = "";
+  cont.replaceChildren();
+  const prepararMiniatura = prepararMiniaturas(cont);
 
   const items = devRecursosF2Administrados(
     "texturas",
@@ -2397,18 +2378,9 @@ function cargarTexturasF2(){
 
     if (item.url) {
       const img = document.createElement("img");
-      devOptimizarCargaImagen(img, indice, 12);
-      img.crossOrigin = "anonymous";
-      img.src = devUrlRecursoSeguro(
-        item.url,
-        "textura_devocional.png"
-      );
       img.alt = item.nombre;
       img.className = "dev-textura-thumb";
-      img.onerror = () => {
-        b.classList.add("dev-textura-btn-none");
-        b.innerHTML = `<i class="fa-solid fa-genderless"></i>`;
-      };
+      prepararMiniatura(img, item.url, indice - 1, item.miniaturaUrl);
       b.appendChild(img);
     } else {
       b.classList.add("dev-textura-btn-none");
@@ -2554,6 +2526,14 @@ function devAsegurarControlContorno(fase) {
     }, 0);
   }
 
+  for (const selector of [colorHost, host]) {
+    montarOpcionesColorEditor(selector, () => ({
+      titulo: selector.title,
+      fondo: devFondoParaCuentagotas(),
+      tomarColor: fondo => window.devAbrirCuentagotasF2(1, "fondoF2", {host: selector, src: fondo})
+    }));
+  }
+
   return input;
 }
 
@@ -2628,16 +2608,9 @@ const DEV_CUENTAGOTAS_F2 = {
   ctx: null,
   arrastrando: false,
   destino: "fondoF2",
-  destinoFondo: 1
+  destinoFondo: 1,
+  solicitud: 0
 };
-
-function devRgbToHex(r, g, b){
-  const hx = n => Math.max(0, Math.min(255, Math.round(n)))
-    .toString(16)
-    .padStart(2, "0");
-
-  return `#${hx(r)}${hx(g)}${hx(b)}`;
-}
 
 function devEnsureBotonCuentagotasF2(){
   if ($("devBtnCuentagotasF2")) return;
@@ -2706,6 +2679,7 @@ function devEnsureBotonCuentagotasWrapperF1(){
 }
 
 window.devCerrarCuentagotasF2 = function(){
+  DEV_CUENTAGOTAS_F2.solicitud++;
   try {
     DEV_CUENTAGOTAS_F2.arrastrando = false;
 
@@ -2721,6 +2695,7 @@ function devEnsureModalCuentagotasF2(){
 
   const div = document.createElement("div");
   div.id = "modalDevCuentagotasF2";
+  div.dataset.vaEditorColor = "";
   div.className = "modal-overlay";
   div.setAttribute("aria-hidden", "true");
 
@@ -2749,7 +2724,7 @@ function devEnsureModalCuentagotasF2(){
       </div>
 
       <div class="dev-cuentagotas-actions">
-   <button type="button" onclick="devAplicarCuentagotasF2('fondoActual')">
+   <button type="button" id="devCuentagotasAplicar" disabled>
   Usar este color
 </button>
 
@@ -2797,12 +2772,14 @@ function devCargarImagenCuentagotasF2(src){
   });
 }
 
-window.devAbrirCuentagotasF2 = async function(indiceFondo = 1, destino = "fondoF2"){
+function devFondoParaCuentagotas(){
+  return DEV.f1.fondoBlob || DEV.f1.fondoUrl || "";
+}
+
+window.devAbrirCuentagotasF2 = async function(indiceFondo = 1, destino = "fondoF2", {host, src = devFondoParaCuentagotas()} = {}){
   DEV_CUENTAGOTAS_F2.destinoFondo = Number(indiceFondo || 1);
   DEV_CUENTAGOTAS_F2.destino =
     destino === "wrapperF1" ? "wrapperF1" : "fondoF2";
-
-  const src = DEV.f1?.fondoBlob || DEV.f1?.fondoUrl || "";
 
   if (!src) {
     alert("Primero elegí un fondo en la fase 1.");
@@ -2813,10 +2790,21 @@ window.devAbrirCuentagotasF2 = async function(indiceFondo = 1, destino = "fondoF
   abrirModal("modalDevCuentagotasF2");
 
   const canvas = $("devCuentagotasCanvas");
-  if (!canvas) return;
+  const aplicar = $("devCuentagotasAplicar");
+  const solicitud = ++DEV_CUENTAGOTAS_F2.solicitud;
+  aplicar.disabled = true;
+  aplicar.onclick = () => {
+    if (!host) {
+      window.devAplicarCuentagotasF2("fondoActual");
+      return;
+    }
+    window.devCerrarCuentagotasF2();
+    aplicarColorEditor(host, DEV_CUENTAGOTAS_F2.color);
+  };
 
   try {
     const img = await devCargarImagenCuentagotasF2(src);
+    if (solicitud !== DEV_CUENTAGOTAS_F2.solicitud) return;
 
     const maxW = 900;
     const maxH = 900;
@@ -2831,9 +2819,10 @@ window.devAbrirCuentagotasF2 = async function(indiceFondo = 1, destino = "fondoF
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-    devSetColorCuentagotasF2("#000000");
-
-       canvas.style.touchAction = "none";
+    const actual = host?.dataset.target && document.querySelector(host.dataset.target)?.value;
+    devSetColorCuentagotasF2(actual || "#000000");
+    aplicar.disabled = false;
+    canvas.style.touchAction = "none";
 
     const cursor = $("devCuentagotasCursor");
     const cursorColor = $("devCuentagotasCursorColor");
@@ -2862,20 +2851,8 @@ window.devAbrirCuentagotasF2 = async function(indiceFondo = 1, destino = "fondoF
       if (cursor) cursor.style.display = "none";
     };
 
-    const tomarColorDesdePunto = (e) => {
-      const r = canvas.getBoundingClientRect();
-
-      const x = Math.max(0, Math.min(canvas.width - 1,
-        Math.floor((e.clientX - r.left) * (canvas.width / r.width))
-      ));
-
-      const y = Math.max(0, Math.min(canvas.height - 1,
-        Math.floor((e.clientY - r.top) * (canvas.height / r.height))
-      ));
-
-      const px = ctx.getImageData(x, y, 1, 1).data;
-      const hex = devRgbToHex(px[0], px[1], px[2]);
-
+    const tomarColorDesdePunto = e => {
+      const hex = colorEnCanvas(canvas, ctx, e);
       devSetColorCuentagotasF2(hex);
       moverCursor(e, hex);
 
@@ -2925,6 +2902,8 @@ window.devAbrirCuentagotasF2 = async function(indiceFondo = 1, destino = "fondoF
     };
 
   } catch(e) {
+    if (solicitud !== DEV_CUENTAGOTAS_F2.solicitud) return;
+    window.devCerrarCuentagotasF2();
     console.error(e);
     alert("No pude abrir el cuentagotas.\n\nDetalle: " + (e?.message || e));
   }
@@ -3763,103 +3742,22 @@ function dev2AsegurarOpcionRombo(){
   });
 }
 
-function dev2AsegurarModalColorFondo(){
-  if ($("modalDevColorFondoOpciones")) return;
-
-  const div = document.createElement("div");
-  div.id = "modalDevColorFondoOpciones";
-  div.className = "modal-overlay";
-  div.setAttribute("aria-hidden", "true");
-
-  div.innerHTML = `
-    <div class="modal-contenido modal-dev-color-opciones" onclick="event.stopPropagation()">
-      <button
-        type="button"
-        class="cerrar-modal"
-        onclick="cerrarModal('modalDevColorFondoOpciones')"
-      >✕</button>
-
-      <h3>Color de fondo</h3>
-
-      <p>Elegí cómo querés tomar este color.</p>
-
-      <div class="dev-color-opciones-actions">
-        <button type="button" id="devColorOpcionImagen">
-          <i class="fa-solid fa-eye-dropper"></i>
-          Tomar color de imagen
-        </button>
-
-        <button type="button" id="devColorOpcionPaleta">
-          <i class="fa-solid fa-palette"></i>
-          Abrir paleta
-        </button>
-      </div>
-    </div>
-  `;
-
-  div.addEventListener("click", e => {
-    if (e.target === div) cerrarModal("modalDevColorFondoOpciones");
-  });
-
-  document.body.appendChild(div);
+function dev2OpcionesColorFondo(indice){
+  return {
+    titulo: "Color de fondo",
+    fondo: devFondoParaCuentagotas(),
+    tomarColor: fondo => window.devAbrirCuentagotasF2(indice, "fondoF2", {src: fondo})
+  };
 }
 
 window.dev2AbrirOpcionesColorFondo = function(indice = 1){
-  indice = Number(indice || 1);
-
-  dev2AsegurarModalColorFondo();
-
-  const modal = $("modalDevColorFondoOpciones");
-  const btnImg = $("devColorOpcionImagen");
-  const btnPal = $("devColorOpcionPaleta");
-
-  if (!modal || !btnImg || !btnPal) return;
-
-  btnImg.onclick = () => {
-    cerrarModal("modalDevColorFondoOpciones");
-
-    DEV_CUENTAGOTAS_F2.destinoFondo = indice;
-    window.devAbrirCuentagotasF2(indice);
-  };
-
-  btnPal.onclick = () => {
-    cerrarModal("modalDevColorFondoOpciones");
-
-    const host = dev2HostColorFondo(indice);
-
-    try {
-      if (host?._pickr && typeof host._pickr.show === "function") {
-        host._pickr.show();
-      } else {
-        dev2InputColorFondo(indice)?.click();
-      }
-    } catch(e) {
-      dev2InputColorFondo(indice)?.click();
-    }
-  };
-
-  abrirModal("modalDevColorFondoOpciones");
+  abrirOpcionesColorEditor(dev2HostColorFondo(indice), dev2OpcionesColorFondo(indice));
 };
 
 function dev2InterceptarHostsColorFondo(){
-  [
-    ["dev2FondoHost", 1],
-    ["dev2GradColor2Host", 2],
-    ["dev2GradColor3Host", 3]
-  ].forEach(([id, indice]) => {
-    const host = $(id);
-    if (!host || host.dataset.devColorChoiceReady === "1") return;
-
-    host.dataset.devColorChoiceReady = "1";
-
-    host.addEventListener("click", e => {
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation();
-
-      window.dev2AbrirOpcionesColorFondo(indice);
-    }, true);
-  });
+  for (const indice of [1, 2, 3]) {
+    montarOpcionesColorEditor(dev2HostColorFondo(indice), () => dev2OpcionesColorFondo(indice));
+  }
 }
 
 function devMostrarSubrayadoDev(){
@@ -6284,9 +6182,7 @@ async function devSubirImagenBaseUnaVez(tsParam){
   if (!blob) throw new Error("No se pudo convertir a PNG");
   const fondoFase1 = DEV.f1.fondoSrc || "";
 
-  const fileBase64 = await blobToBase64(blob);
-
-  const subida = await subirImagenAR2DesdeWeb(fileBase64, fileName, "image/png");
+  const subida = await subirArchivoR2(blob, "devocionales", fileName);
 
 return {
   ok: true,

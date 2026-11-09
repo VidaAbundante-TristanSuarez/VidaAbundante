@@ -1,6 +1,6 @@
-import { crearGestorArchivosAgenda, ordenarArchivosPorPortada } from './agenda-archivos.js?v=20261102-agenda-12';
+import { crearGestorArchivosAgenda, ordenarArchivosPorPortada } from './agenda-archivos.js?v=20261109-medios-1';
 import { botonAdjuntosHTML } from './documentos-adjuntos.js?v=20261102-colectas-11';
-import { normalizarUrlImagen, obtenerBlobImagen } from './carga-imagenes.js?v=20261102-agenda-imagenes-8';
+import { normalizarUrlImagen, obtenerBlobImagen, subirArchivoR2 as subirArchivoAR2DesdeWeb } from './carga-imagenes.js?v=20261109-medios-1';
 // ================= SUBIDOS.JS =================
 const { db } = window.__FB || {};
 const FB = window.__FB_API || {};
@@ -16,7 +16,6 @@ const {
 // ✅ Todo esto va por Cloudflare Worker.
 const R2_WORKER_URL = "https://subir-imagen-r2.vidaabundante-tristansuarez.workers.dev";
 
-const R2_UPLOAD_URL = R2_WORKER_URL;
 const SUBIDOS_VIDEO_UPLOAD_URL = R2_WORKER_URL;
 const SUBIDOS_PROXY_URL = R2_WORKER_URL;
 
@@ -2347,28 +2346,6 @@ async function blobToBase64(blob){
     };
     rd.readAsDataURL(blob);
   });
-}
-
-async function subirArchivoAR2DesdeWeb(file, folder = "subidos"){
-  const fileBase64 = await blobToBase64(file);
-
-  const r = await fetch(R2_UPLOAD_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      fileBase64,
-      fileName: file.name || `archivo_${Date.now()}`,
-      contentType: file.type || "application/octet-stream",
-      folder
-    })
-  });
-
-  const data = await r.json().catch(() => ({}));
-  if (!r.ok || !data?.ok || !data?.url) {
-    throw new Error(data?.error || data?.detail || "No se pudo subir archivo a R2");
-  }
-
-  return data;
 }
 
 /* ================= VIDEOS GRANDES: SUBIDA DIRECTA A R2 ================= */

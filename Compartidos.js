@@ -1,7 +1,7 @@
 import { botonAdjuntosHTML } from './documentos-adjuntos.js?v=20261102-colectas-11';
-import { ordenarArchivosPorPortada } from './agenda-archivos.js?v=20261102-agenda-12';
-import { referenciasHTML, referenciasDePublicacion, carruselImagenHTML } from "./publicaciones-imagen.js?v=20261102-agenda-imagenes-8";
-import { normalizarUrlImagen, prepararCargaImagenes } from './carga-imagenes.js?v=20261102-agenda-imagenes-8';
+import { ordenarArchivosPorPortada } from './agenda-archivos.js?v=20261109-medios-1';
+import { referenciasHTML, referenciasDePublicacion, carruselImagenHTML } from "./publicaciones-imagen.js?v=20261109-medios-1";
+import { normalizarUrlImagen, prepararCargaImagenes, urlMiniaturaImagen } from './carga-imagenes.js?v=20261109-medios-1';
 import {
   ref,
   onValue,
@@ -391,6 +391,8 @@ function compNormalizarCategoriaEdicion(v = "") {
 }
 
 function compCategoriaEdicion(item = {}) {
+  if (item._desdeRecursos) return compNormalizarCategoriaEdicion(item.rama);
+
   const edicionId = String(item?.edicionId || "").trim();
 
   const cache = [
@@ -617,10 +619,9 @@ window.compCambiarSubFiltroEdiciones = function compCambiarSubFiltroEdiciones(fi
 };
 
 let compBaseListo = false;
+let compEdicionesListo = false;
 let compDevocionalesListo = false;
 let compSubidosListo = false;
-let compCargaInicio = Date.now();
-let compTimerCarga = null;
 
 function compEsIOS() {
   const ua = navigator.userAgent || "";
@@ -640,8 +641,10 @@ window.compVerMasPublicaciones = function compVerMasPublicaciones() {
 };
 
 function compOptimizarImagenesFeed() {
-  document.querySelectorAll("#compLista img").forEach((img,i) => {
-    img.loading = i<2?'eager':'lazy';
+  const lista = comp$("compLista");
+  const visible = !!lista?.getClientRects().length;
+  lista?.querySelectorAll("img").forEach((img, indice) => {
+    img.loading = visible && indice < 2 && !img.dataset.vaSrc ? "eager" : "lazy";
     img.decoding = "async";
     img.referrerPolicy = "no-referrer";
   });
@@ -799,19 +802,9 @@ function comp$(id) {
 }
 
 function compEstaCargandoFeed() {
-  // ✅ Mientras las 3 fuentes principales no respondieron,
-  // seguimos mostrando cargando. Sin límite falso de 12 segundos.
+  if (compFiltroActual === "ediciones") return !compEdicionesListo;
+  if (compFiltroActual === "agenda") return !compSubidosListo;
   return !compBaseListo || !compDevocionalesListo || !compSubidosListo;
-}
-
-function compProgramarRepintadoCarga() {
-  if (compTimerCarga) clearTimeout(compTimerCarga);
-
-  compTimerCarga = setTimeout(() => {
-    if (typeof window.renderCompartidos === "function") {
-      window.renderCompartidos();
-    }
-  }, 900);
 }
 
 function compLoaderHTML() {
@@ -1313,15 +1306,12 @@ window.mostrarCompartidos = async () => {
     return;
   }
 
-  // ✅ Mientras carga, no mostramos banner ni promos vacías.
-  compLimpiarCompartidosTop();
-
-iniciarEscuchaCompartidos();
-iniciarEscuchaCompartidosStats();
-iniciarEscuchaCompartidosEdiciones();
-iniciarEscuchaCompartidosGuardados();
-iniciarEscuchaCompartidosImagenesGuardadas();
-iniciarEscuchaCompartidosDescargados();
+  iniciarEscuchaCompartidos();
+  iniciarEscuchaCompartidosStats();
+  iniciarEscuchaCompartidosEdiciones();
+  iniciarEscuchaCompartidosGuardados();
+  iniciarEscuchaCompartidosImagenesGuardadas();
+  iniciarEscuchaCompartidosDescargados();
   iniciarEscuchaCompartidosDevocionales();
   iniciarEscuchaCompartidosSubidos();
   iniciarEscuchaCompartidosOraciones();
@@ -1341,12 +1331,13 @@ function renderCompartidosTop() {
     hero.innerHTML = `
       <div class="comp-hero-card">
         <img
-          src="${compEscape(COMP_BANNER_URL)}"
+          data-va-imagen
+          src="${compEscape(urlMiniaturaImagen(COMP_BANNER_URL))}"
+          data-va-original="${compEscape(COMP_BANNER_URL)}"
           alt=""
           title="Horarios Vida Abundante"
           loading="eager"
           decoding="async"
-          onerror="if(this.parentElement){this.parentElement.remove();}"
         >
       </div>
     `;
@@ -1373,29 +1364,31 @@ function renderCompartidosTop() {
       <div class="comp-promos-slider">
         <div class="comp-promos-page">
           ${COMP_PROMOS.slice(0, 3).map((src, i) => `
-            <img
-              src="${compEscape(src)}"
+            <span class="comp-promo-imagen" data-va-imagen-host><img
+              data-va-imagen
+              src="${compEscape(urlMiniaturaImagen(src))}"
+              data-va-original="${compEscape(src)}"
               alt=""
               title="Promo ${i + 1}"
               loading="eager"
               decoding="async"
-              onerror="this.remove()"
               onclick="compAbrirMedia('${compJs(src)}', 'imagen', 'Promo ${i + 1}')"
-            >
+            ></span>
           `).join("")}
         </div>
 
         <div class="comp-promos-page">
           ${COMP_PROMOS.slice(3, 6).map((src, i) => `
-            <img
-              src="${compEscape(src)}"
+            <span class="comp-promo-imagen" data-va-imagen-host><img
+              data-va-imagen
+              src="${compEscape(urlMiniaturaImagen(src))}"
+              data-va-original="${compEscape(src)}"
               alt=""
               title="Promo ${i + 4}"
               loading="lazy"
               decoding="async"
-              onerror="this.remove()"
               onclick="compAbrirMedia('${compJs(src)}', 'imagen', 'Promo ${i + 4}')"
-            >
+            ></span>
           `).join("")}
         </div>
       </div>
@@ -1512,6 +1505,7 @@ function iniciarEscuchaCompartidosEdiciones() {
   if (!db) return;
 
   onValue(ref(db, "ediciones"), (snap) => {
+    compEdicionesListo = true;
     const val = snap.val() || {};
 
     compartidosEdicionesCache = Object.entries(val)
@@ -1538,7 +1532,9 @@ function iniciarEscuchaCompartidosEdiciones() {
 
     renderCompartidos();
   }, (err) => {
+    compEdicionesListo = true;
     console.error("Error leyendo ediciones para Compartidos:", err);
+    renderCompartidos();
   });
 
   compartidosEdicionesEscuchaActiva = true;
@@ -4643,20 +4639,9 @@ async function compAsegurarEdicionMini(edicionId) {
 function compRenderEdicion(item) {
   const edicionId = String(item.edicionId || "").trim();
 
-  const cacheEdiciones = [
-    ...(Array.isArray(window.__EDICIONES_CACHE)
-      ? window.__EDICIONES_CACHE
-      : []),
-
-    ...(Array.isArray(compartidosEdicionesCache)
-      ? compartidosEdicionesCache
-      : [])
-  ];
-
-  const edicionReal =
-    cacheEdiciones.find(
-      ed => String(ed?.id || "") === edicionId
-    ) || null;
+  const edicionReal = item._desdeRecursos ? item :
+    (window.__EDICIONES_CACHE || []).find(ed => String(ed?.id || "") === edicionId) ||
+    compartidosEdicionesCache.find(ed => String(ed?.id || "") === edicionId);
 
   if (!edicionReal && edicionId) {
     compAsegurarEdicionMini(edicionId);
@@ -4712,7 +4697,8 @@ function compRenderEdicion(item) {
     typeof window.edMiniPaginasHTML === "function"
       ? window.edMiniPaginasHTML(
           edicionId,
-          "compartidos"
+          "compartidos",
+          edicionReal
         )
       : "";
 
@@ -4725,7 +4711,9 @@ function compRenderEdicion(item) {
         portada
           ? `
             <img
-              src="${compEscape(portada)}"
+              data-va-imagen
+              data-va-src="${compEscape(urlMiniaturaImagen(portada, edicionReal?.portadaMiniaturaUrl || item.portadaMiniaturaUrl))}"
+              data-va-original="${compEscape(portada)}"
               alt="${titulo}"
               loading="lazy"
               onclick="abrirPresentacionEdicion('${compJs(edicionId)}')"
@@ -4750,7 +4738,9 @@ function compRenderEdicion(item) {
               portada
                 ? `
                   <img
-                    src="${compEscape(portada)}"
+                    data-va-imagen
+                    data-va-src="${compEscape(urlMiniaturaImagen(portada, edicionReal?.portadaMiniaturaUrl || item.portadaMiniaturaUrl))}"
+                    data-va-original="${compEscape(portada)}"
                     alt="${titulo}"
                     loading="lazy"
                     onclick="abrirPresentacionEdicion('${compJs(edicionId)}')"
@@ -5129,21 +5119,12 @@ window.renderCompartidos = function renderCompartidos() {
     return;
   }
 
-  // ✅ Primero esperamos a que las fuentes principales respondan.
-  // Así no se ve el feed a medias, ni promos vacías, ni cards fantasmas.
+  // Los filtros se pueden usar mientras cargan las publicaciones.
+  renderCompartidosTop();
   if (compEstaCargandoFeed()) {
-    compLimpiarCompartidosTop();
-
-    if (!lista.querySelector(".comp-loading-feed")) {
-      lista.innerHTML = compLoaderHTML();
-    }
-
-    compProgramarRepintadoCarga();
+    if (!lista.querySelector(".comp-loading-feed")) lista.innerHTML = compLoaderHTML();
     return;
   }
-
-  // ✅ Recién cuando la carga base terminó, mostramos banner/promos.
-  renderCompartidosTop();
   const filtrosAgenda=document.getElementById('compAgendaFiltros');
   if(filtrosAgenda)filtrosAgenda.outerHTML=compRenderSubFiltrosAgendaHTML();
   const calendarioAgenda=document.getElementById('compCalendarioAgenda');

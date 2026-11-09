@@ -119640,7 +119640,14 @@
     "Libro": "Proverbios",
     "Capitulo": 31,
     "Versiculo": 9,
-    "NTV": "Sí, habla a favor de los pobres e indefensos, y asegúrate de que se les haga justicia. 10 ¿Quién podrá encontrar una esposa virtuosa y capaz? Es más preciosa que los rubíes.",
+    "NTV": "Sí, habla a favor de los pobres e indefensos, y asegúrate de que se les haga justicia.",
+    "Resaltar": ""
+  },
+  {
+    "Libro": "Proverbios",
+    "Capitulo": 31,
+    "Versiculo": 10,
+    "NTV": "¿Quién podrá encontrar una esposa virtuosa y capaz? Es más preciosa que los rubíes.",
     "Resaltar": ""
   },
   {

@@ -1,4 +1,4 @@
-import { normalizarUrlImagen } from './carga-imagenes.js?v=20261102-agenda-imagenes-8';
+import { normalizarUrlImagen } from './carga-imagenes.js?v=20261109-medios-1';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const tipo=a=>{
   const mime=String(a.mimeType||a.type||'').toLowerCase(),nombre=String(a.fileName||a.name||a.url||'').split(/[?#]/)[0];

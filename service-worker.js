@@ -19,6 +19,8 @@ const APP_SHELL = [
   "/VidaAbundante/Subidos.js",
   "/VidaAbundante/ABC/abc.js",
   "/VidaAbundante/materiales/Recursos.js",
+  "/VidaAbundante/materiales/colectas.js",
+  "/VidaAbundante/materiales/mensajes-hermanos.js",
   "/VidaAbundante/materiales/Ediciones.js",
   "/VidaAbundante/Compartidos.js",
   "/VidaAbundante/carga-imagenes.js",
@@ -96,8 +98,9 @@ async function ponerEnCache(request, response) {
   try {
     if (!response || !response.ok) return;
 
+    const copia = response.clone();
     const cache = await caches.open(VA_CACHE);
-    await cache.put(request, response.clone());
+    await cache.put(request, copia);
   } catch (e) {
     // No rompemos la app si el cache falla.
   }
@@ -110,12 +113,12 @@ async function networkFirst(request, event) {
     const preload = event?.preloadResponse ? await event.preloadResponse : null;
 
     if (preload) {
-      await ponerEnCache(request, preload.clone());
+      await ponerEnCache(request, preload);
       return preload;
     }
 
     const fresh = await fetch(request);
-    await ponerEnCache(request, fresh.clone());
+    await ponerEnCache(request, fresh);
     return fresh;
 
   } catch (e) {
@@ -134,28 +137,19 @@ async function staleWhileRevalidate(request,event) {
   const cache = await caches.open(VA_CACHE);
   const cached = await cache.match(request);
 
-  const update = fetch(request)
-    .then(async response => {
-      if (response && response.ok) {
-        await ponerEnCache(request,response);
-      }
-
-      return response;
-    })
-    .catch(() => cached || Response.error());
-
-  if(cached)event?.waitUntil(update.then(()=>{}));
-  return cached || update;
+  const update = fetch(request);
+  event.waitUntil(update.then(response => ponerEnCache(request, response), () => {}));
+  return cached || update.catch(() => Response.error());
 }
 
-async function cacheFirst(request) {
+async function cacheFirst(request, event) {
   const cache = await caches.open(VA_CACHE);
   const cached = await cache.match(request);
 
   if (cached) return cached;
 
   const fresh = await fetch(request);
-  await ponerEnCache(request, fresh.clone());
+  event.waitUntil(ponerEnCache(request, fresh));
   return fresh;
 }
 
@@ -216,6 +210,12 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  // Las miniaturas tienen URL versionada y se reutilizan al abrir otra galería.
+  if (url.origin === self.location.origin && url.pathname.startsWith('/VidaAbundante/img/miniaturas/')) {
+    event.respondWith(cacheFirst(request, event).catch(() => Response.error()));
+    return;
+  }
+
   // Archivos principales de la app: abrir rápido con cache y actualizar atrás.
   if (esEstatico(url)) {
     event.respondWith(staleWhileRevalidate(request,event));
@@ -224,7 +224,7 @@ self.addEventListener("fetch", (event) => {
 
   // CDN de iconos/fuentes/librerías: cache primero.
   if (esCDNCacheable(url)) {
-    event.respondWith(cacheFirst(request).catch(()=>Response.error()));
+    event.respondWith(cacheFirst(request, event).catch(()=>Response.error()));
     return;
   }
 

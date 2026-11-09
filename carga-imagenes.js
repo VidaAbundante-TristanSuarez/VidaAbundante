@@ -1,4 +1,6 @@
 const WORKER = 'https://subir-imagen-r2.vidaabundante-tristansuarez.workers.dev';
+const RAIZ_IMAGENES = new URL('./img/', import.meta.url);
+const GALERIAS_LOCALES = /^(fondos|texturas|ornamentos|compartidos|subidos)\/.+\.(png|jpe?g|jfif|webp)$/i;
 const blobs = new Map(), pendientes = new Map();
 const MAX_CACHE = 24 * 1024 * 1024;
 let bytesCache = 0;
@@ -11,6 +13,51 @@ export function normalizarUrlImagen(valor = '') {
     const u = new URL(url, location.href);
     return ['http:', 'https:', 'blob:', 'data:'].includes(u.protocol) ? u.href : '';
   } catch { return ''; }
+}
+
+export function urlMiniaturaImagen(valor, miniatura = '') {
+  const original = normalizarUrlImagen(valor);
+  if (!original) return '';
+  const publicada = normalizarUrlImagen(miniatura);
+  if (publicada) return publicada;
+
+  const url = new URL(original);
+  if (url.origin === RAIZ_IMAGENES.origin && url.pathname.startsWith(RAIZ_IMAGENES.pathname)) {
+    const relativa = url.pathname.slice(RAIZ_IMAGENES.pathname.length);
+    if (GALERIAS_LOCALES.test(relativa)) {
+      return new URL('miniaturas/' + relativa + '.webp?v=1', RAIZ_IMAGENES).href;
+    }
+  }
+  return original;
+}
+
+export async function subirArchivoR2(archivo, carpeta, nombre = archivo.name || 'archivo_' + Date.now()) {
+  const form = new FormData();
+  form.append('file', archivo, nombre);
+  form.append('folder', carpeta);
+  form.append('contentType', archivo.type || 'application/octet-stream');
+  const respuesta = await fetch(WORKER, {method: 'POST', body: form});
+  const datos = await respuesta.json().catch(() => ({}));
+  if (!respuesta.ok || !datos?.url) {
+    throw new Error(datos?.error || datos?.detail || datos?.message || 'No se pudo subir el archivo.');
+  }
+  return datos;
+}
+
+export async function crearMiniaturaImagen(archivo, lado) {
+  if (!/^image\/(?:png|jpeg|webp|avif)$/i.test(archivo.type) || archivo.size < 64 * 1024) return null;
+  const imagen = await createImageBitmap(archivo);
+  try {
+    const escala = Math.min(1, lado / Math.max(imagen.width, imagen.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(imagen.width * escala));
+    canvas.height = Math.max(1, Math.round(imagen.height * escala));
+    canvas.getContext('2d').drawImage(imagen, 0, 0, canvas.width, canvas.height);
+    const miniatura = await new Promise(resolve => canvas.toBlob(resolve, 'image/webp', .82));
+    return miniatura?.type === 'image/webp' && miniatura.size < archivo.size ? miniatura : null;
+  } finally {
+    imagen.close();
+  }
 }
 
 export function proxyImagen(url, nombre = 'imagen.png') {
@@ -72,11 +119,12 @@ let observador = null;
 
 function prepararImagen(img) {
   if (estados.has(img)) return;
-  const original = normalizarUrlImagen(img.getAttribute('src'));
+  const preferida = normalizarUrlImagen(img.dataset.vaSrc || img.getAttribute('src'));
+  const original = normalizarUrlImagen(img.dataset.vaOriginal) || preferida;
   if (!original) return;
   const host = img.closest('[data-va-imagen-host]') || img.parentElement;
   host?.setAttribute('data-va-imagen-host','');
-  const estado = {original, host, timer: null, intento: 0, activa: false, cancelada: false};
+  const estado = {timer: null, intento: 0, activa: false, cancelada: false};
   estados.set(img, estado);
   img.decoding = 'async';
   const limpiar = () => {clearTimeout(estado.timer); estado.timer = null;};
@@ -94,20 +142,33 @@ function prepararImagen(img) {
     aviso.textContent = error ? 'No se pudo cargar. Tocá para reintentar.' : 'Cargando imagen…';
   };
   const fallar = () => {limpiar(); mostrar(true);};
+  const cargar = url => {
+    img.src = url;
+    estado.timer = setTimeout(respaldo, 20000);
+  };
   const respaldo = () => {
     limpiar();
     if (estado.cancelada || !img.isConnected) return;
+    if (estado.intento === 0 && preferida !== original) {
+      estado.intento = 1;
+      cargar(original);
+      return;
+    }
     const proxy = proxyImagen(original);
-    if (estado.intento || proxy === original || /^(blob:|data:)/.test(original)) {fallar(); return;}
-    estado.intento = 1; img.src = proxy;
-    estado.timer = setTimeout(fallar, 15000);
+    if (estado.intento === 2 || proxy === original) {fallar(); return;}
+    estado.intento = 2;
+    cargar(proxy);
   };
   estado.iniciar = () => {
     if (estado.cancelada || !img.isConnected) return;
     if (img.complete && img.naturalWidth) {listo(); return;}
     estado.activa = true; mostrar();
-    if (img.complete && !img.naturalWidth) respaldo();
-    else estado.timer = setTimeout(respaldo, 6500);
+    if (!img.getAttribute('src')) {
+      // El observador ya comprobó que esta foto está cerca del área visible.
+      img.loading = 'eager';
+      cargar(preferida || original);
+    } else if (img.complete) respaldo();
+    else estado.timer = setTimeout(respaldo, 20000);
   };
   estado.cancelar = () => {estado.cancelada = true; limpiar(); observador?.unobserve(img);};
   img.addEventListener('load', listo);
@@ -115,7 +176,7 @@ function prepararImagen(img) {
   host?.addEventListener('click', e => {
     if (!host.classList.contains('va-imagen-error')) return;
     e.preventDefault(); e.stopImmediatePropagation();
-    estado.intento = 0; img.src = original; estado.iniciar();
+    estado.intento = 0; mostrar(); cargar(preferida || original);
   }, true);
   if (img.complete && img.naturalWidth) listo();
   else if (img.loading === 'lazy' && 'IntersectionObserver' in window) {

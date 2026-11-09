@@ -1,3 +1,5 @@
+import { normalizarUrlImagen, urlMiniaturaImagen } from "./carga-imagenes.js?v=20261109-medios-1";
+
 // Utilidades compartidas por las dos pantallas. No requiere librerías nuevas.
 const pendientes = new Map();
 const blobs = new Map();
@@ -90,23 +92,125 @@ export async function cargarFondoBlob(url) {
 }
 export function prepararMiniaturas(cont) {
   cont.__vaFondosObserver?.disconnect();
+  const cargar = img => { img.src = img.dataset.vaSrc; };
   let observer;
   if (typeof IntersectionObserver === 'function') {
     observer = new IntersectionObserver(entries => {
-      for (const entry of entries) if (entry.isIntersecting) {
-        const img = entry.target;
-        img.src = img.dataset.vaSrc; observer.unobserve(img);
+      for (const {target, isIntersecting} of entries) {
+        if (!isIntersecting) continue;
+        observer.unobserve(target);
+        if (target.isConnected) cargar(target);
       }
-    }, { root: cont, rootMargin: '180px', threshold: 0 });
+    }, {root: cont, rootMargin: '80px', threshold: 0});
     cont.__vaFondosObserver = observer;
   }
-  return (img, url, indice) => {
-    img.decoding = 'async'; img.loading = indice < 4 ? 'eager' : 'lazy';
-    img.fetchPriority = indice < 4 ? 'high' : 'low';
-    img.dataset.vaSrc = url;
-    if (indice < 4 || !observer) img.src = url;
-    else observer.observe(img);
+
+  const visible = !!cont.getClientRects().length;
+  return (img, url, indice, miniatura) => {
+    const original = normalizarUrlImagen(url);
+    const previa = urlMiniaturaImagen(original, miniatura);
+    img.decoding = 'async';
+    img.fetchPriority = visible && indice < 2 ? 'high' : 'auto';
+    if (img.dataset.vaSrc !== previa && previa !== original) {
+      img.addEventListener('error', () => { img.src = original; }, {once: true});
+    }
+    img.dataset.vaSrc = previa;
+
+    if (observer && !(visible && indice < 2)) {
+      observer.observe(img);
+    } else {
+      if (!visible || indice >= 2) img.loading = 'lazy';
+      cargar(img);
+    }
   };
+}
+
+export function aplicarColorEditor(host, color) {
+  const input = host?.dataset.target && document.querySelector(host.dataset.target);
+  if (!input) return;
+  input.value = color;
+  host.style.setProperty('--pickr-color', color);
+  host.style.background = color;
+  input.dispatchEvent(new Event('input', {bubbles: true}));
+}
+
+export function colorEnCanvas(canvas, ctx, {clientX, clientY}) {
+  const rect = canvas.getBoundingClientRect();
+  const css = getComputedStyle(canvas);
+  const izquierda = parseFloat(css.borderLeftWidth) || 0;
+  const superior = parseFloat(css.borderTopWidth) || 0;
+  const ancho = rect.width - izquierda - (parseFloat(css.borderRightWidth) || 0);
+  const alto = rect.height - superior - (parseFloat(css.borderBottomWidth) || 0);
+  const x = clamp(Math.floor((clientX - rect.left - izquierda) * canvas.width / ancho), 0, canvas.width - 1);
+  const y = clamp(Math.floor((clientY - rect.top - superior) * canvas.height / alto), 0, canvas.height - 1);
+  const rgb = ctx.getImageData(x, y, 1, 1).data.subarray(0, 3);
+  return '#' + Array.from(rgb, canal => canal.toString(16).padStart(2, '0')).join('');
+}
+
+function abrirPaletaEditor(host) {
+  const input = host?.dataset.target && document.querySelector(host.dataset.target);
+  if (!input) return;
+  if (!host._pickr) window.initPickrEnHosts?.('#' + host.id);
+  if (host._pickr) {
+    host._pickr.setColor(input.value || '#000000', true);
+    host._pickr.show();
+    return;
+  }
+
+  let paleta = document.getElementById('va-paleta-editor');
+  if (!paleta) {
+    paleta = document.createElement('input');
+    paleta.type = 'color';
+    paleta.id = 'va-paleta-editor';
+    paleta.tabIndex = -1;
+    paleta.dataset.vaEditorColor = '';
+    paleta.setAttribute('aria-label', 'Paleta de colores');
+    Object.assign(paleta.style, {position: 'fixed', top: '50%', left: '50%', opacity: '0', pointerEvents: 'none'});
+    document.body.appendChild(paleta);
+  }
+  paleta.value = /^#[0-9a-f]{6}$/i.test(input.value) ? input.value : '#000000';
+  paleta.onchange = () => aplicarColorEditor(host, paleta.value);
+  if (paleta.showPicker) paleta.showPicker();
+  else paleta.click();
+}
+
+export function abrirOpcionesColorEditor(host, {titulo, fondo, tomarColor}) {
+  let dialogo = document.getElementById('va-opciones-color');
+  if (!dialogo) {
+    dialogo = document.createElement('dialog');
+    dialogo.id = 'va-opciones-color';
+    dialogo.dataset.vaEditorColor = '';
+    dialogo.setAttribute('aria-labelledby', 'va-opciones-color-titulo');
+    dialogo.innerHTML = `
+      <div class="va-opciones-color-contenido">
+        <button type="button" class="va-opciones-color-cerrar" aria-label="Cerrar opciones de color">×</button>
+        <h3 id="va-opciones-color-titulo"></h3>
+        <button type="button" data-va-color-fondo><i class="fa-solid fa-eye-dropper" aria-hidden="true"></i> Tomar color del fondo</button>
+        <button type="button" data-va-color-paleta><i class="fa-solid fa-palette" aria-hidden="true"></i> Abrir paleta</button>
+        <p>Elegí una imagen de fondo para usar el cuentagotas.</p>
+      </div>`;
+    dialogo.querySelector('.va-opciones-color-cerrar').onclick = () => dialogo.close();
+    dialogo.addEventListener('click', event => { if (event.target === dialogo) dialogo.close(); });
+    document.body.appendChild(dialogo);
+  }
+  const botonFondo = dialogo.querySelector('[data-va-color-fondo]');
+  dialogo.querySelector('h3').textContent = titulo;
+  dialogo.querySelector('p').hidden = !!fondo;
+  botonFondo.disabled = !fondo;
+  botonFondo.onclick = () => { dialogo.close(); tomarColor(fondo); };
+  dialogo.querySelector('[data-va-color-paleta]').onclick = () => { dialogo.close(); abrirPaletaEditor(host); };
+  if (!dialogo.open) dialogo.showModal();
+}
+
+export function montarOpcionesColorEditor(host, opciones) {
+  if (!host || host.dataset.vaColorChoiceReady) return;
+  host.dataset.vaColorChoiceReady = '1';
+  host.setAttribute('aria-haspopup', 'dialog');
+  host.addEventListener('click', event => {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    abrirOpcionesColorEditor(host, opciones());
+  }, true);
 }
 
 const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
@@ -517,7 +621,7 @@ function ocultarMarco(c, conservarSeleccion=false) {
   }
 }
 function esControlFormato(c,el) {
-  if(el.closest?.('.pcr-app,.va-editor-handle'))return true;
+  if(el.closest?.('.pcr-app,.va-editor-handle,[data-va-editor-color]'))return true;
   return !!(c.opts.controlsRoot?.contains(el) && el.closest?.(c.opts.formatControls || '.style-row,.pickr-host'));
 }
 function limitarCaja(c) {

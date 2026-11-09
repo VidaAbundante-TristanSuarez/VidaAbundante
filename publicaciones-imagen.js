@@ -1,4 +1,4 @@
-import { normalizarUrlImagen } from './carga-imagenes.js?v=20261102-agenda-imagenes-8';
+import { normalizarUrlImagen, urlMiniaturaImagen } from './carga-imagenes.js?v=20261109-medios-1';
 
 const escapar=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const lista=v=>Array.isArray(v)?v:(v&&typeof v==='object'?Object.values(v):[]);
@@ -105,7 +105,7 @@ export function combinarDisenosImagen(anterior={},nuevo={}){
 export function carruselImagenHTML(item={},clave=''){
   instalar();const disenos=disenosDeImagen(item);if(!disenos.length)return '';
   return `<section class="va-carrusel-imagen ${disenos.length>1?'va-varios-disenos':''}" data-va-carrusel="${escapar(clave)}" data-diseno-activo="0" aria-label="Diseños de la publicación">
-    <div class="va-disenos-rail" tabindex="0" aria-label="Deslizar diseños">${disenos.map((d,i)=>`<figure class="va-diseno-slide" data-diseno-id="${escapar(d.id)}" data-va-imagen-host><img data-va-imagen src="${escapar(d.miniaturaUrl||d.url)}" data-va-original="${escapar(d.url)}" alt="Diseño ${i+1} de ${disenos.length}" loading="${i?'lazy':'eager'}" decoding="async" draggable="false"></figure>`).join('')}</div>
+    <div class="va-disenos-rail" tabindex="0" aria-label="Deslizar diseños">${disenos.map((d,i)=>`<figure class="va-diseno-slide" data-diseno-id="${escapar(d.id)}" data-va-imagen-host><img data-va-imagen data-va-src="${escapar(urlMiniaturaImagen(d.url,d.miniaturaUrl))}" data-va-original="${escapar(d.url)}" alt="Diseño ${i+1} de ${disenos.length}" loading="lazy" decoding="async" draggable="false"></figure>`).join('')}</div>
     ${disenos.length>1?'<div class="va-disenos-navegar"><button type="button" data-va-paso="-1" aria-label="Diseño anterior" disabled>‹</button><span class="va-disenos-contador" aria-live="polite">1 / '+disenos.length+'</span><button type="button" data-va-paso="1" aria-label="Diseño siguiente">›</button></div>':''}
   </section>`;
 }
