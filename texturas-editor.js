@@ -1,3 +1,5 @@
+import { urlMiniaturaImagen, vistaArchivadaImagen } from "./carga-imagenes.js?v=20261109-medios-1";
+
 // Mismo dibujo en Biblia, Devocionales, preview y PNG. Sin servicios externos.
 const recursos = new Map();
 const pendientes = new Map();
@@ -168,6 +170,28 @@ export function actualizarCapaTexturas(layer,opciones={}) {
     layer.style.display='none'; estado.promise=Promise.resolve(); return estado.promise;
   }
   layer.style.display='block';
+  let originalListo = false;
+  const pintar = (imagenes, provisional = false) => {
+    const factor = provisional ? Math.min(1, 540 / Math.max(w, h)) : 1;
+    const canvas = lienzo(w * factor, h * factor);
+    canvas.dataset.vaTexturas = '1';
+    canvas.setAttribute('aria-hidden', 'true');
+    Object.assign(canvas.style, {position: 'absolute', inset: '0', width: '100%', height: '100%', display: 'block', pointerEvents: 'none'});
+    dibujarTexturas(canvas.getContext('2d'), imagenes, canvas.width, canvas.height, opciones);
+    layer.replaceChildren(canvas);
+    layer.dataset.texturasEstado = provisional ? 'previa' : 'listo';
+  };
+  const previas = urls.map(async url => {
+    const original = new URL(url, location.href).href;
+    let miniatura = urlMiniaturaImagen(original);
+    if (miniatura === original) miniatura = await vistaArchivadaImagen(original);
+    return miniatura ? cargarTextura(miniatura, {maxSize: 512}).catch(() => null) : null;
+  });
+  Promise.all(previas).then(recursos => {
+    const visibles = recursos.filter(Boolean);
+    if (estado.token === token && !originalListo && !estado.error && visibles.length) pintar(visibles, true);
+  }).catch(() => {});
+
   estado.promise=Promise.all(urls.map(url=>cargarTextura(url,{
     maxSize:opciones.maxResourceSize,cache:opciones.cacheRecursos!==false
   }))).then(imagenes=>{
@@ -181,11 +205,8 @@ export function actualizarCapaTexturas(layer,opciones={}) {
     }
     const cambio=JSON.stringify(margenes)!==JSON.stringify(estado.margenes);
     estado.margenes=margenes;
-    const canvas=lienzo(w,h);
-    canvas.dataset.vaTexturas='1'; canvas.setAttribute('aria-hidden','true');
-    Object.assign(canvas.style,{position:'absolute',inset:'0',width:'100%',height:'100%',display:'block',pointerEvents:'none'});
-    dibujarTexturas(canvas.getContext('2d'),imagenes,w,h,opciones);
-    layer.replaceChildren(canvas); layer.dataset.texturasEstado='listo';
+    originalListo = true;
+    pintar(imagenes);
     if (cambio) opciones.onReady?.();
   }).catch(error=>{
     if (estado.token===token) { estado.error=error; estado.key=''; layer.dataset.texturasEstado='error'; }

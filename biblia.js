@@ -2,8 +2,8 @@ import { actualizarAdorno, activarAdorno, esperarAdorno } from "./adornos-editor
 import { elegirResolucionImagen, dimensionesExportacion, conProgresoExportacion } from "./exportacion-imagen.js?v=20261102-agenda-imagenes-8";
 import { referenciasDePublicacion, referenciasHTML, disenosDeImagen, agregarDisenoImagen, combinarDisenosImagen, carruselImagenHTML, disenoActivoDeCard } from "./publicaciones-imagen.js?v=20261109-medios-1";
 import { normalizarUrlImagen, obtenerBlobImagen, subirArchivoR2 } from './carga-imagenes.js?v=20261109-medios-1';
-import { actualizarCapaTexturas, esperarCapaTexturas, montarControlesTextura, margenesTexturas } from "./texturas-editor.js?v=20261109-medios-1";
-import { montarOpcionesColorEditor, aplicarColorEditor, colorEnCanvas, ordenarFondos, registrarUsoFondo, configurarUsoFondos, combinarUsoFondos, urlFondoSeguro, cargarFondoBlob, prepararMiniaturas, montarEditorTexto, aplicarFormatoSeleccion, alternarFormatoSeleccion, restaurarControlesTexto, aplicarSubrayadoTexto, desactivarEditorTexto, crearInstantaneaPreview, esperarFuentesPreview, dibujarCajaTexto, recuperarCajaTexto } from "./imagen-editor.js?v=20261109-medios-1";
+import { actualizarCapaTexturas, esperarCapaTexturas, montarControlesTextura, margenesTexturas } from "./texturas-editor.js?v=20261110-carga-2";
+import { elegirFondoEnPreview, vistaFondoEnCarga, cancelarFondoEnCarga, esperarFondoEnCarga, montarOpcionesColorEditor, aplicarColorEditor, colorEnCanvas, ordenarFondos, registrarUsoFondo, configurarUsoFondos, combinarUsoFondos, cargarFondoBlob, prepararMiniaturas, montarEditorTexto, aplicarFormatoSeleccion, alternarFormatoSeleccion, restaurarControlesTexto, aplicarSubrayadoTexto, desactivarEditorTexto, crearInstantaneaPreview, esperarFuentesPreview, dibujarCajaTexto, recuperarCajaTexto } from "./imagen-editor.js?v=20261110-carga-2";
 
 // ================= IMPORTS FIREBASE =================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -1198,7 +1198,6 @@ let seleccionImagenOrden = [];
 let fondoFinal = null;
 let editorTextoBiblia = {};
 let editorTextoBibliaClave = "";
-let seleccionFondoBibliaToken = 0;
 let fondoFinalBlobUrl = null; // ✅ fondo seguro para html2canvas
 let creandoNotaLibre = false; // ✅ estado: nota sin versículo
 
@@ -1947,8 +1946,9 @@ function asegurarColorContornoBiblia() {
   for (const selector of [colorHost, host]) {
     montarOpcionesColorEditor(selector, () => ({
       titulo: selector.title,
-      fondo: fondoDisenoBiblia.baseTipo === "imagen" ? fondoFinalBlobUrl || fondoFinal : "",
-      tomarColor: fondo => window.bibliaAbrirCuentagotasWrapper(selector, fondo)
+      fondo: vistaFondoEnCarga(document.getElementById("previewImagen")) ||
+        (fondoDisenoBiblia.baseTipo === "imagen" ? fondoFinalBlobUrl || fondoFinal : ""),
+      tomarColor: () => window.bibliaAbrirCuentagotasWrapper(selector)
     }));
   }
 
@@ -2255,7 +2255,7 @@ function guardarEstadoBiblia(extra = {}) {
       subRecursos: window.__RECURSOS_SUB_ACTIVA || anterior.subRecursos || "",
       subPanel: window.__PANEL_SUB_ACTIVA || anterior.subPanel || "",
 
-      version: versionActual || "RV1960",
+      version: (bibliaData.length ? versionActual : anterior.version) || versionActual || "RV1960",
       libro: libroSel?.value || anterior.libro || "",
       capitulo: Number(capSel?.value || anterior.capitulo || 1),
       scrollBiblia: window.scrollY || document.documentElement.scrollTop || 0,
@@ -2636,16 +2636,12 @@ async function registrarUsuarioActual(user) {
       ultimoAcceso: Date.now()
     };
 
-    const snap = await get(ref(db, `usuarios/${user.uid}`));
-    const actual = snap.val() || {};
-
-    await set(ref(db, `usuarios/${user.uid}`), {
+    await runTransaction(ref(db, `usuarios/${user.uid}`), actual => ({
       ...actual,
-      uid: user.uid,
-      nombre: actual.nombre || data.nombre,
-      email: actual.email || data.email,
-      ultimoAcceso: Date.now()
-    });
+      ...data,
+      nombre: actual?.nombre || data.nombre,
+      email: actual?.email || data.email
+    }), {applyLocally: false});
   } catch (e) {
     console.warn("No pude registrar usuario actual:", e);
   }
@@ -2808,7 +2804,7 @@ try {
 };
 
 // ================= AUTH =====================================
-onAuthStateChanged(auth, async user => {
+onAuthStateChanged(auth, user => {
   uid = user ? user.uid : null;
 
   window.__UID = uid;
@@ -2856,9 +2852,6 @@ if (!uid) {
 }
 vaLimpiarParamsEntrada();
   
-  // ✅ registrar automáticamente al usuario que entró
-  await registrarUsuarioActual(user);
-
   // ✅ Pintar de inmediato la apariencia guardada en este dispositivo.
   // Así la app abre visualmente sin esperar Firebase.
   try {
@@ -3093,6 +3086,9 @@ Object.entries(marcadores || {}).forEach(([idMarcador, m]) => {
     vaSeccionInicialLogueado(),
     "usuario-logueado"
   );
+
+  // El último acceso se registra en segundo plano.
+  void registrarUsuarioActual(user);
 
   setTimeout(() => {
   document.getElementById("vaCacheActualizando")?.remove();
@@ -3575,25 +3571,41 @@ function bibliaRestaurarUIAlVolver() {
 // ================= ⭐ CARGA BIBLIA ==============================
 const BIBLIA_VERSION_CACHE = "2026-05-01-correcciones2";
 
-Promise.all([
-  fetch(`VidaAbundante - RV1960.json?v=${BIBLIA_VERSION_CACHE}`).then(r => r.json()),
-  fetch("biblia_ntv.json?v=20261109-proverbios-31").then(r => r.json())
-])
-.then(([rvData, ntvData]) => {
-  bibliaDataRV = Array.isArray(rvData) ? rvData : [];
-  bibliaDataNTV = Array.isArray(ntvData) ? ntvData : [];
-
-  // arranca por defecto en RV1960
-   bibliaData = bibliaDataRV;
-  versionActual = "RV1960";
-
-  requestAnimationFrame(() => {
-    iniciar();
-  });
-})
-.catch(err => {
-  console.error("❌ Error cargando Biblias:", err);
-});
+let bibliaCarga;
+function cargarDatosBiblia() {
+  if (bibliaData.length) return Promise.resolve(true);
+  if (obtenerSeccionActual() === "biblia" && !texto.querySelector(".versiculo")) {
+    texto.innerHTML = '<p role="status">Cargando Biblia…</p>';
+  }
+  if (!bibliaCarga) {
+    const leer = async ruta => {
+      const respuesta = await fetch(ruta);
+      if (!respuesta.ok) throw new Error(`No se pudo leer la Biblia (${respuesta.status})`);
+      const datos = await respuesta.json();
+      if (!Array.isArray(datos) || !datos.length) throw new Error("La Biblia se recibió vacía.");
+      return datos;
+    };
+    bibliaCarga = Promise.all([
+      leer(`VidaAbundante - RV1960.json?v=${BIBLIA_VERSION_CACHE}`),
+      leer("biblia_ntv.json?v=20261109-proverbios-31")
+    ]).then(([rv, ntv]) => {
+      bibliaDataRV = rv;
+      bibliaDataNTV = ntv;
+      versionActual = leerEstadoBiblia()?.version === "NTV" ? "NTV" : "RV1960";
+      bibliaData = versionActual === "NTV" ? ntv : rv;
+      iniciar();
+      return true;
+    }).catch(error => {
+      console.error("Error cargando Biblias:", error);
+      if (obtenerSeccionActual() === "biblia" && !texto.querySelector(".versiculo")) {
+        texto.innerHTML = '<p role="status">No se pudo cargar la Biblia. <button type="button" class="btn-ghost" onclick="vaCargarDatosBiblia()">Reintentar</button></p>';
+      }
+      return false;
+    }).finally(() => { bibliaCarga = null; });
+  }
+  return bibliaCarga;
+}
+window.vaCargarDatosBiblia = cargarDatosBiblia;
 
 // =======
 
@@ -3622,12 +3634,15 @@ function iniciar() {
     vaRefrescarFiltroVersiculo();
   };
 
-  restaurarEstadoBibliaInicial();
-  vaProcesarEnlaceVersiculo();
-  
+  if (leerEstadoBiblia()) restaurarEstadoBibliaInicial();
+  else cargarCapitulos({guardar: false});
 }
 
-function vaAbrirVersiculoReferencia(r){
+async function vaAbrirVersiculoReferencia(r){
+  if (!bibliaData.length) {
+    window.irA?.("biblia");
+    if (!await cargarDatosBiblia() || obtenerSeccionActual() !== "biblia") return;
+  }
   const normalizar=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase();
   const encontrado=bibliaData.find(v=>normalizar(v.Libro)===normalizar(r?.libro)&&Number(v.Capitulo)===Number(r?.capitulo)&&Number(v.Versiculo)===Number(r?.versiculo));
   if(!encontrado){mostrarToast('No encontré ese versículo en la Biblia.');return;}
@@ -3657,7 +3672,7 @@ function vaAbrirVersiculoReferencia(r){
 }
 window.vaAbrirVersiculoReferencia=vaAbrirVersiculoReferencia;
 function vaProcesarEnlaceVersiculo(){
-  const m=location.hash.match(/^#versiculo\/([^/]+)\/(\d+)\/(\d+)$/);if(!m||!bibliaData.length)return;
+  const m=location.hash.match(/^#versiculo\/([^/]+)\/(\d+)\/(\d+)$/);if(!m)return;
   try{vaAbrirVersiculoReferencia({libro:decodeURIComponent(m[1]),capitulo:Number(m[2]),versiculo:Number(m[3])});}catch{}
 }
 window.addEventListener('hashchange',vaProcesarEnlaceVersiculo);
@@ -4328,6 +4343,7 @@ window.forceSyncResaltadorUI = function forceSyncResaltadorUI(intentos = 20) {
 
 // ================= ⭐ MOSTRAR TEXTO =======================
 function mostrarTexto(opts = {}) {
+  if (!bibliaData.length) return;
   const lugarLectura = `${libroSel?.value}_${capSel?.value}`;
   if (vaCapituloLectura !== lugarLectura) {
     window.vaBibliaVersiculoElegido = "";
@@ -5410,11 +5426,9 @@ menuBtn.onclick = (e) => {
     if (!img.getAttribute("src")) prepararMiniatura(img, finalUrl, indice, miniatura);
     img.classList.toggle("activo", finalUrl === fondoFinal);
 
-    img.onclick = async () => {
-      const token = ++seleccionFondoBibliaToken;
-      try {
-        const nuevoBlob = await urlToBlobURL(finalUrl);
-        if (token !== seleccionFondoBibliaToken) { URL.revokeObjectURL(nuevoBlob); return; }
+    img.onclick = () => {
+      const preview = document.getElementById("previewImagen");
+      elegirFondoEnPreview(preview, img, finalUrl, () => urlToBlobURL(finalUrl), nuevoBlob => {
         if (fondoFinalBlobUrl) URL.revokeObjectURL(fondoFinalBlobUrl);
         fondoDisenoBiblia.baseTipo = "imagen";
         fondoFinal = finalUrl;
@@ -5426,13 +5440,10 @@ menuBtn.onclick = (e) => {
         img.classList.add("activo");
 
         bibliaSincronizarControlesFondoDiseno();
-        actualizarPreview();
-      } catch (e) {
-        if (token !== seleccionFondoBibliaToken) return;
-        console.error(e);
-        alert("Ese fondo no se puede usar. Probá otro o sin fondo.");
-        actualizarPreview();
-      }
+      }, actualizarPreview).catch(error => {
+        console.error(error);
+        alert("Ese fondo no se puede usar. Probá con otro.");
+      });
     };
 
     lote.appendChild(img);
@@ -5452,7 +5463,7 @@ menuBtn.onclick = (e) => {
 
 // ================= ⭐ URLTOBLOBURL =======================
 async function urlToBlobURL(url) {
-  return cargarFondoBlob(urlFondoSeguro(url, R2_WORKER_URL));
+  return cargarFondoBlob(url);
 }
 
 function bibliaRgba(hex, alpha = 1){
@@ -5606,14 +5617,9 @@ function bibliaLimpiarCapasFondoDiseno() {
 function bibliaAplicarFondoAlPreview(previewImagen) {
   if (!previewImagen) return;
 
+  const temporal = vistaFondoEnCarga(previewImagen);
   const fondoUsable = fondoFinalBlobUrl || fondoFinal;
-
-  const fondoVisual = fondoUsable
-    ? bibliaUrlRecursoSeguro(
-        fondoUsable,
-        "fondo_biblia.png"
-      )
-    : "";
+  const fondoVisual = temporal || (fondoUsable ? bibliaUrlRecursoSeguro(fondoUsable, "fondo_biblia.png") : "");
 
   const textura = document.getElementById("bibliaFondoTexturaLayer");
   const adorno = document.getElementById("bibliaFondoAdornoLayer");
@@ -5622,7 +5628,7 @@ function bibliaAplicarFondoAlPreview(previewImagen) {
   // ✅ Unificado:
   // imagen = galería normal
   // plano/gradiente = fondo de color
-  if (fondoDisenoBiblia.baseTipo === "imagen") {
+  if (temporal || fondoDisenoBiblia.baseTipo === "imagen") {
     if (fondoVisual) {
       previewImagen.style.backgroundImage = `url("${fondoVisual}")`;
       previewImagen.style.backgroundColor = "transparent";
@@ -6066,6 +6072,7 @@ if (boxDiseno) {
 };
 
 window.bibliaTogglePaletaFondo = function() {
+  cancelarFondoEnCarga(document.getElementById("previewImagen"));
   if (fondoDisenoBiblia.baseTipo === "imagen") {
     fondoDisenoBiblia.baseTipo = fondoDisenoBiblia.usarColor2 ? "gradiente" : "plano";
   } else {
@@ -6077,6 +6084,7 @@ window.bibliaTogglePaletaFondo = function() {
 };
 
 window.bibliaAgregarColorFondo = function() {
+  cancelarFondoEnCarga(document.getElementById("previewImagen"));
   if (!fondoDisenoBiblia.usarColor2) {
     fondoDisenoBiblia.usarColor2 = true;
     fondoDisenoBiblia.baseTipo = "gradiente";
@@ -6095,7 +6103,7 @@ window.bibliaAgregarColorFondo = function() {
 
 // compatibilidad por si quedó algún botón viejo llamando estas funciones
 window.setTipoBaseFondoBiblia = function(tipo) {
-  if (tipo !== "imagen") seleccionFondoBibliaToken++;
+  if (tipo !== "imagen") cancelarFondoEnCarga(document.getElementById("previewImagen"));
   if (tipo === "gradiente") {
     fondoDisenoBiblia.baseTipo = "gradiente";
     fondoDisenoBiblia.usarColor2 = true;
@@ -6176,7 +6184,7 @@ window.toggleModoFondoBiblia = function() {
 };
 
 function bibliaResetFondoDiseno() {
-  seleccionFondoBibliaToken++;
+  cancelarFondoEnCarga(document.getElementById("previewImagen"));
   modoFondoBiblia = "diseno";
   fondoDisenoBiblia = bibliaNuevoEstadoFondoDiseno();
 
@@ -6421,29 +6429,14 @@ async function vaImgAplicarEstadoDisenoGuardado(item = {}) {
   return true;
 }
 
-function bibliaPrecargarRecurso(url) {
-  if (!url) return Promise.resolve();
-
-  return new Promise(resolve => {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = resolve;
-    img.onerror = resolve;
-    img.src = bibliaUrlRecursoSeguro(
-      url,
-      "recurso_biblia.png"
-    );
-  });
-}
-
-
 async function bibliaEsperarRecursosDiseno() {
+  const preview = document.getElementById("previewImagen");
+  await esperarFondoEnCarga(preview);
   if (modoFondoBiblia !== "diseno") return;
 
   await Promise.all([
     esperarCapaTexturas(document.getElementById("bibliaFondoTexturaLayer")),
-    esperarAdorno(document.getElementById("previewImagen")),
-    bibliaPrecargarRecurso(fondoDisenoBiblia.adornoUrl)
+    esperarAdorno(preview)
   ]);
 }
 
@@ -7995,7 +7988,7 @@ async function descargarArchivoBibliaPreparado(file) {
 function resetModalPersonalizar() {
   editorTextoBiblia = {};
   editorTextoBibliaClave = "";
-  seleccionFondoBibliaToken++;
+  cancelarFondoEnCarga(document.getElementById("previewImagen"));
   userSetFontSize = false;
   fondoFinal = null;
   modoImagenLibre = false;
@@ -8345,6 +8338,7 @@ window.irA = (seccion) => {
   }
 
   if (seccion === "biblia") {
+    if (!bibliaData.length) void cargarDatosBiblia();
     try { bibliaRestaurarUIAlVolver?.(); } catch(e) {}
     try { aplicarEstadoBarra?.("biblia"); } catch(e) {}
     try { mostrarTexto?.(); } catch(e) {}
@@ -8399,6 +8393,7 @@ function abrirModalPersonalizar() {
 }
 
 function cerrarModalPersonalizar() {
+  cancelarFondoEnCarga(document.getElementById("previewImagen"));
   const m = document.getElementById("modalPersonalizar");
   if (!m) return;
   m.style.display = "none";
@@ -9371,7 +9366,8 @@ function renderListaResaltadosMarcadores() {
   lista.scrollLeft = 0;
 }
 
-window.abrirResaltadoDesdeLista = function(id = "") {
+window.abrirResaltadoDesdeLista = async function(id = "") {
+  if (!bibliaData.length && !await cargarDatosBiblia()) return;
   const p = parsearIdResaltadoBiblia(id);
   if (!p) return;
 
@@ -10956,7 +10952,8 @@ limpiarSeleccionMarcadorCompleta();
 }
 
 // ================= ✨ Abrir Marcador 📌=================
-window.abrirMarcador = (idMarcador) => {
+window.abrirMarcador = async (idMarcador) => {
+  if (!bibliaData.length && !await cargarDatosBiblia()) return;
   const m = (marcadores || {})[idMarcador];
   if (!m) return;
 
@@ -12937,12 +12934,15 @@ window.mostrarSeccion = (tipo) => {
     }
   });
 
-  if (tipo === "marcadores") {
-    try { renderPanelMarcadores(); } catch(e) { console.warn(e); }
-  }
-
-  if (tipo === "resaltados") {
-    try { renderPanelResaltados(); } catch(e) { console.warn(e); }
+  if (tipo === "marcadores" || tipo === "resaltados") {
+    const render = tipo === "marcadores" ? renderPanelMarcadores : renderPanelResaltados;
+    try { render(); } catch (error) { console.warn(error); }
+    if (!bibliaData.length) {
+      cargarDatosBiblia().then(ok => {
+        const panel = document.getElementById("panel-" + tipo);
+        if (ok && panel?.getClientRects().length) render();
+      }).catch(console.warn);
+    }
   }
   if (tipo === "items") vaRenderItemsEnPanel();
 
@@ -18004,6 +18004,10 @@ function vaMarcarColumnaActiva() {
 // Cada botón marca su versión; siempre queda al menos una seleccionada.
 window.vaToggleVersionLectura = version => {
   if (version !== 'RV1960' && version !== 'NTV') return;
+  if (!bibliaData.length) {
+    cargarDatosBiblia().then(ok => { if (ok) window.vaToggleVersionLectura(version); });
+    return;
+  }
   if (!lecturaDobleBiblia && version === versionActual) return;
   const anchor = obtenerAnclaScrollBiblia();
   if (lecturaDobleBiblia) {
@@ -18421,8 +18425,9 @@ document.addEventListener('keyup', vaMostrarCrearItem);
 window.addEventListener('scroll',()=>{
   if (document.getElementById('vaCrearItemPalabra')) vaMostrarCrearItem();
 },{passive:true});
-function vaIrPalabraGuardada(item){
+async function vaIrPalabraGuardada(item){
   if(vaPedirCierreItem(()=>vaIrPalabraGuardada(item)))return;
+  if (!bibliaData.length && !await cargarDatosBiblia()) return;
   document.getElementById('vaCrearItemPalabra')?.remove();
   window.getSelection()?.removeAllRanges();
   window.cerrarMarcadores();

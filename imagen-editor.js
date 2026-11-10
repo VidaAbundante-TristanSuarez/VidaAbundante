@@ -1,11 +1,7 @@
-import { normalizarUrlImagen, urlMiniaturaImagen } from "./carga-imagenes.js?v=20261109-medios-1";
+import { normalizarUrlImagen, obtenerBlobImagen, proxyImagen, urlMiniaturaImagen, vistaArchivadaImagen } from "./carga-imagenes.js?v=20261109-medios-1";
 
 // Utilidades compartidas por las dos pantallas. No requiere librerías nuevas.
 const pendientes = new Map();
-const blobs = new Map();
-const MAX_BLOBS = 6;
-const MAX_BYTES = 24 * 1024 * 1024;
-let bytesEnMemoria = 0;
 let guardarUsoRemoto = null;
 
 const claveUso = () => `va_fondos_uso_v1_${window.__UID || 'visitante'}`;
@@ -41,48 +37,27 @@ export function registrarUsoFondo(url, seccion) {
   // Un registro por selección, sin volver a escribir la configuración completa.
   try { Promise.resolve(guardarUsoRemoto?.(seccion, key, fecha)).catch(() => {}); } catch {}
 }
-export function urlFondoSeguro(url, workerUrl) {
-  const abs = new URL(url, location.href);
-  const worker = new URL(workerUrl);
-  if (/^(blob:|data:)/i.test(url) || abs.origin === location.origin || abs.origin === worker.origin) return url;
-  worker.searchParams.set('url', abs.href);
-  worker.searchParams.set('nombre', 'fondo.png');
-  worker.searchParams.set('descargar', '0');
-  return worker.href;
-}
 export async function cargarFondoBlob(url) {
   const key = claveFondo(url);
-  if (blobs.has(key)) {
-    const blob = blobs.get(key);
-    blobs.delete(key); blobs.set(key, blob);
-    return URL.createObjectURL(blob);
-  }
   if (!pendientes.has(key)) {
     const tarea = (async () => {
-      let cache;
-      try { cache = await caches.open('va-fondos-imagen-v1'); } catch {}
-      let respuesta = await cache?.match(key);
-      if (!respuesta) {
-        respuesta = await fetch(key, { cache: 'force-cache' });
-        if (!respuesta.ok) throw new Error(`Fondo no disponible (HTTP ${respuesta.status})`);
-        if (cache && respuesta.type !== 'opaque') {
-          const copia = respuesta.clone();
-          // La escritura de caché no retrasa el fondo elegido.
-          (async () => {
-            await cache.put(key, copia);
-            const keys = await cache.keys();
-            for (const old of keys.slice(0, Math.max(0, keys.length - 24))) await cache.delete(old);
-          })().catch(() => {});
+      let cache, guardada;
+      try {
+        cache = await caches.open('va-fondos-imagen-v1');
+        guardada = await cache.match(key);
+        if (!guardada && new URL(key).origin !== location.origin) {
+          guardada = await cache.match(proxyImagen(key, 'fondo.png'));
         }
-      }
-      const blob = await respuesta.blob();
-      if (!blob.size) throw new Error('El fondo se recibió vacío.');
-      if (blob.size <= MAX_BYTES) {
-        blobs.set(key, blob); bytesEnMemoria += blob.size;
-        while (blobs.size > MAX_BLOBS || bytesEnMemoria > MAX_BYTES) {
-          const primera = blobs.keys().next().value;
-          bytesEnMemoria -= blobs.get(primera).size; blobs.delete(primera);
-        }
+      } catch {}
+      if (guardada) return guardada.blob();
+
+      const blob = await obtenerBlobImagen(key, 'fondo.png', {esperaDirecta: 14000});
+      if (cache) {
+        (async () => {
+          await cache.put(key, new Response(blob, {headers: {'Content-Type': blob.type}}));
+          const keys = await cache.keys();
+          for (const old of keys.slice(0, Math.max(0, keys.length - 24))) await cache.delete(old);
+        })().catch(() => {});
       }
       return blob;
     })().finally(() => pendientes.delete(key));
@@ -90,9 +65,22 @@ export async function cargarFondoBlob(url) {
   }
   return URL.createObjectURL(await pendientes.get(key));
 }
+
 export function prepararMiniaturas(cont) {
   cont.__vaFondosObserver?.disconnect();
-  const cargar = img => { img.src = img.dataset.vaSrc; };
+  const cargar = img => {
+    const src = img.dataset.vaSrc;
+    const archivada = vistaArchivadaImagen(src);
+    if (!archivada) {
+      img.src = src;
+      return;
+    }
+    archivada.then(vista => {
+      if (!img.isConnected || img.dataset.vaSrc !== src) return;
+      if (vista) img.addEventListener('error', () => { img.src = src; }, {once: true});
+      img.src = vista || src;
+    });
+  };
   let observer;
   if (typeof IntersectionObserver === 'function') {
     observer = new IntersectionObserver(entries => {
@@ -123,6 +111,44 @@ export function prepararMiniaturas(cont) {
       cargar(img);
     }
   };
+}
+
+const fondosEnCarga = new WeakMap();
+
+export function vistaFondoEnCarga(stage) {
+  return fondosEnCarga.get(stage)?.miniatura || '';
+}
+
+export function cancelarFondoEnCarga(stage) {
+  fondosEnCarga.delete(stage);
+}
+
+export async function esperarFondoEnCarga(stage) {
+  let cambio;
+  while ((cambio = fondosEnCarga.get(stage))) await cambio.tarea;
+}
+
+export function elegirFondoEnPreview(stage, img, original, cargar, aplicar, repintar) {
+  const actual = img.currentSrc || img.src;
+  const miniatura = img.complete && img.naturalWidth && actual !== normalizarUrlImagen(original) ? actual : '';
+  const cambio = {miniatura};
+  fondosEnCarga.set(stage, cambio);
+  cambio.tarea = (async () => {
+    try {
+      const blob = await cargar();
+      if (fondosEnCarga.get(stage) === cambio) aplicar(blob);
+      else URL.revokeObjectURL(blob);
+    } catch (error) {
+      if (fondosEnCarga.get(stage) === cambio) throw error;
+    } finally {
+      if (fondosEnCarga.get(stage) === cambio) {
+        fondosEnCarga.delete(stage);
+        repintar();
+      }
+    }
+  })();
+  if (miniatura) repintar();
+  return cambio.tarea;
 }
 
 export function aplicarColorEditor(host, color) {

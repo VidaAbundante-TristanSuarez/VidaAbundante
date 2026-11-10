@@ -56,7 +56,27 @@ let compartidosOcultosCache = {};
 let compartidosOcultosEscuchaActiva = false;
 let compPromosTimer = null;
 
-let compartidosEdicionesCache = [];
+const COMP_FLYERS_LOCALES = "va-flyers-publicos-v1";
+const COMP_VIGENCIA_FLYERS = 6 * 60 * 60 * 1000;
+
+function compLeerFlyersLocales() {
+  try {
+    const dato = JSON.parse(localStorage.getItem(COMP_FLYERS_LOCALES));
+    if (dato?.vence > Date.now() && Array.isArray(dato.flyers)) return dato.flyers;
+  } catch {}
+  return [];
+}
+
+function compGuardarFlyersLocales(ediciones) {
+  const flyers = ediciones.filter(item =>
+    item.publicada === true && compNormalizarCategoriaEdicion(item.rama || item.categoria || item.tipoEdicion) === "flyers"
+  );
+  try {
+    localStorage.setItem(COMP_FLYERS_LOCALES, JSON.stringify({flyers, vence: Date.now() + COMP_VIGENCIA_FLYERS}));
+  } catch {}
+}
+
+let compartidosEdicionesCache = compLeerFlyersLocales();
 let compartidosEdicionesEscuchaActiva = false;
 
 let compFiltroActual = (() => {
@@ -802,8 +822,16 @@ function comp$(id) {
 }
 
 function compEstaCargandoFeed() {
-  if (compFiltroActual === "ediciones") return !compEdicionesListo;
+  if (compFiltroActual === "ediciones") {
+    const hayFlyers = compartidosEdicionesCache.length &&
+      ["todo", "flyers"].includes(compSubFiltroEdicionesActual);
+    return !compEdicionesListo && !hayFlyers;
+  }
   if (compFiltroActual === "agenda") return !compSubidosListo;
+  if (compFiltroActual === "todo" && (
+    compartidosEdicionesCache.length || compartidosCache.length ||
+    compartidosDevocionalesCache.length || compartidosSubidosCache.length
+  )) return false;
   return !compBaseListo || !compDevocionalesListo || !compSubidosListo;
 }
 
@@ -1513,6 +1541,7 @@ function iniciarEscuchaCompartidosEdiciones() {
         id,
         ...(item || {})
       }));
+    compGuardarFlyersLocales(compartidosEdicionesCache);
 
     const actual = Array.isArray(window.__EDICIONES_CACHE)
       ? window.__EDICIONES_CACHE
@@ -1533,6 +1562,10 @@ function iniciarEscuchaCompartidosEdiciones() {
     renderCompartidos();
   }, (err) => {
     compEdicionesListo = true;
+    if (/permission|denied/i.test(err?.code || err?.message || "")) {
+      compartidosEdicionesCache = [];
+      try { localStorage.removeItem(COMP_FLYERS_LOCALES); } catch {}
+    }
     console.error("Error leyendo ediciones para Compartidos:", err);
     renderCompartidos();
   });

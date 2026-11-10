@@ -1,9 +1,9 @@
-import { subirArchivoR2 } from "./carga-imagenes.js?v=20261109-medios-1";
+import { subirArchivoR2, normalizarUrlImagen, urlMiniaturaImagen, vistaArchivadaImagen } from "./carga-imagenes.js?v=20261109-medios-1";
 import { actualizarAdorno, activarAdorno, esperarAdorno } from "./adornos-editor.js?v=20261102-notas-compartir-7";
 import { elegirResolucionImagen, dimensionesExportacion, conProgresoExportacion } from "./exportacion-imagen.js?v=20261102-notas-compartir-7";
-import { actualizarCapaTexturas, esperarCapaTexturas, montarControlesTextura, margenesTexturas, cargarTextura, dibujarTexturas } from "./texturas-editor.js?v=20261109-medios-1";
-import { montarOpcionesColorEditor, abrirOpcionesColorEditor, aplicarColorEditor, colorEnCanvas, urlFondoSeguro, cargarFondoBlob, prepararMiniaturas, montarEditorTexto, aplicarCajaTexto, aplicarFormatoSeleccion, alternarFormatoSeleccion, restaurarControlesTexto, aplicarSubrayadoTexto, crearInstantaneaPreview, esperarFuentesPreview, recuperarCajaTexto } from "./imagen-editor.js?v=20261109-medios-1";
-import { dibujarCajaTexto } from "./imagen-editor.js?v=20261109-medios-1";
+import { actualizarCapaTexturas, esperarCapaTexturas, montarControlesTextura, margenesTexturas, cargarTextura, dibujarTexturas } from "./texturas-editor.js?v=20261110-carga-2";
+import { elegirFondoEnPreview, vistaFondoEnCarga, cancelarFondoEnCarga, esperarFondoEnCarga, montarOpcionesColorEditor, abrirOpcionesColorEditor, aplicarColorEditor, colorEnCanvas, cargarFondoBlob, prepararMiniaturas, montarEditorTexto, aplicarCajaTexto, aplicarFormatoSeleccion, alternarFormatoSeleccion, restaurarControlesTexto, aplicarSubrayadoTexto, crearInstantaneaPreview, esperarFuentesPreview, recuperarCajaTexto } from "./imagen-editor.js?v=20261110-carga-2";
+import { dibujarCajaTexto } from "./imagen-editor.js?v=20261110-carga-2";
 
 // devocionales.js (NUEVO LIMPIO)
 // ✅ OCR + Recorte + Modal 3 fases (9:9 + 9:7 => 9:16)
@@ -44,7 +44,7 @@ async function devCapturarPreviewFase(fase){
   const source = $(`dev${fase}Preview`);
   await Promise.all([
     esperarFuentesPreview(source), devEsperarImagenesNodo(source, 1800),
-    fase === 2 ? Promise.all([esperarCapaTexturas(source?.querySelector(".dev2-texture-layer")), esperarAdorno(source)]) : Promise.resolve()
+    fase === 2 ? Promise.all([esperarCapaTexturas(source?.querySelector(".dev2-texture-layer")), esperarAdorno(source)]) : esperarFondoEnCarga(source)
   ]);
   if(fase===2){dev2AjustarFlujoTexto(source);devAplicarEditorTexto(2,source,true);}
   const snapshot = crearInstantaneaPreview(source);
@@ -193,11 +193,9 @@ style: { upper:false, bold:false, italic:false, underline:false }
 
 };
 
-let seleccionFondoDevToken = 0;
-
 function devResetAjustesDevocionalNuevo(){
   devLiberarInstantaneasPreview();
-  seleccionFondoDevToken++;
+  cancelarFondoEnCarga($("dev1Preview"));
   DEV.f1.editor = {}; DEV.f2.editor = {};
   // ✅ limpiar fondo anterior de fase 1
   if (DEV.f1?.fondoBlob) {
@@ -1347,6 +1345,7 @@ function cerrarModal(id){
 }
 
 window.devCerrarTodo = () => {
+  cancelarFondoEnCarga($("dev1Preview"));
   ["modalDevFase0","modalDevFase1","modalDevFase2","modalDevFase3"].forEach(cerrarModal);
 
   DEV.audioOk = false;
@@ -1824,9 +1823,14 @@ async function devFondoCargarHuella(src, publicado = false){
     if (Array.isArray(guardada) && guardada.length === 312 &&
         guardada.every(n => Number.isInteger(n) && n >= 0 && n <= 255)) return guardada;
   } catch {}
+  let imagen = src;
   if (!publicado) {
     const local = await devFondoHuellaLocal(src);
     if (local) return local;
+    const original = normalizarUrlImagen(src);
+    const miniatura = urlMiniaturaImagen(original);
+    imagen = miniatura !== original ? miniatura : await vistaArchivadaImagen(original);
+    if (!imagen) return null;
   }
   const img = await new Promise((resolve, reject) => {
     const im = new Image();
@@ -1843,7 +1847,7 @@ async function devFondoCargarHuella(src, publicado = false){
     const timer = setTimeout(() => fin(new Error("Fondo anterior no disponible")), 5000);
     im.onload = () => fin();
     im.onerror = () => fin(new Error("Fondo anterior no disponible"));
-    im.src = devUrlRecursoSeguro(src, "fondo_historial.png");
+    im.src = devUrlRecursoSeguro(imagen, "fondo_historial.png");
   });
   const huella = devFondoHuella(img, publicado);
   img.src = ""; // No retener imágenes completas en memoria.
@@ -1992,7 +1996,7 @@ function devUrlRecursoSeguro(url, nombre = "recurso.png") {
 }
 
 async function urlToBlobURL(url){
-  return cargarFondoBlob(urlFondoSeguro(url, R2_WORKER_URL));
+  return cargarFondoBlob(url);
 }
 
 function cargarFondosDev(){
@@ -2062,27 +2066,19 @@ function cargarFondosDev(){
     im.referrerPolicy = "no-referrer";
     prepararMiniatura(im, finalUrl, indice, miniaturas.get(finalUrl));
 
-    im.onclick = async ()=>{
-      const token = ++seleccionFondoDevToken;
-      try{
-        const nuevoBlob = await urlToBlobURL(finalUrl);
-        if (token !== seleccionFondoDevToken) { URL.revokeObjectURL(nuevoBlob); return; }
+    im.onclick = () => {
+      elegirFondoEnPreview($("dev1Preview"), im, finalUrl, () => urlToBlobURL(finalUrl), nuevoBlob => {
         if (DEV.f1.fondoBlob) URL.revokeObjectURL(DEV.f1.fondoBlob);
         DEV.f1.fondoUrl = null;
         DEV.f1.fondoSrc = finalUrl;
         DEV.f1.fondoBlob = nuevoBlob;
 
-        cont.querySelectorAll("img").forEach(x=>x.classList.remove("activo"));
+        cont.querySelectorAll("img").forEach(x => x.classList.remove("activo"));
         im.classList.add("activo");
-
-        devRenderFase(1);
-      } catch (e) {
-        if (token !== seleccionFondoDevToken) return;
-        console.error("Fondo error real:", e);
-
-        alert("No se pudo usar este fondo.\n\nDetalle: " + (e?.message || e));
-        devRenderFase(1);
-      }
+      }, () => devRenderFase(1)).catch(error => {
+        console.error("Error cargando el fondo:", error);
+        alert("Ese fondo no se puede usar. Probá con otro.");
+      });
     };
 
     cont.appendChild(im);
@@ -2530,7 +2526,7 @@ function devAsegurarControlContorno(fase) {
     montarOpcionesColorEditor(selector, () => ({
       titulo: selector.title,
       fondo: devFondoParaCuentagotas(),
-      tomarColor: fondo => window.devAbrirCuentagotasF2(1, "fondoF2", {host: selector, src: fondo})
+      tomarColor: () => window.devAbrirCuentagotasF2(1, "fondoF2", {host: selector})
     }));
   }
 
@@ -2773,10 +2769,14 @@ function devCargarImagenCuentagotasF2(src){
 }
 
 function devFondoParaCuentagotas(){
-  return DEV.f1.fondoBlob || DEV.f1.fondoUrl || "";
+  return vistaFondoEnCarga($("dev1Preview")) || DEV.f1.fondoBlob || DEV.f1.fondoUrl || "";
 }
 
-window.devAbrirCuentagotasF2 = async function(indiceFondo = 1, destino = "fondoF2", {host, src = devFondoParaCuentagotas()} = {}){
+window.devAbrirCuentagotasF2 = async function(indiceFondo = 1, destino = "fondoF2", {host} = {}){
+  try { await esperarFondoEnCarga($("dev1Preview")); }
+  catch { return; }
+  if (!$("modalDevFase1")?.classList.contains("abierto") && !$("modalDevFase2")?.classList.contains("abierto")) return;
+  const src = devFondoParaCuentagotas();
   DEV_CUENTAGOTAS_F2.destinoFondo = Number(indiceFondo || 1);
   DEV_CUENTAGOTAS_F2.destino =
     destino === "wrapperF1" ? "wrapperF1" : "fondoF2";
@@ -3746,7 +3746,7 @@ function dev2OpcionesColorFondo(indice){
   return {
     titulo: "Color de fondo",
     fondo: devFondoParaCuentagotas(),
-    tomarColor: fondo => window.devAbrirCuentagotasF2(indice, "fondoF2", {src: fondo})
+    tomarColor: () => window.devAbrirCuentagotasF2(indice)
   };
 }
 
@@ -4023,7 +4023,7 @@ function devRenderFase(fase){
 
     if (b) b.style.display = "none";
 
-    const fondoUsable = st.fondoBlob || st.fondoUrl;
+    const fondoUsable = vistaFondoEnCarga(p) || st.fondoBlob || st.fondoUrl;
     p.style.backgroundImage = fondoUsable ? `url("${fondoUsable}")` : "none";
     p.style.backgroundSize = "cover";
     p.style.backgroundPosition = "center";
