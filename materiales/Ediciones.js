@@ -1,5 +1,15 @@
 import { crearMiniaturaImagen, subirArchivoR2, urlMiniaturaImagen } from "../carga-imagenes.js?v=20261109-medios-1";
 import {
+  abrirEdicionHorarioFlyer,
+  abrirPreparacionHorarioFlyer,
+  activarMiniaturasHorario,
+  configuracionHorarioFlyer,
+  elegirImagenHorarioFlyer,
+  puedeEditarDiaHora,
+  urlConHorarioFlyer,
+  versionesHorarioFlyer
+} from "../flyers-horario.js?v=20261110-flyers-2";
+import {
   ref,
   set,
   remove,
@@ -51,9 +61,11 @@ let edFiltroCategoria = (() => {
 
 let edBusquedaTexto = "";
 let edBuscadorAbierto = false;
+let edGaleriaExpandida = false;
 
 const ED_CATEGORIAS = [
   { id: "todo", label: "Todo" },
+  { id: "anuncios", label: "Anuncios" },
   { id: "flyers", label: "Flyers" },
   { id: "libros", label: "Libros" },
   { id: "videos", label: "Videos" },
@@ -2004,6 +2016,29 @@ window.edAgregarStickersWhatsApp = async function(edicionId = "", boton = null) 
   }
 };
 
+window.edCambiarVistaGaleria = () => {
+  const galeria = document.querySelector("#edLista .ed-galeria-wrap");
+  const boton = ed$("edVistaGaleria");
+  if (!galeria || !boton) return;
+  edGaleriaExpandida = !edGaleriaExpandida;
+  edActualizarVistaGaleria();
+};
+
+function edActualizarVistaGaleria() {
+  const galeria = document.querySelector("#edLista .ed-galeria-wrap");
+  const boton = ed$("edVistaGaleria");
+  if (!boton) return;
+  boton.hidden = !galeria;
+  if (!galeria) return;
+  galeria.classList.toggle("ed-galeria-expandida", edGaleriaExpandida);
+  const nombre = edGaleriaExpandida ? "Volver a la galería horizontal" : "Ver galería en tres columnas";
+  boton.setAttribute("aria-pressed", String(edGaleriaExpandida));
+  boton.setAttribute("aria-label", nombre);
+  boton.title = nombre;
+  boton.querySelector("i").className = edGaleriaExpandida ? "fa-solid fa-compress" : "fa-solid fa-expand";
+  requestAnimationFrame(edActualizarFlechasGaleria);
+}
+
 /* ================= FLECHAS GALERÍA EDICIONES - PC ================= */
 
 function edActualizarFlechasGaleria() {
@@ -2079,6 +2114,7 @@ function edNormalizarRama(v = "") {
     .trim()
     .toLowerCase();
 
+  if (["anuncio", "anuncios"].includes(s)) return "anuncios";
   if (["libro", "libros"].includes(s)) return "libros";
   if (["video", "videos"].includes(s)) return "videos";
   if (["sticker", "stickers", "stiker", "stikers", "pegatina", "pegatinas"].includes(s)) return "stickers";
@@ -2228,33 +2264,35 @@ function edPaginasArray(edicion) {
     .sort((a, b) => Number(a.orden || 0) - Number(b.orden || 0));
 }
 
-function edPaginasArrayConPortada(edicion) {
+function edPaginasVersionesHorario(edicion) {
+  return versionesHorarioFlyer(edicion).map(version => ({
+    id: `horario_${version.id}`,
+    imagenUrl: version.plantilla.original,
+    mediaType: "image/png",
+    versionHorario: version
+  }));
+}
+
+function edPaginasArrayConPortada(edicion, incluirVersiones = true) {
   const paginas = edPaginasArray(edicion);
   const portadaUrl = String(edicion?.portadaUrl || "").trim();
-
-  if (!portadaUrl) return paginas;
-
   const primeraUrl = paginas.length ? edMediaUrlPagina(paginas[0]) : "";
 
-  // ✅ Si la portada es exactamente la misma que la primera página,
-  // no la duplicamos.
-  if (primeraUrl && primeraUrl === portadaUrl) {
-    return paginas;
+  if (portadaUrl && portadaUrl !== primeraUrl) {
+    paginas.unshift({
+      id: "portada",
+      orden: -1,
+      imagenUrl: portadaUrl,
+      miniaturaUrl: edicion.portadaMiniaturaUrl || "",
+      mediaUrl: portadaUrl,
+      mediaType: "image/*",
+      audioEsUrl: "",
+      audioEnUrl: "",
+      esPortada: true
+    });
   }
 
-  const portadaPagina = {
-    id: "portada",
-    orden: -1,
-    imagenUrl: portadaUrl,
-    miniaturaUrl: edicion.portadaMiniaturaUrl || "",
-    mediaUrl: portadaUrl,
-    mediaType: "image/*",
-    audioEsUrl: "",
-    audioEnUrl: "",
-    esPortada: true
-  };
-
-  return [portadaPagina, ...paginas];
+  return incluirVersiones ? paginas.concat(edPaginasVersionesHorario(edicion)) : paginas;
 }
 
 function edTieneAudio(edicion) {
@@ -2317,6 +2355,11 @@ window.mostrarEdiciones = async () => {
               aria-label="Buscar edición"
             >
               <i class="fa-solid fa-magnifying-glass"></i>
+            </button>
+            <button id="edVistaGaleria" type="button" class="ed-top-icon va-vista-galeria"
+                    aria-label="Ver galería en tres columnas" aria-controls="edGaleriaTrack" aria-pressed="false"
+                    title="Ver galería en tres columnas" onclick="edCambiarVistaGaleria()" hidden>
+              <i class="fa-solid fa-expand"></i>
             </button>
           </div>
 
@@ -2396,7 +2439,7 @@ window.mostrarEdiciones = async () => {
   </select>
 
   <div style="font-size:12px; opacity:.75;">
-Elegí si es flyer, libro, video o sticker.
+Elegí la categoría de la publicación.
   </div>
 </div>
 
@@ -2727,6 +2770,8 @@ function renderEdiciones() {
 
   lista.classList.add("ed-lista-galeria");
 
+  const botonVista = ed$("edVistaGaleria");
+  if (botonVista) botonVista.hidden = true;
   edActualizarControlesEdiciones();
 
   if (edFiltroCategoria === "fondos") {
@@ -2946,6 +2991,7 @@ onclick="edAgregarStickersWhatsApp('${edEscape(ed.id)}', this)"
             ${ramaTitulo}
           </div>
 
+          ${edBotonesHorarioFlyer(ed, ed.id, true)}
           <div class="ed-card-actions ed-card-actions-ediciones">
             ${window.__ES_ADMIN ? `
               <button
@@ -3040,7 +3086,7 @@ onclick="edAgregarStickersWhatsApp('${edEscape(ed.id)}', this)"
         <i class="fa-solid fa-chevron-left"></i>
       </button>
 
-      <div class="ed-galeria-track">
+      <div id="edGaleriaTrack" class="ed-galeria-track" tabindex="0" aria-label="Galería de ediciones">
         ${items.map(renderCardEdicion).join("")}
       </div>
 
@@ -3057,6 +3103,7 @@ onclick="edAgregarStickersWhatsApp('${edEscape(ed.id)}', this)"
     </div>
   `;
 
+  edActualizarVistaGaleria();
   edActivarFlechasGaleria();
   edActivarMiniGalerias(lista);
 }
@@ -3859,7 +3906,16 @@ const data = {
 };
 
     edSetEstado("Guardando datos...");
-    await set(ref(db, `ediciones/${edId}`), data);
+    const edicionRef = ref(db, `ediciones/${edId}`);
+    if (existente) {
+      const resultado = await runTransaction(edicionRef, actual => {
+        if (!actual) return;
+        return actual.horariosPorImagen ? { ...data, horariosPorImagen: actual.horariosPorImagen } : data;
+      }, { applyLocally: false });
+      if (!resultado.committed) throw new Error("La edición ya no está disponible.");
+    } else {
+      await set(edicionRef, data);
+    }
 await set(ref(db, `edicionesRefs/${refPublica}`), {
   edicionId: edId,
   titulo,
@@ -3991,6 +4047,138 @@ async function obtenerEdicion(id) {
 }
 
 window.obtenerEdicion = obtenerEdicion;
+
+function edImagenesParaHorario(edicion) {
+  const imagenes = new Map();
+  edPaginasArrayConPortada(edicion, false).forEach((pagina, i) => {
+    if (edPaginaEsVideo(pagina)) return;
+    const url = edMediaUrlPagina(pagina);
+    if (imagenes.has(url)) return;
+    imagenes.set(url, {
+      url,
+      miniaturaUrl: pagina.miniaturaUrl,
+      etiqueta: i === 0 && url === edicion.portadaUrl ? "Portada" : `Imagen ${i + 1}`,
+      config: configuracionHorarioFlyer(edicion, url)
+    });
+  });
+  return [...imagenes.values()];
+}
+
+function edImagenConHorarioEditable({config}) {
+  return config && (!config.plantilla.dia.inactivo || !config.plantilla.hora.inactivo);
+}
+
+function edBotonesHorarioFlyer(edicion, id, mostrarPreparacion = false) {
+  if (!edicion || edRamaEdicion(edicion) !== "flyers" || !puedeEditarDiaHora()) return "";
+  const imagenes = edImagenesParaHorario(edicion);
+  if (!imagenes.length) return "";
+  const preparada = imagenes.some(edImagenConHorarioEditable);
+  const puedePreparar = mostrarPreparacion && window.__ES_ADMIN;
+  if (!preparada && !puedePreparar) return "";
+  return `<div class="va-horario-acciones">
+    ${preparada ? `<button type="button" class="va-horario-boton" data-flyer-id="${edEscape(id)}"
+      onclick="edAbrirHorarioFlyer(this.dataset.flyerId)" title="Editar día/hora" aria-label="Editar día/hora">
+      <i class="fa-solid fa-clock" aria-hidden="true"></i><span>Editar día/hora</span>
+    </button>` : ""}
+    ${puedePreparar ? `<button type="button" class="va-horario-boton" data-flyer-id="${edEscape(id)}"
+      onclick="edAbrirHorarioFlyer(this.dataset.flyerId, true)" title="Preparar día/hora" aria-label="Preparar día/hora">
+      <i class="fa-solid fa-sliders" aria-hidden="true"></i>${preparada ? "" : "<span>Preparar día/hora</span>"}
+    </button>` : ""}
+  </div>`;
+}
+
+window.edBotonesHorarioFlyer = edBotonesHorarioFlyer;
+
+window.edAbrirHorarioFlyer = async (id, preparar = false) => {
+  if (!puedeEditarDiaHora() || (preparar && !window.__ES_ADMIN)) return;
+  const db = edDB();
+  if (!db) return;
+  const edicionRef = ref(db, `ediciones/${id}`);
+  try {
+    const snap = await get(edicionRef);
+    const actual = snap.val();
+    if (!actual || edRamaEdicion(actual) !== "flyers") return;
+    const edicion = { ...actual, id, rama: "flyers" };
+    const imagenes = edImagenesParaHorario(edicion);
+    const imagen = await elegirImagenHorarioFlyer(preparar ? imagenes : imagenes.filter(edImagenConHorarioEditable));
+    if (!imagen) return;
+    const {url, config} = imagen;
+    const clave = config?.clave || edKey("imagen");
+    if (!preparar) {
+      abrirEdicionHorarioFlyer(config, async horario => {
+        if (!puedeEditarDiaHora()) throw new Error("Tu usuario no tiene permiso para editar el horario.");
+        const version = push(ref(db, `ediciones/${id}/horariosPorImagen/${clave}/versiones`));
+        await set(version, horario);
+        window.mostrarToast?.("Nueva imagen guardada en esta ficha.");
+        edMostrarVersionGuardada(id, version.key);
+      });
+      return;
+    }
+
+    abrirPreparacionHorarioFlyer(url, config, async (plantilla, horario, archivo) => {
+      if (!window.__ES_ADMIN) throw new Error("Solo administradores pueden preparar una plantilla.");
+      const plantillaId = edKey("horario");
+      const urls = archivo
+        ? await subirImagenEdicionR2(archivo, `ediciones/${id}/horario/${clave}/${plantillaId}`, 760)
+        : { url: plantilla.baseUrl, miniaturaUrl: plantilla.baseMiniaturaUrl };
+      const nueva = {
+        ...plantilla,
+        id: plantillaId,
+        baseUrl: urls.url,
+        baseMiniaturaUrl: urls.miniaturaUrl || "",
+        diaInicial: horario.dia,
+        horaInicial: horario.hora
+      };
+      const primeraVersion = config ? null : push(ref(db, `ediciones/${id}/horariosPorImagen/${clave}/versiones`)).key;
+      const resultado = await runTransaction(edicionRef, vigente => {
+        if (!vigente || edRamaEdicion(vigente) !== "flyers" ||
+            !edPaginasArrayConPortada(vigente, false).some(p => !edPaginaEsVideo(p) && edMediaUrlPagina(p) === url)) return;
+        const anterior = configuracionHorarioFlyer(vigente, url);
+        if (anterior?.plantilla.id !== config?.plantilla.id) return;
+        const previas = { ...anterior?.plantillasAnteriores };
+        if (anterior && Object.values(anterior.versiones || {}).some(v => v.plantillaId === anterior.plantilla.id)) {
+          previas[anterior.plantilla.id] = anterior.plantilla;
+        }
+        return {
+          ...vigente,
+          rama: "flyers",
+          horariosPorImagen: {
+            ...vigente.horariosPorImagen,
+            [clave]: {
+              versiones: primeraVersion ? {[primeraVersion]: {...horario, plantillaId: nueva.id}} : anterior?.versiones || null,
+              plantilla: nueva,
+              plantillasAnteriores: previas
+            }
+          }
+        };
+      }, { applyLocally: false });
+      if (!resultado.committed) throw new Error("Cambió la edición. Volvé a abrirla para preparar el horario.");
+      if (primeraVersion) {
+        window.mostrarToast?.("Nueva imagen guardada en esta ficha.");
+        edMostrarVersionGuardada(id, primeraVersion);
+      } else {
+        window.mostrarToast?.("Plantilla de horario guardada.");
+      }
+    });
+  } catch (error) {
+    console.error(error);
+    alert("No pude abrir el horario del flyer.");
+  }
+};
+
+function edMostrarVersionGuardada(id, versionId) {
+  requestAnimationFrame(() => {
+    for (const contexto of ["ediciones", "compartidos"]) {
+      const track = ed$(`edMiniTrack_${contexto}_${id}`);
+      if (!track?.getClientRects().length) continue;
+      const pagina = Array.from(track.children).find(el => el.dataset.edVersion === versionId);
+      if (pagina) {
+        const desplazamiento = pagina.getBoundingClientRect().left - track.getBoundingClientRect().left;
+        track.scrollTo({ left: track.scrollLeft + desplazamiento, behavior: "smooth" });
+      }
+    }
+  });
+}
 
 /* ================= DESCARGA PNG + MINI GALERÍA EDICIONES ================= */
 
@@ -4292,6 +4480,7 @@ window.edActualizarMiniFlechas = function edActualizarMiniFlechas(id, contexto =
 };
 
 window.edActivarMiniGalerias = function edActivarMiniGalerias(root = document) {
+  activarMiniaturasHorario(root);
   const tracks = root.querySelectorAll?.(".ed-mini-paginas") || [];
 
   tracks.forEach(track => {
@@ -4310,14 +4499,13 @@ window.edActivarMiniGalerias = function edActivarMiniGalerias(root = document) {
 
       // PC: rueda vertical sobre la imagen mueve horizontal.
 track.addEventListener("wheel", e => {
-        const esCompartidos =
+        const permiteScrollVertical =
           contexto === "compartidos" ||
           !!track.closest?.("#compLista") ||
-          document.body.classList.contains("en-compartidos");
+          document.body.classList.contains("en-compartidos") ||
+          !!track.closest(".ed-galeria-expandida");
 
-        // ✅ En Compartidos, la rueda vertical baja la página.
-        // No la convertimos en scroll horizontal.
-        if (esCompartidos && Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+        if (permiteScrollVertical && Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
           return;
         }
 
@@ -4356,7 +4544,8 @@ window.descargarPaginaEdicionPNG = async function descargarPaginaEdicionPNG(id, 
     if (boton) boton.disabled = true;
     if (icono) icono.className = "fa-solid fa-spinner fa-spin";
 
-    const blob = await edBlobPngDesdeUrl(edMediaUrlPagina(pagina));
+    const url = await urlConHorarioFlyer(pagina.versionHorario, edMediaUrlPagina(pagina));
+    const blob = await edBlobPngDesdeUrl(url);
     const base = edSafeName(ed.titulo || "edicion").replace(/\.[^.]+$/, "");
     const nombre = `${base}_pagina_${Number(index || 0) + 1}.png`;
 
@@ -4631,17 +4820,20 @@ function edMiniPaginasHTML(id, contexto = "ediciones", edicion) {
       >
         ${items.map((p, i) => {
           const url = edMediaUrlPagina(p);
+          const version = p.versionHorario;
 
           return `
-            <div class="ed-mini-page">
+            <div class="ed-mini-page"${version ? ` data-ed-version="${edEscape(version.id)}"` : ""}>
               <img
-                data-va-imagen
-                data-va-src="${edEscape(urlMiniaturaImagen(url, p.miniaturaUrl))}"
-                data-va-original="${edEscape(url)}"
+                ${version ? `data-horario-flyer="${edEscape(JSON.stringify(version))}"` : `
+                  data-va-imagen
+                  data-va-src="${edEscape(urlMiniaturaImagen(url, p.miniaturaUrl))}"
+                  data-va-original="${edEscape(url)}"
+                `}
                 alt="${edEscape(ed.titulo || "Edición")} ${i + 1}"
                 loading="lazy"
                 decoding="async"
-                onclick="abrirPresentacionEdicion('${edEscape(id)}')"
+                onclick="abrirPresentacionEdicion('${edEscape(id)}', ${i})"
               >
             </div>
           `;
@@ -4693,7 +4885,7 @@ window.borrarEdicion = async (id) => {
 
 /* ================= PRESENTACIÓN FULLSCREEN ================= */
 
-window.abrirPresentacionEdicion = async (id) => {
+window.abrirPresentacionEdicion = async (id, desdePagina = 0) => {
   const ed = await obtenerEdicion(id);
   if (!ed) {
     alert("No encontré la edición.");
@@ -4718,7 +4910,7 @@ window.abrirPresentacionEdicion = async (id) => {
   const indiceInicial =
     esCategoriaVideos && tieneVideo
       ? Math.max(0, paginas.findIndex(p => edPaginaEsVideo(p)))
-      : 0;
+      : Math.max(0, Math.min(paginas.length - 1, Number(desdePagina) || 0));
 
   let viewer = ed$("edViewer");
 
@@ -4782,7 +4974,10 @@ window.abrirPresentacionEdicion = async (id) => {
     ` : ``}
 
     <div class="ed-slides">
-      ${paginas.map((p, i) => `
+      ${paginas.map((p, i) => {
+        const mediaUrl = edMediaUrlPagina(p);
+        const version = p.versionHorario;
+        return `
         <section class="ed-slide">
           <div class="ed-slide-inner">
             <div class="ed-slide-img-wrap">
@@ -4790,7 +4985,7 @@ window.abrirPresentacionEdicion = async (id) => {
                 edPaginaEsVideo(p)
                   ? `<video
                       class="ed-slide-video"
-                      src="${edEscape(edMediaUrlPagina(p))}"
+                      src="${edEscape(mediaUrl)}"
                       controls
                       playsinline
                       preload="auto"
@@ -4798,7 +4993,7 @@ window.abrirPresentacionEdicion = async (id) => {
                     ></video>`
                   : `<img
                       class="ed-slide-img"
-                      src="${edEscape(edMediaUrlPagina(p))}"
+                      ${version ? `data-horario-flyer="${edEscape(JSON.stringify(version))}" data-horario-completo` : `src="${edEscape(mediaUrl)}"`}
                       alt="Página ${i + 1}"
                       loading="lazy"
                     >`
@@ -4824,7 +5019,8 @@ window.abrirPresentacionEdicion = async (id) => {
             ` : ``}
           </div>
         </section>
-      `).join("")}
+      `;
+      }).join("")}
     </div>
   `;
 
@@ -4832,6 +5028,7 @@ window.abrirPresentacionEdicion = async (id) => {
 
   viewer.classList.add("ed-open");
   document.body.style.overflow = "hidden";
+  activarMiniaturasHorario(viewer);
 
   requestAnimationFrame(() => {
     edIrASlide(indiceInicial, "auto");
@@ -5109,7 +5306,7 @@ window.descargarEdicionPDF = async (id) => {
     return;
   }
 
-  const paginas = edPaginasArray(ed);
+  const paginas = edPaginasArray(ed).concat(edPaginasVersionesHorario(ed));
   if (!paginas.length) {
     alert("Esta edición no tiene páginas para descargar.");
     return;
@@ -5163,7 +5360,8 @@ if (edTieneAudio(ed)) {
   continue;
 }
 
-const dataUrl = await edUrlToDataUrl(edMediaUrlPagina(paginas[i]));
+      const url = await urlConHorarioFlyer(paginas[i].versionHorario, edMediaUrlPagina(paginas[i]));
+      const dataUrl = await edUrlToDataUrl(url);
       const dims = await edImageDims(dataUrl);
 
       const fit = edFit(dims.w, dims.h, pageW - margin * 2, pageH - margin * 2);
@@ -5751,7 +5949,7 @@ window.edCompartirImagenActualEdicion = async function edCompartirImagenActualEd
           tipoSugerido
         )
       : await edCrearFileDesdeUrl(
-          mediaUrl,
+          await urlConHorarioFlyer(pagina.versionHorario, mediaUrl),
           `${titulo}_${indice + 1}`
         );
 
@@ -6134,7 +6332,7 @@ await set(compRef, {
   const url = await crearLinkPublicoEdicion(id, titulo);
 
   try {
-const resultado = await edCompartirPublicacionLink({
+    const resultado = await edCompartirPublicacionLink({
       titulo,
       url,
       portadaUrl
