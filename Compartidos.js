@@ -87,6 +87,7 @@ let compFiltroActual = (() => {
   }
 })();
 
+let compEdicionesExpandidas = false;
 let compSubFiltroEdicionesActual = (() => {
   try {
     return localStorage.getItem("vaCompSubFiltroEdiciones") || "todo";
@@ -386,6 +387,7 @@ const COMP_FILTROS = [
 
 const COMP_EDICIONES_SUBFILTROS = [
   { id: "todo", label: "Todo" },
+  { id: "anuncios", label: "Anuncios" },
   { id: "flyers", label: "Flyers" },
   { id: "libros", label: "Libros" },
   { id: "videos", label: "Videos" },
@@ -402,6 +404,7 @@ function compNormalizarCategoriaEdicion(v = "") {
     .trim()
     .toLowerCase();
 
+  if (["anuncio", "anuncios"].includes(s)) return "anuncios";
   if (["libro", "libros"].includes(s)) return "libros";
   if (["video", "videos"].includes(s)) return "videos";
   if (["sticker", "stickers", "stiker", "stikers", "pegatina", "pegatinas"].includes(s)) return "stickers";
@@ -489,20 +492,38 @@ function compRenderSubFiltrosEdicionesHTML() {
   compSubFiltroEdicionesActual = compSubFiltroEdicionesValido(compSubFiltroEdicionesActual);
 
   return `
-    <div id="compSubFiltrosEdiciones" class="comp-subfiltros-ediciones">
-      ${COMP_EDICIONES_SUBFILTROS.map(f => `
-        <button
-          type="button"
-          data-comp-ed-sub="${compEscape(f.id)}"
-          class="${f.id === compSubFiltroEdicionesActual ? "activo" : ""}"
-          onclick="compCambiarSubFiltroEdiciones('${compJs(f.id)}', this)"
-        >
-          ${compEscape(f.label)}
-        </button>
-      `).join("")}
+    <div class="va-ediciones-filtros">
+      <div id="compSubFiltrosEdiciones" class="comp-subfiltros-ediciones">
+        ${COMP_EDICIONES_SUBFILTROS.map(f => `
+          <button
+            type="button"
+            data-comp-ed-sub="${compEscape(f.id)}"
+            class="${f.id === compSubFiltroEdicionesActual ? "activo" : ""}"
+            onclick="compCambiarSubFiltroEdiciones('${compJs(f.id)}', this)"
+          >
+            ${compEscape(f.label)}
+          </button>
+        `).join("")}
+      </div>
+      <button id="compVistaEdiciones" type="button" class="va-vista-galeria" aria-controls="compLista"
+              aria-pressed="${compEdicionesExpandidas}" aria-label="${compEdicionesExpandidas ? "Volver a la vista de publicaciones" : "Ver galería en tres columnas"}"
+              title="${compEdicionesExpandidas ? "Volver a la vista de publicaciones" : "Ver galería en tres columnas"}"
+              onclick="compCambiarVistaEdiciones(this)">
+        <i class="fa-solid ${compEdicionesExpandidas ? "fa-compress" : "fa-expand"}"></i>
+      </button>
     </div>
   `;
 }
+
+window.compCambiarVistaEdiciones = function(boton) {
+  compEdicionesExpandidas = !compEdicionesExpandidas;
+  const nombre = compEdicionesExpandidas ? "Volver a la vista de publicaciones" : "Ver galería en tres columnas";
+  boton.title = nombre;
+  boton.setAttribute("aria-label", nombre);
+  boton.setAttribute("aria-pressed", String(compEdicionesExpandidas));
+  boton.querySelector("i").className = compEdicionesExpandidas ? "fa-solid fa-compress" : "fa-solid fa-expand";
+  renderCompartidos();
+};
 
 function compRenderFiltrosHTML() {
   compFiltroActual =
@@ -4983,6 +5004,7 @@ onclick="window.edAgregarStickersWhatsApp ? window.edAgregarStickersWhatsApp('${
         ${contenidoMedia}
       </div>
 
+      ${window.edBotonesHorarioFlyer?.(edicionReal, edicionId) || ""}
       <div class="comp-post-actions">
 
         ${compActionButton({
@@ -5144,6 +5166,7 @@ function compUnificarItems() {
 window.renderCompartidos = function renderCompartidos() {
   const lista = comp$("compLista");
   if (!lista) return;
+  lista.classList.toggle("comp-ediciones-expandida", compFiltroActual === "ediciones" && compEdicionesExpandidas);
 
     const predicaRefDirecta = compRefPredicaDirecta();
 
@@ -5170,7 +5193,8 @@ window.renderCompartidos = function renderCompartidos() {
 
   // ✅ iPhone/Safari: pintar por tandas.
   // PC/Android siguen viendo todo como antes.
-  const items = compEsIOS()
+  const porTandas = compEsIOS() && !lista.classList.contains("comp-ediciones-expandida");
+  const items = porTandas
     ? itemsTodos.slice(0, compItemsVisibles)
     : itemsTodos;
 
@@ -5194,7 +5218,7 @@ window.renderCompartidos = function renderCompartidos() {
       }).join("")}
 
       ${
-        compEsIOS() && itemsTodos.length > items.length
+        porTandas && itemsTodos.length > items.length
           ? `
             <div class="comp-ver-mas-wrap">
               <button
