@@ -4702,8 +4702,8 @@ function compRenderEdicion(item) {
   }
 
   const tituloTexto =
-    item.titulo ||
     edicionReal?.titulo ||
+    item.titulo ||
     "Edición";
 
   const titulo = compEscape(tituloTexto);

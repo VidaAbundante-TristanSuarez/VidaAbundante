@@ -3,7 +3,7 @@ import { elegirResolucionImagen, dimensionesExportacion, conProgresoExportacion 
 import { referenciasDePublicacion, referenciasHTML, disenosDeImagen, agregarDisenoImagen, combinarDisenosImagen, carruselImagenHTML, disenoActivoDeCard } from "./publicaciones-imagen.js?v=20261109-medios-1";
 import { normalizarUrlImagen, obtenerBlobImagen, subirArchivoR2 } from './carga-imagenes.js?v=20261109-medios-1';
 import { actualizarCapaTexturas, esperarCapaTexturas, montarControlesTextura, margenesTexturas } from "./texturas-editor.js?v=20261110-carga-2";
-import { elegirFondoEnPreview, vistaFondoEnCarga, cancelarFondoEnCarga, esperarFondoEnCarga, montarOpcionesColorEditor, aplicarColorEditor, colorEnCanvas, ordenarFondos, registrarUsoFondo, configurarUsoFondos, combinarUsoFondos, cargarFondoBlob, prepararMiniaturas, montarEditorTexto, aplicarFormatoSeleccion, alternarFormatoSeleccion, restaurarControlesTexto, aplicarSubrayadoTexto, desactivarEditorTexto, crearInstantaneaPreview, esperarFuentesPreview, dibujarCajaTexto, recuperarCajaTexto } from "./imagen-editor.js?v=20261110-carga-2";
+import { elegirFondoEnPreview, vistaFondoEnCarga, cancelarFondoEnCarga, esperarFondoEnCarga, montarOpcionesColorEditor, aplicarColorEditor, colorEnCanvas, ordenarFondos, registrarSeleccionGaleria, configurarUsoFondos, combinarUsoFondos, cargarFondoBlob, prepararMiniaturas, prepararGaleriaRecursos, marcarRecursosGaleria, fuentesEditorImagen, montarEditorTexto, aplicarFormatoSeleccion, alternarFormatoSeleccion, restaurarControlesTexto, aplicarSubrayadoTexto, desactivarEditorTexto, crearInstantaneaPreview, esperarFuentesPreview, dibujarCajaTexto, recuperarCajaTexto } from "./imagen-editor.js?v=20261111-editores-1";
 
 // ================= IMPORTS FIREBASE =================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -4837,40 +4837,6 @@ document.addEventListener("freeze", () => {
 });
 
 // ================= 🎀 LISTA VISUAL DE FUENTES =================
-const fuentesGoogle = [
-  // ================= Limpias y muy legibles =================
-  { nombre: "Roboto", css: "Roboto, sans-serif" },
-  { nombre: "Lexend", css: "Lexend, sans-serif" },
-  { nombre: "Montserrat", css: "Montserrat, sans-serif" },
-  { nombre: "Poppins", css: "Poppins, sans-serif" },
-  { nombre: "Oswald", css: "Oswald, sans-serif" },
-  { nombre: "Josefin Sans", css: "'Josefin Sans', sans-serif" },
-
-  // ================= Clásicas / bíblicas =================
-  { nombre: "Lora", css: "Lora, serif" },
-  { nombre: "Merriweather", css: "Merriweather, serif" },
-  { nombre: "Libre Baskerville", css: "'Libre Baskerville', serif" },
-  { nombre: "Alegreya", css: "Alegreya, serif" },
-  { nombre: "Playfair Display", css: "'Playfair Display', serif" },
-  { nombre: "DM Serif Display", css: "'DM Serif Display', serif" },
-  { nombre: "Cinzel", css: "Cinzel, serif" },
-  { nombre: "Cormorant", css: "Cormorant, serif" },
-
-  // ================= Fuertes para títulos =================
-  { nombre: "Bebas Neue", css: "'Bebas Neue', sans-serif" },
-  { nombre: "Abril Fatface", css: "'Abril Fatface', serif" },
-
-  // ================= Manuscritas / decorativas =================
-  { nombre: "Lobster", css: "Lobster, cursive" },
-  { nombre: "Caveat", css: "Caveat, cursive" },
-  { nombre: "Dancing Script", css: "'Dancing Script', cursive" },
-  { nombre: "Courgette", css: "Courgette, cursive" },
-  { nombre: "Great Vibes", css: "'Great Vibes', cursive" },
-
-  // ✅ La dejamos porque en tu celular sí se visualiza bien
-  { nombre: "Comic Sans MS", css: "'Comic Sans MS', cursive" }
-];
-
 // ================= ⭐ CREAR LISTA VISUAL DE FUENTES  =======================
 function crearListaVisualFuentes() {
   const cont = document.getElementById("listaFuentes");
@@ -4878,7 +4844,7 @@ function crearListaVisualFuentes() {
 
   cont.innerHTML = "";
 
-  fuentesGoogle.forEach(f => {
+  fuentesEditorImagen.forEach(f => {
     const btn = document.createElement("button");
     btn.textContent = f.nombre;
     btn.style.fontFamily = f.css;
@@ -5264,7 +5230,7 @@ function cargarFondos() {
     (fondosCategorias[fondoCategoriaActual] || []).map(url => ({url}));
   const miniaturas = new Map(catalogo.map(item => [item.url, item.miniaturaUrl || ""]));
   const fondos = ordenarFondos([...miniaturas.keys()], "biblia");
-  const clave = JSON.stringify([fondoCategoriaActual, [...miniaturas]]);
+  const clave = JSON.stringify([fondoCategoriaActual, [...miniaturas], fondos]);
   if (cont.__vaFondosClave === clave && cont.querySelector('#btnBibliaPaletaFondo')) {
     cont.querySelectorAll('img.biblia-fondo-img').forEach(img => img.classList.toggle('activo', img.dataset.fondoUrl === fondoFinal));
     bibliaSincronizarControlesFondoDiseno(); return;
@@ -5407,7 +5373,9 @@ menuBtn.onclick = (e) => {
   cont.appendChild(menuWrap);
 
   }
-  const prepararMiniatura = prepararMiniaturas(cont);
+  const {prepararMiniatura, restaurar} = prepararGaleriaRecursos(cont, "Fondos", {
+    selector: "img[data-fondo-url]", conservar: true
+  });
   const lote = document.createDocumentFragment();
   cont.querySelectorAll('[data-categoria-fondo]').forEach(b => b.classList.toggle('activo', b.dataset.categoriaFondo === fondoCategoriaActual));
 
@@ -5433,8 +5401,7 @@ menuBtn.onclick = (e) => {
         fondoDisenoBiblia.baseTipo = "imagen";
         fondoFinal = finalUrl;
         fondoFinalBlobUrl = nuevoBlob;
-        registrarUsoFondo(finalUrl, "biblia");
-        cont.appendChild(img);
+        registrarSeleccionGaleria(cont, img, finalUrl, "biblia");
 
         cont.querySelectorAll("img.biblia-fondo-img").forEach(x => x.classList.remove("activo"));
         img.classList.add("activo");
@@ -5450,6 +5417,7 @@ menuBtn.onclick = (e) => {
   });
   cont.querySelectorAll("img.biblia-fondo-img").forEach(img => { if (!fondos.includes(img.dataset.fondoUrl)) img.remove(); });
   cont.appendChild(lote);
+  restaurar();
   cont.__vaFondosClave = clave;
 
   setTimeout(() => {
@@ -5835,7 +5803,7 @@ function bibliaRecursosAdministrados(categoria, base, nombreVacio) {
 
   return [
     { nombre: nombreVacio, url: null },
-    ...administrados
+    ...ordenarFondos(administrados, "biblia", {url: item => item.url})
   ];
 }
 
@@ -5843,8 +5811,7 @@ function bibliaRenderTexturasDiseno() {
   const cont = document.getElementById("bibliaTexturasCarril");
   if (!cont) return;
 
-  cont.replaceChildren();
-  const prepararMiniatura = prepararMiniaturas(cont);
+  const {prepararMiniatura, restaurar} = prepararGaleriaRecursos(cont, "Texturas");
 
   const items = bibliaRecursosAdministrados(
     "texturas",
@@ -5864,6 +5831,7 @@ function bibliaRenderTexturasDiseno() {
   items.forEach((item, indice) => {
     const btn = document.createElement("button");
     btn.type = "button";
+    btn.dataset.recurso = item.url || "";
     btn.className = "biblia-recurso-mini";
 
     const activo = item.url
@@ -5894,22 +5862,24 @@ function bibliaRenderTexturasDiseno() {
           : [item.url, ...actuales];
 
         bibliaGuardarTexturasSeleccionadas(nuevas);
+        if (nuevas.includes(item.url)) registrarSeleccionGaleria(cont, btn, item.url, "biblia");
       }
 
-      bibliaRenderTexturasDiseno();
+      marcarRecursosGaleria(cont, bibliaTexturasSeleccionadas());
       actualizarPreview();
     };
 
     cont.appendChild(btn);
   });
+  marcarRecursosGaleria(cont, bibliaTexturasSeleccionadas());
+  restaurar();
 }
 
 function bibliaRenderAdornosDiseno() {
   const cont = document.getElementById("bibliaAdornosCarril");
   if (!cont) return;
 
-  cont.replaceChildren();
-  const prepararMiniatura = prepararMiniaturas(cont);
+  const {prepararMiniatura, restaurar} = prepararGaleriaRecursos(cont, "Adornos");
 
   const items = bibliaRecursosAdministrados(
     "adornos",
@@ -5931,6 +5901,7 @@ function bibliaRenderAdornosDiseno() {
   items.forEach((item, indice) => {
     const btn = document.createElement("button");
     btn.type = "button";
+    btn.dataset.recurso = item.url || "";
     btn.className = "biblia-recurso-mini";
     btn.classList.toggle("activo", fondoDisenoBiblia.adornoUrl === item.url);
     btn.title = item.nombre;
@@ -5946,12 +5917,15 @@ function bibliaRenderAdornosDiseno() {
 
     btn.onclick = () => {
       fondoDisenoBiblia.adornoUrl = item.url;
-      bibliaRenderAdornosDiseno();
+      registrarSeleccionGaleria(cont, btn, item.url, "biblia");
+      marcarRecursosGaleria(cont, [fondoDisenoBiblia.adornoUrl]);
       actualizarPreview();
     };
 
     cont.appendChild(btn);
   });
+  marcarRecursosGaleria(cont, [fondoDisenoBiblia.adornoUrl]);
+  restaurar();
 }
 
 function bibliaAsegurarTabsFondoDiseno() {
@@ -5966,8 +5940,9 @@ if (!box) {
 }
 
 /* ✅ Tabs siempre arriba / galería de fondos siempre abajo */
-if (fondosBox.parentNode && fondosBox.previousElementSibling !== box) {
-  fondosBox.parentNode.insertBefore(box, fondosBox);
+const filaFondos = fondosBox.closest(".va-galeria-fila") || fondosBox;
+if (filaFondos.parentNode && filaFondos.previousElementSibling !== box) {
+  filaFondos.parentNode.insertBefore(box, filaFondos);
 }
 
   if (!box.dataset.unificado) {
@@ -6062,6 +6037,8 @@ if (boxDiseno) {
   const galeria = document.getElementById("personalizarFondos");
   if (galeria) {
     galeria.style.display = elegida === "fondo" ? "flex" : "none";
+    const filaFondos = galeria.closest(".va-galeria-fila");
+    if (filaFondos) filaFondos.hidden = elegida !== "fondo";
   }
 
   if (elegida === "textura") bibliaRenderTexturasDiseno();

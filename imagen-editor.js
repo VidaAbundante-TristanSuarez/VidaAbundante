@@ -4,6 +4,31 @@ import { normalizarUrlImagen, obtenerBlobImagen, proxyImagen, urlMiniaturaImagen
 const pendientes = new Map();
 let guardarUsoRemoto = null;
 
+export const fuentesEditorImagen = [
+  { nombre: "Roboto", css: "Roboto, sans-serif" },
+  { nombre: "Lexend", css: "Lexend, sans-serif" },
+  { nombre: "Montserrat", css: "Montserrat, sans-serif" },
+  { nombre: "Poppins", css: "Poppins, sans-serif" },
+  { nombre: "Oswald", css: "Oswald, sans-serif" },
+  { nombre: "Josefin Sans", css: "'Josefin Sans', sans-serif" },
+  { nombre: "Lora", css: "Lora, serif" },
+  { nombre: "Merriweather", css: "Merriweather, serif" },
+  { nombre: "Libre Baskerville", css: "'Libre Baskerville', serif" },
+  { nombre: "Alegreya", css: "Alegreya, serif" },
+  { nombre: "Playfair Display", css: "'Playfair Display', serif" },
+  { nombre: "DM Serif Display", css: "'DM Serif Display', serif" },
+  { nombre: "Cinzel", css: "Cinzel, serif" },
+  { nombre: "Cormorant", css: "Cormorant, serif" },
+  { nombre: "Bebas Neue", css: "'Bebas Neue', sans-serif" },
+  { nombre: "Abril Fatface", css: "'Abril Fatface', serif" },
+  { nombre: "Lobster", css: "Lobster, cursive" },
+  { nombre: "Caveat", css: "Caveat, cursive" },
+  { nombre: "Dancing Script", css: "'Dancing Script', cursive" },
+  { nombre: "Courgette", css: "Courgette, cursive" },
+  { nombre: "Great Vibes", css: "'Great Vibes', cursive" },
+  { nombre: "Comic Sans MS", css: "'Comic Sans MS', cursive" }
+];
+
 const claveUso = () => `va_fondos_uso_v1_${window.__UID || 'visitante'}`;
 const claveFondo = url => {
   try { return new URL(url, location.href).href; } catch { return String(url); }
@@ -23,9 +48,10 @@ export function combinarUsoFondos(remoto) {
   }
   try { localStorage.setItem(claveUso(), JSON.stringify(uso)); } catch {}
 }
-export function ordenarFondos(lista, seccion) {
+export function ordenarFondos(lista, seccion, {url = item => item, usoPrevio = () => 0} = {}) {
   const uso = leerUso()[seccion] || {};
-  return [...lista].sort((a, b) => (Number(uso[claveFondo(a)]) || 0) - (Number(uso[claveFondo(b)]) || 0));
+  const fecha = item => Math.max(Number(uso[claveFondo(url(item))]) || 0, usoPrevio(url(item)));
+  return [...lista].sort((a, b) => fecha(a) - fecha(b));
 }
 export function registrarUsoFondo(url, seccion) {
   const uso = leerUso();
@@ -103,6 +129,7 @@ export function prepararMiniaturas(cont) {
       img.addEventListener('error', () => { img.src = original; }, {once: true});
     }
     img.dataset.vaSrc = previa;
+    img.dataset.vaOriginal = original;
 
     if (observer && !(visible && indice < 2)) {
       observer.observe(img);
@@ -111,6 +138,164 @@ export function prepararMiniaturas(cont) {
       cargar(img);
     }
   };
+}
+
+export function crearDialogoEditor(titulo) {
+  if (document.querySelector('dialog.va-horario-dialog[open]')) return null;
+  const dialogo = document.createElement('dialog');
+  dialogo.className = 'va-horario-dialog';
+  dialogo.setAttribute('aria-label', titulo);
+  dialogo.innerHTML = `<header><h2></h2>
+    <button type="button" class="va-horario-cerrar" aria-label="Cerrar">×</button></header>`;
+  dialogo.querySelector('h2').textContent = titulo;
+  dialogo.querySelector('.va-horario-cerrar').onclick = () => dialogo.close();
+  const foco = document.activeElement;
+  const viewport = window.visualViewport;
+  const ajustar = () => {
+    dialogo.style.setProperty('--va-horario-vw', viewport.width + 'px');
+    dialogo.style.setProperty('--va-horario-vh', viewport.height + 'px');
+    dialogo.style.setProperty('--va-horario-cx', (viewport.offsetLeft + viewport.width / 2) + 'px');
+    dialogo.style.setProperty('--va-horario-cy', (viewport.offsetTop + viewport.height / 2) + 'px');
+  };
+  if (viewport) {
+    ajustar();
+    viewport.addEventListener('resize', ajustar);
+    viewport.addEventListener('scroll', ajustar);
+  }
+  dialogo.addEventListener('close', () => {
+    viewport?.removeEventListener('resize', ajustar);
+    viewport?.removeEventListener('scroll', ajustar);
+    dialogo.remove();
+    foco?.focus({preventScroll: true});
+  });
+  document.body.appendChild(dialogo);
+  return dialogo;
+}
+
+const galeriasRecursos = new WeakMap();
+
+export function marcarRecursosGaleria(carril, urls) {
+  const seleccion = new Set(urls.filter(Boolean));
+  for (const boton of carril.children) {
+    const activo = boton.dataset.recurso ? seleccion.has(boton.dataset.recurso) : !seleccion.size;
+    boton.classList.toggle('activo', activo);
+    boton.setAttribute('aria-pressed', String(activo));
+  }
+}
+
+export function registrarSeleccionGaleria(carril, opcion, url, seccion) {
+  if (!url) return;
+  registrarUsoFondo(url, seccion);
+  if (opcion.parentElement !== carril || opcion === carril.lastElementChild) return;
+  const izquierda = carril.scrollLeft;
+  carril.append(opcion);
+  carril.scrollLeft = izquierda;
+}
+
+export function prepararGaleriaRecursos(carril, titulo, {selector = 'button[data-recurso]', conservar = false} = {}) {
+  let estado = galeriasRecursos.get(carril);
+  if (!estado) {
+    estado = {izquierda: 0, indice: 0};
+    galeriasRecursos.set(carril, estado);
+    const fila = document.createElement('div');
+    fila.className = 'va-galeria-fila';
+    const boton = document.createElement('button');
+    boton.type = 'button';
+    boton.className = 'va-galeria-expandir';
+    boton.title = `Ver ${titulo.toLowerCase()} en tres renglones`;
+    boton.setAttribute('aria-label', boton.title);
+    boton.setAttribute('aria-haspopup', 'dialog');
+    boton.innerHTML = '<i class="fa-solid fa-expand" aria-hidden="true"></i>';
+    boton.onclick = () => abrirGaleriaRecursos(carril, titulo, estado, selector);
+    carril.before(fila);
+    fila.append(carril, boton);
+    carril.addEventListener('scroll', () => {
+      if (!carril.clientWidth || carril.scrollLeft === estado.izquierda) return;
+      estado.izquierda = carril.scrollLeft;
+      const izquierda = carril.getBoundingClientRect().left;
+      estado.indice = Math.max(0, Array.from(carril.querySelectorAll(selector)).findIndex(el => el.getBoundingClientRect().right > izquierda));
+    }, {passive: true});
+  }
+  if (carril.clientWidth && carril.scrollLeft) estado.izquierda = carril.scrollLeft;
+  if (!conservar) carril.replaceChildren();
+  return {
+    prepararMiniatura: prepararMiniaturas(carril),
+    restaurar() {
+      if (carril.clientWidth) carril.scrollLeft = estado.izquierda;
+    }
+  };
+}
+
+function abrirGaleriaRecursos(carril, titulo, estado, selector) {
+  const opciones = Array.from(carril.querySelectorAll(selector));
+  if (!opciones.length) return;
+  const dialogo = crearDialogoEditor(titulo);
+  if (!dialogo) return;
+  dialogo.classList.add('va-galeria-tres-renglones');
+  dialogo.insertAdjacentHTML('beforeend', `
+    <div class="va-galeria-cuadricula"></div>
+    <footer>
+      <button type="button" data-anterior aria-label="Página anterior"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i></button>
+      <span aria-live="polite"></span>
+      <button type="button" data-siguiente aria-label="Página siguiente"><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></button>
+    </footer>`);
+  const grilla = dialogo.querySelector('.va-galeria-cuadricula');
+  const pie = dialogo.querySelector('footer');
+  const anterior = pie.querySelector('[data-anterior]');
+  const siguiente = pie.querySelector('[data-siguiente]');
+  let indice = estado.indice;
+  let pagina = 0, cupo = 0;
+
+  function mostrar() {
+    const columnas = Math.max(1, Math.min(9, Math.floor(grilla.clientWidth / 54)));
+    cupo = columnas * 3;
+    const total = Math.ceil(opciones.length / cupo);
+    pagina = Math.min(total - 1, Math.max(0, Math.floor(indice / cupo)));
+    grilla.style.setProperty('--va-galeria-columnas', String(columnas));
+    grilla.replaceChildren();
+    const preparar = prepararMiniaturas(grilla);
+    opciones.slice(pagina * cupo, (pagina + 1) * cupo).forEach((opcion, i) => {
+      const boton = document.createElement('button');
+      boton.type = 'button';
+      boton.title = opcion.title;
+      const original = opcion.matches('img') ? opcion : opcion.querySelector('img');
+      boton.setAttribute('aria-label', original?.alt || opcion.title || `${titulo} ${pagina * cupo + i + 1}`);
+      boton.setAttribute('aria-pressed', String(opcion.classList.contains('activo')));
+      if (original) {
+        const img = document.createElement('img');
+        img.alt = '';
+        preparar(img, original.dataset.vaOriginal, i, original.dataset.vaSrc);
+        boton.append(img);
+      } else {
+        boton.append(opcion.querySelector('i')?.cloneNode() || opcion.textContent);
+      }
+      boton.onclick = () => {
+        if (opcion.getClientRects().length) {
+          const diferencia = opcion.getBoundingClientRect().left - carril.getBoundingClientRect().left;
+          carril.scrollLeft += diferencia;
+        }
+        estado.izquierda = carril.scrollLeft;
+        estado.indice = pagina * cupo + i;
+        dialogo.close();
+        opcion.click();
+      };
+      grilla.append(boton);
+    });
+    pie.hidden = total <= 1;
+    anterior.disabled = pagina === 0;
+    siguiente.disabled = pagina >= total - 1;
+    pie.querySelector('span').textContent = `${pagina + 1} / ${total}`;
+  }
+  anterior.onclick = () => { estado.indice = indice = (pagina - 1) * cupo; mostrar(); };
+  siguiente.onclick = () => { estado.indice = indice = (pagina + 1) * cupo; mostrar(); };
+  const viewport = window.visualViewport || window;
+  viewport.addEventListener('resize', mostrar);
+  dialogo.addEventListener('close', () => {
+    viewport.removeEventListener('resize', mostrar);
+    grilla.__vaFondosObserver?.disconnect();
+  }, {once: true});
+  dialogo.showModal();
+  mostrar();
 }
 
 const fondosEnCarga = new WeakMap();

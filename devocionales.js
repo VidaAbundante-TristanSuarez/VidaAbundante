@@ -2,8 +2,8 @@ import { subirArchivoR2, normalizarUrlImagen, urlMiniaturaImagen, vistaArchivada
 import { actualizarAdorno, activarAdorno, esperarAdorno } from "./adornos-editor.js?v=20261102-notas-compartir-7";
 import { elegirResolucionImagen, dimensionesExportacion, conProgresoExportacion } from "./exportacion-imagen.js?v=20261102-notas-compartir-7";
 import { actualizarCapaTexturas, esperarCapaTexturas, montarControlesTextura, margenesTexturas, cargarTextura, dibujarTexturas } from "./texturas-editor.js?v=20261110-carga-2";
-import { elegirFondoEnPreview, vistaFondoEnCarga, cancelarFondoEnCarga, esperarFondoEnCarga, montarOpcionesColorEditor, abrirOpcionesColorEditor, aplicarColorEditor, colorEnCanvas, cargarFondoBlob, prepararMiniaturas, montarEditorTexto, aplicarCajaTexto, aplicarFormatoSeleccion, alternarFormatoSeleccion, restaurarControlesTexto, aplicarSubrayadoTexto, crearInstantaneaPreview, esperarFuentesPreview, recuperarCajaTexto } from "./imagen-editor.js?v=20261110-carga-2";
-import { dibujarCajaTexto } from "./imagen-editor.js?v=20261110-carga-2";
+import { elegirFondoEnPreview, vistaFondoEnCarga, cancelarFondoEnCarga, esperarFondoEnCarga, montarOpcionesColorEditor, abrirOpcionesColorEditor, aplicarColorEditor, colorEnCanvas, cargarFondoBlob, ordenarFondos, registrarSeleccionGaleria, prepararGaleriaRecursos, marcarRecursosGaleria, fuentesEditorImagen, montarEditorTexto, aplicarCajaTexto, aplicarFormatoSeleccion, alternarFormatoSeleccion, restaurarControlesTexto, aplicarSubrayadoTexto, crearInstantaneaPreview, esperarFuentesPreview, recuperarCajaTexto } from "./imagen-editor.js?v=20261111-editores-1";
+import { dibujarCajaTexto } from "./imagen-editor.js?v=20261111-editores-1";
 
 // devocionales.js (NUEVO LIMPIO)
 // ✅ OCR + Recorte + Modal 3 fases (9:9 + 9:7 => 9:16)
@@ -1407,40 +1407,6 @@ if (estado) {
 /* =========================================================
    5) FUENTES (igual que Biblia pero separado)
    ========================================================= */
-const fuentesGoogle = [
-  // ================= Limpias y muy legibles =================
-  { nombre: "Roboto", css: "Roboto, sans-serif" },
-  { nombre: "Lexend", css: "Lexend, sans-serif" },
-  { nombre: "Montserrat", css: "Montserrat, sans-serif" },
-  { nombre: "Poppins", css: "Poppins, sans-serif" },
-  { nombre: "Oswald", css: "Oswald, sans-serif" },
-  { nombre: "Josefin Sans", css: "'Josefin Sans', sans-serif" },
-
-  // ================= Clásicas / bíblicas =================
-  { nombre: "Lora", css: "Lora, serif" },
-  { nombre: "Merriweather", css: "Merriweather, serif" },
-  { nombre: "Libre Baskerville", css: "'Libre Baskerville', serif" },
-  { nombre: "Alegreya", css: "Alegreya, serif" },
-  { nombre: "Playfair Display", css: "'Playfair Display', serif" },
-  { nombre: "DM Serif Display", css: "'DM Serif Display', serif" },
-  { nombre: "Cinzel", css: "Cinzel, serif" },
-  { nombre: "Cormorant", css: "Cormorant, serif" },
-
-  // ================= Fuertes para títulos =================
-  { nombre: "Bebas Neue", css: "'Bebas Neue', sans-serif" },
-  { nombre: "Abril Fatface", css: "'Abril Fatface', serif" },
-
-  // ================= Manuscritas / decorativas =================
-  { nombre: "Lobster", css: "Lobster, cursive" },
-  { nombre: "Caveat", css: "Caveat, cursive" },
-  { nombre: "Dancing Script", css: "'Dancing Script', cursive" },
-  { nombre: "Courgette", css: "Courgette, cursive" },
-  { nombre: "Great Vibes", css: "'Great Vibes', cursive" },
-
-  // ✅ La dejamos porque en tu celular sí se visualiza bien
-  { nombre: "Comic Sans MS", css: "'Comic Sans MS', cursive" }
-];
-
 function crearListaFuentes(fase){
   const btn = $(`dev${fase}BtnFuentes`);
   const lista = $(`dev${fase}ListaFuentes`);
@@ -1450,7 +1416,7 @@ function crearListaFuentes(fase){
   lista.innerHTML = "";
   const st = (fase===1) ? DEV.f1 : DEV.f2;
 
-  fuentesGoogle.forEach(f=>{
+  fuentesEditorImagen.forEach(f=>{
     const b = document.createElement("button");
     b.textContent = f.nombre;
     b.style.fontFamily = f.css;
@@ -1691,7 +1657,7 @@ const fondosEtiquetas = {
 
 let devF1CategoriaActual = "paisajes";
 
-/* El uso se confirma al publicar, nunca al probar un fondo. */
+/* El historial de publicaciones complementa los fondos elegidos en el editor. */
 let devFondosPublicados = [];
 let devFondosUltimoUso = new Map();
 const devFondosHuellas = new Map();
@@ -1734,10 +1700,9 @@ function devFondosActualizarUso(items){
 }
 
 function devOrdenarFondosPublicados(lista){
-  return [...lista].sort((a, b) =>
-    (devFondosUltimoUso.get(devFondoClave(a)) || 0) -
-    (devFondosUltimoUso.get(devFondoClave(b)) || 0)
-  );
+  return ordenarFondos(lista, "devocionales", {
+    usoPrevio: src => devFondosUltimoUso.get(devFondoClave(src)) || 0
+  });
 }
 
 function devFondosReordenarGaleria(){
@@ -2002,7 +1967,9 @@ async function urlToBlobURL(url){
 function cargarFondosDev(){
   const cont = $("dev1Fondos");
   if (!cont) return;
-  cont.innerHTML = "";
+  const {prepararMiniatura, restaurar} = prepararGaleriaRecursos(cont, "Fondos", {
+    selector: "img[data-dev-fondo]"
+  });
 
   const menuWrap = document.createElement("div");
   menuWrap.className = "dev-f1-menu-wrap";
@@ -2055,13 +2022,13 @@ function cargarFondosDev(){
     devFondosListaCategoria(devF1CategoriaActual).map(url => ({url}));
   const miniaturas = new Map(catalogo.map(item => [item.url, item.miniaturaUrl || ""]));
   const fondos = devOrdenarFondosPublicados([...miniaturas.keys()]);
-  const prepararMiniatura = prepararMiniaturas(cont);
 
   fondos.forEach((base, indice)=>{
   const finalUrl = base;
 
     const im = document.createElement("img");
     im.dataset.devFondo = finalUrl;
+    im.alt = `Fondo ${indice + 1}`;
     im.classList.toggle("activo", finalUrl === DEV.f1.fondoSrc);
     im.referrerPolicy = "no-referrer";
     prepararMiniatura(im, finalUrl, indice, miniaturas.get(finalUrl));
@@ -2072,6 +2039,7 @@ function cargarFondosDev(){
         DEV.f1.fondoUrl = null;
         DEV.f1.fondoSrc = finalUrl;
         DEV.f1.fondoBlob = nuevoBlob;
+        registrarSeleccionGaleria(cont, im, finalUrl, "devocionales");
 
         cont.querySelectorAll("img").forEach(x => x.classList.remove("activo"));
         im.classList.add("activo");
@@ -2083,6 +2051,7 @@ function cargarFondosDev(){
 
     cont.appendChild(im);
   });
+  restaurar();
 }
 
 // =========================
@@ -2180,7 +2149,7 @@ function devRecursosF2Administrados(categoria, base, nombreVacio) {
 
   return [
     { nombre: nombreVacio, url: null },
-    ...administrados
+    ...ordenarFondos(administrados, "devocionales", {url: item => item.url})
   ];
 }
 
@@ -2188,8 +2157,7 @@ function cargarAdornosF2(){
   const cont = $("dev2Adornos");
   if (!cont) return;
 
-  cont.replaceChildren();
-  const prepararMiniatura = prepararMiniaturas(cont);
+  const {prepararMiniatura, restaurar} = prepararGaleriaRecursos(cont, "Adornos");
 
   const items = devRecursosF2Administrados(
     "adornos",
@@ -2211,6 +2179,7 @@ function cargarAdornosF2(){
   items.forEach((item, indice)=>{
     const b = document.createElement("button");
     b.type = "button";
+    b.dataset.recurso = item.url || "";
     b.className = "dev-adorno-btn";
 
     if (item.url) {
@@ -2231,15 +2200,16 @@ function cargarAdornosF2(){
 
     b.onclick = ()=>{
       DEV.f2.adornoUrl = item.url;
-
-      cont.querySelectorAll("button").forEach(x=>x.classList.remove("activo"));
-      b.classList.add("activo");
+      registrarSeleccionGaleria(cont, b, item.url, "devocionales");
+      marcarRecursosGaleria(cont, [DEV.f2.adornoUrl]);
 
       devRenderFase(2);
     };
 
     cont.appendChild(b);
   });
+  marcarRecursosGaleria(cont, [DEV.f2.adornoUrl]);
+  restaurar();
 }
 
 const texturasF2 = [
@@ -2348,8 +2318,7 @@ function cargarTexturasF2(){
   const cont = $("dev2Texturas");
   if (!cont) return;
 
-  cont.replaceChildren();
-  const prepararMiniatura = prepararMiniaturas(cont);
+  const {prepararMiniatura, restaurar} = prepararGaleriaRecursos(cont, "Texturas");
 
   const items = devRecursosF2Administrados(
     "texturas",
@@ -2369,6 +2338,7 @@ function cargarTexturasF2(){
   items.forEach((item, indice)=>{
     const b = document.createElement("button");
     b.type = "button";
+    b.dataset.recurso = item.url || "";
     b.className = "dev-textura-btn";
     b.textContent = "";
 
@@ -2403,14 +2373,17 @@ function cargarTexturasF2(){
           : [item.url, ...actuales];
 
         devF2GuardarTexturas(nuevas);
+        if (nuevas.includes(item.url)) registrarSeleccionGaleria(cont, b, item.url, "devocionales");
       }
 
-      cargarTexturasF2();
+      marcarRecursosGaleria(cont, devF2TexturasSeleccionadas());
       devRenderFase(2);
     };
 
     cont.appendChild(b);
   });
+  marcarRecursosGaleria(cont, devF2TexturasSeleccionadas());
+  restaurar();
 }
 
 /* =========================================================

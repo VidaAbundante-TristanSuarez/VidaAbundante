@@ -1,5 +1,6 @@
 .va-vista-galeria[hidden],
-.va-horario-dialog [hidden] {
+.va-horario-dialog [hidden],
+.va-galeria-fila[hidden] {
   display: none !important;
 }
 
@@ -203,7 +204,7 @@ body.oscuro .va-horario-dialog {
   justify-content: flex-end;
 }
 
-.va-horario-preparacion footer {
+.va-edicion-imagen-dialog footer {
   position: sticky;
   bottom: -14px;
   z-index: 2;
@@ -213,11 +214,11 @@ body.oscuro .va-horario-dialog {
   background: #f6fbff;
 }
 
-.va-horario-preparacion {
+.va-edicion-imagen-dialog {
   scroll-padding-bottom: 68px;
 }
 
-body.oscuro .va-horario-preparacion footer {
+body.oscuro .va-edicion-imagen-dialog footer {
   background: #172332;
 }
 
@@ -232,8 +233,7 @@ body.oscuro .va-horario-preparacion footer {
   cursor: default;
 }
 
-.va-horario-valores,
-.va-horario-bloques {
+.va-horario-valores {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
@@ -282,14 +282,6 @@ body.oscuro .va-horario-preparacion footer {
   height: auto;
 }
 
-.va-horario-dialog:has(.va-horario-ubicar) canvas {
-  cursor: crosshair;
-}
-
-.va-horario-canvas-limpieza {
-  touch-action: none;
-}
-
 .va-horario-marca {
   position: absolute;
   pointer-events: none;
@@ -298,52 +290,6 @@ body.oscuro .va-horario-preparacion footer {
   border-radius: 2px;
   background: #77bbff30;
   box-shadow: 0 0 0 1px #173c5b;
-}
-
-.va-horario-limpieza {
-  display: grid;
-  gap: 6px;
-}
-
-.va-horario-limpieza select {
-  flex: 1 1 130px;
-  max-width: 200px;
-}
-
-.va-horario-opciones summary {
-  cursor: pointer;
-  font-size: 13px;
-}
-
-.va-horario-opciones > :not(summary) {
-  margin-top: 6px;
-}
-
-.va-horario-ubicar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px 12px;
-  align-items: center;
-}
-
-.va-horario-ubicar label {
-  display: flex;
-  align-items: center;
-}
-
-.va-horario-bloques fieldset {
-  min-width: 0;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px;
-  padding: 6px;
-  border: 1px solid #a8c1d8;
-  border-radius: 10px;
-}
-
-.va-horario-bloques legend {
-  padding: 0 4px;
-  font-weight: 700;
 }
 
 .va-horario-estado:empty {
@@ -386,8 +332,214 @@ body.oscuro .va-horario-preparacion footer {
   }
 }
 
-@media (max-width: 420px) {
-  .va-horario-bloques fieldset {
-    grid-template-columns: minmax(0, 1fr);
-  }
+.va-edicion-herramientas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+}
+
+.va-edicion-imagen-dialog button[aria-pressed="true"],
+.va-galeria-cuadricula button[aria-pressed="true"] {
+  background: var(--ui-azul-claro, #bcdcff);
+  color: #172a3c;
+  border-color: #5b8eb9;
+}
+
+.va-edicion-escena {
+  position: relative;
+  width: min(100%, calc(var(--va-edicion-relacion, 1) * min(48dvh, 480px)));
+  aspect-ratio: var(--va-edicion-relacion, 1);
+  margin-inline: auto;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #dbe8f2;
+}
+
+.va-edicion-escena > canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.va-edicion-escena:is([data-herramienta="tapar"], [data-herramienta^="color"]) {
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.va-edicion-escena:not([data-herramienta="texto"]) .va-edicion-caja {
+  pointer-events: none;
+}
+
+.va-edicion-caja {
+  position: absolute;
+  box-sizing: border-box;
+  min-height: 26px;
+  padding: 2px;
+  border: 1px solid transparent;
+}
+
+.va-edicion-caja.activa {
+  border-color: #2971a9;
+  box-shadow: 0 0 0 1px #ffffffaa;
+}
+
+.va-edicion-caja [role="textbox"] {
+  min-height: 1.16em;
+  padding: 1px 0;
+  outline: none;
+  font-family: inherit;
+  line-height: 1.16;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  cursor: text;
+}
+
+.va-edicion-caja.activa [role="textbox"]:empty::before {
+  content: attr(data-placeholder);
+  color: #172a3c;
+  background: #eef7ffb5;
+  font-size: min(1em, 14px);
+  font-style: normal;
+  font-weight: 400;
+}
+
+.va-edicion-caja button {
+  position: absolute;
+  right: 0;
+  z-index: 1;
+  display: none;
+  place-items: center;
+  width: 27px;
+  height: 27px;
+  min-height: 0;
+  padding: 0;
+  border-radius: 50%;
+  background: #ecf7ff;
+  color: #183d5c;
+  touch-action: none;
+}
+
+.va-edicion-escena[data-herramienta="texto"] .va-edicion-caja.activa button {
+  display: grid;
+}
+
+.va-edicion-caja [data-mover] {
+  top: -13px;
+  cursor: move;
+}
+
+.va-edicion-caja [data-ajustar] {
+  bottom: -10px;
+  cursor: nwse-resize;
+}
+
+.va-edicion-texto-controles {
+  display: grid;
+  min-width: 0;
+  gap: 7px;
+}
+
+.va-edicion-herramientas input[type="color"] {
+  width: 38px;
+  height: 36px;
+  padding: 3px;
+  cursor: pointer;
+}
+
+.va-edicion-color-origen {
+  box-sizing: border-box;
+  width: 28px;
+  height: 28px;
+  border: 1px solid #a8c1d8;
+  border-radius: 8px;
+}
+
+.va-edicion-fuentes {
+  display: flex;
+  gap: 6px;
+  min-width: 0;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  padding: 1px 0 4px;
+}
+
+.va-edicion-fuentes button {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  font-size: 15px;
+}
+
+.va-galeria-fila {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+}
+
+.va-galeria-fila > :first-child {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+  overflow-anchor: none;
+  scroll-behavior: auto;
+}
+
+.va-galeria-fila:has(> #personalizarFondos) {
+  width: min(464px, 100%);
+  margin-inline: auto;
+}
+
+.va-galeria-expandir {
+  display: inline-grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 1px solid #acc9df;
+  border-radius: 11px;
+  background: var(--ui-azul-claro, #d1eeff);
+  color: #193e58;
+  cursor: pointer;
+}
+
+.va-galeria-tres-renglones {
+  overflow: hidden;
+  padding: 10px;
+}
+
+.va-galeria-cuadricula {
+  display: grid;
+  grid-template-columns: repeat(var(--va-galeria-columnas, 4), minmax(0, 1fr));
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+  gap: 5px;
+  height: min(255px, max(24px, calc(var(--va-horario-vh, 100dvh) - 135px)));
+  overflow: hidden;
+}
+
+.va-galeria-cuadricula button {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 0;
+  padding: 3px;
+  overflow: hidden;
+}
+
+.va-galeria-cuadricula img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  object-fit: contain;
+  border-radius: 5px;
+}
+
+.va-galeria-tres-renglones footer {
+  justify-content: center;
+  margin-top: 8px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
 }
