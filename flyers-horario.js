@@ -448,6 +448,17 @@ export function abrirEdicionHorarioFlyer(config, guardar) {
 
 const limitar = (valor, minimo, maximo) => Math.max(minimo, Math.min(maximo, valor));
 
+const marcasTexto = [
+  ['nw', -1, -1, 'la esquina superior izquierda'],
+  ['n',   0, -1, 'el centro superior'],
+  ['ne',  1, -1, 'la esquina superior derecha'],
+  ['w',  -1,  0, 'el centro izquierdo'],
+  ['e',   1,  0, 'el centro derecho'],
+  ['sw', -1,  1, 'la esquina inferior izquierda'],
+  ['s',   0,  1, 'el centro inferior'],
+  ['se',  1,  1, 'la esquina inferior derecha']
+];
+
 export function abrirEditorImagenEdicion({titulo, rama, tipos, imagen}, guardar) {
   if (!window.__UID || !window.__ES_ADMIN) return;
   const dialogo = crearDialogoEditor('Editar imagen');
@@ -566,10 +577,10 @@ export function abrirEditorImagenEdicion({titulo, rama, tipos, imagen}, guardar)
     dibujarBaseHorario(mapa, 880, vista, lienzo);
   }
 
-  function aplicarCaja(caja) {
-    const {nodo, texto, x, y, ancho, tamano, color, fuente} = caja;
+  function aplicarCaja(caja, bordeInferior) {
+    if (!escena.clientHeight) return;
+    const {nodo, texto, x, ancho, tamano, color, fuente} = caja;
     nodo.style.left = x * 100 + '%';
-    nodo.style.top = y * 100 + '%';
     nodo.style.width = ancho * 100 + '%';
     texto.style.fontSize = Math.max(1, tamano * escena.clientWidth) + 'px';
     texto.style.fontFamily = fuente;
@@ -577,6 +588,10 @@ export function abrirEditorImagenEdicion({titulo, rama, tipos, imagen}, guardar)
     texto.style.fontWeight = caja.negrita ? '700' : '400';
     texto.style.fontStyle = caja.cursiva ? 'italic' : 'normal';
     texto.style.textDecoration = caja.subrayado ? 'underline' : 'none';
+
+    const alto = Math.min(1, nodo.offsetHeight / escena.clientHeight);
+    caja.y = limitar(bordeInferior == null ? caja.y : bordeInferior - alto, 0, 1 - alto);
+    nodo.style.top = caja.y * 100 + '%';
   }
 
   function mostrarMarca(rect) {
@@ -658,9 +673,11 @@ export function abrirEditorImagenEdicion({titulo, rama, tipos, imagen}, guardar)
     };
     const nodo = document.createElement('div');
     nodo.className = 'va-edicion-caja';
-    nodo.innerHTML = `<button type="button" data-mover aria-label="Mover cuadro" title="Mover cuadro"><i class="fa-solid fa-arrows-up-down-left-right" aria-hidden="true"></i></button>
-      <div role="textbox" aria-label="Texto en la imagen" aria-multiline="true" contenteditable="true" spellcheck="false" data-placeholder="Escribí acá"></div>
-      <button type="button" data-ajustar aria-label="Cambiar tamaño" title="Cambiar tamaño"><i class="fa-solid fa-up-right-and-down-left-from-center" aria-hidden="true"></i></button>`;
+    nodo.innerHTML = `<div role="textbox" aria-label="Texto en la imagen" aria-multiline="true" contenteditable="true" spellcheck="false" data-placeholder="Escribí acá"></div>
+      ${marcasTexto.map(([lado, horizontal, vertical, etiqueta]) => `
+        <button type="button" data-ajustar="${lado}" tabindex="-1" aria-label="Cambiar tamaño desde ${etiqueta}"
+          style="left:${(horizontal + 1) * 50}%;top:${(vertical + 1) * 50}%"></button>`).join('')}
+      <button type="button" data-mover aria-label="Mover cuadro" title="Mover cuadro"><i class="fa-solid fa-arrows-up-down-left-right" aria-hidden="true"></i></button>`;
     caja.nodo = nodo;
     caja.texto = nodo.querySelector('[role="textbox"]');
     caja.texto.onfocus = () => seleccionar(caja);
@@ -669,7 +686,10 @@ export function abrirEditorImagenEdicion({titulo, rama, tipos, imagen}, guardar)
       document.execCommand('insertText', false, e.clipboardData.getData('text/plain'));
     };
     caja.texto.ondrop = e => e.preventDefault();
-    caja.texto.oninput = actualizarGuardar;
+    caja.texto.oninput = () => {
+      aplicarCaja(caja);
+      actualizarGuardar();
+    };
     cajas.push(caja);
     escena.append(nodo);
     aplicarCaja(caja);
@@ -722,19 +742,46 @@ export function abrirEditorImagenEdicion({titulo, rama, tipos, imagen}, guardar)
     actualizarHerramienta();
   };
 
-  function punto(evento) {
+  function punto(evento, dentro = true) {
     const r = escena.getBoundingClientRect();
-    return {x: limitar((evento.clientX - r.left) / r.width, 0, 1),
-      y: limitar((evento.clientY - r.top) / r.height, 0, 1)};
+    const x = (evento.clientX - r.left) / r.width;
+    const y = (evento.clientY - r.top) / r.height;
+    return dentro ? {x: limitar(x, 0, 1), y: limitar(y, 0, 1)} : {x, y};
   }
   function rectangulo(a, b) {
     return {x: Math.min(a.x, b.x), y: Math.min(a.y, b.y),
       ancho: Math.abs(a.x - b.x), alto: Math.abs(a.y - b.y)};
   }
 
+  function ajustarCaja(caja, original, marca, dx, dy) {
+    const [, horizontal, vertical] = marca;
+    const anchoMaximo = horizontal < 0 ? original.x + original.ancho : 1 - original.x;
+    caja.ancho = original.ancho;
+    caja.tamano = original.tamano;
+
+    if (horizontal && vertical) {
+      const ancho = escena.clientWidth * original.ancho;
+      const alto = escena.clientHeight * original.alto;
+      // Proyectar el arrastre sobre la diagonal para mantener la proporción.
+      const avance = dx * horizontal * escena.clientWidth * ancho + dy * vertical * escena.clientHeight * alto;
+      const factor = limitar(1 + avance / (ancho ** 2 + alto ** 2),
+        Math.max(.08 / original.ancho, .016 / original.tamano),
+        Math.min(anchoMaximo / original.ancho, .34 / original.tamano));
+      caja.ancho *= factor;
+      caja.tamano *= factor;
+    } else if (horizontal) {
+      caja.ancho = limitar(original.ancho + dx * horizontal, .08, anchoMaximo);
+    } else {
+      caja.tamano = limitar(original.tamano * (1 + dy * vertical / original.alto), .016, .34);
+    }
+
+    caja.x = horizontal < 0 ? original.x + original.ancho - caja.ancho : original.x;
+    caja.y = original.y;
+    aplicarCaja(caja, vertical < 0 ? original.y + original.alto : undefined);
+  }
+
   escena.addEventListener('pointerdown', evento => {
     if (!mapa || guardando || gesto || evento.button !== 0) return;
-    const inicio = punto(evento);
     if (cambiandoColor()) {
       if (herramienta === 'reemplazo') return;
       evento.preventDefault();
@@ -763,44 +810,43 @@ export function abrirEditorImagenEdicion({titulo, rama, tipos, imagen}, guardar)
       return;
     }
 
-    let tipo = 'recuadro', caja;
+    let caja, marca, original;
     if (herramienta !== 'tapar') {
       const nodo = evento.target.closest('.va-edicion-caja');
       if (!nodo || evento.target.closest('[role="textbox"]')) return;
       caja = cajas.find(item => item.nodo === nodo);
       if (!caja) return;
-      tipo = evento.target.closest('[data-ajustar]') ? 'tamaño' : 'mover';
+      const lado = evento.target.closest('[data-ajustar]')?.dataset.ajustar;
+      marca = marcasTexto.find(([id]) => id === lado);
       seleccionar(caja);
+      original = {...caja, alto: nodo.offsetHeight / escena.clientHeight};
     }
     evento.preventDefault();
-    gesto = {id: evento.pointerId, inicio, tipo, caja, original: caja && {...caja}};
+    gesto = {id: evento.pointerId, inicio: punto(evento, !caja), caja, marca, original};
     escena.setPointerCapture(evento.pointerId);
   });
 
   escena.addEventListener('pointermove', evento => {
     if (!gesto || gesto.id !== evento.pointerId) return;
-    const {tipo, inicio, caja, original} = gesto;
-    const actual = punto(evento);
-    if (tipo === 'recuadro') {
+    const {inicio, caja, marca, original} = gesto;
+    const actual = punto(evento, !caja);
+    if (!caja) {
       mostrarMarca(rectangulo(inicio, actual));
       return;
     }
     const dx = actual.x - inicio.x, dy = actual.y - inicio.y;
-    if (tipo === 'mover') {
-      const alto = Math.min(1, caja.nodo.offsetHeight / escena.clientHeight);
-      caja.x = limitar(original.x + dx, 0, 1 - caja.ancho);
-      caja.y = limitar(original.y + dy, 0, 1 - alto);
-    } else {
-      const aumento = (dx + dy * escena.clientHeight / escena.clientWidth) / 2;
-      caja.ancho = limitar(original.ancho + aumento, .08, 1 - caja.x);
-      caja.tamano = limitar(original.tamano * caja.ancho / original.ancho, .016, .34);
+    if (marca) {
+      ajustarCaja(caja, original, marca, dx, dy);
+      return;
     }
+    caja.x = limitar(original.x + dx, 0, 1 - caja.ancho);
+    caja.y = original.y + dy;
     aplicarCaja(caja);
   });
 
   function terminarGesto(evento) {
     if (!gesto || gesto.id !== evento.pointerId) return;
-    if (gesto.tipo === 'recuadro') {
+    if (!gesto.caja) {
       const rect = rectangulo(gesto.inicio, punto(evento));
       seleccion = evento.type === 'pointerup' && rect.ancho * escena.clientWidth >= 4 && rect.alto * escena.clientHeight >= 4
         ? rect : null;
@@ -812,7 +858,7 @@ export function abrirEditorImagenEdicion({titulo, rama, tipos, imagen}, guardar)
   escena.addEventListener('pointerup', terminarGesto);
   escena.addEventListener('pointercancel', terminarGesto);
 
-  const ajustarTexto = () => cajas.forEach(aplicarCaja);
+  const ajustarTexto = () => cajas.forEach(caja => aplicarCaja(caja));
   const resize = typeof ResizeObserver === 'function' ? new ResizeObserver(ajustarTexto) : null;
   resize?.observe(escena);
   dialogo.addEventListener('close', () => {
