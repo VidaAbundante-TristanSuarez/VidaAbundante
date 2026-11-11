@@ -1,14 +1,14 @@
 import { crearMiniaturaImagen, subirArchivoR2, urlMiniaturaImagen } from "../carga-imagenes.js?v=20261109-medios-1";
 import {
   abrirEdicionHorarioFlyer,
-  abrirPreparacionHorarioFlyer,
+  abrirEditorImagenEdicion,
   activarMiniaturasHorario,
   configuracionHorarioFlyer,
   elegirImagenHorarioFlyer,
   puedeEditarDiaHora,
   urlConHorarioFlyer,
   versionesHorarioFlyer
-} from "../flyers-horario.js?v=20261110-flyers-2";
+} from "../flyers-horario.js?v=20261111-editores-1";
 import {
   ref,
   set,
@@ -36,6 +36,7 @@ let edicionesIniciado = false;
 let edicionesEscuchaActiva = false;
 let edicionesCache = [];
 let edicionEditId = null;
+let edicionPaginasAlAbrir = new Set();
 
 let edicionesStatsCache = {};
 let edicionesStatsEscuchaActiva = false;
@@ -2916,6 +2917,7 @@ onclick="edAgregarStickersWhatsApp('${edEscape(ed.id)}', this)"
 
         <div class="ed-sticker-pack-actions">
           ${renderBotonAgregarStickers(ed)}
+          ${edBotonesHorarioFlyer(ed, ed.id, true)}
 
           ${window.__ES_ADMIN ? `
             <button
@@ -3159,6 +3161,7 @@ window.editarEdicion = async (id) => {
   }
 
   edicionEditId = id;
+  edicionPaginasAlAbrir = new Set(Object.keys(ed.paginas || {}));
 
   const tituloModal = ed$("edModalTitulo");
   const modal = ed$("edModal");
@@ -3694,6 +3697,7 @@ const portadaFile = ed$("edPortadaFile")?.files?.[0] || null;
 
   if (btn?.disabled) return;
   const editandoId = edicionEditId;
+  const paginasAlAbrir = edicionPaginasAlAbrir;
   if (btn) {
     btn.disabled = true;
     btn.textContent = "Guardando...";
@@ -3869,19 +3873,6 @@ const mediaFile =
       };
     }
 
-const stickerPackId =
-  rama === "stickers"
-    ? (
-        existente?.stickerPackId ||
-        edStickerPackIdSeguro(`va_stickers_${edId}`)
-      )
-    : (existente?.stickerPackId || "");
-
-const stickerVersion =
-  rama === "stickers"
-    ? Number(existente?.stickerVersion || 0) + 1
-    : Number(existente?.stickerVersion || 0);
-
 const data = {
   titulo,
   refPublica,
@@ -3896,13 +3887,7 @@ const data = {
   ts: existente?.ts || Date.now(),
   actualizado: Date.now(),
 
-  ...(rama === "stickers" ? {
-    stickerPackId,
-    stickerPackName: titulo,
-    stickerPublisher: "Iglesia Cristiana de la Vida Abundante",
-    stickerTrayUrl: portadaUrl,
-    stickerVersion
-  } : {})
+  ...(rama === "stickers" ? edDatosStickerPack(edId, existente, titulo, portadaUrl) : {})
 };
 
     edSetEstado("Guardando datos...");
@@ -3910,7 +3895,15 @@ const data = {
     if (existente) {
       const resultado = await runTransaction(edicionRef, actual => {
         if (!actual) return;
-        return actual.horariosPorImagen ? { ...data, horariosPorImagen: actual.horariosPorImagen } : data;
+        const paginas = {...data.paginas};
+        for (const [id, pagina] of Object.entries(actual.paginas || {})) {
+          if (!id.startsWith("editada_") || paginasAlAbrir.has(id) || paginas[id]) continue;
+          paginas[id] = {...pagina, orden: Object.keys(paginas).length};
+        }
+        return {
+          ...data, paginas,
+          ...(actual.horariosPorImagen ? {horariosPorImagen: actual.horariosPorImagen} : {})
+        };
       }, { applyLocally: false });
       if (!resultado.committed) throw new Error("La edición ya no está disponible.");
     } else {
@@ -4048,17 +4041,30 @@ async function obtenerEdicion(id) {
 
 window.obtenerEdicion = obtenerEdicion;
 
-function edImagenesParaHorario(edicion) {
+function edDatosStickerPack(id, existente, titulo, portadaUrl) {
+  return {
+    stickerPackId: existente?.stickerPackId || edStickerPackIdSeguro(`va_stickers_${id}`),
+    stickerPackName: titulo,
+    stickerPublisher: "Iglesia Cristiana de la Vida Abundante",
+    stickerTrayUrl: portadaUrl || "",
+    stickerVersion: Number(existente?.stickerVersion || 0) + 1
+  };
+}
+
+function edImagenesEdicion(edicion, incluirVersiones = false) {
   const imagenes = new Map();
-  edPaginasArrayConPortada(edicion, false).forEach((pagina, i) => {
+  edPaginasArrayConPortada(edicion, incluirVersiones).forEach((pagina, i) => {
     if (edPaginaEsVideo(pagina)) return;
     const url = edMediaUrlPagina(pagina);
-    if (imagenes.has(url)) return;
-    imagenes.set(url, {
+    const clave = pagina.versionHorario ? pagina.id : url;
+    if (imagenes.has(clave)) return;
+    imagenes.set(clave, {
+      id: pagina.id,
       url,
       miniaturaUrl: pagina.miniaturaUrl,
       etiqueta: i === 0 && url === edicion.portadaUrl ? "Portada" : `Imagen ${i + 1}`,
-      config: configuracionHorarioFlyer(edicion, url)
+      version: pagina.versionHorario,
+      config: incluirVersiones ? null : configuracionHorarioFlyer(edicion, url)
     });
   });
   return [...imagenes.values()];
@@ -4068,101 +4074,95 @@ function edImagenConHorarioEditable({config}) {
   return config && (!config.plantilla.dia.inactivo || !config.plantilla.hora.inactivo);
 }
 
-function edBotonesHorarioFlyer(edicion, id, mostrarPreparacion = false) {
-  if (!edicion || edRamaEdicion(edicion) !== "flyers" || !puedeEditarDiaHora()) return "";
-  const imagenes = edImagenesParaHorario(edicion);
-  if (!imagenes.length) return "";
-  const preparada = imagenes.some(edImagenConHorarioEditable);
-  const puedePreparar = mostrarPreparacion && window.__ES_ADMIN;
-  if (!preparada && !puedePreparar) return "";
+function edBotonesHorarioFlyer(edicion, id, mostrarEditor = false) {
+  if (!edicion || !puedeEditarDiaHora()) return "";
+  const preparada = edRamaEdicion(edicion) === "flyers" && edImagenesEdicion(edicion).some(edImagenConHorarioEditable);
+  const puedeEditar = mostrarEditor && window.__ES_ADMIN && edImagenesEdicion(edicion, true).length > 0;
+  if (!preparada && !puedeEditar) return "";
   return `<div class="va-horario-acciones">
+    ${puedeEditar ? `<button type="button" class="va-horario-boton" data-edicion-id="${edEscape(id)}"
+      onclick="edAbrirEditorImagen(this.dataset.edicionId)" title="Editar imagen" aria-label="Editar imagen">
+      <i class="fa-regular fa-image" aria-hidden="true"></i><span>Editar imagen</span>
+    </button>` : ""}
     ${preparada ? `<button type="button" class="va-horario-boton" data-flyer-id="${edEscape(id)}"
       onclick="edAbrirHorarioFlyer(this.dataset.flyerId)" title="Editar día/hora" aria-label="Editar día/hora">
       <i class="fa-solid fa-clock" aria-hidden="true"></i><span>Editar día/hora</span>
-    </button>` : ""}
-    ${puedePreparar ? `<button type="button" class="va-horario-boton" data-flyer-id="${edEscape(id)}"
-      onclick="edAbrirHorarioFlyer(this.dataset.flyerId, true)" title="Preparar día/hora" aria-label="Preparar día/hora">
-      <i class="fa-solid fa-sliders" aria-hidden="true"></i>${preparada ? "" : "<span>Preparar día/hora</span>"}
     </button>` : ""}
   </div>`;
 }
 
 window.edBotonesHorarioFlyer = edBotonesHorarioFlyer;
 
-window.edAbrirHorarioFlyer = async (id, preparar = false) => {
-  if (!puedeEditarDiaHora() || (preparar && !window.__ES_ADMIN)) return;
+window.edAbrirHorarioFlyer = async id => {
+  if (!puedeEditarDiaHora()) return;
   const db = edDB();
   if (!db) return;
-  const edicionRef = ref(db, `ediciones/${id}`);
   try {
-    const snap = await get(edicionRef);
-    const actual = snap.val();
-    if (!actual || edRamaEdicion(actual) !== "flyers") return;
-    const edicion = { ...actual, id, rama: "flyers" };
-    const imagenes = edImagenesParaHorario(edicion);
-    const imagen = await elegirImagenHorarioFlyer(preparar ? imagenes : imagenes.filter(edImagenConHorarioEditable));
+    const snap = await get(ref(db, `ediciones/${id}`));
+    const edicion = snap.val();
+    if (!edicion || edRamaEdicion(edicion) !== "flyers") return;
+    const imagen = await elegirImagenHorarioFlyer(edImagenesEdicion(edicion).filter(edImagenConHorarioEditable));
     if (!imagen) return;
-    const {url, config} = imagen;
-    const clave = config?.clave || edKey("imagen");
-    if (!preparar) {
-      abrirEdicionHorarioFlyer(config, async horario => {
-        if (!puedeEditarDiaHora()) throw new Error("Tu usuario no tiene permiso para editar el horario.");
-        const version = push(ref(db, `ediciones/${id}/horariosPorImagen/${clave}/versiones`));
-        await set(version, horario);
-        window.mostrarToast?.("Nueva imagen guardada en esta ficha.");
-        edMostrarVersionGuardada(id, version.key);
-      });
-      return;
-    }
-
-    abrirPreparacionHorarioFlyer(url, config, async (plantilla, horario, archivo) => {
-      if (!window.__ES_ADMIN) throw new Error("Solo administradores pueden preparar una plantilla.");
-      const plantillaId = edKey("horario");
-      const urls = archivo
-        ? await subirImagenEdicionR2(archivo, `ediciones/${id}/horario/${clave}/${plantillaId}`, 760)
-        : { url: plantilla.baseUrl, miniaturaUrl: plantilla.baseMiniaturaUrl };
-      const nueva = {
-        ...plantilla,
-        id: plantillaId,
-        baseUrl: urls.url,
-        baseMiniaturaUrl: urls.miniaturaUrl || "",
-        diaInicial: horario.dia,
-        horaInicial: horario.hora
-      };
-      const primeraVersion = config ? null : push(ref(db, `ediciones/${id}/horariosPorImagen/${clave}/versiones`)).key;
-      const resultado = await runTransaction(edicionRef, vigente => {
-        if (!vigente || edRamaEdicion(vigente) !== "flyers" ||
-            !edPaginasArrayConPortada(vigente, false).some(p => !edPaginaEsVideo(p) && edMediaUrlPagina(p) === url)) return;
-        const anterior = configuracionHorarioFlyer(vigente, url);
-        if (anterior?.plantilla.id !== config?.plantilla.id) return;
-        const previas = { ...anterior?.plantillasAnteriores };
-        if (anterior && Object.values(anterior.versiones || {}).some(v => v.plantillaId === anterior.plantilla.id)) {
-          previas[anterior.plantilla.id] = anterior.plantilla;
-        }
-        return {
-          ...vigente,
-          rama: "flyers",
-          horariosPorImagen: {
-            ...vigente.horariosPorImagen,
-            [clave]: {
-              versiones: primeraVersion ? {[primeraVersion]: {...horario, plantillaId: nueva.id}} : anterior?.versiones || null,
-              plantilla: nueva,
-              plantillasAnteriores: previas
-            }
-          }
-        };
-      }, { applyLocally: false });
-      if (!resultado.committed) throw new Error("Cambió la edición. Volvé a abrirla para preparar el horario.");
-      if (primeraVersion) {
-        window.mostrarToast?.("Nueva imagen guardada en esta ficha.");
-        edMostrarVersionGuardada(id, primeraVersion);
-      } else {
-        window.mostrarToast?.("Plantilla de horario guardada.");
-      }
+    const {config} = imagen;
+    abrirEdicionHorarioFlyer(config, async horario => {
+      if (!puedeEditarDiaHora()) throw new Error("Tu usuario no tiene permiso para editar el horario.");
+      const version = push(ref(db, `ediciones/${id}/horariosPorImagen/${config.clave}/versiones`));
+      await set(version, horario);
+      window.mostrarToast?.("Nueva imagen guardada en esta ficha.");
+      edMostrarVersionGuardada(id, version.key);
     });
   } catch (error) {
     console.error(error);
     alert("No pude abrir el horario del flyer.");
+  }
+};
+
+window.edAbrirEditorImagen = async id => {
+  if (!window.__UID || !window.__ES_ADMIN) return;
+  const db = edDB();
+  if (!db) return;
+  const edicionRef = ref(db, `ediciones/${id}`);
+  try {
+    const actual = (await get(edicionRef)).val();
+    if (!actual) return;
+    const imagen = await elegirImagenHorarioFlyer(edImagenesEdicion(actual, true));
+    if (!imagen) return;
+    const tipos = ED_CATEGORIAS.filter(tipo => tipo.id !== "todo");
+    const tituloInicial = String(actual.titulo || "");
+    const ramaInicial = edRamaEdicion(actual);
+    abrirEditorImagenEdicion({titulo: tituloInicial, rama: ramaInicial, tipos, imagen}, async ({titulo, rama, archivo}) => {
+      if (!window.__ES_ADMIN) throw new Error("Solo los administradores pueden editar imágenes.");
+      if (!titulo || !tipos.some(tipo => tipo.id === rama)) throw new Error("Completá el título y el tipo de edición.");
+      const idPagina = archivo ? edKey("editada") : null;
+      const subida = archivo ? await subirImagenEdicionR2(archivo, `ediciones/${id}/imagenes/${idPagina}`, 760) : null;
+      const ahora = Date.now();
+      const resultado = await runTransaction(edicionRef, vigente => {
+        if (!vigente || (subida && !edPaginasArrayConPortada(vigente).some(p =>
+          p.id === imagen.id && edMediaUrlPagina(p) === imagen.url))) return;
+
+        const tipoFinal = rama === ramaInicial ? edRamaEdicion(vigente) : rama;
+        const tituloFinal = titulo === tituloInicial ? String(vigente.titulo || titulo) : titulo;
+        const cambios = {...vigente, titulo: tituloFinal, rama: tipoFinal, categoria: tipoFinal,
+          tipoEdicion: tipoFinal, actualizado: ahora};
+        if (subida) {
+          const orden = Math.max(-1, ...edPaginasArray(vigente).map(p => Number(p.orden) || 0)) + 1;
+          cambios.paginas = {...vigente.paginas, [idPagina]: {
+            orden, imagenUrl: subida.url, mediaUrl: subida.url, mediaType: "image/png",
+            miniaturaUrl: subida.miniaturaUrl || "", actualizado: ahora
+          }};
+        }
+        if (tipoFinal === "stickers") {
+          Object.assign(cambios, edDatosStickerPack(id, vigente, tituloFinal, edPortadaEdicion(vigente)));
+        }
+        return cambios;
+      }, {applyLocally: false});
+      if (!resultado.committed) throw new Error("Cambió la edición. Volvé a abrir la imagen.");
+      window.mostrarToast?.(subida ? "Nueva imagen guardada en esta ficha." : "Cambios guardados.");
+      if (idPagina) edMostrarVersionGuardada(id, idPagina);
+    });
+  } catch (error) {
+    console.error(error);
+    alert("No pude abrir la imagen.");
   }
 };
 
@@ -4823,7 +4823,7 @@ function edMiniPaginasHTML(id, contexto = "ediciones", edicion) {
           const version = p.versionHorario;
 
           return `
-            <div class="ed-mini-page"${version ? ` data-ed-version="${edEscape(version.id)}"` : ""}>
+            <div class="ed-mini-page" data-ed-version="${edEscape(version?.id || p.id)}">
               <img
                 ${version ? `data-horario-flyer="${edEscape(JSON.stringify(version))}"` : `
                   data-va-imagen
