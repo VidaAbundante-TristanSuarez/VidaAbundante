@@ -8,7 +8,7 @@ import {
   puedeEditarDiaHora,
   urlConHorarioFlyer,
   versionesHorarioFlyer
-} from "../flyers-horario.js?v=20261111-editores-1";
+} from "../flyers-horario.js?v=20261111-editores-2";
 import {
   ref,
   set,
