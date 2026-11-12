@@ -29,7 +29,7 @@ export const fuentesEditorImagen = [
   { nombre: "Comic Sans MS", css: "'Comic Sans MS', cursive" }
 ];
 
-const claveUso = () => `va_fondos_uso_v1_${window.__UID || 'visitante'}`;
+const claveUso = () => `va_fondos_generados_uso_v1_${window.__UID || 'visitante'}`;
 const claveFondo = url => {
   try { return new URL(url, location.href).href; } catch { return String(url); }
 };
@@ -40,28 +40,42 @@ function leerUso() {
 export function configurarUsoFondos(guardar) { guardarUsoRemoto = guardar; }
 export function combinarUsoFondos(remoto) {
   const uso = leerUso();
+  let cambio = false;
   for (const seccion of ['biblia', 'devocionales']) {
     uso[seccion] ||= {};
     for (const [url, fecha] of Object.entries(remoto?.[seccion] || {})) {
-      uso[seccion][url] = Math.max(Number(uso[seccion][url]) || 0, Number(fecha) || 0);
+      if (Number(fecha) > (Number(uso[seccion][url]) || 0)) {
+        uso[seccion][url] = Number(fecha);
+        cambio = true;
+      }
     }
   }
-  try { localStorage.setItem(claveUso(), JSON.stringify(uso)); } catch {}
+  if (cambio) {
+    try { localStorage.setItem(claveUso(), JSON.stringify(uso)); } catch {}
+  }
+  return cambio;
 }
-export function ordenarFondos(lista, seccion, {url = item => item, usoPrevio = () => 0} = {}) {
+export function ordenarFondos(lista, seccion, {usoPrevio = () => 0} = {}) {
   const uso = leerUso()[seccion] || {};
-  const fecha = item => Math.max(Number(uso[claveFondo(url(item))]) || 0, usoPrevio(url(item)));
-  return [...lista].sort((a, b) => fecha(a) - fecha(b));
+  return lista.map(url => ({url, fecha: Number(uso[claveFondo(url)]) || usoPrevio(url)}))
+    .sort((a, b) => a.fecha - b.fecha)
+    .map(item => item.url);
 }
-export function registrarUsoFondo(url, seccion) {
+export function registrarUsoFondoGenerado(url, seccion, categorias) {
+  if (!url) return false;
+  const key = claveFondo(url);
+  const esDeGaleria = Object.entries(categorias).some(([categoria, base]) =>
+    (window.vaFondosObtenerLista?.(categoria) ?? base).some(src => claveFondo(src) === key));
+  if (!esDeGaleria) return false;
+
   const uso = leerUso();
   uso[seccion] ||= {};
-  const key = claveFondo(url);
-  const fecha = Math.max(Date.now(), ...Object.values(uso[seccion]).map(x => (Number(x) || 0) + 1));
+  const fecha = Object.values(uso[seccion]).reduce(
+    (maxima, anterior) => Math.max(maxima, (Number(anterior) || 0) + 1), Date.now());
   uso[seccion][key] = fecha;
   try { localStorage.setItem(claveUso(), JSON.stringify(uso)); } catch {}
-  // Un registro por selección, sin volver a escribir la configuración completa.
   try { Promise.resolve(guardarUsoRemoto?.(seccion, key, fecha)).catch(() => {}); } catch {}
+  return true;
 }
 export async function cargarFondoBlob(url) {
   const key = claveFondo(url);
@@ -181,15 +195,6 @@ export function marcarRecursosGaleria(carril, urls) {
     boton.classList.toggle('activo', activo);
     boton.setAttribute('aria-pressed', String(activo));
   }
-}
-
-export function registrarSeleccionGaleria(carril, opcion, url, seccion) {
-  if (!url) return;
-  registrarUsoFondo(url, seccion);
-  if (opcion.parentElement !== carril || opcion === carril.lastElementChild) return;
-  const izquierda = carril.scrollLeft;
-  carril.append(opcion);
-  carril.scrollLeft = izquierda;
 }
 
 export function prepararGaleriaRecursos(carril, titulo, {selector = 'button[data-recurso]', conservar = false} = {}) {

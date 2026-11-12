@@ -2,7 +2,7 @@ import { subirArchivoR2, normalizarUrlImagen, urlMiniaturaImagen, vistaArchivada
 import { actualizarAdorno, activarAdorno, esperarAdorno } from "./adornos-editor.js?v=20261102-notas-compartir-7";
 import { elegirResolucionImagen, dimensionesExportacion, conProgresoExportacion } from "./exportacion-imagen.js?v=20261102-notas-compartir-7";
 import { actualizarCapaTexturas, esperarCapaTexturas, montarControlesTextura, margenesTexturas, cargarTextura, dibujarTexturas } from "./texturas-editor.js?v=20261110-carga-2";
-import { elegirFondoEnPreview, vistaFondoEnCarga, cancelarFondoEnCarga, esperarFondoEnCarga, montarOpcionesColorEditor, abrirOpcionesColorEditor, aplicarColorEditor, colorEnCanvas, cargarFondoBlob, ordenarFondos, registrarSeleccionGaleria, prepararGaleriaRecursos, marcarRecursosGaleria, fuentesEditorImagen, montarEditorTexto, aplicarCajaTexto, aplicarFormatoSeleccion, alternarFormatoSeleccion, restaurarControlesTexto, aplicarSubrayadoTexto, crearInstantaneaPreview, esperarFuentesPreview, recuperarCajaTexto } from "./imagen-editor.js?v=20261111-editores-1";
+import { elegirFondoEnPreview, vistaFondoEnCarga, cancelarFondoEnCarga, esperarFondoEnCarga, montarOpcionesColorEditor, abrirOpcionesColorEditor, aplicarColorEditor, colorEnCanvas, cargarFondoBlob, ordenarFondos, registrarUsoFondoGenerado, prepararGaleriaRecursos, marcarRecursosGaleria, fuentesEditorImagen, montarEditorTexto, aplicarCajaTexto, aplicarFormatoSeleccion, alternarFormatoSeleccion, restaurarControlesTexto, aplicarSubrayadoTexto, crearInstantaneaPreview, esperarFuentesPreview, recuperarCajaTexto } from "./imagen-editor.js?v=20261111-editores-1";
 import { dibujarCajaTexto } from "./imagen-editor.js?v=20261111-editores-1";
 
 // devocionales.js (NUEVO LIMPIO)
@@ -1318,6 +1318,7 @@ function abrirModal(id){
   // ✅ abrir SOLO con clase
   m.classList.add("abierto");
   m.setAttribute("aria-hidden","false");
+  if (id === "modalDevFase1") devFondosReordenarGaleria();
 
   // ✅ bloquear scroll del body
   document.body.classList.add("modal-open");
@@ -1657,242 +1658,37 @@ const fondosEtiquetas = {
 
 let devF1CategoriaActual = "paisajes";
 
-/* El historial de publicaciones complementa los fondos elegidos en el editor. */
-let devFondosPublicados = [];
-let devFondosUltimoUso = new Map();
-const devFondosHuellas = new Map();
-const devFondosRecuperados = new Map();
-const devFondosIntentados = new Set();
-let devFondosRecuperando = false;
-let devFondosRevision = 0;
-
-function devFondoClave(src){
-  if (!src || /^(blob:|data:)/i.test(src)) return "";
-  try {
-    const url = new URL(src, window.location.href);
-    url.hash = "";
-    return url.href;
-  } catch { return String(src); }
-}
-
-function devFondoIdPublicado(it){
-  return `${it.id || `${it.uidOwner || ""}_${it.tsKey || it.fecha || 0}`}|${it.url || ""}`;
-}
-
 function devFondosListaCategoria(cat){
-  return window.vaFondosObtenerLista
-    ? window.vaFondosObtenerLista(cat)
-    : (fondosCategorias[cat] || []);
-}
-
-function devFondosActualizarUso(items){
-  devFondosPublicados = Array.isArray(items) ? items : [];
-  devFondosUltimoUso = new Map();
-  for (const it of devFondosPublicados) {
-    const src = it.fondoFase1 || devFondosRecuperados.get(devFondoIdPublicado(it));
-    const clave = devFondoClave(src);
-    const fecha = Number(it.fecha || it.tsKey || 0);
-    if (clave && Number.isFinite(fecha) && fecha > 0) {
-      devFondosUltimoUso.set(clave, Math.max(fecha, devFondosUltimoUso.get(clave) || 0));
-    }
-  }
-  devFondosReordenarGaleria();
+  return window.vaFondosObtenerLista?.(cat) ?? (fondosCategorias[cat] || []);
 }
 
 function devOrdenarFondosPublicados(lista){
+  const publicados = new Map();
+  for (const item of window.__DEV_ITEMS_PUBLICADOS || []) {
+    if (!window.__UID || item.uidOwner !== window.__UID || !item.fondoFase1) continue;
+    const url = normalizarUrlImagen(item.fondoFase1);
+    const fecha = Number(item.fecha || item.tsKey);
+    if (url && fecha > (publicados.get(url) || 0)) publicados.set(url, fecha);
+  }
   return ordenarFondos(lista, "devocionales", {
-    usoPrevio: src => devFondosUltimoUso.get(devFondoClave(src)) || 0
+    usoPrevio: url => publicados.get(normalizarUrlImagen(url)) || 0
   });
 }
 
 function devFondosReordenarGaleria(){
   const cont = $("dev1Fondos");
-  if (!cont) return;
-  const scroll = cont.scrollLeft;
+  if (!cont?.clientWidth) return;
   const imagenes = Array.from(cont.querySelectorAll("img[data-dev-fondo]"));
-  // Partir del catálogo evita conservar el orden de una selección anterior.
   const posiciones = new Map(devOrdenarFondosPublicados(devFondosListaCategoria(devF1CategoriaActual))
-    .map((src, i) => [devFondoClave(src), i]));
-  imagenes.sort((a, b) => (posiciones.get(devFondoClave(a.dataset.devFondo)) ?? Infinity) -
-    (posiciones.get(devFondoClave(b.dataset.devFondo)) ?? Infinity));
-  imagenes.forEach(img => cont.appendChild(img));
+    .map((url, i) => [url, i]));
+  const ordenadas = [...imagenes].sort((a, b) =>
+    (posiciones.get(a.dataset.devFondo) ?? Infinity) - (posiciones.get(b.dataset.devFondo) ?? Infinity));
+  for (const img of imagenes) img.classList.toggle("activo", img.dataset.devFondo === DEV.f1.fondoSrc);
+  if (ordenadas.every((img, i) => img === imagenes[i])) return;
+  const scroll = cont.scrollLeft;
+  cont.append(...ordenadas);
   cont.scrollLeft = scroll;
 }
-
-// Los registros antiguos sólo tienen el PNG final. Comparamos el margen de
-// su mitad superior con los fondos; la caja de texto comienza al 6%.
-// Una coincidencia dudosa se deja sin asignar y nunca se escribe en Firebase.
-function devFondoHuella(img, publicado = false){
-  const w = img.naturalWidth, h = img.naturalHeight;
-  if (!w || !h || (publicado && Math.abs(h / w - 16 / 9) > 0.04)) return null;
-  const canvas = document.createElement("canvas");
-  canvas.width = canvas.height = 128;
-  const ctx = canvas.getContext("2d", {willReadFrequently:true});
-  ctx.fillStyle = "#ffffff";
-  ctx.fillRect(0, 0, 128, 128);
-  if (publicado) ctx.drawImage(img, 0, 0, w, w, 0, 0, 128, 128);
-  else devCanvasDibujarCover(ctx, img, 0, 0, 128, 128);
-  const pixeles = ctx.getImageData(0, 0, 128, 128).data;
-  const huella = [];
-  for (const borde of [3, 4, 123, 124]) {
-    for (let p = 16; p <= 112; p += 8) {
-      for (const [x, y] of [[p, borde], [borde, p]]) {
-        const i = (y * 128 + x) * 4;
-        huella.push(pixeles[i], pixeles[i + 1], pixeles[i + 2]);
-      }
-    }
-  }
-  return huella;
-}
-
-function devFondoCoincidencia(huella){
-  if (!huella?.length || Math.max(...huella) - Math.min(...huella) < 24) return "";
-  const coincidencias = [];
-  for (const [src, otra] of devFondosHuellas) {
-    if (!otra || otra.length !== huella.length) continue;
-    let total = 0, distintos = 0;
-    for (let i = 0; i < huella.length; i++) {
-      const diferencia = Math.abs(huella[i] - otra[i]);
-      total += diferencia;
-      if (diferencia > 12) distintos++;
-    }
-    coincidencias.push({src, error:total / huella.length, distintos});
-  }
-  coincidencias.sort((a, b) => a.error - b.error);
-  const [mejor, segunda] = coincidencias;
-  return mejor && mejor.error <= 2 && mejor.distintos <= huella.length * 0.02 &&
-    (!segunda || segunda.error > Math.max(5, mejor.error * 4)) ? mejor.src : "";
-}
-
-const devRaizFondosLocales = new URL("./img/fondos/", import.meta.url);
-let devHuellasLocales;
-
-async function devFondoHuellaLocal(src){
-  const url = new URL(src, location.href);
-  if (url.origin !== devRaizFondosLocales.origin || !url.pathname.startsWith(devRaizFondosLocales.pathname)) return null;
-
-  devHuellasLocales ||= fetch(new URL("./img/miniaturas/huellas-fondos.json?v=1", import.meta.url))
-    .then(respuesta => respuesta.ok ? respuesta.json() : {})
-    .catch(() => ({}));
-  const mapa = await devHuellasLocales;
-  const clave = decodeURIComponent(url.pathname.slice(devRaizFondosLocales.pathname.length));
-  const huella = mapa[clave];
-  return huella ? Array.from(atob(huella), letra => letra.charCodeAt(0)) : null;
-}
-
-async function devFondoCargarHuella(src, publicado = false){
-  const revision = devFondosRevision;
-  const cacheKey = `va-dev-fondo-huella-v1:${publicado ? "publicado" : "fondo"}:${src}`;
-  try {
-    const guardada = JSON.parse(localStorage.getItem(cacheKey) || "null");
-    if (Array.isArray(guardada) && guardada.length === 312 &&
-        guardada.every(n => Number.isInteger(n) && n >= 0 && n <= 255)) return guardada;
-  } catch {}
-  let imagen = src;
-  if (!publicado) {
-    const local = await devFondoHuellaLocal(src);
-    if (local) return local;
-    const original = normalizarUrlImagen(src);
-    const miniatura = urlMiniaturaImagen(original);
-    imagen = miniatura !== original ? miniatura : await vistaArchivadaImagen(original);
-    if (!imagen) return null;
-  }
-  const img = await new Promise((resolve, reject) => {
-    const im = new Image();
-    im.crossOrigin = "anonymous";
-    im.referrerPolicy = "no-referrer";
-    im.decoding = "async";
-    im.fetchPriority = "low";
-    const fin = (error) => {
-      clearTimeout(timer);
-      im.onload = im.onerror = null;
-      if (error) { im.src = ""; reject(error); }
-      else resolve(im);
-    };
-    const timer = setTimeout(() => fin(new Error("Fondo anterior no disponible")), 5000);
-    im.onload = () => fin();
-    im.onerror = () => fin(new Error("Fondo anterior no disponible"));
-    im.src = devUrlRecursoSeguro(imagen, "fondo_historial.png");
-  });
-  const huella = devFondoHuella(img, publicado);
-  img.src = ""; // No retener imágenes completas en memoria.
-  if (huella && (publicado || revision === devFondosRevision)) {
-    try { localStorage.setItem(cacheKey, JSON.stringify(huella)); } catch {}
-  }
-  return huella;
-}
-
-function devFondosInvalidarComparaciones(){
-  devFondosRevision++;
-  for (const cat of Object.keys(fondosCategorias)) {
-    for (const src of devFondosListaCategoria(cat)) {
-      try { localStorage.removeItem(`va-dev-fondo-huella-v1:fondo:${src}`); } catch {}
-    }
-  }
-  devFondosHuellas.clear();
-  devFondosRecuperados.clear();
-  devFondosIntentados.clear();
-  devFondosActualizarUso(devFondosPublicados);
-}
-
-function devFondosFase1Visible(){
-  return devPuedeCrear() && !!$("modalDevFase1")?.getClientRects().length;
-}
-
-function devFondosRecuperarAnteriores(){
-  if (devFondosRecuperando || !devFondosFase1Visible() ||
-      !devFondosPublicados.some(it => !it.fondoFase1 && it.url &&
-        !devFondosIntentados.has(devFondoIdPublicado(it)))) return;
-  devFondosRecuperando = true;
-  const revision = devFondosRevision;
-  (async () => {
-    // Dejar que la galería visible se cargue antes de revisar el historial.
-    const pausa = () => new Promise(resolve => setTimeout(resolve, 30));
-    await new Promise(resolve => {
-      if (window.requestIdleCallback) requestIdleCallback(resolve, {timeout: 1500});
-      else setTimeout(resolve, 400);
-    });
-    const candidatos = Array.from(new Set(Object.keys(fondosCategorias)
-      .flatMap(cat => devFondosListaCategoria(cat))));
-    for (const src of candidatos) {
-      if (!devFondosFase1Visible() || revision !== devFondosRevision) return;
-      if (devFondosHuellas.has(src) || devFondosIntentados.has(src)) continue;
-      devFondosIntentados.add(src);
-      await pausa();
-      try {
-        const huella = await devFondoCargarHuella(src);
-        if (revision !== devFondosRevision) return;
-        devFondosHuellas.set(src, huella);
-      } catch {}
-    }
-    // Evaluar sólo contra los fondos actuales, incluso si Ediciones los cambió.
-    for (const src of devFondosHuellas.keys()) {
-      if (!candidatos.includes(src)) devFondosHuellas.delete(src);
-    }
-    for (const it of devFondosPublicados) {
-      if (!devFondosFase1Visible() || revision !== devFondosRevision) return;
-      if (it.fondoFase1 || !it.url) continue;
-      const id = devFondoIdPublicado(it);
-      if (devFondosRecuperados.has(id) || devFondosIntentados.has(id)) continue;
-      devFondosIntentados.add(id);
-      await pausa();
-      try {
-        const src = devFondoCoincidencia(await devFondoCargarHuella(it.url, true));
-        if (revision !== devFondosRevision) return;
-        if (src) {
-          devFondosRecuperados.set(id, src);
-          devFondosActualizarUso(devFondosPublicados);
-        }
-      } catch {}
-    }
-  })().catch(e => console.warn("No pude recuperar el orden anterior de fondos:", e))
-    .finally(() => {
-      devFondosRecuperando = false;
-      if (revision !== devFondosRevision) devFondosRecuperarAnteriores();
-    });
-}
-
-
 
 /* =========================================================
    FONDOS COMPARTIDOS CON EDICIONES
@@ -1917,11 +1713,10 @@ Object.entries(fondosCategorias).forEach(([categoria, urls]) => {
 if (!window.__DEV_FONDOS_EVENTO_ACTIVO) {
   window.__DEV_FONDOS_EVENTO_ACTIVO = true;
 
+  window.addEventListener("va-fondos-uso-sincronizado", devFondosReordenarGaleria);
   window.addEventListener("va-fondos-actualizados", () => {
-    devFondosInvalidarComparaciones();
     if (document.getElementById("dev1Fondos")) {
       cargarFondosDev();
-      devFondosRecuperarAnteriores();
     }
   });
 }
@@ -2039,7 +1834,6 @@ function cargarFondosDev(){
         DEV.f1.fondoUrl = null;
         DEV.f1.fondoSrc = finalUrl;
         DEV.f1.fondoBlob = nuevoBlob;
-        registrarSeleccionGaleria(cont, im, finalUrl, "devocionales");
 
         cont.querySelectorAll("img").forEach(x => x.classList.remove("activo"));
         im.classList.add("activo");
@@ -2149,7 +1943,7 @@ function devRecursosF2Administrados(categoria, base, nombreVacio) {
 
   return [
     { nombre: nombreVacio, url: null },
-    ...ordenarFondos(administrados, "devocionales", {url: item => item.url})
+    ...administrados
   ];
 }
 
@@ -2200,7 +1994,6 @@ function cargarAdornosF2(){
 
     b.onclick = ()=>{
       DEV.f2.adornoUrl = item.url;
-      registrarSeleccionGaleria(cont, b, item.url, "devocionales");
       marcarRecursosGaleria(cont, [DEV.f2.adornoUrl]);
 
       devRenderFase(2);
@@ -2373,7 +2166,6 @@ function cargarTexturasF2(){
           : [item.url, ...actuales];
 
         devF2GuardarTexturas(nuevas);
-        if (nuevas.includes(item.url)) registrarSeleccionGaleria(cont, b, item.url, "devocionales");
       }
 
       marcarRecursosGaleria(cont, devF2TexturasSeleccionadas());
@@ -3978,7 +3770,6 @@ window.dev2ToggleColor3 = function(){
 };
 
 function devRenderFase(fase){
-  if (fase === 1) devFondosRecuperarAnteriores();
   restaurarControlesTexto($(`dev${fase}Preview`));
   if (fase === 1) {
     devEnsureBotonCuentagotasWrapperF1();
@@ -6244,11 +6035,15 @@ async function devAsegurarShareFinalListo(){
     devPreparandoPNGFinal = (async () => {
       for (let intento = 0; intento < 2; intento++) {
         const revision = devRevisionPNGFinal;
+        const fondo = DEV.finalizadaMode ? "" : DEV.f1.fondoSrc;
         const c = await renderFinalCanvasCaptureReal();
         if (!c) throw new Error("No se pudo preparar la imagen para compartir.");
         if (revision !== devRevisionPNGFinal) continue;
         const file = await devPrepararShareFinalDesdeCanvas(c);
-        if (file && revision === devRevisionPNGFinal) return;
+        if (file && revision === devRevisionPNGFinal) {
+          registrarUsoFondoGenerado(fondo, "devocionales", fondosCategorias);
+          return;
+        }
       }
       throw new Error("El diseño cambió mientras se preparaba la imagen. Volvé a intentarlo.");
     })();
@@ -7129,8 +6924,7 @@ devMoverAddDebajoGaleria();
 
     items.sort((a,b)=>(b.fecha||b.tsKey||0)-(a.fecha||a.tsKey||0));
     window.__DEV_ITEMS_PUBLICADOS = items;
-    devFondosActualizarUso(items);
-    devFondosRecuperarAnteriores();
+    devFondosReordenarGaleria();
     if (!items.length) {
       if (feed) feed.innerHTML = `<div style="opacity:.8; padding:10px;">
         No hay devocionales todavía.<br>

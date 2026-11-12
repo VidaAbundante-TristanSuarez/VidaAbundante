@@ -3,7 +3,7 @@ import { elegirResolucionImagen, dimensionesExportacion, conProgresoExportacion 
 import { referenciasDePublicacion, referenciasHTML, disenosDeImagen, agregarDisenoImagen, combinarDisenosImagen, carruselImagenHTML, disenoActivoDeCard } from "./publicaciones-imagen.js?v=20261109-medios-1";
 import { normalizarUrlImagen, obtenerBlobImagen, subirArchivoR2 } from './carga-imagenes.js?v=20261109-medios-1';
 import { actualizarCapaTexturas, esperarCapaTexturas, montarControlesTextura, margenesTexturas } from "./texturas-editor.js?v=20261110-carga-2";
-import { elegirFondoEnPreview, vistaFondoEnCarga, cancelarFondoEnCarga, esperarFondoEnCarga, montarOpcionesColorEditor, aplicarColorEditor, colorEnCanvas, ordenarFondos, registrarSeleccionGaleria, configurarUsoFondos, combinarUsoFondos, cargarFondoBlob, prepararMiniaturas, prepararGaleriaRecursos, marcarRecursosGaleria, fuentesEditorImagen, montarEditorTexto, aplicarFormatoSeleccion, alternarFormatoSeleccion, restaurarControlesTexto, aplicarSubrayadoTexto, desactivarEditorTexto, crearInstantaneaPreview, esperarFuentesPreview, dibujarCajaTexto, recuperarCajaTexto } from "./imagen-editor.js?v=20261111-editores-1";
+import { elegirFondoEnPreview, vistaFondoEnCarga, cancelarFondoEnCarga, esperarFondoEnCarga, montarOpcionesColorEditor, aplicarColorEditor, colorEnCanvas, ordenarFondos, registrarUsoFondoGenerado, configurarUsoFondos, combinarUsoFondos, cargarFondoBlob, prepararMiniaturas, prepararGaleriaRecursos, marcarRecursosGaleria, fuentesEditorImagen, montarEditorTexto, aplicarFormatoSeleccion, alternarFormatoSeleccion, restaurarControlesTexto, aplicarSubrayadoTexto, desactivarEditorTexto, crearInstantaneaPreview, esperarFuentesPreview, dibujarCajaTexto, recuperarCajaTexto } from "./imagen-editor.js?v=20261111-editores-1";
 
 // ================= IMPORTS FIREBASE =================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -2940,6 +2940,7 @@ onValue(ref(db, "panelImagenesPersonal/" + uid), s => {
   const data = s.val() || {};
   panelImagenesGuardadas = data;
   window.vaActualizarGaleriaCreada?.();
+  if (bibliaModalImagenVisible()) cargarFondos();
 
   // ✅ En celulares no renderizamos Mi Panel si no está visible.
   // Esto evita cargar muchas imágenes al iniciar Biblia/Compartidos.
@@ -3469,16 +3470,17 @@ if (btn) {
   }
 }
 
-function aplicarFiltrosBiblia() {
-  const versiculo = Number(document.getElementById("versiculoBiblia")?.value || 0);
-  const libro = libroSel?.value || "";
-  const capitulo = Number(capSel?.value || 1);
-
+function aplicarFiltrosBiblia({
+  libro = libroSel?.value || "",
+  capitulo = Number(capSel?.value || 1),
+  versiculo = Number(document.getElementById("versiculoBiblia")?.value || 0)
+} = {}) {
   if (!libro) {
     cerrarFiltrosBiblia(true);
     return;
   }
 
+  libroSel.value = libro;
   reconstruirCapitulosParaLibro(libro, capitulo);
   vaRefrescarFiltroVersiculo(versiculo);
   mostrarTexto({ irArriba: !versiculo, guardar: true });
@@ -5221,6 +5223,22 @@ function bibliaModalImagenVisible() {
 }
 
 // ================= ⭐ CARGAR FONDOS (CORS + URL FINAL) =======================
+function bibliaFondosDeImagenesGuardadas() {
+  const usos = new Map();
+  if (!uid) return usos;
+  for (const item of Object.values(panelImagenesGuardadas)) {
+    if (item?.origen !== "biblia" || (item.uid && item.uid !== uid) || panelImagenVieneDeCompartidos(item)) continue;
+    for (const diseno of disenosDeImagen(item)) {
+      const estado = diseno.disenoImagen;
+      if (estado?.fondoDisenoBiblia?.baseTipo !== "imagen") continue;
+      const url = normalizarUrlImagen(estado.fondoFinal);
+      const fecha = Number(diseno.fecha || item.fecha);
+      if (url && fecha > (usos.get(url) || 0)) usos.set(url, fecha);
+    }
+  }
+  return usos;
+}
+
 function cargarFondos() {
   const cont = document.getElementById("personalizarFondos");
   if (!cont) return;
@@ -5229,7 +5247,10 @@ function cargarFondos() {
   const catalogo = window.vaFondosObtenerItems?.(fondoCategoriaActual) ||
     (fondosCategorias[fondoCategoriaActual] || []).map(url => ({url}));
   const miniaturas = new Map(catalogo.map(item => [item.url, item.miniaturaUrl || ""]));
-  const fondos = ordenarFondos([...miniaturas.keys()], "biblia");
+  const usosGuardados = bibliaFondosDeImagenesGuardadas();
+  const fondos = ordenarFondos([...miniaturas.keys()], "biblia", {
+    usoPrevio: url => usosGuardados.get(normalizarUrlImagen(url)) || 0
+  });
   const clave = JSON.stringify([fondoCategoriaActual, [...miniaturas], fondos]);
   if (cont.__vaFondosClave === clave && cont.querySelector('#btnBibliaPaletaFondo')) {
     cont.querySelectorAll('img.biblia-fondo-img').forEach(img => img.classList.toggle('activo', img.dataset.fondoUrl === fondoFinal));
@@ -5401,7 +5422,6 @@ menuBtn.onclick = (e) => {
         fondoDisenoBiblia.baseTipo = "imagen";
         fondoFinal = finalUrl;
         fondoFinalBlobUrl = nuevoBlob;
-        registrarSeleccionGaleria(cont, img, finalUrl, "biblia");
 
         cont.querySelectorAll("img.biblia-fondo-img").forEach(x => x.classList.remove("activo"));
         img.classList.add("activo");
@@ -5803,7 +5823,7 @@ function bibliaRecursosAdministrados(categoria, base, nombreVacio) {
 
   return [
     { nombre: nombreVacio, url: null },
-    ...ordenarFondos(administrados, "biblia", {url: item => item.url})
+    ...administrados
   ];
 }
 
@@ -5862,7 +5882,6 @@ function bibliaRenderTexturasDiseno() {
           : [item.url, ...actuales];
 
         bibliaGuardarTexturasSeleccionadas(nuevas);
-        if (nuevas.includes(item.url)) registrarSeleccionGaleria(cont, btn, item.url, "biblia");
       }
 
       marcarRecursosGaleria(cont, bibliaTexturasSeleccionadas());
@@ -5917,7 +5936,6 @@ function bibliaRenderAdornosDiseno() {
 
     btn.onclick = () => {
       fondoDisenoBiblia.adornoUrl = item.url;
-      registrarSeleccionGaleria(cont, btn, item.url, "biblia");
       marcarRecursosGaleria(cont, [fondoDisenoBiblia.adornoUrl]);
       actualizarPreview();
     };
@@ -7399,6 +7417,16 @@ function bibliaPrepararResaltadoExplicitoParaCaptura() {
 }
 
 // ================= ⭐ CANVAS GENERA IMAGEN FINAL (FIX REAL) ============================
+const fondoDelCanvasBiblia = new WeakMap();
+
+function bibliaConfirmarFondoDelPNG(canvas) {
+  const url = fondoDelCanvasBiblia.get(canvas);
+  fondoDelCanvasBiblia.delete(canvas);
+  if (registrarUsoFondoGenerado(url, "biblia", fondosCategorias) && bibliaModalImagenVisible()) {
+    cargarFondos();
+  }
+}
+
 function bibliaFormatoExportacion(){
   if(formatoImagenActual!=='story')return 'cuadrado';
   const rect=document.getElementById('previewImagen')?.getBoundingClientRect();
@@ -7420,6 +7448,9 @@ async function generarImagenFinal(opts = {}) {
     if (rect.width < 10 || rect.height < 10) return false;
     instantanea = crearInstantaneaPreview(preview);
     if (!instantanea) return false;
+    const esBiblia = !modoImagenLibre && origenModalImagen === "biblia";
+    const fondoCapturado = esBiblia && fondoDisenoBiblia.baseTipo === "imagen" && fondoFinalBlobUrl
+      ? fondoFinal : null;
     const medida=dimensionesExportacion(bibliaFormatoExportacion(),ancho);
     const textura=instantanea.stage.querySelector('#bibliaFondoTexturaLayer') || instantanea.get(document.getElementById('bibliaFondoTexturaLayer'));
     if(textura){
@@ -7431,7 +7462,6 @@ async function generarImagenFinal(opts = {}) {
         maxResourceSize:medida.width>1080?4096:2048,cacheRecursos:medida.width===1080
       });
     }
-    const esBiblia = !modoImagenLibre && origenModalImagen === "biblia";
     const front = instantanea.get(document.getElementById("previewTexto"));
     const back = instantanea.get(document.getElementById("previewTextoBack"));
     if (esBiblia) {
@@ -7460,6 +7490,7 @@ async function generarImagenFinal(opts = {}) {
           outlineShadow:editor?.outlineShadow});
       } finally { ctx.restore(); }
     }
+    fondoDelCanvasBiblia.set(canvasFinal, fondoCapturado);
   } catch (err) {
     console.error("No pude generar la imagen:", err);
     alert("No se pudo generar PNG.\n\nDetalle: " + (err?.message || err));
@@ -7484,6 +7515,7 @@ async function obtenerPNGFinalBiblia() {
       cache.blobKey = key;
       cache.blobPromise = new Promise(resolve => canvas.toBlob(resolve, "image/png")).then(blob => {
         if (revision !== cache.revision || key !== cache.key || key !== getRenderKey()) return null;
+        if (blob) bibliaConfirmarFondoDelPNG(canvas);
         cache.blob = blob;
         return blob;
       });
@@ -7887,6 +7919,7 @@ async function descargarImagenFinal() {
         if(!await generarImagenFinal({subir:false,ancho,canvasDestino:temporal}))return;
         blob=await new Promise(resolve=>temporal.toBlob(resolve,'image/png'));
         if(key!==getRenderKey())throw new Error('El diseño cambió. Volvé a descargar la imagen.');
+        if (blob) bibliaConfirmarFondoDelPNG(temporal);
         nombreArchivo=nombreArchivo.replace(/\.png$/i,'_alta.png');
       }else{
         blob=await obtenerPNGFinalBiblia();
@@ -18061,6 +18094,28 @@ function vaPosicionarFiltrosBiblia() {
   panel.style.top = `${Math.max(8, Math.min(abajo + 8, innerHeight - panel.offsetHeight - 8))}px`;
 }
 
+function normalizarLibroDeCita(nombre) {
+  return normalizarTextoFiltro(nombre).replace(/\s+/g, ' ')
+    .replace(/^([1-3])[.°ºª]?\s*(?:de\s+)?(?=[a-z])/, '$1 ')
+    .replace(/^(?:salmo|sal\.?)$/, 'salmos')
+    .replace(/^cantar de los cantares$/, 'cantares');
+}
+
+function buscarCitaBiblia(entrada, libros) {
+  const partes = normalizarTextoFiltro(entrada).replace(/\s+/g, ' ')
+    .match(/^(.+?)\s+(\d+)(?:(?:\s*:\s*|\s+)(\d+)(?:\s*[-‐‑–—]\s*\d+)?)?$/);
+  if (!partes) return null;
+  const [, nombre, cap, vers] = partes;
+  const libro = Array.from(libros).find(o => !o.disabled &&
+    normalizarLibroDeCita(o.textContent) === normalizarLibroDeCita(nombre))?.value;
+  const capitulo = Number(cap);
+  const versiculo = Number(vers || 0);
+  const existe = !!libro && capitulo > 0 && (vers === undefined || versiculo > 0) &&
+    bibliaData.some(v => v.Libro === libro && Number(v.Capitulo) === capitulo &&
+      (!versiculo || Number(v.Versiculo) === versiculo));
+  return {libro, capitulo, versiculo, existe};
+}
+
 function vaPrepararSelectoresBiblia() {
   document.getElementById('buscarLibroBiblia')?.remove();
   for (const [id, nombre] of [['libro', 'Libro'], ['capitulo', 'Capítulo'], ['versiculoBiblia', 'Versículo']]) {
@@ -18084,7 +18139,7 @@ function vaPrepararSelectoresBiblia() {
     panel.hidden = true;
     const input = document.createElement('input');
     input.type = 'search';
-    input.placeholder = `Buscar ${nombre.toLowerCase()}…`;
+    input.placeholder = id === 'libro' ? 'Buscar libro o cita…' : `Buscar ${nombre.toLowerCase()}…`;
     input.setAttribute('aria-label', input.placeholder);
     input.setAttribute('role', 'combobox');
     input.setAttribute('aria-expanded', 'false');
@@ -18130,6 +18185,10 @@ function vaPrepararSelectoresBiblia() {
     };
     const elegir = opcion => {
       if (!opcion) return;
+      if (opcion.libro) {
+        aplicarFiltrosBiblia(opcion);
+        return;
+      }
       select.value = opcion.value;
       select.dispatchEvent(new Event('change', {bubbles: true}));
       actualizar();
@@ -18138,9 +18197,17 @@ function vaPrepararSelectoresBiblia() {
     };
     const filtrar = () => {
       const q = normalizarTextoFiltro(input.value);
-      opciones = Array.from(select.options).filter(o => !o.disabled &&
-        (!q || normalizarTextoFiltro(o.textContent).includes(q)));
-      if (q) opciones.sort((a, b) => Number(normalizarTextoFiltro(b.textContent) === q) - Number(normalizarTextoFiltro(a.textContent) === q));
+      const cita = id === 'libro' ? buscarCitaBiblia(input.value, select.options) : null;
+      if (cita) {
+        opciones = cita.existe ? [cita] : [];
+      } else {
+        const alias = id === 'libro' ? normalizarLibroDeCita(q) : '';
+        const coincide = o => normalizarTextoFiltro(o.textContent) === q ||
+          (!!alias && normalizarLibroDeCita(o.textContent) === alias);
+        opciones = Array.from(select.options).filter(o => !o.disabled &&
+          (!q || normalizarTextoFiltro(o.textContent).includes(q) || coincide(o)));
+        if (q) opciones.sort((a, b) => Number(coincide(b)) - Number(coincide(a)));
+      }
       lista.replaceChildren();
       for (const [index, opcion] of opciones.entries()) {
         const item = document.createElement('button');
@@ -18149,13 +18216,15 @@ function vaPrepararSelectoresBiblia() {
         item.id = `${lista.id}-${index}`;
         item.setAttribute('role', 'option');
         item.setAttribute('aria-selected', String(opcion.value === select.value));
-        item.textContent = opcion.textContent.trim() || 'Sin versículo';
+        item.textContent = cita
+          ? `Ir a ${cita.libro} ${cita.capitulo}${cita.versiculo ? ':' + cita.versiculo : ''}`
+          : opcion.textContent.trim() || 'Sin versículo';
         item.onclick = () => elegir(opcion);
         lista.appendChild(item);
       }
       if (!opciones.length) {
         const vacio = document.createElement('p');
-        vacio.textContent = 'Sin resultados';
+        vacio.textContent = cita ? 'No encontré esa cita.' : 'Sin resultados';
         vacio.setAttribute('role', 'status');
         lista.appendChild(vacio);
       }
@@ -18180,6 +18249,16 @@ function vaPrepararSelectoresBiblia() {
       input.focus({preventScroll: true});
     };
     input.oninput = filtrar;
+    if (id === 'libro') {
+      input.addEventListener('paste', e => {
+        const pegado = e.clipboardData?.getData('text/plain');
+        if (!pegado) return;
+        const cita = buscarCitaBiblia(pegado, select.options);
+        if (!cita?.existe || !cita.versiculo) return;
+        e.preventDefault();
+        aplicarFiltrosBiblia(cita);
+      });
+    }
     input.onkeydown = e => {
       if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
         e.preventDefault();
@@ -18463,20 +18542,31 @@ function vaAsegurarPanelItems(){
 function vaRenderItemsEnPanel(){vaAsegurarPanelItems();const panel=document.getElementById('panel-items');if(panel && panel.offsetParent!==null)vaRenderListaItems(document.getElementById('vaPanelItemsLista'),panel?.querySelector('input')?.value||'');}
 
 // Sincronizar el historial por usuario y sección; la copia local sigue funcionando sin red.
-configurarUsoFondos(async(seccion,url,usedAt)=>{
-  if(!uid)return;
-  const key=btoa(unescape(encodeURIComponent(url))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
-  await set(ref(db,`usuariosConfig/${uid}/fondosUso/${seccion}/${key}`),{url,usedAt});
+configurarUsoFondos(async (seccion, url, usedAt) => {
+  if (!uid) return;
+  const codificada = btoa(unescape(encodeURIComponent(url))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/,'');
+  const registro = ref(db, `usuariosConfig/${uid}/fondosUso/${seccion}/generado-${codificada}`);
+  await runTransaction(registro, actual => Number(actual?.usedAt) >= usedAt ? undefined : {url, usedAt});
 });
-let vaUsoFondosUnsubscribe=null;
-onAuthStateChanged(auth,user=>{
-  vaUsoFondosUnsubscribe?.();vaUsoFondosUnsubscribe=null;
-  if(!user)return;
-  vaUsoFondosUnsubscribe=onValue(ref(db,`usuariosConfig/${user.uid}/fondosUso`),snap=>{
-    const remote=snap.val()||{},uso={biblia:{},devocionales:{}};
-    for(const seccion of Object.keys(uso))for(const item of Object.values(remote[seccion]||{}))if(item?.url)uso[seccion][item.url]=item.usedAt;
-    combinarUsoFondos(uso);
-  },()=>{});
+let vaUsoFondosUnsubscribe = null;
+onAuthStateChanged(auth, user => {
+  vaUsoFondosUnsubscribe?.();
+  vaUsoFondosUnsubscribe = null;
+  if (!user) return;
+  vaUsoFondosUnsubscribe = onValue(ref(db, `usuariosConfig/${user.uid}/fondosUso`), snap => {
+    if (uid !== user.uid) return;
+    const remoto = snap.val() || {};
+    const uso = {biblia: {}, devocionales: {}};
+    for (const seccion of Object.keys(uso)) {
+      for (const [clave, item] of Object.entries(remoto[seccion] || {})) {
+        if (clave.startsWith('generado-') && item?.url) uso[seccion][item.url] = item.usedAt;
+      }
+    }
+    if (combinarUsoFondos(uso)) {
+      if (bibliaModalImagenVisible()) cargarFondos();
+      window.dispatchEvent(new Event('va-fondos-uso-sincronizado'));
+    }
+  }, () => {});
 });
 vaEstiloLecturaExtras();vaAsegurarFiltroVersiculo();vaPrepararSelectoresBiblia();vaAsegurarPanelItems();
 
