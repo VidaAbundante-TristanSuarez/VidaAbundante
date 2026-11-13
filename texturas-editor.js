@@ -1,4 +1,4 @@
-import { urlMiniaturaImagen, vistaArchivadaImagen } from "./carga-imagenes.js?v=20261109-medios-1";
+import { cargarImagenDecodificada, indicarCargaPreview } from "./imagen-editor.js?v=20261111-editores-1";
 
 // Mismo dibujo en Biblia, Devocionales, preview y PNG. Sin servicios externos.
 const recursos = new Map();
@@ -6,6 +6,73 @@ const pendientes = new Map();
 const capas = new WeakMap();
 const limitar = (n, min, max) => Math.max(min, Math.min(max, n));
 const modos = new Set(['auto', 'marco', 'completa', 'repetir', 'cubrir']);
+const opacidadInicial = .22;
+
+function normalizarOpacidad(valor) {
+  const n = Number(valor ?? opacidadInicial);
+  return Number.isFinite(n) ? limitar(n, 0, 4) : opacidadInicial;
+}
+
+export function ajustarSeleccionTexturas(estado, urls, enfocada = estado.texturaActiva) {
+  estado.texturasUrls = urls;
+  estado.texturaUrl = urls[0] || null;
+  estado.texturaActiva = urls.includes(enfocada) ? enfocada : estado.texturaUrl;
+}
+
+export function enfocarTextura(estado, url) {
+  const urls = estado.texturasUrls || [];
+  if (urls.includes(url)) {
+    estado.texturaActiva = url;
+    return;
+  }
+  ajustarSeleccionTexturas(estado, [url, ...urls], url);
+  ajustarOpacidadTextura(estado, opacidadTexturaActiva(estado));
+}
+
+export function prepararTexturasDiseno(estado, urlSegura, intensidadAnterior = opacidadInicial) {
+  const urls = estado.texturasUrls || [];
+  const individuales = Array.isArray(estado.texturasOpacidades) ? estado.texturasOpacidades : null;
+  const valores = new Map(individuales?.filter(item => item?.url).map(item => [item.url, item.opacidad]));
+  return {
+    urls: urls.map(urlSegura),
+    opacidades: individuales ? urls.map(url => normalizarOpacidad(valores.get(url) ?? intensidadAnterior)) : undefined,
+    intensidad: normalizarOpacidad(intensidadAnterior),
+    ajuste: estado.texturaAjuste || 'auto',
+    escala: estado.texturaEscala || 100
+  };
+}
+
+export function ajustarOpacidadTextura(estado, opacidad) {
+  if (!estado.texturaActiva) return;
+  const anterior = Array.isArray(estado.texturasOpacidades) ? estado.texturasOpacidades : [];
+  estado.texturasOpacidades = [
+    ...anterior.filter(item => item?.url && item.url !== estado.texturaActiva),
+    {url: estado.texturaActiva, opacidad: normalizarOpacidad(opacidad)}
+  ];
+}
+
+export function opacidadTexturaActiva(estado, intensidadAnterior = opacidadInicial) {
+  const anterior = Array.isArray(estado.texturasOpacidades) ? estado.texturasOpacidades : [];
+  return normalizarOpacidad(anterior.find(item => item?.url === estado.texturaActiva)?.opacidad ?? intensidadAnterior);
+}
+
+export function instalarOpcionTextura(boton, url, nombre, seleccionar, quitar) {
+  boton.classList.add('va-textura-opcion');
+  boton.title = url ? nombre + ' · tocar para editar su opacidad' : nombre;
+  boton.onclick = seleccionar;
+  if (!url) return boton;
+  const opcion = document.createElement('span');
+  opcion.className = 'va-textura-item';
+  const remover = document.createElement('button');
+  remover.type = 'button';
+  remover.className = 'va-textura-quitar';
+  remover.setAttribute('aria-label', 'Quitar ' + nombre);
+  remover.title = 'Quitar textura';
+  remover.textContent = '×';
+  remover.onclick = quitar;
+  opcion.append(boton, remover);
+  return opcion;
+}
 
 function lienzo(w, h) {
   const c = document.createElement('canvas');
@@ -55,25 +122,19 @@ export async function cargarTextura(url, opciones = {}) {
     return recurso;
   }
   if (pendientes.has(key)) return pendientes.get(key);
-  const trabajo=new Promise((resolve,reject)=>{
-    const img=new Image(); img.crossOrigin='anonymous'; img.decoding='async';
-    const timer=setTimeout(()=>fin(new Error('No pude cargar una textura. Volvé a intentarlo.')),12000);
-    function fin(error) {
-      clearTimeout(timer); img.onload=img.onerror=null;
-      if (error) { reject(error); return; }
-      try {
-        const factor=Math.min(1,maxSize/Math.max(img.naturalWidth,img.naturalHeight));
-        const source=lienzo(img.naturalWidth*factor,img.naturalHeight*factor);
-        source.getContext('2d').drawImage(img,0,0,source.width,source.height);
-        const recurso={source,...analizarImagen(source),realzada:null,realce:0};
-        if(conservar)recursos.set(key,recurso);
-        // La caché no retiene todas las texturas grandes de la galería.
-        while (recursos.size>4) recursos.delete(recursos.keys().next().value);
-        resolve(recurso);
-      } catch { reject(new Error('No pude preparar una textura. Comprobá que la imagen permita su uso.')); }
-    }
-    img.onload=()=>fin(); img.onerror=()=>fin(new Error('No pude cargar una textura. Volvé a intentarlo.'));
-    img.src=src;
+  const trabajo=cargarImagenDecodificada(src,{
+    cors:true, mensaje:'No pude cargar una textura. Volvé a intentarlo.'
+  }).then(img=>{
+    try {
+      const factor=Math.min(1,maxSize/Math.max(img.naturalWidth,img.naturalHeight));
+      const source=lienzo(img.naturalWidth*factor,img.naturalHeight*factor);
+      source.getContext('2d').drawImage(img,0,0,source.width,source.height);
+      const recurso={source,...analizarImagen(source),realzada:null,realce:0};
+      if(conservar)recursos.set(key,recurso);
+      // La caché no retiene todas las texturas grandes de la galería.
+      while (recursos.size>4) recursos.delete(recursos.keys().next().value);
+      return recurso;
+    } catch { throw new Error('No pude preparar una textura. Comprobá que la imagen permita su uso.'); }
   }).finally(()=>pendientes.delete(key));
   pendientes.set(key,trabajo);
   return trabajo;
@@ -140,23 +201,44 @@ function dibujarUna(ctx,recurso,w,h,ajuste,escala,intensidad) {
 }
 
 export function dibujarTexturas(ctx,imagenes,w,h,opciones={}) {
-  const intensidad=limitar(Number(opciones.intensidad ?? .22)||0,0,4);
-  if (!imagenes.length || !intensidad) return;
+  if (!imagenes.length) return;
   const ajuste=modos.has(opciones.ajuste) ? opciones.ajuste : 'auto';
   const escala=limitar(Number(opciones.escala)||100,25,250)/100;
-  const grupo=lienzo(w,h),gctx=grupo.getContext('2d');
+  const capa=lienzo(w,h), dibujo=capa.getContext('2d');
   // Igual que CSS: la primera textura elegida es la capa superior.
-  [...imagenes].reverse().forEach(img=>dibujarUna(gctx,img,w,h,ajuste,escala,intensidad));
-  ctx.save(); ctx.globalAlpha=Math.min(1,intensidad);
-  ctx.drawImage(grupo,0,0,w,h); ctx.restore();
-  grupo.width=grupo.height=0;
+  ctx.save();
+  if (!opciones.opacidades) {
+    // Los diseños que guardaban una opacidad global mantienen su composición.
+    const intensidad=normalizarOpacidad(opciones.intensidad);
+    if (intensidad) {
+      for (let i=imagenes.length-1;i>=0;i--) {
+        if (imagenes[i]) dibujarUna(dibujo,imagenes[i],w,h,ajuste,escala,intensidad);
+      }
+      ctx.globalAlpha=Math.min(1,intensidad);
+      ctx.drawImage(capa,0,0,w,h);
+    }
+    ctx.restore();
+    capa.width=capa.height=0;
+    return;
+  }
+  for (let i=imagenes.length-1;i>=0;i--) {
+    const opacidad=normalizarOpacidad(opciones.opacidades?.[i] ?? opciones.intensidad);
+    if (!imagenes[i] || !opacidad) continue;
+    dibujo.clearRect(0,0,w,h);
+    dibujarUna(dibujo,imagenes[i],w,h,ajuste,escala,opacidad);
+    ctx.globalAlpha=Math.min(1,opacidad);
+    ctx.drawImage(capa,0,0,w,h);
+  }
+  ctx.restore();
+  capa.width=capa.height=0;
 }
 
 export function actualizarCapaTexturas(layer,opciones={}) {
   if (!layer) return Promise.resolve();
-  const urls=Array.isArray(opciones.urls) ? opciones.urls.filter(Boolean) : [];
+  const urls=Array.isArray(opciones.urls) ? opciones.urls : [];
+  const opacidades=urls.map((url,i)=>url ? normalizarOpacidad(opciones.opacidades?.[i] ?? opciones.intensidad) : 0);
   const w=opciones.width||1080,h=opciones.height||1080;
-  const key=JSON.stringify([urls,w,h,opciones.ajuste||'auto',opciones.escala||100,opciones.intensidad??.22]);
+  const key=JSON.stringify([urls,opacidades,!!opciones.opacidades,w,h,opciones.ajuste||'auto',opciones.escala||100,opciones.maxResourceSize]);
   let estado=capas.get(layer);
   if (!estado) { estado={token:0,key:'',promise:Promise.resolve(),error:null,margenes:{left:0,right:0,top:0,bottom:0}}; capas.set(layer,estado); }
   if (estado.key===key) return estado.promise;
@@ -164,52 +246,46 @@ export function actualizarCapaTexturas(layer,opciones={}) {
   const token=++estado.token;
   layer.style.backgroundImage='none'; layer.style.opacity='1';
   layer.style.mixBlendMode='normal'; layer.style.filter='none';
-  layer.replaceChildren();
-  if (!urls.length || Number(opciones.intensidad)===0) {
+  const avisar=mensaje=>{if (opciones.avisar) indicarCargaPreview(layer.parentElement,'texturas',mensaje);};
+  if (!opacidades.some(Boolean)) {
     estado.margenes={left:0,right:0,top:0,bottom:0};
+    layer.replaceChildren();
+    delete layer.dataset.texturasEstado;
+    avisar('');
     layer.style.display='none'; estado.promise=Promise.resolve(); return estado.promise;
   }
   layer.style.display='block';
-  let originalListo = false;
-  const pintar = (imagenes, provisional = false) => {
-    const factor = provisional ? Math.min(1, 540 / Math.max(w, h)) : 1;
-    const canvas = lienzo(w * factor, h * factor);
+  layer.dataset.texturasEstado='cargando';
+  avisar('Cargando textura…');
+  const pintar = imagenes => {
+    const canvas = lienzo(w, h);
     canvas.dataset.vaTexturas = '1';
     canvas.setAttribute('aria-hidden', 'true');
     Object.assign(canvas.style, {position: 'absolute', inset: '0', width: '100%', height: '100%', display: 'block', pointerEvents: 'none'});
     dibujarTexturas(canvas.getContext('2d'), imagenes, canvas.width, canvas.height, opciones);
     layer.replaceChildren(canvas);
-    layer.dataset.texturasEstado = provisional ? 'previa' : 'listo';
+    layer.dataset.texturasEstado = 'listo';
   };
-  const previas = urls.map(async url => {
-    const original = new URL(url, location.href).href;
-    let miniatura = urlMiniaturaImagen(original);
-    if (miniatura === original) miniatura = await vistaArchivadaImagen(original);
-    return miniatura ? cargarTextura(miniatura, {maxSize: 512}).catch(() => null) : null;
-  });
-  Promise.all(previas).then(recursos => {
-    const visibles = recursos.filter(Boolean);
-    if (estado.token === token && !originalListo && !estado.error && visibles.length) pintar(visibles, true);
-  }).catch(() => {});
-
-  estado.promise=Promise.all(urls.map(url=>cargarTextura(url,{
+  estado.promise=Promise.all(urls.map((url,i)=>opacidades[i] ? cargarTextura(url,{
     maxSize:opciones.maxResourceSize,cache:opciones.cacheRecursos!==false
-  }))).then(imagenes=>{
+  }) : null)).then(imagenes=>{
     if (estado.token!==token) return;
     const margenes={left:0,right:0,top:0,bottom:0};
     for (const recurso of imagenes) {
+      if (!recurso) continue;
       if (opciones.ajuste!=='marco' && !(recurso.marco && (!opciones.ajuste || opciones.ajuste==='auto'))) continue;
       const g=geometriaMarco(recurso.source,w,h,limitar(Number(opciones.escala)||100,25,250)/100);
       margenes.left=margenes.right=Math.max(margenes.left,g.dx*1.05/w+.01);
       margenes.top=margenes.bottom=Math.max(margenes.top,g.dy*.6/h+.01);
     }
-    const cambio=JSON.stringify(margenes)!==JSON.stringify(estado.margenes);
     estado.margenes=margenes;
-    originalListo = true;
     pintar(imagenes);
-    if (cambio) opciones.onReady?.();
+    avisar('');
   }).catch(error=>{
-    if (estado.token===token) { estado.error=error; estado.key=''; layer.dataset.texturasEstado='error'; }
+    if (estado.token===token) {
+      estado.error=error; estado.key=''; layer.dataset.texturasEstado='error';
+      avisar('No se pudo cargar la textura.');
+    }
     throw error;
   });
   // El error se muestra al intentar continuar/exportar; evitar rechazos sin manejar.
@@ -240,11 +316,12 @@ function prepararPasoTextura(grupo, alCambiar) {
   const max = Number(campo.max);
   let confirmado;
 
-  function mostrar(numero) {
+  function mostrar(numero, deshabilitado = false) {
     confirmado = limitar(Math.round(numero), min, max);
     campo.value = String(confirmado);
-    menos.disabled = confirmado === min;
-    mas.disabled = confirmado === max;
+    campo.disabled = deshabilitado;
+    menos.disabled = deshabilitado || confirmado === min;
+    mas.disabled = deshabilitado || confirmado === max;
   }
 
   function cambiar(numero) {
@@ -259,7 +336,10 @@ function prepararPasoTextura(grupo, alCambiar) {
   return mostrar;
 }
 
-export function montarControlesTextura(input, {ajuste = 'auto', escala = 100, intensidad = .22, onChange} = {}) {
+export function montarControlesTextura(input, {
+  ajuste = 'auto', escala = 100, opacidad = opacidadInicial, activa = false,
+  onChange, onOpacidad
+} = {}) {
   if (!input) return;
   const fila = input.parentElement;
   fila.classList.add('va-textura-fila');
@@ -278,7 +358,7 @@ export function montarControlesTextura(input, {ajuste = 'auto', escala = 100, in
           <option value="cubrir">Cubrir</option>
         </select>
       </label>
-      ${[['Intensidad', 0, 400], ['Escala', 25, 250]].map(([nombre, min, max]) => `
+      ${[['Opacidad', 0, 400], ['Escala', 25, 250]].map(([nombre, min, max]) => `
         <div class="va-textura-paso" role="group" aria-label="${nombre} de textura">
           <span>${nombre}</span>
           <div class="va-textura-paso-botones">
@@ -293,13 +373,10 @@ export function montarControlesTextura(input, {ajuste = 'auto', escala = 100, in
     `;
     fila.appendChild(box);
     const select = box.querySelector('select');
-    const [intensidadGrupo, escalaGrupo] = box.querySelectorAll('.va-textura-paso');
+    const [opacidadGrupo, escalaGrupo] = box.querySelectorAll('.va-textura-paso');
     const controles = {select, escala: 100};
     const notificar = () => controles.onChange?.({ajuste: select.value, escala: controles.escala});
-    controles.mostrarIntensidad = prepararPasoTextura(intensidadGrupo, valor => {
-      input.value = String(valor / 100);
-      input.dispatchEvent(new Event('input', {bubbles: true}));
-    });
+    controles.mostrarOpacidad = prepararPasoTextura(opacidadGrupo, valor => controles.onOpacidad?.(valor / 100));
     controles.mostrarEscala = prepararPasoTextura(escalaGrupo, valor => {
       controles.escala = valor;
       notificar();
@@ -310,10 +387,10 @@ export function montarControlesTextura(input, {ajuste = 'auto', escala = 100, in
 
   const controles = fila.__vaControlesTextura;
   controles.onChange = onChange;
+  controles.onOpacidad = onOpacidad;
   controles.select.value = modos.has(ajuste) ? ajuste : 'auto';
   controles.escala = limitar(Number(escala) || 100, 25, 250);
-  input.value = String(limitar(Number(intensidad) || 0, 0, 4));
-  controles.mostrarIntensidad(Number(input.value) * 100);
+  controles.mostrarOpacidad(normalizarOpacidad(opacidad) * 100, !activa);
   controles.mostrarEscala(controles.escala);
 
   if (document.getElementById('va-estilos-texturas')) return;
@@ -327,6 +404,10 @@ export function montarControlesTextura(input, {ajuste = 'auto', escala = 100, in
     .va-textura-paso-botones{display:flex;align-items:center;gap:2px;border:1px solid #c6d9e7;border-radius:9px;background:#fff}
     .va-textura-paso-botones button{display:grid;place-items:center;width:30px;min-width:30px;height:30px;padding:0;border:0;border-radius:8px;background:#e5f2fc;color:#224e70;font:700 16px/1 Arial;cursor:pointer}
     .va-textura-paso-botones button:disabled{opacity:.38;cursor:default}
+    .va-textura-item{position:relative;display:inline-flex;flex:0 0 auto}
+    :is(#modalPersonalizar,#modalDevFase2) .va-textura-opcion[aria-current=true],.va-galeria-cuadricula button[aria-current=true]{box-shadow:inset 0 0 0 3px #2876b6;outline:2px solid #2876b6;outline-offset:-2px}
+    :is(#modalPersonalizar,#modalDevFase2) .va-textura-quitar{position:absolute;top:0;right:0;z-index:1;display:grid;place-items:center;box-sizing:border-box;width:22px;min-width:22px;height:22px;min-height:22px;margin:0;padding:0;border:1px solid #2876b6;border-radius:50%;background:#f5fbff;color:#173e5d;font:700 16px/1 Arial}
+    .va-textura-quitar[hidden]{display:none!important}
     :is(#modalPersonalizar,#modalDevFase2) .va-textura-porcentaje{display:flex!important;flex-direction:row!important;align-items:center;gap:0!important;margin:0!important;padding:0 3px 0 0!important;font-size:11px;color:#234}
     :is(#modalPersonalizar,#modalDevFase2) .va-textura-porcentaje input{width:25px!important;min-width:0!important;height:24px!important;padding:0!important;margin:0!important;border:0!important;box-shadow:none!important;background:transparent!important;color:inherit!important;text-align:right;font:inherit;appearance:textfield}
     .va-textura-porcentaje input::-webkit-inner-spin-button,.va-textura-porcentaje input::-webkit-outer-spin-button{appearance:none;margin:0}

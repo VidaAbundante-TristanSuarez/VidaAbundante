@@ -2,8 +2,10 @@ import { actualizarAdorno, activarAdorno, esperarAdorno } from "./adornos-editor
 import { elegirResolucionImagen, dimensionesExportacion, conProgresoExportacion } from "./exportacion-imagen.js?v=20261102-agenda-imagenes-8";
 import { referenciasDePublicacion, referenciasHTML, disenosDeImagen, agregarDisenoImagen, combinarDisenosImagen, carruselImagenHTML, disenoActivoDeCard } from "./publicaciones-imagen.js?v=20261109-medios-1";
 import { normalizarUrlImagen, obtenerBlobImagen, subirArchivoR2 } from './carga-imagenes.js?v=20261109-medios-1';
-import { actualizarCapaTexturas, esperarCapaTexturas, montarControlesTextura, margenesTexturas } from "./texturas-editor.js?v=20261110-carga-2";
-import { elegirFondoEnPreview, vistaFondoEnCarga, cancelarFondoEnCarga, esperarFondoEnCarga, montarOpcionesColorEditor, aplicarColorEditor, colorEnCanvas, ordenarFondos, registrarUsoFondoGenerado, configurarUsoFondos, combinarUsoFondos, cargarFondoBlob, prepararMiniaturas, prepararGaleriaRecursos, marcarRecursosGaleria, fuentesEditorImagen, montarEditorTexto, aplicarFormatoSeleccion, alternarFormatoSeleccion, restaurarControlesTexto, aplicarSubrayadoTexto, desactivarEditorTexto, crearInstantaneaPreview, esperarFuentesPreview, dibujarCajaTexto, recuperarCajaTexto } from "./imagen-editor.js?v=20261111-editores-1";
+import { actualizarCapaTexturas, esperarCapaTexturas, montarControlesTextura, margenesTexturas,
+  ajustarSeleccionTexturas, enfocarTextura, prepararTexturasDiseno, ajustarOpacidadTextura,
+  opacidadTexturaActiva, instalarOpcionTextura } from "./texturas-editor.js?v=20261110-carga-2";
+import { elegirFondoEnPreview, cancelarFondoEnCarga, esperarFondoEnCarga, montarOpcionesColorEditor, aplicarColorEditor, colorEnCanvas, ordenarFondos, registrarUsoFondoGenerado, configurarUsoFondos, combinarUsoFondos, cargarFondoBlob, prepararMiniaturas, prepararGaleriaRecursos, marcarRecursosGaleria, fuentesEditorImagen, montarEditorTexto, aplicarFormatoSeleccion, alternarFormatoSeleccion, restaurarControlesTexto, aplicarSubrayadoTexto, desactivarEditorTexto, crearInstantaneaPreview, esperarFuentesPreview, dibujarCajaTexto, recuperarCajaTexto } from "./imagen-editor.js?v=20261111-editores-1";
 
 // ================= IMPORTS FIREBASE =================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -1946,8 +1948,7 @@ function asegurarColorContornoBiblia() {
   for (const selector of [colorHost, host]) {
     montarOpcionesColorEditor(selector, () => ({
       titulo: selector.title,
-      fondo: vistaFondoEnCarga(document.getElementById("previewImagen")) ||
-        (fondoDisenoBiblia.baseTipo === "imagen" ? fondoFinalBlobUrl || fondoFinal : ""),
+      fondo: fondoDisenoBiblia.baseTipo === "imagen" ? fondoFinalBlobUrl || fondoFinal : "",
       tomarColor: () => window.bibliaAbrirCuentagotasWrapper(selector)
     }));
   }
@@ -5417,7 +5418,8 @@ menuBtn.onclick = (e) => {
 
     img.onclick = () => {
       const preview = document.getElementById("previewImagen");
-      elegirFondoEnPreview(preview, img, finalUrl, () => urlToBlobURL(finalUrl), nuevoBlob => {
+      invalidarRenderFinal();
+      elegirFondoEnPreview(preview, finalUrl, nuevoBlob => {
         if (fondoFinalBlobUrl) URL.revokeObjectURL(fondoFinalBlobUrl);
         fondoDisenoBiblia.baseTipo = "imagen";
         fondoFinal = finalUrl;
@@ -5584,7 +5586,7 @@ function bibliaLimpiarCapasFondoDiseno() {
   const imgAdorno = document.getElementById("bibliaFondoAdornoImg");
 
   if (textura) {
-    actualizarCapaTexturas(textura, {urls:[]});
+    actualizarCapaTexturas(textura, {urls:[], avisar:true});
     textura.style.display = "none";
     textura.style.backgroundImage = "none";
     textura.style.backgroundSize = "";
@@ -5600,23 +5602,19 @@ function bibliaLimpiarCapasFondoDiseno() {
     imgAdorno.style.width = "";
     imgAdorno.style.opacity = "";
   }
+  actualizarAdorno(document.getElementById("previewImagen"));
 }
 
 function bibliaAplicarFondoAlPreview(previewImagen) {
   if (!previewImagen) return;
 
-  const temporal = vistaFondoEnCarga(previewImagen);
   const fondoUsable = fondoFinalBlobUrl || fondoFinal;
-  const fondoVisual = temporal || (fondoUsable ? bibliaUrlRecursoSeguro(fondoUsable, "fondo_biblia.png") : "");
-
-  const textura = document.getElementById("bibliaFondoTexturaLayer");
-  const adorno = document.getElementById("bibliaFondoAdornoLayer");
-  const imgAdorno = document.getElementById("bibliaFondoAdornoImg");
+  const fondoVisual = fondoUsable ? bibliaUrlRecursoSeguro(fondoUsable, "fondo_biblia.png") : "";
 
   // ✅ Unificado:
   // imagen = galería normal
   // plano/gradiente = fondo de color
-  if (temporal || fondoDisenoBiblia.baseTipo === "imagen") {
+  if (fondoDisenoBiblia.baseTipo === "imagen") {
     if (fondoVisual) {
       previewImagen.style.backgroundImage = `url("${fondoVisual}")`;
       previewImagen.style.backgroundColor = "transparent";
@@ -5648,18 +5646,16 @@ function bibliaAplicarFondoAlPreview(previewImagen) {
     }
   }
 
-  if (textura) {
-    actualizarCapaTexturas(textura, {
-      urls: bibliaTexturasSeleccionadas().map(url => bibliaUrlRecursoSeguro(url, "textura_biblia.png")),
-      ...dimensionesExportacion(bibliaFormatoExportacion(),1080),
-      ajuste: fondoDisenoBiblia.texturaAjuste || "auto",
-      escala: fondoDisenoBiblia.texturaEscala || 100,
-      intensidad: fondoDisenoBiblia.texturaOpacidad ?? .22,
-      onReady: () => invalidarRenderFinal()
-    });
-  }
-
+  bibliaActualizarTexturas();
   bibliaActualizarAdorno(previewImagen);
+}
+
+function bibliaActualizarTexturas() {
+  return actualizarCapaTexturas(document.getElementById("bibliaFondoTexturaLayer"), {
+    ...bibliaOpcionesTexturas(),
+    ...dimensionesExportacion(bibliaFormatoExportacion(),1080),
+    avisar: true
+  });
 }
 
 function bibliaActualizarAdorno(stage){
@@ -5712,7 +5708,6 @@ function bibliaSincronizarControlesFondoDiseno() {
   const color2 = document.getElementById("bibliaFondoColor2");
   const color3 = document.getElementById("bibliaFondoColor3");
   const forma = document.getElementById("bibliaGradienteForma");
-  const texturaOp = document.getElementById("bibliaTexturaOpacidad");
   const adornoTam = document.getElementById("bibliaAdornoTamano");
   const adornoOp = document.getElementById("bibliaAdornoOpacidad");
 
@@ -5733,16 +5728,7 @@ function bibliaSincronizarControlesFondoDiseno() {
     forma.style.display = fondoDisenoBiblia.usarColor2 ? "inline-flex" : "none";
   }
 
-  montarControlesTextura(texturaOp, {
-    ajuste: fondoDisenoBiblia.texturaAjuste,
-    escala: fondoDisenoBiblia.texturaEscala,
-    intensidad: fondoDisenoBiblia.texturaOpacidad,
-    onChange: ({ajuste, escala}) => {
-      fondoDisenoBiblia.texturaAjuste = ajuste;
-      fondoDisenoBiblia.texturaEscala = escala;
-      actualizarPreview();
-    }
-  });
+  bibliaSincronizarControlesTextura();
   if (adornoTam) {
     adornoTam.value=String(fondoDisenoBiblia.adornoTamano);
     adornoTam.closest('label,.biblia-slider-row')?.style.setProperty('display','none');
@@ -5773,6 +5759,26 @@ function bibliaSincronizarControlesFondoDiseno() {
   bibliaActualizarGaleriaFondoVisible();
 }
 
+function bibliaSincronizarControlesTextura() {
+  montarControlesTextura(document.getElementById("bibliaTexturaOpacidad"), {
+    ajuste: fondoDisenoBiblia.texturaAjuste,
+    escala: fondoDisenoBiblia.texturaEscala,
+    activa: !!fondoDisenoBiblia.texturaActiva,
+    opacidad: opacidadTexturaActiva(fondoDisenoBiblia, fondoDisenoBiblia.texturaOpacidad),
+    onOpacidad: valor => {
+      ajustarOpacidadTextura(fondoDisenoBiblia, valor);
+      invalidarRenderFinal();
+      bibliaActualizarTexturas();
+    },
+    onChange: ({ajuste, escala}) => {
+      fondoDisenoBiblia.texturaAjuste = ajuste;
+      fondoDisenoBiblia.texturaEscala = escala;
+      invalidarRenderFinal();
+      bibliaActualizarTexturas();
+    }
+  });
+}
+
 function bibliaTexturasSeleccionadas() {
   const actuales = Array.isArray(fondoDisenoBiblia?.texturasUrls)
     ? fondoDisenoBiblia.texturasUrls
@@ -5797,8 +5803,12 @@ function bibliaGuardarTexturasSeleccionadas(urls = []) {
     )
   );
 
-  fondoDisenoBiblia.texturasUrls = limpias;
-  fondoDisenoBiblia.texturaUrl = limpias[0] || null;
+  ajustarSeleccionTexturas(fondoDisenoBiblia, limpias);
+}
+
+function bibliaOpcionesTexturas() {
+  return prepararTexturasDiseno(fondoDisenoBiblia,
+    url => bibliaUrlRecursoSeguro(url, "textura_biblia.png"), fondoDisenoBiblia.texturaOpacidad);
 }
 
 function bibliaRecursosAdministrados(categoria, base, nombreVacio) {
@@ -5847,21 +5857,16 @@ function bibliaRenderTexturasDiseno() {
     .filter(url => permitidas.has(url));
 
   bibliaGuardarTexturasSeleccionadas(seleccionadas);
+  const sincronizar = () => {
+    marcarRecursosGaleria(cont, fondoDisenoBiblia.texturasUrls, fondoDisenoBiblia.texturaActiva);
+    bibliaSincronizarControlesTextura();
+  };
 
   items.forEach((item, indice) => {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.dataset.recurso = item.url || "";
     btn.className = "biblia-recurso-mini";
-
-    const activo = item.url
-      ? seleccionadas.includes(item.url)
-      : seleccionadas.length === 0;
-
-    btn.classList.toggle("activo", activo);
-    btn.title = item.url
-      ? `${item.nombre} · tocar para agregar o quitar`
-      : item.nombre;
 
     if (item.url) {
       const miniatura = document.createElement("img");
@@ -5872,25 +5877,26 @@ function bibliaRenderTexturasDiseno() {
       btn.innerHTML = `<i class="fa-solid fa-ban"></i>`;
     }
 
-    btn.onclick = () => {
-      if (!item.url) {
-        bibliaGuardarTexturasSeleccionadas([]);
-      } else {
-        const actuales = bibliaTexturasSeleccionadas();
-        const nuevas = actuales.includes(item.url)
-          ? actuales.filter(url => url !== item.url)
-          : [item.url, ...actuales];
-
-        bibliaGuardarTexturasSeleccionadas(nuevas);
+    const seleccionar = () => {
+      const yaAplicada = fondoDisenoBiblia.texturasUrls.includes(item.url);
+      if (item.url) enfocarTextura(fondoDisenoBiblia, item.url);
+      else bibliaGuardarTexturasSeleccionadas([]);
+      sincronizar();
+      if (!yaAplicada || document.getElementById("bibliaFondoTexturaLayer")?.dataset.texturasEstado === "error") {
+        invalidarRenderFinal();
+        bibliaActualizarTexturas();
       }
-
-      marcarRecursosGaleria(cont, bibliaTexturasSeleccionadas());
-      actualizarPreview();
+    };
+    const quitar = () => {
+      bibliaGuardarTexturasSeleccionadas(fondoDisenoBiblia.texturasUrls.filter(url => url !== item.url));
+      sincronizar();
+      invalidarRenderFinal();
+      bibliaActualizarTexturas();
     };
 
-    cont.appendChild(btn);
+    cont.appendChild(instalarOpcionTextura(btn, item.url, item.nombre, seleccionar, quitar));
   });
-  marcarRecursosGaleria(cont, bibliaTexturasSeleccionadas());
+  sincronizar();
   restaurar();
 }
 
@@ -5988,7 +5994,6 @@ if (filaFondos.parentNode && filaFondos.previousElementSibling !== box) {
             id="bibliaTexturaOpacidad"
             type="hidden"
             value="0.22"
-            oninput="actualizarFondoDisenoBibliaDesdeUI()"
           >
         </div>
       </div>
@@ -6126,7 +6131,6 @@ window.actualizarFondoDisenoBibliaDesdeUI = function() {
   const color2 = document.getElementById("bibliaFondoColor2");
   const color3 = document.getElementById("bibliaFondoColor3");
   const forma = document.getElementById("bibliaGradienteForma");
-  const texturaOp = document.getElementById("bibliaTexturaOpacidad");
   const adornoTam = document.getElementById("bibliaAdornoTamano");
   const adornoOp = document.getElementById("bibliaAdornoOpacidad");
 
@@ -6135,7 +6139,6 @@ window.actualizarFondoDisenoBibliaDesdeUI = function() {
   if (color3) fondoDisenoBiblia.color3 = color3.value || "#a6d0ff";
   if (forma) fondoDisenoBiblia.gradienteForma = forma.value || "vertical";
 
-  if (texturaOp) fondoDisenoBiblia.texturaOpacidad = Number(texturaOp.value || 0);
   if (adornoTam) fondoDisenoBiblia.adornoTamano = Number(adornoTam.value || 70);
   if (adornoOp) fondoDisenoBiblia.adornoOpacidad = Number(adornoOp.value ?? 1);
 
@@ -7455,10 +7458,8 @@ async function generarImagenFinal(opts = {}) {
     const textura=instantanea.stage.querySelector('#bibliaFondoTexturaLayer') || instantanea.get(document.getElementById('bibliaFondoTexturaLayer'));
     if(textura){
       await actualizarCapaTexturas(textura,{
-        urls:bibliaTexturasSeleccionadas().map(url=>bibliaUrlRecursoSeguro(url,'textura_biblia.png')),
+        ...bibliaOpcionesTexturas(),
         width:medida.width,height:medida.height,
-        ajuste:fondoDisenoBiblia.texturaAjuste || 'auto',escala:fondoDisenoBiblia.texturaEscala || 100,
-        intensidad:fondoDisenoBiblia.texturaOpacidad ?? .22,
         maxResourceSize:medida.width>1080?4096:2048,cacheRecursos:medida.width===1080
       });
     }
@@ -7915,6 +7916,7 @@ async function descargarImagenFinal() {
     try {
       let blob;
       if(ancho===2160){
+        await esperarFondoEnCarga(document.getElementById("previewImagen"));
         const key=getRenderKey();temporal=document.createElement('canvas');
         if(!await generarImagenFinal({subir:false,ancho,canvasDestino:temporal}))return;
         blob=await new Promise(resolve=>temporal.toBlob(resolve,'image/png'));
@@ -8150,8 +8152,8 @@ function getRenderKey() {
   const rect = preview.getBoundingClientRect();
   const fondoUsable = (fondoFinalBlobUrl || fondoFinal || "") + "";
   const firmaFondo = modoFondoBiblia === "diseno"
-    ? JSON.stringify(fondoDisenoBiblia)
-    : fondoUsable;
+    ? JSON.stringify(fondoDisenoBiblia, (clave, valor) => clave === "texturaActiva" ? undefined : valor)
+    : "";
   const texto = (document.getElementById("previewTexto")?.textContent || "").trim();
   const font = getComputedStyle(document.getElementById("previewTexto") || preview).fontFamily || "";
   const color = getComputedStyle(document.getElementById("previewTexto") || preview).color || "";
@@ -8162,6 +8164,7 @@ function getRenderKey() {
     Math.round(rect.width),
     Math.round(rect.height),
     modoFondoBiblia,
+    fondoUsable,
     firmaFondo,
     texto,
     font,
@@ -8190,6 +8193,8 @@ async function asegurarCanvasFinal({ subir = false } = {}) {
   const modal = document.getElementById("modalPersonalizar");
   const canvas = document.getElementById("canvasFinal");
   if (!canvas || (modal && getComputedStyle(modal).display === "none")) return false;
+  try { await esperarFondoEnCarga(document.getElementById("previewImagen")); }
+  catch { return false; }
   const cache = window.__canvasFinalCache;
   let ok = cache.lastOk && cache.key === getRenderKey() && canvas.width > 10 && canvas.height > 10;
   if (!ok) {

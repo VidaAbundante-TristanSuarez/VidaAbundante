@@ -1,8 +1,10 @@
 import { subirArchivoR2, normalizarUrlImagen, urlMiniaturaImagen, vistaArchivadaImagen } from "./carga-imagenes.js?v=20261109-medios-1";
 import { actualizarAdorno, activarAdorno, esperarAdorno } from "./adornos-editor.js?v=20261102-notas-compartir-7";
 import { elegirResolucionImagen, dimensionesExportacion, conProgresoExportacion } from "./exportacion-imagen.js?v=20261102-notas-compartir-7";
-import { actualizarCapaTexturas, esperarCapaTexturas, montarControlesTextura, margenesTexturas, cargarTextura, dibujarTexturas } from "./texturas-editor.js?v=20261110-carga-2";
-import { elegirFondoEnPreview, vistaFondoEnCarga, cancelarFondoEnCarga, esperarFondoEnCarga, montarOpcionesColorEditor, abrirOpcionesColorEditor, aplicarColorEditor, colorEnCanvas, cargarFondoBlob, ordenarFondos, registrarUsoFondoGenerado, prepararGaleriaRecursos, marcarRecursosGaleria, fuentesEditorImagen, montarEditorTexto, aplicarCajaTexto, aplicarFormatoSeleccion, alternarFormatoSeleccion, restaurarControlesTexto, aplicarSubrayadoTexto, crearInstantaneaPreview, esperarFuentesPreview, recuperarCajaTexto } from "./imagen-editor.js?v=20261111-editores-1";
+import { actualizarCapaTexturas, esperarCapaTexturas, montarControlesTextura, margenesTexturas, cargarTextura, dibujarTexturas,
+  ajustarSeleccionTexturas, enfocarTextura, prepararTexturasDiseno, ajustarOpacidadTextura,
+  opacidadTexturaActiva, instalarOpcionTextura } from "./texturas-editor.js?v=20261110-carga-2";
+import { elegirFondoEnPreview, cancelarFondoEnCarga, esperarFondoEnCarga, montarOpcionesColorEditor, abrirOpcionesColorEditor, aplicarColorEditor, colorEnCanvas, ordenarFondos, registrarUsoFondoGenerado, prepararGaleriaRecursos, marcarRecursosGaleria, fuentesEditorImagen, montarEditorTexto, aplicarCajaTexto, aplicarFormatoSeleccion, alternarFormatoSeleccion, restaurarControlesTexto, aplicarSubrayadoTexto, crearInstantaneaPreview, esperarFuentesPreview, recuperarCajaTexto } from "./imagen-editor.js?v=20261111-editores-1";
 import { dibujarCajaTexto } from "./imagen-editor.js?v=20261111-editores-1";
 
 // devocionales.js (NUEVO LIMPIO)
@@ -50,10 +52,7 @@ async function devCapturarPreviewFase(fase){
   const snapshot = crearInstantaneaPreview(source);
   if (!snapshot) throw new Error("No pude leer la preview de la fase " + fase);
   snapshot.texto = snapshot.get($(`dev${fase}Texto`));
-  if(fase===2)snapshot.texturas={
-    urls:devF2TexturasSeleccionadas().map(url=>devUrlRecursoSeguro(url,'textura_devocional.png')),
-    ajuste:DEV.f2.texturaAjuste || 'auto',escala:DEV.f2.texturaEscala || 100,intensidad:DEV.f2.texturaOp ?? .22
-  };
+  if(fase===2)snapshot.texturas=devOpcionesTexturas();
   DEV_EXPORT_PREVIEWS.get(fase)?.remove();
   DEV_EXPORT_PREVIEWS.set(fase, snapshot);
   devInvalidarPNGFinal();
@@ -138,7 +137,8 @@ gradienteForma: "vertical",
     // Varias texturas pueden quedar activas al mismo tiempo.
     texturasUrls: [],
     texturaUrl: null, // compatibilidad interna con el sistema anterior
-    texturaOp: 0.22,
+    texturaActiva: null,
+    texturasOpacidades: [],
     texturaAjuste: "auto",
     texturaEscala: 100,
     fuente: "Roboto",
@@ -225,7 +225,8 @@ DEV.f2.gradienteForma = "vertical";
   DEV.f2.tabActiva = "fondo";
   DEV.f2.texturasUrls = [];
   DEV.f2.texturaUrl = null;
-  DEV.f2.texturaOp = 0.22;
+  DEV.f2.texturaActiva = null;
+  DEV.f2.texturasOpacidades = [];
   DEV.f2.texturaAjuste = "auto";
   DEV.f2.texturaEscala = 100;
   DEV.f2.fuente = "Roboto";
@@ -1347,6 +1348,9 @@ function cerrarModal(id){
 
 window.devCerrarTodo = () => {
   cancelarFondoEnCarga($("dev1Preview"));
+  const preview = $("dev2Preview");
+  actualizarAdorno(preview);
+  actualizarCapaTexturas(preview?.querySelector(".dev2-texture-layer"), {avisar:true});
   ["modalDevFase0","modalDevFase1","modalDevFase2","modalDevFase3"].forEach(cerrarModal);
 
   DEV.audioOk = false;
@@ -1755,10 +1759,6 @@ function devUrlRecursoSeguro(url, nombre = "recurso.png") {
   }
 }
 
-async function urlToBlobURL(url){
-  return cargarFondoBlob(url);
-}
-
 function cargarFondosDev(){
   const cont = $("dev1Fondos");
   if (!cont) return;
@@ -1829,7 +1829,7 @@ function cargarFondosDev(){
     prepararMiniatura(im, finalUrl, indice, miniaturas.get(finalUrl));
 
     im.onclick = () => {
-      elegirFondoEnPreview($("dev1Preview"), im, finalUrl, () => urlToBlobURL(finalUrl), nuevoBlob => {
+      elegirFondoEnPreview($("dev1Preview"), finalUrl, nuevoBlob => {
         if (DEV.f1.fondoBlob) URL.revokeObjectURL(DEV.f1.fondoBlob);
         DEV.f1.fondoUrl = null;
         DEV.f1.fondoSrc = finalUrl;
@@ -1917,8 +1917,11 @@ function devF2GuardarTexturas(urls = []) {
     )
   );
 
-  DEV.f2.texturasUrls = limpias;
-  DEV.f2.texturaUrl = limpias[0] || null;
+  ajustarSeleccionTexturas(DEV.f2, limpias);
+}
+
+function devOpcionesTexturas(){
+  return prepararTexturasDiseno(DEV.f2, url => devUrlRecursoSeguro(url, "textura_devocional.png"));
 }
 
 function devRecursosF2Administrados(categoria, base, nombreVacio) {
@@ -2127,6 +2130,10 @@ function cargarTexturasF2(){
     .filter(url => permitidas.has(url));
 
   devF2GuardarTexturas(seleccionadas);
+  const sincronizar = () => {
+    marcarRecursosGaleria(cont, DEV.f2.texturasUrls, DEV.f2.texturaActiva);
+    dev2AsegurarControlesTextura();
+  };
 
   items.forEach((item, indice)=>{
     const b = document.createElement("button");
@@ -2146,35 +2153,24 @@ function cargarTexturasF2(){
       b.innerHTML = `<i class="fa-solid fa-genderless"></i>`;
     }
 
-    const activo = item.url
-      ? seleccionadas.includes(item.url)
-      : seleccionadas.length === 0;
-
-    b.classList.toggle("activo", activo);
-    b.title = item.url
-      ? `${item.nombre} · tocar para agregar o quitar`
-      : item.nombre;
-
-    b.onclick = ()=>{
-      if (!item.url) {
-        devF2GuardarTexturas([]);
-      } else {
-        const actuales = devF2TexturasSeleccionadas();
-
-        const nuevas = actuales.includes(item.url)
-          ? actuales.filter(url => url !== item.url)
-          : [item.url, ...actuales];
-
-        devF2GuardarTexturas(nuevas);
+    const seleccionar = () => {
+      const yaAplicada = DEV.f2.texturasUrls.includes(item.url);
+      if (item.url) enfocarTextura(DEV.f2, item.url);
+      else devF2GuardarTexturas([]);
+      sincronizar();
+      if (!yaAplicada || $("dev2Preview")?.querySelector(".dev2-texture-layer")?.dataset.texturasEstado === "error") {
+        devCambiarTexturas();
       }
-
-      marcarRecursosGaleria(cont, devF2TexturasSeleccionadas());
-      devRenderFase(2);
+    };
+    const quitar = () => {
+      devF2GuardarTexturas(DEV.f2.texturasUrls.filter(url => url !== item.url));
+      sincronizar();
+      devCambiarTexturas();
     };
 
-    cont.appendChild(b);
+    cont.appendChild(instalarOpcionTextura(b, item.url, item.nombre, seleccionar, quitar));
   });
-  marcarRecursosGaleria(cont, devF2TexturasSeleccionadas());
+  sincronizar();
   restaurar();
 }
 
@@ -2534,7 +2530,7 @@ function devCargarImagenCuentagotasF2(src){
 }
 
 function devFondoParaCuentagotas(){
-  return vistaFondoEnCarga($("dev1Preview")) || DEV.f1.fondoBlob || DEV.f1.fondoUrl || "";
+  return DEV.f1.fondoBlob || DEV.f1.fondoUrl || "";
 }
 
 window.devAbrirCuentagotasF2 = async function(indiceFondo = 1, destino = "fondoF2", {host} = {}){
@@ -3260,6 +3256,18 @@ function ensureDev2TextureLayer(container){
   return layer;
 }
 
+function dev2ActualizarTexturas(preview = $("dev2Preview")){
+  return actualizarCapaTexturas(ensureDev2TextureLayer(preview), {
+    ...devOpcionesTexturas(), width: 1080, height: 840, avisar: true
+  });
+}
+
+function devCambiarTexturas(){
+  DEV.f2.userChanged = true;
+  devInvalidarPNGFinal();
+  dev2ActualizarTexturas();
+}
+
 function devSvgRomboDifuminadoDataUrl(c1, c2, c3, usar3 = false){
   c1 = devHexSeguro(c1) || "#ffffff";
   c2 = devHexSeguro(c2) || "#d1eeff";
@@ -3645,10 +3653,15 @@ function dev2AsegurarControlesTextura(){
   montarControlesTextura($("dev2TexturaOp"), {
     ajuste: DEV.f2.texturaAjuste,
     escala: DEV.f2.texturaEscala,
-    intensidad: DEV.f2.texturaOp,
+    activa: !!DEV.f2.texturaActiva,
+    opacidad: opacidadTexturaActiva(DEV.f2),
+    onOpacidad: valor => {
+      ajustarOpacidadTextura(DEV.f2, valor);
+      devCambiarTexturas();
+    },
     onChange: ({ajuste, escala}) => {
       DEV.f2.texturaAjuste=ajuste; DEV.f2.texturaEscala=escala;
-      DEV.f2.userChanged=true; devRenderFase(2);
+      devCambiarTexturas();
     }
   });
 }
@@ -3787,7 +3800,7 @@ function devRenderFase(fase){
 
     if (b) b.style.display = "none";
 
-    const fondoUsable = vistaFondoEnCarga(p) || st.fondoBlob || st.fondoUrl;
+    const fondoUsable = st.fondoBlob || st.fondoUrl;
     p.style.backgroundImage = fondoUsable ? `url("${fondoUsable}")` : "none";
     p.style.backgroundSize = "cover";
     p.style.backgroundPosition = "center";
@@ -3828,14 +3841,7 @@ if (fase === 2) {
   const sc2 = scalePreviewF2();
   const pxPreview = Math.max(1, st.size * sc2);
 
-  const layer = ensureDev2TextureLayer(p);
-  actualizarCapaTexturas(layer, {
-    urls: devF2TexturasSeleccionadas().map(url => devUrlRecursoSeguro(url, "textura_devocional.png")),
-    width: 1080, height: 840,
-    ajuste: st.texturaAjuste || "auto", escala: st.texturaEscala || 100,
-    intensidad: st.texturaOp ?? .22,
-    onReady: () => devInvalidarPNGFinal()
-  });
+  dev2ActualizarTexturas(p);
   const baseInset=16*sc2;
   w.style.inset=baseInset+"px";
 
@@ -4679,7 +4685,6 @@ async function devRenderFinalCanvasDirectoAPK(cFinal, ctx, W = 1080, H = 1920, o
 
   const fondoF1Url = DEV.f1.fondoBlob || DEV.f1.fondoUrl || "";
   const adornoVisible=DEV_EXPORT_PREVIEWS.get(2)?.stage.querySelector('img[data-va-adorno-image]');
-  const adornoUrl=adornoVisible?.getAttribute('src') || '';
 
   let romboUrl = "";
   if (DEV.f2.usarColor2 && DEV.f2.gradienteForma === "rombo") {
@@ -4699,9 +4704,10 @@ async function devRenderFinalCanvasDirectoAPK(cFinal, ctx, W = 1080, H = 1920, o
   const fondoPromise = fondoF1Url
     ? devCanvasCargarImagen(fondoF1Url, "fondo_devocional.png", 4500)
     : Promise.resolve(null);
-  const adornoPromise = adornoUrl
-    ? devCanvasCargarImagen(adornoUrl, "adorno_devocional.png", 4500)
-    : Promise.resolve(null);
+  const cargarAdorno = adornoVisible?.getAttribute('src') && !adornoVisible.naturalWidth;
+  const adornoPromise = cargarAdorno
+    ? devCanvasCargarImagen(adornoVisible.src, "adorno_devocional.png", 4500)
+    : Promise.resolve(adornoVisible);
   const romboPromise = romboUrl
     ? devCanvasCargarImagen(romboUrl, "gradiente_rombo.svg", 2500)
     : Promise.resolve(null);
@@ -4732,7 +4738,9 @@ async function devRenderFinalCanvasDirectoAPK(cFinal, ctx, W = 1080, H = 1920, o
   const texturaCanvas=snapshotF2?.stage.querySelector('canvas[data-va-texturas]');
   if(W>1080 && snapshotF2?.texturas?.urls.length){
     const opcionesTextura=snapshotF2.texturas;
-    const imagenes=await Promise.all(opcionesTextura.urls.map(url=>cargarTextura(url,{maxSize:4096,cache:false})));
+    const imagenes=await Promise.all(opcionesTextura.urls.map((url,i) =>
+      (opcionesTextura.opacidades?.[i] ?? opcionesTextura.intensidad) > 0
+        ? cargarTextura(url,{maxSize:4096,cache:false}) : null));
     dibujarTexturas(f2ctx,imagenes,W,H2,opcionesTextura);
   }else if (texturaCanvas) f2ctx.drawImage(texturaCanvas,0,0,W,H2);
 
@@ -5314,7 +5322,7 @@ function bindInputs(){
 // =========================
 // FASE 2: texto, textura y adorno
 // =========================
-["Tamano","Color","TexturaOp","AdornoTamano","AdornoOpacidad"].forEach(k=>{
+["Tamano","Color","AdornoTamano","AdornoOpacidad"].forEach(k=>{
   const el = $(`dev2${k}`);
   if (!el) return;
 
@@ -5324,7 +5332,6 @@ function bindInputs(){
     DEV.f2.userChanged = true;
     if (k === 'Tamano') {DEV.f2.size = Number(el.value || 26);DEV.f2.sizePreferido=DEV.f2.size;}
     if (k === 'Color') DEV.f2.color = el.value || '#000000';
-    if (k === 'TexturaOp') DEV.f2.texturaOp = Number(el.value || 0.22);
     if (k === 'AdornoTamano') DEV.f2.adornoWidth = Number(el.value || 70);
     if (k === 'AdornoOpacidad') { DEV.f2.adornoOpacidad = Math.max(0, Math.min(1, Number(el.value ?? 1))); dev2ActualizarAdorno(); return; }
 

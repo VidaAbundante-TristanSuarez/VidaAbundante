@@ -305,11 +305,11 @@ export function proxyImagen(url, nombre = 'imagen.png') {
   return worker.href;
 }
 
-async function leerBlob(url, timeout) {
+async function leerBlob(url, timeout, prioridad) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeout);
   try {
-    const response = await fetch(url, {signal: controller.signal});
+    const response = await fetch(url, {signal: controller.signal, priority: prioridad});
     if (!response.ok) throw new Error('No se pudo leer la imagen (' + response.status + ').');
     const blob = await response.blob();
     if (!blob.size || (/^(text\/html|application\/json)/i.test(blob.type))) throw new Error('La respuesta no contiene una imagen.');
@@ -318,7 +318,7 @@ async function leerBlob(url, timeout) {
 }
 
 // Reutiliza el original: no comprime ni cambia la calidad de las exportaciones.
-export function obtenerBlobImagen(valor, nombre = 'imagen.png', {esperaDirecta = 5000} = {}) {
+export function obtenerBlobImagen(valor, nombre = 'imagen.png', {esperaDirecta = 5000, prioridad = 'auto'} = {}) {
   const url = normalizarUrlImagen(valor);
   if (!url) return Promise.reject(new Error('No hay imagen para preparar.'));
   if (blobs.has(url)) {
@@ -328,11 +328,11 @@ export function obtenerBlobImagen(valor, nombre = 'imagen.png', {esperaDirecta =
   if (pendientes.has(url)) return pendientes.get(url);
   const trabajo = (async () => {
     let blob;
-    try { blob = await leerBlob(url, esperaDirecta); }
+    try { blob = await leerBlob(url, esperaDirecta, prioridad); }
     catch (error) {
       const alternativa = proxyImagen(url, nombre);
       if (alternativa === url || /^(blob:|data:)/.test(url)) throw error;
-      blob = await leerBlob(alternativa, 15000);
+      blob = await leerBlob(alternativa, 15000, prioridad);
     }
     if (blob.size <= MAX_CACHE) {
       while (blobs.size && bytesCache + blob.size > MAX_CACHE) {

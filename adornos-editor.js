@@ -1,3 +1,5 @@
+import { cargarImagenDecodificada, indicarCargaPreview } from "./imagen-editor.js?v=20261111-editores-1";
+
 // Posición y tamaño del adorno independientes de la caja de texto.
 const editores=new WeakMap();
 const acotar=(n,a,b)=>Math.max(a,Math.min(b,n));
@@ -11,7 +13,7 @@ function instalarEstilos(){
 
 function dimensiones(c){
   const r=c.stage.getBoundingClientRect();
-  const ratio=c.img.naturalWidth/Math.max(1,c.img.naturalHeight)||4;
+  const ratio=c.img ? c.img.naturalWidth/Math.max(1,c.img.naturalHeight) : 4;
   const max=Math.min(.96,.96*r.height*ratio/Math.max(1,r.width));
   return {r,ratio,max:Math.max(.025,max)};
 }
@@ -20,7 +22,7 @@ function dimensiones(c){
 function recortarTransparencia(img){
   try{
     const nw=img.naturalWidth,nh=img.naturalHeight;
-    const factor=Math.min(1,1024/Math.max(nw,nh));
+    const factor=Math.min(1,512/Math.max(nw,nh));
     const muestra=document.createElement('canvas');
     muestra.width=Math.max(1,Math.round(nw*factor));muestra.height=Math.max(1,Math.round(nh*factor));
     const ctx=muestra.getContext('2d',{willReadFrequently:true});ctx.drawImage(img,0,0,muestra.width,muestra.height);
@@ -29,7 +31,7 @@ function recortarTransparencia(img){
     for(let y=0;y<muestra.height;y++)for(let x=0;x<muestra.width;x++){
       if(pixels[(y*muestra.width+x)*4+3]>4){l=Math.min(l,x);r=Math.max(r,x);t=Math.min(t,y);b=Math.max(b,y);}
     }
-    if(r<l || (l===0 && t===0 && r===muestra.width-1 && b===muestra.height-1))return '';
+    if(r<l || (l===0 && t===0 && r===muestra.width-1 && b===muestra.height-1))return null;
     const sx=Math.max(0,Math.floor(l*nw/muestra.width));
     const sy=Math.max(0,Math.floor(t*nh/muestra.height));
     const sw=Math.min(nw,Math.ceil((r+1)*nw/muestra.width))-sx;
@@ -37,12 +39,29 @@ function recortarTransparencia(img){
     const salida=document.createElement('canvas'),escala=Math.min(1,4096/Math.max(sw,sh));
     salida.width=Math.max(1,Math.round(sw*escala));salida.height=Math.max(1,Math.round(sh*escala));
     salida.getContext('2d').drawImage(img,sx,sy,sw,sh,0,0,salida.width,salida.height);
-    return salida.toDataURL('image/png');
-  }catch{return '';}
+    return salida;
+  }catch{return null;}
+}
+
+async function prepararAdorno(url, recortar) {
+  const opciones = {cors: true, mensaje: 'No pude cargar el adorno. Volvé a intentarlo.'};
+  const original = await cargarImagenDecodificada(url, opciones);
+  const recorte = recortar && recortarTransparencia(original);
+  if (!recorte) return {img: original, objeto: ''};
+  const blob = await new Promise(resolve => recorte.toBlob(resolve, 'image/png'));
+  recorte.width = recorte.height = 0;
+  if (!blob) return {img: original, objeto: ''};
+  const objeto = URL.createObjectURL(blob);
+  try {
+    return {img: await cargarImagenDecodificada(objeto, opciones), objeto};
+  } catch {
+    URL.revokeObjectURL(objeto);
+    return {img: original, objeto: ''};
+  }
 }
 
 function dibujar(c,avisar=false,usuario=false){
-  if(!c.img.complete || !c.img.naturalWidth || !c.stage.clientWidth)return;
+  if(!c.img?.naturalWidth || !c.stage.clientWidth || c.url !== c.opts.url || c.cargando || c.error)return;
   const {r,ratio,max}=dimensiones(c),s=c.opts.state;
   if(!s.inicializado){
     const inicial=Number(c.opts.defaultWidth)||.7;
@@ -61,6 +80,7 @@ function dibujar(c,avisar=false,usuario=false){
   const estilo={left:s.x*100+'%',top:s.y*100+'%',width:s.width*100+'%',height:h*100+'%'};
   Object.assign(c.img.style,estilo);
   c.img.style.opacity=String(acotar(Number(c.opts.opacity??1),0,1));
+  c.visual.hidden=false;
   Object.assign(c.control.style,estilo);
   c.control.hidden=!c.opts.interactive;
   if(avisar)c.opts.onChange?.({...s},usuario);
@@ -74,7 +94,7 @@ function comenzar(c,handle=''){
   else {const p=[...c.points.values()][0];c.gesture={...s,point:p,handle};}
 }
 function abajo(c,e){
-  if(!c.opts.interactive || (e.pointerType==='mouse' && e.button!==0))return;
+  if(c.control.hidden || !c.opts.interactive || (e.pointerType==='mouse' && e.button!==0))return;
   e.preventDefault();e.stopPropagation();
   c.points.set(e.pointerId,punto(e));
   c.control.setPointerCapture?.(e.pointerId);
@@ -110,9 +130,7 @@ function soltar(c,e){
 function crear(stage){
   instalarEstilos();
   const visual=document.createElement('div');visual.className='va-adorno-visual';
-  const img=document.createElement('img');img.className='va-adorno-imagen';
-  img.dataset.vaAdornoImage='1';img.crossOrigin='anonymous';img.decoding='async';img.alt='';img.draggable=false;
-  visual.appendChild(img);stage.appendChild(visual);
+  visual.hidden=true;stage.appendChild(visual);
   const control=document.createElement('div');control.className='va-adorno-control';
   control.setAttribute('data-html2canvas-ignore','true');control.setAttribute('role','group');
   control.setAttribute('aria-label','Mover y cambiar el tamaño del adorno');control.tabIndex=0;control.hidden=true;
@@ -121,12 +139,14 @@ function crear(stage){
     h.setAttribute('aria-label','Cambiar tamaño del adorno');h.style.left=x+'%';h.style.top=y+'%';control.appendChild(h);
   }
   stage.appendChild(control);
-  const c={stage,img,visual,control,opts:{},points:new Map(),gesture:null,promise:Promise.resolve(),token:0,error:null};
+  const c={stage,img:null,visual,control,opts:{},points:new Map(),gesture:null,
+    promise:Promise.resolve(),url:'',objeto:'',cargando:false,token:0,error:null};
   control.addEventListener('pointerdown',e=>abajo(c,e));
   control.addEventListener('pointermove',e=>mover(c,e));
   for(const ev of ['pointerup','pointercancel','lostpointercapture'])control.addEventListener(ev,e=>soltar(c,e));
   control.addEventListener('contextmenu',e=>e.preventDefault());
   control.addEventListener('keydown',e=>{
+    if(control.hidden)return;
     const s=c.opts.state,{r}=dimensiones(c),d=e.shiftKey?10:2;
     if(!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','+','-'].includes(e.key))return;
     e.preventDefault();
@@ -145,41 +165,41 @@ export function actualizarAdorno(stage,opts={}){
   const c=editores.get(stage)||crear(stage);c.opts=opts;
   const key=opts.resourceKey||opts.url||'';
   if(!opts.url){
-    c.token++;c.visual.hidden=true;c.control.hidden=true;c.img.removeAttribute('src');
-    c.loadedUrl='';
+    c.token++;c.visual.hidden=true;c.control.hidden=true;c.visual.replaceChildren();c.img=null;
+    if(c.objeto)URL.revokeObjectURL(c.objeto);
+    c.url=c.objeto='';c.cargando=false;
+    indicarCargaPreview(stage,'adorno');
     c.promise=Promise.resolve();c.error=null;return c.promise;
   }
-  c.visual.hidden=false;
   if(opts.state.source!==key){
     Object.assign(opts.state,{source:key,inicializado:false,editado:false,posicionEditada:false});
   }
-  if(c.loadedUrl===opts.url && !c.error){dibujar(c);return c.promise;}
-  const token=++c.token;c.error=null;c.loadedUrl=opts.url;
-  c.promise=new Promise((resolve,reject)=>{
-    const timer=setTimeout(()=>fin(new Error('No pude cargar el adorno. Volvé a intentarlo.')),12000);
-    function fin(error){
-      clearTimeout(timer);
-      if(token!==c.token){resolve();return;}
-      c.img.onload=c.img.onerror=null;
-      if(error){c.error=error;reject(error);return;}
-      dibujar(c,true,false);resolve();
+  if(c.url===opts.url && !c.error){dibujar(c);return c.promise;}
+  const token=++c.token;c.error=null;c.url=opts.url;c.cargando=true;
+  c.control.hidden=true;
+  indicarCargaPreview(stage,'adorno','Cargando adorno…');
+  c.promise=prepararAdorno(opts.url,opts.trimTransparent).then(({img,objeto})=>{
+    if(token!==c.token){
+      if(objeto)URL.revokeObjectURL(objeto);
+      return;
     }
-    let preparado=false;
-    c.img.onload=()=>{
-      if(token!==c.token){fin();return;}
-      if(opts.trimTransparent && !preparado){
-        preparado=true;const recortado=recortarTransparencia(c.img);
-        if(recortado){c.img.src=recortado;return;}
-      }
-      fin();
-    };
-    c.img.onerror=()=>fin(new Error('No pude cargar el adorno. Volvé a intentarlo.'));
-    c.img.src=opts.url;
+    if(c.objeto)URL.revokeObjectURL(c.objeto);
+    c.objeto=objeto;c.img=img;c.cargando=false;
+    img.className='va-adorno-imagen';img.dataset.vaAdornoImage='1';img.alt='';img.draggable=false;
+    c.visual.hidden=true;
+    c.visual.replaceChildren(img);
+    dibujar(c,true,false);
+    indicarCargaPreview(stage,'adorno');
+  }).catch(error=>{
+    if(token!==c.token)return;
+    c.error=error;c.cargando=false;
+    indicarCargaPreview(stage,'adorno','No se pudo cargar el adorno.');
+    throw error;
   });
   c.promise.catch(()=>{});return c.promise;
 }
 
-export function activarAdorno(stage,activo){const c=editores.get(stage);if(c){c.opts.interactive=!!activo;c.control.hidden=!activo||!c.opts.url;}}
+export function activarAdorno(stage,activo){const c=editores.get(stage);if(c){c.opts.interactive=!!activo;c.control.hidden=!activo||!c.img||c.cargando||!!c.error||c.visual.hidden;}}
 export async function esperarAdorno(stage){
   const c=editores.get(stage);if(!c)return;
   let trabajo;

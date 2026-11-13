@@ -79,9 +79,10 @@ export function registrarUsoFondoGenerado(url, seccion, categorias) {
 }
 export async function cargarFondoBlob(url) {
   const key = claveFondo(url);
+  let cache, desdeCache = false;
   if (!pendientes.has(key)) {
     const tarea = (async () => {
-      let cache, guardada;
+      let guardada;
       try {
         cache = await caches.open('va-fondos-imagen-v1');
         guardada = await cache.match(key);
@@ -89,21 +90,32 @@ export async function cargarFondoBlob(url) {
           guardada = await cache.match(proxyImagen(key, 'fondo.png'));
         }
       } catch {}
-      if (guardada) return guardada.blob();
-
-      const blob = await obtenerBlobImagen(key, 'fondo.png', {esperaDirecta: 14000});
-      if (cache) {
-        (async () => {
-          await cache.put(key, new Response(blob, {headers: {'Content-Type': blob.type}}));
-          const keys = await cache.keys();
-          for (const old of keys.slice(0, Math.max(0, keys.length - 24))) await cache.delete(old);
-        })().catch(() => {});
+      if (guardada) {
+        desdeCache = true;
+        return guardada.blob();
       }
-      return blob;
+
+      return obtenerBlobImagen(key, 'fondo.png', {esperaDirecta: 14000, prioridad: 'high'});
     })().finally(() => pendientes.delete(key));
     pendientes.set(key, tarea);
   }
-  return URL.createObjectURL(await pendientes.get(key));
+  const blob = await pendientes.get(key);
+  const objeto = URL.createObjectURL(blob);
+  try {
+    await cargarImagenDecodificada(objeto);
+    if (cache && !desdeCache) {
+      (async () => {
+        await cache.put(key, new Response(blob, {headers: {'Content-Type': blob.type}}));
+        const keys = await cache.keys();
+        for (const old of keys.slice(0, Math.max(0, keys.length - 24))) await cache.delete(old);
+      })().catch(() => {});
+    }
+    return objeto;
+  } catch (error) {
+    URL.revokeObjectURL(objeto);
+    cache?.delete(key).catch(() => {});
+    throw error;
+  }
 }
 
 export function prepararMiniaturas(cont) {
@@ -138,7 +150,7 @@ export function prepararMiniaturas(cont) {
     const original = normalizarUrlImagen(url);
     const previa = urlMiniaturaImagen(original, miniatura);
     img.decoding = 'async';
-    img.fetchPriority = visible && indice < 2 ? 'high' : 'auto';
+    img.fetchPriority = visible && indice < 2 ? 'auto' : 'low';
     if (img.dataset.vaSrc !== previa && previa !== original) {
       img.addEventListener('error', () => { img.src = original; }, {once: true});
     }
@@ -188,12 +200,18 @@ export function crearDialogoEditor(titulo) {
 
 const galeriasRecursos = new WeakMap();
 
-export function marcarRecursosGaleria(carril, urls) {
+export function marcarRecursosGaleria(carril, urls, actual) {
+  if (!carril) return;
   const seleccion = new Set(urls.filter(Boolean));
-  for (const boton of carril.children) {
+  for (const boton of carril.querySelectorAll('button[data-recurso]')) {
     const activo = boton.dataset.recurso ? seleccion.has(boton.dataset.recurso) : !seleccion.size;
     boton.classList.toggle('activo', activo);
     boton.setAttribute('aria-pressed', String(activo));
+    const actualEditado = activo && !!actual && boton.dataset.recurso === actual;
+    if (actualEditado) boton.setAttribute('aria-current', 'true');
+    else boton.removeAttribute('aria-current');
+    const quitar = boton.closest('.va-textura-item')?.querySelector('.va-textura-quitar');
+    if (quitar) quitar.hidden = !activo;
   }
 }
 
@@ -266,6 +284,7 @@ function abrirGaleriaRecursos(carril, titulo, estado, selector) {
       const original = opcion.matches('img') ? opcion : opcion.querySelector('img');
       boton.setAttribute('aria-label', original?.alt || opcion.title || `${titulo} ${pagina * cupo + i + 1}`);
       boton.setAttribute('aria-pressed', String(opcion.classList.contains('activo')));
+      if (opcion.hasAttribute('aria-current')) boton.setAttribute('aria-current', 'true');
       if (original) {
         const img = document.createElement('img');
         img.alt = '';
@@ -282,7 +301,7 @@ function abrirGaleriaRecursos(carril, titulo, estado, selector) {
         estado.izquierda = carril.scrollLeft;
         estado.indice = pagina * cupo + i;
         dialogo.close();
-        opcion.click();
+      opcion.click();
       };
       grilla.append(boton);
     });
@@ -304,13 +323,61 @@ function abrirGaleriaRecursos(carril, titulo, estado, selector) {
 }
 
 const fondosEnCarga = new WeakMap();
+const avisosPreview = new WeakMap();
 
-export function vistaFondoEnCarga(stage) {
-  return fondosEnCarga.get(stage)?.miniatura || '';
+export function cargarImagenDecodificada(src, {cors = false, mensaje = 'No pude cargar la imagen. Volvé a intentarlo.'} = {}) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.decoding = 'async';
+    img.fetchPriority = 'high';
+    if (cors) img.crossOrigin = 'anonymous';
+    let terminado = false;
+    const terminar = error => {
+      if (terminado) return;
+      terminado = true;
+      clearTimeout(timer);
+      img.onload = img.onerror = null;
+      if (error) {
+        img.removeAttribute('src');
+        reject(error);
+      } else resolve(img);
+    };
+    const fallar = () => terminar(new Error(mensaje));
+    const timer = setTimeout(fallar, 12000);
+    img.onerror = fallar;
+    if (!img.decode) img.onload = () => terminar();
+    img.src = src;
+    if (img.decode) img.decode().then(() => terminar(), fallar);
+  });
+}
+
+export function indicarCargaPreview(stage, recurso, mensaje = '') {
+  if (!stage) return;
+  let aviso = avisosPreview.get(stage);
+  if (!aviso) {
+    if (!mensaje) return;
+    const elemento = document.createElement('span');
+    elemento.setAttribute('role', 'status');
+    elemento.setAttribute('data-html2canvas-ignore', 'true');
+    Object.assign(elemento.style, {
+      position: 'absolute', top: '8px', left: '8px', zIndex: '50',
+      padding: '5px 9px', borderRadius: '9px', background: '#19334aeb', color: '#fff',
+      font: '13px Arial, sans-serif', pointerEvents: 'none'
+    });
+    stage.appendChild(elemento);
+    aviso = {elemento, mensajes: new Map()};
+    avisosPreview.set(stage, aviso);
+  }
+  if (mensaje) aviso.mensajes.set(recurso, mensaje);
+  else aviso.mensajes.delete(recurso);
+  aviso.elemento.hidden = !aviso.mensajes.size;
+  const texto = [...aviso.mensajes.values()].join(' ');
+  if (aviso.elemento.textContent !== texto) aviso.elemento.textContent = texto;
 }
 
 export function cancelarFondoEnCarga(stage) {
   fondosEnCarga.delete(stage);
+  indicarCargaPreview(stage, 'fondo');
 }
 
 export async function esperarFondoEnCarga(stage) {
@@ -318,26 +385,30 @@ export async function esperarFondoEnCarga(stage) {
   while ((cambio = fondosEnCarga.get(stage))) await cambio.tarea;
 }
 
-export function elegirFondoEnPreview(stage, img, original, cargar, aplicar, repintar) {
-  const actual = img.currentSrc || img.src;
-  const miniatura = img.complete && img.naturalWidth && actual !== normalizarUrlImagen(original) ? actual : '';
-  const cambio = {miniatura};
+export function elegirFondoEnPreview(stage, original, aplicar, repintar) {
+  const anterior = fondosEnCarga.get(stage);
+  if (anterior?.original === original) return anterior.tarea;
+  const cambio = {original};
   fondosEnCarga.set(stage, cambio);
+  indicarCargaPreview(stage, 'fondo', 'Cargando fondo…');
   cambio.tarea = (async () => {
     try {
-      const blob = await cargar();
-      if (fondosEnCarga.get(stage) === cambio) aplicar(blob);
-      else URL.revokeObjectURL(blob);
+      const blob = await cargarFondoBlob(original);
+      if (fondosEnCarga.get(stage) !== cambio) {
+        URL.revokeObjectURL(blob);
+        return;
+      }
+      aplicar(blob);
+      repintar();
     } catch (error) {
       if (fondosEnCarga.get(stage) === cambio) throw error;
     } finally {
       if (fondosEnCarga.get(stage) === cambio) {
         fondosEnCarga.delete(stage);
-        repintar();
+        indicarCargaPreview(stage, 'fondo');
       }
     }
   })();
-  if (miniatura) repintar();
   return cambio.tarea;
 }
 
