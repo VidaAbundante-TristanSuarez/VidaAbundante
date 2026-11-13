@@ -3,8 +3,8 @@ import { elegirResolucionImagen, dimensionesExportacion, conProgresoExportacion 
 import { referenciasDePublicacion, referenciasHTML, disenosDeImagen, agregarDisenoImagen, combinarDisenosImagen, carruselImagenHTML, disenoActivoDeCard } from "./publicaciones-imagen.js?v=20261109-medios-1";
 import { normalizarUrlImagen, obtenerBlobImagen, subirArchivoR2 } from './carga-imagenes.js?v=20261109-medios-1';
 import { actualizarCapaTexturas, esperarCapaTexturas, montarControlesTextura, margenesTexturas,
-  ajustarSeleccionTexturas, enfocarTextura, prepararTexturasDiseno, ajustarOpacidadTextura,
-  opacidadTexturaActiva, instalarOpcionTextura } from "./texturas-editor.js?v=20261110-carga-2";
+  ajustarSeleccionTexturas, alternarTextura, prepararTexturasDiseno, ajustarOpacidadTextura,
+  opacidadTexturaActiva } from "./texturas-editor.js?v=20261110-carga-2";
 import { elegirFondoEnPreview, cancelarFondoEnCarga, esperarFondoEnCarga, montarOpcionesColorEditor, aplicarColorEditor, colorEnCanvas, ordenarFondos, registrarUsoFondoGenerado, configurarUsoFondos, combinarUsoFondos, cargarFondoBlob, prepararMiniaturas, prepararGaleriaRecursos, marcarRecursosGaleria, fuentesEditorImagen, montarEditorTexto, aplicarFormatoSeleccion, alternarFormatoSeleccion, restaurarControlesTexto, aplicarSubrayadoTexto, desactivarEditorTexto, crearInstantaneaPreview, esperarFuentesPreview, dibujarCajaTexto, recuperarCajaTexto } from "./imagen-editor.js?v=20261111-editores-1";
 
 // ================= IMPORTS FIREBASE =================
@@ -5866,7 +5866,8 @@ function bibliaRenderTexturasDiseno() {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.dataset.recurso = item.url || "";
-    btn.className = "biblia-recurso-mini";
+    btn.className = "biblia-recurso-mini va-textura-opcion";
+    btn.title = item.nombre;
 
     if (item.url) {
       const miniatura = document.createElement("img");
@@ -5877,24 +5878,14 @@ function bibliaRenderTexturasDiseno() {
       btn.innerHTML = `<i class="fa-solid fa-ban"></i>`;
     }
 
-    const seleccionar = () => {
-      const yaAplicada = fondoDisenoBiblia.texturasUrls.includes(item.url);
-      if (item.url) enfocarTextura(fondoDisenoBiblia, item.url);
-      else bibliaGuardarTexturasSeleccionadas([]);
-      sincronizar();
-      if (!yaAplicada || document.getElementById("bibliaFondoTexturaLayer")?.dataset.texturasEstado === "error") {
-        invalidarRenderFinal();
-        bibliaActualizarTexturas();
-      }
-    };
-    const quitar = () => {
-      bibliaGuardarTexturasSeleccionadas(fondoDisenoBiblia.texturasUrls.filter(url => url !== item.url));
+    btn.onclick = () => {
+      alternarTextura(fondoDisenoBiblia, item.url);
       sincronizar();
       invalidarRenderFinal();
       bibliaActualizarTexturas();
     };
 
-    cont.appendChild(instalarOpcionTextura(btn, item.url, item.nombre, seleccionar, quitar));
+    cont.appendChild(btn);
   });
   sincronizar();
   restaurar();

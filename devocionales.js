@@ -2,8 +2,8 @@ import { subirArchivoR2, normalizarUrlImagen, urlMiniaturaImagen, vistaArchivada
 import { actualizarAdorno, activarAdorno, esperarAdorno } from "./adornos-editor.js?v=20261102-notas-compartir-7";
 import { elegirResolucionImagen, dimensionesExportacion, conProgresoExportacion } from "./exportacion-imagen.js?v=20261102-notas-compartir-7";
 import { actualizarCapaTexturas, esperarCapaTexturas, montarControlesTextura, margenesTexturas, cargarTextura, dibujarTexturas,
-  ajustarSeleccionTexturas, enfocarTextura, prepararTexturasDiseno, ajustarOpacidadTextura,
-  opacidadTexturaActiva, instalarOpcionTextura } from "./texturas-editor.js?v=20261110-carga-2";
+  ajustarSeleccionTexturas, alternarTextura, prepararTexturasDiseno, ajustarOpacidadTextura,
+  opacidadTexturaActiva } from "./texturas-editor.js?v=20261110-carga-2";
 import { elegirFondoEnPreview, cancelarFondoEnCarga, esperarFondoEnCarga, montarOpcionesColorEditor, abrirOpcionesColorEditor, aplicarColorEditor, colorEnCanvas, ordenarFondos, registrarUsoFondoGenerado, prepararGaleriaRecursos, marcarRecursosGaleria, fuentesEditorImagen, montarEditorTexto, aplicarCajaTexto, aplicarFormatoSeleccion, alternarFormatoSeleccion, restaurarControlesTexto, aplicarSubrayadoTexto, crearInstantaneaPreview, esperarFuentesPreview, recuperarCajaTexto } from "./imagen-editor.js?v=20261111-editores-1";
 import { dibujarCajaTexto } from "./imagen-editor.js?v=20261111-editores-1";
 
@@ -2139,8 +2139,8 @@ function cargarTexturasF2(){
     const b = document.createElement("button");
     b.type = "button";
     b.dataset.recurso = item.url || "";
-    b.className = "dev-textura-btn";
-    b.textContent = "";
+    b.className = "dev-textura-btn va-textura-opcion";
+    b.title = item.nombre;
 
     if (item.url) {
       const img = document.createElement("img");
@@ -2153,22 +2153,13 @@ function cargarTexturasF2(){
       b.innerHTML = `<i class="fa-solid fa-genderless"></i>`;
     }
 
-    const seleccionar = () => {
-      const yaAplicada = DEV.f2.texturasUrls.includes(item.url);
-      if (item.url) enfocarTextura(DEV.f2, item.url);
-      else devF2GuardarTexturas([]);
-      sincronizar();
-      if (!yaAplicada || $("dev2Preview")?.querySelector(".dev2-texture-layer")?.dataset.texturasEstado === "error") {
-        devCambiarTexturas();
-      }
-    };
-    const quitar = () => {
-      devF2GuardarTexturas(DEV.f2.texturasUrls.filter(url => url !== item.url));
+    b.onclick = () => {
+      alternarTextura(DEV.f2, item.url);
       sincronizar();
       devCambiarTexturas();
     };
 
-    cont.appendChild(instalarOpcionTextura(b, item.url, item.nombre, seleccionar, quitar));
+    cont.appendChild(b);
   });
   sincronizar();
   restaurar();

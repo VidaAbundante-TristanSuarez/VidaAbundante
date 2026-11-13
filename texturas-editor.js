@@ -19,10 +19,10 @@ export function ajustarSeleccionTexturas(estado, urls, enfocada = estado.textura
   estado.texturaActiva = urls.includes(enfocada) ? enfocada : estado.texturaUrl;
 }
 
-export function enfocarTextura(estado, url) {
+export function alternarTextura(estado, url) {
   const urls = estado.texturasUrls || [];
-  if (urls.includes(url)) {
-    estado.texturaActiva = url;
+  if (!url || urls.includes(url)) {
+    ajustarSeleccionTexturas(estado, url ? urls.filter(actual => actual !== url) : []);
     return;
   }
   ajustarSeleccionTexturas(estado, [url, ...urls], url);
@@ -54,24 +54,6 @@ export function ajustarOpacidadTextura(estado, opacidad) {
 export function opacidadTexturaActiva(estado, intensidadAnterior = opacidadInicial) {
   const anterior = Array.isArray(estado.texturasOpacidades) ? estado.texturasOpacidades : [];
   return normalizarOpacidad(anterior.find(item => item?.url === estado.texturaActiva)?.opacidad ?? intensidadAnterior);
-}
-
-export function instalarOpcionTextura(boton, url, nombre, seleccionar, quitar) {
-  boton.classList.add('va-textura-opcion');
-  boton.title = url ? nombre + ' · tocar para editar su opacidad' : nombre;
-  boton.onclick = seleccionar;
-  if (!url) return boton;
-  const opcion = document.createElement('span');
-  opcion.className = 'va-textura-item';
-  const remover = document.createElement('button');
-  remover.type = 'button';
-  remover.className = 'va-textura-quitar';
-  remover.setAttribute('aria-label', 'Quitar ' + nombre);
-  remover.title = 'Quitar textura';
-  remover.textContent = '×';
-  remover.onclick = quitar;
-  opcion.append(boton, remover);
-  return opcion;
 }
 
 function lienzo(w, h) {
@@ -404,10 +386,7 @@ export function montarControlesTextura(input, {
     .va-textura-paso-botones{display:flex;align-items:center;gap:2px;border:1px solid #c6d9e7;border-radius:9px;background:#fff}
     .va-textura-paso-botones button{display:grid;place-items:center;width:30px;min-width:30px;height:30px;padding:0;border:0;border-radius:8px;background:#e5f2fc;color:#224e70;font:700 16px/1 Arial;cursor:pointer}
     .va-textura-paso-botones button:disabled{opacity:.38;cursor:default}
-    .va-textura-item{position:relative;display:inline-flex;flex:0 0 auto}
     :is(#modalPersonalizar,#modalDevFase2) .va-textura-opcion[aria-current=true],.va-galeria-cuadricula button[aria-current=true]{box-shadow:inset 0 0 0 3px #2876b6;outline:2px solid #2876b6;outline-offset:-2px}
-    :is(#modalPersonalizar,#modalDevFase2) .va-textura-quitar{position:absolute;top:0;right:0;z-index:1;display:grid;place-items:center;box-sizing:border-box;width:22px;min-width:22px;height:22px;min-height:22px;margin:0;padding:0;border:1px solid #2876b6;border-radius:50%;background:#f5fbff;color:#173e5d;font:700 16px/1 Arial}
-    .va-textura-quitar[hidden]{display:none!important}
     :is(#modalPersonalizar,#modalDevFase2) .va-textura-porcentaje{display:flex!important;flex-direction:row!important;align-items:center;gap:0!important;margin:0!important;padding:0 3px 0 0!important;font-size:11px;color:#234}
     :is(#modalPersonalizar,#modalDevFase2) .va-textura-porcentaje input{width:25px!important;min-width:0!important;height:24px!important;padding:0!important;margin:0!important;border:0!important;box-shadow:none!important;background:transparent!important;color:inherit!important;text-align:right;font:inherit;appearance:textfield}
     .va-textura-porcentaje input::-webkit-inner-spin-button,.va-textura-porcentaje input::-webkit-outer-spin-button{appearance:none;margin:0}

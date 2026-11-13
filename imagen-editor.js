@@ -210,8 +210,6 @@ export function marcarRecursosGaleria(carril, urls, actual) {
     const actualEditado = activo && !!actual && boton.dataset.recurso === actual;
     if (actualEditado) boton.setAttribute('aria-current', 'true');
     else boton.removeAttribute('aria-current');
-    const quitar = boton.closest('.va-textura-item')?.querySelector('.va-textura-quitar');
-    if (quitar) quitar.hidden = !activo;
   }
 }
 
