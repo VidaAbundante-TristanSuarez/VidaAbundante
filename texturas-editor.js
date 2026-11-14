@@ -1,4 +1,5 @@
 import { cargarImagenDecodificada, indicarCargaPreview } from "./imagen-editor.js?v=20261111-editores-1";
+import { obtenerBlobImagen, origenDeImagenProxy } from "./carga-imagenes.js?v=20261109-medios-1";
 
 // Mismo dibujo en Biblia, Devocionales, preview y PNG. Sin servicios externos.
 const recursos = new Map();
@@ -95,7 +96,8 @@ function analizarImagen(source) {
 }
 
 export async function cargarTextura(url, opciones = {}) {
-  const src=new URL(url, location.href).href;
+  const src=origenDeImagenProxy(url);
+  if (!src) throw new Error('No se encontró la textura.');
   const maxSize=limitar(Number(opciones.maxSize)||2048,512,4096);
   const conservar=opciones.cache!==false;
   const key=src+'|'+maxSize;
@@ -104,13 +106,8 @@ export async function cargarTextura(url, opciones = {}) {
     return recurso;
   }
   if (pendientes.has(key)) return pendientes.get(key);
-  const trabajo=cargarImagenDecodificada(src,{
-    cors:true, mensaje:'No pude cargar una textura. Volvé a intentarlo.'
-  }).then(img=>{
+  const trabajo=prepararImagenTextura(src,maxSize).then(source=>{
     try {
-      const factor=Math.min(1,maxSize/Math.max(img.naturalWidth,img.naturalHeight));
-      const source=lienzo(img.naturalWidth*factor,img.naturalHeight*factor);
-      source.getContext('2d').drawImage(img,0,0,source.width,source.height);
       const recurso={source,...analizarImagen(source),realzada:null,realce:0};
       if(conservar)recursos.set(key,recurso);
       // La caché no retiene todas las texturas grandes de la galería.
@@ -120,6 +117,34 @@ export async function cargarTextura(url, opciones = {}) {
   }).finally(()=>pendientes.delete(key));
   pendientes.set(key,trabajo);
   return trabajo;
+}
+
+async function prepararImagenTextura(url, maxSize) {
+  const opciones = {
+    aceptarAlCargar: true, espera: 30000,
+    mensaje: 'No pude cargar una textura. Volvé a intentarlo.'
+  };
+  const preparar = img => {
+    const factor=Math.min(1,maxSize/Math.max(img.naturalWidth,img.naturalHeight));
+    const source=lienzo(img.naturalWidth*factor,img.naturalHeight*factor);
+    source.getContext('2d').drawImage(img,0,0,source.width,source.height);
+    return source;
+  };
+  if (new URL(url).origin === location.origin) {
+    const img = await cargarImagenDecodificada(url, opciones).catch(() => null);
+    if (img) return preparar(img);
+  }
+  let source;
+  const desdeBlob = async blob => {
+    const objeto = URL.createObjectURL(blob);
+    try { source = preparar(await cargarImagenDecodificada(objeto, opciones)); }
+    finally { URL.revokeObjectURL(objeto); }
+  };
+  const blob = await obtenerBlobImagen(url, 'textura.png', {
+    esperaDirecta: 30000, prioridad: 'high', reintentar: true, validar: desdeBlob
+  });
+  if (!source) await desdeBlob(blob);
+  return source;
 }
 
 function imagenConIntensidad(recurso, intensidad) {

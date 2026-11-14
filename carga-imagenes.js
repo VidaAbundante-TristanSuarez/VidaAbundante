@@ -294,6 +294,13 @@ export async function crearMiniaturaImagen(archivo, lado) {
   }
 }
 
+export function origenDeImagenProxy(valor) {
+  const src = normalizarUrlImagen(valor);
+  if (!src || new URL(src).origin !== WORKER) return src;
+  const original = new URL(src).searchParams.get('url');
+  return normalizarUrlImagen(original) || src;
+}
+
 export function proxyImagen(url, nombre = 'imagen.png') {
   const original = normalizarUrlImagen(url);
   if (!original || /^(blob:|data:)/.test(original)) return original;
@@ -305,11 +312,11 @@ export function proxyImagen(url, nombre = 'imagen.png') {
   return worker.href;
 }
 
-async function leerBlob(url, timeout, prioridad) {
+async function leerBlob(url, timeout, prioridad, cache = 'default') {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeout);
   try {
-    const response = await fetch(url, {signal: controller.signal, priority: prioridad});
+    const response = await fetch(url, {signal: controller.signal, priority: prioridad, cache});
     if (!response.ok) throw new Error('No se pudo leer la imagen (' + response.status + ').');
     const blob = await response.blob();
     if (!blob.size || (/^(text\/html|application\/json)/i.test(blob.type))) throw new Error('La respuesta no contiene una imagen.');
@@ -318,7 +325,9 @@ async function leerBlob(url, timeout, prioridad) {
 }
 
 // Reutiliza el original: no comprime ni cambia la calidad de las exportaciones.
-export function obtenerBlobImagen(valor, nombre = 'imagen.png', {esperaDirecta = 5000, prioridad = 'auto'} = {}) {
+export function obtenerBlobImagen(valor, nombre = 'imagen.png', {
+  esperaDirecta = 5000, prioridad = 'auto', reintentar = false, validar
+} = {}) {
   const url = normalizarUrlImagen(valor);
   if (!url) return Promise.reject(new Error('No hay imagen para preparar.'));
   if (blobs.has(url)) {
@@ -327,12 +336,19 @@ export function obtenerBlobImagen(valor, nombre = 'imagen.png', {esperaDirecta =
   }
   if (pendientes.has(url)) return pendientes.get(url);
   const trabajo = (async () => {
+    const leer = async (src, espera, cache) => {
+      const blob = await leerBlob(src, espera, prioridad, cache);
+      await validar?.(blob);
+      return blob;
+    };
     let blob;
-    try { blob = await leerBlob(url, esperaDirecta, prioridad); }
+    try { blob = await leer(url, esperaDirecta); }
     catch (error) {
-      const alternativa = proxyImagen(url, nombre);
-      if (alternativa === url || /^(blob:|data:)/.test(url)) throw error;
-      blob = await leerBlob(alternativa, 15000, prioridad);
+      const alternativa = reintentar && new URL(url).origin === location.origin
+        ? url : proxyImagen(url, nombre);
+      if (/^(blob:|data:)/.test(url) || (alternativa === url && !reintentar)) throw error;
+      blob = await leer(alternativa, reintentar ? esperaDirecta : 15000,
+        reintentar ? 'reload' : 'default');
     }
     if (blob.size <= MAX_CACHE) {
       while (blobs.size && bytesCache + blob.size > MAX_CACHE) {

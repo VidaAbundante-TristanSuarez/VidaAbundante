@@ -323,7 +323,10 @@ function abrirGaleriaRecursos(carril, titulo, estado, selector) {
 const fondosEnCarga = new WeakMap();
 const avisosPreview = new WeakMap();
 
-export function cargarImagenDecodificada(src, {cors = false, mensaje = 'No pude cargar la imagen. Volvé a intentarlo.'} = {}) {
+export function cargarImagenDecodificada(src, {
+  cors = false, mensaje = 'No pude cargar la imagen. Volvé a intentarlo.',
+  aceptarAlCargar = false, espera = 12000
+} = {}) {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.decoding = 'async';
@@ -341,11 +344,11 @@ export function cargarImagenDecodificada(src, {cors = false, mensaje = 'No pude 
       } else resolve(img);
     };
     const fallar = () => terminar(new Error(mensaje));
-    const timer = setTimeout(fallar, 12000);
+    const timer = setTimeout(fallar, espera);
     img.onerror = fallar;
-    if (!img.decode) img.onload = () => terminar();
+    if (aceptarAlCargar || !img.decode) img.onload = () => terminar();
     img.src = src;
-    if (img.decode) img.decode().then(() => terminar(), fallar);
+    if (!aceptarAlCargar && img.decode) img.decode().then(() => terminar(), fallar);
   });
 }
 
