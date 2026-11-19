@@ -1,3 +1,4 @@
+import {audienciaPublicacion, campoVisibilidad, escucharPublicaciones, leerPublicaciones, nivelPublicacion, puedeVerPublicacion, verificarAccesoPublicacion, visibilidadEnLote} from "../visibilidad-publicaciones.js";
 import { crearMiniaturaImagen, subirArchivoR2, urlMiniaturaImagen } from "../carga-imagenes.js?v=20261109-medios-1";
 import {
   abrirEdicionHorarioFlyer,
@@ -12,6 +13,7 @@ import {
 import {
   ref,
   set,
+  update,
   remove,
   onValue,
   get,
@@ -2213,7 +2215,6 @@ async function edAsegurarRefPublica(edicionId, titulo) {
 
   await set(ref(db, `edicionesRefs/${refPublica}`), {
     edicionId,
-    titulo: titulo || "Edición",
     ts: Date.now()
   });
 
@@ -2428,6 +2429,7 @@ window.mostrarEdiciones = async () => {
        <div class="ed-field">
   <label for="edTitulo">Título de la edición</label>
   <input id="edTitulo" type="text" required placeholder="Ej: David y Goliat" />
+  <div id="edVisibilidadCampo">${campoVisibilidad("edVisibilidad")}</div>
 </div>
 
 <div class="ed-field">
@@ -2524,8 +2526,7 @@ function iniciarEscuchaEdiciones() {
   const db = edDB();
   if (!db) return;
 
-  onValue(ref(db, "ediciones"), (snap) => {
-    const val = snap.val() || {};
+  escucharPublicaciones(db, "ediciones", (val) => {
 
     edicionesCache = Object.entries(val).map(([id, item]) => ({
       id,
@@ -2546,6 +2547,10 @@ if (typeof window.renderCompartidos === "function") {
   });
 
   edicionesEscuchaActiva = true;
+  if (window.__ES_ADMIN) visibilidadEnLote({
+    ancla: ed$("edBtnNueva"), db, ruta: "ediciones", items: () => edicionesCache,
+    titulo: ed => ed.titulo, propietario: ed => ed.creadoPor, campoPropietario: "creadoPor"
+  });
 }
 
 function iniciarEscuchaEdicionesStats() {
@@ -3128,6 +3133,7 @@ window.abrirNuevaEdicion = () => {
 
   if (tituloModal) tituloModal.textContent = "Nueva edición";
   if (form) form.reset();
+  ed$("edVisibilidadCampo").innerHTML = campoVisibilidad("edVisibilidad");
 
     const serieInput = ed$("edSerieImagenesInput");
   if (serieInput) serieInput.value = "";
@@ -3173,6 +3179,7 @@ window.editarEdicion = async (id) => {
   if (tituloModal) tituloModal.textContent = "Editar edición";
   if (form) form.reset();
   if (inputTitulo) inputTitulo.value = ed.titulo || "";
+  ed$("edVisibilidadCampo").innerHTML = campoVisibilidad("edVisibilidad", nivelPublicacion(ed), !ed.creadoPor || ed.creadoPor === window.__UID);
 
   const selectRama = ed$("edRama");
 if (selectRama) selectRama.value = edRamaEdicion(ed);
@@ -3705,6 +3712,9 @@ const portadaFile = ed$("edPortadaFile")?.files?.[0] || null;
 
   try {
     const existente = editandoId ? await obtenerEdicion(editandoId) : null;
+    if (editandoId && !existente) throw new Error("La edición ya no está disponible.");
+    const audiencia = audienciaPublicacion(ed$("edVisibilidad")?.value || nivelPublicacion(existente), existente?.creadoPor || window.__UID);
+    await verificarAccesoPublicacion(db, "ediciones", audiencia);
     const portadaExistente = String(existente?.portadaUrl || "").trim();
     if (!rows.length && !portadaFile && !portadaExistente) {
       alert("Cargá una portada o agregá al menos una página.");
@@ -3883,6 +3893,7 @@ const data = {
   portadaMiniaturaUrl,
   paginas: paginasObj,
   publicada: true,
+  audiencia,
   creadoPor: existente?.creadoPor || window.__UID || "",
   ts: existente?.ts || Date.now(),
   actualizado: Date.now(),
@@ -3891,6 +3902,11 @@ const data = {
 };
 
     edSetEstado("Guardando datos...");
+    if (existente && audiencia !== "publica") {
+      const retirarCopias = {[`compartidos/edicion_${edId}`]: null};
+      if (existente.refPublica) retirarCopias[`edicionesRefs/${existente.refPublica}/titulo`] = null;
+      await update(ref(db), retirarCopias);
+    }
     const edicionRef = ref(db, `ediciones/${edId}`);
     if (existente) {
       const resultado = await runTransaction(edicionRef, actual => {
@@ -3911,7 +3927,6 @@ const data = {
     }
 await set(ref(db, `edicionesRefs/${refPublica}`), {
   edicionId: edId,
-  titulo,
   ts: Date.now()
 });
     edSetEstado("Edición guardada.");
@@ -4027,16 +4042,19 @@ async function subirImagenEdicionR2(file, carpeta, lado) {
 
 async function obtenerEdicion(id) {
   const cache = edicionesCache.find(x => x.id === id);
-  if (cache) return cache;
+  if (cache && puedeVerPublicacion(cache)) return cache;
 
   const db = await edEsperarDB();
   if (!db) return null;
 
-  const snap = await get(ref(db, `ediciones/${id}`));
-  const val = snap.val();
-  if (!val) return null;
-
-  return { id, ...val };
+  await window.__FB.auth.authStateReady?.();
+  try {
+    const val = (await get(ref(db, `ediciones/${id}`))).val();
+    return val && puedeVerPublicacion(val) ? {...val, id} : null;
+  } catch (error) {
+    if (/permission.denied/i.test(error.code || error.message || "")) return null;
+    throw error;
+  }
 }
 
 window.obtenerEdicion = obtenerEdicion;
@@ -6152,6 +6170,7 @@ function edPedirLoginParaPanel() {
 }
 
 async function edAsegurarPublicadaParaCompartir(ed) {
+  if (nivelPublicacion(ed) !== "publica") return true;
   const db = edDB();
 
   if (!db) {
@@ -6237,6 +6256,10 @@ window.compartirEdicion = async (id, destino = "redes") => {
   /* ===== Botón publicar / volver a publicar en Compartidos ===== */
 
   if (destino === "compartidos") {
+    if (nivelPublicacion(ed) !== "publica") {
+      window.mostrarToast?.("La edición ya aparece para el público elegido en Visibilidad.");
+      return;
+    }
     if (!window.__ES_ADMIN) {
       alert("Solo los administradores pueden enviar a Compartidos.");
       return;
@@ -6415,8 +6438,7 @@ async function edIdDesdeLinkPublico() {
 
   // Respaldo por si existe refPublica dentro de ediciones,
   // pero todavía no existe edicionesRefs.
-  const snapEds = await get(ref(db, "ediciones"));
-  const eds = snapEds.val() || {};
+  const eds = await leerPublicaciones(db, "ediciones");
 
   const encontrado = Object.entries(eds).find(([_, item]) => {
     return String(item?.refPublica || "") === refPublica;
@@ -6438,8 +6460,10 @@ async function abrirEdicionDesdeURL() {
   const id = data.id;
   const refPublica = data.refPublica;
 
-  if (!id) {
+  if (!id || !await obtenerEdicion(id)) {
     document.body.classList.remove("ed-link-directo");
+    window.irA?.("compartidos");
+    window.mostrarToast?.("La edición no está disponible para esta sesión.");
     return;
   }
 
