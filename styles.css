@@ -6906,7 +6906,8 @@ body.oscuro .va-nota-imagen-estado.va-nota-desborde{color:#ffd391;}
 #panel-marcadores .va-nota-titulo-citas{flex:1 1 auto;min-width:0;font-size:13px;}
 #panel-marcadores .va-nota-titulo-citas > b{display:block;overflow-wrap:anywhere;}
 #panel-marcadores .va-nota-titulo-citas .va-referencias{padding:7px 0 2px;}
-#panel-marcadores .va-nota-fecha{margin-top:9px;text-align:right;font-size:11px;line-height:1.3;opacity:.62;}
+#panel-marcadores .va-nota-fecha,
+.nota-vista-lista > .va-nota-fecha{margin-top:9px;text-align:right;font-size:11px;line-height:1.3;opacity:.62;}
 #panel-marcadores .va-nota-personal[hidden]{display:none!important;}
 
 .va-items-tema{isolation:isolate;--va-items-imagen:none;--va-items-color:transparent;--va-items-opacidad:1;color:var(--va-items-texto,inherit)!important;}
@@ -7120,3 +7121,33 @@ body.oscuro .va-creada-carrusel .va-carrusel-imagen:not(.va-varios-disenos){back
 .va-opciones-color-contenido .va-opciones-color-cerrar{position:absolute;right:10px;top:10px;min-height:32px;width:32px;padding:0;font-size:20px}
 .va-opciones-color-contenido p{margin:3px 0 0;font:13px/1.35 Arial,sans-serif}
 body.oscuro #va-opciones-color{background:#203e54;color:#edf7ff;border-color:#54748b}
+
+/* La Biblia web usa el alto estable del navegador para el fondo. */
+@supports (height: 100lvh) {
+  body.va-biblia-web-movil.en-biblia #fondoBiblia {
+    height: 100lvh;
+    transform: none;
+  }
+}
+body.va-biblia-web-movil.en-biblia:not(.barra-oculta) #seccion-biblia {
+  padding-bottom: var(--va-alto-acciones-biblia, 47px);
+}
+body.va-biblia-web-movil.en-biblia:not(.barra-oculta) #seccion-biblia #texto {
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+.nota-vista-titulo > .va-referencias {
+  padding: 4px 0 2px;
+}
+.nota-vista-versiculo {
+  white-space: pre-wrap;
+}
+.nota-vista-versiculo:last-child {
+  margin-bottom: 0;
+}
+.nota-vista-lista > .va-nota-fecha {
+  margin-top: 0;
+  opacity: .48;
+}
+
+.comp-directo-cerrar { justify-self: end; }

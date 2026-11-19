@@ -1758,8 +1758,9 @@ function baseEdicionMarcadorCompleta(m = {}, idMarcador = "") {
     textoVersiculo: esNotaLibre
       ? ""
       : (
-          String(m.textoVersiculo || m.textoBiblico || "").trim() ||
-          textoVersiculosMarcadorPlano(items)
+          (String(m.textoVersiculo || m.textoBiblico || "").trim()
+            ? String(m.textoVersiculo || m.textoBiblico)
+            : textoVersiculosMarcadorPlano(items))
         )
   };
 }
@@ -9597,7 +9598,7 @@ function renderListaMarcadores() {
             }
           </div>
 
-          ${referenciasHTML(m,{agruparPorCapitulo:true,lineaUnica:true})}
+          ${referenciasHTML(m,{agruparPorCapitulo:true,lineaUnica:true,unirConY:true})}
           <div class="nota-lista-botones">
             <button
               type="button"
@@ -10442,13 +10443,8 @@ window.abrirVistaMarcadorDesdeLista = function(idMarcador, origenLista = "biblia
     : "#000";
 
   const titulo = marcadorEscapeHTML(datos.titulo || "Nota");
-  const metaBase = datos.meta || "";
-  const temaABC = m?.origen === "abc" && m?.abc?.temaTitulo
-    ? `ABC · ${m.abc.temaTitulo}`
-    : "";
-
-  const meta = marcadorEscapeHTML([temaABC, metaBase].filter(Boolean).join(" · "));
-  const versiculo = vaNotaHTML(datos.versiculo || "", m.versiculoFormato || {tamano: 18});
+  const fecha = marcadorEscapeHTML(notaShareFechaHora(m.fecha));
+  const versiculo = vaNotaHTML(datos.versiculo, datos.versiculoFormato);
   const nota = vaNotaHTML(datos.texto || "", datos.notaFormato);
 
   const audioUrl =
@@ -10484,17 +10480,16 @@ window.abrirVistaMarcadorDesdeLista = function(idMarcador, origenLista = "biblia
 
         <div class="nota-vista-titulo">
           <b>${titulo}</b>
-          ${meta ? `<span>${meta}</span>` : ``}
+          ${referenciasHTML(m, {agruparPorCapitulo: true, lineaUnica: true, unirConY: true})}
         </div>
       </div>
 
-      ${referenciasHTML(m)}
       <div
         class="nota-vista-card"
         style="background:${fondoNota} !important; color:${colorTexto} !important;"
       >
         ${versiculo ? `<div class="nota-vista-versiculo">${versiculo}</div>` : ``}
-        ${nota ? `<div class="nota-vista-texto">${nota}</div>` : `<div class="nota-vista-texto muted">Esta nota no tiene texto escrito.</div>`}
+        ${nota ? `<div class="nota-vista-texto">${nota}</div>` : ``}
       </div>
 
       ${
@@ -10560,6 +10555,7 @@ window.abrirVistaMarcadorDesdeLista = function(idMarcador, origenLista = "biblia
           </button>
         ` : ``}
       </div>
+      ${fecha ? `<div class="va-nota-fecha">${fecha}</div>` : ``}
     </div>
   `;
 };
@@ -10583,7 +10579,7 @@ function renderPreviewVersiculosMarcador() {
   const input = document.getElementById('marcadorNota');
   if (!input?.__vaNotaToolbar) vaCargarEditorNota(base || {nota: input?.value || ''});
   const contenido = String(base?.textoVersiculo || base?.textoBiblico || textoVersiculosMarcadorPlano(items));
-  const estilos = input?.__vaVersiculoFormato || {tamano: 18, rangos: [{inicio: 0, fin: contenido.length, tamano: 18, bold: true, italic: true}]};
+  const estilos = vaFormatoVersiculoGuardado(contenido, input?.__vaVersiculoFormato);
   box.__vaEditorVersiculo = vaMontarEditorNota(texto, input.__vaNotaToolbar, {
     texto: contenido, formato: estilos, soloFormato: true, label: 'Versículos de la nota'
   }, estado => { input.__vaVersiculoFormato = estado.formato; });
@@ -11617,9 +11613,9 @@ const tituloPanel =
         textoABC = String(m?.abcTexto || "").trim();
       }
 
-const textoGuardado = String(m.textoVersiculo || m.textoBiblico || "").trim();
+const textoGuardado = String(m.textoVersiculo || m.textoBiblico || "");
 
-      if (textoGuardado) {
+      if (textoGuardado.trim()) {
         textoVers = textoGuardado;
       } else {
         const items = itemsMarcadorDesdeData(m);
@@ -11721,7 +11717,7 @@ return `
             </div>
           </div>
 
-          ${textoVers ? `<div class="nota preview-versiculos-marcador" style="margin-top:8px;">${vaNotaHTML(textoVers, m.versiculoFormato || {tamano: 18})}</div>` : ""}
+          ${textoVers ? `<div class="nota preview-versiculos-marcador" style="margin-top:8px;">${vaNotaHTML(textoVers, vaFormatoVersiculoGuardado(textoVers, m.versiculoFormato))}</div>` : ""}
           ${(!textoVers && textoABC) ? `<div class="nota preview-versiculos-marcador" style="margin-top:8px;">${textoABC}</div>` : ""}
 ${m.nota ? `<div class="nota va-nota-personal" data-nota-personal="${marcadorEscapeHTML(m.id)}">${vaNotaPersonalHTML(m.nota, m.notaFormato)}</div>` : ""}
 
@@ -13819,8 +13815,8 @@ function notaShareTextoVersiculoMarcador(m = {}) {
     return String(m.abcTexto || "").trim();
   }
 
-  const guardado = String(m.textoVersiculo || m.textoBiblico || "").trim();
-  if (guardado) return guardado;
+  const guardado = String(m.textoVersiculo || m.textoBiblico || "");
+  if (guardado.trim()) return guardado;
 
   const items = itemsMarcadorDesdeData(m);
   if (!items.length) return "";
@@ -13861,20 +13857,34 @@ function notaShareFechaHora(ts) {
   }
 }
 
+function vaFormatoVersiculoGuardado(texto, formato) {
+  const guardado = Array.isArray(formato?.rangos)
+    ? formato.rangos
+    : Object.values(formato?.rangos || {});
+  const rangos = guardado.filter(r => r && Number.isInteger(r.inicio) &&
+    Number.isInteger(r.fin) && r.inicio >= 0 && r.fin > r.inicio && r.inicio < texto.length);
+  const tamano = Number(formato?.tamano) || 18;
+  return {
+    ...formato, tamano,
+    rangos: rangos.length ? rangos : [{inicio: 0, fin: texto.length, tamano, bold: true, italic: true}]
+  };
+}
+
 function notaShareDatosDesdeMarcador(m = {}) {
   const referencia = notaShareReferenciaMarcador(m);
   const fecha = notaShareFechaHora(m.fecha);
   const nota = vaNotaPrepararMarkdown(m.nota, m.notaFormato);
+  const versiculo = notaShareTextoVersiculoMarcador(m);
 
   return {
     titulo: String(m.titulo || "Nota").trim() || "Nota",
     referencia,
     meta: [referencia, fecha].filter(Boolean).join(" · "),
-    versiculo: notaShareTextoVersiculoMarcador(m),
+    versiculo,
     texto: nota.texto,
     referencias:referenciasDePublicacion(m),
     notaFormato: nota.formato,
-    versiculoFormato: m.versiculoFormato || null,
+    versiculoFormato: vaFormatoVersiculoGuardado(versiculo, m.versiculoFormato),
     fondo: String(m.color || "#fff3b0").trim(),
     fuente: vaEstiloFuenteUsuario()
   };
@@ -17656,6 +17666,20 @@ window.cancelarFondoTema = () => {
     setTimeout(fijarAlto, 400);
   });
 })();
+
+// Chrome móvil cambia el alto visible al mostrar u ocultar su barra de direcciones.
+if (/Android.*Chrome/i.test(navigator.userAgent) && !vaEsAndroidAPK() && !vaEsStandalone()) {
+  document.body.classList.add("va-biblia-web-movil");
+  const barra = document.getElementById("accionesBiblia");
+  const medirBarra = () => {
+    const alto = barra?.getBoundingClientRect().height;
+    if (alto) document.body.style.setProperty("--va-alto-acciones-biblia", alto + "px");
+  };
+  if (barra && typeof ResizeObserver === "function") {
+    new ResizeObserver(medirBarra).observe(barra);
+  }
+  medirBarra();
+}
 
 // ================= CARGAR FONDOS AL INICIAR =================
 window.addEventListener("load", () => {

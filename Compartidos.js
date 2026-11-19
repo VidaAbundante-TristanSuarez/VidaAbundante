@@ -711,7 +711,7 @@ function compRefPredicaDirecta() {
       return params.get("ref") || params.get("id") || "";
     }
 
-    if (params.get("ver") === "compartidos" && params.get("predicaRef")) {
+    if (params.has("predicaRef")) {
       return params.get("predicaRef") || "";
     }
 
@@ -724,6 +724,17 @@ function compRefPredicaDirecta() {
 function compEsPredicaLinkDirecto() {
   return !!String(compRefPredicaDirecta() || "").trim();
 }
+
+window.compCerrarPredicaDirecta = function () {
+  const destino = new URL("./index.html", import.meta.url);
+  destino.searchParams.set("ver", "compartidos");
+  history.replaceState(history.state, "", destino);
+  document.body.classList.remove("comp-link-directo");
+  compFiltroActual = "todo";
+  if (typeof window.irA === "function") window.irA("compartidos");
+  else window.mostrarCompartidos();
+  window.scrollTo(0, 0);
+};
 
 function compNormalizarRefDirecta(v = "") {
   try {
@@ -818,6 +829,7 @@ function compRenderPredicaDirecta(refDirecta = "") {
     lista.innerHTML = `
       <div id="compVacio">
         No encontré esta prédica.
+        <button type="button" onclick="compCerrarPredicaDirecta()">Ver publicaciones</button>
       </div>
     `;
     return;
@@ -825,6 +837,10 @@ function compRenderPredicaDirecta(refDirecta = "") {
 
   lista.innerHTML = `
     <div class="comp-directo-simple">
+      <button type="button" class="pm-btn comp-directo-cerrar"
+        onclick="compCerrarPredicaDirecta()" aria-label="Cerrar prédica" title="Cerrar prédica">
+        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+      </button>
       ${compRenderSubido(item)}
     </div>
   `;
@@ -832,7 +848,10 @@ function compRenderPredicaDirecta(refDirecta = "") {
   // ✅ En link directo, la prédica se ve abierta completa.
   setTimeout(() => {
     const art = lista.querySelector(".comp-post--predica-abierta");
-    if (art) art.classList.add("comp-predica-expandida");
+    if (art && compEsPredicaLinkDirecto()) {
+      art.classList.add("comp-predica-expandida");
+      compActualizarEstadoBotonPredica(art);
+    }
   }, 0);
 
   compActivarBotonesSubidosRenderizados([item]);
@@ -4114,6 +4133,12 @@ window.compTogglePredicaCompartidos = function compTogglePredicaCompartidos(subi
   if (!card) return;
 
   const yaAbierta = card.classList.contains("comp-predica-expandida");
+  if (compEsPredicaLinkDirecto()) {
+    if (ev?.currentTarget?.classList.contains("comp-predica-desplegar--cerrar")) {
+      window.compCerrarPredicaDirecta();
+    }
+    return;
+  }
 
   document
     .querySelectorAll(".comp-post--predica-abierta.comp-predica-expandida")
@@ -4133,7 +4158,7 @@ if (!window.__COMP_PREDICA_COMPRIMIR_CLICK_READY) {
   window.__COMP_PREDICA_COMPRIMIR_CLICK_READY = true;
 
   document.addEventListener("click", e => {
-    if (e.target.closest(".comp-post--predica-abierta")) return;
+    if (compEsPredicaLinkDirecto() || e.target.closest(".comp-post--predica-abierta")) return;
 
     document
       .querySelectorAll(".comp-post--predica-abierta.comp-predica-expandida")
