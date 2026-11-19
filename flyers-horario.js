@@ -141,8 +141,9 @@ function reemplazarColorImagen(ctx, ancho, alto, origen, destino) {
     const mezcla = neutro
       ? limitar((.28 - Math.abs(actual.luz - tomado.luz)) / .15, 0, 1) *
         limitar((30 - actual.croma) / 12, 0, 1)
-      : limitar((44 - Math.abs(diferenciaTono)) / 20, 0, 1) *
-        limitar((actual.croma - 2) / Math.max(2, Math.min(12, tomado.croma - 2)), 0, 1);
+      : limitar((18 - Math.abs(diferenciaTono)) / 10, 0, 1) *
+        limitar((actual.croma - 5) / Math.max(3, Math.min(14, tomado.croma - 5)), 0, 1) *
+        limitar((actual.saturacion - .06) / .12, 0, 1);
     if (!mezcla) continue;
 
     // Conservar el relieve del color elegido, incluso en sombras y luces.
@@ -459,6 +460,13 @@ const marcasTexto = [
   ['se',  1,  1, 'la esquina inferior derecha']
 ];
 
+function controlesRecuadro() {
+  return `${marcasTexto.map(([lado, horizontal, vertical, etiqueta]) => `
+    <button type="button" data-ajustar="${lado}" tabindex="-1" aria-label="Cambiar tamaño desde ${etiqueta}"
+      style="left:${(horizontal + 1) * 50}%;top:${(vertical + 1) * 50}%"></button>`).join('')}
+    <button type="button" data-mover aria-label="Mover cuadro" title="Mover cuadro"><i class="fa-solid fa-arrows-up-down-left-right" aria-hidden="true"></i></button>`;
+}
+
 export function abrirEditorImagenEdicion({titulo, rama, tipos, imagen}, guardar) {
   if (!window.__UID || !window.__ES_ADMIN) return;
   const dialogo = crearDialogoEditor('Editar imagen');
@@ -526,6 +534,7 @@ export function abrirEditorImagenEdicion({titulo, rama, tipos, imagen}, guardar)
   const botonGuardar = form.querySelector('button[type="submit"]');
   const retoques = [];
   const cajas = [];
+  const coberturas = new Map();
   let mapa, activa, seleccion, gesto, colorPendiente;
   let herramienta = 'tapar';
   let guardando = false;
@@ -543,7 +552,7 @@ export function abrirEditorImagenEdicion({titulo, rama, tipos, imagen}, guardar)
     const imagenModificada = cambiosImagen();
     const metadatosModificados = meta.titulo !== titulo || meta.rama !== rama;
     botonGuardar.textContent = !imagenModificada && metadatosModificados ? 'Guardar cambios' : 'Guardar como nueva';
-    botonGuardar.disabled = guardando || !mapa || !!seleccion || !!colorPendiente || !meta.titulo || !meta.rama ||
+    botonGuardar.disabled = guardando || !mapa || !!(seleccion && !seleccion.color) || !!colorPendiente || !meta.titulo || !meta.rama ||
       (!imagenModificada && !metadatosModificados);
   }
 
@@ -565,7 +574,7 @@ export function abrirEditorImagenEdicion({titulo, rama, tipos, imagen}, guardar)
       'color-origen': 'Tocá el color que querés cambiar.',
       'color-destino': 'Tocá el color de reemplazo en la imagen.',
       reemplazo: 'Elegí el reemplazo y tocá Aplicar color.',
-      tapar: seleccion ? 'Tocá el color de la imagen con el que querés cubrir el recuadro.' :
+      tapar: seleccion && !seleccion.color ? 'Tocá el color de la imagen con el que querés cubrir el recuadro.' :
         'Arrastrá un recuadro sobre el día o la hora.'
     };
     estado.textContent = indicaciones[herramienta] || '';
@@ -575,6 +584,35 @@ export function abrirEditorImagenEdicion({titulo, rama, tipos, imagen}, guardar)
   function repintar() {
     const vista = colorPendiente && herramienta !== 'color-destino' ? [...retoques, colorPendiente] : retoques;
     dibujarBaseHorario(mapa, 880, vista, lienzo);
+  }
+
+  function actualizarCobertura(rect, nodo) {
+    nodo.style.left = rect.x * 100 + '%';
+    nodo.style.top = rect.y * 100 + '%';
+    nodo.style.width = rect.ancho * 100 + '%';
+    nodo.style.height = rect.alto * 100 + '%';
+  }
+
+  function seleccionarCobertura(rect) {
+    if (seleccion && !seleccion.color && seleccion !== rect) {
+      coberturas.get(seleccion)?.remove();
+      coberturas.delete(seleccion);
+    }
+    seleccion = rect;
+    for (const [item, nodo] of coberturas) nodo.classList.toggle('activa', item === rect);
+    mostrarMarca(null);
+  }
+
+  function crearCobertura(rect) {
+    const nodo = document.createElement('div');
+    nodo.className = 'va-edicion-caja va-edicion-cobertura';
+    nodo.setAttribute('role', 'group');
+    nodo.setAttribute('aria-label', 'Zona para cubrir');
+    nodo.innerHTML = controlesRecuadro();
+    coberturas.set(rect, nodo);
+    actualizarCobertura(rect, nodo);
+    escena.appendChild(nodo);
+    seleccionarCobertura(rect);
   }
 
   function aplicarCaja(caja, bordeInferior) {
@@ -609,7 +647,7 @@ export function abrirEditorImagenEdicion({titulo, rama, tipos, imagen}, guardar)
       repintar();
     }
     activa = caja;
-    seleccion = null;
+    seleccionarCobertura(null);
     herramienta = 'texto';
     mostrarMarca(null);
     for (const item of cajas) item.nodo.classList.toggle('activa', item === caja);
@@ -674,10 +712,7 @@ export function abrirEditorImagenEdicion({titulo, rama, tipos, imagen}, guardar)
     const nodo = document.createElement('div');
     nodo.className = 'va-edicion-caja';
     nodo.innerHTML = `<div role="textbox" aria-label="Texto en la imagen" aria-multiline="true" contenteditable="true" spellcheck="false" data-placeholder="Escribí acá"></div>
-      ${marcasTexto.map(([lado, horizontal, vertical, etiqueta]) => `
-        <button type="button" data-ajustar="${lado}" tabindex="-1" aria-label="Cambiar tamaño desde ${etiqueta}"
-          style="left:${(horizontal + 1) * 50}%;top:${(vertical + 1) * 50}%"></button>`).join('')}
-      <button type="button" data-mover aria-label="Mover cuadro" title="Mover cuadro"><i class="fa-solid fa-arrows-up-down-left-right" aria-hidden="true"></i></button>`;
+      ${controlesRecuadro()}`;
     caja.nodo = nodo;
     caja.texto = nodo.querySelector('[role="textbox"]');
     caja.texto.onfocus = () => seleccionar(caja);
@@ -735,8 +770,13 @@ export function abrirEditorImagenEdicion({titulo, rama, tipos, imagen}, guardar)
     if (colorPendiente) {
       colorPendiente = null;
       herramienta = 'tapar';
-    } else if (seleccion) seleccion = null;
-    else retoques.pop();
+    } else if (seleccion && !seleccion.color) seleccionarCobertura(null);
+    else {
+      const ultimo = retoques.pop();
+      coberturas.get(ultimo)?.remove();
+      coberturas.delete(ultimo);
+      if (seleccion === ultimo) seleccionarCobertura(null);
+    }
     mostrarMarca(null);
     repintar();
     actualizarHerramienta();
@@ -780,6 +820,24 @@ export function abrirEditorImagenEdicion({titulo, rama, tipos, imagen}, guardar)
     aplicarCaja(caja, vertical < 0 ? original.y + original.alto : undefined);
   }
 
+  function moverCobertura(rect, original, marca, dx, dy) {
+    if (!marca) {
+      rect.x = limitar(original.x + dx, 0, 1 - original.ancho);
+      rect.y = limitar(original.y + dy, 0, 1 - original.alto);
+    } else {
+      const [, horizontal, vertical] = marca;
+      let izquierda = original.x, derecha = original.x + original.ancho;
+      let arriba = original.y, abajo = original.y + original.alto;
+      if (horizontal < 0) izquierda = limitar(izquierda + dx, 0, derecha - 4 / escena.clientWidth);
+      if (horizontal > 0) derecha = limitar(derecha + dx, izquierda + 4 / escena.clientWidth, 1);
+      if (vertical < 0) arriba = limitar(arriba + dy, 0, abajo - 4 / escena.clientHeight);
+      if (vertical > 0) abajo = limitar(abajo + dy, arriba + 4 / escena.clientHeight, 1);
+      Object.assign(rect, {x: izquierda, y: arriba, ancho: derecha - izquierda, alto: abajo - arriba});
+    }
+    actualizarCobertura(rect, coberturas.get(rect));
+    if (rect.color) repintar();
+  }
+
   escena.addEventListener('pointerdown', evento => {
     if (!mapa || guardando || gesto || evento.button !== 0) return;
     if (cambiandoColor()) {
@@ -793,7 +851,19 @@ export function abrirEditorImagenEdicion({titulo, rama, tipos, imagen}, guardar)
       actualizarHerramienta();
       return;
     }
-    if (herramienta === 'color' || (herramienta === 'tapar' && seleccion)) {
+    const nodoCobertura = evento.target.closest('.va-edicion-cobertura');
+    if (herramienta === 'tapar' && nodoCobertura) {
+      const rect = [...coberturas].find(([, nodo]) => nodo === nodoCobertura)?.[0];
+      if (!rect) return;
+      seleccionarCobertura(rect);
+      const lado = evento.target.closest('[data-ajustar]')?.dataset.ajustar;
+      const marca = marcasTexto.find(([id]) => id === lado);
+      evento.preventDefault();
+      gesto = {id: evento.pointerId, inicio: punto(evento, false), rect, marca, original: {...rect}};
+      escena.setPointerCapture(evento.pointerId);
+      return;
+    }
+    if (herramienta === 'color' || (herramienta === 'tapar' && seleccion && !seleccion.color)) {
       evento.preventDefault();
       const color = colorEnCanvas(lienzo, ctx, evento);
       if (herramienta === 'color') {
@@ -801,8 +871,8 @@ export function abrirEditorImagenEdicion({titulo, rama, tipos, imagen}, guardar)
         aplicarCaja(activa);
         seleccionar(activa);
       } else {
-        retoques.push({...seleccion, color});
-        seleccion = null;
+        seleccion.color = color;
+        retoques.push(seleccion);
         mostrarMarca(null);
         repintar();
         actualizarHerramienta();
@@ -811,6 +881,7 @@ export function abrirEditorImagenEdicion({titulo, rama, tipos, imagen}, guardar)
     }
 
     let caja, marca, original;
+    if (herramienta === 'tapar') seleccionarCobertura(null);
     if (herramienta !== 'tapar') {
       const nodo = evento.target.closest('.va-edicion-caja');
       if (!nodo || evento.target.closest('[role="textbox"]')) return;
@@ -828,8 +899,12 @@ export function abrirEditorImagenEdicion({titulo, rama, tipos, imagen}, guardar)
 
   escena.addEventListener('pointermove', evento => {
     if (!gesto || gesto.id !== evento.pointerId) return;
-    const {inicio, caja, marca, original} = gesto;
-    const actual = punto(evento, !caja);
+    const {inicio, caja, rect, marca, original} = gesto;
+    const actual = punto(evento, !caja && !rect);
+    if (rect) {
+      moverCobertura(rect, original, marca, actual.x - inicio.x, actual.y - inicio.y);
+      return;
+    }
     if (!caja) {
       mostrarMarca(rectangulo(inicio, actual));
       return;
@@ -846,11 +921,11 @@ export function abrirEditorImagenEdicion({titulo, rama, tipos, imagen}, guardar)
 
   function terminarGesto(evento) {
     if (!gesto || gesto.id !== evento.pointerId) return;
-    if (!gesto.caja) {
+    if (!gesto.caja && !gesto.rect) {
       const rect = rectangulo(gesto.inicio, punto(evento));
-      seleccion = evento.type === 'pointerup' && rect.ancho * escena.clientWidth >= 4 && rect.alto * escena.clientHeight >= 4
-        ? rect : null;
-      mostrarMarca(seleccion);
+      if (evento.type === 'pointerup' && rect.ancho * escena.clientWidth >= 4 && rect.alto * escena.clientHeight >= 4) {
+        crearCobertura(rect);
+      } else mostrarMarca(null);
     }
     gesto = null;
     actualizarHerramienta();

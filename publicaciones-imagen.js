@@ -26,9 +26,9 @@ export function referenciasDePublicacion(item={}){
   {
     for(const grupo of String(item.ref||item.referencia||'').split(';')){
       const match=grupo.trim().match(/^(.+?)\s+(\d+:.*)$/);if(!match)continue;
-      for(const tramo of match[2].matchAll(/(\d+)\s*:\s*([\d\s,–-]+)/g)){
+      for(const tramo of match[2].matchAll(/(\d+)\s*:\s*([\d\s,y–-]+?)(?=\s*(?:[,y]\s*)?\d+\s*:|[^\d\s,y–-]|$)/g)){
         if(gruposCompletos.has(match[1]+'_'+Number(tramo[1])))continue;
-        for(const rango of tramo[2].split(',')){
+        for(const rango of tramo[2].split(/,|\by\b/)){
           const m=rango.trim().match(/^(\d+)(?:\s*[-–]\s*(\d+))?$/);if(!m)continue;
           const desde=Number(m[1]),hasta=Number(m[2]||m[1]);
           if(hasta<desde||hasta-desde>200)continue;
@@ -40,14 +40,16 @@ export function referenciasDePublicacion(item={}){
   return salida;
 }
 
-function comprimirVersiculos(numeros){
+function comprimirVersiculos(numeros, unirConY = false){
   const valores=[...new Set(numeros)].sort((a,b)=>a-b),rangos=[];
   for(let i=0;i<valores.length;i++){
     const primero=valores[i];let ultimo=primero;
     while(valores[i+1]===ultimo+1)ultimo=valores[++i];
     rangos.push(primero===ultimo?String(primero):`${primero}-${ultimo}`);
   }
-  return rangos.join(',');
+  return unirConY && rangos.length > 1
+    ? rangos.slice(0, -1).join(', ') + ' y ' + rangos.at(-1)
+    : rangos.join(',');
 }
 
 export function referenciasHTML(item={},opciones={}){
@@ -62,7 +64,7 @@ export function referenciasHTML(item={},opciones={}){
     }
     enlaces=[...grupos.values()].map(g=>{
       const numeros=[...new Set(g.versiculos)].sort((a,b)=>a-b);
-      return {destino:{...g,id:`${g.libro}_${g.capitulo}_${numeros[0]}`,versiculo:numeros[0],versiculos:numeros},rango:comprimirVersiculos(numeros)};
+      return {destino:{...g,id:`${g.libro}_${g.capitulo}_${numeros[0]}`,versiculo:numeros[0],versiculos:numeros},rango:comprimirVersiculos(numeros, opciones.unirConY)};
     });
   }
   return `<nav class="va-referencias${opciones.lineaUnica?' va-referencias-linea':''}"${opciones.lineaUnica?' tabindex="0"':''} aria-label="Versículos incluidos">${enlaces.map(({destino:r,rango})=>{

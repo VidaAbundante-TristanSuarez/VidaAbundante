@@ -6902,6 +6902,25 @@ body.oscuro .va-nota-imagen-estado.va-nota-desborde{color:#ffd391;}
 
 .va-item-drawer{max-height:calc(100dvh - 24px);overflow-y:auto;overscroll-behavior:contain;}
 
+#panel-marcadores .va-nota-cabecera{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;min-width:0;}
+#panel-marcadores .va-nota-titulo-citas{flex:1 1 auto;min-width:0;font-size:13px;}
+#panel-marcadores .va-nota-titulo-citas > b{display:block;overflow-wrap:anywhere;}
+#panel-marcadores .va-nota-titulo-citas .va-referencias{padding:7px 0 2px;}
+#panel-marcadores .va-nota-fecha{margin-top:9px;text-align:right;font-size:11px;line-height:1.3;opacity:.62;}
+#panel-marcadores .va-nota-personal[hidden]{display:none!important;}
+
+.va-items-tema{isolation:isolate;--va-items-imagen:none;--va-items-color:transparent;--va-items-opacidad:1;color:var(--va-items-texto,inherit)!important;}
+.va-item-drawer.va-items-tema,
+#modalMarcadores.va-items-abierto > .va-items-tema{background:transparent!important;}
+#modalMarcadores.va-items-abierto > .va-items-tema{position:relative;}
+.va-item-drawer.va-items-tema::before,
+#modalMarcadores.va-items-abierto > .va-items-tema::before{content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;background-image:var(--va-items-imagen);background-color:var(--va-items-color);background-size:cover;background-position:center;opacity:var(--va-items-opacidad);pointer-events:none;}
+#modalMarcadores.va-items-abierto .va-item-card,
+#panel-items .va-item-card{background:transparent;color:inherit;}
+#modalMarcadores.va-items-abierto .va-item-ref,
+#panel-items .va-item-ref,
+.va-item-drawer.va-items-tema .va-item-ref{color:inherit;opacity:.72;}
+
 /* Navegación fija: Vida Abundante | Mis | Biblia. */
 #header #menu{gap:6px;min-width:0;}
 #header #btnNavVida,#header #btnNavMis,#header #btnNavBiblia{

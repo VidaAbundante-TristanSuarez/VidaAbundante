@@ -1,4 +1,5 @@
 import { actualizarAdorno, activarAdorno, esperarAdorno } from "./adornos-editor.js?v=20261102-notas-compartir-7";
+import { interpretarMarkdownNota, enlaceNotaSeguro } from "./notas-markdown.js?v=20261119-notas-1";
 import { elegirResolucionImagen, dimensionesExportacion, conProgresoExportacion } from "./exportacion-imagen.js?v=20261102-agenda-imagenes-8";
 import { referenciasDePublicacion, referenciasHTML, disenosDeImagen, agregarDisenoImagen, combinarDisenosImagen, carruselImagenHTML, disenoActivoDeCard } from "./publicaciones-imagen.js?v=20261109-medios-1";
 import { normalizarUrlImagen, obtenerBlobImagen, subirArchivoR2 } from './carga-imagenes.js?v=20261109-medios-1';
@@ -9424,6 +9425,7 @@ function renderListaMarcadores() {
 
   actualizarToggleMarcadores();
 
+  document.getElementById('modalMarcadores')?.classList.toggle('va-items-abierto', vistaMarcadoresActual === 'items');
   if (vistaMarcadoresActual === "items") {
     vaRenderListaItems(lista, busquedaMarcadoresLibro);
     return;
@@ -10447,7 +10449,7 @@ window.abrirVistaMarcadorDesdeLista = function(idMarcador, origenLista = "biblia
 
   const meta = marcadorEscapeHTML([temaABC, metaBase].filter(Boolean).join(" · "));
   const versiculo = vaNotaHTML(datos.versiculo || "", m.versiculoFormato || {tamano: 18});
-  const nota = vaNotaHTML(datos.texto || "", m.notaFormato);
+  const nota = vaNotaHTML(datos.texto || "", datos.notaFormato);
 
   const audioUrl =
   String(
@@ -11415,6 +11417,52 @@ window.abrirResaltadoDesdePanel =
     }, 0);
   };
 
+const notasPanelContraidas = new Map();
+let comprimirNotasPanel = false;
+
+function notaPanelContraida(id) {
+  return notasPanelContraidas.get(`${uid}:${id}`) ?? comprimirNotasPanel;
+}
+
+function actualizarCompresionNotasPanel() {
+  const panel = document.getElementById('panel-marcadores');
+  if (!panel) return;
+  for (const contenido of panel.querySelectorAll('[data-nota-personal]')) {
+    const contraida = notaPanelContraida(contenido.dataset.notaPersonal);
+    contenido.hidden = contraida;
+    const boton = contenido.closest('.card-marcador').querySelector('[data-comprimir-nota]');
+    boton.setAttribute('aria-expanded', String(!contraida));
+    boton.title = contraida ? 'Desplegar nota' : 'Comprimir nota';
+    boton.setAttribute('aria-label', boton.title);
+    boton.querySelector('i').className = contraida ? 'fa-solid fa-caret-down' : 'fa-solid fa-caret-up';
+  }
+  const general = panel.querySelector('[data-comprimir-notas]');
+  if (general) {
+    const hayDesplegada = [...panel.querySelectorAll('[data-nota-personal]')].some(el => !el.hidden);
+    general.setAttribute('aria-expanded', String(hayDesplegada));
+    const label = hayDesplegada ? 'Comprimir todas las notas' : 'Desplegar todas las notas';
+    general.title = label;
+    general.setAttribute('aria-label', label);
+    general.querySelector('i').className = hayDesplegada ? 'fa-solid fa-caret-up' : 'fa-solid fa-caret-down';
+  }
+}
+
+function enlazarCompresionNotasPanel(panel) {
+  panel.querySelector('[data-comprimir-notas]')?.addEventListener('click', () => {
+    comprimirNotasPanel = [...panel.querySelectorAll('[data-nota-personal]')].some(el => !el.hidden);
+    notasPanelContraidas.clear();
+    actualizarCompresionNotasPanel();
+  });
+  for (const boton of panel.querySelectorAll('[data-comprimir-nota]')) {
+    boton.onclick = () => {
+      const id = boton.dataset.comprimirNota;
+      notasPanelContraidas.set(`${uid}:${id}`, !notaPanelContraida(id));
+      actualizarCompresionNotasPanel();
+    };
+  }
+  actualizarCompresionNotasPanel();
+}
+
 function renderPanelMarcadores() {
   vaEstiloFuenteUsuario();
   const panel = document.getElementById("panel-marcadores");
@@ -11498,6 +11546,10 @@ const tituloPanel =
   </div>
 
   <div class="pm-right" style="position:relative;">
+        ${filtrados.some(m => String(m.nota || '').trim()) ? `
+          <button type="button" class="pm-btn" data-comprimir-notas title="Comprimir todas las notas" aria-label="Comprimir todas las notas">
+            <i class="fa-solid fa-caret-up" aria-hidden="true"></i>
+          </button>` : ''}
         <button type="button" class="pm-btn" onclick="abrirNotaLibre()" title="Agregar nota">
           <i class="fa-solid fa-square-plus"></i>
         </button>
@@ -11555,31 +11607,6 @@ const tituloPanel =
 
     ${filtrados.length ? filtrados.map(m => {
       const fechaTxt = m.fecha ? new Date(m.fecha).toLocaleString("es-AR") : "";
-
-      let refTxt = "Nota libre";
-
-      // ✅ ABC
-      if (m?.origen === "abc") {
-        const temaABC = String(m?.abc?.temaTitulo || "").trim();
-        refTxt = temaABC ? `ABC - ${temaABC}` : "ABC";
-      }
-
-      // ✅ Biblia
-      else if ((m.versiculos || []).length > 0) {
-        if (m.ref && String(m.ref).trim()) {
-          refTxt = m.ref.trim();
-        } else if (m.libro && m.capitulo) {
-          const vers = (m.versiculos || []).map(Number).sort((a, b) => a - b);
-
-          if (vers.length === 1) {
-            refTxt = `${m.libro} ${m.capitulo}:${vers[0]}`;
-          } else if (vers.length > 1) {
-            refTxt = `${m.libro} ${m.capitulo}:${vers[0]}-${vers[vers.length - 1]}`;
-          } else {
-            refTxt = `${m.libro} ${m.capitulo}`;
-          }
-        }
-      }
 
       const checked = !!(seleccionEliminarMarcadores && seleccionEliminarMarcadores[m.id]);
 
@@ -11649,13 +11676,15 @@ return `
   data-panel-nota-libro="${libroBusquedaPanel}"
   style="${bgDestacada ? `background:${bgDestacada} !important; color:${colorTextoDestacada} !important; border:1px solid rgba(0,0,0,.10);` : ""}"
 >
-          <div style="display:flex; justify-content:space-between; gap:10px; align-items:center;">
-            <div style="font-size:13px;">
-              <b>${m.destacada ? "⭐ " : ""}${m.titulo || "Marcador"}</b><br>
-              <span class="${bgDestacada ? "" : "muted"}">${refTxt} · ${fechaTxt}</span>
+          <div class="va-nota-cabecera">
+            <div class="va-nota-titulo-citas">
+              <b>${m.destacada ? "⭐ " : ""}${marcadorEscapeHTML(m.titulo || "Nota")}</b>
+              ${referenciasHTML(m, {agruparPorCapitulo: true, lineaUnica: true, unirConY: true})}
             </div>
 
             <div style="display:flex; gap:8px; align-items:center;">
+              ${m.nota ? `<button type="button" class="pm-btn" data-comprimir-nota="${marcadorEscapeHTML(m.id)}"
+                title="Comprimir nota" aria-label="Comprimir nota"><i class="fa-solid fa-caret-up" aria-hidden="true"></i></button>` : ''}
               ${modoEliminarMarcadores ? `
                 <input type="checkbox" ${checked ? "checked":""}
                   onchange="toggleSeleccionEliminarMarcador('${m.id}', this.checked)">
@@ -11692,10 +11721,9 @@ return `
             </div>
           </div>
 
-          ${referenciasHTML(m)}
           ${textoVers ? `<div class="nota preview-versiculos-marcador" style="margin-top:8px;">${vaNotaHTML(textoVers, m.versiculoFormato || {tamano: 18})}</div>` : ""}
           ${(!textoVers && textoABC) ? `<div class="nota preview-versiculos-marcador" style="margin-top:8px;">${textoABC}</div>` : ""}
-${m.nota ? `<div class="nota">${vaNotaHTML(m.nota, m.notaFormato)}</div>` : ""}
+${m.nota ? `<div class="nota va-nota-personal" data-nota-personal="${marcadorEscapeHTML(m.id)}">${vaNotaPersonalHTML(m.nota, m.notaFormato)}</div>` : ""}
 
 ${
   audioUrl
@@ -11710,6 +11738,7 @@ ${
     `
     : ``
 }
+<div class="va-nota-fecha">${marcadorEscapeHTML(fechaTxt)}</div>
 </div>
       `;
 }).join("") : `<p style="opacity:.75">Todavía no tenés notas para este filtro.</p>`}
@@ -11732,6 +11761,8 @@ ${
         : ``
     }
   `;
+
+  enlazarCompresionNotasPanel(panel);
 
   /*
     Se vuelve a aplicar cuando cambiás entre:
@@ -13345,6 +13376,8 @@ function vaEstiloFuenteUsuario() {
 function vaNotaEstilo(datos = {}, tamano = 18) {
   return {
     bold: !!datos.bold, italic: !!datos.italic, underline: !!datos.underline, upper: !!datos.upper,
+    tachado: !!datos.tachado, codigo: !!datos.codigo, literalMarkdown: !!datos.literalMarkdown,
+    enlace: enlaceNotaSeguro(datos.enlace),
     tamano: Math.min(160, Math.max(7, Number(datos.tamano) || tamano)),
     fondo: vaNotaColorSeguro(datos.fondo)
   };
@@ -13376,9 +13409,22 @@ function vaNotaNormalizar(texto, formato = {}) {
 function vaNotaHTML(texto = '', formato = {}, escala = 1, desde = 0, hasta = texto.length) {
   return vaNotaNormalizar(texto, formato).rangos.filter(r => r.fin > desde && r.inicio < hasta).map(r => {
     const resaltado = r.fondo ? `background-color:${r.fondo};color:${notaShareColorContraste(r.fondo)};box-decoration-break:clone;-webkit-box-decoration-break:clone;` : '';
-    const estilo = `${resaltado}font-size:${r.tamano * escala}px;font-weight:${r.bold ? 700 : 400};font-style:${r.italic ? 'italic' : 'normal'};text-decoration:${r.underline ? 'underline' : 'none'};text-transform:${r.upper ? 'uppercase' : 'none'}`;
-    return `<span style="${estilo}">${marcadorEscapeHTML(texto.slice(Math.max(desde, r.inicio), Math.min(hasta, r.fin)))}</span>`;
+    const decoracion = [r.underline ? 'underline' : '', r.tachado ? 'line-through' : ''].filter(Boolean).join(' ') || 'none';
+    const estilo = `${resaltado}font-size:${r.tamano * escala}px;font-weight:${r.bold ? 700 : 400};font-style:${r.italic ? 'italic' : 'normal'};text-decoration:${decoracion};text-transform:${r.upper ? 'uppercase' : 'none'}${r.codigo ? ';font-family:monospace' : ''}`;
+    const contenido = `<span${r.literalMarkdown ? ' data-va-literal-markdown="true"' : ''} style="${estilo}">${marcadorEscapeHTML(texto.slice(Math.max(desde, r.inicio), Math.min(hasta, r.fin)))}</span>`;
+    return r.enlace ? `<a href="${marcadorEscapeHTML(r.enlace)}" target="_blank" rel="noopener noreferrer">${contenido}</a>` : contenido;
   }).join('');
+}
+
+function vaNotaPrepararMarkdown(texto = '', formato = {}) {
+  texto = String(texto || '');
+  const resultado = interpretarMarkdownNota(texto, vaNotaNormalizar(texto, formato));
+  return {texto: resultado.texto, formato: vaNotaNormalizar(resultado.texto, resultado.formato)};
+}
+
+function vaNotaPersonalHTML(texto, formato) {
+  const preparada = vaNotaPrepararMarkdown(texto, formato);
+  return vaNotaHTML(preparada.texto, preparada.formato);
 }
 
 function vaNotaLeerDOM(editor, tamano = 18) {
@@ -13400,7 +13446,15 @@ function vaNotaLeerDOM(editor, tamano = 18) {
     if (css.fontSize) estilo.tamano = vaNotaEstilo({tamano: parseFloat(css.fontSize)}, tamano).tamano;
     if (css.fontWeight) estilo.bold = Number(css.fontWeight) >= 600 || css.fontWeight === 'bold';
     if (css.fontStyle) estilo.italic = css.fontStyle === 'italic';
-    if (css.textDecoration) estilo.underline = css.textDecoration.includes('underline');
+    if (css.textDecoration) {
+      estilo.underline = css.textDecoration.includes('underline');
+      estilo.tachado = css.textDecoration.includes('line-through');
+    }
+    if (css.fontFamily) estilo.codigo = css.fontFamily.includes('monospace');
+    if (nodo.dataset?.vaLiteralMarkdown) estilo.literalMarkdown = true;
+    if (nodo.tagName === 'A') estilo.enlace = enlaceNotaSeguro(nodo.getAttribute('href'));
+    if (['DEL', 'S'].includes(nodo.tagName)) estilo.tachado = true;
+    if (nodo.tagName === 'CODE') estilo.codigo = true;
     if (css.textTransform) estilo.upper = css.textTransform === 'uppercase';
     if (css.backgroundColor) estilo.fondo = vaNotaColorSeguro(css.backgroundColor);
     if (['B', 'STRONG'].includes(nodo.tagName)) estilo.bold = true;
@@ -13446,6 +13500,7 @@ function vaNotaRestaurarSeleccion(editor, seleccion) {
 function vaMontarEditorNota(editor, toolbar, datos, alCambiar = () => {}) {
   const eventos = new AbortController(), signal = eventos.signal;
   let texto = String(datos.texto || ''), formato = vaNotaNormalizar(texto, datos.formato);
+  if (!datos.soloFormato) ({texto, formato} = vaNotaPrepararMarkdown(texto, formato));
   let seleccion = null, historial = [], futuros = [];
   editor.contentEditable = datos.soloFormato ? 'false' : 'true';
   if (datos.soloFormato) { editor.tabIndex = 0; editor.setAttribute('aria-readonly', 'true'); }
@@ -13503,14 +13558,23 @@ function vaMontarEditorNota(editor, toolbar, datos, alCambiar = () => {}) {
     if (seleccion) vaNotaRestaurarSeleccion(editor, seleccion);
     avisar();
   };
-  const insertar = contenido => {
+  const insertar = (contenido, markdown = false) => {
     const sel = window.getSelection();
     if (!sel?.rangeCount || !vaNotaSeleccion(editor)) editor.focus();
     const rango = window.getSelection()?.rangeCount ? window.getSelection().getRangeAt(0) : null;
     if (!rango || !editor.contains(rango.commonAncestorContainer)) return;
     rango.deleteContents();
-    const node = document.createTextNode(contenido); rango.insertNode(node);
-    rango.setStartAfter(node); rango.collapse(true); sel.removeAllRanges(); sel.addRange(rango);
+    let node = document.createTextNode(contenido), ultimo = node;
+    if (markdown) {
+      const preparado = vaNotaPrepararMarkdown(contenido, {tamano: formato.tamano});
+      const plantilla = document.createElement('template');
+      plantilla.innerHTML = vaNotaHTML(preparado.texto, preparado.formato);
+      node = plantilla.content;
+      ultimo = node.lastChild;
+    }
+    rango.insertNode(node);
+    if (ultimo) rango.setStartAfter(ultimo);
+    rango.collapse(true); sel.removeAllRanges(); sel.addRange(rango);
     leer();
   };
   const leer = () => {
@@ -13524,7 +13588,16 @@ function vaMontarEditorNota(editor, toolbar, datos, alCambiar = () => {}) {
     if (datos.soloFormato) { e.preventDefault(); return; }
     if (['insertParagraph', 'insertLineBreak'].includes(e.inputType)) { e.preventDefault(); insertar('\n'); }
   }, {signal});
-  editor.addEventListener('paste', e => { e.preventDefault(); if (datos.soloFormato) return; insertar(e.clipboardData.getData('text/plain').replace(/\r\n?/g, '\n')); }, {signal});
+  editor.addEventListener('paste', e => { e.preventDefault(); if (datos.soloFormato) return; insertar(e.clipboardData.getData('text/plain').replace(/\r\n?/g, '\n'), true); }, {signal});
+  editor.addEventListener('blur', () => {
+    if (datos.soloFormato) return;
+    const preparado = vaNotaPrepararMarkdown(texto, formato);
+    if (preparado.texto === texto) return;
+    ({texto, formato} = preparado);
+    seleccion = null;
+    pintar();
+    avisar();
+  }, {signal});
   editor.addEventListener('drop', e => { e.preventDefault(); }, {signal});
   editor.addEventListener('keydown', e => {
     if (!(e.ctrlKey || e.metaKey)) return;
@@ -13559,6 +13632,7 @@ function vaMontarEditorNota(editor, toolbar, datos, alCambiar = () => {}) {
     leer: () => ({texto, formato}),
     cargar: (contenido, estilos = {}) => {
       texto = String(contenido || ''); formato = vaNotaNormalizar(texto, estilos);
+      if (!datos.soloFormato) ({texto, formato} = vaNotaPrepararMarkdown(texto, formato));
       seleccion = null; historial = []; futuros = []; pintar(); alCambiar({texto, formato});
     },
     escalar: factor => { seleccion = null; window.getSelection()?.removeAllRanges(); cambiar('escala', factor); },
@@ -13790,15 +13864,16 @@ function notaShareFechaHora(ts) {
 function notaShareDatosDesdeMarcador(m = {}) {
   const referencia = notaShareReferenciaMarcador(m);
   const fecha = notaShareFechaHora(m.fecha);
+  const nota = vaNotaPrepararMarkdown(m.nota, m.notaFormato);
 
   return {
     titulo: String(m.titulo || "Nota").trim() || "Nota",
     referencia,
     meta: [referencia, fecha].filter(Boolean).join(" · "),
     versiculo: notaShareTextoVersiculoMarcador(m),
-    texto: String(m.nota || ""),
+    texto: nota.texto,
     referencias:referenciasDePublicacion(m),
-    notaFormato: m.notaFormato || null,
+    notaFormato: nota.formato,
     versiculoFormato: m.versiculoFormato || null,
     fondo: String(m.color || "#fff3b0").trim(),
     fuente: vaEstiloFuenteUsuario()
@@ -18360,6 +18435,7 @@ function vaPedirCierreItem(continuar){
 function vaCrearCajon(titulo){
   vaEstiloLecturaExtras();document.getElementById('vaItemDrawer')?.remove();
   const d=document.createElement('div');d.id='vaItemDrawer';d.className='va-item-drawer';d.setAttribute('role','dialog');d.setAttribute('aria-label',titulo);
+  vaAplicarTemaItems(d);
   const strong=document.createElement('strong');strong.textContent=titulo;d.appendChild(strong);
   const actions=document.createElement('div');actions.className='va-item-actions';d.appendChild(actions);document.body.appendChild(d);
   d.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();d.__vaPedirCierre?.();}});return d;
@@ -18505,6 +18581,8 @@ function vaRenderSubrayadosPalabra(container,items){
 }
 function vaRenderListaItems(container,busqueda=''){
   if(!container)return;container.replaceChildren();
+  const modal = container.closest('#modalMarcadores');
+  if (modal) vaAplicarTemaItems(modal.querySelector('.modal-contenido') || modal.firstElementChild);
   const q=marcadoresNormalizarBusqueda(busqueda);
   const items=vaItemsPalabra().filter(m=>!q||marcadoresNormalizarBusqueda(`${m.libro} ${m.capitulo}:${m.versiculo} ${m.palabra} ${m.nota}`).includes(q)).sort((a,b)=>Number(b.fecha)-Number(a.fecha));
   if(!items.length){container.textContent='No hay ítems guardados'+(q?' para esta búsqueda.':'.');return;}
@@ -18523,9 +18601,17 @@ function vaRenderListaItems(container,busqueda=''){
 }
 function vaAsegurarPanelItems(){
   const panel=document.getElementById('seccion-panel');if(!panel)return;
+  asegurarPanelResaltadosUI();
   const tabs=panel.querySelector('.panel-tabs');
   if(tabs&&!document.getElementById('vaPanelItemsTab')){
     const b=document.createElement('button');b.type='button';b.id='vaPanelItemsTab';b.dataset.panelTab='items';b.setAttribute('onclick',"mostrarSeccion('items')");b.innerHTML='<i class="fa-brands fa-slack"></i> <span>Ítems</span>';tabs.appendChild(b);
+  }
+  if (tabs) {
+    const resaltados = tabs.querySelector('[data-panel-tab="resaltados"]');
+    const items = document.getElementById('vaPanelItemsTab');
+    if (resaltados && items && resaltados.nextElementSibling !== items) resaltados.after(items);
+    const guardados = [...tabs.children].find(b => (b.getAttribute('onclick') || '').includes("mostrarSeccion('compartidos')"));
+    if (guardados && guardados !== tabs.lastElementChild) tabs.appendChild(guardados);
   }
   if(!document.getElementById('panel-items')){
     const div=document.createElement('div');div.id='panel-items';div.className='panel-seccion';div.style.display='none';
@@ -18534,6 +18620,20 @@ function vaAsegurarPanelItems(){
     const list=document.createElement('div');list.id='vaPanelItemsLista';div.appendChild(list);panel.appendChild(div);
   }
   vaCompactarTabsPanel();
+}
+
+function vaAplicarTemaItems(contenedor) {
+  if (!contenedor) return;
+  const seccion = getSeccionActualFondoKey();
+  const capa = getElementoCapaFondo(seccion);
+  if (!capa) return;
+  const fondo = getComputedStyle(capa);
+  contenedor.classList.add('va-items-tema');
+  contenedor.style.setProperty('--va-items-imagen', fondo.backgroundImage);
+  contenedor.style.setProperty('--va-items-color', fondo.backgroundColor);
+  contenedor.style.setProperty('--va-items-opacidad', fondo.opacity);
+  const fuente = getComputedStyle(getElementoSeccionFondo(seccion));
+  contenedor.style.setProperty('--va-items-texto', fuente.getPropertyValue('--va-color-texto-biblia') || fuente.color);
 }
 function vaRenderItemsEnPanel(){vaAsegurarPanelItems();const panel=document.getElementById('panel-items');if(panel && panel.offsetParent!==null)vaRenderListaItems(document.getElementById('vaPanelItemsLista'),panel?.querySelector('input')?.value||'');}
 

@@ -368,6 +368,27 @@ body.oscuro .va-edicion-imagen-dialog footer {
   margin-block-end: 26px;
 }
 
+.va-edicion-escena[data-herramienta="tapar"]:has(.va-edicion-cobertura.activa) {
+  overflow: visible;
+  margin-block-end: 26px;
+}
+
+.va-edicion-caja.va-edicion-cobertura {
+  min-height: 0;
+  padding: 0;
+  pointer-events: none;
+}
+
+.va-edicion-escena[data-herramienta="tapar"] .va-edicion-cobertura {
+  pointer-events: auto;
+  touch-action: none;
+  cursor: move;
+}
+
+.va-edicion-escena[data-herramienta="tapar"] .va-edicion-cobertura.activa button {
+  display: grid;
+}
+
 .va-edicion-escena:is([data-herramienta="tapar"], [data-herramienta^="color"]) {
   cursor: crosshair;
   touch-action: none;
