@@ -1,23 +1,27 @@
-<script>
-  (function(){
-    const params = new URLSearchParams(window.location.search);
-
-    const ref =
-      params.get("ref") ||
-      params.get("id") ||
-      params.get("predica") ||
-      params.get("p") ||
-      "";
-
-    const path = window.location.pathname;
-
-    // /VidaAbundante/predica/  =>  /VidaAbundante
-    const base = path.replace(/\/predica\/?$/i, "");
-
-    const destino = ref
-      ? `${window.location.origin}${base}/index.html?predicaRef=${encodeURIComponent(ref)}`
-      : `${window.location.origin}${base}/index.html`;
-
-    window.location.replace(destino);
-  })();
-</script>
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Prédica · Vida Abundante</title>
+</head>
+<body>
+  <a id="abrirPredica" href="../index.html?ver=compartidos">Abrir Vida Abundante</a>
+  <script>
+    const origen = new URL(window.location.href);
+    const params = origen.searchParams;
+    const hash = new URLSearchParams(origen.hash.slice(1));
+    const referencia = ["predicaRef", "ref", "id", "predica", "p", "idPredica"]
+      .map(clave => params.get(clave)?.trim()).find(Boolean)
+      || hash.get("predica") || hash.get("subido");
+    const rutaPredica = origen.pathname.replace(/\/predica(?:\/index\.html)?\/?$/i, "/");
+    const destino = new URL("index.html", new URL(rutaPredica, origen));
+    if (referencia) destino.searchParams.set("predicaRef", referencia);
+    else destino.searchParams.set("ver", "compartidos");
+    const enlace = document.getElementById("abrirPredica");
+    enlace.href = destino.href;
+    if (referencia) enlace.textContent = "Abrir prédica";
+    window.location.replace(destino.href);
+  </script>
+</body>
+</html>
