@@ -3414,23 +3414,6 @@ function subidosTieneContenidoPredica(it) {
   return !!(obtenerCitasPredicaSubido(it).length || String(it.predicaNotaFinal || it.notaFinalGeneral || "").trim());
 }
 
-function subidosBaseUrlApp() {
-  const url = new URL(window.location.href);
-  let path = url.pathname;
-
-  if (path.endsWith("/")) path = path.slice(0, -1);
-
-  const partes = path.split("/");
-  const ultimo = partes[partes.length - 1] || "";
-
-  if (ultimo.includes(".")) {
-    partes.pop();
-    path = partes.join("/");
-  }
-
-  return url.origin + path.replace(/\/$/, "");
-}
-
 function subidosNormalizarRefPredica(txt = "") {
   return String(txt || "")
     .trim()
@@ -3590,14 +3573,15 @@ function abrirModalSubidosVisor(titulo, html) {
 }
 
 function subidosLinkDetalle(id) {
-  const base = subidosBaseUrlApp();
   const it = obtenerSubidoPorId(id);
 
   const ref = it && subidosEsPredicaConContenido(it)
     ? subidosRefPredicaItem(it)
     : id;
 
-  return `${base}/predica/?ref=${encodeURIComponent(ref)}`;
+  const enlace = new URL("./index.html", import.meta.url);
+  enlace.searchParams.set("predicaRef", ref);
+  return enlace.href;
 }
 
 function subidosEsperarImagenes(node) {

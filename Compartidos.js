@@ -1286,6 +1286,7 @@ window.compCerrarMedia=function compCerrarMedia(){
 };
 
 function compLimpiarCompartidosTop() {
+  document.querySelector("#compFeedWrap > .va-invitacion")?.remove();
   if (compPromosTimer) {
     clearInterval(compPromosTimer);
     compPromosTimer = null;
@@ -1401,6 +1402,7 @@ function renderCompartidosTop() {
     `;
   }
 
+  window.vaActualizarInvitacionCompartidos?.();
   if (!promos || promos.dataset.rendered === "1") return;
 
   promos.dataset.rendered = "1";

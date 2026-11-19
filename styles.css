@@ -4823,96 +4823,34 @@ body.oscuro .tema-toggle-fondo input:checked + label{
   }
 }
 
-#vaTipInstalarApp {
-  position: fixed;
-  inset: 0;
-  z-index: 999999;
+.va-invitacion {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 18px;
-  background: rgba(0,0,0,.38);
-}
-
-.va-tip-app-card {
-  position: relative;
-  width: min(92vw, 410px);
-  padding: 30px 24px 24px;
-  border-radius: 30px;
-  background:
-    radial-gradient(circle at top left, rgba(166,208,255,.48), transparent 42%),
-    radial-gradient(circle at bottom right, rgba(233,246,255,.9), transparent 48%),
-    rgba(255,255,255,.96);
-  border: 1px solid rgba(255,255,255,.9);
-  box-shadow: 0 22px 60px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.9);
-  text-align: center;
-  overflow: hidden;
-  color: #111;
-}
-
-.va-tip-app-icon {
-  width: 62px;
-  height: 62px;
-  margin: 0 auto 14px;
-  border-radius: 999px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(180deg, #e9f6ff, #a6d0ff);
-  color: #111;
-  box-shadow: 0 10px 24px rgba(0,0,0,.14);
-}
-
-.va-tip-app-icon i {
-  font-size: 26px;
-}
-
-.va-tip-app-card h3 {
-  margin: 0;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 21px;
-  font-weight: 900;
-  line-height: 1.18;
-}
-
-.va-tip-app-card p {
-  margin: 13px auto 16px;
-  max-width: 340px;
-  font-size: 14px;
-  line-height: 1.45;
-  color: #263238;
-}
-
-.va-tip-app-info {
-  margin: 0 auto 18px;
-  padding: 12px;
-  border-radius: 18px;
-  background: rgba(255,255,255,.82);
-  border: 1px solid rgba(0,0,0,.08);
-  text-align: left;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 6px 0;
+  padding: 2px 8px 2px 12px;
+  border: 1px solid #c5dfed;
+  border-radius: 12px;
+  background: #eef7fc;
+  color: #25445a;
   font-size: 13px;
-  line-height: 1.4;
-  color: #263238;
 }
-
-.va-tip-app-info strong {
-  display: block;
-  margin-bottom: 5px;
-}
-
-#btnVaContinuarWeb {
-  width: 100%;
-  min-height: 46px;
-  border: none;
-  border-radius: 999px;
-  padding: 0 18px;
-  background: #a6d0ff;
-  color: #000;
-  font-weight: 900;
-  font-size: 14px;
-  box-shadow: 0 8px 18px rgba(0,0,0,.16);
+.va-invitacion details { flex: 1; min-width: 0; }
+.va-invitacion summary { padding: 5px 0; cursor: pointer; }
+.va-invitacion-opciones { display: flex; flex-wrap: wrap; gap: 6px; padding: 3px 0 6px; }
+.va-invitacion button {
+  border: 0;
+  border-radius: 8px;
+  min-height: 30px;
+  padding: 0 9px;
+  background: #d8ebf7;
+  color: inherit;
+  font: inherit;
   cursor: pointer;
 }
+.va-invitacion .va-invitacion-cerrar { background: transparent; font-size: 19px; }
+body.oscuro .va-invitacion { background: #243542; color: #e6f2fa; border-color: #41576a; }
+body.oscuro .va-invitacion-opciones button { background: #324b60; }
 
 .panel-vacio-login {
   margin: 18px auto;

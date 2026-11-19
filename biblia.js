@@ -1970,8 +1970,6 @@ const VA_UI_SNAPSHOT_KEY = "va_ui_snapshot_v1";
 const VA_UI_SNAPSHOT_MAX_AGE = 1000 * 60 * 60 * 24 * 3; // 3 días
 const VA_UI_SNAPSHOT_MAX_HTML = 900000; // evita romper localStorage con HTML enorme
 
-const VA_VISITANTE_KEY = "VA_VISITANTE_OK";
-const VA_TIP_APP_KEY = "VA_TIP_APP_VISTO";
 
 function vaParam(nombre) {
   try {
@@ -2015,13 +2013,6 @@ function vaEsMovil() {
   );
 }
 
-function vaEntradaVisitante() {
-  return (
-    vaParam("visitante") === "1" ||
-    localStorage.getItem(VA_VISITANTE_KEY) === "1"
-  );
-}
-
 function vaEntradaDesdeLogin() {
   return vaParam("loginOk") === "1" || vaParam("visitante") === "1";
 }
@@ -2038,7 +2029,7 @@ function vaEsLinkCompartidosDirecto() {
     return (
       params.get("ver") === "compartidos" &&
       !params.get("edicionRef") &&
-      !params.get("predicaRef")
+      !window.vaReferenciaPredicaEnlace?.()
     );
   } catch {
     return false;
@@ -2131,111 +2122,75 @@ if (typeof window.irA === "function") {
   if(location.hash.startsWith('#versiculo/'))vaProcesarEnlaceVersiculo();
 }
 
-// ✅ En links directos no mostramos cartel de instalar app.
-// En iPhone puede molestar y sumar carga visual justo al abrir desde WhatsApp.
-if (vaDebeMostrarConsejoInstalarApp()) {
-  vaMostrarConsejoInstalarApp();
-}
     } catch (e) {
       console.warn("No pude abrir pantalla inicial:", motivo, e);
     }
   }, 0);
 }
 
-function vaTextoInstalarApp() {
-  const ua = navigator.userAgent || "";
-  const esIOS = /iphone|ipad|ipod/i.test(ua);
-  const esAndroid = /android/i.test(ua);
+// Contar solamente el tiempo con la pestaña visible.
+const VA_ESPERA_INVITACION = 3 * 60 * 1000;
+let vaTiempoVisible = 0;
+let vaInicioVisible = document.hidden ? null : performance.now();
+let vaTimerInvitacion;
+let vaInvitacionMostrada = false;
+try {
+  vaInvitacionMostrada = sessionStorage.getItem("vaInvitacionMostrada") === "1";
+} catch {}
 
-  if (esIOS) {
-    return `
-      <strong>Para usarla como app en iPhone:</strong>
-      Tocá el botón de compartir de Safari y elegí
-      <b>Agregar a pantalla de inicio</b>.
-    `;
+function vaProgramarInvitacion() {
+  clearTimeout(vaTimerInvitacion);
+  if (vaInicioVisible === null || vaInvitacionMostrada) return;
+  const restante = VA_ESPERA_INVITACION - vaTiempoVisible - (performance.now() - vaInicioVisible);
+  if (restante > 0) {
+    vaTimerInvitacion = setTimeout(vaProgramarInvitacion, restante);
+    return;
   }
 
-  if (esAndroid) {
-    return `
-      <strong>Para usarla como app en Android:</strong>
-      Si Chrome muestra <b>Instalar app</b>, aceptalo.
-      Si no aparece, tocá el menú <b>⋮</b> y elegí
-      <b>Agregar a pantalla principal</b>.
-    `;
-  }
+  const promos = document.getElementById("compPromos");
+  if (!promos || !document.body.classList.contains("en-compartidos") ||
+      document.body.classList.contains("comp-link-directo") || vaHayLinkDirectoInterno()) return;
+  const puedeIngresar = !window.__UID;
+  const puedeInstalar = !vaAppEstaInstalada();
+  if (!puedeIngresar && !puedeInstalar) return;
 
-  return `
-    <strong>Para usarla como app:</strong>
-    Si tu navegador muestra <b>Instalar app</b>, aceptalo.
-    También podés crear un acceso directo desde el menú del navegador.
-  `;
+  const franja = document.createElement("aside");
+  franja.className = "va-invitacion";
+  franja.setAttribute("aria-label", "Opciones de Vida Abundante");
+  franja.innerHTML = `
+    <details>
+      <summary>${puedeIngresar ? "Personalizá Vida Abundante" : "Instalá Vida Abundante"}</summary>
+      <div class="va-invitacion-opciones"></div>
+    </details>
+    <button type="button" class="va-invitacion-cerrar" aria-label="Cerrar invitación">×</button>`;
+  const opciones = franja.querySelector(".va-invitacion-opciones");
+  const agregarOpcion = (texto, accion) => {
+    const boton = document.createElement("button");
+    boton.type = "button";
+    boton.textContent = texto;
+    boton.addEventListener("click", accion);
+    opciones.appendChild(boton);
+  };
+  if (puedeIngresar) agregarOpcion("Iniciar sesión", () => window.vaIniciarSesionGoogle());
+  if (puedeInstalar) agregarOpcion("Instalar app", () => window.vaInstalarAppDesdeMenu());
+
+  franja.querySelector(".va-invitacion-cerrar").onclick = () => franja.remove();
+  promos.before(franja);
+  vaInvitacionMostrada = true;
+  try { sessionStorage.setItem("vaInvitacionMostrada", "1"); } catch {}
+  setTimeout(() => {
+    if (!franja.querySelector("details").open && !franja.matches(":focus-within")) franja.remove();
+  }, 25000);
 }
 
-function vaDebeMostrarConsejoInstalarApp() {
-  const esAPK =
-    window.__VIDA_ANDROID_APK__ === true ||
-    document.documentElement.classList.contains("vida-android-apk") ||
-    document.body?.classList.contains("vida-android-apk") ||
-    new URLSearchParams(location.search).get("apk") === "1" ||
-    new URLSearchParams(location.search).get("android") === "1" ||
-    /VidaAbundanteAndroidApp/i.test(navigator.userAgent || "") ||
-    localStorage.getItem("vida_abundante_android_apk") === "1";
-
-  if (esAPK) return false;
-
-  if (vaEsStandalone()) return false;
-
-  if (!vaEsMovil()) return false;
-
-  if (vaHayLinkDirectoInterno()) return false;
-
-  if (localStorage.getItem(VA_TIP_APP_KEY) === "1") return false;
-
-  if (document.getElementById("vaTipInstalarApp")) return false;
-
-  return true;
-}
-
-window.vaDebeMostrarConsejoInstalarApp = vaDebeMostrarConsejoInstalarApp;
-
-function vaMostrarConsejoInstalarApp() {
-  if (!vaDebeMostrarConsejoInstalarApp()) return false;
-
-  const div = document.createElement("div");
-  div.id = "vaTipInstalarApp";
-
-  div.innerHTML = `
-    <div class="va-tip-app-card">
-      <div class="va-tip-app-icon">
-        <i class="fa-solid fa-dove"></i>
-      </div>
-
-      <h3>Bendecido hermano</h3>
-
-      <p>
-        Te animamos a usar Vida Abundante como aplicación en tu celular
-        para acceder más rápido a Biblia, devocionales, recursos y compartidos.
-      </p>
-
-      <div class="va-tip-app-info">
-        ${vaTextoInstalarApp()}
-      </div>
-
-      <button type="button" id="btnVaContinuarWeb">
-        Continuar en web
-      </button>
-    </div>
-  `;
-
-  document.body.appendChild(div);
-
-  document.getElementById("btnVaContinuarWeb")?.addEventListener("click", () => {
-    localStorage.setItem(VA_TIP_APP_KEY, "1");
-    div.remove();
-  });
-
-  return true;
-}
+window.vaActualizarInvitacionCompartidos = vaProgramarInvitacion;
+document.addEventListener("visibilitychange", () => {
+  const ahora = performance.now();
+  if (vaInicioVisible !== null) vaTiempoVisible += ahora - vaInicioVisible;
+  vaInicioVisible = document.hidden ? null : ahora;
+  vaProgramarInvitacion();
+});
+vaProgramarInvitacion();
 
 function obtenerSeccionActual() {
   if (document.body.classList.contains("en-iglesia")) return "iglesia";
@@ -2817,18 +2772,6 @@ if (!uid) {
     return;
   }
 
-  const puedeEntrarComoVisitante = vaEntradaVisitante();
-
-  // ✅ Primer ingreso real sin login y sin elegir visitante:
-  // va a la pantalla bienvenida/login.
-  if (!puedeEntrarComoVisitante) {
-    window.location.replace("/VidaAbundante/login.html");
-    return;
-  }
-
-  // ✅ MODO VISITANTE
-  localStorage.setItem(VA_VISITANTE_KEY, "1");
-
   window.__UID = null;
   window.__ES_ADMIN = false;
   window.__ES_COLABORADOR = false;
@@ -3154,9 +3097,7 @@ if (!vaSnapshotRapidoOk) {
   if (vaEsLinkCompartidosDirecto()) {
     seccionTemprana = "compartidos";
   } else if (!vaHayLinkDirectoInterno()) {
-    seccionTemprana = vaEntradaVisitante()
-      ? vaSeccionInicialVisitante()
-      : vaSeccionInicialLogueado();
+    seccionTemprana = vaSeccionInicialVisitante();
   }
 
   if (vaSeccionValidaApp(seccionTemprana)) {
