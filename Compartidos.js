@@ -81,6 +81,8 @@ let compartidosEdicionesEscuchaActiva = false;
 
 let compFiltroActual = (() => {
   try {
+    const params = new URLSearchParams(location.search);
+    if (params.get("ver") === "compartidos" && params.get("filtro") === "todo") return "todo";
     return localStorage.getItem("vaCompFiltroActual") || "todo";
   } catch (e) {
     return "todo";
@@ -703,22 +705,7 @@ const COMP_PROMOS = [
 ];
 
 function compRefPredicaDirecta() {
-  try {
-    const params = new URLSearchParams(location.search);
-    const path = String(location.pathname || "").toLowerCase();
-
-    if (path.includes("/predica/")) {
-      return params.get("ref") || params.get("id") || "";
-    }
-
-    if (params.has("predicaRef")) {
-      return params.get("predicaRef") || "";
-    }
-
-    return "";
-  } catch (_) {
-    return "";
-  }
+  return window.vaReferenciaPredicaEnlace?.() || "";
 }
 
 function compEsPredicaLinkDirecto() {
@@ -728,12 +715,15 @@ function compEsPredicaLinkDirecto() {
 window.compCerrarPredicaDirecta = function () {
   const destino = new URL("./index.html", import.meta.url);
   destino.searchParams.set("ver", "compartidos");
+  destino.searchParams.set("filtro", "todo");
   history.replaceState(history.state, "", destino);
-  document.body.classList.remove("comp-link-directo");
+  document.body.classList.remove("comp-link-directo", "va-header-biblia-oculto");
+  window.compCerrarCalendarioAgenda();
   compFiltroActual = "todo";
+  compLimpiarCompartidosTop();
   if (typeof window.irA === "function") window.irA("compartidos");
   else window.mostrarCompartidos();
-  window.scrollTo(0, 0);
+  window.scrollTo({top: 0, left: 0, behavior: "instant"});
 };
 
 function compNormalizarRefDirecta(v = "") {
@@ -785,7 +775,7 @@ function compBuscarPredicaDirecta(refDirecta = "") {
     ].map(compClaveDirecta);
 
     return claves.includes(buscada);
-  }) || null;
+  }) || window.subidosBuscarPredicaPorReferencia?.(buscada, compartidosSubidosCache) || null;
 }
 
 function compLoaderPredicaDirectaHTML() {
@@ -5290,6 +5280,10 @@ window.cargarCompartidos = function cargarCompartidos() {
 window.iniciarCompartidos = function iniciarCompartidos() {
   return window.mostrarCompartidos();
 };
+
+window.addEventListener("hashchange", () => {
+  if (compEsPredicaLinkDirecto()) window.mostrarCompartidos();
+});
 
 function compIniciarCompartidosSiVisible() {
   if (

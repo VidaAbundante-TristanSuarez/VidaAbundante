@@ -2052,7 +2052,7 @@ function vaHayLinkDirectoInterno() {
 
     // ✅ Links directos que NO deben mostrar paseo previo.
     if (params.get("edicionRef")) return true;
-    if (params.get("predicaRef")) return true;
+    if (window.vaReferenciaPredicaEnlace?.()) return true;
 
     if (params.get("ver") === "edicion") return true;
     if (path.includes("/ediciones/") && params.get("ref")) return true;

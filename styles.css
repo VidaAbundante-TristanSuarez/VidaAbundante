@@ -717,6 +717,14 @@ body.modo-imagen #btnImagen {
   transform: translateZ(0);
 }
 
+/* El área visible crece cuando Chrome oculta la barra de direcciones. */
+@supports (height: 100lvh) {
+  #fondoBiblia, #fondoIglesia, #fondoPanel, #fondoCompartidos {
+    height: 100lvh;
+    transform: none;
+  }
+}
+
 body.en-biblia #fondoBiblia{ display:block; }
 body.en-iglesia #fondoIglesia{ display:block; }
 body.en-panel #fondoPanel{ display:block; }
@@ -7122,13 +7130,6 @@ body.oscuro .va-creada-carrusel .va-carrusel-imagen:not(.va-varios-disenos){back
 .va-opciones-color-contenido p{margin:3px 0 0;font:13px/1.35 Arial,sans-serif}
 body.oscuro #va-opciones-color{background:#203e54;color:#edf7ff;border-color:#54748b}
 
-/* La Biblia web usa el alto estable del navegador para el fondo. */
-@supports (height: 100lvh) {
-  body.va-biblia-web-movil.en-biblia #fondoBiblia {
-    height: 100lvh;
-    transform: none;
-  }
-}
 body.va-biblia-web-movil.en-biblia:not(.barra-oculta) #seccion-biblia {
   padding-bottom: var(--va-alto-acciones-biblia, 47px);
 }

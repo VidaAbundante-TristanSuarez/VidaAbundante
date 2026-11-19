@@ -303,7 +303,7 @@ let subidosCargados = false;
 let subidosHermanosCumples = [];
 let subidosEtiquetas = [];
 let subidosEditandoId = null;
-let subidosDeepLinkAbierto = false;
+
 
 /* =========================================================
    APK ANDROID: COMPARTIR / DESCARGAR CON PUENTE NATIVO
@@ -3452,13 +3452,13 @@ function subidosNumeroDesdePredicaRef(refTxt = "", fechaEvento = "") {
   return m ? Number(m[1] || 0) : 0;
 }
 
-function subidosListaPredicasMismaFecha(fechaEvento = "", excluirId = "") {
+function subidosListaPredicasMismaFecha(fechaEvento = "", excluirId = "", items = subidosItems) {
   const fecha = String(fechaEvento || "").trim();
   const excluir = String(excluirId || "").trim();
 
   if (!fecha) return [];
 
-  return subidosItems
+  return items
     .filter(it =>
       String(it.id || "") !== excluir &&
       esPredicaSubidos(it.etiqueta || "") &&
@@ -3486,13 +3486,13 @@ function subidosCrearPredicaRef(fechaEvento = "", excluirId = "") {
   return `${fecha}-${numero}`;
 }
 
-function subidosRefPredicaItem(it = {}) {
+function subidosRefPredicaItem(it = {}, items = subidosItems) {
   if (it.predicaRef) return String(it.predicaRef || "").trim();
 
   const fecha = String(it.fechaEvento || "").trim();
   if (!fecha) return String(it.id || "").trim();
 
-  const lista = subidosListaPredicasMismaFecha(fecha, "");
+  const lista = subidosListaPredicasMismaFecha(fecha, "", items);
 
   const index = lista.findIndex(x => String(x.id || "") === String(it.id || ""));
   const numero = index >= 0 ? index + 1 : 1;
@@ -3500,21 +3500,21 @@ function subidosRefPredicaItem(it = {}) {
   return `${fecha}-${numero}`;
 }
 
-function subidosBuscarPredicaPorReferencia(refTxt = "") {
-  const refLimpia = decodeURIComponent(String(refTxt || "").trim());
+window.subidosBuscarPredicaPorReferencia = function (refTxt, items) {
+  const refLimpia = String(refTxt || "").trim();
   if (!refLimpia) return null;
 
   // ✅ Compatibilidad: si entra el ID raro viejo, también abre.
-  const porId = obtenerSubidoPorId(refLimpia);
+  const porId = items.find(it => String(it.id) === refLimpia || String(it._subidoId) === refLimpia);
   if (porId) return porId;
 
   const refNorm = subidosNormalizarRefPredica(refLimpia);
 
-  const candidatas = subidosItems
+  const candidatas = items
     .filter(it => subidosEsPredicaConContenido(it))
     .filter(it => {
       const guardada = subidosNormalizarRefPredica(it.predicaRef || "");
-      const calculada = subidosNormalizarRefPredica(subidosRefPredicaItem(it));
+      const calculada = subidosNormalizarRefPredica(subidosRefPredicaItem(it, items));
       const fecha = String(it.fechaEvento || "").trim();
 
       return (
@@ -3531,7 +3531,7 @@ function subidosBuscarPredicaPorReferencia(refTxt = "") {
     });
 
   return candidatas[0] || null;
-}
+};
 
 function subidosTextoPlanoPredica(it) {
   const citas = obtenerCitasPredicaSubido(it);
@@ -5024,75 +5024,6 @@ async function subidosGenerarBlobCardPredica(id, itemOverride = null) {
 
 function subidosEsPredicaConContenido(it) {
   return esPredicaSubidos(it?.etiqueta || "") && subidosTieneContenidoPredica(it);
-}
-
-function subidosLeerLinkPredicaDirecta() {
-  const url = new URL(window.location.href);
-
-  const refQuery =
-    url.searchParams.get("predicaRef") ||
-    url.searchParams.get("ref") ||
-    url.searchParams.get("predica") ||
-    url.searchParams.get("p") ||
-    url.searchParams.get("idPredica");
-
-  if (refQuery) {
-    return {
-      ref: String(refQuery || "").trim(),
-      limpiarHash: false
-    };
-  }
-
-  const rawHash = String(window.location.hash || "").replace(/^#/, "");
-  if (!rawHash) return null;
-
-  if (rawHash.startsWith("subido=")) {
-    const params = new URLSearchParams(rawHash);
-    return {
-      ref: String(params.get("subido") || "").trim(),
-      limpiarHash: true
-    };
-  }
-
-  if (rawHash.startsWith("predica=")) {
-    const params = new URLSearchParams(rawHash);
-    return {
-      ref: String(params.get("predica") || "").trim(),
-      limpiarHash: true
-    };
-  }
-
-  return null;
-}
-
-function subidosAbrirDesdeHash() {
-  if (subidosDeepLinkAbierto) return;
-
-  const link = subidosLeerLinkPredicaDirecta();
-  if (!link?.ref) return;
-
-  const it = subidosBuscarPredicaPorReferencia(link.ref);
-  if (!it) return;
-
-  subidosDeepLinkAbierto = true;
-
-  if (link.limpiarHash) {
-    subidosLimpiarHashDetalle();
-  }
-
-  if (typeof window.irA === "function") window.irA("iglesia");
-  if (typeof window.mostrarIglesiaSub === "function") window.mostrarIglesiaSub("subidos");
-
-  setTimeout(() => {
-    if (subidosEsPredicaConContenido(it)) {
-      abrirSubidosVisorPredica(it.id, "all");
-      return;
-    }
-
-    if (it.url) {
-      abrirSubidosVisorArchivo(it.id);
-    }
-  }, 180);
 }
 
 function htmlArchivoGrandePredica(it) {
@@ -8388,8 +8319,6 @@ onValue(ref(db, "subidosIglesia"), (s) => {
 
   refrescarSubidos();
 
-  // ✅ intentar abrir desde hash una vez que ya existen los datos
-  setTimeout(subidosAbrirDesdeHash, 0);
 });
 
   onValue(ref(db, "subidosEtiquetas"), (s) => {
@@ -8436,12 +8365,8 @@ document.addEventListener("DOMContentLoaded", () => {
   refrescarSubidos();
   initLecturas();
 
-  setTimeout(subidosAbrirDesdeHash, 600);
 });
 
-window.addEventListener("hashchange", () => {
-  subidosAbrirDesdeHash();
-});
 
 // =========================================================
 // BOTONES FIJOS DEL MODAL DE SUBIDOS
