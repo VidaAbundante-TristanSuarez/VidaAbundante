@@ -1,3 +1,4 @@
+import {audienciaPublicacion, campoVisibilidad, escucharPublicaciones, nivelPublicacion, verificarAccesoPublicacion, visibilidadEnLote} from "./visibilidad-publicaciones.js";
 import { crearGestorArchivosAgenda, ordenarArchivosPorPortada } from './agenda-archivos.js?v=20261109-medios-1';
 import { botonAdjuntosHTML } from './documentos-adjuntos.js?v=20261102-colectas-11';
 import { normalizarUrlImagen, obtenerBlobImagen, subirArchivoR2 as subirArchivoAR2DesdeWeb } from './carga-imagenes.js?v=20261109-medios-1';
@@ -2757,6 +2758,7 @@ function abrirModalSubidos() {
   subidosEditandoId = null;
 
   setSubidosModalTitulo("Nueva publicación");
+  document.getElementById("subidosVisibilidadCampo").innerHTML = campoVisibilidad("subidosVisibilidad");
   if (archivo) archivo.value = "";
   const archivoLabel = document.getElementById("subidosArchivoLabel");
   if (archivoLabel) archivoLabel.textContent = "Archivos y carátula";
@@ -6561,6 +6563,7 @@ window.abrirEditarSubido = async function abrirEditarSubido(id) {
 
   abrirModalSubidos();
   subidosEditandoId = id;
+  document.getElementById("subidosVisibilidadCampo").innerHTML = campoVisibilidad("subidosVisibilidad", nivelPublicacion(it), !it.uidCreador || it.uidCreador === window.__UID);
   const archivoLabel = document.getElementById("subidosArchivoLabel");
   if (archivoLabel) archivoLabel.textContent = "Archivos y carátula";
 
@@ -7169,6 +7172,13 @@ function refrescarSubidos() {
   const btnNuevo = document.getElementById("btnSubidoNuevo");
   if (btnNuevo) btnNuevo.style.display = subidosPuedeEditar() ? "inline-flex" : "none";
 
+  if (subidosPuedeEditar()) visibilidadEnLote({
+    ancla: btnNuevo, db, ruta: "subidosIglesia", items: () => subidosItems,
+    titulo: it => it.predicaTitulo || it.titulo || [it.etiqueta, it.fechaEvento].filter(Boolean).join(" · "),
+    propietario: it => it.uidCreador, campoPropietario: "uidCreador"
+  });
+  else document.querySelector('[data-audiencia-ruta="subidosIglesia"]')?.remove();
+
   // ✅ prepara archivos reales en memoria para descargar/compartir
   subidosPrepararArchivosDelFeed();
 }
@@ -7673,6 +7683,9 @@ async function guardarSubido() {
     const btnGuardar = document.getElementById("btnGuardarSubido");
 
     const actual = editandoId ? (obtenerSubidoPorId(editandoId) || {}) : {};
+    const nivel = document.getElementById("subidosVisibilidad")?.value || nivelPublicacion(actual);
+    const audiencia = audienciaPublicacion(nivel, actual.uidCreador || window.__UID);
+    await verificarAccesoPublicacion(db, "subidosIglesia", audiencia);
     const gestor=subidosObtenerGestor();
     const pendientes=gestor?gestor.pendientes():[...(inpFile?.files||[])].map((file,i)=>({file,id:String(i)}));
     const files=pendientes.map(p=>p.file);
@@ -7972,6 +7985,7 @@ const datosAnteriores = {...actual};
 delete datosAnteriores.id;
 const datosBase = {
       ...datosAnteriores,
+      audiencia,
       titulo:esPredica?(actual.titulo||''):tituloGeneral,
       fecha: actual.fecha || ts,
       fechaEdicion: editandoId ? ts : "",
@@ -8289,9 +8303,8 @@ function initSubidosBotones() {
 }
 
 function initLecturas() {
-onValue(ref(db, "subidosIglesia"), (s) => {
-   subidosCargados = true;
-  const data = s.val() || {};
+escucharPublicaciones(db, "subidosIglesia", (data, lista = true) => {
+  subidosCargados = lista;
   subidosItems = Object.entries(data)
     .map(([id, obj]) => ({ id, ...(obj || {}) }))
     .sort((a, b) => {

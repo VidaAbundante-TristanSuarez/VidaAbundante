@@ -2321,6 +2321,10 @@ if (vaEsMovil()) {
     if (document.querySelector("#modalPersonalizar.abierto")) return;
 
     const selector = vaSelectorCacheActual(seccion);
+    if (seccion === "compartidos" || (seccion === "iglesia" && selector === "#iglesia-subidos")) {
+      localStorage.removeItem(VA_UI_SNAPSHOT_KEY);
+      return;
+    }
     const el = selector ? document.querySelector(selector) : null;
 
     // ✅ Nunca guardar HTML visual de ABC.
@@ -2426,6 +2430,10 @@ if (vaEsMovil()) {
   
   const snap = vaLeerSnapshotVisual();
   if (!snap) return false;
+  if (snap.seccion === "compartidos" || (snap.seccion === "iglesia" && snap.selector === "#iglesia-subidos")) {
+    try { localStorage.removeItem(VA_UI_SNAPSHOT_KEY); } catch {}
+    return false;
+  }
   if (vaHayLinkDirectoInterno()) return false;
 
   // ✅ Nunca restaurar HTML viejo de ABC.

@@ -7090,3 +7090,30 @@ body.va-biblia-web-movil.en-biblia:not(.barra-oculta) #seccion-biblia #texto {
 }
 
 .comp-directo-cerrar { justify-self: end; }
+
+.va-campo-audiencia {
+  display: grid;
+  gap: 5px;
+  margin-block: 8px;
+}
+.va-dialogo-audiencia {
+  width: min(480px, calc(100vw - 24px));
+  max-height: 85dvh;
+  border: 1px solid #b4d2e8;
+  border-radius: 16px;
+  padding: 16px;
+  background: #f6fbff;
+  color: #21384a;
+}
+.va-dialogo-audiencia::backdrop { background: #0f24397a; }
+.va-dialogo-audiencia h3 { margin: 0 0 10px; }
+.va-dialogo-audiencia label { display: flex; align-items: center; gap: 9px; cursor: pointer; }
+.va-dialogo-audiencia [data-lista] { max-height: 42dvh; overflow: auto; margin-block: 8px; }
+.va-dialogo-audiencia [data-lista] label { min-height: 38px; border-bottom: 1px solid #c5dfed; }
+.va-dialogo-audiencia footer { display: flex; justify-content: flex-end; gap: 8px; }
+.va-dialogo-audiencia button, .va-dialogo-audiencia select {
+  min-height: 36px; padding: 3px 9px; border-radius: 8px;
+  border: 1px solid #b4d2e8; background: #e6f4ff; color: #21384a;
+}
+.va-dialogo-audiencia button:disabled { opacity: .48; }
+.va-boton-audiencia { font-size: 13px; }

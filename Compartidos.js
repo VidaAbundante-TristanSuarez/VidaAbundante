@@ -1,3 +1,4 @@
+import {escucharPublicaciones, puedeVerPublicacion} from "./visibilidad-publicaciones.js";
 import { botonAdjuntosHTML } from './documentos-adjuntos.js?v=20261102-colectas-11';
 import { ordenarArchivosPorPortada } from './agenda-archivos.js?v=20261109-medios-1';
 import { referenciasHTML, referenciasDePublicacion, carruselImagenHTML } from "./publicaciones-imagen.js?v=20261109-medios-1";
@@ -56,27 +57,7 @@ let compartidosOcultosCache = {};
 let compartidosOcultosEscuchaActiva = false;
 let compPromosTimer = null;
 
-const COMP_FLYERS_LOCALES = "va-flyers-publicos-v1";
-const COMP_VIGENCIA_FLYERS = 6 * 60 * 60 * 1000;
-
-function compLeerFlyersLocales() {
-  try {
-    const dato = JSON.parse(localStorage.getItem(COMP_FLYERS_LOCALES));
-    if (dato?.vence > Date.now() && Array.isArray(dato.flyers)) return dato.flyers;
-  } catch {}
-  return [];
-}
-
-function compGuardarFlyersLocales(ediciones) {
-  const flyers = ediciones.filter(item =>
-    item.publicada === true && compNormalizarCategoriaEdicion(item.rama || item.categoria || item.tipoEdicion) === "flyers"
-  );
-  try {
-    localStorage.setItem(COMP_FLYERS_LOCALES, JSON.stringify({flyers, vence: Date.now() + COMP_VIGENCIA_FLYERS}));
-  } catch {}
-}
-
-let compartidosEdicionesCache = compLeerFlyersLocales();
+let compartidosEdicionesCache = [];
 let compartidosEdicionesEscuchaActiva = false;
 
 let compFiltroActual = (() => {
@@ -774,8 +755,8 @@ function compBuscarPredicaDirecta(refDirecta = "") {
       item?.slug
     ].map(compClaveDirecta);
 
-    return claves.includes(buscada);
-  }) || window.subidosBuscarPredicaPorReferencia?.(buscada, compartidosSubidosCache) || null;
+    return puedeVerPublicacion(item) && claves.includes(buscada);
+  }) || window.subidosBuscarPredicaPorReferencia?.(buscada, compartidosSubidosCache.filter(item => puedeVerPublicacion(item))) || null;
 }
 
 function compLoaderPredicaDirectaHTML() {
@@ -1564,41 +1545,10 @@ function iniciarEscuchaCompartidosEdiciones() {
   const db = compDB();
   if (!db) return;
 
-  onValue(ref(db, "ediciones"), (snap) => {
-    compEdicionesListo = true;
-    const val = snap.val() || {};
-
-    compartidosEdicionesCache = Object.entries(val)
-      .map(([id, item]) => ({
-        id,
-        ...(item || {})
-      }));
-    compGuardarFlyersLocales(compartidosEdicionesCache);
-
-    const actual = Array.isArray(window.__EDICIONES_CACHE)
-      ? window.__EDICIONES_CACHE
-      : [];
-
-    const mapa = new Map();
-
-    actual.forEach(item => {
-      if (item?.id) mapa.set(String(item.id), item);
-    });
-
-    compartidosEdicionesCache.forEach(item => {
-      if (item?.id) mapa.set(String(item.id), item);
-    });
-
-    window.__EDICIONES_CACHE = Array.from(mapa.values());
-
-    renderCompartidos();
-  }, (err) => {
-    compEdicionesListo = true;
-    if (/permission|denied/i.test(err?.code || err?.message || "")) {
-      compartidosEdicionesCache = [];
-      try { localStorage.removeItem(COMP_FLYERS_LOCALES); } catch {}
-    }
-    console.error("Error leyendo ediciones para Compartidos:", err);
+  escucharPublicaciones(db, "ediciones", (datos, listo = true) => {
+    compEdicionesListo = listo;
+    compartidosEdicionesCache = Object.entries(datos).map(([id, item]) => ({...item, id}));
+    window.__EDICIONES_CACHE = compartidosEdicionesCache;
     renderCompartidos();
   });
 
@@ -1733,10 +1683,8 @@ function iniciarEscuchaCompartidosSubidos() {
   const db = compDB();
   if (!db) return;
 
-onValue(ref(db, "subidosIglesia"), (snap) => {
-  compSubidosListo = true;
-
-  const val = snap.val() || {};
+escucharPublicaciones(db, "subidosIglesia", (val, listo = true) => {
+  compSubidosListo = listo;
 
   compartidosSubidosCache = Object.entries(val)
     .map(([id, it]) => ({
@@ -5132,6 +5080,7 @@ function compUnificarItems() {
   // ✅ Ediciones SIEMPRE salen de Recursos > Ediciones.
   // Así los filtros de Compartidos usan la misma fuente que Recursos.
   const edicionesDesdeRecursos = (compartidosEdicionesCache || [])
+    .filter(item => puedeVerPublicacion(item))
     .map(compEdicionRecursoComoItem)
     .filter(Boolean);
 
@@ -5144,7 +5093,7 @@ function compUnificarItems() {
     ...edicionesDesdeRecursos,
     ...compartidosSinEdiciones,
     ...(compartidosDevocionalesCache || []).map(x => ({ ...x, _auto: "devocional" })),
-    ...(compartidosSubidosCache || []).map(x => ({ ...x, _auto: "subido" }))
+    ...(compartidosSubidosCache || []).filter(item => puedeVerPublicacion(item)).map(x => ({ ...x, _auto: "subido" }))
   ];
 
   const vistos = new Set();

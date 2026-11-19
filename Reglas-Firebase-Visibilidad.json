@@ -1,0 +1,26 @@
+{
+  "rules": {
+    "subidosIglesia": {
+      ".indexOn": [
+        "audiencia"
+      ],
+      ".read": "query.orderByChild == 'audiencia' && ((query.endAt == false && query.startAt == null) || query.equalTo == 'publica' || (auth != null && (query.equalTo == 'sesion' || query.equalTo == 'uid:' + auth.uid)))",
+      "$publicacion": {
+        ".read": "!data.child('audiencia').exists() || data.child('audiencia').val() == 'publica' || (auth != null && (data.child('audiencia').val() == 'sesion' || (data.child('audiencia').val() == 'uid:' + auth.uid && data.child('uidCreador').val() == auth.uid)))",
+        ".write": "auth != null && (root.child('admins').child(auth.uid).val() == true || root.child('colaboradores').child(auth.uid).val() == true) && (!data.child('audiencia').isString() || data.child('audiencia').val() == 'publica' || data.child('audiencia').val() == 'sesion' || data.child('uidCreador').val() == auth.uid) && (!newData.child('audiencia').isString() || newData.child('audiencia').val() == 'publica' || newData.child('audiencia').val() == 'sesion' || newData.child('uidCreador').val() == auth.uid)",
+        ".validate": "(data.exists() || (newData.child('fecha').isNumber() && newData.child('uidCreador').val() == auth.uid)) && (!data.child('uidCreador').isString() || data.child('uidCreador').val() == '' || data.child('uidCreador').val() == newData.child('uidCreador').val()) && (!newData.child('audiencia').exists() || newData.child('audiencia').val() == 'publica' || newData.child('audiencia').val() == 'sesion' || (newData.child('uidCreador').isString() && newData.child('uidCreador').val() != '' && newData.child('audiencia').val() == 'uid:' + newData.child('uidCreador').val()))"
+      }
+    },
+    "ediciones": {
+      ".indexOn": [
+        "audiencia"
+      ],
+      ".read": "query.orderByChild == 'audiencia' && ((query.endAt == false && query.startAt == null) || query.equalTo == 'publica' || (auth != null && (query.equalTo == 'sesion' || query.equalTo == 'uid:' + auth.uid)))",
+      "$publicacion": {
+        ".read": "!data.child('audiencia').exists() || data.child('audiencia').val() == 'publica' || (auth != null && (data.child('audiencia').val() == 'sesion' || (data.child('audiencia').val() == 'uid:' + auth.uid && data.child('creadoPor').val() == auth.uid)))",
+        ".write": "auth != null && root.child('admins').child(auth.uid).val() == true && (!data.child('audiencia').isString() || data.child('audiencia').val() == 'publica' || data.child('audiencia').val() == 'sesion' || data.child('creadoPor').val() == auth.uid) && (!newData.child('audiencia').isString() || newData.child('audiencia').val() == 'publica' || newData.child('audiencia').val() == 'sesion' || newData.child('creadoPor').val() == auth.uid)",
+        ".validate": "(data.exists() || (newData.child('ts').isNumber() && newData.child('creadoPor').val() == auth.uid)) && (!data.child('creadoPor').isString() || data.child('creadoPor').val() == '' || data.child('creadoPor').val() == newData.child('creadoPor').val()) && (!newData.child('audiencia').exists() || newData.child('audiencia').val() == 'publica' || newData.child('audiencia').val() == 'sesion' || (newData.child('creadoPor').isString() && newData.child('creadoPor').val() != '' && newData.child('audiencia').val() == 'uid:' + newData.child('creadoPor').val()))"
+      }
+    }
+  }
+}
