@@ -1723,12 +1723,11 @@ function edStickerImagenesParaPack(ed = {}) {
       vistos.add(canon);
       return true;
     })
-    .sort((a, b) => Number(a.orden || 0) - Number(b.orden || 0))
-    .slice(0, 30);
+    .sort((a, b) => Number(a.orden || 0) - Number(b.orden || 0));
 }
 
-function edCrearPayloadStickerPack(ed = {}) {
-  const stickers = edStickerImagenesParaPack(ed);
+function edCrearPayloadStickerPack(ed = {}, seleccion = null) {
+  const stickers = seleccion || edStickerImagenesParaPack(ed).slice(0, 30);
 
   const identifier = edStickerPackIdSeguro(
     ed.stickerPackId ||
@@ -1927,8 +1926,8 @@ window.vaStickerPackEstadoAndroid = function(mensaje = "") {
     aviso.style.cssText = `
       position: fixed;
       left: 50%;
-      bottom: 18px;
-      transform: translateX(-50%);
+      top: 50%;
+      transform: translate(-50%, -50%);
       z-index: 2147483601;
       background: rgba(0,0,0,.86);
       color: #fff;
@@ -1937,6 +1936,8 @@ window.vaStickerPackEstadoAndroid = function(mensaje = "") {
       font-size: 13px;
       font-weight: 800;
       box-shadow: 0 8px 25px rgba(0,0,0,.25);
+      max-width: calc(100vw - 32px);
+      text-align: center;
     `;
     document.body.appendChild(aviso);
   }
@@ -1946,10 +1947,13 @@ window.vaStickerPackEstadoAndroid = function(mensaje = "") {
 
 window.vaStickerPackResultadoAndroid = function(ok = false, packId = "", error = "") {
   const id = String(packId || "").trim();
+  window.vaStickerPackEstadoAndroid("");
 
   if (ok && id) {
     try {
       localStorage.setItem(`vaStickerPackAgregado_${id}`, "1");
+      const contenido = edStickerEnviosPendientes.get(id);
+      if (contenido) localStorage.setItem(`vaStickerPackContenido_${id}`, JSON.stringify(contenido));
 
       const edicionId = localStorage.getItem(`vaStickerPackEdicion_${id}`) || "";
 
@@ -1964,6 +1968,7 @@ window.vaStickerPackResultadoAndroid = function(ok = false, packId = "", error =
     if (typeof mostrarToast === "function") {
       mostrarToast("✅ Pack enviado a WhatsApp");
     }
+    edStickerEnviosPendientes.delete(id);
 
     renderEdiciones();
 
@@ -1975,9 +1980,100 @@ window.vaStickerPackResultadoAndroid = function(ok = false, packId = "", error =
   }
 
   if (!ok && error) {
+    edStickerEnviosPendientes.delete(id);
     alert("WhatsApp rechazó el pack:\n\n" + error);
   }
 };
+
+const edStickerEnviosPendientes = new Map();
+
+async function edLeerStickersEnviados(ed) {
+  const identifier = edCrearPayloadStickerPack(ed, []).identifier;
+  try {
+    const guardados = JSON.parse(localStorage.getItem(`vaStickerPackContenido_${identifier}`) || "null");
+    if (Array.isArray(guardados)) return guardados.filter(st => st?.url);
+    // Los packs anteriores enviaban todas las imágenes. La fecha de descarga permite
+    // recuperar ese conjunto si las direcciones conservan la fecha de subida.
+    if (localStorage.getItem(`vaStickerPackAgregado_${identifier}`) !== "1") return [];
+    let fecha = Number(edicionesDescargadasCache?.[ed.id]?.ts || window.__EDICIONES_DESCARGADAS?.[ed.id]?.ts || 0);
+    if (!fecha && edDB() && edUidActual()) {
+      fecha = Number((await get(ref(edDB(), `panelDescargasEdiciones/${edUidActual()}/${ed.id}`))).val()?.ts || 0);
+    }
+    if (!fecha) return [];
+    const anteriores = edStickerImagenesParaPack(ed).filter(st => {
+      const subida = Number(st.url.match(/\/(\d{13})_/u)?.[1] || 0);
+      return subida > 0 && subida <= fecha;
+    });
+    return anteriores.length >= 3 ? anteriores.map(st => ({url: st.url, emojis: st.emojis})) : [];
+  } catch { return []; }
+}
+
+function edUnirStickersSeleccionados(anteriores, seleccion) {
+  const unicos = new Map();
+  for (const st of [...anteriores, ...seleccion]) unicos.set(edStickerUrlCanonica(st.url), {url: st.url, emojis: st.emojis});
+  return [...unicos.values()];
+}
+
+function edElegirStickersWhatsApp(ed, anteriores) {
+  return new Promise(resolve => {
+    const dialogo = crearDialogoEditor("Elegir stickers");
+    if (!dialogo) {resolve(null); return;}
+    dialogo.classList.add("ed-stickers-seleccion");
+    const stickers = edStickerImagenesParaPack(ed);
+    const enviados = new Set(anteriores.map(st => edStickerUrlCanonica(st.url)));
+    dialogo.insertAdjacentHTML("beforeend", `<p>${edEscape(ed.titulo || "Stickers")}</p>
+      <p>Los elegidos se suman al mismo pack conservando los anteriores.</p>
+      <div class="ed-stickers-seleccion-barra"><button type="button" data-todos>Marcar todos</button>
+        ${anteriores.length ? '<button type="button" data-nuevos>Solo nuevos</button>' : ""}
+        <span data-cantidad aria-live="polite"></span></div>
+      <div class="ed-stickers-seleccion-grilla"></div><p data-aviso role="status"></p>
+      <footer><button type="button" data-cancelar>Cancelar</button>
+        <button type="button" data-enviar class="va-horario-primario">Agregar seleccionados</button></footer>`);
+    const grilla = dialogo.querySelector(".ed-stickers-seleccion-grilla");
+    const entradas = stickers.map((st, i) => {
+      const label = document.createElement("label");
+      label.className = "ed-sticker-elegible";
+      const anterior = enviados.has(edStickerUrlCanonica(st.url));
+      label.innerHTML = `<input type="checkbox" aria-label="Elegir sticker ${i + 1}">
+        <img alt="Sticker ${i + 1}" loading="lazy" data-va-imagen
+          data-va-src="${edEscape(urlMiniaturaImagen(st.url, st.pagina?.miniaturaUrl))}"
+          data-va-original="${edEscape(st.url)}">${anterior ? '<span>Enviado antes</span>' : ""}`;
+      const check = label.querySelector("input");
+      check.checked = !anterior;
+      grilla.append(label);
+      return {check, st, anterior};
+    });
+    const boton = dialogo.querySelector("[data-enviar]");
+    const aviso = dialogo.querySelector("[data-aviso]");
+    const elegidos = () => entradas.filter(e => e.check.checked).map(e => e.st);
+    const actualizar = () => {
+      const cantidad = elegidos().length;
+      dialogo.querySelector("[data-cantidad]").textContent = `${cantidad} seleccionado${cantidad === 1 ? "" : "s"}`;
+      boton.disabled = !cantidad;
+      aviso.textContent = "";
+    };
+    grilla.addEventListener("change", actualizar);
+    dialogo.querySelector("[data-todos]").onclick = () => {
+      const marcar = entradas.some(e => !e.check.checked);
+      entradas.forEach(e => e.check.checked = marcar);
+      actualizar();
+    };
+    const nuevos = dialogo.querySelector("[data-nuevos]");
+    if (nuevos) nuevos.onclick = () => {entradas.forEach(e => e.check.checked = !e.anterior); actualizar();};
+    dialogo.querySelector("[data-cancelar]").onclick = () => dialogo.close();
+    boton.onclick = () => {
+      const seleccion = elegidos();
+      const total = edUnirStickersSeleccionados(anteriores, seleccion).length;
+      if (total < 3) {aviso.textContent = "Para crear el primer pack, WhatsApp pide al menos 3 stickers. Después podés sumar uno por vez."; return;}
+      if (total > 30) {aviso.textContent = "Este pack admite hasta 30 stickers. Creá otra ficha para los siguientes."; return;}
+      dialogo.__seleccion = seleccion;
+      dialogo.close();
+    };
+    dialogo.addEventListener("close", () => resolve(dialogo.__seleccion || null), {once: true});
+    actualizar();
+    dialogo.showModal();
+  });
+}
 
 window.edAgregarStickersWhatsApp = async function(edicionId = "", boton = null) {
   try {
@@ -1997,17 +2093,19 @@ window.edAgregarStickersWhatsApp = async function(edicionId = "", boton = null) 
       return;
     }
 
-    const pack = edCrearPayloadStickerPack(ed);
-
-    if (!pack.stickers || pack.stickers.length < 3) {
-      alert("WhatsApp necesita mínimo 3 stickers en el pack.");
-      edSetBotonStickerTrabajando(boton, false);
-      return;
-    }
+    const anteriores = await edLeerStickersEnviados(ed);
+    edSetBotonStickerTrabajando(boton, false);
+    const seleccion = await edElegirStickersWhatsApp(ed, anteriores);
+    if (!seleccion) return;
+    const contenido = edUnirStickersSeleccionados(anteriores, seleccion);
+    const pack = edCrearPayloadStickerPack(ed, contenido);
 
     try {
       localStorage.setItem(`vaStickerPackEdicion_${pack.identifier}`, ed.id || edicionId);
     } catch (_) {}
+    edStickerEnviosPendientes.set(pack.identifier, contenido);
+    edSetBotonStickerTrabajando(boton, true, "Preparando stickers…");
+    window.vaStickerPackEstadoAndroid("Preparando stickers…");
 
     if (
       window.vaAndroidAgregarStickerPack &&
@@ -2036,12 +2134,14 @@ window.edAgregarStickersWhatsApp = async function(edicionId = "", boton = null) 
     }
 
     edSetBotonStickerTrabajando(boton, false);
+    window.vaStickerPackEstadoAndroid("");
     edMostrarAvisoDescargarAPK();
 
   } catch (e) {
     console.error("No pude preparar el pack de stickers:", e);
 
     edSetBotonStickerTrabajando(boton, false);
+    window.vaStickerPackEstadoAndroid("");
 
     alert(
       "No pude preparar este pack de stickers.\n\n" +
