@@ -1618,6 +1618,14 @@ function subidosTextoHtml(txt = "") {
   return escaparHtml(limpio).replace(/\n/g, "<br>");
 }
 
+function subidosHtmlVersiculosPredica(txt = "", claseNumero = "subidos-num-versiculo") {
+  return subidosTextoPlanoExport(txt).split("\n").map(linea => {
+    const numero = linea.match(/^(\d{1,3})(?:[.)](?!\d)|(?=\s|$))/);
+    if (!numero) return escaparHtml(linea);
+    return `<span class="${escaparHtml(claseNumero)}">${escaparHtml(numero[0])}</span>${escaparHtml(linea.slice(numero[0].length))}`;
+  }).join("<br>");
+}
+
 function subidosNumsSeleccionados(card) {
   const nums = Array.isArray(card.__seleccionNums) ? [...card.__seleccionNums] : [];
   return nums
@@ -2293,7 +2301,7 @@ function htmlPredicaBibliaSubido(it) {
 
         ${texto ? `
           <div class="subidos-predica-primera-texto">
-            ${subidosTextoHtml(texto)}
+            ${subidosHtmlVersiculosPredica(texto)}
           </div>
         ` : ``}
       </div>
@@ -3938,6 +3946,10 @@ color:#111;
 #subidosExportPredicaFinal *{
   box-sizing:border-box;
 }
+#subidosExportPredicaFinal .subidos-num-versiculo{
+  font-size:50%;
+  line-height:0;
+}
 
 #subidosExportPredicaFinal::before{
   content:"";
@@ -4442,7 +4454,7 @@ ${tituloPredica ? `
     <div class="subidos-export-primera-box ${primeraClase}">
       ${primeraTexto ? `
         <div class="subidos-export-primera-texto">
-          ${subidosHtmlExport(primeraTexto)}
+          ${subidosHtmlVersiculosPredica(primeraTexto)}
         </div>
       ` : `
         <div class="subidos-export-primera-texto">
@@ -5122,12 +5134,7 @@ function subidosHtmlBibliaImpresion(txt = "") {
     .map(linea => String(linea || "").trim())
     .filter(Boolean)
     .map(linea => {
-      let html = escaparHtml(linea);
-      html = html.replace(
-        /^(\d+\s*[\.\)]?\s*)/,
-        '<strong class="print-num-verso">$1</strong>'
-      );
-      return `<div class="print-verso">${html}</div>`;
+      return `<div class="print-verso">${subidosHtmlVersiculosPredica(linea, "print-num-verso")}</div>`;
     })
     .join("");
 }
@@ -5251,7 +5258,7 @@ main{
 }
 .print-biblia{margin:0 0 2.5mm 5.5mm;padding-left:3mm;border-left:1px solid #000;}
 .print-verso{margin:0 0 1.1mm;text-align:justify;orphans:3;widows:3;}
-.print-num-verso{font-weight:800;}
+.print-num-verso{font-weight:800;font-size:50%;line-height:0;}
 .print-comentario{margin-left:5.5mm;margin-bottom:2mm;}
 .print-seccion{margin:0 0 4mm;}
 .print-seccion-titulo{margin:0 0 1.5mm;break-after:avoid;page-break-after:avoid;}
@@ -5607,7 +5614,7 @@ async function subidosCrearPdfPredica(it = {}) {
     const escribirVersiculo = (linea = "") => {
       const t = limpiar(linea);
       if (!t) return;
-      const m = t.match(/^(\d+)\s*[\.\)]?\s*(.*)$/);
+      const m = t.match(/^(\d{1,3})(?:[.)](?!\d)\s*|\s+|$)(.*)$/);
       const BAR_X = LEFT + 5;
       const X_NUM = LEFT + 14;
       const numero = m ? `${m[1]}.` : "";
@@ -5627,7 +5634,7 @@ async function subidosCrearPdfPredica(it = {}) {
         doc.setLineWidth(0.8);
         doc.line(BAR_X, y - BODY_SIZE * 0.75, BAR_X, y + LINE_H - BODY_SIZE * 0.75);
         if (indice === 0 && numero) {
-          setFont(BODY_SIZE, true);
+          setFont(BODY_SIZE * 0.5, true);
           doc.text(numero, X_NUM, y);
         }
         setFont();
@@ -5923,7 +5930,7 @@ function htmlPredicaBibliaSubidoGrande(it, abrirClave = "") {
 
       ${primeraCita.texto ? `
         <div class="subidos-visor-texto subidos-visor-texto-primera subidos-visor-versiculo-box">
-          ${subidosTextoHtml(primeraCita.texto || "")}
+          ${subidosHtmlVersiculosPredica(primeraCita.texto || "")}
         </div>
       ` : ``}
 
@@ -5944,7 +5951,7 @@ function htmlPredicaBibliaSubidoGrande(it, abrirClave = "") {
 
         ${c.texto ? `
           <div class="subidos-visor-texto subidos-visor-versiculo-box">
-            ${subidosTextoHtml(c.texto || "")}
+            ${subidosHtmlVersiculosPredica(c.texto || "")}
           </div>
         ` : ``}
 
@@ -7276,6 +7283,7 @@ function subidosFirmaVisualPredica(src = {}) {
   }));
 
   return JSON.stringify({
+    estiloNumerosVersiculo: "50-por-ciento-v1",
     fechaEvento: String(src.fechaEvento || "").trim(),
     etiqueta: String(src.etiqueta || "").trim(),
     descripcion: String(src.descripcion || "").trim(),
@@ -7298,6 +7306,7 @@ function subidosFirmaVisualPredica(src = {}) {
 function subidosPredicaNecesitaRegenerarShare(actual = {}, nuevo = {}) {
   const shareActual = String(actual.shareUrl || "").trim();
   if (!shareActual) return true;
+  if (!String(actual.shareFingerprintPredica || "").trim()) return true;
 
   const firmaActual =
     String(actual.shareFingerprintPredica || "").trim() ||

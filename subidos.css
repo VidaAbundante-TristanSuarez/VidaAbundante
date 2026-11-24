@@ -2875,6 +2875,11 @@ body.oscuro #modalSubidos .subidos-modal-contexto{color:#b5ccdc}
 body.oscuro .subidos-compartir-predica { background: #172332; color: #f0f5fa; }
 body.oscuro .subidos-compartir-predica [data-lista] { color: #172a3c; }
 
+.subidos-num-versiculo {
+  font-size: 50%;
+  line-height: 0;
+}
+
 .subidos-impresion-dialog {
   --a4-fondo: #f6fbff;
   --a4-campo: #fff;
