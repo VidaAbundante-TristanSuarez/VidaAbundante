@@ -278,20 +278,73 @@ export async function subirArchivoR2(archivo, carpeta, nombre = archivo.name || 
   return datos;
 }
 
-export async function crearMiniaturaImagen(archivo, lado) {
+export async function crearMiniaturaImagen(archivo, lado, alLeer) {
   if (!/^image\/(?:png|jpeg|webp|avif)$/i.test(archivo.type) || archivo.size < 64 * 1024) return null;
-  const imagen = await createImageBitmap(archivo);
+  let imagen, objeto;
   try {
-    const escala = Math.min(1, lado / Math.max(imagen.width, imagen.height));
+    if (typeof createImageBitmap === 'function') imagen = await createImageBitmap(archivo);
+  } catch { /* Algunos WebView no decodifican estos archivos con ImageBitmap. */ }
+  if (!imagen) {
+    objeto = URL.createObjectURL(archivo);
+    imagen = new Image();
+    try {
+      await new Promise((resolve, reject) => {
+        imagen.onload = resolve;
+        imagen.onerror = () => reject(new Error('No se pudo leer la imagen para crear su vista liviana.'));
+        imagen.src = objeto;
+      });
+    } catch (error) {
+      URL.revokeObjectURL(objeto);
+      throw error;
+    }
+  }
+  try {
+    const ancho = imagen.naturalWidth || imagen.width, alto = imagen.naturalHeight || imagen.height;
+    alLeer?.({ancho, alto});
+    const escala = Math.min(1, (Number(lado) || 192) / Math.max(ancho, alto));
     const canvas = document.createElement('canvas');
-    canvas.width = Math.max(1, Math.round(imagen.width * escala));
-    canvas.height = Math.max(1, Math.round(imagen.height * escala));
+    canvas.width = Math.max(1, Math.round(ancho * escala));
+    canvas.height = Math.max(1, Math.round(alto * escala));
     canvas.getContext('2d').drawImage(imagen, 0, 0, canvas.width, canvas.height);
     const miniatura = await new Promise(resolve => canvas.toBlob(resolve, 'image/webp', .82));
-    return miniatura?.type === 'image/webp' && miniatura.size < archivo.size ? miniatura : null;
+    if (!miniatura?.size) throw new Error('No se pudo crear la vista liviana de la imagen.');
+    return miniatura.size < archivo.size ? miniatura : null;
   } finally {
-    imagen.close();
+    imagen.close?.();
+    if (objeto) URL.revokeObjectURL(objeto);
   }
+}
+
+const CACHE_MINIATURAS = 'va-miniaturas-v1';
+const miniaturasCargando = new Map();
+
+export async function guardarMiniaturaLocal(url, blob) {
+  try {
+    if (!globalThis.caches || !blob?.size || !/^https?:/.test(url)) return;
+    const cache = await caches.open(CACHE_MINIATURAS);
+    await cache.put(url, new Response(blob, {headers: {'Content-Type': blob.type}}));
+    const claves = await cache.keys();
+    await Promise.all(claves.slice(0, Math.max(0, claves.length - 180)).map(clave => cache.delete(clave)));
+  } catch { /* La galería también funciona cuando el navegador no permite guardar caché. */ }
+}
+
+// Se solicita la miniatura, con un respaldo para conexiones que no responden desde R2.
+// Esta caché es independiente de los originales usados para generar la imagen final.
+export function cargarMiniaturaImagen(valor) {
+  const url = normalizarUrlImagen(valor);
+  if (!/^https?:/.test(url)) return Promise.resolve(url);
+  if (!miniaturasCargando.has(url)) {
+    const tarea = (async () => {
+      let guardada;
+      try { guardada = await (await caches.open(CACHE_MINIATURAS)).match(url); } catch {}
+      const blob = guardada ? await guardada.blob() : await obtenerBlobImagen(url, 'miniatura.webp', {esperaDirecta: 2500});
+      if (!guardada) await guardarMiniaturaLocal(url, blob);
+      return blob;
+    })();
+    miniaturasCargando.set(url, tarea);
+    tarea.finally(() => miniaturasCargando.delete(url)).catch(() => {});
+  }
+  return miniaturasCargando.get(url).then(blob => URL.createObjectURL(blob));
 }
 
 export function origenDeImagenProxy(valor) {
@@ -394,6 +447,11 @@ function prepararImagen(img) {
   };
   const fallar = () => {limpiar(); mostrar(true);};
   const cargar = url => {
+    if (url?.startsWith('blob:')) {
+      const liberar = () => URL.revokeObjectURL(url);
+      img.addEventListener('load', liberar, {once: true});
+      img.addEventListener('error', liberar, {once: true});
+    }
     img.src = url;
     estado.timer = setTimeout(respaldo, 20000);
   };
@@ -412,6 +470,16 @@ function prepararImagen(img) {
   };
   const cargarVista = () => {
     const archivada = vistaActual === original ? vistaArchivadaImagen(original) : null;
+    if (vistaActual !== original && /^https?:/.test(vistaActual)) {
+      cargarMiniaturaImagen(vistaActual).then(vista => {
+        if (estado.cancelada || !img.isConnected) {
+          if (vista?.startsWith('blob:')) URL.revokeObjectURL(vista);
+          return;
+        }
+        cargar(vista);
+      }).catch(respaldo);
+      return;
+    }
     if (!archivada) {
       cargar(vistaActual);
       return;

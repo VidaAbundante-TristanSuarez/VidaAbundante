@@ -1,4 +1,4 @@
-import { normalizarUrlImagen, obtenerBlobImagen, proxyImagen, urlMiniaturaImagen, vistaArchivadaImagen } from "./carga-imagenes.js?v=20261109-medios-1";
+import { cargarMiniaturaImagen, normalizarUrlImagen, obtenerBlobImagen, proxyImagen, urlMiniaturaImagen, vistaArchivadaImagen } from "./carga-imagenes.js?v=20261109-medios-1";
 
 // Utilidades compartidas por las dos pantallas. No requiere librerías nuevas.
 const pendientes = new Map();
@@ -120,18 +120,40 @@ export async function cargarFondoBlob(url) {
 
 export function prepararMiniaturas(cont) {
   cont.__vaFondosObserver?.disconnect();
-  const cargar = img => {
+  const cargar = async img => {
     const src = img.dataset.vaSrc;
-    const archivada = vistaArchivadaImagen(src);
-    if (!archivada) {
-      img.src = src;
-      return;
+    const original = img.dataset.vaOriginal;
+    const vigente = () => img.dataset.vaSrc === src && img.dataset.vaOriginal === original;
+    img.loading = 'eager';
+    try {
+      const archivada = vistaArchivadaImagen(src);
+      const vista = archivada ? await archivada : '';
+      const ligera = vista || (src !== original ? await cargarMiniaturaImagen(src) : src);
+      if (!vigente()) {
+        if (ligera?.startsWith('blob:')) URL.revokeObjectURL(ligera);
+        return;
+      }
+      img.addEventListener('error', async () => {
+        if (!vigente()) return;
+        try {
+          const blob = await obtenerBlobImagen(original, 'fondo.png');
+          const respaldo = URL.createObjectURL(blob);
+          if (vigente()) asignar(respaldo);
+          else URL.revokeObjectURL(respaldo);
+        } catch { if (vigente()) img.src = original; }
+      }, {once: true});
+      asignar(ligera);
+    } catch {
+      if (vigente()) img.src = proxyImagen(original, 'fondo.png');
     }
-    archivada.then(vista => {
-      if (!img.isConnected || img.dataset.vaSrc !== src) return;
-      if (vista) img.addEventListener('error', () => { img.src = src; }, {once: true});
-      img.src = vista || src;
-    });
+    function asignar(url) {
+      if (url?.startsWith('blob:')) {
+        const liberar = () => URL.revokeObjectURL(url);
+        img.addEventListener('load', liberar, {once: true});
+        img.addEventListener('error', liberar, {once: true});
+      }
+      img.src = url;
+    }
   };
   let observer;
   if (typeof IntersectionObserver === 'function') {
@@ -150,17 +172,13 @@ export function prepararMiniaturas(cont) {
     const original = normalizarUrlImagen(url);
     const previa = urlMiniaturaImagen(original, miniatura);
     img.decoding = 'async';
-    img.fetchPriority = visible && indice < 2 ? 'auto' : 'low';
-    if (img.dataset.vaSrc !== previa && previa !== original) {
-      img.addEventListener('error', () => { img.src = original; }, {once: true});
-    }
+    img.fetchPriority = 'auto';
     img.dataset.vaSrc = previa;
     img.dataset.vaOriginal = original;
 
     if (observer && !(visible && indice < 2)) {
       observer.observe(img);
     } else {
-      if (!visible || indice >= 2) img.loading = 'lazy';
       cargar(img);
     }
   };

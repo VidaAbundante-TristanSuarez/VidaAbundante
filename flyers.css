@@ -233,6 +233,44 @@ body.oscuro .va-edicion-imagen-dialog footer {
   cursor: default;
 }
 
+.ed-eliminar-dialog .ed-eliminar-previa {
+  display: block;
+  width: 100%;
+  height: 160px;
+  object-fit: contain;
+  border-radius: 10px;
+}
+
+.ed-eliminar-opciones {
+  display: grid;
+  gap: 8px;
+}
+
+.ed-eliminar-opciones .ed-eliminar-todas {
+  color: #a02032;
+  border-color: #c4707d;
+}
+
+#edRecuperacionAcciones[hidden],
+#edRecuperacionAcciones [hidden] {
+  display: none !important;
+}
+
+#edRecuperacionAcciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+#edRecuperacionAcciones button {
+  min-width: 0;
+  min-height: 32px;
+  height: auto;
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
 .va-horario-valores {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
