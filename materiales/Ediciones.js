@@ -1,5 +1,6 @@
 import {audienciaPublicacion, campoVisibilidad, escucharPublicaciones, leerPublicaciones, nivelPublicacion, puedeVerPublicacion, verificarAccesoPublicacion, visibilidadEnLote} from "../visibilidad-publicaciones.js";
-import { crearMiniaturaImagen, subirArchivoR2, urlMiniaturaImagen } from "../carga-imagenes.js?v=20261109-medios-1";
+import { cargarMiniaturaImagen, crearMiniaturaImagen, guardarMiniaturaLocal, subirArchivoR2, urlMiniaturaImagen } from "../carga-imagenes.js?v=20261109-medios-1";
+import {crearDialogoEditor} from "../imagen-editor.js?v=20261111-editores-1";
 import {
   abrirEdicionHorarioFlyer,
   abrirEditorImagenEdicion,
@@ -229,6 +230,8 @@ function edFondosConstruirLista(categoria = "", incluirOcultos = false) {
         ""
       ).trim(),
       miniaturaUrl: cfg.miniaturaUrl || "",
+      ancho: Number(cfg.ancho) || 0,
+      alto: Number(cfg.alto) || 0,
 
       originalUrl,
 
@@ -278,6 +281,8 @@ function edFondosConstruirLista(categoria = "", incluirOcultos = false) {
 
       url: String(item.url || "").trim(),
       miniaturaUrl: item.miniaturaUrl || "",
+      ancho: Number(item.ancho) || 0,
+      alto: Number(item.alto) || 0,
 
       originalUrl: String(
         item.originalUrl || ""
@@ -384,6 +389,20 @@ function edFondosNotificar() {
   }
 }
 
+const edMiniaturasPrecargadas = new Set();
+function edPrecargarFondosNuevos() {
+  const nuevos = ["paisajes", "acuarelas", "tarjetas"].flatMap(categoria => Object.values(edFondosConfig[categoria] || {}))
+    .filter(item => item?.miniaturaUrl && item.activo !== false && !item.eliminado)
+    .sort((a, b) => Number(b.creado || b.actualizado || 0) - Number(a.creado || a.actualizado || 0)).slice(0, 6);
+  for (const item of nuevos) {
+    if (edMiniaturasPrecargadas.has(item.miniaturaUrl)) continue;
+    edMiniaturasPrecargadas.add(item.miniaturaUrl);
+    cargarMiniaturaImagen(item.miniaturaUrl).then(url => {
+      if (url.startsWith("blob:")) URL.revokeObjectURL(url);
+    }).catch(() => edMiniaturasPrecargadas.delete(item.miniaturaUrl));
+  }
+}
+
 function edFondosIniciarEscucha(intento = 0) {
   if (edFondosEscuchaActiva) return;
 
@@ -401,6 +420,7 @@ function edFondosIniciarEscucha(intento = 0) {
     (snap) => {
       edFondosConfig = snap.val() || {};
       edFondosNotificar();
+      edPrecargarFondosNuevos();
     },
     (error) => {
       console.warn("No pude leer los fondos administrables:", error);
@@ -482,10 +502,14 @@ function edFondosCardHTML(categoria, item) {
         title="Abrir para revisar calidad"
       >
         <img
-          src="${edEscape(item.url)}"
+          data-va-imagen
+          data-va-src="${edEscape(urlMiniaturaImagen(item.url, item.miniaturaUrl))}"
+          data-va-original="${edEscape(item.url)}"
           alt="${nombre}"
           loading="lazy"
           data-ed-fondo-id="${item.id}"
+          data-ancho-original="${item.ancho || 0}"
+          data-alto-original="${item.alto || 0}"
           onload="edFondoMarcarDimensiones(this)"
         >
       </button>
@@ -502,7 +526,7 @@ function edFondosCardHTML(categoria, item) {
           class="ed-fondo-card-meta"
           data-ed-fondo-meta="${item.id}"
         >
-          Cargando tamaño…
+          ${item.ancho && item.alto ? `${item.ancho} × ${item.alto}px` : "Abrir para revisar tamaño"}
         </div>
 
         <div class="ed-fondo-card-actions">
@@ -802,11 +826,13 @@ window.edFondoMarcarDimensiones = function(img) {
   const meta = document.querySelector(`[data-ed-fondo-meta="${id}"]`);
   if (!meta) return;
 
-  const w = Number(img.naturalWidth || 0);
-  const h = Number(img.naturalHeight || 0);
+  const original = img.dataset.vaOriginal;
+  const esOriginal = !original || img.src === original;
+  const w = Number(img.dataset.anchoOriginal) || (esOriginal ? Number(img.naturalWidth) : 0);
+  const h = Number(img.dataset.altoOriginal) || (esOriginal ? Number(img.naturalHeight) : 0);
 
   if (!w || !h) {
-    meta.textContent = "No pude leer el tamaño";
+    meta.textContent = "Abrir para revisar tamaño";
     return;
   }
 
@@ -851,12 +877,14 @@ window.edFondosAgregar = async function(categoria = "", input) {
 
       edFondosSetEstado(`Subiendo fondo ${i + 1} de ${files.length}…`);
 
-      const {url, miniaturaUrl} = await subirImagenEdicionR2(file, `fondos/${cat}`, 192);
+      const {url, miniaturaUrl, ancho, alto} = await subirImagenEdicionR2(file, `fondos/${cat}`, 192);
       const id = `nuevo_${Date.now()}_${edFondosHash(file.name + Math.random())}`;
 
       await set(ref(db, `${ED_FONDOS_RUTA}/${cat}/${id}`), {
         url,
         miniaturaUrl,
+        ancho,
+        alto,
         nombre: file.name || "Fondo",
         activo: true,
         nuevo: true,
@@ -1083,6 +1111,7 @@ window.edFondoGuardarEdicion = async function(categoria = "", id = "") {
 
     let url = item.url;
     let miniaturaUrl = item.miniaturaUrl || "";
+    let ancho = item.ancho || 0, alto = item.alto || 0;
 
     /*
       Solo subimos otra imagen cuando realmente
@@ -1095,7 +1124,7 @@ window.edFondoGuardarEdicion = async function(categoria = "", id = "") {
         estado.textContent = "Subiendo la nueva imagen…";
       }
 
-      ({url, miniaturaUrl} = await subirImagenEdicionR2(file, `fondos/${catDestino}`, 192));
+      ({url, miniaturaUrl, ancho, alto} = await subirImagenEdicionR2(file, `fondos/${catDestino}`, 192));
     }
 
     if (estado) {
@@ -1110,6 +1139,8 @@ window.edFondoGuardarEdicion = async function(categoria = "", id = "") {
       ...actual,
       url,
       miniaturaUrl,
+      ancho,
+      alto,
       nombre,
       originalUrl: item.originalUrl || "",
       activo: true,
@@ -2374,6 +2405,11 @@ window.mostrarEdiciones = async () => {
           </div>
         </div>
 
+        <div id="edRecuperacionAcciones" hidden>
+          <button id="edBtnRecuperarRacimos" class="ed-pill-btn" type="button" onclick="edRecuperarRacimos()" hidden>Recuperar RACIMOS</button>
+          <button id="edBtnDeshacerBorrado" class="ed-pill-btn" type="button" onclick="edDeshacerBorrado()" hidden>Deshacer eliminación</button>
+        </div>
+
         <div id="edBuscadorBox" style="display:none;">
           <div class="ed-search-wrap">
             <i class="fa-solid fa-magnifying-glass"></i>
@@ -2518,6 +2554,8 @@ iniciarEscuchaEdicionesStats();
 iniciarEscuchaMisEdicionesGuardadas();
 iniciarEscuchaMisEdicionesDescargadas();
 iniciarEscuchaEdicionesPublicadas();
+edPrepararRecuperacionRacimos();
+edActualizarDeshacerBorrado();
 };
 
 function iniciarEscuchaEdiciones() {
@@ -4029,13 +4067,27 @@ async function subirArchivoEdicionR2(file, carpeta) {
 }
 
 async function subirImagenEdicionR2(file, carpeta, lado) {
-  const miniatura = crearMiniaturaImagen(file, lado).then(async blob => {
+  let ancho = 0, alto = 0;
+  const blob = await crearMiniaturaImagen(file, lado, dimensiones => {
+    ({ancho, alto} = dimensiones);
+  });
+  const subirMiniatura = async () => {
     if (!blob) return "";
-    const nombre = edSafeName(file.name) + ".webp";
-    return (await subirArchivoR2(blob, `${carpeta}/miniaturas`, nombre)).url;
-  }).catch(() => "");
+    const extension = blob.type === "image/webp" ? ".webp" : ".png";
+    const nombre = edSafeName(file.name) + extension;
+    let ultimoError;
+    for (let intento = 0; intento < 2; intento++) {
+      try {
+        const {url} = await subirArchivoR2(blob, `${carpeta}/miniaturas`, nombre);
+        await guardarMiniaturaLocal(url, blob);
+        return url;
+      } catch (error) { ultimoError = error; }
+    }
+    throw new Error("No se pudo guardar la vista liviana. Volvé a intentar la subida. " + (ultimoError?.message || ""));
+  };
+  const miniatura = subirMiniatura();
   const [url, miniaturaUrl] = await Promise.all([subirArchivoEdicionR2(file, carpeta), miniatura]);
-  return {url, miniaturaUrl};
+  return {url, miniaturaUrl, ancho, alto};
 }
 
 /* ================= OBTENER / BORRAR ================= */
@@ -4875,7 +4927,174 @@ function edMiniPaginasHTML(id, contexto = "ediciones", edicion) {
 
 window.edMiniPaginasHTML = edMiniPaginasHTML;
 
-window.borrarEdicion = async (id) => {
+function edElegirBorrado(ed, pagina, cantidad) {
+  return new Promise(resolve => {
+    const dialogo = crearDialogoEditor("Eliminar imagen");
+    if (!dialogo) { resolve(null); return; }
+    dialogo.classList.add("ed-eliminar-dialog");
+    const esVideo = edPaginaEsVideo(pagina);
+    dialogo.insertAdjacentHTML("beforeend", `
+      <form method="dialog">
+        <p><b>${edEscape(ed.titulo || "Sin título")}</b></p>
+        ${!esVideo ? `<img class="ed-eliminar-previa" alt="Imagen actual"
+          ${pagina.versionHorario ? `data-horario-flyer="${edEscape(JSON.stringify(pagina.versionHorario))}"` :
+            `data-va-imagen data-va-src="${edEscape(urlMiniaturaImagen(edMediaUrlPagina(pagina), pagina.miniaturaUrl))}"
+             data-va-original="${edEscape(edMediaUrlPagina(pagina))}"`}>` : ""}
+        <p>${cantidad > 1 ? "¿Desea eliminar la imagen actual o todas?" : "¿Desea eliminar esta imagen? Se quitará también la ficha porque es la última."}</p>
+        <div class="ed-eliminar-opciones">
+          <button value="actual">Eliminar imagen actual</button>
+          ${cantidad > 1 ? `<button value="todas" class="ed-eliminar-todas">Eliminar todas (${cantidad})</button>` : ""}
+        </div>
+        <footer><button value="cancelar" autofocus>Cancelar</button></footer>
+      </form>`);
+    dialogo.addEventListener("close", () => resolve(["actual", "todas"].includes(dialogo.returnValue) ? dialogo.returnValue : null), {once: true});
+    dialogo.showModal();
+    activarMiniaturasHorario(dialogo);
+  });
+}
+
+// El identificador de la imagen permanece estable aunque cambie el orden de la galería.
+function edSinImagen(ed, pagina) {
+  const nuevo = JSON.parse(JSON.stringify(ed));
+  if (pagina.versionHorario) {
+    let encontrada = false;
+    for (const config of Object.values(nuevo.horariosPorImagen || {})) {
+      if (!config.versiones?.[pagina.versionHorario.id]) continue;
+      delete config.versiones[pagina.versionHorario.id];
+      encontrada = true;
+    }
+    if (!encontrada) throw new Error("La imagen cambió. Volvé a abrir la ficha.");
+  } else {
+    const entradas = Array.isArray(nuevo.paginas)
+      ? nuevo.paginas.flatMap((valor, indice) => valor ? [[valor.id || `p_${indice}`, valor]] : [])
+      : Object.entries(nuevo.paginas || {});
+    const paginas = Object.fromEntries(entradas.filter(([clave]) => pagina.esPortada || clave !== pagina.id));
+    nuevo.paginas = paginas;
+    if (nuevo.portadaUrl === edMediaUrlPagina(pagina)) {
+      const portada = edPaginasArray(nuevo).find(p => !edPaginaEsVideo(p));
+      nuevo.portadaUrl = edMediaUrlPagina(portada) || "";
+      nuevo.portadaMiniaturaUrl = portada?.miniaturaUrl || "";
+    }
+  }
+  if (!edPaginasCompartiblesVisuales(nuevo).length) return null;
+  nuevo.actualizado = Date.now();
+  return nuevo;
+}
+
+const edBorradosEnCurso = new Set();
+const edClaveDeshacer = () => "va_edicion_eliminada_" + edUidActual();
+
+function edLeerDeshacer() {
+  try { return JSON.parse(localStorage.getItem(edClaveDeshacer()) || "null"); }
+  catch { return null; }
+}
+
+function edFirmaDatos(valor) {
+  const normalizar = dato => {
+    if (!dato || typeof dato !== "object") return dato ?? null;
+    const pares = Object.entries(dato).map(([clave, hijo]) => [clave, normalizar(hijo)])
+      .filter(([, hijo]) => hijo !== null).sort(([a], [b]) => a.localeCompare(b));
+    return pares.length ? Object.fromEntries(pares) : null;
+  };
+  return JSON.stringify(normalizar(valor));
+}
+
+function edActualizarDeshacerBorrado() {
+  const boton = ed$("edBtnDeshacerBorrado");
+  if (boton) boton.hidden = !window.__ES_ADMIN || !edLeerDeshacer();
+  edActualizarAccionesRecuperacion();
+}
+
+function edActualizarAccionesRecuperacion() {
+  const acciones = ed$("edRecuperacionAcciones");
+  if (acciones) acciones.hidden = !acciones.querySelector("button:not([hidden])");
+}
+
+const ED_RACIMOS_ID = "-OsoIniIOrYHbf41RBun";
+let edRecuperacionRacimosRevisada = false;
+
+async function edPrepararRecuperacionRacimos() {
+  if (!window.__ES_ADMIN || edRecuperacionRacimosRevisada) return;
+  const db = edDB();
+  if (!db) return;
+  try {
+    const [ficha, enlace] = await Promise.all([
+      get(ref(db, `ediciones/${ED_RACIMOS_ID}`)), get(ref(db, "edicionesRefs/racimos-1"))
+    ]);
+    const boton = ed$("edBtnRecuperarRacimos");
+    if (boton) boton.hidden = ficha.exists() || !!enlace.val()?.recuperadaEl;
+    edActualizarAccionesRecuperacion();
+    edRecuperacionRacimosRevisada = true;
+  } catch (error) { console.warn("No pude comprobar la recuperación de RACIMOS:", error); }
+}
+
+window.edRecuperarRacimos = async () => {
+  const db = edDB(), uid = edUidActual();
+  if (!window.__ES_ADMIN || !uid || !db) return;
+  const boton = ed$("edBtnRecuperarRacimos");
+  if (boton?.disabled) return;
+  if (boton) { boton.disabled = true; boton.textContent = "Recuperando…"; }
+  try {
+    const base = "https://pub-f0843badb1194dc79fd37b3a5526e273.r2.dev/ediciones/" + ED_RACIMOS_ID;
+    const originales = [
+      {url: base + "/portada/1783453515827_1783453514363_ChatGPT_Image_7_jul_2026_04_44_16_p.m..png",
+       miniaturaUrl: base + "/recuperacion/miniaturas/1795529323968_racimos-original-1.webp"},
+      {url: base + "/recuperacion/1795529336955_racimos-original.png",
+       miniaturaUrl: base + "/recuperacion/miniaturas/1795529348616_racimos-original-2.webp"}
+    ];
+    const ahora = Date.now();
+    const ficha = {
+      titulo: "Racimos", refPublica: "racimos-1", rama: "anuncios", categoria: "anuncios", tipoEdicion: "anuncios",
+      portadaUrl: originales[0].url, portadaMiniaturaUrl: originales[0].miniaturaUrl,
+      paginas: Object.fromEntries(originales.map((imagen, indice) => [`original_${indice + 1}`, {
+        orden: indice, imagenUrl: imagen.url, mediaUrl: imagen.url, mediaType: "image/png", miniaturaUrl: imagen.miniaturaUrl
+      }])),
+      creadaPorRecuperacion: true, creadaDesde: ED_RACIMOS_ID,
+      publicada: true, audiencia: "publica", creadoPor: uid, ts: 1794426793546, actualizado: ahora
+    };
+    const resultado = await runTransaction(ref(db, `ediciones/${ED_RACIMOS_ID}`), actual => actual ? undefined : ficha,
+      {applyLocally: false});
+    if (!resultado.committed) throw new Error("RACIMOS ya existe. No sobrescribí sus imágenes.");
+    await update(ref(db, "edicionesRefs/racimos-1"), {edicionId: ED_RACIMOS_ID, recuperadaEl: ahora})
+      .catch(error => console.warn("La ficha se recuperó; no pude actualizar la referencia:", error));
+    if (boton) boton.hidden = true;
+    window.mostrarToast?.("RACIMOS recuperado con sus dos originales.");
+  } catch (error) {
+    console.error(error);
+    alert("No pude recuperar RACIMOS. " + (error?.message || ""));
+  } finally {
+    if (boton) { boton.disabled = false; boton.textContent = "Recuperar RACIMOS"; }
+    edActualizarAccionesRecuperacion();
+  }
+};
+
+window.edDeshacerBorrado = async () => {
+  if (!window.__ES_ADMIN) return;
+  const copia = edLeerDeshacer(), db = edDB();
+  if (!copia || !db) return;
+  const boton = ed$("edBtnDeshacerBorrado");
+  if (boton) boton.disabled = true;
+  try {
+    const referencia = ref(db, `ediciones/${copia.id}`);
+    await get(referencia);
+    const resultado = await runTransaction(referencia, actual =>
+      edFirmaDatos(actual) === edFirmaDatos(copia.despues) || edFirmaDatos(actual) === edFirmaDatos(copia.antes)
+        ? copia.antes : undefined,
+      {applyLocally: false});
+    if (!resultado.committed) throw new Error("La ficha cambió desde la eliminación. No la sobrescribí.");
+    if (copia.compartida) await set(ref(db, `compartidos/edicion_${copia.id}`), copia.compartida);
+    localStorage.removeItem(edClaveDeshacer());
+    window.mostrarToast?.("Eliminación deshecha.");
+  } catch (error) {
+    console.error(error);
+    alert("No pude deshacer la eliminación. " + (error?.message || ""));
+  } finally {
+    if (boton) boton.disabled = false;
+    edActualizarDeshacerBorrado();
+  }
+};
+
+window.borrarEdicion = async (id, contexto = "ediciones") => {
   if (!window.__ES_ADMIN) {
     alert("Solo los administradores pueden borrar ediciones.");
     return;
@@ -4887,17 +5106,41 @@ window.borrarEdicion = async (id) => {
     return;
   }
 
-  const ed = await obtenerEdicion(id);
-  if (!ed) return;
-
-  if (!confirm(`¿Borrar la edición "${ed.titulo || "sin título"}"?`)) return;
-
+  if (edBorradosEnCurso.has(id)) return;
+  edBorradosEnCurso.add(id);
   try {
-    await remove(ref(db, `ediciones/${id}`));
-    await remove(ref(db, `compartidos/edicion_${id}`));
+    const referencia = ref(db, `ediciones/${id}`);
+    const ed = (await get(referencia)).val();
+    if (!ed) return;
+    const imagenes = edPaginasCompartiblesVisuales(ed);
+    const visibles = ed$(`edMiniTrack_${contexto}_${id}`) ? edPaginasImagenesVisuales(ed) : imagenes;
+    const indice = Math.min(edIndiceActualMiniGaleria(id, contexto), visibles.length - 1);
+    const pagina = visibles[indice];
+    if (!pagina) return;
+    const opcion = await edElegirBorrado(ed, pagina, imagenes.length);
+    if (!opcion) return;
+    const despues = opcion === "todas" ? null : edSinImagen(ed, pagina);
+    const compartida = (await get(ref(db, `compartidos/edicion_${id}`))).val();
+    // Conserva la ficha y sus versiones para poder deshacer desde este navegador.
+    localStorage.setItem(edClaveDeshacer(), JSON.stringify({id, antes: ed, despues, compartida}));
+    const resultado = await runTransaction(referencia, actual =>
+      edFirmaDatos(actual) === edFirmaDatos(ed) ? despues : undefined,
+      {applyLocally: false});
+    if (!resultado.committed) {
+      localStorage.removeItem(edClaveDeshacer());
+      throw new Error("La ficha cambió. Volvé a abrirla para elegir la imagen actual.");
+    }
+    if (compartida) {
+      if (!despues) await remove(ref(db, `compartidos/edicion_${id}`));
+      else await update(ref(db, `compartidos/edicion_${id}`), {portadaUrl: edPortadaEdicion(despues)});
+    }
+    window.mostrarToast?.(despues ? "Imagen eliminada. Podés deshacer la eliminación." : "Ficha eliminada. Podés deshacer la eliminación.");
   } catch (err) {
     console.error(err);
-    alert("No pude borrar la edición.");
+    alert("No pude completar la eliminación. " + (err?.message || ""));
+  } finally {
+    edBorradosEnCurso.delete(id);
+    edActualizarDeshacerBorrado();
   }
 };
 
