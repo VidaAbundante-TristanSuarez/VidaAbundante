@@ -1,4 +1,5 @@
 import { subirArchivoR2, normalizarUrlImagen, urlMiniaturaImagen, vistaArchivadaImagen } from "./carga-imagenes.js?v=20261109-medios-1";
+import {segmentosDevocional, VOZ_VERSICULO_DEVOCIONAL, VOZ_COMENTARIO_NARRACION} from "./narracion-texto.js?v=20261124-1";
 import { actualizarAdorno, activarAdorno, esperarAdorno } from "./adornos-editor.js?v=20261102-notas-compartir-7";
 import { elegirResolucionImagen, dimensionesExportacion, conProgresoExportacion } from "./exportacion-imagen.js?v=20261102-notas-compartir-7";
 import { actualizarCapaTexturas, esperarCapaTexturas, montarControlesTextura, margenesTexturas, cargarTextura, dibujarTexturas,
@@ -747,21 +748,7 @@ function ensurePeriod(s){
 }
 
 function buildAudioFromParts(p1, p2){
-  const reflex = oneLine(p2?.reflexion || "");
-  const orac   = oneLine(p2?.oracion || "");
-
-  const fecha = ensurePeriod(p1?.fecha || "");
-  const cita  = ensurePeriod(p1?.cita || "");
-
-  return [
-    "DEVOCIONAL",
-    fecha,
-    "",
-    oneLine(p1?.versiculo || ""),
-    cita,
-    "",
-    `Reflexión: ${reflex} Oración: ${orac}`.trim()
-  ].join("\n").trim();
+  return segmentosDevocional(p1, p2).map(seg => seg.texto).join("\n\n");
 }
 
 /* =========================================================
@@ -5383,10 +5370,12 @@ if (gradColor3) {
    11) AUDIO (bloquea botones hasta "Correcto")
    ========================================================= */
 window.devAbrirAudio = () => {
-  window.__AUDIO_VOICE_NAME = "es-US-Neural2-B";
+  window.__AUDIO_VOICE_NAME = VOZ_VERSICULO_DEVOCIONAL;
   window.__AUDIO_ORIGEN = "devocional";
 
   DEV.audioText = buildAudioFromParts(DEV.p1, DEV.p2);
+  window.__AUDIO_DEVOCIONAL_SEGMENTOS = segmentosDevocional(DEV.p1, DEV.p2);
+  window.__AUDIO_DEVOCIONAL_TEXTO = DEV.audioText;
 
   const ta = $("textoAudio");
   if (ta) ta.value = DEV.audioText;
@@ -5812,7 +5801,7 @@ const subirGithub = opts.subirGithub !== false;
 
     // 3) si no existe, generarlo automáticamente
     if (!pack?.base64 || !pack?.blob) {
-      window.__AUDIO_VOICE_NAME = "es-US-Neural2-B";
+      window.__AUDIO_VOICE_NAME = VOZ_VERSICULO_DEVOCIONAL;
 
       const texto = (DEV.audioText || "").trim();
       if (!texto) {
@@ -5823,8 +5812,11 @@ const subirGithub = opts.subirGithub !== false;
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          action: "ttsPredica",
           texto,
-          voiceName: "es-US-Neural2-B"
+          segmentos: segmentosDevocional(DEV.p1, DEV.p2),
+          voiceNameScripture: VOZ_VERSICULO_DEVOCIONAL,
+          voiceNameComment: VOZ_COMENTARIO_NARRACION
         })
       });
 

@@ -1,3 +1,4 @@
+import {conPausasNarracion, VOZ_VERSICULO_DEVOCIONAL, VOZ_COMENTARIO_NARRACION} from "./narracion-texto.js?v=20261124-1";
 // biblia.audio.js
 document.addEventListener("DOMContentLoaded", () => {
   // ✅ Si no existe el modal de audio, no hacemos nada
@@ -13,11 +14,12 @@ document.addEventListener("DOMContentLoaded", () => {
 // ✅ Biblia Crear Imagen: SIEMPRE Standard seco, sin arpa y sin Firebase Function
 const AUDIO_VOZ_BIBLIA = "es-US-Standard-B";
 
-// ✅ Devocionales: Wavenet + arpa, pasando por Firebase Function
-const AUDIO_VOZ_DEVOCIONAL = "es-US-Wavenet-B";
+// Conserva la voz principal de las prédicas y la voz del versículo devocional.
+const AUDIO_VOZ_PRINCIPAL_PREDICA = "es-US-Wavenet-B";
+const AUDIO_VOZ_DEVOCIONAL = VOZ_VERSICULO_DEVOCIONAL;
 
 // ✅ Comentarios de prédica: segunda voz masculina, español de EE.UU.
-const AUDIO_VOZ_COMENTARIO_PREDICA = "es-US-Wavenet-C";
+const AUDIO_VOZ_COMENTARIO_PREDICA = VOZ_COMENTARIO_NARRACION;
 
 const AUDIO_LIMITE_COLAB_DIA = 3;
 
@@ -231,7 +233,7 @@ function audioNormalizarReferenciasBiblicas(txt = "") {
 }
 
 function audioPrepararTextoParaTTS(txt = "") {
-  let out = String(txt || "")
+  let out = String(["predica", "devocional"].includes(audioContextoActual()) ? conPausasNarracion(txt) : txt || "")
     .replace(/[*•▪●■□◆◇▶►◼◻]/g, "")
     .replace(/\s{2,}/g, " ")
     .trim();
@@ -538,14 +540,16 @@ async function audioPedirParteTTS({
 */
 async function audioPedirPredicaCompletaTTS({
   texto = "",
-  segmentos = []
+  segmentos = [],
+  voiceNameScripture = AUDIO_VOZ_PRINCIPAL_PREDICA,
+  voiceNameComment = AUDIO_VOZ_COMENTARIO_PREDICA
 } = {}) {
   const body = {
     action: "ttsPredica",
     texto: String(texto || "").trim(),
     segmentos: Array.isArray(segmentos) ? segmentos : [],
-    voiceNameScripture: AUDIO_VOZ_DEVOCIONAL,
-    voiceNameComment: AUDIO_VOZ_COMENTARIO_PREDICA
+    voiceNameScripture,
+    voiceNameComment
   };
 
   const r = await fetch(AUDIO_WEBAPP_URL, {
@@ -728,11 +732,12 @@ function audioPredicaNormalizarParaComparar(txt = "") {
 }
 
 function audioPredicaTextoFueEditado(textoActual = "") {
-  if (audioContextoActual() !== "predica") return false;
+  const contexto = audioContextoActual();
+  if (!["predica", "devocional"].includes(contexto)) return false;
 
   const actual = audioPredicaNormalizarParaComparar(textoActual);
   const original = audioPredicaNormalizarParaComparar(
-    window.__AUDIO_PREDICA_TEXTO || ""
+    (contexto === "devocional" ? window.__AUDIO_DEVOCIONAL_TEXTO : window.__AUDIO_PREDICA_TEXTO) || ""
   );
 
   if (!actual || !original) return false;
@@ -741,8 +746,9 @@ function audioPredicaTextoFueEditado(textoActual = "") {
 }
 
 function audioPredicaClonarSegmentosBase() {
-  const base = Array.isArray(window.__AUDIO_PREDICA_SEGMENTOS)
-    ? window.__AUDIO_PREDICA_SEGMENTOS
+  const fuente = audioContextoActual() === "devocional" ? window.__AUDIO_DEVOCIONAL_SEGMENTOS : window.__AUDIO_PREDICA_SEGMENTOS;
+  const base = Array.isArray(fuente)
+    ? fuente
     : [];
 
   return base
@@ -849,7 +855,7 @@ function audioPredicaAplicarCambioAlModelo(textoAntes = "", textoAhora = "") {
         ? (
             prefijo >= inicio &&
             prefijo <= fin &&
-            !insertado.includes("\n\n")
+            (prefijo < fin || !insertado.includes("\n\n"))
           )
         : (
             prefijo >= inicio &&
@@ -963,7 +969,7 @@ function audioHookLimpiarCacheAlEditarTextarea(ta) {
     - Solo actualiza el texto del segmento exacto que tocaste.
   */
   ta.addEventListener("beforeinput", () => {
-    if (audioContextoActual() !== "predica") return;
+    if (!["predica", "devocional"].includes(audioContextoActual())) return;
 
     if (
       !Array.isArray(window.__AUDIO_PREDICA_SEGMENTOS_EDITADOS) ||
@@ -977,7 +983,7 @@ function audioHookLimpiarCacheAlEditarTextarea(ta) {
   });
 
   ta.addEventListener("input", () => {
-    if (audioContextoActual() !== "predica") {
+    if (!["predica", "devocional"].includes(audioContextoActual())) {
       window.__AUDIO_TEXTO_EDITADO = true;
       return;
     }
@@ -1040,7 +1046,7 @@ audioLimpiarEstadoViejoSiCambioTexto(textoActual);
     ta.value = "";
   }
 
-  if (contexto === "predica") {
+  if (["predica", "devocional"].includes(contexto)) {
     audioPredicaIniciarModeloEdicion(ta);
   } else {
     window.__AUDIO_PREDICA_SEGMENTOS_EDITADOS = [];
@@ -1080,7 +1086,7 @@ audioLimpiarEstadoViejoSiCambioTexto(textoActual);
 
     ta.value = __audioTextoOriginal || "";
 
-    if (audioContextoActual() === "predica") {
+    if (["predica", "devocional"].includes(audioContextoActual())) {
       audioPredicaIniciarModeloEdicion(ta);
     }
 
@@ -1131,7 +1137,9 @@ const contexto = audioContextoActual();
 
   const voiceName = esBibliaSeco
     ? AUDIO_VOZ_BIBLIA
-    : (window.__AUDIO_VOICE_NAME || AUDIO_VOZ_DEVOCIONAL);
+    : esPredicaArpa ? AUDIO_VOZ_PRINCIPAL_PREDICA : (window.__AUDIO_VOICE_NAME || AUDIO_VOZ_DEVOCIONAL);
+  const firmaVoces = esBibliaSeco ? voiceName :
+    `${voiceName}|${AUDIO_VOZ_COMENTARIO_PREDICA}|2`;
 
   const cache = window.__audioCacheLocal || {};
 
@@ -1139,6 +1147,7 @@ const contexto = audioContextoActual();
     window.__AUDIO_TEXTO_EDITADO !== true &&
     cache.texto === textoLimpio &&
     cache.voiceName === voiceName &&
+    cache.firmaVoces === firmaVoces &&
     cache.contexto === contexto &&
     cache.audioBase64;
 
@@ -1225,17 +1234,12 @@ audioBase64Final =
   });
 
     } else if (esDevocionalArpa) {
-      /*
-        El devocional completo también queda a cargo de Firebase.
-        Si alguna vez es largo, Firebase lo une correctamente antes
-        de devolverlo.
-      */
-      audioBase64Final =
-        await audioPedirParteTTS({
-          texto: textoLimpio,
-          action: "tts",
-          voiceName
-        });
+      const segmentos = audioSegmentosPredicaSeguros(texto, textoLimpio);
+      audioBase64Final = await audioPedirPredicaCompletaTTS({
+        texto: segmentos.map(seg => seg.texto).join("\n\n"), segmentos,
+        voiceNameScripture: voiceName,
+        voiceNameComment: AUDIO_VOZ_COMENTARIO_PREDICA
+      });
 
     } else {
       /*
@@ -1311,13 +1315,14 @@ audioBase64Final =
       texto: textoLimpio,
       textoOriginal: texto,
       voiceName,
+      firmaVoces,
       contexto,
       audioBase64: data.audioBase64
     };
 
     window.__AUDIO_TEXTO_EDITADO = false;
 
-    if (esPredicaArpa) {
+    if (esPredicaArpa || esDevocionalArpa) {
       window.__AUDIO_PREDICA_TEXTO_ANTES_INPUT =
         String(ta.value || "").replace(/\r/g, "");
     }

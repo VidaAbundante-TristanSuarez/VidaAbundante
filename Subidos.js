@@ -1,4 +1,5 @@
 import {audienciaPublicacion, campoVisibilidad, escucharPublicaciones, nivelPublicacion, verificarAccesoPublicacion, visibilidadEnLote} from "./visibilidad-publicaciones.js";
+import {conPausasNarracion} from "./narracion-texto.js?v=20261124-1";
 import { crearGestorArchivosAgenda, ordenarArchivosPorPortada } from './agenda-archivos.js?v=20261109-medios-1';
 import { botonAdjuntosHTML } from './documentos-adjuntos.js?v=20261102-colectas-11';
 import { normalizarUrlImagen, obtenerBlobImagen, subirArchivoR2 as subirArchivoAR2DesdeWeb } from './carga-imagenes.js?v=20261109-medios-1';
@@ -22,7 +23,7 @@ const SUBIDOS_PROXY_URL = R2_WORKER_URL;
 
 const SUBIDOS_EXPORT_BG_URL = "./img/fondos/Tarjetas/1a.png";
 
-console.log("✅ Subidos PRINT FIX cargado", "20260827-PDF-SIN-PALABRA-HUERFANA-11");
+console.log("✅ Subidos PRINT FIX cargado", "20261124-A4-REVISION-Y-MARGENES-1");
 
 /*
   ✅ Fondos de prédica:
@@ -379,6 +380,7 @@ async function subidosAndroidCompartirFile(file, texto = ""){
 const subidosFileCache = new Map();
 const subidosFilePreparando = new Set();
 const subidosFilesPendientes = new Map();
+const subidosTareasArchivoAccion = new Map();
 
 function subidosNombreLimpio(nombre = "archivo") {
   return String(nombre || "archivo")
@@ -1178,17 +1180,27 @@ function subidosMarcarArchivoAccionListo(id, listo) {
 
   [btnD, btnS].forEach(btn => {
     if (!btn) return;
-
-    btn.disabled = !listo;
-    btn.style.opacity = listo ? "1" : ".45";
-    btn.style.cursor = listo ? "pointer" : "wait";
+    const compartirPredica = !!btn.dataset.subidosShare && subidosEsPredicaConContenido(obtenerSubidoPorId(id));
+    btn.disabled = !listo && !compartirPredica;
+    btn.style.opacity = btn.disabled ? ".45" : "1";
+    btn.style.cursor = btn.disabled ? "wait" : "pointer";
     btn.title = listo
       ? (btn.dataset.subidosShare ? "Compartir" : "Descargar")
       : "Preparando archivo...";
   });
 }
 
-async function subidosPrepararArchivoAccion(id) {
+function subidosPrepararArchivoAccion(id) {
+  if (subidosTareasArchivoAccion.has(id)) return subidosTareasArchivoAccion.get(id);
+  const tarea = subidosPrepararArchivoAccionInterno(id);
+  subidosTareasArchivoAccion.set(id, tarea);
+  tarea.finally(() => {
+    if (subidosTareasArchivoAccion.get(id) === tarea) subidosTareasArchivoAccion.delete(id);
+  }).catch(() => {});
+  return tarea;
+}
+
+async function subidosPrepararArchivoAccionInterno(id) {
   const it = obtenerSubidoPorId(id);
   if (!it) return null;
 
@@ -5321,6 +5333,14 @@ function subidosCargarJsPDF() {
   return window.__SUBIDOS_JSPDF_PROMISE;
 }
 
+let subidosFuentesPdfPromise;
+function subidosCargarFuentesPdf() {
+  subidosFuentesPdfPromise ||= import("./fuentes-impresion.js?v=20261124-1")
+    .then(modulo => modulo.registrarFuentesImpresion)
+    .catch(error => {subidosFuentesPdfPromise = null; throw error;});
+  return subidosFuentesPdfPromise;
+}
+
 function subidosTextoPlanoPdf(txt = "") {
   return String(txt || "")
     .replace(/\u00A0/g, " ")
@@ -5329,8 +5349,23 @@ function subidosTextoPlanoPdf(txt = "") {
     .trim();
 }
 
+function subidosPrefijoListaImpresion(linea = "") {
+  const texto = String(linea).trim();
+  const numero = texto.match(/^(\d+)\s*([.)]|-\s)\s*(.*)$/);
+  if (numero) return {tipo: "numero", marcador: numero[1] + ")", texto: numero[3]};
+  // Incluye viñetas de Word y símbolos de listas que Helvetica no representa.
+  const vineta = texto.match(/^([•●○◉◦∙·‣⁃▪▫■□◼◻➢➤►▶➔→✓✔☑☐✦✧★☆\uf0b7\uf0a7]|[-–—*+]\s)\s*(.*)$/u);
+  if (!vineta) return null;
+  const marca = vineta[1].trim();
+  return {
+    tipo: /[▪▫■□◼◻☑☐\uf0a7]/u.test(marca) ? "cuadrado" : "circulo",
+    hueca: /[○◦▫□◻☐]/u.test(marca), texto: vineta[2]
+  };
+}
+
 async function subidosCrearPdfPredica(it = {}) {
   const jsPDF = await subidosCargarJsPDF();
+  const registrarFuentes = await subidosCargarFuentesPdf();
 
   const titulo = String(
     it.predicaTitulo ||
@@ -5359,8 +5394,10 @@ async function subidosCrearPdfPredica(it = {}) {
       orientation: "portrait",
       unit: "pt",
       format: "a4",
-      compress: true
+      compress: true,
+      putOnlyUsedFonts: true
     });
+    registrarFuentes(doc);
 
     try {
       doc.viewerPreferences({
@@ -5375,26 +5412,26 @@ async function subidosCrearPdfPredica(it = {}) {
     // Ajuste más aprovechado de hoja
     const M = 24; // aprox 0.85 cm, más útil visualmente
     const LEFT = M;
-    const RIGHT = PAGE_W - M;
+    const RIGHT = PAGE_W - M - 3;
     const TOP = M;
     const BOTTOM = PAGE_H - M;
     const FULL_W = RIGHT - LEFT;
 
     const LINE_H = BODY_SIZE * 1.18;
-    let y = TOP;
+    let y = TOP + BODY_SIZE * 0.8;
 
     const setFont = (size = BODY_SIZE, bold = false, italic = false) => {
       const style = bold
         ? (italic ? "bolditalic" : "bold")
         : (italic ? "italic" : "normal");
-      doc.setFont("helvetica", style);
+      doc.setFont("VidaAbundanteSans", style);
       doc.setFontSize(size);
       doc.setTextColor(0, 0, 0);
     };
 
     const nuevaPagina = () => {
       doc.addPage();
-      y = TOP;
+      y = TOP + BODY_SIZE * 0.8;
     };
 
     const asegurar = (alto = LINE_H) => {
@@ -5404,7 +5441,9 @@ async function subidosCrearPdfPredica(it = {}) {
 
     const limpiar = (txt = "") =>
       String(txt || "")
-        .replace(/\u00A0/g, " ")
+        .replace(/[\u00A0\u202F]/g, " ")
+        .replace(/[\u200B\uFEFF]/g, "")
+        .replace(/[\u2010\u2011\u2212]/g, "-")
         .replace(/\t/g, " ")
         .replace(/[ ]{2,}/g, " ")
         .trim();
@@ -5414,6 +5453,22 @@ async function subidosCrearPdfPredica(it = {}) {
       if (!t) return [];
       setFont(size, bold, italic);
       return doc.splitTextToSize(t, Math.max(20, width));
+    };
+
+    const dibujarRenglon = (texto, x, baseline, width, justificar = false) => {
+      doc.setCharSpace(0);
+      const palabras = String(texto).trim().split(/\s+/);
+      if (!justificar || palabras.length < 2) {
+        doc.text(String(texto), x, baseline);
+        return;
+      }
+      const anchos = palabras.map(palabra => doc.getTextWidth(palabra));
+      const espacio = Math.max(doc.getTextWidth(" "), (width - anchos.reduce((s, w) => s + w, 0)) / (palabras.length - 1));
+      let cursor = x;
+      palabras.forEach((palabra, indice) => {
+        doc.text(palabra, cursor, baseline);
+        cursor += anchos[indice] + espacio;
+      });
     };
 
     // línea horizontal bien separada del texto
@@ -5489,7 +5544,7 @@ async function subidosCrearPdfPredica(it = {}) {
         const s = String(linea);
         const esUltima = i === lineas.length - 1;
         if (justificar && !esUltima && s.trim().includes(" ") && s.length > 18) {
-          doc.text(s, x, y, { maxWidth: width, align: "justify" });
+          dibujarRenglon(s, x, y, width, true);
         } else {
           doc.text(s, x, y);
         }
@@ -5498,25 +5553,12 @@ async function subidosCrearPdfPredica(it = {}) {
       y += Math.max(0, Number(after) || 0);
     };
 
-    const escribirOriginal = (txt, opts = {}) => {
-      const raw = String(txt || "").replace(/\r/g, "");
-      if (!raw.trim()) return;
-      raw.split("\n").forEach((linea, i, arr) => {
-        const t = limpiar(linea);
-        if (!t) {
-          y += BODY_SIZE * 0.34;
-          return;
-        }
-        escribir(t, { ...opts, after: 0 });
-        if (i < arr.length - 1) y += BODY_SIZE * 0.10;
-      });
-    };
-
     const escribirCabecera = () => {
       const tituloTxt = limpiar(titulo || "Prédica");
       const fechaTxt = limpiar(fecha || "");
       const TITLE_SIZE = BODY_SIZE + 4;
       const DATE_SIZE = BODY_SIZE;
+      y = TOP + TITLE_SIZE * 0.8;
       setFont(DATE_SIZE, false, false);
       const fechaW = fechaTxt ? doc.getTextWidth(fechaTxt) : 0;
       const gap = BODY_SIZE * 1.6;
@@ -5538,14 +5580,7 @@ async function subidosCrearPdfPredica(it = {}) {
     };
 
     const escribirItalic = (txt = "") => {
-      escribirOriginal(txt, {
-        x: LEFT,
-        width: FULL_W,
-        size: BODY_SIZE,
-        italic: true,
-        lineH: LINE_H,
-        justificar: true
-      });
+      escribirComentario(txt, {x: LEFT, italic: true});
     };
 
     // Viñeta distinta para citas bíblicas: cuadrado sólido tipo ▪
@@ -5553,13 +5588,12 @@ async function subidosCrearPdfPredica(it = {}) {
       const ref = limpiar(referencia);
       if (!ref) return;
       const BULLET_X = LEFT + 2;
-      const BULLET_Y = y - BODY_SIZE * 0.45;
       const TEXT_X = LEFT + 15;
       const TEXT_W = RIGHT - TEXT_X;
       const lineas = dividir(ref, TEXT_W, BODY_SIZE, true, false);
-      if (y + (LINE_H * 2) > BOTTOM) nuevaPagina();
+      asegurar(LINE_H * (lineas.length + 1));
       doc.setFillColor(0, 0, 0);
-      doc.rect(BULLET_X, BULLET_Y, 4.2, 4.2, 'F');
+      doc.rect(BULLET_X, y - BODY_SIZE * 0.45, 4.2, 4.2, 'F');
       setFont(BODY_SIZE, true, false);
       lineas.forEach((linea, i) => {
         if (i > 0) asegurar(LINE_H);
@@ -5576,181 +5610,89 @@ async function subidosCrearPdfPredica(it = {}) {
       const m = t.match(/^(\d+)\s*[\.\)]?\s*(.*)$/);
       const BAR_X = LEFT + 5;
       const X_NUM = LEFT + 14;
-      const X_BODY_FALLBACK = LEFT + 18;
+      const numero = m ? `${m[1]}.` : "";
+      setFont(BODY_SIZE, true);
+      const X_BODY = m ? X_NUM + Math.max(doc.getTextWidth(numero), doc.getTextWidth("99.")) + 7 : LEFT + 18;
+      const BODY_W = RIGHT - X_BODY;
+      const lineas = dividir(m ? m[2] : t, BODY_W);
+      if (!lineas.length && numero) lineas.push("");
+      const corte = corteParaEvitarPalabraSola(lineas);
 
-      if (!m) {
-        const startY = y;
-        escribir(t, {
-          x: X_BODY_FALLBACK,
-          width: RIGHT - X_BODY_FALLBACK,
-          size: BODY_SIZE,
-          lineH: LINE_H,
-          justificar: true
-        });
+      lineas.forEach((linea, indice) => {
+        if (indice === corte) nuevaPagina();
+        else asegurar(LINE_H);
+
+        // Cada tramo pertenece a la hoja de su renglón. Nunca cruza un salto.
         doc.setDrawColor(135, 135, 135);
         doc.setLineWidth(0.8);
-        doc.line(BAR_X, startY - BODY_SIZE * 0.75, BAR_X, y - BODY_SIZE * 0.28);
-        return;
-      }
-
-      const numero = `${m[1]}.`;
-      const cuerpo = String(m[2] || "").trim();
-      setFont(BODY_SIZE, true, false);
-      const anchoNumero = doc.getTextWidth(numero);
-      const X_BODY = X_NUM + anchoNumero + 7;
-      const BODY_W = RIGHT - X_BODY;
-      const lineas = dividir(cuerpo, BODY_W, BODY_SIZE, false, false);
-
-      const cortePalabraSola =
-        corteParaEvitarPalabraSola(lineas, LINE_H);
-
-      if (cortePalabraSola === 0) {
-        nuevaPagina();
-      }
-
-      const startY = y;
-
-      asegurar(LINE_H);
-      setFont(BODY_SIZE, true, false);
-      doc.text(numero, X_NUM, y);
-
-      if (lineas.length) {
-        setFont(BODY_SIZE, false, false);
-        const primera = String(lineas[0]);
-        if (lineas.length > 1 && primera.trim().includes(" ") && primera.length > 18) {
-          doc.text(primera, X_BODY, y, { maxWidth: BODY_W, align: "justify" });
-        } else {
-          doc.text(primera, X_BODY, y);
+        doc.line(BAR_X, y - BODY_SIZE * 0.75, BAR_X, y + LINE_H - BODY_SIZE * 0.75);
+        if (indice === 0 && numero) {
+          setFont(BODY_SIZE, true);
+          doc.text(numero, X_NUM, y);
         }
-      }
-      y += LINE_H;
-
-      for (let i = 1; i < lineas.length; i++) {
-        if (i === cortePalabraSola) {
-          nuevaPagina();
-        } else {
-          asegurar(LINE_H);
-        }
-
-        setFont(BODY_SIZE, false, false);
-        const s = String(lineas[i]);
-        const esUltima = i === lineas.length - 1;
-        if (!esUltima && s.trim().includes(" ") && s.length > 18) {
-          doc.text(s, X_BODY, y, { maxWidth: BODY_W, align: "justify" });
+        setFont();
+        const s = String(linea);
+        if (indice < lineas.length - 1 && s.trim().includes(" ") && s.length > 18) {
+          dibujarRenglon(s, X_BODY, y, BODY_W, true);
         } else {
           doc.text(s, X_BODY, y);
         }
         y += LINE_H;
-      }
-
-      doc.setDrawColor(135, 135, 135);
-      doc.setLineWidth(0.8);
-      doc.line(BAR_X, startY - BODY_SIZE * 0.75, BAR_X, y - BODY_SIZE * 0.28);
+      });
     };
 
-    const escribirComentario = (txt = "") => {
+    const escribirComentario = (txt = "", {italic = false, x = LEFT + 12} = {}) => {
       const raw = String(txt || "").replace(/\r/g, "");
       if (!raw.trim()) return;
 
-      const MARK_X = LEFT + 12;
-      const TEXTO_X = LEFT + 12;
-      const TEXTO_W = RIGHT - TEXTO_X;
-
-      raw.split("\n").forEach((lineaOriginal) => {
+      raw.split("\n").forEach(lineaOriginal => {
         const linea = limpiar(lineaOriginal);
         if (!linea) {
           y += BODY_SIZE * 0.34;
           return;
         }
-
-        const num = linea.match(/^(\d+)\s*[\.\)]\s*(.*)$/);
-        if (num) {
-          const marcador = `${num[1]})`;
-          const cuerpo = String(num[2] || "").trim();
-          setFont(BODY_SIZE, true, false);
-          const anchoMarca = doc.getTextWidth(marcador);
-          const BODY_X = MARK_X + anchoMarca + 7;
-          const BODY_W = RIGHT - BODY_X;
-          const partes = dividir(cuerpo, BODY_W, BODY_SIZE, false, false);
-
-          const cortePalabraSola =
-            corteParaEvitarPalabraSola(partes, LINE_H);
-
-          if (cortePalabraSola === 0) {
-            nuevaPagina();
-          } else {
-            asegurar(LINE_H);
-          }
-
-          setFont(BODY_SIZE, true, false);
-          doc.text(marcador, MARK_X, y);
-          partes.forEach((parte, i) => {
-            if (i > 0) {
-              if (i === cortePalabraSola) {
-                nuevaPagina();
-              } else {
-                asegurar(LINE_H);
-              }
-            }
-            setFont(BODY_SIZE, false, false);
-            const s = String(parte);
-            const esUltima = i === partes.length - 1;
-            if (!esUltima && s.trim().includes(" ") && s.length > 18) {
-              doc.text(s, BODY_X, y, { maxWidth: BODY_W, align: "justify" });
-            } else {
-              doc.text(s, BODY_X, y);
-            }
-            y += LINE_H;
-          });
+        const lista = subidosPrefijoListaImpresion(linea);
+        if (!lista) {
+          escribir(linea, {x, width: RIGHT - x, italic, justificar: true});
           return;
         }
 
-        const bullet = linea.match(/^([•▪◦·\-\–\—\*])\s*(.*)$/);
-        if (bullet) {
-          const marcador = "•";
-          const cuerpo = String(bullet[2] || "").trim();
-          setFont(BODY_SIZE, false, false);
-          const anchoMarca = doc.getTextWidth(marcador);
-          const BODY_X = MARK_X + anchoMarca + 7;
-          const BODY_W = RIGHT - BODY_X;
-          const partes = dividir(cuerpo, BODY_W, BODY_SIZE, false, false);
+        setFont(BODY_SIZE, lista.tipo === "numero", italic);
+        const anchoMarca = lista.tipo === "numero" ? doc.getTextWidth(lista.marcador) : BODY_SIZE * 0.42;
+        const BODY_X = x + anchoMarca + 7;
+        const BODY_W = RIGHT - BODY_X;
+        const partes = dividir(lista.texto, BODY_W, BODY_SIZE, false, italic);
+        if (!partes.length) partes.push("");
+        const corte = corteParaEvitarPalabraSola(partes);
 
-          const cortePalabraSola =
-            corteParaEvitarPalabraSola(partes, LINE_H);
-
-          if (cortePalabraSola === 0) {
-            nuevaPagina();
-          } else {
-            asegurar(LINE_H);
-          }
-
-          doc.text(marcador, MARK_X, y);
-          partes.forEach((parte, i) => {
-            if (i > 0) {
-              if (i === cortePalabraSola) {
-                nuevaPagina();
+        partes.forEach((parte, indice) => {
+          if (indice === corte) nuevaPagina();
+          else asegurar(LINE_H);
+          if (indice === 0) {
+            if (lista.tipo === "numero") {
+              setFont(BODY_SIZE, true, italic);
+              doc.text(lista.marcador, x, y);
+            } else {
+              doc.setFillColor(0, 0, 0);
+              doc.setDrawColor(0, 0, 0);
+              doc.setLineWidth(0.7);
+              const lado = BODY_SIZE * 0.24;
+              const centro = y - BODY_SIZE * 0.28;
+              if (lista.tipo === "cuadrado") {
+                doc.rect(x + 1, centro - lado / 2, lado, lado, lista.hueca ? "S" : "F");
               } else {
-                asegurar(LINE_H);
+                doc.circle(x + lado / 2 + 1, centro, lado / 2, lista.hueca ? "S" : "F");
               }
             }
-            const s = String(parte);
-            const esUltima = i === partes.length - 1;
-            if (!esUltima && s.trim().includes(" ") && s.length > 18) {
-              doc.text(s, BODY_X, y, { maxWidth: BODY_W, align: "justify" });
-            } else {
-              doc.text(s, BODY_X, y);
-            }
-            y += LINE_H;
-          });
-          return;
-        }
-
-        escribir(linea, {
-          x: TEXTO_X,
-          width: TEXTO_W,
-          size: BODY_SIZE,
-          lineH: LINE_H,
-          justificar: true
+          }
+          setFont(BODY_SIZE, false, italic);
+          const s = String(parte);
+          if (indice < partes.length - 1 && s.trim().includes(" ") && s.length > 18) {
+            dibujarRenglon(s, BODY_X, y, BODY_W, true);
+          } else {
+            doc.text(s, BODY_X, y);
+          }
+          y += LINE_H;
         });
       });
     };
@@ -5816,64 +5758,146 @@ async function subidosCrearPdfPredica(it = {}) {
     paginas: elegido.pages,
     yFinal: elegido.lastY,
     bordeInferior: elegido.bottom,
-    version: "20260827-PDF-LINEA-VERTICAL-9"
+    version: "20261124-A4-REVISION-Y-MARGENES-1"
   });
 
   return elegido.doc;
 }
 
-window.subidosImprimirPredica = async function subidosImprimirPredica(id) {
-  const it = obtenerSubidoPorId(id);
-
-  if (!it) {
-    alert("No encontré la prédica para imprimir.");
-    return;
-  }
-
-  // Abrimos una pestaña en el mismo click para evitar bloqueadores.
-  const visorPdf = window.open("", "_blank");
-
-  if (!visorPdf) {
-    alert("El navegador bloqueó la vista de impresión. Permití ventanas emergentes para esta página.");
-    return;
-  }
-
+async function subidosMostrarPdfImpresion(it, visorPdf) {
+  visorPdf.document.open();
+  visorPdf.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Preparando A4…</title></head>
+    <body style="font-family:Arial,sans-serif;padding:24px">Preparando A4…</body></html>`);
+  visorPdf.document.close();
   try {
-    visorPdf.document.write(`
-      <html>
-        <head><title>Preparando impresión…</title></head>
-        <body style="font-family:Arial,sans-serif;padding:24px;">
-          Preparando A4…
-        </body>
-      </html>
-    `);
-
     const doc = await subidosCrearPdfPredica(it);
-
+    if (visorPdf.closed) return false;
     if (typeof doc.autoPrint === "function") {
-      try {
-        doc.autoPrint({ variant: "non-conform" });
-      } catch (e) {}
+      try { doc.autoPrint({variant: "non-conform"}); } catch {}
     }
-
-    const blob = doc.output("blob");
-    const url = URL.createObjectURL(blob);
-
+    const url = URL.createObjectURL(doc.output("blob"));
     visorPdf.location.replace(url);
-
-    setTimeout(() => {
-      try { URL.revokeObjectURL(url); } catch {}
-    }, 120000);
-
-  } catch (e) {
-    console.error("No pude preparar el PDF de la prédica:", e);
-
-    try {
-      visorPdf.close();
-    } catch {}
-
-    alert("No pude preparar el A4 para imprimir.");
+    setTimeout(() => URL.revokeObjectURL(url), 120000);
+    return true;
+  } catch (error) {
+    try { visorPdf.close(); } catch {}
+    throw error;
   }
+}
+
+function subidosRevisarImpresion(it) {
+  const abierta = document.querySelector("dialog.subidos-impresion-dialog[open]");
+  if (abierta) { abierta.focus(); return; }
+  const original = JSON.parse(JSON.stringify(it));
+  const foco = document.activeElement;
+  const dialogo = document.createElement("dialog");
+  dialogo.className = "subidos-impresion-dialog";
+  dialogo.setAttribute("aria-labelledby", "subidosRevisionA4Titulo");
+  dialogo.innerHTML = `
+    <header><h2 id="subidosRevisionA4Titulo">Revisar impresión A4</h2>
+      <button type="button" data-cerrar aria-label="Cerrar">×</button></header>
+    <form>
+      <div class="subidos-impresion-campos">
+        <p class="subidos-impresion-ayuda">Corregí el texto, las viñetas o los símbolos antes de ver el A4. Los cambios se aplican solo a esta impresión.</p>
+        <div class="subidos-impresion-cabecera"></div>
+        <div class="subidos-impresion-contenido"></div>
+      </div>
+      <footer><span role="status" aria-live="polite"></span>
+        <button type="button" data-cancelar>Cancelar</button>
+        <button type="submit" class="subidos-impresion-continuar"><i class="fa-solid fa-print" aria-hidden="true"></i> Ver A4</button>
+      </footer>
+    </form>`;
+  const formulario = dialogo.querySelector("form");
+  const cabecera = dialogo.querySelector(".subidos-impresion-cabecera");
+  const contenido = dialogo.querySelector(".subidos-impresion-contenido");
+  const aviso = dialogo.querySelector('[role="status"]');
+  const continuar = formulario.querySelector('[type="submit"]');
+  const ajustar = campo => {
+    if (campo.tagName !== "TEXTAREA") return;
+    campo.style.height = "auto";
+    campo.style.height = Math.max(72, campo.scrollHeight + 2) + "px";
+  };
+  const campo = (padre, etiqueta, valor, {tipo = "text", nombre, filas = 3} = {}) => {
+    const label = document.createElement("label");
+    const texto = document.createElement("span");
+    texto.textContent = etiqueta;
+    const input = document.createElement(tipo === "textarea" ? "textarea" : "input");
+    if (tipo === "textarea") input.rows = filas;
+    else input.type = tipo;
+    input.name = nombre;
+    input.value = String(valor || "");
+    input.addEventListener("input", () => ajustar(input));
+    label.append(texto, input);
+    padre.append(label);
+    return input;
+  };
+  const titulo = campo(cabecera, "Título", original.predicaTitulo || original.tituloPredica || "Prédica", {nombre: "titulo"});
+  const fecha = campo(cabecera, "Fecha", String(original.fechaEvento || "").slice(0, 10), {tipo: "date", nombre: "fecha"});
+  const introduccion = campo(contenido, "Introducción (opcional)", original.predicaIntroduccion || original.introduccionPredica, {tipo: "textarea", nombre: "introduccion"});
+  const citas = obtenerCitasPredicaSubido(original).map((cita, indice) => {
+    const seccion = document.createElement("fieldset");
+    const leyenda = document.createElement("legend");
+    leyenda.textContent = "Cita " + (indice + 1);
+    seccion.append(leyenda);
+    contenido.append(seccion);
+    return {
+      original: cita,
+      referencia: campo(seccion, "Referencia", cita.referencia, {nombre: `referencia_${indice}`}),
+      texto: campo(seccion, "Versículos", cita.texto, {tipo: "textarea", nombre: `versiculos_${indice}`, filas: 5}),
+      comentario: campo(seccion, "Comentario (opcional)", cita.comentario || cita.nota, {tipo: "textarea", nombre: `comentario_${indice}`})
+    };
+  });
+  const notaFinal = campo(contenido, "Nota final (opcional)", original.predicaNotaFinal || original.notaFinalGeneral, {tipo: "textarea", nombre: "notaFinal"});
+  let preparando = false, visorPdf = null;
+  const cerrar = () => dialogo.close();
+  dialogo.querySelector("[data-cerrar]").onclick = cerrar;
+  dialogo.querySelector("[data-cancelar]").onclick = cerrar;
+  dialogo.addEventListener("close", () => {
+    if (preparando && visorPdf && !visorPdf.closed) visorPdf.close();
+    dialogo.remove();
+    foco?.focus({preventScroll: true});
+  }, {once: true});
+  formulario.onsubmit = async evento => {
+    evento.preventDefault();
+    if (preparando) return;
+    // La pestaña se abre desde este clic, después de revisar, para evitar bloqueadores.
+    if (!visorPdf || visorPdf.closed) visorPdf = window.open("", "_blank");
+    if (!visorPdf) {
+      aviso.textContent = "El navegador bloqueó el A4. Permití las ventanas emergentes para esta página y volvé a tocar Ver A4.";
+      return;
+    }
+    const editada = {
+      ...original, predicaTitulo: titulo.value.trim(), tituloPredica: titulo.value.trim(), fechaEvento: fecha.value,
+      predicaIntroduccion: introduccion.value, introduccionPredica: introduccion.value,
+      predicaNotaFinal: notaFinal.value, notaFinalGeneral: notaFinal.value,
+      predicaCitas: citas.map(cita => ({
+        ...cita.original, referencia: cita.referencia.value.trim(), texto: cita.texto.value,
+        comentario: cita.comentario.value, nota: cita.comentario.value
+      }))
+    };
+    preparando = true;
+    continuar.disabled = true;
+    aviso.textContent = "Preparando A4…";
+    try {
+      const listo = await subidosMostrarPdfImpresion(editada, visorPdf);
+      aviso.textContent = listo ? "A4 listo. Podés ajustar el texto y volver a generarlo." : "Podés volver a generar el A4.";
+    } catch (error) {
+      console.error("No pude preparar el A4 revisado:", error);
+      aviso.textContent = "No pude preparar el A4. " + (error?.message || "Volvé a intentar.");
+    } finally {
+      preparando = false;
+      continuar.disabled = false;
+    }
+  };
+  document.body.append(dialogo);
+  dialogo.showModal();
+  dialogo.querySelectorAll("textarea").forEach(ajustar);
+}
+
+window.subidosImprimirPredica = function subidosImprimirPredica(id) {
+  const it = obtenerSubidoPorId(id);
+  if (!it) { alert("No encontré la prédica para imprimir."); return; }
+  subidosRevisarImpresion(it);
 };
 
 
@@ -7072,6 +7096,62 @@ window.abrirSubidoDesdeCalendario = function abrirSubidoDesdeCalendario(id) {
   }, 1800);
 };
 
+function subidosPrepararPredicaParaCompartir(id, item) {
+  const existente = document.querySelector("dialog.subidos-compartir-predica[open]");
+  if (existente) { existente.focus(); return; }
+  const dialogo = document.createElement("dialog");
+  dialogo.className = "subidos-compartir-predica";
+  dialogo.setAttribute("aria-label", "Compartir prédica");
+  dialogo.innerHTML = `<button type="button" data-cerrar aria-label="Cerrar">×</button>
+    <i class="fa-solid fa-spinner fa-spin" data-icono aria-hidden="true"></i>
+    <p role="status" aria-live="polite">Preparando prédica para compartir…</p>
+    <button type="button" data-lista disabled>Compartir prédica lista</button>`;
+  const estado = dialogo.querySelector('[role="status"]');
+  const listo = dialogo.querySelector("[data-lista]");
+  const icono = dialogo.querySelector("[data-icono]");
+  const foco = document.activeElement;
+  let file = null, preparando = false;
+  dialogo.querySelector("[data-cerrar]").onclick = () => dialogo.close();
+  dialogo.addEventListener("close", () => {dialogo.remove(); foco?.focus({preventScroll: true});}, {once: true});
+  const preparar = async () => {
+    if (preparando) return;
+    preparando = true;
+    listo.disabled = true;
+    estado.textContent = "Preparando prédica para compartir…";
+    icono.className = "fa-solid fa-spinner fa-spin";
+    try {
+      const info = subidosInfoArchivoAccion(item);
+      file = info ? await subidosPrepararArchivoAccion(id) : new File(
+        [await subidosGenerarBlobCardPredica(id, item)], subidosNombreSharePredica(item), {type: "image/png"}
+      );
+      if (!file) throw new Error("No pude preparar la imagen. Volvé a intentar.");
+      estado.textContent = "Prédica lista para compartir.";
+      icono.className = "fa-solid fa-circle-check";
+      listo.textContent = "Compartir prédica lista";
+    } catch (error) {
+      estado.textContent = error?.message || "No pude preparar la prédica.";
+      icono.className = "fa-solid fa-triangle-exclamation";
+      listo.textContent = "Volver a preparar";
+    } finally {
+      preparando = false;
+      listo.disabled = false;
+    }
+  };
+  listo.onclick = async () => {
+    if (!file) { await preparar(); return; }
+    listo.disabled = true;
+    try {
+      await subidosCompartirFileObligatorio(file, item.predicaTitulo || item.titulo || "Prédica", subidosLinkDetalle(id));
+      dialogo.close();
+    } catch (error) {
+      estado.textContent = error?.name === "AbortError" ? "Prédica lista. Podés volver a compartirla." : error?.message || "No pude compartir la prédica.";
+    } finally { listo.disabled = false; }
+  };
+  document.body.append(dialogo);
+  dialogo.showModal();
+  preparar();
+}
+
 window.compartirSubido = async function compartirSubido(id, btn = null) {
   try {
     const it = obtenerSubidoPorId(id);
@@ -7087,11 +7167,10 @@ window.compartirSubido = async function compartirSubido(id, btn = null) {
     // ✅ PRÉDICA: MISMO SISTEMA DE SIEMPRE, ARCHIVO + LINK.
     if (esPredica) {
       const info = subidosInfoArchivoAccion(it);
-      const file = subidosLeerFileCachePorInfo(info, id);
+      const file = info ? subidosLeerFileCachePorInfo(info, id) : null;
 
       if (!file) {
-        subidosPrepararArchivoAccion(id);
-        alert("La prédica todavía se está preparando. Esperá unos segundos y tocá compartir otra vez.");
+        subidosPrepararPredicaParaCompartir(id, it);
         return;
       }
 
@@ -7336,9 +7415,9 @@ function subidosArmarSegmentosAudioPredica(it = {}) {
 
     segmentos.push({
       tipo: tipo === "comentario" ? "comentario" : "biblia",
-      texto: tipo === "biblia"
+      texto: conPausasNarracion(tipo === "biblia"
         ? subidosQuitarNumerosVersiculosAudio(limpio)
-        : limpio
+        : limpio)
     });
   };
 
@@ -7968,6 +8047,7 @@ videoPreviewFileName = principal.videoPreviewFileName || "";
     // ✅ cuando guardo/edito, borro cache viejo para no compartir imagen anterior
 subidosFileCache.delete(idFinal);
 subidosFilePreparando.delete(idFinal);
+subidosTareasArchivoAccion.delete(idFinal);
 
 /*
   Si estamos editando una prédica que ya tenía audio,
@@ -8141,6 +8221,7 @@ if (esPredica) {
 
       subidosFileCache.delete(idFinal);
       subidosFilePreparando.delete(idFinal);
+subidosTareasArchivoAccion.delete(idFinal);
     }
   } else {
     datosFinalGuardados = {
@@ -8190,6 +8271,7 @@ if (esPredica) {
 
   subidosFileCache.delete(idFinal);
   subidosFilePreparando.delete(idFinal);
+subidosTareasArchivoAccion.delete(idFinal);
 }
 
 // ⛔ NO guardar subidosEtiquetas acá.
